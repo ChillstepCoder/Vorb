@@ -88,6 +88,8 @@ namespace vorb {
             i32 getNumPresses(VirtualKey k) const;
             bool hasFocus() const;
 
+            bool isKeyPressed(VirtualKey k) const;
+
             Event<> onEvent; ///< Signaled when any keyboard event happens
             Event<> onFocusLost; ///< Signaled when keyboard no longer provides input to application
             Event<> onFocusGained; ///< Signaled when keyboard begins to provide input to application
