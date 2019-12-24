@@ -1,0 +1,30 @@
+#include "stdafx.h"
+
+#include "App.h"
+#include "MainMenuScreen.h"
+
+#include <Vorb/Delegate.hpp>
+#include <Vorb/ui/InputDispatcher.h>
+#include <Vorb/ui/ScreenList.h>
+#include <Vorb/graphics/SpriteBatch.h>
+#include <Vorb/sound/SoundEngine.h>
+
+App::App() {
+}
+
+App::~App() {
+}
+
+void App::addScreens() {
+	m_mainMenuScreen = std::make_unique<MainMenuScreen>(this);
+
+	m_screenList.addScreen(m_mainMenuScreen.get());
+
+	m_screenList.setScreen(m_mainMenuScreen->getIndex());
+}
+
+void App::onInit() {
+}
+
+void App::onExit() {
+}

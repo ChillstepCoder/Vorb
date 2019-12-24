@@ -76,7 +76,9 @@
 #   define VORB_OS_WINDOWS
 #   define _WINSOCKAPI_
 #
+#ifndef NOMINMAX
 #   define NOMINMAX
+#endif
 #   include <windows.h>
 #   undef NOMINMAX
 #endif

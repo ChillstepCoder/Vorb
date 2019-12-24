@@ -106,7 +106,7 @@
 
 #if !defined(PRINT_REFCOUNT_DELEGATES)
 #    if defined(DEBUG)
-#        define PRINT_REFCOUNT_DELEGATES 1
+#        define PRINT_REFCOUNT_DELEGATES 0 // Forced off
 #    else
 #        define PRINT_REFCOUNT_DELEGATES 0
 #    endif
