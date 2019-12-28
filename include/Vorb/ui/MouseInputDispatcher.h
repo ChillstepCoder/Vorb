@@ -42,7 +42,8 @@ namespace vorb {
             MIDDLE, ///< The middle mouse button
             RIGHT, ///< The right mouse button
             X1, ///< The first X button
-            X2 ///< The second X button
+            X2, ///< The second X button
+            COUNT
         };
 
         /// Common mouse event data
@@ -105,13 +106,12 @@ namespace vorb {
         public:
             void getPosition(i32* x, i32* y) const;
             i32v2 getPosition() const {
-                i32v2 v;
-                getPosition(&v.x, &v.y);
-                return v;
+                return m_lastPos;
             }
             bool hasFocus() const;
             bool isRelative() const;
             bool isHidden() const;
+            bool isButtonPressed(MouseButton button) const;
 
             Event<const MouseEvent&> onEvent; ///< Signaled when any mouse event happens
             Event<const MouseEvent&> onFocusLost; ///< Signaled when mouse no longer provides input to application
@@ -124,7 +124,10 @@ namespace vorb {
             void setPos(i32 x, i32 y);
             void setFocus(bool v);
             void setRelative(bool v);
+
             void setHidden(bool v);
+
+            bool m_state[static_cast<int>(MouseButton::COUNT)]; ///< The pressed state each virtual key
 
             i32v2 m_lastPos; ///< The last tracked position of the mouse
             i32v2 m_fullScroll; ///< The accumulated values of the scroll wheel

@@ -27,8 +27,28 @@
 
 #include "Entity.h"
 #include "BitTable.hpp"
+#include "ComponentTable.hpp"
 #include "../Event.hpp"
 #include "../IDGenerator.h"
+
+/// Useful macro for base classes to set up table accessors
+/// Generates getXXX, addXXX and getXXXs
+/// @param Table: The table variable name, ex mPhysicsTable
+/// @param Component: The class name of your component, ex PhysicsComponent
+#define DECL_COMPONENT_TABLE(Table, Component) \
+Component& get##Component(vecs::ComponentID compId) { \
+	return Table.get(compId); \
+} \
+const Component& get##Component(vecs::ComponentID compId) const { \
+	return Table.get(compId); \
+} \
+std::pair<vecs::ComponentID, Component&> add##Component(vecs::EntityID entityId) { \
+	vecs::ComponentID newId = vecs::ECS::addComponent(Table.getID(), entityId); \
+	std::pair<vecs::ComponentID, Component&> rv = std::pair<vecs::ComponentID, Component&>(newId, Table.get(newId)); \
+	return rv; \
+} \
+const auto& get##Component##s() const { return Table; }
+
 
 namespace vorb {
     namespace ecs {
@@ -70,7 +90,16 @@ namespace vorb {
             void genEntities(const size_t& n, EntityID* ids) {
                 for (size_t i = 0; i < n; i++) ids[i] = addEntity();
             }
-
+			/// Add a component to an entity
+			/// @param tableID: ID of the component table
+			/// @param id: Component owner entity
+			/// @return ID of generated component
+			ComponentID addComponent(const TableID& tableID, EntityID id);
+			/// Remove a component from an entity
+			/// @param tableID: ID of the component table
+		    /// @param id: Component owner entity
+		    /// @return True if a component was deleted
+			bool deleteComponent(const TableID& tableID, EntityID id);
             /// Add a component to an entity
             /// @param name: Friendly name of component
             /// @param id: Component owner entity
@@ -113,6 +142,9 @@ namespace vorb {
             Event<EntityID> onEntityRemoved; ///< Called when an entity is removed from this system
             Event<NamedComponent> onComponentAdded; ///< Called when a component table is added to this system
         private:
+            ComponentID addComponentInternal(ComponentTableBase* table, EntityID id);
+			ComponentID deleteComponentInternal(ComponentTableBase* table, EntityID id);
+
             typedef std::pair<ComponentTableBase*, std::shared_ptr<Delegate<void, Sender, EntityID>>> ComponentSubscriber;
             typedef std::unordered_map<nString, ComponentSubscriber> ComponentSubscriberSet;
 

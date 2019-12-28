@@ -23,12 +23,13 @@
 #endif // !VORB_USING_PCH
 
 #include "Entity.h"
-#include "ECS.h"
 #include "../Event.hpp"
 #include "../IDGenerator.h"
 
 namespace vorb {
     namespace ecs {
+        class ECS;
+
         class ComponentTableBase {
             friend class ECS;
         public:

@@ -87,14 +87,15 @@ inline void convertWToMBString(const cwString ws, nString& resultString) {
 
     resultString[l] = '\0';
 }
-inline const cwString convertMBToWString(const cString s) {
+inline const std::wstring convertMBToWString(const cString s) {
     size_t l = strlen(s);
-    cwString resultString = new wchar_t[l + 1];
+    std::wstring resultString = new wchar_t[l + 1];
+    resultString.resize(l + 1);
     size_t numConverted = 0;
 #if defined(__APPLE__) || defined(__linux__)
     wcstombs((char *)&(resultString[0]), (const wchar_t *)s, numConverted);
 #elif defined(VORB_OS_WINDOWS)
-    mbstowcs(resultString, s, l);
+    mbstowcs_s(&numConverted, &(resultString[0]), l + 1, s, l);
 #endif   // win32
 
     resultString[l] = '\0';

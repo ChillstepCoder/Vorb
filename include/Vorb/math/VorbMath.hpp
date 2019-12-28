@@ -101,6 +101,11 @@ namespace vorb {
             return y;
         }
 
+		template<typename T>
+		inline T lerp(T a, T b, float alpha) {
+            return a * (1.0f - alpha) + b * alpha;
+		}
+
         template <typename T>
         inline T sin(T a) {
             return std::sin(a);
