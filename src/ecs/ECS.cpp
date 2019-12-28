@@ -53,6 +53,7 @@ bool vecs::ECS::deleteEntity(EntityID id) {
 }
 
 vecs::TableID vecs::ECS::addComponentTable(nString name, vecs::ComponentTableBase* table) {
+    assert(table);
     TableID id = (TableID)m_componentList.size() + 1;
     table->m_id = id;
     m_components[name] = id;
@@ -64,35 +65,56 @@ vecs::TableID vecs::ECS::addComponentTable(nString name, vecs::ComponentTableBas
 
     return id;
 }
+
 vecs::TableID vecs::ECS::getComponentTableID(const nString& name) const {
     auto kvp = m_components.find(name);
     return (kvp == m_components.end()) ? 0 : kvp->second;
 }
+
 vecs::ComponentTableBase* vecs::ECS::getComponentTable(nString name) const {
     TableID tid = getComponentTableID(name);
     if (tid == 0) return nullptr;
     return getComponentTable(getComponentTableID(name));
 }
+
 vecs::ComponentTableBase* vecs::ECS::getComponentTable(TableID id) const {
     return m_componentList[id - 1];
 }
 
+vorb::ecs::ComponentID vorb::ecs::ECS::addComponent(const TableID& tableID, EntityID id) {
+	ComponentTableBase* table = getComponentTable(tableID);
+	return addComponentInternal(table, id);
+}
+
+bool vorb::ecs::ECS::deleteComponent(const TableID& tableID, EntityID id) {
+	ComponentTableBase* table = getComponentTable(tableID);
+	return deleteComponentInternal(table, id);
+}
+
 vecs::ComponentID vecs::ECS::addComponent(nString name, EntityID id) {
     ComponentTableBase* table = getComponentTable(name);
-    if (!table) return ID_GENERATOR_NULL_ID;
-
-    // Can't have multiple of the same component
-    if (hasComponent(table->getID(), id)) return ID_GENERATOR_NULL_ID;
-    m_entityComponents.setTrue(id - 1, table->getID() - 1);
-    return table->add(id);
+    return addComponentInternal(table, id);
+   
 }
 bool vecs::ECS::deleteComponent(nString name, EntityID id) {
     ComponentTableBase* table = getComponentTable(name);
-    if (!table) return false;
-    if (!hasComponent(table->getID(), id)) return false;
-    // TODO: Delete component dependencies
-    m_entityComponents.setFalse(id - 1, table->getID() - 1);
-    return table->remove(id);
+    return deleteComponentInternal(table, id);
+}
+
+vorb::ecs::ComponentID vorb::ecs::ECS::addComponentInternal(ComponentTableBase* table, EntityID id) {
+	if (!table) return ID_GENERATOR_NULL_ID;
+	// Can't have multiple of the same component
+	if (hasComponent(table->getID(), id)) return ID_GENERATOR_NULL_ID;
+	m_entityComponents.setTrue(id - 1, table->getID() - 1);
+	return table->add(id);
+}
+
+vorb::ecs::ComponentID vorb::ecs::ECS::deleteComponentInternal(ComponentTableBase* table, EntityID id) {
+	if (!table) return false;
+	if (!hasComponent(table->getID(), id)) return false;
+	// TODO: Delete component dependencies
+	m_entityComponents.setFalse(id - 1, table->getID() - 1);
+	return table->remove(id);
 }
 
 bool vecs::ECS::hasComponent(const TableID& tableID, const EntityID& id) const {

@@ -14,8 +14,8 @@ TileGrid::TileGrid(const i32v2& dims, vg::TextureCache& textureCache, const std:
 	m_texture = textureCache.addTexture("data/textures/tiles.png");
 	m_tileSet.init(&m_texture, tileSetDims);
 
-	m_tiles[0] = STONE_2;
-	m_tiles[1] = STONE_2;
+	//m_tiles[0] = STONE_2;
+	//m_tiles[1] = STONE_2;
 
 	m_sb = std::make_unique<vg::SpriteBatch>();
 	m_sb->init();

@@ -15,6 +15,10 @@ bool vorb::ui::MouseEventDispatcher::isHidden() const {
     return std::atomic_load(&m_hidden) != 0;
 }
 
+bool vorb::ui::MouseEventDispatcher::isButtonPressed(MouseButton button) const {
+    return m_state[static_cast<int>(button)];
+}
+
 void vui::MouseEventDispatcher::setPos(i32 x, i32 y) {
     std::atomic_store(&m_x, x);
     std::atomic_store(&m_y, y);

@@ -1,0 +1,9 @@
+COMPONENTS
+
+Physics
+- Position
+- Velocity
+- Mass (inf for static)
+
+Interleaved? Fast update?
+

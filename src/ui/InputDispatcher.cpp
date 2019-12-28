@@ -164,7 +164,8 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         ie.mouseButton.y = e->button.y;
         ie.mouseButton.clicks = e->button.clicks;
         vui::InputDispatcher::mouse.onButtonDown(ie.mouseButton);
-        vui::InputDispatcher::mouse.onEvent(ie.mouseMotion);
+		vui::InputDispatcher::mouse.onEvent(ie.mouseMotion);
+		vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = true;
         break;
     case SDL_MOUSEBUTTONUP:
         convert(ie.mouseButton.button, e->button.button);
@@ -173,6 +174,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         ie.mouseButton.clicks = e->button.clicks;
         vui::InputDispatcher::mouse.onButtonUp(ie.mouseButton);
         vui::InputDispatcher::mouse.onEvent(ie.mouseMotion);
+        vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = false;
         break;
     case SDL_MOUSEWHEEL:
         ie.mouseWheel.x = vui::InputDispatcher::mouse.m_lastPos.x;

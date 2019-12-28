@@ -34,6 +34,7 @@ public:
     float getAspectRatio() const { return (float)_screenWidth / (float)_screenHeight; }
     float getScreenWidth() const { return _screenWidth; }
     float getScreenHeight() const { return _screenHeight; }
+    f32v2 getScreenSize() const { return f32v2(_screenWidth, _screenHeight); }
 private:
     int _screenWidth, _screenHeight;
     bool _needsMatrixUpdate;
