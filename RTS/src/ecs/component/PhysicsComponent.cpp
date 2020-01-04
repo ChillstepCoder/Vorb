@@ -37,7 +37,7 @@ inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 // TODO: Measure perf of this vs non inline vs macro
 inline void updateComponent(PhysicsComponent& cmp, float deltaTime) {
 	//if (cmp.mPosition.z <= 0.0f) {
-	cmp.mVelocity *= cmp.mFrictionCoef * deltaTime; // TODO: Deterministic?
+	cmp.mVelocity -= cmp.mVelocity * (1.0f - cmp.mFrictionCoef) * deltaTime; // TODO: Deterministic?
 	//}
 	cmp.mPosition += cmp.mVelocity;
 }

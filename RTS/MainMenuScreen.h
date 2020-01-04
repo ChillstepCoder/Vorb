@@ -11,6 +11,7 @@
 
 class App;
 class Camera2D;
+class UndeadActorFactory;
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
@@ -39,21 +40,23 @@ public:
 	virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
-	std::unique_ptr<vg::SpriteBatch> m_sb;
-	std::unique_ptr<vg::TextureCache> m_textureCache;
+	std::unique_ptr<vg::SpriteBatch> mSb;
+	std::unique_ptr<vg::TextureCache> mTextureCache;
 	std::unique_ptr<vg::SpriteFont> mSpriteFont;
-	std::unique_ptr<TileGrid> m_tileGrid;
-	std::unique_ptr<Camera2D> m_camera2D;
-	vg::Texture m_circleTexture;
+	std::unique_ptr<TileGrid> mTileGrid;
+	std::unique_ptr<Camera2D> mCamera2D;
+	vg::Texture mCircleTexture;
 
-	std::unique_ptr<vio::IOManager> m_ioManager;
+	std::unique_ptr<vio::IOManager> mIoManager;
 
-	EntityComponentSystem mEntityComponentSystem;
+	EntityComponentSystem mEcs;
 	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
 
-	float m_scale = 1.0f;
-	float m_fps = 0.0f;
+	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
 
-	f32v2 m_testClick = f32v2(0.0f);
+	float mScale = 1.0f;
+	float mFps = 0.0f;
+
+	f32v2 mTestClick = f32v2(0.0f);
 };
 

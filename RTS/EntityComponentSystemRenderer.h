@@ -9,10 +9,11 @@ DECL_VG(class TextureCache);
 class Camera2D;
 class PhysicsComponentTable;
 class EntityComponentSystem;
+class TileGrid;
 
 class EntityComponentSystemRenderer {
 public:
-	EntityComponentSystemRenderer(vg::TextureCache& textureCache, const EntityComponentSystem& system);
+	EntityComponentSystemRenderer(vg::TextureCache& textureCache, const EntityComponentSystem& system, const TileGrid& tileGrid);
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
 
@@ -21,5 +22,6 @@ private:
 	vg::TextureCache& mTextureCache;
 	vg::Texture mCircleTexture;
 	const EntityComponentSystem& mSystem;
+	const TileGrid& mTileGrid;
 };
 

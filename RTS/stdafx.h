@@ -38,5 +38,6 @@
 #include <Vorb/graphics/gtypes.h>
 #include <Vorb/VorbPreDecl.inl>
 
+#define UNUSED(x) (void)(x)
 
 #endif // stdafx_h__RTS

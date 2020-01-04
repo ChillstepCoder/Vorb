@@ -138,6 +138,7 @@
     </ClCompile>
     <ClCompile Include="TileGrid.cpp" />
     <ClCompile Include="TileSet.cpp" />
+    <ClCompile Include="UndeadActorFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -146,6 +147,8 @@
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="EntityComponentSystem.h" />
     <ClInclude Include="EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\actor\IActorFactory.h" />
+    <ClInclude Include="src\actor\UndeadActorFactory.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="stdafx.h" />

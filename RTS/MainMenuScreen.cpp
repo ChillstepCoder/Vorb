@@ -16,21 +16,25 @@
 #include "TileGrid.h"
 #include "Utils.h"
 
+#include "actor/UndeadActorFactory.h"
+
 #include "DebugRenderer.h"
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app) {
-	m_sb = std::make_unique<vg::SpriteBatch>();
-	m_textureCache = std::make_unique<vg::TextureCache>();
+	mSb = std::make_unique<vg::SpriteBatch>();
+	mTextureCache = std::make_unique<vg::TextureCache>();
 
-	m_ioManager = std::make_unique<vio::IOManager>();
+	mIoManager = std::make_unique<vio::IOManager>();
 
-	m_camera2D = std::make_unique<Camera2D>();
+	mCamera2D = std::make_unique<Camera2D>();
 
-	m_tileGrid = std::make_unique<TileGrid>(i32v2(50, 50), *m_textureCache, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
+	mTileGrid = std::make_unique<TileGrid>(i32v2(50, 50), *mTextureCache, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
 
-	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*m_textureCache, mEntityComponentSystem);
+	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, mEcs, *mTileGrid);
 	mSpriteFont = std::make_unique<vg::SpriteFont>();
+
+	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(mEcs, *mTextureCache);
 }
 
 
@@ -46,26 +50,34 @@ i32 MainMenuScreen::getPreviousScreen() const {
 }
 
 void MainMenuScreen::build() {
-	m_sb->init();
-	m_textureCache->init(m_ioManager.get());
+	mSb->init();
+	mTextureCache->init(mIoManager.get());
 	mSpriteFont->init("data/fonts/chintzy.ttf", 32);
 
-	m_circleTexture = m_textureCache->addTexture("data/textures/circle.png");
+	mCircleTexture = mTextureCache->addTexture("data/textures/circle.png");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
-	m_camera2D->init((int)screenSize.x, (int)screenSize.y);
+	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
-		
+		// View toggle
+		if (event.keyCode == VKEY_V) {
+			if (mTileGrid->getView() == TileGrid::View::ISO) {
+				mTileGrid->setView(TileGrid::View::TOP_DOWN);
+			}
+			else {
+				mTileGrid->setView(TileGrid::View::ISO);
+			}
+		}
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		m_scale = glm::clamp(m_scale + event.dy * 0.05f, 0.5f, 1.5f);
-		m_camera2D->setScale(m_scale);
+		mScale = glm::clamp(mScale + event.dy * 0.05f, 0.5f, 1.5f);
+		mCamera2D->setScale(mScale);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
-		m_testClick = m_camera2D->convertScreenToWorld(f32v2(event.x, event.y));
+		mTestClick = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y));
 
 		// Set tiles
 		//int tileIndex = m_tileGrid->getTileIndexFromScreenPos(m_testClick, *m_camera2D);
@@ -75,7 +87,7 @@ void MainMenuScreen::build() {
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
 		constexpr float VEL_MULT = 0.5f;
 		constexpr float VEL_EXP = 0.5f;
-		const f32v2 offset = m_camera2D->convertScreenToWorld(f32v2(event.x, event.y)) - m_testClick;
+		const f32v2 offset = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y)) - mTestClick;
 		const float mag = glm::length(offset);
 		const float power = pow(mag * VEL_MULT, VEL_EXP);
 		f32v2 velocity;
@@ -85,30 +97,18 @@ void MainMenuScreen::build() {
 		else {
 			velocity = (offset / mag) * power;
 		}
-
-		// Create physics entity
-		vecs::EntityID newEntity = mEntityComponentSystem.addEntity();
-		auto physCompPair = mEntityComponentSystem.addPhysicsComponent(newEntity);
-		auto& physComp = physCompPair.second;
-		physComp.mPosition = f32v3(m_testClick, 0.0f);
-		physComp.mVelocity = f32v3(velocity, 0.0f);
-		physComp.mMass = 1.0f;
-		physComp.mGravity = 1.0f;
-		physComp.mCollisionRadius = 5.0f;
-		physComp.mFrictionCoef = 0.97f;
-		physComp.mFlags = 0;
-
-		auto spriteCompPair = mEntityComponentSystem.addSimpleSpriteComponent(newEntity);
-		auto& spriteComp = spriteCompPair.second;
-		spriteComp.physicsComponent = physCompPair.first;
-		spriteComp.texture = m_circleTexture.id;
-		spriteComp.dims = f32v2(10.0f);
+		vecs::EntityID newActor = mUndeadActorFactory->createActorWithVelocity(
+			mTileGrid->convertScreenCoordToWorld(mTestClick),
+			mTileGrid->convertScreenCoordToWorld(velocity),
+			vio::Path("data/textures/circle.png"),
+			vio::Path("")
+		);
 	});
 }
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
-	m_sb->dispose();
-	m_textureCache->dispose();
+	mSb->dispose();
+	mTextureCache->dispose();
 }
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
@@ -138,15 +138,15 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	}
 
 	if (offset.x != 0.0f || offset.y != 0.0f) {
-		m_camera2D->offsetPosition(offset);
+		mCamera2D->offsetPosition(offset);
 	}
 
-	m_camera2D->update();
+	mCamera2D->update();
 
-	mEntityComponentSystem.update(deltaTime);
+	mEcs.update(deltaTime);
 
 	// Update
-	m_fps = vmath::lerp(m_fps, m_app->getFps(), 0.85f);
+	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);
 }
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
@@ -154,30 +154,30 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	m_tileGrid->draw(*m_camera2D);
+	mTileGrid->draw(*mCamera2D);
 
 
-	DebugRenderer::drawVector(f32v2(0.0f), m_tileGrid->m_axis[0] * 170.0f, color4(1.0f, 0.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), m_tileGrid->m_axis[1] * 170.0f, color4(0.0f, 1.0f, 0.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[0] * 170.0f, color4(1.0f, 0.0f, 0.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[1] * 170.0f, color4(0.0f, 1.0f, 0.0f));
 	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 140.0f, color4(0.0f, 0.0f, 1.0f));
 
 	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);
-	mEcsRenderer->renderSimpleSprites(*m_camera2D);
+	mEcsRenderer->renderSimpleSprites(*mCamera2D);
 
 	if (vui::InputDispatcher::mouse.isButtonPressed(vui::MouseButton::LEFT)) {
-		m_sb->draw(m_circleTexture.id, m_testClick - f32v2(8.0f), f32v2(16.0f), color4(1.0f, 0.0f, 1.0f));
-		const f32v2 pos = m_camera2D->convertScreenToWorld(vui::InputDispatcher::mouse.getPosition());
-		DebugRenderer::drawVector(m_testClick, pos - m_testClick, color4(1.0f, 0.0f, 0.0f));
+		mSb->draw(mCircleTexture.id, mTestClick - f32v2(8.0f), f32v2(16.0f), color4(1.0f, 0.0f, 1.0f));
+		const f32v2 pos = mCamera2D->convertScreenToWorld(vui::InputDispatcher::mouse.getPosition());
+		DebugRenderer::drawVector(mTestClick, pos - mTestClick, color4(1.0f, 0.0f, 0.0f));
 	}
 
-	DebugRenderer::renderLines(m_camera2D->getCameraMatrix());
+	DebugRenderer::renderLines(mCamera2D->getCameraMatrix());
 
-	m_sb->begin();
+	mSb->begin();
 	char fpsString[64];
-	sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(m_fps));
-	m_sb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, m_camera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
-	m_sb->end();
-	m_sb->render(m_camera2D->getScreenSize());
+	sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
+	mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
+	mSb->end();
+	mSb->render(mCamera2D->getScreenSize());
 
 	
 }

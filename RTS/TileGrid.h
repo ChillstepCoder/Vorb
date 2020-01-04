@@ -22,23 +22,33 @@ public:
 		INVALID = 255
 	};
 
+	enum class View {
+		ISO,
+		TOP_DOWN
+	};
+
 	void draw(const Camera2D& camera);
 
+	void setView(View view);
+	View getView() const { return mView; }
+	f32v2 convertScreenCoordToWorld(const f32v2& screenPos) const;
+	f32v2 convertWorldCoordToScreen(const f32v2& worldPos) const;
 	int getTileIndexFromScreenPos(const f32v2& screenPos, const Camera2D& camera);
 	void setTile(int index, Tile tile);
 
 //private:
 public:
-	i32v2 m_dims;
-	f32v2 m_realDims;
-	f32v2 m_axis[2];
-	std::vector<Tile> m_tiles;
-	TileSet m_tileSet;
-	vg::Texture m_texture;
-	bool m_dirty = true;
-	f32m2 m_isoTransform;
-	f32m2 m_invIsoTransform;
+	View mView;
+	i32v2 mDims;
+	f32v2 mRealDims;
+	f32v2 mAxis[2];
+	std::vector<Tile> mTiles;
+	TileSet mTileSet;
+	bool mDirty = true;
+	vg::Texture mTexture;
+	f32m2 mIsoTransform;
+	f32m2 mInvIsoTransform;
 
-	std::unique_ptr<vg::SpriteBatch> m_sb;
+	std::unique_ptr<vg::SpriteBatch> mSb;
 };
 
