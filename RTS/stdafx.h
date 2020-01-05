@@ -39,5 +39,6 @@
 #include <Vorb/VorbPreDecl.inl>
 
 #define UNUSED(x) (void)(x)
+#define ENTITY_ID_NONE (ui32)(~0u)
 
 #endif // stdafx_h__RTS

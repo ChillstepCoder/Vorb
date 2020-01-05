@@ -12,6 +12,7 @@
 class App;
 class Camera2D;
 class UndeadActorFactory;
+class HumanActorFactory;
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
@@ -52,6 +53,7 @@ private:
 	EntityComponentSystem mEcs;
 	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
 
+	std::unique_ptr<HumanActorFactory> mHumanActorFactory;
 	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
 
 	float mScale = 1.0f;

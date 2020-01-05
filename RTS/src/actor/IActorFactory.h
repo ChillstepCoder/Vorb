@@ -2,18 +2,21 @@
 #include "stdafx.h"
 #include <Vorb/ecs/Entity.h>
 
-DECL_VECS(class ECS);
 DECL_VIO(class Path);
+DECL_VG(class TextureCache);
+
+class EntityComponentSystem;
 
 class IActorFactory {
 public:
-	IActorFactory(vecs::ECS& ecs) : mEcs(ecs) { };
+	IActorFactory() = delete;
+	IActorFactory(EntityComponentSystem& ecs, vg::TextureCache& textureCache) : mEcs(ecs), mTextureCache(textureCache) { };
 	virtual ~IActorFactory() = default;
 
 	// TODO??
-	//virtual vecs::EntityID createActor(const f32v2& position, VGTexture texture, const vio::Path& definitionFile) = 0;
+	virtual vecs::EntityID createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) = 0;
 
 protected:
-
-	vecs::ECS& mEcs;
+	EntityComponentSystem& mEcs;
+	vg::TextureCache& mTextureCache;
 };

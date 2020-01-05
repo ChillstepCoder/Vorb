@@ -35,12 +35,19 @@
 /// Generates getXXX, addXXX and getXXXs
 /// @param Table: The table variable name, ex mPhysicsTable
 /// @param Component: The class name of your component, ex PhysicsComponent
+// TODO we need to make these params explicit
 #define DECL_COMPONENT_TABLE(Table, Component) \
 Component& get##Component(vecs::ComponentID compId) { \
 	return Table.get(compId); \
 } \
 const Component& get##Component(vecs::ComponentID compId) const { \
 	return Table.get(compId); \
+} \
+Component& get##Component##FromEntity(vecs::EntityID entityId) { \
+	return Table.getFromEntity(entityId); \
+} \
+const Component& get##Component##FromEntity(vecs::EntityID entityId) const { \
+	return Table.getFromEntity(entityId); \
 } \
 std::pair<vecs::ComponentID, Component&> add##Component(vecs::EntityID entityId) { \
 	vecs::ComponentID newId = vecs::ECS::addComponent(Table.getID(), entityId); \

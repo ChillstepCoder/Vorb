@@ -1,18 +1,24 @@
 #pragma once
-
-#include "TileSet.h"
-
 #include <Vorb/graphics/Texture.h>
+#include <Vorb/ecs/Entity.h>
+#include <functional>
+#include <optional>
+
+#include "actor/ActorTypes.h"
+#include "TileSet.h"
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class TextureCache)
 
 class Camera2D;
+class EntityComponentSystem;
+
+typedef std::pair<float, vecs::EntityID> EntityDistSortKey;
 
 class TileGrid
 {
 public:
-	TileGrid(const i32v2& dims, vg::TextureCache& textureCache, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees);
+	TileGrid(const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees);
 	~TileGrid();
 
 	enum Tile : ui8 {
@@ -36,6 +42,8 @@ public:
 	int getTileIndexFromScreenPos(const f32v2& screenPos, const Camera2D& camera);
 	void setTile(int index, Tile tile);
 
+	std::vector<EntityDistSortKey> queryActorsInRadius(f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
+
 //private:
 public:
 	View mView;
@@ -50,5 +58,6 @@ public:
 	f32m2 mInvIsoTransform;
 
 	std::unique_ptr<vg::SpriteBatch> mSb;
+	const EntityComponentSystem& mEcs;
 };
 

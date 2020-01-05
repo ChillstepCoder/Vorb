@@ -16,6 +16,7 @@
 #include "TileGrid.h"
 #include "Utils.h"
 
+#include "actor/HumanActorFactory.h"
 #include "actor/UndeadActorFactory.h"
 
 #include "DebugRenderer.h"
@@ -29,11 +30,12 @@ MainMenuScreen::MainMenuScreen(const App* app)
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mTileGrid = std::make_unique<TileGrid>(i32v2(50, 50), *mTextureCache, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
+	mTileGrid = std::make_unique<TileGrid>(i32v2(50, 50), *mTextureCache, mEcs, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
 
 	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, mEcs, *mTileGrid);
 	mSpriteFont = std::make_unique<vg::SpriteFont>();
 
+	mHumanActorFactory = std::make_unique<HumanActorFactory>(mEcs, *mTextureCache);
 	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(mEcs, *mTextureCache);
 }
 
@@ -97,12 +99,26 @@ void MainMenuScreen::build() {
 		else {
 			velocity = (offset / mag) * power;
 		}
-		vecs::EntityID newActor = mUndeadActorFactory->createActorWithVelocity(
-			mTileGrid->convertScreenCoordToWorld(mTestClick),
-			mTileGrid->convertScreenCoordToWorld(velocity),
-			vio::Path("data/textures/circle.png"),
-			vio::Path("")
-		);
+
+		vecs::EntityID newActor = 0;
+		if (event.button == vui::MouseButton::LEFT) {
+			newActor = mUndeadActorFactory->createActor(
+				mTileGrid->convertScreenCoordToWorld(mTestClick),
+				vio::Path("data/textures/circle.png"),
+				vio::Path("")
+			);
+		}
+		else if (event.button == vui::MouseButton::RIGHT) {
+			newActor = mHumanActorFactory->createActor(
+				mTileGrid->convertScreenCoordToWorld(mTestClick),
+				vio::Path("data/textures/circle.png"),
+				vio::Path("")
+			);
+		}
+
+		// Apply velocity
+		auto& physComp = mEcs.getPhysicsComponentFromEntity(newActor);
+		physComp.mVelocity = mTileGrid->convertScreenCoordToWorld(velocity);
 	});
 }
 
@@ -119,7 +135,7 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
 
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
-	const float deltaTime = gameTime.elapsed / (1.0f / 60.0f);
+	const float deltaTime = /*gameTime.elapsed / (1.0f / 60.0f)*/ 1.0f;
 	static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
 	f32v2 offset(0.0f);
 
@@ -143,7 +159,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 	mCamera2D->update();
 
-	mEcs.update(deltaTime);
+	mEcs.update(deltaTime, *mTileGrid);
 
 	// Update
 	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);

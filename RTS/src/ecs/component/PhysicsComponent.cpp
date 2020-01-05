@@ -37,9 +37,11 @@ inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 // TODO: Measure perf of this vs non inline vs macro
 inline void updateComponent(PhysicsComponent& cmp, float deltaTime) {
 	//if (cmp.mPosition.z <= 0.0f) {
-	cmp.mVelocity -= cmp.mVelocity * (1.0f - cmp.mFrictionCoef) * deltaTime; // TODO: Deterministic?
 	//}
 	cmp.mPosition += cmp.mVelocity;
+	if (cmp.mFrictionEnabled) {
+		cmp.mVelocity -= cmp.mVelocity * (1.0f - cmp.mFrictionCoef) * deltaTime; // TODO: Deterministic?
+	}
 }
 
 
@@ -50,7 +52,8 @@ void PhysicsComponentTable::update(float deltaTime) {
 
 	// Collision
 	// TODO: Spatial Partition
-	auto&& it = _components.begin();
+	// Skip default element
+	std::vector<ComponentPairing>::iterator it = _components.begin() + 1;
 	while (it != _components.end()) {
 		auto compareIt = it;
 		while (++compareIt != _components.end()) {

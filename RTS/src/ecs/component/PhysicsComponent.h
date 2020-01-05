@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 
+#include "actor/ActorTypes.h"
 #include <Vorb/ecs/ComponentTable.hpp>
 
 enum class PhysicsComponentFlag : ui8 {
@@ -17,6 +18,8 @@ struct PhysicsComponent {
 	// Multiplied per update
 	float mFrictionCoef = 0.0f;
 	ui8 mFlags = 0u;
+	ActorTypes mQueryActorType = ACTORTYPE_NONE;
+	bool mFrictionEnabled = true;
 };
 
 class PhysicsComponentTable : public vecs::ComponentTable<PhysicsComponent> {

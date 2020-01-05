@@ -130,7 +130,12 @@
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="EntityComponentSystem.cpp" />
     <ClCompile Include="EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\actor\HumanActorFactory.cpp" />
+    <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
+    <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
+    <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -138,7 +143,6 @@
     </ClCompile>
     <ClCompile Include="TileGrid.cpp" />
     <ClCompile Include="TileSet.cpp" />
-    <ClCompile Include="UndeadActorFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h" />
@@ -147,10 +151,14 @@
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="EntityComponentSystem.h" />
     <ClInclude Include="EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\actor\ActorTypes.h" />
+    <ClInclude Include="src\actor\HumanActorFactory.h" />
     <ClInclude Include="src\actor\IActorFactory.h" />
     <ClInclude Include="src\actor\UndeadActorFactory.h" />
+    <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
+    <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TileGrid.h" />
     <ClInclude Include="TileSet.h" />

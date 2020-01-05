@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "TileGrid.h"
-#include "Camera2D.h"
+#include "Camera2D.h"#
+#include "EntityComponentSystem.h"
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
@@ -8,10 +9,10 @@
 
 #include "Utils.h"
 
-
-TileGrid::TileGrid(const i32v2& dims, vg::TextureCache& textureCache, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees)
+TileGrid::TileGrid(const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees)
 	: mDims(dims)
-	, mTiles(dims.x * dims.y, TileGrid::GRASS_0) {
+	, mTiles(dims.x * dims.y, TileGrid::GRASS_0)
+	, mEcs(ecs) {
 	mTexture = textureCache.addTexture("data/textures/tiles.png");
 	mTileSet.init(&mTexture, tileSetDims);
 
@@ -112,4 +113,39 @@ void TileGrid::setTile(int index, Tile tile) {
 
 	mTiles[index] = tile;
 	mDirty = true;
+}
+
+std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+	// TODO: Spatial partition
+	// TODO: No allocation?
+
+	// Empty mask = all types
+	if (mask == 0) {
+		mask = ~0;
+	}
+
+	// TODO: Components as well? Better lookup?
+	std::vector<EntityDistSortKey> entities;
+
+	const PhysicsComponentTable& physicsComponents = mEcs.getPhysicsComponents();
+	for (auto&& it = physicsComponents.cbegin(); it != physicsComponents.cend(); ++it) {
+		if (it->first != except) {
+			const PhysicsComponent& cmp = it->second;
+			if (cmp.mQueryActorType & mask) {
+				const f32v2& offset = cmp.mPosition - pos;
+				const float distanceToEdge = glm::length(offset) - cmp.mCollisionRadius;
+				if (distanceToEdge <= radius) {
+					entities.emplace_back(distanceToEdge, it->first);
+				}
+			}
+		}
+	}
+
+	if (sorted) {
+		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
+			return a.first < b.first;
+		});
+	}
+
+	return entities;
 }
