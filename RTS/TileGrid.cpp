@@ -7,12 +7,18 @@
 #include <Vorb/math/VectorMath.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include <box2d/b2_fixture.h>
+
 #include "Utils.h"
 
-TileGrid::TileGrid(const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees)
+// TODO: Shared
+const float TILE_SCALE = 0.5f;
+
+TileGrid::TileGrid(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees)
 	: mDims(dims)
 	, mTiles(dims.x * dims.y, TileGrid::GRASS_0)
-	, mEcs(ecs) {
+	, mEcs(ecs)
+	, mPhysWorld(physWorld) {
 	mTexture = textureCache.addTexture("data/textures/tiles.png");
 	mTileSet.init(&mTexture, tileSetDims);
 
@@ -34,7 +40,7 @@ TileGrid::~TileGrid() {
 void TileGrid::draw(const Camera2D& camera) {
 
 	if  (mDirty) {
-		const f32v2 tileDims = mTileSet.getTileDims() * 0.5f;
+		const f32v2 tileDims(TILE_SCALE);
 		const f32v2 offset(-tileDims.x, -tileDims.y);
 
 		mSb->begin();
@@ -115,8 +121,45 @@ void TileGrid::setTile(int index, Tile tile) {
 	mDirty = true;
 }
 
-std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
-	// TODO: Spatial partition
+class MyQueryCallback : public b2QueryCallback
+{
+public:
+	MyQueryCallback(std::vector<EntityDistSortKey>& entities, f32v2 pos, const PhysicsComponentTable& physicsComponents, ActorTypesMask mask, float radius, vecs::EntityID except)
+		: mEntities(entities)
+		, mPos(pos)
+		, mPhysicsComponents(physicsComponents)
+		, mMask(mask)
+		, mRadius(radius) {
+	}
+	bool ReportFixture(b2Fixture* fixture) {
+		vecs::EntityID entityId = reinterpret_cast<vecs::EntityID>(fixture->GetUserData());
+		if (entityId == mExcept) {
+			return true;
+		}
+		// TODO: Marry physics component and fixture?
+		const PhysicsComponent& cmp = mPhysicsComponents.getFromEntity(entityId);
+		if (cmp.mQueryActorType & mMask) {
+			const f32v2 offset = cmp.getPosition() - mPos;
+			const float distanceToEdge = glm::length(offset) - cmp.mCollisionRadius;
+			if (distanceToEdge <= mRadius) {
+				mEntities.emplace_back(distanceToEdge, entityId);
+			}
+		}
+
+		// Return true to continue the query.
+		return true;
+	}
+
+private:
+	std::vector<EntityDistSortKey>& mEntities;
+	f32v2 mPos;
+	const PhysicsComponentTable& mPhysicsComponents;
+	ActorTypesMask mMask;
+	float mRadius;
+	vecs::EntityID mExcept;
+};
+
+std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
 	// TODO: No allocation?
 
 	// Empty mask = all types
@@ -127,25 +170,52 @@ std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(f32v2& pos, float r
 	// TODO: Components as well? Better lookup?
 	std::vector<EntityDistSortKey> entities;
 
-	const PhysicsComponentTable& physicsComponents = mEcs.getPhysicsComponents();
-	for (auto&& it = physicsComponents.cbegin(); it != physicsComponents.cend(); ++it) {
-		if (it->first != except) {
-			const PhysicsComponent& cmp = it->second;
-			if (cmp.mQueryActorType & mask) {
-				const f32v2& offset = cmp.mPosition - pos;
-				const float distanceToEdge = glm::length(offset) - cmp.mCollisionRadius;
-				if (distanceToEdge <= radius) {
-					entities.emplace_back(distanceToEdge, it->first);
-				}
-			}
-		}
-	}
+	MyQueryCallback queryCallBack(entities, pos, mEcs.getPhysicsComponents(), mask, radius, except);
+	b2AABB aabb;
+	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
+	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
+	mPhysWorld.QueryAABB(&queryCallBack, aabb);
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
 			return a.first < b.first;
 		});
 	}
+
+	return entities;
+}
+
+inline void testExtremePoint(const f32v2& point, b2AABB& aabb) {
+	if (point.x < aabb.lowerBound.x) {
+		aabb.lowerBound.x = point.x;
+	}
+	else if (point.x > aabb.upperBound.x) {
+		aabb.upperBound.x = point.x;
+	}
+	if (point.y < aabb.lowerBound.y) {
+		aabb.lowerBound.y = point.y;
+	}
+	else if (point.y > aabb.upperBound.y) {
+		aabb.upperBound.y = point.y;
+	}
+}
+
+std::vector<EntityDistSortKey> TileGrid::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+	const float halfAngle = arcAngle * 0.5f;
+	
+	// TODO: Components as well? Better lookup?
+	std::vector<EntityDistSortKey> entities;
+	
+	b2AABB aabb;
+	aabb.lowerBound = TO_BVEC2_C(pos);
+	aabb.upperBound = TO_BVEC2_C(pos);
+
+	f32v2 offset = glm::rotate(normal, halfAngle);
+	f32v2 point = pos + offset;
+	testExtremePoint(point, aabb);
+	
+	float currentAngle = atan2(point.y, point.x);
+	std::cout << "CURRENT ANGLE " << currentAngle << std::endl;
 
 	return entities;
 }

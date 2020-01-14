@@ -8,6 +8,8 @@ TileSet::TileSet()
 {
 }
 
+const float TILE_SCALE = 1.0f;
+
 void TileSet::init(vg::Texture* texture, i32v2 dims)
 {
 	m_texture = texture;
@@ -15,8 +17,8 @@ void TileSet::init(vg::Texture* texture, i32v2 dims)
 	m_uvMult.x = 1.0f / m_dims.x;
 	m_uvMult.y = 1.0f / m_dims.y;
 
-	m_tileDims.x = texture->width / dims.x;
-	m_tileDims.y = texture->height / dims.y;
+	m_tileDims.x = TILE_SCALE;
+	m_tileDims.y = TILE_SCALE;
 }
 
 void TileSet::renderTile(vg::SpriteBatch& spriteBatch, i32 index, const f32v2& pos)

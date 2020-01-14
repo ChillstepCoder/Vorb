@@ -24,7 +24,7 @@ void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera2D& camera) c
 	for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
 		const PhysicsComponent& cmp = it->second;
 		// TODO: 3D???
-		const f32v2 position = mTileGrid.convertWorldCoordToScreen(cmp.mPosition - cmp.mCollisionRadius);
+		const f32v2 position = mTileGrid.convertWorldCoordToScreen(cmp.getPosition() - cmp.mCollisionRadius);
 		mSpriteBatch->draw(mCircleTexture.id, position, f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
 	}
 
@@ -41,7 +41,7 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 		const SimpleSpriteComponent& cmp = it->second;
 		// TODO: 3D???
 		const PhysicsComponent& physCmp = physicsComponents.get(cmp.physicsComponent);
-		const f32v2 position = mTileGrid.convertWorldCoordToScreen(physCmp.mPosition) - cmp.dims * 0.5f;
+		const f32v2 position = mTileGrid.convertWorldCoordToScreen(physCmp.getPosition()) - cmp.dims * 0.5f;
 		mSpriteBatch->draw(mCircleTexture.id, position, cmp.dims, cmp.color);
 	}
 

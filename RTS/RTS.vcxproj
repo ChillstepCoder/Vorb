@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -69,18 +69,26 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\RelWithDebInfo;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2d.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\glewd.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\enetd.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\pngd.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\zlibd.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2d.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\glewd.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\enetd.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\pngd.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\zlibd.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -89,7 +97,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -100,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -116,10 +128,12 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>..\build\release\vorb.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttf.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2main.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetype.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glew.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enet.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_lib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\png.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlib.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -131,11 +145,14 @@
     <ClCompile Include="EntityComponentSystem.cpp" />
     <ClCompile Include="EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="src\actor\HumanActorFactory.cpp" />
+    <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
     <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
+    <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -154,11 +171,14 @@
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\actor\HumanActorFactory.h" />
     <ClInclude Include="src\actor\IActorFactory.h" />
+    <ClInclude Include="src\actor\PlayerActorFactory.h" />
     <ClInclude Include="src\actor\UndeadActorFactory.h" />
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
+    <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TileGrid.h" />
     <ClInclude Include="TileSet.h" />

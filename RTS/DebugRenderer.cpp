@@ -57,6 +57,13 @@ void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 col
     sLines.push_back({ end, end + glm::rotate(tipRay, -rotVal), color });
 }
 
+void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color)
+{
+	const f32v2 end = origin + vec;
+	const f32v2 tipRay = -vec * 0.2f;
+	sLines.push_back({ origin, end, color });
+}
+
 void DebugRenderer::renderLines(const f32m4& viewMatrix)
 {
     if (!sLines.size()) {

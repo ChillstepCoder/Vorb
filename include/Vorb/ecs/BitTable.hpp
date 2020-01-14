@@ -138,7 +138,7 @@ namespace vorb {
             }
 
             /// Add columns to the table (resizes every 8 new columns)
-            void addColumns(const size_t n) {
+            void addColumns(const ui32 n) {
                 m_columnsBits += n;
                 ui32 col = (m_columnsBits + 7) >> 3;
                 if (col != m_columns) {
@@ -167,7 +167,7 @@ namespace vorb {
                 }
             }
             /// Add rows to the table
-            void addRows(const size_t n) {
+            void addRows(const ui32 n) {
                 m_bits.resize(m_bits.size() + n * m_columns);
                 m_rows += n;
             }

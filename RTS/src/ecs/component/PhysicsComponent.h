@@ -4,27 +4,40 @@
 #include "actor/ActorTypes.h"
 #include <Vorb/ecs/ComponentTable.hpp>
 
+#include <box2d/b2_world.h>
+#include <box2d/b2_body.h>
+
+class b2Body;
+
 enum class PhysicsComponentFlag : ui8 {
 	AIRBORNE = 1 << 0
 };
 
 struct PhysicsComponent {
-	f32v2 mPosition = f32v2(0.0f);
-	f32v2 mVelocity = f32v2(0.0f);
-	float mMass = 0.0f;
-	float mGravity = 0.0f;
-	// Zero radius means no collide
-	float mCollisionRadius = 0.0f;
-	// Multiplied per update
-	float mFrictionCoef = 0.0f;
+
+	const f32v2& getPosition() const {
+		return reinterpret_cast<const f32v2&>(mBody->GetPosition());
+	}
+
+	const f32v2& getLinearVelocity() const {
+		return reinterpret_cast<const f32v2&>(mBody->GetLinearVelocity());
+	}
+
 	ui8 mFlags = 0u;
+	float mCollisionRadius = 0.0f;
 	ActorTypes mQueryActorType = ACTORTYPE_NONE;
 	bool mFrictionEnabled = true;
+
+	b2Body* mBody = nullptr;
 };
 
 class PhysicsComponentTable : public vecs::ComponentTable<PhysicsComponent> {
 public:
-	static const std::string& NAME;
+	PhysicsComponentTable(b2World& world);
 
 	void update(float deltaTime);
+
+	static const std::string& NAME;
+
+	b2World& mWorld;
 };

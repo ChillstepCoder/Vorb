@@ -4,6 +4,8 @@
 #include <functional>
 #include <optional>
 
+#include <box2d/b2_world.h>
+
 #include "actor/ActorTypes.h"
 #include "TileSet.h"
 
@@ -18,7 +20,7 @@ typedef std::pair<float, vecs::EntityID> EntityDistSortKey;
 class TileGrid
 {
 public:
-	TileGrid(const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees);
+	TileGrid(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees);
 	~TileGrid();
 
 	enum Tile : ui8 {
@@ -42,7 +44,8 @@ public:
 	int getTileIndexFromScreenPos(const f32v2& screenPos, const Camera2D& camera);
 	void setTile(int index, Tile tile);
 
-	std::vector<EntityDistSortKey> queryActorsInRadius(f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
+	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
+	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
 
 //private:
 public:
@@ -59,5 +62,6 @@ public:
 
 	std::unique_ptr<vg::SpriteBatch> mSb;
 	const EntityComponentSystem& mEcs;
+	b2World& mPhysWorld;
 };
 

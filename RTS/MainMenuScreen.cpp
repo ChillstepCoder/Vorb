@@ -11,6 +11,9 @@
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include <box2d/b2_body.h>
+#include <box2d/b2_contact.h>
+
 #include "Camera2D.h"
 
 #include "TileGrid.h"
@@ -18,11 +21,17 @@
 
 #include "actor/HumanActorFactory.h"
 #include "actor/UndeadActorFactory.h"
+#include "actor/PlayerActorFactory.h"
+
+#include "physics/ContactListener.h"
 
 #include "DebugRenderer.h"
 
+
 MainMenuScreen::MainMenuScreen(const App* app) 
-	: IAppScreen<App>(app) {
+	: IAppScreen<App>(app)
+	, mPhysWorld(b2Vec2(0.0f, 0.0f))
+	, mEcs(mPhysWorld){
 	mSb = std::make_unique<vg::SpriteBatch>();
 	mTextureCache = std::make_unique<vg::TextureCache>();
 
@@ -30,13 +39,17 @@ MainMenuScreen::MainMenuScreen(const App* app)
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mTileGrid = std::make_unique<TileGrid>(i32v2(50, 50), *mTextureCache, mEcs, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
+	mTileGrid = std::make_unique<TileGrid>(mPhysWorld, i32v2(50, 50), *mTextureCache, mEcs, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
 
 	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, mEcs, *mTileGrid);
 	mSpriteFont = std::make_unique<vg::SpriteFont>();
 
 	mHumanActorFactory = std::make_unique<HumanActorFactory>(mEcs, *mTextureCache);
 	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(mEcs, *mTextureCache);
+	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(mEcs, *mTextureCache);
+
+	mContactListener = std::make_unique<ContactListener>(mEcs);
+	mPhysWorld.SetContactListener(mContactListener.get());
 }
 
 
@@ -60,6 +73,7 @@ void MainMenuScreen::build() {
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
+	mCamera2D->setScale(mScale);
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
@@ -74,7 +88,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * 0.05f, 0.5f, 1.5f);
+		mScale = glm::clamp(mScale + event.dy * 0.5f, 20.0f, 40.f);
 		mCamera2D->setScale(mScale);
 	});
 
@@ -87,8 +101,8 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
-		constexpr float VEL_MULT = 0.5f;
-		constexpr float VEL_EXP = 0.5f;
+		constexpr float VEL_MULT = 0.0001f;
+		constexpr float VEL_EXP = 0.4f;
 		const f32v2 offset = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y)) - mTestClick;
 		const float mag = glm::length(offset);
 		const float power = pow(mag * VEL_MULT, VEL_EXP);
@@ -118,8 +132,16 @@ void MainMenuScreen::build() {
 
 		// Apply velocity
 		auto& physComp = mEcs.getPhysicsComponentFromEntity(newActor);
-		physComp.mVelocity = mTileGrid->convertScreenCoordToWorld(velocity);
+		velocity = mTileGrid->convertScreenCoordToWorld(velocity);
+		physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
 	});
+
+
+	// Add player
+	vecs::EntityID playerEntity = mPlayerActorFactory->createActor(mTileGrid->convertScreenCoordToWorld(f32v2(0.0f)),
+		vio::Path("data/textures/circle.png"),
+		vio::Path(""));
+	UNUSED(playerEntity);
 }
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
@@ -173,9 +195,9 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	mTileGrid->draw(*mCamera2D);
 
 
-	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[0] * 170.0f, color4(1.0f, 0.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[1] * 170.0f, color4(0.0f, 1.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 140.0f, color4(0.0f, 0.0f, 1.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[0] * 5.0f, color4(1.0f, 0.0f, 0.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[1] * 5.0f, color4(0.0f, 1.0f, 0.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
 
 	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);
 	mEcsRenderer->renderSimpleSprites(*mCamera2D);

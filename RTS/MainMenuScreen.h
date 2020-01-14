@@ -11,8 +11,10 @@
 
 class App;
 class Camera2D;
+class ContactListener;
 class UndeadActorFactory;
 class HumanActorFactory;
+class PlayerActorFactory;
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
@@ -50,13 +52,19 @@ private:
 
 	std::unique_ptr<vio::IOManager> mIoManager;
 
+	b2World mPhysWorld;
+
 	EntityComponentSystem mEcs;
 	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
 
 	std::unique_ptr<HumanActorFactory> mHumanActorFactory;
 	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
+	std::unique_ptr<PlayerActorFactory> mPlayerActorFactory;
 
-	float mScale = 1.0f;
+	std::unique_ptr<ContactListener> mContactListener;
+
+
+	float mScale = 30.0f;
 	float mFps = 0.0f;
 
 	f32v2 mTestClick = f32v2(0.0f);
