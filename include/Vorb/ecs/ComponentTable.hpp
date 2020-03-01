@@ -27,6 +27,9 @@
 
 #include "ComponentTableBase.h"
 
+// 0 is invalid
+constexpr ui32 INVALID_ENTITY = ID_GENERATOR_NULL_ID;
+
 namespace vorb {
     namespace ecs {
         /// Component table that stores a specific component type
@@ -40,7 +43,7 @@ namespace vorb {
             /// @param defaultData: Blank component data
             ComponentTable(const T& defaultData) : ComponentTableBase() {
                 // Default data goes in the first slot
-                _components.emplace_back(ID_GENERATOR_NULL_ID, defaultData);
+                _components.emplace_back(INVALID_ENTITY, defaultData);
             }
             /// Default constructor that uses component constructor for defaults
             ComponentTable() : ComponentTable(T()) {
@@ -100,6 +103,10 @@ namespace vorb {
                 return _components;
             }
 
+            inline bool isValid(const ComponentPairing& cp) {
+                return cp.first != INVALID_ENTITY;
+            }
+
             /// @return size of internal component list
             size_t getComponentListSize() const { return _components.size(); }
 
@@ -121,7 +128,7 @@ namespace vorb {
                 // Empty
             }
 
-            ComponentList _components; ///< A list of (entity ID, Component)
+            ComponentList _components; ///< A list of (entity ID, Component) keyed on ComponentId
         };
     }
 }

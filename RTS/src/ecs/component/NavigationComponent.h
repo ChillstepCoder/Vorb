@@ -5,6 +5,7 @@
 #include <Vorb/ecs/ComponentTable.hpp>
 
 class EntityComponentSystem;
+class TileGrid;
 
 struct NavigationComponent {
 
@@ -20,5 +21,5 @@ class NavigationComponentTable : public vecs::ComponentTable<NavigationComponent
 public:
 	static const std::string& NAME;
 
-	void update(EntityComponentSystem& ecs);
+	void update(EntityComponentSystem& ecs, TileGrid& world);
 };

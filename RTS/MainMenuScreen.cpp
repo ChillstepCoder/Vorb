@@ -27,11 +27,18 @@
 
 #include "DebugRenderer.h"
 
-
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app)
 	, mPhysWorld(b2Vec2(0.0f, 0.0f))
 	, mEcs(mPhysWorld){
+
+	// TODO: This is kinda stupid
+	if (WeaponRegistry::s_allWeaponItems.empty()) {
+		ArmorRegistry::loadArmors();
+		WeaponRegistry::loadWeapons();
+		ShieldRegistry::loadShields();
+	}
+
 	mSb = std::make_unique<vg::SpriteBatch>();
 	mTextureCache = std::make_unique<vg::TextureCache>();
 
@@ -50,6 +57,12 @@ MainMenuScreen::MainMenuScreen(const App* app)
 
 	mContactListener = std::make_unique<ContactListener>(mEcs);
 	mPhysWorld.SetContactListener(mContactListener.get());
+
+	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
+	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
+	// units use BFS to update the graph when a connection is broken, drawing new connections as needed.
+	// Unit can simulate every single frame since its merely checking a few neighbor pointers, but these are cache misses.
+	// Try do group things spatially so cache misses are few. Allocate a single buffer.
 }
 
 
@@ -69,7 +82,7 @@ void MainMenuScreen::build() {
 	mTextureCache->init(mIoManager.get());
 	mSpriteFont->init("data/fonts/chintzy.ttf", 32);
 
-	mCircleTexture = mTextureCache->addTexture("data/textures/circle.png");
+	mCircleTexture = mTextureCache->addTexture("data/textures/circle_dir.png");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
@@ -88,7 +101,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * 0.5f, 20.0f, 40.f);
+		mScale = glm::clamp(mScale + event.dy * 1.0f, 10.0f, 50.f);
 		mCamera2D->setScale(mScale);
 	});
 
@@ -118,14 +131,14 @@ void MainMenuScreen::build() {
 		if (event.button == vui::MouseButton::LEFT) {
 			newActor = mUndeadActorFactory->createActor(
 				mTileGrid->convertScreenCoordToWorld(mTestClick),
-				vio::Path("data/textures/circle.png"),
+				vio::Path("data/textures/circle_dir.png"),
 				vio::Path("")
 			);
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
 			newActor = mHumanActorFactory->createActor(
 				mTileGrid->convertScreenCoordToWorld(mTestClick),
-				vio::Path("data/textures/circle.png"),
+				vio::Path("data/textures/circle_dir.png"),
 				vio::Path("")
 			);
 		}
@@ -138,10 +151,9 @@ void MainMenuScreen::build() {
 
 
 	// Add player
-	vecs::EntityID playerEntity = mPlayerActorFactory->createActor(mTileGrid->convertScreenCoordToWorld(f32v2(0.0f)),
-		vio::Path("data/textures/circle.png"),
+	mPlayerEntity = mPlayerActorFactory->createActor(mTileGrid->convertScreenCoordToWorld(f32v2(0.0f)),
+		vio::Path("data/textures/circle_dir.png"),
 		vio::Path(""));
-	UNUSED(playerEntity);
 }
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
@@ -158,10 +170,11 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 	const float deltaTime = /*gameTime.elapsed / (1.0f / 60.0f)*/ 1.0f;
-	static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
-	f32v2 offset(0.0f);
+	//static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
+	//f32v2 offset(0.0f);
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT) || vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
+	// Camera movement
+	/*if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT) || vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
 		offset.x -= CAM_VELOCITY.x * deltaTime;
 	}
 	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT) || vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
@@ -177,9 +190,14 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 	if (offset.x != 0.0f || offset.y != 0.0f) {
 		mCamera2D->offsetPosition(offset);
-	}
+	}*/
+
+	f32v2 cameraFollow = mEcs.getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
+	cameraFollow = mTileGrid->convertWorldCoordToScreen(cameraFollow);
+	mCamera2D->setPosition(cameraFollow);
 
 	mCamera2D->update();
+	mTileGrid->updateWorldMousePos(*mCamera2D.get());
 
 	mEcs.update(deltaTime, *mTileGrid);
 
@@ -196,7 +214,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 
 
 	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[0] * 5.0f, color4(1.0f, 0.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[1] * 5.0f, color4(0.0f, 1.0f, 0.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), -mTileGrid->mAxis[1] * 5.0f, color4(0.0f, 1.0f, 0.0f));
 	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
 
 	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);

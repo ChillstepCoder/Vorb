@@ -43,33 +43,33 @@ namespace vorb {
 
             /// @return Iterator to the first pair of (entity ID, component ID)
             ComponentBindingSet::iterator begin() {
-                return _components.begin();
+                return _entityToComponentMap.begin();
             }
             /// @return Iterator to the end of component pairing list
             ComponentBindingSet::iterator end() {
-                return _components.end();
+                return _entityToComponentMap.end();
             }
             /// @return Const iterator to the first pair of (entity ID, component ID)
             ComponentBindingSet::const_iterator cbegin() const {
-                return _components.cbegin();
+                return _entityToComponentMap.cbegin();
             }
             /// @return Const iterator to the end of component pairing list
             ComponentBindingSet::const_iterator cend() const {
-                return _components.cend();
+                return _entityToComponentMap.cend();
             }
 
             /// Obtain the component ID for this entity
             /// @param eID: ID of entity to search
             /// @return Component ID if it exists, else ID_GENERATOR_NULL_ID
             ComponentID getComponentID(EntityID eID) const {
-                auto comp = _components.find(eID);
-                if (comp == _components.end()) return ID_GENERATOR_NULL_ID;
+                auto comp = _entityToComponentMap.find(eID);
+                if (comp == _entityToComponentMap.end()) return ID_GENERATOR_NULL_ID;
                 return comp->second;
             }
 
             /// @return Number of active components
             size_t getComponentCount() const {
-                return _components.size(); // This should be equal to _genComponent.getActiveCount()
+                return _entityToComponentMap.size(); // This should be equal to _genComponent.getActiveCount()
             }
 
             void unsafeSetSize(size_t n);
@@ -79,7 +79,7 @@ namespace vorb {
             Event<ComponentID, EntityID> onEntityRemoved; ///< Called when an entity is removed from this table
         protected:
             virtual void addComponent(ComponentID cID, EntityID eID) = 0;
-            virtual void setComponent(ComponentID cID, EntityID eID) = 0;
+			virtual void setComponent(ComponentID cID, EntityID eID) = 0;
 
             virtual void initComponent(ComponentID cID, EntityID eID) = 0;
             virtual void disposeComponent(ComponentID cID, EntityID eID) = 0;
@@ -95,7 +95,7 @@ namespace vorb {
             bool remove(EntityID eID);
 
             TableID m_id; ///< ID within a system
-            ComponentBindingSet _components; ///< List of (entity ID, component ID) pairings
+            ComponentBindingSet _entityToComponentMap; ///< List of (entity ID, component ID) pairings
             vcore::IDGenerator<ComponentID> _genComponent; ///< Unique ID generator
         };
     }

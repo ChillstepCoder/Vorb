@@ -38,6 +38,12 @@ inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 
 // TODO: Measure perf of this vs non inline vs macro
 inline void updateComponent(PhysicsComponent& cmp, float deltaTime) {
+	const f32v2& vel = cmp.getLinearVelocity();
+	// TODO: TestBit
+	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(vel.x) > 0.0001f || glm::abs(vel.y) >= 0.0001f)) {
+		cmp.mDir = glm::normalize(vel);
+	}
+
 	//if (cmp.mPosition.z <= 0.0f) {
 	//}
 	//cmp.mPosition += cmp.mVelocity;
@@ -62,15 +68,19 @@ void PhysicsComponentTable::update(float deltaTime) {
 	// Skip default element
 	std::vector<ComponentPairing>::iterator it = _components.begin() + 1;
 	while (it != _components.end()) {
-		auto compareIt = it;
-		while (++compareIt != _components.end()) {
-			handleCollision2D(it->second, compareIt->second);
+		if (isValid(*it)) {
+			auto compareIt = it;
+			while (++compareIt != _components.end()) {
+				if (isValid(*compareIt)) {
+					handleCollision2D(it->second, compareIt->second);
+				}
+			}
 		}
 		++it;
 	}
 
 	// Update components
-	for (auto&& cmp : _components) {
+	for (auto&& cmp : *this) {
 		updateComponent(cmp.second, deltaTime);
 	}
 }

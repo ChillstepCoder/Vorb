@@ -63,10 +63,10 @@ private:
 
 	std::unique_ptr<ContactListener> mContactListener;
 
-
-	float mScale = 30.0f;
+	float mScale = 50.0f;
 	float mFps = 0.0f;
 
 	f32v2 mTestClick = f32v2(0.0f);
+	vecs::EntityID mPlayerEntity = 0;
 };
 

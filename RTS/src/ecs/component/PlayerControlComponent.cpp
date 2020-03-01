@@ -3,19 +3,28 @@
 
 #include "EntityComponentSystem.h"
 
+#include "TileGrid.h"
+#include "DebugRenderer.h"
+
 #include <Vorb/ui/InputDispatcher.h>
 
 const std::string& PlayerControlComponentTable::NAME = "playercontrol";
 
-const float SPEED = 0.3f;
+const float BASE_SPEED = 0.15f;
 const float ACCELERATION = 0.015f;
+const float IMPULSE = 0.02f;
 
-inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs) {
-	UNUSED(cmp);
+const float ATTACK_RADIUS = 5.0f;
+const float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
+
+void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
-	
-	f32v2 moveDir(0.0f);
+	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
+}
 
+f32v2 getMovementDir(TileGrid& world) {
+	f32v2 moveDir(0.0f);
+	// Movement
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
 		moveDir.y = 1.0f;
 	}
@@ -30,9 +39,47 @@ inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, 
 		moveDir.x = 1.0f;
 	}
 
-	moveDir = glm::normalize(moveDir);
+	// Normalize or return 0
+	float length = glm::length(moveDir);
+	if (length > FLT_EPSILON) {
+		moveDir /= length;
+	}
+	else {
+		return f32v2(0.0f);
+	}
 
-	const f32v2 targetVelocity = moveDir * SPEED;
+	moveDir = world.convertScreenCoordToWorld(moveDir);
+	return moveDir;
+}
+
+void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
+
+	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
+
+	bool isSprinting = cmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
+	f32v2 moveDir = getMovementDir(world);
+
+	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
+		return;
+	}
+	// Facing
+	if (isSprinting) {
+		myPhysCmp.mDir = moveDir;
+	}
+	else {
+		const f32v2& mousePos = world.getCurrentWorldMousePos();
+		myPhysCmp.mDir = glm::normalize(mousePos - myPhysCmp.getPosition());
+	}
+
+	float speed = BASE_SPEED;
+	float dotp = glm::dot(moveDir, myPhysCmp.mDir);
+	if (dotp > 1.0f) dotp = 1.0f; // Fix any math rounding errors to prevent NAN acos
+	const float angleOffset = acos(dotp);
+	// Reduce speed for backstep
+	const float speedLerp = glm::clamp((angleOffset - M_PI_2) / M_PI_2, 0.0f, 1.0f);
+	speed *= 1.0 - (speedLerp * 0.5f);
+
+	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f);
 	f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();
 	float velocityDist = glm::length(velocityOffset);
 
@@ -46,9 +93,26 @@ inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, 
 	}
 }
 
-void PlayerControlComponentTable::update(EntityComponentSystem& ecs) {
+inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
+	UNUSED(cmp);
+
+	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+		cmp.mPlayerControlFlags |= enum_cast(PlayerControlFlags::SPRINTING);
+	}
+	else {
+		cmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
+	}
+
+	updateMovement(entity, cmp, ecs, world);
+
+	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
+		performAttack(entity, cmp, ecs, world);
+	}
+}
+
+void PlayerControlComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
 	// Update components
 	for (auto&& cmp : *this) {
-		updateComponent(cmp.first, cmp.second, ecs);
+		updateComponent(cmp.first, cmp.second, ecs, world);
 	}
 }

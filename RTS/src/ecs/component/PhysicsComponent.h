@@ -10,7 +10,8 @@
 class b2Body;
 
 enum class PhysicsComponentFlag : ui8 {
-	AIRBORNE = 1 << 0
+	AIRBORNE = 1 << 0,
+	LOCK_DIR_TO_VELOCITY
 };
 
 struct PhysicsComponent {
@@ -23,10 +24,11 @@ struct PhysicsComponent {
 		return reinterpret_cast<const f32v2&>(mBody->GetLinearVelocity());
 	}
 
+	unsigned mQueryActorTypes = ACTORTYPE_NONE;
+	f32v2 mDir = f32v2(0.0f, 1.0f);
+	float mCollisionRadius = 0.0f; // TODO: needed?
+	bool mFrictionEnabled = true; //TODO: Bit
 	ui8 mFlags = 0u;
-	float mCollisionRadius = 0.0f;
-	ActorTypes mQueryActorType = ACTORTYPE_NONE;
-	bool mFrictionEnabled = true;
 
 	b2Body* mBody = nullptr;
 };

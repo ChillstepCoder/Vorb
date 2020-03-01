@@ -12,5 +12,10 @@ vecs::EntityID PlayerActorFactory::createActor(const f32v2& position, const vio:
 	auto& playerComp = static_cast<EntityComponentSystem&>(mEcs).addPlayerControlComponent(newEntity).second;
 	UNUSED(playerComp);
 
+	mEcs.deleteComponent(mEcs.mSoldierAITable.getID(), newEntity);
+
+	// Player combat
+	//auto& combatComp = mEcs.getCombatComponentFromEntity(newEntity);
+
 	return newEntity;
 }

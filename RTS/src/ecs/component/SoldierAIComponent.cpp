@@ -1,5 +1,6 @@
 #include "stdafx.h"
-#include "UndeadAIComponent.h"
+
+#include "SoldierAIComponent.h"
 #include "CombatComponent.h"
 
 #include "TileGrid.h"
@@ -9,13 +10,13 @@
 const float AGGRO_DISTANCE = 5000.0f;
 const float MIN_DISTANCE = 0.2f; // TODO: Matches NavigationComponent
 const float DISTANCE_THRESHOLD = 0.2f; // TODO: Matches NavigationComponent=
-const std::string& UndeadAIComponentTable::NAME = "undeadai";
+const std::string& SoldierAIComponentTable::NAME = "soldierai";
 
-inline void updateComponent(vecs::EntityID entity, UndeadAIComponent& cmp, TileGrid& world, EntityComponentSystem& ecs) {
+inline void updateComponent(vecs::EntityID entity, SoldierAIComponent& cmp, TileGrid& world, EntityComponentSystem& ecs) {
 	// Check if dead
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 	// TODO: No allocations
-	std::vector<EntityDistSortKey> nearbyEntities = world.queryActorsInRadius(myPhysCmp.getPosition(), AGGRO_DISTANCE, ActorTypes::ACTORTYPE_HUMAN, ActorTypes::ACTORTYPE_CORPSE, true, entity);
+	std::vector<EntityDistSortKey> nearbyEntities = world.queryActorsInRadius(myPhysCmp.getPosition(), AGGRO_DISTANCE, ActorTypes::ACTORTYPE_UNDEAD, ActorTypes::ACTORTYPE_CORPSE, true, entity);
 	if (nearbyEntities.size()) {
 		vecs::EntityID closest = nearbyEntities.front().second;
 		const float distance = nearbyEntities.front().first.dist - myPhysCmp.mCollisionRadius;
@@ -40,7 +41,7 @@ inline void updateComponent(vecs::EntityID entity, UndeadAIComponent& cmp, TileG
 				ecs.convertEntityToCorpse(closest);
 			}
 			// TODO: REAL
-			cmp.mAttackCooldown = 10.0f;
+			cmp.mAttackCooldown = 3.0f;
 		}
 		else {
 			cmp.mAttackCooldown -= 0.1f;
@@ -48,9 +49,8 @@ inline void updateComponent(vecs::EntityID entity, UndeadAIComponent& cmp, TileG
 	}
 }
 
-void UndeadAIComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
+void SoldierAIComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
 	// Update components
-	int c = 0;
 	for (auto&& cmp : *this) {
 		if (isValid(cmp)) {
 			updateComponent(cmp.first, cmp.second, world, ecs);

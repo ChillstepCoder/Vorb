@@ -37,10 +37,10 @@
 /// @param Component: The class name of your component, ex PhysicsComponent
 // TODO we need to make these params explicit
 #define DECL_COMPONENT_TABLE(Table, Component) \
-Component& get##Component(vecs::ComponentID compId) { \
+Component& get##Component##FromCID(vecs::ComponentID compId) { \
 	return Table.get(compId); \
 } \
-const Component& get##Component(vecs::ComponentID compId) const { \
+const Component& get##Component##FromCID(vecs::ComponentID compId) const { \
 	return Table.get(compId); \
 } \
 Component& get##Component##FromEntity(vecs::EntityID entityId) { \
@@ -148,7 +148,7 @@ namespace vorb {
             Event<EntityID> onEntityAdded; ///< Called when an entity is added to this system
             Event<EntityID> onEntityRemoved; ///< Called when an entity is removed from this system
             Event<NamedComponent> onComponentAdded; ///< Called when a component table is added to this system
-        private:
+        protected:
             ComponentID addComponentInternal(ComponentTableBase* table, EntityID id);
 			ComponentID deleteComponentInternal(ComponentTableBase* table, EntityID id);
 

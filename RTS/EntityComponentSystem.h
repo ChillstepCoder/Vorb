@@ -9,6 +9,9 @@
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/UndeadAIComponent.h"
 #include "ecs/component/PlayerControlComponent.h"
+#include "ecs/component/CombatComponent.h"
+#include "ecs/component/CorpseComponent.h"
+#include "ecs/component/SoldierAIComponent.h"
 
 
 class EntityComponentSystem : public vecs::ECS {
@@ -16,12 +19,16 @@ public:
 	EntityComponentSystem(b2World& physWorld);
 
 	void update(float deltaTime, TileGrid& world);
+	void convertEntityToCorpse(vecs::EntityID entity);
 
 	DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
 	DECL_COMPONENT_TABLE(mSpriteTable, SimpleSpriteComponent);
 	DECL_COMPONENT_TABLE(mNavigationTable, NavigationComponent);
 	DECL_COMPONENT_TABLE(mUndeadAITable, UndeadAIComponent);
+	DECL_COMPONENT_TABLE(mSoldierAITable, SoldierAIComponent);
 	DECL_COMPONENT_TABLE(mPlayerControlTable, PlayerControlComponent);
+	DECL_COMPONENT_TABLE(mCombatTable, CombatComponent);
+	DECL_COMPONENT_TABLE(mCorpseTable, CorpseComponent);
 
 	b2World& getPhysWorld() { return mPhysWorld; }
 
@@ -29,9 +36,13 @@ public:
 	SimpleSpriteComponentTable mSpriteTable;
 	NavigationComponentTable mNavigationTable;
 	UndeadAIComponentTable mUndeadAITable;
+	SoldierAIComponentTable mSoldierAITable;
 	PlayerControlComponentTable mPlayerControlTable;
+	CombatComponentTable mCombatTable;
+	CorpseComponentTable mCorpseTable;
 
 private:
+
 	b2World& mPhysWorld;
 };
 

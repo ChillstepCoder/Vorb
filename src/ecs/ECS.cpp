@@ -3,6 +3,9 @@
 
 #include "Vorb/ecs/ComponentTableBase.h"
 
+// Temp
+#include <iostream>
+
 vecs::ECS::ECS() :
     onEntityAdded(this),
     onEntityRemoved(this),

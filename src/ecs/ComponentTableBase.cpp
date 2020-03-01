@@ -13,8 +13,8 @@ vecs::ComponentTableBase::ComponentTableBase() :
 
 vecs::ComponentID vecs::ComponentTableBase::add(EntityID eID) {
     // Check that this entity does not exist
-    auto cBind = _components.find(eID);
-    if (cBind != _components.end()) {
+    auto cBind = _entityToComponentMap.find(eID);
+    if (cBind != _entityToComponentMap.end()) {
         char buf[256];
         sprintf(buf,
                 "Entity <0x%08lX> already contains component <0x%08lX>",
@@ -26,7 +26,7 @@ vecs::ComponentID vecs::ComponentTableBase::add(EntityID eID) {
     // Generate a new component
     bool shouldPush = false;
     ComponentID id = _genComponent.generate(&shouldPush);
-    _components[eID] = id;
+    _entityToComponentMap[eID] = id;
 
     if (shouldPush) {
         // Add a new component
@@ -46,19 +46,20 @@ vecs::ComponentID vecs::ComponentTableBase::add(EntityID eID) {
 }
 bool vecs::ComponentTableBase::remove(EntityID eID) {
     // Find the entity
-    auto cBind = _components.find(eID);
-    if (cBind == _components.end()) return false;
+    auto cBind = _entityToComponentMap.find(eID);
+    if (cBind == _entityToComponentMap.end()) return false;
 
     // Signal removal
     onEntityRemoved(cBind->second, eID);
 
     // Perform disposal operations
-    disposeComponent(cBind->second, eID);
+	disposeComponent(cBind->second, eID);
 
     // Component is cleared
     _genComponent.recycle(cBind->second);
     setComponent(cBind->second, ID_GENERATOR_NULL_ID);
-    _components.erase(cBind);
+    _entityToComponentMap.erase(cBind);
+
 
     return true;
 }
@@ -66,7 +67,7 @@ bool vecs::ComponentTableBase::remove(EntityID eID) {
 void vecs::ComponentTableBase::unsafeSetSize(size_t n) {
     { // Remove old components
         std::vector<vecs::EntityID> entities(getComponentCount());
-        for (auto& ec : _components) entities.emplace_back(ec.first);
+        for (auto& ec : _entityToComponentMap) entities.emplace_back(ec.first);
         for (auto& e : entities) remove(e);
         _genComponent.reset();
     }
@@ -86,7 +87,7 @@ void vecs::ComponentTableBase::unsafeSetLink(vecs::ECS& ecs, vecs::EntityID eID,
         _genComponent.recycle(cID);
     } else {
         // Setup component
-        _components[eID] = cID;
+        _entityToComponentMap[eID] = cID;
         setComponent(cID, eID);
         initComponent(cID, eID);
         onEntityAdded(cID, eID);

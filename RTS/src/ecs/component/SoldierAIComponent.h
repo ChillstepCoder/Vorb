@@ -1,5 +1,4 @@
 #pragma once
-#include "stdafx.h"
 
 #include "actor/ActorTypes.h"
 #include <Vorb/ecs/ComponentTable.hpp>
@@ -7,13 +6,13 @@
 class EntityComponentSystem;
 class TileGrid;
 
-struct UndeadAIComponent {
+struct SoldierAIComponent {
 	int mState = 0;
 	float mAttackCooldown = 0.0f;
 	vecs::ComponentID mCombatComponent;
 };
 
-class UndeadAIComponentTable : public vecs::ComponentTable<UndeadAIComponent> {
+class SoldierAIComponentTable : public vecs::ComponentTable<SoldierAIComponent> {
 public:
 	static const std::string& NAME;
 

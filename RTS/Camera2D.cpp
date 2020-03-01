@@ -28,7 +28,7 @@ void Camera2D::update() {
     if (_needsMatrixUpdate) {
 
         //Camera Translation
-        glm::vec3 translate(-_position.x + _screenWidth / 2, -_position.y + _screenHeight / 2, 0.0f);
+        glm::vec3 translate(-_position.x * _scale + _screenWidth / 2, -_position.y * _scale + _screenHeight / 2, 0.0f);
         _cameraMatrix = glm::translate(_orthoMatrix, translate);
 
         //Camera Scale
@@ -39,10 +39,10 @@ void Camera2D::update() {
     }
 }
 
-glm::vec2 Camera2D::convertScreenToWorld(const glm::vec2& screenCoords) {
+glm::vec2 Camera2D::convertScreenToWorld(const glm::vec2& screenCoords) const {
     const f32m4 invCamera = glm::inverse(_cameraMatrix);
     const f32v2 scaledCoords = (f32v2(screenCoords.x / _screenWidth, 1.0f - screenCoords.y / _screenHeight) - 0.5f) * 2.0f;
-    return f32v2(f32v4(scaledCoords, 0.0f, 0.0f) * invCamera) + _position / _scale;
+    return f32v2(f32v4(scaledCoords, 0.0f, 0.0f) * invCamera) + _position;
 }
 
 // Simple AABB test to see if a box is in the camera view
@@ -57,7 +57,7 @@ bool Camera2D::isBoxInView(const glm::vec2& position, const glm::vec2& dimension
     // Center position of the parameters
     glm::vec2 centerPos = position + dimensions / 2.0f;
     // Center position of the camera
-    glm::vec2 centerCameraPos = _position;
+    glm::vec2 centerCameraPos = _position * _scale;
     // Vector from the input to the camera
     glm::vec2 distVec = centerPos - centerCameraPos;
 

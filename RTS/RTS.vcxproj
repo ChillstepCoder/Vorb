@@ -147,12 +147,19 @@
     <ClCompile Include="src\actor\HumanActorFactory.cpp" />
     <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
     <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
+    <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
+    <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
+    <ClCompile Include="src\item\ArmorItem.cpp" />
+    <ClCompile Include="src\item\ShieldItem.cpp" />
+    <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
+    <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -173,12 +180,20 @@
     <ClInclude Include="src\actor\IActorFactory.h" />
     <ClInclude Include="src\actor\PlayerActorFactory.h" />
     <ClInclude Include="src\actor\UndeadActorFactory.h" />
+    <ClInclude Include="src\ecs\component\CombatComponent.h" />
+    <ClInclude Include="src\ecs\component\CorpseComponent.h" />
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
+    <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="src\item\ArmorItem.h" />
+    <ClInclude Include="src\item\ItemMaterial.h" />
+    <ClInclude Include="src\item\ShieldItem.h" />
+    <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
+    <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TileGrid.h" />
     <ClInclude Include="TileSet.h" />

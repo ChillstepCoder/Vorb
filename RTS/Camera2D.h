@@ -16,7 +16,7 @@ public:
     //updates the camera matrix if needed
     void update();
 
-    glm::vec2 convertScreenToWorld(const glm::vec2& screenCoords);
+    glm::vec2 convertScreenToWorld(const glm::vec2& screenCoords) const;
 
     bool isBoxInView(const glm::vec2& position, const glm::vec2& dimensions);
 
@@ -32,8 +32,8 @@ public:
     float getScale() const { return _scale; }
     const glm::mat4& getCameraMatrix() const { return _cameraMatrix; }
     float getAspectRatio() const { return (float)_screenWidth / (float)_screenHeight; }
-    float getScreenWidth() const { return _screenWidth; }
-    float getScreenHeight() const { return _screenHeight; }
+    float getScreenWidth() const { return (float)_screenWidth; }
+    float getScreenHeight() const { return (float)_screenHeight; }
     f32v2 getScreenSize() const { return f32v2(_screenWidth, _screenHeight); }
 private:
     int _screenWidth, _screenHeight;

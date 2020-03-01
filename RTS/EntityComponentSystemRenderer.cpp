@@ -5,6 +5,7 @@
 #include "EntityComponentSystem.h"
 #include "TileGrid.h"
 
+#include <Vorb/utils.h>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 
@@ -14,7 +15,7 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer(vg::TextureCache& t
 	, mTextureCache(textureCache)
 	, mTileGrid(tileGrid) {
 	// TODO: Render thread assert?
-	mCircleTexture = mTextureCache.addTexture("data/textures/circle.png");
+	mCircleTexture = mTextureCache.addTexture("data/textures/circle_dir.png");
 	mSpriteBatch->init();
 }
 
@@ -41,8 +42,12 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 		const SimpleSpriteComponent& cmp = it->second;
 		// TODO: 3D???
 		const PhysicsComponent& physCmp = physicsComponents.get(cmp.physicsComponent);
-		const f32v2 position = mTileGrid.convertWorldCoordToScreen(physCmp.getPosition()) - cmp.dims * 0.5f;
-		mSpriteBatch->draw(mCircleTexture.id, position, cmp.dims, cmp.color);
+		const f32v2 position = mTileGrid.convertWorldCoordToScreen(physCmp.getPosition());
+		const f32v2 convertedDir = mTileGrid.convertWorldCoordToScreen(physCmp.mDir);
+		const f32 rotation = atan2(convertedDir.y, convertedDir.x);
+		color4 color;
+		color.lerp(cmp.color, color4(1.0f, 0.0f, 0.0f, 1.0f), cmp.hitFlash);
+		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, position, f32v2(0.5f), cmp.dims, rotation, cmp.color);
 	}
 
 	mSpriteBatch->end();

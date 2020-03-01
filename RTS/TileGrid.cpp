@@ -1,7 +1,9 @@
 #include "stdafx.h"
 #include "TileGrid.h"
-#include "Camera2D.h"#
+#include "Camera2D.h"
 #include "EntityComponentSystem.h"
+#include "DebugRenderer.h"
+
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
@@ -9,10 +11,18 @@
 
 #include <box2d/b2_fixture.h>
 
+#include "physics/PhysQueryCallback.h"
 #include "Utils.h"
 
 // TODO: Shared
 const float TILE_SCALE = 0.5f;
+
+#define ENABLE_DEBUG_RENDER 1
+#if ENABLE_DEBUG_RENDER == 1
+#include <Vorb/ui/InputDispatcher.h>
+static bool s_debugToggle = false;
+static bool s_wasTogglePressed = false;
+#endif
 
 TileGrid::TileGrid(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs, const std::string& tileSetFile, const i32v2& tileSetDims, float isoDegrees)
 	: mDims(dims)
@@ -39,6 +49,19 @@ TileGrid::~TileGrid() {
 
 void TileGrid::draw(const Camera2D& camera) {
 
+#if ENABLE_DEBUG_RENDER == 1
+	if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
+		if (!s_wasTogglePressed) {
+			s_wasTogglePressed = true;
+			s_debugToggle = !s_debugToggle;
+		}
+	}
+	else {
+		s_wasTogglePressed = false;
+	}
+#endif
+
+
 	if  (mDirty) {
 		const f32v2 tileDims(TILE_SCALE);
 		const f32v2 offset(-tileDims.x, -tileDims.y);
@@ -55,6 +78,12 @@ void TileGrid::draw(const Camera2D& camera) {
 	}
 
 	mSb->render(f32m4(1.0f), camera.getCameraMatrix());
+}
+
+void TileGrid::updateWorldMousePos(const Camera2D& camera) {
+	const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
+	const f32v2 screenCoord = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+	mWorldMousePos = convertScreenCoordToWorld(screenCoord);
 }
 
 void TileGrid::setView(View view) {
@@ -96,8 +125,6 @@ int TileGrid::getTileIndexFromScreenPos(const f32v2& screenPos, const Camera2D& 
 
 	f32v2 worldPos = convertScreenCoordToWorld(screenPos);
 
-	std::cout << screenPos.x << " " << screenPos.y << " " << worldPos.x << " " << worldPos.y << std::endl;
-
 	const int xIndex = worldPos.x / (mTileSet.getTileDims().x * 0.5f);
 	const int yIndex = -worldPos.y / (mTileSet.getTileDims().y * 0.5f);
 
@@ -121,56 +148,18 @@ void TileGrid::setTile(int index, Tile tile) {
 	mDirty = true;
 }
 
-class MyQueryCallback : public b2QueryCallback
-{
-public:
-	MyQueryCallback(std::vector<EntityDistSortKey>& entities, f32v2 pos, const PhysicsComponentTable& physicsComponents, ActorTypesMask mask, float radius, vecs::EntityID except)
-		: mEntities(entities)
-		, mPos(pos)
-		, mPhysicsComponents(physicsComponents)
-		, mMask(mask)
-		, mRadius(radius) {
-	}
-	bool ReportFixture(b2Fixture* fixture) {
-		vecs::EntityID entityId = reinterpret_cast<vecs::EntityID>(fixture->GetUserData());
-		if (entityId == mExcept) {
-			return true;
-		}
-		// TODO: Marry physics component and fixture?
-		const PhysicsComponent& cmp = mPhysicsComponents.getFromEntity(entityId);
-		if (cmp.mQueryActorType & mMask) {
-			const f32v2 offset = cmp.getPosition() - mPos;
-			const float distanceToEdge = glm::length(offset) - cmp.mCollisionRadius;
-			if (distanceToEdge <= mRadius) {
-				mEntities.emplace_back(distanceToEdge, entityId);
-			}
-		}
-
-		// Return true to continue the query.
-		return true;
-	}
-
-private:
-	std::vector<EntityDistSortKey>& mEntities;
-	f32v2 mPos;
-	const PhysicsComponentTable& mPhysicsComponents;
-	ActorTypesMask mMask;
-	float mRadius;
-	vecs::EntityID mExcept;
-};
-
-std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask mask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
 	// TODO: No allocation?
 
 	// Empty mask = all types
-	if (mask == 0) {
-		mask = ~0;
+	if (includeMask == 0) {
+		includeMask = ~0;
 	}
 
 	// TODO: Components as well? Better lookup?
 	std::vector<EntityDistSortKey> entities;
 
-	MyQueryCallback queryCallBack(entities, pos, mEcs.getPhysicsComponents(), mask, radius, except);
+	PhysQueryCallback queryCallBack(entities, pos, mEcs.getPhysicsComponents(), includeMask, excludeMask, radius, except);
 	b2AABB aabb;
 	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
@@ -178,7 +167,7 @@ std::vector<EntityDistSortKey> TileGrid::queryActorsInRadius(const f32v2& pos, f
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
-			return a.first < b.first;
+			return a.first.dist < b.first.dist;
 		});
 	}
 
@@ -200,22 +189,82 @@ inline void testExtremePoint(const f32v2& point, b2AABB& aabb) {
 	}
 }
 
-std::vector<EntityDistSortKey> TileGrid::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+std::vector<EntityDistSortKey> TileGrid::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
 	const float halfAngle = arcAngle * 0.5f;
+
+	// Empty mask = all types
+	if (includeMask == 0) {
+		includeMask = ~0;
+	}
 	
+	// TODO: Implementation is wrong for >= 180 degrees angles
+	// To fix we would need to start in our aim quadrant and increment/decrement nearby quadrants to see if they lie within
+	assert(arcAngle <= M_PI);
+
 	// TODO: Components as well? Better lookup?
 	std::vector<EntityDistSortKey> entities;
+
+	CONST f32v2 scaledNormal = normal * radius;
 	
+	// Center
 	b2AABB aabb;
 	aabb.lowerBound = TO_BVEC2_C(pos);
 	aabb.upperBound = TO_BVEC2_C(pos);
 
-	f32v2 offset = glm::rotate(normal, halfAngle);
-	f32v2 point = pos + offset;
-	testExtremePoint(point, aabb);
-	
-	float currentAngle = atan2(point.y, point.x);
-	std::cout << "CURRENT ANGLE " << currentAngle << std::endl;
+	// Left ray
+	f32v2 offset = glm::rotate(scaledNormal, -halfAngle);
+	f32v2 point1 = pos + offset;
+	testExtremePoint(point1, aabb);
+
+	float centerAngle = atan2(normal.y, normal.x);
+
+	float startAngle = centerAngle - halfAngle;
+	float endAngle = centerAngle + halfAngle;
+
+	// Right ray
+	offset = glm::rotate(scaledNormal, +halfAngle);
+	f32v2 point2 = pos + offset;
+	testExtremePoint(point2, aabb);
+
+	static const f32v2 axisExtrema[5] = { {-1.0f, 0.0f}, {0.0f, -1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {-1.0f, 0.0f} };
+
+	int i = 0;
+	for (float angle = -M_PI; i < 5; angle += M_PI_2, ++i) {
+		if (angle > startAngle && angle < endAngle) {
+			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
+#if ENABLE_DEBUG_RENDER == 1
+			if (s_debugToggle) {
+				DebugRenderer::drawLine(convertWorldCoordToScreen(pos), convertWorldCoordToScreen(pos + axisExtrema[i] * radius) - convertWorldCoordToScreen(pos), color4(0.0f, 1.0f, 0.0f), 1);
+			}
+#endif
+		}
+	}
+
+	ArcQueryCallback queryCallBack(entities, pos, mEcs.getPhysicsComponents(), includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
+	mPhysWorld.QueryAABB(&queryCallBack, aabb);
+
+	if (sorted) {
+		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
+			return a.first.dist < b.first.dist;
+		});
+	}
+
+#if ENABLE_DEBUG_RENDER == 1
+	if (s_debugToggle) {
+		static const int lifetime = 1;
+		const f32v2 screenPos = convertWorldCoordToScreen(pos);
+
+		const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
+		const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
+		const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
+		const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
+
+		DebugRenderer::drawAABB(convertWorldCoordToScreen(bottomLeft), convertWorldCoordToScreen(bottomRight), convertWorldCoordToScreen(topLeft), convertWorldCoordToScreen(topRight), color4(1.0f, 0.0f, 1.0f), lifetime);
+		DebugRenderer::drawLine(screenPos, convertWorldCoordToScreen(point1) - screenPos, color4(0.0f, 0.0f, 1.0f), lifetime);
+		DebugRenderer::drawLine(screenPos, convertWorldCoordToScreen(point2) - screenPos, color4(0.0f, 0.0f, 1.0f), lifetime);
+		DebugRenderer::drawLine(screenPos, convertWorldCoordToScreen(scaledNormal), color4(0.0f, 0.0f, 1.0f), lifetime);
+	}
+#endif
 
 	return entities;
 }

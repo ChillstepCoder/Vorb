@@ -25,7 +25,7 @@ vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio:
 	auto physCompPair = mEcs.addPhysicsComponent(newEntity);
 	auto& physComp = physCompPair.second;
 	physComp.mFlags = 0;
-	physComp.mQueryActorType = ACTORTYPE_UNDEAD;
+	physComp.mQueryActorTypes = ACTORTYPE_UNDEAD;
 
 	{ // box2d
 		b2BodyDef bodyDef;
@@ -58,6 +58,9 @@ vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio:
 	mEcs.addUndeadAIComponent(newEntity);
 	auto& navCmp = mEcs.addNavigationComponent(newEntity).second;
 	navCmp.mSpeed = 0.1f;
+
+	auto& combatComp = mEcs.addCombatComponent(newEntity).second;
+	UNUSED(combatComp);
 
 	return newEntity;
 }
