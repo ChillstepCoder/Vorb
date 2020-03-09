@@ -160,6 +160,8 @@
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
+    <ClCompile Include="src\rendering\CharacterModel.cpp" />
+    <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -194,6 +196,8 @@
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
+    <ClInclude Include="src\rendering\CharacterModel.h" />
+    <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TileGrid.h" />
     <ClInclude Include="TileSet.h" />

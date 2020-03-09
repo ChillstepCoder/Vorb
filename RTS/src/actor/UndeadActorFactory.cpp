@@ -62,5 +62,10 @@ vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio:
 	auto& combatComp = mEcs.addCombatComponent(newEntity).second;
 	UNUSED(combatComp);
 
+	// TMP
+	auto& characterModelComp = static_cast<EntityComponentSystem&>(mEcs).addCharacterModelComponent(newEntity).second;
+	characterModelComp.mModel.load(mTextureCache, "face/male/narrow_wide", "body/muscular", "hair/allback2");
+	characterModelComp.mPhysicsComponent = static_cast<EntityComponentSystem&>(mEcs).mPhysicsTable.getComponentID(newEntity);
+
 	return newEntity;
 }

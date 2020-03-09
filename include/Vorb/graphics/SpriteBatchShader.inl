@@ -33,6 +33,10 @@ out vec4 fColor;
 
 void main() {
     fColor = texture(SBTex, fract(fUV.xy) * fUVRect.zw + fUVRect.xy) * fTint;
+    // Don't write 0 alpha (TMP)
+    if (fColor.a <= 0.01) {
+        discard;
+    }
 }
 )";
         }

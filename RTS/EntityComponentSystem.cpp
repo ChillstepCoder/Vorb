@@ -17,6 +17,7 @@ EntityComponentSystem::EntityComponentSystem(b2World& physWorld)
 	addComponentTable(PlayerControlComponentTable::NAME, &mPlayerControlTable);
 	addComponentTable(CombatComponentTable::NAME, &mCombatTable);
 	addComponentTable(CorpseComponentTable::NAME, &mCorpseTable);
+	addComponentTable(CharacterModelComponentTable::NAME, &mCharacterModelTable);
 }
 
 void EntityComponentSystem::update(float deltaTime, TileGrid& world) {

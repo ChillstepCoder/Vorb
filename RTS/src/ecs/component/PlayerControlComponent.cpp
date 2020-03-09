@@ -49,7 +49,7 @@ f32v2 getMovementDir(TileGrid& world) {
 	}
 
 	moveDir = world.convertScreenCoordToWorld(moveDir);
-	return moveDir;
+	return glm::normalize(moveDir);
 }
 
 void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
@@ -57,7 +57,7 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 
 	bool isSprinting = cmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
-	f32v2 moveDir = getMovementDir(world);
+	const f32v2 moveDir = getMovementDir(world);
 
 	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
 		return;
@@ -72,9 +72,11 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	}
 
 	float speed = BASE_SPEED;
-	float dotp = glm::dot(moveDir, myPhysCmp.mDir);
-	if (dotp > 1.0f) dotp = 1.0f; // Fix any math rounding errors to prevent NAN acos
+	float dotp = glm::dot(moveDir, glm::normalize(myPhysCmp.mDir));
+	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
 	const float angleOffset = acos(dotp);
+	assert(angleOffset == angleOffset);
+	// nan check
 	// Reduce speed for backstep
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2) / M_PI_2, 0.0f, 1.0f);
 	speed *= 1.0 - (speedLerp * 0.5f);

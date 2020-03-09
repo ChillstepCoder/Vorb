@@ -16,6 +16,7 @@ public:
 	EntityComponentSystemRenderer(vg::TextureCache& textureCache, const EntityComponentSystem& system, const TileGrid& tileGrid);
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
+	void renderCharacterModels(const Camera2D& camera);
 
 private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;

@@ -5,9 +5,12 @@
 #include "EntityComponentSystem.h"
 #include "TileGrid.h"
 
+#include "rendering/CharacterRenderer.h"
+
 #include <Vorb/utils.h>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
+#include <Vorb/graphics/DepthState.h>
 
 EntityComponentSystemRenderer::EntityComponentSystemRenderer(vg::TextureCache& textureCache, const EntityComponentSystem& system, const TileGrid& tileGrid)
 	: mSpriteBatch(std::make_unique<vg::SpriteBatch>())
@@ -42,6 +45,7 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 		const SimpleSpriteComponent& cmp = it->second;
 		// TODO: 3D???
 		const PhysicsComponent& physCmp = physicsComponents.get(cmp.physicsComponent);
+		// TODO: Common?
 		const f32v2 position = mTileGrid.convertWorldCoordToScreen(physCmp.getPosition());
 		const f32v2 convertedDir = mTileGrid.convertWorldCoordToScreen(physCmp.mDir);
 		const f32 rotation = atan2(convertedDir.y, convertedDir.x);
@@ -52,4 +56,23 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 
 	mSpriteBatch->end();
 	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix());
+}
+
+void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera) {
+	mSpriteBatch->begin();
+
+	const PhysicsComponentTable& physicsComponents = mSystem.getPhysicsComponents();
+	const CharacterModelComponentTable& components = mSystem.getCharacterModelComponents();
+	for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
+		const CharacterModelComponent& cmp = it->second;
+		const PhysicsComponent& physCmp = physicsComponents.get(cmp.mPhysicsComponent);
+		// TODO: Common?
+		const f32v2 position = mTileGrid.convertWorldCoordToScreen(physCmp.getPosition());
+		const f32v2 convertedDir = mTileGrid.convertWorldCoordToScreen(physCmp.mDir);
+		const f32 rotation = atan2(convertedDir.y, convertedDir.x);
+		CharacterRenderer::render(*mSpriteBatch, cmp.mModel, position, rotation);
+	}
+
+	mSpriteBatch->end();
+	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
 }

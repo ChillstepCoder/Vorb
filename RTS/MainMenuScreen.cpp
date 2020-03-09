@@ -7,6 +7,7 @@
 #include <Vorb/math/VorbMath.hpp>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
+#include <Vorb/graphics/DepthState.h>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
@@ -219,6 +220,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 
 	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);
 	mEcsRenderer->renderSimpleSprites(*mCamera2D);
+	mEcsRenderer->renderCharacterModels(*mCamera2D);
 
 	if (vui::InputDispatcher::mouse.isButtonPressed(vui::MouseButton::LEFT)) {
 		mSb->draw(mCircleTexture.id, mTestClick - f32v2(8.0f), f32v2(16.0f), color4(1.0f, 0.0f, 1.0f));

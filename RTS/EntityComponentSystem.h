@@ -13,6 +13,9 @@
 #include "ecs/component/CorpseComponent.h"
 #include "ecs/component/SoldierAIComponent.h"
 
+// TODO: ecs file?
+#include "rendering/CharacterModel.h";
+
 
 class EntityComponentSystem : public vecs::ECS {
 public:
@@ -29,6 +32,7 @@ public:
 	DECL_COMPONENT_TABLE(mPlayerControlTable, PlayerControlComponent);
 	DECL_COMPONENT_TABLE(mCombatTable, CombatComponent);
 	DECL_COMPONENT_TABLE(mCorpseTable, CorpseComponent);
+	DECL_COMPONENT_TABLE(mCharacterModelTable, CharacterModelComponent);
 
 	b2World& getPhysWorld() { return mPhysWorld; }
 
@@ -40,6 +44,7 @@ public:
 	PlayerControlComponentTable mPlayerControlTable;
 	CombatComponentTable mCombatTable;
 	CorpseComponentTable mCorpseTable;
+	CharacterModelComponentTable mCharacterModelTable;
 
 private:
 
