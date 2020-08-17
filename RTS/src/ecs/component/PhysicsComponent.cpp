@@ -1,7 +1,11 @@
 #include "stdafx.h"
 #include "PhysicsComponent.h"
 
+#include "EntityComponentSystem.h"
+
 #include <box2d/b2_body.h>
+#include <box2d/b2_circle_shape.h>
+#include <box2d/b2_fixture.h>
 
 const std::string& PhysicsComponentTable::NAME = "physics";
 
@@ -63,10 +67,12 @@ void PhysicsComponentTable::update(float deltaTime) {
 		return;
 	}
 
+	// THIS IS NOW HANDLED BY BOX2D
+
 	// Collision
 	// TODO: Spatial Partition
 	// Skip default element
-	std::vector<ComponentPairing>::iterator it = _components.begin() + 1;
+	/*std::vector<ComponentPairing>::iterator it = _components.begin() + 1;
 	while (it != _components.end()) {
 		if (isValid(*it)) {
 			auto compareIt = it;
@@ -77,10 +83,57 @@ void PhysicsComponentTable::update(float deltaTime) {
 			}
 		}
 		++it;
-	}
+	}*/
 
 	// Update components
 	for (auto&& cmp : *this) {
 		updateComponent(cmp.second, deltaTime);
 	}
+}
+
+void PhysicsComponent::initBody(EntityComponentSystem& parentSystem, const f32v2& centerPosition, bool isStatic) {
+	if (!mBody) {
+		b2BodyDef bodyDef;
+		if (isStatic) {
+			bodyDef.type = b2_staticBody;
+			bodyDef.position.Set(centerPosition.x, centerPosition.y);
+			mBody = parentSystem.getPhysWorld().CreateBody(&bodyDef);
+		}
+		else {
+			bodyDef.type = b2_dynamicBody;
+			bodyDef.position.Set(centerPosition.x, centerPosition.y);
+			mBody = parentSystem.getPhysWorld().CreateBody(&bodyDef);
+			mBody->SetLinearDamping(0.1f);
+		}
+	}
+}
+
+void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape, const float halfWidth) {
+
+	// Init physics body
+	
+
+	switch (shape) {
+		case ColliderShapes::SPHERE: {
+			// TODO: Move this into the physics component?
+			{ // box2d
+				b2CircleShape dynamicCircle;
+				dynamicCircle.m_radius = halfWidth;
+				mCollisionRadius = dynamicCircle.m_radius;
+
+				b2FixtureDef fixtureDef;
+				fixtureDef.shape = &dynamicCircle;
+				fixtureDef.density = 1.0f;
+				fixtureDef.userData = reinterpret_cast<void*>(entityId);
+
+				mBody->CreateFixture(&fixtureDef);
+			}
+			break;
+		}
+		case ColliderShapes::NONE:
+			ASSERT_FAIL; // Invalid collider type
+		default:
+			ASSERT_FAIL; // Need to add collider typev
+	}
+
 }

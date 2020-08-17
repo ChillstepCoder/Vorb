@@ -7,8 +7,8 @@
 #include "item/WeaponItem.h"
 #include "item/ShieldItem.h"
 
-struct PhysicsComponent;
-struct SimpleSpriteComponent;
+class PhysicsComponent;
+class SimpleSpriteComponent;
 class TileGrid;
 class EntityComponentSystem;
 

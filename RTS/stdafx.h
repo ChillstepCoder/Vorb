@@ -39,6 +39,8 @@
 #include <Vorb/graphics/gtypes.h>
 #include <Vorb/VorbPreDecl.inl>
 
+#include <Vorb/Constants.h>
+
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)
 

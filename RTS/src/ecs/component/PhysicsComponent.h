@@ -2,19 +2,30 @@
 #include "stdafx.h"
 
 #include "actor/ActorTypes.h"
+
+#include <Vorb/ecs/ECS.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 
 #include <box2d/b2_world.h>
 #include <box2d/b2_body.h>
 
 class b2Body;
+class EntityComponentSystem;
 
 enum class PhysicsComponentFlag : ui8 {
 	AIRBORNE = 1 << 0,
 	LOCK_DIR_TO_VELOCITY
 };
 
-struct PhysicsComponent {
+enum class ColliderShapes {
+	SPHERE,
+	NONE
+};
+
+class PhysicsComponent {
+public:
+	void initBody(EntityComponentSystem& parentSystem, const f32v2& centerPosition, bool isStatic);
+	void addCollider (vecs::EntityID entityId, ColliderShapes shape, const float halfWidth);
 
 	const f32v2& getPosition() const {
 		return reinterpret_cast<const f32v2&>(mBody->GetPosition());

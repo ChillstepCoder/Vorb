@@ -35,7 +35,8 @@
 /// Generates getXXX, addXXX and getXXXs
 /// @param Table: The table variable name, ex mPhysicsTable
 /// @param Component: The class name of your component, ex PhysicsComponent
-// TODO we need to make these params explicit
+// TODO: we need to make these params explicit
+// TODO: This is kinda hard to read
 #define DECL_COMPONENT_TABLE(Table, Component) \
 Component& get##Component##FromCID(vecs::ComponentID compId) { \
 	return Table.get(compId); \

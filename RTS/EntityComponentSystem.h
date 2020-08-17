@@ -14,8 +14,7 @@
 #include "ecs/component/SoldierAIComponent.h"
 
 // TODO: ecs file?
-#include "rendering/CharacterModel.h";
-
+#include "rendering/CharacterModel.h"
 
 class EntityComponentSystem : public vecs::ECS {
 public:
@@ -50,4 +49,3 @@ private:
 
 	b2World& mPhysWorld;
 };
-

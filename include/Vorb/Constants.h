@@ -32,4 +32,6 @@
 #define MICROSECONDS_PER_MILLISECOND_F32 1000.0f
 #define MICROSECONDS_PER_MILLISECOND_F64 1000.0
 
+#define ASSERT_FAIL (assert(false))
+
 #endif // !Vorb_Constants_h__

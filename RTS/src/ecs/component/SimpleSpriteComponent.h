@@ -4,8 +4,13 @@
 #include <Vorb/ecs/Entity.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 
-struct SimpleSpriteComponent {
-	// TODO: Compress
+class SimpleSpriteComponent {
+public:
+	void init (vecs::ComponentID componentId, VGTexture texture, const f32v2& dims) {
+		this->physicsComponent = componentId;
+		this->texture = texture;
+		this->dims = dims;
+	}
 	vecs::ComponentID physicsComponent = 0;
 	VGTexture texture = 0;
 	float angle = 0.0f;
