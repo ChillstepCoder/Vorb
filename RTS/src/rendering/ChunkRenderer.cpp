@@ -33,7 +33,7 @@ void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
 void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 	// mutable render data
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
-	const i32v2& pos = chunk.getPos();
+	const i32v2& pos = chunk.getChunkPos();
 	const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH - 1);
 
 	if (!renderData.mSb) {

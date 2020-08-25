@@ -126,14 +126,14 @@ void MainMenuScreen::build() {
 		vecs::EntityID newActor = 0;
 		if (event.button == vui::MouseButton::LEFT) {
 			newActor = mUndeadActorFactory->createActor(
-				mCamera2D->convertScreenToWorld(mTestClick),
+				mTestClick,
 				vio::Path("data/textures/circle_dir.png"),
 				vio::Path("")
 			);
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
 			newActor = mHumanActorFactory->createActor(
-				mCamera2D->convertScreenToWorld(mTestClick),
+				mTestClick,
 				vio::Path("data/textures/circle_dir.png"),
 				vio::Path("")
 			);
@@ -141,13 +141,13 @@ void MainMenuScreen::build() {
 
 		// Apply velocity
 		auto& physComp = mEcs.getPhysicsComponentFromEntity(newActor);
-		velocity = mCamera2D->convertScreenToWorld(velocity);
+		velocity = velocity;
 		physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
 	});
 
 
 	// Add player
-	mPlayerEntity = mPlayerActorFactory->createActor(mCamera2D->convertScreenToWorld(f32v2(0.0f)),
+	mPlayerEntity = mPlayerActorFactory->createActor(f32v2(0.0f),
 		vio::Path("data/textures/circle_dir.png"),
 		vio::Path(""));
 }

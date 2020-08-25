@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "World.h"
+
 #include "Camera2D.h"
 #include "EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
+#include "world/ChunkGenerator.h"
 
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
@@ -28,6 +30,7 @@ World::World(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCac
 	: mEcs(ecs)
 	, mPhysWorld(physWorld) {
 	mChunkRenderer = std::make_unique<ChunkRenderer>(textureCache);
+	mChunkGenerator = std::make_unique<ChunkGenerator>();
 }
 
 World::~World() {
@@ -90,7 +93,7 @@ Chunk* World::getChunkOrCreateAtPosition(const f32v2& worldPos) {
 	auto newChunkIt = mChunks.insert(std::make_pair(chunkId, std::make_unique<Chunk>()));
 	Chunk* newChunk = newChunkIt.first->second.get();
 	newChunk->init(chunkId);
-	newChunk->load();
+	mChunkGenerator->GenerateChunk(*newChunk);
 	return newChunk;
 }
 

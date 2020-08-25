@@ -144,6 +144,7 @@
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="EntityComponentSystem.cpp" />
     <ClCompile Include="EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\actor\HumanActorFactory.cpp" />
     <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
     <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
@@ -164,6 +165,7 @@
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
+    <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -196,12 +198,14 @@
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
+    <ClInclude Include="src\Noise.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
     <ClInclude Include="src\world\Chunk.h" />
+    <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="World.h" />

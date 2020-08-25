@@ -43,15 +43,16 @@ struct ChunkID {
 };
 
 class Chunk {
+	friend class ChunkGenerator;
 	friend class ChunkRenderer;
 public:
 	Chunk();
 
 	// Position in cells
 	void init(ChunkID chunkId);
-	void load(); // TODO: Better
 
-	const i32v2& getPos() const { return mChunkId.pos; }
+	const i32v2& getChunkPos() const { return mChunkId.pos; }
+	f32v2 getWorldPos() const { return f32v2(mChunkId.pos) * (float)CHUNK_WIDTH; }
 	ChunkState getState() const { return mState; }
 
 	Tile getTileAt(unsigned x, unsigned y) const {

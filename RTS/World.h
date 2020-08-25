@@ -17,6 +17,7 @@ DECL_VG(class TextureCache)
 
 class Camera2D;
 class ChunkRenderer;
+class ChunkGenerator;
 class EntityComponentSystem;
 
 class World
@@ -43,6 +44,7 @@ private:
 	// Resources
 	const EntityComponentSystem& mEcs;
 	b2World& mPhysWorld;
+	std::unique_ptr<ChunkGenerator> mChunkGenerator;
 
 	// Data
 	f32v2 mAxis[2];
