@@ -1,6 +1,4 @@
 #pragma once
-#include "stdafx.h"
-
 #include "rendering/CharacterModel.h"
 
 #include <Vorb/graphics/SpriteBatch.h>

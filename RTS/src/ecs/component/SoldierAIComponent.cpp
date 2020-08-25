@@ -3,7 +3,7 @@
 #include "SoldierAIComponent.h"
 #include "CombatComponent.h"
 
-#include "TileGrid.h"
+#include "World.h"
 #include "EntityComponentSystem.h"
 
 // TODO: Debug render
@@ -12,7 +12,7 @@ const float MIN_DISTANCE = 0.2f; // TODO: Matches NavigationComponent
 const float DISTANCE_THRESHOLD = 0.2f; // TODO: Matches NavigationComponent=
 const std::string& SoldierAIComponentTable::NAME = "soldierai";
 
-inline void updateComponent(vecs::EntityID entity, SoldierAIComponent& cmp, TileGrid& world, EntityComponentSystem& ecs) {
+inline void updateComponent(vecs::EntityID entity, SoldierAIComponent& cmp, World& world, EntityComponentSystem& ecs) {
 	// Check if dead
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 	// TODO: No allocations
@@ -49,7 +49,7 @@ inline void updateComponent(vecs::EntityID entity, SoldierAIComponent& cmp, Tile
 	}
 }
 
-void SoldierAIComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
+void SoldierAIComponentTable::update(EntityComponentSystem& ecs, World& world) {
 	// Update components
 	for (auto&& cmp : *this) {
 		if (isValid(cmp)) {

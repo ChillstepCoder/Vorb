@@ -1,6 +1,4 @@
 #pragma once
-#include "stdafx.h"
-
 #include <Vorb/ecs/ComponentTable.hpp>
 
 #include "item/ArmorItem.h"
@@ -9,7 +7,7 @@
 
 class PhysicsComponent;
 class SimpleSpriteComponent;
-class TileGrid;
+class World;
 class EntityComponentSystem;
 
 struct CombatComponent {
@@ -32,5 +30,5 @@ public:
 namespace Combat {
 	// Return true on defender death
 	bool resolveMeleeAttack(CombatComponent& attacker, CombatComponent& defender, PhysicsComponent& defenderPhysComp, SimpleSpriteComponent& defenderSpriteComp, const f32v2& dir, float flankingAngle);
-	bool meleeAttackArc(vecs::EntityID source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, TileGrid& world, EntityComponentSystem& ecs);
+	bool meleeAttackArc(vecs::EntityID source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, World& world, EntityComponentSystem& ecs);
 };

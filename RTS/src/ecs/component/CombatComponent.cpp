@@ -2,7 +2,7 @@
 #include "CombatComponent.h"
 #include "PhysicsComponent.h"
 #include "SimpleSpriteComponent.h"
-#include "TileGrid.h"
+#include "World.h"
 #include "EntityComponentSystem.h"
 
 const std::string& CombatComponentTable::NAME = "combat";
@@ -48,7 +48,7 @@ namespace Combat {
 		}
 	}
 
-	bool meleeAttackArc(vecs::EntityID source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, TileGrid& world, EntityComponentSystem& ecs) {
+	bool meleeAttackArc(vecs::EntityID source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, World& world, EntityComponentSystem& ecs) {
 		bool wasHit = false;
 		// TODO: Team filtering?
 		ActorTypesMask includeMask = ~0;

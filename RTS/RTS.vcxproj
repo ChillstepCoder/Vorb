@@ -162,12 +162,14 @@
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
+    <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="TileGrid.cpp" />
+    <ClCompile Include="World.cpp" />
     <ClCompile Include="TileSet.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -198,8 +200,11 @@
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\world\Chunk.h" />
+    <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="TileGrid.h" />
+    <ClInclude Include="World.h" />
     <ClInclude Include="TileSet.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>

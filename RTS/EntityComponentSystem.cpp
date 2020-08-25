@@ -20,7 +20,7 @@ EntityComponentSystem::EntityComponentSystem(b2World& physWorld)
 	addComponentTable(CharacterModelComponentTable::NAME, &mCharacterModelTable);
 }
 
-void EntityComponentSystem::update(float deltaTime, TileGrid& world) {
+void EntityComponentSystem::update(float deltaTime, World& world) {
 	
 	// TODO: Not every frame
 	static int frameCount = 0;

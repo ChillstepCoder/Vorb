@@ -1,6 +1,4 @@
 #pragma once
-#include "stdafx.h"
-
 #include <box2d/b2_world_callbacks.h>
 
 class EntityComponentSystem;

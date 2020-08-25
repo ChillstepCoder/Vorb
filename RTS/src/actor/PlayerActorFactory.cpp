@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "PlayerActorFactory.h"
 
 #include "EntityComponentSystem.h"

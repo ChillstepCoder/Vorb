@@ -1,10 +1,9 @@
 #pragma once
-
 #include "actor/ActorTypes.h"
 #include <Vorb/ecs/ComponentTable.hpp>
 
 class EntityComponentSystem;
-class TileGrid;
+class World;
 
 struct SoldierAIComponent {
 	int mState = 0;
@@ -16,5 +15,5 @@ class SoldierAIComponentTable : public vecs::ComponentTable<SoldierAIComponent> 
 public:
 	static const std::string& NAME;
 
-	void update(EntityComponentSystem& ecs, TileGrid& world);
+	void update(EntityComponentSystem& ecs, World& world);
 };

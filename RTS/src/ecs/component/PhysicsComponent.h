@@ -1,6 +1,4 @@
 #pragma once
-#include "stdafx.h"
-
 #include "actor/ActorTypes.h"
 
 #include <Vorb/ecs/ECS.h>

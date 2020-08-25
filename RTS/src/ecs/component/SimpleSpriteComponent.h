@@ -1,6 +1,4 @@
 #pragma once
-#include "stdafx.h"
-
 #include <Vorb/ecs/Entity.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 

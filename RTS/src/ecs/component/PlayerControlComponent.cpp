@@ -3,7 +3,7 @@
 
 #include "EntityComponentSystem.h"
 
-#include "TileGrid.h"
+#include "World.h"
 #include "DebugRenderer.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -17,12 +17,12 @@ const float IMPULSE = 0.02f;
 const float ATTACK_RADIUS = 5.0f;
 const float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
 
-void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
+void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
 }
 
-f32v2 getMovementDir(TileGrid& world) {
+f32v2 getMovementDir(World& world) {
 	f32v2 moveDir(0.0f);
 	// Movement
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
@@ -48,11 +48,10 @@ f32v2 getMovementDir(TileGrid& world) {
 		return f32v2(0.0f);
 	}
 
-	moveDir = world.convertScreenCoordToWorld(moveDir);
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
+void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
 
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 
@@ -81,21 +80,23 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2) / M_PI_2, 0.0f, 1.0f);
 	speed *= 1.0 - (speedLerp * 0.5f);
 
-	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f);
+	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
 	f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();
 	float velocityDist = glm::length(velocityOffset);
 
-	if (velocityDist <= ACCELERATION) {
+	const float acceleration = ACCELERATION * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 5.0f : 1.0f);
+
+	if (velocityDist <= acceleration) {
 		myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
 	}
 	else {
 		const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(myPhysCmp.mBody->GetLinearVelocity());
-		velocityOffset = (velocityOffset / velocityDist) * ACCELERATION + currentLinearVelocity;
+		velocityOffset = (velocityOffset / velocityDist) * acceleration + currentLinearVelocity;
 		myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
 	}
 }
 
-inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
+inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
 	UNUSED(cmp);
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
@@ -112,7 +113,7 @@ inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, 
 	}
 }
 
-void PlayerControlComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
+void PlayerControlComponentTable::update(EntityComponentSystem& ecs, World& world) {
 	// Update components
 	for (auto&& cmp : *this) {
 		updateComponent(cmp.first, cmp.second, ecs, world);

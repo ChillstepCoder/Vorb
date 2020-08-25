@@ -1,7 +1,4 @@
 #pragma once
-#include "stdafx.h"
-
-
 #include <Vorb/ecs/ComponentTable.hpp>
 
 DECL_VG(class TextureCache);

@@ -2,7 +2,7 @@
 #include "UndeadAIComponent.h"
 #include "CombatComponent.h"
 
-#include "TileGrid.h"
+#include "World.h"
 #include "EntityComponentSystem.h"
 
 // TODO: Debug render
@@ -11,7 +11,7 @@ const float MIN_DISTANCE = 0.2f; // TODO: Matches NavigationComponent
 const float DISTANCE_THRESHOLD = 0.2f; // TODO: Matches NavigationComponent=
 const std::string& UndeadAIComponentTable::NAME = "undeadai";
 
-inline void updateComponent(vecs::EntityID entity, UndeadAIComponent& cmp, TileGrid& world, EntityComponentSystem& ecs) {
+inline void updateComponent(vecs::EntityID entity, UndeadAIComponent& cmp, World& world, EntityComponentSystem& ecs) {
 	// Check if dead
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 	// TODO: No allocations
@@ -48,7 +48,7 @@ inline void updateComponent(vecs::EntityID entity, UndeadAIComponent& cmp, TileG
 	}
 }
 
-void UndeadAIComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
+void UndeadAIComponentTable::update(EntityComponentSystem& ecs, World& world) {
 	// Update components
 	int c = 0;
 	for (auto&& cmp : *this) {

@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "CharacterRenderer.h"
 
 void renderPart(vg::SpriteBatch& sb, const vg::Texture& body, const f32v2& pos, const f32v2& offset, const f32v2& additionalOffset, f32v4& uvRect, float size, float depth) {

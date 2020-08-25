@@ -1,6 +1,5 @@
 #pragma once
 
-#include "stdafx.h"
 #include <Vorb/ui/MainGame.h>
 
 class MainMenuScreen;

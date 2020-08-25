@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "PhysQueryCallback.h"
 
 #include <box2d/b2_fixture.h>

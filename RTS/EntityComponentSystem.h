@@ -20,7 +20,7 @@ class EntityComponentSystem : public vecs::ECS {
 public:
 	EntityComponentSystem(b2World& physWorld);
 
-	void update(float deltaTime, TileGrid& world);
+	void update(float deltaTime, World& world);
 	void convertEntityToCorpse(vecs::EntityID entity);
 
 	DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);

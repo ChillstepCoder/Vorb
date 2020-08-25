@@ -1,5 +1,4 @@
 #pragma once
-#include "stdafx.h"
 #include "ItemMaterial.h"
 
 typedef ui16 ShieldItemID;

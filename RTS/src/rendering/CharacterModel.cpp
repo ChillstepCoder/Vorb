@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "CharacterModel.h"
 
 #include <Vorb/graphics/TextureCache.h>

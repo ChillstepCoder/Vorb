@@ -17,7 +17,7 @@
 
 #include "Camera2D.h"
 
-#include "TileGrid.h"
+#include "World.h"
 #include "Utils.h"
 
 #include "actor/HumanActorFactory.h"
@@ -47,9 +47,9 @@ MainMenuScreen::MainMenuScreen(const App* app)
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mTileGrid = std::make_unique<TileGrid>(mPhysWorld, i32v2(50, 50), *mTextureCache, mEcs, "data/textures/tiles.png", i32v2(10, 16), 60.0f);
+	mWorld = std::make_unique<World>(mPhysWorld, i32v2(50, 50), *mTextureCache, mEcs);
 
-	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, mEcs, *mTileGrid);
+	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, mEcs, *mWorld);
 	mSpriteFont = std::make_unique<vg::SpriteFont>();
 
 	mHumanActorFactory = std::make_unique<HumanActorFactory>(mEcs, *mTextureCache);
@@ -91,18 +91,13 @@ void MainMenuScreen::build() {
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
-		if (event.keyCode == VKEY_V) {
-			if (mTileGrid->getView() == TileGrid::View::ISO) {
-				mTileGrid->setView(TileGrid::View::TOP_DOWN);
-			}
-			else {
-				mTileGrid->setView(TileGrid::View::ISO);
-			}
+		if (event.keyCode == VKEY_B) {
+			mDebugOptions.mWireframe = !mDebugOptions.mWireframe;
 		}
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * 1.0f, 10.0f, 50.f);
+		mScale = glm::clamp(mScale + event.dy * 1.5f, 5.0f, 100.f);
 		mCamera2D->setScale(mScale);
 	});
 
@@ -131,14 +126,14 @@ void MainMenuScreen::build() {
 		vecs::EntityID newActor = 0;
 		if (event.button == vui::MouseButton::LEFT) {
 			newActor = mUndeadActorFactory->createActor(
-				mTileGrid->convertScreenCoordToWorld(mTestClick),
+				mCamera2D->convertScreenToWorld(mTestClick),
 				vio::Path("data/textures/circle_dir.png"),
 				vio::Path("")
 			);
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
 			newActor = mHumanActorFactory->createActor(
-				mTileGrid->convertScreenCoordToWorld(mTestClick),
+				mCamera2D->convertScreenToWorld(mTestClick),
 				vio::Path("data/textures/circle_dir.png"),
 				vio::Path("")
 			);
@@ -146,13 +141,13 @@ void MainMenuScreen::build() {
 
 		// Apply velocity
 		auto& physComp = mEcs.getPhysicsComponentFromEntity(newActor);
-		velocity = mTileGrid->convertScreenCoordToWorld(velocity);
+		velocity = mCamera2D->convertScreenToWorld(velocity);
 		physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
 	});
 
 
 	// Add player
-	mPlayerEntity = mPlayerActorFactory->createActor(mTileGrid->convertScreenCoordToWorld(f32v2(0.0f)),
+	mPlayerEntity = mPlayerActorFactory->createActor(mCamera2D->convertScreenToWorld(f32v2(0.0f)),
 		vio::Path("data/textures/circle_dir.png"),
 		vio::Path(""));
 }
@@ -193,14 +188,17 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 		mCamera2D->offsetPosition(offset);
 	}*/
 
-	f32v2 cameraFollow = mEcs.getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
-	cameraFollow = mTileGrid->convertWorldCoordToScreen(cameraFollow);
-	mCamera2D->setPosition(cameraFollow);
-
+	// Camera follow
+	const f32v2& playerPos = mEcs.getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
+	const f32v2& offset = mWorld->getCurrentWorldMousePos() - playerPos;
+	mCamera2D->setPosition(playerPos + offset * 0.2f);
 	mCamera2D->update();
-	mTileGrid->updateWorldMousePos(*mCamera2D.get());
 
-	mEcs.update(deltaTime, *mTileGrid);
+	// Generate Chunks
+	mWorld->getChunkOrCreateAtPosition(playerPos);
+	mWorld->updateWorldMousePos(*mCamera2D.get());
+
+	mEcs.update(deltaTime, *mWorld);
 
 	// Update
 	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);
@@ -211,12 +209,19 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	mTileGrid->draw(*mCamera2D);
+	mWorld->draw(*mCamera2D);
 
+	if (mDebugOptions.mWireframe) {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+	else {
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 
-	DebugRenderer::drawVector(f32v2(0.0f), mTileGrid->mAxis[0] * 5.0f, color4(1.0f, 0.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), -mTileGrid->mAxis[1] * 5.0f, color4(0.0f, 1.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
+	// Axis render
+	DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
+	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
+	//DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
 
 	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);
 	mEcsRenderer->renderSimpleSprites(*mCamera2D);

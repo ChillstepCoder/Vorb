@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdio>
-#include "stdafx.h"
 
 inline void printMatrix(const char* title, const f32m4& mat) {
 	printf(

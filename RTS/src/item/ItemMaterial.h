@@ -1,5 +1,4 @@
 #pragma once
-#include "stdafx.h"
 
 enum class ItemMaterial : ui8 {
 	WOOD,

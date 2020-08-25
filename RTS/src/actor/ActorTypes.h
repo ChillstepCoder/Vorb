@@ -1,5 +1,4 @@
 #pragma once
-#include "stdafx.h"
 
 #include <Vorb/ecs/Entity.h>
 

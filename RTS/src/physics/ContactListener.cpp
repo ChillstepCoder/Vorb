@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "ContactListener.h"
 
 #include <box2d/b2_contact.h>

@@ -1,6 +1,4 @@
 #pragma once
-
-#include "stdafx.h"
 #include <Vorb/ui/IGameScreen.h>
 
 #include <Vorb/graphics/Texture.h>
@@ -22,7 +20,12 @@ DECL_VG(class TextureCache);
 DECL_VUI(class InputDispatcher);
 DECL_VIO(class IOManager);
 
-class TileGrid;
+class World;
+
+// TODO: New file
+struct DebugOptions {
+	bool mWireframe = false;
+};
 
 class MainMenuScreen : public vui::IAppScreen<App>
 {
@@ -46,7 +49,7 @@ private:
 	std::unique_ptr<vg::SpriteBatch> mSb;
 	std::unique_ptr<vg::TextureCache> mTextureCache;
 	std::unique_ptr<vg::SpriteFont> mSpriteFont;
-	std::unique_ptr<TileGrid> mTileGrid;
+	std::unique_ptr<World> mWorld;
 	std::unique_ptr<Camera2D> mCamera2D;
 	vg::Texture mCircleTexture;
 
@@ -68,5 +71,7 @@ private:
 
 	f32v2 mTestClick = f32v2(0.0f);
 	vecs::EntityID mPlayerEntity = 0;
+
+	DebugOptions mDebugOptions;
 };
 

@@ -6,7 +6,6 @@
 #include <Vorb/Delegate.hpp>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/ScreenList.h>
-#include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/sound/SoundEngine.h>
 
 App::App() {

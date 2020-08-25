@@ -61,7 +61,7 @@ vg::SpriteBatch::SpriteBatch(bool isDynamic /*= true*/, bool doInit /*= false*/)
     if (doInit) init();
 }
 vg::SpriteBatch::~SpriteBatch() {
-    // Empty
+    dispose();
 }
 
 void vg::SpriteBatch::init() {

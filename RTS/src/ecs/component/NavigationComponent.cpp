@@ -4,7 +4,7 @@
 
 #include "EntityComponentSystem.h"
 
-#include "TileGrid.h"
+#include "World.h"
 
 const float MIN_DISTANCE = 0.2f;
 const float ACCELERATION = 0.013f;
@@ -12,7 +12,7 @@ constexpr int QUADRANTS = 5; //bad name
 
 const std::string& NavigationComponentTable::NAME = "navigation";
 
-inline void updateComponent(vecs::EntityID entity, NavigationComponent& cmp, EntityComponentSystem& ecs, TileGrid& world) {
+inline void updateComponent(vecs::EntityID entity, NavigationComponent& cmp, EntityComponentSystem& ecs, World& world) {
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 	const f32v2& offset = cmp.mTargetPos - myPhysCmp.getPosition();
 	const float distance2 = glm::length2(offset);
@@ -76,7 +76,7 @@ inline void updateComponent(vecs::EntityID entity, NavigationComponent& cmp, Ent
 	}
 }
 
-void NavigationComponentTable::update(EntityComponentSystem& ecs, TileGrid& world) {
+void NavigationComponentTable::update(EntityComponentSystem& ecs, World& world) {
 	// Update components
 	for (auto&& cmp : *this) {
 		if (isValid(cmp) && cmp.second.mHasTarget) {

@@ -32,6 +32,7 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <assert.h>
 
 // TODO: Distribute OpenGL from this location
 #include <GL/glew.h>
@@ -40,6 +41,7 @@
 #include <Vorb/VorbPreDecl.inl>
 
 #include <Vorb/Constants.h>
+#include <Vorb/types.h>
 
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)
