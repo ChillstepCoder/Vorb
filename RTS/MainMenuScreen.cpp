@@ -195,8 +195,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	mCamera2D->update();
 
 	// Generate Chunks
-	mWorld->getChunkOrCreateAtPosition(playerPos);
-	mWorld->updateWorldMousePos(*mCamera2D.get());
+	mWorld->update(playerPos, *mCamera2D);
 
 	mEcs.update(deltaTime, *mWorld);
 

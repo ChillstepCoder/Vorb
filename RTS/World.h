@@ -27,6 +27,7 @@ public:
 	~World();
 
 	void draw(const Camera2D& camera);
+	void update(const f32v2& playerPos, const Camera2D& camera); // TODO: Multiplayer?
 	void updateWorldMousePos(const Camera2D& camera);
 
 	const f32v2& getCurrentWorldMousePos() const { return mWorldMousePos; }
@@ -38,18 +39,29 @@ public:
 	// Internal public interface
 	Chunk* getChunkAtPosition(const f32v2& worldPos);
 	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
+	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
 
 	
 private:
+
+	// Returns true if should be removed
+	bool updateChunk(Chunk& chunk);
+	void updateChunkNeighbors(Chunk& chunk);
+	bool shouldChunkLoad(ChunkID chunkId, float addOffset = 0.0f);
+	void initChunk(Chunk& chunk, ChunkID chunkId);
+
 	// Resources
 	const EntityComponentSystem& mEcs;
 	b2World& mPhysWorld;
 	std::unique_ptr<ChunkGenerator> mChunkGenerator;
 
 	// Data
-	f32v2 mAxis[2];
 	f32v2 mWorldMousePos = f32v2(0.0f);
+	f32v2 mLoadRange = f32v2(0.0f);
+	f32v2 mLoadCenter = f32v2(0.0f);
 	bool mDirty = true;
+	
+	// TODO: Chunk paging for cache performance on updates
 	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
 
 	// Rendering

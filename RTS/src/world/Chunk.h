@@ -5,14 +5,14 @@
 #include <Vorb/graphics/SpriteBatch.h>
 
 const int CHUNK_WIDTH = 128;
+const int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 const int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 const i64 CHUNK_ID_INVALID = INT64_MAX;
-
 
 enum class ChunkState {
 	INVALID,
 	LOADING,
-	FINISHED
+	FINISHED,
 };
 
 
@@ -35,6 +35,12 @@ struct ChunkID {
 	void operator=(const ChunkID& other) { id = other.id; }
 	void operator=(ChunkID&& other) { id = other.id; }
 
+	f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
+	ChunkID getLeftID() const { return ChunkID(i32v2(pos.x - 1, pos.y)); }
+	ChunkID getTopID() const { return ChunkID(i32v2(pos.x, pos.y + 1)); }
+	ChunkID getRightID() const { return ChunkID(i32v2(pos.x + 1, pos.y)); }
+	ChunkID getBottomID() const { return ChunkID(i32v2(pos.x, pos.y - 1)); }
+
 	// Data
 	union {
 		i32v2 pos;
@@ -43,17 +49,21 @@ struct ChunkID {
 };
 
 class Chunk {
+	friend class World;
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;
 public:
 	Chunk();
+	~Chunk();
 
 	// Position in cells
 	void init(ChunkID chunkId);
+	void dispose();
 
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
 	f32v2 getWorldPos() const { return f32v2(mChunkId.pos) * (float)CHUNK_WIDTH; }
 	ChunkState getState() const { return mState; }
+	ChunkID getChunkID() const { return mChunkId; }
 
 	Tile getTileAt(unsigned x, unsigned y) const {
 		assert(x < CHUNK_WIDTH && y < CHUNK_WIDTH);
@@ -71,6 +81,16 @@ private:
 	ChunkID mChunkId;
 	Tile mTiles[CHUNK_SIZE];
 	ChunkState mState = ChunkState::INVALID;
+
+	union {
+		struct {
+			Chunk* mNeighborLeft;
+			Chunk* mNeighborTop;
+			Chunk* mNeighborRight;
+			Chunk* mNeighborBottom;
+		};
+		Chunk* mNeighbors[4];
+	};
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;

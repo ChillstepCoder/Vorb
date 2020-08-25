@@ -41,9 +41,9 @@ void EntityComponentSystem::update(float deltaTime, World& world) {
 
 void EntityComponentSystem::convertEntityToCorpse(vecs::EntityID entity) {
 	SimpleSpriteComponent& spriteComp = getSimpleSpriteComponentFromEntity(entity);
-	spriteComp.color.r *= DEAD_COLOR_MULT;
-	spriteComp.color.g *= DEAD_COLOR_MULT;
-	spriteComp.color.b *= DEAD_COLOR_MULT;
+	spriteComp.color.r = ui8((float)spriteComp.color.r * DEAD_COLOR_MULT);
+	spriteComp.color.g = ui8((float)spriteComp.color.g * DEAD_COLOR_MULT);
+	spriteComp.color.b = ui8((float)spriteComp.color.b * DEAD_COLOR_MULT);
 
 	// Change filter for no collide
 	PhysicsComponent& physComp = getPhysicsComponentFromEntity(entity);

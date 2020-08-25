@@ -25,6 +25,8 @@ static bool s_debugToggle = false;
 static bool s_wasTogglePressed = false;
 #endif
 
+const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
+
 
 World::World(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs)
 	: mEcs(ecs)
@@ -59,6 +61,28 @@ void World::draw(const Camera2D& camera) {
 	updateWorldMousePos(camera);
 }
 
+void World::update(const f32v2& playerPos, const Camera2D& camera) {
+	mLoadCenter = playerPos;
+
+	getChunkOrCreateAtPosition(playerPos);
+	updateWorldMousePos(camera);
+	
+	mLoadRange.x = std::max(camera.getScreenWidth() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
+	mLoadRange.y = std::max(camera.getScreenHeight() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
+
+	// Corners
+	for (auto it = mChunks.begin(); it != mChunks.end(); /* no iASSSSncrement */) {
+		Chunk& chunk = *it->second;
+		if (updateChunk(chunk)) {
+			chunk.dispose();
+			mChunks.erase(it++);
+		}
+		else {
+			++it;
+		}
+	}
+}
+
 void World::updateWorldMousePos(const Camera2D& camera) {
 	const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
 	mWorldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
@@ -84,17 +108,75 @@ Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
 
 Chunk* World::getChunkOrCreateAtPosition(const f32v2& worldPos) {
 	ChunkID chunkId(worldPos);
+	return getChunkOrCreateAtPosition(chunkId);
+}
+
+Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
 	auto it = mChunks.find(chunkId);
 	if (it != mChunks.end()) {
 		return it->second.get();
 	}
-	
+
 	// Create
 	auto newChunkIt = mChunks.insert(std::make_pair(chunkId, std::make_unique<Chunk>()));
 	Chunk* newChunk = newChunkIt.first->second.get();
-	newChunk->init(chunkId);
+	initChunk(*newChunk, chunkId);
 	mChunkGenerator->GenerateChunk(*newChunk);
 	return newChunk;
+}
+
+bool World::updateChunk(Chunk& chunk) {
+	if (!shouldChunkLoad(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
+		// Unload
+		return true;
+	}
+	
+	updateChunkNeighbors(chunk);
+	
+	return false;
+}
+
+void World::updateChunkNeighbors(Chunk& chunk) {
+	// Neighbors
+	ChunkID myId = chunk.getChunkID();
+	// Left
+	if (!chunk.mNeighborLeft) {
+		ChunkID leftChunk = myId.getLeftID();
+		if (shouldChunkLoad(leftChunk)) {
+			chunk.mNeighborLeft = getChunkOrCreateAtPosition(leftChunk);
+		}
+	}
+	if (!chunk.mNeighborTop) {
+		ChunkID topChunk = myId.getTopID();
+		if (shouldChunkLoad(topChunk)) {
+			chunk.mNeighborTop = getChunkOrCreateAtPosition(topChunk);
+		}
+	}
+	if (!chunk.mNeighborRight) {
+		ChunkID rightChunk = myId.getRightID();
+		if (shouldChunkLoad(rightChunk)) {
+			chunk.mNeighborRight = getChunkOrCreateAtPosition(rightChunk);
+		}
+	}
+	if (!chunk.mNeighborBottom) {
+		ChunkID bottomChunk = myId.getBottomID();
+		if (shouldChunkLoad(bottomChunk)) {
+			chunk.mNeighborBottom = getChunkOrCreateAtPosition(bottomChunk);
+		}
+	}
+}
+
+bool World::shouldChunkLoad(ChunkID chunkPos, float addOffset /* = 0.0f*/)
+{
+	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
+	const f32v2 offset = centerPos - mLoadCenter;
+
+	// TODO: only need to check this at the edges
+	return (abs(offset.x) + addOffset <= mLoadRange.x && abs(offset.y) + addOffset <= mLoadRange.y);
+}
+
+void World::initChunk(Chunk& chunk, ChunkID chunkId) {
+	chunk.init(chunkId);
 }
 
 std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
