@@ -2,8 +2,6 @@
 #include <Vorb/ecs/ECS.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 
-#include <box2d/b2_world.h>
-
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/SimpleSpriteComponent.h"
 #include "ecs/component/NavigationComponent.h"
@@ -16,11 +14,13 @@
 // TODO: ecs file?
 #include "rendering/CharacterModel.h"
 
+class World;
+
 class EntityComponentSystem : public vecs::ECS {
 public:
-	EntityComponentSystem(b2World& physWorld);
+	EntityComponentSystem(World& world);
 
-	void update(float deltaTime, World& world);
+	void update(float deltaTime);
 	void convertEntityToCorpse(vecs::EntityID entity);
 
 	DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
@@ -33,8 +33,6 @@ public:
 	DECL_COMPONENT_TABLE(mCorpseTable, CorpseComponent);
 	DECL_COMPONENT_TABLE(mCharacterModelTable, CharacterModelComponent);
 
-	b2World& getPhysWorld() { return mPhysWorld; }
-
 	PhysicsComponentTable mPhysicsTable;
 	SimpleSpriteComponentTable mSpriteTable;
 	NavigationComponentTable mNavigationTable;
@@ -45,7 +43,9 @@ public:
 	CorpseComponentTable mCorpseTable;
 	CharacterModelComponentTable mCharacterModelTable;
 
-private:
+	// Classes with World access
+	friend class PhysicsComponent;
 
-	b2World& mPhysWorld;
+private:
+	World& mWorld;
 };

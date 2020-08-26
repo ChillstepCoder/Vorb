@@ -4,9 +4,9 @@
 #include <Vorb/ecs/ECS.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 
-#include <box2d/b2_world.h>
 #include <box2d/b2_body.h>
 
+class World;
 class b2Body;
 class EntityComponentSystem;
 
@@ -44,11 +44,11 @@ public:
 
 class PhysicsComponentTable : public vecs::ComponentTable<PhysicsComponent> {
 public:
-	PhysicsComponentTable(b2World& world);
+	PhysicsComponentTable(World& world);
 
 	void update(float deltaTime);
 
 	static const std::string& NAME;
 
-	b2World& mWorld;
+	World& mWorld;
 };

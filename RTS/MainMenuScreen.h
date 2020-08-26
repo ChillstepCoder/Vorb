@@ -9,7 +9,6 @@
 
 class App;
 class Camera2D;
-class ContactListener;
 class UndeadActorFactory;
 class HumanActorFactory;
 class PlayerActorFactory;
@@ -21,6 +20,7 @@ DECL_VUI(class InputDispatcher);
 DECL_VIO(class IOManager);
 
 class World;
+class b2World;
 
 // TODO: New file
 struct DebugOptions {
@@ -55,16 +55,14 @@ private:
 
 	std::unique_ptr<vio::IOManager> mIoManager;
 
-	b2World mPhysWorld;
 
-	EntityComponentSystem mEcs;
+	std::unique_ptr<EntityComponentSystem> mEcs;
 	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
 
 	std::unique_ptr<HumanActorFactory> mHumanActorFactory;
 	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
 	std::unique_ptr<PlayerActorFactory> mPlayerActorFactory;
 
-	std::unique_ptr<ContactListener> mContactListener;
 
 	float mScale = 50.0f;
 	float mFps = 0.0f;

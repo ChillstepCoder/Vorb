@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "PhysicsComponent.h"
 
+#include "World.h"
 #include "EntityComponentSystem.h"
 
 #include <box2d/b2_body.h>
@@ -57,7 +58,7 @@ inline void updateComponent(PhysicsComponent& cmp, float deltaTime) {
 }
 
 
-PhysicsComponentTable::PhysicsComponentTable(b2World& world) 
+PhysicsComponentTable::PhysicsComponentTable(World& world)
 	: mWorld(world) {
 
 }
@@ -97,12 +98,12 @@ void PhysicsComponent::initBody(EntityComponentSystem& parentSystem, const f32v2
 		if (isStatic) {
 			bodyDef.type = b2_staticBody;
 			bodyDef.position.Set(centerPosition.x, centerPosition.y);
-			mBody = parentSystem.getPhysWorld().CreateBody(&bodyDef);
+			mBody = parentSystem.mWorld.createPhysBody(&bodyDef);
 		}
 		else {
 			bodyDef.type = b2_dynamicBody;
 			bodyDef.position.Set(centerPosition.x, centerPosition.y);
-			mBody = parentSystem.getPhysWorld().CreateBody(&bodyDef);
+			mBody = parentSystem.mWorld.createPhysBody(&bodyDef);
 			mBody->SetLinearDamping(0.1f);
 		}
 	}
@@ -115,19 +116,16 @@ void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape
 
 	switch (shape) {
 		case ColliderShapes::SPHERE: {
-			// TODO: Move this into the physics component?
-			{ // box2d
-				b2CircleShape dynamicCircle;
-				dynamicCircle.m_radius = halfWidth;
-				mCollisionRadius = dynamicCircle.m_radius;
+			b2CircleShape dynamicCircle;
+			dynamicCircle.m_radius = halfWidth;
+			mCollisionRadius = dynamicCircle.m_radius;
 
-				b2FixtureDef fixtureDef;
-				fixtureDef.shape = &dynamicCircle;
-				fixtureDef.density = 1.0f;
-				fixtureDef.userData = reinterpret_cast<void*>(entityId);
+			b2FixtureDef fixtureDef;
+			fixtureDef.shape = &dynamicCircle;
+			fixtureDef.density = 1.0f;
+			fixtureDef.userData = reinterpret_cast<void*>(entityId);
 
-				mBody->CreateFixture(&fixtureDef);
-			}
+			mBody->CreateFixture(&fixtureDef);
 			break;
 		}
 		case ColliderShapes::NONE:

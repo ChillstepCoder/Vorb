@@ -4,8 +4,6 @@
 #include <functional>
 #include <optional>
 
-#include <box2d/b2_world.h>
-
 #include "actor/ActorTypes.h"
 #include "TileSet.h"
 #include "world/Tile.h"
@@ -15,19 +13,26 @@
 DECL_VG(class SpriteBatch);
 DECL_VG(class TextureCache)
 
+struct b2BodyDef;
+class b2Body;
+class b2World;
 class Camera2D;
+class ContactListener;
 class ChunkRenderer;
 class ChunkGenerator;
 class EntityComponentSystem;
 
 class World
 {
+	friend class EntityComponentSystem;
 public:
-	World(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs);
+	World(vg::TextureCache& textureCache);
 	~World();
 
+
+	void init(EntityComponentSystem& ecs);
 	void draw(const Camera2D& camera);
-	void update(const f32v2& playerPos, const Camera2D& camera); // TODO: Multiplayer?
+	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera); // TODO: Multiplayer?
 	void updateWorldMousePos(const Camera2D& camera);
 
 	const f32v2& getCurrentWorldMousePos() const { return mWorldMousePos; }
@@ -35,6 +40,8 @@ public:
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except = ENTITY_ID_NONE);
+
+	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 
 	// Internal public interface
 	Chunk* getChunkAtPosition(const f32v2& worldPos);
@@ -51,8 +58,9 @@ private:
 	void initChunk(Chunk& chunk, ChunkID chunkId);
 
 	// Resources
-	const EntityComponentSystem& mEcs;
-	b2World& mPhysWorld;
+	EntityComponentSystem* mEcs = nullptr;
+	std::unique_ptr<b2World> mPhysWorld;
+	std::unique_ptr<ContactListener> mContactListener;
 	std::unique_ptr<ChunkGenerator> mChunkGenerator;
 
 	// Data

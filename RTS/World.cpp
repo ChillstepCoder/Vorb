@@ -6,12 +6,14 @@
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
+#include "physics/ContactListener.h"
 
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include <box2d/b2_world.h>
 #include <box2d/b2_fixture.h>
 
 #include "physics/PhysQueryCallback.h"
@@ -28,15 +30,22 @@ static bool s_wasTogglePressed = false;
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 
-World::World(b2World& physWorld, const i32v2& dims, vg::TextureCache& textureCache, EntityComponentSystem& ecs)
-	: mEcs(ecs)
-	, mPhysWorld(physWorld) {
+World::World(vg::TextureCache& textureCache) {
 	mChunkRenderer = std::make_unique<ChunkRenderer>(textureCache);
 	mChunkGenerator = std::make_unique<ChunkGenerator>();
 }
 
 World::~World() {
 
+}
+
+void World::init(EntityComponentSystem& ecs) {
+	assert(!mEcs);
+	mEcs = &ecs;
+	mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
+
+	mContactListener = std::make_unique<ContactListener>(*mEcs);
+	mPhysWorld->SetContactListener(mContactListener.get());
 }
 
 void World::draw(const Camera2D& camera) {
@@ -61,7 +70,9 @@ void World::draw(const Camera2D& camera) {
 	updateWorldMousePos(camera);
 }
 
-void World::update(const f32v2& playerPos, const Camera2D& camera) {
+void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
+	assert(mEcs);
+
 	mLoadCenter = playerPos;
 
 	getChunkOrCreateAtPosition(playerPos);
@@ -81,6 +92,9 @@ void World::update(const f32v2& playerPos, const Camera2D& camera) {
 			++it;
 		}
 	}
+
+	// Update physics
+	mPhysWorld->Step(deltaTime, 1, 1);
 }
 
 void World::updateWorldMousePos(const Camera2D& camera) {
@@ -190,11 +204,11 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	// TODO: Components as well? Better lookup?
 	std::vector<EntityDistSortKey> entities;
 
-	PhysQueryCallback queryCallBack(entities, pos, mEcs.getPhysicsComponents(), includeMask, excludeMask, radius, except);
+	PhysQueryCallback queryCallBack(entities, pos, mEcs->getPhysicsComponents(), includeMask, excludeMask, radius, except);
 	b2AABB aabb;
 	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
-	mPhysWorld.QueryAABB(&queryCallBack, aabb);
+	mPhysWorld->QueryAABB(&queryCallBack, aabb);
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
@@ -271,8 +285,8 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 		}
 	}
 
-	ArcQueryCallback queryCallBack(entities, pos, mEcs.getPhysicsComponents(), includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
-	mPhysWorld.QueryAABB(&queryCallBack, aabb);
+	ArcQueryCallback queryCallBack(entities, pos, mEcs->getPhysicsComponents(), includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
+	mPhysWorld->QueryAABB(&queryCallBack, aabb);
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
@@ -297,4 +311,8 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 #endif
 
 	return entities;
+}
+
+b2Body* World::createPhysBody(const b2BodyDef* bodyDef) {
+	return mPhysWorld->CreateBody(bodyDef);
 }

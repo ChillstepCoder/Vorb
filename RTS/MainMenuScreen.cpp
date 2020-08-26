@@ -29,9 +29,7 @@
 #include "DebugRenderer.h"
 
 MainMenuScreen::MainMenuScreen(const App* app) 
-	: IAppScreen<App>(app)
-	, mPhysWorld(b2Vec2(0.0f, 0.0f))
-	, mEcs(mPhysWorld){
+	: IAppScreen<App>(app) {
 
 	// TODO: This is kinda stupid
 	if (WeaponRegistry::s_allWeaponItems.empty()) {
@@ -47,17 +45,15 @@ MainMenuScreen::MainMenuScreen(const App* app)
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mWorld = std::make_unique<World>(mPhysWorld, i32v2(50, 50), *mTextureCache, mEcs);
+	mWorld = std::make_unique<World>(*mTextureCache);
+	mEcs = std::make_unique<EntityComponentSystem>(*mWorld);
 
-	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, mEcs, *mWorld);
+	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, *mEcs, *mWorld);
 	mSpriteFont = std::make_unique<vg::SpriteFont>();
 
-	mHumanActorFactory = std::make_unique<HumanActorFactory>(mEcs, *mTextureCache);
-	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(mEcs, *mTextureCache);
-	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(mEcs, *mTextureCache);
-
-	mContactListener = std::make_unique<ContactListener>(mEcs);
-	mPhysWorld.SetContactListener(mContactListener.get());
+	mHumanActorFactory = std::make_unique<HumanActorFactory>(*mEcs, *mTextureCache);
+	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mTextureCache);
+	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mTextureCache);
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
 	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
@@ -79,6 +75,8 @@ i32 MainMenuScreen::getPreviousScreen() const {
 }
 
 void MainMenuScreen::build() {
+	mWorld->init(*mEcs);
+
 	mSb->init();
 	mTextureCache->init(mIoManager.get());
 	mSpriteFont->init("data/fonts/chintzy.ttf", 32);
@@ -140,7 +138,7 @@ void MainMenuScreen::build() {
 		}
 
 		// Apply velocity
-		auto& physComp = mEcs.getPhysicsComponentFromEntity(newActor);
+		auto& physComp = mEcs->getPhysicsComponentFromEntity(newActor);
 		velocity = velocity;
 		physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
 	});
@@ -189,15 +187,14 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	}*/
 
 	// Camera follow
-	const f32v2& playerPos = mEcs.getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
+	const f32v2& playerPos = mEcs->getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
 	const f32v2& offset = mWorld->getCurrentWorldMousePos() - playerPos;
 	mCamera2D->setPosition(playerPos + offset * 0.2f);
 	mCamera2D->update();
 
-	// Generate Chunks
-	mWorld->update(playerPos, *mCamera2D);
+	mWorld->update(deltaTime, playerPos, *mCamera2D);
 
-	mEcs.update(deltaTime, *mWorld);
+	mEcs->update(deltaTime);
 
 	// Update
 	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);

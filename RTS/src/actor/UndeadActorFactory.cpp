@@ -3,10 +3,6 @@
 
 #include <Vorb/graphics/TextureCache.h>
 
-#include <box2d/b2_body.h>
-#include <box2d/b2_circle_shape.h>
-#include <box2d/b2_fixture.h>
-
 #include "EntityComponentSystem.h"
 
 const float SPRITE_RADIUS = 0.3f; // In meters
@@ -27,26 +23,9 @@ vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio:
 	physComp.mFlags = 0;
 	physComp.mQueryActorTypes = ACTORTYPE_UNDEAD;
 
-	{ // box2d
-		b2BodyDef bodyDef;
-		bodyDef.type = b2_dynamicBody;
-		bodyDef.position.Set(position.x, position.y);
-		b2Body* body = mEcs.getPhysWorld().CreateBody(&bodyDef);
-		body->SetLinearDamping(0.1f);
-
-		b2CircleShape dynamicCircle;
-		dynamicCircle.m_radius = SPRITE_RADIUS;
-		physComp.mCollisionRadius = dynamicCircle.m_radius;
-
-		b2FixtureDef fixtureDef;
-		fixtureDef.shape = &dynamicCircle;
-		fixtureDef.density = 1.0f;
-		fixtureDef.friction = 11.5f;
-		fixtureDef.userData = reinterpret_cast<void*>(newEntity);
-
-		body->CreateFixture(&fixtureDef);
-		physComp.mBody = body;
-	}
+	// Setup the physics component
+	physComp.initBody(mEcs, position, false /*isStatic*/);
+	physComp.addCollider(newEntity, ColliderShapes::SPHERE, SPRITE_RADIUS);
 
 	auto spriteCompPair = mEcs.addSimpleSpriteComponent(newEntity);
 	auto& spriteComp = spriteCompPair.second;
