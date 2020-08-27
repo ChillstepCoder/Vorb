@@ -110,7 +110,8 @@ void MainMenuScreen::build() {
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
 		constexpr float VEL_MULT = 0.0001f;
 		constexpr float VEL_EXP = 0.4f;
-		const f32v2 offset = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y)) - mTestClick;
+		const f32v2 worldPos = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y));
+		const f32v2 offset = worldPos - mTestClick;
 		const float mag = glm::length(offset);
 		const float power = pow(mag * VEL_MULT, VEL_EXP);
 		f32v2 velocity;
@@ -123,24 +124,30 @@ void MainMenuScreen::build() {
 
 		vecs::EntityID newActor = 0;
 		if (event.button == vui::MouseButton::LEFT) {
-			newActor = mUndeadActorFactory->createActor(
-				mTestClick,
-				vio::Path("data/textures/circle_dir.png"),
-				vio::Path("")
-			);
+            /*newActor = mUndeadActorFactory->createActor(
+                mTestClick,
+                vio::Path("data/textures/circle_dir.png"),
+                vio::Path("")
+            );*/
+			TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+			handle.chunk->setTileAt(handle.index, Tile::TILE_STONE_1);
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
-			newActor = mHumanActorFactory->createActor(
-				mTestClick,
-				vio::Path("data/textures/circle_dir.png"),
-				vio::Path("")
-			);
+            /*newActor = mHumanActorFactory->createActor(
+                mTestClick,
+                vio::Path("data/textures/circle_dir.png"),
+                vio::Path("")
+            );*/
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+            handle.chunk->setTileAt(handle.index, Tile::TILE_GRASS_0);
 		}
 
 		// Apply velocity
-		auto& physComp = mEcs->getPhysicsComponentFromEntity(newActor);
-		velocity = velocity;
-		physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
+		if (newActor) {
+			auto& physComp = mEcs->getPhysicsComponentFromEntity(newActor);
+			velocity = velocity;
+			physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
+		}
 	});
 
 

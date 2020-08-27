@@ -1,6 +1,8 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/ui/InputDispatcher.h"
 
+#include <stdexcept>
+
 #include "Vorb/ui/InputDispatcherEventCatcher.h"
 #include "Vorb/ui/GameWindow.h"
 #include "Vorb/ui/KeyMappings.inl"
