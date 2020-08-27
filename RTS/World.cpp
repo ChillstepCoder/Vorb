@@ -46,6 +46,8 @@ void World::init(EntityComponentSystem& ecs) {
 
 	mContactListener = std::make_unique<ContactListener>(*mEcs);
 	mPhysWorld->SetContactListener(mContactListener.get());
+
+	initTileData();
 }
 
 void World::draw(const Camera2D& camera) {

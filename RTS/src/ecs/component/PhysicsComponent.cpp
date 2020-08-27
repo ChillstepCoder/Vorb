@@ -72,7 +72,7 @@ inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime
 	const float circleRadius = cmp.mCollisionRadius;
 	for (int i = 0; i < 4; ++i) {
 		TileHandle handle = world.getTileHandleAtWorldPos(cornerPositions[i]);
-		if (handle.tile == Tile::TILE_STONE_1) {
+		if (getTileData(handle.tile).hasCollision) {
 			const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
 			f32v2 offsetToCircle = position - tileCenter;
             offsetToCircle.x = vmath::clamp(offsetToCircle.x, -0.5f, 0.5f);

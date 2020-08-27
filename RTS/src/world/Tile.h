@@ -7,3 +7,10 @@ enum class Tile : ui8 {
 	TILE_STONE_2 = 70,
 	TILE_INVALID = 255
 };
+
+struct TileData {
+	bool hasCollision = false;
+};
+
+const TileData& getTileData(Tile tile);
+void initTileData();
