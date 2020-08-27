@@ -22,6 +22,12 @@ class ChunkRenderer;
 class ChunkGenerator;
 class EntityComponentSystem;
 
+struct TileHandle {
+	Chunk* chunk = nullptr;
+	Tile tile;
+	TileIndex index;
+};
+
 class World
 {
 	friend class EntityComponentSystem;
@@ -36,7 +42,6 @@ public:
 	void updateWorldMousePos(const Camera2D& camera);
 
 	const f32v2& getCurrentWorldMousePos() const { return mWorldMousePos; }
-	int getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except = ENTITY_ID_NONE);
@@ -47,6 +52,9 @@ public:
 	Chunk* getChunkAtPosition(const f32v2& worldPos);
 	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
 	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
+
+	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
+	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
 
 	
 private:

@@ -35,7 +35,7 @@ public:
 
 	unsigned mQueryActorTypes = ACTORTYPE_NONE;
 	f32v2 mDir = f32v2(0.0f, 1.0f);
-	float mCollisionRadius = 0.0f; // TODO: needed?
+	float mCollisionRadius = 0.0f;
 	bool mFrictionEnabled = true; //TODO: Bit
 	ui8 mFlags = 0u;
 

@@ -42,7 +42,7 @@ inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 }
 
 // TODO: Measure perf of this vs non inline vs macro
-inline void updateComponent(PhysicsComponent& cmp, float deltaTime) {
+inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime) {
 	const f32v2& vel = cmp.getLinearVelocity();
 	// TODO: TestBit
 	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(vel.x) > 0.0001f || glm::abs(vel.y) >= 0.0001f)) {
@@ -55,6 +55,87 @@ inline void updateComponent(PhysicsComponent& cmp, float deltaTime) {
 	//if (cmp.mFrictionEnabled) {
 	//	cmp.mVelocity -= cmp.mVelocity * (1.0f - cmp.mFrictionCoef) * deltaTime; // TODO: Deterministic?
 	//}
+
+	const f32v2& position = cmp.getPosition();
+
+	// TODO: Handle larger colliders
+	const f32v2 cornerPositions[4] = {
+		position + f32v2(-0.5f,-0.5f), // Bottom left
+		position + f32v2( 0.5f,-0.5f), // Bottom right
+		position + f32v2(-0.5f, 0.5f), // Top left
+		position + f32v2( 0.5f, 0.5f), // Top right
+	};
+
+	const float VEL_DAMPING = 0.75f;
+
+	// TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
+	const float circleRadius = cmp.mCollisionRadius;
+	for (int i = 0; i < 4; ++i) {
+		TileHandle handle = world.getTileHandleAtWorldPos(cornerPositions[i]);
+		if (handle.tile == Tile::TILE_STONE_1) {
+			const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
+			f32v2 offsetToCircle = position - tileCenter;
+            offsetToCircle.x = vmath::clamp(offsetToCircle.x, -0.5f, 0.5f);
+            offsetToCircle.y = vmath::clamp(offsetToCircle.y, -0.5f, 0.5f);
+			const f32v2 closestPoint = tileCenter + offsetToCircle;
+			const f32v2 offsetToWall = closestPoint - position;
+			const float dx2 = offsetToWall.x * offsetToWall.x;
+			const float dy2 = offsetToWall.y * offsetToWall.y;
+			if (dx2 + dy2 < circleRadius * circleRadius) {
+				// Collision!
+                b2Vec2 impulse;
+				b2Vec2 currentVelocity = cmp.mBody->GetLinearVelocity();
+				if (dx2 > dy2) {
+					// X collision
+					if (offsetToWall.x < 0.0f) {
+						// Colliding with left wall
+                        impulse.x = 0.1f;
+                        if (currentVelocity.x < 0.0f) {
+                            currentVelocity.x = -currentVelocity.x * VEL_DAMPING;
+							cmp.mBody->SetLinearVelocity(currentVelocity);
+						}
+						const float collisionDepth = circleRadius + offsetToWall.x;
+						cmp.mBody->SetTransform(b2Vec2(position.x + collisionDepth, position.y), 0.0f);
+					}
+					else {
+						// Colliding with right wall
+						impulse.x = -0.1f;
+                        if (currentVelocity.x > 0.0f) {
+                            currentVelocity.x = -currentVelocity.x * VEL_DAMPING;
+                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                        }
+                        const float collisionDepth = circleRadius - offsetToWall.x;
+                        cmp.mBody->SetTransform(b2Vec2(position.x - collisionDepth, position.y), 0.0f);
+					}
+					impulse.y = 0.0f;
+				}
+				else {
+                    // Y collision
+                    if (offsetToWall.y < 0.0f) {
+                        // Colliding with bottom wall
+                        impulse.y = 0.1f;
+                        if (currentVelocity.y < 0.0f) {
+                            currentVelocity.y = -currentVelocity.y * VEL_DAMPING;
+                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                        }
+                        const float collisionDepth = circleRadius + offsetToWall.y;
+                        cmp.mBody->SetTransform(b2Vec2(position.x, position.y + collisionDepth), 0.0f);
+                    }
+                    else {
+                        // Colliding with top wall
+						impulse.y = -0.1f;
+                        if (currentVelocity.y > 0.0f) {
+                            currentVelocity.y = -currentVelocity.y * VEL_DAMPING;
+                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                        }
+                        const float collisionDepth = circleRadius - offsetToWall.y;
+                        cmp.mBody->SetTransform(b2Vec2(position.x, position.y - collisionDepth), 0.0f);
+                    }
+                    impulse.x = 0.0f;
+				}
+			}
+		}
+	}
 }
 
 
@@ -88,7 +169,7 @@ void PhysicsComponentTable::update(float deltaTime) {
 
 	// Update components
 	for (auto&& cmp : *this) {
-		updateComponent(cmp.second, deltaTime);
+		updateComponent(mWorld, cmp.second, deltaTime);
 	}
 }
 

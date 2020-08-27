@@ -41,6 +41,7 @@
 #include <Vorb/graphics/gtypes.h>
 #include <Vorb/VorbPreDecl.inl>
 
+#include <Vorb/math/VorbMath.hpp>
 #include <Vorb/Constants.h>
 #include <Vorb/types.h>
 
@@ -65,11 +66,11 @@ struct b2Vec2;
 #define M_LOG10E   0.434294481903251827651f  // log10(e)
 #define M_LN2      0.693147180559945309417f  // ln(2)
 #define M_LN10     2.30258509299404568402f   // ln(10)
-#define M_PI       3.14159265358979323846f   // pi
-#define M_PI_2     1.57079632679489661923f   // pi/2
-#define M_PI_4     0.785398163397448309616f  // pi/4
-#define M_1_PI     0.318309886183790671538f  // 1/pi
-#define M_2_PI     0.636619772367581343076f  // 2/pi
+#define M_PIf       3.14159265358979323846f   // pi
+#define M_PI_2f     1.57079632679489661923f   // pi/2
+#define M_PI_4f     0.785398163397448309616f  // pi/4
+#define M_1_PIf     0.318309886183790671538f  // 1/pi
+#define M_2_PIf     0.636619772367581343076f  // 2/pi
 #define M_2_SQRTPI 1.12837916709551257390f   // 2/sqrt(pi)
 #define M_SQRT2    1.41421356237309504880f   // sqrt(2)
 #define M_SQRT1_2  0.707106781186547524401f  // 1/sqrt(2)
@@ -77,6 +78,8 @@ struct b2Vec2;
 
 #define DEG_TO_RAD(x) ((x) * M_PI / 180.0f)
 #define RAD_TO_DEG(x) ((x) * 180.0f / M_PI)
+
+typedef ui16 TileIndex;
 
 template<typename E>
 constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {

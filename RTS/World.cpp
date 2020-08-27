@@ -102,14 +102,6 @@ void World::updateWorldMousePos(const Camera2D& camera) {
 	mWorldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
 }
 
-int World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) {
-	/*float cameraScale = camera.getScale();
-
-	f32v2 worldPos = convertScreenCoordToWorld(screenPos);
-	return yIndex * mDims.x + xIndex;*/
-	return 0;
-}
-
 Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
 	ChunkID chunkId(worldPos);
 	std::map<ChunkID, std::unique_ptr<Chunk>>::iterator it = mChunks.find(chunkId);
@@ -137,6 +129,23 @@ Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
 	initChunk(*newChunk, chunkId);
 	mChunkGenerator->GenerateChunk(*newChunk);
 	return newChunk;
+}
+
+TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) {
+	assert(false); // Implement!
+	return TileHandle();
+}
+
+TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
+	TileHandle handle;
+	handle.chunk = getChunkAtPosition(worldPos);
+	if (handle.chunk) {
+		unsigned x = (unsigned)floor(worldPos.x) & (CHUNK_WIDTH - 1); // Fast modulus
+		unsigned y = (unsigned)floor(worldPos.y) & (CHUNK_WIDTH - 1); // Fast modulus
+		handle.index = ui16(y * CHUNK_WIDTH + x);
+		handle.tile = handle.chunk->getTileAt(handle.index);
+	}
+	return handle;
 }
 
 bool World::updateChunk(Chunk& chunk) {

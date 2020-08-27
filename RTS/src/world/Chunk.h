@@ -70,12 +70,23 @@ public:
 		assert(mState == ChunkState::FINISHED);
 		return mTiles[y * CHUNK_WIDTH + x];
 	}
+    Tile getTileAt(TileIndex i) const {
+        assert(i < CHUNK_SIZE);
+        assert(mState == ChunkState::FINISHED);
+        return mTiles[i];
+    }
 
 	void setTileAt(unsigned x, unsigned y, Tile tile) {
 		assert(x < CHUNK_WIDTH && y < CHUNK_WIDTH);
 		mTiles[y * CHUNK_WIDTH + x] = tile;
 		mChunkRenderData.mDirty = true;
 	}
+
+    void setTileAt(TileIndex i, Tile tile) {
+		assert(i < CHUNK_SIZE);
+        mTiles[i] = tile;
+        mChunkRenderData.mDirty = true;
+    }
 
 private:
 	ChunkID mChunkId;

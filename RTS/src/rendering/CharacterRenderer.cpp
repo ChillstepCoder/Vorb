@@ -29,7 +29,7 @@ void CharacterRenderer::render(vg::SpriteBatch& sb, const CharacterModel& model,
 		index = CHARACTER_MODEL_TEXTURE_SIDE;
 	}
 
-	std::cout << angle << " " << index << std::endl;
+	//std::cout << angle << " " << index << std::endl;
 
 	static const float BODY_SIZE = 2.0f;
 	static const float HEAD_SIZE = 2.0f;

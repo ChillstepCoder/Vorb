@@ -34,7 +34,7 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 	// mutable render data
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
 	const i32v2& pos = chunk.getChunkPos();
-	const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH - 1);
+	const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
 
 	if (!renderData.mSb) {
 		renderData.mSb = std::make_unique<vg::SpriteBatch>(true, true);
