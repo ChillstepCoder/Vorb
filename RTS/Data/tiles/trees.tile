@@ -1,0 +1,8 @@
+tree_large:
+  tex: tree_large
+  dims: [3,3]
+  col: 2
+tree_small:
+  tex: tree_small
+  dims: [1,2]
+  col: 1

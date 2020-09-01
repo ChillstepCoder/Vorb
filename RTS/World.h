@@ -11,7 +11,6 @@
 #include "world/Chunk.h"
 
 DECL_VG(class SpriteBatch);
-DECL_VG(class TextureCache)
 
 struct b2BodyDef;
 class b2Body;
@@ -21,6 +20,7 @@ class ContactListener;
 class ChunkRenderer;
 class ChunkGenerator;
 class EntityComponentSystem;
+class ResourceManager;
 
 struct TileHandle {
 	Chunk* chunk = nullptr;
@@ -32,7 +32,7 @@ class World
 {
 	friend class EntityComponentSystem;
 public:
-	World(vg::TextureCache& textureCache);
+	World(ResourceManager& resourceManager);
 	~World();
 
 

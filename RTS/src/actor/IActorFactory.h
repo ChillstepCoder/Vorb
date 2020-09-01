@@ -2,14 +2,14 @@
 #include <Vorb/ecs/Entity.h>
 
 DECL_VIO(class Path);
-DECL_VG(class TextureCache);
 
+class ResourceManager;
 class EntityComponentSystem;
 
 class IActorFactory {
 public:
 	IActorFactory() = delete;
-	IActorFactory(EntityComponentSystem& ecs, vg::TextureCache& textureCache) : mEcs(ecs), mTextureCache(textureCache) { };
+	IActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager) : mEcs(ecs), mResourceManager(resourceManager) { };
 	virtual ~IActorFactory() = default;
 
 	// TODO??
@@ -17,5 +17,5 @@ public:
 
 protected:
 	EntityComponentSystem& mEcs;
-	vg::TextureCache& mTextureCache;
+	ResourceManager& mResourceManager;
 };

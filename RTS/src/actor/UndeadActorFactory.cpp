@@ -1,20 +1,22 @@
 #include "stdafx.h"
 #include "actor/UndeadActorFactory.h"
 
+#include "ResourceManager.h"
+
 #include <Vorb/graphics/TextureCache.h>
 
 #include "EntityComponentSystem.h"
 
 const float SPRITE_RADIUS = 0.3f; // In meters
 
-UndeadActorFactory::UndeadActorFactory(EntityComponentSystem& ecs, vg::TextureCache& textureCache)
-	: IActorFactory(ecs, textureCache) {
+UndeadActorFactory::UndeadActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager)
+	: IActorFactory(ecs, resourceManager) {
 }
 
 vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
 	UNUSED(definitionFile);
 
-	VGTexture texture = mTextureCache.addTexture(texturePath).id;
+	VGTexture texture = mResourceManager.getTextureCache().addTexture(texturePath).id;
 
 	// Create physics entity
 	vecs::EntityID newEntity = mEcs.addEntity();
@@ -43,7 +45,7 @@ vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio:
 
 	// TMP
 	auto& characterModelComp = static_cast<EntityComponentSystem&>(mEcs).addCharacterModelComponent(newEntity).second;
-	characterModelComp.mModel.load(mTextureCache, "face/male/narrow_wide", "body/muscular", "hair/allback2");
+	characterModelComp.mModel.load(mResourceManager.getTextureCache(), "face/male/narrow_wide", "body/muscular", "hair/allback2");
 	characterModelComp.mPhysicsComponent = static_cast<EntityComponentSystem&>(mEcs).mPhysicsTable.getComponentID(newEntity);
 
 	return newEntity;

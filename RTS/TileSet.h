@@ -5,6 +5,7 @@ DECL_VG(class TextureCache);
 
 #include <Vorb/graphics/Texture.h>
 
+// TODO: Is this deprecated?
 class TileSet
 {
 public:

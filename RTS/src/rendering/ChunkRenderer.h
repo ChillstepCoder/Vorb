@@ -3,14 +3,14 @@
 #include "world/Chunk.h"
 
 DECL_VG(class SpriteBatch);
-DECL_VG(class TextureCache);
 
+class ResourceManager;
 class Camera2D;
 class TileSet;
 
 class ChunkRenderer {
 public:
-	ChunkRenderer(vg::TextureCache& textureCache);
+	ChunkRenderer(ResourceManager& resourceManager);
 	~ChunkRenderer();
 
 	// Different rendering methods
@@ -26,5 +26,6 @@ private:
 	void UpdateMesh(const Chunk& chunk);
 
 	std::unique_ptr<TileSet> mTileSet;
+	ResourceManager& mResourceManager;
 };
 

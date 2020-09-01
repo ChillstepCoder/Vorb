@@ -78,7 +78,7 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	// nan check
 	// Reduce speed for backstep
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
-	speed *= 1.0 - (speedLerp * 0.5f);
+	speed *= 1.0f - (speedLerp * 0.5f);
 
 	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
 	f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();

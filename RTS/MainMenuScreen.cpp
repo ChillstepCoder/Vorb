@@ -3,7 +3,6 @@
 
 #include "App.h"
 
-#include <Vorb/io/IOManager.h>
 #include <Vorb/math/VorbMath.hpp>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
@@ -24,6 +23,8 @@
 #include "actor/UndeadActorFactory.h"
 #include "actor/PlayerActorFactory.h"
 
+#include "ResourceManager.h"
+
 #include "physics/ContactListener.h"
 
 #include "DebugRenderer.h"
@@ -39,21 +40,19 @@ MainMenuScreen::MainMenuScreen(const App* app)
 	}
 
 	mSb = std::make_unique<vg::SpriteBatch>();
-	mTextureCache = std::make_unique<vg::TextureCache>();
-
-	mIoManager = std::make_unique<vio::IOManager>();
+	mResourceManager = std::make_unique<ResourceManager>();
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mWorld = std::make_unique<World>(*mTextureCache);
+	mWorld = std::make_unique<World>(*mResourceManager);
 	mEcs = std::make_unique<EntityComponentSystem>(*mWorld);
 
-	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mTextureCache, *mEcs, *mWorld);
+	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mResourceManager, *mEcs, *mWorld);
 	mSpriteFont = std::make_unique<vg::SpriteFont>();
 
-	mHumanActorFactory = std::make_unique<HumanActorFactory>(*mEcs, *mTextureCache);
-	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mTextureCache);
-	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mTextureCache);
+	mHumanActorFactory = std::make_unique<HumanActorFactory>(*mEcs, *mResourceManager);
+	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mResourceManager);
+	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mResourceManager);
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
 	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
@@ -76,16 +75,17 @@ i32 MainMenuScreen::getPreviousScreen() const {
 
 void MainMenuScreen::build() {
 	mWorld->init(*mEcs);
-
 	mSb->init();
-	mTextureCache->init(mIoManager.get());
 	mSpriteFont->init("data/fonts/chintzy.ttf", 32);
 
-	mCircleTexture = mTextureCache->addTexture("data/textures/circle_dir.png");
+	mCircleTexture = mResourceManager->getTextureCache().addTexture("data/textures/circle_dir.png");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 	mCamera2D->setScale(mScale);
+
+    mResourceManager->loadResources("data/textures");
+    mResourceManager->loadResources("data/tiles");
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
@@ -129,8 +129,8 @@ void MainMenuScreen::build() {
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
             );*/
-			TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-			handle.chunk->setTileAt(handle.index, Tile::TILE_STONE_1);
+			//TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+			//handle.chunk->setTileAt(handle.index, Tile::TILE_STONE_1);
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
             /*newActor = mHumanActorFactory->createActor(
@@ -138,8 +138,8 @@ void MainMenuScreen::build() {
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
             );*/
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-            handle.chunk->setTileAt(handle.index, Tile::TILE_GRASS_0);
+            //TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+            //handle.chunk->setTileAt(handle.index, Tile::TILE_GRASS_0);
 		}
 
 		// Apply velocity
@@ -159,7 +159,6 @@ void MainMenuScreen::build() {
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
 	mSb->dispose();
-	mTextureCache->dispose();
 }
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
