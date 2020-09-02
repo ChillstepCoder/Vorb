@@ -123,7 +123,7 @@ void vg::SpriteBatch::begin() {
     std::vector<Batch>().swap(m_batches);
 }
 
-void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuadRotated,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -138,7 +138,7 @@ void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, f32v2* uvTiling, const f3
                           depth);
 }
 
-void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(ui32 t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuadRotated,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -150,7 +150,7 @@ void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, f32v2* uvTiling, const f32v2& 
                           tint,
                           depth);
 }
-void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuadOffset,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -165,7 +165,7 @@ void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, f32v2* uvTiling, const f3
                           depth);
 }
 
-void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(ui32 t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuadOffset,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -178,7 +178,7 @@ void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, f32v2* uvTiling, const f32v2& 
                           depth);
 }
 
-void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, f32v2* uvTiling, const f32v2& position, const f32v2& size, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& size, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuad,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -193,7 +193,7 @@ void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, f32v2* uvTiling, const f3
                           depth);
 }
 
-void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, f32v2* uvTiling, const f32v2& position, const f32v2& size, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(ui32 t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& size, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuad,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -206,7 +206,7 @@ void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, f32v2* uvTiling, const f32v2& 
                           depth);
 }
 
-void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, const f32v2& position, const f32v2& size, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(VGTexture t, const f32v4* uvRect, const f32v2& position, const f32v2& size, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuad,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),
@@ -221,7 +221,7 @@ void vg::SpriteBatch::draw(VGTexture t, f32v4* uvRect, const f32v2& position, co
                           depth);
 }
 
-void vg::SpriteBatch::draw(ui32 t, f32v4* uvRect, const f32v2& position, const f32v2& size, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
+void vg::SpriteBatch::draw(ui32 t, const f32v4* uvRect, const f32v2& position, const f32v2& size, const ColorRGBA8& tint, f32 depth /*= 0.0f*/) {
     m_glyphs.emplace_back(&SpriteBatch::buildQuad,
                           t == 0 ? m_texPixel : t,
                           uvRect != nullptr ? *uvRect : f32v4(0, 0, 1, 1),

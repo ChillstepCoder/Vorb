@@ -1,19 +1,21 @@
 #include "stdafx.h"
 #include "actor/HumanActorFactory.h"
 
+#include "ResourceManager.h"
+
 #include <Vorb/graphics/TextureCache.h>
 #include "EntityComponentSystem.h"
 
 const float SPRITE_RADIUS = 0.3f; // In meters
 
-HumanActorFactory::HumanActorFactory(EntityComponentSystem& ecs, vg::TextureCache& textureCache)
-	: IActorFactory(ecs, textureCache) {
+HumanActorFactory::HumanActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager)
+	: IActorFactory(ecs, resourceManager) {
 }
 
 vecs::EntityID HumanActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
 	UNUSED(definitionFile);
 
-	VGTexture texture = mTextureCache.addTexture(texturePath).id;
+	VGTexture texture = mResourceManager.getTextureCache().addTexture(texturePath).id;
 
 	// Create physics entity
 	// TODO: Why not make entities object oriented?

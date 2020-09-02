@@ -1,0 +1,7 @@
+grass1:
+  tex: grass1
+grass2:
+  tex: grass2
+rock1:
+  tex: CON_TEMPLATE
+  col: 1

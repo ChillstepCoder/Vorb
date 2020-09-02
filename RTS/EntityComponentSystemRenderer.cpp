@@ -5,6 +5,7 @@
 #include "EntityComponentSystem.h"
 #include "World.h"
 
+#include "ResourceManager.h"
 #include "rendering/CharacterRenderer.h"
 
 #include <Vorb/utils.h>
@@ -12,13 +13,13 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
 
-EntityComponentSystemRenderer::EntityComponentSystemRenderer(vg::TextureCache& textureCache, const EntityComponentSystem& system, const World& tileGrid)
+EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& resourceManager, const EntityComponentSystem& system, const World& tileGrid)
 	: mSpriteBatch(std::make_unique<vg::SpriteBatch>())
 	, mSystem(system)
-	, mTextureCache(textureCache)
+	, mResourceManager(resourceManager)
 	, mTileGrid(tileGrid) {
 	// TODO: Render thread assert?
-	mCircleTexture = mTextureCache.addTexture("data/textures/circle_dir.png");
+	mCircleTexture = resourceManager.getTextureCache().addTexture("data/textures/circle_dir.png");
 	mSpriteBatch->init();
 }
 

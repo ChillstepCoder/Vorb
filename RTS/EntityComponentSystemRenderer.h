@@ -4,23 +4,23 @@
 #include <Vorb/graphics/Texture.h>
 
 DECL_VG(class SpriteBatch)
-DECL_VG(class TextureCache);
 
 class Camera2D;
 class PhysicsComponentTable;
 class EntityComponentSystem;
+class ResourceManager;
 class World;
 
 class EntityComponentSystemRenderer {
 public:
-	EntityComponentSystemRenderer(vg::TextureCache& textureCache, const EntityComponentSystem& system, const World& tileGrid);
+	EntityComponentSystemRenderer(ResourceManager& resourceManager, const EntityComponentSystem& system, const World& tileGrid);
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
 	void renderCharacterModels(const Camera2D& camera);
 
 private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;
-	vg::TextureCache& mTextureCache;
+	ResourceManager& mResourceManager;
 	vg::Texture mCircleTexture;
 	const EntityComponentSystem& mSystem;
 	const World& mTileGrid;

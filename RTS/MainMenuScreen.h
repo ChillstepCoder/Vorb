@@ -12,12 +12,11 @@ class Camera2D;
 class UndeadActorFactory;
 class HumanActorFactory;
 class PlayerActorFactory;
+class ResourceManager;
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
-DECL_VG(class TextureCache);
 DECL_VUI(class InputDispatcher);
-DECL_VIO(class IOManager);
 
 class World;
 class b2World;
@@ -47,14 +46,12 @@ public:
 
 private:
 	std::unique_ptr<vg::SpriteBatch> mSb;
-	std::unique_ptr<vg::TextureCache> mTextureCache;
 	std::unique_ptr<vg::SpriteFont> mSpriteFont;
+
+    std::unique_ptr<ResourceManager> mResourceManager;
 	std::unique_ptr<World> mWorld;
 	std::unique_ptr<Camera2D> mCamera2D;
 	vg::Texture mCircleTexture;
-
-	std::unique_ptr<vio::IOManager> mIoManager;
-
 
 	std::unique_ptr<EntityComponentSystem> mEcs;
 	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;

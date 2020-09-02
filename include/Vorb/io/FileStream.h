@@ -94,9 +94,14 @@ namespace vorb {
             /// Read a formatted string
             /// @param format: String format
             /// @param args: Format arguments
+            /// @return: Number of matched args
             template<typename... Args>
-            void read(const cString format, Args... args) const {
-                fscanf(m_fileCached, format, args...);
+            int read(const cString format, Args... args) const {
+                return fscanf(m_fileCached, format, args...);
+            }
+            template<typename... Args>
+            int read_s(const cString format, Args... args) const {
+                return fscanf_s(m_fileCached, format, args...);
             }
 
             /// Move the read/write head to a certain place

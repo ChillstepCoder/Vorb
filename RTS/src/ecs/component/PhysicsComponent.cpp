@@ -72,7 +72,8 @@ inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime
 	const float circleRadius = cmp.mCollisionRadius;
 	for (int i = 0; i < 4; ++i) {
 		TileHandle handle = world.getTileHandleAtWorldPos(cornerPositions[i]);
-		if (getTileData(handle.tile).hasCollision) {
+		// TODO: CollisionMap
+		if (TileRepository::getTileData(handle.tile.groundLayer).collisionBits) {
 			const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
 			f32v2 offsetToCircle = position - tileCenter;
             offsetToCircle.x = vmath::clamp(offsetToCircle.x, -0.5f, 0.5f);
@@ -204,7 +205,7 @@ void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &dynamicCircle;
 			fixtureDef.density = 1.0f;
-			fixtureDef.userData = reinterpret_cast<void*>(entityId);
+			fixtureDef.userData = (void*)((size_t)entityId); // size_t to shut up the compiler warning
 
 			mBody->CreateFixture(&fixtureDef);
 			break;

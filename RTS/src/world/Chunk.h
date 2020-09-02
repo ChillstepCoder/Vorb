@@ -4,9 +4,6 @@
 // TODO: Removing this causes compile error
 #include <Vorb/graphics/SpriteBatch.h>
 
-const int CHUNK_WIDTH = 128;
-const int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
-const int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 const i64 CHUNK_ID_INVALID = INT64_MAX;
 
 enum class ChunkState {
@@ -17,8 +14,10 @@ enum class ChunkState {
 
 
 struct ChunkRenderData {
-	std::unique_ptr<vg::SpriteBatch> mSb = nullptr; // Compile error here without SpriteBatch.h
-	bool mDirty = true;
+	std::unique_ptr<vg::SpriteBatch> mBaseMesh = nullptr;
+	std::unique_ptr<vg::SpriteBatch> mObjectMesh = nullptr;
+	bool mBaseDirty = true;
+	bool mObjectDirty = true;
 };
 
 struct ChunkID {
@@ -48,6 +47,18 @@ struct ChunkID {
 	};
 };
 
+enum NeighborIndex {
+	TOP_LEFT     = 0,
+	TOP          = 1,
+	TOP_RIGHT    = 2,
+	LEFT         = 3,
+	RIGHT        = 4,
+	BOTTOM_LEFT  = 5,
+	BOTTOM       = 6,
+	BOTTOM_RIGHT = 7,
+	COUNT        = 8
+};
+
 class Chunk {
 	friend class World;
 	friend class ChunkGenerator;
@@ -65,28 +76,29 @@ public:
 	ChunkState getState() const { return mState; }
 	ChunkID getChunkID() const { return mChunkId; }
 
-	Tile getTileAt(unsigned x, unsigned y) const {
-		assert(x < CHUNK_WIDTH && y < CHUNK_WIDTH);
-		assert(mState == ChunkState::FINISHED);
-		return mTiles[y * CHUNK_WIDTH + x];
-	}
+	Tile* getLeftTile(TileIndex index);
+    Tile* getRightTile(TileIndex index);
+    Tile* getTopTile(TileIndex index);
+    Tile* getBottomTile(TileIndex index);
+	// Get neighbors starting from top left
+	void getNeighbors(TileIndex index, OUT Tile neighbors[8]);
+
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
         assert(mState == ChunkState::FINISHED);
         return mTiles[i];
     }
 
-	void setTileAt(unsigned x, unsigned y, Tile tile) {
-		assert(x < CHUNK_WIDTH && y < CHUNK_WIDTH);
-		mTiles[y * CHUNK_WIDTH + x] = tile;
-		mChunkRenderData.mDirty = true;
-	}
-
     void setTileAt(TileIndex i, Tile tile) {
 		assert(i < CHUNK_SIZE);
         mTiles[i] = tile;
-        mChunkRenderData.mDirty = true;
+        mChunkRenderData.mBaseDirty = true;
     }
+
+	void setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
+        mTiles[i].layers[(int)layer] = tileId;
+        mChunkRenderData.mBaseDirty = true;
+	}
 
 private:
 	ChunkID mChunkId;

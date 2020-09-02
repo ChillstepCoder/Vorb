@@ -30,8 +30,8 @@ static bool s_wasTogglePressed = false;
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 
-World::World(vg::TextureCache& textureCache) {
-	mChunkRenderer = std::make_unique<ChunkRenderer>(textureCache);
+World::World(ResourceManager& resourceManager) {
+	mChunkRenderer = std::make_unique<ChunkRenderer>(resourceManager);
 	mChunkGenerator = std::make_unique<ChunkGenerator>();
 }
 
@@ -46,8 +46,6 @@ void World::init(EntityComponentSystem& ecs) {
 
 	mContactListener = std::make_unique<ContactListener>(*mEcs);
 	mPhysWorld->SetContactListener(mContactListener.get());
-
-	initTileData();
 }
 
 void World::draw(const Camera2D& camera) {
@@ -285,7 +283,7 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 	static const f32v2 axisExtrema[5] = { {-1.0f, 0.0f}, {0.0f, -1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {-1.0f, 0.0f} };
 
 	int i = 0;
-	for (float angle = -M_PI; i < 5; angle += M_PI_2, ++i) {
+	for (float angle = -M_PIf; i < 5; angle += M_PI_2f, ++i) {
 		if (angle > startAngle && angle < endAngle) {
 			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
 #if ENABLE_DEBUG_RENDER == 1

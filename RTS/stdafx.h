@@ -76,10 +76,29 @@ struct b2Vec2;
 #define M_SQRT1_2  0.707106781186547524401f  // 1/sqrt(2)
 #endif
 
-#define DEG_TO_RAD(x) ((x) * M_PI / 180.0f)
-#define RAD_TO_DEG(x) ((x) * 180.0f / M_PI)
+#define DEG_TO_RAD(x) ((x) * M_PIf / 180.0f)
+#define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
 
-typedef ui16 TileIndex;
+const int CHUNK_WIDTH = 128;
+const int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
+const int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
+const ui16 INVALID_TILE_INDEX = 0xffff;
+
+struct TileIndex {
+	TileIndex() : index(INVALID_TILE_INDEX) {};
+	TileIndex(ui16 index) : index(index) {};
+	TileIndex(unsigned x, unsigned y) : index((y << 7) + x) {
+		assert(getX() == x && getY() == y && index == y * 128 + x);
+	};
+
+	inline ui16 getX() { return index & 0x7f; }
+	inline ui16 getY() { return index >> 7; }
+
+	operator ui16() const { return index; }
+
+	ui16 index;
+};
+static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators above");
 
 template<typename E>
 constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
