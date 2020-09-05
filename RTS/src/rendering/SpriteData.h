@@ -4,7 +4,8 @@
 
 enum class TileTextureMethod : ui8 {
     SIMPLE,
-    CONNECTED
+    CONNECTED,
+    CONNECTED_WALL
 };
 
 struct SpriteData {

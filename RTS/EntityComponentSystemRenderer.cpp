@@ -48,11 +48,11 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
 		color4 color;
 		color.lerp(cmp.color, color4(1.0f, 0.0f, 0.0f, 1.0f), cmp.hitFlash);
-		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getPosition(), f32v2(0.5f), cmp.dims, rotation, cmp.color);
+		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getPosition(), f32v2(0.5f), cmp.dims, rotation, cmp.color, 0.05f);
 	}
 
 	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix());
+	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
 }
 
 void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera) {

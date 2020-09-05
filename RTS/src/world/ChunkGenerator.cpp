@@ -19,7 +19,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
 			TileID tile = grass1;
 			const float n = (float)Noise::fractal(6, 0.6f, 0.01f, x + chunkPosWorld.x, y + chunkPosWorld.y);
 			if (n < -0.3) {
-				tile = rock1;
+                tile = rock1;
 			} else if(n > 0.3) {
 				tile = grass2;
 			}

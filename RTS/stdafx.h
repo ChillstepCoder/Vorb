@@ -96,6 +96,11 @@ struct TileIndex {
 
 	operator ui16() const { return index; }
 
+	TileIndex& operator++() {
+		++index;
+		return *this;
+	}
+
 	ui16 index;
 };
 static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators above");

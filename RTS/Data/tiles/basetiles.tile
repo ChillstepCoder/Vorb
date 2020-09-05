@@ -3,5 +3,5 @@ grass1:
 grass2:
   tex: grass2
 rock1:
-  tex: CON_TEMPLATE
+  tex: con_squash
   col: 1

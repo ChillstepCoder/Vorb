@@ -82,11 +82,11 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	mLoadRange.y = std::max(camera.getScreenHeight() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
 
 	// Corners
-	for (auto it = mChunks.begin(); it != mChunks.end(); /* no iASSSSncrement */) {
+	for (auto it = mChunks.begin(); it != mChunks.end(); /* no increment */) {
 		Chunk& chunk = *it->second;
 		if (updateChunk(chunk)) {
 			chunk.dispose();
-			mChunks.erase(it++);
+			it = mChunks.erase(it);
 		}
 		else {
 			++it;

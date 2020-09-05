@@ -86,23 +86,27 @@ bool ResourceManager::loadSpriteSheet(const vio::Path& filePath) {
         if (fs.read_s("%d,%d", &fileDims.x, &fileDims.y) != 2) {
             char buf[16];
             if (fs.read_s("%15s", buf, sizeof(buf))) {
-                if (strcmp(buf, "con") == 0) {
-                    SpriteData newData;
-                    newData.texture = texture.id;
+                SpriteData newData;
+                if (strcmp(buf, "con_wall") == 0) {
+                    newData.method = TileTextureMethod::CONNECTED_WALL;
+                   
+                } else if (strcmp(buf, "con") == 0) {
                     newData.method = TileTextureMethod::CONNECTED;
-                    newData.dims = ui8v2(5, 3);
-                    std::string textureName = filePath.getLeaf();
-                    textureName.resize(textureName.size() - 4); // Chop of .png
-                    // Copy paste :(
-                    auto it = mSprites.find(textureName);
-                    if (it != mSprites.end()) {
-                        assert(false); // Sprite name conflict! Mod conflict?
-                        return false;
-                    }
-                    mSprites.insert(std::make_pair(textureName, std::move(newData)));
-
-                    return true;
                 }
+                else {
+                    return false;
+                }
+                std::string textureName = filePath.getLeaf();
+                textureName.resize(textureName.size() - 4); // Chop of .png
+                newData.texture = texture.id;
+                newData.dims = ui8v2(1, 1);
+                auto it = mSprites.find(textureName);
+                if (it != mSprites.end()) {
+                    assert(false); // Sprite name conflict! Mod conflict?
+                    return false;
+                }
+                mSprites.insert(std::make_pair(textureName, std::move(newData)));
+                return true;
             } else {
                 assert(false); // Bad meta file
                 return false;

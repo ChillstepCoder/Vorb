@@ -47,15 +47,15 @@ struct ChunkID {
 	};
 };
 
-enum NeighborIndex {
-	TOP_LEFT     = 0,
-	TOP          = 1,
-	TOP_RIGHT    = 2,
+enum class NeighborIndex {
+	BOTTOM_LEFT  = 0,
+	BOTTOM       = 1,
+	BOTTOM_RIGHT = 2,
 	LEFT         = 3,
 	RIGHT        = 4,
-	BOTTOM_LEFT  = 5,
-	BOTTOM       = 6,
-	BOTTOM_RIGHT = 7,
+	TOP_LEFT     = 5,
+	TOP          = 6,
+	TOP_RIGHT    = 7,
 	COUNT        = 8
 };
 
@@ -76,12 +76,12 @@ public:
 	ChunkState getState() const { return mState; }
 	ChunkID getChunkID() const { return mChunkId; }
 
-	Tile* getLeftTile(TileIndex index);
-    Tile* getRightTile(TileIndex index);
-    Tile* getTopTile(TileIndex index);
-    Tile* getBottomTile(TileIndex index);
+	Tile* getLeftTile(TileIndex index) const;
+    Tile* getRightTile(TileIndex index) const;
+    Tile* getTopTile(TileIndex index) const;
+    Tile* getBottomTile(TileIndex index) const;
 	// Get neighbors starting from top left
-	void getNeighbors(TileIndex index, OUT Tile neighbors[8]);
+	void getTileNeighbors(TileIndex index, OUT Tile neighbors[8]) const;
 
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);

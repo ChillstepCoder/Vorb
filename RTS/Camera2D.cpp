@@ -21,6 +21,10 @@ void Camera2D::init(int screenWidth, int screenHeight) {
     _orthoMatrix = glm::ortho(0.0f, (float)_screenWidth, 0.0f, (float)_screenHeight);
 }
 
+// TODO: Investigate Pixels per unit
+// https://blogs.unity3d.com/2015/06/19/pixel-perfect-2d/
+// const int PPU = 16;
+
 // updates the camera matrix if needed
 void Camera2D::update() {
 

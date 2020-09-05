@@ -4,6 +4,7 @@
 
 #include <Vorb/io/Keg.h>
 
+constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
 
 enum class TileLayer {
@@ -13,13 +14,16 @@ enum class TileLayer {
 };
 
 struct Tile {
+	Tile() {};
+	Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
+
 	union {
 		struct {
 			TileID groundLayer; // Dirt, foundation, earth
 			TileID midLayer; // Carpet, boards, walls, trees
 			TileID topLayer; // Furniture, props
 		};
-		TileID layers[3];
+		TileID layers[3] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
 };
 
