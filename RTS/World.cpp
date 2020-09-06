@@ -62,9 +62,11 @@ void World::draw(const Camera2D& camera) {
 	}
 #endif
 
-	for (auto&& it : mChunks) {
-		if (it.second->canRender()) {
-			mChunkRenderer->RenderChunk(*it.second.get(), camera);
+	ChunkID chunkId;
+	Chunk* chunk;
+	while (enumVisibleChunks(camera, chunkId, &chunk)) {
+		if (chunk && chunk->canRender()) {
+			mChunkRenderer->RenderChunk(*chunk, camera);
 		}
 	}
 
@@ -111,18 +113,20 @@ void World::updateWorldMousePos(const Camera2D& camera) {
 }
 
 Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
-	ChunkID chunkId(worldPos);
-	std::map<ChunkID, std::unique_ptr<Chunk>>::iterator it = mChunks.find(chunkId);
-	if (it != mChunks.end()) {
-		return it->second.get();
-	}
+	return getChunkAtPosition(ChunkID(worldPos));
+}
 
-	return nullptr;
+Chunk* World::getChunkAtPosition(ChunkID chunkId) {
+    std::map<ChunkID, std::unique_ptr<Chunk>>::iterator it = mChunks.find(chunkId);
+    if (it != mChunks.end()) {
+        return it->second.get();
+    }
+
+    return nullptr;
 }
 
 Chunk* World::getChunkOrCreateAtPosition(const f32v2& worldPos) {
-	ChunkID chunkId(worldPos);
-	return getChunkOrCreateAtPosition(chunkId);
+	return getChunkOrCreateAtPosition(ChunkID(worldPos));
 }
 
 Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
@@ -154,6 +158,34 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 		handle.tile = handle.chunk->getTileAt(handle.index);
 	}
 	return handle;
+}
+
+bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT Chunk** chunk) {
+	// TODO: Can we cache this conversion?
+    const f32v2 bottomLeftCorner = camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight()));
+    const ChunkID bottomLeftPosition(bottomLeftCorner);
+
+	// Start case
+    if (enumerator.id == CHUNK_ID_INVALID) {
+		enumerator = bottomLeftPosition;
+    }
+
+	const float scaledWidth = camera.getScreenWidth() / camera.getScale();
+	const float scaledHeight = camera.getScreenHeight() / camera.getScale();
+	const int widthInChunks = (scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1;
+	const int heightInChunks = (scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1;
+	if (enumerator.pos.x - bottomLeftPosition.pos.x > widthInChunks) {
+		enumerator.pos.x -= widthInChunks + 1;
+		++enumerator.pos.y;
+	}
+	if (enumerator.pos.y - bottomLeftPosition.pos.y > heightInChunks) {
+		// Off screen
+		return false;
+	}
+	
+	*chunk = getChunkAtPosition(enumerator);
+	++enumerator.pos.x;
+	return true;
 }
 
 bool World::updateChunk(Chunk& chunk) {

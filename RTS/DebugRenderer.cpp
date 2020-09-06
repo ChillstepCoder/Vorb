@@ -72,6 +72,16 @@ void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color
 	sLines.emplace_back(origin, end, color, lifeTime);
 }
 
+void DebugRenderer::drawBox(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/) {
+
+    const f32v2 topRight = origin + dims;
+    sLines.emplace_back(origin, origin + f32v2(dims.x, 0.0f), color, lifeTime);
+    sLines.emplace_back(origin, origin + f32v2(0.0f, dims.y), color, lifeTime);
+    sLines.emplace_back(topRight, topRight - f32v2(dims.x, 0.0f), color, lifeTime);
+    sLines.emplace_back(topRight, topRight - f32v2(0.0f, dims.x), color, lifeTime);
+
+}
+
 void DebugRenderer::drawAABB(const b2AABB& aabb, color4 color, int lifeTime /*= 0*/) {
 
 	const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
@@ -121,6 +131,7 @@ void DebugRenderer::renderLines(const f32m4& viewMatrix)
         index += 2;
     }
 
+    glDepthFunc((VGEnum)vg::DepthFunction::ALWAYS);
     glBindBuffer(GL_ARRAY_BUFFER, sVbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(SimpleMeshVertex), nullptr, GL_DYNAMIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(SimpleMeshVertex), vertices.data());

@@ -24,6 +24,7 @@ class b2World;
 // TODO: New file
 struct DebugOptions {
 	bool mWireframe = false;
+	bool mChunkBoundaries = false;
 };
 
 class MainMenuScreen : public vui::IAppScreen<App>

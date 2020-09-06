@@ -80,7 +80,21 @@ struct b2Vec2;
 #define DEG_TO_RAD(x) ((x) * M_PIf / 180.0f)
 #define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
 
+// Comment out for larger chunks
+#define USE_SMALL_CHUNK_WIDTH
+
+#ifdef USE_SMALL_CHUNK_WIDTH
+const int CHUNK_WIDTH = 64;
+static_assert(CHUNK_WIDTH == 64, "Adjust bitwise operators above");
+#define TILE_INDEX_Y_SHIFT 6
+#define TILE_INDEX_X_MASK 0x3f
+#else
 const int CHUNK_WIDTH = 128;
+static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
+#define TILE_INDEX_Y_SHIFT 7
+#define TILE_INDEX_X_MASK 0x7f
+#endif
+
 const int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 const int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 const ui16 INVALID_TILE_INDEX = 0xffff;
@@ -89,12 +103,12 @@ struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
 	TileIndex(ui16 index) : index(index) {};
     TileIndex(const TileIndex& index) : index(index.index) {};
-	TileIndex(unsigned x, unsigned y) : index((y << 7) + x) {
-		assert(getX() == x && getY() == y && index == y * 128 + x);
+	TileIndex(unsigned x, unsigned y) : index((y << TILE_INDEX_Y_SHIFT) + x) {
+		assert(getX() == x && getY() == y && index == y * CHUNK_WIDTH + x);
 	};
 
-	inline ui16 getX() const { return index & 0x7f; }
-	inline ui16 getY() const { return index >> 7; }
+	inline ui16 getX() const { return index & TILE_INDEX_X_MASK; }
+	inline ui16 getY() const { return index >> TILE_INDEX_Y_SHIFT; }
 
 	operator ui16() const { return index; }
 
@@ -109,7 +123,6 @@ struct TileIndex {
 
 	ui16 index;
 };
-static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators above");
 
 template<typename E>
 constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {

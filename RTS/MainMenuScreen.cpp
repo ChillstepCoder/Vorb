@@ -91,7 +91,9 @@ void MainMenuScreen::build() {
 		// View toggle
 		if (event.keyCode == VKEY_B) {
 			mDebugOptions.mWireframe = !mDebugOptions.mWireframe;
-		}
+        } else if (event.keyCode == VKEY_C) {
+            mDebugOptions.mChunkBoundaries = !mDebugOptions.mChunkBoundaries;
+        }
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
@@ -238,14 +240,23 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 		DebugRenderer::drawVector(mTestClick, pos - mTestClick, color4(1.0f, 0.0f, 0.0f));
 	}
 
-	DebugRenderer::renderLines(mCamera2D->getCameraMatrix());
+    if (mDebugOptions.mChunkBoundaries) {
+		ChunkID id;
+		Chunk* chunk;
+		while (mWorld->enumVisibleChunks(*mCamera2D, id, &chunk)) {
+			if (chunk) {
+				DebugRenderer::drawBox(chunk->getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
+			}
+		}
+    }
 
-	mSb->begin();
-	char fpsString[64];
-	sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
-	mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
-	mSb->end();
-	mSb->render(mCamera2D->getScreenSize());
+    DebugRenderer::renderLines(mCamera2D->getCameraMatrix());
 
+    mSb->begin();
+    char fpsString[64];
+    sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
+    mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
+    mSb->end();
+    mSb->render(mCamera2D->getScreenSize());
 	
 }

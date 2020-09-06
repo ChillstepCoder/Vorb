@@ -25,6 +25,7 @@ struct ChunkRenderData {
 
 struct ChunkID {
 
+	ChunkID() : id(CHUNK_ID_INVALID) {}
 	ChunkID(const ChunkID& other) { *this = other; }
 	ChunkID(i64 id) : id(id) {};
 	ChunkID(const i32v2& pos) : pos(pos) {};
@@ -35,7 +36,7 @@ struct ChunkID {
 	bool operator<(const ChunkID& other) const { return id < other.id; }
 	bool operator!=(const ChunkID& other) const { return id != other.id; }
 	void operator=(const ChunkID& other) { id = other.id; }
-	void operator=(ChunkID&& other) { id = other.id; }
+	void operator=(ChunkID&& other) noexcept { id = other.id; }
 
 	f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
 	ChunkID getLeftID() const { return ChunkID(i32v2(pos.x - 1, pos.y)); }

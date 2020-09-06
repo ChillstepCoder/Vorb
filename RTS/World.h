@@ -43,12 +43,15 @@ public:
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 
 	// Internal public interface
-	Chunk* getChunkAtPosition(const f32v2& worldPos);
+    Chunk* getChunkAtPosition(const f32v2& worldPos);
+    Chunk* getChunkAtPosition(ChunkID chunkId);
 	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
 	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
 
 	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
 	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
+
+	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT Chunk** chunk);
 
 	
 private:
