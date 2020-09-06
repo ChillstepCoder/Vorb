@@ -60,7 +60,7 @@ bool ArcQueryCallback::ReportFixture(b2Fixture* fixture) {
 			float angle = atan2(det, dot);
 			// TODO: Maybe don't do this logic when only 1 quadrant
 			if (abs(angle) < mHalfAngle) {
-				const int quadrant = floor((angle + mHalfAngle) / quadrantSize);
+				const int quadrant = (int)floor((angle + mHalfAngle) / quadrantSize);
 				mEntities.emplace_back(EntityDistInfo{ distanceToEdge, quadrant }, entityId);
 			}
 		}

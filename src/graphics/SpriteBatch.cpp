@@ -118,9 +118,10 @@ void vg::SpriteBatch::dispose() {
     }
 }
 
-void vg::SpriteBatch::begin() {
+void vg::SpriteBatch::begin(size_t reserveCount /* = 0 */) {
     m_glyphs.clear();
-    std::vector<Batch>().swap(m_batches);
+    m_batches.clear();
+    m_glyphs.reserve(reserveCount);
 }
 
 void vg::SpriteBatch::draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {

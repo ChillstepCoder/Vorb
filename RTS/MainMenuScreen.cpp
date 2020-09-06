@@ -95,7 +95,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 2.0f, 1020.f);
+		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 1.0f, 1020.f);
 		mCamera2D->setScale(mScale);
 	});
 
@@ -130,7 +130,9 @@ void MainMenuScreen::build() {
                 vio::Path("")
             );*/
 			TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-			handle.chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+			if (handle.isValid()) {
+				handle.chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+			}
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
             /*newActor = mHumanActorFactory->createActor(
@@ -139,7 +141,9 @@ void MainMenuScreen::build() {
                 vio::Path("")
             );*/
             TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-            handle.chunk->setTileAt(handle.index, Tile(TileRepository::getTile("grass"), TILE_ID_NONE, TILE_ID_NONE));
+			if (handle.isValid()) {
+				handle.chunk->setTileAt(handle.index, Tile(TileRepository::getTile("grass"), TILE_ID_NONE, TILE_ID_NONE));
+			}
 		}
 
 		// Apply velocity

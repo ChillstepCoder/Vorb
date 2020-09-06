@@ -78,14 +78,19 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	getChunkOrCreateAtPosition(playerPos);
 	updateWorldMousePos(camera);
 	
-	mLoadRange.x = std::max(camera.getScreenWidth() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
-	mLoadRange.y = std::max(camera.getScreenHeight() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
+	const f32v2 topRight = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), 0.0f));
+	const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth() * 0.5f, camera.getScreenHeight() * 0.5f));
 
-	// Corners
+    mLoadRange.x = topRight.x - center.x + CHUNK_WIDTH / 2;
+    mLoadRange.y = topRight.y - center.y + CHUNK_WIDTH / 2;
+
+    mLoadRange.x = MAX(mLoadRange.x, CHUNK_WIDTH);
+    mLoadRange.y = MAX(mLoadRange.y, CHUNK_WIDTH);
+
 	for (auto it = mChunks.begin(); it != mChunks.end(); /* no increment */) {
 		Chunk& chunk = *it->second;
 		if (updateChunk(chunk)) {
-			chunk.dispose();
+            chunk.dispose();
 			it = mChunks.erase(it);
 		}
 		else {
@@ -149,7 +154,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 }
 
 bool World::updateChunk(Chunk& chunk) {
-	if (!shouldChunkLoad(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
+	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
 		// Unload
 		return true;
 	}
@@ -165,31 +170,35 @@ void World::updateChunkNeighbors(Chunk& chunk) {
 	// Left
 	if (!chunk.mNeighborLeft) {
 		ChunkID leftChunk = myId.getLeftID();
-		if (shouldChunkLoad(leftChunk)) {
-			chunk.mNeighborLeft = getChunkOrCreateAtPosition(leftChunk);
+		if (isChunkInLoadDistance(leftChunk)) {
+            chunk.mNeighborLeft = getChunkOrCreateAtPosition(leftChunk);
+			chunk.mNeighborLeft->mNeighborRight = &chunk;
 		}
 	}
 	if (!chunk.mNeighborTop) {
 		ChunkID topChunk = myId.getTopID();
-		if (shouldChunkLoad(topChunk)) {
-			chunk.mNeighborTop = getChunkOrCreateAtPosition(topChunk);
+		if (isChunkInLoadDistance(topChunk)) {
+            chunk.mNeighborTop = getChunkOrCreateAtPosition(topChunk);
+            chunk.mNeighborTop->mNeighborBottom = &chunk;
 		}
 	}
 	if (!chunk.mNeighborRight) {
 		ChunkID rightChunk = myId.getRightID();
-		if (shouldChunkLoad(rightChunk)) {
-			chunk.mNeighborRight = getChunkOrCreateAtPosition(rightChunk);
+		if (isChunkInLoadDistance(rightChunk)) {
+            chunk.mNeighborRight = getChunkOrCreateAtPosition(rightChunk);
+            chunk.mNeighborRight->mNeighborLeft = &chunk;
 		}
 	}
 	if (!chunk.mNeighborBottom) {
 		ChunkID bottomChunk = myId.getBottomID();
-		if (shouldChunkLoad(bottomChunk)) {
-			chunk.mNeighborBottom = getChunkOrCreateAtPosition(bottomChunk);
+		if (isChunkInLoadDistance(bottomChunk)) {
+            chunk.mNeighborBottom = getChunkOrCreateAtPosition(bottomChunk);
+            chunk.mNeighborBottom->mNeighborTop = &chunk;
 		}
 	}
 }
 
-bool World::shouldChunkLoad(ChunkID chunkPos, float addOffset /* = 0.0f*/)
+bool World::isChunkInLoadDistance(ChunkID chunkPos, float addOffset /* = 0.0f*/)
 {
 	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
 	const f32v2 offset = centerPos - mLoadCenter;

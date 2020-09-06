@@ -12,6 +12,7 @@ Chunk::~Chunk() {
 }
 
 void Chunk::init(ChunkID chunkId) {
+	assert(mState == ChunkState::WAITING_FOR_INIT);
 	mChunkId = chunkId;
 	mState = ChunkState::LOADING;
 }
@@ -23,15 +24,19 @@ void Chunk::dispose() {
 
 	if (mNeighborLeft) {
 		mNeighborLeft->mNeighborRight = nullptr;
+		mNeighborLeft = nullptr;
 	}
 	if (mNeighborRight) {
 		mNeighborRight->mNeighborLeft = nullptr;
+		mNeighborRight = nullptr;
 	}
 	if (mNeighborTop) {
 		mNeighborTop->mNeighborBottom = nullptr;
+		mNeighborTop = nullptr;
 	}
 	if (mNeighborBottom) {
 		mNeighborBottom->mNeighborTop = nullptr;
+		mNeighborBottom = nullptr;
 	}
 
 	mState = ChunkState::INVALID;

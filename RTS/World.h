@@ -23,6 +23,9 @@ class EntityComponentSystem;
 class ResourceManager;
 
 struct TileHandle {
+
+	bool isValid() const { return chunk != nullptr; }
+
 	Chunk* chunk = nullptr;
 	Tile tile;
 	TileIndex index;
@@ -62,7 +65,7 @@ private:
 	// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
 	void updateChunkNeighbors(Chunk& chunk);
-	bool shouldChunkLoad(ChunkID chunkId, float addOffset = 0.0f);
+	bool isChunkInLoadDistance(ChunkID chunkId, float addOffset = 0.0f);
 	void initChunk(Chunk& chunk, ChunkID chunkId);
 
 	// Resources

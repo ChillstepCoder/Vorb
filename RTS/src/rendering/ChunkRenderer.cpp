@@ -204,7 +204,9 @@ void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
 
 	if (renderData.mBaseDirty) {
+        PreciseTimer timer;
 		UpdateMesh(chunk);
+        std::cout << "Mesh updated in " << timer.stop() << " ms\n";
 	}
 
 	renderData.mBaseMesh->render(f32m4(1.0f), camera.getCameraMatrix(), &vg::SamplerState::POINT_CLAMP, &vg::DepthState::FULL);
@@ -220,8 +222,9 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 		renderData.mBaseMesh = std::make_unique<vg::SpriteBatch>(true, true);
 	}
 
+    PreciseTimer timer;
 	Tile neighbors[8];
-	renderData.mBaseMesh->begin();
+	renderData.mBaseMesh->begin(CHUNK_WIDTH * CHUNK_WIDTH);
 	for (int y = 0; y < CHUNK_WIDTH; ++y) {
 		for (int x = 0; x < CHUNK_WIDTH; ++x) {
 			//  TODO: More than just ground
@@ -280,7 +283,9 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 			}
 		}
 	}
+    std::cout << " p1 " << timer.stop() << " ms\n";
 	renderData.mBaseMesh->end();
 
+    std::cout << " p2 " << timer.stop() << " ms\n";
 	renderData.mBaseDirty = false;
 }

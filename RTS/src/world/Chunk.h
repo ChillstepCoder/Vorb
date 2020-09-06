@@ -8,6 +8,7 @@ const i64 CHUNK_ID_INVALID = INT64_MAX;
 
 enum class ChunkState {
 	INVALID,
+	WAITING_FOR_INIT,
 	LOADING,
 	FINISHED,
 };
@@ -103,7 +104,7 @@ public:
 private:
 	ChunkID mChunkId;
 	Tile mTiles[CHUNK_SIZE];
-	ChunkState mState = ChunkState::INVALID;
+	ChunkState mState = ChunkState::WAITING_FOR_INIT;
 
 	union {
 		struct {
