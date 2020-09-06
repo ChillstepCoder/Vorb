@@ -30,7 +30,6 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
             chunk.setTileAt(TileIndex(x, y), tile, TileLayer::Ground);
         }
     }
-    chunk.mState = ChunkState::FINISHED;
 
     std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }

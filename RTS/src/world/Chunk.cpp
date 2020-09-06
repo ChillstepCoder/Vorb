@@ -23,20 +23,28 @@ void Chunk::dispose() {
 	}
 
 	if (mNeighborLeft) {
-		mNeighborLeft->mNeighborRight = nullptr;
-		mNeighborLeft = nullptr;
+        mNeighborLeft->mNeighborRight = nullptr;
+        if (isDataReady()) {
+            --mNeighborLeft->mDataReadyNeighborCount;
+        }
 	}
 	if (mNeighborRight) {
-		mNeighborRight->mNeighborLeft = nullptr;
-		mNeighborRight = nullptr;
+        mNeighborRight->mNeighborLeft = nullptr;
+        if (isDataReady()) {
+            --mNeighborRight->mDataReadyNeighborCount;
+        }
 	}
 	if (mNeighborTop) {
-		mNeighborTop->mNeighborBottom = nullptr;
-		mNeighborTop = nullptr;
+        mNeighborTop->mNeighborBottom = nullptr;
+        if (isDataReady()) {
+            --mNeighborTop->mDataReadyNeighborCount;
+        }
 	}
 	if (mNeighborBottom) {
-		mNeighborBottom->mNeighborTop = nullptr;
-		mNeighborBottom = nullptr;
+        mNeighborBottom->mNeighborTop = nullptr;
+        if (isDataReady()) {
+            --mNeighborBottom->mDataReadyNeighborCount;
+        }
 	}
 
 	mState = ChunkState::INVALID;

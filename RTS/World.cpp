@@ -62,8 +62,10 @@ void World::draw(const Camera2D& camera) {
 	}
 #endif
 
-	for (auto&& chunk : mChunks) {
-		mChunkRenderer->RenderChunk(*chunk.second.get(), camera);
+	for (auto&& it : mChunks) {
+		if (it.second->canRender()) {
+			mChunkRenderer->RenderChunk(*it.second.get(), camera);
+		}
 	}
 
 	// TODO: This feels wrong
@@ -84,8 +86,9 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
     mLoadRange.x = topRight.x - center.x + CHUNK_WIDTH / 2;
     mLoadRange.y = topRight.y - center.y + CHUNK_WIDTH / 2;
 
-    mLoadRange.x = MAX(mLoadRange.x, CHUNK_WIDTH);
-    mLoadRange.y = MAX(mLoadRange.y, CHUNK_WIDTH);
+	// Always load an extra border of chunks
+    mLoadRange.x = MAX(mLoadRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
+    mLoadRange.y = MAX(mLoadRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
 
 	for (auto it = mChunks.begin(); it != mChunks.end(); /* no increment */) {
 		Chunk& chunk = *it->second;
@@ -132,7 +135,7 @@ Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
 	auto newChunkIt = mChunks.insert(std::make_pair(chunkId, std::make_unique<Chunk>()));
 	Chunk* newChunk = newChunkIt.first->second.get();
 	initChunk(*newChunk, chunkId);
-	mChunkGenerator->GenerateChunk(*newChunk);
+	generateChunk(*newChunk);
 	return newChunk;
 }
 
@@ -159,12 +162,19 @@ bool World::updateChunk(Chunk& chunk) {
 		return true;
 	}
 	
-	updateChunkNeighbors(chunk);
+	// If we need some neighbor connections, update
+	if (chunk.mDataReadyNeighborCount != 4) {
+		updateChunkNeighbors(chunk);
+	}
 	
 	return false;
 }
 
 void World::updateChunkNeighbors(Chunk& chunk) {
+	// Don't update neighbors until we are data ready
+	if (!chunk.isDataReady()) {
+		return;
+	}
 	// Neighbors
 	ChunkID myId = chunk.getChunkID();
 	// Left
@@ -173,6 +183,10 @@ void World::updateChunkNeighbors(Chunk& chunk) {
 		if (isChunkInLoadDistance(leftChunk)) {
             chunk.mNeighborLeft = getChunkOrCreateAtPosition(leftChunk);
 			chunk.mNeighborLeft->mNeighborRight = &chunk;
+			++chunk.mNeighborLeft->mDataReadyNeighborCount;
+			if (chunk.mNeighborLeft->isDataReady()) {
+				++chunk.mDataReadyNeighborCount;
+			}
 		}
 	}
 	if (!chunk.mNeighborTop) {
@@ -180,6 +194,10 @@ void World::updateChunkNeighbors(Chunk& chunk) {
 		if (isChunkInLoadDistance(topChunk)) {
             chunk.mNeighborTop = getChunkOrCreateAtPosition(topChunk);
             chunk.mNeighborTop->mNeighborBottom = &chunk;
+            ++chunk.mNeighborTop->mDataReadyNeighborCount;
+            if (chunk.mNeighborTop->isDataReady()) {
+                ++chunk.mDataReadyNeighborCount;
+            }
 		}
 	}
 	if (!chunk.mNeighborRight) {
@@ -187,6 +205,10 @@ void World::updateChunkNeighbors(Chunk& chunk) {
 		if (isChunkInLoadDistance(rightChunk)) {
             chunk.mNeighborRight = getChunkOrCreateAtPosition(rightChunk);
             chunk.mNeighborRight->mNeighborLeft = &chunk;
+            ++chunk.mNeighborRight->mDataReadyNeighborCount;
+            if(chunk.mNeighborRight->isDataReady()) {
+                ++chunk.mDataReadyNeighborCount;
+            }
 		}
 	}
 	if (!chunk.mNeighborBottom) {
@@ -194,6 +216,10 @@ void World::updateChunkNeighbors(Chunk& chunk) {
 		if (isChunkInLoadDistance(bottomChunk)) {
             chunk.mNeighborBottom = getChunkOrCreateAtPosition(bottomChunk);
             chunk.mNeighborBottom->mNeighborTop = &chunk;
+            ++chunk.mNeighborBottom->mDataReadyNeighborCount;
+            if(chunk.mNeighborBottom->isDataReady()) {
+                ++chunk.mDataReadyNeighborCount;
+            }
 		}
 	}
 }
@@ -209,6 +235,11 @@ bool World::isChunkInLoadDistance(ChunkID chunkPos, float addOffset /* = 0.0f*/)
 
 void World::initChunk(Chunk& chunk, ChunkID chunkId) {
 	chunk.init(chunkId);
+}
+
+void World::generateChunk(Chunk& chunk) {
+	mChunkGenerator->GenerateChunk(chunk);
+	chunk.mState = ChunkState::FINISHED;
 }
 
 std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {

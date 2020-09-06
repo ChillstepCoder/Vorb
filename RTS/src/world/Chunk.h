@@ -101,6 +101,7 @@ public:
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
+	bool canRender() const { return mDataReadyNeighborCount == 4; }
 
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
@@ -133,6 +134,7 @@ private:
 		};
 		Chunk* mNeighbors[4];
 	};
+	ui8 mDataReadyNeighborCount = 0;
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;

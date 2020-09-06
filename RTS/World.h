@@ -58,6 +58,7 @@ private:
 	void updateChunkNeighbors(Chunk& chunk);
 	bool isChunkInLoadDistance(ChunkID chunkId, float addOffset = 0.0f);
 	void initChunk(Chunk& chunk, ChunkID chunkId);
+	void generateChunk(Chunk& chunk);
 
 	// Resources
 	EntityComponentSystem* mEcs = nullptr;
