@@ -131,7 +131,7 @@ void MainMenuScreen::build() {
             );*/
 			TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
 			if (handle.isValid()) {
-				handle.chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+				handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
 			}
 		}
 		else if (event.button == vui::MouseButton::RIGHT) {
@@ -142,7 +142,7 @@ void MainMenuScreen::build() {
             );*/
             TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
 			if (handle.isValid()) {
-				handle.chunk->setTileAt(handle.index, Tile(TileRepository::getTile("grass"), TILE_ID_NONE, TILE_ID_NONE));
+				handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass"), TILE_ID_NONE, TILE_ID_NONE));
 			}
 		}
 

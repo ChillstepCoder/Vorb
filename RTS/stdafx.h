@@ -88,12 +88,13 @@ const ui16 INVALID_TILE_INDEX = 0xffff;
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
 	TileIndex(ui16 index) : index(index) {};
+    TileIndex(const TileIndex& index) : index(index.index) {};
 	TileIndex(unsigned x, unsigned y) : index((y << 7) + x) {
 		assert(getX() == x && getY() == y && index == y * 128 + x);
 	};
 
-	inline ui16 getX() { return index & 0x7f; }
-	inline ui16 getY() { return index >> 7; }
+	inline ui16 getX() const { return index & 0x7f; }
+	inline ui16 getY() const { return index >> 7; }
 
 	operator ui16() const { return index; }
 
@@ -101,6 +102,10 @@ struct TileIndex {
 		++index;
 		return *this;
 	}
+    TileIndex& operator--() {
+        --index;
+        return *this;
+    }
 
 	ui16 index;
 };

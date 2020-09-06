@@ -22,15 +22,6 @@ class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
 
-struct TileHandle {
-
-	bool isValid() const { return chunk != nullptr; }
-
-	Chunk* chunk = nullptr;
-	Tile tile;
-	TileIndex index;
-};
-
 class World
 {
 	friend class EntityComponentSystem;

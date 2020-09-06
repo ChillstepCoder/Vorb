@@ -4,6 +4,8 @@
 // TODO: Removing this causes compile error
 #include <Vorb/graphics/SpriteBatch.h>
 
+class Chunk;
+
 const i64 CHUNK_ID_INVALID = INT64_MAX;
 
 enum class ChunkState {
@@ -60,6 +62,20 @@ enum class NeighborIndex {
 	COUNT        = 8
 };
 
+struct TileHandle {
+
+    TileHandle() {};
+    TileHandle(const Chunk* chunk, TileIndex index) : chunk(chunk), index(index) {};
+    TileHandle(const Chunk* chunk, TileIndex index, Tile tile) : chunk(chunk), index(index), tile(tile) {};
+
+    bool isValid() const { return chunk != nullptr; }
+	Chunk* getMutableChunk() { return const_cast<Chunk*>(chunk); }
+
+    const Chunk* chunk = nullptr;
+    TileIndex index;
+    Tile tile;
+};
+
 class Chunk {
 	friend class World;
 	friend class ChunkGenerator;
@@ -77,12 +93,14 @@ public:
 	ChunkState getState() const { return mState; }
 	ChunkID getChunkID() const { return mChunkId; }
 
-	Tile* getLeftTile(TileIndex index) const;
-    Tile* getRightTile(TileIndex index) const;
-    Tile* getTopTile(TileIndex index) const;
-    Tile* getBottomTile(TileIndex index) const;
+	TileHandle getLeftTile(const TileIndex index) const;
+	TileHandle getRightTile(const TileIndex index) const;
+	TileHandle getTopTile(const TileIndex index) const;
+	TileHandle getBottomTile(const TileIndex index) const;
 	// Get neighbors starting from top left
-	void getTileNeighbors(TileIndex index, OUT Tile neighbors[8]) const;
+	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
+
+	bool isDataReady() const { return mState > ChunkState::LOADING; }
 
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
