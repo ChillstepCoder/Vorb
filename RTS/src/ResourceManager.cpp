@@ -45,6 +45,11 @@ void ResourceManager::loadResources(const vio::Path& folderPath) {
         }
     }
 
+    std::cout << "Sprites loaded!\n";
+    for (auto&& it : mSprites) {
+        std::cout << "   " << it.first << " " << it.second.texture << std::endl;
+    }
+
     mHasLoadedResources = true;
 }
 
@@ -75,7 +80,8 @@ bool ResourceManager::loadSpriteSheet(const vio::Path& filePath) {
     metaFilePath.resize(metaFilePath.size() - 4); // Chop of .png
     metaFilePath += ".meta";
     vio::File metaFile;
-    assert(vio::Path(metaFilePath).asFile(&metaFile));
+    const bool asFile = vio::Path(metaFilePath).asFile(&metaFile);
+    assert(asFile);
     vio::FileStream fs = metaFile.open();
 
     // Meta file is optional, and describes sprites

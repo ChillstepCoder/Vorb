@@ -9,7 +9,6 @@
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/DepthState.h>
 
-
 // TODO: Method(s) file?
 struct ConnectedWallData {
 	union {
