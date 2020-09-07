@@ -2,6 +2,7 @@
 
 #include "world/Chunk.h"
 
+
 DECL_VG(class SpriteBatch);
 
 class ResourceManager;

@@ -2,6 +2,7 @@
 #include "ChunkMesher.h"
 
 #include "world/Chunk.h"
+#include "rendering/ChunkMesh.h"
 
 // TODO: Method(s) file?
 struct ConnectedWallData {
@@ -184,10 +185,97 @@ void initConnectedOffsets() {
 
 ChunkMesher::ChunkMesher() {
     initConnectedOffsets();
+
+    ui32 i = 0;
+    for (ui32 v = 0; i < MAX_INDICES_PER_CHUNK; v += 4u) {
+        mIndices[i++] = v;
+        mIndices[i++] = v + 2;
+        mIndices[i++] = v + 3;
+        mIndices[i++] = v + 3;
+        mIndices[i++] = v + 1;
+        mIndices[i++] = v;
+    }
+
+    std::cout << "Chunk mesher initialized with memory size" << sizeof(ChunkMesher) / 1000 << " MB\n";
+
+}
+
+void addQuad(ChunkVertex* verts, const f32v2& position, const f32v4& uvs, const color4& color, float depth) {
+    // Top Left
+    ChunkVertex& vtl = verts[0];
+    vtl.pos.x = position.x;
+    vtl.pos.y = position.y;
+    vtl.pos.z = depth;
+    vtl.uvs.x = uvs.x;
+    vtl.uvs.y = uvs.y;
+    vtl.color = color;
+    // Top Right
+    ChunkVertex& vtr = verts[1];
+    vtr.pos.x = position.x + 1;
+    vtr.pos.y = position.y;
+    vtr.pos.z = depth;
+    vtr.uvs.x = uvs.x + uvs.z;
+    vtr.uvs.y = uvs.y;
+    vtr.color = color;
+    // Bottom Left
+    ChunkVertex& vbl = verts[2];
+    vbl.pos.x = position.x;
+    vbl.pos.y = position.y + 1;
+    vbl.pos.z = depth;
+    vbl.uvs.x = uvs.x;
+    vbl.uvs.y = uvs.y + uvs.w;
+    vbl.color = color;
+    // Bottom Right
+    ChunkVertex& vbr = verts[3];
+    vbr.pos.x = position.x + 1;
+    vbr.pos.y = position.y + 1;
+    vbr.pos.z = depth;
+    vbr.uvs.x = uvs.x + uvs.z;
+    vbr.uvs.y = uvs.y + uvs.w;
+    vbr.color = color;
 }
 
 void ChunkMesher::createMesh(const Chunk& chunk) {
-    assert(false);
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    const i32v2& pos = chunk.getChunkPos();
+    const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
+
+    if (!renderData.mChunkMesh) {
+        renderData.mChunkMesh = std::make_unique<ChunkMesh>();
+    }
+    ChunkMesh& mesh = *renderData.mChunkMesh;
+
+    int vertexCount = 0;
+    VGTexture tmp;
+    
+    PreciseTimer timer;
+    Tile neighbors[8];
+    for (int y = 0; y < CHUNK_WIDTH; ++y) {
+        for (int x = 0; x < CHUNK_WIDTH; ++x) {
+            //  TODO: More than just ground
+            TileIndex index(x, y);
+            const Tile& tile = chunk.mTiles[index];
+            const SpriteData& spriteData = TileRepository::getTileData(tile.groundLayer).spriteData;
+            tmp = spriteData.texture;
+            switch (spriteData.method) {
+                case TileTextureMethod::SIMPLE: {
+                    
+                    addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
+                    vertexCount += 4;
+                    break;
+                }
+                case TileTextureMethod::CONNECTED_WALL: {
+                    assert(false);
+                }
+            }
+        }
+    }
+    std::cout << " loop took " << timer.stop() << " ms\n";
+
+    PreciseTimer timer2;
+    mesh.setData(mVertices, vertexCount, mIndices, tmp);
+    std::cout << " setdata took " << timer2.stop() << " ms\n";
+    renderData.mBaseDirty = false;
 }
 
 void ChunkMesher::updateSpritebatch(const Chunk& chunk) {
@@ -207,7 +295,7 @@ void ChunkMesher::updateSpritebatch(const Chunk& chunk) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             //  TODO: More than just ground
             TileIndex index(x, y);
-            const Tile& tile = chunk.getTileAt(index);
+            const Tile& tile = chunk.mTiles[index];
             const SpriteData& spriteData = TileRepository::getTileData(tile.groundLayer).spriteData;
             switch (spriteData.method) {
                 case TileTextureMethod::SIMPLE: {

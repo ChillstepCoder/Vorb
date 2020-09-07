@@ -19,13 +19,13 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     for (int y = 0; y < CHUNK_WIDTH; ++y) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             TileID tile = grass1;
-            const float n = (float)Noise::fractal(6, 0.6f, 0.01f, (f64)x + (f64)chunkPosWorld.x, (f64)y + (f64)chunkPosWorld.y);
+            /*const float n = (float)Noise::fractal(6, 0.6f, 0.01f, (f64)x + (f64)chunkPosWorld.x, (f64)y + (f64)chunkPosWorld.y);
             if (n < -0.3) {
                 tile = rock1;
             }
             else if (n > 0.3) {
                 tile = grass2;
-            }
+            }*/
 
             chunk.setTileAt(TileIndex(x, y), tile, TileLayer::Ground);
         }

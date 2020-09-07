@@ -211,6 +211,7 @@
     <ClInclude Include="src\rendering\ChunkMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\rendering\ChunkVertex.h" />
     <ClInclude Include="src\rendering\SpriteData.h" />
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
