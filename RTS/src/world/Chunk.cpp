@@ -1,6 +1,12 @@
 #include "stdafx.h"
 #include "Chunk.h"
 
+#include "rendering/ChunkMesh.h"
+
+
+ChunkRenderData::~ChunkRenderData() {
+    // Empty
+}
 
 Chunk::Chunk() :
 	mChunkId(CHUNK_ID_INVALID) {

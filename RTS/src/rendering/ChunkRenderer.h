@@ -6,7 +6,7 @@ DECL_VG(class SpriteBatch);
 
 class ResourceManager;
 class Camera2D;
-class TileSet;
+class ChunkMesher;
 
 class ChunkRenderer {
 public:
@@ -19,13 +19,10 @@ public:
 
 	// TODO: Deep LOD?
 
-	// TODO: 3D Generated???
-	// void RenderChunkAs3D(const Chunk& chunk, const Camera3D& camera)
-
 private:
 	void UpdateMesh(const Chunk& chunk);
 
-	std::unique_ptr<TileSet> mTileSet;
+	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 };
 

@@ -81,7 +81,7 @@ struct b2Vec2;
 #define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
 
 // Comment out for larger chunks
-#define USE_SMALL_CHUNK_WIDTH
+// #define USE_SMALL_CHUNK_WIDTH
 
 #ifdef USE_SMALL_CHUNK_WIDTH
 const int CHUNK_WIDTH = 64;

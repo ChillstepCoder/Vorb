@@ -5,6 +5,7 @@
 #include <Vorb/graphics/SpriteBatch.h>
 
 class Chunk;
+class ChunkMesh;
 
 const i64 CHUNK_ID_INVALID = INT64_MAX;
 
@@ -15,10 +16,13 @@ enum class ChunkState {
 	FINISHED,
 };
 
-
 struct ChunkRenderData {
+
+	~ChunkRenderData();
+
 	std::unique_ptr<vg::SpriteBatch> mBaseMesh = nullptr;
 	std::unique_ptr<vg::SpriteBatch> mObjectMesh = nullptr;
+	std::unique_ptr<ChunkMesh> mChunkMesh;
 	bool mBaseDirty = true;
 	bool mObjectDirty = true;
 };
@@ -81,6 +85,7 @@ class Chunk {
 	friend class World;
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;
+	friend class ChunkMesher;
 public:
 	Chunk();
 	~Chunk();

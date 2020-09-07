@@ -172,8 +172,9 @@ bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, O
 
 	const float scaledWidth = camera.getScreenWidth() / camera.getScale();
 	const float scaledHeight = camera.getScreenHeight() / camera.getScale();
-	const int widthInChunks = (scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1;
-	const int heightInChunks = (scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1;
+	const int widthInChunks = (int)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+	const int heightInChunks = (int)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+
 	if (enumerator.pos.x - bottomLeftPosition.pos.x > widthInChunks) {
 		enumerator.pos.x -= widthInChunks + 1;
 		++enumerator.pos.y;
