@@ -166,6 +166,8 @@
     <ClCompile Include="src\rendering\ChunkMesh.cpp" />
     <ClCompile Include="src\rendering\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
+    <ClCompile Include="src\rendering\TextureAtlas.cpp" />
+    <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
@@ -213,6 +215,8 @@
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
     <ClInclude Include="src\rendering\ChunkVertex.h" />
     <ClInclude Include="src\rendering\SpriteData.h" />
+    <ClInclude Include="src\rendering\TextureAtlas.h" />
+    <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
