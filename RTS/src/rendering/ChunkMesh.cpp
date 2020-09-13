@@ -14,49 +14,9 @@
 
 vg::GLProgram ChunkMesh::sProgram;
 
-// TODO: Data
-const cString MESH_VS_SRC = R"(
-uniform mat4 World;
-uniform mat4 VP;
-
-in vec4 vPosition;
-in vec2 vUV;
-in vec4 vTint;
-in float vAtlasPage;
-
-out vec2 fUV;
-flat out float fAtlasPage;
-out vec4 fTint;
-
-void main() {
-    fTint = vTint;
-    fUV = vUV;
-    fAtlasPage = vAtlasPage;
-    vec4 worldPos = World * vPosition;
-    gl_Position = VP * worldPos;
-}
-)";
-const cString MESH_FS_SRC = R"(
-uniform sampler2DArray tex;
-
-in vec2 fUV;
-flat in float fAtlasPage;
-in vec4 fTint;
-
-out vec4 fColor;
-
-void main() {
-    fColor = texture(tex, vec3(fUV, fAtlasPage)) * fTint;
-    // Don't write 0 alpha (TMP)
-    if (fColor.a <= 0.01) {
-        discard;
-    }
-}
-)";
-
 ChunkMesh::ChunkMesh() {
     // Create program if it's not cached
-    if (!sProgram.isCreated()) sProgram = ShaderLoader::createProgram("Atlas", MESH_VS_SRC, MESH_FS_SRC);
+    if (!sProgram.isCreated()) sProgram = ShaderLoader::createProgramFromFile("data/shaders/standard_tile.vert", "data/shaders/standard_tile.frag");
 
     { // Create VAO
         glGenVertexArrays(1, &mVao);

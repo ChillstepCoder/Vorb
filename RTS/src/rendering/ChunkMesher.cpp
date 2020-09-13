@@ -95,7 +95,7 @@ inline bool checkIShape(int i, NeighborBits iBit, ui32 iIndex, NeighborBits corn
 f32v2 getUvsOffsetsFromConnectedWallIndex(int index) {
     f32v2 rv;
     rv.x = index % (int)CONNECTED_WALL_DIMS.x;
-    rv.y = index / (int)CONNECTED_WALL_DIMS.x + 1;
+    rv.y = index / (int)CONNECTED_WALL_DIMS.x;
     return rv;
 }
 
@@ -198,38 +198,39 @@ ChunkMesher::ChunkMesher(const TextureAtlas& textureAtlas) :
 
 }
 
-void addQuad(ChunkVertex* verts, const f32v2& position, const f32v4& uvs, const color4& color, float depth) {
+void addQuad(ChunkVertex* verts, const f32v2& position, const f32v2& dimsMeters, const f32v4& uvs, const color4& color, float depth) {
+    const float xOffset = -(float)((dimsMeters.x - 1) / 2);
     // Top Left
     ChunkVertex& vtl = verts[0];
-    vtl.pos.x = position.x;
+    vtl.pos.x = position.x + xOffset;
     vtl.pos.y = position.y;
     vtl.pos.z = depth;
     vtl.uvs.x = uvs.x;
-    vtl.uvs.y = uvs.y;
+    vtl.uvs.y = uvs.y + uvs.w;
     vtl.color = color;
     // Top Right
     ChunkVertex& vtr = verts[1];
-    vtr.pos.x = position.x + 1;
+    vtr.pos.x = position.x + dimsMeters.x + xOffset;
     vtr.pos.y = position.y;
     vtr.pos.z = depth;
     vtr.uvs.x = uvs.x + uvs.z;
-    vtr.uvs.y = uvs.y;
+    vtr.uvs.y = uvs.y + uvs.w;
     vtr.color = color;
     // Bottom Left
     ChunkVertex& vbl = verts[2];
-    vbl.pos.x = position.x;
-    vbl.pos.y = position.y + 1;
+    vbl.pos.x = position.x + xOffset;
+    vbl.pos.y = position.y + dimsMeters.y;
     vbl.pos.z = depth;
     vbl.uvs.x = uvs.x;
-    vbl.uvs.y = uvs.y + uvs.w;
+    vbl.uvs.y = uvs.y;
     vbl.color = color;
     // Bottom Right
     ChunkVertex& vbr = verts[3];
-    vbr.pos.x = position.x + 1;
-    vbr.pos.y = position.y + 1;
+    vbr.pos.x = position.x + dimsMeters.x + xOffset;
+    vbr.pos.y = position.y + dimsMeters.y;
     vbr.pos.z = depth;
     vbr.uvs.x = uvs.x + uvs.z;
-    vbr.uvs.y = uvs.y + uvs.w;
+    vbr.uvs.y = uvs.y;
     vbr.color = color;
 }
 
@@ -252,71 +253,68 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
             //  TODO: More than just ground
             TileIndex index(x, y);
             const Tile& tile = chunk.mTiles[index];
-            if (tile.groundLayer == TILE_ID_NONE) {
-                continue;
-            }
-            const SpriteData& spriteData = TileRepository::getTileData(tile.groundLayer).spriteData;
-            switch (spriteData.method) {
-                case TileTextureMethod::SIMPLE: {
-                    
-                    addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
-                    vertexCount += 4;
-                    break;
+            for (int l = 0; l < 3; ++l) {
+                TileID layerTile = tile.layers[l];
+                if (layerTile == TILE_ID_NONE) {
+                    continue;
                 }
-                case TileTextureMethod::CONNECTED_WALL: {
-                    chunk.getTileNeighbors(index, neighbors);
-                    unsigned connectedBits = 0;
-                    for (int i = 0; i < 8; ++i) {
-                        if (neighbors[i].groundLayer != tile.groundLayer) {
-                            connectedBits |= (1 << i);
-                        }
-                    }
-                    const ConnectedWallData& data = sConnectedWallData[connectedBits];
-                    const float verticalOffset = 0.749f;
-                    if (data.data == 0) {
-                        f32v4 uvs = spriteData.uvs;
-                        uvs.w = -uvs.w;
-                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), uvs, color4(1.0f, 1.0f, 1.0f), 1.0f);
+                float layerDepth = l * 0.1f;
+                const SpriteData& spriteData = TileRepository::getTileData(layerTile).spriteData;
+                switch (spriteData.method) {
+                    case TileTextureMethod::SIMPLE: {
+                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f + l);
                         vertexCount += 4;
+                        break;
                     }
-                    else {
-                        // Check if we need to render the base layer first
-                        if (data.a < 0x10) {
-                            f32v4 uvs = spriteData.uvs;
-                            uvs.w = -uvs.w;
-                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), uvs, color4(1.0f, 1.0f, 1.0f), 0.9f);
+                    case TileTextureMethod::CONNECTED_WALL: {
+                        chunk.getTileNeighbors(index, neighbors);
+                        unsigned connectedBits = 0;
+                        for (int i = 0; i < 8; ++i) {
+                            if (neighbors[i].layers[l] != layerTile) {
+                                connectedBits |= (1 << i);
+                            }
+                        }
+                        const ConnectedWallData& data = sConnectedWallData[connectedBits];
+                        const float verticalOffset = 0.749f;
+                        if (data.data == 0) {
+                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.8f + l);
                             vertexCount += 4;
                         }
-                        // Render up to 4 textures depending on configuration
-                        for (int i = 0; i < 4; ++i) {
-                            const ui16 val = data.dataArray[i];
-                            if (val == 0) break;
+                        else {
+                            // Check if we need to render the base layer first
+                            if (data.a < 0x10) {
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.7f + l);
+                                vertexCount += 4;
+                            }
+                            // Render up to 4 textures depending on configuration
+                            for (int i = 0; i < 4; ++i) {
+                                const ui16 val = data.dataArray[i];
+                                if (val == 0) break;
 
-                            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-                            f32v4 uvs = spriteData.uvs;
-                            uvs.x += offsets.x * uvs.z;
-                            uvs.y += offsets.y * uvs.w;
-                            uvs.w = -uvs.w;
-                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), uvs, color4(1.0f, 1.0f, 1.0f), 1.0f);
-                            vertexCount += 4;
+                                const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                                f32v4 uvs = spriteData.uvs;
+                                uvs.x += offsets.x * uvs.z;
+                                uvs.y += offsets.y * uvs.w;
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 0.8f + l);
+                                vertexCount += 4;
+                            }
+                            // Render exposed wall bottom if  needed
+                            if (isBitSet(connectedBits, BOTTOM)) {
+                                // Simple 2 bit LUT
+                                const unsigned sideCheck = ((connectedBits & (LEFT | RIGHT)) >> 3);
+                                const ui16 val = sExposedWallLookup[sideCheck];
+
+                                const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                                f32v4 uvs = spriteData.uvs;
+                                uvs.x += offsets.x * uvs.z;
+                                uvs.y += offsets.y * uvs.w;
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
+                                vertexCount += 4;
+                            }
+
                         }
-                        // Render exposed wall bottom if  needed
-                        if (isBitSet(connectedBits, BOTTOM)) {
-                            // Simple 2 bit LUT
-                            const unsigned sideCheck = ((connectedBits & (LEFT | RIGHT)) >> 3);
-                            const ui16 val = sExposedWallLookup[sideCheck];
-
-                            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-                            f32v4 uvs = spriteData.uvs;
-                            uvs.x += offsets.x * uvs.z;
-                            uvs.y += offsets.y * uvs.w;
-                            uvs.w = -uvs.w;
-                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
-                            vertexCount += 4;
-                        }
-
+                        break;
                     }
-                    break;
                 }
             }
         }

@@ -161,6 +161,7 @@
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
+    <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\ChunkMesh.cpp" />
@@ -209,6 +210,7 @@
     <ClInclude Include="src\Noise.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
+    <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\ChunkMesh.h" />

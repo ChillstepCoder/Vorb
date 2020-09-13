@@ -13,7 +13,6 @@ public:
     ChunkMesher(const TextureAtlas& textureAtlas);
 
     void createMesh(const Chunk& chunk);
-    void updateSpritebatch(const Chunk& chunk);
 
 private:
     // Shared vertex buffer to eliminate allocations
