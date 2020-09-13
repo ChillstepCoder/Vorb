@@ -91,7 +91,7 @@ namespace vorb {
             /// @param r: Row from which to obtain values
             /// @return Array pointer to the row (invalidates on this table's resizing operations)
             BitArray getRow(const ui32& r) {
-                return BitArray(&m_bits[r * m_columns]);
+                return BitArray(&m_bits[(unsigned)r * m_columns]);
             }
 
             /// Retrieve a bit value
@@ -99,7 +99,7 @@ namespace vorb {
             /// @param c: Column of value
             /// @return True if bit is non-zero
             bool valueOf(const ui32& r, const ui32& c) const {
-                const ui8* bits = &m_bits[r * m_columns];
+                const ui8* bits = &m_bits[(unsigned)r * m_columns];
                 bits += c >> 3;
                 return ((*bits >> (c & 0x07)) & 0x01) == 1;
             }
@@ -108,7 +108,7 @@ namespace vorb {
             /// @param r: Row of value
             /// @param c: Column of value
             void setTrue(const ui32& r, const ui32& c) {
-                ui8* val = &m_bits[r * m_columns];
+                ui8* val = &m_bits[(unsigned)r * m_columns];
                 val += c >> 3;
                 ui8 field = 0x01 << (c & 0x07);
                 *val |= field;
@@ -117,7 +117,7 @@ namespace vorb {
             /// @param r: Row of value
             /// @param c: Column of value
             void setFalse(const ui32& r, const ui32& c) {
-                ui8* val = &m_bits[r * m_columns];
+                ui8* val = &m_bits[(unsigned)r * m_columns];
                 val += c >> 3;
                 ui8 field = 0x01 << (c & 0x07);
                 *val &= ~field;
@@ -126,7 +126,7 @@ namespace vorb {
             /// @param r: Row of value
             /// @param c: Column of value
             void toggleValue(const ui32& r, const ui32& c) {
-                ui8* val = &m_bits[r * m_columns];
+                ui8* val = &m_bits[(unsigned)r * m_columns];
                 val += c >> 3;
                 ui8 field = 0x01 << (c & 0x07);
                 *val ^= field;
@@ -134,7 +134,7 @@ namespace vorb {
             /// Clear out an entire row
             /// @param r: Row
             void setRowFalse(const ui32& r) {
-                memset(m_bits.data() + r * m_columns, 0, m_columns);
+                memset(m_bits.data() + (unsigned)r * m_columns, 0, m_columns);
             }
 
             /// Add columns to the table (resizes every 8 new columns)
@@ -143,11 +143,11 @@ namespace vorb {
                 ui32 col = (m_columnsBits + 7) >> 3;
                 if (col != m_columns) {
                     if (m_rows > 0) {
-                        m_bits.resize(col * m_rows);
+                        m_bits.resize((unsigned)col * m_rows);
                         ui32 diff = col - m_columns;
 
-                        ui8* oldData = &m_bits[m_rows * m_columns - 1];
-                        ui8* newData = &m_bits[m_rows * col - 1];     
+                        ui8* oldData = &m_bits[(unsigned)m_rows * m_columns - 1];
+                        ui8* newData = &m_bits[(unsigned)m_rows * col - 1];
 
                         // Translate the data
                         for (ui32 r = m_rows; r > 0;) {
@@ -168,7 +168,7 @@ namespace vorb {
             }
             /// Add rows to the table
             void addRows(const ui32 n) {
-                m_bits.resize(m_bits.size() + n * m_columns);
+                m_bits.resize(m_bits.size() + (unsigned)n * m_columns);
                 m_rows += n;
             }
 

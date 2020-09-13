@@ -8,7 +8,8 @@ public:
     f32v3 pos; // TOOD: ui16v3?
     f32v2 uvs; //TODO: ui16v2?
     color4 color;
-    ui8 padding[8];
+    ui8 atlasPage;
+    ui8 padding[7];
 };
 
 // Need power of 2 alignment

@@ -9,13 +9,26 @@
 // TODO: Remove?
 #include <Vorb/graphics/TextureCache.h>
 
-// Must be power of 2 and >= 16
-const unsigned MIN_TILE_SIZE = 16;
+#define ENABLE_TEXTURE_ATLAS 1
 
-TileSpriteLoader::TileSpriteLoader(ResourceManager& resourceManager) :
-    mResourceManager(resourceManager)
+ui32 TileSpriteLoader::AtlasTileMapping::getX() const {
+    return index % TEXTURE_ATLAS_CELLS_PER_ROW;
+}
+
+ui32 TileSpriteLoader::AtlasTileMapping::getY() const {
+    return (index % TEXTURE_ATLAS_CELLS_PER_PAGE) / TEXTURE_ATLAS_CELLS_PER_ROW;
+
+}
+
+ui32 TileSpriteLoader::AtlasTileMapping::getPage() const {
+    return index / TEXTURE_ATLAS_CELLS_PER_PAGE;
+}
+
+TileSpriteLoader::TileSpriteLoader(ResourceManager& resourceManager, TextureAtlas& textureAtlas) :
+    mResourceManager(resourceManager),
+    mTextureAtlas(textureAtlas)
 {
-    textureMapper = std::make_unique<vvox::VoxelTextureStitcher>(TEXTURE_ATLAS_SIZE / MIN_TILE_SIZE);
+    textureMapper = std::make_unique<vvox::VoxelTextureStitcher>(TEXTURE_ATLAS_WIDTH_PX / TEXTURE_ATLAS_CELL_WIDTH_PX);
 }
 
 TileSpriteLoader::~TileSpriteLoader()
@@ -24,26 +37,50 @@ TileSpriteLoader::~TileSpriteLoader()
 }
 
 bool TileSpriteLoader::loadSpriteSheet(const vio::Path& filePath) {
-    // Load texture
-    vg::Texture texture = mResourceManager.mTextureCache->addTexture(
-        filePath,
-        vg::TextureTarget::TEXTURE_2D,
-        &vg::SamplerState::LINEAR_CLAMP_MIPMAP,
-        vg::TextureInternalFormat::RGBA,
-        vg::TextureFormat::RGBA
-    );
+    if (!filePath.isValid()) return false;
 
-    std::vector<SpriteMetaData> metaDataArray;
-    buildSpriteDataFromMetaFile(filePath, ui32v2(texture.width, texture.height), metaDataArray);
-    for (auto&& metaData : metaDataArray) {
+    vg::ScopedBitmapResource rs(vg::ImageIO().load(filePath, vg::ImageIOFormat::RGBA_UI8));
+    assert(rs.width <= TEXTURE_ATLAS_WIDTH_PX && rs.height <= TEXTURE_ATLAS_WIDTH_PX);
+    assert(rs.width % TEXTURE_ATLAS_CELL_WIDTH_PX == 0 && rs.height % TEXTURE_ATLAS_CELL_WIDTH_PX == 0);
+
+    SpritesheetFileData sheetMetaData;
+    getFileMetadata(filePath, ui32v2(rs.width, rs.height), sheetMetaData);
+
+    for (auto&& metaData : sheetMetaData.spriteMetaData) {
+
         SpriteData sprite;
-        sprite.texture = texture.id;
+        sprite.texture = mTextureAtlas.getAtlasTexture();
+        sprite.dimsMeters = metaData.dimsMeters;
 
-        sprite.uvs.x = ((float)metaData.pixelRect.x / texture.width);
-        sprite.uvs.y = ((float)metaData.pixelRect.y / texture.height);
-        sprite.uvs.z = ((float)metaData.pixelRect.z / texture.width);
-        sprite.uvs.w = ((float)metaData.pixelRect.w / texture.height);
+        // Determine how many tiles we need to map to the atlas, by finding the AABB in tile units
+        // TODO: Ensure this is correct usage of pixelRect.zw
+        const ui32v2 tileDims(ceil((float)metaData.pixelRect.z / TEXTURE_ATLAS_CELL_WIDTH_PX), ceil((float)metaData.pixelRect.w / TEXTURE_ATLAS_CELL_WIDTH_PX));
+        assert(tileDims.x * tileDims.y > 0);
+        const unsigned sourceOffset = (unsigned)metaData.pixelRect.y * rs.width + metaData.pixelRect.x;
+        const color4* sourceBytes = (color4*)(rs.bytesUI8v4 + sourceOffset);
+        if (tileDims.x == 1 && tileDims.y == 1) {
+            ui32 index = textureMapper->mapSingle();
+            sprite.uvs = mTextureAtlas.writePixels(index, 1, 1, sourceBytes, rs.width);
+            sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+        }
+        else if (sheetMetaData.method == TileTextureMethod::SIMPLE) {
+            ui32 index = textureMapper->mapBox(tileDims.x, tileDims.y);
+            sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
+            sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+        }
+        else {
+            // Connected and others
+            sprite.cellWidthPx = rs.width / 6.0f;
+            ui32 index = textureMapper->mapBox(tileDims.x, tileDims.y);
+            sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
+            sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+            sprite.method = TileTextureMethod::CONNECTED_WALL;
+            // Correct dims per tile
+            sprite.uvs.z /= 6.0f;
+            sprite.uvs.w /= 4.0f;
+        }
 
+        // Insert the sprite
         if (metaData.textureName.size()) {
             auto it = mResourceManager.mSprites.find(metaData.textureName);
             if (it != mResourceManager.mSprites.end()) {
@@ -62,35 +99,11 @@ bool TileSpriteLoader::loadSpriteSheet(const vio::Path& filePath) {
             mResourceManager.mSprites.insert(std::make_pair(std::move(textureName), std::move(sprite)));
         }
     }
-    
-    return true;
-}
-
-bool TileSpriteLoader::loadSpriteSheetToAtlas(const vio::Path& filePath) {
-    if (!filePath.isValid()) return false;
-
-    vg::ScopedBitmapResource rs(vg::ImageIO().load(filePath, vg::ImageIOFormat::RGBA_UI8));
-    assert(rs.width <= TEXTURE_ATLAS_SIZE && rs.height <= TEXTURE_ATLAS_SIZE);
-    assert(rs.width % MIN_TILE_SIZE == 0 && rs.height % MIN_TILE_SIZE == 0);
-
-    std::vector<SpriteMetaData> spriteData;
-    buildSpriteDataFromMetaFile(filePath, ui32v2(rs.width, rs.height), spriteData);
-    for (auto&& sprite : spriteData) {
-
-        ui32v2 tileDims(rs.width / MIN_TILE_SIZE, rs.height / MIN_TILE_SIZE);
-
-        ui32 index;
-        if (tileDims.x == 1 && tileDims.y == 1) {
-         //   textureMapper->mapBox()
-        }
-
-    }
-    //layer.index.layer = m_texturePack->addLayer(layer, layer.path, (color4*)rs.bytesUI8v4);
 
     return false;
 }
 
-void TileSpriteLoader::buildSpriteDataFromMetaFile(const vio::Path& imageFilePath, const ui32v2& fileDims, OUT std::vector<SpriteMetaData>& metaDataArray)
+void TileSpriteLoader::getFileMetadata(const vio::Path& imageFilePath, const ui32v2& fileDimsPx, OUT SpritesheetFileData& metaData)
 {
     // Find meta file
     std::string metaFilePath = imageFilePath.getString();
@@ -101,22 +114,31 @@ void TileSpriteLoader::buildSpriteDataFromMetaFile(const vio::Path& imageFilePat
     assert(asFile);
     vio::FileStream fs = metaFile.open();
 
+    // Some useful data
+    metaData.fileDimsPx = ui32v2(fileDimsPx.x, fileDimsPx.y);
+    metaData.tileDimsPx = metaData.fileDimsTiles / metaData.fileDimsPx;
+
+    // TODO: Keg
     // Meta file is optional, and describes sprites
     if (fs.isOpened()) {
 
         // Read meta data
-        i32v2 tileDims;
-        if (fs.read_s("%d,%d", &tileDims.x, &tileDims.y) != 2) {
+        if (fs.read_s("%u,%u", &metaData.fileDimsTiles.x, &metaData.fileDimsTiles.y) != 2) {
             char buf[16];
             if (fs.read_s("%15s", buf, sizeof(buf))) {
                 SpriteMetaData newData;
+                newData.pixelRect.x = 0;
+                newData.pixelRect.y = 0;
+                newData.pixelRect.z = metaData.fileDimsPx.x;
+                newData.pixelRect.w = metaData.fileDimsPx.y;
                 if (strcmp(buf, "con_wall") == 0) {
                     newData.method = TileTextureMethod::CONNECTED_WALL;
                 }
                 else if (strcmp(buf, "con") == 0) {
                     newData.method = TileTextureMethod::CONNECTED;
                 }
-                metaDataArray.emplace_back(std::move(newData));
+                metaData.method = newData.method;
+                metaData.spriteMetaData.emplace_back(std::move(newData));
                 return;
             }
             else {
@@ -125,14 +147,14 @@ void TileSpriteLoader::buildSpriteDataFromMetaFile(const vio::Path& imageFilePat
             }
         }
 
-        assert(fileDims.x % tileDims.x == 0 && fileDims.y % tileDims.y == 0);
+        assert(metaData.fileDimsPx.x % metaData.fileDimsTiles.x == 0 && metaData.fileDimsPx.y % metaData.fileDimsTiles.y == 0);
 
-        const ui32 tilePixelWidth = fileDims.x / tileDims.x;
-        const ui32 tilePixelHeight = fileDims.y / tileDims.y;
+        const ui32 tilePixelWidth = metaData.fileDimsPx.x / metaData.fileDimsTiles.x;
+        const ui32 tilePixelHeight = metaData.fileDimsPx.y / metaData.fileDimsTiles.y;
 
         char textureName[128];
         i32v2 tilePos;
-        i32v2 rectSize;
+        i32v2 rectSize; //  In this specification, cells are always 1 meter long, but may have variable pixel density
         while (fs.read_s("%127s %d,%d %d,%d", textureName, sizeof(textureName), &tilePos.x, &tilePos.y, &rectSize.x, &rectSize.y) == 5) {
             SpriteMetaData newData;
             newData.pixelRect.x = tilePos.x * tilePixelWidth;
@@ -140,8 +162,20 @@ void TileSpriteLoader::buildSpriteDataFromMetaFile(const vio::Path& imageFilePat
             newData.pixelRect.z = rectSize.x * tilePixelWidth;
             newData.pixelRect.w = rectSize.y * tilePixelHeight;
             newData.textureName = textureName;
-            metaDataArray.emplace_back(std::move(newData));
+            newData.dimsMeters = rectSize;
+            metaData.spriteMetaData.emplace_back(std::move(newData));
         }
+    }
+    else {
+        // No meta file, treat entire png as a single image
+        SpriteMetaData newData;
+        newData.pixelRect.x = 0;
+        newData.pixelRect.y = 0;
+        newData.pixelRect.z = fileDimsPx.x;
+        newData.pixelRect.w = fileDimsPx.y;
+        newData.textureName = getTextureNameFromFilePath(imageFilePath);
+        newData.dimsMeters = f32v2(fileDimsPx) / 16.0f; // Arbitrary
+        metaData.spriteMetaData.emplace_back(std::move(newData));
     }
     return;
 }

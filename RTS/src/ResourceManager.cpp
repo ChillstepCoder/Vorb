@@ -12,8 +12,8 @@ ResourceManager::ResourceManager() {
     mTextureCache = std::make_unique<vg::TextureCache>();
     mIoManager = std::make_unique<vio::IOManager>();
     mTextureCache->init(mIoManager.get());
-    mTileSpriteLoader = std::make_unique<TileSpriteLoader>(*this);
     mTextureAtlas = std::make_unique<TextureAtlas>();
+    mTileSpriteLoader = std::make_unique<TileSpriteLoader>(*this, *mTextureAtlas);
 }
 
 ResourceManager::~ResourceManager() {
@@ -50,12 +50,11 @@ void ResourceManager::loadResources(const vio::Path& folderPath) {
         }
     }
 
-    std::cout << "Sprites loaded!\n";
-    for (auto&& it : mSprites) {
-        std::cout << "   " << it.first << " " << it.second.texture << std::endl;
-    }
-
     mHasLoadedResources = true;
+
+    // Update textures
+    mTextureAtlas->uploadDirtyPages();
+    mTextureAtlas->writeDebugPages();
 }
 
 SpriteData ResourceManager::getSprite(const std::string& spriteName) {

@@ -144,7 +144,7 @@ void MainMenuScreen::build() {
             );*/
             TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
 			if (handle.isValid()) {
-				handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass"), TILE_ID_NONE, TILE_ID_NONE));
+				handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
 			}
 		}
 

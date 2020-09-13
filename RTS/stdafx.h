@@ -129,5 +129,16 @@ constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 	return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+// **************** ERRORS *****************
+//yes 1, no 0
+extern i32 showYesNoBox(const nString& message);
+extern i32 showYesNoCancelBox(const nString& message);
+extern void showMessage(const nString& message);
+
+extern nString getFullPath(const cString initialDir);
+extern void pError(const cString message);
+extern void pError(const nString& message);
+
+extern bool checkGlError(const nString& errorLocation);
 
 #endif // stdafx_h__RTS

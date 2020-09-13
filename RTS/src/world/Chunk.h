@@ -19,12 +19,8 @@ enum class ChunkState {
 struct ChunkRenderData {
 
 	~ChunkRenderData();
-
-	std::unique_ptr<vg::SpriteBatch> mBaseMesh = nullptr;
-	std::unique_ptr<vg::SpriteBatch> mObjectMesh = nullptr;
 	std::unique_ptr<ChunkMesh> mChunkMesh;
 	bool mBaseDirty = true;
-	bool mObjectDirty = true;
 };
 
 struct ChunkID {

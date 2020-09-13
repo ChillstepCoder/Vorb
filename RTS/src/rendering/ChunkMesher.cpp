@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
+#include "rendering/TextureAtlas.h"
 
 #include "world/Chunk.h"
 #include "rendering/ChunkMesh.h"
@@ -91,16 +92,11 @@ inline bool checkIShape(int i, NeighborBits iBit, ui32 iIndex, NeighborBits corn
     return false;
 }
 
-f32v4 getUvsFromConnectedWallIndex(int index) {
-    const int offsetX = index % (int)CONNECTED_WALL_DIMS.x;
-    const int offsetY = index / (int)CONNECTED_WALL_DIMS.x + 1;
-
-    f32v4 uvs;
-    uvs.x = offsetX / CONNECTED_WALL_DIMS.x;
-    uvs.y = offsetY / CONNECTED_WALL_DIMS.y;
-    uvs.z = 1.0f / CONNECTED_WALL_DIMS.x;
-    uvs.w = -1.0f / CONNECTED_WALL_DIMS.y;
-    return uvs;
+f32v2 getUvsOffsetsFromConnectedWallIndex(int index) {
+    f32v2 rv;
+    rv.x = index % (int)CONNECTED_WALL_DIMS.x;
+    rv.y = index / (int)CONNECTED_WALL_DIMS.x + 1;
+    return rv;
 }
 
 // Hex map
@@ -154,7 +150,7 @@ void initConnectedOffsets() {
 
         // I shapes
         if (checkIShape(i, TOP, 0x8, BOTTOM_LEFT, BOTTOM_RIGHT, BOTTOM, 0x5)) {
-            continue;
+continue;
         }
         if (checkIShape(i, RIGHT, 0x7, BOTTOM_LEFT, TOP_LEFT, LEFT, 0x6)) {
             continue;
@@ -183,7 +179,9 @@ void initConnectedOffsets() {
     }
 }
 
-ChunkMesher::ChunkMesher() {
+ChunkMesher::ChunkMesher(const TextureAtlas& textureAtlas) :
+    mTextureAtlas(textureAtlas)
+{
     initConnectedOffsets();
 
     ui32 i = 0;
@@ -196,7 +194,7 @@ ChunkMesher::ChunkMesher() {
         mIndices[i++] = v;
     }
 
-    std::cout << "Chunk mesher initialized with memory size" << sizeof(ChunkMesher) / 1000 << " MB\n";
+    std::cout << "Chunk mesher initialized with memory size " << sizeof(ChunkMesher) / 1000.0f / 1000.0f << " MB\n";
 
 }
 
@@ -246,8 +244,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
     ChunkMesh& mesh = *renderData.mChunkMesh;
 
     int vertexCount = 0;
-    VGTexture tmp;
-    
+
     PreciseTimer timer;
     Tile neighbors[8];
     for (int y = 0; y < CHUNK_WIDTH; ++y) {
@@ -255,51 +252,15 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
             //  TODO: More than just ground
             TileIndex index(x, y);
             const Tile& tile = chunk.mTiles[index];
+            if (tile.groundLayer == TILE_ID_NONE) {
+                continue;
+            }
             const SpriteData& spriteData = TileRepository::getTileData(tile.groundLayer).spriteData;
-            tmp = spriteData.texture;
             switch (spriteData.method) {
                 case TileTextureMethod::SIMPLE: {
                     
                     addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
                     vertexCount += 4;
-                    break;
-                }
-                case TileTextureMethod::CONNECTED_WALL: {
-                    assert(false);
-                }
-            }
-        }
-    }
-    std::cout << " loop took " << timer.stop() << " ms\n";
-
-    PreciseTimer timer2;
-    mesh.setData(mVertices, vertexCount, mIndices, tmp);
-    std::cout << " setdata took " << timer2.stop() << " ms\n";
-    renderData.mBaseDirty = false;
-}
-
-void ChunkMesher::updateSpritebatch(const Chunk& chunk) {
-    // mutable render data
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    const i32v2& pos = chunk.getChunkPos();
-    const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
-
-    if (!renderData.mBaseMesh) {
-        renderData.mBaseMesh = std::make_unique<vg::SpriteBatch>(true, true);
-    }
-
-    PreciseTimer timer;
-    Tile neighbors[8];
-    renderData.mBaseMesh->begin(CHUNK_WIDTH * CHUNK_WIDTH);
-    for (int y = 0; y < CHUNK_WIDTH; ++y) {
-        for (int x = 0; x < CHUNK_WIDTH; ++x) {
-            //  TODO: More than just ground
-            TileIndex index(x, y);
-            const Tile& tile = chunk.mTiles[index];
-            const SpriteData& spriteData = TileRepository::getTileData(tile.groundLayer).spriteData;
-            switch (spriteData.method) {
-                case TileTextureMethod::SIMPLE: {
-                    renderData.mBaseMesh->draw(spriteData.texture, &spriteData.uvs, f32v2(x + offset.x, y + offset.y), f32v2(spriteData.dims), color4(1.0f, 1.0f, 1.0f), 0.0f);
                     break;
                 }
                 case TileTextureMethod::CONNECTED_WALL: {
@@ -313,23 +274,31 @@ void ChunkMesher::updateSpritebatch(const Chunk& chunk) {
                     const ConnectedWallData& data = sConnectedWallData[connectedBits];
                     const float verticalOffset = 0.749f;
                     if (data.data == 0) {
-                        // TODO: Atlas? Starting offset?
-                        f32v4 uvs(0.0f, 0.0f, 1.0f / CONNECTED_WALL_DIMS.x, -1.0f / CONNECTED_WALL_DIMS.y);
-                        renderData.mBaseMesh->draw(spriteData.texture, &uvs, f32v2(x + offset.x, y + offset.y + verticalOffset), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f), 1.0f);
+                        f32v4 uvs = spriteData.uvs;
+                        uvs.w = -uvs.w;
+                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), uvs, color4(1.0f, 1.0f, 1.0f), 1.0f);
+                        vertexCount += 4;
                     }
                     else {
                         // Check if we need to render the base layer first
                         if (data.a < 0x10) {
-                            f32v4 uvs(0.0f, 0.0f, 1.0f / CONNECTED_WALL_DIMS.x, -1.0f / CONNECTED_WALL_DIMS.y);
-                            renderData.mBaseMesh->draw(spriteData.texture, &uvs, f32v2(x + offset.x, y + offset.y + verticalOffset), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f), 0.9f);
+                            f32v4 uvs = spriteData.uvs;
+                            uvs.w = -uvs.w;
+                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), uvs, color4(1.0f, 1.0f, 1.0f), 0.9f);
+                            vertexCount += 4;
                         }
                         // Render up to 4 textures depending on configuration
                         for (int i = 0; i < 4; ++i) {
                             const ui16 val = data.dataArray[i];
                             if (val == 0) break;
 
-                            const f32v4 uvs = getUvsFromConnectedWallIndex(val);
-                            renderData.mBaseMesh->draw(spriteData.texture, &uvs, f32v2(x + offset.x, y + offset.y + verticalOffset), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f), 1.0f);
+                            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                            f32v4 uvs = spriteData.uvs;
+                            uvs.x += offsets.x * uvs.z;
+                            uvs.y += offsets.y * uvs.w;
+                            uvs.w = -uvs.w;
+                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), uvs, color4(1.0f, 1.0f, 1.0f), 1.0f);
+                            vertexCount += 4;
                         }
                         // Render exposed wall bottom if  needed
                         if (isBitSet(connectedBits, BOTTOM)) {
@@ -337,21 +306,25 @@ void ChunkMesher::updateSpritebatch(const Chunk& chunk) {
                             const unsigned sideCheck = ((connectedBits & (LEFT | RIGHT)) >> 3);
                             const ui16 val = sExposedWallLookup[sideCheck];
 
-                            const f32v4 uvs = getUvsFromConnectedWallIndex(val);
-                            renderData.mBaseMesh->draw(spriteData.texture, &uvs, f32v2(x + offset.x, y + offset.y), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f), 0.0f);
+                            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                            f32v4 uvs = spriteData.uvs;
+                            uvs.x += offsets.x * uvs.z;
+                            uvs.y += offsets.y * uvs.w;
+                            uvs.w = -uvs.w;
+                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
+                            vertexCount += 4;
                         }
 
                     }
                     break;
                 }
-                default:
-                    assert(false);
             }
         }
     }
-    std::cout << " p1 " << timer.stop() << " ms\n";
-    renderData.mBaseMesh->end();
+    std::cout << " loop took " << timer.stop() << " ms\n";
 
-    std::cout << " p2 " << timer.stop() << " ms\n";
+    PreciseTimer timer2;
+    mesh.setData(mVertices, vertexCount, mIndices, mTextureAtlas.getAtlasTexture());
+    std::cout << " setdata took " << timer2.stop() << " ms\n";
     renderData.mBaseDirty = false;
 }

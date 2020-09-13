@@ -18,7 +18,7 @@
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager) :
 	mResourceManager(resourceManager) // TODO: Remove?
 {
-    mMesher = std::make_unique<ChunkMesher>();
+    mMesher = std::make_unique<ChunkMesher>(resourceManager.getTextureAtlas());
 }
 
 ChunkRenderer::~ChunkRenderer() {

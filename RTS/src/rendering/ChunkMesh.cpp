@@ -3,9 +3,9 @@
 
 #include "world/Chunk.h"
 #include "rendering/ChunkVertex.h"
+#include "rendering/ShaderLoader.h"
 #include "Camera2D.h"
 
-#include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -22,28 +22,31 @@ uniform mat4 VP;
 in vec4 vPosition;
 in vec2 vUV;
 in vec4 vTint;
+in float vAtlasPage;
 
 out vec2 fUV;
-flat out vec4 fUVRect;
+flat out float fAtlasPage;
 out vec4 fTint;
 
 void main() {
     fTint = vTint;
     fUV = vUV;
+    fAtlasPage = vAtlasPage;
     vec4 worldPos = World * vPosition;
     gl_Position = VP * worldPos;
 }
 )";
 const cString MESH_FS_SRC = R"(
-uniform sampler2D SBTex;
+uniform sampler2DArray tex;
 
 in vec2 fUV;
+flat in float fAtlasPage;
 in vec4 fTint;
 
 out vec4 fColor;
 
 void main() {
-    fColor = texture(SBTex, fUV) * fTint;
+    fColor = texture(tex, vec3(fUV, fAtlasPage)) * fTint;
     // Don't write 0 alpha (TMP)
     if (fColor.a <= 0.01) {
         discard;
@@ -53,7 +56,7 @@ void main() {
 
 ChunkMesh::ChunkMesh() {
     // Create program if it's not cached
-    if (!sProgram.isCreated()) sProgram = vg::ShaderManager::createProgram(MESH_VS_SRC, MESH_FS_SRC);
+    if (!sProgram.isCreated()) sProgram = ShaderLoader::createProgram("Atlas", MESH_VS_SRC, MESH_FS_SRC);
 
     { // Create VAO
         glGenVertexArrays(1, &mVao);
@@ -70,6 +73,7 @@ ChunkMesh::ChunkMesh() {
         glVertexAttribPointer(sProgram.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, pos));
         glVertexAttribPointer(sProgram.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, uvs));
         glVertexAttribPointer(sProgram.getAttribute("vTint"), 4, GL_UNSIGNED_BYTE, true, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, color));
+        glVertexAttribPointer(sProgram.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_BYTE, true, sizeof(ChunkVertex), (void*)offsetof(ChunkVertex, atlasPage));
 
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -131,15 +135,12 @@ void ChunkMesh::draw(const Camera2D& camera) {
     glBindVertexArray(mVao); // TODO(Ben): This wont work with all custom shaders?
 
     glActiveTexture(GL_TEXTURE0);
-    glUniform1i(sProgram.getUniform("SBTex"), 0);
-    // Draw All The Batches
-    //for (auto& b : m_batches) {
+    glUniform1i(sProgram.getUniform("tex"), 0);
 
-        glBindTexture(GL_TEXTURE_2D, mTexture);
-        vg::SamplerState::LINEAR_WRAP.set(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, mTexture);
+    vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
 
-        glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
-    //}
+    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
 
     glBindVertexArray(0);
 

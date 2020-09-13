@@ -23,6 +23,7 @@ public:
     // Resource Accessors
     SpriteData getSprite(const std::string& spriteName);
 
+    TextureAtlas& getTextureAtlas() { return *mTextureAtlas; }
     vg::TextureCache& getTextureCache() { return *mTextureCache.get(); }
     bool hasLoadedResources() const { return mHasLoadedResources; }
     

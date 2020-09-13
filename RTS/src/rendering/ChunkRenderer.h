@@ -8,6 +8,7 @@ DECL_VG(class SpriteBatch);
 class ResourceManager;
 class Camera2D;
 class ChunkMesher;
+class TextureAtlas;
 
 class ChunkRenderer {
 public:
