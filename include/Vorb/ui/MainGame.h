@@ -116,9 +116,9 @@ namespace vorb {
             bool checkScreenChange();
 
             // Steps Performed During Game Loop
-            void refreshElapsedTime();
-            void onUpdateFrame();
-            void onRenderFrame();
+            virtual void refreshElapsedTime();
+            virtual void onUpdateFrame();
+            virtual void onRenderFrame();
 
             GameWindow m_window; ///< The application's window
         

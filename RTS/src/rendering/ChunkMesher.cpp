@@ -3,7 +3,7 @@
 #include "rendering/TextureAtlas.h"
 
 #include "world/Chunk.h"
-#include "rendering/ChunkMesh.h"
+#include "rendering/QuadMesh.h"
 
 // TODO: Method(s) file?
 struct ConnectedWallData {
@@ -183,55 +183,47 @@ ChunkMesher::ChunkMesher(const TextureAtlas& textureAtlas) :
     mTextureAtlas(textureAtlas)
 {
     initConnectedOffsets();
-
-    ui32 i = 0;
-    for (ui32 v = 0; i < MAX_INDICES_PER_CHUNK; v += 4u) {
-        mIndices[i++] = v;
-        mIndices[i++] = v + 2;
-        mIndices[i++] = v + 3;
-        mIndices[i++] = v + 3;
-        mIndices[i++] = v + 1;
-        mIndices[i++] = v;
-    }
-
-    std::cout << "Chunk mesher initialized with memory size " << sizeof(ChunkMesher) / 1000.0f / 1000.0f << " MB\n";
-
 }
 
-void addQuad(ChunkVertex* verts, const f32v2& position, const f32v2& dimsMeters, const f32v4& uvs, const color4& color, float depth) {
+void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters, const f32v4& uvs, const color4& color, float extraHeight) {
+    // Center the sprite
     const float xOffset = -(float)((dimsMeters.x - 1) / 2);
-    // Top Left
-    ChunkVertex& vtl = verts[0];
-    vtl.pos.x = position.x + xOffset;
-    vtl.pos.y = position.y;
-    vtl.pos.z = depth;
-    vtl.uvs.x = uvs.x;
-    vtl.uvs.y = uvs.y + uvs.w;
-    vtl.color = color;
-    // Top Right
-    ChunkVertex& vtr = verts[1];
-    vtr.pos.x = position.x + dimsMeters.x + xOffset;
-    vtr.pos.y = position.y;
-    vtr.pos.z = depth;
-    vtr.uvs.x = uvs.x + uvs.z;
-    vtr.uvs.y = uvs.y + uvs.w;
-    vtr.color = color;
+
+    float bottomDepth = extraHeight;
+    float topDepth = std::max(dimsMeters.y - 1.0f, 0.0f) + extraHeight;
+
     // Bottom Left
-    ChunkVertex& vbl = verts[2];
+    BasicVertex& vbl = verts[0];
     vbl.pos.x = position.x + xOffset;
-    vbl.pos.y = position.y + dimsMeters.y;
-    vbl.pos.z = depth;
+    vbl.pos.y = position.y;
+    vbl.pos.z = bottomDepth;
     vbl.uvs.x = uvs.x;
-    vbl.uvs.y = uvs.y;
+    vbl.uvs.y = uvs.y + uvs.w;
     vbl.color = color;
     // Bottom Right
-    ChunkVertex& vbr = verts[3];
+    BasicVertex& vbr = verts[1];
     vbr.pos.x = position.x + dimsMeters.x + xOffset;
-    vbr.pos.y = position.y + dimsMeters.y;
-    vbr.pos.z = depth;
+    vbr.pos.y = position.y;
+    vbr.pos.z = bottomDepth;
     vbr.uvs.x = uvs.x + uvs.z;
-    vbr.uvs.y = uvs.y;
+    vbr.uvs.y = uvs.y + uvs.w;
     vbr.color = color;
+    // Top Left
+    BasicVertex& vtl = verts[2];
+    vtl.pos.x = position.x + xOffset;
+    vtl.pos.y = position.y + dimsMeters.y;
+    vtl.pos.z = topDepth;
+    vtl.uvs.x = uvs.x;
+    vtl.uvs.y = uvs.y;
+    vtl.color = color;
+    // Top Right
+    BasicVertex& vtr = verts[3];
+    vtr.pos.x = position.x + dimsMeters.x + xOffset;
+    vtr.pos.y = position.y + dimsMeters.y;
+    vtr.pos.z = topDepth;
+    vtr.uvs.x = uvs.x + uvs.z;
+    vtr.uvs.y = uvs.y;
+    vtr.color = color;
 }
 
 void ChunkMesher::createMesh(const Chunk& chunk) {
@@ -240,9 +232,9 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
     const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
 
     if (!renderData.mChunkMesh) {
-        renderData.mChunkMesh = std::make_unique<ChunkMesh>();
+        renderData.mChunkMesh = std::make_unique<QuadMesh>();
     }
-    ChunkMesh& mesh = *renderData.mChunkMesh;
+    QuadMesh& mesh = *renderData.mChunkMesh;
 
     int vertexCount = 0;
 
@@ -258,11 +250,11 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                 if (layerTile == TILE_ID_NONE) {
                     continue;
                 }
-                float layerDepth = l * 0.1f;
+                float layerDepth = l * 0.001f;
                 const SpriteData& spriteData = TileRepository::getTileData(layerTile).spriteData;
                 switch (spriteData.method) {
                     case TileTextureMethod::SIMPLE: {
-                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f + l);
+                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f + layerDepth);
                         vertexCount += 4;
                         break;
                     }
@@ -277,13 +269,13 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                         const ConnectedWallData& data = sConnectedWallData[connectedBits];
                         const float verticalOffset = 0.749f;
                         if (data.data == 0) {
-                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.8f + l);
+                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.02f + layerDepth);
                             vertexCount += 4;
                         }
                         else {
                             // Check if we need to render the base layer first
                             if (data.a < 0x10) {
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.7f + l);
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.01f + layerDepth);
                                 vertexCount += 4;
                             }
                             // Render up to 4 textures depending on configuration
@@ -295,7 +287,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 0.8f + l);
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 0.02f + layerDepth);
                                 vertexCount += 4;
                             }
                             // Render exposed wall bottom if  needed
@@ -308,7 +300,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 0.0f);
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 0.01f + layerDepth);
                                 vertexCount += 4;
                             }
 
@@ -322,7 +314,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
     std::cout << " loop took " << timer.stop() << " ms\n";
 
     PreciseTimer timer2;
-    mesh.setData(mVertices, vertexCount, mIndices, mTextureAtlas.getAtlasTexture());
+    mesh.setData(mVertices, vertexCount, mTextureAtlas.getAtlasTexture());
     std::cout << " setdata took " << timer2.stop() << " ms\n";
     renderData.mBaseDirty = false;
 }

@@ -13,6 +13,7 @@ public:
     virtual void addScreens() override;
     virtual void onInit() override;
     virtual void onExit() override;
+    virtual void refreshElapsedTime() override;
 
 	std::unique_ptr<MainMenuScreen> m_mainMenuScreen;
 };

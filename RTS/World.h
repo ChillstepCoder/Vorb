@@ -53,6 +53,8 @@ public:
 
 	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT Chunk** chunk);
 
+	ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
+
 	
 private:
 
@@ -79,6 +81,6 @@ private:
 	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
 
 	// Rendering
-	std::unique_ptr<ChunkRenderer> mChunkRenderer;
+	mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
 };
 

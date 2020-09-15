@@ -4,6 +4,7 @@
 
 
 DECL_VG(class SpriteBatch);
+DECL_VG(class GLProgram);
 
 class ResourceManager;
 class Camera2D;
@@ -21,10 +22,17 @@ public:
 
 	// TODO: Deep LOD?
 
+	void ReloadShaders();
+	void SelectNextShader();
+
 private:
 	void UpdateMesh(const Chunk& chunk);
+	void LoadShaders();
 
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
+
+	std::vector<vg::GLProgram> mShaders;
+	unsigned mActiveShader = 0;
 };
 

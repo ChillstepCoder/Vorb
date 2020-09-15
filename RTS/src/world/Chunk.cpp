@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Chunk.h"
 
-#include "rendering/ChunkMesh.h"
+#include "rendering/QuadMesh.h"
 
 
 ChunkRenderData::~ChunkRenderData() {

@@ -27,6 +27,7 @@
 
 #include "physics/ContactListener.h"
 
+#include "rendering/ChunkRenderer.h"
 #include "DebugRenderer.h"
 
 MainMenuScreen::MainMenuScreen(const App* app) 
@@ -93,6 +94,12 @@ void MainMenuScreen::build() {
 			mDebugOptions.mWireframe = !mDebugOptions.mWireframe;
         } else if (event.keyCode == VKEY_C) {
             mDebugOptions.mChunkBoundaries = !mDebugOptions.mChunkBoundaries;
+        }
+        else if (event.keyCode == VKEY_R) {
+			mWorld->getChunkRenderer().ReloadShaders();
+        }
+        else if (event.keyCode == VKEY_N) {
+            mWorld->getChunkRenderer().SelectNextShader();
         }
 	});
 

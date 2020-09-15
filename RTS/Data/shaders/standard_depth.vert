@@ -9,6 +9,7 @@ in float vAtlasPage;
 out vec2 fUV;
 flat out float fAtlasPage;
 out vec4 fTint;
+out float depth;
 
 void main() {
     fTint = vTint;
@@ -16,5 +17,6 @@ void main() {
     fAtlasPage = vAtlasPage;
     vec4 worldPos = World * vPosition;
     gl_Position = VP * worldPos;
-	//gl_Position.z += (gl_Position.y + 1.0) / 2.0;
+	// gl_Position.z += (gl_Position.y + 1.0) / 2.0;
+	depth = (gl_Position.z + 1.0) / 2.0;
 }

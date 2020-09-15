@@ -18,7 +18,7 @@ Camera2D::~Camera2D()
 void Camera2D::init(int screenWidth, int screenHeight) {
     _screenWidth = screenWidth;
     _screenHeight = screenHeight;
-    _orthoMatrix = glm::ortho(0.0f, (float)_screenWidth, 0.0f, (float)_screenHeight);
+    _orthoMatrix = glm::ortho(0.0f, (float)_screenWidth, 0.0f, (float)_screenHeight, -10.0f, 10.0f);
 }
 
 // TODO: Investigate Pixels per unit

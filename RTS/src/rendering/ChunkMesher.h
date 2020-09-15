@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/ChunkVertex.h"
+#include "rendering/BasicVertex.h"
 
 class Chunk;
 class TextureAtlas;
@@ -16,8 +16,7 @@ public:
 
 private:
     // Shared vertex buffer to eliminate allocations
-    ChunkVertex mVertices[MAX_VERTICES_PER_CHUNK];
-    ui32 mIndices[MAX_INDICES_PER_CHUNK];
+    BasicVertex mVertices[MAX_VERTICES_PER_CHUNK];
     const TextureAtlas& mTextureAtlas;
 };
 

@@ -4,12 +4,12 @@
 
 DECL_VG(class GLProgram);
 class Camera2D;
-struct ChunkVertex;
+struct BasicVertex;
 
-class ChunkMesh {
+class QuadMesh {
 public:
-    ChunkMesh();
-    ~ChunkMesh();
+    QuadMesh();
+    ~QuadMesh();
 
     /*class Batch {
     public:
@@ -19,16 +19,16 @@ public:
         ui32 indexOffset;
     };*/
 
-    void setData(const ChunkVertex* meshData, int vertexCount, const ui32* indexData, VGTexture texture);
-    void draw(const Camera2D& camera);
+    // Indices are 0, 2, 3, 3, 1, 0
+    void setData(const BasicVertex* meshData, int vertexCount, VGTexture texture);
+    void draw(const Camera2D& camera, vg::GLProgram& program);
 
+private:
     VGVertexArray mVao = 0; ///< Vertex Array Object
     VGBuffer mVbo = 0; ///< Vertex Buffer Object
     VGBuffer mIbo = 0; ///< Index Buffer Object
     VGTexture mTexture = 0;
     ui32 mIndexCount = 0; ///< Current capacity of the m_ibo
+    const vg::GLProgram* mLastUsedProgram = nullptr;
    // std::vector<Batch> mBatches; ///< Vector of batches for rendering
-
-    static vg::GLProgram sProgram; ///< Shader handle
 };
-

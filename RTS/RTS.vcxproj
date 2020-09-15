@@ -164,7 +164,7 @@
     <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
-    <ClCompile Include="src\rendering\ChunkMesh.cpp" />
+    <ClCompile Include="src\rendering\QuadMesh.cpp" />
     <ClCompile Include="src\rendering\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
@@ -213,10 +213,10 @@
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
-    <ClInclude Include="src\rendering\ChunkMesh.h" />
+    <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
-    <ClInclude Include="src\rendering\ChunkVertex.h" />
+    <ClInclude Include="src\rendering\BasicVertex.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />
     <ClInclude Include="src\rendering\SpriteData.h" />
     <ClInclude Include="src\rendering\TextureAtlas.h" />

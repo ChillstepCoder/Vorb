@@ -153,6 +153,14 @@ namespace vorb {
                 return m_uniforms.at(name);
             }
 
+            /// Gets a uniform index, if it exists
+            /// @param name: The uniform's name
+            /// @return Uniform location
+            const VGUniform* tryGetUniform(const nString& name) const {
+                auto&& it = m_uniforms.find(name);
+                return it != m_uniforms.end() ? &it->second : nullptr;
+            }
+
             /// Gets the current semantic binding
             const AttributeSemBinding& getSemanticBinding() const { return m_semanticBinding; }
 

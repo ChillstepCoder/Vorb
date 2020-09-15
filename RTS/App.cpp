@@ -27,3 +27,9 @@ void App::onInit() {
 
 void App::onExit() {
 }
+
+void App::refreshElapsedTime() {
+	vui::MainGame::refreshElapsedTime();
+	sTotalTimeSeconds = m_curTime.total;
+	sElapsedSecondsSinceLastFrame = m_curTime.elapsed;
+}
