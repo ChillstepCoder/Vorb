@@ -37,7 +37,7 @@ void CharacterRenderer::render(vg::SpriteBatch& sb, const CharacterModel& model,
 	static const float HEAD_OFFSET_MULT_X = 0.025f;
 	const f32v2 headOffset = f32v2(HEAD_SIZE * HEAD_OFFSET_MULT_X * headOffsetX, BODY_SIZE * HEAD_OFFSET_MULT_Y);
 	const f32v2 bodyOffset = f32v2(0.0f, BODY_SIZE * 0.25f);
-	renderPart(sb, model.mBodyTextures[index], pos, bodyOffset, f32v2(0.0f), uvRect, BODY_SIZE, 0.1f);
-	renderPart(sb, model.mFaceTextures[index], pos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.2f);
-	renderPart(sb, model.mHairTextures[index], pos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.3f);
+	renderPart(sb, model.mBodyTextures[index], pos, bodyOffset, f32v2(0.0f), uvRect, BODY_SIZE, 0.2f);
+	renderPart(sb, model.mFaceTextures[index], pos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.4f);
+	renderPart(sb, model.mHairTextures[index], pos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.6f);
 }
