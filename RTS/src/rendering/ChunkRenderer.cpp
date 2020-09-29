@@ -17,7 +17,6 @@ ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager) :
 	mResourceManager(resourceManager) // TODO: Remove?
 {
     mMesher = std::make_unique<ChunkMesher>(resourceManager.getTextureAtlas());
-	LoadShaders();
 }
 
 ChunkRenderer::~ChunkRenderer() {
@@ -38,11 +37,13 @@ void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
 }
 
 void ChunkRenderer::ReloadShaders() {
+	// reload dirty via timestamp
+	assert(false);
 	for (auto& shader : mShaders) {
 		shader.dispose();
 	}
 	mShaders.clear();
-	LoadShaders();
+	InitPostLoad();
 }
 
 void ChunkRenderer::SelectNextShader() {
@@ -56,18 +57,18 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 	mMesher->createMesh(chunk);
 }
 
-void ChunkRenderer::LoadShaders()
+void ChunkRenderer::InitPostLoad()
 {
     mActiveShader = 0;
 
 	// Basic
-    vg::GLProgram basicProgram = ShaderLoader::createProgramFromFile("data/shaders/standard_tile.vert", "data/shaders/standard_tile.frag");
+    vg::GLProgram basicProgram = ShaderLoader::getProgram("standard_tile");
 	if (basicProgram.isLinked()) {
 		mShaders.emplace_back(std::move(basicProgram));
 	}
 
 	// Depth
-    vg::GLProgram depthProgram = ShaderLoader::createProgramFromFile("data/shaders/standard_depth.vert", "data/shaders/standard_depth.frag");
+    vg::GLProgram depthProgram = ShaderLoader::getProgram("standard_depth");
 	if (depthProgram.isLinked()) {
 		mShaders.emplace_back(std::move(depthProgram));
 	}

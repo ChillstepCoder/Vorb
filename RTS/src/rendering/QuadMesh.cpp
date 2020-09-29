@@ -119,6 +119,7 @@ void QuadMesh::draw(const Camera2D& camera, vg::GLProgram& program) {
         glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_BYTE, true, sizeof(BasicVertex), (void*)offsetof(BasicVertex, atlasPage));
     }
 
+    // TODO: Maybe use  multiple texture units? Not bind this every time?
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(program.getUniform("tex"), 0);
 

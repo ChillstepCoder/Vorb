@@ -94,8 +94,8 @@ inline bool checkIShape(int i, NeighborBits iBit, ui32 iIndex, NeighborBits corn
 
 f32v2 getUvsOffsetsFromConnectedWallIndex(int index) {
     f32v2 rv;
-    rv.x = index % (int)CONNECTED_WALL_DIMS.x;
-    rv.y = index / (int)CONNECTED_WALL_DIMS.x;
+    rv.x = float(index % (int)CONNECTED_WALL_DIMS.x);
+    rv.y = float(index / (int)CONNECTED_WALL_DIMS.x);
     return rv;
 }
 
@@ -191,7 +191,15 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
 
     const float bottomDepth = extraHeight;
     float topDepth = extraHeight;
-    if (dimsMeters.y > 1.0f) topDepth += dimsMeters.y;
+    color4 bottomColor;
+    if (dimsMeters.y > 1.0f) {
+        topDepth += dimsMeters.y;
+        constexpr float SHADOW_MULT = 0.5f;
+        bottomColor = color4(ui8(color.r * SHADOW_MULT), ui8(color.r * SHADOW_MULT), ui8(color.r * SHADOW_MULT), color.a);
+    }
+    else {
+        bottomColor = color;
+    }
 
     // Bottom Left
     BasicVertex& vbl = verts[0];
@@ -200,7 +208,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     vbl.pos.z = bottomDepth;
     vbl.uvs.x = uvs.x;
     vbl.uvs.y = uvs.y + uvs.w;
-    vbl.color = color;
+    vbl.color = bottomColor;
     // Bottom Right
     BasicVertex& vbr = verts[1];
     vbr.pos.x = position.x + dimsMeters.x + xOffset;
@@ -208,7 +216,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     vbr.pos.z = bottomDepth;
     vbr.uvs.x = uvs.x + uvs.z;
     vbr.uvs.y = uvs.y + uvs.w;
-    vbr.color = color;
+    vbr.color = bottomColor;
     // Top Left
     BasicVertex& vtl = verts[2];
     vtl.pos.x = position.x + xOffset;

@@ -69,9 +69,6 @@ void World::draw(const Camera2D& camera) {
 			mChunkRenderer->RenderChunk(*chunk, camera);
 		}
 	}
-
-	// TODO: This feels wrong
-	updateWorldMousePos(camera);
 }
 
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
@@ -80,7 +77,6 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	mLoadCenter = playerPos;
 
 	getChunkOrCreateAtPosition(playerPos);
-	updateWorldMousePos(camera);
 	
 	const f32v2 topRight = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), 0.0f));
 	const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth() * 0.5f, camera.getScreenHeight() * 0.5f));
@@ -105,11 +101,6 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 
 	// Update physics
 	mPhysWorld->Step(deltaTime, 1, 1);
-}
-
-void World::updateWorldMousePos(const Camera2D& camera) {
-	const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
-	mWorldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
 }
 
 Chunk* World::getChunkAtPosition(const f32v2& worldPos) {

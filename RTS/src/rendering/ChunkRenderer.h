@@ -25,9 +25,9 @@ public:
 	void ReloadShaders();
 	void SelectNextShader();
 
+    void InitPostLoad();
 private:
 	void UpdateMesh(const Chunk& chunk);
-	void LoadShaders();
 
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;

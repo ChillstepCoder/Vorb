@@ -1,45 +1,55 @@
 #pragma once
 
-DECL_VG(class TextureCache);
 DECL_VIO(class IOManager);
 
 #include <Vorb/io/Path.h>
-#include "rendering/SpriteData.h"
 #include "world/Tile.h"
 
-class TileSpriteLoader;
-class TextureAtlas;
+#include "rendering/SpriteRepository.h"
+
+class MaterialManager;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
 class ResourceManager {
-    friend class TileSpriteLoader;
 public:
     ResourceManager();
     ~ResourceManager();
 
-    void loadResources(const vio::Path& folderPath);
+    void gatherFiles(const vio::Path& folderPath);
+    void loadFiles();
 
     // Resource Accessors
-    SpriteData getSprite(const std::string& spriteName);
+    const SpriteData& getSprite(const std::string& spriteName);
 
-    TextureAtlas& getTextureAtlas() { return *mTextureAtlas; }
-    vg::TextureCache& getTextureCache() { return *mTextureCache.get(); }
+    SpriteRepository& getSpriteRepository() { return *mSpriteRepository; }
+    // TODO: Replace?
+    vg::TextureCache& getTextureCache() { return mSpriteRepository->getTextureCache(); }
+    const TextureAtlas& getTextureAtlas() const { return mSpriteRepository->getTextureAtlas(); }
+    const MaterialManager& getMaterialManager() const { return *mMaterialManager; }
     bool hasLoadedResources() const { return mHasLoadedResources; }
+
+    void writeDebugAtlas() const;
     
 private:
     bool loadTiles(const vio::Path& filePath);
+    bool loadShader(const vio::Path& filePath);
 
-    // Textures
-    std::unique_ptr<TileSpriteLoader> mTileSpriteLoader;
-    std::unique_ptr<vg::TextureCache> mTextureCache;
-    std::unique_ptr<TextureAtlas> mTextureAtlas;
-    std::map<std::string /* Sprite Name */, SpriteData> mSprites;
+    // Tasks
+    // TODO: ResourceLoader
+    std::vector<vio::Path> mShaderFiles;
+    std::vector<vio::Path> mTextureFiles;
+    std::vector<vio::Path> mMaterialFiles;
+    std::vector<vio::Path> mTileFiles;
+
+    std::unique_ptr<SpriteRepository> mSpriteRepository;
+    std::unique_ptr<MaterialManager> mMaterialManager;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 
     TileID mIdGenerator = 0; // Generates IDs
 
     bool mHasLoadedResources = false;
+    bool mHasGathered = false;
 };
 

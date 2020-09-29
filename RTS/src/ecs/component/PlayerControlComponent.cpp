@@ -3,6 +3,8 @@
 
 #include "EntityComponentSystem.h"
 
+#include "ecs/ClientEcsData.h"
+
 #include "World.h"
 #include "DebugRenderer.h"
 
@@ -51,7 +53,7 @@ f32v2 getMovementDir(World& world) {
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
+void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world, const ClientECSData& clientData) {
 
 	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 
@@ -66,8 +68,7 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 		myPhysCmp.mDir = moveDir;
 	}
 	else {
-		const f32v2& mousePos = world.getCurrentWorldMousePos();
-		myPhysCmp.mDir = glm::normalize(mousePos - myPhysCmp.getPosition());
+		myPhysCmp.mDir = glm::normalize(clientData.worldMousePos - myPhysCmp.getPosition());
 	}
 
 	float speed = BASE_SPEED;
@@ -96,7 +97,7 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	}
 }
 
-inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
+inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world, const ClientECSData& clientData) {
 	UNUSED(cmp);
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
@@ -106,16 +107,16 @@ inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, 
 		cmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
 	}
 
-	updateMovement(entity, cmp, ecs, world);
+	updateMovement(entity, cmp, ecs, world, clientData);
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
 		performAttack(entity, cmp, ecs, world);
 	}
 }
 
-void PlayerControlComponentTable::update(EntityComponentSystem& ecs, World& world) {
+void PlayerControlComponentTable::update(EntityComponentSystem& ecs, World& world, const ClientECSData& clientData) {
 	// Update components
 	for (auto&& cmp : *this) {
-		updateComponent(cmp.first, cmp.second, ecs, world);
+		updateComponent(cmp.first, cmp.second, ecs, world, clientData);
 	}
 }

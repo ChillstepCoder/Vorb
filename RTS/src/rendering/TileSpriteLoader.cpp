@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TileSpriteLoader.h"
-#include "ResourceManager.h"
 
+#include "rendering/SpriteRepository.h"
 #include "rendering/TextureAtlas.h"
 
 #include <Vorb/io/IOManager.h>
@@ -24,8 +24,8 @@ ui32 TileSpriteLoader::AtlasTileMapping::getPage() const {
     return index / TEXTURE_ATLAS_CELLS_PER_PAGE;
 }
 
-TileSpriteLoader::TileSpriteLoader(ResourceManager& resourceManager, TextureAtlas& textureAtlas) :
-    mResourceManager(resourceManager),
+TileSpriteLoader::TileSpriteLoader(SpriteRepository& spriteRepository, TextureAtlas& textureAtlas) :
+    mSpriteRepository(spriteRepository),
     mTextureAtlas(textureAtlas)
 {
     textureMapper = std::make_unique<vvox::VoxelTextureStitcher>(TEXTURE_ATLAS_WIDTH_PX / TEXTURE_ATLAS_CELL_WIDTH_PX);
@@ -36,7 +36,7 @@ TileSpriteLoader::~TileSpriteLoader()
 
 }
 
-bool TileSpriteLoader::loadSpriteSheet(const vio::Path& filePath) {
+bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
     if (!filePath.isValid()) return false;
 
     vg::ScopedBitmapResource rs(vg::ImageIO().load(filePath, vg::ImageIOFormat::RGBA_UI8));
@@ -70,7 +70,6 @@ bool TileSpriteLoader::loadSpriteSheet(const vio::Path& filePath) {
         }
         else {
             // Connected and others
-            sprite.cellWidthPx = rs.width / 6.0f;
             ui32 index = textureMapper->mapBox(tileDims.x, tileDims.y);
             sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
             sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
@@ -82,21 +81,21 @@ bool TileSpriteLoader::loadSpriteSheet(const vio::Path& filePath) {
 
         // Insert the sprite
         if (metaData.textureName.size()) {
-            auto it = mResourceManager.mSprites.find(metaData.textureName);
-            if (it != mResourceManager.mSprites.end()) {
+            auto it = mSpriteRepository.mSprites.find(metaData.textureName);
+            if (it != mSpriteRepository.mSprites.end()) {
                 assert(false); // Sprite name conflict! Mod conflict?
                 return false;
             }
-            mResourceManager.mSprites.insert(std::make_pair(std::move(metaData.textureName), std::move(sprite)));
+            mSpriteRepository.mSprites.insert(std::make_pair(std::move(metaData.textureName), std::move(sprite)));
         }
         else {
             std::string textureName = getTextureNameFromFilePath(filePath);
-            auto it = mResourceManager.mSprites.find(textureName);
-            if (it != mResourceManager.mSprites.end()) {
+            auto it = mSpriteRepository.mSprites.find(textureName);
+            if (it != mSpriteRepository.mSprites.end()) {
                 assert(false); // Sprite name conflict! Mod conflict?
                 return false;
             }
-            mResourceManager.mSprites.insert(std::make_pair(std::move(textureName), std::move(sprite)));
+            mSpriteRepository.mSprites.insert(std::make_pair(std::move(textureName), std::move(sprite)));
         }
     }
 

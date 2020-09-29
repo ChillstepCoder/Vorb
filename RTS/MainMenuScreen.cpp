@@ -27,8 +27,13 @@
 
 #include "physics/ContactListener.h"
 
+#include "rendering/MaterialManager.h"
+#include "rendering/MaterialRenderer.h"
+#include "rendering/RenderContext.h"
 #include "rendering/ChunkRenderer.h"
 #include "DebugRenderer.h"
+
+#include "TextureManip.h"
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app) {
@@ -54,6 +59,10 @@ MainMenuScreen::MainMenuScreen(const App* app)
 	mHumanActorFactory = std::make_unique<HumanActorFactory>(*mEcs, *mResourceManager);
 	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mResourceManager);
 	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mResourceManager);
+
+	mRenderContext = std::make_unique<RenderContext>();
+	mMaterialRenderer = std::make_unique<MaterialRenderer>();
+	mTextureManipulator = std::make_unique<GPUTextureManipulator>();
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
 	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
@@ -85,8 +94,14 @@ void MainMenuScreen::build() {
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 	mCamera2D->setScale(mScale);
 
-    mResourceManager->loadResources("data/textures");
-    mResourceManager->loadResources("data/tiles");
+    mResourceManager->gatherFiles("data/shaders");
+    mResourceManager->gatherFiles("data/textures");
+    mResourceManager->gatherFiles("data/tiles");
+    mResourceManager->gatherFiles("data/materials/normals");
+	mResourceManager->loadFiles();
+	mResourceManager->writeDebugAtlas();
+
+	mWorld->getChunkRenderer().InitPostLoad();
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
@@ -167,6 +182,11 @@ void MainMenuScreen::build() {
 	mPlayerEntity = mPlayerActorFactory->createActor(f32v2(0.0f),
 		vio::Path("data/textures/circle_dir.png"),
 		vio::Path(""));
+
+
+	// Init UI elements
+	initUi();
+
 }
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
@@ -182,6 +202,10 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 	const float deltaTime = /*gameTime.elapsed / (1.0f / 60.0f)*/ 1.0f;
+
+	// Do this first
+	UpdateClientEcsData();
+
 	//static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
 	//f32v2 offset(0.0f);
 
@@ -205,14 +229,16 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	}*/
 
 	// Camera follow
-	const f32v2& playerPos = mEcs->getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
-	const f32v2& offset = mWorld->getCurrentWorldMousePos() - playerPos;
+
+
+    const f32v2& playerPos = mEcs->getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
+	const f32v2& offset = mClientEcsData.worldMousePos - playerPos;
 	mCamera2D->setPosition(playerPos + offset * 0.2f);
 	mCamera2D->update();
 
 	mWorld->update(deltaTime, playerPos, *mCamera2D);
 
-	mEcs->update(deltaTime);
+	mEcs->update(deltaTime, mClientEcsData);
 
 	// Update
 	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);
@@ -222,6 +248,8 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	mRenderContext->BeginFrame(*mCamera2D, *mResourceManager);
 
 	mWorld->draw(*mCamera2D);
 
@@ -259,6 +287,10 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 
     DebugRenderer::renderLines(mCamera2D->getCameraMatrix());
 
+	const Material* testMaterial = mResourceManager->getMaterialManager().getMaterial("normals");
+	assert(testMaterial);
+	mMaterialRenderer->renderMaterialToScreen(*testMaterial, *mRenderContext);
+
     mSb->begin();
     char fpsString[64];
     sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
@@ -266,4 +298,27 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     mSb->end();
     mSb->render(mCamera2D->getScreenSize());
 	
+}
+
+void MainMenuScreen::UpdateClientEcsData() {
+    const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
+	mClientEcsData.worldMousePos = mCamera2D->convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+}
+
+void MainMenuScreen::initUi()
+{
+
+	// Init cool textures
+	// Test auto normal map generation
+	SpriteData existingData = mResourceManager->getSprite("tree_large");
+
+	//mTextureManipulator->RunMaterialProcess()
+
+}
+
+void MainMenuScreen::drawUi()
+{
+
+	// Draw cool textures
+
 }

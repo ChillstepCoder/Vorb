@@ -180,6 +180,8 @@ namespace vorb {
                 return m_programInUse;
             }
 
+            const UniformMap& getUniforms() const { return m_uniforms; }
+
             Event<const nString&> onShaderCompilationError; ///< Event signaled during addShader when an error occurs
             Event<const nString&> onProgramLinkError; ///< Event signaled during link when an error occurs
         private:

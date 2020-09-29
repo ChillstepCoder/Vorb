@@ -2,6 +2,7 @@
 #include <Vorb/ecs/Entity.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 
+struct ClientECSData;
 class EntityComponentSystem;
 class World;
 
@@ -17,5 +18,5 @@ class PlayerControlComponentTable : public vecs::ComponentTable<PlayerControlCom
 public:
 	static const std::string& NAME;
 
-	void update(EntityComponentSystem& ecs, World& world);
+	void update(EntityComponentSystem& ecs, World& world, const ClientECSData& clientData);
 };

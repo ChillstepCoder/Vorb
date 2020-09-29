@@ -9,15 +9,15 @@
 DECL_VVOX(class VoxelTextureStitcher);
 
 class TextureAtlas;
-class ResourceManager;
+class SpriteRepository;
 struct SpriteData;
 
 class TileSpriteLoader {
 public:
-    TileSpriteLoader(ResourceManager& resourceManager, TextureAtlas& textureAtlas);
+    TileSpriteLoader(SpriteRepository& spriteRepository, TextureAtlas& textureAtlas);
     ~TileSpriteLoader();
 
-    bool loadSpriteSheet(const vio::Path& filePath);
+    bool loadSpriteTexture(const vio::Path& filePath);
 
 private:
 
@@ -53,7 +53,7 @@ private:
     void getFileMetadata(const vio::Path& imageFilePath, const ui32v2& fileDimsPx, OUT SpritesheetFileData& metaData);
     std::string getTextureNameFromFilePath(const vio::Path& path);
 
-    ResourceManager& mResourceManager;
+    SpriteRepository& mSpriteRepository;
     TextureAtlas& mTextureAtlas;
     std::unique_ptr<vvox::VoxelTextureStitcher> textureMapper;
 };

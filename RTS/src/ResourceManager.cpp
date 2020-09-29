@@ -1,19 +1,34 @@
 #include "stdafx.h"
 #include "ResourceManager.h"
 
+#include "rendering/MaterialManager.h"
 #include "rendering/TextureAtlas.h"
-#include "rendering/TileSpriteLoader.h"
+#include "rendering/ShaderLoader.h"
 
 #include <Vorb/io/IOManager.h>
-#include <Vorb/graphics/TextureCache.h>
 #include <Vorb/IO.h>
+#include <Vorb/graphics/TextureCache.h>
+#include <Vorb/graphics/ShaderManager.h>
+#include <Vorb/graphics/GLProgram.h>
+
+
+struct ShaderData {
+    nString vert;
+    nString frag;
+};
+KEG_TYPE_DECL(ShaderData);
+KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
+    kt.addValue("vert", keg::Value::basic(offsetof(ShaderData, vert), keg::BasicType::STRING));
+    kt.addValue("frag", keg::Value::basic(offsetof(ShaderData, frag), keg::BasicType::STRING));
+}
+
 
 ResourceManager::ResourceManager() {
-    mTextureCache = std::make_unique<vg::TextureCache>();
+    
     mIoManager = std::make_unique<vio::IOManager>();
-    mTextureCache->init(mIoManager.get());
-    mTextureAtlas = std::make_unique<TextureAtlas>();
-    mTileSpriteLoader = std::make_unique<TileSpriteLoader>(*this, *mTextureAtlas);
+
+    mSpriteRepository = std::make_unique<SpriteRepository>(*mIoManager);
+    mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository);
 }
 
 ResourceManager::~ResourceManager() {
@@ -28,7 +43,7 @@ bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
     return strcmp(filePath.getString().c_str() + (length - extension.size()), extension.c_str()) == 0;
 }
 
-void ResourceManager::loadResources(const vio::Path& folderPath) {
+void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     vio::Directory directory;
     if (!folderPath.asDirectory(&directory)) {
         // TODO: Better error messaging
@@ -43,29 +58,61 @@ void ResourceManager::loadResources(const vio::Path& folderPath) {
 
     for (auto&& entry : entries) {
         if (fileHasExtension(entry, ".png")) {
-            mTileSpriteLoader->loadSpriteSheet(entry);
+            mTextureFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".tile")) {
-            loadTiles(entry);
+            mTileFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".material")) {
+            mMaterialFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".shader")) {
+            mShaderFiles.emplace_back(entry);
         }
     }
 
-    mHasLoadedResources = true;
-
-    // Update textures
-    mTextureAtlas->uploadDirtyPages();
-    mTextureAtlas->writeDebugPages();
+    mHasGathered = true;
 }
 
-SpriteData ResourceManager::getSprite(const std::string& spriteName) {
-    SpriteData rv;
+void ResourceManager::loadFiles() {
+    assert(mHasGathered);
 
-    auto it = mSprites.find(spriteName);
-    if (it != mSprites.end()) {
-        return it->second;
+    // Load Shaders
+    for (auto&& entry : mShaderFiles) {
+        loadShader(entry);
     }
 
-    return rv;
+    // Load Textures
+    for (auto&& entry : mTextureFiles) {
+        mSpriteRepository->loadSpriteTexture(entry);
+    }
+    mTextureFiles.clear();
+
+    // Load Tiles
+    for (auto&& entry : mTileFiles) {
+        // TODO: Tilemanager?
+        loadTiles(entry);
+    }
+    mTileFiles.clear();
+
+    // Load Materials
+    for (auto&& entry : mMaterialFiles) {
+        mMaterialManager->loadMaterial(entry);
+    };
+    mMaterialFiles.clear();
+
+    // Update textures
+    mSpriteRepository->mTextureAtlas->uploadDirtyPages();
+
+    mHasLoadedResources = true;
+}
+
+const SpriteData& ResourceManager::getSprite(const std::string& spriteName) {
+    return mSpriteRepository->getSprite(spriteName);
+}
+
+void ResourceManager::writeDebugAtlas() const {
+    mSpriteRepository->mTextureAtlas->writeDebugPages();
 }
 
 bool ResourceManager::loadTiles(const vio::Path& filePath) {
@@ -104,4 +151,34 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
     context.reader.dispose();
 
     return true;
+}
+
+bool ResourceManager::loadShader(const vio::Path& filePath)
+{
+    nString data;
+    mIoManager->readFileToString(filePath, data);
+    if (data.empty()) return false;
+
+    // Convert to YAML
+    keg::ReadContext context;
+    context.env = keg::getGlobalEnvironment();
+    context.reader.init(data.c_str());
+    keg::Node rootObject = context.reader.getFirst();
+    if (keg::getType(rootObject) != keg::NodeType::MAP) {
+        context.reader.dispose();
+        return false;
+    }
+
+    auto f = makeFunctor([&](Sender, const nString& key, keg::Node value) {
+        ShaderData shaderData;
+        keg::Error error = keg::parse((ui8*)&shaderData, value, context, &KEG_GLOBAL_TYPE(ShaderData));
+        assert(error == keg::Error::NONE);
+        vio::Path rootPath = filePath;
+        rootPath.trimEnd();
+        vio::Path vertPath = rootPath / shaderData.vert;
+        vio::Path fragPath = rootPath / shaderData.frag;
+        vg::GLProgram program = ShaderLoader::createProgramFromFile(key, vertPath, fragPath);
+    });
+    context.reader.forAllInMap(rootObject, &f);
+    context.reader.dispose();
 }

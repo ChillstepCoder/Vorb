@@ -32,10 +32,7 @@ public:
 
 	void init(EntityComponentSystem& ecs);
 	void draw(const Camera2D& camera);
-	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera); // TODO: Multiplayer?
-	void updateWorldMousePos(const Camera2D& camera);
-
-	const f32v2& getCurrentWorldMousePos() const { return mWorldMousePos; }
+	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera);
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except = ENTITY_ID_NONE);
@@ -72,7 +69,6 @@ private:
 	std::unique_ptr<ChunkGenerator> mChunkGenerator;
 
 	// Data
-	f32v2 mWorldMousePos = f32v2(0.0f);
 	f32v2 mLoadRange = f32v2(0.0f);
 	f32v2 mLoadCenter = f32v2(0.0f);
 	bool mDirty = true;

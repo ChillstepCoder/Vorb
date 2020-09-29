@@ -22,7 +22,7 @@ EntityComponentSystem::EntityComponentSystem(World& world)
 	addComponentTable(CharacterModelComponentTable::NAME, &mCharacterModelTable);
 }
 
-void EntityComponentSystem::update(float deltaTime) {
+void EntityComponentSystem::update(float deltaTime, const ClientECSData& clientData) {
 	
 	// TODO: Not every frame
 	static int frameCount = 0;
@@ -36,7 +36,7 @@ void EntityComponentSystem::update(float deltaTime) {
 	mSpriteTable.update();
 	mPhysicsTable.update(deltaTime); // Phys cmp sets dir to velocity
 	mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
-	mPlayerControlTable.update(*this, mWorld);
+	mPlayerControlTable.update(*this, mWorld, clientData);
 	mCorpseTable.update();
 }
 

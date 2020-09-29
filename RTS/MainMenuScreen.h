@@ -13,6 +13,9 @@ class UndeadActorFactory;
 class HumanActorFactory;
 class PlayerActorFactory;
 class ResourceManager;
+class RenderContext;
+class GPUTextureManipulator;
+class MaterialRenderer;
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
@@ -46,20 +49,29 @@ public:
 	virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
-	std::unique_ptr<vg::SpriteBatch> mSb;
-	std::unique_ptr<vg::SpriteFont> mSpriteFont;
+	void UpdateClientEcsData();
+	void initUi();
+	void drawUi();
 
     std::unique_ptr<ResourceManager> mResourceManager;
 	std::unique_ptr<World> mWorld;
-	std::unique_ptr<Camera2D> mCamera2D;
 	vg::Texture mCircleTexture;
 
+	ClientECSData mClientEcsData;
 	std::unique_ptr<EntityComponentSystem> mEcs;
 	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
 
 	std::unique_ptr<HumanActorFactory> mHumanActorFactory;
 	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
 	std::unique_ptr<PlayerActorFactory> mPlayerActorFactory;
+
+    // Rendering
+    std::unique_ptr<vg::SpriteBatch> mSb;
+    std::unique_ptr<vg::SpriteFont> mSpriteFont;
+    std::unique_ptr<Camera2D> mCamera2D;
+    std::unique_ptr<RenderContext> mRenderContext;
+    std::unique_ptr<MaterialRenderer> mMaterialRenderer;
+	std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
 
 
 	float mScale = 50.0f;

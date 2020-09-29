@@ -24,14 +24,18 @@ DECL_VIO(class IOManager);
 #pragma once
 class ShaderLoader {
 public:
+
+    /// Gets a previously created program by name
+    static vg::GLProgram getProgram(const nString& name);
+
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath,
+    static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath,
         vio::IOManager* iom = nullptr, const cString defines = nullptr);
 
     /// Creates a program using passed code, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgram(const cString displayName, const cString vertSrc, const cString fragSrc,
+    static CALLER_DELETE vg::GLProgram createProgram(const nString& name, const cString vertSrc, const cString fragSrc,
         vio::IOManager* iom = nullptr, const cString defines = nullptr);
 };
 

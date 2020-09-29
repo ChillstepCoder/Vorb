@@ -2,6 +2,8 @@
 #include <Vorb/ecs/ECS.h>
 #include <Vorb/ecs/ComponentTable.hpp>
 
+#include "ecs/ClientEcsData.h"
+
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/SimpleSpriteComponent.h"
 #include "ecs/component/NavigationComponent.h"
@@ -20,7 +22,7 @@ class EntityComponentSystem : public vecs::ECS {
 public:
 	EntityComponentSystem(World& world);
 
-	void update(float deltaTime);
+	void update(float deltaTime, const ClientECSData& clientData);
 	void convertEntityToCorpse(vecs::EntityID entity);
 
 	DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
