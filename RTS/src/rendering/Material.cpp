@@ -4,10 +4,16 @@
 #include <Vorb/graphics/Texture.h>
 
 
+KEG_TYPE_DEF_SAME_NAME(MaterialAtlasTextureInputData, kt) {
+    kt.addValue("name", keg::Value::basic(offsetof(MaterialAtlasTextureInputData, textureName), keg::BasicType::STRING));
+    kt.addValue("unrect", keg::Value::basic(offsetof(MaterialAtlasTextureInputData, uniformRectName), keg::BasicType::STRING));
+    kt.addValue("unpage", keg::Value::basic(offsetof(MaterialAtlasTextureInputData, uniformPageName), keg::BasicType::STRING));
+}
 
 KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
-    kt.addValue("inputTextures", keg::Value::array(offsetof(MaterialData, inputTextureNames), keg::BasicType::STRING));
-    kt.addValue("shader", keg::Value::basic(offsetof(MaterialData, shaderName), keg::BasicType::STRING));
+    kt.addValue("atlasTextures", keg::Value::array(offsetof(MaterialData, atlasTextures), keg::Value::custom(0, "MaterialAtlasTextureInputData", false)));
+    kt.addValue("vert", keg::Value::basic(offsetof(MaterialData, vertexShaderName), keg::BasicType::STRING));
+    kt.addValue("frag", keg::Value::basic(offsetof(MaterialData, fragmentShaderName), keg::BasicType::STRING));
 }
 
 const std::map<nString, MaterialUniform> sUniformLookup = {
@@ -30,9 +36,9 @@ extern MaterialUniform lookupMaterialUniform(const nString& str) {
 void Material::use() const {
 
     mProgram.use();
-    for (int i = 0; i < mInputTextures.size(); ++i) {
-        glActiveTexture(GL_TEXTURE0 + i);
-        mInputTextures[i].bind();
-    }
 
+    for (auto&& atlasTextureInput : mInputAtlasTextures) {
+        glUniform4fv(atlasTextureInput.uvRectUniform, 1, &atlasTextureInput.uvRect[0]);
+        glUniform1fv(atlasTextureInput.pageUniform, 1, &atlasTextureInput.page);
+    }
 }

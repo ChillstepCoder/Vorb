@@ -1,3 +1,0 @@
-normals:
-  inputTextures: ["color_noise"]
-  shader: normals

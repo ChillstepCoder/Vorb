@@ -36,7 +36,10 @@
 #include "TextureManip.h"
 
 MainMenuScreen::MainMenuScreen(const App* app) 
-	: IAppScreen<App>(app) {
+	: IAppScreen<App>(app),
+	  mResourceManager(std::make_unique<ResourceManager>()),
+      mRenderContext(RenderContext::initInstance(*mResourceManager))
+{
 
 	// TODO: This is kinda stupid
 	if (WeaponRegistry::s_allWeaponItems.empty()) {
@@ -46,7 +49,6 @@ MainMenuScreen::MainMenuScreen(const App* app)
 	}
 
 	mSb = std::make_unique<vg::SpriteBatch>();
-	mResourceManager = std::make_unique<ResourceManager>();
 
 	mCamera2D = std::make_unique<Camera2D>();
 
@@ -60,8 +62,6 @@ MainMenuScreen::MainMenuScreen(const App* app)
 	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mResourceManager);
 	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mResourceManager);
 
-	mRenderContext = std::make_unique<RenderContext>();
-	mMaterialRenderer = std::make_unique<MaterialRenderer>();
 	mTextureManipulator = std::make_unique<GPUTextureManipulator>();
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
@@ -97,11 +97,11 @@ void MainMenuScreen::build() {
     mResourceManager->gatherFiles("data/shaders");
     mResourceManager->gatherFiles("data/textures");
     mResourceManager->gatherFiles("data/tiles");
-    mResourceManager->gatherFiles("data/materials/normals");
+    mResourceManager->gatherFiles("data/materials");
 	mResourceManager->loadFiles();
 	mResourceManager->writeDebugAtlas();
 
-	mWorld->getChunkRenderer().InitPostLoad();
+	mRenderContext.initPostLoad();
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
@@ -111,10 +111,10 @@ void MainMenuScreen::build() {
             mDebugOptions.mChunkBoundaries = !mDebugOptions.mChunkBoundaries;
         }
         else if (event.keyCode == VKEY_R) {
-			mWorld->getChunkRenderer().ReloadShaders();
+			mRenderContext.getChunkRenderer().ReloadShaders();
         }
         else if (event.keyCode == VKEY_N) {
-            mWorld->getChunkRenderer().SelectNextShader();
+			mRenderContext.getChunkRenderer().SelectNextShader();
         }
 	});
 
@@ -249,9 +249,9 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	mRenderContext->BeginFrame(*mCamera2D, *mResourceManager);
+	mRenderContext.beginFrame(*mCamera2D, *mResourceManager);
 
-	mWorld->draw(*mCamera2D);
+	mRenderContext.getChunkRenderer().renderWorld(*mWorld, *mCamera2D);
 
 	if (mDebugOptions.mWireframe) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -289,7 +289,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 
 	const Material* testMaterial = mResourceManager->getMaterialManager().getMaterial("normals");
 	assert(testMaterial);
-	mMaterialRenderer->renderMaterialToScreen(*testMaterial, *mRenderContext);
+	mRenderContext.getMaterialRenderer().renderMaterialToScreen(*testMaterial);
 
     mSb->begin();
     char fpsString[64];

@@ -2,23 +2,43 @@
 
 class ResourceManager;
 class Camera2D;
+class MaterialRenderer;
+class ChunkRenderer;
 
 struct GlobalRenderData {
-    f32m4 viewProjectionMatrix;
-    f32m4 worldMatrix;
     VGTexture atlas;
     f32 time;
     const Camera2D* mainCamera = nullptr;
 };
 
+// Singleton
 class RenderContext {
+protected:
+    RenderContext(ResourceManager& resourceManager);
+    ~RenderContext();
+
 public:
+    RenderContext(RenderContext& other) = delete;
+    void operator=(const RenderContext&) = delete;
 
-    void BeginFrame(const Camera2D& camera, const ResourceManager& resourceManager);
+    static RenderContext& initInstance(ResourceManager& resourceManager);
+    static RenderContext& getInstance();
 
-    const GlobalRenderData& GetRenderData() const { return mRenderData; }
+    void initPostLoad();
+    void beginFrame(const Camera2D& camera, const ResourceManager& resourceManager);
+
+    const GlobalRenderData& getRenderData() const { return mRenderData; }
+    ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
+    MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
 
 private:
+    // Data
     GlobalRenderData mRenderData;
+
+    static RenderContext* sInstance;
+
+    // Renderers
+    mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
+    mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
 };
 

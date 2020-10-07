@@ -15,7 +15,6 @@ class PlayerActorFactory;
 class ResourceManager;
 class RenderContext;
 class GPUTextureManipulator;
-class MaterialRenderer;
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
@@ -69,8 +68,7 @@ private:
     std::unique_ptr<vg::SpriteBatch> mSb;
     std::unique_ptr<vg::SpriteFont> mSpriteFont;
     std::unique_ptr<Camera2D> mCamera2D;
-    std::unique_ptr<RenderContext> mRenderContext;
-    std::unique_ptr<MaterialRenderer> mMaterialRenderer;
+    RenderContext& mRenderContext;
 	std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
 
 

@@ -4,6 +4,10 @@
 #include <Vorb/Event.hpp>
 #include <Vorb/graphics/ShaderManager.h>
 
+std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> ShaderLoader::sProgramCache;
+std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
+std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
+
 namespace {
     void printShaderError(Sender s VORB_MAYBE_UNUSED, const nString& n) {
         puts("Shader Error: ");
@@ -21,6 +25,22 @@ namespace {
 
 vg::GLProgram ShaderLoader::getProgram(const nString& name) {
     return vg::ShaderManager::getProgram(name);
+}
+
+vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName) {
+    auto id = std::make_pair(vertexShaderName, fragmentShaderName);
+    auto&& it = sProgramCache.find(id);
+    if (it != sProgramCache.end()) {
+        return it->second;
+    }
+
+    vio::Path vertPath;
+    vio::Path fragPath;
+    tryGetCachedPaths(vertexShaderName, fragmentShaderName, vertPath, fragPath);
+
+    vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName, vertPath, fragPath);
+    sProgramCache.insert(std::make_pair(id, newProgram));
+    return newProgram;
 }
 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath,
@@ -78,4 +98,26 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
         vg::ShaderManager::registerProgram(name, program);
     }
     return program;
+}
+
+void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath)
+{
+    {
+        auto&& it = sVertexShaderNameToPath.find(vertexShaderName);
+        if (it != sVertexShaderNameToPath.end()) {
+            resultVertPath = it->second;
+        }
+        else {
+            resultVertPath = vertexShaderName;
+        }
+    }
+    {
+        auto&& it = sFragmentShaderNameToPath.find(fragmentShaderName);
+        if (it != sFragmentShaderNameToPath.end()) {
+            resultFragPath = it->second;
+        }
+        else {
+            resultFragPath = fragmentShaderName;
+        }
+    }
 }

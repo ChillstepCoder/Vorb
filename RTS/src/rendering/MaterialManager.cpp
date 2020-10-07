@@ -40,22 +40,29 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
 
         Material newMaterial;
 
-        for (int i = 0; i < materialData.inputTextureNames.size(); ++i) {
-            const SpriteData& sprite = mSpriteRepository.getSprite(materialData.inputTextureNames[i]);
-            vg::Texture inputTexture;
-            inputTexture.id = sprite.texture;
-            inputTexture.textureTarget = vg::TextureTarget::TEXTURE_2D_ARRAY;
-            inputTexture.width = (ui32)sprite.dimsMeters.x;
-            inputTexture.height = (ui32)sprite.dimsMeters.y;
-            newMaterial.mInputTextures.emplace_back(std::move(inputTexture));
-        }
-        newMaterial.mProgram = ShaderLoader::getProgram(materialData.shaderName);
+        // Get shader
+        newMaterial.mProgram = ShaderLoader::getOrCreateProgram(materialData.vertexShaderName, materialData.fragmentShaderName);
         assert(newMaterial.mProgram.isLinked());
+
+        for (int i = 0; i < materialData.atlasTextures.size(); ++i) {
+            const MaterialAtlasTextureInputData& textureData = materialData.atlasTextures[i];
+            const SpriteData& sprite = mSpriteRepository.getSprite(textureData.textureName);
+            assert(textureData.uniformPageName.size() && textureData.uniformRectName.size());
+            // If this is an atlas subtexture, our material will need the uvrect and page of the texture
+            MaterialAtlasTextureInput input;
+            input.uvRect = sprite.uvs;
+            input.page = sprite.atlasPage;
+            input.uvRectUniform = newMaterial.mProgram.getUniform(textureData.uniformRectName);
+            input.pageUniform = newMaterial.mProgram.getUniform(textureData.uniformPageName);
+            newMaterial.mInputAtlasTextures.emplace_back(std::move(input));
+        }
 
         // Get uniforms from shader
         for (auto&& uniform : newMaterial.mProgram.getUniforms()) {
-            newMaterial.mUniforms.emplace_back(lookupMaterialUniform(uniform.first), uniform.second);
-            assert(newMaterial.mUniforms.back().first != MaterialUniform::INVALID);
+            MaterialUniform matUniform = lookupMaterialUniform(uniform.first);
+            if (matUniform != MaterialUniform::INVALID) {
+                newMaterial.mUniforms.emplace_back(lookupMaterialUniform(uniform.first), uniform.second);
+            }
         }
 
         // Store material

@@ -17,11 +17,26 @@ enum class MaterialUniform {
 
 extern MaterialUniform lookupMaterialUniform(const nString& str);
 
+struct MaterialAtlasTextureInputData {
+    nString textureName;
+    nString uniformRectName;
+    nString uniformPageName;
+};
+KEG_TYPE_DECL(MaterialAtlasTextureInputData);
+
 struct MaterialData {
-    Array<nString> inputTextureNames;
-    nString        shaderName;
+    Array<MaterialAtlasTextureInputData> atlasTextures;
+    nString vertexShaderName;
+    nString fragmentShaderName;
 };
 KEG_TYPE_DECL(MaterialData);
+
+struct MaterialAtlasTextureInput {
+    f32v4 uvRect;
+    f32 page;
+    VGUniform uvRectUniform;
+    VGUniform pageUniform;
+};
 
 class Material {
 public:
@@ -29,6 +44,6 @@ public:
     void use() const;
 
     std::vector<std::pair<MaterialUniform, VGUniform> > mUniforms;
-    std::vector<vg::Texture> mInputTextures;
+    std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;
     mutable vg::GLProgram mProgram; //  TODO: Handle
 };

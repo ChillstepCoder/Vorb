@@ -6,7 +6,13 @@
 void keg::YAMLReader::init(const cString data) {
     m_first = new YAMLNode;
     m_allocated.insert(m_first);
-    m_first->data = YAML::Load(data);
+    try {
+        m_first->data = YAML::Load(data);
+    }
+    catch (YAML::ParserException e) {
+        printf("Parser exception %s at line %d column %d pos %d\n", e.msg.c_str(), e.mark.line, e.mark.column, e.mark.pos);
+        assert(false);
+    }
 }
 void keg::YAMLReader::dispose() {
     for (auto node : m_allocated) delete node;

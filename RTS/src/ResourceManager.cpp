@@ -69,6 +69,12 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         else if (fileHasExtension(entry, ".shader")) {
             mShaderFiles.emplace_back(entry);
         }
+        else if (fileHasExtension(entry, ".vert")) {
+            ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
+        }
+        else if (fileHasExtension(entry, ".frag")) {
+            ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
+        }
     }
 
     mHasGathered = true;
@@ -181,4 +187,5 @@ bool ResourceManager::loadShader(const vio::Path& filePath)
     });
     context.reader.forAllInMap(rootObject, &f);
     context.reader.dispose();
+    return true;
 }

@@ -130,6 +130,10 @@ constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 	return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+// **************** BEBUG *****************
+static bool s_debugToggle = false;
+static bool s_wasTogglePressed = false;
+
 // **************** ERRORS *****************
 //yes 1, no 0
 extern i32 showYesNoBox(const nString& message);

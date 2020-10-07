@@ -17,7 +17,6 @@ class b2Body;
 class b2World;
 class Camera2D;
 class ContactListener;
-class ChunkRenderer;
 class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
@@ -31,7 +30,6 @@ public:
 
 
 	void init(EntityComponentSystem& ecs);
-	void draw(const Camera2D& camera);
 	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera);
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
@@ -49,9 +47,6 @@ public:
 	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
 
 	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT Chunk** chunk);
-
-	ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
-
 	
 private:
 
@@ -75,8 +70,5 @@ private:
 	
 	// TODO: Chunk paging for cache performance on updates
 	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
-
-	// Rendering
-	mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
 };
 

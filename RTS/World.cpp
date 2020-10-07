@@ -21,17 +21,11 @@
 
 
 #define ENABLE_DEBUG_RENDER 1
-#if ENABLE_DEBUG_RENDER == 1
-#include <Vorb/ui/InputDispatcher.h>
-static bool s_debugToggle = false;
-static bool s_wasTogglePressed = false;
-#endif
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 
 World::World(ResourceManager& resourceManager) {
-	mChunkRenderer = std::make_unique<ChunkRenderer>(resourceManager);
 	mChunkGenerator = std::make_unique<ChunkGenerator>();
 }
 
@@ -46,29 +40,6 @@ void World::init(EntityComponentSystem& ecs) {
 
 	mContactListener = std::make_unique<ContactListener>(*mEcs);
 	mPhysWorld->SetContactListener(mContactListener.get());
-}
-
-void World::draw(const Camera2D& camera) {
-
-#if ENABLE_DEBUG_RENDER == 1
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
-		if (!s_wasTogglePressed) {
-			s_wasTogglePressed = true;
-			s_debugToggle = !s_debugToggle;
-		}
-	}
-	else {
-		s_wasTogglePressed = false;
-	}
-#endif
-
-	ChunkID chunkId;
-	Chunk* chunk;
-	while (enumVisibleChunks(camera, chunkId, &chunk)) {
-		if (chunk && chunk->canRender()) {
-			mChunkRenderer->RenderChunk(*chunk, camera);
-		}
-	}
 }
 
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
@@ -352,6 +323,7 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
 #if ENABLE_DEBUG_RENDER == 1
 			if (s_debugToggle) {
+				assert(false); // Can we do shared debug  toggle
 				DebugRenderer::drawLine(pos, (pos + axisExtrema[i] * radius) - pos, color4(0.0f, 1.0f, 0.0f), 1);
 			}
 #endif

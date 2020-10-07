@@ -2,26 +2,28 @@
 
 #include "world/Chunk.h"
 
-
 DECL_VG(class SpriteBatch);
-DECL_VG(class GLProgram);
 
 class ResourceManager;
 class Camera2D;
 class ChunkMesher;
 class TextureAtlas;
+class MaterialRenderer;
+class World;
+class Material;
 
 class ChunkRenderer {
 public:
-	ChunkRenderer(ResourceManager& resourceManager);
+	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
+
+	void renderWorld(World& world, const Camera2D& camera);
 
 	// Different rendering methods
 	void RenderChunk(const Chunk& chunk, const Camera2D& camera);
 	//void RenderChunkBaked(const Chunk& chunk, const Camera2D& camera, int LOD);
 
 	// TODO: Deep LOD?
-
 	void ReloadShaders();
 	void SelectNextShader();
 
@@ -32,7 +34,8 @@ private:
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 
-	std::vector<vg::GLProgram> mShaders;
-	unsigned mActiveShader = 0;
+	const MaterialRenderer& mMaterialRenderer;
+	std::vector<const Material*> mMaterials;
+	unsigned mActiveMaterial = 0;
 };
 

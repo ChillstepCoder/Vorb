@@ -1,0 +1,7 @@
+normals:
+  atlasTextures:
+    - name: color_noise
+      unrect: NoiseUvRect
+      unpage: NoisePage
+  vert: pass_through.vert
+  frag: normals.frag

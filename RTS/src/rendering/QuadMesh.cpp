@@ -3,6 +3,7 @@
 
 #include "world/Chunk.h"
 #include "rendering/BasicVertex.h"
+#include "rendering/RenderContext.h"
 #include "Camera2D.h"
 
 #include <Vorb/graphics/GLProgram.h>
@@ -91,22 +92,22 @@ void QuadMesh::setData(const BasicVertex* meshData, int vertexCount, VGTexture t
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void QuadMesh::draw(const Camera2D& camera, vg::GLProgram& program) {
-
+void QuadMesh::draw(const vg::GLProgram& program) const {
     // Make sure we have been initialized
     assert(mVao);
 
-    // Setup The Shader
     vg::DepthState::FULL.set();
     vg::RasterizerState::CULL_NONE.set();
 
-    program.use();
-    f32m4 world(1.0f);
-    // TODO: cache uniform id?
-    glUniformMatrix4fv(program.getUniform("World"), 1, false, &world[0][0]);
-    glUniformMatrix4fv(program.getUniform("VP"), 1, false, &camera.getCameraMatrix()[0][0]);
-
     glBindVertexArray(mVao); // TODO(Ben): This wont work with all custom shaders?
+    bindVertexAttribs(program);
+
+    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
+
+    glBindVertexArray(0);
+}
+
+void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     if (mLastUsedProgram != &program) {
         mLastUsedProgram = &program;
 
@@ -118,21 +119,5 @@ void QuadMesh::draw(const Camera2D& camera, vg::GLProgram& program) {
         glVertexAttribPointer(program.getAttribute("vTint"), 4, GL_UNSIGNED_BYTE, true, sizeof(BasicVertex), (void*)offsetof(BasicVertex, color));
         glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_BYTE, true, sizeof(BasicVertex), (void*)offsetof(BasicVertex, atlasPage));
     }
-
-    // TODO: Maybe use  multiple texture units? Not bind this every time?
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(program.getUniform("tex"), 0);
-
-    // Optional time
-    if (const VGUniform* timeUniform = program.tryGetUniform("time")) {
-        glUniform1f(*timeUniform, (float)sTotalTimeSeconds);
-    }
-
-    glBindTexture(GL_TEXTURE_2D_ARRAY, mTexture);
-    vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
-
-    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
-
-    glBindVertexArray(0);
 }
 

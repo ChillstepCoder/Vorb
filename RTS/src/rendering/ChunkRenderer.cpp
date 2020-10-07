@@ -3,24 +3,57 @@
 #include "TileSet.h"
 #include "Camera2D.h"
 #include "world/Chunk.h"
+#include "World.h"
 #include "ResourceManager.h"
 #include "rendering/ChunkMesher.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/BasicVertex.h"
 #include "rendering/ShaderLoader.h"
+#include "rendering/MaterialRenderer.h"
+#include "rendering/MaterialManager.h"
+#include "rendering/RenderContext.h"
 
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/DepthState.h>
 
-ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager) :
-	mResourceManager(resourceManager) // TODO: Remove?
+#define ENABLE_DEBUG_RENDER 1
+#if ENABLE_DEBUG_RENDER == 1
+#include <Vorb/ui/InputDispatcher.h>
+#endif
+
+ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
+	mResourceManager(resourceManager),
+	mMaterialRenderer(materialRenderer)
 {
     mMesher = std::make_unique<ChunkMesher>(resourceManager.getTextureAtlas());
 }
 
 ChunkRenderer::~ChunkRenderer() {
 	
+}
+
+void ChunkRenderer::renderWorld(World& world, const Camera2D& camera)
+{
+#if ENABLE_DEBUG_RENDER == 1
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
+        if (!s_wasTogglePressed) {
+            s_wasTogglePressed = true;
+            s_debugToggle = !s_debugToggle;
+        }
+    }
+    else {
+        s_wasTogglePressed = false;
+    }
+#endif
+
+    ChunkID chunkId;
+    Chunk* chunk;
+    while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
+        if (chunk && chunk->canRender()) {
+            RenderChunk(*chunk, camera);
+        }
+    }
 }
 
 void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
@@ -33,23 +66,23 @@ void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
         std::cout << "Mesh updated in " << timer.stop() << " ms\n";
 	}
 
-	renderData.mChunkMesh->draw(camera, mShaders[mActiveShader]);
+	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mMaterials[mActiveMaterial]);
 }
 
 void ChunkRenderer::ReloadShaders() {
 	// reload dirty via timestamp
 	assert(false);
-	for (auto& shader : mShaders) {
-		shader.dispose();
-	}
-	mShaders.clear();
+	//for (auto& material : mMaterials) {
+		//material.dispose();
+	//}
+	mMaterials.clear();
 	InitPostLoad();
 }
 
 void ChunkRenderer::SelectNextShader() {
-	++mActiveShader;
-	if (mActiveShader >= mShaders.size()) {
-		mActiveShader = 0;
+	++mActiveMaterial;
+	if (mActiveMaterial >= mMaterials.size()) {
+		mActiveMaterial = 0;
 	}
 }
 
@@ -59,17 +92,17 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 
 void ChunkRenderer::InitPostLoad()
 {
-    mActiveShader = 0;
+    mActiveMaterial = 0;
 
-	// Basic
-    vg::GLProgram basicProgram = ShaderLoader::getProgram("standard_tile");
-	if (basicProgram.isLinked()) {
-		mShaders.emplace_back(std::move(basicProgram));
+	// Standard
+	const Material* standardMat = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+	if (standardMat){
+		mMaterials.emplace_back(standardMat);
 	}
 
 	// Depth
-    vg::GLProgram depthProgram = ShaderLoader::getProgram("standard_depth");
-	if (depthProgram.isLinked()) {
-		mShaders.emplace_back(std::move(depthProgram));
+	const Material* depthMat = mResourceManager.getMaterialManager().getMaterial("standard_depth");
+	if (depthMat) {
+		mMaterials.emplace_back(depthMat);
 	}
 }
