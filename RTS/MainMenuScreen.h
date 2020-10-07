@@ -5,29 +5,16 @@
 
 // TODO: MOVE
 #include "EntityComponentSystem.h"
-#include "EntityComponentSystemRenderer.h"
 
 class App;
 class Camera2D;
-class UndeadActorFactory;
-class HumanActorFactory;
-class PlayerActorFactory;
 class ResourceManager;
 class RenderContext;
-class GPUTextureManipulator;
 
-DECL_VG(class SpriteBatch);
-DECL_VG(class SpriteFont);
 DECL_VUI(class InputDispatcher);
 
 class World;
 class b2World;
-
-// TODO: New file
-struct DebugOptions {
-	bool mWireframe = false;
-	bool mChunkBoundaries = false;
-};
 
 class MainMenuScreen : public vui::IAppScreen<App>
 {
@@ -48,36 +35,20 @@ public:
 	virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
-	void UpdateClientEcsData();
-	void initUi();
-	void drawUi();
 
     std::unique_ptr<ResourceManager> mResourceManager;
 	std::unique_ptr<World> mWorld;
 	vg::Texture mCircleTexture;
 
-	ClientECSData mClientEcsData;
-	std::unique_ptr<EntityComponentSystem> mEcs;
-	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
-
-	std::unique_ptr<HumanActorFactory> mHumanActorFactory;
-	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
-	std::unique_ptr<PlayerActorFactory> mPlayerActorFactory;
-
     // Rendering
-    std::unique_ptr<vg::SpriteBatch> mSb;
-    std::unique_ptr<vg::SpriteFont> mSpriteFont;
     std::unique_ptr<Camera2D> mCamera2D;
     RenderContext& mRenderContext;
-	std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
 
-
-	float mScale = 50.0f;
-	float mFps = 0.0f;
+    float mScale = 50.0f;
+    float mFps = 0.0f;
 
 	f32v2 mTestClick = f32v2(0.0f);
 	vecs::EntityID mPlayerEntity = 0;
 
-	DebugOptions mDebugOptions;
 };
 

@@ -13,11 +13,11 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
 
-EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& resourceManager, const EntityComponentSystem& system, const World& tileGrid)
+EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world)
 	: mSpriteBatch(std::make_unique<vg::SpriteBatch>())
-	, mSystem(system)
+	, mSystem(world.getECS())
 	, mResourceManager(resourceManager)
-	, mTileGrid(tileGrid) {
+	, mWorld(world) {
 	// TODO: Render thread assert?
 	mCircleTexture = resourceManager.getTextureCache().addTexture("data/textures/circle_dir.png");
 	mSpriteBatch->init();

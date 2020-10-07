@@ -4,11 +4,9 @@
 #include "App.h"
 
 #include <Vorb/math/VorbMath.hpp>
-#include <Vorb/graphics/SpriteBatch.h>
-#include <Vorb/graphics/TextureCache.h>
-#include <Vorb/graphics/DepthState.h>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteFont.h>
+#include <Vorb/graphics/TextureCache.h>
 #include <glm/gtx/rotate_vector.hpp>
 
 #include <box2d/b2_body.h>
@@ -19,50 +17,29 @@
 #include "World.h"
 #include "Utils.h"
 
-#include "actor/HumanActorFactory.h"
-#include "actor/UndeadActorFactory.h"
-#include "actor/PlayerActorFactory.h"
-
 #include "ResourceManager.h"
 
 #include "physics/ContactListener.h"
-
-#include "rendering/MaterialManager.h"
-#include "rendering/MaterialRenderer.h"
 #include "rendering/RenderContext.h"
-#include "rendering/ChunkRenderer.h"
-#include "DebugRenderer.h"
 
 #include "TextureManip.h"
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(std::make_unique<ResourceManager>()),
-      mRenderContext(RenderContext::initInstance(*mResourceManager))
+	  mWorld(std::make_unique<World>(*mResourceManager)),
+      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld))
 {
-
-	// TODO: This is kinda stupid
-	if (WeaponRegistry::s_allWeaponItems.empty()) {
-		ArmorRegistry::loadArmors();
-		WeaponRegistry::loadWeapons();
-		ShieldRegistry::loadShields();
-	}
-
-	mSb = std::make_unique<vg::SpriteBatch>();
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mWorld = std::make_unique<World>(*mResourceManager);
-	mEcs = std::make_unique<EntityComponentSystem>(*mWorld);
+    // TODO: This is kinda stupid
+    if (WeaponRegistry::s_allWeaponItems.empty()) {
+        ArmorRegistry::loadArmors();
+        WeaponRegistry::loadWeapons();
+        ShieldRegistry::loadShields();
+    }
 
-	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mResourceManager, *mEcs, *mWorld);
-	mSpriteFont = std::make_unique<vg::SpriteFont>();
-
-	mHumanActorFactory = std::make_unique<HumanActorFactory>(*mEcs, *mResourceManager);
-	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mResourceManager);
-	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mResourceManager);
-
-	mTextureManipulator = std::make_unique<GPUTextureManipulator>();
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
 	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
@@ -84,9 +61,6 @@ i32 MainMenuScreen::getPreviousScreen() const {
 }
 
 void MainMenuScreen::build() {
-	mWorld->init(*mEcs);
-	mSb->init();
-	mSpriteFont->init("data/fonts/chintzy.ttf", 32);
 
 	mCircleTexture = mResourceManager->getTextureCache().addTexture("data/textures/circle_dir.png");
 
@@ -103,15 +77,15 @@ void MainMenuScreen::build() {
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
 		if (event.keyCode == VKEY_B) {
-			mDebugOptions.mWireframe = !mDebugOptions.mWireframe;
+			sDebugOptions.mWireframe = !sDebugOptions.mWireframe;
         } else if (event.keyCode == VKEY_C) {
-            mDebugOptions.mChunkBoundaries = !mDebugOptions.mChunkBoundaries;
+            sDebugOptions.mChunkBoundaries = !sDebugOptions.mChunkBoundaries;
         }
         else if (event.keyCode == VKEY_R) {
-			mRenderContext.getChunkRenderer().ReloadShaders();
+			mRenderContext.reloadShaders();
         }
         else if (event.keyCode == VKEY_N) {
-			mRenderContext.getChunkRenderer().SelectNextShader();
+			mRenderContext.selectNextDebugShader();
         }
 	});
 
@@ -169,25 +143,19 @@ void MainMenuScreen::build() {
 
 		// Apply velocity
 		if (newActor) {
-			auto& physComp = mEcs->getPhysicsComponentFromEntity(newActor);
-			velocity = velocity;
-			physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
+            /*auto& physcomp = mecs->getphysicscomponentfromentity(newactor);
+            velocity = velocity;
+            physcomp.mbody->applyforce(reinterpret_cast<b2vec2&>(velocity), physcomp.mbody->getworldcenter(), true);*/
 		}
 	});
 
 	// Add player
-	mPlayerEntity = mPlayerActorFactory->createActor(f32v2(0.0f),
-		vio::Path("data/textures/circle_dir.png"),
-		vio::Path(""));
-
-
-	// Init UI elements
-	initUi();
+	mPlayerEntity = mWorld->createEntity(f32v2(0.0f), EntityType::PLAYER);
 
 }
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
-	mSb->dispose();
+	
 }
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
@@ -201,7 +169,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	const float deltaTime = /*gameTime.elapsed / (1.0f / 60.0f)*/ 1.0f;
 
 	// Do this first
-	UpdateClientEcsData();
+	mWorld->updateClientEcsData(*mCamera2D);
 
 	//static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
 	//f32v2 offset(0.0f);
@@ -228,14 +196,12 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	// Camera follow
 
 
-    const f32v2& playerPos = mEcs->getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
-	const f32v2& offset = mClientEcsData.worldMousePos - playerPos;
+    const f32v2& playerPos = mWorld->getECS().getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
+	const f32v2& offset = mWorld->getClientECSData().worldMousePos - playerPos;
 	mCamera2D->setPosition(playerPos + offset * 0.2f);
 	mCamera2D->update();
 
 	mWorld->update(deltaTime, playerPos, *mCamera2D);
-
-	mEcs->update(deltaTime, mClientEcsData);
 
 	// Update
 	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);
@@ -243,79 +209,15 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	mRenderContext.beginFrame(*mCamera2D, *mResourceManager);
+	mRenderContext.renderFrame(*mCamera2D, *mResourceManager);
 
-	mRenderContext.getChunkRenderer().renderWorld(*mWorld, *mCamera2D);
 
-	if (mDebugOptions.mWireframe) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	}
-	else {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	}
-
-	// Axis render
-	DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
-	//DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
-
-	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);
-	mEcsRenderer->renderSimpleSprites(*mCamera2D);
-	mEcsRenderer->renderCharacterModels(*mCamera2D);
-
-	if (vui::InputDispatcher::mouse.isButtonPressed(vui::MouseButton::LEFT)) {
-		mSb->draw(mCircleTexture.id, mTestClick - f32v2(8.0f), f32v2(16.0f), color4(1.0f, 0.0f, 1.0f));
-		const f32v2 pos = mCamera2D->convertScreenToWorld(vui::InputDispatcher::mouse.getPosition());
-		DebugRenderer::drawVector(mTestClick, pos - mTestClick, color4(1.0f, 0.0f, 0.0f));
-	}
-
-    if (mDebugOptions.mChunkBoundaries) {
-		ChunkID id;
-		Chunk* chunk;
-		while (mWorld->enumVisibleChunks(*mCamera2D, id, &chunk)) {
-			if (chunk) {
-				DebugRenderer::drawBox(chunk->getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
-			}
-		}
-    }
-
-    DebugRenderer::renderLines(mCamera2D->getCameraMatrix());
-
-	const Material* testMaterial = mResourceManager->getMaterialManager().getMaterial("normals");
-	assert(testMaterial);
-	mRenderContext.getMaterialRenderer().renderMaterialToScreen(*testMaterial);
-
-    mSb->begin();
+    /*mSb->begin();
     char fpsString[64];
     sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
     mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
     mSb->end();
-    mSb->render(mCamera2D->getScreenSize());
+    mSb->render(mCamera2D->getScreenSize());*/
 	
-}
-
-void MainMenuScreen::UpdateClientEcsData() {
-    const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
-	mClientEcsData.worldMousePos = mCamera2D->convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
-}
-
-void MainMenuScreen::initUi()
-{
-
-	// Init cool textures
-	// Test auto normal map generation
-	SpriteData existingData = mResourceManager->getSprite("tree_large");
-
-	//mTextureManipulator->RunMaterialProcess()
-
-}
-
-void MainMenuScreen::drawUi()
-{
-
-	// Draw cool textures
-
 }

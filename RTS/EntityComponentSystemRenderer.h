@@ -13,7 +13,7 @@ class World;
 
 class EntityComponentSystemRenderer {
 public:
-	EntityComponentSystemRenderer(ResourceManager& resourceManager, const EntityComponentSystem& system, const World& tileGrid);
+	EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world);
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
 	void renderCharacterModels(const Camera2D& camera);
@@ -23,6 +23,6 @@ private:
 	ResourceManager& mResourceManager;
 	vg::Texture mCircleTexture;
 	const EntityComponentSystem& mSystem;
-	const World& mTileGrid;
+	const World& mWorld;
 };
 

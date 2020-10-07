@@ -156,6 +156,7 @@
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
+    <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
@@ -210,6 +211,8 @@
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="src\ecs\factory\EntityFactory.h" />
+    <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ShieldItem.h" />

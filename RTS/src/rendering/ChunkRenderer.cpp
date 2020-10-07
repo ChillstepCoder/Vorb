@@ -33,7 +33,7 @@ ChunkRenderer::~ChunkRenderer() {
 	
 }
 
-void ChunkRenderer::renderWorld(World& world, const Camera2D& camera)
+void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera)
 {
 #if ENABLE_DEBUG_RENDER == 1
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
@@ -48,7 +48,7 @@ void ChunkRenderer::renderWorld(World& world, const Camera2D& camera)
 #endif
 
     ChunkID chunkId;
-    Chunk* chunk;
+    const Chunk* chunk;
     while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
         if (chunk && chunk->canRender()) {
             RenderChunk(*chunk, camera);

@@ -17,7 +17,7 @@ public:
 	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
-	void renderWorld(World& world, const Camera2D& camera);
+	void renderWorld(const World& world, const Camera2D& camera);
 
 	// Different rendering methods
 	void RenderChunk(const Chunk& chunk, const Camera2D& camera);

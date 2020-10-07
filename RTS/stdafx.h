@@ -134,6 +134,13 @@ constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 static bool s_debugToggle = false;
 static bool s_wasTogglePressed = false;
 
+struct DebugOptions {
+    bool mWireframe = false;
+    bool mChunkBoundaries = false;
+};
+
+extern DebugOptions sDebugOptions;
+
 // **************** ERRORS *****************
 //yes 1, no 0
 extern i32 showYesNoBox(const nString& message);

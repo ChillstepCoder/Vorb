@@ -8,6 +8,12 @@
 #include "world/ChunkGenerator.h"
 #include "physics/ContactListener.h"
 
+#include "actor/HumanActorFactory.h"
+#include "actor/UndeadActorFactory.h"
+#include "actor/PlayerActorFactory.h"
+#include "ecs/factory/EntityFactory.h"
+
+#include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
@@ -24,22 +30,26 @@
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
+World::World(ResourceManager& resourceManager) :
+	mResourceManager(resourceManager)
+{
+    // Init generation
+    mChunkGenerator = std::make_unique<ChunkGenerator>();
 
-World::World(ResourceManager& resourceManager) {
-	mChunkGenerator = std::make_unique<ChunkGenerator>();
+    // Init ECS
+    mEcs = std::make_unique<EntityComponentSystem>(*this);
+
+    // Init factories
+	mEntityFactory = std::make_unique<EntityFactory>(*mEcs, mResourceManager);
+
+    // Init physics
+    mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
+    mContactListener = std::make_unique<ContactListener>(*mEcs);
+    mPhysWorld->SetContactListener(mContactListener.get());
 }
 
 World::~World() {
 
-}
-
-void World::init(EntityComponentSystem& ecs) {
-	assert(!mEcs);
-	mEcs = &ecs;
-	mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
-
-	mContactListener = std::make_unique<ContactListener>(*mEcs);
-	mPhysWorld->SetContactListener(mContactListener.get());
 }
 
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
@@ -72,6 +82,9 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 
 	// Update physics
 	mPhysWorld->Step(deltaTime, 1, 1);
+
+	// Update ECS
+    mEcs->update(deltaTime, mClientEcsData);
 }
 
 Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
@@ -79,7 +92,16 @@ Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
 }
 
 Chunk* World::getChunkAtPosition(ChunkID chunkId) {
-    std::map<ChunkID, std::unique_ptr<Chunk>>::iterator it = mChunks.find(chunkId);
+    auto&& it = mChunks.find(chunkId);
+    if (it != mChunks.end()) {
+        return it->second.get();
+    }
+
+    return nullptr;
+}
+
+const Chunk* World::getChunkAtPosition(ChunkID chunkId) const {
+    const auto&& it = mChunks.find(chunkId);
     if (it != mChunks.end()) {
         return it->second.get();
     }
@@ -122,7 +144,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 	return handle;
 }
 
-bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT Chunk** chunk) {
+bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT const Chunk** chunk) const {
 	// TODO: Can we cache this conversion?
     const f32v2 bottomLeftCorner = camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight()));
     const ChunkID bottomLeftPosition(bottomLeftCorner);
@@ -149,6 +171,11 @@ bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, O
 	*chunk = getChunkAtPosition(enumerator);
 	++enumerator.pos.x;
 	return true;
+}
+
+void World::updateClientEcsData(const Camera2D& camera) {
+    const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
+    mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
 }
 
 bool World::updateChunk(Chunk& chunk) {
@@ -356,6 +383,10 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 #endif
 
 	return entities;
+}
+
+vecs::EntityID World::createEntity(const f32v2& pos, EntityType type) {
+	return mEntityFactory->createEntity(pos, type);
 }
 
 b2Body* World::createPhysBody(const b2BodyDef* bodyDef) {

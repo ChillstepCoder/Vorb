@@ -7,6 +7,8 @@
 #include "actor/ActorTypes.h"
 #include "TileSet.h"
 #include "world/Tile.h"
+#include "ecs/ClientEcsData.h"
+#include "ecs/factory/EntityType.h"
 
 #include "world/Chunk.h"
 
@@ -20,6 +22,7 @@ class ContactListener;
 class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
+class EntityFactory;
 
 class World
 {
@@ -28,46 +31,63 @@ public:
 	World(ResourceManager& resourceManager);
 	~World();
 
-
-	void init(EntityComponentSystem& ecs);
 	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera);
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except = ENTITY_ID_NONE);
 
+	vecs::EntityID createEntity(const f32v2& pos, EntityType type);
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 
 	// Internal public interface
     Chunk* getChunkAtPosition(const f32v2& worldPos);
     Chunk* getChunkAtPosition(ChunkID chunkId);
+    const Chunk* getChunkAtPosition(ChunkID chunkId) const;
 	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
 	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
 
 	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
 	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
 
-	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT Chunk** chunk);
+	const ClientECSData& getClientECSData() const { return mClientEcsData; }
+	const EntityComponentSystem& getECS() const { return *mEcs; }
+	const ResourceManager& getResourceManager() const { return mResourceManager; }
+
+	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT const Chunk** chunk) const;
+
+	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
+	void updateClientEcsData(const Camera2D& camera);
 	
 private:
 
-	// Returns true if should be removed
+	/// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
 	void updateChunkNeighbors(Chunk& chunk);
 	bool isChunkInLoadDistance(ChunkID chunkId, float addOffset = 0.0f);
 	void initChunk(Chunk& chunk, ChunkID chunkId);
 	void generateChunk(Chunk& chunk);
 
-	// Resources
-	EntityComponentSystem* mEcs = nullptr;
+    // ECS
+    ClientECSData mClientEcsData;
+    std::unique_ptr<EntityComponentSystem> mEcs;
+
+	// Physics
 	std::unique_ptr<b2World> mPhysWorld;
 	std::unique_ptr<ContactListener> mContactListener;
-	std::unique_ptr<ChunkGenerator> mChunkGenerator;
+
+	// Generation
+    std::unique_ptr<ChunkGenerator> mChunkGenerator;
+
+	// Factories
+	std::unique_ptr<EntityFactory> mEntityFactory;
+
+	// Resource handle
+	ResourceManager& mResourceManager;
 
 	// Data
 	f32v2 mLoadRange = f32v2(0.0f);
 	f32v2 mLoadCenter = f32v2(0.0f);
 	bool mDirty = true;
-	
 	// TODO: Chunk paging for cache performance on updates
 	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
 };
