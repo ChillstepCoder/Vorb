@@ -117,7 +117,7 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BasicVertex), (void*)offsetof(BasicVertex, pos));
         glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(BasicVertex), (void*)offsetof(BasicVertex, uvs));
         glVertexAttribPointer(program.getAttribute("vTint"), 4, GL_UNSIGNED_BYTE, true, sizeof(BasicVertex), (void*)offsetof(BasicVertex, color));
-        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_BYTE, true, sizeof(BasicVertex), (void*)offsetof(BasicVertex, atlasPage));
+        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(BasicVertex), (void*)offsetof(BasicVertex, atlasPage));
     }
 }
 

@@ -52,12 +52,15 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
     vio::DirectoryEntries entries;
     if (!directory.appendEntries(entries)) {
-
-        assert(false); // Empty directory
+        // Empty directory
+        return;
     }
 
     for (auto&& entry : entries) {
-        if (fileHasExtension(entry, ".png")) {
+        // Recurse
+        if (entry.isDirectory()) {
+            gatherFiles(entry);
+        } else if (fileHasExtension(entry, ".png")) {
             mTextureFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".tile")) {
@@ -75,6 +78,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         else if (fileHasExtension(entry, ".frag")) {
             ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
         }
+        // TODO: .ttf?
     }
 
     mHasGathered = true;

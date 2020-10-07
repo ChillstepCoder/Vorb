@@ -185,7 +185,7 @@ ChunkMesher::ChunkMesher(const TextureAtlas& textureAtlas) :
     initConnectedOffsets();
 }
 
-void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters, const f32v4& uvs, const color4& color, float extraHeight) {
+void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters, const f32v4& uvs, const color4& color, float extraHeight, ui16 atlasPage) {
     // Center the sprite
     const float xOffset = -(float)((dimsMeters.x - 1) / 2);
 
@@ -209,6 +209,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     vbl.uvs.x = uvs.x;
     vbl.uvs.y = uvs.y + uvs.w;
     vbl.color = bottomColor;
+    vbl.atlasPage = atlasPage;
     // Bottom Right
     BasicVertex& vbr = verts[1];
     vbr.pos.x = position.x + dimsMeters.x + xOffset;
@@ -217,6 +218,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     vbr.uvs.x = uvs.x + uvs.z;
     vbr.uvs.y = uvs.y + uvs.w;
     vbr.color = bottomColor;
+    vbr.atlasPage = atlasPage;
     // Top Left
     BasicVertex& vtl = verts[2];
     vtl.pos.x = position.x + xOffset;
@@ -225,6 +227,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     vtl.uvs.x = uvs.x;
     vtl.uvs.y = uvs.y;
     vtl.color = color;
+    vtl.atlasPage = atlasPage;
     // Top Right
     BasicVertex& vtr = verts[3];
     vtr.pos.x = position.x + dimsMeters.x + xOffset;
@@ -233,6 +236,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     vtr.uvs.x = uvs.x + uvs.z;
     vtr.uvs.y = uvs.y;
     vtr.color = color;
+    vtr.atlasPage = atlasPage;
 }
 
 void ChunkMesher::createMesh(const Chunk& chunk) {
@@ -263,7 +267,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                 const SpriteData& spriteData = TileRepository::getTileData(layerTile).spriteData;
                 switch (spriteData.method) {
                     case TileTextureMethod::SIMPLE: {
-                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f + layerDepth);
+                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f + layerDepth, spriteData.atlasPage);
                         vertexCount += 4;
                         break;
                     }
@@ -278,13 +282,13 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                         const ConnectedWallData& data = sConnectedWallData[connectedBits];
                         const float verticalOffset = 0.749f;
                         if (data.data == 0) {
-                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 1.0f + layerDepth);
+                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 1.0f + layerDepth, spriteData.atlasPage);
                             vertexCount += 4;
                         }
                         else {
                             // Check if we need to render the base layer first
                             if (data.a < 0x10) {
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.95f + layerDepth);
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.95f + layerDepth, spriteData.atlasPage);
                                 vertexCount += 4;
                             }
                             // Render up to 4 textures depending on configuration
@@ -296,7 +300,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 1.0f + layerDepth);
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 1.0f + layerDepth, spriteData.atlasPage);
                                 vertexCount += 4;
                             }
                             // Render exposed wall bottom if  needed
@@ -309,7 +313,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), layerDepth);
+                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), layerDepth, spriteData.atlasPage);
                                 vertexCount += 4;
                             }
 

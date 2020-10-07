@@ -94,10 +94,7 @@ void MainMenuScreen::build() {
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 	mCamera2D->setScale(mScale);
 
-    mResourceManager->gatherFiles("data/shaders");
-    mResourceManager->gatherFiles("data/textures");
-    mResourceManager->gatherFiles("data/tiles");
-    mResourceManager->gatherFiles("data/materials");
+    mResourceManager->gatherFiles("data");
 	mResourceManager->loadFiles();
 	mResourceManager->writeDebugAtlas();
 

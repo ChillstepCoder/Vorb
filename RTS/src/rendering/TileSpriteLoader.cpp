@@ -40,8 +40,14 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
     if (!filePath.isValid()) return false;
 
     vg::ScopedBitmapResource rs(vg::ImageIO().load(filePath, vg::ImageIOFormat::RGBA_UI8));
-    assert(rs.width <= TEXTURE_ATLAS_WIDTH_PX && rs.height <= TEXTURE_ATLAS_WIDTH_PX);
-    assert(rs.width % TEXTURE_ATLAS_CELL_WIDTH_PX == 0 && rs.height % TEXTURE_ATLAS_CELL_WIDTH_PX == 0);
+    if (rs.width > TEXTURE_ATLAS_WIDTH_PX | rs.height > TEXTURE_ATLAS_WIDTH_PX) {
+        pError("Failed to load " + filePath.getString() + " texture must be smaller than " + std::to_string(TEXTURE_ATLAS_WIDTH_PX));
+        return false;
+    }
+    if (!(rs.width % TEXTURE_ATLAS_CELL_WIDTH_PX == 0 && rs.height % TEXTURE_ATLAS_CELL_WIDTH_PX == 0)) {
+        std::cerr << "Failed to load " << filePath.getString() << " dimensions must be divisible by " << std::to_string(TEXTURE_ATLAS_CELL_WIDTH_PX) << "\n";
+        return false;
+    }
 
     SpritesheetFileData sheetMetaData;
     getFileMetadata(filePath, ui32v2(rs.width, rs.height), sheetMetaData);
