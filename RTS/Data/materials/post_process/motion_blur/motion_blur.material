@@ -1,0 +1,3 @@
+motion_blur:
+  vert: pass_through.vert
+  frag: motion_blur.frag

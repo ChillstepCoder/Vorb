@@ -20,7 +20,9 @@
 const std::string sPassthroughMaterialNames[] = {
     "pass_through",
     //"depth",
-    "outline"
+    //"outline",
+    //"motion_blur",
+    "normals"
 };
 
 RenderContext* RenderContext::sInstance = nullptr;
@@ -47,9 +49,11 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[0].number = 0;
     attachments[0].pixelFormat = vg::TextureFormat::RGBA;
     attachments[0].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    mGBuffer.setSize(ui32v2(mScreenResolution));
-    mGBuffer.init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::NONE);
-    mGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+    for (int i = 0; i < 2; ++i) {
+        mGBuffers[i].setSize(ui32v2(mScreenResolution));
+        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::NONE);
+        mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+    }
 
     // Misc
     mTextureManipulator = std::make_unique<GPUTextureManipulator>();
@@ -95,8 +99,10 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mRenderData.mainCamera = &camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
 
-    mGBuffer.useGeometry();
-    mCurrentFramebufferDims = mGBuffer.getSize();
+    vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
+
+    activeGbuffer.useGeometry();
+    mCurrentFramebufferDims = activeGbuffer.getSize();
 
     // Clear screen
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -133,21 +139,29 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     }
 
     DebugRenderer::renderLines(camera.getCameraMatrix());
-    // *** Post process ***
+    // *** Post processes ***
     // Disable depth testing for post processing
     glDisable(GL_DEPTH_TEST);
 
-    const Material* testMaterial = mResourceManager.getMaterialManager().getMaterial("normals");
-    assert(testMaterial);
-    mMaterialRenderer->renderMaterialToScreen(*testMaterial);
+    // Pass through process
+    const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+    assert(postMat);
+    mCurrentFramebufferDims = mScreenResolution;
 
-    const Material* finalMaterial = mPassthroughMaterials[mPassthroughRenderMode];
+    mMaterialRenderer->renderMaterialToScreen(*postMat);
+
+    // Final pass through
+    activeGbuffer.unuse();
+    // Pass through needs to always be  0
+    const Material* finalMaterial = mPassthroughMaterials[0];
     assert(finalMaterial);
-
-    mGBuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
 
     mMaterialRenderer->renderMaterialToScreen(*finalMaterial);
+
+    // Swap
+    mPrevGBuffer = mActiveGBuffer;
+    mActiveGBuffer = !mActiveGBuffer;
 }
 
 void RenderContext::reloadShaders() {

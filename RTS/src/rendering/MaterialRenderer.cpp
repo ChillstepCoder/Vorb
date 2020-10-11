@@ -56,6 +56,7 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
                 glUniform1f(it.second, (float)sTotalTimeSeconds);
                 break;
             case MaterialUniform::WMatrix: {
+                // TODO: Get rid or replace no op
                 f32m4 world(1.0f);
                 glUniformMatrix4fv(it.second, 1, false, &world[0][0]);
                 break;
@@ -69,12 +70,22 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
                 glUniform1i(it.second, mAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getGBuffer().getGeometryTexture(0));
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(0));
                 break;
             case MaterialUniform::FboDepth:
                 glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
                 glUniform1i(it.second, mAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getGBuffer().getDepthTexture());
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getDepthTexture());
+                break;
+            case MaterialUniform::PrevFbo0:
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getGeometryTexture(0));
+                break;
+            case MaterialUniform::PrevFboDepth:
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getDepthTexture());
                 break;
             case MaterialUniform::PixelDims: {
                 const f32v2 pixelDims = 1.0f / mRenderContext.getCurrentFramebufferDims();
@@ -85,6 +96,6 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
                 glUniform1f(it.second, renderData.mainCamera->getScale());
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 10, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 12, "Update for new uniform type");
     }
 }

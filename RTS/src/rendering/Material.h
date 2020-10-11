@@ -14,6 +14,8 @@ enum class MaterialUniform {
     VPMatrix,
     Fbo0,
     FboDepth,
+    PrevFbo0,
+    PrevFboDepth,
     PixelDims,
     ZoomScale,
     COUNT

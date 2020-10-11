@@ -42,7 +42,8 @@ public:
     const GlobalRenderData& getRenderData() const { return mRenderData; }
     ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
-    const vg::GBuffer& getGBuffer() const { return mGBuffer; }
+    const vg::GBuffer& getActiveGBuffer() const { return mGBuffers[mActiveGBuffer]; }
+    const vg::GBuffer& getPrevGBuffer() const { return mGBuffers[mPrevGBuffer]; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
@@ -63,7 +64,9 @@ private:
     std::unique_ptr<vg::SpriteBatch> mSb;
     std::unique_ptr<vg::SpriteFont> mSpriteFont;
 
-    vg::GBuffer mGBuffer;
+    int mPrevGBuffer = 1;
+    int mActiveGBuffer = 0;
+    vg::GBuffer mGBuffers[2];
     const World& mWorld;
 
     // TODO: Use this?
