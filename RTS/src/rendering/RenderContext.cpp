@@ -41,7 +41,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[0].pixelFormat = vg::TextureFormat::RGBA;
     attachments[0].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     mGBuffer.setSize(ui32v2(mScreenResolution));
-    mGBuffer.init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA8);
+    mGBuffer.init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::NONE);
     mGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
 
     // Misc

@@ -145,8 +145,8 @@ namespace vorb {
         private:
             ui32v2 m_size; ///< The width and height of the GBuffer
 
-            VGFramebuffer m_fboGeom; ///< The rendering target for geometry
-            VGFramebuffer m_fboLight; ///< The rendering target for light
+            VGFramebuffer m_fboGeom = 0; ///< The rendering target for geometry
+            VGFramebuffer m_fboLight = 0; ///< The rendering target for light
             Array<VGTexture> m_textures; ///< An array of all the textures
             VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
         };
