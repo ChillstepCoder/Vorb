@@ -40,13 +40,15 @@ void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& 
 }
 
 void MaterialRenderer::uploadUniforms(const Material& material) {
+    ui32 mAvailableTextureIndex = 0;
+    const GlobalRenderData& renderData = mRenderContext.getRenderData();
     // Bind uniforms
     for (auto&& it : material.mUniforms) {
         switch (it.first) {
             case MaterialUniform::Atlas:
-                glActiveTexture(GL_TEXTURE0);
-                glUniform1i(it.second, 0);
-                glBindTexture(GL_TEXTURE_2D_ARRAY, mRenderContext.getRenderData().atlas);
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.atlas);
                 // TODO: Stop re-setting this
                 vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
                 break;
@@ -62,16 +64,16 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
                 assert(false); //Not implemented
                 break;
             case MaterialUniform::VPMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &mRenderContext.getRenderData().mainCamera->getCameraMatrix()[0][0]);
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getCameraMatrix()[0][0]);
                 break;
             case MaterialUniform::Fbo0:
-                glActiveTexture(GL_TEXTURE0);
-                glUniform1i(it.second, 0);
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getGBuffer().getGeometryTexture(0));
                 break;
             case MaterialUniform::FboDepth:
-                glActiveTexture(GL_TEXTURE0);
-                glUniform1i(it.second, 0);
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getGBuffer().getDepthTexture());
                 break;
             case MaterialUniform::PixelDims: {
@@ -79,7 +81,10 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
+            case MaterialUniform::ZoomScale:
+                glUniform1f(it.second, renderData.mainCamera->getScale());
+                break;
         }
-        static_assert((int)MaterialUniform::COUNT == 9, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 10, "Update for new uniform type");
     }
 }

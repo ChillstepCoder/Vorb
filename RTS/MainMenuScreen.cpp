@@ -210,7 +210,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
 
-	mRenderContext.renderFrame(*mCamera2D, *mResourceManager);
+	mRenderContext.renderFrame(*mCamera2D);
 
 
     /*mSb->begin();

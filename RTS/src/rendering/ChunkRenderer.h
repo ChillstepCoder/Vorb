@@ -25,7 +25,6 @@ public:
 
 	// TODO: Deep LOD?
 	void ReloadShaders();
-	void SelectNextShader();
 
     void InitPostLoad();
 private:
@@ -34,8 +33,7 @@ private:
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 
-	const MaterialRenderer& mMaterialRenderer;
-	std::vector<const Material*> mMaterials;
-	unsigned mActiveMaterial = 0;
+    const MaterialRenderer& mMaterialRenderer;
+	const Material* standardMaterial = nullptr;
 };
 

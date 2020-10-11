@@ -66,7 +66,7 @@ void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
         std::cout << "Mesh updated in " << timer.stop() << " ms\n";
 	}
 
-	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mMaterials[mActiveMaterial]);
+	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *standardMaterial);
 }
 
 void ChunkRenderer::ReloadShaders() {
@@ -75,15 +75,7 @@ void ChunkRenderer::ReloadShaders() {
 	//for (auto& material : mMaterials) {
 		//material.dispose();
 	//}
-	mMaterials.clear();
 	InitPostLoad();
-}
-
-void ChunkRenderer::SelectNextShader() {
-	++mActiveMaterial;
-	if (mActiveMaterial >= mMaterials.size()) {
-		mActiveMaterial = 0;
-	}
 }
 
 void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
@@ -92,17 +84,6 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 
 void ChunkRenderer::InitPostLoad()
 {
-    mActiveMaterial = 0;
-
-	// Standard
-	const Material* standardMat = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-	if (standardMat){
-		mMaterials.emplace_back(standardMat);
-	}
-
-	// Depth
-	const Material* depthMat = mResourceManager.getMaterialManager().getMaterial("standard_depth");
-	if (depthMat) {
-		mMaterials.emplace_back(depthMat);
-	}
+	standardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+	assert(standardMaterial);
 }

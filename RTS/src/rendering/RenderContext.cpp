@@ -17,9 +17,16 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
 
+const std::string sPassthroughMaterialNames[] = {
+    "pass_through",
+    //"depth",
+    "outline"
+};
+
 RenderContext* RenderContext::sInstance = nullptr;
 
 RenderContext::RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution) :
+    mResourceManager(resourceManager),
     mWorld(world),
     mScreenResolution(screenResolution)
 {
@@ -69,13 +76,24 @@ RenderContext& RenderContext::getInstance() {
 
 void RenderContext::initPostLoad() {
     mChunkRenderer->InitPostLoad();
+
+    // Init all passthrough materials
+    for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
+        const Material* material = mResourceManager.getMaterialManager().getMaterial(sPassthroughMaterialNames[i]);
+        if (material) {
+            mPassthroughMaterials.emplace_back(material);
+        }
+        else {
+            pError("Missing material for pass through: " + std::string(sPassthroughMaterialNames[i]));
+        }
+    }
 }
 
-void RenderContext::renderFrame(const Camera2D& camera, const ResourceManager& resourceManager) {
+void RenderContext::renderFrame(const Camera2D& camera) {
 
     // Set renderData
     mRenderData.mainCamera = &camera;
-    mRenderData.atlas = resourceManager.getTextureAtlas().getAtlasTexture();
+    mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
 
     mGBuffer.useGeometry();
     mCurrentFramebufferDims = mGBuffer.getSize();
@@ -119,17 +137,11 @@ void RenderContext::renderFrame(const Camera2D& camera, const ResourceManager& r
     // Disable depth testing for post processing
     glDisable(GL_DEPTH_TEST);
 
-    const Material* testMaterial = resourceManager.getMaterialManager().getMaterial("normals");
+    const Material* testMaterial = mResourceManager.getMaterialManager().getMaterial("normals");
     assert(testMaterial);
     mMaterialRenderer->renderMaterialToScreen(*testMaterial);
 
-    const Material* finalMaterial;
-    if (mRenderDepth) {
-        finalMaterial = resourceManager.getMaterialManager().getMaterial("depth");
-    }
-    else {
-        finalMaterial = resourceManager.getMaterialManager().getMaterial("pass_through");
-    }
+    const Material* finalMaterial = mPassthroughMaterials[mPassthroughRenderMode];
     assert(finalMaterial);
 
     mGBuffer.unuse();
@@ -144,5 +156,8 @@ void RenderContext::reloadShaders() {
 
 void RenderContext::selectNextDebugShader() {
     //mChunkRenderer->SelectNextShader();
-    mRenderDepth = !mRenderDepth;
+    ++mPassthroughRenderMode;
+    if (mPassthroughRenderMode >= mPassthroughMaterials.size()) {
+        mPassthroughRenderMode = 0;
+    }
 }

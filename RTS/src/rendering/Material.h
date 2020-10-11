@@ -15,6 +15,7 @@ enum class MaterialUniform {
     Fbo0,
     FboDepth,
     PixelDims,
+    ZoomScale,
     COUNT
 };
 

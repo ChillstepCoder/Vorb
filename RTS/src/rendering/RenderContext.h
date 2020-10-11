@@ -2,6 +2,7 @@
 
 class ResourceManager;
 class Camera2D;
+class Material;
 class MaterialRenderer;
 class EntityComponentSystemRenderer;
 class ChunkRenderer;
@@ -33,7 +34,7 @@ public:
     static RenderContext& getInstance();
 
     void initPostLoad();
-    void renderFrame(const Camera2D& camera, const ResourceManager& resourceManager);
+    void renderFrame(const Camera2D& camera);
 
     void reloadShaders();
     void selectNextDebugShader();
@@ -51,6 +52,7 @@ private:
     GlobalRenderData mRenderData;
     f32v2 mScreenResolution;
     f32v2 mCurrentFramebufferDims;
+    ResourceManager& mResourceManager;
 
     // Renderers
     mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
@@ -67,6 +69,7 @@ private:
     // TODO: Use this?
     std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
 
-    bool mRenderDepth = false;
+    int mPassthroughRenderMode = 0;
+    std::vector<const Material*> mPassthroughMaterials;
 };
 
