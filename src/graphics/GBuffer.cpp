@@ -38,9 +38,9 @@ vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::
     glDrawBuffers((GLsizei)attachments.size(), bufs);
 
     // Make the framebuffer for lighting
-    glGenFramebuffers(1, &m_fboLight);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    initTarget(m_size, m_textures[m_textures.size() - 1], { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
+//    glGenFramebuffers(1, &m_fboLight);
+//    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
+//    initTarget(m_size, m_textures[m_textures.size() - 1], { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
 
     // Set the output location for pixels
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -56,14 +56,18 @@ vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::
 vg::GBuffer& vg::GBuffer::initDepth(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH_COMPONENT32*/) {
     glGenTextures(1, &m_texDepth);
     glBindTexture(GL_TEXTURE_2D, m_texDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, nullptr);
     SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+    checkError();
+
+  //  glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
+  //  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+
+    checkError();
 
     // Unbind used resources
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -82,8 +86,8 @@ vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*=
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
+    //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
 
     // Unbind used resources
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -118,10 +122,58 @@ void vg::GBuffer::useGeometry() {
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
     glViewport(0, 0, m_size.x, m_size.y);
 }
+
 void vg::GBuffer::useLight() {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    glViewport(0, 0, m_size.x, m_size.y);
+    //glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
+    //glViewport(0, 0, m_size.x, m_size.y);
 }
+
+void vorb::graphics::GBuffer::unuse() {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+bool vorb::graphics::GBuffer::checkError() {
+    const int fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
+        std::string errorString;
+        switch (fboStatus) {
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_UNSUPPORTED:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_UNDEFINED:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
+                break;
+            case GL_INVALID_ENUM:
+                errorString = "No framebuffer bound";
+                break;
+            default:
+                errorString = "UNKNOWN - " + std::to_string(fboStatus);
+                break;
+        }
+        printf("FBO Error: %d", fboStatus);
+        return true;
+    }
+    return false;
+}
+
 void vg::GBuffer::bindGeometryTexture(size_t i, ui32 textureUnit) {
     glActiveTexture(GL_TEXTURE0 + textureUnit);
     glBindTexture(GL_TEXTURE_2D, m_textures[i]);

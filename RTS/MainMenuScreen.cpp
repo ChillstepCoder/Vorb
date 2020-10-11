@@ -28,7 +28,7 @@ MainMenuScreen::MainMenuScreen(const App* app)
 	: IAppScreen<App>(app),
 	  mResourceManager(std::make_unique<ResourceManager>()),
 	  mWorld(std::make_unique<World>(*mResourceManager)),
-      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld))
+      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight())))
 {
 
 	mCamera2D = std::make_unique<Camera2D>();

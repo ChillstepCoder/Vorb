@@ -19,8 +19,9 @@
 
 RenderContext* RenderContext::sInstance = nullptr;
 
-RenderContext::RenderContext(ResourceManager& resourceManager, const World& world) :
-    mWorld(world)
+RenderContext::RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution) :
+    mWorld(world),
+    mScreenResolution(screenResolution)
 {
     // Init renderers
     mMaterialRenderer   = std::make_unique<MaterialRenderer>(*this);
@@ -33,17 +34,30 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mSb->init();
     mSpriteFont->init("data/fonts/chintzy.ttf", 32);
 
+    // GBuffer
+    vg::GBufferAttachment attachments[1];
+    attachments[0].format = vg::TextureInternalFormat::RGBA8;
+    attachments[0].number = 0;
+    attachments[0].pixelFormat = vg::TextureFormat::RGBA;
+    attachments[0].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    mGBuffer.setSize(ui32v2(mScreenResolution));
+    mGBuffer.init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA8);
+    mGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+
     // Misc
     mTextureManipulator = std::make_unique<GPUTextureManipulator>();
+
+    checkGlError("Init render context");
+
 }
 
 RenderContext::~RenderContext() {
 
 }
 
-RenderContext& RenderContext::initInstance(ResourceManager& resourceManager, const World& world) {
+RenderContext& RenderContext::initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution) {
     if (!sInstance) {
-        sInstance = new RenderContext(resourceManager, world);
+        sInstance = new RenderContext(resourceManager, world, screenResolution);
     }
     return *sInstance;
 }
@@ -58,13 +72,19 @@ void RenderContext::initPostLoad() {
 }
 
 void RenderContext::renderFrame(const Camera2D& camera, const ResourceManager& resourceManager) {
+
     // Set renderData
     mRenderData.mainCamera = &camera;
     mRenderData.atlas = resourceManager.getTextureAtlas().getAtlasTexture();
 
+    mGBuffer.useGeometry();
+    mCurrentFramebufferDims = mGBuffer.getSize();
+
     // Clear screen
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glDepthMask(true);
+    glEnable(GL_DEPTH_TEST);
 
     mChunkRenderer->renderWorld(mWorld, camera);
 
@@ -95,10 +115,27 @@ void RenderContext::renderFrame(const Camera2D& camera, const ResourceManager& r
     }
 
     DebugRenderer::renderLines(camera.getCameraMatrix());
+    // *** Post process ***
+    // Disable depth testing for post processing
+    glDisable(GL_DEPTH_TEST);
 
     const Material* testMaterial = resourceManager.getMaterialManager().getMaterial("normals");
     assert(testMaterial);
     mMaterialRenderer->renderMaterialToScreen(*testMaterial);
+
+    const Material* finalMaterial;
+    if (mRenderDepth) {
+        finalMaterial = resourceManager.getMaterialManager().getMaterial("depth");
+    }
+    else {
+        finalMaterial = resourceManager.getMaterialManager().getMaterial("pass_through");
+    }
+    assert(finalMaterial);
+
+    mGBuffer.unuse();
+    mCurrentFramebufferDims = mScreenResolution;
+
+    mMaterialRenderer->renderMaterialToScreen(*finalMaterial);
 }
 
 void RenderContext::reloadShaders() {
@@ -106,5 +143,6 @@ void RenderContext::reloadShaders() {
 }
 
 void RenderContext::selectNextDebugShader() {
-    mChunkRenderer->SelectNextShader();
+    //mChunkRenderer->SelectNextShader();
+    mRenderDepth = !mRenderDepth;
 }

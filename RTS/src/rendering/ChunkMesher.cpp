@@ -189,7 +189,7 @@ void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters,
     // Center the sprite
     const float xOffset = -(float)((dimsMeters.x - 1) / 2);
 
-    const float bottomDepth = extraHeight;
+    float bottomDepth = extraHeight;
     float topDepth = extraHeight;
     color4 bottomColor;
     if (dimsMeters.y > 1.0f) {

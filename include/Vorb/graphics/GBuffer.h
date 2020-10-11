@@ -88,6 +88,8 @@ namespace vorb {
             /// Set up the light target to be active
             void useLight();
 
+            void unuse();
+
             /// Bind Geometry Texture
             /// @param i: Which Geometry texture to bind
             /// @param textureUnit Position to bind texture
@@ -138,6 +140,8 @@ namespace vorb {
             const VGTexture& getDepthTexture() const {
                 return m_texDepth;
             }
+
+            bool checkError();
         private:
             ui32v2 m_size; ///< The width and height of the GBuffer
 

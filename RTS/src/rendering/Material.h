@@ -12,6 +12,9 @@ enum class MaterialUniform {
     WMatrix,
     WVPMatrix,
     VPMatrix,
+    Fbo0,
+    FboDepth,
+    PixelDims,
     COUNT
 };
 

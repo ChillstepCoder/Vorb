@@ -22,8 +22,11 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("VP", MaterialUniform::VPMatrix),
     std::make_pair("WVP", MaterialUniform::WVPMatrix),
     std::make_pair("Atlas", MaterialUniform::Atlas),
+    std::make_pair("Fbo0", MaterialUniform::Fbo0),
+    std::make_pair("FboDepth", MaterialUniform::FboDepth),
+    std::make_pair("PixelDims", MaterialUniform::PixelDims),
 };
-static_assert((int)MaterialUniform::COUNT == 6, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 9, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     auto&& it = sUniformLookup.find(str);

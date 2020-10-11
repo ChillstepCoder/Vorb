@@ -8,6 +8,8 @@ class ChunkRenderer;
 class GPUTextureManipulator;
 class World;
 
+#include <Vorb/graphics/GBuffer.h>
+
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
 
@@ -20,14 +22,14 @@ struct GlobalRenderData {
 // Singleton
 class RenderContext {
 protected:
-    RenderContext(ResourceManager& resourceManager, const World& world);
+    RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution);
     ~RenderContext();
 
 public:
     RenderContext(RenderContext& other) = delete;
     void operator=(const RenderContext&) = delete;
 
-    static RenderContext& initInstance(ResourceManager& resourceManager, const World& world);
+    static RenderContext& initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution);
     static RenderContext& getInstance();
 
     void initPostLoad();
@@ -39,12 +41,16 @@ public:
     const GlobalRenderData& getRenderData() const { return mRenderData; }
     ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
+    const vg::GBuffer& getGBuffer() const { return mGBuffer; }
+    const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
     static RenderContext* sInstance;
 
     // Data
     GlobalRenderData mRenderData;
+    f32v2 mScreenResolution;
+    f32v2 mCurrentFramebufferDims;
 
     // Renderers
     mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
@@ -55,9 +61,12 @@ private:
     std::unique_ptr<vg::SpriteBatch> mSb;
     std::unique_ptr<vg::SpriteFont> mSpriteFont;
 
+    vg::GBuffer mGBuffer;
     const World& mWorld;
 
     // TODO: Use this?
     std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
+
+    bool mRenderDepth = false;
 };
 

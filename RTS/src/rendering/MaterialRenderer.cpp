@@ -22,6 +22,9 @@ MaterialRenderer::~MaterialRenderer()
 void MaterialRenderer::renderMaterialToScreen(const Material& material) {
     material.use();
 
+    // Enable depth test unless disabled by depth input
+    glDepthMask(true);
+
     uploadUniforms(material);
 
     mScreenVBO.draw();
@@ -44,6 +47,7 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
                 glActiveTexture(GL_TEXTURE0);
                 glUniform1i(it.second, 0);
                 glBindTexture(GL_TEXTURE_2D_ARRAY, mRenderContext.getRenderData().atlas);
+                // TODO: Stop re-setting this
                 vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
                 break;
             case MaterialUniform::Time:
@@ -60,7 +64,22 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
             case MaterialUniform::VPMatrix:
                 glUniformMatrix4fv(it.second, 1, false, &mRenderContext.getRenderData().mainCamera->getCameraMatrix()[0][0]);
                 break;
+            case MaterialUniform::Fbo0:
+                glActiveTexture(GL_TEXTURE0);
+                glUniform1i(it.second, 0);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getGBuffer().getGeometryTexture(0));
+                break;
+            case MaterialUniform::FboDepth:
+                glActiveTexture(GL_TEXTURE0);
+                glUniform1i(it.second, 0);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getGBuffer().getDepthTexture());
+                break;
+            case MaterialUniform::PixelDims: {
+                const f32v2 pixelDims = 1.0f / mRenderContext.getCurrentFramebufferDims();
+                glUniform2f(it.second, pixelDims.x, pixelDims.y);
+                break;
+            }
         }
-        static_assert((int)MaterialUniform::COUNT == 6, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 9, "Update for new uniform type");
     }
 }
