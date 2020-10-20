@@ -27,14 +27,14 @@ vecs::EntityID EntityFactory::createEntity(const f32v2& position, EntityType typ
             );
             break;
         case EntityType::UNDEAD:
-            mUndeadActorFactory->createActor(
+            return mUndeadActorFactory->createActor(
                 position,
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
             );
             break;
         case EntityType::HUMAN:
-            mHumanActorFactory->createActor(
+            return mHumanActorFactory->createActor(
                 position,
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
@@ -44,4 +44,5 @@ vecs::EntityID EntityFactory::createEntity(const f32v2& position, EntityType typ
             assert(false);
             break;
     }
+    return 0;
 }

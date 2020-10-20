@@ -1,0 +1,3 @@
+shadow_debug:
+  vert: shadow_debug.vert
+  frag: shadow_debug.frag

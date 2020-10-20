@@ -7,7 +7,7 @@
 #include "ResourceManager.h"
 #include "rendering/ChunkMesher.h"
 #include "rendering/QuadMesh.h"
-#include "rendering/BasicVertex.h"
+#include "rendering/TileVertex.h"
 #include "rendering/ShaderLoader.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
@@ -56,6 +56,17 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera)
     }
 }
 
+void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camera)
+{
+    ChunkID chunkId;
+    const Chunk* chunk;
+    while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
+        if (chunk && chunk->canRender()) {
+            RenderChunkShadows(*chunk, camera);
+        }
+    }
+}
+
 void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
 	// mutable render data
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
@@ -67,6 +78,11 @@ void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
 	}
 
 	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *standardMaterial);
+}
+
+void ChunkRenderer::RenderChunkShadows(const Chunk& chunk, const Camera2D& camera)
+{
+    RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*chunk.mChunkRenderData.mChunkMesh, *shadowMaterial, vg::DepthState::FULL);
 }
 
 void ChunkRenderer::ReloadShaders() {
@@ -85,5 +101,7 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 void ChunkRenderer::InitPostLoad()
 {
 	standardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-	assert(standardMaterial);
+    assert(standardMaterial);
+    shadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow");
+    assert(shadowMaterial);
 }

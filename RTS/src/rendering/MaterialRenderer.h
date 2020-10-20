@@ -5,6 +5,7 @@ class Material;
 class QuadMesh;
 
 #include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/DepthState.h>
 
 class MaterialRenderer {
 public:
@@ -13,7 +14,7 @@ public:
     ~MaterialRenderer();
 
     void renderMaterialToScreen(const Material& material);
-    void renderQuadMesh(const QuadMesh& quadMesh, const Material& material);
+    void renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState = vg::DepthState::FULL);
 
 private:
     void uploadUniforms(const Material& material);

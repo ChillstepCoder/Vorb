@@ -55,6 +55,8 @@ World::~World() {
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
 	assert(mEcs);
 
+	updateSun();
+
 	mLoadCenter = playerPos;
 
 	getChunkOrCreateAtPosition(playerPos);
@@ -176,6 +178,49 @@ bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, O
 void World::updateClientEcsData(const Camera2D& camera) {
     const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
     mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+}
+
+void World::setTimeOfDay(float time) {
+	assert(time >= 0.0f && time <= HOURS_PER_DAY);
+
+	// Get initial
+    updateSun();
+
+	// Offset debug time
+	const f64 timeOffset = time - mTimeOfDay;
+	sDebugOptions.mTimeOffset += timeOffset * SECONDS_PER_HOUR;
+
+	// TODO: Better time manager
+	// Update with new offset
+	updateSun();
+}
+
+void World::updateSun() {
+    const float SUNRISE_TIME = 6.0f; // 6am
+    const float SUNSET_TIME = 19.0f; // 7pm
+	const float SUN_HEIGHT_EXPONENT = 0.5f; // Smaller exponent means brighter days
+	const float DAY_SPAN = SUNSET_TIME - SUNRISE_TIME;
+	// TODO: Better time manager
+	const f64 adjustedTime = sTotalTimeSeconds + sDebugOptions.mTimeOffset;
+    mTimeOfDay = (float)fmod(adjustedTime / (f64)SECONDS_PER_HOUR, (f64)HOURS_PER_DAY);
+
+	const float dayDelta = (mTimeOfDay - SUNRISE_TIME) / DAY_SPAN;
+	mSunHeight = sin(dayDelta * M_PI);
+	if (mSunHeight > 0.0f) {
+		// We can only do exponent curve on nonzero numbers
+		mSunHeight = pow(mSunHeight, SUN_HEIGHT_EXPONENT);
+	}
+	mSunPosition = vmath::lerp(-1.0f, 1.0f, dayDelta);
+
+	// Colors
+    f32v3 sunSet(1.0f, 0.5f, 0);
+    f32v3 sunPeak(1.0f, 1.0f, 1.0f);
+    const float c = vmath::max(mSunHeight, 0.0f);
+	mSunColor = f32v3(
+        vmath::lerp(sunSet.r, sunPeak.r, c),
+		vmath::lerp(sunSet.g, sunPeak.g, c),
+		vmath::lerp(sunSet.b, sunPeak.b, c)
+	);
 }
 
 bool World::updateChunk(Chunk& chunk) {

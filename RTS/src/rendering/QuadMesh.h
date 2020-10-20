@@ -1,10 +1,11 @@
 #pragma once
 
 #include <Vorb/graphics/gtypes.h>
+#include <Vorb/graphics/DepthState.h>
 
 DECL_VG(class GLProgram);
 class Camera2D;
-struct BasicVertex;
+struct TileVertex;
 
 class QuadMesh {
 public:
@@ -20,8 +21,8 @@ public:
     };*/
 
     // Indices are 0, 2, 3, 3, 1, 0
-    void setData(const BasicVertex* meshData, int vertexCount, VGTexture texture);
-    void draw(const vg::GLProgram& program) const;
+    void setData(const TileVertex* meshData, int vertexCount, VGTexture texture);
+    void draw(const vg::GLProgram& program, const vg::DepthState& depthState) const;
 
 private:
     void bindVertexAttribs(const vg::GLProgram& program) const;

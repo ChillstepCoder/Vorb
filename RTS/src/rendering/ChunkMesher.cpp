@@ -185,58 +185,116 @@ ChunkMesher::ChunkMesher(const TextureAtlas& textureAtlas) :
     initConnectedOffsets();
 }
 
-void addQuad(BasicVertex* verts, const f32v2& position, const f32v2& dimsMeters, const f32v4& uvs, const color4& color, float extraHeight, ui16 atlasPage) {
+void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const SpriteData& spriteData, const f32v4& uvs, float extraHeight) {
     // Center the sprite
-    const float xOffset = -(float)((dimsMeters.x - 1) / 2);
+    const float xOffset = -(float)((spriteData.dimsMeters.x - 1) / 2);
+
+    // Need to increase depth to bring walls in line with roofs for depth, since walls are shorter than 1.0
+    static constexpr float WALL_Y_DEPTH_MULT = 1.333333333f;
+    static constexpr float SHADOW_MULT = 0.5f;
+
+    // Otherwise shadows break
+    assert(spriteData.dimsMeters.x <= 6.0f && spriteData.dimsMeters.y <= 6.0f);
+    // 40 units per tile with max of 6 for size
+    static constexpr float HEIGHT_SCALE = 42.0f;// (0, 252) / 6 so we get 42;
+    static constexpr float WALL_HEIGHT = 1.0f;
 
     float bottomDepth = extraHeight;
     float topDepth = extraHeight;
+    ui8 shadowTop = false;
+    ui8 shadowBottom = false;
+    ui8 topHeight    = 0;
+    ui8 bottomHeight = 0;
+    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
     color4 bottomColor;
-    if (dimsMeters.y > 1.0f) {
-        topDepth += dimsMeters.y;
-        constexpr float SHADOW_MULT = 0.5f;
-        bottomColor = color4(ui8(color.r * SHADOW_MULT), ui8(color.r * SHADOW_MULT), ui8(color.r * SHADOW_MULT), color.a);
+    // TODO: Encode height in the tile data, not as a guess
+    switch (shape) {
+        case THIN: {
+            topDepth += spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT;
+            // This is actually fake ambient occlusion
+            bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
+            shadowTop = true;
+            topHeight = ui8(spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * HEIGHT_SCALE);
+            break;
+        }
+        case THICK: {
+            topDepth += spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * WALL_HEIGHT;
+            // This is actually fake ambient occlusion
+            bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
+            shadowTop = true;
+            topHeight = ui8(spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * HEIGHT_SCALE * WALL_HEIGHT);
+            break;
+        }
+        case ROOF: {
+            bottomDepth += WALL_HEIGHT;
+            topDepth += WALL_HEIGHT;
+            bottomColor = topColor;
+            shadowTop = true;
+            shadowBottom = true;
+            // Roof is always 1.0 high
+            topHeight = ui8(HEIGHT_SCALE * WALL_HEIGHT);
+            bottomHeight = topHeight;
+            break;
+        }
+        case FLOOR: {
+            bottomColor = topColor;
+            break;
+        }
+        default: {
+            assert(false); // Missing
+            break;
+        }
     }
-    else {
-        bottomColor = color;
-    }
+    static_assert(TileShape::COUNT == 4, "Update for new shape");
 
-    // Bottom Left
-    BasicVertex& vbl = verts[0];
-    vbl.pos.x = position.x + xOffset;
-    vbl.pos.y = position.y;
-    vbl.pos.z = bottomDepth;
-    vbl.uvs.x = uvs.x;
-    vbl.uvs.y = uvs.y + uvs.w;
-    vbl.color = bottomColor;
-    vbl.atlasPage = atlasPage;
-    // Bottom Right
-    BasicVertex& vbr = verts[1];
-    vbr.pos.x = position.x + dimsMeters.x + xOffset;
-    vbr.pos.y = position.y;
-    vbr.pos.z = bottomDepth;
-    vbr.uvs.x = uvs.x + uvs.z;
-    vbr.uvs.y = uvs.y + uvs.w;
-    vbr.color = bottomColor;
-    vbr.atlasPage = atlasPage;
-    // Top Left
-    BasicVertex& vtl = verts[2];
-    vtl.pos.x = position.x + xOffset;
-    vtl.pos.y = position.y + dimsMeters.y;
-    vtl.pos.z = topDepth;
-    vtl.uvs.x = uvs.x;
-    vtl.uvs.y = uvs.y;
-    vtl.color = color;
-    vtl.atlasPage = atlasPage;
-    // Top Right
-    BasicVertex& vtr = verts[3];
-    vtr.pos.x = position.x + dimsMeters.x + xOffset;
-    vtr.pos.y = position.y + dimsMeters.y;
-    vtr.pos.z = topDepth;
-    vtr.uvs.x = uvs.x + uvs.z;
-    vtr.uvs.y = uvs.y;
-    vtr.color = color;
-    vtr.atlasPage = atlasPage;
+    { // Bottom Left
+        TileVertex& vbl = verts[0];
+        vbl.pos.x = position.x + xOffset;
+        vbl.pos.y = position.y;
+        vbl.pos.z = bottomDepth;
+        vbl.uvs.x = uvs.x;
+        vbl.uvs.y = uvs.y + uvs.w;
+        vbl.color = bottomColor;
+        vbl.atlasPage = spriteData.atlasPage;
+        vbl.shadowEnabled = shadowBottom;
+        vbl.height = bottomHeight;
+    }
+    { // Bottom Right
+        TileVertex& vbr = verts[1];
+        vbr.pos.x = position.x + spriteData.dimsMeters.x + xOffset;
+        vbr.pos.y = position.y;
+        vbr.pos.z = bottomDepth;
+        vbr.uvs.x = uvs.x + uvs.z;
+        vbr.uvs.y = uvs.y + uvs.w;
+        vbr.color = bottomColor;
+        vbr.atlasPage = spriteData.atlasPage;
+        vbr.shadowEnabled = shadowBottom;
+        vbr.height = bottomHeight;
+    }
+    { // Top Left
+        TileVertex& vtl = verts[2];
+        vtl.pos.x = position.x + xOffset;
+        vtl.pos.y = position.y + spriteData.dimsMeters.y;
+        vtl.pos.z = topDepth;
+        vtl.uvs.x = uvs.x;
+        vtl.uvs.y = uvs.y;
+        vtl.color = topColor;
+        vtl.atlasPage = spriteData.atlasPage;
+        vtl.shadowEnabled = shadowTop;
+        vtl.height = topHeight;
+    }
+    { // Top Right
+        TileVertex& vtr = verts[3];
+        vtr.pos.x = position.x + spriteData.dimsMeters.x + xOffset;
+        vtr.pos.y = position.y + spriteData.dimsMeters.y;
+        vtr.pos.z = topDepth;
+        vtr.uvs.x = uvs.x + uvs.z;
+        vtr.uvs.y = uvs.y;
+        vtr.color = topColor;
+        vtr.atlasPage = spriteData.atlasPage;
+        vtr.shadowEnabled = shadowTop;
+        vtr.height = topHeight;
+    }
 }
 
 void ChunkMesher::createMesh(const Chunk& chunk) {
@@ -264,10 +322,11 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                     continue;
                 }
                 float layerDepth = l * 0.001f;
-                const SpriteData& spriteData = TileRepository::getTileData(layerTile).spriteData;
+                const TileData& tileData = TileRepository::getTileData(layerTile);
+                const SpriteData& spriteData = tileData.spriteData;
                 switch (spriteData.method) {
                     case TileTextureMethod::SIMPLE: {
-                        addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.0f + layerDepth, spriteData.atlasPage);
+                        addQuad(mVertices + vertexCount, tileData.shape, f32v2(x + offset.x, y + offset.y), spriteData, spriteData.uvs, layerDepth);
                         vertexCount += 4;
                         break;
                     }
@@ -282,13 +341,13 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                         const ConnectedWallData& data = sConnectedWallData[connectedBits];
                         const float verticalOffset = 0.749f;
                         if (data.data == 0) {
-                            addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 1.0f + layerDepth, spriteData.atlasPage);
+                            addQuad(mVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
                             vertexCount += 4;
                         }
                         else {
                             // Check if we need to render the base layer first
                             if (data.a < 0x10) {
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, spriteData.uvs, color4(1.0f, 1.0f, 1.0f), 0.95f + layerDepth, spriteData.atlasPage);
+                                addQuad(mVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
                                 vertexCount += 4;
                             }
                             // Render up to 4 textures depending on configuration
@@ -300,7 +359,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), 1.0f + layerDepth, spriteData.atlasPage);
+                                addQuad(mVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, uvs, layerDepth + 0.01f);
                                 vertexCount += 4;
                             }
                             // Render exposed wall bottom if  needed
@@ -313,10 +372,9 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, f32v2(x + offset.x, y + offset.y), spriteData.dimsMeters, uvs, color4(1.0f, 1.0f, 1.0f), layerDepth, spriteData.atlasPage);
+                                addQuad(mVertices + vertexCount, TileShape::THICK, f32v2(x + offset.x, y + offset.y), spriteData, uvs, layerDepth);
                                 vertexCount += 4;
                             }
-
                         }
                         break;
                     }

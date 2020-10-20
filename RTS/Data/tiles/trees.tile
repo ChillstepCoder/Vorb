@@ -2,7 +2,9 @@ tree_large:
   tex: tree_large
   dims: [3,3]
   col: 2
+  shape: Thin
 tree_small:
   tex: tree_small
   dims: [1,2]
   col: 1
+  shape: Thin

@@ -27,6 +27,15 @@ struct Tile {
 	};
 };
 
+enum TileShape {
+    FLOOR, // Ground level, no shadow
+	THIN,  // Trees
+    THICK, // Solid walls
+    ROOF,  // Top level flat
+	COUNT
+};
+KEG_ENUM_DECL(TileShape);
+
 struct TileData {
     SpriteData spriteData;
     ui16 collisionBits = 0;
@@ -34,6 +43,7 @@ struct TileData {
 	ui8 rootPos = 0;
 	std::string name;
 	std::string textureName;
+	TileShape shape = TileShape::FLOOR;
 };
 KEG_TYPE_DECL(TileData);
 

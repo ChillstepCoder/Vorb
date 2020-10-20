@@ -18,6 +18,7 @@ void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::G
     SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment.number, GL_TEXTURE_2D, texID, 0);
 }
+
 vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::TextureInternalFormat lightFormat) {
     // Create texture targets
     if (lightFormat != vg::TextureInternalFormat::NONE) {
@@ -49,9 +50,6 @@ vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::
         glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
         initTarget(m_size, m_textures[m_textures.size() - 1], { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
     }
-
-    // Set the output location for pixels
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
     // Unbind used resources
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -181,7 +179,7 @@ bool vorb::graphics::GBuffer::checkError() {
                 errorString = "UNKNOWN - " + std::to_string(fboStatus);
                 break;
         }
-        printf("FBO Error: %d", fboStatus);
+        printf("FBO Error: %s %d\n", errorString.c_str(), fboStatus);
         return true;
     }
     return false;

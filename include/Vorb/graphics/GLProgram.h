@@ -35,7 +35,7 @@
 #undef minor
 #endif//VORB_COMPILER_GCC
 
-#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 1
+#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 3
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_MINOR 3
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_REVISION 0
 
@@ -145,6 +145,10 @@ namespace vorb {
             /// @return Attribute location
             const VGAttribute& getAttribute(const nString& name) const {
                 return m_attributes.at(name);
+            }
+            const VGAttribute* tryGetAttribute(const nString& name) const {
+                auto&& it = m_attributes.find(name);
+                return it != m_attributes.end() ? &it->second : nullptr;
             }
             /// Gets a uniform index
             /// @param name: The uniform's name

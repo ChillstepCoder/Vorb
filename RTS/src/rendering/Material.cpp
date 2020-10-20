@@ -18,6 +18,10 @@ KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
 
 const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("Time", MaterialUniform::Time),
+    std::make_pair("TimeOfDay", MaterialUniform::TimeOfDay),
+    std::make_pair("SunColor", MaterialUniform::SunColor),
+    std::make_pair("SunHeight", MaterialUniform::SunHeight),
+    std::make_pair("SunPosition", MaterialUniform::SunPosition),
     std::make_pair("World", MaterialUniform::WMatrix),
     std::make_pair("VP", MaterialUniform::VPMatrix),
     std::make_pair("WVP", MaterialUniform::WVPMatrix),
@@ -28,8 +32,9 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("PrevFboDepth", MaterialUniform::PrevFboDepth),
     std::make_pair("PixelDims", MaterialUniform::PixelDims),
     std::make_pair("ZoomScale", MaterialUniform::ZoomScale),
+    std::make_pair("FboShadowHeight", MaterialUniform::FboShadowHeight),
 };
-static_assert((int)MaterialUniform::COUNT == 12, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 17, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     auto&& it = sUniformLookup.find(str);

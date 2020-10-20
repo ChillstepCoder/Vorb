@@ -40,7 +40,7 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
     if (!filePath.isValid()) return false;
 
     vg::ScopedBitmapResource rs(vg::ImageIO().load(filePath, vg::ImageIOFormat::RGBA_UI8));
-    if (rs.width > TEXTURE_ATLAS_WIDTH_PX | rs.height > TEXTURE_ATLAS_WIDTH_PX) {
+    if (rs.width > TEXTURE_ATLAS_WIDTH_PX || rs.height > TEXTURE_ATLAS_WIDTH_PX) {
         pError("Failed to load " + filePath.getString() + " texture must be smaller than " + std::to_string(TEXTURE_ATLAS_WIDTH_PX));
         return false;
     }

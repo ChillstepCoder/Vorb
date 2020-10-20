@@ -229,7 +229,7 @@
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
-    <ClInclude Include="src\rendering\BasicVertex.h" />
+    <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />
     <ClInclude Include="src\rendering\SpriteData.h" />

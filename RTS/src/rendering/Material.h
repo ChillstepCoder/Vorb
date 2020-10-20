@@ -9,6 +9,10 @@ enum class MaterialUniform {
     INVALID,
     Atlas,
     Time,
+    TimeOfDay,
+    SunColor,
+    SunHeight,
+    SunPosition,
     WMatrix,
     WVPMatrix,
     VPMatrix,
@@ -18,6 +22,7 @@ enum class MaterialUniform {
     PrevFboDepth,
     PixelDims,
     ZoomScale,
+    FboShadowHeight,
     COUNT
 };
 

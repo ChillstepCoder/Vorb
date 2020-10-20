@@ -22,23 +22,21 @@ MaterialRenderer::~MaterialRenderer()
 void MaterialRenderer::renderMaterialToScreen(const Material& material) {
     material.use();
 
-    // Enable depth test unless disabled by depth input
-    glDepthMask(true);
-
     uploadUniforms(material);
 
     mScreenVBO.draw();
 }
 
-void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material)
+void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState/* = vg::DepthState::FULL*/)
 {
     material.use();
 
     uploadUniforms(material);
 
-    quadMesh.draw(material.mProgram);
+    quadMesh.draw(material.mProgram, depthState);
 }
 
+// TODO: Batch upload uniforms so we dont do it multiple times redundantly
 void MaterialRenderer::uploadUniforms(const Material& material) {
     ui32 mAvailableTextureIndex = 0;
     const GlobalRenderData& renderData = mRenderContext.getRenderData();
@@ -54,6 +52,18 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
                 break;
             case MaterialUniform::Time:
                 glUniform1f(it.second, (float)sTotalTimeSeconds);
+                break;
+            case MaterialUniform::TimeOfDay:
+                glUniform1f(it.second, renderData.timeOfDay);
+                break;
+            case MaterialUniform::SunColor:
+                glUniform3f(it.second, renderData.sunColor.x, renderData.sunColor.y, renderData.sunColor.z);
+                break;
+            case MaterialUniform::SunHeight:
+                glUniform1f(it.second, renderData.sunHeight);
+                break;
+            case MaterialUniform::SunPosition:
+                glUniform1f(it.second, renderData.sunPosition);
                 break;
             case MaterialUniform::WMatrix: {
                 // TODO: Get rid or replace no op
@@ -95,7 +105,12 @@ void MaterialRenderer::uploadUniforms(const Material& material) {
             case MaterialUniform::ZoomScale:
                 glUniform1f(it.second, renderData.mainCamera->getScale());
                 break;
+            case MaterialUniform::FboShadowHeight:
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowGBuffer().getGeometryTexture(0));
+                break;
         }
-        static_assert((int)MaterialUniform::COUNT == 12, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 17, "Update for new uniform type");
     }
 }

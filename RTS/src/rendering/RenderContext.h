@@ -17,6 +17,10 @@ DECL_VG(class SpriteFont);
 struct GlobalRenderData {
     VGTexture atlas;
     f32 time;
+    f32 sunHeight;
+    f32 sunPosition;
+    f32 timeOfDay;
+    f32v3 sunColor;
     const Camera2D* mainCamera = nullptr;
 };
 
@@ -44,9 +48,12 @@ public:
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return mGBuffers[mActiveGBuffer]; }
     const vg::GBuffer& getPrevGBuffer() const { return mGBuffers[mPrevGBuffer]; }
+    const vg::GBuffer& getShadowGBuffer() const { return mShadowGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
+    void renderUI();
+
     static RenderContext* sInstance;
 
     // Data
@@ -67,6 +74,7 @@ private:
     int mPrevGBuffer = 1;
     int mActiveGBuffer = 0;
     vg::GBuffer mGBuffers[2];
+    vg::GBuffer mShadowGBuffer;
     const World& mWorld;
 
     // TODO: Use this?
@@ -74,5 +82,7 @@ private:
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
+    const Material* mShadowMaterial = nullptr;
+    const Material* mLightingMaterial = nullptr;
 };
 

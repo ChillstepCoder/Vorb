@@ -2,7 +2,7 @@
 #include "QuadMesh.h"
 
 #include "world/Chunk.h"
-#include "rendering/BasicVertex.h"
+#include "rendering/TileVertex.h"
 #include "rendering/RenderContext.h"
 #include "Camera2D.h"
 
@@ -60,7 +60,7 @@ QuadMesh::~QuadMesh() {
     }
 }
 
-void QuadMesh::setData(const BasicVertex* meshData, int vertexCount, VGTexture texture) {
+void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture texture) {
 
     if (!sQuadIndicesInitialized) {
         initSharedQuadIndices();
@@ -82,7 +82,7 @@ void QuadMesh::setData(const BasicVertex* meshData, int vertexCount, VGTexture t
     // Set data
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, mIndexCount * sizeof(ui32), sQuadIndices);
 
-    const int bufferSizeBytes = vertexCount * sizeof(BasicVertex);
+    const int bufferSizeBytes = vertexCount * sizeof(TileVertex);
 
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     // Orphan the buffer for speed
@@ -92,11 +92,11 @@ void QuadMesh::setData(const BasicVertex* meshData, int vertexCount, VGTexture t
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void QuadMesh::draw(const vg::GLProgram& program) const {
+void QuadMesh::draw(const vg::GLProgram& program, const vg::DepthState& depthState) const {
     // Make sure we have been initialized
     assert(mVao);
 
-    vg::DepthState::FULL.set();
+    depthState.set();
     vg::RasterizerState::CULL_NONE.set();
 
     glBindVertexArray(mVao); // TODO(Ben): This wont work with all custom shaders?
@@ -114,10 +114,17 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
         program.enableVertexAttribArrays();
-        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BasicVertex), (void*)offsetof(BasicVertex, pos));
-        glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(BasicVertex), (void*)offsetof(BasicVertex, uvs));
-        glVertexAttribPointer(program.getAttribute("vTint"), 4, GL_UNSIGNED_BYTE, true, sizeof(BasicVertex), (void*)offsetof(BasicVertex, color));
-        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(BasicVertex), (void*)offsetof(BasicVertex, atlasPage));
+        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, pos));
+        glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, uvs));
+        glVertexAttribPointer(program.getAttribute("vTint"), 4, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, color));
+        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, atlasPage));
+
+        if (const VGAttribute* heightAttribute = program.tryGetAttribute("vHeight")) {
+            glVertexAttribPointer(*heightAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, height));
+        }
+        if (const VGAttribute* shadowAttribute = program.tryGetAttribute("vShadowEnabled")) {
+            glVertexAttribPointer(*shadowAttribute, 1, GL_UNSIGNED_BYTE, false, sizeof(TileVertex), (void*)offsetof(TileVertex, shadowEnabled));
+        }
     }
 }
 

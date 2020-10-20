@@ -19,7 +19,7 @@ enum class ChunkState {
 struct ChunkRenderData {
 
 	~ChunkRenderData();
-	std::unique_ptr<QuadMesh> mChunkMesh;
+    std::unique_ptr<QuadMesh> mChunkMesh;
 	bool mBaseDirty = true;
 };
 

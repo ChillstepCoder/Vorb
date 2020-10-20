@@ -299,9 +299,6 @@
     <ClInclude Include="src\rendering\QuadMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\BasicVertex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TextureManip.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -327,6 +324,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\factory\EntityType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\TileVertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -17,10 +17,9 @@ public:
 	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
-	void renderWorld(const World& world, const Camera2D& camera);
+    void renderWorld(const World& world, const Camera2D& camera);
+    void renderWorldShadows(const World& world, const Camera2D& camera);
 
-	// Different rendering methods
-	void RenderChunk(const Chunk& chunk, const Camera2D& camera);
 	//void RenderChunkBaked(const Chunk& chunk, const Camera2D& camera, int LOD);
 
 	// TODO: Deep LOD?
@@ -28,12 +27,17 @@ public:
 
     void InitPostLoad();
 private:
+    // Different rendering methods
+    void RenderChunk(const Chunk& chunk, const Camera2D& camera);
+    void RenderChunkShadows(const Chunk& chunk, const Camera2D& camera);
+
 	void UpdateMesh(const Chunk& chunk);
 
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
-	const Material* standardMaterial = nullptr;
+    const Material* standardMaterial = nullptr;
+    const Material* shadowMaterial = nullptr;
 };
 

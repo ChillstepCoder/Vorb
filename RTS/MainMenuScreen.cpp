@@ -40,6 +40,9 @@ MainMenuScreen::MainMenuScreen(const App* app)
         ShieldRegistry::loadShields();
     }
 
+	// Starting time of day to noon
+	mWorld->setTimeOfDay(12.0f);
+
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
 	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
@@ -90,7 +93,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 1.0f, 1020.f);
+		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 8.0f, 1020.f);
 		mCamera2D->setScale(mScale);
 	});
 
@@ -171,6 +174,15 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	// Do this first
 	mWorld->updateClientEcsData(*mCamera2D);
 
+	// DEBUG Time advance
+	static constexpr float TIME_ADVANCE_MULT = 100.0f;
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
+        sDebugOptions.mTimeOffset -= gameTime.elapsed * TIME_ADVANCE_MULT;
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
+        sDebugOptions.mTimeOffset += gameTime.elapsed * TIME_ADVANCE_MULT;
+    }
+
 	//static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
 	//f32v2 offset(0.0f);
 
@@ -204,7 +216,8 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	mWorld->update(deltaTime, playerPos, *mCamera2D);
 
 	// Update
-	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);
+	sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
+	mFps = sFps;
 }
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)

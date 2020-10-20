@@ -131,10 +131,12 @@ constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 }
 
 // **************** BEBUG *****************
-static bool s_debugToggle = false;
-static bool s_wasTogglePressed = false;
+extern bool s_debugToggle;
+extern bool s_wasTogglePressed;
+extern float sFps;
 
 struct DebugOptions {
+	f64 mTimeOffset = 0.0f;
     bool mWireframe = false;
     bool mChunkBoundaries = false;
 };
