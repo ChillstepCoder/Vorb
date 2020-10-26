@@ -49,6 +49,7 @@ vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::
         glGenFramebuffers(1, &m_fboLight);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
         initTarget(m_size, m_textures[m_textures.size() - 1], { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
+        checkError();
     }
 
     // Unbind used resources
@@ -69,12 +70,6 @@ vg::GBuffer& vg::GBuffer::initDepth(TextureInternalFormat depthFormat /*= Textur
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
 
     checkError();
-
-    if (m_fboLight) {
-        glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
-        checkError();
-    }
 
     // Unbind used resources
     glBindTexture(GL_TEXTURE_2D, 0);

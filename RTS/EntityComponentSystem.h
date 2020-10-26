@@ -12,12 +12,14 @@
 #include "ecs/component/CombatComponent.h"
 #include "ecs/component/CorpseComponent.h"
 #include "ecs/component/SoldierAIComponent.h"
+#include "ecs/component/DynamicLightComponent.h"
 
 // TODO: ecs file?
 #include "rendering/CharacterModel.h"
 
 class World;
 
+// TODO: Switch to EnTT
 class EntityComponentSystem : public vecs::ECS {
 public:
 	EntityComponentSystem(World& world);
@@ -33,7 +35,8 @@ public:
 	DECL_COMPONENT_TABLE(mPlayerControlTable, PlayerControlComponent);
 	DECL_COMPONENT_TABLE(mCombatTable, CombatComponent);
 	DECL_COMPONENT_TABLE(mCorpseTable, CorpseComponent);
-	DECL_COMPONENT_TABLE(mCharacterModelTable, CharacterModelComponent);
+    DECL_COMPONENT_TABLE(mCharacterModelTable, CharacterModelComponent);
+    DECL_COMPONENT_TABLE(mDynamicLightComponentTable, DynamicLightComponent);
 
 	PhysicsComponentTable mPhysicsTable;
 	SimpleSpriteComponentTable mSpriteTable;
@@ -44,6 +47,7 @@ public:
 	CombatComponentTable mCombatTable;
 	CorpseComponentTable mCorpseTable;
 	CharacterModelComponentTable mCharacterModelTable;
+	DynamicLightComponentTable mDynamicLightComponentTable;
 
 	// Classes with World access
 	friend class PhysicsComponent;

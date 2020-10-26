@@ -7,6 +7,7 @@
 #include "TextureManip.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/ChunkRenderer.h"
+#include "rendering/LightRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "DebugRenderer.h"
@@ -37,6 +38,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
 {
     // Init renderers
     mMaterialRenderer   = std::make_unique<MaterialRenderer>(*this);
+    mLightRenderer      = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
     mChunkRenderer      = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
     mEcsRenderer        = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
     checkGlError("Renderer init");
@@ -56,7 +58,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[0].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::NONE);
+        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA8);
         mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     }
     checkGlError("GBuffer init");
@@ -96,6 +98,7 @@ RenderContext& RenderContext::getInstance() {
 }
 
 void RenderContext::initPostLoad() {
+    mLightRenderer->InitPostLoad();
     mChunkRenderer->InitPostLoad();
 
     // Init all passthrough materials
@@ -109,8 +112,8 @@ void RenderContext::initPostLoad() {
         }
     }
 
-    mShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
-    mLightingMaterial = mResourceManager.getMaterialManager().getMaterial("lighting");
+    mSunShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
+    mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
 }
 
 void RenderContext::renderFrame(const Camera2D& camera) {
@@ -154,8 +157,6 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mShadowGBuffer.useGeometry();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // TODO: Replace With BlendState
-    //glBlendFunc(GL_ONE, GL_ONE);
-    //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
     glBlendFunc(GL_ONE, GL_ZERO);
     mChunkRenderer->renderWorldShadows(mWorld, camera);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -192,17 +193,21 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     mMaterialRenderer->renderMaterialToScreen(*postMat);
 
-    // SHADOWS
-    {
-        mMaterialRenderer->renderMaterialToScreen(*mShadowMaterial);
-    }
-    
     // TODO: Swap chains?
     // Final pass through
     activeGbuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
 
-    mMaterialRenderer->renderMaterialToScreen(*mLightingMaterial);
+    // Sun Light
+    mMaterialRenderer->renderMaterialToScreen(*mSunLightMaterial);
+
+    // Sun Shadows
+    mMaterialRenderer->renderMaterialToScreen(*mSunShadowMaterial);
+
+    // Additive blend Point Lights
+    glBlendFunc(GL_ONE, GL_ONE);
+    mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // UI last
     renderUI();

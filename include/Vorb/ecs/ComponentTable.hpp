@@ -103,7 +103,7 @@ namespace vorb {
                 return _components;
             }
 
-            inline bool isValid(const ComponentPairing& cp) {
+            inline bool isValid(const ComponentPairing& cp) const {
                 return cp.first != INVALID_ENTITY;
             }
 

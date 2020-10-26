@@ -12,6 +12,7 @@ class MaterialRenderer;
 class World;
 class Material;
 
+// TODO: IRendererBase?
 class ChunkRenderer {
 public:
 	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);

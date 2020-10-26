@@ -13,11 +13,12 @@ public:
     MaterialRenderer(const RenderContext& renderContext);
     ~MaterialRenderer();
 
-    void renderMaterialToScreen(const Material& material);
-    void renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState = vg::DepthState::FULL);
+    void renderMaterialToScreen(const Material& material) const;
+    void renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState = vg::DepthState::FULL) const;
+    void bindMaterialForRender(const Material& material) const;
 
 private:
-    void uploadUniforms(const Material& material);
+    void uploadUniforms(const Material& material) const;
     // TODO: Subsections, like a UI render
     vg::FullQuadVBO mScreenVBO;
     const RenderContext& mRenderContext;

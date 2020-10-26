@@ -19,25 +19,27 @@ MaterialRenderer::~MaterialRenderer()
 
 }
 
-void MaterialRenderer::renderMaterialToScreen(const Material& material) {
-    material.use();
+void MaterialRenderer::renderMaterialToScreen(const Material& material) const {
 
-    uploadUniforms(material);
+    bindMaterialForRender(material);
 
     mScreenVBO.draw();
 }
 
-void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState/* = vg::DepthState::FULL*/)
+void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState/* = vg::DepthState::FULL*/) const
 {
-    material.use();
-
-    uploadUniforms(material);
+    bindMaterialForRender(material);
 
     quadMesh.draw(material.mProgram, depthState);
 }
 
+void MaterialRenderer::bindMaterialForRender(const Material& material) const {
+    material.use();
+    uploadUniforms(material);
+}
+
 // TODO: Batch upload uniforms so we dont do it multiple times redundantly
-void MaterialRenderer::uploadUniforms(const Material& material) {
+void MaterialRenderer::uploadUniforms(const Material& material) const {
     ui32 mAvailableTextureIndex = 0;
     const GlobalRenderData& renderData = mRenderContext.getRenderData();
     // Bind uniforms

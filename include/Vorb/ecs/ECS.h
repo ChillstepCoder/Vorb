@@ -55,7 +55,10 @@ std::pair<vecs::ComponentID, Component&> add##Component(vecs::EntityID entityId)
 	std::pair<vecs::ComponentID, Component&> rv = std::pair<vecs::ComponentID, Component&>(newId, Table.get(newId)); \
 	return rv; \
 } \
-const auto& get##Component##s() const { return Table; }
+const auto& get##Component##s() const { return Table; } \
+void delete##Component(vecs::ComponentID compId) { \
+    deleteComponent(Table.getID(), compId); \
+}
 
 
 namespace vorb {

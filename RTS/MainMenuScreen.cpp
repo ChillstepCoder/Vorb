@@ -90,6 +90,20 @@ void MainMenuScreen::build() {
         else if (event.keyCode == VKEY_N) {
 			mRenderContext.selectNextDebugShader();
         }
+        else if (event.keyCode == VKEY_L) {
+			auto&& ecs = mWorld->getECS();
+			vecs::ComponentID id = ecs.mDynamicLightComponentTable.getComponentID(mPlayerEntity);
+			if (id == 0) {
+				// Add new
+				auto&& added = ecs.addDynamicLightComponent(mPlayerEntity);
+				//added.second.mLightData.mColor = ui8v3(255, 0, 255);
+				added.second.mPhysicsComponent = ecs.mPhysicsTable.getComponentID(mPlayerEntity);
+			}
+			else {
+				// Remove existing
+                ecs.deleteDynamicLightComponent(id);
+			}
+        }
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {

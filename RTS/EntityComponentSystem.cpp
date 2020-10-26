@@ -19,7 +19,8 @@ EntityComponentSystem::EntityComponentSystem(World& world)
 	addComponentTable(PlayerControlComponentTable::NAME, &mPlayerControlTable);
 	addComponentTable(CombatComponentTable::NAME, &mCombatTable);
 	addComponentTable(CorpseComponentTable::NAME, &mCorpseTable);
-	addComponentTable(CharacterModelComponentTable::NAME, &mCharacterModelTable);
+    addComponentTable(CharacterModelComponentTable::NAME, &mCharacterModelTable);
+    addComponentTable(DynamicLightComponentTable::NAME, &mDynamicLightComponentTable);
 }
 
 void EntityComponentSystem::update(float deltaTime, const ClientECSData& clientData) {

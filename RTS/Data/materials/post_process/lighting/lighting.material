@@ -1,3 +1,0 @@
-lighting:
-  vert: pass_through.vert
-  frag: lighting.frag

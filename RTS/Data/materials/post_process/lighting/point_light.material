@@ -1,0 +1,3 @@
+point_light:
+  vert: point_light.vert
+  frag: point_light.frag

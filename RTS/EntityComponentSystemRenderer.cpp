@@ -7,6 +7,7 @@
 
 #include "ResourceManager.h"
 #include "rendering/CharacterRenderer.h"
+#include "rendering/LightRenderer.h"
 
 #include <Vorb/utils.h>
 #include <Vorb/graphics/SpriteBatch.h>
@@ -26,10 +27,12 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& re
 void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera2D& camera) const {
 	mSpriteBatch->begin();
 	const PhysicsComponentTable& components = mSystem.getPhysicsComponents();
-	for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
-		const PhysicsComponent& cmp = it->second;
-		// TODO: 3D???
-		mSpriteBatch->draw(mCircleTexture.id, cmp.getPosition() - cmp.mCollisionRadius, f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
+    for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
+		if (components.isValid(*it)) {
+			const PhysicsComponent& cmp = it->second;
+			// TODO: 3D???
+			mSpriteBatch->draw(mCircleTexture.id, cmp.getPosition() - cmp.mCollisionRadius, f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
+		}
 	}
 
 	mSpriteBatch->end();
@@ -41,14 +44,16 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 
 	const PhysicsComponentTable& physicsComponents = mSystem.getPhysicsComponents();
 	const SimpleSpriteComponentTable& components = mSystem.getSimpleSpriteComponents();
-	for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
-		const SimpleSpriteComponent& cmp = it->second;
-		// TODO: 3D???
-		const PhysicsComponent& physCmp = physicsComponents.get(cmp.physicsComponent);
-		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		color4 color;
-		color.lerp(cmp.color, color4(1.0f, 0.0f, 0.0f, 1.0f), cmp.hitFlash);
-		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getPosition(), f32v2(0.5f), cmp.dims, rotation, cmp.color, 0.05f);
+    for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
+		if (components.isValid(*it)) {
+			const SimpleSpriteComponent& cmp = it->second;
+			// TODO: 3D???
+			const PhysicsComponent& physCmp = physicsComponents.get(cmp.physicsComponent);
+			const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
+			color4 color;
+			color.lerp(cmp.color, color4(1.0f, 0.0f, 0.0f, 1.0f), cmp.hitFlash);
+			mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getPosition(), f32v2(0.5f), cmp.dims, rotation, cmp.color, 0.05f);
+		}
 	}
 
 	mSpriteBatch->end();
@@ -60,14 +65,29 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 
 	const PhysicsComponentTable& physicsComponents = mSystem.getPhysicsComponents();
 	const CharacterModelComponentTable& components = mSystem.getCharacterModelComponents();
-	for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
-		const CharacterModelComponent& cmp = it->second;
-		const PhysicsComponent& physCmp = physicsComponents.get(cmp.mPhysicsComponent);
-		// TODO: Common?
-		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		CharacterRenderer::render(*mSpriteBatch, cmp.mModel, physCmp.getPosition(), rotation);
+    for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
+		if (components.isValid(*it)) {
+			const CharacterModelComponent& cmp = it->second;
+			const PhysicsComponent& physCmp = physicsComponents.get(cmp.mPhysicsComponent);
+			// TODO: Common?
+			const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
+			CharacterRenderer::render(*mSpriteBatch, cmp.mModel, physCmp.getPosition(), rotation);
+		}
 	}
 
 	mSpriteBatch->end();
 	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
+}
+
+void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer) {
+    const PhysicsComponentTable& physicsComponents = mSystem.getPhysicsComponents();
+    const DynamicLightComponentTable& components = mSystem.getDynamicLightComponents();
+    for (auto&& it = components.cbegin(); it != components.cend(); ++it) {
+        if (components.isValid(*it)) {
+			const DynamicLightComponent& cmp = it->second;
+			const PhysicsComponent& physCmp = physicsComponents.get(cmp.mPhysicsComponent);
+
+			lightRenderer.RenderLight(physCmp.getPosition(), cmp.mLightData, camera);
+		}
+	}
 }

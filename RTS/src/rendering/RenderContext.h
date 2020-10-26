@@ -6,6 +6,7 @@ class Material;
 class MaterialRenderer;
 class EntityComponentSystemRenderer;
 class ChunkRenderer;
+class LightRenderer;
 class GPUTextureManipulator;
 class World;
 
@@ -63,8 +64,9 @@ private:
     ResourceManager& mResourceManager;
 
     // Renderers
-    mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
     mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
+    mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
+    mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
 
     // UI
@@ -82,7 +84,7 @@ private:
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
-    const Material* mShadowMaterial = nullptr;
-    const Material* mLightingMaterial = nullptr;
+    const Material* mSunShadowMaterial = nullptr;
+    const Material* mSunLightMaterial = nullptr;
 };
 

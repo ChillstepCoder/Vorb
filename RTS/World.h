@@ -54,8 +54,8 @@ public:
 	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
 
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
-	const EntityComponentSystem& getECS() const { return *mEcs; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
+	EntityComponentSystem& getECS() const { return *mEcs; }
 
 	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT const Chunk** chunk) const;
 

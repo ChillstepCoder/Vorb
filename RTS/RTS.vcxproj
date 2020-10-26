@@ -150,6 +150,7 @@
     <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
+    <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
@@ -165,6 +166,8 @@
     <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\LightData.cpp" />
+    <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\Material.cpp" />
     <ClCompile Include="src\rendering\MaterialManager.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
@@ -205,6 +208,7 @@
     <ClInclude Include="src\ecs\ClientEcsData.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
+    <ClInclude Include="src\ecs\component\DynamicLightComponent.h" />
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
@@ -223,6 +227,8 @@
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\LightData.h" />
+    <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\Material.h" />
     <ClInclude Include="src\rendering\MaterialManager.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />

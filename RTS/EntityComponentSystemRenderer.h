@@ -10,6 +10,7 @@ class PhysicsComponentTable;
 class EntityComponentSystem;
 class ResourceManager;
 class World;
+class LightRenderer;
 
 class EntityComponentSystemRenderer {
 public:
@@ -17,6 +18,7 @@ public:
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
 	void renderCharacterModels(const Camera2D& camera);
+	void renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer);
 
 private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;
