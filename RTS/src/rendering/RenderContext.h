@@ -86,5 +86,6 @@ private:
     std::vector<const Material*> mPassthroughMaterials;
     const Material* mSunShadowMaterial = nullptr;
     const Material* mSunLightMaterial = nullptr;
+    const Material* mLightPassThroughMaterial = nullptr;
 };
 

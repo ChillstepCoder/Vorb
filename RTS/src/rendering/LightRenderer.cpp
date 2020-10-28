@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "LightRenderer.h"
 
+#include <glm/mat3x3.hpp>
+
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "ResourceManager.h"
@@ -27,10 +29,11 @@ void LightRenderer::RenderLight(const f32v2& position, const LightData& lightDat
     mMaterialRenderer.bindMaterialForRender(*mPointLightMaterial);
 
     // Upload light uniforms
-    glUniform1f(mPointLightMaterial->mProgram.getUniform("InnerRadius"), lightData.mInnerRadius);
-    glUniform1f(mPointLightMaterial->mProgram.getUniform("OuterRadius"), lightData.mOuterRadius);
+    glUniform1f(mPointLightMaterial->mProgram.getUniform("InnerRadius"), lightData.mInnerRadiusCoef);
     glUniform3f(mPointLightMaterial->mProgram.getUniform("Color"), lightData.mColor.r / 255.0f, lightData.mColor.g / 255.0f, lightData.mColor.b / 255.0f);
     glUniform1f(mPointLightMaterial->mProgram.getUniform("Intensity"), lightData.mIntensity);
+    glUniform2f(mPointLightMaterial->mProgram.getUniform("Position"), position.x, position.y);
+    glUniform1f(mPointLightMaterial->mProgram.getUniform("Scale"), lightData.mOuterRadius);
 
     // Bind mesh
     glBindVertexArray(mSharedPointLightMesh.mVao);

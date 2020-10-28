@@ -58,7 +58,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[0].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA8);
+        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA16F);
         mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     }
     checkGlError("GBuffer init");
@@ -114,6 +114,7 @@ void RenderContext::initPostLoad() {
 
     mSunShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
+    mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
 }
 
 void RenderContext::renderFrame(const Camera2D& camera) {
@@ -133,7 +134,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     // Clear screen
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
     glDepthMask(true);
     glEnable(GL_DEPTH_TEST);
 
@@ -189,7 +190,6 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // Pass through process
     const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
     assert(postMat);
-    mCurrentFramebufferDims = mScreenResolution;
 
     mMaterialRenderer->renderMaterialToScreen(*postMat);
 
@@ -198,16 +198,32 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     activeGbuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
 
+    // *** Lighting ***
+    activeGbuffer.useLight();
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     // Sun Light
     mMaterialRenderer->renderMaterialToScreen(*mSunLightMaterial);
 
     // Sun Shadows
-    mMaterialRenderer->renderMaterialToScreen(*mSunShadowMaterial);
+    if (mRenderData.sunHeight > 0.0f) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        mMaterialRenderer->renderMaterialToScreen(*mSunShadowMaterial);
+    }
 
-    // Additive blend Point Lights
+    //  Dynamic  light
     glBlendFunc(GL_ONE, GL_ONE);
     mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
+
+    activeGbuffer.unuse();
+    mCurrentFramebufferDims = mScreenResolution;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Final Lighting
+    mMaterialRenderer->renderMaterialToScreen(*mLightPassThroughMaterial);
+
+
 
     // UI last
     renderUI();

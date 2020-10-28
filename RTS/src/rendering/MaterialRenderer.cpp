@@ -84,6 +84,11 @@ void MaterialRenderer::uploadUniforms(const Material& material) const {
                 glUniform1i(it.second, mAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(0));
                 break;
+            case MaterialUniform::FboLight:
+                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
+                glUniform1i(it.second, mAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getLightTexture());
+                break;
             case MaterialUniform::FboDepth:
                 glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
                 glUniform1i(it.second, mAvailableTextureIndex++);
@@ -113,6 +118,6 @@ void MaterialRenderer::uploadUniforms(const Material& material) const {
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowGBuffer().getGeometryTexture(0));
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 17, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 18, "Update for new uniform type");
     }
 }

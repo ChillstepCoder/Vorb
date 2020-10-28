@@ -12,6 +12,7 @@ const float DEPTH_SCALE = 10.0; // Far plane  is 10
 // TODO: Shared constants file?
 // Needs to match C++
 const float SHADOW_SCALE = 6.0;
+const float SHADOW_ALPHA = 0.7;
 
 void main() {
 	
@@ -24,5 +25,5 @@ void main() {
 	float shadowHeight = texture(FboShadowHeight, shadowUV).r * SHADOW_SCALE;
 	
 	fColor.rgb = vec3(0.0);
-	fColor.a = step(0.0, shadowHeight - (invertDepth + 0.01)) * SunHeight;
+	fColor.a = step(0.0, shadowHeight - (invertDepth + 0.01)) * SunHeight * SHADOW_ALPHA;
 }

@@ -17,6 +17,7 @@ enum class MaterialUniform {
     WVPMatrix,
     VPMatrix,
     Fbo0,
+    FboLight,
     FboDepth,
     PrevFbo0,
     PrevFboDepth,
