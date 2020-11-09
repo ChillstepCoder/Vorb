@@ -62,8 +62,11 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         // TODO: Ensure this is correct usage of pixelRect.zw
         const ui32v2 tileDims(ceil((float)metaData.pixelRect.z / TEXTURE_ATLAS_CELL_WIDTH_PX), ceil((float)metaData.pixelRect.w / TEXTURE_ATLAS_CELL_WIDTH_PX));
         assert(tileDims.x * tileDims.y > 0);
+        assert(tileDims.x < TEXTURE_ATLAS_CELLS_PER_ROW / 2); // Need room for normal maps
         const unsigned sourceOffset = (unsigned)metaData.pixelRect.y * rs.width + metaData.pixelRect.x;
         const color4* sourceBytes = (color4*)(rs.bytesUI8v4 + sourceOffset);
+
+        // Reserve double space for normal map
         if (tileDims.x == 1 && tileDims.y == 1) {
             ui32 index = textureMapper->mapSingle();
             sprite.uvs = mTextureAtlas.writePixels(index, 1, 1, sourceBytes, rs.width);
@@ -81,8 +84,8 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
             sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
             sprite.method = TileTextureMethod::CONNECTED_WALL;
             // Correct dims per tile
-            sprite.uvs.z /= 6.0f;
-            sprite.uvs.w /= 4.0f;
+            sprite.uvs.z /= TILE_TEX_METHOD_CONNECTED_WALL_WIDTH;
+            sprite.uvs.w /= TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT;
         }
 
         // Insert the sprite

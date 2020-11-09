@@ -5,9 +5,9 @@ class Camera2D;
 class Material;
 class MaterialRenderer;
 class EntityComponentSystemRenderer;
+class GPUTextureManipulator;
 class ChunkRenderer;
 class LightRenderer;
-class GPUTextureManipulator;
 class World;
 
 #include <Vorb/graphics/GBuffer.h>
@@ -68,6 +68,7 @@ private:
     mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
+    mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
@@ -78,9 +79,6 @@ private:
     vg::GBuffer mGBuffers[2];
     vg::GBuffer mShadowGBuffer;
     const World& mWorld;
-
-    // TODO: Use this?
-    std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;

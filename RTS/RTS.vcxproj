@@ -161,6 +161,9 @@
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
+    <ClCompile Include="src\particles\ParticleSystem.cpp" />
+    <ClCompile Include="src\particles\ParticleSystemData.cpp" />
+    <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
     <ClCompile Include="src\Random.cpp" />
@@ -171,6 +174,7 @@
     <ClCompile Include="src\rendering\Material.cpp" />
     <ClCompile Include="src\rendering\MaterialManager.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
+    <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\QuadMesh.cpp" />
     <ClCompile Include="src\rendering\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
@@ -222,6 +226,9 @@
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\Noise.h" />
+    <ClInclude Include="src\particles\ParticleSystem.h" />
+    <ClInclude Include="src\particles\ParticleSystemData.h" />
+    <ClInclude Include="src\particles\ParticleSystemManager.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="src\Random.h" />
@@ -232,6 +239,7 @@
     <ClInclude Include="src\rendering\Material.h" />
     <ClInclude Include="src\rendering\MaterialManager.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
+    <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />

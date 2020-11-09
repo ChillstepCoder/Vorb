@@ -9,6 +9,8 @@ DECL_VIO(class IOManager);
 class TileSpriteLoader;
 class TextureAtlas;
 
+typedef std::map<std::string /* Sprite Name */, SpriteData> SpriteDataMap;
+
 class SpriteRepository
 {
     friend class TileSpriteLoader;
@@ -22,12 +24,13 @@ public:
 
     vg::TextureCache& getTextureCache() { return *mTextureCache; }
     const TextureAtlas& getTextureAtlas() { return *mTextureAtlas; }
+    SpriteDataMap& getSprites() { return mSprites; }
 
 private:
     std::unique_ptr<TileSpriteLoader> mTileSpriteLoader;
     std::unique_ptr<vg::TextureCache> mTextureCache;
     std::unique_ptr<TextureAtlas> mTextureAtlas;
-    std::map<std::string /* Sprite Name */, SpriteData> mSprites;
+    SpriteDataMap mSprites;
 
     vio::IOManager& mIoManager;
 };

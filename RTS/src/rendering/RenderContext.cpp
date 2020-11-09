@@ -9,7 +9,7 @@
 #include "rendering/ChunkRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "rendering/MaterialManager.h"
-#include "rendering/MaterialRenderer.h"
+#include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
 
@@ -43,6 +43,9 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mEcsRenderer        = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
     checkGlError("Renderer init");
 
+    mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
+    checkGlError("Init texture manipulator");
+
     // int UI resources
     mSb         = std::make_unique<vg::SpriteBatch>();
     mSpriteFont = std::make_unique<vg::SpriteFont>();
@@ -51,14 +54,20 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     checkGlError("SB init");
 
     // GBuffer
-    vg::GBufferAttachment attachments[1];
-    attachments[0].format = vg::TextureInternalFormat::RGBA8;
-    attachments[0].number = 0;
-    attachments[0].pixelFormat = vg::TextureFormat::RGBA;
-    attachments[0].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    vg::GBufferAttachment attachments[2];
+    // Color
+    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGB8;
+    attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
+    attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RGB;
+    attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    // Normals
+    attachments[FBO_GEOMETRY_NORMAL].format = vg::TextureInternalFormat::RGB8;
+    attachments[FBO_GEOMETRY_NORMAL].number = FBO_GEOMETRY_NORMAL;
+    attachments[FBO_GEOMETRY_NORMAL].pixelFormat = vg::TextureFormat::RGB;
+    attachments[FBO_GEOMETRY_NORMAL].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA16F);
+        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 2), vg::TextureInternalFormat::RGBA16F);
         mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     }
     checkGlError("GBuffer init");
@@ -74,11 +83,6 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
     mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     checkGlError("Shadow GBuffer Init");
-
-    // Misc
-    mTextureManipulator = std::make_unique<GPUTextureManipulator>();
-    checkGlError("Init texture manipulator");
-
 }
 
 RenderContext::~RenderContext() {
@@ -100,6 +104,7 @@ RenderContext& RenderContext::getInstance() {
 void RenderContext::initPostLoad() {
     mLightRenderer->InitPostLoad();
     mChunkRenderer->InitPostLoad();
+    mTextureManipulator->InitPostLoad();
 
     // Init all passthrough materials
     for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {

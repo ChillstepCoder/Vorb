@@ -8,6 +8,8 @@ constexpr unsigned TEXTURE_ATLAS_CELL_WIDTH_PX = 16;
 constexpr unsigned TEXTURE_ATLAS_CELLS_PER_ROW = TEXTURE_ATLAS_WIDTH_PX / TEXTURE_ATLAS_CELL_WIDTH_PX;
 constexpr unsigned TEXTURE_ATLAS_CELLS_PER_PAGE = TEXTURE_ATLAS_CELLS_PER_ROW * TEXTURE_ATLAS_CELLS_PER_ROW;
 constexpr unsigned TEXTURE_ATLAS_MAX_DEPTH = GL_MAX_ARRAY_TEXTURE_LAYERS;
+// Layer 1 = color, layer 2 = normals
+constexpr int TEXTURE_ATLAS_LAYERS_PER_PAGE = 2;
 
 struct AtlasPage {
     AtlasPage() : dirty(true) {}
@@ -28,6 +30,7 @@ public:
 
     VGTexture getAtlasTexture() const { return mAtlasTexture; }
     unsigned getPageIndexFromCellIndex(unsigned cellIndex);
+    unsigned getNumPages() const { return (unsigned)mPages.size(); }
 
 private:
     void addPage();

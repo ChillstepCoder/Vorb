@@ -205,7 +205,7 @@ void World::updateSun() {
     mTimeOfDay = (float)fmod(adjustedTime / (f64)SECONDS_PER_HOUR, (f64)HOURS_PER_DAY);
 
 	const float dayDelta = (mTimeOfDay - SUNRISE_TIME) / DAY_SPAN;
-	mSunHeight = sin(dayDelta * M_PI);
+	mSunHeight = sin(dayDelta * M_PIF);
 	if (mSunHeight > 0.0f) {
 		// We can only do exponent curve on nonzero numbers
 		mSunHeight = pow(mSunHeight, SUN_HEIGHT_EXPONENT);

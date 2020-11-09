@@ -8,6 +8,7 @@ class Camera2D;
 
 
 // TODO: IRendererBase?
+// TODO: Use point sprite for lights?
 class LightRenderer
 {
 public:

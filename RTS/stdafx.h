@@ -46,6 +46,7 @@
 #include <Vorb/Constants.h>
 #include <Vorb/types.h>
 #include <Vorb/Timing.h>
+#include <Vorb/io/Keg.h>
 
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)

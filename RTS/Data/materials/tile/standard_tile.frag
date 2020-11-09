@@ -4,7 +4,8 @@ in vec2 fUV;
 flat in float fAtlasPage;
 in vec4 fTint;
 
-out vec4 fColor;
+layout (location = 0) out vec4 fColor;
+layout (location = 1) out vec4 fNormal;
 
 void main() {
     fColor = texture(Atlas, vec3(fUV, fAtlasPage)) * fTint;
@@ -12,4 +13,6 @@ void main() {
     if (fColor.a <= 0.01) {
         discard;
     }
+	// Normal is always the next page
+	fNormal= texture(Atlas, vec3(fUV, fAtlasPage + 1.0));
 }

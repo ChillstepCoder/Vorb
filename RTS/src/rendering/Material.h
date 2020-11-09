@@ -1,6 +1,5 @@
 #pragma once
-
-#include <Vorb/io/Keg.h>
+\
 #include <Vorb/graphics/GLProgram.h>
 
 DECL_VG(class Texture);
@@ -19,6 +18,7 @@ enum class MaterialUniform {
     Fbo0,
     FboLight,
     FboDepth,
+    FboNormals,
     PrevFbo0,
     PrevFboDepth,
     PixelDims,

@@ -8,6 +8,7 @@ DECL_VIO(class IOManager);
 #include "rendering/SpriteRepository.h"
 
 class MaterialManager;
+class ParticleSystemManager;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -27,23 +28,26 @@ public:
     vg::TextureCache& getTextureCache() { return mSpriteRepository->getTextureCache(); }
     const TextureAtlas& getTextureAtlas() const { return mSpriteRepository->getTextureAtlas(); }
     const MaterialManager& getMaterialManager() const { return *mMaterialManager; }
+    ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
+
     bool hasLoadedResources() const { return mHasLoadedResources; }
 
+    void generateNormalMaps();
     void writeDebugAtlas() const;
     
 private:
     bool loadTiles(const vio::Path& filePath);
-    bool loadShader(const vio::Path& filePath);
 
     // Tasks
     // TODO: ResourceLoader
-    std::vector<vio::Path> mShaderFiles;
     std::vector<vio::Path> mTextureFiles;
     std::vector<vio::Path> mMaterialFiles;
     std::vector<vio::Path> mTileFiles;
+    std::vector<vio::Path> mParticleSystemFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
+    std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

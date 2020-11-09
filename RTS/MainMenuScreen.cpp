@@ -23,6 +23,10 @@
 #include "rendering/RenderContext.h"
 
 #include "TextureManip.h"
+#include "Random.h"
+
+// size of global cached random table
+const unsigned CACHED_RANDOM_SIZE = 65536;
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
@@ -65,6 +69,8 @@ i32 MainMenuScreen::getPreviousScreen() const {
 
 void MainMenuScreen::build() {
 
+	Random::initCachedRandom(CACHED_RANDOM_SIZE);
+
 	mCircleTexture = mResourceManager->getTextureCache().addTexture("data/textures/circle_dir.png");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
@@ -73,9 +79,9 @@ void MainMenuScreen::build() {
 
     mResourceManager->gatherFiles("data");
 	mResourceManager->loadFiles();
-	mResourceManager->writeDebugAtlas();
 
-	mRenderContext.initPostLoad();
+    mRenderContext.initPostLoad();
+    mResourceManager->writeDebugAtlas();
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle

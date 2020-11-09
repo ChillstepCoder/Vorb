@@ -5,7 +5,15 @@
 enum class TileTextureMethod : ui8 {
     SIMPLE,
     CONNECTED,
-    CONNECTED_WALL
+    CONNECTED_WALL,
+    COUNT
+};
+
+constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
+constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 4;
+
+enum SpriteDataFlags : ui8 {
+    SPRITEDATA_HAS_NORMAL_MAP = 1 << 0
 };
 
 struct SpriteData {
@@ -17,4 +25,5 @@ struct SpriteData {
     VGTexture texture = 0;
     TileTextureMethod method = TileTextureMethod::SIMPLE;
     ui16 atlasPage = 0;
+    ui8 flags = 0;
 };

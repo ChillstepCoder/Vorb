@@ -2,8 +2,6 @@
 
 #include "rendering/SpriteData.h"
 
-#include <Vorb/io/Keg.h>
-
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
 

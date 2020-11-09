@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TextureAtlas.h"
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 TextureAtlas::TextureAtlas()
 {
@@ -69,10 +69,12 @@ void TextureAtlas::uploadDirtyPages()
 }
 
 void TextureAtlas::addPage() {
-    mPages.emplace_back();
-    auto& page = mPages.back();
-    page.pixels.resize(TEXTURE_ATLAS_SIZE_PX, color4(255, 0, 255, 255));
-    page.index = mPages.size() - 1;
+    for (int i = 0; i < TEXTURE_ATLAS_LAYERS_PER_PAGE; ++i) {
+        mPages.emplace_back();
+        auto& page = mPages.back();
+        page.pixels.resize(TEXTURE_ATLAS_SIZE_PX, color4(255, 0, 255, 255));
+        page.index = mPages.size() - 1;
+    }
     mNeedsReallocate = true;
 }
 
@@ -82,7 +84,7 @@ void TextureAtlas::uploadPage(AtlasPage& page) {
 }
 
 unsigned TextureAtlas::getPageIndexFromCellIndex(unsigned cellIndex) {
-    return cellIndex / TEXTURE_ATLAS_CELLS_PER_PAGE;
+    return (cellIndex / TEXTURE_ATLAS_CELLS_PER_PAGE) * TEXTURE_ATLAS_LAYERS_PER_PAGE;
 }
 
 ui32v2 TextureAtlas::getPageCoordsFromCellIndex(unsigned cellIndex) {

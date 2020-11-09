@@ -21,33 +21,33 @@ MaterialRenderer::~MaterialRenderer()
 
 void MaterialRenderer::renderMaterialToScreen(const Material& material) const {
 
-    bindMaterialForRender(material);
+    bindMaterialForRender(material, nullptr);
 
     mScreenVBO.draw();
 }
 
 void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState/* = vg::DepthState::FULL*/) const
 {
-    bindMaterialForRender(material);
+    bindMaterialForRender(material, nullptr);
 
     quadMesh.draw(material.mProgram, depthState);
 }
 
-void MaterialRenderer::bindMaterialForRender(const Material& material) const {
+void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) const {
     material.use();
-    uploadUniforms(material);
+    uploadUniforms(material, nextAvailableTextureIndex);
 }
 
 // TODO: Batch upload uniforms so we dont do it multiple times redundantly
-void MaterialRenderer::uploadUniforms(const Material& material) const {
-    ui32 mAvailableTextureIndex = 0;
+void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAvailableTextureIndex) const {
+    ui32 availableTextureIndex = 0;
     const GlobalRenderData& renderData = mRenderContext.getRenderData();
     // Bind uniforms
     for (auto&& it : material.mUniforms) {
         switch (it.first) {
             case MaterialUniform::Atlas:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.atlas);
                 // TODO: Stop re-setting this
                 vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
@@ -80,28 +80,33 @@ void MaterialRenderer::uploadUniforms(const Material& material) const {
                 glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getCameraMatrix()[0][0]);
                 break;
             case MaterialUniform::Fbo0:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(0));
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(FBO_GEOMETRY_COLOR));
                 break;
             case MaterialUniform::FboLight:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getLightTexture());
                 break;
             case MaterialUniform::FboDepth:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getDepthTexture());
                 break;
+            case MaterialUniform::FboNormals:
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(FBO_GEOMETRY_NORMAL));
+                break;
             case MaterialUniform::PrevFbo0:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getGeometryTexture(0));
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getGeometryTexture(FBO_GEOMETRY_COLOR));
                 break;
             case MaterialUniform::PrevFboDepth:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getDepthTexture());
                 break;
             case MaterialUniform::PixelDims: {
@@ -113,11 +118,14 @@ void MaterialRenderer::uploadUniforms(const Material& material) const {
                 glUniform1f(it.second, renderData.mainCamera->getScale());
                 break;
             case MaterialUniform::FboShadowHeight:
-                glActiveTexture(GL_TEXTURE0 + mAvailableTextureIndex);
-                glUniform1i(it.second, mAvailableTextureIndex++);
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowGBuffer().getGeometryTexture(0));
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 18, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 19, "Update for new uniform type");
+    }
+    if (nextAvailableTextureIndex) {
+        *nextAvailableTextureIndex = availableTextureIndex;
     }
 }

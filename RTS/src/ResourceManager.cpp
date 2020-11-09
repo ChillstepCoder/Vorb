@@ -4,6 +4,7 @@
 #include "rendering/MaterialManager.h"
 #include "rendering/TextureAtlas.h"
 #include "rendering/ShaderLoader.h"
+#include "particles/ParticleSystemManager.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -29,6 +30,7 @@ ResourceManager::ResourceManager() {
 
     mSpriteRepository = std::make_unique<SpriteRepository>(*mIoManager);
     mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository);
+    mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -69,14 +71,14 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         else if (fileHasExtension(entry, ".material")) {
             mMaterialFiles.emplace_back(entry);
         }
-        else if (fileHasExtension(entry, ".shader")) {
-            mShaderFiles.emplace_back(entry);
-        }
         else if (fileHasExtension(entry, ".vert")) {
             ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
         }
         else if (fileHasExtension(entry, ".frag")) {
             ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
+        }
+        else if (fileHasExtension(entry, ".part")) {
+            mParticleSystemFiles.emplace_back(entry);
         }
         // TODO: .ttf?
     }
@@ -86,11 +88,6 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
 void ResourceManager::loadFiles() {
     assert(mHasGathered);
-
-    // Load Shaders
-    for (auto&& entry : mShaderFiles) {
-        loadShader(entry);
-    }
 
     // Load Textures
     for (auto&& entry : mTextureFiles) {
@@ -111,6 +108,12 @@ void ResourceManager::loadFiles() {
     };
     mMaterialFiles.clear();
 
+    // Load particle Systems
+    for (auto&& entry : mParticleSystemFiles) {
+        mParticleSystemManager->loadParticleSystemData(entry);
+    };
+    mMaterialFiles.clear();
+
     // Update textures
     mSpriteRepository->mTextureAtlas->uploadDirtyPages();
 
@@ -119,6 +122,11 @@ void ResourceManager::loadFiles() {
 
 const SpriteData& ResourceManager::getSprite(const std::string& spriteName) {
     return mSpriteRepository->getSprite(spriteName);
+}
+
+void ResourceManager::generateNormalMaps() {
+
+    glTextureBarrier();
 }
 
 void ResourceManager::writeDebugAtlas() const {
@@ -160,36 +168,5 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
     context.reader.forAllInMap(node, &f);
     context.reader.dispose();
 
-    return true;
-}
-
-bool ResourceManager::loadShader(const vio::Path& filePath)
-{
-    nString data;
-    mIoManager->readFileToString(filePath, data);
-    if (data.empty()) return false;
-
-    // Convert to YAML
-    keg::ReadContext context;
-    context.env = keg::getGlobalEnvironment();
-    context.reader.init(data.c_str());
-    keg::Node rootObject = context.reader.getFirst();
-    if (keg::getType(rootObject) != keg::NodeType::MAP) {
-        context.reader.dispose();
-        return false;
-    }
-
-    auto f = makeFunctor([&](Sender, const nString& key, keg::Node value) {
-        ShaderData shaderData;
-        keg::Error error = keg::parse((ui8*)&shaderData, value, context, &KEG_GLOBAL_TYPE(ShaderData));
-        assert(error == keg::Error::NONE);
-        vio::Path rootPath = filePath;
-        rootPath.trimEnd();
-        vio::Path vertPath = rootPath / shaderData.vert;
-        vio::Path fragPath = rootPath / shaderData.frag;
-        vg::GLProgram program = ShaderLoader::createProgramFromFile(key, vertPath, fragPath);
-    });
-    context.reader.forAllInMap(rootObject, &f);
-    context.reader.dispose();
     return true;
 }

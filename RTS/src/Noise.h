@@ -14,8 +14,6 @@
 #ifndef Noise_h__
 #define Noise_h__
 
-#include <Vorb/io/Keg.h>
-
 enum class TerrainStage {
 	NOISE,
 	SQUARED,
