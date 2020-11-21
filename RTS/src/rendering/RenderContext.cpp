@@ -9,6 +9,7 @@
 #include "rendering/ChunkRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "rendering/MaterialManager.h"
+#include "rendering/ParticleSystemRenderer.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
@@ -37,10 +38,11 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mScreenResolution(screenResolution)
 {
     // Init renderers
-    mMaterialRenderer   = std::make_unique<MaterialRenderer>(*this);
-    mLightRenderer      = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
-    mChunkRenderer      = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
-    mEcsRenderer        = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
+    mMaterialRenderer       = std::make_unique<MaterialRenderer>(*this);
+    mLightRenderer          = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
+    mChunkRenderer          = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
+    mEcsRenderer            = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
+    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer);
     checkGlError("Renderer init");
 
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
@@ -120,6 +122,7 @@ void RenderContext::initPostLoad() {
     mSunShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
     mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
+    mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 }
 
 void RenderContext::renderFrame(const Camera2D& camera) {
@@ -138,10 +141,9 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mCurrentFramebufferDims = activeGbuffer.getSize();
 
     // Clear screen
+    vg::DepthState::FULL.set();
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT);
-    glDepthMask(true);
-    glEnable(GL_DEPTH_TEST);
 
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -169,7 +171,9 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     activeGbuffer.useGeometry();
 
-    vg::DepthState::FULL.set();
+    // TODO: Transparent particles will have issues, possibly need to not write to depth? No that fucks shadows...
+    // Particles
+    mParticleSystemRenderer->renderLitParticleSystems(camera);
 
     // Debug Axis render
     DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
@@ -188,11 +192,12 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     }
 
     DebugRenderer::renderLines(camera.getCameraMatrix());
+
     // *** Post processes ***
     // Disable depth testing for post processing
-    glDisable(GL_DEPTH_TEST);
+    vg::DepthState::NONE.set();
 
-    // Pass through process
+    // Final Pass through process
     const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
     assert(postMat);
 
@@ -224,12 +229,19 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     activeGbuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    vg::DepthState::NONE.set();
 
     // Final Lighting
     mMaterialRenderer->renderMaterialToScreen(*mLightPassThroughMaterial);
 
+    // Copy depth for emissive rendering, so we can still depth test
+    vg::DepthState::WRITE.set();
+    mMaterialRenderer->renderMaterialToScreen(*mCopyDepthMaterial);
+    vg::DepthState::READ.set();
 
-
+    // Emissive Particles
+    mParticleSystemRenderer->renderEmissiveParticleSystems(camera);
+    vg::DepthState::NONE.set();
     // UI last
     renderUI();
 

@@ -4,6 +4,7 @@ class ResourceManager;
 class Camera2D;
 class Material;
 class MaterialRenderer;
+class ParticleSystemRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ChunkRenderer;
@@ -69,6 +70,7 @@ private:
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
     mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
+    mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
@@ -85,5 +87,6 @@ private:
     const Material* mSunShadowMaterial = nullptr;
     const Material* mSunLightMaterial = nullptr;
     const Material* mLightPassThroughMaterial = nullptr;
+    const Material* mCopyDepthMaterial = nullptr;
 };
 

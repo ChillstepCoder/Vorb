@@ -79,8 +79,7 @@ struct b2Vec2;
 #define M_SQRT1_2  0.707106781186547524401f  // 1/sqrt(2)
 #endif
 
-#define DEG_TO_RAD(x) ((x) * M_PIf / 180.0f)
-#define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
+#include "util/MathUtil.hpp"
 
 // Comment out for larger chunks
 // #define USE_SMALL_CHUNK_WIDTH

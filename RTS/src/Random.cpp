@@ -4,6 +4,7 @@
 static ui32 x = 123456789, y = 362436069, z = 521288629;
 bool hasInitCachedRandom = false;
 std::vector<ui32> cachedRandom;
+static unsigned cachedRandomIndex = 0;
 
 ui32 Random::xorshf96() {          //period 2^96-1
     ui32 t;
@@ -32,12 +33,14 @@ extern void Random::initCachedRandom(unsigned count) {
     }
 }
 
-extern ui32 Random::getCachedRandom(unsigned index) {
-    return cachedRandom[index % (unsigned)cachedRandom.size()];
+extern ui32 Random::getCachedRandom() {
+    assert(hasInitCachedRandom);
+    return cachedRandom[++cachedRandomIndex % (unsigned)cachedRandom.size()];
 }
 
-extern ui32 Random::getCachedRandomf(unsigned index) {
-    return (cachedRandom[index % (unsigned)cachedRandom.size()] & 0x01fffffff) / (float)0x01fffffff;
+extern float Random::getCachedRandomf() {
+    assert(hasInitCachedRandom);
+    return (cachedRandom[++cachedRandomIndex % (unsigned)cachedRandom.size()] & 0x01fffffff) / (float)0x01fffffff;
 }
 
 Random::RandomPermutationTable::RandomPermutationTable(unsigned count) :

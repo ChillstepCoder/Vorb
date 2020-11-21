@@ -18,6 +18,7 @@
 #include "Utils.h"
 
 #include "ResourceManager.h"
+#include "particles/ParticleSystemManager.h"
 
 #include "physics/ContactListener.h"
 #include "rendering/RenderContext.h"
@@ -147,21 +148,19 @@ void MainMenuScreen::build() {
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
             );*/
-			TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-			if (handle.isValid()) {
-				handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
-			}
-		}
-		else if (event.button == vui::MouseButton::RIGHT) {
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+            }
+        }
+        else if (event.button == vui::MouseButton::RIGHT) {
             /*newActor = mHumanActorFactory->createActor(
                 mTestClick,
                 vio::Path("data/textures/circle_dir.png"),
-                vio::Path("")
+                vio::Pathw("")
             );*/
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-			if (handle.isValid()) {
-				handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("bricks1"), TILE_ID_NONE, TILE_ID_NONE));
-			}
+			const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
+			mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(0.1f, 0.1f, 0.3f), "burning_hands");
 		}
 
 		// Apply velocity

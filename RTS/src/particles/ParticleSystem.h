@@ -28,22 +28,27 @@ public:
     void setRootPosition(const f32v3& rootPosition) { mRootPosition = rootPosition; }
     void setInitialVelocity(const f32v3& initialVelocity) { mInitialVelocity = initialVelocity; }
 
-protected:
-    void initParticles();
-    void tryEmitParticles(float deltaTime);
-    void emitParticle(Particle& particle);
+    void stop();
 
-    GLint mMaxPixelSize;
+protected:
+    void tryEmitParticles();
+    void emitParticle();
+    float getRandomValFromRange(const f32v2& range);
+    int getRandomValFromRange(const i32v2& range);
+
     f32v3 mRootPosition;
     f32v3 mInitialVelocity;
     ParticleSystemData mSystemData;
     // TODO: Recycle memory
-    VGBuffer mVbo = 0;
     std::vector<Particle> mParticles;
-    unsigned mActiveParticles = 0;
     f32 mEmitTimer = 0.0f;
-    f32 mEmitRate = 1.0f;
-    // Used by ParticleSystemRenderer, set every time you update
-    mutable bool mDirty = true;
+    f32 mEmitRate = 0.0f;
+    f32 mCurrentTime = 0.0f;
+    f32 mTotalDuration = 0.0f;
+    bool mIsStopped = false;
+    // Mesh data used by ParticleSystemRenderer
+    mutable VGBuffer mVbo = 0;
+    mutable VGBuffer mVao = 0;
+    mutable bool mDirty = true; // Set this any time you want mesh to update
 };
 

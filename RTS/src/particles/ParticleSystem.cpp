@@ -3,41 +3,77 @@
 
 #include "Random.h"
 
-ParticleSystem::ParticleSystem(const f32v3& rootPosition, const f32v3& initialVelocity, const ParticleSystemData& systemData) :
-    mParticles(systemData.maxParticles),
-    mRootPosition(rootPosition),
-    mSystemData(systemData)
-{
-    // TODO: Would be nice to have RAII wrapper around buffer objects
-    glGenBuffers(1, &mVbo);
-    glGetIntegerv(GL_POINT_SIZE_RANGE, &mMaxPixelSize);
+const float GRAVITY_CONSTANT = 0.01f;
 
-    initParticles();
+ParticleSystem::ParticleSystem(const f32v3& rootPosition, const f32v3& initialVelocity, const ParticleSystemData& systemData) :
+    mRootPosition(rootPosition),
+    mSystemData(systemData),
+    mInitialVelocity(initialVelocity)
+{
+    mParticles.reserve(systemData.maxParticles);
+    mEmitRate = mSystemData.duration / mSystemData.maxParticles;
+
+    // One shot should emit on init
+    if (mSystemData.duration == 0.0f) {
+        tryEmitParticles();
+    }
 }
 
 ParticleSystem::~ParticleSystem()
 {
-    glDeleteBuffers(1, &mVbo);
+    // TODO: Would be nice to have RAII wrapper around buffer objects
+    if (mVbo) {
+        glDeleteBuffers(1, &mVbo);
+    }
+    if (mVao) {
+        glDeleteVertexArrays(1, &mVao);
+    }
 }
 
 bool ParticleSystem::update(float deltaTime)
 {
-    if (mSystemData.isEmitter) {
-        tryEmitParticles(deltaTime);
+    mCurrentTime += sElapsedSecondsSinceLastFrame;
+    // Handle looping logic
+    if (mCurrentTime > mSystemData.duration) {
+        if (mSystemData.isLooping) {
+            mCurrentTime -= mSystemData.duration;
+        }
+        else {
+            mIsStopped = true;
+        }
+    }
+
+    if (!mIsStopped) {
+        tryEmitParticles();
     }
     
     // Motion
-    for (auto&& particle : mParticles) {
+    const float gravityForce = GRAVITY_CONSTANT * deltaTime * mSystemData.gravityMult;
+    const float restingForce = gravityForce * 4.0f;
+    for (unsigned i = 0; i < mParticles.size();) {
+        Particle& particle = mParticles[i];
+        // TODO: Real time lifetime
+        particle.mLifeTime += sElapsedSecondsSinceLastFrame;
+        if (particle.mLifeTime >= mSystemData.particleLifetimeSecondsRange.y) {
+            particle = mParticles.back();
+            mParticles.pop_back();
+            continue;
+        }
         // x, y, z = 16 bit velocity  w
-        particle.mPosition += particle.mVelocity * deltaTime;
+        particle.mVelocity.z -= gravityForce;
         particle.mVelocity *= mSystemData.airDamping;
+        particle.mPosition += particle.mVelocity * deltaTime;
         // Bounce off the ground
         if (particle.mPosition.z <= 0.0f) {
-            particle.mPosition.x *= mSystemData.hitDamping;
-            particle.mPosition.y *= mSystemData.hitDamping;
-            particle.mPosition.z = -particle.mPosition.z * mSystemData.hitDamping;
+            particle.mPosition.z = -particle.mPosition.z;
+            particle.mVelocity.z = -particle.mVelocity.z;
+            particle.mVelocity *= mSystemData.hitDamping;
+            if (particle.mVelocity.z <= restingForce) {
+                particle.mVelocity.z = 0.0f;
+            }
             // TODO: Generate collision event
         }
+        ++i;
     }
 
     // TODO: Custom logic
@@ -48,29 +84,58 @@ bool ParticleSystem::update(float deltaTime)
             break;
     }
 
-    return mActiveParticles == 0;
-}
+    mDirty = true;
 
-void ParticleSystem::initParticles()
-{
-    for (auto&& particle : mParticles) {
-        emitParticle(particle);
+    if (mIsStopped) {
+        return mParticles.size() == 0;
     }
+    return false;
 }
 
-void ParticleSystem::tryEmitParticles(float deltaTime)
+void ParticleSystem::stop() {
+    mIsStopped = true;
+}
+
+void ParticleSystem::tryEmitParticles()
 {
-    mEmitTimer -= deltaTime;
+    mEmitTimer -= sElapsedSecondsSinceLastFrame;
     while (mEmitTimer < 0.0f) {
         mEmitTimer += mEmitRate;
-        if (mActiveParticles < mParticles.size()) {
-            emitParticle(mParticles[mActiveParticles++]);
+        if (mParticles.size() < mSystemData.maxParticles) {
+            emitParticle();
+        }
+        else {
+            return;
         }
     }
 }
 
-inline void ParticleSystem::emitParticle(Particle& particle) {
+inline void ParticleSystem::emitParticle() {
+    mParticles.emplace_back();
+    Particle& particle = mParticles.back();
     // TODO: Random emit
     particle.mPosition = mRootPosition;
-    particle.mVelocity = mInitialVelocity;
+
+    const float angleDeg = ((Random::getCachedRandomf() * 2.0f) - 1.0f) * mSystemData.launchAngleHorizDeg * 0.5f;
+    const f32v2 newVel = MathUtil::RotateVector(mInitialVelocity.x, mInitialVelocity.y, angleDeg);
+
+    particle.mVelocity.x = newVel.x;
+    particle.mVelocity.y = newVel.y;
+    particle.mVelocity.z = mInitialVelocity.z;
+    
+    particle.mSize = (ui16)(getRandomValFromRange(mSystemData.particleSizeRange) * PARTICLE_SIZE_SCALE);
+    // Lifetime offsets
+    const float thisLifetime = getRandomValFromRange(mSystemData.particleLifetimeSecondsRange);
+    particle.mLifeTime = mSystemData.particleLifetimeSecondsRange.y - thisLifetime;
+}
+
+float ParticleSystem::getRandomValFromRange(const f32v2& range)
+{
+    return vmath::lerp(range.x, range.y, Random::getCachedRandomf());
+}
+
+int ParticleSystem::getRandomValFromRange(const i32v2& range)
+{
+    const int modulo = range.y - range.x + 1;
+    return range.x + (Random::getCachedRandom() % modulo);
 }

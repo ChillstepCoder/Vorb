@@ -1,0 +1,3 @@
+fire_particle:
+  vert: particle.vert
+  frag: fire_particle.frag

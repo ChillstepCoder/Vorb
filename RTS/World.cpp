@@ -25,6 +25,10 @@
 #include "physics/PhysQueryCallback.h"
 #include "Utils.h"
 
+// TODO: remove?
+#include "ResourceManager.h"
+#include "particles/ParticleSystemManager.h"
+
 
 #define ENABLE_DEBUG_RENDER 1
 
@@ -84,6 +88,9 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 
 	// Update physics
 	mPhysWorld->Step(deltaTime, 1, 1);
+
+	// Update particles (TODO: Ecs?)
+	mResourceManager.getParticleSystemManager().update(deltaTime);
 
 	// Update ECS
     mEcs->update(deltaTime, mClientEcsData);

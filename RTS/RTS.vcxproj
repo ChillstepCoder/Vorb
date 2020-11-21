@@ -251,6 +251,7 @@
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\Tile.h" />

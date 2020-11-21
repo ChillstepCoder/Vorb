@@ -19,9 +19,7 @@ ParticleSystemManager::~ParticleSystemManager()
 ParticleSystem* ParticleSystemManager::createParticleSystem(const f32v3& position, const f32v3& initialVelocity, const nString& name) {
 
     auto&& it = mParticleSystemData.find(name);
-    if (it == mParticleSystemData.end()) {
-        return nullptr;
-    }
+    assert(it != mParticleSystemData.end());
 
     mParticleSystems.emplace_back(std::make_unique<ParticleSystem>(position, initialVelocity, it->second));
     return mParticleSystems.back().get();
@@ -47,6 +45,8 @@ bool ParticleSystemManager::loadParticleSystemData(const vio::Path& filePath) {
         ParticleSystemData systemData;
         keg::Error error = keg::parse((ui8*)&systemData, value, context, &KEG_GLOBAL_TYPE(ParticleSystemData));
         assert(error == keg::Error::NONE);
+
+        mParticleSystemData[key] = systemData;
     });
 
     context.reader.forAllInMap(rootObject, &f);
@@ -57,10 +57,11 @@ bool ParticleSystemManager::loadParticleSystemData(const vio::Path& filePath) {
 
 void ParticleSystemManager::update(float deltaTime) {
 
-    const unsigned count = mParticleSystems.size();
-    for (unsigned i = 0; i < count;) {
+    for (unsigned i = 0; i < mParticleSystems.size();) {
         if (mParticleSystems[i]->update(deltaTime)) {
-            mParticleSystems[i] = std::move(mParticleSystems[count]);
+            if (i != mParticleSystems.size() - 1) {
+                mParticleSystems[i] = std::move(mParticleSystems.back());
+            }
             mParticleSystems.pop_back();
         }
         else {

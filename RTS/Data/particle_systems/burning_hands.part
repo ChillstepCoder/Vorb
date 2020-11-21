@@ -1,12 +1,14 @@
 burning_hands:
   type: fire
   max_particles: 160
-  particle_size: 0.1
-  particle_lifetime: 2.0
-  launch_angle_horizontal: 90.0
+  particle_size: [0.3, 0.5]
+  particle_lifetime: [2.0, 3.0]
+  launch_angle_horizontal: 360.0
   launch_angle_vertical: 30.0
   air_damping: 0.98
   hit_damping: 0.95
   gravity_mult: 0.75
-  material: fire
-  is_emitter: true
+  material: fire_particle
+  duration: 5.0
+  looping: false
+  emissive: true

@@ -8,8 +8,8 @@ namespace Random {
 
     // Low quality but extremely fast RNG
     extern void initCachedRandom(unsigned count);
-    extern ui32 getCachedRandom(unsigned index);
-    extern ui32 getCachedRandomf(unsigned index);
+    extern ui32 getCachedRandom();
+    extern float getCachedRandomf();
 
     class RandomPermutationTable {
     public:

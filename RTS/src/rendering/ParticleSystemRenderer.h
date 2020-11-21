@@ -11,7 +11,8 @@ public:
     ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
     ~ParticleSystemRenderer();
 
-    void renderParticleSystems(const Camera2D& camera);
+    void renderLitParticleSystems(const Camera2D& camera);
+    void renderEmissiveParticleSystems(const Camera2D& camera);
 private:
     void renderParticleSystem(const Camera2D& camera, const ParticleSystem& particleSystem);
 
