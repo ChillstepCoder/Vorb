@@ -8,16 +8,6 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 
-#define ITERATE_SYSTEMS_START \
-const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager(); \
-for (auto&& layerName : manager.mSystemLayerSortOrder) { \
-    auto&& it = manager.mParticleSystems.find(layerName.second); \
-    const ParticleSystemArray& systemArray = it->second; \
-    if (systemArray.empty()) continue; \
-
-#define ITERATE_SYSTEMS_END }
-
-
 ParticleSystemRenderer::ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2 & gbufferDims) :
     mResourceManager(resourceManager),
     mMaterialRenderer(materialRenderer),
@@ -33,43 +23,48 @@ void ParticleSystemRenderer::renderParticleSystems(const Camera2D& camera, vg::G
 
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_POINT_SPRITE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    ITERATE_SYSTEMS_START;
+    const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager();
+    for (auto&& layerName : manager.mSystemLayerSortOrder) {
 
-    ParticleSystemData& systemData = systemArray[0]->mSystemData;
-    bool isPostProcess = systemData.postMaterialName.size() > 0;
-    if (isPostProcess) {
-        vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
+        auto&& it = manager.mParticleSystems.find(layerName.second);
+        const ParticleSystemArray& systemArray = it->second;
+        if (systemArray.empty()) continue;
 
-        // Share depth texture with main FBO
-        gbuffer.useGeometry();
-        glClear(GL_COLOR_BUFFER_BIT);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer ? activeGbuffer->getDepthTexture() : 0, 0);
-        checkGlError("AttachDepthParticle");
+        ParticleSystemData& systemData = systemArray[0]->mSystemData;
 
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    }
+        vg::BlendState::set(systemData.blendState);
 
-    for (auto&& system : systemArray) {
-        if (system->mSystemData.isEmissive != renderLitSystems) {
-            renderParticleSystem(camera, *system);
+        bool isPostProcess = systemData.postMaterialName.size() > 0;
+        if (isPostProcess) {
+            vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
+
+            // Share depth texture with main FBO
+            gbuffer.useGeometry();
+            glClear(GL_COLOR_BUFFER_BIT);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer ? activeGbuffer->getDepthTexture() : 0, 0);
+            checkGlError("AttachDepthParticle");
         }
-    }
 
-    if (isPostProcess) {
-        if (activeGbuffer) {
-            activeGbuffer->useGeometry();
+        for (auto&& system : systemArray) {
+            if (system->mSystemData.isEmissive != renderLitSystems) {
+                renderParticleSystem(camera, *system);
+            }
         }
-        else {
-            vg::GBuffer::unuse();
-        }
-        // TODO This copy + lookup is redundant and dumb
-        vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
-        renderPostProcess(systemData, gbuffer);
-    }
 
-    ITERATE_SYSTEMS_END;
+        if (isPostProcess) {
+            if (activeGbuffer) {
+                activeGbuffer->useGeometry();
+            }
+            else {
+                vg::GBuffer::unuse();
+            }
+            // TODO This copy + lookup is redundant and dumb
+            vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
+            renderPostProcess(systemData, gbuffer);
+        }
+
+    }
 }
 
 void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const ParticleSystem& particleSystem) {
@@ -161,7 +156,7 @@ void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particl
     glUniform2f(pixelDimsUniform, 1.0f / mGbufferDims.x, 1.0f / mGbufferDims.y);
 
     vg::DepthState::NONE.set();
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    vg::BlendState::set(particleSystemData.postBlendState);
     mFullQuadVbo.draw();
 
     vg::DepthState::READ.set();

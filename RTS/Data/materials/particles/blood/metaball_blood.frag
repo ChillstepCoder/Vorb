@@ -7,7 +7,7 @@ layout (location = 0) out vec4 fColor;
 layout (location = 1) out vec4 fNormal;
 
 const float THRESHOLD = 0.25;
-const float NORMAL_INTENSITY = 4.0;
+const float NORMAL_INTENSITY = 2.0;
 
 vec3 getNormalSobel() {
 	// Get UVS
@@ -32,12 +32,15 @@ vec3 getNormalSobel() {
 
 void main() {
 	float intensity = texture(ParticleFbo, fUV).r;
-	intensity = step(THRESHOLD, intensity);
+	float stepped = step(THRESHOLD, intensity);
 	
-    fColor = vec4(intensity, 0.0, 0.0, intensity); 
+	// Keep transparent edges
+	stepped = max(intensity, stepped);
+	
+    fColor = vec4(1.0, 0.0, 0.0, stepped);
 	
 	fNormal.rgb = getNormalSobel();
-	fNormal.a = intensity;
+	fNormal.a = fColor.r;
 	// Darken
 	fColor.r *= fNormal.g;
 }

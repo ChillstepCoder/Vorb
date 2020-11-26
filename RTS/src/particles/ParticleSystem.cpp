@@ -69,7 +69,7 @@ bool ParticleSystem::update(float deltaTime, const f32v2& playerPos)
             continue;
         }
         // Player force field influence
-#define USE_FORCE 0
+#define USE_FORCE 1
 #if USE_FORCE == 1
         {
             const f32v2 offsetToPlayer = playerPos - reinterpret_cast<f32v2&>(particle.mPosition);

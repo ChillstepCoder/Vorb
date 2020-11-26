@@ -11,7 +11,7 @@ KEG_TYPE_DEF_SAME_NAME(MaterialAtlasTextureInputData, kt) {
 }
 
 KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
-    kt.addValue("atlasTextures", keg::Value::array(offsetof(MaterialData, atlasTextures), keg::Value::custom(0, "MaterialAtlasTextureInputData", false)));
+    kt.addValue("atlas_textures", keg::Value::array(offsetof(MaterialData, atlasTextures), keg::Value::custom(0, "MaterialAtlasTextureInputData", false)));
     kt.addValue("vert", keg::Value::basic(offsetof(MaterialData, vertexShaderName), keg::BasicType::STRING));
     kt.addValue("frag", keg::Value::basic(offsetof(MaterialData, fragmentShaderName), keg::BasicType::STRING));
 }

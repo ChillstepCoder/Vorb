@@ -22,8 +22,8 @@ struct ParticleSystemData {
     f32 gravityMult = 1.0f;
     f32 duration = 1.0f;
     ui32 layer = 0;
-    vg::BlendStateType blendState;
-    vg::BlendStateType postBlendState;
+    vg::BlendStateType blendState = vg::BlendStateType::ALPHA;
+    vg::BlendStateType postBlendState = vg::BlendStateType::ALPHA;
     bool isLooping = false;
     bool isEmissive = false;
     nString materialName;
