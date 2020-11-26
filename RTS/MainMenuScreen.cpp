@@ -160,7 +160,7 @@ void MainMenuScreen::build() {
                 vio::Pathw("")
             );*/
 			const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
-			mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(0.1f, 0.1f, 0.3f), "burning_hands");
+			mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "burning_hands");
 		}
 
 		// Apply velocity

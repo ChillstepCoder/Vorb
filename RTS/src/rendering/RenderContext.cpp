@@ -158,7 +158,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     }
 
     //mEcsRenderer->renderPhysicsDebug(*m_camera2D);
-    mEcsRenderer->renderSimpleSprites(camera);
+    //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera);
 
     // Shadows
@@ -171,9 +171,12 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     activeGbuffer.useGeometry();
 
-    // TODO: Transparent particles will have issues, possibly need to not write to depth? No that fucks shadows...
     // Particles
+    // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
+    vg::DepthState::READ.set();
+    // TODO: Replace With BlendState
     mParticleSystemRenderer->renderLitParticleSystems(camera);
+    vg::DepthState::FULL.set();
 
     // Debug Axis render
     DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
@@ -239,7 +242,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mMaterialRenderer->renderMaterialToScreen(*mCopyDepthMaterial);
     vg::DepthState::READ.set();
 
-    // Emissive Particles
+    // Emissive Particles (Additive Blend)
     mParticleSystemRenderer->renderEmissiveParticleSystems(camera);
     vg::DepthState::NONE.set();
     // UI last

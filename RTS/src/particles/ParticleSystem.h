@@ -19,14 +19,14 @@ class ParticleSystem
 {
     friend class ParticleSystemRenderer;
 public:
-    ParticleSystem(const f32v3& rootPosition, const f32v3& initialVelocity, const ParticleSystemData& systemData);
+    ParticleSystem(const f32v3& rootPosition, const f32v3& direction, const ParticleSystemData& systemData);
     ~ParticleSystem();
 
     // Returns true on empty
-    bool update(float deltaTime);
+    bool update(float deltaTime, const f32v2& playerPos);
 
     void setRootPosition(const f32v3& rootPosition) { mRootPosition = rootPosition; }
-    void setInitialVelocity(const f32v3& initialVelocity) { mInitialVelocity = initialVelocity; }
+    void sestDirection(const f32v3& direction) { mDirection = direction; }
 
     void stop();
 
@@ -37,7 +37,7 @@ protected:
     int getRandomValFromRange(const i32v2& range);
 
     f32v3 mRootPosition;
-    f32v3 mInitialVelocity;
+    f32v3 mDirection;
     ParticleSystemData mSystemData;
     // TODO: Recycle memory
     std::vector<Particle> mParticles;

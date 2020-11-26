@@ -1,14 +1,23 @@
 #include "stdafx.h"
 #include "ParticleSystem.h"
 
+#include <glm/gtx/rotate_vector.hpp>
+
 #include "Random.h"
 
 const float GRAVITY_CONSTANT = 0.01f;
 
+const f32 PLAYER_ABSORB_HEIGHT = 0.9f;
+const f32 PARTICLE_ABSORB_DISTANCE = 0.2f;
+const f32 FORCE_DISTANCE_INNNER = 0.1f;
+const f32 FORCE_DISTANCE_OUTER = 5.5f;
+const f32 FORCE_DISTANCE_SPAN = FORCE_DISTANCE_OUTER - FORCE_DISTANCE_INNNER;
+const float FORCE_POWER_MULT = 0.055f;
+
 ParticleSystem::ParticleSystem(const f32v3& rootPosition, const f32v3& initialVelocity, const ParticleSystemData& systemData) :
     mRootPosition(rootPosition),
     mSystemData(systemData),
-    mInitialVelocity(initialVelocity)
+    mDirection(initialVelocity)
 {
     mParticles.reserve(systemData.maxParticles);
     mEmitRate = mSystemData.duration / mSystemData.maxParticles;
@@ -30,7 +39,7 @@ ParticleSystem::~ParticleSystem()
     }
 }
 
-bool ParticleSystem::update(float deltaTime)
+bool ParticleSystem::update(float deltaTime, const f32v2& playerPos)
 {
     mCurrentTime += sElapsedSecondsSinceLastFrame;
     // Handle looping logic
@@ -59,10 +68,36 @@ bool ParticleSystem::update(float deltaTime)
             mParticles.pop_back();
             continue;
         }
-        // x, y, z = 16 bit velocity  w
+        // Player force field influence
+#define USE_FORCE 0
+#if USE_FORCE == 1
+        {
+            const f32v2 offsetToPlayer = playerPos - reinterpret_cast<f32v2&>(particle.mPosition);
+            const f32 distanceToPlayer = glm::length(offsetToPlayer);
+            if (distanceToPlayer < PARTICLE_ABSORB_DISTANCE && particle.mPosition.z < PLAYER_ABSORB_HEIGHT) {
+                particle = mParticles.back();
+                mParticles.pop_back();
+                continue;
+            }
+            const f32v2 offsetToPlayerNormalized = offsetToPlayer / distanceToPlayer;
+
+            f32v3 forceInner(0.0f, 0.0f, 1.0f);
+            f32v3 forceOuter(offsetToPlayerNormalized.x, offsetToPlayerNormalized.y, 0.0f);
+
+            const f32 forceLerp = (1.0f - vmath::clamp((distanceToPlayer - FORCE_DISTANCE_INNNER) / FORCE_DISTANCE_SPAN, 0.0f, 1.0f));
+            const f32 heightMult = vmath::max(1.0f - particle.mPosition.z, 0.0f);
+            const f32 totalForce = (forceLerp * FORCE_POWER_MULT);
+            const f32v3 resultForce = vmath::lerp(forceInner, forceOuter, forceLerp) * totalForce;
+
+            particle.mVelocity += resultForce;
+        }
+#endif
+        // x, y, z = 16 bit velocity w
         particle.mVelocity.z -= gravityForce;
+        
         particle.mVelocity *= mSystemData.airDamping;
         particle.mPosition += particle.mVelocity * deltaTime;
+
         // Bounce off the ground
         if (particle.mPosition.z <= 0.0f) {
             particle.mPosition.z = -particle.mPosition.z;
@@ -70,6 +105,7 @@ bool ParticleSystem::update(float deltaTime)
             particle.mVelocity *= mSystemData.hitDamping;
             if (particle.mVelocity.z <= restingForce) {
                 particle.mVelocity.z = 0.0f;
+                particle.mPosition.z = 0.001f;
             }
             // TODO: Generate collision event
         }
@@ -113,16 +149,27 @@ void ParticleSystem::tryEmitParticles()
 inline void ParticleSystem::emitParticle() {
     mParticles.emplace_back();
     Particle& particle = mParticles.back();
-    // TODO: Random emit
+
     particle.mPosition = mRootPosition;
 
-    const float angleDeg = ((Random::getCachedRandomf() * 2.0f) - 1.0f) * mSystemData.launchAngleHorizDeg * 0.5f;
-    const f32v2 newVel = MathUtil::RotateVector(mInitialVelocity.x, mInitialVelocity.y, angleDeg);
+    { // Determine velocity
+        const float horizAngleDeg = ((Random::getCachedRandomf() * 2.0f) - 1.0f) * mSystemData.launchAngleHorizDeg * 0.5f;
+        const f32v2 newDir = MathUtil::RotateVector(mDirection.x, mDirection.y, horizAngleDeg);
 
-    particle.mVelocity.x = newVel.x;
-    particle.mVelocity.y = newVel.y;
-    particle.mVelocity.z = mInitialVelocity.z;
-    
+        // Rotate sideways
+        const f32v2 vertRotate = MathUtil::RotateVector(newDir.x, newDir.y, -90.0f);
+
+        particle.mVelocity.x = newDir.x;
+        particle.mVelocity.y = newDir.y;
+        particle.mVelocity.z = mDirection.z;
+
+        // Rotate up
+        const f32 vertRotateDeg = getRandomValFromRange(mSystemData.launchAngleVertRangeDeg);
+        particle.mVelocity = glm::rotate(particle.mVelocity, DEG_TO_RAD(vertRotateDeg), glm::normalize(f32v3(vertRotate.x, vertRotate.y, 0.0f)));
+
+        // Scale
+        particle.mVelocity *= getRandomValFromRange(mSystemData.speedRange);
+    }
     particle.mSize = (ui16)(getRandomValFromRange(mSystemData.particleSizeRange) * PARTICLE_SIZE_SCALE);
     // Lifetime offsets
     const float thisLifetime = getRandomValFromRange(mSystemData.particleLifetimeSecondsRange);

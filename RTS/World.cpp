@@ -90,7 +90,7 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	mPhysWorld->Step(deltaTime, 1, 1);
 
 	// Update particles (TODO: Ecs?)
-	mResourceManager.getParticleSystemManager().update(deltaTime);
+	mResourceManager.getParticleSystemManager().update(deltaTime, playerPos);
 
 	// Update ECS
     mEcs->update(deltaTime, mClientEcsData);

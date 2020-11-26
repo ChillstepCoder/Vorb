@@ -6,6 +6,8 @@ in float vLifetime;
 
 uniform mat4 VP;
 uniform float ZoomScale;
+uniform float MaxLifetime;
+uniform float ShrinkDuration;
 const float PARTICLE_SCALE_RATIO = 1.0 / 1024.0;
 
 out vec3 fVelocity;

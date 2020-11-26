@@ -156,6 +156,6 @@ extern void pError(const nString& message);
 extern bool checkGlError(const nString& errorLocation);
 
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
-extern UNIT_SPACE(SECONDS) f64 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
+extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
 #endif // stdafx_h__RTS

@@ -16,13 +16,34 @@ ParticleSystemManager::~ParticleSystemManager()
 
 }
 
-ParticleSystem* ParticleSystemManager::createParticleSystem(const f32v3& position, const f32v3& initialVelocity, const nString& name) {
+ParticleSystem* ParticleSystemManager::createParticleSystem(const f32v3& position, const f32v3& direction, const nString& name) {
 
     auto&& it = mParticleSystemData.find(name);
     assert(it != mParticleSystemData.end());
+    ParticleSystemData& systemData = it->second;
 
-    mParticleSystems.emplace_back(std::make_unique<ParticleSystem>(position, initialVelocity, it->second));
-    return mParticleSystems.back().get();
+    // TODO: Reduce to 1 map lookup
+    bool isNew = (mParticleSystems.find(name) == mParticleSystems.end());
+
+    ParticleSystemArray& array = mParticleSystems[name];
+
+    // Insert into sort array
+    if (isNew) {
+        bool shouldAppend = true;
+        for (auto&& it = mSystemLayerSortOrder.begin(); it != mSystemLayerSortOrder.end(); ++it) {
+            if (systemData.layer <= it->first) {
+                mSystemLayerSortOrder.insert(it, std::pair<ui32, nString>(systemData.layer, name));
+                shouldAppend = false;
+                break;
+            }
+        }
+        if (shouldAppend) {
+            mSystemLayerSortOrder.emplace_back(systemData.layer, name);
+        }
+    }
+
+    array.emplace_back(std::make_unique<ParticleSystem>(position, direction, systemData));
+    return array.back().get();
 }
 
 bool ParticleSystemManager::loadParticleSystemData(const vio::Path& filePath) {
@@ -55,17 +76,20 @@ bool ParticleSystemManager::loadParticleSystemData(const vio::Path& filePath) {
     return true;
 }
 
-void ParticleSystemManager::update(float deltaTime) {
+void ParticleSystemManager::update(float deltaTime, const f32v2& playerPos) {
 
-    for (unsigned i = 0; i < mParticleSystems.size();) {
-        if (mParticleSystems[i]->update(deltaTime)) {
-            if (i != mParticleSystems.size() - 1) {
-                mParticleSystems[i] = std::move(mParticleSystems.back());
+    for (auto&& it : mParticleSystems) {
+        ParticleSystemArray& systemArray = it.second;
+        for (unsigned i = 0; i < systemArray.size();) {
+            if (systemArray[i]->update(deltaTime, playerPos)) {
+                if (i != systemArray.size() - 1) {
+                    systemArray[i] = std::move(systemArray.back());
+                }
+                systemArray.pop_back();
             }
-            mParticleSystems.pop_back();
-        }
-        else {
-            ++i;
+            else {
+                ++i;
+            }
         }
     }
 }

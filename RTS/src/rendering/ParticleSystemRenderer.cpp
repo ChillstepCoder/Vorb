@@ -20,18 +20,34 @@ ParticleSystemRenderer::~ParticleSystemRenderer() {
 
 void ParticleSystemRenderer::renderLitParticleSystems(const Camera2D& camera) {
 
-    for (auto&& system : mResourceManager.getParticleSystemManager().mParticleSystems) {
-        if (!system->mSystemData.isEmissive) {
-            renderParticleSystem(camera, *system);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_POINT_SPRITE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager();
+    for (auto&& layerName : manager.mSystemLayerSortOrder) {
+        auto&& it = manager.mParticleSystems.find(layerName.second);
+        const ParticleSystemArray& systemArray = it->second;
+        for (auto&& system : systemArray) {
+            if (!system->mSystemData.isEmissive) {
+                renderParticleSystem(camera, *system);
+            }
         }
     }
 }
 
 void ParticleSystemRenderer::renderEmissiveParticleSystems(const Camera2D& camera) {
 
-    for (auto&& system : mResourceManager.getParticleSystemManager().mParticleSystems) {
-        if (system->mSystemData.isEmissive) {
-            renderParticleSystem(camera, *system);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+    glEnable(GL_POINT_SPRITE);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager();
+    for (auto&& layerName : manager.mSystemLayerSortOrder) {
+        auto&& it = manager.mParticleSystems.find(layerName.second);
+        const ParticleSystemArray& systemArray = it->second;
+        for (auto&& system : systemArray) {
+            if (system->mSystemData.isEmissive) {
+                renderParticleSystem(camera, *system);
+            }
         }
     }
 }
@@ -81,7 +97,6 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const 
     assert(material);
     mMaterialRenderer.bindMaterialForRender(*material);
 
-    glEnable(GL_PROGRAM_POINT_SIZE);
     material->mProgram.enableVertexAttribArrays();
     glDrawArrays(GL_POINTS, 0, particleSystem.mParticles.size());
 
