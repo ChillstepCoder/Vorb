@@ -1,5 +1,5 @@
-burning_hands:
-  type: fire
+blood:
+  type: blood
   max_particles: 1200
   particle_size: [0.05, 0.15]
   particle_lifetime: [115.0, 118.0]
@@ -9,8 +9,10 @@ burning_hands:
   air_damping: 0.98
   hit_damping: 0.25
   gravity_mult: 0.75
-  material: fire_particle
+  material: blood
+  blend: additive
   post_material: metaball_blood
+  post_blend: alpha
   duration: 3.0
   looping: false
   emissive: false

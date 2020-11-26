@@ -1,7 +1,10 @@
 #pragma once
 
+#include <Vorb/graphics/BlendState.h>
+
 enum class ParticleSystemType : ui8 {
     SIMPLE,
+    BLOOD,
     FIRE
 };
 KEG_ENUM_DECL(ParticleSystemType);
@@ -19,6 +22,8 @@ struct ParticleSystemData {
     f32 gravityMult = 1.0f;
     f32 duration = 1.0f;
     ui32 layer = 0;
+    vg::BlendStateType blendState;
+    vg::BlendStateType postBlendState;
     bool isLooping = false;
     bool isEmissive = false;
     nString materialName;

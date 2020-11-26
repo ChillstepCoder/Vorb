@@ -88,7 +88,7 @@ namespace vorb {
             /// Set up the light target to be active
             void useLight();
 
-            void unuse();
+            static void unuse();
 
             /// Bind Geometry Texture
             /// @param i: Which Geometry texture to bind

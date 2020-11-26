@@ -42,7 +42,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mLightRenderer          = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
     mChunkRenderer          = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
     mEcsRenderer            = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
-    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer);
+    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer, screenResolution);
     checkGlError("Renderer init");
 
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
@@ -126,7 +126,7 @@ void RenderContext::initPostLoad() {
 }
 
 void RenderContext::renderFrame(const Camera2D& camera) {
-
+    
     // Set renderData
     mRenderData.mainCamera = &camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
@@ -175,7 +175,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
     vg::DepthState::READ.set();
     // TODO: Replace With BlendState
-    mParticleSystemRenderer->renderLitParticleSystems(camera);
+    mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
     vg::DepthState::FULL.set();
 
     // Debug Axis render
@@ -242,8 +242,8 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mMaterialRenderer->renderMaterialToScreen(*mCopyDepthMaterial);
     vg::DepthState::READ.set();
 
-    // Emissive Particles (Additive Blend)
-    mParticleSystemRenderer->renderEmissiveParticleSystems(camera);
+    // Unlit Particles
+    mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
     vg::DepthState::NONE.set();
     // UI last
     renderUI();

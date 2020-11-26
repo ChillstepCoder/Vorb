@@ -2,8 +2,9 @@
 #include "ParticleSystemData.h"
 
 KEG_ENUM_DEF(ParticleSystemType, ParticleSystemType, kt) {
-    kt.addValue("Simple", ParticleSystemType::SIMPLE);
-    kt.addValue("Fire", ParticleSystemType::FIRE);
+    kt.addValue("simple", ParticleSystemType::SIMPLE);
+    kt.addValue("blood", ParticleSystemType::BLOOD);
+    kt.addValue("fire", ParticleSystemType::FIRE);
 }
 
 KEG_TYPE_DEF_SAME_NAME(ParticleSystemData, kt) {
@@ -18,9 +19,11 @@ KEG_TYPE_DEF_SAME_NAME(ParticleSystemData, kt) {
     kt.addValue("hit_damping", keg::Value::basic(offsetof(ParticleSystemData, hitDamping), keg::BasicType::F32));
     kt.addValue("gravity_mult", keg::Value::basic(offsetof(ParticleSystemData, gravityMult), keg::BasicType::F32));
     kt.addValue("material", keg::Value::basic(offsetof(ParticleSystemData, materialName), keg::BasicType::STRING));
-    kt.addValue("postMaterialName", keg::Value::basic(offsetof(ParticleSystemData, postMaterialName), keg::BasicType::STRING));
+    kt.addValue("post_material", keg::Value::basic(offsetof(ParticleSystemData, postMaterialName), keg::BasicType::STRING));
     kt.addValue("duration", keg::Value::basic(offsetof(ParticleSystemData, duration), keg::BasicType::F32));
     kt.addValue("looping", keg::Value::basic(offsetof(ParticleSystemData, isLooping), keg::BasicType::BOOL));
     kt.addValue("emissive", keg::Value::basic(offsetof(ParticleSystemData, isEmissive), keg::BasicType::BOOL));
     kt.addValue("layer", keg::Value::basic(offsetof(ParticleSystemData, layer), keg::BasicType::UI32));
+    kt.addValue("blend", keg::Value::custom(offsetof(ParticleSystemData, blendState), "BlendStateType", true));
+    kt.addValue("post_blend", keg::Value::custom(offsetof(ParticleSystemData, postBlendState), "BlendStateType", true));
 }

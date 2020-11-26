@@ -12,7 +12,7 @@ const f32 PARTICLE_ABSORB_DISTANCE = 0.2f;
 const f32 FORCE_DISTANCE_INNNER = 0.1f;
 const f32 FORCE_DISTANCE_OUTER = 5.5f;
 const f32 FORCE_DISTANCE_SPAN = FORCE_DISTANCE_OUTER - FORCE_DISTANCE_INNNER;
-const float FORCE_POWER_MULT = 0.055f;
+const float FORCE_POWER_MULT = 0.015f;
 
 ParticleSystem::ParticleSystem(const f32v3& rootPosition, const f32v3& initialVelocity, const ParticleSystemData& systemData) :
     mRootPosition(rootPosition),

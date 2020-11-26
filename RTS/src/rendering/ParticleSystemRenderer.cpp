@@ -8,48 +8,68 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 
-ParticleSystemRenderer::ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
-    mResourceManager(resourceManager),
-    mMaterialRenderer(materialRenderer) {
+#define ITERATE_SYSTEMS_START \
+const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager(); \
+for (auto&& layerName : manager.mSystemLayerSortOrder) { \
+    auto&& it = manager.mParticleSystems.find(layerName.second); \
+    const ParticleSystemArray& systemArray = it->second; \
+    if (systemArray.empty()) continue; \
 
+#define ITERATE_SYSTEMS_END }
+
+
+ParticleSystemRenderer::ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2 & gbufferDims) :
+    mResourceManager(resourceManager),
+    mMaterialRenderer(materialRenderer),
+    mGbufferDims(gbufferDims) {
+    mFullQuadVbo.init();
 }
 
 ParticleSystemRenderer::~ParticleSystemRenderer() {
 
 }
 
-void ParticleSystemRenderer::renderLitParticleSystems(const Camera2D& camera) {
+void ParticleSystemRenderer::renderParticleSystems(const Camera2D& camera, vg::GBuffer* activeGbuffer, bool renderLitSystems) {
 
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_POINT_SPRITE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager();
-    for (auto&& layerName : manager.mSystemLayerSortOrder) {
-        auto&& it = manager.mParticleSystems.find(layerName.second);
-        const ParticleSystemArray& systemArray = it->second;
-        for (auto&& system : systemArray) {
-            if (!system->mSystemData.isEmissive) {
-                renderParticleSystem(camera, *system);
-            }
+
+    ITERATE_SYSTEMS_START;
+
+    ParticleSystemData& systemData = systemArray[0]->mSystemData;
+    bool isPostProcess = systemData.postMaterialName.size() > 0;
+    if (isPostProcess) {
+        vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
+
+        // Share depth texture with main FBO
+        gbuffer.useGeometry();
+        glClear(GL_COLOR_BUFFER_BIT);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer ? activeGbuffer->getDepthTexture() : 0, 0);
+        checkGlError("AttachDepthParticle");
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    }
+
+    for (auto&& system : systemArray) {
+        if (system->mSystemData.isEmissive != renderLitSystems) {
+            renderParticleSystem(camera, *system);
         }
     }
-}
 
-void ParticleSystemRenderer::renderEmissiveParticleSystems(const Camera2D& camera) {
-
-    glEnable(GL_PROGRAM_POINT_SIZE);
-    glEnable(GL_POINT_SPRITE);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager();
-    for (auto&& layerName : manager.mSystemLayerSortOrder) {
-        auto&& it = manager.mParticleSystems.find(layerName.second);
-        const ParticleSystemArray& systemArray = it->second;
-        for (auto&& system : systemArray) {
-            if (system->mSystemData.isEmissive) {
-                renderParticleSystem(camera, *system);
-            }
+    if (isPostProcess) {
+        if (activeGbuffer) {
+            activeGbuffer->useGeometry();
         }
+        else {
+            vg::GBuffer::unuse();
+        }
+        // TODO This copy + lookup is redundant and dumb
+        vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
+        renderPostProcess(systemData, gbuffer);
     }
+
+    ITERATE_SYSTEMS_END;
 }
 
 void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const ParticleSystem& particleSystem) {
@@ -102,4 +122,47 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const 
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+vg::GBuffer ParticleSystemRenderer::getOrCreateFramebufferForParticleSystem(const nString& name)
+{
+    auto&& it = mGBuffers.find(name);
+    if (it != mGBuffers.end()) {
+        return it->second;
+    }
+
+    vg::GBuffer newGBuffer;
+    vg::GBufferAttachment attachments[1];
+    // Color
+    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::R8;
+    attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
+    attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RED;
+    attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    newGBuffer.setSize(ui32v2(mGbufferDims));
+    newGBuffer.init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::R8);
+    //newGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+    checkGlError("Particle GBuffer init");
+    mGBuffers[name] = newGBuffer;
+    return newGBuffer;
+}
+
+void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particleSystemData, vg::GBuffer& gBuffer)
+{
+    const Material* material = mResourceManager.getMaterialManager().getMaterial(particleSystemData.postMaterialName);
+    assert(material);
+
+    mMaterialRenderer.bindMaterialForRender(*material);
+
+    const VGUniform inputUniform = material->mProgram.getUniform("ParticleFbo");
+    gBuffer.bindGeometryTexture(0, 0);
+    glUniform1i(inputUniform, 0);
+
+    const VGUniform pixelDimsUniform = material->mProgram.getUniform("unPixelDims");
+    glUniform2f(pixelDimsUniform, 1.0f / mGbufferDims.x, 1.0f / mGbufferDims.y);
+
+    vg::DepthState::NONE.set();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    mFullQuadVbo.draw();
+
+    vg::DepthState::READ.set();
 }
