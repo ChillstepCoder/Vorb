@@ -44,6 +44,7 @@ private:
     std::unique_ptr<Camera2D> mCamera2D;
     RenderContext& mRenderContext;
 
+	float mTargetScale = 50.0f;
     float mScale = 50.0f;
     float mFps = 0.0f;
 

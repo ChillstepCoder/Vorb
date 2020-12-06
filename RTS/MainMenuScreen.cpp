@@ -114,8 +114,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 1.0f, 1020.f);
-		mCamera2D->setScale(mScale);
+		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 1.0f, 1020.f);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -230,6 +229,12 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
     const f32v2& playerPos = mWorld->getECS().getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
 	const f32v2& offset = mWorld->getClientECSData().worldMousePos - playerPos;
 	mCamera2D->setPosition(playerPos + offset * 0.2f);
+	// TODO: Delta time dependent?
+	const float roundedTarget = round(mTargetScale);
+	if (abs(roundedTarget - mScale) > 0.001f) {
+		mScale = vmath::lerp(mScale, roundedTarget, 0.3f);
+		mCamera2D->setScale(mScale);
+	}
 	mCamera2D->update();
 
 	mWorld->update(deltaTime, playerPos, *mCamera2D);

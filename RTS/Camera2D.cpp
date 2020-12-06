@@ -32,7 +32,10 @@ void Camera2D::update() {
 	if (_needsMatrixUpdate) {
 
 		// Round for fixing grid issues
-        const float roundScale = round(_scale);
+        float roundScale = _scale;
+        if (_scale > 20.0f) {
+            roundScale = round(roundScale);
+        }
 
         // Camera Translation
         glm::vec3 translate(round(-_position.x * roundScale + _screenWidth / 2), round(-_position.y * roundScale + _screenHeight / 2), 0.0f);
