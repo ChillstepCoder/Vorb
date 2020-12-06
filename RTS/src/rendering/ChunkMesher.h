@@ -23,11 +23,14 @@ public:
     // Updatemesh?
     // CreateMesh also caches shadow casters so we dont
     // iterate through full data when updating shadows
-    void createMesh(const Chunk& chunk);
+    void createFullDetailMesh(const Chunk& chunk);
+    void createLODTexture(const Chunk& chunk);
 
 private:
     // Shared vertex buffer to eliminate allocations
     TileVertex mVertices[MAX_VERTICES_PER_CHUNK];
     const TextureAtlas& mTextureAtlas;
+
+    color3 mLODTexturePixelBuffer[CHUNK_SIZE];
 };
 

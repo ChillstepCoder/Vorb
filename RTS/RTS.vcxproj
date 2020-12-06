@@ -180,6 +180,7 @@
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
+    <ClCompile Include="src\rendering\SpriteData.cpp" />
     <ClCompile Include="src\rendering\SpriteRepository.cpp" />
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />

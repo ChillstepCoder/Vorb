@@ -13,7 +13,7 @@ SpriteRepository::SpriteRepository(vio::IOManager& ioManager) :
     mTextureCache = std::make_unique<vg::TextureCache>();
     mTextureCache->init(&mIoManager);
     mTextureAtlas = std::make_unique<TextureAtlas>();
-    mTileSpriteLoader = std::make_unique<TileSpriteLoader>(*this, *mTextureAtlas);
+    mTileSpriteLoader = std::make_unique<TileSpriteLoader>(*this, *mTextureAtlas, mIoManager);
 }
 
 SpriteRepository::~SpriteRepository()

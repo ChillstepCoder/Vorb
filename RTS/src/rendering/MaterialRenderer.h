@@ -18,13 +18,15 @@ public:
     MaterialRenderer(const RenderContext& renderContext);
     ~MaterialRenderer();
 
-    void renderMaterialToScreen(const Material& material) const;
+    void renderFullScreenQuad(const Material& material) const;
     void renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState = vg::DepthState::FULL) const;
+    void renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect);
+
     void bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex = nullptr) const;
 
 private:
     void uploadUniforms(const Material& material, OUT ui32* nextAvailableTextureIndex) const;
     // TODO: Subsections, like a UI render
-    vg::FullQuadVBO mScreenVBO;
+    vg::FullQuadVBO mQuadVBO;
     const RenderContext& mRenderContext;
 };

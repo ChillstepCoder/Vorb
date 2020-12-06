@@ -18,6 +18,7 @@
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
+#include <Vorb/graphics/BlendState.h>
 #include <Vorb/colors.h>
 
 // TODO: Render a string to the screen for these, Debug Render: %s (gone for pass_through)
@@ -126,7 +127,13 @@ void RenderContext::initPostLoad() {
 }
 
 void RenderContext::renderFrame(const Camera2D& camera) {
-    
+
+    ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
+    // TODO: Map texels to pixels?
+    if (camera.getScale() < 20.0f) {
+        lodState = ChunkRenderLOD::LOD_TEXTURE;
+    }
+
     // Set renderData
     mRenderData.mainCamera = &camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
@@ -148,8 +155,6 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    mChunkRenderer->renderWorld(mWorld, camera);
-
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
@@ -157,26 +162,41 @@ void RenderContext::renderFrame(const Camera2D& camera) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
+
+    mChunkRenderer->renderWorld(mWorld, camera, lodState);
+
+
     //mEcsRenderer->renderPhysicsDebug(*m_camera2D);
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera);
-
-    // Shadows
-    mShadowGBuffer.useGeometry();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // TODO: Replace With BlendState
-    glBlendFunc(GL_ONE, GL_ZERO);
-    mChunkRenderer->renderWorldShadows(mWorld, camera);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    activeGbuffer.useGeometry();
 
     // Particles
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
     vg::DepthState::READ.set();
     // TODO: Replace With BlendState
     mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
+    vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
     vg::DepthState::FULL.set();
+
+    if (sDebugOptions.mWireframe) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    // Shadows
+    mShadowGBuffer.useGeometry();
+    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // TODO: Replace With BlendState
+        glBlendFunc(GL_ONE, GL_ZERO);
+        mChunkRenderer->renderWorldShadows(mWorld, camera);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        activeGbuffer.useGeometry();
+    }
+    else {
+        // TODO: Can we not do this every frame?
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        activeGbuffer.useGeometry();
+    }
 
     // Debug Axis render
     DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
@@ -200,14 +220,19 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
 
-    // Final Pass through process
-    const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-    assert(postMat);
+     // Final Pass through process
+    // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
+    if (mPassthroughRenderMode != 0) {
+        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        assert(postMat);
 
-    mMaterialRenderer->renderMaterialToScreen(*postMat);
+        // TODO: Swap chain for this to work
+        mMaterialRenderer->renderFullScreenQuad(*postMat);
+    }
 
+    // Disable depth testing for post processing
     // TODO: Swap chains?
-    // Final pass through
+    // TODO: This should be at top
     activeGbuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
 
@@ -217,12 +242,12 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Sun Light
-    mMaterialRenderer->renderMaterialToScreen(*mSunLightMaterial);
+    mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
 
     // Sun Shadows
     if (mRenderData.sunHeight > 0.0f) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        mMaterialRenderer->renderMaterialToScreen(*mSunShadowMaterial);
+        mMaterialRenderer->renderFullScreenQuad(*mSunShadowMaterial);
     }
 
     //  Dynamic  light
@@ -235,15 +260,15 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     vg::DepthState::NONE.set();
 
     // Final Lighting
-    mMaterialRenderer->renderMaterialToScreen(*mLightPassThroughMaterial);
+    mMaterialRenderer->renderFullScreenQuad(*mLightPassThroughMaterial);
 
     // Copy depth for emissive rendering, so we can still depth test
     vg::DepthState::WRITE.set();
-    mMaterialRenderer->renderMaterialToScreen(*mCopyDepthMaterial);
+    mMaterialRenderer->renderFullScreenQuad(*mCopyDepthMaterial);
     vg::DepthState::READ.set();
 
     // Unlit Particles
-    mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
+    //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
     vg::DepthState::NONE.set();
     // UI last
     renderUI();

@@ -20,7 +20,9 @@ struct ChunkRenderData {
 
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh;
+	VGTexture mLODTexture = 0;
 	bool mBaseDirty = true;
+	bool mLODDirty = true;
 };
 
 struct ChunkID {

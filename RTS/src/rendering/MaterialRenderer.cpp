@@ -11,7 +11,7 @@
 MaterialRenderer::MaterialRenderer(const RenderContext& renderContext) :
     mRenderContext(renderContext)
 {
-    mScreenVBO.init();
+    mQuadVBO.init();
 }
 
 MaterialRenderer::~MaterialRenderer()
@@ -19,18 +19,38 @@ MaterialRenderer::~MaterialRenderer()
 
 }
 
-void MaterialRenderer::renderMaterialToScreen(const Material& material) const {
+void MaterialRenderer::renderFullScreenQuad(const Material& material) const {
 
     bindMaterialForRender(material, nullptr);
 
-    mScreenVBO.draw();
+    mQuadVBO.draw();
 }
 
 void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState/* = vg::DepthState::FULL*/) const
 {
+    // TODO: Here we are rebinding to make sure nobody fucked with our textures, but would be nice to avoid re-binds when iterating chunks?
     bindMaterialForRender(material, nullptr);
 
     quadMesh.draw(material.mProgram, depthState);
+}
+
+void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect)
+{
+    assert(texture);
+    ui32 textureIndex;
+    bindMaterialForRender(material, &textureIndex);
+
+    // TODO: Uniform buffer object for static uniforms
+    VGUniform textureUniform = material.mProgram.getUniform("Texture");
+    glActiveTexture(textureIndex);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glUniform1i(textureUniform, textureIndex);
+
+    // TODO: Cache so we dont need a string lookup? (I think it just has to be cached on outer loop)
+    VGUniform rectUniform = material.mProgram.getUniform("Rect");
+    glUniform4fv(rectUniform, 1, &(worldSpaceRect.x));
+
+    mQuadVBO.draw();
 }
 
 void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) const {
@@ -40,6 +60,8 @@ void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32*
 
 // TODO: Batch upload uniforms so we dont do it multiple times redundantly
 void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAvailableTextureIndex) const {
+    //  TODO: We are redundant with the texture uniform uploads. Can uniform buffer object save us here?
+    // https://www.khronos.org/opengl/wiki/Uniform_Buffer_Object
     ui32 availableTextureIndex = 0;
     const GlobalRenderData& renderData = mRenderContext.getRenderData();
     // Bind uniforms

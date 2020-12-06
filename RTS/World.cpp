@@ -153,6 +153,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 	return handle;
 }
 
+// TODO: Pass in lambda so we dont keep recalculating all these constants? Profile this.
 bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT const Chunk** chunk) const {
 	// TODO: Can we cache this conversion?
     const f32v2 bottomLeftCorner = camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight()));

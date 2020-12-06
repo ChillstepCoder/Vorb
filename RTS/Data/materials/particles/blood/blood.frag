@@ -2,7 +2,7 @@ uniform sampler2DArray Atlas;
 uniform vec4 unMaskRect;
 uniform float unMaskPage; 
 
-in vec3 fVelocity;
+//in vec3 fVelocity;
 
 out vec4 fColor;
 

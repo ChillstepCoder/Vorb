@@ -4,6 +4,7 @@
 
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
+constexpr int TILE_LAYER_COUNT = 3;
 
 enum class TileLayer {
 	Ground = 0,
@@ -21,7 +22,7 @@ struct Tile {
 			TileID midLayer; // Carpet, boards, walls, trees
 			TileID topLayer; // Furniture, props
 		};
-		TileID layers[3] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
+		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
 };
 

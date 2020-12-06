@@ -33,7 +33,7 @@ ChunkRenderer::~ChunkRenderer() {
 	
 }
 
-void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera)
+void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, ChunkRenderLOD lod)
 {
 #if ENABLE_DEBUG_RENDER == 1
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
@@ -49,11 +49,29 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera)
 
     ChunkID chunkId;
     const Chunk* chunk;
-    while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
-        if (chunk && chunk->canRender()) {
-            RenderChunk(*chunk, camera);
+
+    switch (lod) {
+        case ChunkRenderLOD::FULL_DETAIL: {
+            while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
+                if (chunk && chunk->canRender()) {
+                    RenderFullDetail(*chunk, camera);
+                }
+            }
+            break;
         }
+        case ChunkRenderLOD::LOD_TEXTURE: {
+            while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
+                if (chunk && chunk->canRender()) {
+                    RenderLODTexture(*chunk, camera);
+                }
+            }
+            break;
+        }
+        default:
+            assert(false);
     }
+    static_assert((int)ChunkRenderLOD::COUNT == 2, "Update");
+
 }
 
 void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camera)
@@ -62,27 +80,43 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camer
     const Chunk* chunk;
     while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
         if (chunk && chunk->canRender()) {
-            RenderChunkShadows(*chunk, camera);
+            RenderFullDetailShadows(*chunk, camera);
         }
     }
 }
 
-void ChunkRenderer::RenderChunk(const Chunk& chunk, const Camera2D& camera) {
+void ChunkRenderer::RenderFullDetail(const Chunk& chunk, const Camera2D& camera) {
 	// mutable render data
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
 
 	if (renderData.mBaseDirty) {
         PreciseTimer timer;
-		UpdateMesh(chunk);
+		UpdateFullDetailMesh(chunk);
         std::cout << "Mesh updated in " << timer.stop() << " ms\n";
 	}
 
-	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *standardMaterial);
+	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
 }
 
-void ChunkRenderer::RenderChunkShadows(const Chunk& chunk, const Camera2D& camera)
+void ChunkRenderer::RenderFullDetailShadows(const Chunk& chunk, const Camera2D& camera)
 {
-    RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*chunk.mChunkRenderData.mChunkMesh, *shadowMaterial, vg::DepthState::FULL);
+    RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*chunk.mChunkRenderData.mChunkMesh, *mShadowMaterial, vg::DepthState::FULL);
+}
+
+void ChunkRenderer::RenderLODTexture(const Chunk& chunk, const Camera2D& camera) {
+    // mutable render data
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+
+    if (renderData.mLODDirty) {
+        PreciseTimer timer;
+        UpdateLODTexture(chunk);
+        std::cout << "LOD updated in " << timer.stop() << " ms\n";
+    }
+
+    const f32v2 worldPos = chunk.getWorldPos();
+    const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
+
+    RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, renderData.mLODTexture, rect);
 }
 
 void ChunkRenderer::ReloadShaders() {
@@ -94,14 +128,20 @@ void ChunkRenderer::ReloadShaders() {
 	InitPostLoad();
 }
 
-void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
-	mMesher->createMesh(chunk);
+void ChunkRenderer::UpdateFullDetailMesh(const Chunk& chunk) {
+	mMesher->createFullDetailMesh(chunk);
+}
+
+void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
+    mMesher->createLODTexture(chunk);
 }
 
 void ChunkRenderer::InitPostLoad()
 {
-	standardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-    assert(standardMaterial);
-    shadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow");
-    assert(shadowMaterial);
+	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+    assert(mStandardMaterial);
+    mShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow");
+    assert(mShadowMaterial);
+    mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
+    assert(mLODMaterial);
 }

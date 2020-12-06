@@ -4,6 +4,7 @@
 
 #include "world/Chunk.h"
 #include "rendering/QuadMesh.h"
+#include <Vorb/graphics/SamplerState.h>
 
 // TODO: Method(s) file?
 struct ConnectedWallData {
@@ -297,7 +298,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
 }
 
-void ChunkMesher::createMesh(const Chunk& chunk) {
+void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     const i32v2& pos = chunk.getChunkPos();
     const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
@@ -316,7 +317,7 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
             //  TODO: More than just ground
             TileIndex index(x, y);
             const Tile& tile = chunk.mTiles[index];
-            for (int l = 0; l < 3; ++l) {
+            for (int l = 0; l < TILE_LAYER_COUNT; ++l) {
                 TileID layerTile = tile.layers[l];
                 if (layerTile == TILE_ID_NONE) {
                     continue;
@@ -388,4 +389,38 @@ void ChunkMesher::createMesh(const Chunk& chunk) {
     mesh.setData(mVertices, vertexCount, mTextureAtlas.getAtlasTexture());
     std::cout << " setdata took " << timer2.stop() << " ms\n";
     renderData.mBaseDirty = false;
+}
+
+void ChunkMesher::createLODTexture(const Chunk& chunk) {
+
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    const i32v2& pos = chunk.getChunkPos();
+    const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
+
+    color3* currentPixel = mLODTexturePixelBuffer;
+    for (int index = 0; index < CHUNK_SIZE; ++index) {
+        //  TODO: More than just ground
+        const Tile& tile = chunk.mTiles[index];
+        for (int l = TILE_LAYER_COUNT - 1; l >= 0; --l) {
+            TileID layerTile = tile.layers[l];
+            if (layerTile == TILE_ID_NONE) {
+                continue;
+            }
+            // First opaque tile
+            const TileData& tileData = TileRepository::getTileData(layerTile);
+            *currentPixel++ = tileData.spriteData.lodColor;
+            break;
+        }
+    }
+
+    if (!renderData.mLODTexture) {
+        glGenTextures(1, &renderData.mLODTexture);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, mLODTexturePixelBuffer);
+    vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    renderData.mLODDirty = false;
 }

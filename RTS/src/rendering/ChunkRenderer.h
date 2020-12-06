@@ -12,13 +12,19 @@ class MaterialRenderer;
 class World;
 class Material;
 
+enum class ChunkRenderLOD {
+    FULL_DETAIL,
+    LOD_TEXTURE,
+    COUNT
+};
+
 // TODO: IRendererBase?
 class ChunkRenderer {
 public:
 	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
-    void renderWorld(const World& world, const Camera2D& camera);
+    void renderWorld(const World& world, const Camera2D& camera, ChunkRenderLOD lod);
     void renderWorldShadows(const World& world, const Camera2D& camera);
 
 	//void RenderChunkBaked(const Chunk& chunk, const Camera2D& camera, int LOD);
@@ -29,16 +35,19 @@ public:
     void InitPostLoad();
 private:
     // Different rendering methods
-    void RenderChunk(const Chunk& chunk, const Camera2D& camera);
-    void RenderChunkShadows(const Chunk& chunk, const Camera2D& camera);
+    void RenderFullDetail(const Chunk& chunk, const Camera2D& camera);
+    void RenderFullDetailShadows(const Chunk& chunk, const Camera2D& camera);
+    void RenderLODTexture(const Chunk& chunk, const Camera2D& camera);
 
-	void UpdateMesh(const Chunk& chunk);
+	void UpdateFullDetailMesh(const Chunk& chunk);
+    void UpdateLODTexture(const Chunk& chunk);
 
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
-    const Material* standardMaterial = nullptr;
-    const Material* shadowMaterial = nullptr;
+    const Material* mStandardMaterial = nullptr;
+    const Material* mShadowMaterial = nullptr;
+    const Material* mLODMaterial = nullptr;
 };
 

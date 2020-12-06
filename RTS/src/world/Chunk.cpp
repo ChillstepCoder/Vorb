@@ -6,6 +6,10 @@
 
 ChunkRenderData::~ChunkRenderData() {
     // Empty
+    // TODO: RAII Wrapper for safety
+    if (mLODTexture) {
+        glDeleteTextures(1, &mLODTexture);
+    }
 }
 
 Chunk::Chunk() :

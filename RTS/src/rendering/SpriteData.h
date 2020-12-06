@@ -8,6 +8,7 @@ enum class TileTextureMethod : ui8 {
     CONNECTED_WALL,
     COUNT
 };
+KEG_ENUM_DECL(TileTextureMethod);
 
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 4;
@@ -25,5 +26,7 @@ struct SpriteData {
     VGTexture texture = 0;
     TileTextureMethod method = TileTextureMethod::SIMPLE;
     ui16 atlasPage = 0;
+    color3 lodColor = color3(255, 0, 255);
     ui8 flags = 0;
 };
+KEG_TYPE_DECL(TileData);

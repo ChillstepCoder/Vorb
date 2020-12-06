@@ -65,13 +65,16 @@ void ParticleSystemRenderer::renderParticleSystems(const Camera2D& camera, vg::G
         }
 
     }
+
+    // TODO: needed?
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisable(GL_POINT_SPRITE);
 }
 
 void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const ParticleSystem& particleSystem) {
     if (!particleSystem.mParticles.size()) {
         return;
     }
-
     const Material* material = mResourceManager.getMaterialManager().getMaterial(particleSystem.mSystemData.materialName);
 
     // Lazy mesh init
@@ -148,16 +151,18 @@ void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particl
 
     mMaterialRenderer.bindMaterialForRender(*material);
 
-    const VGUniform inputUniform = material->mProgram.getUniform("ParticleFbo");
-    gBuffer.bindGeometryTexture(0, 0);
-    glUniform1i(inputUniform, 0);
+    if (const VGUniform* inputUniform = material->mProgram.tryGetUniform("ParticleFbo")) {
+        gBuffer.bindGeometryTexture(0, 0);
+        glUniform1i(*inputUniform, 0);
+    }
 
-    const VGUniform pixelDimsUniform = material->mProgram.getUniform("unPixelDims");
-    glUniform2f(pixelDimsUniform, 1.0f / mGbufferDims.x, 1.0f / mGbufferDims.y);
+    if (const VGUniform* inputUniform = material->mProgram.tryGetUniform("unPixelDims")) {
+        glUniform2f(*inputUniform, 1.0f / mGbufferDims.x, 1.0f / mGbufferDims.y);
+    }
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(particleSystemData.postBlendState);
     mFullQuadVbo.draw();
 
-    vg::DepthState::READ.set();
+    vg::DepthState::NONE.set();
 }

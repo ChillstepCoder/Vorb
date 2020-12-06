@@ -114,7 +114,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 8.0f, 1020.f);
+		mScale = glm::clamp(mScale + event.dy * mScale * 0.2f, 1.0f, 1020.f);
 		mCamera2D->setScale(mScale);
 	});
 
