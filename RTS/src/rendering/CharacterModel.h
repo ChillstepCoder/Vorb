@@ -1,5 +1,4 @@
 #pragma once
-#include <Vorb/ecs/ComponentTable.hpp>
 
 DECL_VG(class TextureCache);
 
@@ -23,13 +22,4 @@ public:
 // TODO: File name
 struct CharacterModelComponent {
 	CharacterModel mModel;
-	vecs::ComponentID mPhysicsComponent = 0;
 };
-
-class CharacterModelComponentTable : public vecs::ComponentTable<CharacterModelComponent> {
-public:
-	static const std::string& NAME;
-};
-
-
-

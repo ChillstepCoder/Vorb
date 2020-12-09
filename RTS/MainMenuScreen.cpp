@@ -99,16 +99,12 @@ void MainMenuScreen::build() {
         }
         else if (event.keyCode == VKEY_L) {
 			auto&& ecs = mWorld->getECS();
-			vecs::ComponentID id = ecs.mDynamicLightComponentTable.getComponentID(mPlayerEntity);
-			if (id == 0) {
-				// Add new
-				auto&& added = ecs.addDynamicLightComponent(mPlayerEntity);
-				//added.second.mLightData.mColor = ui8v3(255, 0, 255);
-				added.second.mPhysicsComponent = ecs.mPhysicsTable.getComponentID(mPlayerEntity);
-			}
-			else {
+			if (ecs.mRegistry.try_get<DynamicLightComponent>(mPlayerEntity)) {
 				// Remove existing
-                ecs.deleteDynamicLightComponent(id);
+				ecs.mRegistry.remove<DynamicLightComponent>(mPlayerEntity);
+			} else {
+				// Add new
+				ecs.mRegistry.emplace<DynamicLightComponent>(mPlayerEntity);
 			}
         }
 	});
@@ -140,7 +136,7 @@ void MainMenuScreen::build() {
 			velocity = (offset / mag) * power;
 		}
 
-		vecs::EntityID newActor = 0;
+		entt::entity newActor = INVALID_ENTITY;
 		if (event.button == vui::MouseButton::LEFT) {
             /*newActor = mUndeadActorFactory->createActor(
                 mTestClick,
@@ -163,7 +159,7 @@ void MainMenuScreen::build() {
 		}
 
 		// Apply velocity
-		if (newActor) {
+		if (newActor != INVALID_ENTITY) {
             /*auto& physcomp = mecs->getphysicscomponentfromentity(newactor);
             velocity = velocity;
             physcomp.mbody->applyforce(reinterpret_cast<b2vec2&>(velocity), physcomp.mbody->getworldcenter(), true);*/
@@ -226,7 +222,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	// Camera follow
 
 
-    const f32v2& playerPos = mWorld->getECS().getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
+    const f32v2& playerPos = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity).getPosition();
 	const f32v2& offset = mWorld->getClientECSData().worldMousePos - playerPos;
 	mCamera2D->setPosition(playerPos + offset * 0.2f);
 	// TODO: Delta time dependent?

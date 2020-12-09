@@ -5,12 +5,14 @@
 #include "actor/PlayerActorFactory.h"
 #include "actor/UndeadActorFactory.h"
 
+#include "EntityComponentSystem.h"
+
 #include <Vorb/io/Path.h>
 
 EntityFactory::EntityFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager) {
-    mHumanActorFactory = std::make_unique<HumanActorFactory>(ecs, resourceManager);
-    mPlayerActorFactory = std::make_unique<PlayerActorFactory>(ecs, resourceManager);
-    mUndeadActorFactory = std::make_unique<UndeadActorFactory>(ecs, resourceManager);
+    mHumanActorFactory = std::make_unique<HumanActorFactory>(ecs.mRegistry, ecs.mWorld, resourceManager);
+    mPlayerActorFactory = std::make_unique<PlayerActorFactory>(ecs.mRegistry, ecs.mWorld, resourceManager);
+    mUndeadActorFactory = std::make_unique<UndeadActorFactory>(ecs.mRegistry, ecs.mWorld, resourceManager);
 }
 
 EntityFactory::~EntityFactory()
@@ -18,7 +20,7 @@ EntityFactory::~EntityFactory()
 
 }
 
-vecs::EntityID EntityFactory::createEntity(const f32v2& position, EntityType type) {
+entt::entity EntityFactory::createEntity(const f32v2& position, EntityType type) {
     switch (type) {
         case EntityType::PLAYER:
             return mPlayerActorFactory->createActor(position,
@@ -44,5 +46,5 @@ vecs::EntityID EntityFactory::createEntity(const f32v2& position, EntityType typ
             assert(false);
             break;
     }
-    return 0;
+    return (entt::entity)0;
 }

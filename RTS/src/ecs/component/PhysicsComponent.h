@@ -1,9 +1,6 @@
 #pragma once
 #include "actor/ActorTypes.h"
 
-#include <Vorb/ecs/ECS.h>
-#include <Vorb/ecs/ComponentTable.hpp>
-
 #include <box2d/b2_body.h>
 
 class World;
@@ -22,8 +19,8 @@ enum class ColliderShapes {
 
 class PhysicsComponent {
 public:
-	void initBody(EntityComponentSystem& parentSystem, const f32v2& centerPosition, bool isStatic);
-	void addCollider (vecs::EntityID entityId, ColliderShapes shape, const float halfWidth);
+	PhysicsComponent(World& world, const f32v2& centerPosition, bool isStatic);
+	void addCollider (entt::entity entityId, ColliderShapes shape, const float halfWidth);
 
 	const f32v2& getPosition() const {
 		return reinterpret_cast<const f32v2&>(mBody->GetPosition());
@@ -42,13 +39,11 @@ public:
 	b2Body* mBody = nullptr;
 };
 
-class PhysicsComponentTable : public vecs::ComponentTable<PhysicsComponent> {
+class PhysicsSystem {
 public:
-	PhysicsComponentTable(World& world);
+	PhysicsSystem(World& world);
 
-	void update(float deltaTime);
-
-	static const std::string& NAME;
+	void update(entt::registry& registry, float deltaTime);
 
 	World& mWorld;
 };

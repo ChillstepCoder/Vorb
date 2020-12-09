@@ -1,7 +1,4 @@
 #pragma once
-#include <Vorb/ecs/ECS.h>
-#include <Vorb/ecs/ComponentTable.hpp>
-
 #include "ecs/ClientEcsData.h"
 
 #include "ecs/component/PhysicsComponent.h"
@@ -19,39 +16,35 @@
 
 class World;
 
-// TODO: Switch to EnTT
-class EntityComponentSystem : public vecs::ECS {
+class EntityComponentSystem {
 public:
 	EntityComponentSystem(World& world);
 
 	void update(float deltaTime, const ClientECSData& clientData);
-	void convertEntityToCorpse(vecs::EntityID entity);
+	void convertEntityToCorpse(entt::entity entity);
 
-	DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
-	DECL_COMPONENT_TABLE(mSpriteTable, SimpleSpriteComponent);
-	DECL_COMPONENT_TABLE(mNavigationTable, NavigationComponent);
-	DECL_COMPONENT_TABLE(mUndeadAITable, UndeadAIComponent);
-	DECL_COMPONENT_TABLE(mSoldierAITable, SoldierAIComponent);
-	DECL_COMPONENT_TABLE(mPlayerControlTable, PlayerControlComponent);
-	DECL_COMPONENT_TABLE(mCombatTable, CombatComponent);
-	DECL_COMPONENT_TABLE(mCorpseTable, CorpseComponent);
+    /*DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
+    DECL_COMPONENT_TABLE(mSpriteTable, SimpleSpriteComponent);
+    DECL_COMPONENT_TABLE(mNavigationTable, NavigationComponent);
+    DECL_COMPONENT_TABLE(mUndeadAITable, UndeadAIComponent);
+    DECL_COMPONENT_TABLE(mSoldierAITable, SoldierAIComponent);
+    DECL_COMPONENT_TABLE(mPlayerControlTable, PlayerControlComponent);
+    DECL_COMPONENT_TABLE(mCombatTable, CombatComponent);
+    DECL_COMPONENT_TABLE(mCorpseTable, CorpseComponent);
     DECL_COMPONENT_TABLE(mCharacterModelTable, CharacterModelComponent);
-    DECL_COMPONENT_TABLE(mDynamicLightComponentTable, DynamicLightComponent);
+    DECL_COMPONENT_TABLE(mDynamicLightComponentTable, DynamicLightComponent);*/
 
-	PhysicsComponentTable mPhysicsTable;
-	SimpleSpriteComponentTable mSpriteTable;
-	NavigationComponentTable mNavigationTable;
-	UndeadAIComponentTable mUndeadAITable;
-	SoldierAIComponentTable mSoldierAITable;
-	PlayerControlComponentTable mPlayerControlTable;
-	CombatComponentTable mCombatTable;
-	CorpseComponentTable mCorpseTable;
-	CharacterModelComponentTable mCharacterModelTable;
-	DynamicLightComponentTable mDynamicLightComponentTable;
+	PhysicsSystem mPhysicsSystem;
+	//NavigationComponentTable mNavigationTable;
+	//UndeadAIComponentTable mUndeadAITable;
+	//SoldierAIComponentTable mSoldierAITable;
+	PlayerControlSystem mPlayerControlSystem;
+	//CombatComponentTable mCombatTable;
+	//CorpseComponentTable mCorpseTable;
 
 	// Classes with World access
 	friend class PhysicsComponent;
 
-private:
+    entt::registry mRegistry;
 	World& mWorld;
 };

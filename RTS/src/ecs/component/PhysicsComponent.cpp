@@ -8,8 +8,6 @@
 #include <box2d/b2_circle_shape.h>
 #include <box2d/b2_fixture.h>
 
-const std::string& PhysicsComponentTable::NAME = "physics";
-
 // TODO: Capsule collision
 inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 	//// We add radius since position is the top left corner
@@ -142,16 +140,12 @@ inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime
 }
 
 
-PhysicsComponentTable::PhysicsComponentTable(World& world)
+PhysicsSystem::PhysicsSystem(World& world)
 	: mWorld(world) {
 
 }
 
-void PhysicsComponentTable::update(float deltaTime) {
-	if (getComponentListSize() <= 1) {
-		return;
-	}
-
+void PhysicsSystem::update(entt::registry& registry, float deltaTime) {
 	// THIS IS NOW HANDLED BY BOX2D
 
 	// Collision
@@ -171,33 +165,29 @@ void PhysicsComponentTable::update(float deltaTime) {
 	}*/
 
 	// Update components
-	for (auto&& cmp : *this) {
-		updateComponent(mWorld, cmp.second, deltaTime);
-	}
+	registry.view<PhysicsComponent>().each([&](auto& cmp) {
+        updateComponent(mWorld, cmp, deltaTime);
+	});
 }
 
-void PhysicsComponent::initBody(EntityComponentSystem& parentSystem, const f32v2& centerPosition, bool isStatic) {
-	if (!mBody) {
-		b2BodyDef bodyDef;
-		if (isStatic) {
-			bodyDef.type = b2_staticBody;
-			bodyDef.position.Set(centerPosition.x, centerPosition.y);
-			mBody = parentSystem.mWorld.createPhysBody(&bodyDef);
-		}
-		else {
-			bodyDef.type = b2_dynamicBody;
-			bodyDef.position.Set(centerPosition.x, centerPosition.y);
-			mBody = parentSystem.mWorld.createPhysBody(&bodyDef);
-			mBody->SetLinearDamping(0.1f);
-		}
-	}
+PhysicsComponent::PhysicsComponent(World& world, const f32v2& centerPosition, bool isStatic) {
+    b2BodyDef bodyDef;
+    if (isStatic) {
+        bodyDef.type = b2_staticBody;
+        bodyDef.position.Set(centerPosition.x, centerPosition.y);
+        mBody = world.createPhysBody(&bodyDef);
+    }
+    else {
+        bodyDef.type = b2_dynamicBody;
+        bodyDef.position.Set(centerPosition.x, centerPosition.y);
+        mBody = world.createPhysBody(&bodyDef);
+        mBody->SetLinearDamping(0.1f);
+    }
 }
 
-void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape, const float halfWidth) {
+void PhysicsComponent::addCollider(entt::entity entityId, ColliderShapes shape, const float halfWidth) {
 
 	// Init physics body
-	
-
 	switch (shape) {
 		case ColliderShapes::SPHERE: {
 			b2CircleShape dynamicCircle;
@@ -207,7 +197,7 @@ void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &dynamicCircle;
 			fixtureDef.density = 1.0f;
-			fixtureDef.userData = (void*)((size_t)entityId); // size_t to shut up the compiler warning
+			fixtureDef.userData = reinterpret_cast<void*>(entityId);
 
 			mBody->CreateFixture(&fixtureDef);
 			break;
@@ -215,7 +205,7 @@ void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape
 		case ColliderShapes::NONE:
 			ASSERT_FAIL; // Invalid collider type
 		default:
-			ASSERT_FAIL; // Need to add collider typev
+			ASSERT_FAIL; // Need to add collider type
 	}
 
 }

@@ -9,44 +9,46 @@
 
 const float SPRITE_RADIUS = 0.3f; // In meters
 
-UndeadActorFactory::UndeadActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager)
-	: IActorFactory(ecs, resourceManager) {
+UndeadActorFactory::UndeadActorFactory(entt::registry& registry, World& world, ResourceManager& resourceManager)
+	: IActorFactory(registry, world, resourceManager) {
 }
 
-vecs::EntityID UndeadActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
-	UNUSED(definitionFile);
+entt::entity UndeadActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
+	//UNUSED(definitionFile);
 
-	VGTexture texture = mResourceManager.getTextureCache().addTexture(texturePath).id;
+	//VGTexture texture = mResourceManager.getTextureCache().addTexture(texturePath).id;
 
-	// Create physics entity
-	vecs::EntityID newEntity = mEcs.addEntity();
-	auto physCompPair = mEcs.addPhysicsComponent(newEntity);
-	auto& physComp = physCompPair.second;
-	physComp.mFlags = 0;
-	physComp.mQueryActorTypes = ACTORTYPE_UNDEAD;
+	//// Create physics entity
+	//vecs::EntityID newEntity = mEcs.addEntity();
+	//auto physCompPair = mEcs.addPhysicsComponent(newEntity);
+	//auto& physComp = physCompPair.second;
+	//physComp.mFlags = 0;
+	//physComp.mQueryActorTypes = ACTORTYPE_UNDEAD;
 
-	// Setup the physics component
-	physComp.initBody(mEcs, position, false /*isStatic*/);
-	physComp.addCollider(newEntity, ColliderShapes::SPHERE, SPRITE_RADIUS);
+	//// Setup the physics component
+	//physComp.initBody(mEcs, position, false /*isStatic*/);
+	//physComp.addCollider(newEntity, ColliderShapes::SPHERE, SPRITE_RADIUS);
 
-	auto spriteCompPair = mEcs.addSimpleSpriteComponent(newEntity);
-	auto& spriteComp = spriteCompPair.second;
-	spriteComp.physicsComponent = physCompPair.first;
-	spriteComp.texture = texture;
-	spriteComp.dims = f32v2(SPRITE_RADIUS * 2.0f);
-	spriteComp.color = color4(0.0f, 1.0f, 0.0f);
+	//auto spriteCompPair = mEcs.addSimpleSpriteComponent(newEntity);
+	//auto& spriteComp = spriteCompPair.second;
+	//spriteComp.physicsComponent = physCompPair.first;
+	//spriteComp.texture = texture;
+	//spriteComp.dims = f32v2(SPRITE_RADIUS * 2.0f);
+	//spriteComp.color = color4(0.0f, 1.0f, 0.0f);
 
-	mEcs.addUndeadAIComponent(newEntity);
-	auto& navCmp = mEcs.addNavigationComponent(newEntity).second;
-	navCmp.mSpeed = 0.1f;
+	//mEcs.addUndeadAIComponent(newEntity);
+	//auto& navCmp = mEcs.addNavigationComponent(newEntity).second;
+	//navCmp.mSpeed = 0.1f;
 
-	auto& combatComp = mEcs.addCombatComponent(newEntity).second;
-	UNUSED(combatComp);
+	//auto& combatComp = mEcs.addCombatComponent(newEntity).second;
+	//UNUSED(combatComp);
 
-	// TMP
-	auto& characterModelComp = static_cast<EntityComponentSystem&>(mEcs).addCharacterModelComponent(newEntity).second;
-	characterModelComp.mModel.load(mResourceManager.getTextureCache(), "face/male/narrow_wide", "body/muscular", "hair/allback2");
-	characterModelComp.mPhysicsComponent = static_cast<EntityComponentSystem&>(mEcs).mPhysicsTable.getComponentID(newEntity);
+	//// TMP
+	//auto& characterModelComp = static_cast<EntityComponentSystem&>(mEcs).addCharacterModelComponent(newEntity).second;
+	//characterModelComp.mModel.load(mResourceManager.getTextureCache(), "face/male/narrow_wide", "body/muscular", "hair/allback2");
+	//characterModelComp.mPhysicsComponent = static_cast<EntityComponentSystem&>(mEcs).mPhysicsSystem.getComponentID(newEntity);
 
-	return newEntity;
+	//return newEntity;
+	assert(false);
+	return entt::entity();
 }

@@ -8,8 +8,6 @@ constexpr const char* FRONT_SUFFIX = "_front.png";
 constexpr const char* SIDE_SUFFIX = "_side.png";
 constexpr const char* BACK_SUFFIX = "_back.png";
 
-const std::string& CharacterModelComponentTable::NAME = "character_model";
-
 void loadTexturesForPart(vg::TextureCache& textureCache, vg::Texture textures[3], const std::string& name) {
 	std::string path;
 	vg::Texture texture;

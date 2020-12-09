@@ -3,8 +3,8 @@
 
 class UndeadActorFactory : public IActorFactory {
 public:
-	UndeadActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager);
+	UndeadActorFactory(entt::registry& registry, World& world, ResourceManager& resourceManager);
 
-	vecs::EntityID createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) override;
+	entt::entity createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) override;
 };
 

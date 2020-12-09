@@ -48,6 +48,10 @@
 #include <Vorb/Timing.h>
 #include <Vorb/io/Keg.h>
 
+#include <entt/entt.hpp>
+
+constexpr entt::entity INVALID_ENTITY = (entt::entity)(0);
+
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)
 

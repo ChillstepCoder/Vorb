@@ -103,7 +103,7 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const 
 
     // Update mesh
     if (particleSystem.mDirty) {
-        const int bufferSizeBytes = particleSystem.mParticles.size() * sizeof(Particle);
+        const unsigned bufferSizeBytes = particleSystem.mParticles.size() * sizeof(Particle);
         // TODO: Look up buffer object streaming https://www.khronos.org/opengl/wiki/Buffer_Object_Streaming 
         // Orphan the buffer for speed
         glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_STREAM_DRAW);
@@ -116,7 +116,7 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const 
     mMaterialRenderer.bindMaterialForRender(*material);
 
     material->mProgram.enableVertexAttribArrays();
-    glDrawArrays(GL_POINTS, 0, particleSystem.mParticles.size());
+    glDrawArrays(GL_POINTS, 0, (unsigned)particleSystem.mParticles.size());
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

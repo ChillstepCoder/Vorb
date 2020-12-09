@@ -73,7 +73,7 @@ void TextureAtlas::addPage() {
         mPages.emplace_back();
         auto& page = mPages.back();
         page.pixels.resize(TEXTURE_ATLAS_SIZE_PX, color4(255, 0, 255, 255));
-        page.index = mPages.size() - 1;
+        page.index = (unsigned)mPages.size() - 1u;
     }
     mNeedsReallocate = true;
 }
@@ -100,7 +100,7 @@ void TextureAtlas::allocateTexture() {
 
     // TODO: Investigate mipmapping, see SOA
     // Set up all the mipmap storage
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, (GLsizei)mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
     // Set up tex parameters
     // No mipmapping

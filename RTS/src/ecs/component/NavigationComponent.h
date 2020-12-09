@@ -1,9 +1,7 @@
 #pragma once
 
 #include "actor/ActorTypes.h"
-#include <Vorb/ecs/ComponentTable.hpp>
 
-class EntityComponentSystem;
 class World;
 
 struct NavigationComponent {
@@ -16,9 +14,7 @@ struct NavigationComponent {
 	bool mColliding = false;
 };
 
-class NavigationComponentTable : public vecs::ComponentTable<NavigationComponent> {
+class NavigationComponentTable {
 public:
-	static const std::string& NAME;
-
-	void update(EntityComponentSystem& ecs, World& world);
+	void update(entt::registry& registry, World& world);
 };

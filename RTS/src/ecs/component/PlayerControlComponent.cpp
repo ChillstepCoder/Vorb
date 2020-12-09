@@ -10,8 +10,6 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-const std::string& PlayerControlComponentTable::NAME = "playercontrol";
-
 const float BASE_SPEED = 0.15f;
 const float ACCELERATION = 0.015f;
 const float IMPULSE = 0.02f;
@@ -19,10 +17,10 @@ const float IMPULSE = 0.02f;
 const float ATTACK_RADIUS = 5.0f;
 const float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
 
-void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
-	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
-	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
-}
+//void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
+//	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
+//	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
+//}
 
 f32v2 getMovementDir(World& world) {
 	f32v2 moveDir(0.0f);
@@ -53,11 +51,9 @@ f32v2 getMovementDir(World& world) {
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world, const ClientECSData& clientData) {
+void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData) {
 
-	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
-
-	bool isSprinting = cmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
+	bool isSprinting = controlCmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
 	const f32v2 moveDir = getMovementDir(world);
 
 	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
@@ -65,14 +61,14 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	}
 	// Facing
 	if (isSprinting) {
-		myPhysCmp.mDir = moveDir;
+		physCmp.mDir = moveDir;
 	}
 	else {
-		myPhysCmp.mDir = glm::normalize(clientData.worldMousePos - myPhysCmp.getPosition());
+		physCmp.mDir = glm::normalize(clientData.worldMousePos - physCmp.getPosition());
 	}
 
 	float speed = BASE_SPEED;
-	float dotp = glm::dot(moveDir, glm::normalize(myPhysCmp.mDir));
+	float dotp = glm::dot(moveDir, glm::normalize(physCmp.mDir));
 	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
 	const float angleOffset = acos(dotp);
 	assert(angleOffset == angleOffset);
@@ -82,41 +78,40 @@ void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityCo
 	speed *= 1.0f - (speedLerp * 0.5f);
 
 	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
-	f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();
+	f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
 	float velocityDist = glm::length(velocityOffset);
 
 	const float acceleration = ACCELERATION * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 5.0f : 1.0f);
 
 	if (velocityDist <= acceleration) {
-		myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
+		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
 	}
 	else {
-		const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(myPhysCmp.mBody->GetLinearVelocity());
+		const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
 		velocityOffset = (velocityOffset / velocityDist) * acceleration + currentLinearVelocity;
-		myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
+		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
 	}
 }
 
-inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world, const ClientECSData& clientData) {
-	UNUSED(cmp);
+inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData) {
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-		cmp.mPlayerControlFlags |= enum_cast(PlayerControlFlags::SPRINTING);
+		controlCmp.mPlayerControlFlags |= enum_cast(PlayerControlFlags::SPRINTING);
 	}
 	else {
-		cmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
+		controlCmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
 	}
 
-	updateMovement(entity, cmp, ecs, world, clientData);
+	updateMovement(controlCmp, physCmp, world, clientData);
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-		performAttack(entity, cmp, ecs, world);
+	//	performAttack(entity, cmp, ecs, world);
 	}
 }
 
-void PlayerControlComponentTable::update(EntityComponentSystem& ecs, World& world, const ClientECSData& clientData) {
+void PlayerControlSystem::update(entt::registry& registry, World& world, const ClientECSData& clientData) {
 	// Update components
-	for (auto&& cmp : *this) {
-		updateComponent(cmp.first, cmp.second, ecs, world, clientData);
-	}
+	registry.view<PlayerControlComponent, PhysicsComponent>().each([&](auto& controlCmp, auto& physCmp) {
+		updateComponent(controlCmp, physCmp, world, clientData);
+	});
 }

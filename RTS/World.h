@@ -1,6 +1,5 @@
 #pragma once
 #include <Vorb/graphics/Texture.h>
-#include <Vorb/ecs/Entity.h>
 #include <functional>
 #include <optional>
 
@@ -37,10 +36,10 @@ public:
 
 	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera);
 
-	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
-	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except = ENTITY_ID_NONE);
+	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = (entt::entity)0);
+	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except = (entt::entity)0);
 
-	vecs::EntityID createEntity(const f32v2& pos, EntityType type);
+	entt::entity createEntity(const f32v2& pos, EntityType type);
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 
 	// Internal public interface

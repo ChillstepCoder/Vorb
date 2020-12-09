@@ -10,29 +10,25 @@ const float MIN_DISTANCE = 0.2f;
 const float ACCELERATION = 0.013f;
 constexpr int QUADRANTS = 5; //bad name
 
-const std::string& NavigationComponentTable::NAME = "navigation";
-
-inline void updateComponent(vecs::EntityID entity, NavigationComponent& cmp, EntityComponentSystem& ecs, World& world) {
-	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
-	const f32v2& offset = cmp.mTargetPos - myPhysCmp.getPosition();
+inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+	const f32v2& offset = navCmp.mTargetPos - physCmp.getPosition();
 	const float distance2 = glm::length2(offset);
 	if (distance2 < MIN_DISTANCE) {
-		cmp.mHasTarget = false;
-		myPhysCmp.mFrictionEnabled = true;
+		navCmp.mHasTarget = false;
+		physCmp.mFrictionEnabled = true;
 	}
 	else {
 
-
-		f32v2 targetVelocity = (offset / std::sqrt(distance2)) * cmp.mSpeed/* * (cmp.mColliding ? 0.2f : 1.0f)*/;
+		f32v2 targetVelocity = (offset / std::sqrt(distance2)) * navCmp.mSpeed/* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 		const f32v2 targetDir = glm::normalize(targetVelocity); // TODO: Get rid of normalize
-		myPhysCmp.mDir = targetDir;
+		physCmp.mDir = targetDir;
 
 		const float ARC_LENGTH = DEG_TO_RAD(175.0f);
 
 		// Look for undead allies
-		std::vector<EntityDistSortKey> actors = world.queryActorsInArc(myPhysCmp.getPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, true, QUADRANTS, entity);
+		std::vector<EntityDistSortKey> actors = world.queryActorsInArc(physCmp.getPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, ACTORTYPE_NONE, true, QUADRANTS, entity);
 		float closest[5] = { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX };
-		vecs::EntityID closestEnt[QUADRANTS];
+		entt::entity closestEnt[QUADRANTS];
 		for (auto&& it : actors) {
 			if (it.first.dist < closest[it.first.quadrant]) {
 				closest[it.first.quadrant] = it.first.dist;
@@ -61,26 +57,30 @@ inline void updateComponent(vecs::EntityID entity, NavigationComponent& cmp, Ent
 
 		// Disable friction while we are navigating
 		//myPhysCmp.mFrictionEnabled = false;
-		f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();
+		f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
 		float velocityDist = glm::length(velocityOffset);
 		// TODO: DELTATIME
 		//myPhysCmp.mBody->ApplyForce(reinterpret_cast<const b2Vec2&>(targetVelocity * 0.025f), myPhysCmp.mBody->GetWorldCenter(), true);
 		if (velocityDist <= ACCELERATION) {
-			myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
+			physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
 		}
 		else {
-			const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(myPhysCmp.mBody->GetLinearVelocity());
+			const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
 			velocityOffset = (velocityOffset / velocityDist) * ACCELERATION + currentLinearVelocity;
-			myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
+			physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
 		}
 	}
 }
 
-void NavigationComponentTable::update(EntityComponentSystem& ecs, World& world) {
+void NavigationComponentTable::update(entt::registry& registry, World& world) {
 	// Update components
-	for (auto&& cmp : *this) {
-		if (isValid(cmp) && cmp.second.mHasTarget) {
-			updateComponent(cmp.first, cmp.second, ecs, world);
+    auto view = registry.view<NavigationComponent, PhysicsComponent>();
+
+    for (auto entity : view) {
+		auto& navCmp = view.get<NavigationComponent>(entity);
+        if (navCmp.mHasTarget) {
+            auto& physCmp = view.get<PhysicsComponent>(entity);
+			updateComponent(entity, navCmp, physCmp, world);
 		}
 	}
 }

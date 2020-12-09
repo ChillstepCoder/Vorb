@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Vorb/ecs/Entity.h>
 #include "ecs/factory/EntityType.h"
 
 // TODO: Entity, not actor
@@ -17,7 +16,7 @@ public:
     EntityFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager);
     ~EntityFactory();
 
-    vecs::EntityID createEntity(const f32v2& position, EntityType type);
+    entt::entity createEntity(const f32v2& position, EntityType type);
 
 private:
     std::unique_ptr<HumanActorFactory> mHumanActorFactory;

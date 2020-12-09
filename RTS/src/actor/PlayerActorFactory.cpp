@@ -5,25 +5,21 @@
 
 #include "EntityComponentSystem.h"
 
-PlayerActorFactory::PlayerActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager)
-	: HumanActorFactory(ecs, resourceManager) {
+PlayerActorFactory::PlayerActorFactory(entt::registry& registry, World& world, ResourceManager& resourceManager)
+	: HumanActorFactory(registry, world, resourceManager) {
 }
 
-vecs::EntityID PlayerActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
-	vecs::EntityID newEntity = HumanActorFactory::createActor(position, texturePath, definitionFile);
+entt::entity PlayerActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
+	entt::entity newEntity = HumanActorFactory::createActor(position, texturePath, definitionFile);
 
-	auto& playerComp = static_cast<EntityComponentSystem&>(mEcs).addPlayerControlComponent(newEntity).second;
-	UNUSED(playerComp);
-
-	mEcs.deleteComponent(mEcs.mSoldierAITable.getID(), newEntity);
+	mRegistry.emplace<PlayerControlComponent>(newEntity);
 
 	// Player combat
 	//auto& combatComp = mEcs.getCombatComponentFromEntity(newEntity);
 
-	// model
-	auto& characterModelComp = static_cast<EntityComponentSystem&>(mEcs).addCharacterModelComponent(newEntity).second;
-	characterModelComp.mModel.load(mResourceManager.getTextureCache(), "face/female/Female_Average_Wide", "body/thin", "hair/longB");
-	characterModelComp.mPhysicsComponent = static_cast<EntityComponentSystem&>(mEcs).mPhysicsTable.getComponentID(newEntity);
+    // model
+    auto& modelCmp = mRegistry.emplace<CharacterModelComponent>(newEntity);
+	modelCmp.mModel.load(mResourceManager.getTextureCache(), "face/female/Female_Average_Wide", "body/thin", "hair/longB");
 
 	return newEntity;
 }

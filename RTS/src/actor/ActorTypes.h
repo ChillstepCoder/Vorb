@@ -1,13 +1,11 @@
 #pragma once
 
-#include <Vorb/ecs/Entity.h>
-
 struct EntityDistInfo {
 	float dist;
 	int quadrant; // Used for special arc queries
 };
 
-typedef std::pair<EntityDistInfo, vecs::EntityID> EntityDistSortKey;
+typedef std::pair<EntityDistInfo, entt::entity> EntityDistSortKey;
 
 enum ActorTypes : ui32 {
 	ACTORTYPE_NONE = 0,

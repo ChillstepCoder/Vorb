@@ -4,7 +4,7 @@
 class HumanActorFactory : public IActorFactory {
 public:
 	
-	HumanActorFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager);
-	vecs::EntityID createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) override;
+	HumanActorFactory(entt::registry& registry, World& world, ResourceManager& resourceManager);
+	entt::entity createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) override;
 };
 

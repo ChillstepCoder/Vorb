@@ -6,7 +6,7 @@
 DECL_VG(class SpriteBatch)
 
 class Camera2D;
-class PhysicsComponentTable;
+class PhysicsSystem;
 class EntityComponentSystem;
 class ResourceManager;
 class World;

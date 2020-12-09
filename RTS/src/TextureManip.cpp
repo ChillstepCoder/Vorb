@@ -64,7 +64,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     for (auto&& it : spritesToGenerate) {
-        assert(it.first < atlas.getNumPages());
+        assert(it.first < (int)atlas.getNumPages());
         // Set read buffer for copy
         glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, atlas.getAtlasTexture(), 0, it.first);
         glReadBuffer(GL_COLOR_ATTACHMENT0);

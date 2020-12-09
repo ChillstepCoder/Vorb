@@ -49,7 +49,7 @@ private:
     float mFps = 0.0f;
 
 	f32v2 mTestClick = f32v2(0.0f);
-	vecs::EntityID mPlayerEntity = 0;
+	entt::entity mPlayerEntity = (entt::entity)0;
 
 };
 

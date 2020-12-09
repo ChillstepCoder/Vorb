@@ -317,7 +317,7 @@ void World::generateChunk(Chunk& chunk) {
 	chunk.mState = ChunkState::FINISHED;
 }
 
-std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {
 	// TODO: No allocation?
 
 	// Empty mask = all types
@@ -328,7 +328,7 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	// TODO: Components as well? Better lookup?
 	std::vector<EntityDistSortKey> entities;
 
-	PhysQueryCallback queryCallBack(entities, pos, mEcs->getPhysicsComponents(), includeMask, excludeMask, radius, except);
+	PhysQueryCallback queryCallBack(entities, pos, mEcs->mRegistry, includeMask, excludeMask, radius, except);
 	b2AABB aabb;
 	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
@@ -358,7 +358,7 @@ inline void testExtremePoint(const f32v2& point, b2AABB& aabb) {
 	}
 }
 
-std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except /*= (entt::entity)0*/) {
 	const float halfAngle = arcAngle * 0.5f;
 
 	// Empty mask = all types
@@ -410,7 +410,7 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 		}
 	}
 
-	ArcQueryCallback queryCallBack(entities, pos, mEcs->getPhysicsComponents(), includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
+	ArcQueryCallback queryCallBack(entities, pos, mEcs->mRegistry, includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
 	mPhysWorld->QueryAABB(&queryCallBack, aabb);
 
 	if (sorted) {
@@ -438,7 +438,7 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 	return entities;
 }
 
-vecs::EntityID World::createEntity(const f32v2& pos, EntityType type) {
+entt::entity World::createEntity(const f32v2& pos, EntityType type) {
 	return mEntityFactory->createEntity(pos, type);
 }
 
