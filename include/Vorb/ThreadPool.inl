@@ -6,15 +6,16 @@ vcore::ThreadPool<T>::~ThreadPool() {
 template<typename T>
 void vcore::ThreadPool<T>::clearTasks() {
     // Dequeue all tasks
-    IThreadPoolTask<T>* task;
-    while (m_tasks.try_dequeue(task));
-    while (m_tasks.try_dequeue(task));
+    ThreadPoolTaskProcs<T> task;
+    // TODO: Bulk dequeue? Why are we double? lol
+    while (mTasks.try_dequeue(task));
+    while (mTasks.try_dequeue(task));
 }
 
 template<typename T>
 void vcore::ThreadPool<T>::init(ui32 size) {
     // Check if its already initialized
-    if (m_isInitialized) return;
+    assert(!m_isInitialized);
     m_isInitialized = true;
 
     /// Allocate all threads
@@ -25,22 +26,22 @@ void vcore::ThreadPool<T>::init(ui32 size) {
 }
 
 template<typename T>
+void vorb::core::ThreadPool<T>::mainThreadUpdate() {
+    assert(m_isInitialized);
+
+    std::function<void()> proc;
+    // TODO: limit + bulk dequeue
+    while (mMainThreadProcs.try_dequeue(proc)) {
+        proc();
+    }
+}
+
+template<typename T>
 void vcore::ThreadPool<T>::destroy() {
     if (!m_isInitialized) return;
 
-    // Tell threads to quit
-    for (size_t i = 0; i < m_workers.size(); i++) {
-        m_workers[i]->data.stop = true;
-    }
+    mStop.store(true);
 
-    clearTasks();
-
-    // Run quit tasks
-    std::vector<QuitThreadPoolTask<T> > quitTasks(m_workers.size() * 2); // Extra tasks just in case
-    for (size_t i = 0; i < quitTasks.size(); i++) {
-        m_tasks.enqueue(&quitTasks[i]);
-    }
-    
     // Join all threads
     for (size_t i = 0; i < m_workers.size(); i++) {
         m_workers[i]->join();
@@ -58,16 +59,21 @@ void vcore::ThreadPool<T>::destroy() {
 
 template<typename T>
 void vcore::ThreadPool<T>::workerThreadFunc(T* data) {
-    data->stop = false;
-    IThreadPoolTask<T>* task;
+    ThreadPoolTaskProcs<T> task;
 
     while (true) {
         // Check for exit
-        if (data->stop) return;
+        if (mStop.load()) return;
 
-        m_tasks.wait_dequeue(task);
-        task->execute(data);
-        task->isFinished = true;
-        task->cleanup();
+        if (mTasks.try_dequeue(task)) {
+            task.first(data);
+            if (task.second) {
+                mMainThreadProcs.enqueue(task.second);
+            }
+        }
+        else {
+            // Don't just spin
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
     }
 }

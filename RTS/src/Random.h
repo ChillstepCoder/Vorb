@@ -11,6 +11,9 @@ namespace Random {
     extern ui32 getCachedRandom();
     extern float getCachedRandomf();
 
+    extern ui32 getThreadSafe(ui32 x, ui32 y);
+    extern float getThreadSafef(ui32 x, ui32 y);
+
     class RandomPermutationTable {
     public:
         RandomPermutationTable(unsigned count);

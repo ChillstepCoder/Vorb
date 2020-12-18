@@ -1,5 +1,6 @@
 #pragma once
 #include <Vorb/graphics/Texture.h>
+#include <Vorb/ThreadPool.h>
 #include <functional>
 #include <optional>
 
@@ -26,6 +27,10 @@ class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
+
+struct ThreadPoolWorkerData {
+
+};
 
 class World
 {
@@ -77,7 +82,7 @@ private:
 	void updateChunkNeighbors(Chunk& chunk);
 	bool isChunkInLoadDistance(ChunkID chunkId, float addOffset = 0.0f);
 	void initChunk(Chunk& chunk, ChunkID chunkId);
-	void generateChunk(Chunk& chunk);
+	void generateChunkAsync(Chunk& chunk);
 
     // ECS
     ClientECSData mClientEcsData;
@@ -96,7 +101,11 @@ private:
 	// Resource handle
 	ResourceManager& mResourceManager;
 
+	// Jobs
+	vcore::ThreadPool<ThreadPoolWorkerData> mThreadPool;
+
 	// Data
+	f32v2 mViewRange = f32v2(0.0f);
 	f32v2 mLoadRange = f32v2(0.0f);
 	f32v2 mLoadCenter = f32v2(0.0f);
 	// Sunlight

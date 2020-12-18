@@ -84,6 +84,7 @@ class Chunk {
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;
 	friend class ChunkMesher;
+	friend class RenderContext; // For debug rendering of neighbors only
 public:
 	Chunk();
 	~Chunk();
@@ -105,7 +106,7 @@ public:
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
-	bool canRender() const { return mDataReadyNeighborCount == 4; }
+	bool canRender() const { return isDataReady() && mDataReadyNeighborCount == 4; }
 
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
@@ -125,6 +126,11 @@ public:
 	}
 
 private:
+
+	void setTileFromGeneration(TileIndex i, TileID tileId, TileLayer layer) {
+		mTiles[i].layers[(int)layer] = tileId;
+	}
+
 	ChunkID mChunkId;
 	Tile mTiles[CHUNK_SIZE];
 	ChunkState mState = ChunkState::WAITING_FOR_INIT;

@@ -9,6 +9,8 @@
 
 void ChunkGenerator::GenerateChunk(Chunk& chunk) {
 
+    // ThreadSafe
+
     PreciseTimer timer;
 
     static TileID grass1 = TileRepository::getTile("grass1");
@@ -28,17 +30,17 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
             }
             else if (n > 0.3) {
                 tile = grass2;
-                if (Random::xorshf96f() > 0.6f) {
-                    chunk.setTileAt(index, bigTree, TileLayer::Mid);
+                if (Random::getThreadSafef(x, y) > 0.6f) {
+                    chunk.setTileFromGeneration(index, bigTree, TileLayer::Mid);
                 }
             }
             else {
-                if (Random::xorshf96f() > 0.95f) {
-                    chunk.setTileAt(index, smallTree, TileLayer::Mid);
+                if (Random::getThreadSafef(x, y) > 0.95f) {
+                    chunk.setTileFromGeneration(index, smallTree, TileLayer::Mid);
                 }
             }
 
-            chunk.setTileAt(index, tile, TileLayer::Ground);
+            chunk.setTileFromGeneration(index, tile, TileLayer::Ground);
         }
     }
 

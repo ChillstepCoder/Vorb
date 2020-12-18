@@ -4,6 +4,6 @@ class Chunk;
 
 class ChunkGenerator {
 public:
-	void GenerateChunk(Chunk& chunk);
+	static void GenerateChunk(Chunk& chunk);
 };
 

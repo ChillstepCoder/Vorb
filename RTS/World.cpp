@@ -33,6 +33,7 @@
 #define ENABLE_DEBUG_RENDER 1
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 10.0f;
 
 World::World(ResourceManager& resourceManager) :
 	mResourceManager(resourceManager)
@@ -50,6 +51,13 @@ World::World(ResourceManager& resourceManager) :
     mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
     mContactListener = std::make_unique<ContactListener>(*mEcs);
     mPhysWorld->SetContactListener(mContactListener.get());
+
+	const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 1, 1);
+	std::cout << "Initializing threadpool with " << threadCount << " threads.\n";
+	mThreadPool.init(threadCount);
+
+	// Static load range for now
+	mLoadRange = f32v2(CHUNK_LOAD_RANGE);
 }
 
 World::~World() {
@@ -58,6 +66,8 @@ World::~World() {
 
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
 	assert(mEcs);
+
+	mThreadPool.mainThreadUpdate();
 
 	updateSun();
 
@@ -68,12 +78,12 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	const f32v2 topRight = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), 0.0f));
 	const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth() * 0.5f, camera.getScreenHeight() * 0.5f));
 
-    mLoadRange.x = topRight.x - center.x + CHUNK_WIDTH / 2;
-    mLoadRange.y = topRight.y - center.y + CHUNK_WIDTH / 2;
+    mViewRange.x = topRight.x - center.x + CHUNK_WIDTH / 2;
+	mViewRange.y = topRight.y - center.y + CHUNK_WIDTH / 2;
 
 	// Always load an extra border of chunks
-    mLoadRange.x = MAX(mLoadRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
-    mLoadRange.y = MAX(mLoadRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
+	mViewRange.x = MAX(mViewRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
+	mViewRange.y = MAX(mViewRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
 
 	for (auto it = mChunks.begin(); it != mChunks.end(); /* no increment */) {
 		Chunk& chunk = *it->second;
@@ -132,7 +142,7 @@ Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
 	auto newChunkIt = mChunks.insert(std::make_pair(chunkId, std::make_unique<Chunk>()));
 	Chunk* newChunk = newChunkIt.first->second.get();
 	initChunk(*newChunk, chunkId);
-	generateChunk(*newChunk);
+	generateChunkAsync(*newChunk);
 	return newChunk;
 }
 
@@ -144,13 +154,14 @@ TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2
 TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 	TileHandle handle;
 	handle.chunk = getChunkAtPosition(worldPos);
-	if (handle.chunk) {
+	if (handle.chunk && handle.chunk->getState() == ChunkState::FINISHED) {
 		unsigned x = (unsigned)floor(worldPos.x) & (CHUNK_WIDTH - 1); // Fast modulus
 		unsigned y = (unsigned)floor(worldPos.y) & (CHUNK_WIDTH - 1); // Fast modulus
 		handle.index = ui16(y * CHUNK_WIDTH + x);
 		handle.tile = handle.chunk->getTileAt(handle.index);
+		return handle;
 	}
-	return handle;
+	return TileHandle();
 }
 
 // TODO: Pass in lambda so we dont keep recalculating all these constants? Profile this.
@@ -236,10 +247,12 @@ bool World::updateChunk(Chunk& chunk) {
 		// Unload
 		return true;
 	}
-	
-	// If we need some neighbor connections, update
-	if (chunk.mDataReadyNeighborCount != 4) {
-		updateChunkNeighbors(chunk);
+
+	if (chunk.isDataReady()) {
+		// Check for new neighbors
+		if (chunk.mDataReadyNeighborCount < 4) {
+			updateChunkNeighbors(chunk);
+		}
 	}
 	
 	return false;
@@ -247,56 +260,59 @@ bool World::updateChunk(Chunk& chunk) {
 
 void World::updateChunkNeighbors(Chunk& chunk) {
 	// Don't update neighbors until we are data ready
-	if (!chunk.isDataReady()) {
-		return;
-	}
+	assert(chunk.isDataReady());
 	// Neighbors
 	ChunkID myId = chunk.getChunkID();
 	// Left
 	if (!chunk.mNeighborLeft) {
 		ChunkID leftChunk = myId.getLeftID();
 		if (isChunkInLoadDistance(leftChunk)) {
-            chunk.mNeighborLeft = getChunkOrCreateAtPosition(leftChunk);
-			chunk.mNeighborLeft->mNeighborRight = &chunk;
-			++chunk.mNeighborLeft->mDataReadyNeighborCount;
-			if (chunk.mNeighborLeft->isDataReady()) {
+            Chunk* neighbor = getChunkOrCreateAtPosition(leftChunk);
+			if (neighbor->isDataReady()) {
+				chunk.mNeighborLeft = neighbor;
+				chunk.mNeighborLeft->mNeighborRight = &chunk;
+				++chunk.mNeighborLeft->mDataReadyNeighborCount;
 				++chunk.mDataReadyNeighborCount;
 			}
 		}
 	}
 	if (!chunk.mNeighborTop) {
 		ChunkID topChunk = myId.getTopID();
-		if (isChunkInLoadDistance(topChunk)) {
-            chunk.mNeighborTop = getChunkOrCreateAtPosition(topChunk);
-            chunk.mNeighborTop->mNeighborBottom = &chunk;
-            ++chunk.mNeighborTop->mDataReadyNeighborCount;
-            if (chunk.mNeighborTop->isDataReady()) {
-                ++chunk.mDataReadyNeighborCount;
-            }
+        if (isChunkInLoadDistance(topChunk)) {
+            Chunk* neighbor = getChunkOrCreateAtPosition(topChunk);
+			if (neighbor->isDataReady()) {
+				chunk.mNeighborTop = neighbor;
+				chunk.mNeighborTop->mNeighborBottom = &chunk;
+				++chunk.mNeighborTop->mDataReadyNeighborCount;
+				++chunk.mDataReadyNeighborCount;
+			}
 		}
 	}
 	if (!chunk.mNeighborRight) {
 		ChunkID rightChunk = myId.getRightID();
 		if (isChunkInLoadDistance(rightChunk)) {
-            chunk.mNeighborRight = getChunkOrCreateAtPosition(rightChunk);
-            chunk.mNeighborRight->mNeighborLeft = &chunk;
-            ++chunk.mNeighborRight->mDataReadyNeighborCount;
-            if(chunk.mNeighborRight->isDataReady()) {
-                ++chunk.mDataReadyNeighborCount;
-            }
+            Chunk* neighbor = getChunkOrCreateAtPosition(rightChunk);
+			if (neighbor->isDataReady()) {
+				chunk.mNeighborRight = neighbor;
+				chunk.mNeighborRight->mNeighborLeft = &chunk;
+				++chunk.mNeighborRight->mDataReadyNeighborCount;
+				++chunk.mDataReadyNeighborCount;
+			}
 		}
 	}
 	if (!chunk.mNeighborBottom) {
 		ChunkID bottomChunk = myId.getBottomID();
 		if (isChunkInLoadDistance(bottomChunk)) {
-            chunk.mNeighborBottom = getChunkOrCreateAtPosition(bottomChunk);
-            chunk.mNeighborBottom->mNeighborTop = &chunk;
-            ++chunk.mNeighborBottom->mDataReadyNeighborCount;
-            if(chunk.mNeighborBottom->isDataReady()) {
-                ++chunk.mDataReadyNeighborCount;
-            }
+			Chunk* neighbor = getChunkOrCreateAtPosition(bottomChunk);
+			if (neighbor->isDataReady()) {
+				chunk.mNeighborBottom = neighbor;
+				chunk.mNeighborBottom->mNeighborTop = &chunk;
+				++chunk.mNeighborBottom->mDataReadyNeighborCount;
+				++chunk.mDataReadyNeighborCount;
+			}
 		}
 	}
+	assert(chunk.mDataReadyNeighborCount <= 4);
 }
 
 bool World::isChunkInLoadDistance(ChunkID chunkPos, float addOffset /* = 0.0f*/)
@@ -312,9 +328,14 @@ void World::initChunk(Chunk& chunk, ChunkID chunkId) {
 	chunk.init(chunkId);
 }
 
-void World::generateChunk(Chunk& chunk) {
-	mChunkGenerator->GenerateChunk(chunk);
-	chunk.mState = ChunkState::FINISHED;
+void World::generateChunkAsync(Chunk& chunk) {
+
+    mThreadPool.addTask([&](ThreadPoolWorkerData* workerData) {
+        mChunkGenerator->GenerateChunk(chunk);
+    }, [&]() {
+        chunk.mState = ChunkState::FINISHED;
+		updateChunkNeighbors(chunk);
+    });
 }
 
 std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {

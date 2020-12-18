@@ -43,6 +43,20 @@ extern float Random::getCachedRandomf() {
     return (cachedRandom[++cachedRandomIndex % (unsigned)cachedRandom.size()] & 0x01fffffff) / (float)0x01fffffff;
 }
 
+extern ui32 Random::getThreadSafe(ui32 x, ui32 y) {
+    ui32 a = x ^ (y << 8);
+    a = (a ^ 61) ^ (a >> 16);
+    a = a + (a << 3);
+    a = a ^ (a >> 4);
+    a = a * 0x27d4eb2d;
+    a = a ^ (a >> 15);
+    return a;
+};
+
+extern float Random::getThreadSafef(ui32 x, ui32 y) {
+    return getThreadSafe(x, y) / (float)UINT_MAX;
+}
+
 Random::RandomPermutationTable::RandomPermutationTable(unsigned count) :
     mPerm(count)
 {
