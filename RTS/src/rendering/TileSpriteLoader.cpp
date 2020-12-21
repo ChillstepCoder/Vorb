@@ -68,20 +68,19 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         // Determine how many tiles we need to map to the atlas, by finding the AABB in tile units
         // TODO: Ensure this is correct usage of pixelRect.zw
         const ui32v2 tileDims(ceil((float)metaData.pixelRect.z / TEXTURE_ATLAS_CELL_WIDTH_PX), ceil((float)metaData.pixelRect.w / TEXTURE_ATLAS_CELL_WIDTH_PX));
-        const ui32v2 paddedDims = tileDims + TEXTURE_ATLAS_CELL_PADDING / TEXTURE_ATLAS_CELL_WIDTH_PX;
         assert(tileDims.x * tileDims.y > 0);
         assert(tileDims.x < TEXTURE_ATLAS_CELLS_PER_ROW / 2); // Need room for normal maps
         const unsigned sourceOffset = (unsigned)metaData.pixelRect.y * rs.width + metaData.pixelRect.x;
         const color4* sourceBytes = (color4*)(rs.bytesUI8v4 + sourceOffset);
 
         if (metaData.method == TileTextureMethod::SIMPLE) {
-            ui32 index = mTextureMapper->mapBox(paddedDims.x, paddedDims.y);
+            ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
             sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
             sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
         }
         else {
             // Connected and others
-            ui32 index = mTextureMapper->mapBox(paddedDims.x, paddedDims.y);
+            ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
             sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
             sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
             sprite.method = TileTextureMethod::CONNECTED_WALL;

@@ -312,30 +312,19 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
 }
 
-void ChunkMesher::createFullDetailMeshAsync(const Chunk& chunk) {
+void ChunkMesher::createMeshAsync(const Chunk& chunk) {
     
-    TileMeshData* meshData;
-    if (mFreeTileMeshData.size()) {
-        meshData = mFreeTileMeshData.back();
-        mFreeTileMeshData.pop_back();
-    }
-    else {
-        if (mNumMeshTasksRunning >= MAX_CONCURRENT_MESH_TASKS) {
-            return;
-        }
-        meshData = new TileMeshData();
-    }
-
-    if (!chunk.mChunkRenderData.mChunkMesh) {
-        chunk.mChunkRenderData.mChunkMesh = std::make_unique<QuadMesh>();
+    TileMeshData* meshData = tryGetFreeTileMeshData();
+    if (!meshData) {
+        return;
     }
     
     ++mNumMeshTasksRunning;
-
     chunk.mChunkRenderData.mIsBuildingMesh = true;
 
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mBaseDirty = false;
+    chunk.mChunkRenderData.mLODDirty = false;
     
     // TODO we will crash if chunk is deallocated during this, need a refcount
     Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
@@ -343,13 +332,13 @@ void ChunkMesher::createFullDetailMeshAsync(const Chunk& chunk) {
         const i32v2& pos = chunk.getChunkPos();
         const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
 
-        QuadMesh& mesh = *renderData.mChunkMesh;
         std::vector<TileVertex>& vertexData = meshData->mTileVertices;
+        color3* lodData = meshData->mLODTexturePixelBuffer;
 
         Tile neighbors[8];
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                //  TODO: More than just ground
+                //  TODO: Multiple world layers
                 TileIndex index(x, y);
                 const Tile& tile = chunk.mTiles[index];
                 for (int l = 0; l < TILE_LAYER_COUNT; ++l) {
@@ -360,6 +349,12 @@ void ChunkMesher::createFullDetailMeshAsync(const Chunk& chunk) {
                     float layerDepth = l * 0.001f;
                     const TileData& tileData = TileRepository::getTileData(layerTile);
                     const SpriteData& spriteData = tileData.spriteData;
+
+                    // Set LOD pixel
+                    // TODO: expand trees
+                    lodData[index] = tileData.spriteData.lodColor;
+
+                    // Tile mesh
                     switch (spriteData.method) {
                         case TileTextureMethod::SIMPLE: {
                             vertexData.resize(vertexData.size() + 4);
@@ -419,139 +414,99 @@ void ChunkMesher::createFullDetailMeshAsync(const Chunk& chunk) {
             }
         }
     }, [this, &chunk, meshData]() {
+
         ChunkRenderData& renderData = chunk.mChunkRenderData;
+
+        // Mesh
+        if (!renderData.mChunkMesh) {
+            renderData.mChunkMesh = std::make_unique<QuadMesh>();
+        }
+
         QuadMesh& mesh = *renderData.mChunkMesh;
         mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture());
         meshData->mTileVertices.clear();
+
+        // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
-        chunk.mChunkRenderData.mIsBuildingMesh = false;
+        renderData.mIsBuildingMesh = false;
+
+        // LOD
+        if (!renderData.mLODTexture) {
+            glGenTextures(1, &renderData.mLODTexture);
+        }
+
+        glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, meshData->mLODTexturePixelBuffer);
+        vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
         --mNumMeshTasksRunning;
     });
 }
 
-void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    const i32v2& pos = chunk.getChunkPos();
-    const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
+void ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
-    if (!renderData.mChunkMesh) {
-        renderData.mChunkMesh = std::make_unique<QuadMesh>();
+    TileMeshData* meshData = tryGetFreeTileMeshData();
+    if (!meshData) {
+        return;
     }
-    QuadMesh& mesh = *renderData.mChunkMesh;
 
-    int vertexCount = 0;
+    ++mNumMeshTasksRunning;
+    chunk.mChunkRenderData.mIsBuildingMesh = true;
+    chunk.mChunkRenderData.mLODDirty = false;
 
-    PreciseTimer timer;
-    Tile neighbors[8];
-    for (int y = 0; y < CHUNK_WIDTH; ++y) {
-        for (int x = 0; x < CHUNK_WIDTH; ++x) {
+    // TODO: We have a race condition if the chunk goes out of memory
+    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
+
+        color3* currentPixel = meshData->mLODTexturePixelBuffer;
+        for (int index = 0; index < CHUNK_SIZE; ++index) {
             //  TODO: More than just ground
-            TileIndex index(x, y);
             const Tile& tile = chunk.mTiles[index];
-            for (int l = 0; l < TILE_LAYER_COUNT; ++l) {
+            for (int l = TILE_LAYER_COUNT - 1; l >= 0; --l) {
                 TileID layerTile = tile.layers[l];
                 if (layerTile == TILE_ID_NONE) {
                     continue;
                 }
-                float layerDepth = l * 0.001f;
+                // First opaque tile
                 const TileData& tileData = TileRepository::getTileData(layerTile);
-                const SpriteData& spriteData = tileData.spriteData;
-                switch (spriteData.method) {
-                    case TileTextureMethod::SIMPLE: {
-                        addQuad(sVertices + vertexCount, tileData.shape, f32v2(x + offset.x, y + offset.y), spriteData, spriteData.uvs, layerDepth);
-                        vertexCount += 4;
-                        break;
-                    }
-                    case TileTextureMethod::CONNECTED_WALL: {
-                        chunk.getTileNeighbors(index, neighbors);
-                        unsigned connectedBits = 0;
-                        for (int i = 0; i < 8; ++i) {
-                            if (neighbors[i].layers[l] != layerTile) {
-                                connectedBits |= (1 << i);
-                            }
-                        }
-                        const ConnectedWallData& data = sConnectedWallData[connectedBits];
-                        const float verticalOffset = 0.749f;
-                        if (data.data == 0) {
-                            addQuad(sVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
-                            vertexCount += 4;
-                        }
-                        else {
-                            // Check if we need to render the base layer first
-                            if (data.a < 0x10) {
-                                addQuad(sVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
-                                vertexCount += 4;
-                            }
-                            // Render up to 4 textures depending on configuration
-                            for (int i = 0; i < 4; ++i) {
-                                const ui16 val = data.dataArray[i];
-                                if (val == 0) break;
-
-                                const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-                                f32v4 uvs = spriteData.uvs;
-                                uvs.x += offsets.x * uvs.z;
-                                uvs.y += offsets.y * uvs.w;
-                                addQuad(sVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, uvs, layerDepth + 0.01f);
-                                vertexCount += 4;
-                            }
-                            // Render exposed wall bottom if  needed
-                            if (isBitSet(connectedBits, BOTTOM)) {
-                                // Simple 2 bit LUT
-                                const unsigned sideCheck = ((connectedBits & (LEFT | RIGHT)) >> 3);
-                                const ui16 val = sExposedWallLookup[sideCheck];
-
-                                const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-                                f32v4 uvs = spriteData.uvs;
-                                uvs.x += offsets.x * uvs.z;
-                                uvs.y += offsets.y * uvs.w;
-                                addQuad(sVertices + vertexCount, TileShape::THICK, f32v2(x + offset.x, y + offset.y), spriteData, uvs, layerDepth);
-                                vertexCount += 4;
-                            }
-                        }
-                        break;
-                    }
-                }
+                *currentPixel++ = tileData.spriteData.lodColor;
+                break;
             }
         }
-    }
-    std::cout << " loop took " << timer.stop() << " ms\n";
 
-    PreciseTimer timer2;
-    mesh.setData(sVertices, vertexCount, mTextureAtlas.getAtlasTexture());
-    std::cout << " setdata took " << timer2.stop() << " ms\n";
-    renderData.mBaseDirty = false;
+
+    }, [this, &chunk, meshData]() {
+
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+
+        // Recycle and flag as free
+        mFreeTileMeshData.push_back(meshData);
+        chunk.mChunkRenderData.mIsBuildingMesh = false;
+
+        if (!renderData.mLODTexture) {
+            glGenTextures(1, &renderData.mLODTexture);
+        }
+
+        glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, meshData->mLODTexturePixelBuffer);
+        vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        --mNumMeshTasksRunning;
+    });
 }
 
-void ChunkMesher::createLODTexture(const Chunk& chunk) {
-
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    const i32v2& pos = chunk.getChunkPos();
-    const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
-
-    color3* currentPixel = mLODTexturePixelBuffer;
-    for (int index = 0; index < CHUNK_SIZE; ++index) {
-        //  TODO: More than just ground
-        const Tile& tile = chunk.mTiles[index];
-        for (int l = TILE_LAYER_COUNT - 1; l >= 0; --l) {
-            TileID layerTile = tile.layers[l];
-            if (layerTile == TILE_ID_NONE) {
-                continue;
-            }
-            // First opaque tile
-            const TileData& tileData = TileRepository::getTileData(layerTile);
-            *currentPixel++ = tileData.spriteData.lodColor;
-            break;
+TileMeshData* ChunkMesher::tryGetFreeTileMeshData()
+{
+    TileMeshData* meshData;
+    if (mFreeTileMeshData.size()) {
+        meshData = mFreeTileMeshData.back();
+        mFreeTileMeshData.pop_back();
+    }
+    else {
+        if (mNumMeshTasksRunning >= MAX_CONCURRENT_MESH_TASKS) {
+            return nullptr;
         }
+        meshData = new TileMeshData();
     }
-
-    if (!renderData.mLODTexture) {
-        glGenTextures(1, &renderData.mLODTexture);
-    }
-
-    glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, mLODTexturePixelBuffer);
-    vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    renderData.mLODDirty = false;
+    return meshData;
 }

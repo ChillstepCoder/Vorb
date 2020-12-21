@@ -23,7 +23,6 @@
 #include <Vorb/ui/InputDispatcher.h>
 #endif
 
-#define ENABLE_MT_MESHING 1
 
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
 	mResourceManager(resourceManager),
@@ -53,27 +52,11 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
     ChunkID chunkId;
     const Chunk* chunk;
 
-    switch (lod) {
-        case ChunkRenderLOD::FULL_DETAIL: {
-            while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
-                if (chunk && chunk->canRender()) {
-                    RenderFullDetail(*chunk, camera);
-                }
-            }
-            break;
+    while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
+        if (chunk && chunk->canRender()) {
+            Render(*chunk, camera, lod);
         }
-        case ChunkRenderLOD::LOD_TEXTURE: {
-            while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
-                if (chunk && chunk->canRender()) {
-                    RenderLODTexture(*chunk, camera);
-                }
-            }
-            break;
-        }
-        default:
-            assert(false);
     }
-    static_assert((int)ChunkRenderLOD::COUNT == 2, "Update");
 
 }
 
@@ -83,52 +66,41 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camer
     const Chunk* chunk;
     while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
         if (chunk && chunk->canRender()) {
-            RenderFullDetailShadows(*chunk, camera);
+            RenderShadows(*chunk, camera);
         }
     }
 }
 
-void ChunkRenderer::RenderFullDetail(const Chunk& chunk, const Camera2D& camera) {
+void ChunkRenderer::Render(const Chunk& chunk, const Camera2D& camera, ChunkRenderLOD lod) {
 	// mutable render data
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (!renderData.mIsBuildingMesh) {
+        if (lod == ChunkRenderLOD::FULL_DETAIL && renderData.mBaseDirty) {
+            mMesher->createMeshAsync(chunk);
+        }
+        else if (lod == ChunkRenderLOD::LOD_TEXTURE && renderData.mLODDirty) {
+            mMesher->createLODTextureAsync(chunk);
+        }
+    }
 
-	if (renderData.mBaseDirty && !renderData.mIsBuildingMesh) {
-#if ENABLE_MT_MESHING == 1
-        UpdateFullDetailMeshAsync(chunk);
-#else
-        PreciseTimer timer;
-		UpdateFullDetailMesh(chunk);
-        std::cout << "Mesh updated in " << timer.stop() << " ms\n";
-#endif
-	}
-
-    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+    if (lod == ChunkRenderLOD::FULL_DETAIL && renderData.mChunkMesh) {
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
     }
+    else if (renderData.mLODTexture) {
+        const f32v2 worldPos = chunk.getWorldPos();
+        const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
+
+        RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, renderData.mLODTexture, rect);
+    }
+    static_assert((int)ChunkRenderLOD::COUNT == 2, "Update");
 }
 
-void ChunkRenderer::RenderFullDetailShadows(const Chunk& chunk, const Camera2D& camera)
+void ChunkRenderer::RenderShadows(const Chunk& chunk, const Camera2D& camera)
 {
     QuadMesh* mesh = chunk.mChunkRenderData.mChunkMesh.get();
     if (mesh && mesh->isValid()) {
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial, vg::DepthState::FULL);
     }
-}
-
-void ChunkRenderer::RenderLODTexture(const Chunk& chunk, const Camera2D& camera) {
-    // mutable render data
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-
-    if (renderData.mLODDirty) {
-        PreciseTimer timer;
-        UpdateLODTexture(chunk);
-        std::cout << "LOD updated in " << timer.stop() << " ms\n";
-    }
-
-    const f32v2 worldPos = chunk.getWorldPos();
-    const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
-
-    RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, renderData.mLODTexture, rect);
 }
 
 void ChunkRenderer::ReloadShaders() {
@@ -138,19 +110,6 @@ void ChunkRenderer::ReloadShaders() {
 		//material.dispose();
 	//}
 	InitPostLoad();
-}
-
-void ChunkRenderer::UpdateFullDetailMeshAsync(const Chunk& chunk) {
-    mMesher->createFullDetailMeshAsync(chunk);
-}
-
-void ChunkRenderer::UpdateFullDetailMesh(const Chunk& chunk) {
-	mMesher->createFullDetailMesh(chunk);
-}
-
-
-void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
-    mMesher->createLODTexture(chunk);
 }
 
 void ChunkRenderer::InitPostLoad()

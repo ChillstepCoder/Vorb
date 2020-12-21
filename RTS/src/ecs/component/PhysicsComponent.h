@@ -30,6 +30,10 @@ public:
 		return reinterpret_cast<const f32v2&>(mBody->GetLinearVelocity());
 	}
 
+    void teleportToPoint(const f32v2& worldPos) {
+		mBody->SetTransform(reinterpret_cast<const b2Vec2&>(worldPos), mBody->GetAngle());
+    }
+
 	unsigned mQueryActorTypes = ACTORTYPE_NONE;
 	f32v2 mDir = f32v2(0.0f, 1.0f);
 	float mCollisionRadius = 0.0f;

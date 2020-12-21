@@ -90,7 +90,7 @@ struct b2Vec2;
 
 #ifdef USE_SMALL_CHUNK_WIDTH
 const int CHUNK_WIDTH = 64;
-static_assert(CHUNK_WIDTH == 64, "Adjust bitwise operators above");
+static_assert(CHUNK_WIDTH == 64, "Adjust bitwise operators below");
 #define TILE_INDEX_Y_SHIFT 6
 #define TILE_INDEX_X_MASK 0x3f
 #else

@@ -143,10 +143,20 @@ void MainMenuScreen::build() {
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
             );*/
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-            if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
-            }
+
+			if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
+                // Teleport
+                auto&& ecs = mWorld->getECS();
+				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(mPlayerEntity)) {
+					phys->teleportToPoint(worldPos);
+				}
+			}
+			else {
+				TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+				if (handle.isValid()) {
+					handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+				}
+			}
         }
         else if (event.button == vui::MouseButton::RIGHT) {
             /*newActor = mHumanActorFactory->createActor(

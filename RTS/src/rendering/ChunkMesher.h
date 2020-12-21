@@ -16,6 +16,7 @@ struct TileMeshData {
         mTileVertices.reserve(AVERAGE_VERTICES_PER_CHUNK);
     }
     std::vector<TileVertex> mTileVertices;
+    color3 mLODTexturePixelBuffer[CHUNK_SIZE];
 };
 
 // TODO: Move to Light.h?
@@ -32,17 +33,19 @@ public:
     ~ChunkMesher();
 
     // Updatemesh?
-    void createFullDetailMeshAsync(const Chunk& chunk);
-    void createFullDetailMesh(const Chunk& chunk);
-    void createLODTexture(const Chunk& chunk);
+    void createMeshAsync(const Chunk& chunk);
+    void createLODTextureAsync(const Chunk& chunk);
 
 private:
+
+    TileMeshData* tryGetFreeTileMeshData();
+
     // Shared vertex buffer to eliminate allocations
     const TextureAtlas& mTextureAtlas;
     // Passed to worker threads for use, then returned to storage
     std::vector<TileMeshData*> mFreeTileMeshData;
     int mNumMeshTasksRunning = 0;
 
-    color3 mLODTexturePixelBuffer[CHUNK_SIZE];
+    
 };
 

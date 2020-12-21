@@ -1,6 +1,16 @@
 #pragma once
 #include <cstdio>
 
+inline ui32 NextPowerOfTwo(ui32 v) {
+    --v;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+	return ++v;
+}
+
 inline void printMatrix(const char* title, const f32m4& mat) {
 	printf(
 		"%s:\n%f %f %f %f\n%f %f %f %f\n %f %f %f %f\n %f %f %f %f\n",

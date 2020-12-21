@@ -27,21 +27,14 @@ public:
     void renderWorld(const World& world, const Camera2D& camera, ChunkRenderLOD lod);
     void renderWorldShadows(const World& world, const Camera2D& camera);
 
-	//void RenderChunkBaked(const Chunk& chunk, const Camera2D& camera, int LOD);
-
 	// TODO: Deep LOD?
 	void ReloadShaders();
 
     void InitPostLoad();
 private:
     // Different rendering methods
-    void RenderFullDetail(const Chunk& chunk, const Camera2D& camera);
-    void RenderFullDetailShadows(const Chunk& chunk, const Camera2D& camera);
-    void RenderLODTexture(const Chunk& chunk, const Camera2D& camera);
-
-    void UpdateFullDetailMesh(const Chunk& chunk);
-    void UpdateFullDetailMeshAsync(const Chunk& chunk);
-    void UpdateLODTexture(const Chunk& chunk);
+    void Render(const Chunk& chunk, const Camera2D& camera, ChunkRenderLOD lod);
+    void RenderShadows(const Chunk& chunk, const Camera2D& camera);
 
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
