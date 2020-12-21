@@ -66,6 +66,13 @@ void TextureAtlas::uploadDirtyPages()
             }
         }
     }
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
+void TextureAtlas::generateMipMaps() const {
+    glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 void TextureAtlas::addPage() {
@@ -95,31 +102,26 @@ ui32v2 TextureAtlas::getPageCoordsFromCellIndex(unsigned cellIndex) {
 }
 
 void TextureAtlas::allocateTexture() {
+    static constexpr int MIP_LEVELS = 4;
     // Set up the storage
     glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
 
-    // TODO: Investigate mipmapping, see SOA
     // Set up all the mipmap storage
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, (GLsizei)mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    ui32 width = TEXTURE_ATLAS_WIDTH_PX;
+    for (ui32 i = 0; i < MIP_LEVELS; i++) {
+        assert(width > 0);
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, i, GL_RGBA8, width, width, (GLsizei)mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        width >>= 1;
+    }
 
     // Set up tex parameters
-    // No mipmapping
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, (int)0);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LOD, (int)0);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, (int)MIP_LEVELS);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LOD, (int)MIP_LEVELS);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    // Anisotropic filtering
-    float anisotropy;
-    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &anisotropy);
-    glActiveTexture(GL_TEXTURE0);
-    // Smooth texture params
-//    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
- //   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
- //   glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 
     // Unbind
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);

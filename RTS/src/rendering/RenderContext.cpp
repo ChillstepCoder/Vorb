@@ -131,7 +131,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
     if (camera.getScale() < 20.0f) {
-        lodState = ChunkRenderLOD::LOD_TEXTURE;
+    //    lodState = ChunkRenderLOD::LOD_TEXTURE;
     }
 
     // Set renderData

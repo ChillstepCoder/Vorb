@@ -17,12 +17,12 @@ enum class ChunkState {
 };
 
 struct ChunkRenderData {
-
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh;
 	VGTexture mLODTexture = 0;
 	bool mBaseDirty = true;
 	bool mLODDirty = true;
+	bool mIsBuildingMesh = false; // When true, we are waiting for our mesh to be completed
 };
 
 struct ChunkID {

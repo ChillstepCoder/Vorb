@@ -1,10 +1,15 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
 #include "rendering/TextureAtlas.h"
+#include "services/Services.h"
 
 #include "world/Chunk.h"
 #include "rendering/QuadMesh.h"
 #include <Vorb/graphics/SamplerState.h>
+
+constexpr int MAX_CONCURRENT_MESH_TASKS = 10;
+
+static TileVertex sVertices[MAX_VERTICES_PER_CHUNK];
 
 // TODO: Method(s) file?
 struct ConnectedWallData {
@@ -186,6 +191,14 @@ ChunkMesher::ChunkMesher(const TextureAtlas& textureAtlas) :
     initConnectedOffsets();
 }
 
+ChunkMesher::~ChunkMesher()
+{
+    // TODO: We will leak any data currently assigned to a worker thread
+    for (TileMeshData* data : mFreeTileMeshData) {
+        delete data;
+    }
+}
+
 void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const SpriteData& spriteData, const f32v4& uvs, float extraHeight) {
     // Center the sprite
     const float xOffset = -(float)((spriteData.dimsMeters.x - 1) / 2);
@@ -193,6 +206,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     // Need to increase depth to bring walls in line with roofs for depth, since walls are shorter than 1.0
     static constexpr float WALL_Y_DEPTH_MULT = 1.333333333f;
     static constexpr float SHADOW_MULT = 0.5f;
+    static constexpr float EPSILON = 0.01f;
 
     // Otherwise shadows break
     assert(spriteData.dimsMeters.x <= 6.0f && spriteData.dimsMeters.y <= 6.0f);
@@ -262,7 +276,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
-        vbr.pos.x = position.x + spriteData.dimsMeters.x + xOffset;
+        vbr.pos.x = position.x + spriteData.dimsMeters.x + xOffset + EPSILON;
         vbr.pos.y = position.y;
         vbr.pos.z = bottomDepth;
         vbr.uvs.x = uvs.x + uvs.z;
@@ -275,7 +289,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     { // Top Left
         TileVertex& vtl = verts[2];
         vtl.pos.x = position.x + xOffset;
-        vtl.pos.y = position.y + spriteData.dimsMeters.y;
+        vtl.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
         vtl.pos.z = topDepth;
         vtl.uvs.x = uvs.x;
         vtl.uvs.y = uvs.y;
@@ -286,8 +300,8 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
     { // Top Right
         TileVertex& vtr = verts[3];
-        vtr.pos.x = position.x + spriteData.dimsMeters.x + xOffset;
-        vtr.pos.y = position.y + spriteData.dimsMeters.y;
+        vtr.pos.x = position.x + spriteData.dimsMeters.x + xOffset + EPSILON;
+        vtr.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
         vtr.pos.z = topDepth;
         vtr.uvs.x = uvs.x + uvs.z;
         vtr.uvs.y = uvs.y;
@@ -296,6 +310,123 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
         vtr.shadowEnabled = shadowTop;
         vtr.height = topHeight;
     }
+}
+
+void ChunkMesher::createFullDetailMeshAsync(const Chunk& chunk) {
+    
+    TileMeshData* meshData;
+    if (mFreeTileMeshData.size()) {
+        meshData = mFreeTileMeshData.back();
+        mFreeTileMeshData.pop_back();
+    }
+    else {
+        if (mNumMeshTasksRunning >= MAX_CONCURRENT_MESH_TASKS) {
+            return;
+        }
+        meshData = new TileMeshData();
+    }
+
+    if (!chunk.mChunkRenderData.mChunkMesh) {
+        chunk.mChunkRenderData.mChunkMesh = std::make_unique<QuadMesh>();
+    }
+    
+    ++mNumMeshTasksRunning;
+
+    chunk.mChunkRenderData.mIsBuildingMesh = true;
+
+    // TODO: Move somewhere else?
+    chunk.mChunkRenderData.mBaseDirty = false;
+    
+    // TODO we will crash if chunk is deallocated during this, need a refcount
+    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+        const i32v2& pos = chunk.getChunkPos();
+        const i32v2 offset(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH);
+
+        QuadMesh& mesh = *renderData.mChunkMesh;
+        std::vector<TileVertex>& vertexData = meshData->mTileVertices;
+
+        Tile neighbors[8];
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                //  TODO: More than just ground
+                TileIndex index(x, y);
+                const Tile& tile = chunk.mTiles[index];
+                for (int l = 0; l < TILE_LAYER_COUNT; ++l) {
+                    TileID layerTile = tile.layers[l];
+                    if (layerTile == TILE_ID_NONE) {
+                        continue;
+                    }
+                    float layerDepth = l * 0.001f;
+                    const TileData& tileData = TileRepository::getTileData(layerTile);
+                    const SpriteData& spriteData = tileData.spriteData;
+                    switch (spriteData.method) {
+                        case TileTextureMethod::SIMPLE: {
+                            vertexData.resize(vertexData.size() + 4);
+                            addQuad(&vertexData.back() - 3, tileData.shape, f32v2(x + offset.x, y + offset.y), spriteData, spriteData.uvs, layerDepth);
+                            break;
+                        }
+                        case TileTextureMethod::CONNECTED_WALL: {
+                            chunk.getTileNeighbors(index, neighbors);
+                            unsigned connectedBits = 0;
+                            for (int i = 0; i < 8; ++i) {
+                                if (neighbors[i].layers[l] != layerTile) {
+                                    connectedBits |= (1 << i);
+                                }
+                            }
+                            const ConnectedWallData& data = sConnectedWallData[connectedBits];
+                            const float verticalOffset = 0.749f;
+                            if (data.data == 0) {
+                                vertexData.resize(vertexData.size() + 4);
+                                addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
+                            }
+                            else {
+                                // Check if we need to render the base layer first
+                                if (data.a < 0x10) {
+                                    vertexData.resize(vertexData.size() + 4);
+                                    addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
+                                }
+                                // Render up to 4 textures depending on configuration
+                                for (int i = 0; i < 4; ++i) {
+                                    const ui16 val = data.dataArray[i];
+                                    if (val == 0) break;
+
+                                    const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                                    f32v4 uvs = spriteData.uvs;
+                                    uvs.x += offsets.x * uvs.z;
+                                    uvs.y += offsets.y * uvs.w;
+                                    vertexData.resize(vertexData.size() + 4);
+                                    addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, uvs, layerDepth + 0.01f);
+                                }
+                                // Render exposed wall bottom if  needed
+                                if (isBitSet(connectedBits, BOTTOM)) {
+                                    // Simple 2 bit LUT
+                                    const unsigned sideCheck = ((connectedBits & (LEFT | RIGHT)) >> 3);
+                                    const ui16 val = sExposedWallLookup[sideCheck];
+
+                                    const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                                    f32v4 uvs = spriteData.uvs;
+                                    uvs.x += offsets.x * uvs.z;
+                                    uvs.y += offsets.y * uvs.w;
+                                    vertexData.resize(vertexData.size() + 4);
+                                    addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(x + offset.x, y + offset.y), spriteData, uvs, layerDepth);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }, [this, &chunk, meshData]() {
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+        QuadMesh& mesh = *renderData.mChunkMesh;
+        mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture());
+        meshData->mTileVertices.clear();
+        mFreeTileMeshData.push_back(meshData);
+        chunk.mChunkRenderData.mIsBuildingMesh = false;
+        --mNumMeshTasksRunning;
+    });
 }
 
 void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
@@ -327,7 +458,7 @@ void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
                 const SpriteData& spriteData = tileData.spriteData;
                 switch (spriteData.method) {
                     case TileTextureMethod::SIMPLE: {
-                        addQuad(mVertices + vertexCount, tileData.shape, f32v2(x + offset.x, y + offset.y), spriteData, spriteData.uvs, layerDepth);
+                        addQuad(sVertices + vertexCount, tileData.shape, f32v2(x + offset.x, y + offset.y), spriteData, spriteData.uvs, layerDepth);
                         vertexCount += 4;
                         break;
                     }
@@ -342,13 +473,13 @@ void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
                         const ConnectedWallData& data = sConnectedWallData[connectedBits];
                         const float verticalOffset = 0.749f;
                         if (data.data == 0) {
-                            addQuad(mVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
+                            addQuad(sVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
                             vertexCount += 4;
                         }
                         else {
                             // Check if we need to render the base layer first
                             if (data.a < 0x10) {
-                                addQuad(mVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
+                                addQuad(sVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, spriteData.uvs, layerDepth);
                                 vertexCount += 4;
                             }
                             // Render up to 4 textures depending on configuration
@@ -360,7 +491,7 @@ void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, uvs, layerDepth + 0.01f);
+                                addQuad(sVertices + vertexCount, TileShape::ROOF, f32v2(x + offset.x, y + offset.y + verticalOffset), spriteData, uvs, layerDepth + 0.01f);
                                 vertexCount += 4;
                             }
                             // Render exposed wall bottom if  needed
@@ -373,7 +504,7 @@ void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
                                 f32v4 uvs = spriteData.uvs;
                                 uvs.x += offsets.x * uvs.z;
                                 uvs.y += offsets.y * uvs.w;
-                                addQuad(mVertices + vertexCount, TileShape::THICK, f32v2(x + offset.x, y + offset.y), spriteData, uvs, layerDepth);
+                                addQuad(sVertices + vertexCount, TileShape::THICK, f32v2(x + offset.x, y + offset.y), spriteData, uvs, layerDepth);
                                 vertexCount += 4;
                             }
                         }
@@ -386,7 +517,7 @@ void ChunkMesher::createFullDetailMesh(const Chunk& chunk) {
     std::cout << " loop took " << timer.stop() << " ms\n";
 
     PreciseTimer timer2;
-    mesh.setData(mVertices, vertexCount, mTextureAtlas.getAtlasTexture());
+    mesh.setData(sVertices, vertexCount, mTextureAtlas.getAtlasTexture());
     std::cout << " setdata took " << timer2.stop() << " ms\n";
     renderData.mBaseDirty = false;
 }

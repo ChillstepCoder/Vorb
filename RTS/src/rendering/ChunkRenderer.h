@@ -39,7 +39,8 @@ private:
     void RenderFullDetailShadows(const Chunk& chunk, const Camera2D& camera);
     void RenderLODTexture(const Chunk& chunk, const Camera2D& camera);
 
-	void UpdateFullDetailMesh(const Chunk& chunk);
+    void UpdateFullDetailMesh(const Chunk& chunk);
+    void UpdateFullDetailMeshAsync(const Chunk& chunk);
     void UpdateLODTexture(const Chunk& chunk);
 
 	std::unique_ptr<ChunkMesher> mMesher;

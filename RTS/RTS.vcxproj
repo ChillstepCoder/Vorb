@@ -185,6 +185,7 @@
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
@@ -252,6 +253,7 @@
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />

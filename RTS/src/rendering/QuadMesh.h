@@ -24,6 +24,8 @@ public:
     void setData(const TileVertex* meshData, int vertexCount, VGTexture texture);
     void draw(const vg::GLProgram& program, const vg::DepthState& depthState) const;
 
+    bool isValid() const { return mIndexCount > 0; }
+
 private:
     void bindVertexAttribs(const vg::GLProgram& program) const;
 

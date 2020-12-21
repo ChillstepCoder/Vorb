@@ -29,7 +29,6 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.getAtlasTexture());
-    vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
 
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -124,4 +123,8 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
 void GPUTextureManipulator::InitPostLoad() {
     mNormalsMaterial = mResourceManager.getMaterialManager().getMaterial("normals_gen");
     GenerateNormalMapsForTextureAtlas();
+
+    // Generate mipmaps
+    const TextureAtlas& atlas = mResourceManager.getTextureAtlas();
+    atlas.generateMipMaps();
 }

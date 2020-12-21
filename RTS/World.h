@@ -1,6 +1,5 @@
 #pragma once
 #include <Vorb/graphics/Texture.h>
-#include <Vorb/ThreadPool.h>
 #include <functional>
 #include <optional>
 
@@ -9,6 +8,7 @@
 #include "world/Tile.h"
 #include "ecs/ClientEcsData.h"
 #include "ecs/factory/EntityType.h"
+#include "services/Services.h"
 
 #include "world/Chunk.h"
 
@@ -27,10 +27,6 @@ class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
-
-struct ThreadPoolWorkerData {
-
-};
 
 class World
 {
@@ -100,9 +96,6 @@ private:
 
 	// Resource handle
 	ResourceManager& mResourceManager;
-
-	// Jobs
-	vcore::ThreadPool<ThreadPoolWorkerData> mThreadPool;
 
 	// Data
 	f32v2 mViewRange = f32v2(0.0f);

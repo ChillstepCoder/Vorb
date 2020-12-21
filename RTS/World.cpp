@@ -52,10 +52,6 @@ World::World(ResourceManager& resourceManager) :
     mContactListener = std::make_unique<ContactListener>(*mEcs);
     mPhysWorld->SetContactListener(mContactListener.get());
 
-	const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 1, 1);
-	std::cout << "Initializing threadpool with " << threadCount << " threads.\n";
-	mThreadPool.init(threadCount);
-
 	// Static load range for now
 	mLoadRange = f32v2(CHUNK_LOAD_RANGE);
 }
@@ -67,7 +63,7 @@ World::~World() {
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
 	assert(mEcs);
 
-	mThreadPool.mainThreadUpdate();
+	Services::Threadpool::ref().mainThreadUpdate();
 
 	updateSun();
 
@@ -330,7 +326,7 @@ void World::initChunk(Chunk& chunk, ChunkID chunkId) {
 
 void World::generateChunkAsync(Chunk& chunk) {
 
-    mThreadPool.addTask([&](ThreadPoolWorkerData* workerData) {
+	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
         mChunkGenerator->GenerateChunk(chunk);
     }, [&]() {
         chunk.mState = ChunkState::FINISHED;

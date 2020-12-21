@@ -71,8 +71,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAv
                 glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
                 glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.atlas);
-                // TODO: Stop re-setting this
-                vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
                 break;
             case MaterialUniform::Time:
                 glUniform1f(it.second, (float)sTotalTimeSeconds);

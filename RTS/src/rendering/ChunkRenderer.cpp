@@ -12,6 +12,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/RenderContext.h"
+#include "services/Services.h"
 
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/SamplerState.h>
@@ -21,6 +22,8 @@
 #if ENABLE_DEBUG_RENDER == 1
 #include <Vorb/ui/InputDispatcher.h>
 #endif
+
+#define ENABLE_MT_MESHING 1
 
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
 	mResourceManager(resourceManager),
@@ -89,18 +92,27 @@ void ChunkRenderer::RenderFullDetail(const Chunk& chunk, const Camera2D& camera)
 	// mutable render data
 	ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-	if (renderData.mBaseDirty) {
+	if (renderData.mBaseDirty && !renderData.mIsBuildingMesh) {
+#if ENABLE_MT_MESHING == 1
+        UpdateFullDetailMeshAsync(chunk);
+#else
         PreciseTimer timer;
 		UpdateFullDetailMesh(chunk);
         std::cout << "Mesh updated in " << timer.stop() << " ms\n";
+#endif
 	}
 
-	RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
+    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
+    }
 }
 
 void ChunkRenderer::RenderFullDetailShadows(const Chunk& chunk, const Camera2D& camera)
 {
-    RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*chunk.mChunkRenderData.mChunkMesh, *mShadowMaterial, vg::DepthState::FULL);
+    QuadMesh* mesh = chunk.mChunkRenderData.mChunkMesh.get();
+    if (mesh && mesh->isValid()) {
+        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial, vg::DepthState::FULL);
+    }
 }
 
 void ChunkRenderer::RenderLODTexture(const Chunk& chunk, const Camera2D& camera) {
@@ -128,9 +140,14 @@ void ChunkRenderer::ReloadShaders() {
 	InitPostLoad();
 }
 
+void ChunkRenderer::UpdateFullDetailMeshAsync(const Chunk& chunk) {
+    mMesher->createFullDetailMeshAsync(chunk);
+}
+
 void ChunkRenderer::UpdateFullDetailMesh(const Chunk& chunk) {
 	mMesher->createFullDetailMesh(chunk);
 }
+
 
 void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
     mMesher->createLODTexture(chunk);

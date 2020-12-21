@@ -3,6 +3,8 @@
 #include "App.h"
 #include "MainMenuScreen.h"
 
+#include "services/Services.h"
+
 #include <Vorb/Delegate.hpp>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/ScreenList.h>
@@ -23,9 +25,11 @@ void App::addScreens() {
 }
 
 void App::onInit() {
+	Services::init();
 }
 
 void App::onExit() {
+	Services::destroy();
 }
 
 void App::refreshElapsedTime() {

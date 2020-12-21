@@ -80,7 +80,7 @@ void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture te
     mIndexCount = indexCount;
     // TODO: Can we get away with just a single IBO?
     // Set data
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, mIndexCount * sizeof(ui32), sQuadIndices);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexCount * sizeof(ui32), sQuadIndices);
 
     const int bufferSizeBytes = vertexCount * sizeof(TileVertex);
 
@@ -99,7 +99,7 @@ void QuadMesh::draw(const vg::GLProgram& program, const vg::DepthState& depthSta
     depthState.set();
     vg::RasterizerState::CULL_NONE.set();
 
-    glBindVertexArray(mVao); // TODO(Ben): This wont work with all custom shaders?
+    glBindVertexArray(mVao);
     bindVertexAttribs(program);
 
     glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);

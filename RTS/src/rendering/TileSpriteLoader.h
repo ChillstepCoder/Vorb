@@ -47,6 +47,6 @@ private:
     const vio::IOManager& mIoManager;
     SpriteRepository& mSpriteRepository;
     TextureAtlas& mTextureAtlas;
-    std::unique_ptr<vvox::VoxelTextureStitcher> textureMapper;
+    std::unique_ptr<vvox::VoxelTextureStitcher> mTextureMapper;
 };
 

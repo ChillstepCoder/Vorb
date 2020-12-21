@@ -43,17 +43,10 @@ namespace vorb {
         template<typename T>
         class ThreadPool {
         public:
-            ThreadPool() {};
+            ThreadPool(ui32 size);
             ~ThreadPool();
 
-            /// Initializes the threadpool
-            /// @param size: The number of worker threads
-            void init(ui32 size);
-
             void mainThreadUpdate();
-
-            /// Frees all resources
-            void destroy();
 
             /// Clears all unprocessed tasks from the task queue
             void clearTasks();
@@ -105,11 +98,10 @@ namespace vorb {
             void workerThreadFunc(T* data);
 
             /// Lock free task queues
-            moodycamel::ConcurrentQueue<ThreadPoolTaskProcs<T>> mTasks; ///< Holds tasks to execute
+            moodycamel::BlockingConcurrentQueue<ThreadPoolTaskProcs<T>> mTasks; ///< Holds tasks to execute
             moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs; ///< Contains functions to run on main thread after complete
-            std::atomic<bool> mStop = false;
+            std::atomic_bool mStop = false;
            
-            bool m_isInitialized = false; ///< true when the pool has been initialized
             std::vector<WorkerThread*> m_workers; ///< All the worker threads
         };
 
