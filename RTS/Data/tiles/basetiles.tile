@@ -7,3 +7,5 @@ rock1:
   col: 1
 bricks1:
   tex: bricks1
+water:
+  tex: water

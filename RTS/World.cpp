@@ -245,6 +245,10 @@ void World::updateSun() {
 
 bool World::updateChunk(Chunk& chunk) {
 	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
+		if (chunk.mRefCount) {
+			// Waiting on a thread to free us
+			return false;
+		}
 		// Unload
 		return true;
 	}
@@ -330,12 +334,13 @@ void World::initChunk(Chunk& chunk, ChunkID chunkId) {
 }
 
 void World::generateChunkAsync(Chunk& chunk) {
-
+	chunk.incRef();
 	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
         mChunkGenerator->GenerateChunk(chunk);
     }, [&]() {
         chunk.mState = ChunkState::FINISHED;
 		updateChunkNeighbors(chunk);
+		chunk.decRef();
     });
 }
 

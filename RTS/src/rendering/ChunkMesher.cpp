@@ -5,6 +5,7 @@
 
 #include "world/Chunk.h"
 #include "rendering/QuadMesh.h"
+#include "Random.h"
 #include <Vorb/graphics/SamplerState.h>
 
 constexpr int MAX_CONCURRENT_MESH_TASKS = 10;
@@ -206,7 +207,19 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     // Need to increase depth to bring walls in line with roofs for depth, since walls are shorter than 1.0
     static constexpr float WALL_Y_DEPTH_MULT = 1.333333333f;
     static constexpr float SHADOW_MULT = 0.5f;
-    static constexpr float EPSILON = 0.01f;
+    static constexpr float EPSILON = 0.001f;
+
+    f32v4 adjustedUvs;
+    if ((spriteData.flags & SPRITEDATA_RAND_FLIP) && Random::getThreadSafef(position.x, position.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z;
+        adjustedUvs.y = uvs.y;
+        adjustedUvs.z = -uvs.z;
+        adjustedUvs.w = uvs.w;
+    }
+    else {
+        adjustedUvs = uvs;
+    }
 
     // Otherwise shadows break
     assert(spriteData.dimsMeters.x <= 6.0f && spriteData.dimsMeters.y <= 6.0f);
@@ -222,6 +235,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     ui8 bottomHeight = 0;
     color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
     color4 bottomColor;
+    float topRightDepthAdjust = 0.0f;
     // TODO: Encode height in the tile data, not as a guess
     switch (shape) {
         case THIN: {
@@ -230,6 +244,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
             bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
             shadowTop = true;
             topHeight = ui8(spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * HEIGHT_SCALE);
+            topRightDepthAdjust = EPSILON;
             break;
         }
         case THICK: {
@@ -267,8 +282,8 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
         vbl.pos.x = position.x + xOffset;
         vbl.pos.y = position.y;
         vbl.pos.z = bottomDepth;
-        vbl.uvs.x = uvs.x;
-        vbl.uvs.y = uvs.y + uvs.w;
+        vbl.uvs.x = adjustedUvs.x;
+        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbl.color = bottomColor;
         vbl.atlasPage = spriteData.atlasPage;
         vbl.shadowEnabled = shadowBottom;
@@ -279,8 +294,8 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
         vbr.pos.x = position.x + spriteData.dimsMeters.x + xOffset + EPSILON;
         vbr.pos.y = position.y;
         vbr.pos.z = bottomDepth;
-        vbr.uvs.x = uvs.x + uvs.z;
-        vbr.uvs.y = uvs.y + uvs.w;
+        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbr.color = bottomColor;
         vbr.atlasPage = spriteData.atlasPage;
         vbr.shadowEnabled = shadowBottom;
@@ -291,8 +306,8 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
         vtl.pos.x = position.x + xOffset;
         vtl.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
         vtl.pos.z = topDepth;
-        vtl.uvs.x = uvs.x;
-        vtl.uvs.y = uvs.y;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
         vtl.color = topColor;
         vtl.atlasPage = spriteData.atlasPage;
         vtl.shadowEnabled = shadowTop;
@@ -302,9 +317,9 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
         TileVertex& vtr = verts[3];
         vtr.pos.x = position.x + spriteData.dimsMeters.x + xOffset + EPSILON;
         vtr.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
-        vtr.pos.z = topDepth;
-        vtr.uvs.x = uvs.x + uvs.z;
-        vtr.uvs.y = uvs.y;
+        vtr.pos.z = topDepth + topRightDepthAdjust; // Epsilon to prevent Z fighting with trees
+        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vtr.uvs.y = adjustedUvs.y;
         vtr.color = topColor;
         vtr.atlasPage = spriteData.atlasPage;
         vtr.shadowEnabled = shadowTop;
@@ -325,8 +340,8 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mBaseDirty = false;
     chunk.mChunkRenderData.mLODDirty = false;
+    chunk.incRef();
     
-    // TODO we will crash if chunk is deallocated during this, need a refcount
     Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
         ChunkRenderData& renderData = chunk.mChunkRenderData;
         const i32v2& pos = chunk.getChunkPos();
@@ -441,6 +456,7 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
         glGenerateMipmap(GL_TEXTURE_2D);
 
         --mNumMeshTasksRunning;
+        chunk.decRef();
     });
 }
 
@@ -454,6 +470,7 @@ void ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
     ++mNumMeshTasksRunning;
     chunk.mChunkRenderData.mIsBuildingMesh = true;
     chunk.mChunkRenderData.mLODDirty = false;
+    chunk.incRef();
 
     // TODO: We have a race condition if the chunk goes out of memory
     Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
@@ -492,6 +509,7 @@ void ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
         vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
         glGenerateMipmap(GL_TEXTURE_2D);
         --mNumMeshTasksRunning;
+        chunk.decRef();
     });
 }
 

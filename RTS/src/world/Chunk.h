@@ -125,6 +125,14 @@ public:
         mChunkRenderData.mBaseDirty = true;
 	}
 
+	void incRef() const {
+		++mRefCount;
+	}
+
+	void decRef() const {
+		--mRefCount;
+	}
+
 private:
 
 	void setTileFromGeneration(TileIndex i, TileID tileId, TileLayer layer) {
@@ -134,6 +142,9 @@ private:
 	ChunkID mChunkId;
 	Tile mTiles[CHUNK_SIZE];
 	ChunkState mState = ChunkState::WAITING_FOR_INIT;
+
+	// Refcount for threading
+	mutable ui8 mRefCount = 0;
 
 	union {
 		struct {

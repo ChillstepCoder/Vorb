@@ -20,6 +20,7 @@ KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
     kt.addValue("dims_meters", keg::Value::basic(offsetof(SpriteMetaData, dimsMeters), keg::BasicType::F32_V2));
     kt.addValue("name", keg::Value::basic(offsetof(SpriteMetaData, name), keg::BasicType::STRING));
     kt.addValue("lod_color", keg::Value::basic(offsetof(SpriteMetaData, lodColor), keg::BasicType::UI8_V3));
+    kt.addValue("rand_flip", keg::Value::basic(offsetof(SpriteMetaData, randFlip), keg::BasicType::BOOL));
 }
 
 KEG_TYPE_DEF(SpritesheetFileData, SpritesheetFileData, kt) {
@@ -64,6 +65,9 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         sprite.texture = mTextureAtlas.getAtlasTexture();
         sprite.dimsMeters = metaData.dimsMeters;
         sprite.lodColor = metaData.lodColor;
+        if (metaData.randFlip) {
+            sprite.flags |= SPRITEDATA_RAND_FLIP;
+        }
 
         // Determine how many tiles we need to map to the atlas, by finding the AABB in tile units
         // TODO: Ensure this is correct usage of pixelRect.zw
