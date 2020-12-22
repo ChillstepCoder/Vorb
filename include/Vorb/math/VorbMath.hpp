@@ -64,11 +64,11 @@ namespace vorb {
     namespace math {
         /*! @brief Computes the dot product of two values.
         */
-        template <typename T>
+        /*template <typename T>
         inline T dot(T x, T y) {
             static_assert(std::numeric_limits<T>::is_iec559, "'dot' only accept floating-point inputs.");
             return x * y;
-        }
+        }*/
         /*! @brief Computes the square root of a number.
         */
         template <typename T>

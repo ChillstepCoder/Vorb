@@ -26,7 +26,7 @@ struct Tile {
 	};
 };
 
-enum TileShape {
+enum class TileShape {
     FLOOR, // Ground level, no shadow
 	THIN,  // Trees
     THICK, // Solid walls
@@ -35,9 +35,17 @@ enum TileShape {
 };
 KEG_ENUM_DECL(TileShape);
 
+enum class TileCollisionShape {
+	NONE,
+	BOX,
+	SMALL_CIRCLE,
+	MEDIUM_CIRCLE,
+	COUNT
+};
+
 struct TileData {
     SpriteData spriteData;
-    ui16 collisionBits = 0;
+	TileCollisionShape collisionShape = TileCollisionShape::NONE;
     ui8v2 dims = ui8v2(1); // 4x4 is max size
 	ui8 rootPos = 0;
 	std::string name;
@@ -49,10 +57,10 @@ KEG_TYPE_DECL(TileData);
 class TileRepository {
 	friend class ResourceManager;
 public:
-	static TileData getTileData(TileID tileId) {
+	static const TileData& getTileData(TileID tileId) {
 		return sTileData[tileId];
 	}
-	static TileData getTileData(const std::string& name) {
+	static const TileData& getTileData(const std::string& name) {
 		// TOOD: Hashed string and error handling
 		TileID id = sTileIdMapping[name];
 		return sTileData[id];

@@ -166,9 +166,9 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
 
 
-    //mEcsRenderer->renderPhysicsDebug(*m_camera2D);
+    //mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderCharacterModels(camera);
+    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f);
 
     // Particles
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
@@ -237,6 +237,9 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // *** Post processes ***
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
+
+    // Render characters that are behind geometry with some transparency
+    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.25f);
 
      // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...

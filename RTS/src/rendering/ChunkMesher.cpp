@@ -238,7 +238,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     float topRightDepthAdjust = 0.0f;
     // TODO: Encode height in the tile data, not as a guess
     switch (shape) {
-        case THIN: {
+        case TileShape::THIN: {
             topDepth += spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT;
             // This is actually fake ambient occlusion
             bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
@@ -247,7 +247,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
             topRightDepthAdjust = EPSILON;
             break;
         }
-        case THICK: {
+        case TileShape::THICK: {
             topDepth += spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * WALL_HEIGHT;
             // This is actually fake ambient occlusion
             bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
@@ -255,7 +255,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
             topHeight = ui8(spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * HEIGHT_SCALE * WALL_HEIGHT);
             break;
         }
-        case ROOF: {
+        case TileShape::ROOF: {
             bottomDepth += WALL_HEIGHT;
             topDepth += WALL_HEIGHT;
             bottomColor = topColor;
@@ -266,7 +266,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
             bottomHeight = topHeight;
             break;
         }
-        case FLOOR: {
+        case TileShape::FLOOR: {
             bottomColor = topColor;
             break;
         }
@@ -275,7 +275,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
             break;
         }
     }
-    static_assert(TileShape::COUNT == 4, "Update for new shape");
+    static_assert((int)TileShape::COUNT == 4, "Update for new shape");
 
     { // Bottom Left
         TileVertex& vbl = verts[0];

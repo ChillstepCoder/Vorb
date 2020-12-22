@@ -44,7 +44,7 @@ extern float Random::getCachedRandomf() {
 }
 
 extern ui32 Random::getThreadSafe(ui32 x, ui32 y) {
-    ui32 a = x ^ (y << 8);
+    ui32 a = x * 2366207 + y * 2745229 - 23747;
     a = (a ^ 61) ^ (a >> 16);
     a = a + (a << 3);
     a = a ^ (a >> 4);
@@ -54,7 +54,8 @@ extern ui32 Random::getThreadSafe(ui32 x, ui32 y) {
 };
 
 extern float Random::getThreadSafef(ui32 x, ui32 y) {
-    return getThreadSafe(x, y) / (float)UINT_MAX;
+    // random large prime
+    return (getThreadSafe(x, y) % 6421343) / 6421343.0f;
 }
 
 Random::RandomPermutationTable::RandomPermutationTable(unsigned count) :

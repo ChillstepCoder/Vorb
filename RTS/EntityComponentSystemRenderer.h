@@ -4,6 +4,7 @@
 #include <Vorb/graphics/Texture.h>
 
 DECL_VG(class SpriteBatch)
+DECL_VG(class DepthState)
 
 class Camera2D;
 class PhysicsSystem;
@@ -17,7 +18,7 @@ public:
 	EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world);
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
-	void renderCharacterModels(const Camera2D& camera);
+	void renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, float alpha);
 	void renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer);
 
 private:

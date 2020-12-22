@@ -5,6 +5,6 @@
 
 class CharacterRenderer {
 public:
-	static void render(vg::SpriteBatch& sb, const CharacterModel& model, const f32v2& pos, float angle);
+	static void render(vg::SpriteBatch& sb, const CharacterModel& model, const f32v2& pos, float angle, float alpha);
 };
 

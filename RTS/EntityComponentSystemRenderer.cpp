@@ -52,18 +52,18 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
 }
 
-void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera) {
+void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, float alpha) {
 	mSpriteBatch->begin();
 
     auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this](auto& physCmp, auto& modelCmp) {
+	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, physCmp.getPosition(), rotation);
+		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, physCmp.getPosition(), rotation, alpha);
 	});
 
 	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
+	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &depthState);
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer) {

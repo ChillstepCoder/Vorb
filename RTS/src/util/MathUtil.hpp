@@ -2,6 +2,7 @@
 
 #define DEG_TO_RAD(x) ((x) * M_PIf / 180.0f)
 #define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
+#define SQ(x) ((x) * (x))
 
 namespace MathUtil {
     inline f32v2 RotateVector(float x, float y, float angleDeg) {

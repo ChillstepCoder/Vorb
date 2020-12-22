@@ -22,10 +22,16 @@ public:
 	PhysicsComponent(World& world, const f32v2& centerPosition, bool isStatic);
 	void addCollider (entt::entity entityId, ColliderShapes shape, const float halfWidth);
 
+    void setPosition(const f32v2& pos) {
+        mBody->SetTransform(reinterpret_cast<const b2Vec2&>(pos), mBody->GetAngle());
+    }
+	void setLinearVelocity(const f32v2& vel) {
+		mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(vel));
+	}
+
 	const f32v2& getPosition() const {
 		return reinterpret_cast<const f32v2&>(mBody->GetPosition());
 	}
-
 	const f32v2& getLinearVelocity() const {
 		return reinterpret_cast<const f32v2&>(mBody->GetLinearVelocity());
 	}
