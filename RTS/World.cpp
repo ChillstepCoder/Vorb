@@ -34,10 +34,12 @@
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
+constexpr float CHUNKS_LOAD_RANGE_MULT = 54.0f;
+
 #ifdef USE_SMALL_CHUNK_WIDTH
-const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 24.0f;
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;
 #else
-const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 12.0f;
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 #endif
 
 World::World(ResourceManager& resourceManager) :
@@ -107,11 +109,11 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
     mEcs->update(deltaTime, mClientEcsData);
 }
 
-Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
-	return getChunkAtPosition(ChunkID(worldPos));
+Chunk* World::tryGetChunkAtPosition(const f32v2& worldPos) {
+	return tryGetChunkAtPosition(ChunkID(worldPos));
 }
 
-Chunk* World::getChunkAtPosition(ChunkID chunkId) {
+Chunk* World::tryGetChunkAtPosition(ChunkID chunkId) {
     auto&& it = mChunks.find(chunkId);
     if (it != mChunks.end()) {
         return it->second.get();
@@ -120,7 +122,7 @@ Chunk* World::getChunkAtPosition(ChunkID chunkId) {
     return nullptr;
 }
 
-const Chunk* World::getChunkAtPosition(ChunkID chunkId) const {
+const Chunk* World::tryGetChunkAtPosition(ChunkID chunkId) const {
     const auto&& it = mChunks.find(chunkId);
     if (it != mChunks.end()) {
         return it->second.get();
@@ -154,7 +156,7 @@ TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2
 
 TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 	TileHandle handle;
-	handle.chunk = getChunkAtPosition(worldPos);
+	handle.chunk = tryGetChunkAtPosition(worldPos);
 	if (handle.chunk && handle.chunk->getState() == ChunkState::FINISHED) {
 		unsigned x = (unsigned)floor(worldPos.x) & (CHUNK_WIDTH - 1); // Fast modulus
 		unsigned y = (unsigned)floor(worldPos.y) & (CHUNK_WIDTH - 1); // Fast modulus
@@ -165,34 +167,72 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 	return TileHandle();
 }
 
-// TODO: Pass in lambda so we dont keep recalculating all these constants? Profile this.
-bool World::enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT const Chunk** chunk) const {
-	// TODO: Can we cache this conversion?
+void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
+{
     const f32v2 bottomLeftCorner = camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight()));
-    const ChunkID bottomLeftPosition(bottomLeftCorner);
+    const ChunkID bottomLeftID(bottomLeftCorner);
 
-	// Start case
-    if (enumerator.id == CHUNK_ID_INVALID) {
-		enumerator = bottomLeftPosition;
-    }
+	ChunkID enumerator = bottomLeftID;
+   
+    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
+    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
+    const int widthInChunks = (int)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+    const int heightInChunks = (int)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
 
-	const float scaledWidth = camera.getScreenWidth() / camera.getScale();
-	const float scaledHeight = camera.getScreenHeight() / camera.getScale();
-	const int widthInChunks = (int)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
-	const int heightInChunks = (int)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+    const Chunk* chunk;
+	while (true) {
 
-	if (enumerator.pos.x - bottomLeftPosition.pos.x > widthInChunks) {
-		enumerator.pos.x -= widthInChunks + 1;
-		++enumerator.pos.y;
+		if (enumerator.pos.x - bottomLeftID.pos.x > widthInChunks) {
+			enumerator.pos.x -= widthInChunks + 1;
+			++enumerator.pos.y;
+		}
+		if (enumerator.pos.y - bottomLeftID.pos.y > heightInChunks) {
+			// Off screen
+			return;
+		}
+
+		if (chunk = tryGetChunkAtPosition(enumerator)) {
+			func(*chunk);
+		}
+		++enumerator.pos.x;
 	}
-	if (enumerator.pos.y - bottomLeftPosition.pos.y > heightInChunks) {
-		// Off screen
-		return false;
-	}
-	
-	*chunk = getChunkAtPosition(enumerator);
-	++enumerator.pos.x;
-	return true;
+}
+
+void World::enumVisibleChunksSpiral(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
+{
+    const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), camera.getScreenHeight() / 2.0f));
+    const ChunkID centerID(center);
+
+    ChunkID enumerator = centerID;
+
+    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
+    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
+    const int widthInChunks = (int)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+    const int heightInChunks = (int)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+
+    const Chunk* chunk;
+
+	int x = 0;
+	int y = 0;
+	int dx = 1;
+	int dy = 0;
+
+    //while (true) {
+
+    //    if (enumerator.pos.x - bottomLeftPosition.pos.x > widthInChunks) {
+    //        enumerator.pos.x -= widthInChunks + 1;
+    //        ++enumerator.pos.y;
+    //    }
+    //    if (enumerator.pos.y - bottomLeftPosition.pos.y > heightInChunks) {
+    //        // Off screen
+    //        return;
+    //    }
+
+    //    if (chunk = tryGetChunkAtPosition(enumerator)) {
+    //        func(*chunk);
+    //    }
+    //    ++enumerator.pos.x;
+    //}
 }
 
 void World::updateClientEcsData(const Camera2D& camera) {

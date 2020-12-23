@@ -29,7 +29,7 @@ struct ChunkID {
 
 	ChunkID() : id(CHUNK_ID_INVALID) {}
 	ChunkID(const ChunkID& other) { *this = other; }
-	ChunkID(i64 id) : id(id) {};
+	ChunkID(ui64 id) : id(id) {};
 	ChunkID(const i32v2& pos) : pos(pos) {};
 	ChunkID(i32v2&& pos) : pos(pos) {};
 	ChunkID(const f32v2 worldPos);
@@ -39,6 +39,7 @@ struct ChunkID {
 	bool operator!=(const ChunkID& other) const { return id != other.id; }
 	void operator=(const ChunkID& other) { id = other.id; }
 	void operator=(ChunkID&& other) noexcept { id = other.id; }
+	bool operator==(const ChunkID& other) const { return id == other.id; }
 
 	f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
 	ChunkID getLeftID() const { return ChunkID(i32v2(pos.x - 1, pos.y)); }
@@ -49,7 +50,7 @@ struct ChunkID {
 	// Data
 	union {
 		i32v2 pos;
-		i64 id;
+		ui64 id;
 	};
 };
 
@@ -106,7 +107,7 @@ public:
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
-	bool canRender() const { return isDataReady() && mDataReadyNeighborCount == 4; }
+	bool isFinished() const { return isDataReady() && mDataReadyNeighborCount == 4; }
 
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);

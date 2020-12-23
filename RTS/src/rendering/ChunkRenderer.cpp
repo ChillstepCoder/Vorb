@@ -52,23 +52,30 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
     ChunkID chunkId;
     const Chunk* chunk;
 
-    while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
-        if (chunk && chunk->canRender()) {
-            Render(*chunk, camera, lod);
+
+    // TODO: REMOVE
+    PreciseTimer timer;
+    timer.start();
+    int i = 0;
+
+    world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+        ++i;
+        if (chunk.isFinished()) {
+            Render(chunk, camera, lod);
         }
-    }
+    });
+    f64 total = timer.stop();
+    std::cout << "ENUMERATE " << i << " " << total << std::endl;
 
 }
 
 void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camera)
 {
-    ChunkID chunkId;
-    const Chunk* chunk;
-    while (world.enumVisibleChunks(camera, chunkId, &chunk)) {
-        if (chunk && chunk->canRender()) {
-            RenderShadows(*chunk, camera);
+    world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+        if (chunk.isFinished()) {
+            RenderShadows(chunk, camera);
         }
-    }
+    });
 }
 
 void ChunkRenderer::Render(const Chunk& chunk, const Camera2D& camera, ChunkRenderLOD lod) {

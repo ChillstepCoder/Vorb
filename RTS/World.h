@@ -44,9 +44,9 @@ public:
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 
 	// Internal public interface
-    Chunk* getChunkAtPosition(const f32v2& worldPos);
-    Chunk* getChunkAtPosition(ChunkID chunkId);
-    const Chunk* getChunkAtPosition(ChunkID chunkId) const;
+    Chunk* tryGetChunkAtPosition(const f32v2& worldPos);
+    Chunk* tryGetChunkAtPosition(ChunkID chunkId);
+    const Chunk* tryGetChunkAtPosition(ChunkID chunkId) const;
 	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
 	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
 
@@ -57,7 +57,8 @@ public:
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 
-	bool enumVisibleChunks(const Camera2D& camera, OUT ChunkID& enumerator, OUT const Chunk** chunk) const;
+    void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
+    void enumVisibleChunksSpiral(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
 	void updateClientEcsData(const Camera2D& camera);
@@ -108,7 +109,7 @@ private:
 	f32v3 mSunColor = f32v3(1.0f);
 
 	bool mDirty = true;
-	// TODO: Chunk paging for cache performance on updates
+	// TODO: Chunk paging for cache performance on updates?
 	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
 };
 

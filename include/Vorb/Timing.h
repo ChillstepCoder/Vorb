@@ -33,6 +33,7 @@ public:
         start();
     }
     void start();
+    /// Returns time in MS
     f64 stop();
 
     const bool& isRunning() const {

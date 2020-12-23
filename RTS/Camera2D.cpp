@@ -31,9 +31,9 @@ void Camera2D::update() {
     // Only update if our position or scale have changed
 	if (_needsMatrixUpdate) {
 
-		// Round for fixing grid issues
+		// Round for fixing pixel grid issues when zoomed in
         float roundScale = _scale;
-        if (_scale > 20.0f) {
+        if (_scale > 25.0f) {
             roundScale = round(roundScale);
         }
 

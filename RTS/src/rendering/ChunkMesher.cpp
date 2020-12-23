@@ -200,6 +200,25 @@ ChunkMesher::~ChunkMesher()
     }
 }
 
+void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
+    if (!renderData.mLODTexture) {
+        glGenTextures(1, &renderData.mLODTexture);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
+    // Compressed
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, pixelData);
+
+    // Set up tex parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void addQuad(TileVertex* verts, TileShape shape, f32v2 position, const SpriteData& spriteData, const f32v4& uvs, float extraHeight) {
     // Center the sprite
     const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
@@ -208,7 +227,7 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, const SpriteDat
     // Need to increase depth to bring walls in line with roofs for depth, since walls are shorter than 1.0
     static constexpr float WALL_Y_DEPTH_MULT = 1.333333333f;
     static constexpr float SHADOW_MULT = 0.5f;
-    static constexpr float EPSILON = 0.001f;
+    static constexpr float EPSILON = 0.005f;
 
     f32v4 adjustedUvs;
     if ((spriteData.flags & SPRITEDATA_RAND_FLIP) && Random::getThreadSafef(position.x, position.y) > 0.5f) {
@@ -437,25 +456,18 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
         if (!renderData.mChunkMesh) {
             renderData.mChunkMesh = std::make_unique<QuadMesh>();
         }
-
         QuadMesh& mesh = *renderData.mChunkMesh;
         mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture());
         meshData->mTileVertices.clear();
 
+        // LOD
+        uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
+
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
-        renderData.mIsBuildingMesh = false;
+        chunk.mChunkRenderData.mIsBuildingMesh = false;
 
-        // LOD
-        if (!renderData.mLODTexture) {
-            glGenTextures(1, &renderData.mLODTexture);
-        }
-
-        glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, meshData->mLODTexturePixelBuffer);
-        vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
+        // Update refcount
         --mNumMeshTasksRunning;
         chunk.decRef();
     });
@@ -497,18 +509,14 @@ void ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
+        // LOD
+        uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
+
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
         chunk.mChunkRenderData.mIsBuildingMesh = false;
 
-        if (!renderData.mLODTexture) {
-            glGenTextures(1, &renderData.mLODTexture);
-        }
-
-        glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, meshData->mLODTexturePixelBuffer);
-        vg::SamplerState::POINT_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        // Update refcount
         --mNumMeshTasksRunning;
         chunk.decRef();
     });

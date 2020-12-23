@@ -150,7 +150,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // Clear screen
     vg::DepthState::FULL.set();
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // TODO: Remove color buffer clear, doing it just to reduce ghosting
 
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -207,29 +207,27 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     if (sDebugOptions.mChunkBoundaries) {
         ChunkID id;
         const Chunk* chunk;
-        while (mWorld.enumVisibleChunks(camera, id, &chunk)) {
-            if (chunk) {
-                if (chunk->isDataReady()) {
-                    DebugRenderer::drawBox(chunk->getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
-                    color4 neighborColor(1.0f, 0.0f, 0.0f);
-                    if (chunk->mNeighborBottom) {
-                        DebugRenderer::drawLine(chunk->getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, 0.0f), f32v2(0.0f, 6.0f), neighborColor);
-                    }
-                    if (chunk->mNeighborTop) {
-                        DebugRenderer::drawLine(chunk->getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, CHUNK_WIDTH), f32v2(0.0f, -6.0f), neighborColor);
-                    }
-                    if (chunk->mNeighborLeft) {
-                        DebugRenderer::drawLine(chunk->getWorldPos() + f32v2(0.0f, CHUNK_WIDTH * 0.5f), f32v2(6.0f, 0.0f), neighborColor);
-                    }
-                    if (chunk->mNeighborRight) {
-                        DebugRenderer::drawLine(chunk->getWorldPos() + f32v2(CHUNK_WIDTH, CHUNK_WIDTH * 0.5f), f32v2(-6.0f, 0.0f), neighborColor);
-                    }
+        mWorld.enumVisibleChunks(camera, [](const Chunk& chunk) {
+            if (chunk.isDataReady()) {
+                DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
+                color4 neighborColor(1.0f, 0.0f, 0.0f);
+                if (chunk.mNeighborBottom) {
+                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, 0.0f), f32v2(0.0f, 6.0f), neighborColor);
                 }
-                else {
-                    DebugRenderer::drawBox(chunk->getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 0.0f));
+                if (chunk.mNeighborTop) {
+                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, CHUNK_WIDTH), f32v2(0.0f, -6.0f), neighborColor);
+                }
+                if (chunk.mNeighborLeft) {
+                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(0.0f, CHUNK_WIDTH * 0.5f), f32v2(6.0f, 0.0f), neighborColor);
+                }
+                if (chunk.mNeighborRight) {
+                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH, CHUNK_WIDTH * 0.5f), f32v2(-6.0f, 0.0f), neighborColor);
                 }
             }
-        }
+            else {
+                DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 0.0f));
+            }
+        });
     }
 
     DebugRenderer::renderLines(camera.getCameraMatrix());

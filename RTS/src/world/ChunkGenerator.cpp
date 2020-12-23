@@ -26,31 +26,41 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     static TileID smallTree = TileRepository::getTile("tree_small");
     static TileID water = TileRepository::getTile("water");
 
+    constexpr f64 CONTINENT_RADIUS = 6000.0;
+    constexpr f64 CONTINENT_RADIUS_SQ = SQ(CONTINENT_RADIUS);
+
     const f32v2& chunkPosWorld = chunk.getWorldPos();
     for (int y = 0; y < CHUNK_WIDTH; ++y) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             TileID tile = grass1;
             TileIndex index(x, y);
-            const f64 height = -Noise::fractal(OCTAVES, PERSISTENCE, FREQUENCY, (f64)x + (f64)chunkPosWorld.x + START_OFFSET, (f64)y + (f64)chunkPosWorld.y + START_OFFSET);
+            f64 height = -Noise::fractal(OCTAVES, PERSISTENCE, FREQUENCY, (f64)x + (f64)chunkPosWorld.x + START_OFFSET, (f64)y + (f64)chunkPosWorld.y + START_OFFSET);
             
-            const f32v2 offsetToCenter = chunkPosWorld + f32v2(CHUNK_WIDTH / 2);
-            constexpr f32 CONTINENT_RADIUS = 100.0f;
+            f32v2 offsetToCenter(
+                chunkPosWorld.x + x + HALF_CHUNK_WIDTH,
+                chunkPosWorld.y + y + HALF_CHUNK_WIDTH
+            );
+
+            const f64 distanceFromCenter2 = glm::length2(offsetToCenter);
+            if (distanceFromCenter2 > CONTINENT_RADIUS_SQ) {
+                height -= (distanceFromCenter2 - CONTINENT_RADIUS_SQ) * 0.0000001;
+            }
 
             
             if (height > 0.3) {
                 tile = rock1;
             }
-            else if (height < -0.25) {
+            else if (height < -0.45) {
                 tile = water;
             }
             else if (height < -0.1 || height > 0.1) {
-                if (Random::getThreadSafef(x, y) > 0.95f) {
+                if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.95f) {
                     chunk.setTileFromGeneration(index, smallTree, TileLayer::Mid);
                 }
             }
             else {
                 tile = grass2;
-                if (Random::getThreadSafef(x, y) > 0.6f) {
+                if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.6f) {
                     chunk.setTileFromGeneration(index, bigTree, TileLayer::Mid);
                 }
             }

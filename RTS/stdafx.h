@@ -89,20 +89,20 @@ struct b2Vec2;
 // #define USE_SMALL_CHUNK_WIDTH
 
 #ifdef USE_SMALL_CHUNK_WIDTH
-const int CHUNK_WIDTH = 64;
+constexpr int CHUNK_WIDTH = 64;
 static_assert(CHUNK_WIDTH == 64, "Adjust bitwise operators below");
 #define TILE_INDEX_Y_SHIFT 6
 #define TILE_INDEX_X_MASK 0x3f
 #else
-const int CHUNK_WIDTH = 128;
+constexpr int CHUNK_WIDTH = 128;
 static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
 #define TILE_INDEX_Y_SHIFT 7
 #define TILE_INDEX_X_MASK 0x7f
 #endif
 
-const int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
-const int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
-const ui16 INVALID_TILE_INDEX = 0xffff;
+constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
+constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
+constexpr ui16 INVALID_TILE_INDEX = 0xffff;
 
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};

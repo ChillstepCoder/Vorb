@@ -110,7 +110,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 1.0f, 1020.f);
+		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.09f, 1020.f);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -237,9 +237,8 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, const vui::GameTime
 
     // TODO: Delta time dependent?
     // Zoom
-    const float roundedTarget = round(mTargetScale);
-    if (abs(roundedTarget - mScale) > 0.001f) {
-        mScale = vmath::lerp(mScale, roundedTarget, 0.3f);
+    if (abs(mTargetScale - mScale) > 0.001f) {
+        mScale = vmath::lerp(mScale, mTargetScale, 0.3f);
         mCamera2D->setScale(mScale);
     }
 	const float cameraHeight = 1.0f / mScale * 1000.0f; // Height in meters
