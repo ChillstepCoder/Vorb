@@ -36,8 +36,9 @@ namespace vorb {
          */
         struct GameTime {
         public:
-            UNIT_SPACE(SECONDS) f64 total; ///< Total time since the update/draw loop started.
-            UNIT_SPACE(SECONDS) f64 elapsed; ///< Elapsed time of the previous frame.
+            f64 totalSec; ///< Total time since the update/draw loop started.
+            f64 elapsedSec; ///< Elapsed time of the previous frame.
+            f32 deltaTime;
         };
         
         /*! @brief An entry point for an graphical application.

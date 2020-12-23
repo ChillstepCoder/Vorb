@@ -166,7 +166,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
 
 
-    //mEcsRenderer->renderPhysicsDebug(camera);
+    mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f);
 
@@ -239,9 +239,9 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.25f);
+    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.20f);
 
-     // Final Pass through process
+    // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
     if (mPassthroughRenderMode != 0) {
         const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];

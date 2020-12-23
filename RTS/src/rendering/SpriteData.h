@@ -22,8 +22,9 @@ struct SpriteData {
 
     const bool isValid() const { return texture != 0; }
 
-    f32v4 uvs = f32v4(0, 0, 1, 1);
-    f32v2 dimsMeters = f32v2(1, 1);
+    f32v4 uvs = f32v4(0.0f, 0.0f, 1.0f, 1.0f);
+    f32v2 dimsMeters = f32v2(1.0f, 1.0f);
+    f32v2 offset = f32v2(0.0f);
     VGTexture texture = 0;
     TileTextureMethod method = TileTextureMethod::SIMPLE;
     ui16 atlasPage = 0;

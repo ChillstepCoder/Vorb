@@ -35,9 +35,9 @@
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 #ifdef USE_SMALL_CHUNK_WIDTH
-const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 20.0f;
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 24.0f;
 #else
-const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 10.0f;
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * 12.0f;
 #endif
 
 World::World(ResourceManager& resourceManager) :

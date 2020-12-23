@@ -4,7 +4,7 @@ grass2:
   tex: grass2
 rock1:
   tex: con_squash
-  col: 1
+  col: box
 bricks1:
   tex: bricks1
 water:

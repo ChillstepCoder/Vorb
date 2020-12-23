@@ -31,14 +31,19 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             TileID tile = grass1;
             TileIndex index(x, y);
-            const f64 n = Noise::fractal(OCTAVES, PERSISTENCE, FREQUENCY, (f64)x + (f64)chunkPosWorld.x + START_OFFSET, (f64)y + (f64)chunkPosWorld.y + START_OFFSET);
-            if (n < -0.3) {
+            const f64 height = -Noise::fractal(OCTAVES, PERSISTENCE, FREQUENCY, (f64)x + (f64)chunkPosWorld.x + START_OFFSET, (f64)y + (f64)chunkPosWorld.y + START_OFFSET);
+            
+            const f32v2 offsetToCenter = chunkPosWorld + f32v2(CHUNK_WIDTH / 2);
+            constexpr f32 CONTINENT_RADIUS = 100.0f;
+
+            
+            if (height > 0.3) {
                 tile = rock1;
             }
-            else if (n > 0.25) {
+            else if (height < -0.25) {
                 tile = water;
             }
-            else if (n > 0.1 || n < -0.1) {
+            else if (height < -0.1 || height > 0.1) {
                 if (Random::getThreadSafef(x, y) > 0.95f) {
                     chunk.setTileFromGeneration(index, smallTree, TileLayer::Mid);
                 }

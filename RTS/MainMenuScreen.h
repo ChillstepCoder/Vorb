@@ -36,6 +36,8 @@ public:
 
 private:
 
+	void updateCamera(const f32v2& targetCenter, const vui::GameTime& gameTime);
+
     std::unique_ptr<ResourceManager> mResourceManager;
 	std::unique_ptr<World> mWorld;
 	vg::Texture mCircleTexture;
@@ -50,6 +52,10 @@ private:
 
 	f32v2 mTestClick = f32v2(0.0f);
 	entt::entity mPlayerEntity = (entt::entity)0;
+
+	// Camera
+	f32v2 mTargetCameraPosition = f32v2(0.0f);
+	f32v2 mCameraVelocity = f32v2(0.0f);
 
 };
 

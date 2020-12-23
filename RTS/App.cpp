@@ -34,7 +34,7 @@ void App::onExit() {
 
 void App::refreshElapsedTime() {
 	vui::MainGame::refreshElapsedTime();
-	sTotalTimeSeconds = m_curTime.total;
+	sTotalTimeSeconds = m_curTime.totalSec;
 	// Loss of precision here should be fine
-	sElapsedSecondsSinceLastFrame = (f32)m_curTime.elapsed;
+	sElapsedSecondsSinceLastFrame = (f32)m_curTime.elapsedSec;
 }

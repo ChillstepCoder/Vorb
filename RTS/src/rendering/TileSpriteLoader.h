@@ -20,6 +20,7 @@ struct SpriteMetaData {
     f32v2 dimsMeters = f32v2(1.0f); // World size
     TileTextureMethod method = TileTextureMethod::SIMPLE;
     std::string name;
+    f32v2 offset = f32v2(0.0f);
     bool randFlip = false;
 };
 KEG_TYPE_DECL(SpriteMetaData);

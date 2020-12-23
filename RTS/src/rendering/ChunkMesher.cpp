@@ -200,9 +200,10 @@ ChunkMesher::~ChunkMesher()
     }
 }
 
-void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const SpriteData& spriteData, const f32v4& uvs, float extraHeight) {
+void addQuad(TileVertex* verts, TileShape shape, f32v2 position, const SpriteData& spriteData, const f32v4& uvs, float extraHeight) {
     // Center the sprite
-    const float xOffset = -(float)((spriteData.dimsMeters.x - 1) / 2);
+    const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
+    position += offset;
 
     // Need to increase depth to bring walls in line with roofs for depth, since walls are shorter than 1.0
     static constexpr float WALL_Y_DEPTH_MULT = 1.333333333f;
@@ -279,7 +280,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
 
     { // Bottom Left
         TileVertex& vbl = verts[0];
-        vbl.pos.x = position.x + xOffset;
+        vbl.pos.x = position.x;
         vbl.pos.y = position.y;
         vbl.pos.z = bottomDepth;
         vbl.uvs.x = adjustedUvs.x;
@@ -291,7 +292,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
-        vbr.pos.x = position.x + spriteData.dimsMeters.x + xOffset + EPSILON;
+        vbr.pos.x = position.x + spriteData.dimsMeters.x + EPSILON;
         vbr.pos.y = position.y;
         vbr.pos.z = bottomDepth;
         vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
@@ -303,7 +304,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
     { // Top Left
         TileVertex& vtl = verts[2];
-        vtl.pos.x = position.x + xOffset;
+        vtl.pos.x = position.x;
         vtl.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
         vtl.pos.z = topDepth;
         vtl.uvs.x = adjustedUvs.x;
@@ -315,7 +316,7 @@ void addQuad(TileVertex* verts, TileShape shape, const f32v2& position, const Sp
     }
     { // Top Right
         TileVertex& vtr = verts[3];
-        vtr.pos.x = position.x + spriteData.dimsMeters.x + xOffset + EPSILON;
+        vtr.pos.x = position.x + spriteData.dimsMeters.x + EPSILON;
         vtr.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
         vtr.pos.z = topDepth + topRightDepthAdjust; // Epsilon to prevent Z fighting with trees
         vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;

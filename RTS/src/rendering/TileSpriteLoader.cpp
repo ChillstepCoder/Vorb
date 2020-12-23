@@ -21,6 +21,7 @@ KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
     kt.addValue("name", keg::Value::basic(offsetof(SpriteMetaData, name), keg::BasicType::STRING));
     kt.addValue("lod_color", keg::Value::basic(offsetof(SpriteMetaData, lodColor), keg::BasicType::UI8_V3));
     kt.addValue("rand_flip", keg::Value::basic(offsetof(SpriteMetaData, randFlip), keg::BasicType::BOOL));
+    kt.addValue("offset", keg::Value::basic(offsetof(SpriteMetaData, offset), keg::BasicType::F32_V2));
 }
 
 KEG_TYPE_DEF(SpritesheetFileData, SpritesheetFileData, kt) {
@@ -65,6 +66,7 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         sprite.texture = mTextureAtlas.getAtlasTexture();
         sprite.dimsMeters = metaData.dimsMeters;
         sprite.lodColor = metaData.lodColor;
+        sprite.offset = metaData.offset;
         if (metaData.randFlip) {
             sprite.flags |= SPRITEDATA_RAND_FLIP;
         }

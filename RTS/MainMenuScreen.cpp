@@ -201,47 +201,15 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	// DEBUG Time advance
 	static constexpr float TIME_ADVANCE_MULT = 100.0f;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
-        sDebugOptions.mTimeOffset -= gameTime.elapsed * TIME_ADVANCE_MULT;
+        sDebugOptions.mTimeOffset -= gameTime.elapsedSec * TIME_ADVANCE_MULT;
     }
     else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
-        sDebugOptions.mTimeOffset += gameTime.elapsed * TIME_ADVANCE_MULT;
+        sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
     }
 
-	//static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
-	//f32v2 offset(0.0f);
-
-	// Camera movement
-	/*if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT) || vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
-		offset.x -= CAM_VELOCITY.x * deltaTime;
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT) || vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
-		offset.x += CAM_VELOCITY.x * deltaTime;
-	}
-
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_UP) || vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
-		offset.y += CAM_VELOCITY.x * deltaTime;
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_DOWN) || vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
-		offset.y -= CAM_VELOCITY.x * deltaTime;
-	}
-
-	if (offset.x != 0.0f || offset.y != 0.0f) {
-		mCamera2D->offsetPosition(offset);
-	}*/
-
-	// Camera follow
-
-
     const f32v2& playerPos = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity).getPosition();
-	const f32v2& offset = mWorld->getClientECSData().worldMousePos - playerPos;
-	mCamera2D->setPosition(playerPos + offset * 0.2f);
-	// TODO: Delta time dependent?
-	const float roundedTarget = round(mTargetScale);
-	if (abs(roundedTarget - mScale) > 0.001f) {
-		mScale = vmath::lerp(mScale, roundedTarget, 0.3f);
-		mCamera2D->setScale(mScale);
-	}
-	mCamera2D->update();
+
+	updateCamera(playerPos, gameTime);
 
 	mWorld->update(deltaTime, playerPos, *mCamera2D);
 
@@ -263,4 +231,55 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     mSb->end();
     mSb->render(mCamera2D->getScreenSize());*/
 	
+}
+
+void MainMenuScreen::updateCamera(const f32v2& targetCenter, const vui::GameTime& gameTime) {
+
+    // TODO: Delta time dependent?
+    // Zoom
+    const float roundedTarget = round(mTargetScale);
+    if (abs(roundedTarget - mScale) > 0.001f) {
+        mScale = vmath::lerp(mScale, roundedTarget, 0.3f);
+        mCamera2D->setScale(mScale);
+    }
+	const float cameraHeight = 1.0f / mScale * 1000.0f; // Height in meters
+
+    const f32v2& currentPos = mCamera2D->getPosition();
+
+    // Camera follow
+    const f32v2& offsetToMouse = mWorld->getClientECSData().worldMousePos - currentPos;
+    constexpr float LOOK_SCALE = 0.4f;
+    mTargetCameraPosition = targetCenter + offsetToMouse * LOOK_SCALE;
+
+	const f32v2 offsetToTarget = mTargetCameraPosition - currentPos;
+	const float distanceToTarget = glm::length(offsetToTarget);
+	const f32v2 normalToTarget = offsetToTarget / distanceToTarget;
+
+	constexpr float MAX_SPEED_MPS = 0.1f;
+	const f32 maxSpeed = MAX_SPEED_MPS * cameraHeight;
+    f32v2 maxTargetVelocity = normalToTarget * maxSpeed;
+
+    // How fast are we going in the correct direction?
+    const f32v2 projectedVelocity = (glm::dot(mCameraVelocity, maxTargetVelocity) / glm::length2(maxTargetVelocity)) * maxTargetVelocity;
+	const f32 projectedSpeed = glm::length(projectedVelocity);
+    
+    bool isDecelerating = false;
+    if (distanceToTarget < maxSpeed * 10.0f) {
+        maxTargetVelocity *= (distanceToTarget / (maxSpeed * 10.0f));
+        if (projectedSpeed >= glm::length(maxTargetVelocity)) {
+            isDecelerating = true;
+        }
+	}
+
+	// Smooth accelerate, abrupt decelerate
+	if (isDecelerating) {
+		mCameraVelocity = vmath::lerp(mCameraVelocity, maxTargetVelocity, 0.9f);
+	}
+	else {
+		mCameraVelocity = vmath::lerp(mCameraVelocity, maxTargetVelocity, 0.1f);
+    }
+
+    mCamera2D->setPosition(currentPos + mCameraVelocity);
+
+    mCamera2D->update();
 }
