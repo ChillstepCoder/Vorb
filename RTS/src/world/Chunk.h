@@ -50,7 +50,7 @@ struct ChunkID {
 
 	// Return true if we should never load
 	bool isSentinelID() const {
-		return pos.x == 0 || pos.y == 0 || pos.x == WorldData::WORLD_CHUNKS_WIDTH - 1 || pos.y == WorldData::WORLD_CHUNKS_WIDTH - 1;
+		return pos.x == 0 || pos.y == 0 || pos.x == WorldData::WORLD_WIDTH_CHUNKS - 1 || pos.y == WorldData::WORLD_WIDTH_CHUNKS - 1;
 	}
 
 	ui32v2 pos;
@@ -58,7 +58,7 @@ struct ChunkID {
 
 private:
 	inline void initIdFromPos() {
-		id = pos.y * WorldData::WORLD_CHUNKS_WIDTH + pos.x;
+		id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
 	}
 };
 
@@ -172,7 +172,7 @@ struct ChunkGrid {
     Chunk& operator[](ui32 i) { return chunks[i]; }
     const Chunk& operator[](ui32 i) const { return chunks[i]; }
 
-    ui32 size() const { return WorldData::WORLD_CHUNKS_SIZE; }
+    ui32 size() const { return WorldData::WORLD_SIZE_CHUNKS; }
 
-    Chunk chunks[WorldData::WORLD_CHUNKS_SIZE];
+    Chunk chunks[WorldData::WORLD_SIZE_CHUNKS];
 };

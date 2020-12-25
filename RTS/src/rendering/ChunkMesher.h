@@ -34,7 +34,7 @@ public:
 
     // Updatemesh?
     void createMeshAsync(const Chunk& chunk);
-    void createLODTextureAsync(const Chunk& chunk);
+    bool createLODTextureAsync(const Chunk& chunk);
 
 private:
 

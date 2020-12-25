@@ -158,7 +158,7 @@ Chunk& Chunk::getLeftNeighbor() const {
 }
 
 Chunk& Chunk::getTopNeighbor() const {
-    return mChunkGrid->operator[](mChunkId.id + WorldData::WORLD_CHUNKS_WIDTH);
+    return mChunkGrid->operator[](mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 Chunk& Chunk::getRightNeighbor() const {
@@ -166,17 +166,17 @@ Chunk& Chunk::getRightNeighbor() const {
 }
 
 Chunk& Chunk::getBottomNeighbor() const {
-    return mChunkGrid->operator[](mChunkId.id - WorldData::WORLD_CHUNKS_WIDTH);
+    return mChunkGrid->operator[](mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 ChunkID::ChunkID(const f32v2 worldPos) {
     assert(worldPos.x >= 0.0f && worldPos.y >= 0.0f);
 	pos = i32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
-    id = pos.y * WorldData::WORLD_CHUNKS_WIDTH + pos.x;
+    id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
 }
 
 ChunkID::ChunkID(ui32 id) : 
     id(id) { 
-    pos.x = id % WorldData::WORLD_CHUNKS_WIDTH;
-    pos.y = id / WorldData::WORLD_CHUNKS_WIDTH;
+    pos.x = id % WorldData::WORLD_WIDTH_CHUNKS;
+    pos.y = id / WorldData::WORLD_WIDTH_CHUNKS;
 };

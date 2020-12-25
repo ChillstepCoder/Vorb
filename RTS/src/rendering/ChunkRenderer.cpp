@@ -72,15 +72,35 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
         ui32 nextTextureIndex;
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
 
+        std::vector<const Chunk*> chunksNeedingUpdate;
+
         world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
             ++i;
             if (chunk.isFinished()) {
                 // Check LOD for update
-                UpdateLODTexture(chunk);
+                //UpdateLODTexture(chunk);
+                ChunkRenderData& renderData = chunk.mChunkRenderData;
+                if (!renderData.mIsBuildingMesh && renderData.mLODDirty) {
+                    chunksNeedingUpdate.push_back(&chunk);
+                }
 
                 RenderLODTextureBindless(chunk, camera, nextTextureIndex);
             }
         });
+
+        // TODO: We could cache the distances if we cared
+        std::sort(chunksNeedingUpdate.begin(), chunksNeedingUpdate.end(), [&](const Chunk* a, const Chunk* b) { 
+            const f32v2& center = camera.getPosition();
+            const float dista2 = glm::length2(a->getWorldPos() - center);
+            const float distb2 = glm::length2(b->getWorldPos() - center);
+            return dista2 < distb2;
+        });
+
+        for (const Chunk* chunk : chunksNeedingUpdate) {
+            if (!mMesher->createLODTextureAsync(*chunk)) {
+                break;
+            }
+        }
     }
     static_assert((int)ChunkRenderLOD::COUNT == 2, "Update for new rendering style");
 

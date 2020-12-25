@@ -2,10 +2,14 @@
 
 // Global static world-specific data
 namespace WorldData {
-    // Uncomment to switch to map mode
-    constexpr ui32 WORLD_CHUNKS_PADDING = 1;
-    constexpr ui32 WORLD_CHUNKS_WIDTH = 100 + WORLD_CHUNKS_PADDING * 2;
-    constexpr ui32 WORLD_CHUNKS_SIZE = WORLD_CHUNKS_WIDTH * WORLD_CHUNKS_WIDTH;
+    constexpr ui32 REGION_WIDTH_CHUNKS = 16;
+    constexpr ui32 REGION_SIZE_CHUNKS = SQ(REGION_WIDTH_CHUNKS);
 
-    const f32v2 WORLD_CENTER((WORLD_CHUNKS_WIDTH* CHUNK_WIDTH) / 2.0f);
+    constexpr ui32 WORLD_WIDTH_REGIONS = 8;
+    constexpr ui32 WORLD_SIZE_REGIONS = SQ(WORLD_WIDTH_REGIONS);
+
+    constexpr ui32 WORLD_WIDTH_CHUNKS = WORLD_WIDTH_REGIONS * REGION_WIDTH_CHUNKS;
+    constexpr ui32 WORLD_SIZE_CHUNKS = SQ(WORLD_WIDTH_CHUNKS);
+
+    const f32v2 WORLD_CENTER((WORLD_WIDTH_CHUNKS* CHUNK_WIDTH) / 2.0f);
 }

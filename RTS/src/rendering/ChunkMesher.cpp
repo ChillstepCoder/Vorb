@@ -473,11 +473,11 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
     });
 }
 
-void ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
+bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
     TileMeshData* meshData = tryGetFreeTileMeshData();
     if (!meshData) {
-        return;
+        return false;
     }
 
     ++mNumMeshTasksRunning;
@@ -520,6 +520,7 @@ void ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
         --mNumMeshTasksRunning;
         chunk.decRef();
     });
+    return true;
 }
 
 TileMeshData* ChunkMesher::tryGetFreeTileMeshData()

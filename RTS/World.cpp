@@ -124,12 +124,12 @@ Chunk& World::getChunkAtPosition(const f32v2& worldPos) {
 }
 
 Chunk& World::getChunkAtPosition(ChunkID chunkId) {
-	assert(chunkId.id < WorldData::WORLD_CHUNKS_SIZE);
+	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
 	return mChunkGrid[chunkId.id];
 }
 
 const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
-	assert(chunkId.id < WorldData::WORLD_CHUNKS_SIZE);
+	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
     return mChunkGrid[chunkId.id];
 }
 
@@ -165,11 +165,11 @@ void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const C
     ui32 widthInChunks = (ui32)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
 	ui32 heightInChunks = (ui32)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
 
-	if (widthInChunks + enumerator.pos.x >= WorldData::WORLD_CHUNKS_WIDTH) {
-		widthInChunks -= (widthInChunks + enumerator.pos.x) - WorldData::WORLD_CHUNKS_WIDTH + 1;
+	if (widthInChunks + enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS) {
+		widthInChunks -= (widthInChunks + enumerator.pos.x) - WorldData::WORLD_WIDTH_CHUNKS + 1;
 	}
-    if (heightInChunks + enumerator.pos.y >= WorldData::WORLD_CHUNKS_WIDTH) {
-		heightInChunks -= (heightInChunks + enumerator.pos.y) - WorldData::WORLD_CHUNKS_WIDTH + 1;
+    if (heightInChunks + enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
+		heightInChunks -= (heightInChunks + enumerator.pos.y) - WorldData::WORLD_WIDTH_CHUNKS + 1;
     }
 
 	while (true) {
