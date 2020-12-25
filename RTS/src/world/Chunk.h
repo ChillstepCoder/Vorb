@@ -4,10 +4,14 @@
 // TODO: Removing this causes compile error
 #include <Vorb/graphics/SpriteBatch.h>
 
+#include "world/WorldData.h"
+
 class Chunk;
 class QuadMesh;
 
-const i64 CHUNK_ID_INVALID = INT64_MAX;
+const ui32 CHUNK_ID_INVALID = UINT32_MAX;
+
+struct ChunkGrid;
 
 enum class ChunkState {
 	INVALID,
@@ -18,7 +22,7 @@ enum class ChunkState {
 
 struct ChunkRenderData {
 	~ChunkRenderData();
-    std::unique_ptr<QuadMesh> mChunkMesh;
+    std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mBaseDirty = true;
 	bool mLODDirty = true;
@@ -26,32 +30,36 @@ struct ChunkRenderData {
 };
 
 struct ChunkID {
+    ChunkID() : id(CHUNK_ID_INVALID), pos(CHUNK_ID_INVALID) {}
+    ChunkID(const ChunkID& other) { *this = other; }
+	ChunkID(ui32 id);
+    ChunkID(const ui32v2& pos) : pos(pos) { initIdFromPos(); };
+    ChunkID(ui32v2&& pos) : pos(pos) { initIdFromPos(); };
+    ChunkID(const f32v2 worldPos);
 
-	ChunkID() : id(CHUNK_ID_INVALID) {}
-	ChunkID(const ChunkID& other) { *this = other; }
-	ChunkID(ui64 id) : id(id) {};
-	ChunkID(const i32v2& pos) : pos(pos) {};
-	ChunkID(i32v2&& pos) : pos(pos) {};
-	ChunkID(const f32v2 worldPos);
+    // For std::map
+    bool operator<(const ChunkID& other) const { return id < other.id; }
+    bool operator!=(const ChunkID& other) const { return id != other.id; }
+    bool operator==(const ChunkID& other) const { return id == other.id; }
 
-	// For std::map
-	bool operator<(const ChunkID& other) const { return id < other.id; }
-	bool operator!=(const ChunkID& other) const { return id != other.id; }
-	void operator=(const ChunkID& other) { id = other.id; }
-	void operator=(ChunkID&& other) noexcept { id = other.id; }
-	bool operator==(const ChunkID& other) const { return id == other.id; }
+    f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
+    ChunkID getLeftID() const { return ChunkID(ui32v2(pos.x - 1, pos.y)); }
+    ChunkID getTopID() const { return ChunkID(ui32v2(pos.x, pos.y + 1)); }
+    ChunkID getRightID() const { return ChunkID(ui32v2(pos.x + 1, pos.y)); }
+    ChunkID getBottomID() const { return ChunkID(ui32v2(pos.x, pos.y - 1)); }
 
-	f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
-	ChunkID getLeftID() const { return ChunkID(i32v2(pos.x - 1, pos.y)); }
-	ChunkID getTopID() const { return ChunkID(i32v2(pos.x, pos.y + 1)); }
-	ChunkID getRightID() const { return ChunkID(i32v2(pos.x + 1, pos.y)); }
-	ChunkID getBottomID() const { return ChunkID(i32v2(pos.x, pos.y - 1)); }
+	// Return true if we should never load
+	bool isSentinelID() const {
+		return pos.x == 0 || pos.y == 0 || pos.x == WorldData::WORLD_CHUNKS_WIDTH - 1 || pos.y == WorldData::WORLD_CHUNKS_WIDTH - 1;
+	}
 
-	// Data
-	union {
-		i32v2 pos;
-		ui64 id;
-	};
+	ui32v2 pos;
+	ui32 id;
+
+private:
+	inline void initIdFromPos() {
+		id = pos.y * WorldData::WORLD_CHUNKS_WIDTH + pos.x;
+	}
 };
 
 enum class NeighborIndex {
@@ -91,13 +99,13 @@ public:
 	~Chunk();
 
 	// Position in cells
-	void init(ChunkID chunkId);
+	void init(const ChunkID& chunkId, ChunkGrid& chunkGrid);
 	void dispose();
 
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
 	f32v2 getWorldPos() const { return f32v2(mChunkId.pos) * (float)CHUNK_WIDTH; }
 	ChunkState getState() const { return mState; }
-	ChunkID getChunkID() const { return mChunkId; }
+	const ChunkID& getChunkID() const { return mChunkId; }
 
 	TileHandle getLeftTile(const TileIndex index) const;
 	TileHandle getRightTile(const TileIndex index) const;
@@ -106,6 +114,12 @@ public:
 	// Get neighbors starting from top left
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
+	Chunk& getLeftNeighbor() const;
+	Chunk& getTopNeighbor() const;
+	Chunk& getRightNeighbor() const;
+	Chunk& getBottomNeighbor() const;
+
+	bool isInvalid() const { return mState == ChunkState::INVALID; }
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
 	bool isFinished() const { return isDataReady() && mDataReadyNeighborCount == 4; }
 
@@ -141,24 +155,24 @@ private:
 	}
 
 	ChunkID mChunkId;
-	Tile mTiles[CHUNK_SIZE];
-	ChunkState mState = ChunkState::WAITING_FOR_INIT;
+	std::vector<Tile> mTiles;
+	ChunkState mState = ChunkState::INVALID;
 
 	// Refcount for threading
 	mutable ui8 mRefCount = 0;
 
-	union {
-		struct {
-			Chunk* mNeighborLeft;
-			Chunk* mNeighborTop;
-			Chunk* mNeighborRight;
-			Chunk* mNeighborBottom;
-		};
-		Chunk* mNeighbors[4];
-	};
 	ui8 mDataReadyNeighborCount = 0;
+	ChunkGrid* mChunkGrid = nullptr;
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;
 };
 
+struct ChunkGrid {
+    Chunk& operator[](ui32 i) { return chunks[i]; }
+    const Chunk& operator[](ui32 i) const { return chunks[i]; }
+
+    ui32 size() const { return WorldData::WORLD_CHUNKS_SIZE; }
+
+    Chunk chunks[WorldData::WORLD_CHUNKS_SIZE];
+};

@@ -189,6 +189,7 @@
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
+    <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
     <ClCompile Include="src\world\WorldObject.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -257,7 +258,9 @@
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
+    <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
+    <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldObject.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureManip.h" />

@@ -11,6 +11,7 @@
 #include "services/Services.h"
 
 #include "world/Chunk.h"
+#include "world/WorldData.h"
 
 constexpr float SECONDS_PER_DAY = 720.0f;
 constexpr float HOURS_PER_DAY = 24.0f;
@@ -44,11 +45,9 @@ public:
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 
 	// Internal public interface
-    Chunk* tryGetChunkAtPosition(const f32v2& worldPos);
-    Chunk* tryGetChunkAtPosition(ChunkID chunkId);
-    const Chunk* tryGetChunkAtPosition(ChunkID chunkId) const;
-	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
-	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
+    Chunk& getChunkAtPosition(const f32v2& worldPos);
+    Chunk& getChunkAtPosition(ChunkID chunkId);
+    const Chunk& getChunkAtPosition(ChunkID chunkId) const;
 
 	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
 	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
@@ -76,9 +75,11 @@ private:
     void updateSun();
     /// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
-	void updateChunkNeighbors(Chunk& chunk);
-	bool isChunkInLoadDistance(ChunkID chunkId, float addOffset = 0.0f);
-	void initChunk(Chunk& chunk, ChunkID chunkId);
+	void onChunkDataReady(Chunk& chunk);
+	void dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id);
+	bool isChunkInLoadDistance(const ChunkID& chunkId, float addOffset = 0.0f);
+
+	void initChunk(Chunk& chunk);
 	void generateChunkAsync(Chunk& chunk);
 
     // ECS
@@ -109,7 +110,8 @@ private:
 	f32v3 mSunColor = f32v3(1.0f);
 
 	bool mDirty = true;
-	// TODO: Chunk paging for cache performance on updates?
-	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
+	// TODO: Chunk paging for tile data?
+	ChunkGrid mChunkGrid;
+	std::vector<Chunk*> mActiveChunks;
 };
 

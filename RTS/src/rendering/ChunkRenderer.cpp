@@ -23,7 +23,6 @@
 #include <Vorb/ui/InputDispatcher.h>
 #endif
 
-
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
 	mResourceManager(resourceManager),
 	mMaterialRenderer(materialRenderer)
@@ -58,12 +57,33 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
     timer.start();
     int i = 0;
 
-    world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
-        ++i;
-        if (chunk.isFinished()) {
-            Render(chunk, camera, lod);
-        }
-    });
+    if (lod == ChunkRenderLOD::FULL_DETAIL) {
+        world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+            ++i;
+            if (chunk.isFinished()) {
+                // Check chunk mesh for update
+                UpdateMesh(chunk);
+
+                RenderMeshOrLODTexture(chunk, camera);
+            }
+        });
+    }
+    else {
+        ui32 nextTextureIndex;
+        mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
+
+        world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+            ++i;
+            if (chunk.isFinished()) {
+                // Check LOD for update
+                UpdateLODTexture(chunk);
+
+                RenderLODTextureBindless(chunk, camera, nextTextureIndex);
+            }
+        });
+    }
+    static_assert((int)ChunkRenderLOD::COUNT == 2, "Update for new rendering style");
+
     f64 total = timer.stop();
     std::cout << "ENUMERATE " << i << " " << total << std::endl;
 
@@ -78,28 +98,50 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camer
     });
 }
 
-void ChunkRenderer::Render(const Chunk& chunk, const Camera2D& camera, ChunkRenderLOD lod) {
-	// mutable render data
-	ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingMesh) {
-        if (lod == ChunkRenderLOD::FULL_DETAIL && renderData.mBaseDirty) {
-            mMesher->createMeshAsync(chunk);
-        }
-        else if (lod == ChunkRenderLOD::LOD_TEXTURE && renderData.mLODDirty) {
-            mMesher->createLODTextureAsync(chunk);
-        }
+void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (!renderData.mIsBuildingMesh && renderData.mBaseDirty) {
+        mMesher->createMeshAsync(chunk);
     }
+}
 
-    if (lod == ChunkRenderLOD::FULL_DETAIL && renderData.mChunkMesh) {
+void ChunkRenderer::UpdateLODTexture(const Chunk& chunk)
+{
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (!renderData.mIsBuildingMesh && renderData.mLODDirty) {
+        mMesher->createLODTextureAsync(chunk);
+    }
+}
+
+void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& camera) {
+	// mutable render data
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (renderData.mChunkMesh) {
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
     }
-    else if (renderData.mLODTexture) {
+    else {
+        RenderLODTexture(chunk, camera);
+    }
+}
+
+void ChunkRenderer::RenderLODTexture(const Chunk& chunk, const Camera2D& camera) {
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (renderData.mLODTexture) {
         const f32v2 worldPos = chunk.getWorldPos();
         const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
 
         RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, renderData.mLODTexture, rect);
     }
-    static_assert((int)ChunkRenderLOD::COUNT == 2, "Update");
+}
+
+void ChunkRenderer::RenderLODTextureBindless(const Chunk& chunk, const Camera2D& camera, ui32 textureIndex) {
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (renderData.mLODTexture) {
+        const f32v2 worldPos = chunk.getWorldPos();
+        const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
+
+        RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTextureBindless(*mLODMaterial, renderData.mLODTexture, textureIndex, rect);
+    }
 }
 
 void ChunkRenderer::RenderShadows(const Chunk& chunk, const Camera2D& camera)

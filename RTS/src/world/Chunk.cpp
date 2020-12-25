@@ -12,50 +12,42 @@ ChunkRenderData::~ChunkRenderData() {
     }
 }
 
-Chunk::Chunk() :
-	mChunkId(CHUNK_ID_INVALID) {
-	memset(mNeighbors, 0, sizeof(mNeighbors));
+Chunk::Chunk() {
 }
 
 Chunk::~Chunk() {
 	dispose();
 }
 
-void Chunk::init(ChunkID chunkId) {
-	assert(mState == ChunkState::WAITING_FOR_INIT);
+void Chunk::init(const ChunkID& chunkId, ChunkGrid& chunkGrid) {
+    mChunkGrid = &chunkGrid;
+	assert(mState == ChunkState::INVALID);
 	mChunkId = chunkId;
-	mState = ChunkState::LOADING;
+
+    // TODO: Not always
+    mTiles.resize(CHUNK_SIZE);
 }
 
 void Chunk::dispose() {
-	if (mState == ChunkState::INVALID) {
-		return;
-	}
 
-	if (mNeighborLeft) {
-        mNeighborLeft->mNeighborRight = nullptr;
-        if (isDataReady()) {
-            --mNeighborLeft->mDataReadyNeighborCount;
+    if (isDataReady()) {
+        Chunk& leftNeighbor = getLeftNeighbor();
+        if (leftNeighbor.isDataReady()) {
+            --leftNeighbor.mDataReadyNeighborCount;
         }
-	}
-	if (mNeighborRight) {
-        mNeighborRight->mNeighborLeft = nullptr;
-        if (isDataReady()) {
-            --mNeighborRight->mDataReadyNeighborCount;
+        Chunk& rightNeighbor = getRightNeighbor();
+        if (rightNeighbor.isDataReady()) {
+            --rightNeighbor.mDataReadyNeighborCount;
         }
-	}
-	if (mNeighborTop) {
-        mNeighborTop->mNeighborBottom = nullptr;
-        if (isDataReady()) {
-            --mNeighborTop->mDataReadyNeighborCount;
+        Chunk& topNeighbor = getTopNeighbor();
+        if (topNeighbor.isDataReady()) {
+            --topNeighbor.mDataReadyNeighborCount;
         }
-	}
-	if (mNeighborBottom) {
-        mNeighborBottom->mNeighborTop = nullptr;
-        if (isDataReady()) {
-            --mNeighborBottom->mDataReadyNeighborCount;
+        Chunk& bottomNeighbor = getBottomNeighbor();
+        if (bottomNeighbor.isDataReady()) {
+            --bottomNeighbor.mDataReadyNeighborCount;
         }
-	}
+    }
 
 	mState = ChunkState::INVALID;
 }
@@ -67,9 +59,10 @@ TileHandle Chunk::getLeftTile(const TileIndex index) const {
         handle.tile = mTiles[handle.index];
         return handle;
     }
-    else if (mNeighborLeft && mNeighborLeft->isDataReady()) {
-        TileHandle handle(mNeighborLeft, index + CHUNK_WIDTH - 1);
-        handle.tile = mNeighborLeft->mTiles[handle.index];
+    Chunk& leftNeighbor = getLeftNeighbor();
+    if (leftNeighbor.isDataReady()) {
+        TileHandle handle(&leftNeighbor, index + CHUNK_WIDTH - 1);
+        handle.tile = leftNeighbor.mTiles[handle.index];
         return handle;
     }
 	return TileHandle();
@@ -82,9 +75,11 @@ TileHandle Chunk::getRightTile(const TileIndex index) const {
         handle.tile = mTiles[handle.index];
         return handle;
     }
-    else if (mNeighborRight && mNeighborRight->isDataReady()) {
-        TileHandle handle(mNeighborRight, index - CHUNK_WIDTH + 1);
-        handle.tile = mNeighborRight->mTiles[handle.index];
+
+    Chunk& rightNeighbor = getRightNeighbor();
+    if (rightNeighbor.isDataReady()) {
+        TileHandle handle(&rightNeighbor, index - CHUNK_WIDTH + 1);
+        handle.tile = rightNeighbor.mTiles[handle.index];
         return handle;
     }
     return TileHandle();
@@ -96,10 +91,12 @@ TileHandle Chunk::getTopTile(const TileIndex index) const {
         TileHandle handle(this, index + CHUNK_WIDTH);
         handle.tile = mTiles[handle.index];
         return handle;
-	}
-	else if (mNeighborTop && mNeighborTop->isDataReady()) {
-        TileHandle handle(mNeighborTop, index + CHUNK_WIDTH - CHUNK_SIZE);
-        handle.tile = mNeighborTop->mTiles[handle.index];
+    }
+
+    Chunk& topNeighbor = getTopNeighbor();
+	if (topNeighbor.isDataReady()) {
+        TileHandle handle(&topNeighbor, index + CHUNK_WIDTH - CHUNK_SIZE);
+        handle.tile = topNeighbor.mTiles[handle.index];
         return handle;
 	}
     return TileHandle();
@@ -112,9 +109,11 @@ TileHandle Chunk::getBottomTile(const TileIndex index) const {
         handle.tile = mTiles[handle.index];
         return handle;
     }
-    else if (mNeighborBottom && mNeighborBottom->isDataReady()) {
-        TileHandle handle(mNeighborBottom, index - CHUNK_WIDTH + CHUNK_SIZE);
-        handle.tile = mNeighborBottom->mTiles[handle.index];
+
+    Chunk& bottomNeighbor = getBottomNeighbor();
+    if (bottomNeighbor.isDataReady()) {
+        TileHandle handle(&bottomNeighbor, index - CHUNK_WIDTH + CHUNK_SIZE);
+        handle.tile = bottomNeighbor.mTiles[handle.index];
         return handle;
     }
 	return TileHandle();
@@ -154,6 +153,30 @@ void Chunk::getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const
 
 }
 
-ChunkID::ChunkID(const f32v2 worldPos) {
-	pos = i32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
+Chunk& Chunk::getLeftNeighbor() const {
+    return mChunkGrid->operator[](mChunkId.id - 1);
 }
+
+Chunk& Chunk::getTopNeighbor() const {
+    return mChunkGrid->operator[](mChunkId.id + WorldData::WORLD_CHUNKS_WIDTH);
+}
+
+Chunk& Chunk::getRightNeighbor() const {
+    return mChunkGrid->operator[](mChunkId.id + 1);
+}
+
+Chunk& Chunk::getBottomNeighbor() const {
+    return mChunkGrid->operator[](mChunkId.id - WorldData::WORLD_CHUNKS_WIDTH);
+}
+
+ChunkID::ChunkID(const f32v2 worldPos) {
+    assert(worldPos.x >= 0.0f && worldPos.y >= 0.0f);
+	pos = i32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
+    id = pos.y * WorldData::WORLD_CHUNKS_WIDTH + pos.x;
+}
+
+ChunkID::ChunkID(ui32 id) : 
+    id(id) { 
+    pos.x = id % WorldData::WORLD_CHUNKS_WIDTH;
+    pos.y = id / WorldData::WORLD_CHUNKS_WIDTH;
+};

@@ -53,6 +53,22 @@ void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material,
     mQuadVBO.draw();
 }
 
+void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect) {
+    assert(texture);
+
+    // TODO: Uniform buffer object for static uniforms
+    VGUniform textureUniform = material.mProgram.getUniform("Texture");
+    glActiveTexture(textureIndex);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glUniform1i(textureUniform, textureIndex);
+
+    // TODO: Cache so we dont need a string lookup? (I think it just has to be cached on outer loop)
+    VGUniform rectUniform = material.mProgram.getUniform("Rect");
+    glUniform4fv(rectUniform, 1, &(worldSpaceRect.x));
+
+    mQuadVBO.draw();
+}
+
 void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) const {
     material.use();
     uploadUniforms(material, nextAvailableTextureIndex);

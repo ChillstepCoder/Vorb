@@ -33,7 +33,11 @@ public:
     void InitPostLoad();
 private:
     // Different rendering methods
-    void Render(const Chunk& chunk, const Camera2D& camera, ChunkRenderLOD lod);
+    void UpdateMesh(const Chunk& chunk);
+    void UpdateLODTexture(const Chunk& chunk);
+    void RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& camera);
+    void RenderLODTexture(const Chunk& chunk, const Camera2D& camera);
+    void RenderLODTextureBindless(const Chunk& chunk, const Camera2D& camera, ui32 textureIndex);
     void RenderShadows(const Chunk& chunk, const Camera2D& camera);
 
 	std::unique_ptr<ChunkMesher> mMesher;

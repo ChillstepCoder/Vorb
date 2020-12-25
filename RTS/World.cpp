@@ -45,6 +45,11 @@ const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 World::World(ResourceManager& resourceManager) :
 	mResourceManager(resourceManager)
 {
+	// Init all chunks
+	for (ui32 i = 0; i < mChunkGrid.size(); ++i) {
+		mChunkGrid[i].init(ChunkID(i), mChunkGrid);
+	}
+
     // Init generation
     mChunkGenerator = std::make_unique<ChunkGenerator>();
 
@@ -76,7 +81,10 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 
 	mLoadCenter = playerPos;
 
-	getChunkOrCreateAtPosition(playerPos);
+	Chunk& playerChunk = getChunkAtPosition(playerPos);
+	if (playerChunk.isInvalid()) {
+		initChunk(playerChunk);
+	}
 	
 	const f32v2 topRight = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), 0.0f));
 	const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth() * 0.5f, camera.getScreenHeight() * 0.5f));
@@ -88,16 +96,18 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	mViewRange.x = MAX(mViewRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
 	mViewRange.y = MAX(mViewRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
 
-	for (auto it = mChunks.begin(); it != mChunks.end(); /* no increment */) {
-		Chunk& chunk = *it->second;
-		if (updateChunk(chunk)) {
+
+    for (size_t i = 0; i < mActiveChunks.size();) {
+        Chunk& chunk = *mActiveChunks[i];
+        if (updateChunk(chunk)) {
             chunk.dispose();
-			it = mChunks.erase(it);
-		}
-		else {
-			++it;
-		}
-	}
+			mActiveChunks[i] = mActiveChunks.back();
+			mActiveChunks.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
 
 	// Update physics
 	mPhysWorld->Step(deltaTime, 1, 1);
@@ -109,44 +119,18 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
     mEcs->update(deltaTime, mClientEcsData);
 }
 
-Chunk* World::tryGetChunkAtPosition(const f32v2& worldPos) {
-	return tryGetChunkAtPosition(ChunkID(worldPos));
+Chunk& World::getChunkAtPosition(const f32v2& worldPos) {
+	return getChunkAtPosition(ChunkID(worldPos));
 }
 
-Chunk* World::tryGetChunkAtPosition(ChunkID chunkId) {
-    auto&& it = mChunks.find(chunkId);
-    if (it != mChunks.end()) {
-        return it->second.get();
-    }
-
-    return nullptr;
+Chunk& World::getChunkAtPosition(ChunkID chunkId) {
+	assert(chunkId.id < WorldData::WORLD_CHUNKS_SIZE);
+	return mChunkGrid[chunkId.id];
 }
 
-const Chunk* World::tryGetChunkAtPosition(ChunkID chunkId) const {
-    const auto&& it = mChunks.find(chunkId);
-    if (it != mChunks.end()) {
-        return it->second.get();
-    }
-
-    return nullptr;
-}
-
-Chunk* World::getChunkOrCreateAtPosition(const f32v2& worldPos) {
-	return getChunkOrCreateAtPosition(ChunkID(worldPos));
-}
-
-Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
-	auto it = mChunks.find(chunkId);
-	if (it != mChunks.end()) {
-		return it->second.get();
-	}
-
-	// Create
-	auto newChunkIt = mChunks.insert(std::make_pair(chunkId, std::make_unique<Chunk>()));
-	Chunk* newChunk = newChunkIt.first->second.get();
-	initChunk(*newChunk, chunkId);
-	generateChunkAsync(*newChunk);
-	return newChunk;
+const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
+	assert(chunkId.id < WorldData::WORLD_CHUNKS_SIZE);
+    return mChunkGrid[chunkId.id];
 }
 
 TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) {
@@ -156,8 +140,8 @@ TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2
 
 TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 	TileHandle handle;
-	handle.chunk = tryGetChunkAtPosition(worldPos);
-	if (handle.chunk && handle.chunk->getState() == ChunkState::FINISHED) {
+	handle.chunk = &getChunkAtPosition(worldPos);
+	if (handle.chunk->getState() == ChunkState::FINISHED) {
 		unsigned x = (unsigned)floor(worldPos.x) & (CHUNK_WIDTH - 1); // Fast modulus
 		unsigned y = (unsigned)floor(worldPos.y) & (CHUNK_WIDTH - 1); // Fast modulus
 		handle.index = ui16(y * CHUNK_WIDTH + x);
@@ -169,32 +153,39 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 
 void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
 {
-    const f32v2 bottomLeftCorner = camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight()));
+    // Stick to positive numbers
+    const f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+
     const ChunkID bottomLeftID(bottomLeftCorner);
 
 	ChunkID enumerator = bottomLeftID;
    
     const float scaledWidth = camera.getScreenWidth() / camera.getScale();
     const float scaledHeight = camera.getScreenHeight() / camera.getScale();
-    const int widthInChunks = (int)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
-    const int heightInChunks = (int)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+    ui32 widthInChunks = (ui32)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+	ui32 heightInChunks = (ui32)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
 
-    const Chunk* chunk;
+	if (widthInChunks + enumerator.pos.x >= WorldData::WORLD_CHUNKS_WIDTH) {
+		widthInChunks -= (widthInChunks + enumerator.pos.x) - WorldData::WORLD_CHUNKS_WIDTH + 1;
+	}
+    if (heightInChunks + enumerator.pos.y >= WorldData::WORLD_CHUNKS_WIDTH) {
+		heightInChunks -= (heightInChunks + enumerator.pos.y) - WorldData::WORLD_CHUNKS_WIDTH + 1;
+    }
+
 	while (true) {
-
-		if (enumerator.pos.x - bottomLeftID.pos.x > widthInChunks) {
-			enumerator.pos.x -= widthInChunks + 1;
-			++enumerator.pos.y;
-		}
-		if (enumerator.pos.y - bottomLeftID.pos.y > heightInChunks) {
-			// Off screen
-			return;
-		}
-
-		if (chunk = tryGetChunkAtPosition(enumerator)) {
-			func(*chunk);
-		}
-		++enumerator.pos.x;
+        if (enumerator.pos.x - bottomLeftID.pos.x > widthInChunks) {
+            enumerator.pos.x -= widthInChunks + 1;
+			enumerator = enumerator.getTopID();
+        }
+        if (enumerator.pos.y - bottomLeftID.pos.y > heightInChunks) {
+            // Off screen
+            return;
+        }
+		const Chunk& chunk = getChunkAtPosition(enumerator);
+        if (!chunk.isInvalid()) {
+            func(chunk);
+        }
+        enumerator = enumerator.getRightID();
 	}
 }
 
@@ -296,71 +287,41 @@ bool World::updateChunk(Chunk& chunk) {
 	if (chunk.isDataReady()) {
 		// Check for new neighbors
 		if (chunk.mDataReadyNeighborCount < 4) {
-			updateChunkNeighbors(chunk);
+			//assert(false);
+			//onChunkDataReady(chunk);
 		}
 	}
 	
 	return false;
 }
 
-void World::updateChunkNeighbors(Chunk& chunk) {
+void World::onChunkDataReady(Chunk& chunk) {
 	// Don't update neighbors until we are data ready
 	assert(chunk.isDataReady());
 	// Neighbors
 	ChunkID myId = chunk.getChunkID();
-	// Left
-	if (!chunk.mNeighborLeft) {
-		ChunkID leftChunk = myId.getLeftID();
-		if (isChunkInLoadDistance(leftChunk)) {
-            Chunk* neighbor = getChunkOrCreateAtPosition(leftChunk);
-			if (neighbor->isDataReady()) {
-				chunk.mNeighborLeft = neighbor;
-				chunk.mNeighborLeft->mNeighborRight = &chunk;
-				++chunk.mNeighborLeft->mDataReadyNeighborCount;
-				++chunk.mDataReadyNeighborCount;
-			}
-		}
-	}
-	if (!chunk.mNeighborTop) {
-		ChunkID topChunk = myId.getTopID();
-        if (isChunkInLoadDistance(topChunk)) {
-            Chunk* neighbor = getChunkOrCreateAtPosition(topChunk);
-			if (neighbor->isDataReady()) {
-				chunk.mNeighborTop = neighbor;
-				chunk.mNeighborTop->mNeighborBottom = &chunk;
-				++chunk.mNeighborTop->mDataReadyNeighborCount;
-				++chunk.mDataReadyNeighborCount;
-			}
-		}
-	}
-	if (!chunk.mNeighborRight) {
-		ChunkID rightChunk = myId.getRightID();
-		if (isChunkInLoadDistance(rightChunk)) {
-            Chunk* neighbor = getChunkOrCreateAtPosition(rightChunk);
-			if (neighbor->isDataReady()) {
-				chunk.mNeighborRight = neighbor;
-				chunk.mNeighborRight->mNeighborLeft = &chunk;
-				++chunk.mNeighborRight->mDataReadyNeighborCount;
-				++chunk.mDataReadyNeighborCount;
-			}
-		}
-	}
-	if (!chunk.mNeighborBottom) {
-		ChunkID bottomChunk = myId.getBottomID();
-		if (isChunkInLoadDistance(bottomChunk)) {
-			Chunk* neighbor = getChunkOrCreateAtPosition(bottomChunk);
-			if (neighbor->isDataReady()) {
-				chunk.mNeighborBottom = neighbor;
-				chunk.mNeighborBottom->mNeighborTop = &chunk;
-				++chunk.mNeighborBottom->mDataReadyNeighborCount;
-				++chunk.mDataReadyNeighborCount;
-			}
-		}
-	}
+    dataReadyTryNotifyNeighbor(chunk, myId.getLeftID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getTopID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getRightID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getBottomID());
+	
 	assert(chunk.mDataReadyNeighborCount <= 4);
 }
 
-bool World::isChunkInLoadDistance(ChunkID chunkPos, float addOffset /* = 0.0f*/)
+void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
+	Chunk& neighbor = mChunkGrid[id.id];
+    if (neighbor.isDataReady()) {
+		// Set up data ready ref counts
+		++neighbor.mDataReadyNeighborCount;
+		++chunk.mDataReadyNeighborCount;
+	}
+	else if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
+		// Create the chunk, but dont update neighbor count until its done
+		initChunk(neighbor);
+	}
+}
+
+bool World::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 0.0f*/)
 {
 	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
 	const f32v2 offset = centerPos - mLoadCenter;
@@ -369,17 +330,26 @@ bool World::isChunkInLoadDistance(ChunkID chunkPos, float addOffset /* = 0.0f*/)
 	return (abs(offset.x) + addOffset <= mLoadRange.x && abs(offset.y) + addOffset <= mLoadRange.y);
 }
 
-void World::initChunk(Chunk& chunk, ChunkID chunkId) {
-	chunk.init(chunkId);
+void World::initChunk(Chunk& chunk)
+{
+	const ChunkID& chunkId = chunk.getChunkID();
+    // If this is a sentinel chunk, stop here
+    if (chunkId.isSentinelID()) {
+        return;
+    }
+
+    generateChunkAsync(chunk);
+    mActiveChunks.push_back(&chunk);
 }
 
 void World::generateChunkAsync(Chunk& chunk) {
+	chunk.mState = ChunkState::LOADING;
 	chunk.incRef();
 	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
         mChunkGenerator->GenerateChunk(chunk);
     }, [&]() {
         chunk.mState = ChunkState::FINISHED;
-		updateChunkNeighbors(chunk);
+		onChunkDataReady(chunk);
 		chunk.decRef();
     });
 }

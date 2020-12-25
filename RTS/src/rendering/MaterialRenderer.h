@@ -21,6 +21,7 @@ public:
     void renderFullScreenQuad(const Material& material) const;
     void renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState = vg::DepthState::FULL) const;
     void renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect);
+    void renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect);
 
     void bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex = nullptr) const;
 

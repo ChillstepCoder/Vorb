@@ -177,7 +177,8 @@ void MainMenuScreen::build() {
 	});
 
 	// Add player
-	mPlayerEntity = mWorld->createEntity(f32v2(0.0f), EntityType::PLAYER);
+	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, EntityType::PLAYER);
+	mCamera2D->setPosition(WorldData::WORLD_CENTER);
 
 }
 

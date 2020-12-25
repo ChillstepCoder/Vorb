@@ -162,9 +162,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
-
 
     mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
@@ -211,16 +209,19 @@ void RenderContext::renderFrame(const Camera2D& camera) {
             if (chunk.isDataReady()) {
                 DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
                 color4 neighborColor(1.0f, 0.0f, 0.0f);
-                if (chunk.mNeighborBottom) {
+                if (chunk.mDataReadyNeighborCount == 1) {
+                    neighborColor = color4(0.0f, 1.0f, 0.0f);
+                }
+                if (chunk.getBottomNeighbor().isDataReady()) {
                     DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, 0.0f), f32v2(0.0f, 6.0f), neighborColor);
                 }
-                if (chunk.mNeighborTop) {
+                if (chunk.getTopNeighbor().isDataReady()) {
                     DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, CHUNK_WIDTH), f32v2(0.0f, -6.0f), neighborColor);
                 }
-                if (chunk.mNeighborLeft) {
+                if (chunk.getLeftNeighbor().isDataReady()) {
                     DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(0.0f, CHUNK_WIDTH * 0.5f), f32v2(6.0f, 0.0f), neighborColor);
                 }
-                if (chunk.mNeighborRight) {
+                if (chunk.getRightNeighbor().isDataReady()) {
                     DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH, CHUNK_WIDTH * 0.5f), f32v2(-6.0f, 0.0f), neighborColor);
                 }
             }
