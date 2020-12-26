@@ -97,7 +97,6 @@ void QuadMesh::draw(const vg::GLProgram& program, const vg::DepthState& depthSta
     assert(mVao);
 
     depthState.set();
-    vg::RasterizerState::CULL_NONE.set();
 
     glBindVertexArray(mVao);
     bindVertexAttribs(program);

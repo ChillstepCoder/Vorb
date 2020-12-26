@@ -69,6 +69,7 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
         });
     }
     else {
+
         ui32 nextTextureIndex;
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
 

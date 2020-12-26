@@ -58,7 +58,6 @@ public:
 	EntityComponentSystem& getECS() const { return *mEcs; }
 
     void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
-    void enumVisibleChunksSpiral(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
     void enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const;
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
@@ -79,6 +78,8 @@ private:
 	bool updateChunk(Chunk& chunk);
 	void onChunkDataReady(Chunk& chunk);
 	void dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id);
+	void tryCreateNeighbors(Chunk& chunk);
+	void tryCreateNeighbor(Chunk& chunk, const ChunkID& id);
 	bool isChunkInLoadDistance(const ChunkID& chunkId, float addOffset = 0.0f);
 
 	void initChunk(Chunk& chunk);

@@ -103,7 +103,6 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	mViewRange.x = MAX(mViewRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
 	mViewRange.y = MAX(mViewRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
 
-
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
         if (updateChunk(chunk)) {
@@ -178,6 +177,10 @@ void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const C
     if (heightInChunks + enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
 		heightInChunks -= (heightInChunks + enumerator.pos.y) - WorldData::WORLD_WIDTH_CHUNKS + 1;
     }
+	// Dont crash if we go out of world
+	if (enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS || enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
+		return;
+	}
 
 	while (true) {
         if (enumerator.pos.x - bottomLeftID.pos.x > widthInChunks) {
@@ -194,43 +197,6 @@ void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const C
         }
         enumerator = enumerator.getRightID();
 	}
-}
-
-void World::enumVisibleChunksSpiral(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
-{
-    const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), camera.getScreenHeight() / 2.0f));
-    const ChunkID centerID(center);
-
-    ChunkID enumerator = centerID;
-
-    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
-    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
-    const int widthInChunks = (int)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
-    const int heightInChunks = (int)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
-
-    const Chunk* chunk;
-
-	int x = 0;
-	int y = 0;
-	int dx = 1;
-	int dy = 0;
-
-    //while (true) {
-
-    //    if (enumerator.pos.x - bottomLeftPosition.pos.x > widthInChunks) {
-    //        enumerator.pos.x -= widthInChunks + 1;
-    //        ++enumerator.pos.y;
-    //    }
-    //    if (enumerator.pos.y - bottomLeftPosition.pos.y > heightInChunks) {
-    //        // Off screen
-    //        return;
-    //    }
-
-    //    if (chunk = tryGetChunkAtPosition(enumerator)) {
-    //        func(*chunk);
-    //    }
-    //    ++enumerator.pos.x;
-    //}
 }
 
 void World::enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const {
@@ -252,7 +218,10 @@ void World::enumVisibleRegions(const Camera2D& camera, std::function<void(const 
     if (heightInRegions + enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
         heightInRegions -= (heightInRegions + enumerator.pos.y) - WorldData::WORLD_WIDTH_REGIONS + 1;
     }
-
+    // Dont crash if we go out of world
+    if (enumerator.pos.x >= WorldData::WORLD_WIDTH_REGIONS || enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
+        return;
+    }
 
     while (true) {
         if (enumerator.pos.x - bottomLeftID.pos.x > widthInRegions) {
@@ -321,7 +290,7 @@ void World::updateSun() {
 bool World::updateChunk(Chunk& chunk) {
 	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
 		if (chunk.mRefCount) {
-			// Waiting on a thread to free us
+			// Waiting on a thread to release us
 			return false;
 		}
 		// Unload
@@ -330,9 +299,8 @@ bool World::updateChunk(Chunk& chunk) {
 
 	if (chunk.isDataReady()) {
 		// Check for new neighbors
-		if (chunk.mDataReadyNeighborCount < 4) {
-			//assert(false);
-			//onChunkDataReady(chunk);
+		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
+			tryCreateNeighbors(chunk);
 		}
 	}
 	
@@ -343,13 +311,13 @@ void World::onChunkDataReady(Chunk& chunk) {
 	// Don't update neighbors until we are data ready
 	assert(chunk.isDataReady());
 	// Neighbors
-	ChunkID myId = chunk.getChunkID();
+	const ChunkID& myId = chunk.getChunkID();
     dataReadyTryNotifyNeighbor(chunk, myId.getLeftID());
     dataReadyTryNotifyNeighbor(chunk, myId.getTopID());
     dataReadyTryNotifyNeighbor(chunk, myId.getRightID());
     dataReadyTryNotifyNeighbor(chunk, myId.getBottomID());
 	
-	assert(chunk.mDataReadyNeighborCount <= 4);
+	assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
 }
 
 void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
@@ -365,12 +333,29 @@ void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
 	}
 }
 
+void World::tryCreateNeighbors(Chunk& chunk) {
+    // Neighbors
+    const ChunkID& myId = chunk.getChunkID();
+	tryCreateNeighbor(chunk, myId.getLeftID());
+	tryCreateNeighbor(chunk, myId.getTopID());
+	tryCreateNeighbor(chunk, myId.getRightID());
+	tryCreateNeighbor(chunk, myId.getBottomID());
+}
+
+void World::tryCreateNeighbor(Chunk& chunk, const ChunkID& id) {
+    Chunk& neighbor = mWorldGrid.getChunk(id.id);
+    if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
+        // Create the chunk, but dont update neighbor count until its done
+        initChunk(neighbor);
+    }
+}
+
 bool World::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 0.0f*/)
 {
 	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
 	const f32v2 offset = centerPos - mLoadCenter;
 
-	return glm::length2(offset) <= mLoadRangeSq;
+	return glm::length2(offset) <= mLoadRangeSq + addOffset;
 }
 
 void World::initChunk(Chunk& chunk)

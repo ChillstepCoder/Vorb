@@ -196,10 +196,9 @@ void RenderContext::renderFrame(const Camera2D& camera) {
         activeGbuffer.useGeometry();
     }
 
-    // Debug Axis render
+    // Debug Axis render at origin
     DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
     DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
-    //DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries

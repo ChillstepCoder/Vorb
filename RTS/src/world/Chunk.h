@@ -8,6 +8,7 @@ class Chunk;
 class QuadMesh;
 
 const ui32 CHUNK_ID_INVALID = UINT32_MAX;
+constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
 class WorldGrid;
 

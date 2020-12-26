@@ -56,7 +56,7 @@ void Chunk::dispose() {
             --bottomNeighbor.mDataReadyNeighborCount;
         }
     }
-
+    mDataReadyNeighborCount = 0;
 	mState = ChunkState::INVALID;
 }
 
