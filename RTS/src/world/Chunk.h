@@ -1,8 +1,6 @@
 #pragma once
 
 #include "Tile.h"
-// TODO: Removing this causes compile error
-#include <Vorb/graphics/SpriteBatch.h>
 
 #include "world/WorldData.h"
 
@@ -11,11 +9,10 @@ class QuadMesh;
 
 const ui32 CHUNK_ID_INVALID = UINT32_MAX;
 
-struct ChunkGrid;
+class WorldGrid;
 
 enum class ChunkState {
 	INVALID,
-	WAITING_FOR_INIT,
 	LOADING,
 	FINISHED,
 };
@@ -99,11 +96,13 @@ public:
 	~Chunk();
 
 	// Position in cells
-	void init(const ChunkID& chunkId, ChunkGrid& chunkGrid);
+	void init(const ChunkID& chunkId, WorldGrid& worldGrid);
+	void allocateTiles();
+	void freeTiles();
 	void dispose();
 
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
-	f32v2 getWorldPos() const { return f32v2(mChunkId.pos) * (float)CHUNK_WIDTH; }
+	f32v2 getWorldPos() const { return mChunkId.getWorldPos(); }
 	ChunkState getState() const { return mState; }
 	const ChunkID& getChunkID() const { return mChunkId; }
 
@@ -150,8 +149,8 @@ public:
 
 private:
 
-	void setTileFromGeneration(TileIndex i, TileID tileId, TileLayer layer) {
-		mTiles[i].layers[(int)layer] = tileId;
+	void setTileFromGeneration(TileIndex i, Tile&& tile) {
+		mTiles[i] = tile;
 	}
 
 	ChunkID mChunkId;
@@ -162,17 +161,8 @@ private:
 	mutable ui8 mRefCount = 0;
 
 	ui8 mDataReadyNeighborCount = 0;
-	ChunkGrid* mChunkGrid = nullptr;
+	WorldGrid* mWorldGrid = nullptr;
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;
-};
-
-struct ChunkGrid {
-    Chunk& operator[](ui32 i) { return chunks[i]; }
-    const Chunk& operator[](ui32 i) const { return chunks[i]; }
-
-    ui32 size() const { return WorldData::WORLD_SIZE_CHUNKS; }
-
-    Chunk chunks[WorldData::WORLD_SIZE_CHUNKS];
 };

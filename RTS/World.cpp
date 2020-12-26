@@ -34,7 +34,12 @@
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
-constexpr float CHUNKS_LOAD_RANGE_MULT = 54.0f;
+// Chunks to load
+#ifdef DEBUG
+constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
+#else
+constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
+#endif
 
 #ifdef USE_SMALL_CHUNK_WIDTH
 const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;
@@ -45,11 +50,6 @@ const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 World::World(ResourceManager& resourceManager) :
 	mResourceManager(resourceManager)
 {
-	// Init all chunks
-	for (ui32 i = 0; i < mChunkGrid.size(); ++i) {
-		mChunkGrid[i].init(ChunkID(i), mChunkGrid);
-	}
-
     // Init generation
     mChunkGenerator = std::make_unique<ChunkGenerator>();
 
@@ -65,11 +65,18 @@ World::World(ResourceManager& resourceManager) :
     mPhysWorld->SetContactListener(mContactListener.get());
 
 	// Static load range for now
-	mLoadRange = f32v2(CHUNK_LOAD_RANGE);
+	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
 }
 
 World::~World() {
 
+}
+
+void World::initPostLoad() {
+    // Init regions
+    for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
+        mChunkGenerator->GenerateRegionLODTextureAsync(mWorldGrid.getRegion(i));
+    }
 }
 
 void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
@@ -125,12 +132,12 @@ Chunk& World::getChunkAtPosition(const f32v2& worldPos) {
 
 Chunk& World::getChunkAtPosition(ChunkID chunkId) {
 	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
-	return mChunkGrid[chunkId.id];
+	return mWorldGrid.getChunk(chunkId.id);
 }
 
 const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
 	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
-    return mChunkGrid[chunkId.id];
+    return mWorldGrid.getChunk(chunkId.id);
 }
 
 TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) {
@@ -226,6 +233,43 @@ void World::enumVisibleChunksSpiral(const Camera2D& camera, std::function<void(c
     //}
 }
 
+void World::enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const {
+    // Stick to positive numbers
+    const f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+
+    const RegionID bottomLeftID(bottomLeftCorner);
+
+    RegionID enumerator = bottomLeftID;
+
+    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
+    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
+    ui32 widthInRegions = (ui32)((scaledWidth + WorldData::REGION_WIDTH_TILES / 2) / WorldData::REGION_WIDTH_TILES + 1);
+    ui32 heightInRegions = (ui32)((scaledHeight + WorldData::REGION_WIDTH_TILES / 2) / WorldData::REGION_WIDTH_TILES + 1);
+
+    if (widthInRegions + enumerator.pos.x >= WorldData::WORLD_WIDTH_REGIONS) {
+        widthInRegions -= (widthInRegions + enumerator.pos.x) - WorldData::WORLD_WIDTH_REGIONS + 1;
+    }
+    if (heightInRegions + enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
+        heightInRegions -= (heightInRegions + enumerator.pos.y) - WorldData::WORLD_WIDTH_REGIONS + 1;
+    }
+
+
+    while (true) {
+        if (enumerator.pos.x - bottomLeftID.pos.x > widthInRegions) {
+            enumerator.pos.x -= widthInRegions + 1;
+            enumerator = enumerator.getTopID();
+        }
+        if (enumerator.pos.y - bottomLeftID.pos.y > heightInRegions) {
+            // Off screen
+            return;
+        }
+		assert(enumerator.id < WorldData::WORLD_SIZE_REGIONS);
+        const Region& region = mWorldGrid.getRegion(enumerator.id);
+        func(region);
+        enumerator = enumerator.getRightID();
+    }
+}
+
 void World::updateClientEcsData(const Camera2D& camera) {
     const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
     mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
@@ -309,7 +353,7 @@ void World::onChunkDataReady(Chunk& chunk) {
 }
 
 void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
-	Chunk& neighbor = mChunkGrid[id.id];
+	Chunk& neighbor = mWorldGrid.getChunk(id.id);
     if (neighbor.isDataReady()) {
 		// Set up data ready ref counts
 		++neighbor.mDataReadyNeighborCount;
@@ -326,8 +370,7 @@ bool World::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 
 	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
 	const f32v2 offset = centerPos - mLoadCenter;
 
-	// TODO: only need to check this at the edges
-	return (abs(offset.x) + addOffset <= mLoadRange.x && abs(offset.y) + addOffset <= mLoadRange.y);
+	return glm::length2(offset) <= mLoadRangeSq;
 }
 
 void World::initChunk(Chunk& chunk)

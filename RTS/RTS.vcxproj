@@ -191,6 +191,7 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
+    <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObject.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -261,6 +262,7 @@
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\WorldData.h" />
+    <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObject.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureManip.h" />

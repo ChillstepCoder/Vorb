@@ -201,10 +201,8 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
     //DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
 
-    // Debug chunk boundaries
     if (sDebugOptions.mChunkBoundaries) {
-        ChunkID id;
-        const Chunk* chunk;
+        // Debug chunk boundaries
         mWorld.enumVisibleChunks(camera, [](const Chunk& chunk) {
             if (chunk.isDataReady()) {
                 DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
@@ -226,8 +224,13 @@ void RenderContext::renderFrame(const Camera2D& camera) {
                 }
             }
             else {
-                DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 0.0f));
+                DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 1.0f));
             }
+        });
+
+        // Debug region boundaries
+        mWorld.enumVisibleRegions(camera, [](const Region& region) {
+            DebugRenderer::drawBox(region.getWorldPos(), f32v2(WorldData::REGION_WIDTH_TILES), color4(1.0f, 0.0f, 0.0f));
         });
     }
 

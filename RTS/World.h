@@ -10,7 +10,7 @@
 #include "ecs/factory/EntityType.h"
 #include "services/Services.h"
 
-#include "world/Chunk.h"
+#include "world/WorldGrid.h"
 #include "world/WorldData.h"
 
 constexpr float SECONDS_PER_DAY = 720.0f;
@@ -36,6 +36,7 @@ public:
 	World(ResourceManager& resourceManager);
 	~World();
 
+	void initPostLoad();
 	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera);
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = (entt::entity)0);
@@ -58,6 +59,7 @@ public:
 
     void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
     void enumVisibleChunksSpiral(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
+    void enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const;
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
 	void updateClientEcsData(const Camera2D& camera);
@@ -101,8 +103,8 @@ private:
 
 	// Data
 	f32v2 mViewRange = f32v2(0.0f);
-	f32v2 mLoadRange = f32v2(0.0f);
-	f32v2 mLoadCenter = f32v2(0.0f);
+    f32v2 mLoadCenter = f32v2(0.0f);
+    f32   mLoadRangeSq = 0.0f;
 	// Sunlight
 	float mSunHeight = 1.0f;
 	float mSunPosition = 0.0f; // [-1, 1]
@@ -111,7 +113,7 @@ private:
 
 	bool mDirty = true;
 	// TODO: Chunk paging for tile data?
-	ChunkGrid mChunkGrid;
+	WorldGrid mWorldGrid;
 	std::vector<Chunk*> mActiveChunks;
 };
 

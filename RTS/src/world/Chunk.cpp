@@ -3,6 +3,8 @@
 
 #include "rendering/QuadMesh.h"
 
+#include "world/WorldGrid.h"
+
 
 ChunkRenderData::~ChunkRenderData() {
     // Empty
@@ -19,13 +21,19 @@ Chunk::~Chunk() {
 	dispose();
 }
 
-void Chunk::init(const ChunkID& chunkId, ChunkGrid& chunkGrid) {
-    mChunkGrid = &chunkGrid;
+void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
+    mWorldGrid = &worldGrid;
 	assert(mState == ChunkState::INVALID);
 	mChunkId = chunkId;
+}
 
+void Chunk::allocateTiles() {
     // TODO: Not always
     mTiles.resize(CHUNK_SIZE);
+}
+
+void Chunk::freeTiles() {
+    std::vector<Tile>().swap(mTiles);
 }
 
 void Chunk::dispose() {
@@ -154,19 +162,19 @@ void Chunk::getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const
 }
 
 Chunk& Chunk::getLeftNeighbor() const {
-    return mChunkGrid->operator[](mChunkId.id - 1);
+    return mWorldGrid->getChunk(mChunkId.id - 1);
 }
 
 Chunk& Chunk::getTopNeighbor() const {
-    return mChunkGrid->operator[](mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
+    return mWorldGrid->getChunk(mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 Chunk& Chunk::getRightNeighbor() const {
-    return mChunkGrid->operator[](mChunkId.id + 1);
+    return mWorldGrid->getChunk(mChunkId.id + 1);
 }
 
 Chunk& Chunk::getBottomNeighbor() const {
-    return mChunkGrid->operator[](mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
+    return mWorldGrid->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 ChunkID::ChunkID(const f32v2 worldPos) {

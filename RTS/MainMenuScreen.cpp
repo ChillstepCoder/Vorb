@@ -32,8 +32,8 @@ const unsigned CACHED_RANDOM_SIZE = 65536;
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(std::make_unique<ResourceManager>()),
-	  mWorld(std::make_unique<World>(*mResourceManager)),
-      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight())))
+      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()))),
+      mWorld(std::make_unique<World>(*mResourceManager))
 {
 
 	mCamera2D = std::make_unique<Camera2D>();
@@ -84,6 +84,8 @@ void MainMenuScreen::build() {
     mRenderContext.initPostLoad();
     mResourceManager->writeDebugAtlas();
 
+	mWorld->initPostLoad();
+
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
 		if (event.keyCode == VKEY_B) {
@@ -110,7 +112,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.09f, 1020.f);
+		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.05f, 1020.f);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {

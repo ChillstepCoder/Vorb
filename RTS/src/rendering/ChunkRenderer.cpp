@@ -72,19 +72,19 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
         ui32 nextTextureIndex;
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
 
+        // Render all chunks
         std::vector<const Chunk*> chunksNeedingUpdate;
-
         world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
             ++i;
             if (chunk.isFinished()) {
                 // Check LOD for update
                 //UpdateLODTexture(chunk);
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
-                if (!renderData.mIsBuildingMesh && renderData.mLODDirty) {
+                if (renderData.mLODDirty && !renderData.mIsBuildingMesh) {
                     chunksNeedingUpdate.push_back(&chunk);
                 }
 
-                RenderLODTextureBindless(chunk, camera, nextTextureIndex);
+                RenderLODTextureBindless(chunk.getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera, nextTextureIndex);
             }
         });
 
@@ -101,6 +101,11 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
                 break;
             }
         }
+
+        // Render region LODs
+        world.enumVisibleRegions(camera, [&](const Region& region) {
+            RenderLODTextureBindless(region.getWorldPos(), region.mRenderData.mLODTexture, WorldData::REGION_WIDTH_TILES, camera, nextTextureIndex);
+        });
     }
     static_assert((int)ChunkRenderLOD::COUNT == 2, "Update for new rendering style");
 
@@ -140,27 +145,21 @@ void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& c
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
     }
     else {
-        RenderLODTexture(chunk, camera);
+        RenderLODTexture(chunk.getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera);
     }
 }
 
-void ChunkRenderer::RenderLODTexture(const Chunk& chunk, const Camera2D& camera) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mLODTexture) {
-        const f32v2 worldPos = chunk.getWorldPos();
-        const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
-
-        RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, renderData.mLODTexture, rect);
+void ChunkRenderer::RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera2D& camera) {
+    if (texture) {
+        const f32v4 rect(worldPos.x, worldPos.y, width, width);
+        RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, texture, rect);
     }
 }
 
-void ChunkRenderer::RenderLODTextureBindless(const Chunk& chunk, const Camera2D& camera, ui32 textureIndex) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mLODTexture) {
-        const f32v2 worldPos = chunk.getWorldPos();
-        const f32v4 rect(worldPos.x, worldPos.y, CHUNK_WIDTH, CHUNK_WIDTH);
-
-        RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTextureBindless(*mLODMaterial, renderData.mLODTexture, textureIndex, rect);
+void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera2D& camera, ui32 textureIndex) {
+    if (texture) {
+        const f32v4 rect(worldPos.x, worldPos.y, width, width);
+        RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTextureBindless(*mLODMaterial, texture, textureIndex, rect);
     }
 }
 

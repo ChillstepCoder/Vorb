@@ -108,9 +108,7 @@ struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
 	TileIndex(ui16 index) : index(index) {};
     TileIndex(const TileIndex& index) : index(index.index) {};
-	TileIndex(unsigned x, unsigned y) : index((y << TILE_INDEX_Y_SHIFT) + x) {
-		assert(getX() == x && getY() == y && index == y * CHUNK_WIDTH + x);
-	};
+	TileIndex(unsigned x, unsigned y) : index((y << TILE_INDEX_Y_SHIFT) + x) {};
 
 	inline ui16 getX() const { return index & TILE_INDEX_X_MASK; }
 	inline ui16 getY() const { return index >> TILE_INDEX_Y_SHIFT; }
