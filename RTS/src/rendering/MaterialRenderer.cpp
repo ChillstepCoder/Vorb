@@ -26,12 +26,12 @@ void MaterialRenderer::renderFullScreenQuad(const Material& material) const {
     mQuadVBO.draw();
 }
 
-void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material, const vg::DepthState& depthState/* = vg::DepthState::FULL*/) const
+void MaterialRenderer::renderQuadMesh(const QuadMesh& quadMesh, const Material& material) const
 {
     // TODO: Here we are rebinding to make sure nobody fucked with our textures, but would be nice to avoid re-binds when iterating chunks?
     bindMaterialForRender(material, nullptr);
 
-    quadMesh.draw(material.mProgram, depthState);
+    quadMesh.draw(material.mProgram);
 }
 
 void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect)
@@ -42,7 +42,7 @@ void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material,
 
     // TODO: Uniform buffer object for static uniforms
     VGUniform textureUniform = material.mProgram.getUniform("Texture");
-    glActiveTexture(textureIndex);
+    glActiveTexture(GL_TEXTURE0 + textureIndex);
     glBindTexture(GL_TEXTURE_2D, texture);
     glUniform1i(textureUniform, textureIndex);
 
@@ -55,10 +55,9 @@ void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material,
 
 void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect) {
     assert(texture);
-
     // TODO: Uniform buffer object for static uniforms
     VGUniform textureUniform = material.mProgram.getUniform("Texture");
-    glActiveTexture(textureIndex);
+    glActiveTexture(GL_TEXTURE0 + textureIndex);
     glBindTexture(GL_TEXTURE_2D, texture);
     glUniform1i(textureUniform, textureIndex);
 

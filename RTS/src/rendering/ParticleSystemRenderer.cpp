@@ -38,6 +38,7 @@ void ParticleSystemRenderer::renderParticleSystems(const Camera2D& camera, vg::G
         bool isPostProcess = systemData.postMaterialName.size() > 0;
         if (isPostProcess) {
             vg::GBuffer gbuffer = getOrCreateFramebufferForParticleSystem(layerName.second);
+            checkGlError("CreateParticleFramebuffer");
 
             // Share depth texture with main FBO
             gbuffer.useGeometry();

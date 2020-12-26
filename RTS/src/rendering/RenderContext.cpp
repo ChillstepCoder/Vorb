@@ -130,7 +130,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
-    if (camera.getScale() < 3.0f) {
+    if (camera.getScale() < 1.5f) {
         lodState = ChunkRenderLOD::LOD_TEXTURE;
     }
 
@@ -170,11 +170,13 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     // Particles
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
-    vg::DepthState::READ.set();
-    // TODO: Replace With BlendState
-    mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
-    vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
-    vg::DepthState::FULL.set();
+    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+        vg::DepthState::READ.set();
+        // TODO: Replace With BlendState
+        mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
+        vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
+        vg::DepthState::FULL.set();
+    }
 
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -298,6 +300,8 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     // Swap
     mPrevGBuffer = mActiveGBuffer;
     mActiveGBuffer = !mActiveGBuffer;
+
+    checkGlError("RenderContext::FrameEnd");
 }
 
 void RenderContext::reloadShaders() {

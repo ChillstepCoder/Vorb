@@ -67,6 +67,12 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
                 RenderMeshOrLODTexture(chunk, camera);
             }
         });
+        // Render region LODs
+        ui32 nextTextureIndex;
+        mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
+        world.enumVisibleRegions(camera, [&](const Region& region) {
+            RenderLODTextureBindless(region.getWorldPos(), region.mRenderData.mLODTexture, WorldData::REGION_WIDTH_TILES, camera, nextTextureIndex);
+        });
     }
     else {
 
@@ -168,7 +174,7 @@ void ChunkRenderer::RenderShadows(const Chunk& chunk, const Camera2D& camera)
 {
     QuadMesh* mesh = chunk.mChunkRenderData.mChunkMesh.get();
     if (mesh && mesh->isValid()) {
-        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial, vg::DepthState::FULL);
+        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial);
     }
 }
 

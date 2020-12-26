@@ -22,7 +22,7 @@ public:
 
     // Indices are 0, 2, 3, 3, 1, 0
     void setData(const TileVertex* meshData, int vertexCount, VGTexture texture);
-    void draw(const vg::GLProgram& program, const vg::DepthState& depthState) const;
+    void draw(const vg::GLProgram& program) const;
 
     bool isValid() const { return mIndexCount > 0; }
 

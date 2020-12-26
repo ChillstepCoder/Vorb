@@ -92,11 +92,9 @@ void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture te
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void QuadMesh::draw(const vg::GLProgram& program, const vg::DepthState& depthState) const {
+void QuadMesh::draw(const vg::GLProgram& program) const {
     // Make sure we have been initialized
     assert(mVao);
-
-    depthState.set();
 
     glBindVertexArray(mVao);
     bindVertexAttribs(program);
