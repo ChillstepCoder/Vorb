@@ -26,9 +26,6 @@
 #include "TextureManip.h"
 #include "Random.h"
 
-// size of global cached random table
-const unsigned CACHED_RANDOM_SIZE = 65536;
-
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(std::make_unique<ResourceManager>()),
@@ -70,10 +67,6 @@ i32 MainMenuScreen::getPreviousScreen() const {
 
 void MainMenuScreen::build() {
 
-	Random::initCachedRandom(CACHED_RANDOM_SIZE);
-
-	mCircleTexture = mResourceManager->getTextureCache().addTexture("data/textures/circle_dir.png");
-
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 	mCamera2D->setScale(mScale);
@@ -112,7 +105,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.05f, 1020.f);
+		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.03f, 1020.f);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -240,8 +233,10 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, const vui::GameTime
 
     // TODO: Delta time dependent?
     // Zoom
-    if (abs(mTargetScale - mScale) > 0.001f) {
-        mScale = vmath::lerp(mScale, mTargetScale, 0.3f);
+	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
+	float adjustedTargetscale = mTargetScale * ((playerControlCmp.mPlayerControlFlags & (ui16)PlayerControlFlags::SPRINTING) ? 0.9f : 1.0f);
+    if (abs(adjustedTargetscale - mScale) > 0.001f) {
+        mScale = vmath::lerp(mScale, adjustedTargetscale, 0.3f);
         mCamera2D->setScale(mScale);
     }
 	const float cameraHeight = 1.0f / mScale * 1000.0f; // Height in meters
@@ -250,7 +245,7 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, const vui::GameTime
 
     // Camera follow
     const f32v2& offsetToMouse = mWorld->getClientECSData().worldMousePos - currentPos;
-    constexpr float LOOK_SCALE = 0.4f;
+    constexpr float LOOK_SCALE = 1.0f;
     mTargetCameraPosition = targetCenter + offsetToMouse * LOOK_SCALE;
 
 	const f32v2 offsetToTarget = mTargetCameraPosition - currentPos;

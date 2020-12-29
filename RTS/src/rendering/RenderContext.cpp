@@ -320,24 +320,25 @@ void RenderContext::renderUI() {
     mSb->begin();
     char buffer[255];
     const float GAP_SIZE = 64.0f;
+    const float START_MULT = 0.9f;
     float yOffset = 0.0f;
-    const f32v2 scale(2.0f);
+    const f32v2 scale(1.0f);
 
     sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, 0.7f * mScreenResolution.y + yOffset), scale, color::White);
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
-    sprintf_s(buffer, sizeof(buffer), "TimeOfDay: %.2f", mWorld.getTimeOfDay());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, 0.7f * mScreenResolution.y + yOffset), scale, color::White);
+    /*sprintf_s(buffer, sizeof(buffer), "TimeOfDay: %.2f", mWorld.getTimeOfDay());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
     sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, 0.7f * mScreenResolution.y + yOffset), scale, color::White);
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
     sprintf_s(buffer, sizeof(buffer), "SunPosition: %.2f", mWorld.getSunPosition());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, 0.7f * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;*/
 
     mSb->end();
     mSb->render(mScreenResolution);

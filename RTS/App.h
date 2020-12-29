@@ -3,6 +3,7 @@
 #include <Vorb/ui/MainGame.h>
 
 class MainMenuScreen;
+class WorldEditorScreen;
 
 class App : public vui::MainGame
 {
@@ -15,6 +16,7 @@ public:
     virtual void onExit() override;
     virtual void refreshElapsedTime() override;
 
-	std::unique_ptr<MainMenuScreen> m_mainMenuScreen;
+    std::unique_ptr<MainMenuScreen> mMainMenuScreen;
+    std::unique_ptr<WorldEditorScreen> mWorldEditorScreen;
 };
 

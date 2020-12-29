@@ -158,6 +158,7 @@
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
+    <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
@@ -185,6 +186,7 @@
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
@@ -225,6 +227,8 @@
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
+    <ClInclude Include="src\editor\WorldEditor.h" />
+    <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
@@ -255,6 +259,7 @@
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\world\Chunk.h" />

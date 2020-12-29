@@ -77,7 +77,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
 	speed *= 1.0f - (speedLerp * 0.5f);
 
-	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
+	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 2.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
 	f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
 	float velocityDist = glm::length(velocityOffset);
 

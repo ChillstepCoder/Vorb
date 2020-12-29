@@ -18,6 +18,7 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
+RTS/dependencies/noesis/
 
 # Roslyn cache directories
 *.ide/
@@ -188,3 +189,4 @@ docs/
 UnitTester/app.config
 
 .vscode/
+RTS/errorlog.txt

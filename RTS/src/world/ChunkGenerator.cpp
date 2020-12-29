@@ -10,11 +10,19 @@
 
 #include "services/Services.h"
 
-// Terrain gen constants
-constexpr int OCTAVES = 7;
-constexpr float PERSISTENCE = 0.7f;
-constexpr float FREQUENCY = 0.001f;
-constexpr f64 CONTINENT_RADIUS = 12000.0;
+#include "generation/NoiseFunction.hpp"
+
+// Noise functions
+const NoiseFunction sBaseNoise             = { 9, 0.7, 0.001 };
+const NoiseFunction sContinentOutlineNoise = { 9, 0.7, 0.0001 };
+const NoiseFunction sTemperatureNoise      = { 4, 0.7, 0.00005 };
+const NoiseFunction sHumidityNoise         = { 4, 0.7, 0.00008 };
+
+// === Continent noise modifiers ===
+// Configurable
+constexpr f64 CONTINENT_RADIUS = 10000.0;
+constexpr f64 CONTINENT_OUTLINE_SCALE = SQ(20000.0);
+// Constant
 constexpr f64 CONTINENT_RADIUS_SQ = SQ(CONTINENT_RADIUS);
 
 // Region LOD data
@@ -37,14 +45,21 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
 
     Tile tile(grass1, TILE_ID_NONE, TILE_ID_NONE);
 
-    f64 height = -Noise::fractal(OCTAVES, PERSISTENCE, FREQUENCY, (f64)worldPos.x, (f64)worldPos.y);
+    //  TODO: Precompute and interpolate, can cubic interpolate and others
+    f64 height = -sBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
 
     f32v2 offsetToCenter(
         worldPos.x - WorldData::WORLD_CENTER.x,
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    const f64 distanceFromCenter2 = glm::length2(offsetToCenter);
+    //  TODO: Precompute and interpolate, can cubic interpolate and others
+    f64 distanceFromCenter2 = glm::length2(offsetToCenter);
+
+    // Draw the outline via noise
+    distanceFromCenter2 += CONTINENT_OUTLINE_SCALE * sContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
+
+    // Outline
     if (distanceFromCenter2 > CONTINENT_RADIUS_SQ) {
         height -= (distanceFromCenter2 - CONTINENT_RADIUS_SQ) * 0.0000001;
     }
@@ -56,13 +71,13 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
         tile.groundLayer = water;
     }
     else if (height < -0.1 || height > 0.1) {
-        if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.95f) {
+        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.95f) {
             tile.midLayer = smallTree;
         }
     }
     else {
         tile.groundLayer = grass2;
-        if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.6f) {
+        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.6f) {
             tile.midLayer = bigTree;
         }
     }
@@ -111,6 +126,10 @@ void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region)
                     *currentPixel++ = tileData.spriteData.lodColor;
                     break;
                 }
+                //float temperature = sTemperatureNoise.compute(tilePosWorld.x, tilePosWorld.y) * 0.5 + 0.5;
+                //float humidity = sHumidityNoise.compute(tilePosWorld.y, tilePosWorld.x) * 0.5 + 0.5;
+                //currentPixel[-1] = color3((ui8)(currentPixel[-1].r * temperature), currentPixel[-1].g, (ui8)(currentPixel[-1].b * humidity));
+                //currentPixel[-1].r = (ui8)(humidity * 255.0);
             }
         }
     }, [&, pixelData]() {

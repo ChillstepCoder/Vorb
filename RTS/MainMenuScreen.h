@@ -40,7 +40,6 @@ private:
 
     std::unique_ptr<ResourceManager> mResourceManager;
 	std::unique_ptr<World> mWorld;
-	vg::Texture mCircleTexture;
 
     // Rendering
     std::unique_ptr<Camera2D> mCamera2D;
