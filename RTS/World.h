@@ -32,6 +32,7 @@ class EntityFactory;
 class World
 {
 	friend class EntityComponentSystem;
+	friend class WorldEditor;
 public:
 	World(ResourceManager& resourceManager);
 	~World();
@@ -84,6 +85,9 @@ private:
 
 	void initChunk(Chunk& chunk);
 	void generateChunkAsync(Chunk& chunk);
+
+	// Editor functions
+	void editorInvalidateWorldGen();
 
     // ECS
     ClientECSData mClientEcsData;

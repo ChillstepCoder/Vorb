@@ -201,6 +201,9 @@
     <ClCompile Include="src\editor\WorldEditor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\generation\WorldGenerationData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -411,6 +414,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\editor\WorldEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\generation\WorldGenerationData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\editor\ImguiViews.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

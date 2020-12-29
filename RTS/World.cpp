@@ -87,7 +87,8 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 	updateSun();
 
 	mLoadCenter = playerPos;
-
+	
+	// TODO: This now asserts out of bounds
 	Chunk& playerChunk = getChunkAtPosition(playerPos);
 	if (playerChunk.isInvalid()) {
 		initChunk(playerChunk);
@@ -380,6 +381,10 @@ void World::generateChunkAsync(Chunk& chunk) {
 		onChunkDataReady(chunk);
 		chunk.decRef();
     });
+}
+
+void World::editorInvalidateWorldGen() {
+	initPostLoad();
 }
 
 std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {

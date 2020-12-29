@@ -60,6 +60,16 @@ void WorldEditorScreen::build() {
 
     mWorldEditor->init();
 
+    vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
+        // View toggle
+        if (event.keyCode == VKEY_B) {
+            sDebugOptions.mWireframe = !sDebugOptions.mWireframe;
+        }
+        else if (event.keyCode == VKEY_C) {
+            sDebugOptions.mChunkBoundaries = !sDebugOptions.mChunkBoundaries;
+        }
+    });
+
 }
 
 void WorldEditorScreen::destroy(const vui::GameTime& gameTime) {

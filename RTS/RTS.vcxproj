@@ -159,6 +159,7 @@
     <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\editor\WorldEditor.cpp" />
+    <ClCompile Include="src\generation\WorldGenerationData.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
@@ -227,8 +228,10 @@
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
+    <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditor.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
+    <ClInclude Include="src\generation\WorldGenerationData.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ShieldItem.h" />

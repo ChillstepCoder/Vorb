@@ -19,6 +19,7 @@ enum class ChunkState {
 };
 
 struct ChunkRenderData {
+	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
 	VGTexture mLODTexture = 0;

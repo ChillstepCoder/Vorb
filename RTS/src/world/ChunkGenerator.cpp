@@ -11,12 +11,7 @@
 #include "services/Services.h"
 
 #include "generation/NoiseFunction.hpp"
-
-// Noise functions
-const NoiseFunction sBaseNoise             = { 9, 0.7, 0.001 };
-const NoiseFunction sContinentOutlineNoise = { 9, 0.7, 0.0001 };
-const NoiseFunction sTemperatureNoise      = { 4, 0.7, 0.00005 };
-const NoiseFunction sHumidityNoise         = { 4, 0.7, 0.00008 };
+#include "generation/WorldGenerationData.h"
 
 // === Continent noise modifiers ===
 // Configurable
@@ -46,7 +41,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     Tile tile(grass1, TILE_ID_NONE, TILE_ID_NONE);
 
     //  TODO: Precompute and interpolate, can cubic interpolate and others
-    f64 height = -sBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+    f64 height = -sWorldGenData.mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
 
     f32v2 offsetToCenter(
         worldPos.x - WorldData::WORLD_CENTER.x,
@@ -57,7 +52,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     f64 distanceFromCenter2 = glm::length2(offsetToCenter);
 
     // Draw the outline via noise
-    distanceFromCenter2 += CONTINENT_OUTLINE_SCALE * sContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
+    distanceFromCenter2 += CONTINENT_OUTLINE_SCALE * sWorldGenData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
 
     // Outline
     if (distanceFromCenter2 > CONTINENT_RADIUS_SQ) {
@@ -104,10 +99,18 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }
 
-void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region)
+void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region, color3* recursivePixelBuffer /*= nullptr*/)
 {
+    // If were currently building, flag as dirty for later rebuild
+    if (region.mRenderData.mIsBuildingLOD) {
+        region.mRenderData.mLODDirty = true;
+        return;
+    }
 
-    color3* pixelData = new color3[LOD_TEXTURE_RESOLUTION * LOD_TEXTURE_RESOLUTION];
+    color3* pixelData = recursivePixelBuffer ? recursivePixelBuffer : new color3[LOD_TEXTURE_RESOLUTION * LOD_TEXTURE_RESOLUTION];
+
+    region.mRenderData.mIsBuildingLOD = true;
+    region.mRenderData.mLODDirty = false;
 
     Services::Threadpool::ref().addTask([&, pixelData](ThreadPoolWorkerData* workerData) {
         const f32v2& regionPosWorld = region.getWorldPos();
@@ -151,8 +154,13 @@ void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region)
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        region.mRenderData.mLODDirty = false;
-
-        delete[] pixelData;
+        region.mRenderData.mIsBuildingLOD = false;
+        if (region.mRenderData.mLODDirty) {
+            // Recurse again if we made it dirty again, sharing memory
+            GenerateRegionLODTextureAsync(region, pixelData);
+        }
+        else {
+            delete[] pixelData;
+        }
     });
 }

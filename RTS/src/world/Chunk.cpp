@@ -58,6 +58,10 @@ void Chunk::dispose() {
     }
     mDataReadyNeighborCount = 0;
 	mState = ChunkState::INVALID;
+    
+    // Reset render data
+    mChunkRenderData.mLODDirty = true;
+    mChunkRenderData.mBaseDirty = true;
 }
 
 TileHandle Chunk::getLeftTile(const TileIndex index) const {
