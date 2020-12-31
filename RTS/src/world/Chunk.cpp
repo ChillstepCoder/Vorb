@@ -25,6 +25,7 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
     mWorldGrid = &worldGrid;
 	assert(mState == ChunkState::INVALID);
 	mChunkId = chunkId;
+    mWorldPos = chunkId.getWorldPos();
 }
 
 void Chunk::allocateTiles() {

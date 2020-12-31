@@ -22,6 +22,7 @@ struct SpriteMetaData {
     std::string name;
     f32v2 offset = f32v2(0.0f);
     bool randFlip = false;
+    bool opaque   = false;
 };
 KEG_TYPE_DECL(SpriteMetaData);
 

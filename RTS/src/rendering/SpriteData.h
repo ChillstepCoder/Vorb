@@ -14,8 +14,9 @@ constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 4;
 
 enum SpriteDataFlags : ui8 {
-    SPRITEDATA_HAS_NORMAL_MAP = 1 << 0,
-    SPRITEDATA_RAND_FLIP      = 1 << 1
+    SPRITEDATA_FLAG_HAS_NORMAL_MAP = 1 << 0,
+    SPRITEDATA_FLAG_RAND_FLIP      = 1 << 1,
+    SPRITEDATA_FLAG_OPAQUE         = 1 << 2,
 };
 
 struct SpriteData {

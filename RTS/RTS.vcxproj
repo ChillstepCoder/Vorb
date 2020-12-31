@@ -230,6 +230,7 @@
     <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditor.h" />
+    <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
     <ClInclude Include="src\item\ArmorItem.h" />

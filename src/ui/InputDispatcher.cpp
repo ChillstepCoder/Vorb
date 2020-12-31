@@ -7,7 +7,6 @@
 #include "Vorb/ui/GameWindow.h"
 #include "Vorb/ui/KeyMappings.inl"
 
-#define VORB_IMPL_IMGUI
 #if defined(VORB_IMPL_IMGUI)
 #include "Vorb/ui/imgui/imgui.h"
 #include "Vorb/ui/imgui/backends/imgui_impl_sdl.h"

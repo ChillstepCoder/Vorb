@@ -2,6 +2,8 @@
 
 #include <Vorb/ui/MainGame.h>
 
+#include "FeatureConst.h"
+
 class MainMenuScreen;
 class WorldEditorScreen;
 
@@ -17,6 +19,8 @@ public:
     virtual void refreshElapsedTime() override;
 
     std::unique_ptr<MainMenuScreen> mMainMenuScreen;
+#if IS_ENABLED(FEATURE_WORLD_EDITOR)
     std::unique_ptr<WorldEditorScreen> mWorldEditorScreen;
+#endif
 };
 

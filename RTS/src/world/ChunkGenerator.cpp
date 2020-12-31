@@ -61,6 +61,8 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
 
     if (height > 0.3) {
         tile.groundLayer = rock1;
+        // Mountains
+        tile.baseZPosition = (ui16)((height - 0.3) / 0.01);
     }
     else if (height < -0.45) {
         tile.groundLayer = water;

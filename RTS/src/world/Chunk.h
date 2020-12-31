@@ -104,7 +104,7 @@ public:
 	void dispose();
 
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
-	f32v2 getWorldPos() const { return mChunkId.getWorldPos(); }
+	const f32v2& getWorldPos() const { return mWorldPos; }
 	ChunkState getState() const { return mState; }
 	const ChunkID& getChunkID() const { return mChunkId; }
 
@@ -129,6 +129,10 @@ public:
         assert(mState == ChunkState::FINISHED);
         return mTiles[i];
     }
+
+    Tile getTileAtNoAssert(TileIndex i) const {
+        return mTiles[i];
+	}
 
     void setTileAt(TileIndex i, Tile tile) {
 		assert(i < CHUNK_SIZE);
@@ -156,6 +160,7 @@ private:
 	}
 
 	ChunkID mChunkId;
+	f32v2 mWorldPos = f32v2(0.0f);
 	std::vector<Tile> mTiles;
 	ChunkState mState = ChunkState::INVALID;
 

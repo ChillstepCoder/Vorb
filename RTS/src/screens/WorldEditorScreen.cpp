@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "WorldEditorScreen.h"
 
+#if IS_ENABLED(FEATURE_WORLD_EDITOR)
+
 #include "App.h"
 
 #include "rendering/RenderContext.h"
@@ -115,3 +117,5 @@ void WorldEditorScreen::draw(const vui::GameTime& gameTime)
 
     mWorldEditor->updateAndRender();
 }
+
+#endif

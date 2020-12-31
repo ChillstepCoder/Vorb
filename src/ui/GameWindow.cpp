@@ -37,6 +37,12 @@
 #define DEFAULT_WINDOW_FLAGS (SDL_WINDOW_SHOWN)
 #endif
 
+#if defined(VORB_IMPL_IMGUI)
+#include "Vorb/ui/imgui/imgui.h"
+#include "Vorb/ui/imgui/backends/imgui_impl_sdl.h"
+#include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+#endif
+
 KEG_ENUM_DEF(GameSwapInterval, vui::GameSwapInterval, ke) {
     using namespace keg;
     ke.addValue("Unlimited", vui::GameSwapInterval::UNLIMITED_FPS);
@@ -268,6 +274,26 @@ bool vui::GameWindow::init(bool isResizable /*= true*/) {
     vui::InputDispatcher::onQuit += makeDelegate(this, &GameWindow::onQuitSignal);
     vui::InputDispatcher::window.onResize += makeDelegate(this, &GameWindow::onResize);
     m_quitSignal = false;
+
+#ifdef VORB_IMPL_IMGUI
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    const char* glsl_version = "#version 450";
+    // Make sure we are using the right gl version (4.5)
+    const ui32 minor = getGLMinorVersion();
+    const ui32 major = getGLMajorVersion();
+    assert(minor == 5 && major == 4);
+    ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(m_window), m_glc);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+#endif
 
     return true;
 }

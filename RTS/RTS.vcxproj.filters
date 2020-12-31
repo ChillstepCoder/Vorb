@@ -422,5 +422,8 @@
     <ClInclude Include="src\editor\ImguiViews.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\FeatureConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

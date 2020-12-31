@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "WorldEditor.h"
 
+#if IS_ENABLED(FEATURE_WORLD_EDITOR)
+
 #include "Camera2D.h"
 #include "World.h"
 #include "world/WorldData.h"
@@ -111,3 +113,5 @@ void WorldEditor::updateCamera()
         mCamera.setScale(mScale);
     }
 }
+
+#endif

@@ -24,6 +24,7 @@ struct Tile {
 		};
 		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
+	ui16 baseZPosition = 0;
 };
 
 enum class TileShape {

@@ -1,8 +1,12 @@
 #pragma once
 
+#include "FeatureConst.h"
+
 class Camera2D;
 class World;
 struct SDL_Window;
+
+#if IS_ENABLED(FEATURE_WORLD_EDITOR)
 
 class WorldEditor
 {
@@ -25,3 +29,4 @@ private:
     float mScale = 50.0f;
 };
 
+#endif

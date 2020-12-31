@@ -36,11 +36,11 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
     std::map<int /*page*/, std::vector<SpriteData*>> spritesToGenerate;
     for (auto&& it : mResourceManager.getSpriteRepository().getSprites()) {
         SpriteData& spriteData = it.second;
-        if (spriteData.flags & SPRITEDATA_HAS_NORMAL_MAP) {
+        if (spriteData.flags & SPRITEDATA_FLAG_HAS_NORMAL_MAP) {
             continue;
         }
         spritesToGenerate[spriteData.atlasPage].push_back(&spriteData);
-        spriteData.flags |= SPRITEDATA_HAS_NORMAL_MAP;
+        spriteData.flags |= SPRITEDATA_FLAG_HAS_NORMAL_MAP;
     }
 
     VGUniform uvUniform = mNormalsMaterial->mProgram.getUniform("unUvRect");

@@ -1,5 +1,8 @@
-#pragma once
-#pragma once
+
+#include "FeatureConst.h"
+
+#if IS_ENABLED(FEATURE_WORLD_EDITOR)
+
 #include <Vorb/ui/IGameScreen.h>
 
 #include <Vorb/graphics/Texture.h>
@@ -49,3 +52,5 @@ private:
     float mFps = 0.0f;
 
 };
+
+#endif

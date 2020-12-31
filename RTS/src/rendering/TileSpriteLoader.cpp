@@ -21,6 +21,7 @@ KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
     kt.addValue("name", keg::Value::basic(offsetof(SpriteMetaData, name), keg::BasicType::STRING));
     kt.addValue("lod_color", keg::Value::basic(offsetof(SpriteMetaData, lodColor), keg::BasicType::UI8_V3));
     kt.addValue("rand_flip", keg::Value::basic(offsetof(SpriteMetaData, randFlip), keg::BasicType::BOOL));
+    kt.addValue("opaque", keg::Value::basic(offsetof(SpriteMetaData, opaque), keg::BasicType::BOOL));
     kt.addValue("offset", keg::Value::basic(offsetof(SpriteMetaData, offset), keg::BasicType::F32_V2));
 }
 
@@ -68,7 +69,10 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         sprite.lodColor = metaData.lodColor;
         sprite.offset = metaData.offset;
         if (metaData.randFlip) {
-            sprite.flags |= SPRITEDATA_RAND_FLIP;
+            sprite.flags |= SPRITEDATA_FLAG_RAND_FLIP;
+        }
+        if (metaData.opaque) {
+            sprite.flags |= SPRITEDATA_FLAG_OPAQUE;
         }
 
         // Determine how many tiles we need to map to the atlas, by finding the AABB in tile units

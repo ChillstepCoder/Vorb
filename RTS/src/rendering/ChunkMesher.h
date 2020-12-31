@@ -6,6 +6,8 @@
 
 class Chunk;
 class TextureAtlas;
+struct TileData;
+struct SpriteData;
 
 constexpr int MAX_VERTICES_PER_CHUNK = CHUNK_SIZE * 4 * 4;
 constexpr int MAX_INDICES_PER_CHUNK = CHUNK_SIZE * 4 * 6;
