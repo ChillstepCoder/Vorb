@@ -78,7 +78,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     // Shadow GBuffer
     vg::GBufferAttachment shadowAttachments[1];
     // Shadow alpha and source height
-    shadowAttachments[0].format = vg::TextureInternalFormat::R8;
+    shadowAttachments[0].format = vg::TextureInternalFormat::R16;
     shadowAttachments[0].number = 0;
     shadowAttachments[0].pixelFormat = vg::TextureFormat::RED;
     shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
@@ -164,7 +164,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
 
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
 
-    mEcsRenderer->renderPhysicsDebug(camera);
+    //mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f);
 

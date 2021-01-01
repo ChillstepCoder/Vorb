@@ -105,6 +105,7 @@ void QuadMesh::draw(const vg::GLProgram& program) const {
 }
 
 void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
+    // TODO: can we not do this every time?
     if (mLastUsedProgram != &program) {
         mLastUsedProgram = &program;
 
@@ -119,8 +120,8 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         if (const VGAttribute* heightAttribute = program.tryGetAttribute("vHeight")) {
             glVertexAttribPointer(*heightAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, height));
         }
-        if (const VGAttribute* shadowAttribute = program.tryGetAttribute("vShadowEnabled")) {
-            glVertexAttribPointer(*shadowAttribute, 1, GL_UNSIGNED_BYTE, false, sizeof(TileVertex), (void*)offsetof(TileVertex, shadowEnabled));
+        if (const VGAttribute* shadowAttribute = program.tryGetAttribute("vShadowState")) {
+            glVertexAttribPointer(*shadowAttribute, 1, GL_UNSIGNED_BYTE, false, sizeof(TileVertex), (void*)offsetof(TileVertex, shadowState));
         }
     }
 }

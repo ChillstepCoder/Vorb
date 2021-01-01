@@ -11,7 +11,7 @@ enum class TileTextureMethod : ui8 {
 KEG_ENUM_DECL(TileTextureMethod);
 
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
-constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 4;
+constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 5;
 
 enum SpriteDataFlags : ui8 {
     SPRITEDATA_FLAG_HAS_NORMAL_MAP = 1 << 0,

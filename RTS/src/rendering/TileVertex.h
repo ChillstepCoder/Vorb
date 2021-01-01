@@ -1,5 +1,12 @@
 #pragma once
 
+enum class ShadowState : ui8 {
+    NONE,
+    STANDARD, // Thin objects like trees
+    LEFT, // Top left vertex on thick objects
+    RIGHT //  Top right vertex on thick objects
+};
+
 struct TileVertex {
 public:
     TileVertex() {};
@@ -12,7 +19,7 @@ public:
     color4 color;
     ui16 atlasPage;
     ui8 height; // Defines world height to vertex
-    ui8 shadowEnabled;
+    ui8 shadowState;
     ui8 padding[4];
 };
 

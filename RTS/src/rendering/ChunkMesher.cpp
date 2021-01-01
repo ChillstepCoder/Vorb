@@ -11,6 +11,8 @@
 constexpr int MAX_CONCURRENT_MESH_TASKS = 10;
 constexpr float LAYER_DEPTH_ADD = 0.001f;
 constexpr float VERTICAL_OFFSET_PER_LAYER = 0.749f;
+constexpr float AMBIENT_OCCLUSION_MULT = 0.7f;
+constexpr float NO_AMBIENT_OCCLUSION = 1.0f;
 
 static TileVertex sVertices[MAX_VERTICES_PER_CHUNK];
 
@@ -42,7 +44,7 @@ enum ExposedNeighborBits {
     TOP_RIGHT = 1 << 7
 };
 
-const f32v2 CONNECTED_WALL_DIMS = f32v2(6.0f, 4.0f);
+const f32v2 CONNECTED_WALL_DIMS = f32v2(6.0f, 5.0f);
 
 inline bool isBitSet(int v, ExposedNeighborBits bit) {
     return v & bit;
@@ -112,6 +114,7 @@ f32v2 getUvsOffsetsFromConnectedWallIndex(int index) {
 //  0  1  2  3  4  5
 //  6  7  8  9  a  b
 //  c  d  e  f 10 11
+// 12 13 14 15 16 17
 // Cached after running once
 void initConnectedOffsets() {
     // 1 bits represent exposed faces
@@ -159,7 +162,7 @@ void initConnectedOffsets() {
 
         // I shapes
         if (checkIShape(i, TOP, 0x8, BOTTOM_LEFT, BOTTOM_RIGHT, BOTTOM, 0x5)) {
-continue;
+            continue;
         }
         if (checkIShape(i, RIGHT, 0x7, BOTTOM_LEFT, TOP_LEFT, LEFT, 0x6)) {
             continue;
@@ -221,17 +224,17 @@ void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, const SpriteData& spriteData, const f32v4& uvs, float extraHeight) {
+void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, const SpriteData& spriteData, const f32v4& uvs, float extraHeight, float ambientOcclusionMult, float heightMult) {
     // Center the sprite
     const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
     position += offset;
     const float zLevelOffset = zOffset * VERTICAL_OFFSET_PER_LAYER;
     position.y += zLevelOffset;
 
-    // Need to increase depth to bring walls in line with roofs for depth, since walls are shorter than 1.0
-    static constexpr float WALL_Y_DEPTH_MULT = 1.333333333f;
-    static constexpr float SHADOW_MULT = 0.5f;
     static constexpr float EPSILON = 0.005f;
+
+    f32 topHeight = zOffset;
+    f32 bottomHeight = zOffset;
 
     f32v4 adjustedUvs;
     if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(position.x, position.y) > 0.5f) {
@@ -244,49 +247,58 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
     else {
         adjustedUvs = uvs;
     }
+    // Squish UVs to match the tile mesh for short walls and such that aren't 1.0f
+    adjustedUvs.y += (1.0f - heightMult) * adjustedUvs.w;
+    adjustedUvs.w *= heightMult;
 
-    // Otherwise shadows break
-    assert(spriteData.dimsMeters.x <= 6.0f && spriteData.dimsMeters.y <= 6.0f);
-    // 40 units per tile with max of 6 for size
-    static constexpr float HEIGHT_SCALE = 42.0f;// (0, 252) / 6 so we get 42;
+    // 4 units per tile with max of 62 for size
+    static constexpr float HEIGHT_SCALE = 4.0f;
     static constexpr float WALL_HEIGHT = 1.0f;
 
     float bottomDepth = extraHeight + zOffset;
     float topDepth = bottomDepth;
-    ui8 shadowTop = false;
-    ui8 shadowBottom = zLevelOffset > 0.0;
-    ui8 topHeight    = 0;
-    ui8 bottomHeight = 0;
+    ShadowState shadowTopLeft = ShadowState::LEFT;
+    ShadowState shadowTopRight = ShadowState::RIGHT;
+    ShadowState shadowBottomLeft = ShadowState::LEFT;
+    ShadowState shadowBottomRight = ShadowState::RIGHT;
+    if (zLevelOffset > 0.0) {
+        shadowBottomLeft = ShadowState::LEFT;
+        shadowBottomRight = ShadowState::RIGHT;
+    }
     color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
     color4 bottomColor;
     float topRightDepthAdjust = 0.0f;
     // TODO: Encode height in the tile data, not as a guess
     switch (shape) {
         case TileShape::THIN: {
-            topDepth += spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT;
+            topDepth += spriteData.dimsMeters.y;
             // This is actually fake ambient occlusion
-            bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
-            shadowTop = true;
-            topHeight = ui8(spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * HEIGHT_SCALE);
+            bottomColor = color4(ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), 255u);
+            shadowTopLeft = ShadowState::STANDARD;
+            shadowTopRight = ShadowState::STANDARD;
+            topHeight = spriteData.dimsMeters.y + zOffset;
             topRightDepthAdjust = EPSILON;
             break;
         }
         case TileShape::THICK: {
-            topDepth += spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * WALL_HEIGHT;
+            topDepth += spriteData.dimsMeters.y;
             // This is actually fake ambient occlusion
-            bottomColor = color4(ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), ui8(255 * SHADOW_MULT), 255u);
-            shadowTop = true;
-            topHeight = ui8(spriteData.dimsMeters.y * WALL_Y_DEPTH_MULT * HEIGHT_SCALE * WALL_HEIGHT);
+            bottomColor = color4(ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), 255u);
+            shadowTopLeft = ShadowState::LEFT;
+            shadowTopRight = ShadowState::RIGHT;
+            topHeight = spriteData.dimsMeters.y + zOffset;
             break;
         }
         case TileShape::ROOF: {
             bottomDepth += WALL_HEIGHT;
             topDepth += WALL_HEIGHT;
             bottomColor = topColor;
-            shadowTop = true;
-            shadowBottom = true;
+            shadowTopLeft = ShadowState::LEFT;
+            shadowTopRight = ShadowState::RIGHT;
+            shadowBottomLeft = shadowTopLeft;
+            shadowBottomRight = shadowTopRight;
             // Roof is always 1.0 high
-            topHeight = ui8(HEIGHT_SCALE * WALL_HEIGHT);
+            topHeight = 1.0f + zOffset;
             bottomHeight = topHeight;
             break;
         }
@@ -301,6 +313,10 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
     }
     static_assert((int)TileShape::COUNT == 4, "Update for new shape");
 
+
+    ui8 topHeightUi8    = ui8(topHeight * HEIGHT_SCALE);
+    ui8 bottomHeightUi8 = ui8(bottomHeight * HEIGHT_SCALE);
+
     { // Bottom Left
         TileVertex& vbl = verts[0];
         vbl.pos.x = position.x;
@@ -310,8 +326,8 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
         vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbl.color = bottomColor;
         vbl.atlasPage = spriteData.atlasPage;
-        vbl.shadowEnabled = shadowBottom;
-        vbl.height = bottomHeight;
+        vbl.shadowState = (ui8)shadowBottomLeft;
+        vbl.height = bottomHeightUi8;
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
@@ -322,32 +338,32 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
         vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbr.color = bottomColor;
         vbr.atlasPage = spriteData.atlasPage;
-        vbr.shadowEnabled = shadowBottom;
-        vbr.height = bottomHeight;
+        vbr.shadowState = (ui8)shadowBottomRight;
+        vbr.height = bottomHeightUi8;
     }
     { // Top Left
         TileVertex& vtl = verts[2];
         vtl.pos.x = position.x;
-        vtl.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
+        vtl.pos.y = position.y + spriteData.dimsMeters.y * heightMult + EPSILON;
         vtl.pos.z = topDepth;
         vtl.uvs.x = adjustedUvs.x;
         vtl.uvs.y = adjustedUvs.y;
         vtl.color = topColor;
         vtl.atlasPage = spriteData.atlasPage;
-        vtl.shadowEnabled = shadowTop;
-        vtl.height = topHeight;
+        vtl.shadowState = (ui8)shadowTopLeft;
+        vtl.height = topHeightUi8;
     }
     { // Top Right
         TileVertex& vtr = verts[3];
         vtr.pos.x = position.x + spriteData.dimsMeters.x + EPSILON;
-        vtr.pos.y = position.y + spriteData.dimsMeters.y + EPSILON;
+        vtr.pos.y = position.y + spriteData.dimsMeters.y * heightMult + EPSILON;
         vtr.pos.z = topDepth + topRightDepthAdjust; // Epsilon to prevent Z fighting with trees
         vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
         vtr.uvs.y = adjustedUvs.y;
         vtr.color = topColor;
         vtr.atlasPage = spriteData.atlasPage;
-        vtr.shadowEnabled = shadowTop;
-        vtr.height = topHeight;
+        vtr.shadowState = (ui8)shadowTopRight;
+        vtr.height = topHeightUi8;
     }
 }
 
@@ -368,6 +384,18 @@ void addTileConnected(
     Tile neighbors[8];
     chunk.getTileNeighbors(tileIndex, neighbors);
 
+
+    const Tile& botNeighbor = neighbors[(int)NeighborIndex::BOTTOM];
+    const TileID botId = botNeighbor.layers[layerIndex];
+    const TileData& botTileData = TileRepository::getTileData(botId);
+    const SpriteData& botSpriteData = botTileData.spriteData;
+    // Transparent tiles appear to be 1 tile lower
+    int bottomHeightDiff = tile.baseZPosition - botNeighbor.baseZPosition;
+    if (!(botSpriteData.flags & SPRITEDATA_FLAG_OPAQUE)) {
+        bottomHeightDiff += 1;
+    }
+    const bool isElevated = bottomHeightDiff > 1;
+
     unsigned exposedBits = 0;
     for (int i = 0; i < 8; ++i) {
         const Tile& neighbor = neighbors[i];
@@ -379,13 +407,13 @@ void addTileConnected(
     const ConnectedWallData& data = sConnectedWallData[exposedBits];
     if (data.data == 0) {
         vertexData.resize(vertexData.size() + 4);
-        addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, spriteData.uvs, layerDepth);
+        addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, spriteData.uvs, layerDepth, NO_AMBIENT_OCCLUSION, 1.0f);
     }
     else {
         // Check if we need to render the base layer first
         if (data.a < 0x10) {
             vertexData.resize(vertexData.size() + 4);
-            addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, spriteData.uvs, layerDepth);
+            addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, spriteData.uvs, layerDepth, NO_AMBIENT_OCCLUSION, 1.0f);
         }
         // Render up to 4 textures depending on configuration
         for (int i = 0; i < 4; ++i) {
@@ -397,7 +425,7 @@ void addTileConnected(
             uvs.x += offsets.x * uvs.z;
             uvs.y += offsets.y * uvs.w;
             vertexData.resize(vertexData.size() + 4);
-            addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, uvs, layerDepth + LAYER_DEPTH_ADD);
+            addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, uvs, layerDepth + LAYER_DEPTH_ADD, NO_AMBIENT_OCCLUSION, 1.0f);
         }
         // Render exposed wall bottom if  needed
         if (isBitSet(exposedBits, BOTTOM)) {
@@ -410,34 +438,34 @@ void addTileConnected(
             uvs.x += offsets.x * uvs.z;
             uvs.y += offsets.y * uvs.w;
             vertexData.resize(vertexData.size() + 4);
-            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition, spriteData, uvs, layerDepth);
+            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition, spriteData, uvs, layerDepth, isElevated ? NO_AMBIENT_OCCLUSION : AMBIENT_OCCLUSION_MULT, VERTICAL_OFFSET_PER_LAYER);
         }
     }
 
     // See if we need to add additional "tower" quads if we are exposed deeper on the bottom
-    const Tile& botNeighbor = neighbors[(int)NeighborIndex::BOTTOM];
-    int bottomHeightDiff = tile.baseZPosition - botNeighbor.baseZPosition;
-    if (bottomHeightDiff > 0) {
-        const TileID botId = botNeighbor.layers[layerIndex];
-        const TileData& botTileData = TileRepository::getTileData(botId);
-        const SpriteData& botSpriteData = botTileData.spriteData;
-        // Transparent tiles appear to be 1 tile lower
-        if (!(botSpriteData.flags & SPRITEDATA_FLAG_OPAQUE)) {
-            bottomHeightDiff += 1;
+    for (int i = 1; i < bottomHeightDiff; ++i) {
+        exposedBits = 0;
+        const Tile& leftNeighbor  = neighbors[(int)NeighborIndex::LEFT];
+        const Tile& rightNeighbor = neighbors[(int)NeighborIndex::RIGHT];
+        int adjustedZPosition = tile.baseZPosition - i;
+        if (leftNeighbor.baseZPosition < adjustedZPosition || leftNeighbor.layers[layerIndex] != tileId) {
+            exposedBits |= LEFT;
         }
-        for (int i = 1; i < bottomHeightDiff; ++i) {
-
-            // TODO: This needs to be smarter on the lower end
-            const unsigned sideCheck = ((exposedBits & (LEFT | RIGHT)) >> 3);
-            const ui16 val = sExposedWallLookup[sideCheck];
-
-            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-            f32v4 uvs = spriteData.uvs;
-            uvs.x += offsets.x * uvs.z;
-            uvs.y += offsets.y * uvs.w;
-            vertexData.resize(vertexData.size() + 4);
-            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition - i, spriteData, uvs, layerDepth);
+        if (rightNeighbor.baseZPosition < adjustedZPosition || rightNeighbor.layers[layerIndex] != tileId) {
+            exposedBits |= RIGHT;
         }
+        // New exposure check for left and right on towers
+        const unsigned sideCheck = (exposedBits >> 3);
+        const ui16 val = sExposedWallLookup[sideCheck];
+
+        const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+        f32v4 uvs = spriteData.uvs;
+        uvs.x += offsets.x * uvs.z;
+        // + 1 for the tall wall variants
+        uvs.y += (offsets.y + 1) * uvs.w;
+        vertexData.resize(vertexData.size() + 4);
+        const float ambientOcclusion = (i == bottomHeightDiff - 1) ? AMBIENT_OCCLUSION_MULT : NO_AMBIENT_OCCLUSION;
+        addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition - i, spriteData, uvs, layerDepth, ambientOcclusion, VERTICAL_OFFSET_PER_LAYER);
     }
 }
 
@@ -485,7 +513,7 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     switch (spriteData.method) {
                         case TileTextureMethod::SIMPLE: {
                             vertexData.resize(vertexData.size() + 4);
-                            addQuad(&vertexData.back() - 3, tileData.shape, f32v2(x + chunkPos.x, y + chunkPos.y), tile.baseZPosition, spriteData, spriteData.uvs, layerIndex * LAYER_DEPTH_ADD);
+                            addQuad(&vertexData.back() - 3, tileData.shape, f32v2(x + chunkPos.x, y + chunkPos.y), tile.baseZPosition, spriteData, spriteData.uvs, layerIndex * LAYER_DEPTH_ADD, AMBIENT_OCCLUSION_MULT, 1.0f);
                             break;
                         }
                         case TileTextureMethod::CONNECTED_WALL: {

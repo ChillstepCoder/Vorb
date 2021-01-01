@@ -2,17 +2,18 @@ uniform sampler2D FboShadowHeight;
 uniform sampler2D FboDepth;
 uniform float ZoomScale;
 uniform float SunHeight;
+uniform float SunPosition;
 
 in vec2 fUV;
 
 out vec4 fColor;
 
-const float DEPTH_SCALE = 10.0; // Far plane  is 10
+const float DEPTH_SCALE = 256.0; // Far plane is 256
 
 // TODO: Shared constants file?
-// Needs to match C++
-const float SHADOW_SCALE = 6.0;
-const float SHADOW_ALPHA = 0.7;
+// Needs to match C++ HEIGHT_SCALE
+const float SHADOW_SCALE = 62.0;
+const float SHADOW_MAX_ALPHA = 0.5;
 
 void main() {
 	
@@ -22,8 +23,13 @@ void main() {
 	vec2 shadowUV = fUV;
 	// Make objects feel 3D under shadows (Doesn't really work right)
 	//shadowUV.y -= invertDepth * ZoomScale * 0.0002;
-	float shadowHeight = texture(FboShadowHeight, shadowUV).r * SHADOW_SCALE;
+	float shadowHeight = texture(FboShadowHeight, shadowUV).r;
+	float shadowMult = shadowHeight * SHADOW_SCALE;
 	
 	fColor.rgb = vec3(0.0);
-	fColor.a = step(0.0, shadowHeight - (invertDepth + 0.01)) * SunHeight * SHADOW_ALPHA;
+	// Becomes lighter near noon
+	float shadowAlpha = pow(abs(SunPosition * SHADOW_MAX_ALPHA), 0.6);
+	// Compile intensity
+	fColor.a = step(0.0, shadowMult - (invertDepth + 0.01)) * SunHeight * shadowAlpha;
+	// Lighter the higher it goes (doesn't work due to depth sort)
 }
