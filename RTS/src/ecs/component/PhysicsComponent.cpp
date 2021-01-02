@@ -8,6 +8,12 @@
 #include <box2d/b2_circle_shape.h>
 #include <box2d/b2_fixture.h>
 
+constexpr float MIN_Z_SPEED = -0.24f;
+constexpr float TOP_COLLISION_THRESHOLD = 0.75f;
+constexpr float TOP_COLLISION_DEPTH = 1.0f - TOP_COLLISION_THRESHOLD;
+// This prevents tunelling when falling
+static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
+
 // Collision info
 
 float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT] = {
@@ -19,9 +25,11 @@ float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT] = {
 static_assert((int)TileCollisionShape::COUNT == 4, "Update");
 
 constexpr float VEL_DAMPING = 0.75f;
+constexpr float GRAVITY_FORCE = 0.01f;
 
-// TODO: Capsule collision
-inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
+// This is only kept as a reference for 2D collision detection
+// TODO: eventually remove this / replace with a common utility
+//inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 	//// We add radius since position is the top left corner
 	//const glm::vec2 distVec = cmp2.getPosition() - cmp1.getPosition();
 	//const float dist = glm::length(distVec);
@@ -49,16 +57,32 @@ inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
 	//	cmp1.mVelocity += (acf - aci) * distDir;
 	//	cmp2.mVelocity += (bcf - bci) * distDir;
 	//}
-}
+//}
 
-void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tileShape, PhysicsComponent& cmp) {
-    const float colliderRadius = cmp.mCollisionRadius;
-    const f32v2& colliderCenter = cmp.getPosition();
+void resolveCircleTileCollision(const f32v2& tileCenter, f32 tileZTop, TileCollisionShape tileShape, PhysicsComponent& cmp) {
+    float colliderRadius = cmp.mCollisionRadius;
+    const f32v2& colliderCenter = cmp.getXYPosition();
     f32v2 offsetToCollider = colliderCenter - tileCenter;
 	const float tileCollisionRadius = TileCollisionShapeRadii[(int)tileShape];
 
+	bool isCollidingWithTop = false;
+	float zOffset = cmp.getZPosition() - tileZTop;
+	if (zOffset > 0.0f) {
+		// We are above, do nothing
+		return;
+	}
+	else if (zOffset > -TOP_COLLISION_DEPTH) {
+		// We are colliding with the top, snap us up
+		// TODO: we could compare this to the depression of the XY so we don't pop straight up on the corners when climbing?
+		isCollidingWithTop = true;
+		// When colliding with top, our feet are colliding and are smaller
+		// TODO: Make this dynamic?
+		colliderRadius *= 0.3f;
+	}
+
 	switch (tileShape)
 	{
+		case TileCollisionShape::FLOOR:
 		case TileCollisionShape::BOX: {
             offsetToCollider.x = vmath::clamp(offsetToCollider.x, -0.5f, 0.5f);
             offsetToCollider.y = vmath::clamp(offsetToCollider.y, -0.5f, 0.5f);
@@ -68,7 +92,16 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
             const float dx2 = offsetToWall.x * offsetToWall.x;
             const float dy2 = offsetToWall.y * offsetToWall.y;
 
-            if (dx2 + dy2 < colliderRadius * colliderRadius) {
+			// Shrink collider radius if is colliding with top
+
+            if (dx2 + dy2 < SQ(colliderRadius)) {
+                // Just pop up
+                // TODO: Move up smoother, always counter gravity
+                if (isCollidingWithTop) {
+                    cmp.setZPosition(tileZTop);
+					cmp.setZVelocity(0.0f);
+                    return;
+                }
                 // Collision!
                 b2Vec2 currentVelocity = cmp.mBody->GetLinearVelocity();
                 if (dx2 > dy2) {
@@ -80,7 +113,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
                             cmp.mBody->SetLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius + offsetToWall.x;
-						cmp.setPosition(f32v2(colliderCenter.x + collisionDepth, colliderCenter.y));
+						cmp.setXYPosition(f32v2(colliderCenter.x + collisionDepth, colliderCenter.y));
                     }
                     else {
                         // Colliding with right wall
@@ -89,10 +122,11 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
                             cmp.mBody->SetLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius - offsetToWall.x;
-						cmp.setPosition(f32v2(colliderCenter.x - collisionDepth, colliderCenter.y));
+						cmp.setXYPosition(f32v2(colliderCenter.x - collisionDepth, colliderCenter.y));
                     }
                 }
                 else {
+
                     // Y collision
                     if (offsetToWall.y < 0.0f) {
                         // Colliding with bottom wall
@@ -101,7 +135,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
                             cmp.mBody->SetLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius + offsetToWall.y;
-						cmp.setPosition(f32v2(colliderCenter.x, colliderCenter.y + collisionDepth));
+						cmp.setXYPosition(f32v2(colliderCenter.x, colliderCenter.y + collisionDepth));
                     }
                     else {
                         // Colliding with top wall
@@ -110,7 +144,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
                             cmp.mBody->SetLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius - offsetToWall.y;
-						cmp.setPosition(f32v2(colliderCenter.x, colliderCenter.y - collisionDepth));
+						cmp.setXYPosition(f32v2(colliderCenter.x, colliderCenter.y - collisionDepth));
                     }
                 }
             }
@@ -127,7 +161,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
 				f32v2 currentVelocity = cmp.getLinearVelocity();
 				float collisionDepth = totalRadius - offset;
                 // Push away
-				cmp.setPosition(colliderCenter + impulseNormal * collisionDepth);
+				cmp.setXYPosition(colliderCenter + impulseNormal * collisionDepth);
 
                 // Calcuate deflection
                 float vDotN = glm::dot(currentVelocity, impulseNormal);
@@ -145,39 +179,42 @@ void resolveCircleTileCollision(const f32v2& tileCenter, TileCollisionShape tile
 
 // TODO: Measure perf of this vs non inline vs macro
 inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime) {
-	const f32v2& vel = cmp.getLinearVelocity();
+	const f32v2& xyVel = cmp.getLinearVelocity();
 	// TODO: TestBit
-	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(vel.x) > 0.0001f || glm::abs(vel.y) >= 0.0001f)) {
-		cmp.mDir = glm::normalize(vel);
+	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
+		cmp.mDir = glm::normalize(xyVel);
 	}
 
-	//if (cmp.mPosition.z <= 0.0f) {
-	//}
-	//cmp.mPosition += cmp.mVelocity;
-	//if (cmp.mFrictionEnabled) {
-	//	cmp.mVelocity -= cmp.mVelocity * (1.0f - cmp.mFrictionCoef) * deltaTime; // TODO: Deterministic?
-	//}
+    // Handle gravity and Z velocity
+    if (cmp.mZVelocity < MIN_Z_SPEED) {
+        cmp.mZVelocity = MIN_Z_SPEED;
+    }
+	cmp.mZPosition += cmp.mZVelocity * deltaTime;
+	cmp.mZVelocity -= GRAVITY_FORCE * deltaTime;
 
-	const f32v2& position = cmp.getPosition();
+
+	const f32v2& xyPosition = cmp.getXYPosition();
 
 	// TODO: Handle larger colliders
 	const f32v2 cornerPositions[4] = {
-		position + f32v2(-0.5f,-0.5f), // Bottom left
-		position + f32v2( 0.5f,-0.5f), // Bottom right
-		position + f32v2(-0.5f, 0.5f), // Top left
-		position + f32v2( 0.5f, 0.5f), // Top right
+		xyPosition + f32v2(-0.5f,-0.5f), // Bottom left
+		xyPosition + f32v2( 0.5f,-0.5f), // Bottom right
+		xyPosition + f32v2(-0.5f, 0.5f), // Top left
+		xyPosition + f32v2( 0.5f, 0.5f), // Top right
 	};
 
 	// TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
 	for (int i = 0; i < 4; ++i) {
 		TileHandle handle = world.getTileHandleAtWorldPos(cornerPositions[i]);
-		// TODO: CollisionMap
+        const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
+        // TODO: CollisionMap
 		for (int l = 0; l < 3; ++l) {
-			const TileData tileData = TileRepository::getTileData(handle.tile.layers[l]);
-            if (tileData.collisionShape != TileCollisionShape::NONE) {
-				f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-				resolveCircleTileCollision(tileCenter, tileData.collisionShape, cmp);
+            const TileData tileData = TileRepository::getTileData(handle.tile.layers[l]);
+			float topZPos = handle.tile.baseZPosition;
+			if (tileData.collisionShape != TileCollisionShape::FLOOR) {
+				topZPos += tileData.colliderHeight;
 			}
+			resolveCircleTileCollision(tileCenter, topZPos, tileData.collisionShape, cmp);
 		}
 	}
 }

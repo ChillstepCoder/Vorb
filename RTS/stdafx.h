@@ -50,7 +50,7 @@
 
 #include <entt/entt.hpp>
 
-constexpr entt::entity INVALID_ENTITY = (entt::entity)(0);
+constexpr entt::entity INVALID_ENTITY = (entt::entity)(UINT32_MAX);
 
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)
@@ -103,6 +103,9 @@ static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
 constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 constexpr ui16 INVALID_TILE_INDEX = 0xffff;
+
+// We are in 3/4 perspective
+constexpr float Z_TO_XY_RATIO = 0.75f;
 
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};

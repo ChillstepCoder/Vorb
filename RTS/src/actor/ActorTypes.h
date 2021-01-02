@@ -7,12 +7,12 @@ struct EntityDistInfo {
 
 typedef std::pair<EntityDistInfo, entt::entity> EntityDistSortKey;
 
-enum ActorTypes : ui32 {
+enum ActorTypes : ui8 {
 	ACTORTYPE_NONE = 0,
 	ACTORTYPE_UNDEAD = 1 << 0,
 	ACTORTYPE_HUMAN = 1 << 1,
 	ACTORTYPE_CORPSE = 1 << 1,
-	ACTORTYPE_ANY = ~0u
+	ACTORTYPE_ANY = 0xFF
 };
 
-typedef ui32 ActorTypesMask;
+typedef ui8 ActorTypesMask;

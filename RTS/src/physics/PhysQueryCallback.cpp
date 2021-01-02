@@ -25,7 +25,7 @@ bool PhysQueryCallback::ReportFixture(b2Fixture* fixture) {
 	// TODO: Marry physics component and fixture?
 	const PhysicsComponent& cmp = mRegistry.get<PhysicsComponent>(entityId);
 	if (satisfiesMask((ActorTypes)cmp.mQueryActorTypes)) {
-		const f32v2 offset = cmp.getPosition() - mPos;
+		const f32v2 offset = cmp.getXYPosition() - mPos;
 		const float distanceToEdge = glm::length(offset) - cmp.mCollisionRadius;
 		if (distanceToEdge <= mRadius) {
 			mEntities.emplace_back(EntityDistInfo{ distanceToEdge, 0 }, entityId);
@@ -54,7 +54,7 @@ bool ArcQueryCallback::ReportFixture(b2Fixture* fixture) {
 
     const PhysicsComponent& cmp = mRegistry.get<PhysicsComponent>(entityId);
 	if (satisfiesMask((ActorTypes)cmp.mQueryActorTypes)) {
-		f32v2 offset = cmp.getPosition() - mPos;
+		f32v2 offset = cmp.getXYPosition() - mPos;
 		const float offsetLength = glm::length(offset);
 		const float distanceToEdge = offsetLength - cmp.mCollisionRadius;
 		if (distanceToEdge <= mRadius) {

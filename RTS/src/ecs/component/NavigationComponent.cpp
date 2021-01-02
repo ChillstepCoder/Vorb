@@ -11,11 +11,11 @@ const float ACCELERATION = 0.013f;
 constexpr int QUADRANTS = 5; //bad name
 
 inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
-	const f32v2& offset = navCmp.mTargetPos - physCmp.getPosition();
+	const f32v2& offset = navCmp.mTargetPos - physCmp.getXYPosition();
 	const float distance2 = glm::length2(offset);
 	if (distance2 < MIN_DISTANCE) {
 		navCmp.mHasTarget = false;
-		physCmp.mFrictionEnabled = true;
+		physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
 	}
 	else {
 
@@ -26,7 +26,7 @@ inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, Ph
 		const float ARC_LENGTH = DEG_TO_RAD(175.0f);
 
 		// Look for undead allies
-		std::vector<EntityDistSortKey> actors = world.queryActorsInArc(physCmp.getPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, ACTORTYPE_NONE, true, QUADRANTS, entity);
+		std::vector<EntityDistSortKey> actors = world.queryActorsInArc(physCmp.getXYPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, ACTORTYPE_NONE, true, QUADRANTS, entity);
 		float closest[5] = { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX };
 		entt::entity closestEnt[QUADRANTS];
 		for (auto&& it : actors) {

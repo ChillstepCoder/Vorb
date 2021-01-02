@@ -173,6 +173,7 @@ void MainMenuScreen::build() {
 
 	// Add player
 	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, EntityType::PLAYER);
+	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
 	mCamera2D->setPosition(WorldData::WORLD_CENTER);
 
 }
@@ -203,11 +204,13 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
         sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
     }
 
-    const f32v2& playerPos = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity).getPosition();
+	const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+    const f32v2& playerXYPos = physCmp.getXYPosition();
+	f32v2 targetPos = playerXYPos;
+	targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
+	updateCamera(targetPos, physCmp.getZPosition(), gameTime);
 
-	updateCamera(playerPos, gameTime);
-
-	mWorld->update(deltaTime, playerPos, *mCamera2D);
+	mWorld->update(deltaTime, playerXYPos, *mCamera2D);
 
 	// Update
 	sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
@@ -229,8 +232,9 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	
 }
 
-void MainMenuScreen::updateCamera(const f32v2& targetCenter, const vui::GameTime& gameTime) {
-
+void MainMenuScreen::updateCamera(const f32v2& targetCenter, f32 targetHeight, const vui::GameTime& gameTime) {
+	UNUSED(targetHeight);
+	// TODO: use targetHeight to affect zoom
     // TODO: Delta time dependent?
     // Zoom
 	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
@@ -246,13 +250,13 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, const vui::GameTime
     // Camera follow
     const f32v2& offsetToMouse = mWorld->getClientECSData().worldMousePos - currentPos;
     constexpr float LOOK_SCALE = 1.0f;
-    mTargetCameraPosition = targetCenter + offsetToMouse * LOOK_SCALE;
+	mTargetCameraPosition = targetCenter +offsetToMouse * LOOK_SCALE;
 
 	const f32v2 offsetToTarget = mTargetCameraPosition - currentPos;
 	const float distanceToTarget = glm::length(offsetToTarget);
 	const f32v2 normalToTarget = offsetToTarget / distanceToTarget;
 
-	constexpr float MAX_SPEED_MPS = 0.1f;
+	constexpr float MAX_SPEED_MPS = 0.15f;
 	const f32 maxSpeed = MAX_SPEED_MPS * cameraHeight;
     f32v2 maxTargetVelocity = normalToTarget * maxSpeed;
 

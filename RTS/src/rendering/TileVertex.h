@@ -2,7 +2,7 @@
 
 enum class ShadowState : ui8 {
     NONE,
-    STANDARD, // Thin objects like trees
+    THIN, // Thin objects like trees
     LEFT, // Top left vertex on thick objects
     RIGHT //  Top right vertex on thick objects
 };

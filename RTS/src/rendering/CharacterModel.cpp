@@ -3,10 +3,14 @@
 
 #include <Vorb/graphics/TextureCache.h>
 
+// TODO: Remove, this is used for the static sShadowTexture load
+#include "CharacterRenderer.h"
+
 constexpr const char* CHARACTER_TEXTURE_ROOT = "data/textures/character/";
 constexpr const char* FRONT_SUFFIX = "_front.png";
 constexpr const char* SIDE_SUFFIX = "_side.png";
 constexpr const char* BACK_SUFFIX = "_back.png";
+
 
 void loadTexturesForPart(vg::TextureCache& textureCache, vg::Texture textures[3], const std::string& name) {
 	std::string path;
@@ -29,7 +33,9 @@ void loadTexturesForPart(vg::TextureCache& textureCache, vg::Texture textures[3]
 }
 
 void CharacterModel::load(vg::TextureCache& textureCache, const std::string& face, const std::string& body, const std::string& hair) {
+	// TODO: This is inefficient
 	loadTexturesForPart(textureCache, mFaceTextures, face);
 	loadTexturesForPart(textureCache, mBodyTextures, body);
 	loadTexturesForPart(textureCache, mHairTextures, hair);
+	sShadowTexture = textureCache.addTexture("data/textures/shadow.png");
 }

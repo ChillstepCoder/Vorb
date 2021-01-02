@@ -30,7 +30,7 @@ void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera2D& camera) c
 	auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent>().each([this](auto& cmp) {
 		// TODO: 3D???
-		mSpriteBatch->draw(mCircleTexture.id, cmp.getPosition() - cmp.mCollisionRadius, f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
+		mSpriteBatch->draw(mCircleTexture.id, cmp.getXYPosition() - cmp.mCollisionRadius, f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
 	});
 
 	mSpriteBatch->end();
@@ -45,7 +45,7 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
 		color4 color;
 		color.lerp(spriteCmp.mColor, color4(1.0f, 0.0f, 0.0f, 1.0f), spriteCmp.mHitFlash);
-		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getPosition(), f32v2(0.5f), spriteCmp.mDims, rotation, spriteCmp.mColor, 0.05f);
+		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getXYPosition(), f32v2(0.5f), spriteCmp.mDims, rotation, spriteCmp.mColor, 0.05f);
 	});
 
 	mSpriteBatch->end();
@@ -59,7 +59,7 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, physCmp.getPosition(), rotation, alpha);
+		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, physCmp.getXYPosition(), physCmp.getZPosition(), rotation, alpha);
 	});
 
 	mSpriteBatch->end();
@@ -69,6 +69,8 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer) {
     auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent, DynamicLightComponent>().each([&](auto& physCmp, auto& lightCmp) {
-		lightRenderer.RenderLight(physCmp.getPosition(), lightCmp.mLightData, camera);
+		f32v2 pos = physCmp.getXYPosition();
+		pos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
+		lightRenderer.RenderLight(pos, lightCmp.mLightData, camera);
 	});
 }

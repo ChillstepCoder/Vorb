@@ -36,7 +36,7 @@ public:
 
 private:
 
-	void updateCamera(const f32v2& targetCenter, const vui::GameTime& gameTime);
+	void updateCamera(const f32v2& targetCenter, f32 targetHeight, const vui::GameTime& gameTime);
 
     std::unique_ptr<ResourceManager> mResourceManager;
 	std::unique_ptr<World> mWorld;

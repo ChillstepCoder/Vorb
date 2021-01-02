@@ -10,12 +10,14 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-const float BASE_SPEED = 0.15f;
-const float ACCELERATION = 0.015f;
-const float IMPULSE = 0.02f;
+constexpr float BASE_SPEED = 0.15f;
+constexpr float ACCELERATION = 0.015f;
+constexpr float IMPULSE = 0.02f;
 
-const float ATTACK_RADIUS = 5.0f;
-const float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
+constexpr float ATTACK_RADIUS = 5.0f;
+constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
+
+constexpr float JUMP_VELOCITY = 0.15f;
 
 //void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
 //	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
@@ -64,7 +66,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 		physCmp.mDir = moveDir;
 	}
 	else {
-		physCmp.mDir = glm::normalize(clientData.worldMousePos - physCmp.getPosition());
+		physCmp.mDir = glm::normalize(clientData.worldMousePos - physCmp.getXYPosition());
 	}
 
 	float speed = BASE_SPEED;
@@ -104,8 +106,9 @@ inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent
 
 	updateMovement(controlCmp, physCmp, world, clientData);
 
+	// Jump
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-	//	performAttack(entity, cmp, ecs, world);
+		physCmp.setZVelocity(JUMP_VELOCITY);
 	}
 }
 

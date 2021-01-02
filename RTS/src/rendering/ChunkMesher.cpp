@@ -261,10 +261,6 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
     ShadowState shadowTopRight = ShadowState::RIGHT;
     ShadowState shadowBottomLeft = ShadowState::LEFT;
     ShadowState shadowBottomRight = ShadowState::RIGHT;
-    if (zLevelOffset > 0.0) {
-        shadowBottomLeft = ShadowState::LEFT;
-        shadowBottomRight = ShadowState::RIGHT;
-    }
     color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
     color4 bottomColor;
     float topRightDepthAdjust = 0.0f;
@@ -274,8 +270,8 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
             topDepth += spriteData.dimsMeters.y;
             // This is actually fake ambient occlusion
             bottomColor = color4(ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), 255u);
-            shadowTopLeft = ShadowState::STANDARD;
-            shadowTopRight = ShadowState::STANDARD;
+            shadowTopLeft = ShadowState::THIN;
+            shadowTopRight = ShadowState::THIN;
             topHeight = spriteData.dimsMeters.y + zOffset;
             topRightDepthAdjust = EPSILON;
             break;
@@ -284,8 +280,6 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
             topDepth += spriteData.dimsMeters.y;
             // This is actually fake ambient occlusion
             bottomColor = color4(ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), ui8(255 * ambientOcclusionMult), 255u);
-            shadowTopLeft = ShadowState::LEFT;
-            shadowTopRight = ShadowState::RIGHT;
             topHeight = spriteData.dimsMeters.y + zOffset;
             break;
         }
@@ -293,8 +287,6 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
             bottomDepth += WALL_HEIGHT;
             topDepth += WALL_HEIGHT;
             bottomColor = topColor;
-            shadowTopLeft = ShadowState::LEFT;
-            shadowTopRight = ShadowState::RIGHT;
             shadowBottomLeft = shadowTopLeft;
             shadowBottomRight = shadowTopRight;
             // Roof is always 1.0 high
