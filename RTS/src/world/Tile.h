@@ -14,7 +14,8 @@ enum class TileLayer {
 
 struct Tile {
 	Tile() {};
-	Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
+    Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
+    Tile(TileID ground, TileID mid, TileID top, ui16 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos){ }
 
 	union {
 		struct {
@@ -60,6 +61,7 @@ class TileRepository {
 	friend class ResourceManager;
 public:
 	static const TileData& getTileData(TileID tileId) {
+		assert(sTileData.find(tileId) != sTileData.end());
 		return sTileData[tileId];
 	}
 	static const TileData& getTileData(const std::string& name) {

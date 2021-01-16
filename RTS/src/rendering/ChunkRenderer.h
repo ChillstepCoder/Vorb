@@ -24,6 +24,7 @@ public:
 	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
+    void renderChunksZCutout(const World& world, const Camera2D& camera);
     void renderWorld(const World& world, const Camera2D& camera, ChunkRenderLOD lod);
     void renderWorldShadows(const World& world, const Camera2D& camera);
 
@@ -47,5 +48,6 @@ private:
     const Material* mStandardMaterial = nullptr;
     const Material* mShadowMaterial = nullptr;
     const Material* mLODMaterial = nullptr;
+    const Material* mZCutoutMaterial = nullptr;
 };
 

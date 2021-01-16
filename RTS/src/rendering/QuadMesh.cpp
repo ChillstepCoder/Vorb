@@ -114,9 +114,11 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         program.enableVertexAttribArrays();
         glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, pos));
         glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, uvs));
-        glVertexAttribPointer(program.getAttribute("vTint"), 4, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, color));
         glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, atlasPage));
 
+        if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
+            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, color));
+        }
         if (const VGAttribute* heightAttribute = program.tryGetAttribute("vHeight")) {
             glVertexAttribPointer(*heightAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, height));
         }

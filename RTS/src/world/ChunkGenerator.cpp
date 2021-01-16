@@ -34,6 +34,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     static TileID grass1 = TileRepository::getTile("grass1");
     static TileID grass2 = TileRepository::getTile("grass2");
     static TileID rock1 = TileRepository::getTile("rock1");
+    static TileID hugeTree = TileRepository::getTile("tree_huge");
     static TileID bigTree = TileRepository::getTile("tree_large");
     static TileID smallTree = TileRepository::getTile("tree_small");
     static TileID water = TileRepository::getTile("water");
@@ -62,7 +63,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     if (height > 0.3) {
         tile.groundLayer = rock1;
         // Mountains
-        tile.baseZPosition = (ui16)((height - 0.3) / 0.001);
+        tile.baseZPosition = (ui16)((height - 0.3) / 0.005);
     }
     else if (height < -0.45) {
         tile.groundLayer = water;
@@ -74,8 +75,9 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     }
     else {
         tile.groundLayer = grass2;
-        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.6f) {
-            tile.midLayer = bigTree;
+        float r = Random::getThreadSafef(offsetToCenter.x, worldPos.y);
+        if (r > 0.6f) {
+            tile.midLayer = hugeTree;
         }
     }
     return tile;

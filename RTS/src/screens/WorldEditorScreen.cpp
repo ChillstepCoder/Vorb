@@ -113,7 +113,7 @@ void WorldEditorScreen::update(const vui::GameTime& gameTime) {
 void WorldEditorScreen::draw(const vui::GameTime& gameTime)
 {
 
-    mRenderContext.renderFrame(*mCamera2D);
+    mRenderContext.renderFrame(*mCamera2D, 0.0f);
 
     mWorldEditor->updateAndRender();
 }

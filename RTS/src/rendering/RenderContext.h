@@ -23,6 +23,8 @@ struct GlobalRenderData {
     f32 sunPosition;
     f32 timeOfDay;
     f32v3 sunColor;
+    f32v3 playerPos;
+    f32v2 mousePosWorld;
     const Camera2D* mainCamera = nullptr;
 };
 
@@ -40,7 +42,7 @@ public:
     static RenderContext& getInstance();
 
     void initPostLoad();
-    void renderFrame(const Camera2D& camera);
+    void renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld);
 
     void reloadShaders();
     void selectNextDebugShader();
@@ -51,10 +53,11 @@ public:
     const vg::GBuffer& getActiveGBuffer() const { return mGBuffers[mActiveGBuffer]; }
     const vg::GBuffer& getPrevGBuffer() const { return mGBuffers[mPrevGBuffer]; }
     const vg::GBuffer& getShadowGBuffer() const { return mShadowGBuffer; }
+    const vg::GBuffer& getZCutoutGBuffer() const { return mZCutoutGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
-    void renderUI();
+    void renderUI(const Camera2D& camera);
 
     static RenderContext* sInstance;
 
@@ -80,6 +83,7 @@ private:
     int mActiveGBuffer = 0;
     vg::GBuffer mGBuffers[2];
     vg::GBuffer mShadowGBuffer;
+    vg::GBuffer mZCutoutGBuffer;
     const World& mWorld;
 
     int mPassthroughRenderMode = 0;

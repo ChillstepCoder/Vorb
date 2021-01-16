@@ -34,6 +34,7 @@ struct ChunkID {
 	ChunkID(ui32 id);
     ChunkID(const ui32v2& pos) : pos(pos) { initIdFromPos(); };
     ChunkID(ui32v2&& pos) : pos(pos) { initIdFromPos(); };
+    ChunkID(ui32 xPos, ui32 yPos) : pos(xPos, yPos) { initIdFromPos(); };
     ChunkID(const f32v2 worldPos);
 
     // For std::map

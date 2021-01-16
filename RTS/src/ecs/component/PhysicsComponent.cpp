@@ -206,15 +206,24 @@ inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime
 	// TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
 	for (int i = 0; i < 4; ++i) {
 		TileHandle handle = world.getTileHandleAtWorldPos(cornerPositions[i]);
-        const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-        // TODO: CollisionMap
-		for (int l = 0; l < 3; ++l) {
-            const TileData tileData = TileRepository::getTileData(handle.tile.layers[l]);
-			float topZPos = handle.tile.baseZPosition;
-			if (tileData.collisionShape != TileCollisionShape::FLOOR) {
-				topZPos += tileData.colliderHeight;
+		if (handle.isValid()) {
+			const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
+			// TODO: CollisionMap
+			for (int l = 0; l < 3; ++l) {
+				TileID tileId = handle.tile.layers[l];
+				if (tileId != TILE_ID_NONE) {
+					const TileData tileData = TileRepository::getTileData(tileId);
+					float topZPos = handle.tile.baseZPosition;
+					if (tileData.collisionShape != TileCollisionShape::FLOOR) {
+						topZPos += tileData.colliderHeight;
+					}
+					resolveCircleTileCollision(tileCenter, topZPos, tileData.collisionShape, cmp);
+				}
 			}
-			resolveCircleTileCollision(tileCenter, topZPos, tileData.collisionShape, cmp);
+		}
+		else {
+			// Invalid handle, freeze physics
+			cmp.mZVelocity = 0.0f;
 		}
 	}
 }

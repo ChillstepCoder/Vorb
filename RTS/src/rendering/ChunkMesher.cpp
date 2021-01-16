@@ -50,6 +50,10 @@ inline bool isBitSet(int v, ExposedNeighborBits bit) {
     return v & bit;
 }
 
+inline bool areAnyBitsSet(int v, int bits) {
+    return v & bits;
+}
+
 inline bool areBitsSet(int v, int bits) {
     return (v & bits) == bits;
 }
@@ -359,6 +363,18 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
     }
 }
 
+inline int getTileHeight(const Tile& neighbor, int layerIndex) {
+    const TileID tileId = neighbor.layers[layerIndex];
+    const TileData& tileData = TileRepository::getTileData(tileId);
+    const SpriteData& spriteData = tileData.spriteData;
+    // Transparent tiles appear to be 1 tile lower
+    int height = neighbor.baseZPosition;
+    if (spriteData.flags & SPRITEDATA_FLAG_OPAQUE) {
+        ++height;
+    }
+    return height;
+}
+
 void addTileConnected(
     const Chunk& chunk,
     const TileIndex& tileIndex,
@@ -376,17 +392,9 @@ void addTileConnected(
     Tile neighbors[8];
     chunk.getTileNeighbors(tileIndex, neighbors);
 
-
-    const Tile& botNeighbor = neighbors[(int)NeighborIndex::BOTTOM];
-    const TileID botId = botNeighbor.layers[layerIndex];
-    const TileData& botTileData = TileRepository::getTileData(botId);
-    const SpriteData& botSpriteData = botTileData.spriteData;
-    // Transparent tiles appear to be 1 tile lower
-    int bottomHeightDiff = tile.baseZPosition - botNeighbor.baseZPosition;
-    if (!(botSpriteData.flags & SPRITEDATA_FLAG_OPAQUE)) {
-        bottomHeightDiff += 1;
-    }
-    const bool isElevated = bottomHeightDiff > 1;
+    const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+    const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+    const int topHeightDiff    = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);
 
     unsigned exposedBits = 0;
     for (int i = 0; i < 8; ++i) {
@@ -419,7 +427,7 @@ void addTileConnected(
             vertexData.resize(vertexData.size() + 4);
             addQuad(&vertexData.back() - 3, TileShape::ROOF, f32v2(tileWorldPos.x, tileWorldPos.y + VERTICAL_OFFSET_PER_LAYER), tile.baseZPosition, spriteData, uvs, layerDepth + LAYER_DEPTH_ADD, NO_AMBIENT_OCCLUSION, 1.0f);
         }
-        // Render exposed wall bottom if  needed
+        // Render exposed wall bottom if needed
         if (isBitSet(exposedBits, BOTTOM)) {
             // Simple 2 bit LUT
             const unsigned sideCheck = ((exposedBits & (LEFT | RIGHT)) >> 3);
@@ -429,13 +437,15 @@ void addTileConnected(
             f32v4 uvs = spriteData.uvs;
             uvs.x += offsets.x * uvs.z;
             uvs.y += offsets.y * uvs.w;
+            const bool ambientOcclusion = bottomHeightDiff > 1 ? NO_AMBIENT_OCCLUSION : AMBIENT_OCCLUSION_MULT;
             vertexData.resize(vertexData.size() + 4);
-            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition, spriteData, uvs, layerDepth, isElevated ? NO_AMBIENT_OCCLUSION : AMBIENT_OCCLUSION_MULT, VERTICAL_OFFSET_PER_LAYER);
+            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition, spriteData, uvs, layerDepth, ambientOcclusion, VERTICAL_OFFSET_PER_LAYER);
         }
     }
 
     // See if we need to add additional "tower" quads if we are exposed deeper on the bottom
-    for (int i = 1; i < bottomHeightDiff; ++i) {
+    const float maxHeightDiff = std::max(bottomHeightDiff, topHeightDiff);
+    for (int i = 1; i < maxHeightDiff; ++i) {
         exposedBits = 0;
         const Tile& leftNeighbor  = neighbors[(int)NeighborIndex::LEFT];
         const Tile& rightNeighbor = neighbors[(int)NeighborIndex::RIGHT];
@@ -455,9 +465,19 @@ void addTileConnected(
         uvs.x += offsets.x * uvs.z;
         // + 1 for the tall wall variants
         uvs.y += (offsets.y + 1) * uvs.w;
-        vertexData.resize(vertexData.size() + 4);
-        const float ambientOcclusion = (i == bottomHeightDiff - 1) ? AMBIENT_OCCLUSION_MULT : NO_AMBIENT_OCCLUSION;
-        addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition - i, spriteData, uvs, layerDepth, ambientOcclusion, VERTICAL_OFFSET_PER_LAYER);
+        // TODO: this resize here...
+
+        // TODO: Stretched quads?
+        if (i < bottomHeightDiff) {
+            vertexData.resize(vertexData.size() + 4);
+            const float ambientOcclusion = (i == bottomHeightDiff - 1) ? AMBIENT_OCCLUSION_MULT : NO_AMBIENT_OCCLUSION;
+            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y), tile.baseZPosition - i, spriteData, uvs, layerDepth, ambientOcclusion, VERTICAL_OFFSET_PER_LAYER);
+        }
+        if (i < topHeightDiff) {
+            vertexData.resize(vertexData.size() + 4);
+            const float ambientOcclusion = (i == bottomHeightDiff - 1) ? AMBIENT_OCCLUSION_MULT : NO_AMBIENT_OCCLUSION;
+            addQuad(&vertexData.back() - 3, TileShape::THICK, f32v2(tileWorldPos.x, tileWorldPos.y + 1.0f), tile.baseZPosition - i, spriteData, uvs, layerDepth, ambientOcclusion, VERTICAL_OFFSET_PER_LAYER);
+        }
     }
 }
 

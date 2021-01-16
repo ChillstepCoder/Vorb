@@ -86,6 +86,17 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
     mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     checkGlError("Shadow GBuffer Init");
+
+    // Shadow GBuffer
+    vg::GBufferAttachment zCutoutAttachments[1];
+    // Shadow alpha and source height
+    zCutoutAttachments[0].format = vg::TextureInternalFormat::R8;
+    zCutoutAttachments[0].number = 0;
+    zCutoutAttachments[0].pixelFormat = vg::TextureFormat::RED;
+    zCutoutAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
+    mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
+    mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
+    checkGlError("Z Cutout GBuffer Init");
 }
 
 RenderContext::~RenderContext() {
@@ -126,7 +137,8 @@ void RenderContext::initPostLoad() {
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 }
 
-void RenderContext::renderFrame(const Camera2D& camera) {
+void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld) {
+
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
@@ -141,15 +153,29 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     mRenderData.sunColor = mWorld.getSunColor();
     mRenderData.timeOfDay = mWorld.getTimeOfDay();
     mRenderData.sunPosition = mWorld.getSunPosition();
+    mRenderData.playerPos = playerPos;
+    mRenderData.mousePosWorld = mousePosWorld;
 
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
 
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    // Cutout pass
+    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+        mZCutoutGBuffer.useGeometry();
+        vg::BlendState::set(vg::BlendStateType::REPLACE);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        mChunkRenderer->renderChunksZCutout(mWorld, camera);
+    }
+
+    // Main geometry pass
     activeGbuffer.useGeometry();
     mCurrentFramebufferDims = activeGbuffer.getSize();
 
     // Clear screen
     vg::DepthState::FULL.set();
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    vg::BlendState::set(vg::BlendStateType::ALPHA);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // TODO: Remove color buffer clear, doing it just to reduce ghosting
 
     // TODO: Replace With BlendState
@@ -295,7 +321,7 @@ void RenderContext::renderFrame(const Camera2D& camera) {
     //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
     vg::DepthState::NONE.set();
     // UI last
-    renderUI();
+    renderUI(camera);
 
     // Swap
     mPrevGBuffer = mActiveGBuffer;
@@ -316,7 +342,7 @@ void RenderContext::selectNextDebugShader() {
     }
 }
 
-void RenderContext::renderUI() {
+void RenderContext::renderUI(const Camera2D& camera) {
     mSb->begin();
     char buffer[255];
     const float GAP_SIZE = 64.0f;
@@ -328,11 +354,11 @@ void RenderContext::renderUI() {
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
-    /*sprintf_s(buffer, sizeof(buffer), "TimeOfDay: %.2f", mWorld.getTimeOfDay());
+    sprintf_s(buffer, sizeof(buffer), "ZoomScale: %.2f", camera.getScale());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
-    sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
+    /*sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 

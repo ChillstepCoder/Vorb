@@ -157,8 +157,19 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAv
                 glUniform1i(it.second, availableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowGBuffer().getGeometryTexture(0));
                 break;
+            case MaterialUniform::FboZCutout:
+                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
+                glUniform1i(it.second, availableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getZCutoutGBuffer().getGeometryTexture(0));
+                break;
+            case MaterialUniform::PlayerPosWorld:
+                glUniform3f(it.second, renderData.playerPos.x, renderData.playerPos.y, renderData.playerPos.z);
+                break;
+            case MaterialUniform::MousePosWorld:
+                glUniform2f(it.second, renderData.mousePosWorld.x, renderData.mousePosWorld.y);
+                break;
         }
-        static_assert((int)MaterialUniform::COUNT == 19, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 22, "Update for new uniform type");
     }
     if (nextAvailableTextureIndex) {
         *nextAvailableTextureIndex = availableTextureIndex;

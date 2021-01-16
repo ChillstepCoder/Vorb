@@ -10,3 +10,9 @@ tree_small:
   col: small_circle
   shape: Thin
   height: 2.0
+tree_huge:
+  tex: mega_tree
+  dims: [7,8]
+  col: box
+  shape: Thin
+  height: 8.0

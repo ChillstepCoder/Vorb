@@ -13,7 +13,7 @@
 #include "world/WorldGrid.h"
 #include "world/WorldData.h"
 
-constexpr float SECONDS_PER_DAY = 720.0f;
+constexpr float SECONDS_PER_DAY = 1440.0f;
 constexpr float HOURS_PER_DAY = 24.0f;
 constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 

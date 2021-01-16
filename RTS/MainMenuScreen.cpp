@@ -146,6 +146,22 @@ void MainMenuScreen::build() {
 					phys->teleportToPoint(worldPos);
 				}
 			}
+			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
+                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                if (handle.isValid()) {
+					Chunk* chunk = handle.getMutableChunk();
+					ui16 height = chunk->getTileAt(handle.index).baseZPosition + 5;
+					chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
+                }
+			}
+            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_E)) {
+                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                if (handle.isValid()) {
+                    Chunk* chunk = handle.getMutableChunk();
+                    ui16 height = chunk->getTileAt(handle.index).baseZPosition;
+                    chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
+                }
+            }
 			else {
 				TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
 				if (handle.isValid()) {
@@ -196,7 +212,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	mWorld->updateClientEcsData(*mCamera2D);
 
 	// DEBUG Time advance
-	static constexpr float TIME_ADVANCE_MULT = 100.0f;
+	static constexpr float TIME_ADVANCE_MULT = 250.0f;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
         sDebugOptions.mTimeOffset -= gameTime.elapsedSec * TIME_ADVANCE_MULT;
     }
@@ -220,8 +236,10 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
 
-	mRenderContext.renderFrame(*mCamera2D);
-
+    auto&& ecs = mWorld->getECS();
+	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
+	const f32v2& xyPos = cmp.getXYPosition();
+	mRenderContext.renderFrame(*mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos);
 
     /*mSb->begin();
     char fpsString[64];

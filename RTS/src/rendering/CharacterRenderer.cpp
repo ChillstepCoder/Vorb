@@ -42,7 +42,7 @@ void CharacterRenderer::render(vg::SpriteBatch& sb, const CharacterModel& model,
 	const f32v2 bodyOffset = f32v2(0.0f, BODY_SIZE * 0.25f);
 	renderPart(sb, model.mBodyTextures[index], xyPos, zPos, bodyOffset, f32v2(0.0f), uvRect, BODY_SIZE, 0.3f, alpha);
 	renderPart(sb, model.mFaceTextures[index], xyPos, zPos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.6f, alpha);
-	renderPart(sb, model.mHairTextures[index], xyPos, zPos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.9f, alpha);
+	renderPart(sb, model.mHairTextures[index], xyPos, zPos, bodyOffset, headOffset, uvRect, HEAD_SIZE, 0.8f, alpha);
 
 	// Render shadow part
     // TODO: move over to decal system

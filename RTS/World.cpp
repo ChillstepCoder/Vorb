@@ -161,16 +161,18 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
 void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
 {
     // Stick to positive numbers
-    const f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+    f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+	// Start one chunk down for mountains
+	bottomLeftCorner.y -= CHUNK_WIDTH;
 
     const ChunkID bottomLeftID(bottomLeftCorner);
 
 	ChunkID enumerator = bottomLeftID;
-   
+    
     const float scaledWidth = camera.getScreenWidth() / camera.getScale();
     const float scaledHeight = camera.getScreenHeight() / camera.getScale();
     ui32 widthInChunks = (ui32)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
-	ui32 heightInChunks = (ui32)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+	ui32 heightInChunks = (ui32)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1) + 1;
 
 	if (widthInChunks + enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS) {
 		widthInChunks -= (widthInChunks + enumerator.pos.x) - WorldData::WORLD_WIDTH_CHUNKS + 1;
