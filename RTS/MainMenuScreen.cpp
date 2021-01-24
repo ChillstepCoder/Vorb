@@ -162,6 +162,10 @@ void MainMenuScreen::build() {
                     chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
                 }
             }
+            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_C)) {
+                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+				mWorld->createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
+            }
 			else {
 				TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
 				if (handle.isValid()) {

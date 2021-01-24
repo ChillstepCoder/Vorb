@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -152,12 +152,16 @@
     <ClCompile Include="src\actor\HumanActorFactory.cpp" />
     <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
     <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
+    <ClCompile Include="src\city\City.cpp" />
+    <ClCompile Include="src\city\CityBuilder.cpp" />
+    <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
     <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
@@ -220,6 +224,10 @@
     <ClInclude Include="src\actor\IActorFactory.h" />
     <ClInclude Include="src\actor\PlayerActorFactory.h" />
     <ClInclude Include="src\actor\UndeadActorFactory.h" />
+    <ClInclude Include="src\city\Building.h" />
+    <ClInclude Include="src\city\City.h" />
+    <ClInclude Include="src\city\CityBuilder.h" />
+    <ClInclude Include="src\city\CityPlanner.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
@@ -227,6 +235,7 @@
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
+    <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />

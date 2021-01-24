@@ -28,6 +28,7 @@ class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
+struct CityGraph;
 
 class World
 {
@@ -45,6 +46,9 @@ public:
 
 	entt::entity createEntity(const f32v2& pos, EntityType type);
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
+	void createCityAt(const ui32v2& worldPos);
+
+	void setTileAt(const ui32v2& worldPos, Tile tile);
 
 	// Internal public interface
     Chunk& getChunkAtPosition(const f32v2& worldPos);
@@ -105,6 +109,9 @@ private:
 
 	// Resource handle
 	ResourceManager& mResourceManager;
+
+	// Cities
+	std::unique_ptr<CityGraph> mCities;
 
 	// Data
 	f32v2 mViewRange = f32v2(0.0f);

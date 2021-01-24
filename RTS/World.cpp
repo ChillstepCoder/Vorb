@@ -25,6 +25,8 @@
 #include "physics/PhysQueryCallback.h"
 #include "Utils.h"
 
+#include "city/City.h"
+
 // TODO: remove?
 #include "ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
@@ -63,6 +65,9 @@ World::World(ResourceManager& resourceManager) :
     mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
     mContactListener = std::make_unique<ContactListener>(*mEcs);
     mPhysWorld->SetContactListener(mContactListener.get());
+
+	// Cities
+	mCities = std::make_unique<CityGraph>();
 
 	// Static load range for now
 	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
@@ -115,6 +120,11 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
             ++i;
         }
     }
+
+	// Update cities
+	for (auto&& it : mCities->mNodes) {
+		it->update(deltaTime);
+	}
 
 	// Update physics
 	mPhysWorld->Step(deltaTime, 1, 1);
@@ -516,4 +526,19 @@ entt::entity World::createEntity(const f32v2& pos, EntityType type) {
 
 b2Body* World::createPhysBody(const b2BodyDef* bodyDef) {
 	return mPhysWorld->CreateBody(bodyDef);
+}
+
+void World::createCityAt(const ui32v2& worldPos) {
+	std::unique_ptr<City> newCity = std::make_unique<City>(worldPos, *this);
+	mCities->mNodes.emplace_back(std::move(newCity));
+}
+
+void World::setTileAt(const ui32v2& worldPos, Tile tile) {
+
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+	assert(handle.isValid());
+    if (handle.isValid()) {
+        Chunk* chunk = handle.getMutableChunk();
+        chunk->setTileAt(handle.index, tile);
+    }
 }
