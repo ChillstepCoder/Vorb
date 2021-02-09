@@ -27,6 +27,12 @@
 #include "FileStream.h"
 #include "Path.h"
 
+namespace keg {
+    class Type;
+    struct YAMLNode;
+    typedef YAMLNode* Node;
+}
+
 namespace vorb {
     namespace io {
         /*! @brief The directory types through which an IOManager searches.
@@ -161,6 +167,13 @@ namespace vorb {
             /// @param path: The path to the directory
             /// @return true if directory exists
             bool directoryExists(const Path& path) const;
+            
+            // Parse a keg file as a specified object
+            bool parseFileAsKegObject(OUT ui8* dest, const vio::Path& filePath, keg::Type* type) const;
+
+            // Parse a keg file as a map of specified objects
+            bool parseFileAsKegObjectMap(const vio::Path& filePath, Delegate<void, Sender, const nString&, keg::Node> f) const;
+
         private:
             static Path m_pathCWD; ///< The global current working directory.
             static Path m_pathExec; ///< The global executable directory.

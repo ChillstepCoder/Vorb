@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -152,8 +152,11 @@
     <ClCompile Include="src\actor\HumanActorFactory.cpp" />
     <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
     <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
+    <ClCompile Include="src\city\Building.cpp" />
+    <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\city\City.cpp" />
     <ClCompile Include="src\city\CityBuilder.cpp" />
+    <ClCompile Include="src\city\BuildingGrammar.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
@@ -179,6 +182,7 @@
     <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\Material.cpp" />
@@ -225,9 +229,13 @@
     <ClInclude Include="src\actor\PlayerActorFactory.h" />
     <ClInclude Include="src\actor\UndeadActorFactory.h" />
     <ClInclude Include="src\city\Building.h" />
+    <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\City.h" />
     <ClInclude Include="src\city\CityBuilder.h" />
+    <ClInclude Include="src\city\BuildingGrammar.h" />
+    <ClInclude Include="src\city\CityConst.h" />
     <ClInclude Include="src\city\CityPlanner.h" />
+    <ClInclude Include="src\city\RoomNode.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
@@ -259,6 +267,7 @@
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\Material.h" />

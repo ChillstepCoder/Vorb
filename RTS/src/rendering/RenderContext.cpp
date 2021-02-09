@@ -8,11 +8,14 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "rendering/LightRenderer.h"
+#include "rendering/CityDebugRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/ParticleSystemRenderer.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
+
+#include "city/City.h"
 
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteBatch.h>
@@ -44,6 +47,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mChunkRenderer          = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
     mEcsRenderer            = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
     mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer, screenResolution);
+    mCityDebugRenderer      = std::make_unique<CityDebugRenderer>();
     checkGlError("Renderer init");
 
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
@@ -222,6 +226,15 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         // TODO: Can we not do this every frame?
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         activeGbuffer.useGeometry();
+    }
+
+    // City Debug
+    {
+        const CityGraph& cities = mWorld.getCities();
+        for (auto&& city : cities.mNodes) {
+            mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
+            mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
+        }
     }
 
     // Debug Axis render at origin

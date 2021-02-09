@@ -74,6 +74,7 @@ public:
     float getSunPosition() const { return mSunPosition; }
     float getTimeOfDay() const { return mTimeOfDay; }
 	const f32v3& getSunColor() const { return mSunColor; }
+	const CityGraph& getCities() const { return *mCities; }
 	
 private:
 

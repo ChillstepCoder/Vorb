@@ -5,6 +5,7 @@ class Camera2D;
 class Material;
 class MaterialRenderer;
 class ParticleSystemRenderer;
+class CityDebugRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ChunkRenderer;
@@ -74,6 +75,7 @@ private:
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
     mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
+    mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

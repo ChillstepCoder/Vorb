@@ -4,6 +4,11 @@
 #include "Vorb/io/FileOps.h"
 #include "Vorb/utils.h"
 
+// Parsing
+#include <Vorb/io/Keg.h>
+#include "Vorb/io/YAML.h"
+#include "Vorb/io/YAMLImpl.h"
+
 vio::IOManager::IOManager() :
     m_pathSearch("") {
     // Search Directory Defaults To CWD
@@ -227,3 +232,53 @@ bool vio::IOManager::directoryExists(const Path& path) const {
 vio::Path vio::IOManager::m_pathExec = "";
 vio::Path vio::IOManager::m_pathCWD = "";
 
+bool vorb::io::IOManager::parseFileAsKegObject(OUT ui8* dest, const vio::Path& filePath, keg::Type* type) const {
+
+    // Read file
+    nString data;
+    readFileToString(filePath, data);
+    if (data.empty()) return false;
+
+    // Convert to YAML
+    keg::ReadContext context;
+    context.env = keg::getGlobalEnvironment();
+    context.reader.init(data.c_str());
+    keg::Node rootObject = context.reader.getFirst();
+
+    try {
+        keg::Error error = keg::parse(dest, rootObject, context, type);
+        assert(error == keg::Error::NONE);
+    }
+    catch (YAML::ParserException e) {
+        printf("%s : Parser exception %s at line %d column %d pos %d\n", filePath.getCString(), e.msg.c_str(), e.mark.line, e.mark.column, e.mark.pos);
+        assert(false);
+    }
+    catch (YAML::RepresentationException e) {
+        printf("%s : Representation exception %s at line %d column %d pos %d\n", filePath.getCString(), e.msg.c_str(), e.mark.line, e.mark.column, e.mark.pos);
+        assert(false);
+    }
+    return true;
+}
+
+bool vorb::io::IOManager::parseFileAsKegObjectMap(const vio::Path& filePath, Delegate<void, Sender, const nString&, keg::Node> f) const {
+
+    // Read file
+    nString data;
+    readFileToString(filePath, data);
+    if (data.empty()) return false;
+
+    // Convert to YAML
+    keg::ReadContext context;
+    context.env = keg::getGlobalEnvironment();
+    context.reader.init(data.c_str());
+    keg::Node node = context.reader.getFirst();
+    if (keg::getType(node) != keg::NodeType::MAP) {
+        context.reader.dispose();
+        return false;
+    }
+
+    context.reader.forAllInMap(node, &f);
+    context.reader.dispose();
+
+    return true;
+}

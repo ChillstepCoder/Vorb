@@ -5,6 +5,7 @@
 #include "rendering/TextureAtlas.h"
 #include "rendering/ShaderLoader.h"
 #include "particles/ParticleSystemManager.h"
+#include "city/Building.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -31,6 +32,7 @@ ResourceManager::ResourceManager() {
     mSpriteRepository = std::make_unique<SpriteRepository>(*mIoManager);
     mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
+    mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -64,6 +66,12 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
             gatherFiles(entry);
         } else if (fileHasExtension(entry, ".png")) {
             mTextureFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".room")) {
+            mRoomFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".bldg")) {
+            mBuildingFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".tile")) {
             mTileFiles.emplace_back(entry);
@@ -114,6 +122,18 @@ void ResourceManager::loadFiles() {
     };
     mMaterialFiles.clear();
 
+    // Load Rooms
+    for (auto&& entry : mRoomFiles) {
+        mBuildingRepository->loadRoomDescriptionFile(entry);
+    }
+    mRoomFiles.clear();
+
+    // Load Buildings
+    for (auto&& entry : mBuildingFiles) {
+        mBuildingRepository->loadBuildingDescriptionFile(entry);
+    }
+    mBuildingFiles.clear();
+
     // Update textures
     mSpriteRepository->mTextureAtlas->uploadDirtyPages();
 
@@ -135,25 +155,13 @@ void ResourceManager::writeDebugAtlas() const {
 
 bool ResourceManager::loadTiles(const vio::Path& filePath) {
     // Read file
-    nString data;
-    mIoManager->readFileToString(filePath, data);
-    if (data.empty()) return false;
+    return mIoManager->parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
+        keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
-    // Convert to YAML
-    keg::ReadContext context;
-    context.env = keg::getGlobalEnvironment();
-    context.reader.init(data.c_str());
-    keg::Node node = context.reader.getFirst();
-    if (keg::getType(node) != keg::NodeType::MAP) {
-        context.reader.dispose();
-        return false;
-    }
-
-    auto f = makeFunctor([&](Sender, const nString& key, keg::Node value) {
         TileData tile;
 
         // Load data
-        keg::parse((ui8*)&tile, value, context, &KEG_GLOBAL_TYPE(TileData));
+        keg::parse((ui8*)&tile, value, readContext, &KEG_GLOBAL_TYPE(TileData));
 
         // TODO: Serialize the string > ID mapping
         TileID nextId = ++mIdGenerator;
@@ -164,9 +172,5 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         assert(tile.spriteData.isValid()); // TODO: Error msg
         TileRepository::sTileIdMapping[key] = nextId;
         TileRepository::sTileData[nextId] = std::move(tile);
-    });
-    context.reader.forAllInMap(node, &f);
-    context.reader.dispose();
-
-    return true;
+    }));
 }

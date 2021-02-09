@@ -1,0 +1,40 @@
+house:
+  width_range: [20, 40]
+  public_room_count_range: [2, 10]
+  private_room_count_range: [1, 5]
+  min_aspect_ratio: 1.0
+  public_room_grammars:
+    - a|bb
+    - b|c
+    - c|0
+  public_rooms:
+    - name: foyer
+      count_range: [0, 1]
+    - name: living_room
+    - name: kitchen
+    - name: dining_room
+      count_range: [1, 1]
+    - name: buttery
+      count_range: [1, 1]
+    - name: garden
+    - name: library
+      count_range: [1, 1]
+  private_rooms:
+    - name: bedroom
+    - name: storage
+  sub_rooms:
+    - name: pantry
+      count_range: [1, 1]
+      public_rooms:
+        - kitchen
+    - name: bathroom
+      count_range: [1, 2]
+      public_rooms:
+        - library
+        - bedroom
+    - name: closet
+      count_range: [0, 2]
+      public_rooms:
+        - library
+        - bedroom
+        - foyer

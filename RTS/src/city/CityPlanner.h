@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Building.h"
+#include "BuildingBlueprintGenerator.h"
 
 class City;
 class CityBuilder;
@@ -15,6 +16,7 @@ class CityBuilder;
 
 class CityPlanner
 {
+    friend class CityDebugRenderer;
 public:
     CityPlanner(City& city);
 
@@ -22,13 +24,17 @@ public:
 
     // Returns true if successfully storing next plan in outPlan
     bool recieveNextPlan(OUT PlannedBuilding& outPlan);
+    std::unique_ptr<BuildingBlueprint> recieveNextBlueprint();
 
 private:
     
     void generatePlan();
 
     // CityBuilder will grab these as needed
-    std::queue<PlannedBuilding> mStandardPlans;
+    std::deque<PlannedBuilding> mStandardPlans;
+    std::deque<std::unique_ptr<BuildingBlueprint>> mBluePrints;
+
+    BuildingBlueprintGenerator mBuildingGenerator;
 
     City& mCity;
 };

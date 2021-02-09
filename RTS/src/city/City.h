@@ -7,25 +7,6 @@ class CityPlanner;
 class CityBuilder;
 class World;
 
-// TODO: Move to data
-// Buildings can come in various shapes and sizes, and can be entered
-enum class BuildingType {
-    HOVEL,
-    HOUSE,
-    BARN,
-    MILL,
-    GROCERY,
-    BLACKSMITH,
-    TAILOR,
-    TAVERN,
-    STOCKPILE,
-    GRANARY,
-    KEEP,
-    MANSION,
-    BARRACKS,
-    SHERIFFS_OFFICE,
-    STABLE,
-};
 
 enum class MarketStallType {
     PRODUCE,
@@ -135,11 +116,13 @@ public:
 
     CityBuilder& getCityBuilder() { return *mCityBuilder; }
     CityPlanner& getCityPlanner() { return *mCityPlanner; }
+    BuildingDescriptionRepository& getBuildingRepository() { return mBuildingRepository; }
 
 private:
     void tick();
 
     World& mWorld;
+    BuildingDescriptionRepository& mBuildingRepository;
 
     float mCurrentThreatLevel = 0.0f; //[0,100] 0-5 peaceful, 6-15 wary, 16-30 dangerous, 31-50 very dangerous, 51-70 extremely dangerous, 71+ critical danger
     float mCurrentPowerLevel = 0.0f;

@@ -163,4 +163,8 @@ extern bool checkGlError(const nString& errorLocation);
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
+
+
+#define IS_ENABLED(d) d == 1
+
 #endif // stdafx_h__RTS

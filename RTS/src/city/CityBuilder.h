@@ -3,6 +3,7 @@
 class City;
 class CityPlanner;
 class World;
+struct BuildingBlueprint;
 
 #include "Building.h"
 
@@ -13,6 +14,7 @@ class World;
 
 class CityBuilder
 {
+    friend class CityDebugRenderer;
 public:
     CityBuilder(City& city, World& world);
 
@@ -22,11 +24,11 @@ public:
 
 private:
 
-    void debugBuildInstant(PlannedBuilding& plan);
+    void debugBuildInstant(BuildingBlueprint& bp);
 
     City& mCity;
     World& mWorld;
-    std::vector<PlannedBuilding> mInProgressPlans;
+    std::vector<std::unique_ptr<BuildingBlueprint>> mInProgressBlueprints;
 
 
 };

@@ -63,7 +63,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     if (height > 0.3) {
         tile.groundLayer = rock1;
         // Mountains
-        tile.baseZPosition = (ui16)((height - 0.3) / 0.005);
+        tile.baseZPosition = (ui16)((height - 0.3) / 0.004);
     }
     else if (height < -0.45) {
         tile.groundLayer = water;
@@ -100,7 +100,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
         }
     }
 
-    std::cout << "Chunk generated in " << timer.stop() << " ms\n";
+    //std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }
 
 void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region, color3* recursivePixelBuffer /*= nullptr*/)

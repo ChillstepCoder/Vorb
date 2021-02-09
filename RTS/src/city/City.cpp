@@ -4,10 +4,12 @@
 #include "CityPlanner.h"
 #include "CityBuilder.h"
 #include "World.h"
+#include "ResourceManager.h"
 
 City::City(const ui32v2& cityCenterWorldPos, World& world)
     : mCityCenterWorldPos(cityCenterWorldPos)
     , mWorld(world)
+    , mBuildingRepository(mWorld.getResourceManager().getBuildingRepository())
 {
 
     TileHandle root = mWorld.getTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
