@@ -172,6 +172,8 @@ void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const C
 {
     // Stick to positive numbers
     f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+	// This happened once
+	assert(!isnan(bottomLeftCorner.x + bottomLeftCorner.y));
 	// Start one chunk down for mountains
 	bottomLeftCorner.y -= CHUNK_WIDTH;
 	if (bottomLeftCorner.x < 0.0f) {

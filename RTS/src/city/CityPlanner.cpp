@@ -10,7 +10,7 @@
 CityPlanner::CityPlanner(City& city)
     : mCity(city)
 {
-
+    mBuildingGenerator = std::make_unique<BuildingBlueprintGenerator>(city.getBuildingRepository());
 }
 
 void CityPlanner::update()
@@ -61,15 +61,15 @@ void CityPlanner::generatePlan() {
 
     // NEW
     const float sizeAlpha = Random::xorshf96f();
-    std::unique_ptr<BuildingBlueprint> bp = mBuildingGenerator.generateBuilding(buildingRepo.getBuildingDescription("house"), sizeAlpha);
+    std::unique_ptr<BuildingBlueprint> bp = mBuildingGenerator->generateBuilding(buildingRepo.getBuildingDescription("house"), sizeAlpha);
     // TODO: Real
-    bp->rootWorldPos = cityCenter;
+    bp->bottomLeftWorldPos = cityCenter;
 
     if (IS_ENABLED(DEGUG_BLUEPRINT)) {
         std::cout << "\n\Generated house:" << bp->nodes.size() << " " << sizeAlpha << "\n";
         for (auto&& node : bp->nodes) {
             std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " << 
-                node.offsetFromRoot.x << " " << node.offsetFromRoot.y << "\n";
+                node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
             for (int i = 0; i < node.numChildren; ++i) {
                 const int childIndex = (int)node.childRooms[i];
                 std::cout << "    child - " << childIndex << " type - " <<

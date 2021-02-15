@@ -85,6 +85,7 @@ public:
     void loadBuildingDescriptionFile(const vio::Path& filePath);
 
     BuildingDescription& getBuildingDescription(const nString& name);
+    RoomDescription& getRoomDescriptionFromID(RoomTypeID id);
     const nString* getNameFromRoomTypeID(RoomTypeID id);
 
 private:

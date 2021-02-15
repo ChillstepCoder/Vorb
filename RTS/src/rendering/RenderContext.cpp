@@ -231,9 +231,14 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     // City Debug
     {
         const CityGraph& cities = mWorld.getCities();
-        for (auto&& city : cities.mNodes) {
-            mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
-            mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
+        static int FRAME_COUNT = 0;
+        // Matches the value in citybuilder 300
+        if (++FRAME_COUNT == 300) {
+            FRAME_COUNT = 0;
+            for (auto&& city : cities.mNodes) {
+                mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
+                mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
+            }
         }
     }
 

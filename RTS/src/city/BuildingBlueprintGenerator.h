@@ -10,29 +10,32 @@ enum class BlueprintTileType : ui8 {
     NONE,
     FLOOR,
     DOOR,
-    WALL
+    WALL,
+    TYPES
 };
 
 struct BlueprintTile {
-    ui8 parentRoom;
     BlueprintTileType type;
 };
-static_assert(sizeof(BlueprintTile) == 2, "Keep it small"); 
+static_assert(sizeof(BlueprintTile) == 1, "Keep it small"); 
 
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDescription& desc, float sizeAlpha) : desc(desc), sizeAlpha(sizeAlpha) {}
 
     std::vector<RoomNode> nodes;
     std::vector<BlueprintTile> tiles;
-    ui32v2 rootWorldPos;
+    ui32v2 bottomLeftWorldPos;
     ui16v2 dims;
     float sizeAlpha;
     const BuildingDescription& desc;
+    // TODO: This is for debug only
+    std::vector<RoomNodeID> ownerArray;
 };
 
 class BuildingBlueprintGenerator
 {
 public:
+    BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo);
     std::unique_ptr<BuildingBlueprint> generateBuilding(const BuildingDescription& desc, float sizeAlpha);
 
 private:
@@ -41,9 +44,11 @@ private:
     void assignPublicRooms(BuildingBlueprint& bp);
     void addPrivateRoomsToGraph(BuildingBlueprint& bp);
     void addStickOnRoomsToGraph();
-    // Room Placement
+    void initRooms(BuildingBlueprint& bp);
     void placeRooms(BuildingBlueprint& bp);
-    // Room Expansion
     void expandRooms(BuildingBlueprint& bp);
+    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData);
+
+    BuildingDescriptionRepository& mBuildingRepo;
 };
 

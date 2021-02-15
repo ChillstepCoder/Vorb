@@ -158,6 +158,12 @@ BuildingDescription& BuildingDescriptionRepository::getBuildingDescription(const
     return mBuildingDescriptions[id];
 }
 
+RoomDescription& BuildingDescriptionRepository::getRoomDescriptionFromID(RoomTypeID id)
+{
+    assert(id < mRoomDescriptions.size());
+    return mRoomDescriptions[id];
+}
+
 const nString* BuildingDescriptionRepository::getNameFromRoomTypeID(RoomTypeID id)
 {
     for (auto&& it : mRoomTypes) {

@@ -34,7 +34,7 @@ private:
     std::deque<PlannedBuilding> mStandardPlans;
     std::deque<std::unique_ptr<BuildingBlueprint>> mBluePrints;
 
-    BuildingBlueprintGenerator mBuildingGenerator;
+    std::unique_ptr<BuildingBlueprintGenerator> mBuildingGenerator;
 
     City& mCity;
 };
