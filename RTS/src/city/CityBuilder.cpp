@@ -83,7 +83,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     static TileID wallId = TileRepository::getTile("rock1");
     static TileID bricksId = TileRepository::getTile("bricks1");
-    static TileID doorId = TileRepository::getTile("grass1");
+    static TileID doorId = TileRepository::getTile("door");
 
     ui32v2 worldPos = bp.bottomLeftWorldPos;
 

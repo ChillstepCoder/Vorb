@@ -28,6 +28,7 @@ struct RoomNode {
     ui16v2 offsetFromZero;
     ui16 size = 0;
     ui16 desiredSize = 0;
+    ui16 desiredWidth = 0;
     ui8 numWalls = 0;
     ui8 numChildren = 0;
     bool isPrivate = false;

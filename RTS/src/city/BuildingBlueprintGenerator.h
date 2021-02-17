@@ -48,6 +48,7 @@ private:
     void placeRooms(BuildingBlueprint& bp);
     void expandRooms(BuildingBlueprint& bp);
     void initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData);
+    void placeDoors(BuildingBlueprint& bp);
 
     BuildingDescriptionRepository& mBuildingRepo;
 };

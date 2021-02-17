@@ -171,20 +171,38 @@ ui16 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
     return maximumChildDepth + 1;
 }
 
-void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 availableYSpan, ui16 xOffsetPerLayer, ui16v2 currentOffset) {
+void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 availableYSpan, ui16 maxXOffsetPerLayer, ui16v2 currentOffset) {
     if (node->numChildren == 0) {
         return;
     }
 
-    f32 childYSpan = availableYSpan / node->numChildren;
-    currentOffset.x += xOffsetPerLayer;
-    f32 ySegmentSize = availableYSpan / (node->numChildren * 2);
+    // TODO: Worry about even vs odd?
+    const ui16 myDesiredRadius = node->desiredWidth / 2;
+
+    // Determine desired child y span
+    ui16 totalChildSpan = 0;
+    for (int i = 0; i < node->numChildren; ++i) {
+        RoomNode& child = nodes[node->childRooms[i]];
+        totalChildSpan += child.desiredWidth;
+    }
+
+    const f32 desiredYSpan = vmath::min((f32)totalChildSpan, availableYSpan);
+
+    // TODO: Dynamic child Y span based on available space?
+    f32 childYSpan = desiredYSpan / node->numChildren;
+    f32 ySegmentSize = desiredYSpan / (node->numChildren * 2);
     // Start at the top
     currentOffset.y -= ySegmentSize * (node->numChildren - 1);
     for (int i = 0; i < node->numChildren; ++i) {
         RoomNode& child = nodes[node->childRooms[i]];
+        const ui16 childDesiredRadius = child.desiredWidth / 2;
+        
+        ui16 xOffset = vmath::min(maxXOffsetPerLayer, (ui16)(myDesiredRadius + childDesiredRadius));
+        if (xOffset < 1) xOffset = 1;
+
         child.offsetFromZero = currentOffset;
-        placeChildrenRecursive(nodes, &child, childYSpan, xOffsetPerLayer, currentOffset);
+        child.offsetFromZero.x += xOffset;
+        placeChildrenRecursive(nodes, &child, childYSpan, maxXOffsetPerLayer, child.offsetFromZero);
         currentOffset.y += ySegmentSize * 2;
     }
 }
@@ -192,9 +210,15 @@ void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 av
 void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp) {
     for (auto&& room : bp.nodes) {
         RoomDescription& desc = mBuildingRepo.getRoomDescriptionFromID(room.nodeType);
-        room.desiredSize = round(lerp(desc.minWidth, desc.maxWidth, bp.sizeAlpha));
-        room.desiredSize *= room.desiredSize; //SQ
+        room.desiredWidth = round(lerp(desc.minWidth, desc.maxWidth, bp.sizeAlpha));
+        room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
+}
+
+void applyForceOffset(ui16v2& offset, const f32v2& force, const ui16v2& dims) {
+    i32v2 newOffset = i32v2(offset) + i32v2(force);
+    offset.x = vmath::clamp(newOffset.x, 1, dims.x - 2);
+    offset.y = vmath::clamp(newOffset.y, 1, dims.y - 2);
 }
 
 void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) {
@@ -203,17 +227,82 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) {
 
     ui16 maximumDepth = getMaximumDepthRecursive(bp.nodes, root);
 
-    ui16 xOffsetPerLayer = bp.dims.x / maximumDepth;
+    ui16 maxXOffsetPerLayer = bp.dims.x / maximumDepth;
     f32 availableYSpan = bp.dims.y;
     // First place the root
-    root->offsetFromZero = i16v2(xOffsetPerLayer / 2, bp.dims.y / 2);
+    root->offsetFromZero = i16v2(vmath::min(maxXOffsetPerLayer / 2, root->desiredWidth / 2), bp.dims.y / 2);
+    if (root->offsetFromZero.x == 0) root->offsetFromZero.x = 1u;
 
-    placeChildrenRecursive(bp.nodes, root, availableYSpan, xOffsetPerLayer, root->offsetFromZero);
+    placeChildrenRecursive(bp.nodes, root, availableYSpan, maxXOffsetPerLayer, root->offsetFromZero);
 
     // Clamp positions to be withing facade
     for (auto&& room : bp.nodes) {
         room.offsetFromZero.x = vmath::clamp(room.offsetFromZero.x, (ui16)1u, bp.dims.x);
         room.offsetFromZero.y = vmath::clamp(room.offsetFromZero.y, (ui16)1u, bp.dims.y);
+    }
+
+    // Spread rooms apart based on circular collision
+    constexpr f32 FORCE_MULT = 0.5f;
+    for (int iter = 0; iter < 3; ++iter) {
+        for (size_t i = 0; i < bp.nodes.size() - 1; ++i) {
+            RoomNode& room1 = bp.nodes[i];
+            for (size_t j = i + 1; j < bp.nodes.size(); ++j) {
+                RoomNode& room2 = bp.nodes[j];
+
+                f32v2 offset;
+                // Offset should never be 0
+                if (room1.offsetFromZero != room2.offsetFromZero) {
+                    offset = f32v2(room2.offsetFromZero) - f32v2(room1.offsetFromZero);
+                }
+                else {
+                    offset = f32v2(1.0f, 0.0f);
+                }
+                const f32 distance = glm::length(offset);
+                // Normalize
+                offset = offset / distance;
+                const f32 desiredDistance = (room1.desiredWidth + room2.desiredWidth) / 2.0f;
+                // Collide with everything
+                if (distance < desiredDistance) {
+                    const f32v2 pushForce = offset * ((desiredDistance - distance) * FORCE_MULT);
+                    applyForceOffset(room1.offsetFromZero, -pushForce, bp.dims);
+                    applyForceOffset(room2.offsetFromZero, pushForce, bp.dims);
+                } else if (room2.parentRoom == i) { // Magnet only to children
+                    const f32v2 pullForce = offset * ((distance - desiredDistance) * FORCE_MULT);
+                    applyForceOffset(room1.offsetFromZero, pullForce, bp.dims);
+                    applyForceOffset(room2.offsetFromZero, -pullForce, bp.dims);
+
+                }
+            }
+        }
+    }
+
+    // Second spread pass aiming only at tiny distances
+    for (int iter = 0; iter < 2; ++iter) {
+        for (size_t i = 0; i < bp.nodes.size() - 1; ++i) {
+            RoomNode& room1 = bp.nodes[i];
+            for (size_t j = i + 1; j < bp.nodes.size(); ++j) {
+                RoomNode& room2 = bp.nodes[j];
+
+                f32v2 offset;
+                // Offset should never be 0
+                if (room1.offsetFromZero != room2.offsetFromZero) {
+                    offset = f32v2(room2.offsetFromZero) - f32v2(room1.offsetFromZero);
+                }
+                else {
+                    offset = f32v2(1.0f, 0.0f);
+                }
+                const f32 distance = glm::length(offset);
+                // Normalize
+                offset = offset / distance;
+                const f32 desiredDistance = (room1.desiredWidth + room2.desiredWidth) / 2.0f;
+                // Collide with everything
+                if (distance < desiredDistance && distance < 3) {
+                    const f32v2 pushForce = offset * ((desiredDistance - distance));
+                    applyForceOffset(room1.offsetFromZero, -pushForce, bp.dims);
+                    applyForceOffset(room2.offsetFromZero, pushForce, bp.dims);
+                }
+            }
+        }
     }
 }
 
@@ -226,36 +315,7 @@ f32 getPressureValue(ui16 desiredSize, ui16 currentSize) {
     return (f32)desiredSize / (f32)currentSize;
 }
 
-void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData)
-{
-    ui16 index = getIndexAtPos(room.offsetFromZero, bp.dims.x);
-    // Init root node
-    room.size = 1;
-    bp.tiles[index].type = BlueprintTileType::FLOOR;
-    metaData[index] = roomId;
 
-    // Init 4 base walls
-    room.numWalls = 4;
-    for (int i = 0; i < room.numWalls; ++i) {
-        RoomWall& wall = room.walls[i];
-        wall.startPos = room.offsetFromZero;
-        wall.endPos = room.offsetFromZero;
-        wall.length = 1;
-    }
-    room.walls[(int)RoomWallOuterDir::LEFT].startAdjacent = &room.walls[(int)RoomWallOuterDir::BOTTOM];
-    room.walls[(int)RoomWallOuterDir::LEFT].endAdjacent = &room.walls[(int)RoomWallOuterDir::TOP];
-    room.walls[(int)RoomWallOuterDir::TOP].startAdjacent = &room.walls[(int)RoomWallOuterDir::LEFT];
-    room.walls[(int)RoomWallOuterDir::TOP].endAdjacent = &room.walls[(int)RoomWallOuterDir::RIGHT];
-    room.walls[(int)RoomWallOuterDir::RIGHT].startAdjacent = &room.walls[(int)RoomWallOuterDir::TOP];
-    room.walls[(int)RoomWallOuterDir::RIGHT].endAdjacent = &room.walls[(int)RoomWallOuterDir::BOTTOM];
-    room.walls[(int)RoomWallOuterDir::BOTTOM].startAdjacent = &room.walls[(int)RoomWallOuterDir::RIGHT];
-    room.walls[(int)RoomWallOuterDir::BOTTOM].endAdjacent = &room.walls[(int)RoomWallOuterDir::LEFT];
-
-    room.walls[(int)RoomWallOuterDir::LEFT].outerDir = RoomWallOuterDir::LEFT;
-    room.walls[(int)RoomWallOuterDir::TOP].outerDir = RoomWallOuterDir::TOP;
-    room.walls[(int)RoomWallOuterDir::RIGHT].outerDir = RoomWallOuterDir::RIGHT;
-    room.walls[(int)RoomWallOuterDir::BOTTOM].outerDir = RoomWallOuterDir::BOTTOM;
-}
 
 constexpr ui8 ITER_STEP = 2;
 constexpr ui8 MAX_WALL_LENGTH = 64;
@@ -583,4 +643,39 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) {
 
     // TODO: Debug only
     bp.ownerArray.swap(metaData);
+}
+
+void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData)
+{
+    ui16 index = getIndexAtPos(room.offsetFromZero, bp.dims.x);
+    // Init root node
+    room.size = 1;
+    bp.tiles[index].type = BlueprintTileType::FLOOR;
+    metaData[index] = roomId;
+
+    // Init 4 base walls
+    room.numWalls = 4;
+    for (int i = 0; i < room.numWalls; ++i) {
+        RoomWall& wall = room.walls[i];
+        wall.startPos = room.offsetFromZero;
+        wall.endPos = room.offsetFromZero;
+        wall.length = 1;
+    }
+    room.walls[(int)RoomWallOuterDir::LEFT].startAdjacent = &room.walls[(int)RoomWallOuterDir::BOTTOM];
+    room.walls[(int)RoomWallOuterDir::LEFT].endAdjacent = &room.walls[(int)RoomWallOuterDir::TOP];
+    room.walls[(int)RoomWallOuterDir::TOP].startAdjacent = &room.walls[(int)RoomWallOuterDir::LEFT];
+    room.walls[(int)RoomWallOuterDir::TOP].endAdjacent = &room.walls[(int)RoomWallOuterDir::RIGHT];
+    room.walls[(int)RoomWallOuterDir::RIGHT].startAdjacent = &room.walls[(int)RoomWallOuterDir::TOP];
+    room.walls[(int)RoomWallOuterDir::RIGHT].endAdjacent = &room.walls[(int)RoomWallOuterDir::BOTTOM];
+    room.walls[(int)RoomWallOuterDir::BOTTOM].startAdjacent = &room.walls[(int)RoomWallOuterDir::RIGHT];
+    room.walls[(int)RoomWallOuterDir::BOTTOM].endAdjacent = &room.walls[(int)RoomWallOuterDir::LEFT];
+
+    room.walls[(int)RoomWallOuterDir::LEFT].outerDir = RoomWallOuterDir::LEFT;
+    room.walls[(int)RoomWallOuterDir::TOP].outerDir = RoomWallOuterDir::TOP;
+    room.walls[(int)RoomWallOuterDir::RIGHT].outerDir = RoomWallOuterDir::RIGHT;
+    room.walls[(int)RoomWallOuterDir::BOTTOM].outerDir = RoomWallOuterDir::BOTTOM;
+}
+
+void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) {
+
 }
