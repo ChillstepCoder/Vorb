@@ -66,7 +66,7 @@ void CityPlanner::generatePlan() {
     bp->bottomLeftWorldPos = cityCenter;
 
     if (IS_ENABLED(DEGUG_BLUEPRINT)) {
-        std::cout << "\n\Generated house:" << bp->nodes.size() << " " << sizeAlpha << "\n";
+        std::cout << "\nGenerated house:" << bp->nodes.size() << " " << sizeAlpha << "\n";
         for (auto&& node : bp->nodes) {
             std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " << 
                 node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";

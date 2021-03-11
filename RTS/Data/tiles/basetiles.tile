@@ -9,3 +9,5 @@ bricks1:
   tex: bricks1
 water:
   tex: water
+door:
+  tex: door

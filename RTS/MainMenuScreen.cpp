@@ -86,6 +86,9 @@ void MainMenuScreen::build() {
         } else if (event.keyCode == VKEY_C) {
             sDebugOptions.mChunkBoundaries = !sDebugOptions.mChunkBoundaries;
         }
+        else if (event.keyCode == VKEY_V) {
+            sDebugOptions.mCities = !sDebugOptions.mCities;
+        }
         else if (event.keyCode == VKEY_R) {
 			mRenderContext.reloadShaders();
         }

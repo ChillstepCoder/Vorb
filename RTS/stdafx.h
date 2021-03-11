@@ -144,6 +144,7 @@ struct DebugOptions {
 	f64 mTimeOffset = 0.0f;
     bool mWireframe = false;
     bool mChunkBoundaries = false;
+	bool mCities = false;
 };
 
 extern DebugOptions sDebugOptions;

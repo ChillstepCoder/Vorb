@@ -97,7 +97,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
         0, // NONE
         0, // FLOOR
         0, // DOOR
-        1, // WALL
+        0, // WALL
     };
 
     for (int y = 0; y < bp.dims.y; ++y) {

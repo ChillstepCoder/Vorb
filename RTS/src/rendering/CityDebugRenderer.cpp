@@ -13,13 +13,14 @@ const int PERIOD_FRAMES = 300;
 
 constexpr int MAX_ROOM_COLORS = 8;
 constexpr float ROOM_COLOR_ALPHA = 0.4f;
+constexpr float ROOM_COLOR_ALPHA_WHITE = 0.6f;
 const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(1.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA),
     color4(0.0f, 1.0f, 0.0f, ROOM_COLOR_ALPHA),
     color4(0.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA),
     color4(1.0f, 1.0f, 0.0f, ROOM_COLOR_ALPHA),
     color4(0.0f, 1.0f, 1.0f, ROOM_COLOR_ALPHA),
-    color4(1.0f, 1.0f, 1.0f, ROOM_COLOR_ALPHA),
+    color4(1.0f, 1.0f, 1.0f, ROOM_COLOR_ALPHA_WHITE),
     color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA),
     color4(0.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA),
 };

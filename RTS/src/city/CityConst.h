@@ -2,7 +2,7 @@
 
 // TODO: Roomdetials file?
 constexpr ui32 MAX_CHILD_ROOMS = 4;
-constexpr ui32 MAX_ADJACENT_ROOMS = 2;
+constexpr ui32 MAX_ADJACENT_ROOMS = 3;
 constexpr ui32 MAX_WALLS_PER_ROOM = 4;
 
 // Constants

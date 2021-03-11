@@ -6,6 +6,7 @@
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/ShaderManager.h>
+#include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
 #include <box2d/b2_collision.h>
 

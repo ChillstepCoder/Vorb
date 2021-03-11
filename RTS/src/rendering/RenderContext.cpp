@@ -229,7 +229,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     }
 
     // City Debug
-    {
+    if (sDebugOptions.mCities) {
         const CityGraph& cities = mWorld.getCities();
         static int FRAME_COUNT = 0;
         // Matches the value in citybuilder 300

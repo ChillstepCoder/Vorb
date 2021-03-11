@@ -34,6 +34,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBuilding(
     initRooms(*bp);
     placeRooms(*bp);
     expandRooms(*bp);
+    placeDoors(*bp);
 
     std::cout << "\nGenerated building in " << timer.stop() << " ms\n";
     return bp;
@@ -307,15 +308,21 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) {
 }
 
 // Helper
-ui16 getIndexAtPos(ui16v2 pos, ui16 xDims) {
+inline ui16 getIndexAtPos(ui16v2 pos, ui16 xDims) {
     return pos.y * xDims + pos.x;
 }
 
-f32 getPressureValue(ui16 desiredSize, ui16 currentSize) {
-    return (f32)desiredSize / (f32)currentSize;
+inline i16 getIndexAtPos(i16v2 pos, ui16 xDims) {
+    return pos.y * xDims + pos.x;
 }
 
+inline ui32 getIndexAtPos(ui32 x, ui32 y, ui32 xDims) {
+    return y * xDims + x;
+}
 
+inline f32 getPressureValue(ui16 desiredSize, ui16 currentSize) {
+    return (f32)desiredSize / (f32)currentSize;
+}
 
 constexpr ui8 ITER_STEP = 2;
 constexpr ui8 MAX_WALL_LENGTH = 64;
@@ -352,7 +359,7 @@ void extendWallEnd(RoomWall& wall, const i16v2& offset) {
 }
 
 
-void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData) {
+void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId) {
     const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
     const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
 
@@ -366,12 +373,12 @@ void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, RoomNodeI
     for (int j = 0; j < wall.length; ++j) {
         // Get owner room and determine pressure contribution
         const ui16 index = getIndexAtPos(outerPos, bp.dims.x);
-        RoomNodeID ownerId = metaData[index];
+        RoomNodeID ownerId = bp.ownerArray[index];
         if (ownerId != INVALID_ROOM_ID) {
             RoomNode& ownerRoom = bp.nodes[ownerId];
             // TODO: Can we optimize this so we don't run it every time?
         }
-        metaData[index] = roomId;
+        bp.ownerArray[index] = roomId;
         bp.tiles[index].type = BlueprintTileType::FLOOR;
         // Step
         outerPos += iterateOffset;
@@ -383,7 +390,7 @@ void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, RoomNodeI
 }
 
 // Only fills gaps and will not overwrite any existing walls
-void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData) {
+void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId) {
     const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
     const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
 
@@ -401,10 +408,10 @@ void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, R
         // Only if we aren't an overwritten wall
         // Get owner room and determine pressure contribution
         const ui16 index = getIndexAtPos(outerPos, bp.dims.x);
-        RoomNodeID ownerId = metaData[index];
+        RoomNodeID ownerId = bp.ownerArray[index];
         if (ownerId == INVALID_ROOM_ID) {
             ++sizeAdd;
-            metaData[index] = roomId;
+            bp.ownerArray[index] = roomId;
             bp.tiles[index].type = BlueprintTileType::FLOOR;
         }
         // Step
@@ -416,60 +423,51 @@ void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room, R
     room.size += wall.length;
 }
 
-bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData) {
+bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId) {
 
    bool didExpand = false;
 
-   for (int iter = 0; iter < ITER_STEP; ++iter) {
-       // Try expand walls
-       int expandCount = 0;
-       for (int i = 0; i < room.numWalls; ++i) {
+    for (int i = 0; i < room.numWalls; ++i) {
 
-           f32 currentPressure = getPressureValue(room.desiredSize, room.size);
-           // Once we are at desired size, no need to expand
-           if (currentPressure <= 1.0f) {
-               return didExpand;
-           }
+        f32 currentPressure = getPressureValue(room.desiredSize, room.size);
+        // Once we are at desired size, no need to expand
+        if (currentPressure <= 1.0f) {
+            return didExpand;
+        }
 
-           RoomWall& wall = room.walls[i];
-           // Expand
-           const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
-           const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
-           const int xOrY = (int)wall.outerDir % 2;
-           const i16v2 nextStart = wall.startPos + expandOffset;
-           // Bounds check
-           if (boundsCheckRoom(nextStart[xOrY], bp.dims[xOrY])) {
-               assert(wall.length <= MAX_WALL_LENGTH);
-               // We will only expand if we arent expanding into another room
-               bool canExpand = true;
-               i16v2 outerPos = nextStart;
-               for (int j = 0; j < wall.length; ++j) {
-                   const ui16 index = getIndexAtPos(outerPos, bp.dims.x);
-                   RoomNodeID ownerId = metaData[index];
-                   if (ownerId != INVALID_ROOM_ID) {
-                       canExpand = false;
-                       break;
-                   }
-                   // Step
-                   outerPos += iterateOffset;
-               }
-               // If we have room to expand, expand
-               if (canExpand) {
-                   expandWall(wall, bp, room, roomId, metaData);
-                   didExpand = true;
-                   ++expandCount;
-               }
-           }
-       }
-       // Early out due to no expansion
-       if (expandCount == 0) {
-           return didExpand;
-       }
-   }
+        RoomWall& wall = room.walls[i];
+        // Expand
+        const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
+        const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
+        const int xOrY = (int)wall.outerDir % 2;
+        const i16v2 nextStart = wall.startPos + expandOffset;
+        // Bounds check
+        if (boundsCheckRoom(nextStart[xOrY], bp.dims[xOrY])) {
+            assert(wall.length <= MAX_WALL_LENGTH);
+            // We will only expand if we arent expanding into another room
+            bool canExpand = true;
+            i16v2 outerPos = nextStart;
+            for (int j = 0; j < wall.length; ++j) {
+                const ui16 index = getIndexAtPos(outerPos, bp.dims.x);
+                RoomNodeID ownerId = bp.ownerArray[index];
+                if (ownerId != INVALID_ROOM_ID) {
+                    canExpand = false;
+                    break;
+                }
+                // Step
+                outerPos += iterateOffset;
+            }
+            // If we have room to expand, expand
+            if (canExpand) {
+                expandWall(wall, bp, room, roomId);
+                didExpand = true;
+            }
+        }
+    }
    return didExpand;
 }
 
-bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData) {
+bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId) {
 
     bool didExpand = false;
 
@@ -500,7 +498,7 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, st
                 for (int j = 0; j < wall.length; ++j) {
                     // We will expand if there is at least one empty square here
                     const ui16 index = getIndexAtPos(outerPos, bp.dims.x);
-                    RoomNodeID ownerId = metaData[index];
+                    RoomNodeID ownerId = bp.ownerArray[index];
                     if (ownerId == INVALID_ROOM_ID) {
                         canExpand = true;
                         break;
@@ -510,7 +508,7 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, st
                 }
                 // If we have room to expand, expand
                 if (canExpand) {
-                    expandWallGapsOnly(wall, bp, room, roomId, metaData);
+                    expandWallGapsOnly(wall, bp, room, roomId);
                     didExpand = true;
                     ++expandCount;
                 }
@@ -524,7 +522,7 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, st
     return didExpand;
 }
 
-void placeFacadeTiles(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData) {
+void placeFacadeTiles(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId) {
     // Iteratively expand walls
     for (int i = 0; i < room.numWalls; ++i) {
         RoomWall& wall = room.walls[i];
@@ -541,11 +539,11 @@ void placeFacadeTiles(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, 
         for (int j = 0; j <= wallLength; ++j) {
             ui32 index = pos.y * bp.dims.x + pos.x;
             // Only place wall if we own this tile
-            if (metaData[index] == roomId) {
+            if (bp.ownerArray[index] == roomId) {
                 i16v2 facadePos = pos + outerDir;
                 ui32 facadeIndex = facadePos.y * bp.dims.x + facadePos.x;
                 // Only place facade if this is an unowned tile
-                if (metaData[facadeIndex] == INVALID_ROOM_ID) {
+                if (bp.ownerArray[facadeIndex] == INVALID_ROOM_ID) {
                     bp.tiles[facadeIndex].type = BlueprintTileType::WALL;
                     finalWasSuccess = true;
                 }
@@ -563,40 +561,68 @@ void placeFacadeTiles(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, 
             i16v2 facadePos = pos + outerDir;
             ui32 facadeIndex = facadePos.y * bp.dims.x + facadePos.x;
             // Only place facade if this is an unowned tile
-            if (metaData[facadeIndex] == INVALID_ROOM_ID) {
+            if (bp.ownerArray[facadeIndex] == INVALID_ROOM_ID) {
                 bp.tiles[facadeIndex].type = BlueprintTileType::WALL;
             }
         }
     }
 }
 
-void placeInteriorWalls(BuildingBlueprint& bp, std::vector<RoomNodeID>& metaData) {
+void placeInteriorWalls(BuildingBlueprint& bp) {
+    // First place main segments
     for (ui16 y = 1; y < bp.dims.y - 1; ++y) {
         for (ui16 x = 1; x < bp.dims.x - 1; ++x) {
             ui16 index = y * bp.dims.x + x;
-            RoomNodeID roomId = metaData[index];
+            RoomNodeID roomId = bp.ownerArray[index];
             if (roomId == INVALID_ROOM_ID) {
                 continue;
             }
+            int placedWalls = 0;
             { // Right
                 ui16 nIndex = index + 1;
-                RoomNodeID nId = metaData[nIndex];
+                RoomNodeID nId = bp.ownerArray[nIndex];
                 if (nId != INVALID_ROOM_ID && nId != roomId) {
                     bp.tiles[nIndex].type = BlueprintTileType::WALL;
+                    ++placedWalls;
                 }
             }
             { // Down
                 ui16 nIndex = index - bp.dims.x;
-                RoomNodeID nId = metaData[nIndex];
+                RoomNodeID nId = bp.ownerArray[nIndex];
                 if (nId != INVALID_ROOM_ID && nId != roomId) {
                     bp.tiles[nIndex].type = BlueprintTileType::WALL;
+                    ++placedWalls;
                 }
             }
-            { // Down Right
-                ui16 nIndex = index + 1 - bp.dims.x;
-                RoomNodeID nId = metaData[nIndex];
-                if (nId != INVALID_ROOM_ID && nId != roomId) {
-                    bp.tiles[nIndex].type = BlueprintTileType::WALL;
+        }
+    }
+    // Next place corners
+    for (ui16 y = 1; y < bp.dims.y - 1; ++y) {
+        for (ui16 x = 1; x < bp.dims.x - 1; ++x) {
+            ui16 index = y * bp.dims.x + x;
+            if (bp.tiles[index].type != BlueprintTileType::WALL) {
+                continue;
+            }
+            // Down-right configuration
+            {
+                const ui16 downRightIndex = index - bp.dims.x + 1;
+                if (bp.tiles[downRightIndex].type == BlueprintTileType::WALL) {
+                    const ui16 downIndex = index - bp.dims.x;
+                    if (bp.tiles[downIndex].type != BlueprintTileType::WALL) {
+                        // Always place to right
+                        bp.tiles[index + 1].type = BlueprintTileType::WALL;
+                    }
+                }
+            }
+            // Up-right configuration
+            {
+                const ui16 upRightIndex = index + bp.dims.x + 1;
+                if (bp.tiles[upRightIndex].type == BlueprintTileType::WALL) {
+                    const ui16 upIndex = index + bp.dims.x;
+                    if (bp.tiles[upIndex].type != BlueprintTileType::WALL) {
+                        // Always place to right
+                        bp.tiles[index + 1].type = BlueprintTileType::WALL;
+                    }
                 }
             }
         }
@@ -605,18 +631,18 @@ void placeInteriorWalls(BuildingBlueprint& bp, std::vector<RoomNodeID>& metaData
 
 void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) {
     bp.tiles.resize((size_t)bp.dims.x * (size_t)bp.dims.y, { BlueprintTileType::NONE });
-    std::vector<RoomNodeID> metaData(bp.tiles.size(), INVALID_ROOM_ID);
+    bp.ownerArray.resize(bp.tiles.size(), INVALID_ROOM_ID);
 
     // Init rooms
     for (size_t i = 0; i < bp.nodes.size(); ++i) {
-        initRoomWalls(bp, bp.nodes[i], i, metaData);
+        initRoomWalls(bp, bp.nodes[i], i);
     }
 
     // Expand walls in square shape, no overwrite
-    for (int iters = 0; iters < MAX_WALL_LENGTH / ITER_STEP; ++iters) {
+    for (int iters = 0; iters < MAX_WALL_LENGTH; ++iters) {
         int failCount = 0;
         for (size_t i = 0; i < bp.nodes.size(); ++i) {
-            failCount += expandRoomSquare(bp, bp.nodes[i], i, metaData) ? 0 : 1;
+            failCount += expandRoomSquare(bp, bp.nodes[i], i) ? 0 : 1;
         }
         if (failCount == bp.nodes.size()) {
             break;
@@ -626,7 +652,7 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) {
     for (int iters = 0; iters < MAX_WALL_LENGTH / ITER_STEP; ++iters) {
         int failCount = 0;
         for (size_t i = 0; i < bp.nodes.size(); ++i) {
-            failCount += expandRoomGaps(bp, bp.nodes[i], i, metaData) ? 0 : 1;
+            failCount += expandRoomGaps(bp, bp.nodes[i], i) ? 0 : 1;
         }
         if (failCount == bp.nodes.size()) {
             break;
@@ -635,23 +661,20 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) {
 
     // Place facade tiles
     for (size_t i = 0; i < bp.nodes.size(); ++i) {
-        placeFacadeTiles(bp, bp.nodes[i], i, metaData);
+        placeFacadeTiles(bp, bp.nodes[i], i);
     }
 
     // Place interior wall tiles
-    placeInteriorWalls(bp, metaData);
-
-    // TODO: Debug only
-    bp.ownerArray.swap(metaData);
+    placeInteriorWalls(bp);
 }
 
-void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData)
+void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId)
 {
     ui16 index = getIndexAtPos(room.offsetFromZero, bp.dims.x);
     // Init root node
     room.size = 1;
     bp.tiles[index].type = BlueprintTileType::FLOOR;
-    metaData[index] = roomId;
+    bp.ownerArray[index] = roomId;
 
     // Init 4 base walls
     room.numWalls = 4;
@@ -676,6 +699,128 @@ void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& 
     room.walls[(int)RoomWallOuterDir::BOTTOM].outerDir = RoomWallOuterDir::BOTTOM;
 }
 
-void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) {
+struct DoorBFSNode {
+    ui32 index;
+};
 
+void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, RoomWallOuterDir dir, ui32 nodeIndex, RoomNode& room, const i16v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside) {
+    const i16v2& directionOffset = EXPAND_OFFSETS[enum_cast(dir)];
+    const i16v2 nextPos = currentPos + directionOffset;
+    i16 nextIndex = getIndexAtPos(nextPos, bp.dims.x);
+    if (!visited[nextIndex]) {
+        RoomNodeID nextId = bp.ownerArray[nextIndex];
+        visited[nextIndex] = true;
+        if (nextId == bp.ownerArray[nodeIndex]) {
+
+            bfs[bfsBackIndex++].index = nextIndex;
+            if (bfsBackIndex >= bfs.size()) bfsBackIndex = 0;
+        }
+        else {
+
+            if (nextId == INVALID_ROOM_ID) {
+
+                if (canConnectToOutside) {
+
+                    canConnectToOutside = false;
+                    if (bp.tiles[nodeIndex].type == BlueprintTileType::WALL && bp.tiles[nextIndex].type == BlueprintTileType::FLOOR) {
+                        bp.tiles[nodeIndex].type = BlueprintTileType::DOOR;
+                    }
+                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR) {
+
+                        bp.tiles[nextIndex].type = BlueprintTileType::DOOR;
+                    }
+                }
+            }
+            else if (!isConnected[nextId] && room.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
+
+                RoomNode& adjacent = bp.nodes[nextId];
+                if (adjacent.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
+
+                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR) {
+
+                        const i16v2 outerPos = nextPos + directionOffset;
+                        // Bounds check
+                        switch (dir) {
+                            case RoomWallOuterDir::LEFT:
+                                if (outerPos.x < 0) return;
+                                break;
+                            case RoomWallOuterDir::BOTTOM:
+                                if (outerPos.y < 0) return;
+                                break;
+                            case RoomWallOuterDir::RIGHT:
+                                if (outerPos.x >= bp.dims.x) return;
+                                break;
+                            case RoomWallOuterDir::TOP:
+                                if (outerPos.y >= bp.dims.y) return;
+                                break;
+                        }
+
+                        i16 outerIndex = getIndexAtPos(outerPos, bp.dims.x);
+                        if (bp.tiles[outerIndex].type <= BlueprintTileType::FLOOR) {
+                            isConnected[nextId] = true;
+                            room.adjacentRooms[room.numAdjacentRooms++] = nextId;
+                            adjacent.adjacentRooms[adjacent.numAdjacentRooms++] = bp.ownerArray[nodeIndex];
+                            bp.tiles[nextIndex].type = BlueprintTileType::DOOR;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) {
+    // TODO: Re-use memory
+    std::vector<bool> visited((ui32)bp.dims.x * (ui32)bp.dims.y);
+    std::vector<bool> isConnected(bp.nodes.size());
+
+    // Ringbuffer
+    // TODO: Re-use memory
+    std::vector<DoorBFSNode> bfs((ui32)bp.dims.x * (ui32)bp.dims.y);
+    size_t bfsFrontIndex;
+    size_t bfsBackIndex;
+    bool canConnectToOutside = true;
+    for (auto&& room : bp.nodes) {
+        // Clear visited list
+        std::fill(visited.begin(), visited.end(), 0);
+        std::fill(isConnected.begin(), isConnected.end(), 0);
+
+        // Mark neighbor rooms as connected
+        for (int i = 0; i < room.numAdjacentRooms; ++i) {
+            isConnected[room.adjacentRooms[i]] = true;
+        }
+
+        bfsFrontIndex = 0;
+        bfsBackIndex = 1;
+
+        ui32 startIndex = getIndexAtPos(room.offsetFromZero, bp.dims.x);
+        visited[startIndex] = true;
+        bfs[bfsFrontIndex].index = startIndex;
+        // Do the bfs
+        while (bfsFrontIndex != bfsBackIndex) {
+            const DoorBFSNode& node = bfs[bfsFrontIndex];
+            i32v2 pos(node.index % bp.dims.x, node.index / bp.dims.x);
+            RoomNodeID roomId = bp.ownerArray[node.index];
+            // Left
+            if (pos.x > 0) {
+                doorBfs(bfs, bfsBackIndex, bp, RoomWallOuterDir::LEFT, node.index, room, pos, visited, isConnected, canConnectToOutside);
+            }
+
+            // Bottom
+            if (pos.y > 0) {
+                doorBfs(bfs, bfsBackIndex, bp, RoomWallOuterDir::BOTTOM, node.index, room, pos, visited, isConnected, canConnectToOutside);
+            }
+
+            // Right
+            if (pos.x < bp.dims.x - 1) {
+                doorBfs(bfs, bfsBackIndex, bp, RoomWallOuterDir::RIGHT, node.index, room, pos, visited, isConnected, canConnectToOutside);
+            }
+
+            // Up
+            if (pos.y < bp.dims.y - 1) {
+                doorBfs(bfs, bfsBackIndex, bp, RoomWallOuterDir::TOP, node.index, room, pos, visited, isConnected, canConnectToOutside);
+            }
+            ++bfsFrontIndex;
+        }
+    }
 }

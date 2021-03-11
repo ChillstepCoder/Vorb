@@ -31,5 +31,6 @@ struct RoomNode {
     ui16 desiredWidth = 0;
     ui8 numWalls = 0;
     ui8 numChildren = 0;
+    ui8 numAdjacentRooms = 0;
     bool isPrivate = false;
 };

@@ -7,8 +7,8 @@
 #include "Building.h"
 
 enum class BlueprintTileType : ui8 {
-    NONE,
-    FLOOR,
+    NONE  = 0, // THIS SHOULD ALWAYS BE 0
+    FLOOR = 1, // THIS SHOULD ALWAYS BE 1
     DOOR,
     WALL,
     TYPES
@@ -19,6 +19,7 @@ struct BlueprintTile {
 };
 static_assert(sizeof(BlueprintTile) == 1, "Keep it small"); 
 
+// TODO: Cellular automata rule iteration for room fixup
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDescription& desc, float sizeAlpha) : desc(desc), sizeAlpha(sizeAlpha) {}
 
@@ -47,7 +48,7 @@ private:
     void initRooms(BuildingBlueprint& bp);
     void placeRooms(BuildingBlueprint& bp);
     void expandRooms(BuildingBlueprint& bp);
-    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId, std::vector<RoomNodeID>& metaData);
+    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId);
     void placeDoors(BuildingBlueprint& bp);
 
     BuildingDescriptionRepository& mBuildingRepo;
