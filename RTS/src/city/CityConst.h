@@ -12,3 +12,10 @@ typedef ui8 RoomNodeID;
 // Types
 typedef ui16 RoomTypeID;
 typedef ui16 BuildingTypeID;
+
+enum class Cartesian {
+    DOWN  = 0, //-y
+    LEFT  = 1, //-x
+    RIGHT = 2, //+x
+    UP    = 3  //+y
+};

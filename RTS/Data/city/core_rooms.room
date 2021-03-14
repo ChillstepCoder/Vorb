@@ -1,5 +1,5 @@
 foyer:
-  min_width: 3.0
+  min_width: 4.0
   max_width: 10.0
 hall:
   min_width: 4.0
@@ -17,7 +17,7 @@ dining_room:
   min_width: 5.0
   max_width: 23.0
 bathroom:
-  min_width: 3.0
+  min_width: 4.0
   max_width: 6.0
 closet:
   min_width: 2.0
@@ -26,14 +26,14 @@ storage:
   min_width: 2.0
   max_width: 5.0
 pantry:
-  min_width: 2.0
-  max_width: 4.0
+  min_width: 4.0
+  max_width: 5.0
 buttery:
-  min_width: 2.0
-  max_width: 4.0
+  min_width: 4.0
+  max_width: 5.0
 garden:
-  min_width: 2.0
-  max_width: 4.0
+  min_width: 4.0
+  max_width: 5.0
 library:
   min_width: 6.0
   max_width: 40.0

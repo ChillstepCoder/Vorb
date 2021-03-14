@@ -18,8 +18,6 @@ struct RoomDescription {
 class Building {
 public:
     // Building bounds are a series of corner segments
-    // Each pair is an X,Y offset pair representing a wall "corner" so this must be even in length
-    std::vector<i16v2> mWallSegmentOffsets; // Facade // TODO: This only needs to be i16 since we can interleave x,y
     ui32v2 mBottomLeftWorldPos;
     std::vector<RoomNode> mGraph;
 };
@@ -70,12 +68,6 @@ struct BuildingDescription {
 //struct Facade {
 //
 //};
-
-
-
-struct PlannedBuilding {
-    Building mBuilding;
-};
 
 class BuildingDescriptionRepository {
 public:

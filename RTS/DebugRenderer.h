@@ -11,6 +11,7 @@ public:
 	static void drawAABB(const b2AABB& aabb, color4 color, int lifeTime = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, color4 color, int lifeTime = 0);
 
+	// TODO: static void drawText()
 	static void renderLines(const f32m4& viewMatrix);
 };
 

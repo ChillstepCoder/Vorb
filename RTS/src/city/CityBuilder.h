@@ -18,8 +18,6 @@ class CityBuilder
 public:
     CityBuilder(City& city, World& world);
 
-    void addUrgentPlans (PlannedBuilding&& plannedBuilding);
-
     void update();
 
 private:

@@ -16,11 +16,6 @@ CityBuilder::CityBuilder(City& city, World& world)
 
 }
 
-void CityBuilder::addUrgentPlans(PlannedBuilding&& plannedBuilding)
-{
-    assert(false);
-}
-
 void CityBuilder::update()
 {
     // Grab new plans
@@ -31,55 +26,9 @@ void CityBuilder::update()
         }
     //}
 
-    // Build a building
-    //if (mInProgressBlueprints.size()) {
-    //    // TODO: Pop
-    //    BuildingBlueprint& bp = *mInProgressBlueprints.back();
-    //    //mInProgressBlueprints.pop_back();
-    //    debugBuildInstant(bp);
-    //}
 }
 
 void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
-    //Building& building = plan.mBuilding;
-    //ui32v2 worldPos = building.mBottomLeftWorldPos;
-    //assert(building.mWallSegmentOffsets.size() % 2 == 0);
-    //int i = 0;
-
-    //static TileID wallId = TileRepository::getTile("rock1");
-
-    //// TODO: Height
-    //for (auto&& segmentXY : building.mWallSegmentOffsets) {
-    //    const int xLen = segmentXY.x;
-    //    const int yLen = segmentXY.y;
-
-    //    // X wall
-    //    int xOff = glm::sign(xLen);
-    //    int dx = 0;
-    //    while (dx != xLen) {
-    //        mWorld.setTileAt(worldPos, Tile(wallId, TILE_ID_NONE, TILE_ID_NONE, 1));
-    //        dx += xOff;
-    //        worldPos.x += xOff;
-    //        // TODO: Use height of building
-    //    }
-
-    //    // Y wall
-    //    int yOff = glm::sign(yLen);
-    //    int dy = 0;
-    //    while (dy != yLen) {
-    //        mWorld.setTileAt(worldPos, Tile(wallId, TILE_ID_NONE, TILE_ID_NONE, 1));
-    //        dy += yOff;
-    //        worldPos.y += yOff;
-    //        // TODO: Use height of building
-    //    }
-
-    //    // Rooms and Floors
-
-    //    // Doors
-
-    //    // Furniture
-
-    //}
 
     static TileID wallId = TileRepository::getTile("rock1");
     static TileID bricksId = TileRepository::getTile("bricks1");

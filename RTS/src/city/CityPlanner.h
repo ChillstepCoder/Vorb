@@ -22,8 +22,6 @@ public:
 
     void update();
 
-    // Returns true if successfully storing next plan in outPlan
-    bool recieveNextPlan(OUT PlannedBuilding& outPlan);
     std::unique_ptr<BuildingBlueprint> recieveNextBlueprint();
 
 private:
@@ -31,7 +29,6 @@ private:
     void generatePlan();
 
     // CityBuilder will grab these as needed
-    std::deque<PlannedBuilding> mStandardPlans;
     std::deque<std::unique_ptr<BuildingBlueprint>> mBluePrints;
 
     std::unique_ptr<BuildingBlueprintGenerator> mBuildingGenerator;

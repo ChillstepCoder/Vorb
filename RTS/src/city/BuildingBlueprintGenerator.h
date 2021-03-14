@@ -21,23 +21,25 @@ static_assert(sizeof(BlueprintTile) == 1, "Keep it small");
 
 // TODO: Cellular automata rule iteration for room fixup
 struct BuildingBlueprint {
-    BuildingBlueprint(const BuildingDescription& desc, float sizeAlpha) : desc(desc), sizeAlpha(sizeAlpha) {}
+    BuildingBlueprint(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 dims, ui32v2 bottomLeftWorldPos);
+
+    const BuildingDescription& desc;
+    float sizeAlpha;
+    Cartesian entrySide = Cartesian::LEFT;
+    ui16v2 dims;
+    ui32v2 bottomLeftWorldPos;
 
     std::vector<RoomNode> nodes;
-    std::vector<BlueprintTile> tiles;
-    ui32v2 bottomLeftWorldPos;
-    ui16v2 dims;
-    float sizeAlpha;
-    const BuildingDescription& desc;
-    // TODO: This is for debug only
     std::vector<RoomNodeID> ownerArray;
+    std::vector<BlueprintTile> tiles;
+    // TODO: This is for debug only
 };
 
 class BuildingBlueprintGenerator
 {
 public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo);
-    std::unique_ptr<BuildingBlueprint> generateBuilding(const BuildingDescription& desc, float sizeAlpha);
+    std::unique_ptr<BuildingBlueprint> generateBuilding(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos);
 
 private:
     // Graph Generation
@@ -48,7 +50,10 @@ private:
     void initRooms(BuildingBlueprint& bp);
     void placeRooms(BuildingBlueprint& bp);
     void expandRooms(BuildingBlueprint& bp);
-    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room, RoomNodeID roomId);
+    void roomCleanup(BuildingBlueprint& bp);
+    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
+    void placeFacadeWalls(BuildingBlueprint& bp);
+    void placeInteriorWalls(BuildingBlueprint& bp);
     void placeDoors(BuildingBlueprint& bp);
 
     BuildingDescriptionRepository& mBuildingRepo;

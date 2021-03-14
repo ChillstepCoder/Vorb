@@ -20,15 +20,6 @@ void CityPlanner::update()
     }
 }
 
-bool CityPlanner::recieveNextPlan(OUT PlannedBuilding& outPlan)
-{
-    if (mStandardPlans.empty()) {
-        return false;
-    }
-    outPlan = mStandardPlans.front();
-    mStandardPlans.pop_front();
-    return true;
-}
 
 std::unique_ptr<BuildingBlueprint> CityPlanner::recieveNextBlueprint()
 {
@@ -43,27 +34,18 @@ std::unique_ptr<BuildingBlueprint> CityPlanner::recieveNextBlueprint()
 void CityPlanner::generatePlan() {
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
     BuildingDescriptionRepository& buildingRepo = mCity.getBuildingRepository();
-    // OLD
-    mStandardPlans.emplace_back();
-    PlannedBuilding& newPlan = mStandardPlans.back();
-    Building& building = newPlan.mBuilding;
 
-    building.mBottomLeftWorldPos = cityCenter;
-
-    const int numWalls = 6;
-    building.mWallSegmentOffsets.resize(6);
-    building.mWallSegmentOffsets[0].x = 8;
-    building.mWallSegmentOffsets[0].y = 4;
-    building.mWallSegmentOffsets[1].x = 4;
-    building.mWallSegmentOffsets[1].y = -10;
-    building.mWallSegmentOffsets[2].x = -building.mWallSegmentOffsets[0].x - building.mWallSegmentOffsets[1].x;
-    building.mWallSegmentOffsets[2].y = -building.mWallSegmentOffsets[0].y - building.mWallSegmentOffsets[1].y;
-
-    // NEW
     const float sizeAlpha = Random::xorshf96f();
-    std::unique_ptr<BuildingBlueprint> bp = mBuildingGenerator->generateBuilding(buildingRepo.getBuildingDescription("house"), sizeAlpha);
-    // TODO: Real
-    bp->bottomLeftWorldPos = cityCenter;
+
+    // Generate floorplan size
+    const BuildingDescription& desc = buildingRepo.getBuildingDescription("house");
+    ui16v2 plotDims;
+    plotDims.x = vmath::lerp(desc.widthRange.x, desc.widthRange.y, sizeAlpha);
+    // TODO: Dynamic aspect ratio
+    plotDims.y = plotDims.x * desc.minAspectRatio;
+
+    ui32v2 bottomLeftPos = cityCenter; // TODO: Actual position
+    std::unique_ptr<BuildingBlueprint> bp = mBuildingGenerator->generateBuilding(desc, sizeAlpha, Cartesian::DOWN, plotDims, bottomLeftPos);
 
     if (IS_ENABLED(DEGUG_BLUEPRINT)) {
         std::cout << "\nGenerated house:" << bp->nodes.size() << " " << sizeAlpha << "\n";

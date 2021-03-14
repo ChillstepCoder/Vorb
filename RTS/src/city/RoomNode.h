@@ -24,6 +24,7 @@ struct RoomNode {
     RoomNodeID parentRoom = INVALID_ROOM_ID; // Connected via door
     RoomNodeID childRooms[MAX_CHILD_ROOMS]; // Connected via doors, max of 4
     RoomNodeID adjacentRooms[MAX_CHILD_ROOMS]; // Like child rooms, connected via door or open wall, but is not a direct child
+    RoomNodeID id = INVALID_ROOM_ID;
     RoomWall walls[MAX_WALLS_PER_ROOM]; // Starts at bottommost + leftmost, wall corner and proceeds in +y direction, then x,y,x,y,x, ect...
     ui16v2 offsetFromZero;
     ui16 size = 0;
