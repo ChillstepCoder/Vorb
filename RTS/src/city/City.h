@@ -3,6 +3,7 @@
 #include <world/Chunk.h>
 #include "Building.h"
 
+class CityPlotter;
 class CityPlanner;
 class CityBuilder;
 class World;
@@ -103,10 +104,13 @@ struct Task {
     // bool mIsUrgent; instead just have an urgent list
 };
 
+// TODO: Give each city its own random number generator with own seed, so they will generate the same based on initial seed
+// This way, cities are more predictable from a certain seed and can be easier debugged
 class City
 {
     friend class CityPlanner;
     friend class CityBuilder;
+    friend class CityPlotter;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
@@ -116,14 +120,21 @@ public:
 
     CityBuilder& getCityBuilder() { return *mCityBuilder; }
     CityPlanner& getCityPlanner() { return *mCityPlanner; }
+    CityPlotter& getCityPlotter() { return *mCityPlotter; }
     BuildingDescriptionRepository& getBuildingRepository() { return mBuildingRepository; }
+
+    // Accessors
+    const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
 
 private:
     void tick();
 
+    RoadID addRoad(const CityRoad& road);
+
     World& mWorld;
     BuildingDescriptionRepository& mBuildingRepository;
 
+    // TODO: CityGuardManager
     float mCurrentThreatLevel = 0.0f; //[0,100] 0-5 peaceful, 6-15 wary, 16-30 dangerous, 31-50 very dangerous, 51-70 extremely dangerous, 71+ critical danger
     float mCurrentPowerLevel = 0.0f;
 
@@ -132,11 +143,18 @@ private:
     std::vector<Chunk*> mChunks;
     //std::vector<ActorId> mResidents;
     std::vector<Building> mBuildings;
+    std::vector<CityRoad> mRoads;
 
-    std::unique_ptr<CityBuilder> mCityBuilder;
+    std::unique_ptr<CityPlotter> mCityPlotter;
     std::unique_ptr<CityPlanner> mCityPlanner;
+    std::unique_ptr<CityBuilder> mCityBuilder;
 
+    // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;
+    ui32v4 mCityAABB; // x,y,w,h
+
+    ui32 mPopulation = 0;
+    ui32 mPopulationCapacityRemaining = 0;
 };
 
 struct CityGraph {

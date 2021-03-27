@@ -20,11 +20,17 @@ void CityBuilder::update()
 {
     // Grab new plans
     //if (mInProgressBlueprints.empty()) {
-        if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
-            debugBuildInstant(*bp);
-            mInProgressBlueprints.emplace_back(std::move(bp));
-        }
+    if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
+        debugBuildInstant(*bp);
+        mInProgressBlueprints.emplace_back(std::move(bp));
+    }
     //}
+
+    // FILO queue right now
+    while (mRoadsToBuild.size()) {
+        debugBuildInstant(mRoadsToBuild.back());
+        mRoadsToBuild.pop_back();
+    }
 
 }
 
@@ -64,4 +70,19 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     // Register with the city
     Building newBuilding;
     mCity.mBuildings.emplace_back(std::move(newBuilding));
+}
+
+void CityBuilder::debugBuildInstant(RoadID roadId)
+{
+    static TileID bricksId = TileRepository::getTile("bricks1");
+    static TileID grassId = TileRepository::getTile("grass1");
+
+    CityRoad& road = mCity.mRoads[roadId];
+    TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
+
+    for (ui32 y = road.aabb.y; y < road.aabb.y + road.aabb.w; ++y) {
+        for (ui32 x = road.aabb.x; x < road.aabb.x + road.aabb.z; ++x) {
+            mWorld.setTileAt(ui32v2(x, y), Tile(tileId, TILE_ID_NONE, TILE_ID_NONE, 0));
+        }
+    }
 }

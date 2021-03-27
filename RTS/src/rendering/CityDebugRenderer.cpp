@@ -8,11 +8,12 @@
 
 #include "city/CityBuilder.h"
 #include "city/CityPlanner.h"
+#include "city/CityPlotter.h"
 
-const int PERIOD_FRAMES = 300;
+const int PERIOD_FRAMES = 100;
 
 constexpr int MAX_ROOM_COLORS = 8;
-constexpr float ROOM_COLOR_ALPHA = 0.4f;
+constexpr float ROOM_COLOR_ALPHA = 0.2f;
 constexpr float ROOM_COLOR_ALPHA_WHITE = 0.6f;
 const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(1.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA),
@@ -85,5 +86,55 @@ void CityDebugRenderer::renderCityPlannerDebug(const CityPlanner& cityPlanner) c
 void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) const {
     for (auto&& bp : cityBuilder.mInProgressBlueprints) {
         renderBlueprint(*bp);
+    }
+}
+
+void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) const {
+
+    // Render districts
+    for (size_t i = 0; i < cityPotter.mDistricts.size(); ++i) {
+        const CityDistrict& district = *cityPotter.mDistricts[i];
+        color4 color;
+        switch (district.type) {
+            case DistrictTypes::Rural:
+                color = color4(0.0f, 1.0f, 0.0f, ROOM_COLOR_ALPHA);
+                break;
+            case DistrictTypes::Farming:
+                color = color4(0.0f, 0.6f, 0.2f, ROOM_COLOR_ALPHA);
+                break;
+            case DistrictTypes::Residential:
+                color = color4(1.0f, 0.5f, 0.0f, ROOM_COLOR_ALPHA);
+                break;
+            case DistrictTypes::Commercial:
+                color = color4(1.0f, 1.0f, 0.0f, ROOM_COLOR_ALPHA);
+                break;
+            case DistrictTypes::Government:
+                color = color4(0.7f, 0.0f, 0.7f, ROOM_COLOR_ALPHA);
+                break;
+            case DistrictTypes::Military:
+                color = color4(1.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA);
+                break;
+            case DistrictTypes::Industrial:
+                color = color4(0.8f, 0.8f, 0.8f, ROOM_COLOR_ALPHA);
+                break;
+            default:
+                color = color4(1.0f, 1.0f, 1.0f, ROOM_COLOR_ALPHA);
+        };
+        DebugRenderer::drawQuad(f32v2(district.aabb.x, district.aabb.y), f32v2(district.aabb.z, district.aabb.w), color, PERIOD_FRAMES);
+    }
+
+    // Render plots
+    for (size_t i = 0; i < cityPotter.mPlots.size(); ++i) {
+        const auto& plot = cityPotter.mPlots[i];
+        color4 color;
+        if (i == 0) {
+            // City center
+            color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
+        }
+        else {
+            // Everything else
+            color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
+        }
+        DebugRenderer::drawAABB(f32v2(plot.aabb.x, plot.aabb.y), f32v2(plot.aabb.z, plot.aabb.w), color, PERIOD_FRAMES);
     }
 }

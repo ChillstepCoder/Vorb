@@ -119,6 +119,17 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const 
 	sLines.emplace_back(botRight, botLeft, color, lifeTime);
 }
 
+void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 color, int lifeTime /*= 0*/)
+{
+    const f32v2 topLeft = botLeft + f32v2(0.0f, dims.y);
+    const f32v2 topRight = botLeft + f32v2(dims.x, dims.y);
+    const f32v2 botRight = botLeft + f32v2(dims.x, 0.0f);
+    sLines.emplace_back(botLeft, topLeft, color, lifeTime);
+    sLines.emplace_back(topLeft, topRight, color, lifeTime);
+    sLines.emplace_back(topRight, botRight, color, lifeTime);
+    sLines.emplace_back(botRight, botLeft, color, lifeTime);
+}
+
 void DebugRenderer::renderLines(const f32m4& viewMatrix)
 {
     if (!sLines.size() || !sQuads.size()) {

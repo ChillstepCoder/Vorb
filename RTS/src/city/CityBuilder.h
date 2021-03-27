@@ -19,14 +19,17 @@ public:
     CityBuilder(City& city, World& world);
 
     void update();
+    void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
 
 private:
 
     void debugBuildInstant(BuildingBlueprint& bp);
+    void debugBuildInstant(RoadID roadId);
 
     City& mCity;
     World& mWorld;
     std::vector<std::unique_ptr<BuildingBlueprint>> mInProgressBlueprints;
+    std::vector<RoadID> mRoadsToBuild;
 
 
 };

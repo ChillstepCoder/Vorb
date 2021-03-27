@@ -6,6 +6,8 @@
 #include "city/BuildingGrammar.h"
 
 DECL_VIO(class IOManager);
+class Building;
+struct CityPlot;
 
 struct RoomDescription {
     RoomTypeID typeID;
@@ -20,6 +22,24 @@ public:
     // Building bounds are a series of corner segments
     ui32v2 mBottomLeftWorldPos;
     std::vector<RoomNode> mGraph;
+    CityPlot* mPlot = nullptr;
+};
+
+enum class RoadType {
+    DIRT,
+    PAVED
+};
+
+typedef ui32 RoadID;
+
+struct CityRoad {
+    ui32v2 startPos;
+    ui32v2 endPos;
+    ui32v4 aabb;
+    ui32 width;
+    RoadType type = RoadType::PAVED;
+    std::vector<RoadID> neighborRoads;
+    bool mIsBuilt = false;
 };
 
 // TODO: Move to data

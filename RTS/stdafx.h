@@ -104,6 +104,49 @@ constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 constexpr ui16 INVALID_TILE_INDEX = 0xffff;
 
+// Cartesian
+enum class Cartesian {
+    DOWN = 0, //-y  south
+    LEFT = 1, //-x  west
+    RIGHT = 2, //+x east
+    UP = 3,  //+y    north
+    NONE = 100
+};
+constexpr int CARTESIAN_COUNT = 4; 
+constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
+    Cartesian::UP,
+    Cartesian::RIGHT,
+    Cartesian::LEFT,
+    Cartesian::DOWN,
+};
+const i32v2 CARTESIAN_OFFSETS[CARTESIAN_COUNT] = {
+    i32v2(0, -1), // DOWN
+    i32v2(-1, 0), // LEFT
+    i32v2(1,  0), // RIGHT
+    i32v2(0,  1), // UP
+};
+// Corner winding
+constexpr int CORNER_COUNT = 4;
+enum class CornerWinding {
+    BOTTOM_LEFT  = 0,
+    BOTTOM_RIGHT = 1,
+    TOP_LEFT     = 2,
+    TOP_RIGHT    = 3
+};
+const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
+    ui32v2(0,  0), // BOTTOM_LEFT
+    ui32v2(1,  0), // BOTTOM_RIGHT
+    ui32v2(0,  1), // TOP_LEFT
+    ui32v2(1,  1), // TOP_RIGHT
+};
+
+
+enum AXIS {
+    AXIS_HORIZONTAL = 0,
+    AXIS_VERTICAL   = 1
+};
+
+// TODO: Remove
 // We are in 3/4 perspective
 constexpr float Z_TO_XY_RATIO = 0.75f;
 
