@@ -5,6 +5,7 @@
 
 class City;
 class CityBuilder;
+struct CityPlot;
 // ***********************************************************************************************************
 // The city planner handles determining where current and future buildings should be placed.
 // and what types of buildings should be built.
@@ -26,13 +27,17 @@ public:
 
 private:
     
-    void generatePlan();
+    void generatePlan(CityPlot& plot);
+    void finishBlueprint(std::unique_ptr<BuildingBlueprint>&& bp);
 
     // CityBuilder will grab these as needed
-    std::deque<std::unique_ptr<BuildingBlueprint>> mBluePrints;
+    std::deque<std::unique_ptr<BuildingBlueprint>> mFinishedBluePrints;
+    std::vector<std::unique_ptr<BuildingBlueprint>> mGeneratingBlueprints;
 
     std::unique_ptr<BuildingBlueprintGenerator> mBuildingGenerator;
 
     City& mCity;
+    // Temporary af
+    bool mHasFreePlots = true;
 };
 

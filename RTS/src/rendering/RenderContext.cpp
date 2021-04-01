@@ -231,17 +231,15 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     // City Debug
     if (sDebugOptions.mCities) {
         const CityGraph& cities = mWorld.getCities();
-        static int FRAME_COUNT = 0;
-        // Matches the value in citybuilder 100
-        if (++FRAME_COUNT == 100) {
-            FRAME_COUNT = 0;
-            for (auto&& city : cities.mNodes) {
-                mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
-                mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
-                mCityDebugRenderer->renderCityPlotterDebug(city->getCityPlotter());
-
-            }
+        for (auto&& city : cities.mNodes) {
+            mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
+            mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
+            mCityDebugRenderer->renderCityPlotterDebug(city->getCityPlotter());
         }
+        mCityDebugRenderer->finishRenderFrame();
+    }
+    else {
+        mCityDebugRenderer->clearMeshes();
     }
 
     // Debug Axis render at origin
@@ -281,7 +279,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         });
     }
 
-    DebugRenderer::renderLines(camera.getCameraMatrix());
+    DebugRenderer::render(camera.getCameraMatrix());
 
     // *** Post processes ***
     // Disable depth testing for post processing

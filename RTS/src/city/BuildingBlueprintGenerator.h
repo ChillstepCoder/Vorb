@@ -20,6 +20,9 @@ struct BlueprintTile {
 static_assert(sizeof(BlueprintTile) == 1, "Keep it small"); 
 
 // TODO: Cellular automata rule iteration for room fixup
+typedef ui32 BuildingBlueprintId;
+#define INVALID_BLUEPRINT_ID UINT32_MAX
+
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 dims, ui32v2 bottomLeftWorldPos);
 
@@ -32,6 +35,9 @@ struct BuildingBlueprint {
     std::vector<RoomNode> nodes;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
+
+    BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
+    bool isGenerating = true;
     // TODO: This is for debug only
 };
 
@@ -39,23 +45,25 @@ class BuildingBlueprintGenerator
 {
 public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo);
-    std::unique_ptr<BuildingBlueprint> generateBuilding(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos);
+    std::unique_ptr<BuildingBlueprint> generateBuildingAsync(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos);
 
 private:
     // Graph Generation
-    void addPublicRoomsToGraph(BuildingBlueprint& bp);
-    void assignPublicRooms(BuildingBlueprint& bp);
-    void addPrivateRoomsToGraph(BuildingBlueprint& bp);
-    void addStickOnRoomsToGraph();
-    void initRooms(BuildingBlueprint& bp);
-    void placeRooms(BuildingBlueprint& bp);
-    void expandRooms(BuildingBlueprint& bp);
-    void roomCleanup(BuildingBlueprint& bp);
-    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
-    void placeFacadeWalls(BuildingBlueprint& bp);
-    void placeInteriorWalls(BuildingBlueprint& bp);
-    void placeDoors(BuildingBlueprint& bp);
+    void addPublicRoomsToGraph(BuildingBlueprint& bp) const;
+    void assignPublicRooms(BuildingBlueprint& bp) const;
+    void addPrivateRoomsToGraph(BuildingBlueprint& bp) const;
+    void addStickOnRoomsToGraph() const;
+    void initRooms(BuildingBlueprint& bp) const;
+    void placeRooms(BuildingBlueprint& bp) const;
+    void expandRooms(BuildingBlueprint& bp) const;
+    void roomCleanup(BuildingBlueprint& bp) const;
+    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room) const;
+    void placeFacadeWalls(BuildingBlueprint& bp) const;
+    void placeInteriorWalls(BuildingBlueprint& bp) const;
+    void placeDoors(BuildingBlueprint& bp) const;
 
     BuildingDescriptionRepository& mBuildingRepo;
+    std::set<BuildingBlueprint*> mGeneratingBuildings;
+    BuildingBlueprintId mCurrentId = 0;
 };
 

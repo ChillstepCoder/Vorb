@@ -12,5 +12,10 @@ public:
     void renderCityPlannerDebug(const CityPlanner& cityPlanner) const;
     void renderCityBuilderDebug(const CityBuilder& cityBuilder) const;
     void renderCityPlotterDebug(const CityPlotter& cityPotter) const;
+
+    void finishRenderFrame();
+    void clearMeshes();
+
+    bool mNeedsMeshes = true;
 };
 

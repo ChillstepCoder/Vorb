@@ -31,6 +31,7 @@ enum class RoadType {
 };
 
 typedef ui32 RoadID;
+#define INVALID_ROAD_ID UINT32_MAX
 
 struct CityRoad {
     ui32v2 startPos;
@@ -38,6 +39,7 @@ struct CityRoad {
     ui32v4 aabb;
     ui32 width;
     RoadType type = RoadType::PAVED;
+    RoadID id;
     std::vector<RoadID> neighborRoads;
     bool mIsBuilt = false;
 };

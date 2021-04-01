@@ -10,6 +10,7 @@ enum class CityBlockSize {
 
 struct CityDistrict;
 typedef ui32 CityPlotIndex;
+#define INVALID_PLOT_INDEX UINT32_MAX;
 
 struct CityPlot {
     CityPlot() {};
@@ -17,8 +18,15 @@ struct CityPlot {
         aabb(aabb), plotIndex(plotIndex), parentDistrict(parentDistrict) {
     };
 
+    void setNeighborRoad(Cartesian dir, RoadID id) {
+        neighborRoads[enum_cast(dir)] = id;
+    }
+
     ui32v4 aabb;
-    CityPlotIndex plotIndex = UINT32_MAX;
+    CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
     CityDistrict* parentDistrict = nullptr;
     bool isFree = true;
+
+    // TODO: More?
+    RoadID neighborRoads[CARTESIAN_COUNT] = { INVALID_ROAD_ID, INVALID_ROAD_ID, INVALID_ROAD_ID, INVALID_ROAD_ID };
 };

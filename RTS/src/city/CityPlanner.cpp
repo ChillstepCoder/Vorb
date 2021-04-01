@@ -2,6 +2,7 @@
 
 #include "CityPlanner.h"
 #include "City.h"
+#include "CityPlotter.h"
 
 #include "Random.h"
 
@@ -15,23 +16,50 @@ CityPlanner::CityPlanner(City& city)
 
 void CityPlanner::update()
 {
-    if (mCity.mBuildings.empty()) {
-        generatePlan();
+
+    // Update blueprints that are finished generating
+    for (size_t i = 0; i < mGeneratingBlueprints.size();) {
+        if (!mGeneratingBlueprints[i]->isGenerating) {
+            // Swap to end so we can remove from list
+            mGeneratingBlueprints[i].swap(mGeneratingBlueprints.back());
+            // Emplace null unique ptr
+            mFinishedBluePrints.emplace_back();
+            // Move from the generating to the finished list
+            mGeneratingBlueprints.back().swap(mFinishedBluePrints.back());
+            // Release the null unique_ptr
+            mGeneratingBlueprints.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
+
+    if (!mHasFreePlots) {
+        return;
+    }
+
+    CityPlot* plotForBuilding = mCity.getCityPlotter().reservePlotForBuilding(ui32v2(1, 1), ui32v2(100, 100));
+    if (plotForBuilding) {
+        generatePlan(*plotForBuilding);
+    }
+    else {
+        // Don't try anymore
+        mHasFreePlots = false;
     }
 }
 
 
 std::unique_ptr<BuildingBlueprint> CityPlanner::recieveNextBlueprint()
 {
-    if (mBluePrints.empty()) {
+    if (mFinishedBluePrints.empty()) {
         return nullptr;
     }
-    std::unique_ptr<BuildingBlueprint> bp = std::move(mBluePrints.front());
-    mBluePrints.pop_front();
+    std::unique_ptr<BuildingBlueprint> bp = std::move(mFinishedBluePrints.front());
+    mFinishedBluePrints.pop_front();
     return bp;
 }
 
-void CityPlanner::generatePlan() {
+void CityPlanner::generatePlan(CityPlot& plot) {
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
     BuildingDescriptionRepository& buildingRepo = mCity.getBuildingRepository();
 
@@ -39,18 +67,33 @@ void CityPlanner::generatePlan() {
 
     // Generate floorplan size
     const BuildingDescription& desc = buildingRepo.getBuildingDescription("house");
-    ui16v2 plotDims;
-    plotDims.x = vmath::lerp(desc.widthRange.x, desc.widthRange.y, sizeAlpha);
-    // TODO: Dynamic aspect ratio
-    plotDims.y = plotDims.x * desc.minAspectRatio;
+    // TODO: rotation to road
+    const ui16v2 plotDims(plot.aabb.z, plot.aabb.w);
+    // TODO:  aspect ratio
+    //plotDims.y = plotDims.x * desc.minAspectRatio;
 
-    ui32v2 bottomLeftPos = cityCenter; // TODO: Actual position
-    std::unique_ptr<BuildingBlueprint> bp = mBuildingGenerator->generateBuilding(desc, sizeAlpha, Cartesian::DOWN, plotDims, bottomLeftPos);
+    const ui32v2 bottomLeftPos(plot.aabb.x, plot.aabb.y); // TODO: Actual position
+    Cartesian dir = Cartesian::UP;
+    if (plot.neighborRoads[enum_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
+        dir = Cartesian::LEFT;
+    }
+    else if (plot.neighborRoads[enum_cast(Cartesian::RIGHT)] != INVALID_ROAD_ID) {
+        dir = Cartesian::RIGHT;
+    }
+    else if (plot.neighborRoads[enum_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
+        dir = Cartesian::DOWN;
+    }
+    mGeneratingBlueprints.emplace_back(mBuildingGenerator->generateBuildingAsync(desc, sizeAlpha, dir, plotDims, bottomLeftPos));
+    return;
+}
 
+void CityPlanner::finishBlueprint(std::unique_ptr<BuildingBlueprint>&& bp)
+{
     if (IS_ENABLED(DEGUG_BLUEPRINT)) {
-        std::cout << "\nGenerated house:" << bp->nodes.size() << " " << sizeAlpha << "\n";
+        BuildingDescriptionRepository& buildingRepo = mCity.getBuildingRepository();
+        std::cout << "\nGenerated house:" << bp->nodes.size() << " " << bp->dims.x << "\n";
         for (auto&& node : bp->nodes) {
-            std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " << 
+            std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " <<
                 node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
             for (int i = 0; i < node.numChildren; ++i) {
                 const int childIndex = (int)node.childRooms[i];
@@ -60,7 +103,6 @@ void CityPlanner::generatePlan() {
         }
     }
 
-    mBluePrints.emplace_back(std::move(bp));
+    mFinishedBluePrints.emplace_back(std::move(bp));
 
-    return;
 }

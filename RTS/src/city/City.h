@@ -129,7 +129,7 @@ public:
 private:
     void tick();
 
-    RoadID addRoad(const CityRoad& road);
+    RoadID addRoad(CityRoad& road);
 
     World& mWorld;
     BuildingDescriptionRepository& mBuildingRepository;

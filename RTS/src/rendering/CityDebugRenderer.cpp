@@ -10,7 +10,9 @@
 #include "city/CityPlanner.h"
 #include "city/CityPlotter.h"
 
-const int PERIOD_FRAMES = 100;
+constexpr int DEBUG_ID_CITY = 123;
+
+const int PERIOD_FRAMES = INT32_MAX;
 
 constexpr int MAX_ROOM_COLORS = 8;
 constexpr float ROOM_COLOR_ALPHA = 0.2f;
@@ -76,6 +78,11 @@ void renderBlueprint(BuildingBlueprint& bp) {
 }
 
 void CityDebugRenderer::renderCityPlannerDebug(const CityPlanner& cityPlanner) const {
+
+    if (!mNeedsMeshes) {
+        return;
+    }
+
     /*if (frameCount <= 0) {
         for (auto&& bp : cityPlanner.mBluePrints) {
             renderBlueprint(*bp);
@@ -84,12 +91,21 @@ void CityDebugRenderer::renderCityPlannerDebug(const CityPlanner& cityPlanner) c
 }
 
 void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) const {
+
+    if (!mNeedsMeshes) {
+        return;
+    }
+
     for (auto&& bp : cityBuilder.mInProgressBlueprints) {
         renderBlueprint(*bp);
     }
 }
 
 void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) const {
+
+    if (!mNeedsMeshes) {
+        return;
+    }
 
     // Render districts
     for (size_t i = 0; i < cityPotter.mDistricts.size(); ++i) {
@@ -136,5 +152,20 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
             color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
         }
         DebugRenderer::drawAABB(f32v2(plot.aabb.x, plot.aabb.y), f32v2(plot.aabb.z, plot.aabb.w), color, PERIOD_FRAMES);
+    }
+}
+
+void CityDebugRenderer::finishRenderFrame()
+{
+    if (mNeedsMeshes) {
+        mNeedsMeshes = false;
+    }
+}
+
+void CityDebugRenderer::clearMeshes()
+{
+    if (!mNeedsMeshes) {
+        mNeedsMeshes = true;
+        DebugRenderer::clearAllMeshesWithId(DEBUG_ID_CITY);
     }
 }

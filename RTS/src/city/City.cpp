@@ -105,11 +105,12 @@ bool roadDoesIntersect(const CityRoad& roadA, const CityRoad& roadB) {
     return doIntersect(roadA.startPos, roadB.startPos, roadA.endPos, roadB.endPos);
 }
 
-RoadID City::addRoad(const CityRoad& road)
+RoadID City::addRoad(CityRoad& road)
 {
     // It is OUR job to set up neighbors
     assert(road.neighborRoads.empty());
-    RoadID rv = mRoads.size();
+    RoadID id = mRoads.size();
+    road.id = id;
     mRoads.emplace_back(road);
     CityRoad& newRoad = mRoads.back();
     // Set up neighbors for pathing and such
@@ -121,6 +122,6 @@ RoadID City::addRoad(const CityRoad& road)
             road.neighborRoads.emplace_back(mRoads.size() - 1);
         }
     }
-    mCityBuilder->addRoadToBuild(rv);
-    return rv;
+    mCityBuilder->addRoadToBuild(id);
+    return id;
 }
