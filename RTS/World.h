@@ -55,8 +55,8 @@ public:
     Chunk& getChunkAtPosition(ChunkID chunkId);
     const Chunk& getChunkAtPosition(ChunkID chunkId) const;
 
-	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
-	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
+	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const;
+	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
 
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }

@@ -23,6 +23,7 @@ KEG_TYPE_DEF_SAME_NAME(TileData, kt) {
     kt.addValue("tex", keg::Value::basic(offsetof(TileData, textureName), keg::BasicType::STRING));
     kt.addValue("col", keg::Value::custom(offsetof(TileData, collisionShape), "TileCollisionShape", true));
     kt.addValue("height", keg::Value::basic(offsetof(TileData, colliderHeight), keg::BasicType::F32));
+    kt.addValue("path_weight", keg::Value::basic(offsetof(TileData, pathWeight), keg::BasicType::F32));
     kt.addValue("dims", keg::Value::basic(offsetof(TileData, dims), keg::BasicType::UI8_V2));
     kt.addValue("root", keg::Value::basic(offsetof(TileData, rootPos), keg::BasicType::UI8));
     kt.addValue("shape", keg::Value::custom(offsetof(TileData, shape), "TileShape", true));

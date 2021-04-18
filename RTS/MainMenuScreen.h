@@ -56,5 +56,9 @@ private:
 	f32v2 mTargetCameraPosition = f32v2(0.0f);
 	f32v2 mCameraVelocity = f32v2(0.0f);
 
+	// Pathfinding test
+	ui32v2 mPathFindStart = ui32v2(0);
+	bool mIsPathfinding = false;
+
 };
 

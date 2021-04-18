@@ -13,6 +13,7 @@ void Services::init()
     const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 1, 1);
     std::cout << "  Initializing threadpool with " << threadCount << " threads.\n";
     Threadpool::set(threadCount);
+    PathFinder::set();
 }
 
 void Services::destroy()

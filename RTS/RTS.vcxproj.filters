@@ -231,6 +231,9 @@
     <ClCompile Include="src\city\CityPlotter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\pathfinding\PathFinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -489,6 +492,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\city\CityDistrict.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pathfinding\PathFinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

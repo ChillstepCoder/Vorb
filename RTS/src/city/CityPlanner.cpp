@@ -8,6 +8,12 @@
 
 #define DEGUG_BLUEPRINT 1
 
+// TODO: T1 City requires
+// Lumberjacks, wooden buildings, fishing, multi-agent jobs (woodcutting, ect)
+// farming, hunting, trading post, night watch, militia
+
+// T2: Wholesale, shops, OPTIONAL: stonecutter
+
 CityPlanner::CityPlanner(City& city)
     : mCity(city)
 {
@@ -66,7 +72,7 @@ void CityPlanner::generatePlan(CityPlot& plot) {
     const float sizeAlpha = Random::xorshf96f();
 
     // Generate floorplan size
-    const BuildingDescription& desc = buildingRepo.getBuildingDescription("house");
+    const BuildingDescription& desc = buildingRepo.getBuildingDescription("large_house");
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.z, plot.aabb.w);
     // TODO:  aspect ratio

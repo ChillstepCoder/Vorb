@@ -9,6 +9,7 @@
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
 #include <box2d/b2_collision.h>
+#include "pathfinding/PathFinder.h"
 
 namespace {
     const cString VERT_SRC = R"(
@@ -93,7 +94,12 @@ void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 col
 void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
 	const f32v2 end = origin + vec;
-    const f32v2 tipRay = -vec * 0.2f;
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, end, color);
+}
+
+void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+{
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
@@ -144,6 +150,21 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 col
     lines.emplace_back(topLeft, topRight, color);
     lines.emplace_back(topRight, botRight, color);
     lines.emplace_back(botRight, botLeft, color);
+}
+
+void DebugRenderer::drawPath(const Path& path, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    if (path.numPoints < 2) {
+        return;
+    }
+    for (ui32 i = 0; i < path.numPoints - 1; ++i) {
+        drawLineBetweenPoints(
+            f32v2(path.points[i])     + f32v2(0.5f, 0.5f),
+            f32v2(path.points[i + 1]) + f32v2(0.5f, 0.5f),
+            color,
+            lifeTime,
+            id
+        );
+    }
 }
 
 void DebugRenderer::render(const f32m4& viewMatrix)

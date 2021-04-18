@@ -9,6 +9,8 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include "DebugRenderer.h"
+
 #include <box2d/b2_body.h>
 #include <box2d/b2_contact.h>
 
@@ -182,8 +184,31 @@ void MainMenuScreen::build() {
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Pathw("")
             );*/
-			const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
-			mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
+			if (vui::InputDispatcher::key.isKeyPressed(VKEY_P)) {
+                const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
+                mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
+			}
+            else {
+				ui32v2 worldPosInt = worldPos;
+                if (mIsPathfinding) {
+					if (mPathFindStart != worldPosInt) {
+						auto&& path = Services::PathFinder::ref().generatePathSynchronous(*mWorld, mPathFindStart, worldPosInt);
+						if (path) {
+                            DebugRenderer::drawPath(*path, color4(1.0f, 0.0f, 1.0f), 200);
+						}
+						else {
+							DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f), 200);
+						}
+                        mIsPathfinding = false;
+					}
+				}
+                else {
+                    DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.5f), 200);
+					mPathFindStart = worldPosInt;
+					mIsPathfinding = true;
+				}
+			}
+			
 		}
 
 		// Apply velocity

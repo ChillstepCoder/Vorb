@@ -178,6 +178,7 @@
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
+    <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
     <ClCompile Include="src\Random.cpp" />
@@ -266,6 +267,7 @@
     <ClInclude Include="src\particles\ParticleSystem.h" />
     <ClInclude Include="src\particles\ParticleSystemData.h" />
     <ClInclude Include="src\particles\ParticleSystemManager.h" />
+    <ClInclude Include="src\pathfinding\PathFinder.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="src\Random.h" />

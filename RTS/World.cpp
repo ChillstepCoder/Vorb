@@ -150,12 +150,12 @@ const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
     return mWorldGrid.getChunk(chunkId.id);
 }
 
-TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) {
+TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const {
 	assert(false); // Implement!
 	return TileHandle();
 }
 
-TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
+TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	TileHandle handle;
 	handle.chunk = &getChunkAtPosition(worldPos);
 	if (handle.chunk->getState() == ChunkState::FINISHED) {

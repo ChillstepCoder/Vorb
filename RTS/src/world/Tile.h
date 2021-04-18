@@ -49,6 +49,7 @@ struct TileData {
     SpriteData spriteData;
 	TileCollisionShape collisionShape = TileCollisionShape::FLOOR;
 	f32 colliderHeight = 1.0f;
+	f32 pathWeight = 1.0f;
     ui8v2 dims = ui8v2(1); // 4x4 is max size
 	ui8 rootPos = 0;
 	std::string name;
