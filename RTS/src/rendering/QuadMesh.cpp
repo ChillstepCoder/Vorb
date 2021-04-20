@@ -60,7 +60,7 @@ QuadMesh::~QuadMesh() {
     }
 }
 
-void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture texture) {
+void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture texture, QuadMeshDrawMode drawMode) {
 
     if (!sQuadIndicesInitialized) {
         initSharedQuadIndices();
@@ -75,7 +75,7 @@ void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture te
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
     // Orphan the buffer for speed
     // TODO: Do we want dynamic draw or static/stream?
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(ui32), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(ui32), nullptr, enum_cast(drawMode));
 
     mIndexCount = indexCount;
     // TODO: Can we get away with just a single IBO?
@@ -86,7 +86,7 @@ void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture te
 
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     // Orphan the buffer for speed
-    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, enum_cast(drawMode));
     // Set data
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, meshData);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

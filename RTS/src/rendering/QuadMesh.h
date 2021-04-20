@@ -7,6 +7,12 @@ DECL_VG(class GLProgram);
 class Camera2D;
 struct TileVertex;
 
+enum class QuadMeshDrawMode {
+    DYNAMIC = GL_DYNAMIC_DRAW,
+    STREAM = GL_STREAM_DRAW,
+    STATIC = GL_STATIC_DRAW
+};
+
 class QuadMesh {
 public:
     QuadMesh();
@@ -21,7 +27,7 @@ public:
     };*/
 
     // Indices are 0, 2, 3, 3, 1, 0
-    void setData(const TileVertex* meshData, int vertexCount, VGTexture texture);
+    void setData(const TileVertex* meshData, int vertexCount, VGTexture texture, QuadMeshDrawMode drawMode);
     void draw(const vg::GLProgram& program) const;
 
     bool isValid() const { return mIndexCount > 0; }

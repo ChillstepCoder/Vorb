@@ -20,8 +20,8 @@ struct Tile {
 	union {
 		struct {
 			TileID groundLayer; // Dirt, foundation, earth
-			TileID midLayer; // Carpet, boards, walls, trees
-			TileID topLayer; // Furniture, props
+			TileID midLayer; // Carpet, boards, walls, flora
+			TileID topLayer; // Furniture, props, trees
 		};
 		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};

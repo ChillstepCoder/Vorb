@@ -365,6 +365,9 @@ void addQuad(TileVertex* verts, TileShape shape, f32v2 position, f32 zOffset, co
 
 inline int getTileHeight(const Tile& neighbor, int layerIndex) {
     const TileID tileId = neighbor.layers[layerIndex];
+    if (tileId == TILE_ID_NONE) {
+        return neighbor.baseZPosition;
+    }
     const TileData& tileData = TileRepository::getTileData(tileId);
     const SpriteData& spriteData = tileData.spriteData;
     // Transparent tiles appear to be 1 tile lower
@@ -373,6 +376,34 @@ inline int getTileHeight(const Tile& neighbor, int layerIndex) {
         ++height;
     }
     return height;
+}
+
+void addTileFlora(
+    const Chunk& chunk,
+    const TileIndex& tileIndex,
+    int layerIndex,
+    const TileData& tileData,
+    const SpriteData& spriteData,
+    std::vector<TileVertex>& vertexData
+) {
+    const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
+    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
+    const TileID tileId = tile.layers[layerIndex];
+
+    const f32v2 tileWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+
+    /*Tile neighbors[8];
+    chunk.getTileNeighbors(tileIndex, neighbors);
+
+    const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+    const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+    const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
+
+    const int ITER_STEPS = 3;
+    for (int i = 0; i < ITER_STEPS; ++i) {
+        vertexData.resize(vertexData.size() + 4);
+        addQuad(&vertexData.back() - 3, TileShape::THIN, f32v2(tileWorldPos.x + (i % 2) / 16.0f, tileWorldPos.y + i / (float)ITER_STEPS), tile.baseZPosition, spriteData, spriteData.uvs, layerDepth, NO_AMBIENT_OCCLUSION, 1.0f);
+    }
 }
 
 void addTileConnected(
@@ -482,15 +513,15 @@ void addTileConnected(
 }
 
 
-void ChunkMesher::createMeshAsync(const Chunk& chunk) {
+bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     
     TileMeshData* meshData = tryGetFreeTileMeshData();
     if (!meshData) {
-        return;
+        return false;
     }
     
     ++mNumMeshTasksRunning;
-    chunk.mChunkRenderData.mIsBuildingMesh = true;
+    chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
 
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mBaseDirty = false;
@@ -516,10 +547,11 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     }
                     const TileData& tileData = TileRepository::getTileData(layerTile);
                     const SpriteData& spriteData = tileData.spriteData;
-
-                    // Set LOD pixel
-                    // TODO: expand trees
-                    lodData[index] = tileData.spriteData.lodColor;
+                    if (spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
+                        // Set LOD pixel
+                        // TODO: expand trees
+                        lodData[index] = tileData.spriteData.lodColor;
+                    }
 
                     // Tile mesh
                     switch (spriteData.method) {
@@ -530,6 +562,10 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
                         }
                         case TileTextureMethod::CONNECTED_WALL: {
                             addTileConnected(chunk, index, layerIndex, tileData, spriteData, vertexData);
+                            break;
+                        }
+                        case TileTextureMethod::FLORA: {
+                            // We do not mesh flora in this pass
                             break;
                         }
                     }
@@ -545,7 +581,7 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
             renderData.mChunkMesh = std::make_unique<QuadMesh>();
         }
         QuadMesh& mesh = *renderData.mChunkMesh;
-        mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture());
+        mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture(), QuadMeshDrawMode::STATIC);
         meshData->mTileVertices.clear();
 
         // LOD
@@ -553,12 +589,13 @@ void ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
-        chunk.mChunkRenderData.mIsBuildingMesh = false;
+        chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
 
         // Update refcount
         --mNumMeshTasksRunning;
         chunk.decRef();
     });
+    return true;
 }
 
 bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
@@ -569,7 +606,7 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
     }
 
     ++mNumMeshTasksRunning;
-    chunk.mChunkRenderData.mIsBuildingMesh = true;
+    chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
     chunk.mChunkRenderData.mLODDirty = false;
     chunk.incRef();
 
@@ -587,8 +624,10 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
                 }
                 // First opaque tile
                 const TileData& tileData = TileRepository::getTileData(layerTile);
-                *currentPixel++ = tileData.spriteData.lodColor;
-                break;
+                if (tileData.spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
+                    *currentPixel++ = tileData.spriteData.lodColor;
+                    break;
+                }
             }
         }
 
@@ -602,7 +641,74 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
-        chunk.mChunkRenderData.mIsBuildingMesh = false;
+        chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
+
+        // Update refcount
+        --mNumMeshTasksRunning;
+        chunk.decRef();
+    });
+    return true;
+}
+
+bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk)
+{
+    TileMeshData* meshData = tryGetFreeTileMeshData();
+    if (!meshData) {
+        return false;
+    }
+
+    ++mNumMeshTasksRunning;
+    chunk.mChunkRenderData.mIsBuildingFloraMesh = true;
+
+    // TODO: Move somewhere else?
+    chunk.mChunkRenderData.mFloraDirty = false;
+    chunk.incRef();
+
+    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+        const f32v2& chunkPos = chunk.getWorldPos();
+
+        std::vector<TileVertex>& vertexData = meshData->mTileVertices;
+
+        // Flora must be MID layer
+        constexpr int layerIndex = enum_cast(TileLayer::Mid);
+
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                //  TODO: Multiple world layers
+                TileIndex index(x, y);
+                const Tile& tile = chunk.mTiles[index];
+                TileID layerTile = tile.layers[layerIndex];
+                if (layerTile == TILE_ID_NONE) {
+                    continue;
+                }
+                const TileData& tileData = TileRepository::getTileData(layerTile);
+                const SpriteData& spriteData = tileData.spriteData;
+
+                // Flora mesh ONLY
+                if (spriteData.method == TileTextureMethod::FLORA) {
+                    addTileFlora(chunk, index, layerIndex, tileData, spriteData, vertexData);
+                }
+            }
+        }
+    }, [this, &chunk, meshData]() {
+
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+
+        // Mesh
+        if (!renderData.mFloraMesh) {
+            renderData.mFloraMesh = std::make_unique<QuadMesh>();
+        }
+        QuadMesh& mesh = *renderData.mFloraMesh;
+        mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture(), QuadMeshDrawMode::DYNAMIC);
+        meshData->mTileVertices.clear();
+
+        // LOD
+        // uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
+
+        // Recycle and flag as free
+        mFreeTileMeshData.push_back(meshData);
+        chunk.mChunkRenderData.mIsBuildingFloraMesh = false;
 
         // Update refcount
         --mNumMeshTasksRunning;

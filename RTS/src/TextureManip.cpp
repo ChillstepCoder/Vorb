@@ -85,7 +85,8 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
             // Method specific generation
             switch (sprite->method)
             {
-                case TileTextureMethod::SIMPLE: {
+                case TileTextureMethod::SIMPLE:
+                case TileTextureMethod::FLORA: {
                     glUniform4f(uvUniform, sprite->uvs.x, sprite->uvs.y, sprite->uvs.z, sprite->uvs.w);
                     mQuadVbo.draw();
                     break;
@@ -110,7 +111,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                     break;
             }
         }
-        static_assert((int)TileTextureMethod::COUNT == 3, "Implement normal generation for new method");
+        static_assert((int)TileTextureMethod::COUNT == 4, "Implement normal generation for new method");
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

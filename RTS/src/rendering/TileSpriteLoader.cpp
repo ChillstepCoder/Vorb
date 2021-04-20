@@ -67,12 +67,16 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         sprite.texture = mTextureAtlas.getAtlasTexture();
         sprite.dimsMeters = metaData.dimsMeters;
         sprite.lodColor = metaData.lodColor;
+        sprite.method = metaData.method;
         sprite.offset = metaData.offset;
         if (metaData.randFlip) {
             sprite.flags |= SPRITEDATA_FLAG_RAND_FLIP;
         }
         if (metaData.opaque) {
             sprite.flags |= SPRITEDATA_FLAG_OPAQUE;
+        }
+        if (sprite.lodColor != NO_LOD_COLOR) {
+            sprite.flags |= SPRITEDATA_FLAG_RENDER_LOD;
         }
 
         // Determine how many tiles we need to map to the atlas, by finding the AABB in tile units
@@ -82,22 +86,28 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         assert(tileDims.x < TEXTURE_ATLAS_CELLS_PER_ROW / 2); // Need room for normal maps
         const unsigned sourceOffset = (unsigned)metaData.pixelRect.y * rs.width + metaData.pixelRect.x;
         const color4* sourceBytes = (color4*)(rs.bytesUI8v4 + sourceOffset);
+        switch (metaData.method) {
+            case TileTextureMethod::SIMPLE:
+            case TileTextureMethod::FLORA: {
+                ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
+                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
+                sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+                break;
+            }
+            case TileTextureMethod::CONNECTED_WALL: {
+                ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
+                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
+                sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
 
-        if (metaData.method == TileTextureMethod::SIMPLE) {
-            ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
-            sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
-            sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+                // Correct dims per tile
+                sprite.uvs.z /= TILE_TEX_METHOD_CONNECTED_WALL_WIDTH;
+                sprite.uvs.w /= TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT;
+                break;
+            }
+            default:
+                assert(false);
         }
-        else {
-            // Connected and others
-            ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
-            sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
-            sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
-            sprite.method = TileTextureMethod::CONNECTED_WALL;
-            // Correct dims per tile
-            sprite.uvs.z /= TILE_TEX_METHOD_CONNECTED_WALL_WIDTH;
-            sprite.uvs.w /= TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT;
-        }
+        static_assert(enum_cast(TileTextureMethod::COUNT) == 4, "Update above for UVs");
 
         // Insert the sprite
         if (metaData.name.size()) {

@@ -22,10 +22,13 @@ struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
+    std::unique_ptr<QuadMesh> mFloraMesh = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mBaseDirty = true;
 	bool mLODDirty = true;
-	bool mIsBuildingMesh = false; // When true, we are waiting for our mesh to be completed
+	bool mFloraDirty = true;
+	bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
+	bool mIsBuildingFloraMesh = false;
 };
 
 struct ChunkID {

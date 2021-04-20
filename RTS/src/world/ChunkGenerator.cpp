@@ -33,6 +33,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     // TODO: This seems wrong
     static TileID grass1 = TileRepository::getTile("grass1");
     static TileID grass2 = TileRepository::getTile("grass2");
+    static TileID tallGrass = TileRepository::getTile("tall_grass");
     static TileID rock1 = TileRepository::getTile("rock1");
     static TileID hugeTree = TileRepository::getTile("tree_huge");
     static TileID bigTree = TileRepository::getTile("tree_large");
@@ -69,15 +70,20 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
         tile.groundLayer = water;
     }
     else if (height < -0.1 || height > 0.1) {
+        // Standard grass layer
         if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.95f) {
-            tile.midLayer = smallTree;
+            // Small Tree
+            tile.topLayer = smallTree;
+        }
+        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
+            tile.midLayer = tallGrass;
         }
     }
     else {
         tile.groundLayer = grass2;
         float r = Random::getThreadSafef(offsetToCenter.x, worldPos.y);
         if (r > 0.6f) {
-            tile.midLayer = hugeTree;
+            tile.topLayer = hugeTree;
         }
     }
     return tile;
@@ -130,8 +136,10 @@ void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region, color3* recur
                     }
                     // First opaque tile
                     const TileData& tileData = TileRepository::getTileData(layerTile);
-                    *currentPixel++ = tileData.spriteData.lodColor;
-                    break;
+                    if (tileData.spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
+                        *currentPixel++ = tileData.spriteData.lodColor;
+                        break;
+                    }
                 }
                 //float temperature = sTemperatureNoise.compute(tilePosWorld.x, tilePosWorld.y) * 0.5 + 0.5;
                 //float humidity = sHumidityNoise.compute(tilePosWorld.y, tilePosWorld.x) * 0.5 + 0.5;

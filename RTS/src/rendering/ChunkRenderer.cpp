@@ -23,6 +23,8 @@
 #include <Vorb/ui/InputDispatcher.h>
 #endif
 
+constexpr float FLORA_RENDER_SCALE_THRESHOLD = 20.0f;
+
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
 	mResourceManager(resourceManager),
 	mMaterialRenderer(materialRenderer)
@@ -100,7 +102,7 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
                 // Check LOD for update
                 //UpdateLODTexture(chunk);
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
-                if (renderData.mLODDirty && !renderData.mIsBuildingMesh) {
+                if (renderData.mLODDirty && !renderData.mIsBuildingBaseMesh) {
                     chunksNeedingUpdate.push_back(&chunk);
                 }
 
@@ -141,7 +143,7 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camer
 
 void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingMesh && renderData.mBaseDirty) {
+    if (!renderData.mIsBuildingBaseMesh && renderData.mBaseDirty) {
         mMesher->createMeshAsync(chunk);
     }
 }
@@ -149,7 +151,7 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
 void ChunkRenderer::UpdateLODTexture(const Chunk& chunk)
 {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingMesh && renderData.mLODDirty) {
+    if (!renderData.mIsBuildingBaseMesh && renderData.mLODDirty) {
         mMesher->createLODTextureAsync(chunk);
     }
 }
@@ -159,6 +161,14 @@ void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& c
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (renderData.mChunkMesh) {
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
+        if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
+            if (renderData.mFloraMesh) {
+                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraMaterial);
+            }
+            else {
+                mMesher->createHighDetailFloraMeshAsync(chunk);
+            }
+        }
     }
     else {
         RenderLODTexture(chunk.getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera);
@@ -181,9 +191,16 @@ void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture te
 
 void ChunkRenderer::RenderShadows(const Chunk& chunk, const Camera2D& camera)
 {
-    QuadMesh* mesh = chunk.mChunkRenderData.mChunkMesh.get();
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    QuadMesh* mesh = renderData.mChunkMesh.get();
     if (mesh && mesh->isValid()) {
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial);
+
+        if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
+            if (renderData.mFloraMesh) {
+                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraShadowMaterial);
+            }
+        }
     }
 }
 
@@ -200,8 +217,12 @@ void ChunkRenderer::InitPostLoad()
 {
 	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
     assert(mStandardMaterial);
+    mFloraMaterial = mResourceManager.getMaterialManager().getMaterial("flora");
+    assert(mFloraMaterial);
     mShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow");
     assert(mShadowMaterial);
+    mFloraShadowMaterial = mResourceManager.getMaterialManager().getMaterial("flora_shadow");
+    assert(mFloraShadowMaterial);
     mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
     assert(mLODMaterial);
     mZCutoutMaterial = mResourceManager.getMaterialManager().getMaterial("z_cutout");
