@@ -142,11 +142,15 @@ public:
 		assert(i < CHUNK_SIZE);
         mTiles[i] = tile;
         mChunkRenderData.mBaseDirty = true;
+		// TODO: Don't dirty the flora mesh always
+		mChunkRenderData.mFloraDirty = true;
     }
 
 	void setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
         mTiles[i].layers[(int)layer] = tileId;
         mChunkRenderData.mBaseDirty = true;
+        // TODO: Don't dirty the flora mesh always
+        mChunkRenderData.mFloraDirty = true;
 	}
 
 	void incRef() const {

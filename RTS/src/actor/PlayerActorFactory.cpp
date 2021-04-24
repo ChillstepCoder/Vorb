@@ -18,8 +18,8 @@ entt::entity PlayerActorFactory::createActor(const f32v2& position, const vio::P
 	//auto& combatComp = mEcs.getCombatComponentFromEntity(newEntity);
 
     // model
-    auto& modelCmp = mRegistry.emplace<CharacterModelComponent>(newEntity);
-	modelCmp.mModel.load(mResourceManager.getTextureCache(), "face/female/Female_Average_Wide", "body/thin", "hair/longB");
+    // auto& modelCmp = mRegistry.emplace<CharacterModelComponent>(newEntity);
+	// modelCmp.mModel.load(mResourceManager.getTextureCache(), "face/female/Female_Average_Wide", "body/thin", "hair/longB");
 
 	return newEntity;
 }

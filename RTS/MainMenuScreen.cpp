@@ -188,6 +188,9 @@ void MainMenuScreen::build() {
                 const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
                 mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
 			}
+			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
+                mWorld->createEntity(worldPos, EntityType::HUMAN);
+			}
             else {
 				ui32v2 worldPosInt = worldPos;
                 if (mIsPathfinding) {

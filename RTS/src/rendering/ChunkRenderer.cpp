@@ -144,12 +144,14 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camer
 void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (!renderData.mIsBuildingBaseMesh && renderData.mBaseDirty) {
-        mMesher->createMeshAsync(chunk);
+         mMesher->createMeshAsync(chunk);
+    }
+    if (!renderData.mIsBuildingFloraMesh && renderData.mFloraDirty) {
+        mMesher->createHighDetailFloraMeshAsync(chunk);
     }
 }
 
-void ChunkRenderer::UpdateLODTexture(const Chunk& chunk)
-{
+void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (!renderData.mIsBuildingBaseMesh && renderData.mLODDirty) {
         mMesher->createLODTextureAsync(chunk);

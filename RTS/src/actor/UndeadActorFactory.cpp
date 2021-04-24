@@ -14,41 +14,37 @@ UndeadActorFactory::UndeadActorFactory(entt::registry& registry, World& world, R
 }
 
 entt::entity UndeadActorFactory::createActor(const f32v2& position, const vio::Path& texturePath, const vio::Path& definitionFile) {
-	//UNUSED(definitionFile);
+    UNUSED(definitionFile);
+    UNUSED(texturePath);
+    //VGTexture texture = mResourceManager.getTextureCache().addTexture(texturePath).id;
 
-	//VGTexture texture = mResourceManager.getTextureCache().addTexture(texturePath).id;
+    // Create physics entity
+    // TODO: Why not make entities object oriented?
 
-	//// Create physics entity
-	//vecs::EntityID newEntity = mEcs.addEntity();
-	//auto physCompPair = mEcs.addPhysicsComponent(newEntity);
-	//auto& physComp = physCompPair.second;
-	//physComp.mFlags = 0;
-	//physComp.mQueryActorTypes = ACTORTYPE_UNDEAD;
+    entt::entity newEntity = mRegistry.create();
 
-	//// Setup the physics component
-	//physComp.initBody(mEcs, position, false /*isStatic*/);
-	//physComp.addCollider(newEntity, ColliderShapes::SPHERE, SPRITE_RADIUS);
+    // Physics component
+    auto& physics = mRegistry.emplace<PhysicsComponent>(newEntity, mWorld, position, false);
+    physics.mQueryActorTypes = ACTORTYPE_UNDEAD;
+    physics.addCollider(newEntity, ColliderShapes::SPHERE, SPRITE_RADIUS);
 
-	//auto spriteCompPair = mEcs.addSimpleSpriteComponent(newEntity);
-	//auto& spriteComp = spriteCompPair.second;
-	//spriteComp.physicsComponent = physCompPair.first;
-	//spriteComp.texture = texture;
-	//spriteComp.dims = f32v2(SPRITE_RADIUS * 2.0f);
-	//spriteComp.color = color4(0.0f, 1.0f, 0.0f);
+    // Sprite Component
+    //auto& spriteComp = mRegistry.emplace<SimpleSpriteComponent>(newEntity, texture, f32v2(SPRITE_RADIUS * 2.0f));
+    //spriteComp.mColor = color4(1.0f, 0.0f, 0.0f);
 
-	//mEcs.addUndeadAIComponent(newEntity);
-	//auto& navCmp = mEcs.addNavigationComponent(newEntity).second;
-	//navCmp.mSpeed = 0.1f;
+    /*auto& combatComp = mEcs.addCombatComponent(newEntity).second;
+    combatComp.mWeapon = WeaponRegistry::getWeapon(BuiltinWeapons::IRON_SWORD);
+    combatComp.mArmor = ArmorRegistry::getArmor(BuiltinArmors::IRON_ARMOR_MEDIUM);
+    combatComp.mShield = ShieldRegistry::getShield(BuiltinShields::IRON_ROUND);*/
+    /*mEcs.addSoldierAIComponent(newEntity);
+    auto& navCmp = mEcs.addNavigationComponent(newEntity).second;
+    navCmp.mSpeed = 0.1f;*/
+    //mRegistry.emplace<PlayerControlComponent>(newEntity);
+    // Player combat
+    //auto& combatComp = mEcs.getCombatComponentFromEntity(newEntity);
 
-	//auto& combatComp = mEcs.addCombatComponent(newEntity).second;
-	//UNUSED(combatComp);
-
-	//// TMP
-	//auto& characterModelComp = static_cast<EntityComponentSystem&>(mEcs).addCharacterModelComponent(newEntity).second;
-	//characterModelComp.mModel.load(mResourceManager.getTextureCache(), "face/male/narrow_wide", "body/muscular", "hair/allback2");
-	//characterModelComp.mPhysicsComponent = static_cast<EntityComponentSystem&>(mEcs).mPhysicsSystem.getComponentID(newEntity);
-
-	//return newEntity;
-	assert(false);
-	return entt::entity();
+    // model
+    auto& modelCmp = mRegistry.emplace<CharacterModelComponent>(newEntity);
+    modelCmp.mModel.load(mResourceManager.getTextureCache(), "face/female/Female_Average_Wide", "body/thin", "hair/longB");
+    return newEntity;
 }
