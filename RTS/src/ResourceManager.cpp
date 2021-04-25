@@ -6,6 +6,7 @@
 #include "rendering/ShaderLoader.h"
 #include "particles/ParticleSystemManager.h"
 #include "city/Building.h"
+#include "ecs/EntityDefinitionRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -33,6 +34,7 @@ ResourceManager::ResourceManager() {
     mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
+    mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -88,6 +90,9 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         else if (fileHasExtension(entry, ".part")) {
             mParticleSystemFiles.emplace_back(entry);
         }
+        else if (fileHasExtension(entry, ".ent")) {
+            mEntityFiles.emplace_back(entry);
+        }
         // TODO: .ttf?
     }
 
@@ -136,6 +141,11 @@ void ResourceManager::loadFiles() {
 
     // Update textures
     mSpriteRepository->mTextureAtlas->uploadDirtyPages();
+
+    // Load entity definitions
+    for (auto&& entry : mEntityFiles) {
+        mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
+    }
 
     mHasLoadedResources = true;
 }

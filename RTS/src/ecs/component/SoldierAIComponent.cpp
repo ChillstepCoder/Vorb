@@ -4,7 +4,7 @@
 #include "CombatComponent.h"
 
 #include "World.h"
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 // TODO: Debug render
 const float AGGRO_DISTANCE = 5000.0f;

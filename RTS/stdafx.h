@@ -47,6 +47,7 @@
 #include <Vorb/types.h>
 #include <Vorb/Timing.h>
 #include <Vorb/io/Keg.h>
+#include <Vorb/io/Path.h>
 
 #include <entt/entt.hpp>
 

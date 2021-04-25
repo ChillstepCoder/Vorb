@@ -1,8 +1,7 @@
 #include "stdafx.h"
 #include "EntityComponentSystemRenderer.h"
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 #include "Camera2D.h"
-#include "EntityComponentSystem.h"
 #include "World.h"
 
 #include "ResourceManager.h"

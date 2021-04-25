@@ -44,7 +44,7 @@ public:
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = (entt::entity)0);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except = (entt::entity)0);
 
-	entt::entity createEntity(const f32v2& pos, EntityType type);
+	entt::entity createEntity(const f32v2& pos, const nString& typeName);
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 	void createCityAt(const ui32v2& worldPos);
 

@@ -2,15 +2,12 @@
 #include "World.h"
 
 #include "Camera2D.h"
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
 #include "physics/ContactListener.h"
 
-#include "actor/HumanActorFactory.h"
-#include "actor/UndeadActorFactory.h"
-#include "actor/PlayerActorFactory.h"
 #include "ecs/factory/EntityFactory.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -528,8 +525,8 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 	return entities;
 }
 
-entt::entity World::createEntity(const f32v2& pos, EntityType type) {
-	return mEntityFactory->createEntity(pos, type);
+entt::entity World::createEntity(const f32v2& pos, const nString& typeName) {
+	return mEntityFactory->createEntity(pos, typeName);
 }
 
 b2Body* World::createPhysBody(const b2BodyDef* bodyDef) {

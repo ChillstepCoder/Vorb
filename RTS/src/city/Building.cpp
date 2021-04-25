@@ -89,7 +89,7 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
 
 void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path& filePath)
 {
-    if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
+    if (!mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
         BuildingDescriptionFileData fileData;
@@ -147,7 +147,10 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
 
         mBuildingTypes[key] = newID;
         mBuildingDescriptions.emplace_back(std::move(description));
-    })));
+    }))) {
+        // Failure case
+        pError("Failed to parse building file " + filePath.getString());
+    }
 }
 
 BuildingDescription& BuildingDescriptionRepository::getBuildingDescription(const nString& name)

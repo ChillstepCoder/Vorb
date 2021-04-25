@@ -11,3 +11,10 @@ public:
 	color4 mColor = color4(1.0f, 1.0f, 1.0f);
 	float mHitFlash = 0.0f;
 };
+
+struct SimpleSpriteComponentDef {
+	const char* texture; // TODO: This will always leak, we cannot destruct as it is part of union
+	color4 color;
+	f32v2 dims;
+};
+KEG_TYPE_DECL(SimpleSpriteComponentDef);

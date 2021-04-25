@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "PlayerControlComponent.h"
 
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 #include "ecs/ClientEcsData.h"
 
@@ -66,15 +66,22 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 		physCmp.mDir = moveDir;
 	}
 	else {
-		physCmp.mDir = glm::normalize(clientData.worldMousePos - physCmp.getXYPosition());
+		// Prevent NAN
+		const f32v2 offset = clientData.worldMousePos - physCmp.getXYPosition();
+		if (offset.x == 0.0f && offset.y == 0.0f) {
+			physCmp.mDir = moveDir;
+		}
+		else {
+			physCmp.mDir = glm::normalize(offset);
+		}
 	}
 
 	float speed = BASE_SPEED;
 	float dotp = glm::dot(moveDir, glm::normalize(physCmp.mDir));
 	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
 	const float angleOffset = acos(dotp);
-	assert(angleOffset == angleOffset);
-	// nan check
+    assert(angleOffset == angleOffset); // nan check
+
 	// Reduce speed for backstep
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
 	speed *= 1.0f - (speedLerp * 0.5f);

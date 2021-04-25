@@ -39,19 +39,7 @@
     <ClCompile Include="DebugRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EntityComponentSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EntityComponentSystemRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\actor\HumanActorFactory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\actor\UndeadActorFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp">
@@ -60,13 +48,7 @@
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\physics\ContactListener.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\actor\PlayerActorFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp">
@@ -234,6 +216,15 @@
     <ClCompile Include="src\pathfinding\PathFinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\EntityComponentSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -260,22 +251,7 @@
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EntityComponentSystem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EntityComponentSystemRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\actor\IActorFactory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\actor\UndeadActorFactory.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\actor\HumanActorFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\actor\ActorTypes.h">
@@ -288,9 +264,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\ContactListener.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\actor\PlayerActorFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h">
@@ -495,6 +468,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\pathfinding\PathFinder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\EntityComponentSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\EntityDefinitionRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\ComponentTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\ComponentDefinition.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\EntityDefinition.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

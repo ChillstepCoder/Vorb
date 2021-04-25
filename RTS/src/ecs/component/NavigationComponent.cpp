@@ -2,7 +2,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include "NavigationComponent.h"
 
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 #include "World.h"
 

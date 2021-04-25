@@ -2,7 +2,6 @@
 
 DECL_VIO(class IOManager);
 
-#include <Vorb/io/Path.h>
 #include "world/Tile.h"
 
 #include "rendering/SpriteRepository.h"
@@ -11,6 +10,7 @@ DECL_VIO(class IOManager);
 class MaterialManager;
 class ParticleSystemManager;
 class BuildingDescriptionRepository;
+class EntityDefinitionRepository;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -32,6 +32,7 @@ public:
     const MaterialManager& getMaterialManager() const { return *mMaterialManager; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
+    EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
 
     bool hasLoadedResources() const { return mHasLoadedResources; }
 
@@ -49,11 +50,13 @@ private:
     std::vector<vio::Path> mParticleSystemFiles;
     std::vector<vio::Path> mRoomFiles;
     std::vector<vio::Path> mBuildingFiles;
+    std::vector<vio::Path> mEntityFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
     std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
+    std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

@@ -14,13 +14,16 @@ enum class PhysicsComponentFlag : ui8 {
 };
 
 enum class ColliderShapes {
-	SPHERE,
-	NONE
+	NONE,
+	CIRCLE,
+	COUNT
 };
+KEG_ENUM_DECL(ColliderShapes);
 
 class PhysicsComponent {
 public:
 	PhysicsComponent(World& world, const f32v2& centerPosition, bool isStatic);
+
 	void addCollider (entt::entity entityId, ColliderShapes shape, const float halfWidth);
 
     void setXYPosition(const f32v2& pos) {
@@ -61,6 +64,13 @@ public:
     ui8 mQueryActorTypes = ACTORTYPE_NONE;
 
 };
+
+struct PhysicsComponentDef {
+    ColliderShapes colliderShape;
+    float colliderRadius;
+    bool isStatic;
+};
+KEG_TYPE_DECL(PhysicsComponentDef);
 
 class PhysicsSystem {
 public:

@@ -146,12 +146,7 @@
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
-    <ClCompile Include="EntityComponentSystem.cpp" />
-    <ClCompile Include="EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="Noise.cpp" />
-    <ClCompile Include="src\actor\HumanActorFactory.cpp" />
-    <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
-    <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\city\City.cpp" />
@@ -168,7 +163,8 @@
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
-    <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
+    <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
@@ -185,6 +181,7 @@
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
+    <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\Material.cpp" />
@@ -223,13 +220,7 @@
     <ClInclude Include="Camera2D.h" />
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="MainMenuScreen.h" />
-    <ClInclude Include="EntityComponentSystem.h" />
-    <ClInclude Include="EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
-    <ClInclude Include="src\actor\HumanActorFactory.h" />
-    <ClInclude Include="src\actor\IActorFactory.h" />
-    <ClInclude Include="src\actor\PlayerActorFactory.h" />
-    <ClInclude Include="src\actor\UndeadActorFactory.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\City.h" />
@@ -243,8 +234,11 @@
     <ClInclude Include="src\city\RoomNode.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
+    <ClInclude Include="src\ecs\component\ComponentDefinition.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
     <ClInclude Include="src\ecs\component\DynamicLightComponent.h" />
+    <ClInclude Include="src\ecs\component\ComponentTypes.h" />
+    <ClInclude Include="src\ecs\component\EntityDefinition.h" />
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
@@ -252,6 +246,8 @@
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="src\ecs\EntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
@@ -274,6 +270,7 @@
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
+    <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\Material.h" />

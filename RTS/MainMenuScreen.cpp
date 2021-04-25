@@ -189,7 +189,7 @@ void MainMenuScreen::build() {
                 mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
-                mWorld->createEntity(worldPos, EntityType::HUMAN);
+                mWorld->createEntity(worldPos, "player");
 			}
             else {
 				ui32v2 worldPosInt = worldPos;
@@ -211,7 +211,6 @@ void MainMenuScreen::build() {
 					mIsPathfinding = true;
 				}
 			}
-			
 		}
 
 		// Apply velocity
@@ -223,7 +222,7 @@ void MainMenuScreen::build() {
 	});
 
 	// Add player
-	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, EntityType::PLAYER);
+	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
 	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
 	mCamera2D->setPosition(WorldData::WORLD_CENTER);
 

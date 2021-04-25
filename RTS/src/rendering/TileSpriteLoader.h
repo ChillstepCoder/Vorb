@@ -2,8 +2,6 @@
 
 // TODO: ModPathResolver?
 
-#include <Vorb/io/Path.h>
-
 #include "SpriteData.h"
 
 DECL_VVOX(class VoxelTextureStitcher);

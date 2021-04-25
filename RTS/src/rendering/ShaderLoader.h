@@ -16,7 +16,6 @@
 #define ShaderLoader_h__
 
 #include <Vorb/VorbPreDecl.inl>
-#include <Vorb/io/Path.h>
 #include <Vorb/graphics/GLProgram.h>
 
 DECL_VIO(class IOManager);

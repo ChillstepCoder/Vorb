@@ -1,0 +1,9 @@
+player_control:
+character_model:
+  face: face/female/Female_Average_Wide
+  body: body/thin
+  hair: hair/longB
+physics:
+  collider_shape: circle
+  collider_radius: 0.3
+  is_static: true

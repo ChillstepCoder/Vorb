@@ -2,7 +2,7 @@
 #include "PhysicsComponent.h"
 
 #include "World.h"
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 #include <box2d/b2_body.h>
 #include <box2d/b2_circle_shape.h>
@@ -14,8 +14,19 @@ constexpr float TOP_COLLISION_DEPTH = 1.0f - TOP_COLLISION_THRESHOLD;
 // This prevents tunelling when falling
 static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
 
-// Collision info
+KEG_ENUM_DEF(ColliderShapes, ColliderShapes, kt) {
+    kt.addValue("none", ColliderShapes::NONE);
+    kt.addValue("circle", ColliderShapes::CIRCLE);
+}
+static_assert(enum_cast(ColliderShapes::COUNT) == 2, "Update def");
 
+KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
+    kt.addValue("collider_shape", keg::Value::custom(offsetof(PhysicsComponentDef, colliderShape), "ColliderShapes", true));
+	kt.addValue("collider_radius", keg::Value::basic(offsetof(PhysicsComponentDef, colliderRadius), keg::BasicType::F32));
+    kt.addValue("is_static", keg::Value::basic(offsetof(PhysicsComponentDef, isStatic), keg::BasicType::BOOL));
+}
+
+// Collision info
 float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT] = {
 	0.0f,   // NONE
 	0.5f,   // BOX
@@ -235,24 +246,6 @@ PhysicsSystem::PhysicsSystem(World& world)
 }
 
 void PhysicsSystem::update(entt::registry& registry, float deltaTime) {
-	// THIS IS NOW HANDLED BY BOX2D
-
-	// Collision
-	// TODO: Spatial Partition
-	// Skip default element
-	/*std::vector<ComponentPairing>::iterator it = _components.begin() + 1;
-	while (it != _components.end()) {
-		if (isValid(*it)) {
-			auto compareIt = it;
-			while (++compareIt != _components.end()) {
-				if (isValid(*compareIt)) {
-					handleCollision2D(it->second, compareIt->second);
-				}
-			}
-		}
-		++it;
-	}*/
-
 	// Update components
 	registry.view<PhysicsComponent>().each([&](auto& cmp) {
         updateComponent(mWorld, cmp, deltaTime);
@@ -278,7 +271,7 @@ void PhysicsComponent::addCollider(entt::entity entityId, ColliderShapes shape, 
 
 	// Init physics body
 	switch (shape) {
-		case ColliderShapes::SPHERE: {
+		case ColliderShapes::CIRCLE: {
 			b2CircleShape dynamicCircle;
 			dynamicCircle.m_radius = halfWidth;
 			mCollisionRadius = dynamicCircle.m_radius;

@@ -4,7 +4,7 @@
 #include <Vorb/graphics/Texture.h>
 
 // TODO: MOVE
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 class App;
 class Camera2D;

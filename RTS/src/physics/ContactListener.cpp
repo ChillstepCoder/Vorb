@@ -3,7 +3,7 @@
 
 #include <box2d/b2_contact.h>
 
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 // TODO: Shared util?
 inline entt::entity extractEntity(b2Fixture* fixture) {

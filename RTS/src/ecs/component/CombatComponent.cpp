@@ -3,7 +3,7 @@
 #include "PhysicsComponent.h"
 #include "SimpleSpriteComponent.h"
 #include "World.h"
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 
 namespace Combat {
 	bool resolveMeleeAttack(CombatComponent& attacker, CombatComponent& defender, PhysicsComponent& defenderPhysComp, SimpleSpriteComponent& defenderSpriteComp, const f32v2& dir, float flankingAngle) {

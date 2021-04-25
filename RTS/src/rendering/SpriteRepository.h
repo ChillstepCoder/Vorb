@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Vorb/io/Path.h>
 #include "rendering/SpriteData.h"
 
 DECL_VG(class TextureCache);

@@ -1,7 +1,6 @@
 #pragma once
 
 // TODO: PCH?
-#include <Vorb/io/Path.h>
 
 #include "city/BuildingGrammar.h"
 
