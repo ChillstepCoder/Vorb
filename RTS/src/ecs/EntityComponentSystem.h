@@ -1,18 +1,6 @@
 #pragma once
 #include "ecs/ClientEcsData.h"
-
-#include "ecs/component/PhysicsComponent.h"
-#include "ecs/component/SimpleSpriteComponent.h"
-#include "ecs/component/NavigationComponent.h"
-#include "ecs/component/UndeadAIComponent.h"
-#include "ecs/component/PlayerControlComponent.h"
-#include "ecs/component/CombatComponent.h"
-#include "ecs/component/CorpseComponent.h"
-#include "ecs/component/SoldierAIComponent.h"
-#include "ecs/component/DynamicLightComponent.h"
-
-// TODO: ecs file?
-#include "rendering/CharacterModel.h"
+#include "ecs/component/ComponentDefinition.h"
 
 class World;
 
@@ -34,11 +22,13 @@ public:
     DECL_COMPONENT_TABLE(mCharacterModelTable, CharacterModelComponent);
     DECL_COMPONENT_TABLE(mDynamicLightComponentTable, DynamicLightComponent);*/
 
-	PhysicsSystem mPhysicsSystem;
+    // TODO: UniquePtr for faster include
+    PhysicsSystem mPhysicsSystem;
+    PlayerControlSystem mPlayerControlSystem;
+    PersonAISystem mPersonAISystem;
 	//NavigationComponentTable mNavigationTable;
 	//UndeadAIComponentTable mUndeadAITable;
 	//SoldierAIComponentTable mSoldierAITable;
-	PlayerControlSystem mPlayerControlSystem;
 	//CombatComponentTable mCombatTable;
 	//CorpseComponentTable mCorpseTable;
 

@@ -41,6 +41,9 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::Navigation)]) {
             entityDef->components.emplace_back(ComponentTypes::Navigation);
         }
+        else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::PersonAI)]) {
+            entityDef->components.emplace_back(ComponentTypes::PersonAI);
+        }
         else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::Physics)]) {
             //auto& physics = mTemplateRegistry.emplace<PhysicsComponent>(templateEntity/*, mWorld, position, false*/);
             //physics.mQueryActorTypes = ACTORTYPE_HUMAN;
@@ -66,7 +69,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else {
             pError("Tried to load invalid .entt component type \"" + key + "\"");
         }
-        static_assert(enum_cast(ComponentTypes::COUNT) == 11, "Parse new component type");
+        static_assert(enum_cast(ComponentTypes::COUNT) == 12, "Parse new component type");
         // Load data
         //BuildingDescription description
     }))) {

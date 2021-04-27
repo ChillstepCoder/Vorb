@@ -23,6 +23,7 @@ struct b2BodyDef;
 class b2Body;
 class b2World;
 class Camera2D;
+class City;
 class ContactListener;
 class ChunkGenerator;
 class EntityComponentSystem;
@@ -75,6 +76,7 @@ public:
     float getTimeOfDay() const { return mTimeOfDay; }
 	const f32v3& getSunColor() const { return mSunColor; }
 	const CityGraph& getCities() const { return *mCities; }
+	City* getClosestCityToPoint(const f32v2& pos) const;
 	
 private:
 

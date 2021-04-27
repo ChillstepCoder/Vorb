@@ -189,7 +189,7 @@ void MainMenuScreen::build() {
                 mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
-                mWorld->createEntity(worldPos, "player");
+                mWorld->createEntity(worldPos, "villager");
 			}
             else {
 				ui32v2 worldPosInt = worldPos;

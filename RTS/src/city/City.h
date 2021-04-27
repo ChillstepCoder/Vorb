@@ -6,6 +6,7 @@
 class CityPlotter;
 class CityPlanner;
 class CityBuilder;
+class CityResidentManager;
 class World;
 
 
@@ -97,12 +98,12 @@ enum class TaskType {
 };
 
 // Job for a worker
-struct Task {
+//struct Task {
     // ActorId mWorker
-    float mEstimatedDuration;
+    //float mEstimatedDuration;
     // TaskType mTaskType;
     // bool mIsUrgent; instead just have an urgent list
-};
+//};
 
 // TODO: Give each city its own random number generator with own seed, so they will generate the same based on initial seed
 // This way, cities are more predictable from a certain seed and can be easier debugged
@@ -111,6 +112,7 @@ class City
     friend class CityPlanner;
     friend class CityBuilder;
     friend class CityPlotter;
+    friend class CityResidentManager;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
@@ -125,6 +127,10 @@ public:
 
     // Accessors
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
+
+    // Mutators
+    void addResidentToCity(entt::entity entity);
+    void removeResidentFromCity(entt::entity entity); // TODO: Notify?
 
 private:
     void tick();
@@ -141,13 +147,13 @@ private:
     std::string mName;
     // All chunks that contain the city
     std::vector<Chunk*> mChunks;
-    //std::vector<ActorId> mResidents;
     std::vector<Building> mBuildings;
     std::vector<CityRoad> mRoads;
 
     std::unique_ptr<CityPlotter> mCityPlotter;
     std::unique_ptr<CityPlanner> mCityPlanner;
     std::unique_ptr<CityBuilder> mCityBuilder;
+    std::unique_ptr<CityResidentManager> mCityResidentManager;
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;

@@ -208,6 +208,9 @@ extern bool checkGlError(const nString& errorLocation);
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
+// Useful for determining the size of a class pre-compile time
+template <size_t S> class Sizer { };
+#define SIZER(type) Sizer<sizeof(type)> 
 
 
 #define IS_ENABLED(d) d == 1

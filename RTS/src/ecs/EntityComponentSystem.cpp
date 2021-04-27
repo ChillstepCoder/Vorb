@@ -9,6 +9,7 @@ const float DEAD_COLOR_MULT = 0.4f;
 
 EntityComponentSystem::EntityComponentSystem(World& world)
 	: mPhysicsSystem(world)
+	, mPersonAISystem(world)
     , mWorld(world) {
 }
 
@@ -27,6 +28,7 @@ void EntityComponentSystem::update(float deltaTime, const ClientECSData& clientD
 	mPhysicsSystem.update(mRegistry, deltaTime); // Phys cmp sets dir to velocity
 	//mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
 	mPlayerControlSystem.update(mRegistry, mWorld, clientData);
+	mPersonAISystem.update(mRegistry, deltaTime);
 	//mCorpseTable.update();
 }
 

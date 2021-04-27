@@ -22,7 +22,7 @@ void ContactListener::BeginContact(b2Contact* contact) {
     if (auto* navA = mEcs.mRegistry.try_get<NavigationComponent>(idA)) {
         navA->mColliding = true;
     }
-    if (auto* navB = mEcs.mRegistry.try_get<NavigationComponent>(idA)) {
+    if (auto* navB = mEcs.mRegistry.try_get<NavigationComponent>(idB)) {
         navB->mColliding = true;
     }
 }
@@ -34,7 +34,7 @@ void ContactListener::EndContact(b2Contact* contact) {
 	if (auto* navA = mEcs.mRegistry.try_get<NavigationComponent>(idA)) {
 		navA->mColliding = false;
 	}
-    if (auto* navB = mEcs.mRegistry.try_get<NavigationComponent>(idA)) {
+    if (auto* navB = mEcs.mRegistry.try_get<NavigationComponent>(idB)) {
         navB->mColliding = false;
     }
 }

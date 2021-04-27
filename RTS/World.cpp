@@ -277,6 +277,20 @@ void World::setTimeOfDay(float time) {
 	updateSun();
 }
 
+City* World::getClosestCityToPoint(const f32v2& pos) const
+{
+	City* closest = nullptr;
+	f32 closestDist2 = FLT_MAX;
+	for (auto&& city : mCities->mNodes) {
+		const f32 dist2 = glm::length2(f32v2(city->getCityCenterWorldPos()) - pos);
+		if (dist2 < closestDist2) {
+			closestDist2 = dist2;
+			closest = city.get();
+		}
+	}
+	return closest;
+}
+
 void World::updateSun() {
     const float SUNRISE_TIME = 6.0f; // 6am
     const float SUNSET_TIME = 19.0f; // 7pm

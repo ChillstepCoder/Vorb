@@ -7,6 +7,7 @@
 #include "particles/ParticleSystemManager.h"
 #include "city/Building.h"
 #include "ecs/EntityDefinitionRepository.h"
+#include "item/ItemRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -35,6 +36,7 @@ ResourceManager::ResourceManager() {
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
+    mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -145,6 +147,11 @@ void ResourceManager::loadFiles() {
     // Load entity definitions
     for (auto&& entry : mEntityFiles) {
         mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
+    }
+
+    // Load entity definitions
+    for (auto&& entry : mItemFiles) {
+        mItemRepository->loadItemFile(entry);
     }
 
     mHasLoadedResources = true;

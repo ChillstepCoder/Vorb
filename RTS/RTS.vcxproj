@@ -154,6 +154,9 @@
     <ClCompile Include="src\city\BuildingGrammar.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\city\CityPlotter.cpp" />
+    <ClCompile Include="src\city\CityResidentManager.cpp" />
+    <ClCompile Include="src\city\CityItemManager.cpp" />
+    <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
     <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
@@ -169,6 +172,8 @@
     <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
+    <ClCompile Include="src\item\Item.cpp" />
+    <ClCompile Include="src\item\ItemRepository.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
@@ -231,8 +236,11 @@
     <ClInclude Include="src\city\CityPlanner.h" />
     <ClInclude Include="src\city\CityPlot.h" />
     <ClInclude Include="src\city\CityPlotter.h" />
+    <ClInclude Include="src\city\CityResidentManager.h" />
+    <ClInclude Include="src\city\CityItemManager.h" />
     <ClInclude Include="src\city\RoomNode.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
+    <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\ComponentDefinition.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
@@ -256,7 +264,9 @@
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
+    <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
+    <ClInclude Include="src\item\ItemRepository.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\Noise.h" />

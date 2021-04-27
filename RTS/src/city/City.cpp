@@ -4,6 +4,7 @@
 #include "CityPlotter.h"
 #include "CityPlanner.h"
 #include "CityBuilder.h"
+#include "CityResidentManager.h"
 #include "World.h"
 #include "ResourceManager.h"
 
@@ -22,8 +23,9 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     mCityPlotter = std::make_unique<CityPlotter>(*this);
     mCityPlanner = std::make_unique<CityPlanner>(*this);
     mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
+    mCityResidentManager = std::make_unique<CityBuilder>(*this);
 
-    mCityPlotter->initAsTier(4);
+    mCityPlotter->initAsTier(0);
 }
 
 City::~City() {
@@ -36,6 +38,16 @@ void City::update(float deltaTime)
     // TODO: tick()
     mCityPlanner->update();
     mCityBuilder->update();
+}
+
+void City::addResidentToCity(entt::entity entity)
+{
+    mCityResidentManager->addResident(entity);
+}
+
+void City::removeResidentFromCity(entt::entity entity)
+{
+    mCityResidentManager->removeResident(entity);
 }
 
 void City::tick() {

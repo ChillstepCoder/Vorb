@@ -11,6 +11,7 @@ class MaterialManager;
 class ParticleSystemManager;
 class BuildingDescriptionRepository;
 class EntityDefinitionRepository;
+class ItemRepository;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -51,12 +52,14 @@ private:
     std::vector<vio::Path> mRoomFiles;
     std::vector<vio::Path> mBuildingFiles;
     std::vector<vio::Path> mEntityFiles;
+    std::vector<vio::Path> mItemFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
     std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
+    std::unique_ptr<ItemRepository> mItemRepository;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 
