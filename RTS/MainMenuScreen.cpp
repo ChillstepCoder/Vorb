@@ -191,7 +191,8 @@ void MainMenuScreen::build() {
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
                 mWorld->createEntity(worldPos, "villager");
 			}
-            else {
+            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
+				// Pathfinding test
 				ui32v2 worldPosInt = worldPos;
                 if (mIsPathfinding) {
 					if (mPathFindStart != worldPosInt) {
@@ -210,6 +211,11 @@ void MainMenuScreen::build() {
 					mPathFindStart = worldPosInt;
 					mIsPathfinding = true;
 				}
+			}
+			else {
+				// Right click picking
+
+				// Enable context menu
 			}
 		}
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "CityConst.h"
+
 // TODO: non power of two
 enum class CityBlockSize {
     SMALL = 32,

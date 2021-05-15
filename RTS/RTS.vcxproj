@@ -152,6 +152,7 @@
     <ClCompile Include="src\city\City.cpp" />
     <ClCompile Include="src\city\CityBuilder.cpp" />
     <ClCompile Include="src\city\BuildingGrammar.cpp" />
+    <ClCompile Include="src\city\CityFunctionManager.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\city\CityPlotter.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
@@ -174,6 +175,7 @@
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
+    <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
@@ -233,6 +235,7 @@
     <ClInclude Include="src\city\BuildingGrammar.h" />
     <ClInclude Include="src\city\CityConst.h" />
     <ClInclude Include="src\city\CityDistrict.h" />
+    <ClInclude Include="src\city\CityFunctionManager.h" />
     <ClInclude Include="src\city\CityPlanner.h" />
     <ClInclude Include="src\city\CityPlot.h" />
     <ClInclude Include="src\city\CityPlotter.h" />
@@ -267,6 +270,7 @@
     <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
+    <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\Noise.h" />

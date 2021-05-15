@@ -69,7 +69,11 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     // Register with the city
     Building newBuilding;
-    mCity.mBuildings.emplace_back(std::move(newBuilding));
+    // TODO: This is an expensive copy
+    newBuilding.mGraph = bp.nodes;
+    newBuilding.mFunction = bp.desc.function;
+    newBuilding.mPlotIndex = bp.plotIndex;
+    mCity.addCompletedBuilding(std::move(newBuilding));
 }
 
 void CityBuilder::debugBuildInstant(RoadID roadId)

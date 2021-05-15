@@ -2,11 +2,23 @@
 
 // TODO: PCH?
 
+#include "CityConst.h"
 #include "city/BuildingGrammar.h"
+#include "item/ItemTradeManager.h"
+
+#include "city/CityPlot.h"
 
 DECL_VIO(class IOManager);
 class Building;
-struct CityPlot;
+
+// TODO: Move to data?
+enum class BuildingFunction : ui16 {
+    NONE,
+    RESIDENCE,
+    LUMBERMILL,
+    TYPES
+};
+KEG_ENUM_DECL(BuildingFunction);
 
 struct RoomDescription {
     RoomTypeID typeID;
@@ -15,22 +27,24 @@ struct RoomDescription {
     f32 desiredAspectRatio; // Width / Height
 };
 
-// TODO: Can we optimize passing this around so theres no copies? Does it matter...? no
+// TODO: Can we optimize passing this around so theres no copies?
 class Building {
 public:
     // Building bounds are a series of corner segments
     ui32v2 mBottomLeftWorldPos;
     std::vector<RoomNode> mGraph;
-    CityPlot* mPlot = nullptr;
+    CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
+    BuildingFunction mFunction = BuildingFunction::NONE;
+    BuildingID mId;
+
+    // TODO: Move to Business?
+    //ItemTradeManager mTradeManager; // TODO: This is a large copy and we pass building by value
 };
 
 enum class RoadType {
     DIRT,
     PAVED
 };
-
-typedef ui32 RoadID;
-#define INVALID_ROAD_ID UINT32_MAX
 
 struct CityRoad {
     ui32v2 startPos;
@@ -42,26 +56,6 @@ struct CityRoad {
     std::vector<RoadID> neighborRoads;
     bool mIsBuilt = false;
 };
-
-// TODO: Move to data
-// Buildings can come in various shapes and sizes, and can be entered
-//enum class BuildingType : ui16 {
-//    HOVEL,
-//    HOUSE,
-//    BARN,
-//    MILL,
-//    GROCERY,
-//    BLACKSMITH,
-//    TAILOR,
-//    TAVERN,
-//    STOCKPILE,
-//    GRANARY,
-//    KEEP,
-//    MANSION,
-//    BARRACKS,
-//    SHERIFFS_OFFICE,
-//    STABLE,
-//};
 
 struct PossibleSubRoom {
     RoomTypeID id;
@@ -77,8 +71,10 @@ struct BuildingDescription {
     ui32v2 widthRange = f32v2(10, 30);
     ui32v2 publicRoomCountRange = ui32v2(1, 3);
     ui32v2 privateRoomCountRange = ui32v2(1, 3);
+    ui32v2 employeeCountRange = ui32v2(0);
     f32 minAspectRatio = 0.5f;
     BuildingGrammar publicGrammar;
+    BuildingFunction function = BuildingFunction::NONE;
     // TODO: More cache friendly combination?
     std::vector<PossibleRoom> publicRooms;
     std::vector<PossibleRoom> privateRooms;

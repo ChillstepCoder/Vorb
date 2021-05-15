@@ -7,6 +7,7 @@ class CityPlotter;
 class CityPlanner;
 class CityBuilder;
 class CityResidentManager;
+class CityFunctionManager;
 class World;
 
 
@@ -59,16 +60,12 @@ struct Date {
     ui16 day;
 };
 
-struct Item {
-    // Type?
-    ui32 mCount;
-};
 
 // Requisition from one 
 struct Requisition {
     //  TODO: Contiguous memory buffer, combine the vectors
-    std::vector<Item> mRequestedItems;
-    std::vector<Item> mFilledItems;
+    //std::vector<Item> mRequestedItems;
+    //std::vector<Item> mFilledItems;
     Date mDesiredCompleteByDate;
     Date mCancelDate; // If we reach this date, the order is canceled and trust is lowered
     bool mAllowPartial; // If true, will attempt to send partial shipment at fill by date, and the rest when completed.
@@ -113,6 +110,7 @@ class City
     friend class CityBuilder;
     friend class CityPlotter;
     friend class CityResidentManager;
+    friend class CityFunctionManager;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
@@ -136,6 +134,7 @@ private:
     void tick();
 
     RoadID addRoad(CityRoad& road);
+    BuildingID addCompletedBuilding(Building&& building);
 
     World& mWorld;
     BuildingDescriptionRepository& mBuildingRepository;
@@ -154,6 +153,7 @@ private:
     std::unique_ptr<CityPlanner> mCityPlanner;
     std::unique_ptr<CityBuilder> mCityBuilder;
     std::unique_ptr<CityResidentManager> mCityResidentManager;
+    std::unique_ptr<CityFunctionManager> mCityFunctionManager;
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;

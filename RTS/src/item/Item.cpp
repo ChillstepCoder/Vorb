@@ -3,7 +3,7 @@
 
 KEG_ENUM_DEF(ItemType, ItemType, kt) {
     kt.addValue("unknown", ItemType::UNKNOWN);
-    kt.addValue("material", ItemType::MATERIAL);
+    kt.addValue("circle", ItemType::MATERIAL);
     kt.addValue("weapon", ItemType::WEAPON);
     kt.addValue("armor", ItemType::ARMOR);
     kt.addValue("trinket", ItemType::TRINKET);

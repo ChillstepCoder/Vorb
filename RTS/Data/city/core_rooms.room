@@ -37,3 +37,6 @@ garden:
 library:
   min_width: 6.0
   max_width: 40.0
+large_stockpile:
+  min_width: 15.0
+  max_width: 20.0

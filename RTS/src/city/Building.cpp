@@ -39,15 +39,24 @@ KEG_TYPE_DEF_SAME_NAME(PossibleSubRoomFileData, kt) {
     kt.addValue("public_rooms", keg::Value::array(offsetof(PossibleSubRoomFileData, parentRooms), keg::BasicType::STRING));
 }
 
+KEG_ENUM_DEF(BuildingFunction, BuildingFunction, kt) {
+    kt.addValue("none", BuildingFunction::NONE);
+    kt.addValue("residence", BuildingFunction::RESIDENCE);
+    kt.addValue("lumbermill", BuildingFunction::LUMBERMILL);
+}
+static_assert(enum_cast(BuildingFunction::TYPES) == 3, "Update keg definition");
+
 struct BuildingDescriptionFileData {
     ui32v2 widthRange = f32v2(10, 30);
     ui32v2 publicRoomCountRange = ui32v2(1, 3);
     ui32v2 privateRoomCountRange = ui32v2(1, 3);
+    ui32v2 employeeCountRange = ui32v2(0);
     f32 minAspectRatio = 0.5f;
     Array<nString> publicRoomGrammars;
     Array<PossibleRoomFileData> publicRooms;
     Array<PossibleRoomFileData> privateRooms;
     Array<PossibleSubRoomFileData> subRooms;
+    BuildingFunction function = BuildingFunction::NONE;
 };
 KEG_TYPE_DEF_SAME_NAME(BuildingDescriptionFileData, kt) {
     kt.addValue("width_range", keg::Value::basic(offsetof(BuildingDescriptionFileData, widthRange), keg::BasicType::UI32_V2));
@@ -58,6 +67,8 @@ KEG_TYPE_DEF_SAME_NAME(BuildingDescriptionFileData, kt) {
     kt.addValue("public_rooms", keg::Value::array(offsetof(BuildingDescriptionFileData, publicRooms), keg::Value::custom(0, "PossibleRoomFileData", false)));
     kt.addValue("private_rooms", keg::Value::array(offsetof(BuildingDescriptionFileData, privateRooms), keg::Value::custom(0, "PossibleRoomFileData", false)));
     kt.addValue("sub_rooms", keg::Value::array(offsetof(BuildingDescriptionFileData, subRooms), keg::Value::custom(0, "PossibleSubRoomFileData", false)));
+    kt.addValue("employs", keg::Value::basic(offsetof(BuildingDescriptionFileData, employeeCountRange), keg::BasicType::UI32_V2));
+    kt.addValue("function", keg::Value::custom(offsetof(BuildingDescriptionFileData, function), "BuildingFunction", true));
 }
 BuildingDescriptionRepository::BuildingDescriptionRepository(vio::IOManager& ioManager) 
     : mIoManager(ioManager)
@@ -102,6 +113,8 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         description.privateRoomCountRange = fileData.privateRoomCountRange;
         description.minAspectRatio = fileData.minAspectRatio;
         description.publicRooms.reserve(fileData.publicRooms.size());
+        description.employeeCountRange = fileData.employeeCountRange;
+        description.function = fileData.function;
         // TODO: We should get the keys from this somehow
         for (size_t i = 0; i < fileData.publicRooms.size(); ++i) {
             PossibleRoomFileData& roomFileData = fileData.publicRooms[i];

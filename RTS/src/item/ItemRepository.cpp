@@ -5,14 +5,18 @@
 
 struct ItemDef {
     nString name;
+    nString textureName;
     ItemType type;
     f32 value;
     f32 weight;
+    ui32 stackSize;
 };
 KEG_TYPE_DEF_SAME_NAME(ItemDef, kt) {
     kt.addValue("type", keg::Value::custom(offsetof(ItemDef, type), "ItemType", true));
+    kt.addValue("texture", keg::Value::basic(offsetof(ItemDef, textureName), keg::BasicType::STRING));
     kt.addValue("value", keg::Value::basic(offsetof(ItemDef, value), keg::BasicType::F32));
     kt.addValue("weight", keg::Value::basic(offsetof(ItemDef, weight), keg::BasicType::F32));
+    kt.addValue("stack_size", keg::Value::basic(offsetof(ItemDef, stackSize), keg::BasicType::UI32));
 }
 
 ItemRepository::ItemRepository(vio::IOManager& ioManager) :
@@ -33,10 +37,12 @@ void ItemRepository::loadItemFile(const vio::Path& filePath)
         Item& newItem = mItems.emplace_back();
         newItem.mId = mItems.size() - 1;
         newItem.mName = key;
+        newItem.mTextureName = def.textureName;
         newItem.mValue = def.value;
         newItem.mWeight = def.weight;
-        static_assert(sizeof(ItemDef) == 56, "Update new values");
-
+        newItem.mStackSize = def.stackSize;
+        static_assert(sizeof(ItemDef) == 96, "Update new values"); //SIZER(ItemDef) tmp;
+        
         // TODO: Check for mod conflicts
         mItemIdLookup[key] = newItem.mId;
 
@@ -47,4 +53,10 @@ void ItemRepository::loadItemFile(const vio::Path& filePath)
         // Failure case
         pError("Failed to parse item file " + filePath.getString());
     }
+}
+
+const Item& ItemRepository::getItem(const nString& itemName) {
+    auto&& it = mItemIdLookup.find(itemName);
+    assert(it != mItemIdLookup.end());
+    return mItems[it->second];
 }

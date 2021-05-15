@@ -22,7 +22,7 @@ void updateChopWoodTask(World& world, PersonAIComponent& ai, PhysicsComponent& p
     if (!ai.mCurrentTaskData) {
         ChopWoodTaskData* taskData = new ChopWoodTaskData;
         ai.mCurrentTaskData = taskData;
-        taskData->path = Services::PathFinder::ref().generatePathSynchronous(world, physics.getXYPosition(), ???)
+        //taskData->path = Services::PathFinder::ref().generatePathSynchronous(world, physics.getXYPosition(), ???)
     }
 }
 

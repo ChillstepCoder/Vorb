@@ -5,6 +5,7 @@
 #include "CityPlanner.h"
 #include "CityBuilder.h"
 #include "CityResidentManager.h"
+#include "CityFunctionManager.h"
 #include "World.h"
 #include "ResourceManager.h"
 
@@ -23,7 +24,8 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     mCityPlotter = std::make_unique<CityPlotter>(*this);
     mCityPlanner = std::make_unique<CityPlanner>(*this);
     mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
-    mCityResidentManager = std::make_unique<CityBuilder>(*this);
+    mCityResidentManager = std::make_unique<CityResidentManager>(*this);
+    mCityFunctionManager = std::make_unique<CityFunctionManager>(*this);
 
     mCityPlotter->initAsTier(0);
 }
@@ -38,6 +40,7 @@ void City::update(float deltaTime)
     // TODO: tick()
     mCityPlanner->update();
     mCityBuilder->update();
+    mCityFunctionManager->update();
 }
 
 void City::addResidentToCity(entt::entity entity)
@@ -136,4 +139,14 @@ RoadID City::addRoad(CityRoad& road)
     }
     mCityBuilder->addRoadToBuild(id);
     return id;
+}
+
+BuildingID City::addCompletedBuilding(Building&& building) {
+    mBuildings.emplace_back(building);
+    Building& newBuilding = mBuildings.back();
+    newBuilding.mId = mBuildings.size() - 1;
+    
+    mCityFunctionManager->registerNewBuilding(newBuilding);
+
+    return newBuilding.mId;
 }

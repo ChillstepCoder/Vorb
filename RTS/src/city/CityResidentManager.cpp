@@ -14,10 +14,18 @@ void CityResidentManager::addResident(entt::entity entity) {
 }
 
 void CityResidentManager::removeResident(entt::entity entity) {
-    for (size_t i = 0; i < mResidents.size(); ++i) {
-        if (mResidents[i] == entity) {
-            mResidents[i] = mResidents.back();
-            mResidents.pop_back();
+    // TODO: check employment?
+    for (size_t i = 0; i < mUnemployedResidents.size(); ++i) {
+        if (mUnemployedResidents[i] == entity) {
+            mUnemployedResidents[i] = mUnemployedResidents.back();
+            mUnemployedResidents.pop_back();
+            return;
+        }
+    }
+    for (size_t i = 0; i < mEmployedResidents.size(); ++i) {
+        if (mEmployedResidents[i] == entity) {
+            mEmployedResidents[i] = mEmployedResidents.back();
+            mEmployedResidents.pop_back();
             return;
         }
     }

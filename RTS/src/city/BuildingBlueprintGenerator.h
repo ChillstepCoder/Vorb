@@ -31,6 +31,7 @@ struct BuildingBlueprint {
     Cartesian entrySide = Cartesian::LEFT;
     ui16v2 dims;
     ui32v2 bottomLeftWorldPos;
+    CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
     std::vector<RoomNode> nodes;
     std::vector<RoomNodeID> ownerArray;

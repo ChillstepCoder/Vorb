@@ -20,8 +20,8 @@ enum class ItemType {
 KEG_ENUM_DECL(ItemType);
 
 struct ItemStack {
-    ItemID id;
-    ui32 quantity;
+    ItemID id = 0;
+    ui32 quantity = 0;
 };
 
 class Item
@@ -35,10 +35,18 @@ public:
 
 protected:
     nString mName;
+    nString mTextureName;
     ItemType mType = ItemType::UNKNOWN;
     ItemID mId;
     SpriteData mSpriteData; // TODO: instead have the ItemRenderer manage this mapping
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;
+    ui32 mStackSize = 10;
 };
+KEG_TYPE_DECL(Item);
 
+struct StoredItemStack {
+    ItemStack stack;
+    ui32v2 worldPos = {};
+    bool isInContainer = false;
+};

@@ -72,7 +72,7 @@ void CityPlanner::generatePlan(CityPlot& plot) {
     const float sizeAlpha = Random::xorshf96f();
 
     // Generate floorplan size
-    const BuildingDescription& desc = buildingRepo.getBuildingDescription("large_house");
+    const BuildingDescription& desc = buildingRepo.getBuildingDescription("lumbermill");
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.z, plot.aabb.w);
     // TODO:  aspect ratio
@@ -89,7 +89,9 @@ void CityPlanner::generatePlan(CityPlot& plot) {
     else if (plot.neighborRoads[enum_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
         dir = Cartesian::DOWN;
     }
-    mGeneratingBlueprints.emplace_back(mBuildingGenerator->generateBuildingAsync(desc, sizeAlpha, dir, plotDims, bottomLeftPos));
+    auto bp = mBuildingGenerator->generateBuildingAsync(desc, sizeAlpha, dir, plotDims, bottomLeftPos);
+    bp->plotIndex = plot.plotIndex;
+    mGeneratingBlueprints.emplace_back(std::move(bp));
     return;
 }
 

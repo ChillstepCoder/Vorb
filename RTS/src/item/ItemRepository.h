@@ -12,7 +12,7 @@ public:
     void loadItemFile(const vio::Path& filePath);
 
     const Item& getItem(ItemID id) { return mItems[id]; }
-    const Item& getItem(ItemID id);
+    const Item& getItem(const nString& itemName);
     
 
 private:
