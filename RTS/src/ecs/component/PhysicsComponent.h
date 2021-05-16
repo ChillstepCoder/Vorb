@@ -52,6 +52,9 @@ public:
 
     void teleportToPoint(const f32v2& worldPos) {
 		mBody->SetTransform(reinterpret_cast<const b2Vec2&>(worldPos), mBody->GetAngle());
+		if (mZPosition < 0.0f) {
+			mZPosition = 2.0f;
+		}
     }
 
 	f32v2 mDir = f32v2(0.0f, 1.0f);

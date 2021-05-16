@@ -29,6 +29,7 @@ void EntityComponentSystem::update(float deltaTime, const ClientECSData& clientD
 	//mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
 	mPlayerControlSystem.update(mRegistry, mWorld, clientData);
 	mPersonAISystem.update(mRegistry, deltaTime);
+	mNavigationSystem.update(mRegistry, mWorld, deltaTime);
 	//mCorpseTable.update();
 }
 

@@ -26,7 +26,7 @@ public:
     PhysicsSystem mPhysicsSystem;
     PlayerControlSystem mPlayerControlSystem;
     PersonAISystem mPersonAISystem;
-	//NavigationComponentTable mNavigationTable;
+    NavigationComponentSystem mNavigationSystem;
 	//UndeadAIComponentTable mUndeadAITable;
 	//SoldierAIComponentTable mSoldierAITable;
 	//CombatComponentTable mCombatTable;

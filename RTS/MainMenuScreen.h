@@ -10,6 +10,7 @@ class App;
 class Camera2D;
 class ResourceManager;
 class RenderContext;
+class UIInteractMenuPopup;
 
 DECL_VUI(class InputDispatcher);
 
@@ -59,6 +60,11 @@ private:
 	// Pathfinding test
 	ui32v2 mPathFindStart = ui32v2(0);
 	bool mIsPathfinding = false;
+
+    // UI
+	f32v2 mSelectedTilePosition = f32v2(0.0f);
+	f32v2 mInteractPopupPosition = f32v2(0.0f);
+	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 
 };
 

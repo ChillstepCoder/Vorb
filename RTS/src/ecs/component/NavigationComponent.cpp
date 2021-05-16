@@ -11,11 +11,17 @@ const float ACCELERATION = 0.013f;
 constexpr int QUADRANTS = 5; //bad name
 
 inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
-	const f32v2& offset = navCmp.mTargetPos - physCmp.getXYPosition();
+	
+	PathPoint& nextPoint = navCmp.mPath->points[navCmp.mCurrentPoint];
+
+	const f32v2& offset = (f32v2(nextPoint) + f32v2(0.5f)) - physCmp.getXYPosition();
 	const float distance2 = glm::length2(offset);
 	if (distance2 < MIN_DISTANCE) {
-		navCmp.mHasTarget = false;
-		physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+        ++navCmp.mCurrentPoint;
+		// Target reached TODO: Notify?
+		if (navCmp.mCurrentPoint >= navCmp.mPath->numPoints) {
+            physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+		}
 	}
 	else {
 
@@ -72,13 +78,13 @@ inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, Ph
 	}
 }
 
-void NavigationComponentTable::update(entt::registry& registry, World& world) {
+void NavigationComponentSystem::update(entt::registry& registry, World& world, float deltaTime) {
 	// Update components
     auto view = registry.view<NavigationComponent, PhysicsComponent>();
 
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
-        if (navCmp.mHasTarget) {
+        if (navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
             auto& physCmp = view.get<PhysicsComponent>(entity);
 			updateComponent(entity, navCmp, physCmp, world);
 		}

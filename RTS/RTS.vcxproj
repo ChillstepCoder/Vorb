@@ -208,6 +208,7 @@
     <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
+    <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
@@ -304,6 +305,7 @@
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />

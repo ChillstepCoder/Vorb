@@ -28,6 +28,12 @@
 #include "TextureManip.h"
 #include "Random.h"
 
+#include "ui/UIInteractMenuPopup.h"
+
+#include <SDL.h>
+
+#include <Vorb/ui/imgui/imgui.h>
+
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(std::make_unique<ResourceManager>()),
@@ -124,7 +130,8 @@ void MainMenuScreen::build() {
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
 		constexpr float VEL_MULT = 0.0001f;
 		constexpr float VEL_EXP = 0.4f;
-		const f32v2 worldPos = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y));
+		const f32v2 screenPos(event.x, event.y);
+		const f32v2 worldPos = mCamera2D->convertScreenToWorld(screenPos);
 		const f32v2 offset = worldPos - mTestClick;
 		const float mag = glm::length(offset);
 		const float power = pow(mag * VEL_MULT, VEL_EXP);
@@ -172,9 +179,8 @@ void MainMenuScreen::build() {
 				mWorld->createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
             }
 			else {
-				TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-				if (handle.isValid()) {
-					handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+				if (mRightClickInteractPopup) {
+					mRightClickInteractPopup.reset();
 				}
 			}
         }
@@ -191,31 +197,12 @@ void MainMenuScreen::build() {
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
                 mWorld->createEntity(worldPos, "villager");
 			}
-            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
-				// Pathfinding test
-				ui32v2 worldPosInt = worldPos;
-                if (mIsPathfinding) {
-					if (mPathFindStart != worldPosInt) {
-						auto&& path = Services::PathFinder::ref().generatePathSynchronous(*mWorld, mPathFindStart, worldPosInt);
-						if (path) {
-                            DebugRenderer::drawPath(*path, color4(1.0f, 0.0f, 1.0f), 200);
-						}
-						else {
-							DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f), 200);
-						}
-                        mIsPathfinding = false;
-					}
-				}
-                else {
-                    DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.5f), 200);
-					mPathFindStart = worldPosInt;
-					mIsPathfinding = true;
-				}
-			}
 			else {
 				// Right click picking
-
+				mSelectedTilePosition = worldPos;
 				// Enable context menu
+				mInteractPopupPosition = screenPos;
+				mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 			}
 		}
 
@@ -280,6 +267,61 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
 	mRenderContext.renderFrame(*mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos);
+
+	// Handle interact menu TODO: Notify to get this out of here
+	if (mRightClickInteractPopup) {
+        // Render selected
+        ui32v2 worldPosInt = mSelectedTilePosition;
+		DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+
+		// Draw vectors to corners
+		f32v2 interactPopupPositionWorld = mCamera2D->convertScreenToWorld(mInteractPopupPosition);
+		const color4 lineColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
+		DebugRenderer::drawLineBetweenPoints(mSelectedTilePosition, interactPopupPositionWorld, lineColor);
+		
+		const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
+		// TODO: Notify
+		if (result & INTERACT_MENU_RESULT_PATHFIND) {
+            // Pathfinding test
+            /*if (mIsPathfinding) {
+                if (mPathFindStart != worldPosInt) {
+                    auto&& path = Services::PathFinder::ref().generatePathSynchronous(*mWorld, mPathFindStart, worldPosInt);
+                    if (path) {
+                        DebugRenderer::drawPath(*path, color4(1.0f, 0.0f, 1.0f), 200);
+                    }
+                    else {
+                        DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f), 200);
+                    }
+                    mIsPathfinding = false;
+                }
+            }
+            else {
+                DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.5f), 200);
+                mPathFindStart = worldPosInt;
+                mIsPathfinding = true;
+            }*/
+			NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
+			cmp.mPath = Services::PathFinder::ref().generatePathSynchronous(*mWorld, xyPos, worldPosInt);
+			DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
+		}
+		else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+            }
+		}
+
+		// If we had a result, close window
+		if (result) {
+			mRightClickInteractPopup.reset();
+            ImGui::GetIO().WantCaptureKeyboard = false;
+            ImGui::GetIO().WantCaptureMouse = false;
+			
+			// Warp mouse
+			SDL_WarpMouseInWindow(static_cast<SDL_Window*>(m_app->getWindow().getHandle()), mInteractPopupPosition.x, mInteractPopupPosition.y);
+		}
+	} 
 
     /*mSb->begin();
     char fpsString[64];

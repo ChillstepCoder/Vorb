@@ -1,20 +1,18 @@
 #pragma once
 
 #include "actor/ActorTypes.h"
+#include "pathfinding/PathFinder.h"
 
 class World;
 
 struct NavigationComponent {
-
-	// TODO Pathfinding
-	// TODO Entity handles
-	f32v2 mTargetPos = f32v2(0.0f);
 	float mSpeed = 1.0f;
-	bool mHasTarget = false;
-	bool mColliding = false;
+	std::unique_ptr<Path> mPath;
+	ui32 mCurrentPoint = 0;
+	bool mColliding = false; // Colliding with another agent
 };
 
-class NavigationComponentTable {
+class NavigationComponentSystem {
 public:
-	void update(entt::registry& registry, World& world);
+	void update(entt::registry& registry, World& world, float deltaTime);
 };
