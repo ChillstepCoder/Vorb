@@ -301,7 +301,8 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
                 mIsPathfinding = true;
             }*/
 			NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-			cmp.mPath = Services::PathFinder::ref().generatePathSynchronous(*mWorld, xyPos, worldPosInt);
+			cmp.mPath = Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos);
+			cmp.mCurrentPoint = 0;
 			DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
 		}
 		else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
