@@ -53,7 +53,7 @@ f32v2 getMovementDir(World& world) {
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData) {
+void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
 	bool isSprinting = controlCmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
 	const f32v2 moveDir = getMovementDir(world);
@@ -61,6 +61,10 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
 		return;
 	}
+	// Remove any navigation component if we are applying movement input
+	entt::entity entityId = (entt::entity)reinterpret_cast<entt::id_type>(physCmp.mBody->GetUserData());
+	registry.remove_if_exists<NavigationComponent>(entityId);
+
 	// Facing
 	if (isSprinting) {
 		physCmp.mDir = moveDir;
@@ -102,7 +106,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	}
 }
 
-inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData) {
+inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
 		controlCmp.mPlayerControlFlags |= enum_cast(PlayerControlFlags::SPRINTING);
@@ -111,7 +115,7 @@ inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent
 		controlCmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
 	}
 
-	updateMovement(controlCmp, physCmp, world, clientData);
+	updateMovement(controlCmp, physCmp, world, clientData, registry);
 
 	// Jump
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
@@ -122,6 +126,6 @@ inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent
 void PlayerControlSystem::update(entt::registry& registry, World& world, const ClientECSData& clientData) {
 	// Update components
 	registry.view<PlayerControlComponent, PhysicsComponent>().each([&](auto& controlCmp, auto& physCmp) {
-		updateComponent(controlCmp, physCmp, world, clientData);
+		updateComponent(controlCmp, physCmp, world, clientData, registry);
 	});
 }
