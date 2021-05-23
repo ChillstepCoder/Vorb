@@ -209,6 +209,8 @@
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
+    <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\TileUtil.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
@@ -306,11 +308,15 @@
     <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
+    <ClInclude Include="src\util\IntersectionHit.h" />
+    <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
+    <ClInclude Include="src\util\TileUtil.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
+    <ClInclude Include="src\world\TileCollisionShape.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObject.h" />

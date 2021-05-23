@@ -47,7 +47,13 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
     if (ImGui::Button("Clear Tile", buttonSize)) {
         resultFlags |= INTERACT_MENU_RESULT_CLEAR_TILE;
     }
-
+    if (ImGui::Button("Plant Tree", buttonSize)) {
+        resultFlags |= INTERACT_MENU_RESULT_PLANT_TREE;
+    }
+    if (ImGui::Button("Build Wall", buttonSize)) {
+        resultFlags |= INTERACT_MENU_RESULT_BUILD_WALL;
+    }
+    static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
     /*sWorldGenData.mIsDirty |= view(sWorldGenData.mBaseNoise);
     sWorldGenData.mIsDirty |= view(sWorldGenData.mContinentOutlineNoise);
     sWorldGenData.mIsDirty |= view(sWorldGenData.mHumidityNoise);

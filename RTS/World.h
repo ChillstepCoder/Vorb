@@ -13,6 +13,8 @@
 #include "world/WorldGrid.h"
 #include "world/WorldData.h"
 
+#include "util/IntersectionHit.h"
+
 constexpr float SECONDS_PER_DAY = 1440.0f;
 constexpr float HOURS_PER_DAY = 24.0f;
 constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
@@ -53,11 +55,13 @@ public:
 
 	// Internal public interface
     Chunk& getChunkAtPosition(const f32v2& worldPos);
+    Chunk& getChunkAtPosition(const ui32v2& worldPos);
     Chunk& getChunkAtPosition(ChunkID chunkId);
     const Chunk& getChunkAtPosition(ChunkID chunkId) const;
 
 	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const;
-	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
+    TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
+    TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
 
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
@@ -77,6 +81,8 @@ public:
 	const f32v3& getSunColor() const { return mSunColor; }
 	const CityGraph& getCities() const { return *mCities; }
 	City* getClosestCityToPoint(const f32v2& pos) const;
+
+	IntersectionHit tryGetRaycastIntersect(const f32v2& start, const f32v2& end, f32 zPos);
 	
 private:
 

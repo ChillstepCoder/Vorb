@@ -2,6 +2,8 @@
 
 #include "rendering/SpriteData.h"
 
+#include "TileCollisionShape.h"
+
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
 constexpr int TILE_LAYER_COUNT = 3;
@@ -37,13 +39,16 @@ enum class TileShape {
 };
 KEG_ENUM_DECL(TileShape);
 
-enum class TileCollisionShape {
-	FLOOR,
-	BOX,
-	SMALL_CIRCLE,
-	MEDIUM_CIRCLE,
-	COUNT
+
+// Collision info
+const float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT + 1] = {
+    0.0f,   // FLOOR
+    0.5f,   // BOX
+    0.1f,   // SMALL_CIRCLE
+    0.175f, // MEDIUM_CIRCLE
+	0.0f,   // COUNT (Null)
 };
+static_assert((int)TileCollisionShape::COUNT == 4, "Update");
 
 struct TileData {
     SpriteData spriteData;

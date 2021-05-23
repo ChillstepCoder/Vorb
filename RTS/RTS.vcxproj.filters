@@ -249,6 +249,12 @@
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\TileUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\IntersectionUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -534,6 +540,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\UIInteractMenuPopup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\TileUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\IntersectionUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\IntersectionHit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\TileCollisionShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

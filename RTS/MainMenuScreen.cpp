@@ -312,6 +312,21 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
                 handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
             }
 		}
+        else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+            }
+        }
+        else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+            }
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
 
 		// If we had a result, close window
 		if (result) {

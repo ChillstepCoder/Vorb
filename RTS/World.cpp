@@ -28,6 +28,17 @@
 #include "ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
 
+#include "util/TileUtil.h"
+
+// For raycast
+inline f32 fastFloorf(f32 x) {
+    return FastConversion<f32, f32>::floor(x);
+}
+inline f64 fastCeilf(f32 x) {
+    return FastConversion<f32, f32>::ceiling(x);
+}
+
+
 
 #define ENABLE_DEBUG_RENDER 1
 
@@ -147,6 +158,10 @@ const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
     return mWorldGrid.getChunk(chunkId.id);
 }
 
+Chunk& World::getChunkAtPosition(const ui32v2& worldPos) {
+    return getChunkAtPosition(ChunkID(worldPos));
+}
+
 TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const {
 	assert(false); // Implement!
 	return TileHandle();
@@ -165,12 +180,28 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	return TileHandle();
 }
 
+TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
+    TileHandle handle;
+	// TODO: Chunk pos doesnt know how to handle integers, it thinks its chunk coords
+    handle.chunk = &getChunkAtPosition(f32v2(worldPos));
+    if (handle.chunk->getState() == ChunkState::FINISHED) {
+        unsigned x = worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        unsigned y = worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        handle.index = ui16(y * CHUNK_WIDTH + x);
+        handle.tile = handle.chunk->getTileAt(handle.index);
+        return handle;
+    }
+    return TileHandle();
+}
+
 void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
 {
     // Stick to positive numbers
     f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
-	// This happened once
+	// This happened twice... problem with the camera???
 	assert(!isnan(bottomLeftCorner.x + bottomLeftCorner.y));
+	if (isnan(bottomLeftCorner.x + bottomLeftCorner.y)) return;
+
 	// Start one chunk down for mountains
 	bottomLeftCorner.y -= CHUNK_WIDTH;
 	if (bottomLeftCorner.x < 0.0f) {
@@ -289,6 +320,85 @@ City* World::getClosestCityToPoint(const f32v2& pos) const
 		}
 	}
 	return closest;
+}
+
+IntersectionHit World::tryGetRaycastIntersect(const f32v2& start, const f32v2& end, f32 zPos)
+{
+	// TODO: Use Z position
+	UNUSED(zPos);
+    //Find All Distances To Next Voxel In Each Direction
+	f32 currDist = 0.0f;
+	f32v2 currentPos = start;
+	// TODO: do we care about the world wrap lol
+	ui32v2 currentCellPos = currentPos;
+	const f32v2 offset = end - start;
+	const f32 rayLength = glm::length(offset);
+	const f32v2 direction = offset / rayLength;
+
+	while (currDist < rayLength) {
+		f32v2 next;
+		f32v2 r;
+		// X-Distance
+		if (direction.x > 0) {
+			if (currentPos.x == (i32)currentPos.x) next.x = currentPos.x + 1;
+			else next.x = fastCeilf(currentPos.x);
+			r.x = (next.x - currentPos.x) / direction.x;
+		}
+		else if (direction.x < 0) {
+			if (currentPos.x == (i32)currentPos.x) next.x = currentPos.x - 1;
+			else next.x = fastFloorf(currentPos.x);
+			r.x = (next.x - currentPos.x) / direction.x;
+		}
+		else {
+			r.x = FLT_MAX;
+		}
+
+		// Y-Distance
+		if (direction.y > 0) {
+			if (currentPos.y == (i32)currentPos.y) next.y = currentPos.y + 1;
+			else next.y = fastCeilf(currentPos.y);
+			r.y = (next.y - currentPos.y) / direction.y;
+		}
+		else if (direction.y < 0) {
+			if (currentPos.y == (i32)currentPos.y) next.y = currentPos.y - 1;
+			else next.y = fastFloorf(currentPos.y);
+			r.y = (next.y - currentPos.y) / direction.y;
+		}
+		else {
+			r.y = FLT_MAX;
+		}
+
+		// Get minimum movement to the next cell
+		f32 rat;
+		if (r.x < r.y) {
+			// Move In The X-Direction
+			rat = r.x;
+			currentPos += direction * rat;
+			if (direction.x > 0) ++currentCellPos.x;
+			else if (direction.x < 0) --currentCellPos.x;
+		}
+		else {
+			// Move In The Y-Direction
+			rat = r.y;
+			currentPos += direction * rat;
+			if (direction.y > 0) ++currentCellPos.y;
+			else if (direction.y < 0) --currentCellPos.y;
+		}
+
+		TileHandle tile = getTileHandleAtWorldPos(currentCellPos);
+
+		// Check collision
+		// TODO: Pass in collision radius
+		IntersectionHit hit = TileUtil::tryRayTileIntersect(tile.tile, currentCellPos, start, end, 0.3f);
+		if (hit.didHit()) {
+			return hit;
+		}
+
+		// Add The Distance The Ray Has Traversed
+		currDist += rat;
+	}
+
+	return IntersectionHit();
 }
 
 void World::updateSun() {

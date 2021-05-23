@@ -26,15 +26,6 @@ KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
     kt.addValue("is_static", keg::Value::basic(offsetof(PhysicsComponentDef, isStatic), keg::BasicType::BOOL));
 }
 
-// Collision info
-float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT] = {
-	0.0f,   // NONE
-	0.5f,   // BOX
-	0.1f,   // SMALL_CIRCLE
-	0.175f, // MEDIUM_CIRCLE
-};
-static_assert((int)TileCollisionShape::COUNT == 4, "Update");
-
 constexpr float VEL_DAMPING = 0.75f;
 constexpr float GRAVITY_FORCE = 0.01f;
 

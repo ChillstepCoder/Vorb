@@ -10,6 +10,7 @@ struct NavigationComponent {
 	std::unique_ptr<Path> mPath;
 	ui32 mCurrentPoint = 0;
 	bool mColliding = false; // Colliding with another agent
+	ui8 mFramesUntilNextRayCheck = 0;
 };
 
 class NavigationComponentSystem {
