@@ -27,6 +27,9 @@ public:
     PlayerControlSystem mPlayerControlSystem;
     PersonAISystem mPersonAISystem;
     NavigationComponentSystem mNavigationSystem;
+
+    // City stuff
+    BusinessSystem mBusinessSystem;
 	//UndeadAIComponentTable mUndeadAITable;
 	//SoldierAIComponentTable mSoldierAITable;
 	//CombatComponentTable mCombatTable;

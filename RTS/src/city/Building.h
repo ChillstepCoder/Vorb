@@ -37,6 +37,9 @@ public:
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;
 
+    // Entity defining the function of our building, may also own other buildings
+    entt::entity mBusinessEntity = INVALID_ENTITY;
+
     // TODO: Move to Business?
     //ItemTradeManager mTradeManager; // TODO: This is a large copy and we pass building by value
 };

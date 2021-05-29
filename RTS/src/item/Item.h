@@ -4,6 +4,7 @@
 #include "rendering/SpriteData.h"
 
 typedef ui32 ItemID;
+constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
 
 enum class ItemType {
     UNKNOWN,
@@ -20,7 +21,7 @@ enum class ItemType {
 KEG_ENUM_DECL(ItemType);
 
 struct ItemStack {
-    ItemID id = 0;
+    ItemID id = INVALID_ITEM_ID;
     ui32 quantity = 0;
 };
 
@@ -28,10 +29,10 @@ class Item
 {
     friend class ItemRepository;
 public:
-    const nString& getName() { return mName; }
-    ItemID getID() { return mId; }
-    f32 getValue() { return mValue; }
-    f32 getWeight() { return mWeight; }
+    const nString& getName() const { return mName; }
+    ItemID getID() const { return mId; }
+    f32 getValue() const { return mValue; }
+    f32 getWeight() const { return mWeight; }
 
 protected:
     nString mName;

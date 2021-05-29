@@ -77,6 +77,11 @@ enum class NeighborIndex {
 	COUNT        = 8
 };
 
+struct LiteTileHandle {
+	ChunkID chunkID;
+	TileIndex index;
+};
+
 struct TileHandle {
 
     TileHandle() {};

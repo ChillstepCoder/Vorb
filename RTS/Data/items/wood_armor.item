@@ -1,0 +1,15 @@
+wood_breastplate:
+  texture: item_wood
+  type: material
+  value: 0.1
+  weight: 0.01
+wood_helmet:
+  texture: item_wood
+  type: material
+  value: 0.1
+  weight: 0.01
+wood_greaves:
+  texture: item_wood
+  type: material
+  value: 0.1
+  weight: 0.01

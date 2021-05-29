@@ -1,4 +1,4 @@
-wood:
+wood_raw:
   texture: item_wood
   type: material
   value: 0.2

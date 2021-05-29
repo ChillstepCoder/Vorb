@@ -8,6 +8,7 @@
 #include "city/Building.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "item/ItemRepository.h"
+#include "crafting/CraftingRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -37,6 +38,7 @@ ResourceManager::ResourceManager() {
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
+    mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -95,6 +97,9 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         else if (fileHasExtension(entry, ".ent")) {
             mEntityFiles.emplace_back(entry);
         }
+        else if (fileHasExtension(entry, ".recipe")) {
+            mRecipeFiles.emplace_back(entry);
+        }
         // TODO: .ttf?
     }
 
@@ -110,12 +115,22 @@ void ResourceManager::loadFiles() {
     }
     mTextureFiles.clear();
 
+    // Load item definitions
+    for (auto&& entry : mItemFiles) {
+        mItemRepository->loadItemFile(entry);
+    }
+
     // Load Tiles
     for (auto&& entry : mTileFiles) {
         // TODO: Tilemanager?
         loadTiles(entry);
     }
     mTileFiles.clear();
+
+    // Load recipe definitions
+    for (auto&& entry : mRecipeFiles) {
+        mCraftingRepository->loadRecipeFile(*mItemRepository, entry);
+    }
 
     // Load Materials
     for (auto&& entry : mMaterialFiles) {
@@ -149,11 +164,6 @@ void ResourceManager::loadFiles() {
         mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
     }
 
-    // Load entity definitions
-    for (auto&& entry : mItemFiles) {
-        mItemRepository->loadItemFile(entry);
-    }
-
     mHasLoadedResources = true;
 }
 
@@ -162,7 +172,7 @@ const SpriteData& ResourceManager::getSprite(const std::string& spriteName) {
 }
 
 void ResourceManager::generateNormalMaps() {
-
+    //TODO: This not do anything!
     glTextureBarrier();
 }
 

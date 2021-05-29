@@ -149,6 +149,7 @@
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
+    <ClCompile Include="src\city\Business.cpp" />
     <ClCompile Include="src\city\City.cpp" />
     <ClCompile Include="src\city\CityBuilder.cpp" />
     <ClCompile Include="src\city\BuildingGrammar.cpp" />
@@ -215,6 +216,7 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
+    <ClCompile Include="src\world\TileScanner.cpp" />
     <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObject.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -233,6 +235,7 @@
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
+    <ClInclude Include="src\city\Business.h" />
     <ClInclude Include="src\city\City.h" />
     <ClInclude Include="src\city\CityBuilder.h" />
     <ClInclude Include="src\city\BuildingGrammar.h" />
@@ -317,6 +320,7 @@
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\TileCollisionShape.h" />
+    <ClInclude Include="src\world\TileScanner.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObject.h" />

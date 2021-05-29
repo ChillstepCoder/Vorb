@@ -28,5 +28,7 @@ void CityFunctionManager::registerNewBuilding(Building& building)
 
 void CityFunctionManager::update()
 {
+    for (auto&& it : mLumbermills) {
 
+    }
 }

@@ -55,7 +55,7 @@ void ItemRepository::loadItemFile(const vio::Path& filePath)
     }
 }
 
-const Item& ItemRepository::getItem(const nString& itemName) {
+const Item& ItemRepository::getItem(const nString& itemName) const {
     auto&& it = mItemIdLookup.find(itemName);
     assert(it != mItemIdLookup.end());
     return mItems[it->second];

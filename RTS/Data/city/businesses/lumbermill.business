@@ -1,0 +1,22 @@
+lumbermill:
+  gather:
+    priority: 1
+    - id: wood
+      weight: 1.0
+  produce:
+    priority: 0
+    - id: wood_planks
+      weight: 1.0
+      preferredRecipe: wood_planks_01
+  sell:
+    priority: 2
+    costWeight: 1.0
+    itemTags:
+      - wood
+      - tools
+  buy:
+    priority: 2
+    costWeight: 0.7
+    itemTags:
+      - wood
+      - tools
