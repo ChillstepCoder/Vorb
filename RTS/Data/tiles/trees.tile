@@ -4,15 +4,27 @@ tree_large:
   col: medium_circle
   shape: Thin
   height: 3.0
+  resource: wood
+  drops:
+    - item: wood_raw
+      count: [100, 120]
 tree_small:
   tex: tree_small
   dims: [1,2]
   col: small_circle
   shape: Thin
   height: 2.0
+  resource: wood
+  drops:
+    - item: wood_raw
+      count: [40, 60]
 tree_huge:
   tex: mega_tree
   dims: [7,8]
   col: box
   shape: Thin
   height: 8.0
+  resource: wood
+  drops:
+    - item: wood_raw
+      count: [250, 320]

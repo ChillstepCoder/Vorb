@@ -8,7 +8,8 @@ class World;
 class TileScanner
 {
 public:
-    std::vector<LiteTileHandle> scanForTiles(World& world, const TileID tileIDs[], ui32 numTileIDs, const ui32v2& startWorldPos, ui32 maxDistance);
+    // Returns vector of found tiles in order from closest to furthest
+    static std::vector<LiteTileHandle> scanForResource(World& world, TileResource resource, const ui32v2& startWorldPos, ui32 maxDistance, ui32 maxTilesToReturn = UINT32_MAX);
 
 private:
 };

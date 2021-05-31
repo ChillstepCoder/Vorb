@@ -27,8 +27,8 @@ KEG_TYPE_DEF_SAME_NAME(CraftingRecipeDef, kt) {
     kt.addValue("inputs", keg::Value::array(offsetof(CraftingRecipeDef, inputs), keg::Value::custom(0, "ItemStackDef", false)));
     kt.addValue("output", keg::Value::custom(offsetof(CraftingRecipeDef, output), "ItemStackDef", false));
     kt.addValue("byProduct", keg::Value::custom(offsetof(CraftingRecipeDef, byProduct), "ItemStackDef", false));
-    kt.addValue("requiredWorkStation", keg::Value::basic(offsetof(CraftingRecipeDef, byProduct), keg::BasicType::STRING));
-    kt.addValue("requiresWorkBench", keg::Value::basic(offsetof(CraftingRecipeDef, requiresWorkBench), keg::BasicType::BOOL));
+    kt.addValue("required_workstation", keg::Value::basic(offsetof(CraftingRecipeDef, byProduct), keg::BasicType::STRING));
+    kt.addValue("requires_workbench", keg::Value::basic(offsetof(CraftingRecipeDef, requiresWorkBench), keg::BasicType::BOOL));
     kt.addValue("work", keg::Value::basic(offsetof(CraftingRecipeDef, byProduct), keg::BasicType::UI32));
 }
 
@@ -55,14 +55,19 @@ void CraftingRepository::loadRecipeFile(const ItemRepository& itemRepo, const vi
             recipe.mInputItem[i].quantity = itemStackDef.count;
         }
         // Output
-        recipe.mOutputItem.id = itemRepo.getItem(def.byProduct.itemName).getID();
-        recipe.mOutputItem.quantity = def.byProduct.count;
+        assert(def.output.itemName.size());
+        recipe.mOutputItem.id = itemRepo.getItem(def.output.itemName).getID();
+        recipe.mOutputItem.quantity = def.output.count;
 
         // By product
-        recipe.mByProduct.id = itemRepo.getItem(def.byProduct.itemName).getID();
-        recipe.mByProduct.quantity = def.byProduct.count;
+        if (def.byProduct.itemName.size()) {
+            recipe.mByProduct.id = itemRepo.getItem(def.byProduct.itemName).getID();
+            recipe.mByProduct.quantity = def.byProduct.count;
+        }
 
-        recipe.mRequiredWorkStation = itemRepo.getItem(def.requiredWorkStation).getID();
+        if (def.requiredWorkStation.size()) {
+            recipe.mRequiredWorkStation = itemRepo.getItem(def.requiredWorkStation).getID();
+        }
         recipe.mRequiresWorkbench = def.requiresWorkBench;
         recipe.mWork = def.work;
 
@@ -80,10 +85,35 @@ void CraftingRepository::loadRecipeFile(const ItemRepository& itemRepo, const vi
 
 std::vector<CraftingRecipe*> CraftingRepository::getAllCraftingRecipesWithInputs(std::vector<ItemID> inputs)
 {
-
+    std::vector<CraftingRecipe*> recipes;
+    for (auto&& recipe : mCraftingRecipes) {
+        for (ui32 i = 0; i < recipe.mNumInputs; ++i) {
+            for (auto&& matchItem : inputs) {
+                if (recipe.mInputItem[i].id == matchItem) {
+                    recipes.emplace_back(&recipe);
+                    // Break out of both loops
+                    i = recipe.mNumInputs;
+                    break;
+                }
+            }
+        }
+    }
+    return recipes;
 }
 
-std::vector<CraftingRecipe*> CraftingRepository::getAllCraftingRecipesWithOutputs(std::vector<ItemID> inputs, bool includeByProduct /*= true*/)
-{
-
+std::vector<CraftingRecipe*> CraftingRepository::getAllCraftingRecipesWithOutputs(std::vector<ItemID> outputs, bool includeByProduct /*= true*/) {
+    std::vector<CraftingRecipe*> recipes;
+    for (auto&& recipe : mCraftingRecipes) {
+        for (auto&& matchItem : outputs) {
+            if (recipe.mOutputItem.id == matchItem) {
+                recipes.emplace_back(&recipe);
+                break;
+            }
+            if (includeByProduct && recipe.mByProduct.id == matchItem) {
+                recipes.emplace_back(&recipe);
+                break;
+            }
+        }
+    }
+    return recipes;
 }

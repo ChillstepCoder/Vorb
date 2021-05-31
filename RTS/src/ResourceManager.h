@@ -13,6 +13,7 @@ class BuildingDescriptionRepository;
 class EntityDefinitionRepository;
 class ItemRepository;
 class CraftingRepository;
+class BusinessRepository;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -35,6 +36,7 @@ public:
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
+    BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
 
     bool hasLoadedResources() const { return mHasLoadedResources; }
 
@@ -55,6 +57,7 @@ private:
     std::vector<vio::Path> mEntityFiles;
     std::vector<vio::Path> mItemFiles;
     std::vector<vio::Path> mRecipeFiles;
+    std::vector<vio::Path> mBusinessFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
@@ -63,6 +66,7 @@ private:
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;
     std::unique_ptr<ItemRepository> mItemRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
+    std::unique_ptr<BusinessRepository> mBusinessRepository;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

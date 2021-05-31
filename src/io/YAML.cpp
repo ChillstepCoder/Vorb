@@ -11,7 +11,7 @@ void keg::YAMLReader::init(const cString data) {
     }
     catch (YAML::ParserException e) {
         printf("Parser exception %s at line %d column %d pos %d\n", e.msg.c_str(), e.mark.line, e.mark.column, e.mark.pos);
-        assert(false);
+        throw e;
     }
 }
 void keg::YAMLReader::dispose() {

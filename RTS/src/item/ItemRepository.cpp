@@ -41,7 +41,6 @@ void ItemRepository::loadItemFile(const vio::Path& filePath)
         newItem.mValue = def.value;
         newItem.mWeight = def.weight;
         newItem.mStackSize = def.stackSize;
-        static_assert(sizeof(ItemDef) == 96, "Update new values"); //SIZER(ItemDef) tmp;
         
         // TODO: Check for mod conflicts
         mItemIdLookup[key] = newItem.mId;

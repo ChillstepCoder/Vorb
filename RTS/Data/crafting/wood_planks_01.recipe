@@ -1,12 +1,12 @@
 wood_planks_01:
   inputs:
-    - name: wood_raw
+    - item: wood_raw
       count: 1
   output: 
-    name: wood_planks
+    item: wood_planks
     count: 1
   byproduct:
-    name: wood_scrap
+    item: wood_scrap
     count: 1
   requires_workbench: true
-  required_workstation: saw_table
+# required_workstation: saw_table

@@ -1,14 +1,10 @@
 #pragma once
 
-#include "item/Item.h"
-
 DECL_VIO(class IOManager);
 class ItemRepository;
 
-typedef ui32 CraftingRecipeID; // Allows us to serialize crafting recipes so mods work, or for lookups
-#define INVALID_CRAFTING_RECIPE_ID UINT32_MAX
-
-constexpr ui32 MAX_CRAFTING_RECIPE_INPUTS = 4;
+#include "crafting/CraftingConst.h"
+#include "item/Item.h"
 
 struct CraftingRecipe {
     CraftingRecipeID mId = INVALID_CRAFTING_RECIPE_ID; // Array index into mCraftingRecipes
@@ -29,7 +25,7 @@ public:
     void loadRecipeFile(const ItemRepository& itemRepo, const vio::Path& filePath);
 
     std::vector<CraftingRecipe*> getAllCraftingRecipesWithInputs(std::vector<ItemID> inputs);
-    std::vector<CraftingRecipe*> getAllCraftingRecipesWithOutputs(std::vector<ItemID> inputs, bool includeByProduct = true);
+    std::vector<CraftingRecipe*> getAllCraftingRecipesWithOutputs(std::vector<ItemID> outputs, bool includeByProduct = true);
 
 private:
     vio::IOManager& mIoManager;

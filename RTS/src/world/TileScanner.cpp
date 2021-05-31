@@ -4,33 +4,56 @@
 #include "TileScanner.h"
 
 struct BfsNode {
+    BfsNode() {};
+    BfsNode(ui32v2 pos, ui32 depth) : pos(pos), depth(depth) {};
+
     ui32v2 pos;
     ui32 depth;
 };
 
-std::vector<LiteTileHandle> TileScanner::scanForTiles(World& world, const TileID tileIDs[], ui32 numTileIDs, const ui32v2& startWorldPos, ui32 maxDistance) {
+struct closedListNode {
+    closedListNode() {}
+    closedListNode(ui32v2& xy) : xy(xy) {};
+
+    bool operator<(const closedListNode& l) const {
+        return l.cmpValue < cmpValue;
+    }
+
+    union {
+        ui32v2 xy;
+        ui64 cmpValue; // For ez set lookup
+    };
+};
+
+std::vector<LiteTileHandle> TileScanner::scanForResource(World& world, TileResource resource, const ui32v2& startWorldPos, ui32 maxDistance, ui32 maxTilesToReturn /* = UINT32_MAX */) {
     std::vector<LiteTileHandle> tilesToReturn;
+    if (maxTilesToReturn != UINT32_MAX) {
+        tilesToReturn.reserve(maxTilesToReturn);
+    }
     
     // BFS
     // TODO: Custom memory management
-    std::set<ui32v2> closedList;
-    std::queue<BfsNode> mOpenList;
+    std::set<closedListNode> closedList;
+    std::queue<BfsNode> openList;
     const f32 maxDistSq = SQ(maxDistance);
-    mOpenList.emplace(startWorldPos, 0);
+    openList.emplace(startWorldPos, 0);
 
-    while (mOpenList.size()) {
-        BfsNode node = mOpenList.front();
-        mOpenList.pop();
+    while (openList.size()) {
+        BfsNode node = openList.front();
+        openList.pop();
         TileHandle tileHandle = world.getTileHandleAtWorldPos(node.pos);
         if (!tileHandle.isValid()) continue;
 
         // Store this if it contains a tile we want
-        for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
+        // Skip the ground layer, it is never a resource
+        for (int i = TILE_LAYER_MID; i < TILE_LAYER_COUNT; ++i) {
             const TileID id = tileHandle.tile.layers[i];
-            for (ui32 j = 0; j < numTileIDs; ++j) {
-                if (id == tileIDs[j]) {
+            if (id != TILE_ID_NONE) {
+                if (TileRepository::getTileData(id).resource == resource) {
                     tilesToReturn.emplace_back(tileHandle.chunk->getChunkID(), tileHandle.index);
-                    i = TILE_LAYER_COUNT;
+                    if (tilesToReturn.size() >= maxTilesToReturn) {
+                        return tilesToReturn;
+                    }
                     break;
                 }
             }
@@ -49,7 +72,7 @@ std::vector<LiteTileHandle> TileScanner::scanForTiles(World& world, const TileID
             ui32v2 nextPos(node.pos.x, node.pos.y - 1);
             if (closedList.find(nextPos) == closedList.end()) {
                 closedList.insert(nextPos);
-                mOpenList.emplace(nextPos, nextDepth);
+                openList.emplace(nextPos, nextDepth);
             }
         }
 
@@ -58,7 +81,7 @@ std::vector<LiteTileHandle> TileScanner::scanForTiles(World& world, const TileID
             ui32v2 nextPos(node.pos.x - 1, node.pos.y);
             if (closedList.find(nextPos) == closedList.end()) {
                 closedList.insert(nextPos);
-                mOpenList.emplace(nextPos, nextDepth);
+                openList.emplace(nextPos, nextDepth);
             }
         }
 
@@ -67,7 +90,7 @@ std::vector<LiteTileHandle> TileScanner::scanForTiles(World& world, const TileID
             ui32v2 nextPos(node.pos.x + 1, node.pos.y);
             if (closedList.find(nextPos) == closedList.end()) {
                 closedList.insert(nextPos);
-                mOpenList.emplace(nextPos, nextDepth);
+                openList.emplace(nextPos, nextDepth);
             }
         }
 
@@ -76,8 +99,10 @@ std::vector<LiteTileHandle> TileScanner::scanForTiles(World& world, const TileID
             ui32v2 nextPos(node.pos.x, node.pos.y + 1);
             if (closedList.find(nextPos) == closedList.end()) {
                 closedList.insert(nextPos);
-                mOpenList.emplace(nextPos, nextDepth);
+                openList.emplace(nextPos, nextDepth);
             }
         }
     }
+
+    return tilesToReturn;
 }

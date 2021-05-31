@@ -258,7 +258,19 @@
     <ClCompile Include="src\world\TileScanner.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\Business.cpp">
+    <ClCompile Include="src\crafting\CraftingRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\business\BusinessRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\business\BusinessComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\city\CityBusinessManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\component\EmployeeComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -563,7 +575,25 @@
     <ClInclude Include="src\world\TileScanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\Business.h">
+    <ClInclude Include="src\crafting\CraftingRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\business\BusinessComponentTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\business\BusinessRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\business\BusinessComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\crafting\CraftingConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\city\CityBusinessManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\EmployeeComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

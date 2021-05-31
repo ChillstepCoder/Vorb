@@ -78,6 +78,16 @@ enum class NeighborIndex {
 };
 
 struct LiteTileHandle {
+    LiteTileHandle() {};
+    LiteTileHandle(ChunkID chunkID, TileIndex index) : chunkID(chunkID), index(index) {};
+
+	f32v2 getWorldPos() const {
+		f32v2 rv = chunkID.getWorldPos();
+		rv.x += index.getX();
+		rv.y += index.getY();
+		return rv;
+	}
+
 	ChunkID chunkID;
 	TileIndex index;
 };

@@ -6,8 +6,12 @@
 #include "CityBuilder.h"
 #include "CityResidentManager.h"
 #include "CityFunctionManager.h"
+#include "CityBusinessManager.h"
+#include "ecs/business/BusinessRepository.h"
 #include "World.h"
 #include "ResourceManager.h"
+
+#include "ecs/EntityComponentSystem.h"
 
 City::City(const ui32v2& cityCenterWorldPos, World& world)
     : mCityCenterWorldPos(cityCenterWorldPos)
@@ -26,8 +30,12 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
     mCityResidentManager = std::make_unique<CityResidentManager>(*this);
     mCityFunctionManager = std::make_unique<CityFunctionManager>(*this);
+    mCityBusinessManager = std::make_unique<CityBusinessManager>(*this);
 
     mCityPlotter->initAsTier(0);
+
+    // Add test business
+    mWorld.getResourceManager().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");
 }
 
 City::~City() {

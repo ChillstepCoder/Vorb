@@ -9,6 +9,7 @@
 #include "ecs/EntityDefinitionRepository.h"
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"
+#include "ecs/business/BusinessRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -39,6 +40,7 @@ ResourceManager::ResourceManager() {
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
+    mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
 }
 
 ResourceManager::~ResourceManager() {
@@ -68,6 +70,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
     for (auto&& entry : entries) {
         // Recurse
+        // TODO: Map lookup for minor optimization
         if (entry.isDirectory()) {
             gatherFiles(entry);
         } else if (fileHasExtension(entry, ".png")) {
@@ -99,6 +102,12 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         }
         else if (fileHasExtension(entry, ".recipe")) {
             mRecipeFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".item")) {
+            mItemFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".business")) {
+            mBusinessFiles.emplace_back(entry);
         }
         // TODO: .ttf?
     }
@@ -162,6 +171,11 @@ void ResourceManager::loadFiles() {
     // Load entity definitions
     for (auto&& entry : mEntityFiles) {
         mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
+    }
+
+    // Load business definitions
+    for (auto&& entry : mBusinessFiles) {
+        mBusinessRepository->loadBusinessFile(entry);
     }
 
     mHasLoadedResources = true;

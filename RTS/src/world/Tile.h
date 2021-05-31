@@ -6,6 +6,9 @@
 
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
+constexpr int TILE_LAYER_GROUND = 0;
+constexpr int TILE_LAYER_MID = 1;
+constexpr int TILE_LAYER_TOP = 2;
 constexpr int TILE_LAYER_COUNT = 3;
 
 enum class TileLayer {
@@ -39,6 +42,13 @@ enum class TileShape {
 };
 KEG_ENUM_DECL(TileShape);
 
+enum class TileResource {
+	NONE,
+	WOOD,
+	STONE,
+	COUNT
+};
+KEG_ENUM_DECL(TileResource);
 
 // Collision info
 const float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT + 1] = {
@@ -50,6 +60,12 @@ const float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT + 1] = {
 };
 static_assert((int)TileCollisionShape::COUNT == 4, "Update");
 
+struct ItemDropDef {
+	nString itemName;
+	ui32v2 countRange;
+};
+KEG_TYPE_DECL(ItemDropDef);
+
 struct TileData {
     SpriteData spriteData;
 	TileCollisionShape collisionShape = TileCollisionShape::FLOOR;
@@ -58,11 +74,15 @@ struct TileData {
     ui8v2 dims = ui8v2(1); // 4x4 is max size
 	ui8 rootPos = 0;
 	std::string name;
-	std::string textureName;
+    std::string textureName;
+    std::string resourceName;
 	TileShape shape = TileShape::FLOOR;
+	TileResource resource = TileResource::NONE;
+	Array<ItemDropDef> itemDrops;
 };
 KEG_TYPE_DECL(TileData);
 
+// TODO: non static
 class TileRepository {
 	friend class ResourceManager;
 public:

@@ -8,6 +8,7 @@ class CityPlanner;
 class CityBuilder;
 class CityResidentManager;
 class CityFunctionManager;
+class CityBusinessManager;
 class World;
 
 
@@ -111,6 +112,7 @@ class City
     friend class CityPlotter;
     friend class CityResidentManager;
     friend class CityFunctionManager;
+    friend class CityBusinessManager;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
@@ -121,6 +123,7 @@ public:
     CityBuilder& getCityBuilder() { return *mCityBuilder; }
     CityPlanner& getCityPlanner() { return *mCityPlanner; }
     CityPlotter& getCityPlotter() { return *mCityPlotter; }
+    CityBusinessManager& getBusinessManager() { return *mCityBusinessManager; }
     BuildingDescriptionRepository& getBuildingRepository() { return mBuildingRepository; }
 
     // Accessors
@@ -148,12 +151,14 @@ private:
     std::vector<Chunk*> mChunks;
     std::vector<Building> mBuildings;
     std::vector<CityRoad> mRoads;
+    std::vector<entt::entity> mBusinesses;
 
     std::unique_ptr<CityPlotter> mCityPlotter;
     std::unique_ptr<CityPlanner> mCityPlanner;
     std::unique_ptr<CityBuilder> mCityBuilder;
     std::unique_ptr<CityResidentManager> mCityResidentManager;
     std::unique_ptr<CityFunctionManager> mCityFunctionManager;
+    std::unique_ptr<CityBusinessManager> mCityBusinessManager;
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;

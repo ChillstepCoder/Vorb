@@ -268,17 +268,24 @@ bool vorb::io::IOManager::parseFileAsKegObjectMap(const vio::Path& filePath, Del
     if (data.empty()) return false;
 
     // Convert to YAML
-    keg::ReadContext context;
-    context.env = keg::getGlobalEnvironment();
-    context.reader.init(data.c_str());
-    keg::Node node = context.reader.getFirst();
-    if (keg::getType(node) != keg::NodeType::MAP) {
-        context.reader.dispose();
-        return false;
-    }
+    try {
+        keg::ReadContext context;
+        context.env = keg::getGlobalEnvironment();
+        context.reader.init(data.c_str());
+        keg::Node node = context.reader.getFirst();
+        if (keg::getType(node) != keg::NodeType::MAP) {
+            context.reader.dispose();
+            return false;
+        }
 
-    context.reader.forAllInMap(node, &f);
-    context.reader.dispose();
+        context.reader.forAllInMap(node, &f);
+        context.reader.dispose();
+
+    }
+    catch (YAML::ParserException e) {
+        printf("Iomanager failed to parse %s\n", filePath.getCString());
+        assert(false);
+    }
 
     return true;
 }
