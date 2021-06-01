@@ -79,7 +79,7 @@ class PhysicsSystem {
 public:
 	PhysicsSystem(World& world);
 
-	void update(entt::registry& registry, float deltaTime);
+	void update(entt::registry& registry);
 
 	World& mWorld;
 };

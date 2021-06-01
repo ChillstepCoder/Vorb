@@ -140,7 +140,7 @@ inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, Ph
 	
 }
 
-void NavigationComponentSystem::update(entt::registry& registry, World& world, float deltaTime) {
+void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 	// Update components
     auto view = registry.view<NavigationComponent, PhysicsComponent>();
 

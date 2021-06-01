@@ -5,7 +5,6 @@
 #include "CityPlanner.h"
 #include "CityBuilder.h"
 #include "CityResidentManager.h"
-#include "CityFunctionManager.h"
 #include "CityBusinessManager.h"
 #include "ecs/business/BusinessRepository.h"
 #include "World.h"
@@ -29,7 +28,6 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     mCityPlanner = std::make_unique<CityPlanner>(*this);
     mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
     mCityResidentManager = std::make_unique<CityResidentManager>(*this);
-    mCityFunctionManager = std::make_unique<CityFunctionManager>(*this);
     mCityBusinessManager = std::make_unique<CityBusinessManager>(*this);
 
     mCityPlotter->initAsTier(0);
@@ -42,22 +40,19 @@ City::~City() {
 
 }
 
-void City::update(float deltaTime)
+void City::update()
 {
-    UNUSED(deltaTime);
-    // TODO: tick()
     mCityPlanner->update();
     mCityBuilder->update();
-    mCityFunctionManager->update();
 }
 
-void City::addResidentToCity(entt::entity entity)
-{
+void City::addResidentToCity(entt::entity entity) {
+
     mCityResidentManager->addResident(entity);
 }
 
-void City::removeResidentFromCity(entt::entity entity)
-{
+void City::removeResidentFromCity(entt::entity entity) {
+
     mCityResidentManager->removeResident(entity);
 }
 
@@ -67,8 +62,8 @@ void City::tick() {
 
 // Given three colinear points p, q, r, the function checks if 
 // point q lies on line segment 'pr' 
-bool onSegment(ui32v2 p, ui32v2 q, ui32v2 r)
-{
+bool onSegment(ui32v2 p, ui32v2 q, ui32v2 r) {
+
     if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) &&
         q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y))
         return true;
@@ -153,8 +148,6 @@ BuildingID City::addCompletedBuilding(Building&& building) {
     mBuildings.emplace_back(building);
     Building& newBuilding = mBuildings.back();
     newBuilding.mId = mBuildings.size() - 1;
-    
-    mCityFunctionManager->registerNewBuilding(newBuilding);
 
     return newBuilding.mId;
 }

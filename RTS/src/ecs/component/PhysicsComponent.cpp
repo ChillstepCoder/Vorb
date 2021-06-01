@@ -73,7 +73,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, f32 tileZTop, TileColli
 		// We are above, do nothing
 		return;
 	}
-	else if (zOffset > -TOP_COLLISION_DEPTH) {
+	else if (zOffset > -TOP_COLLISION_DEPTH || zOffset < -1.0f) { // If we are colliding with top, or stuck underneath (fix tunnel)
 		// We are colliding with the top, snap us up
 		// TODO: we could compare this to the depression of the XY so we don't pop straight up on the corners when climbing?
 		isCollidingWithTop = true;
@@ -180,7 +180,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, f32 tileZTop, TileColli
 }
 
 // TODO: Measure perf of this vs non inline vs macro
-inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime) {
+inline void updateComponent(World& world, PhysicsComponent& cmp) {
 	const f32v2& xyVel = cmp.getLinearVelocity();
 	// TODO: TestBit
 	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
@@ -191,8 +191,8 @@ inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime
     if (cmp.mZVelocity < MIN_Z_SPEED) {
         cmp.mZVelocity = MIN_Z_SPEED;
     }
-	cmp.mZPosition += cmp.mZVelocity * deltaTime;
-	cmp.mZVelocity -= GRAVITY_FORCE * deltaTime;
+	cmp.mZPosition += cmp.mZVelocity;
+	cmp.mZVelocity -= GRAVITY_FORCE;
 
 
 	const f32v2& xyPosition = cmp.getXYPosition();
@@ -236,10 +236,10 @@ PhysicsSystem::PhysicsSystem(World& world)
 
 }
 
-void PhysicsSystem::update(entt::registry& registry, float deltaTime) {
+void PhysicsSystem::update(entt::registry& registry) {
 	// Update components
 	registry.view<PhysicsComponent>().each([&](auto& cmp) {
-        updateComponent(mWorld, cmp, deltaTime);
+        updateComponent(mWorld, cmp);
 	});
 }
 

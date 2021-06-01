@@ -92,7 +92,7 @@ void World::initPostLoad() {
     }
 }
 
-void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
+void World::update(const f32v2& playerPos, const Camera2D& camera) {
 	assert(mEcs);
 
 	Services::Threadpool::ref().mainThreadUpdate();
@@ -131,17 +131,17 @@ void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& came
 
 	// Update cities
 	for (auto&& it : mCities->mNodes) {
-		it->update(deltaTime);
+		it->update();
 	}
 
 	// Update physics
-	mPhysWorld->Step(deltaTime, 1, 1);
+	mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
 
 	// Update particles (TODO: Ecs?)
-	mResourceManager.getParticleSystemManager().update(deltaTime, playerPos);
+	mResourceManager.getParticleSystemManager().update(playerPos);
 
 	// Update ECS
-    mEcs->update(deltaTime, mClientEcsData);
+    mEcs->update(mClientEcsData);
 }
 
 Chunk& World::getChunkAtPosition(const f32v2& worldPos) {

@@ -6,7 +6,11 @@
 
 #include "World.h"
 #include "city/City.h"
+#include "city/CityBusinessManager.h"
+
 #include "services/Services.h"
+
+#include "ecs/component/EmployeeComponent.h"
 
 PersonAISystem::PersonAISystem(World& world)
     : mWorld(world)
@@ -17,7 +21,7 @@ struct ChopWoodTaskData {
     Path path;
 };
 
-void updateChopWoodTask(World& world, PersonAIComponent& ai, PhysicsComponent& physics, float deltaTime) {
+void updateChopWoodTask(World& world, PersonAIComponent& ai, PhysicsComponent& physics) {
     // Begin task
     if (!ai.mCurrentTaskData) {
         ChopWoodTaskData* taskData = new ChopWoodTaskData;
@@ -27,7 +31,7 @@ void updateChopWoodTask(World& world, PersonAIComponent& ai, PhysicsComponent& p
 }
 
 // TODO: Refactor
-inline void updateComponent(World& world, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics, float deltaTime) {
+inline void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
@@ -40,6 +44,17 @@ inline void updateComponent(World& world, entt::entity entity, PersonAIComponent
         ai.mCity->addResidentToCity(entity);
     }
 
+    // Pick our employment if we dont have one
+    // TODO: Make this smarter, more organic. Use jobs board
+    EmployeeComponent* employeeCmp = registry.try_get<EmployeeComponent>(entity);
+    if (!employeeCmp) {
+        ai.mCity->getBusinessManager().tryEmploy(entity);
+        employeeCmp = registry.try_get<EmployeeComponent>(entity); // Could still be null
+    }
+
+    // Select which task to do
+    // TODO: OnInterrupt for each task, to evaluate if we should interrupt based on external changes
+
 
     switch (ai.currentTask) {
         case PersonAITask::IDLE: {
@@ -48,7 +63,9 @@ inline void updateComponent(World& world, entt::entity entity, PersonAIComponent
             break;
         }
         case PersonAITask::CHOP_WOOD: {
-            updateChopWoodTask(world, ai, physics, deltaTime);
+            // TODO: Change this instead to a task VirtualFunction
+            // Task chains
+            updateChopWoodTask(world, ai, physics);
             break;
         }
         case PersonAITask::BUILD:
@@ -61,12 +78,12 @@ inline void updateComponent(World& world, entt::entity entity, PersonAIComponent
     }
 }
 
-void PersonAISystem::update(entt::registry& registry, float deltaTime)
+void PersonAISystem::update(entt::registry& registry)
 {
     auto view = registry.view<PersonAIComponent, PhysicsComponent>();
     for (auto entity : view) {
         PersonAIComponent& ai = view.get<PersonAIComponent>(entity);
         PhysicsComponent& physics = view.get<PhysicsComponent>(entity);
-        updateComponent(mWorld, entity, ai, physics, deltaTime);
+        updateComponent(mWorld, registry, entity, ai, physics);
     }
 }

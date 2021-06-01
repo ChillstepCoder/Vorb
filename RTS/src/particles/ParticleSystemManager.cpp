@@ -76,12 +76,12 @@ bool ParticleSystemManager::loadParticleSystemData(const vio::Path& filePath) {
     return true;
 }
 
-void ParticleSystemManager::update(float deltaTime, const f32v2& playerPos) {
+void ParticleSystemManager::update(const f32v2& playerPos) {
 
     for (auto&& it : mParticleSystems) {
         ParticleSystemArray& systemArray = it.second;
         for (unsigned i = 0; i < systemArray.size();) {
-            if (systemArray[i]->update(deltaTime, playerPos)) {
+            if (systemArray[i]->update(playerPos)) {
                 if (i != systemArray.size() - 1) {
                     systemArray[i] = std::move(systemArray.back());
                 }

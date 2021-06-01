@@ -8,7 +8,7 @@ class EntityComponentSystem {
 public:
 	EntityComponentSystem(World& world);
 
-	void update(float deltaTime, const ClientECSData& clientData);
+	void update(const ClientECSData& clientData);
 	void convertEntityToCorpse(entt::entity entity);
 
     /*DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);

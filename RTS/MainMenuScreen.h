@@ -6,6 +6,8 @@
 // TODO: MOVE
 #include "ecs/EntityComponentSystem.h"
 
+constexpr ui32 MS_PER_GAME_TICK = 40;
+
 class App;
 class Camera2D;
 class ResourceManager;
@@ -65,6 +67,8 @@ private:
 	f32v2 mSelectedTilePosition = f32v2(0.0f);
 	f32v2 mInteractPopupPosition = f32v2(0.0f);
 	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
+
+	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK);
 
 };
 

@@ -243,9 +243,6 @@
     <ClCompile Include="src\item\ItemTradeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\city\CityFunctionManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -554,9 +551,6 @@
     <ClInclude Include="src\item\ItemTradeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\city\CityFunctionManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ui\UIInteractMenuPopup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -594,6 +588,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\EmployeeComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai\AgentTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

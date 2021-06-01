@@ -39,7 +39,7 @@ ParticleSystem::~ParticleSystem()
     }
 }
 
-bool ParticleSystem::update(float deltaTime, const f32v2& playerPos)
+bool ParticleSystem::update(const f32v2& playerPos)
 {
     mCurrentTime += sElapsedSecondsSinceLastFrame;
     // Handle looping logic
@@ -57,7 +57,7 @@ bool ParticleSystem::update(float deltaTime, const f32v2& playerPos)
     }
     
     // Motion
-    const float gravityForce = GRAVITY_CONSTANT * deltaTime * mSystemData.gravityMult;
+    const float gravityForce = GRAVITY_CONSTANT * mSystemData.gravityMult;
     const float restingForce = gravityForce * 4.0f;
     for (unsigned i = 0; i < mParticles.size();) {
         Particle& particle = mParticles[i];
@@ -96,7 +96,7 @@ bool ParticleSystem::update(float deltaTime, const f32v2& playerPos)
         particle.mVelocity.z -= gravityForce;
         
         particle.mVelocity *= mSystemData.airDamping;
-        particle.mPosition += particle.mVelocity * deltaTime;
+        particle.mPosition += particle.mVelocity;
 
         // Bounce off the ground
         if (particle.mPosition.z <= 0.0f) {

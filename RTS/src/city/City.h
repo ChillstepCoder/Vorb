@@ -7,7 +7,6 @@ class CityPlotter;
 class CityPlanner;
 class CityBuilder;
 class CityResidentManager;
-class CityFunctionManager;
 class CityBusinessManager;
 class World;
 
@@ -111,14 +110,13 @@ class City
     friend class CityBuilder;
     friend class CityPlotter;
     friend class CityResidentManager;
-    friend class CityFunctionManager;
     friend class CityBusinessManager;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
     ~City();
 
-    void update(float deltaTime);
+    void update();
 
     CityBuilder& getCityBuilder() { return *mCityBuilder; }
     CityPlanner& getCityPlanner() { return *mCityPlanner; }
@@ -157,7 +155,6 @@ private:
     std::unique_ptr<CityPlanner> mCityPlanner;
     std::unique_ptr<CityBuilder> mCityBuilder;
     std::unique_ptr<CityResidentManager> mCityResidentManager;
-    std::unique_ptr<CityFunctionManager> mCityFunctionManager;
     std::unique_ptr<CityBusinessManager> mCityBusinessManager;
 
     // City center dims is even so this will be bottom left most center tile

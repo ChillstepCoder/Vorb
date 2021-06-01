@@ -21,7 +21,7 @@ BusinessSystem::BusinessSystem(World& world) :
 
 }
 
-void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp, float deltaTime) {
+void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp) {
     // Gathering currently requires a city
     assert(businessCmp.mCity);
     
@@ -41,7 +41,7 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
     }
 }
 
-void updateBusiness(World& world, entt::registry& registry, entt::entity entity, BusinessComponent& cmp, float deltaTime) {
+void updateBusiness(World& world, entt::registry& registry, entt::entity entity, BusinessComponent& cmp) {
     BusinessProduceComponent* produceCmp = registry.try_get<BusinessProduceComponent>(entity);
     if (produceCmp) {
 
@@ -49,7 +49,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
 
     BusinessGatherComponent* gatherCmp = registry.try_get<BusinessGatherComponent>(entity);
     if (gatherCmp) {
-        updateGatherComponent(world, *gatherCmp, cmp, deltaTime);
+        updateGatherComponent(world, *gatherCmp, cmp);
     }
 
     BusinessRetailComponent* retailCmp = registry.try_get<BusinessRetailComponent>(entity);
@@ -58,7 +58,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
     }
 }
 
-void BusinessSystem::update(entt::registry& registry, float deltaTime)
+void BusinessSystem::update(entt::registry& registry)
 {
     // Update slower
    /* if (--mFramesUntilUpdate <= 0) {
@@ -74,7 +74,7 @@ void BusinessSystem::update(entt::registry& registry, float deltaTime)
     // Update businesses
     for (auto entity : view) {
         auto& cmp = view.get<BusinessComponent>(entity);
-        updateBusiness(mWorld, registry, entity, cmp, deltaTime);
+        updateBusiness(mWorld, registry, entity, cmp);
     }
 
 }

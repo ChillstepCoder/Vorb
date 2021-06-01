@@ -23,7 +23,7 @@ public:
     ~ParticleSystem();
 
     // Returns true on empty
-    bool update(float deltaTime, const f32v2& playerPos);
+    bool update(const f32v2& playerPos);
 
     void setRootPosition(const f32v3& rootPosition) { mRootPosition = rootPosition; }
     void sestDirection(const f32v3& direction) { mDirection = direction; }

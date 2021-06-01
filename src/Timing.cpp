@@ -15,6 +15,7 @@ typedef std::chrono::milliseconds ms;
 
 const f64 MS_PER_SECOND = 1000.0;
 
+// TODO: Steady clock?
 void PreciseTimer::start() {
     m_timerRunning = true;
     m_start = std::chrono::high_resolution_clock::now();
@@ -135,4 +136,51 @@ f32 FpsLimiter::endFrame() {
     }
 
     return m_fps;
+}
+
+TickingTimer::TickingTimer(ui32 msPerTick) : mMsPerTick(msPerTick) {
+    // Zero initialize start, so we always kick off with an instant tick
+    mStart = {};
+}
+
+ui32 TickingTimer::tryTick() {
+    TimePoint now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64> timeSinceStart = now - mStart;
+    // compute how many ticks behind we are
+    ui32 msSinceStart = timeSinceStart.count() * MS_PER_SECOND;
+    ui32 count = static_cast<ui32>(msSinceStart / mMsPerTick);
+    if (count) {
+        mStart = now;
+    }
+    return count;
+}
+
+ResumeTimer::ResumeTimer(f64 timeInSeconds) {
+    mStart = std::chrono::high_resolution_clock::now();
+}
+
+bool ResumeTimer::tryResume() {
+    TimePoint now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64> timeSinceStart = now - mStart;
+    // compute how many ticks behind we are
+    mStart = now;
+    return timeSinceStart.count() > mMsUntilResume;
+}
+
+TickCounter::TickCounter(ui32 tickPeriod, bool tickAtStart)
+    : mTickPeriod(tickPeriod) {
+
+    mCurTick = tickAtStart ? tickPeriod : 0;
+}
+
+bool TickCounter::tryTick() {
+
+    if (++mCurTick >= mTickPeriod) {
+        mCurTick = 0;
+        return true;
+    }
+}
+
+void TickCounter::reset() {
+    mCurTick = 0;
 }

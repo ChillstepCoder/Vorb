@@ -153,7 +153,6 @@
     <ClCompile Include="src\city\CityBuilder.cpp" />
     <ClCompile Include="src\city\BuildingGrammar.cpp" />
     <ClCompile Include="src\city\CityBusinessManager.cpp" />
-    <ClCompile Include="src\city\CityFunctionManager.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\city\CityPlotter.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
@@ -237,6 +236,7 @@
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
+    <ClInclude Include="src\ai\AgentTask.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\City.h" />
@@ -245,7 +245,6 @@
     <ClInclude Include="src\city\CityBusinessManager.h" />
     <ClInclude Include="src\city\CityConst.h" />
     <ClInclude Include="src\city\CityDistrict.h" />
-    <ClInclude Include="src\city\CityFunctionManager.h" />
     <ClInclude Include="src\city\CityPlanner.h" />
     <ClInclude Include="src\city\CityPlot.h" />
     <ClInclude Include="src\city\CityPlotter.h" />

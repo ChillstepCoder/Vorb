@@ -2,10 +2,12 @@
 
 class City;
 
+// ?
 struct ResidentData {
 
 };
 
+// Database of all residents in a city
 class CityResidentManager
 {
 public:
@@ -14,11 +16,10 @@ public:
     void addResident(entt::entity entity);
     void removeResident(entt::entity entity); // TODO: Notify?
 
-    size_t getPopulation() const { return mUnemployedResidents.size() + mEmployedResidents.size(); }
+    size_t getPopulation() const { return mResidents.size(); }
     // Businesses?
 private:
-    std::vector<entt::entity> mUnemployedResidents;
-    std::vector<entt::entity> mEmployedResidents;
+    std::vector<entt::entity> mResidents;
     City& mCity;
 };
 

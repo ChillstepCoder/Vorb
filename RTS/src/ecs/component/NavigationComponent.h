@@ -15,5 +15,5 @@ struct NavigationComponent {
 
 class NavigationComponentSystem {
 public:
-	void update(entt::registry& registry, World& world, float deltaTime);
+	void update(entt::registry& registry, World& world);
 };

@@ -27,6 +27,51 @@
 
 #include <chrono>
 
+// TODO: Instead use steady_clock?
+typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
+
+// Inteded for use inside the game loop to deterministically count ticks for updates
+class TickCounter {
+public:
+    // For tickPeriod 1 == 0
+    TickCounter(ui32 tickPeriod, bool tickAtStart);
+
+    // Returns true on the tick period
+    // Only call this once per gameplay tick per counter
+    bool tryTick();
+    void reset();
+
+protected:
+    ui32 mTickPeriod;
+    ui32 mCurTick;
+};
+
+// Used to synchronize update rates for objects with time
+class TickingTimer {
+public:
+    TickingTimer(ui32 msPerTick);
+
+    // Returns a positive number representing the number of times we need to tick in order to
+    // catch up
+    ui32 tryTick();
+
+protected:
+    ui32 mMsPerTick;
+    TimePoint mStart;
+};
+
+// Used for delaying a specific event for a period of time. Intended for single use timers
+class ResumeTimer {
+public:
+    ResumeTimer(f64 timeInSeconds);
+
+    bool tryResume();
+
+protected:
+    f64 mMsUntilResume;
+    TimePoint mStart;
+};
+
 class PreciseTimer {
 public:
     PreciseTimer() {
@@ -41,7 +86,7 @@ public:
     }
 private:
     bool m_timerRunning = false;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+    TimePoint m_start;
 };
 
 class AccumulationTimer {
@@ -63,7 +108,7 @@ private:
     };
 
     bool m_timerRunning = false;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+    TimePoint m_start;
     std::map<nString, AccumNode> m_accum;
     std::map<nString, AccumNode>::iterator m_it;
 };

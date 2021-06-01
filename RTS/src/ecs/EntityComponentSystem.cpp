@@ -14,7 +14,7 @@ EntityComponentSystem::EntityComponentSystem(World& world)
     , mWorld(world) {
 }
 
-void EntityComponentSystem::update(float deltaTime, const ClientECSData& clientData) {
+void EntityComponentSystem::update(const ClientECSData& clientData) {
 	
 	// TODO: Not every frame
 	static int frameCount = 0;
@@ -26,12 +26,12 @@ void EntityComponentSystem::update(float deltaTime, const ClientECSData& clientD
         mSoldierAITable.update(*this, mWorld);
     }
     mSpriteTable.update();*/
-    mBusinessSystem.update(mRegistry, deltaTime);
-	mPhysicsSystem.update(mRegistry, deltaTime); // Phys cmp sets dir to velocity
+    mBusinessSystem.update(mRegistry);
+	mPhysicsSystem.update(mRegistry); // Phys cmp sets dir to velocity
 	//mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
 	mPlayerControlSystem.update(mRegistry, mWorld, clientData);
-	mPersonAISystem.update(mRegistry, deltaTime);
-	mNavigationSystem.update(mRegistry, mWorld, deltaTime);
+	mPersonAISystem.update(mRegistry);
+    mNavigationSystem.update(mRegistry, mWorld);
 	//mCorpseTable.update();
 }
 

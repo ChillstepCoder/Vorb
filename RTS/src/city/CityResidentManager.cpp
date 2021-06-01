@@ -10,23 +10,19 @@ CityResidentManager::CityResidentManager(City& city) :
 
 void CityResidentManager::addResident(entt::entity entity) {
     // All residents start unemployed?
-    mUnemployedResidents.push_back(entity);
+    mResidents.push_back(entity);
 }
 
 void CityResidentManager::removeResident(entt::entity entity) {
-    // TODO: check employment?
-    for (size_t i = 0; i < mUnemployedResidents.size(); ++i) {
-        if (mUnemployedResidents[i] == entity) {
-            mUnemployedResidents[i] = mUnemployedResidents.back();
-            mUnemployedResidents.pop_back();
+    // TODO: Notify employment? Resident himself should notify employer
+    for (size_t i = 0; i < mResidents.size();) {
+        if (mResidents[i] == entity) {
+            mResidents[i] = mResidents.back();
+            mResidents.pop_back();
             return;
         }
-    }
-    for (size_t i = 0; i < mEmployedResidents.size(); ++i) {
-        if (mEmployedResidents[i] == entity) {
-            mEmployedResidents[i] = mEmployedResidents.back();
-            mEmployedResidents.pop_back();
-            return;
+        else {
+            ++i;
         }
     }
 }

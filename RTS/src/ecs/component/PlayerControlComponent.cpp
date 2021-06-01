@@ -10,9 +10,8 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-constexpr float BASE_SPEED = 0.15f;
-constexpr float ACCELERATION = 0.015f;
-constexpr float IMPULSE = 0.02f;
+constexpr float BASE_SPEED = 0.4;
+constexpr float ACCELERATION = 0.05f;
 
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);

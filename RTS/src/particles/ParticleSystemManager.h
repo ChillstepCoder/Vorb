@@ -18,7 +18,7 @@ public:
 
     bool loadParticleSystemData(const vio::Path& filePath);
 
-    void update(float deltaTime, const f32v2& playerPos);
+    void update(const f32v2& playerPos);
 
 private:
     vio::IOManager& mIoManager;
