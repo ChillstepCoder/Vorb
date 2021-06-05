@@ -49,15 +49,19 @@ protected:
 // Used to synchronize update rates for objects with time
 class TickingTimer {
 public:
-    TickingTimer(ui32 msPerTick);
+    TickingTimer(f64 msPerTick, f64 maxMSPerFrame);
 
-    // Returns a positive number representing the number of times we need to tick in order to
-    // catch up
-    ui32 tryTick();
+    void startFrame();
+    // Returns true while we should be ticking
+    bool tryTick();
+
+    f32 getFrameAlpha() { return (f32)(mAccumulator / mMsPerTick); }
 
 protected:
-    ui32 mMsPerTick;
-    TimePoint mStart;
+    TimePoint mCurrTime;
+    f64 mAccumulator = 0.0;
+    f64 mMsPerTick;
+    f64 mMaxMsPerFrame;
 };
 
 // Used for delaying a specific event for a period of time. Intended for single use timers

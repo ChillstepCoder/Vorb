@@ -181,7 +181,8 @@ void resolveCircleTileCollision(const f32v2& tileCenter, f32 tileZTop, TileColli
 
 // TODO: Measure perf of this vs non inline vs macro
 inline void updateComponent(World& world, PhysicsComponent& cmp) {
-	const f32v2& xyVel = cmp.getLinearVelocity();
+    const f32v2& xyVel = cmp.getLinearVelocity();
+
 	// TODO: TestBit
 	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
 		cmp.mDir = glm::normalize(xyVel);
@@ -236,6 +237,14 @@ PhysicsSystem::PhysicsSystem(World& world)
 
 }
 
+void PhysicsSystem::updateFrameBegin(entt::registry& registry) {
+    // Store prev position so we can frameAlpha
+    registry.view<PhysicsComponent>().each([&](auto& cmp) {
+        cmp.mPrevXYPosition = cmp.getXYPosition();
+        cmp.mPrevZPosition = cmp.mZPosition;
+    });
+}
+
 void PhysicsSystem::update(entt::registry& registry) {
 	// Update components
 	registry.view<PhysicsComponent>().each([&](auto& cmp) {
@@ -256,6 +265,8 @@ PhysicsComponent::PhysicsComponent(World& world, const f32v2& centerPosition, bo
         mBody = world.createPhysBody(&bodyDef);
         mBody->SetLinearDamping(0.1f);
     }
+	mPrevXYPosition = centerPosition;
+	mPrevZPosition = mZPosition;
 }
 
 void PhysicsComponent::addCollider(entt::entity entityId, ColliderShapes shape, const float halfWidth) {

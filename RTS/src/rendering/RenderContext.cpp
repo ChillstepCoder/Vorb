@@ -141,7 +141,7 @@ void RenderContext::initPostLoad() {
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 }
 
-void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld) {
+void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
 
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
@@ -196,7 +196,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
 
     //mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f);
+    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f, frameAlpha);
 
     // Particles
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
@@ -286,7 +286,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.20f);
+    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.20f, frameAlpha);
 
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...

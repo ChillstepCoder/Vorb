@@ -134,6 +134,9 @@ void World::update(const f32v2& playerPos, const Camera2D& camera) {
 		it->update();
 	}
 
+	// TODO: Give physworld ownership to physicssystem?
+	mEcs->mPhysicsSystem.updateFrameBegin(mEcs->mRegistry);
+
 	// Update physics
 	mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
 

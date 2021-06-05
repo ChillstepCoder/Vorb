@@ -57,6 +57,8 @@ public:
 		}
     }
 
+	f32v2 mPrevXYPosition = f32v2(0.0f);
+	f32 mPrevZPosition = 0.0f;
 	f32v2 mDir = f32v2(0.0f, 1.0f);
     f32 mCollisionRadius = 0.0f;
     f32 mZPosition = 0.0f;
@@ -79,6 +81,7 @@ class PhysicsSystem {
 public:
 	PhysicsSystem(World& world);
 
+    void updateFrameBegin(entt::registry& registry);
 	void update(entt::registry& registry);
 
 	World& mWorld;

@@ -35,6 +35,7 @@
 #include <Vorb/ui/imgui/imgui.h>
 
 constexpr ui32 MAX_TICKS_PER_UPDATE = 2;
+constexpr f64 TICK_RATE_MS = 40.0;
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
@@ -235,15 +236,11 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
 
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
-	// Try to
-	ui32 tickCount = mGameTimer.tryTick();
-	tickCount = vmath::min(tickCount, MAX_TICKS_PER_UPDATE);
-	//while (tickCount-- > 0) { // Try to catch up. I think causes a negative feedback loop
-	if (tickCount) { // Instead of catching up, just slow the game down if we are behind
+	mGameTimer.startFrame();
 
-		if (tickCount >= 5) {
-			std::cout << "WARNING: Large tick drift backlog of " << tickCount << "\n";
-		}
+	bool didUpdateCamera = false;
+
+	while (mGameTimer.tryTick()) {
 
 		// Do this first
 		mWorld->updateClientEcsData(*mCamera2D);
@@ -257,24 +254,34 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 			sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
 		}
 
+        // Update camera
+        // TODO: Copy paste bad
+        const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+        const f32v2& playerXYPos = physCmp.getXYPosition();
+        f32v2 targetPos = playerXYPos;
+        targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
+        updateCamera(targetPos, physCmp.getZPosition(), gameTime);
+		didUpdateCamera = true;
+
+		// World update after camera
+        mWorld->update(playerXYPos, *mCamera2D);
 	}
 	// Always update camera
-	// Update world after camera
-    const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
-    const f32v2& playerXYPos = physCmp.getXYPosition();
-    f32v2 targetPos = playerXYPos;
-    targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
-    updateCamera(targetPos, physCmp.getZPosition(), gameTime);
-
-	if (tickCount) {
-		mWorld->update(playerXYPos, *mCamera2D);
+	if (!didUpdateCamera) {
+		// TODO: Copy paste bad
+        const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+        const f32v2& playerXYPos = physCmp.getXYPosition();
+        f32v2 targetPos = playerXYPos;
+        targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
+        updateCamera(targetPos, physCmp.getZPosition(), gameTime);
+        didUpdateCamera = true;
 	}
+
 }
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
-
-	// TODO: Interpolation of objects. 
+	const f32 frameAlpha = mGameTimer.getFrameAlpha();
 
     // Grab fps
     sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
@@ -283,7 +290,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame(*mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos);
+	mRenderContext.renderFrame(*mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
 
 	// Handle interact menu TODO: Notify to get this out of here
 	if (mRightClickInteractPopup) {

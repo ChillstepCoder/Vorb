@@ -43,7 +43,7 @@ public:
     static RenderContext& getInstance();
 
     void initPostLoad();
-    void renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld);
+    void renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
 
     void reloadShaders();
     void selectNextDebugShader();

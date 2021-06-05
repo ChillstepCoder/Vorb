@@ -51,14 +51,22 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
 }
 
-void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, float alpha) {
+void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
 	mSpriteBatch->begin();
 
+	std::cout << frameAlpha << " \n";
+
     auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha](auto& physCmp, auto& modelCmp) {
+	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha, frameAlpha](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, physCmp.getXYPosition(), physCmp.getZPosition(), rotation, alpha);
+		const f32v2& prevXY = physCmp.mPrevXYPosition;
+		const f32v2& nextXY = physCmp.getXYPosition();
+		f32v2 interpolatedXY;
+		interpolatedXY.x = vmath::lerp(prevXY.x, nextXY.x, frameAlpha);
+        interpolatedXY.y = vmath::lerp(prevXY.y, nextXY.y, frameAlpha);
+		f32 interpolatedZ = vmath::lerp(physCmp.mPrevZPosition, physCmp.getZPosition(), frameAlpha);
+		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, interpolatedXY, interpolatedZ, rotation, alpha);
 	});
 
 	mSpriteBatch->end();

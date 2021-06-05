@@ -1,6 +1,8 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/Timing.h"
 
+#include <iostream> // TODO: Remove
+
 #ifndef VORB_USING_PCH
 #include "Vorb/compat.h"
 #endif // !VORB_USING_PCH
@@ -14,6 +16,7 @@
 typedef std::chrono::milliseconds ms;
 
 const f64 MS_PER_SECOND = 1000.0;
+const f64 SECONDS_PER_MS = 0.001;
 
 // TODO: Steady clock?
 void PreciseTimer::start() {
@@ -138,21 +141,31 @@ f32 FpsLimiter::endFrame() {
     return m_fps;
 }
 
-TickingTimer::TickingTimer(ui32 msPerTick) : mMsPerTick(msPerTick) {
-    // Zero initialize start, so we always kick off with an instant tick
-    mStart = {};
+TickingTimer::TickingTimer(f64 msPerTick, f64 maxMSPerFrame) :
+    mMsPerTick(msPerTick),
+    mMaxMsPerFrame(maxMSPerFrame) {
+    // This will delay a tick at the start
+    mCurrTime = std::chrono::high_resolution_clock::now();
 }
 
-ui32 TickingTimer::tryTick() {
-    TimePoint now = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<f64> timeSinceStart = now - mStart;
-    // compute how many ticks behind we are
-    ui32 msSinceStart = timeSinceStart.count() * MS_PER_SECOND;
-    ui32 count = static_cast<ui32>(msSinceStart / mMsPerTick);
-    if (count) {
-        mStart = now;
+void TickingTimer::startFrame()
+{
+    TimePoint newTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64, std::milli> frameTime = newTime - mCurrTime;
+    mCurrTime = newTime;
+    if (frameTime.count() > mMaxMsPerFrame) { // Clamp
+        frameTime = std::chrono::duration<f64, std::milli>(mMaxMsPerFrame);
     }
-    return count;
+
+    mAccumulator += frameTime.count();
+}
+
+bool TickingTimer::tryTick() {
+    if (mAccumulator >= mMsPerTick) {
+        mAccumulator -= mMsPerTick;
+        return true;
+    }
+    return false;
 }
 
 ResumeTimer::ResumeTimer(f64 timeInSeconds) {
@@ -174,11 +187,11 @@ TickCounter::TickCounter(ui32 tickPeriod, bool tickAtStart)
 }
 
 bool TickCounter::tryTick() {
-
     if (++mCurTick >= mTickPeriod) {
         mCurTick = 0;
         return true;
     }
+    return false;
 }
 
 void TickCounter::reset() {

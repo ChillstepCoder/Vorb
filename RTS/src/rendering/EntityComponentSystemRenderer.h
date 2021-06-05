@@ -18,7 +18,7 @@ public:
 	EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world);
 	void renderPhysicsDebug(const Camera2D& camera) const;
 	void renderSimpleSprites(const Camera2D& camera) const;
-	void renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, float alpha);
+	void renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha);
 	void renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer);
 
 private:
