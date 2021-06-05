@@ -238,12 +238,12 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 	mGameTimer.startFrame();
 
-	bool didUpdateCamera = false;
+    bool didUpdateCamera = false;
+
+    // Store mouse position and other useful things
+    mWorld->updateClientEcsData(*mCamera2D);
 
 	while (mGameTimer.tryTick()) {
-
-		// Do this first
-		mWorld->updateClientEcsData(*mCamera2D);
 
 		// DEBUG Time advance
 		static constexpr float TIME_ADVANCE_MULT = 250.0f;
@@ -266,16 +266,15 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 		// World update after camera
         mWorld->update(playerXYPos, *mCamera2D);
 	}
-	// Always update camera
-	if (!didUpdateCamera) {
-		// TODO: Copy paste bad
-        const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
-        const f32v2& playerXYPos = physCmp.getXYPosition();
-        f32v2 targetPos = playerXYPos;
-        targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
-        updateCamera(targetPos, physCmp.getZPosition(), gameTime);
-        didUpdateCamera = true;
-	}
+	// Always update camera one last time using interpolated position
+	// TODO: Copy paste bad
+	const f32 frameAlpha = mGameTimer.getFrameAlpha();
+	const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+    const f32v2& playerXYPos = physCmp.getXYInterpolated(frameAlpha);
+    f32v2 targetPos = playerXYPos;
+    targetPos.y += physCmp.getZInterpolated(frameAlpha) * Z_TO_XY_RATIO;
+    updateCamera(targetPos, physCmp.getZInterpolated(frameAlpha), gameTime);
+    didUpdateCamera = true;
 
 }
 
@@ -306,24 +305,6 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 		const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
 		// TODO: Notify
 		if (result & INTERACT_MENU_RESULT_PATHFIND) {
-            // Pathfinding test
-            /*if (mIsPathfinding) {
-                if (mPathFindStart != worldPosInt) {
-                    auto&& path = Services::PathFinder::ref().generatePathSynchronous(*mWorld, mPathFindStart, worldPosInt);
-                    if (path) {
-                        DebugRenderer::drawPath(*path, color4(1.0f, 0.0f, 1.0f), 200);
-                    }
-                    else {
-                        DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f), 200);
-                    }
-                    mIsPathfinding = false;
-                }
-            }
-            else {
-                DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.5f), 200);
-                mPathFindStart = worldPosInt;
-                mIsPathfinding = true;
-            }*/
 			NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
 			cmp.mPath = Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos);
 			cmp.mCurrentPoint = 0;
@@ -390,7 +371,7 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, f32 targetHeight, c
     // Camera follow
     const f32v2& offsetToMouse = mWorld->getClientECSData().worldMousePos - currentPos;
     constexpr float LOOK_SCALE = 1.0f;
-	mTargetCameraPosition = targetCenter +offsetToMouse * LOOK_SCALE;
+	mTargetCameraPosition = targetCenter + offsetToMouse * LOOK_SCALE;
 
 	const f32v2 offsetToTarget = mTargetCameraPosition - currentPos;
 	const float distanceToTarget = glm::length(offsetToTarget);

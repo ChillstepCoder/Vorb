@@ -60,12 +60,8 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha, frameAlpha](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		const f32v2& prevXY = physCmp.mPrevXYPosition;
-		const f32v2& nextXY = physCmp.getXYPosition();
-		f32v2 interpolatedXY;
-		interpolatedXY.x = vmath::lerp(prevXY.x, nextXY.x, frameAlpha);
-        interpolatedXY.y = vmath::lerp(prevXY.y, nextXY.y, frameAlpha);
-		f32 interpolatedZ = vmath::lerp(physCmp.mPrevZPosition, physCmp.getZPosition(), frameAlpha);
+		f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
+		f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
 		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, interpolatedXY, interpolatedZ, rotation, alpha);
 	});
 
