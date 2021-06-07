@@ -674,3 +674,17 @@ void World::setTileAt(const ui32v2& worldPos, Tile tile) {
         chunk->setTileAt(handle.index, tile);
     }
 }
+
+bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource) {
+	TileHandle handle = getTileHandleAtWorldPos(worldPos);
+	if (handle.isValid()) {
+		for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
+			TileID tileId = handle.tile.layers[i];
+			if (tileId != INVALID_TILE_INDEX) {
+				if (TileRepository::getTileData(tileId).resource == resource) {
+					return true;
+				}
+			}
+		}
+	}
+}

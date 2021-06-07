@@ -33,8 +33,13 @@ inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, Ph
 	if (distance2 <= SQ(MIN_DISTANCE)) {
         ++navCmp.mCurrentPoint;
         if (navCmp.mCurrentPoint >= navCmp.mPath->numPoints) {
-            // Target reached TODO: Notify?
+			// Target reached
             physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+			navCmp.mPath = nullptr;
+			if (navCmp.mFinishedCallback) {
+				navCmp.mFinishedCallback(true /* success */);
+				navCmp.mFinishedCallback = nullptr;
+			}
 			return;
 		}
 		else {
@@ -150,5 +155,20 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
             auto& physCmp = view.get<PhysicsComponent>(entity);
 			updateComponent(entity, navCmp, physCmp, world);
 		}
+	}
+}
+
+void NavigationComponent::setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {
+	mPath = std::move(path);
+	mCurrentPoint = 0;
+	mFinishedCallback = finishedCallback;
+}
+
+void NavigationComponent::abortPath()
+{
+	mPath = nullptr;
+	if (mFinishedCallback) {
+		mFinishedCallback(false /*success*/);
+		mFinishedCallback = nullptr;
 	}
 }

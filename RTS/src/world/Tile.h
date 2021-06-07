@@ -17,6 +17,10 @@ enum class TileLayer {
 	Top = 2,
 };
 
+enum TileFlags : ui8 {
+	TILE_FLAG_IS_INTERACTING = 1 << 0,
+};
+
 struct Tile {
 	Tile() {};
     Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
@@ -30,7 +34,8 @@ struct Tile {
 		};
 		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
-	ui16 baseZPosition = 0;
+	ui8 baseZPosition = 0;
+	ui8 tileFlags = 0;
 };
 
 enum class TileShape {

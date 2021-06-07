@@ -7,6 +7,8 @@
 
 #include "DebugRenderer.h"
 
+#include "ai/tasks/GatherTask.h"
+
 const int UPDATE_INTERVAL = 60;
 
 // TODO: Smarter scanning, dont scan same area twice
@@ -15,16 +17,42 @@ constexpr int MAX_TILES_TO_SCAN_FOR = 64;
 constexpr ui32 MAX_SCAN_DISTANCE = 128;
 constexpr ui32 MAX_RETURN_TILES = 32;
 
+
+IAgentTaskPtr BusinessComponent::aquireTask() {
+    if (mTasksToDo.empty()) return nullptr;
+
+    for (auto&& it = mTasksToDo.begin(); it != mTasksToDo.end(); ++it) {
+        // TODO: Sorting
+        if (it->second.size()) {
+            IAgentTaskPtr task = it->second.back();
+            it->second.pop_back();
+            if (it->second.empty()) {
+                mTasksToDo.erase(it);
+            }
+            return std::move(task);
+        }
+    }
+
+    return nullptr;
+}
+
 BusinessSystem::BusinessSystem(World& world) :
     mWorld(world)
 {
 
 }
 
+enum TaskPriorities {
+    TASK_PRIORITY_RETAIL,
+    TASK_PRIORITY_GATHER
+};
+
+
 void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp) {
     // Gathering currently requires a city
     assert(businessCmp.mCity);
     
+    // Scans
     if (gatherCmp.mScannedTiles.empty()) {
         if (--gatherCmp.mFramesUntilNextScan <= 0) {
             PreciseTimer timer;
@@ -38,6 +66,19 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
     }
     else if (gatherCmp.mFramesUntilNextScan > 0) {
         --gatherCmp.mFramesUntilNextScan;
+    }
+
+    // Update gather tasks
+    TaskList& gatherList = businessCmp.mTasksToDo[TASK_PRIORITY_GATHER];
+    // TODO: -1?
+    while (gatherList.size() < businessCmp.mEmployees.size()) {
+        if (gatherCmp.mScannedTiles.empty()) break;
+
+        LiteTileHandle handle = gatherCmp.mScannedTiles.back();
+        gatherCmp.mScannedTiles.pop_back();
+
+        IAgentTaskPtr newTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather);
+        gatherList.emplace_back(std::move(newTask));
     }
 }
 
@@ -60,13 +101,6 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
 
 void BusinessSystem::update(entt::registry& registry)
 {
-    // Update slower
-   /* if (--mFramesUntilUpdate <= 0) {
-        mFramesUntilUpdate = UPDATE_INTERVAL;
-    }
-    else {
-        return;
-    }*/
 
     // TODO: View per component type? Dependencies?
     auto view = registry.view<BusinessComponent>();

@@ -46,14 +46,14 @@ public:
 		return mZPosition;
 	}
 
-	const f32v2& getXYInterpolated(f32 frameAlpha) const {
+	f32v2 getXYInterpolated(f32 frameAlpha) const {
         const f32v2& nextXY = getXYPosition();
         f32v2 interpolatedXY;
         interpolatedXY.x = vmath::lerp(mPrevXYPosition.x, nextXY.x, frameAlpha);
         interpolatedXY.y = vmath::lerp(mPrevXYPosition.y, nextXY.y, frameAlpha);
 		return interpolatedXY;
 	}
-	const float getZInterpolated(f32 frameAlpha) const {
+	float getZInterpolated(f32 frameAlpha) const {
 		return vmath::lerp(mPrevZPosition, mZPosition, frameAlpha);
 	}
 

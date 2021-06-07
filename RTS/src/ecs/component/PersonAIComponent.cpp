@@ -17,19 +17,6 @@ PersonAISystem::PersonAISystem(World& world)
 {
 }
 
-struct ChopWoodTaskData {
-    Path path;
-};
-
-void updateChopWoodTask(World& world, PersonAIComponent& ai, PhysicsComponent& physics) {
-    // Begin task
-    if (!ai.mCurrentTaskData) {
-        ChopWoodTaskData* taskData = new ChopWoodTaskData;
-        ai.mCurrentTaskData = taskData;
-        //taskData->path = Services::PathFinder::ref().generatePathSynchronous(world, physics.getXYPosition(), ???)
-    }
-}
-
 // TODO: Refactor
 inline void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
@@ -55,27 +42,42 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
     // Select which task to do
     // TODO: OnInterrupt for each task, to evaluate if we should interrupt based on external changes
 
-
-    switch (ai.currentTask) {
-        case PersonAITask::IDLE: {
-            // Ask city for work
-            ai.currentTask = PersonAITask::CHOP_WOOD;
-            break;
+    if (ai.mCurrentTask) {
+        if (ai.mCurrentTask->tick(world, registry, entity)) {
+            IAgentTaskPtr nextTask = ai.mCurrentTask->getNextTask();
+            // This can set it to nullptr
+            ai.mCurrentTask = nextTask;
         }
-        case PersonAITask::CHOP_WOOD: {
-            // TODO: Change this instead to a task VirtualFunction
-            // Task chains
-            updateChopWoodTask(world, ai, physics);
-            break;
-        }
-        case PersonAITask::BUILD:
-            break;
-        case PersonAITask::SLEEP:
-            break;
-        default:
-            assert(false);
-            break;
+    } else if (employeeCmp) {
+        // If we don't have a task, grab one
+        BusinessComponent& businessCmp = registry.get<BusinessComponent>(employeeCmp->mBusiness);
+        ai.mCurrentTask = businessCmp.aquireTask();
     }
+
+    // Handle sleep schedule
+
+    // Sense danger
+
+    //switch (ai.currentTask) {
+    //    case PersonAITask::IDLE: {
+    //        // Ask city for work
+    //        ai.currentTask = PersonAITask::CHOP_WOOD;
+    //        break;
+    //    }
+    //    case PersonAITask::CHOP_WOOD: {
+    //        // TODO: Change this instead to a task VirtualFunction
+    //        // Task chains
+    //        updateChopWoodTask(world, ai, physics);
+    //        break;
+    //    }
+    //    case PersonAITask::BUILD:
+    //        break;
+    //    case PersonAITask::SLEEP:
+    //        break;
+    //    default:
+    //        assert(false);
+    //        break;
+    //}
 }
 
 void PersonAISystem::update(entt::registry& registry)

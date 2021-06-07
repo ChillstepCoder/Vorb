@@ -1,6 +1,5 @@
 #pragma once
-struct EmployeeComponent
-{
+struct EmployeeComponent {
     entt::entity mBusiness;
 };
 

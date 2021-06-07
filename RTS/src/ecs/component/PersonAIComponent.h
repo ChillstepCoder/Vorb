@@ -4,6 +4,9 @@ class City;
 class Building;
 class World;
 
+#include "ai/tasks/IAgentTask.h"
+
+
 // Represents a city and house, OPTIONAL
 struct ResidentComponent {
     City* mCity;
@@ -23,14 +26,8 @@ struct NeedsComponent {
     float tiredness = 0.0f; // 0.0 = well rested, 1.0 = sleep deprived
 };
 
-enum class PersonAITask {
-    IDLE,
-    CHOP_WOOD,
-    BUILD,
-    SLEEP,
-};
-
 // Humans, elves
+// TODO: mCurrentTask is a raw pointer and can leak
 struct PersonAIComponent {
     // Memories
     // Relationships
@@ -38,10 +35,8 @@ struct PersonAIComponent {
     // States
     // Perception
     // Needs
-    PersonAITask currentTask = PersonAITask::IDLE;
     City* mCity = nullptr;
-    // TODO: Polymorphism?
-    void* mCurrentTaskData = nullptr;
+    IAgentTaskPtr mCurrentTask;
 
     //bool inCombat = false;
     //float inCombatTime = 0.0f;

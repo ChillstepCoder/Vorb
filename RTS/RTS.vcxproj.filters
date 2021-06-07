@@ -270,6 +270,9 @@
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ai\tasks\GatherTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -591,6 +594,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\AgentTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai\tasks\GatherTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -53,6 +53,8 @@ public:
 
 	void setTileAt(const ui32v2& worldPos, Tile tile);
 
+	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource);
+
 	// Internal public interface
     Chunk& getChunkAtPosition(const f32v2& worldPos);
     Chunk& getChunkAtPosition(const ui32v2& worldPos);

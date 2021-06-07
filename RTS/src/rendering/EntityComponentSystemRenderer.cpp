@@ -54,8 +54,6 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
 	mSpriteBatch->begin();
 
-	std::cout << frameAlpha << " \n";
-
     auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha, frameAlpha](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
