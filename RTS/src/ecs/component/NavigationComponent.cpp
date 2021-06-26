@@ -151,7 +151,7 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
-        if (navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
+        if (navCmp.mPath && navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
             auto& physCmp = view.get<PhysicsComponent>(entity);
 			updateComponent(entity, navCmp, physCmp, world);
 		}

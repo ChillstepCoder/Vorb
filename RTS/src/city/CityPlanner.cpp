@@ -44,6 +44,9 @@ void CityPlanner::update()
         return;
     }
 
+    // TODO: THIS IS TEMPORARILY DISABLED
+    return;
+
     CityPlot* plotForBuilding = mCity.getCityPlotter().reservePlotForBuilding(ui32v2(1, 1), ui32v2(100, 100));
     if (plotForBuilding) {
         generatePlan(*plotForBuilding);
@@ -72,6 +75,7 @@ void CityPlanner::generatePlan(CityPlot& plot) {
     const float sizeAlpha = Random::xorshf96f();
 
     // Generate floorplan size
+    // TODO: Dont just spam lumbermill
     const BuildingDescription& desc = buildingRepo.getBuildingDescription("lumbermill");
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.z, plot.aabb.w);

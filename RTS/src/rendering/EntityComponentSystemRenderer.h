@@ -20,6 +20,7 @@ public:
 	void renderSimpleSprites(const Camera2D& camera) const;
 	void renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha);
 	void renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer);
+	void renderInteractUI(const Camera2D& camera) const;
 
 private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;

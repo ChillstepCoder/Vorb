@@ -52,7 +52,10 @@ void Camera2D::update() {
 glm::vec2 Camera2D::convertScreenToWorld(const glm::vec2& screenCoords) const {
     const f32m4 invCamera = glm::inverse(_cameraMatrix);
     const f32v2 scaledCoords = (f32v2(screenCoords.x / _screenWidth, 1.0f - screenCoords.y / _screenHeight) - 0.5f) * 2.0f;
-    return f32v2(f32v4(scaledCoords, 0.0f, 0.0f) * invCamera) + _position;
+    f32v2 rv = f32v2(f32v4(scaledCoords, 0.0f, 0.0f) * invCamera) + _position;
+    // TODO: This happened twice... problem with the camera???
+    assert(!isnan(rv.x + rv.y));
+    return rv;
 }
 
 // Simple AABB test to see if a box is in the camera view

@@ -34,6 +34,7 @@ typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
 class TickCounter {
 public:
     // For tickPeriod 1 == 0
+    TickCounter() = default;
     TickCounter(ui32 tickPeriod, bool tickAtStart);
 
     // Returns true on the tick period
@@ -41,9 +42,11 @@ public:
     bool tryTick();
     void reset();
 
+    f32 getTickDelta() const { return (f32)mCurTick / mTickPeriod; }
+
 protected:
-    ui32 mTickPeriod;
-    ui32 mCurTick;
+    ui32 mTickPeriod = 0;
+    ui32 mCurTick = 0;
 };
 
 // Used to synchronize update rates for objects with time
@@ -51,6 +54,7 @@ class TickingTimer {
 public:
     TickingTimer(f64 msPerTick, f64 maxMSPerFrame);
 
+    void setMsPerTick(f64 msPerTick) { mMsPerTick = msPerTick; }
     void startFrame();
     // Returns true while we should be ticking
     bool tryTick();

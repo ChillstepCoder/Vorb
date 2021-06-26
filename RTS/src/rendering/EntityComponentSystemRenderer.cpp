@@ -75,3 +75,21 @@ void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D&
 		lightRenderer.RenderLight(pos, lightCmp.mLightData, camera);
 	});
 }
+
+void EntityComponentSystemRenderer::renderInteractUI(const Camera2D& camera) const {
+    mSpriteBatch->begin();
+
+    auto& ecs = mWorld.getECS();
+
+	const f32v2 fullSize(0.25f, 1.0f);
+    ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize](auto& physCmp, auto& interactCmp) {
+		// Background
+        mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getXYPosition(), fullSize, f32v2(1.0f), 0.0f /*rot*/, color4(0.0f, 0.5f, 0.0f, 0.5f), 0.5f);
+		// Foreground fill
+		const f32v2 fillSize(fullSize.x * interactCmp.mProgress, fullSize.y);
+		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getXYPosition(), fillSize, f32v2(1.0f), 0.0f /*rot*/, color4(0.0f, 1.0f, 0.0f, 1.0f), 0.51f);
+    });
+
+    mSpriteBatch->end();
+    mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
+}

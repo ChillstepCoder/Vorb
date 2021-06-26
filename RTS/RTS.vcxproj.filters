@@ -273,6 +273,9 @@
     <ClCompile Include="src\ai\tasks\GatherTask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -597,6 +600,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\GatherTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

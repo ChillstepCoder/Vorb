@@ -201,8 +201,6 @@ void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const C
 {
     // Stick to positive numbers
     f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
-	// This happened twice... problem with the camera???
-	assert(!isnan(bottomLeftCorner.x + bottomLeftCorner.y));
 	if (isnan(bottomLeftCorner.x + bottomLeftCorner.y)) return;
 
 	// Start one chunk down for mountains
@@ -675,16 +673,33 @@ void World::setTileAt(const ui32v2& worldPos, Tile tile) {
     }
 }
 
-bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource) {
+void World::setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer) {
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+	setTileLayerAt(handle, id, layer);
+}
+
+void World::setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer) {
+    assert(handle.isValid());
+    if (handle.isValid()) {
+        Chunk* chunk = handle.getMutableChunk();
+        chunk->setTileAt(handle.index, id, layer);
+    }
+}
+
+bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
 	TileHandle handle = getTileHandleAtWorldPos(worldPos);
 	if (handle.isValid()) {
 		for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
 			TileID tileId = handle.tile.layers[i];
 			if (tileId != INVALID_TILE_INDEX) {
 				if (TileRepository::getTileData(tileId).resource == resource) {
+					if (outLayer) {
+						*outLayer = (TileLayer)i;
+					}
 					return true;
 				}
 			}
 		}
 	}
+	return false;
 }

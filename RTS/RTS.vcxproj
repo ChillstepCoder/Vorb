@@ -172,6 +172,7 @@
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
+    <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
     <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
@@ -273,6 +274,7 @@
     <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
+    <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
     <ClInclude Include="src\ecs\EntityComponentSystem.h" />
     <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />

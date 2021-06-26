@@ -197,6 +197,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     //mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f, frameAlpha);
+    mEcsRenderer->renderInteractUI(camera);
 
     // Particles
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.

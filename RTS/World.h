@@ -52,8 +52,10 @@ public:
 	void createCityAt(const ui32v2& worldPos);
 
 	void setTileAt(const ui32v2& worldPos, Tile tile);
+    void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
+    void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);
 
-	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource);
+	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 
 	// Internal public interface
     Chunk& getChunkAtPosition(const f32v2& worldPos);

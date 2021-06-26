@@ -27,6 +27,7 @@ public:
     PlayerControlSystem mPlayerControlSystem;
     PersonAISystem mPersonAISystem;
     NavigationComponentSystem mNavigationSystem;
+    TimedTileInteractSystem mTimedTileInteractSystem;
 
     // City stuff
     BusinessSystem mBusinessSystem;

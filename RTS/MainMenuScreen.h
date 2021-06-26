@@ -66,8 +66,10 @@ private:
 
     // UI
 	f32v2 mSelectedTilePosition = f32v2(0.0f);
-	f32v2 mInteractPopupPosition = f32v2(0.0f);
+	f32v2 mLastRightClickPosition = f32v2(0.0f);
 	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
+
+	bool mIsRightButtonDown = false;
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 

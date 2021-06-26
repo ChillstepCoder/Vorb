@@ -15,6 +15,7 @@
 #include "ecs/component/SimpleSpriteComponent.h"
 #include "ecs/component/SoldierAIComponent.h"
 #include "ecs/component/UndeadAIComponent.h"
+#include "ecs/component/TimedTileInteractComponent.h"
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"

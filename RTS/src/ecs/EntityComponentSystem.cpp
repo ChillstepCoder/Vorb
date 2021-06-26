@@ -11,6 +11,7 @@ EntityComponentSystem::EntityComponentSystem(World& world)
 	: mPhysicsSystem(world)
 	, mPersonAISystem(world)
 	, mBusinessSystem(world)
+	, mTimedTileInteractSystem(world)
     , mWorld(world) {
 }
 
@@ -32,6 +33,7 @@ void EntityComponentSystem::update(const ClientECSData& clientData) {
 	mPlayerControlSystem.update(mRegistry, mWorld, clientData);
 	mPersonAISystem.update(mRegistry);
     mNavigationSystem.update(mRegistry, mWorld);
+	mTimedTileInteractSystem.update(mRegistry);
 	//mCorpseTable.update();
 }
 

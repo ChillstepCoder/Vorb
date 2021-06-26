@@ -15,7 +15,9 @@ enum class TileLayer {
 	Ground = 0,
 	Mid = 1,
 	Top = 2,
+	COUNT = 3
 };
+static_assert(TILE_LAYER_COUNT == enum_cast(TileLayer::COUNT));
 
 enum TileFlags : ui8 {
 	TILE_FLAG_IS_INTERACTING = 1 << 0,

@@ -26,6 +26,7 @@ public:
 protected:
 	void init(World& world, entt::registry& registry, entt::entity agent);
 	bool beginHarvest(World& world, entt::registry& registry, entt::entity agent);
+	void pathToHome(World& world, entt::registry& registry, entt::entity agent);
 
 	LiteTileHandle mTileTarget;
     TileResource mResource;
