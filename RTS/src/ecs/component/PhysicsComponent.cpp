@@ -27,7 +27,7 @@ KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
 }
 
 constexpr float VEL_DAMPING = 0.75f;
-constexpr float GRAVITY_FORCE = 0.01f;
+constexpr float GRAVITY_FORCE = 0.03f;
 
 // This is only kept as a reference for 2D collision detection
 // TODO: eventually remove this / replace with a common utility

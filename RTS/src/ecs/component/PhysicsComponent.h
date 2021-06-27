@@ -70,7 +70,7 @@ public:
 
 	f32v2 mPrevXYPosition = f32v2(0.0f);
 	f32 mPrevZPosition = 0.0f;
-	f32v2 mDir = f32v2(0.0f, 1.0f);
+	f32v2 mDir = f32v2(0.0f, -1.0f);
     f32 mCollisionRadius = 0.0f;
     f32 mZPosition = 0.0f;
     f32 mZVelocity = 0.0f;

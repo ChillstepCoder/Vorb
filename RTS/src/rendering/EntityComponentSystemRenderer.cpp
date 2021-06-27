@@ -19,7 +19,8 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& re
 	, mResourceManager(resourceManager)
 	, mWorld(world) {
 	// TODO: Render thread assert?
-	mCircleTexture = resourceManager.getTextureCache().addTexture("data/textures/circle_dir.png");
+    mCircleTexture = resourceManager.getTextureCache().addTexture("data/textures/circle_dir.png");
+    mSquareTexture = resourceManager.getTextureCache().addTexture("data/textures/square.png");
 	mSpriteBatch->init();
 }
 
@@ -81,13 +82,14 @@ void EntityComponentSystemRenderer::renderInteractUI(const Camera2D& camera) con
 
     auto& ecs = mWorld.getECS();
 
-	const f32v2 fullSize(0.25f, 1.0f);
-    ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize](auto& physCmp, auto& interactCmp) {
+	const f32v2 fullSize(1.0f, 0.25f);
+	const f32v2 offset(fullSize.x * -0.5f, 1.0f);
+    ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize, offset](auto& physCmp, auto& interactCmp) {
 		// Background
-        mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getXYPosition(), fullSize, f32v2(1.0f), 0.0f /*rot*/, color4(0.0f, 0.5f, 0.0f, 0.5f), 0.5f);
+        mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fullSize, 0.0f /*rot*/, color4(1.0f, 0.0f, 0.0f, 0.5f), 1.7f);
 		// Foreground fill
 		const f32v2 fillSize(fullSize.x * interactCmp.mProgress, fullSize.y);
-		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getXYPosition(), fillSize, f32v2(1.0f), 0.0f /*rot*/, color4(0.0f, 1.0f, 0.0f, 1.0f), 0.51f);
+		mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fillSize, 0.0f /*rot*/, color4(0.0f, 1.0f, 0.0f, 1.0f), 1.71f);
     });
 
     mSpriteBatch->end();

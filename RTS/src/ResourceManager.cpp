@@ -10,6 +10,7 @@
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
+#include "character/CharacterModelRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -41,6 +42,7 @@ ResourceManager::ResourceManager() {
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
+    mCharacterModelRepository = std::make_unique<CharacterModelRepository>(getTextureCache());
 }
 
 ResourceManager::~ResourceManager() {
@@ -111,6 +113,8 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
         }
         // TODO: .ttf?
     }
+
+    mCharacterModelRepository->gatherCharacterModelParts();
 
     mHasGathered = true;
 }

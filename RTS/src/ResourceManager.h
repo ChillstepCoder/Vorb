@@ -14,6 +14,7 @@ class EntityDefinitionRepository;
 class ItemRepository;
 class CraftingRepository;
 class BusinessRepository;
+class CharacterModelRepository;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -37,6 +38,7 @@ public:
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
+    CharacterModelRepository& getCharacterModelRepository() const { return *mCharacterModelRepository; }
 
     bool hasLoadedResources() const { return mHasLoadedResources; }
 
@@ -67,6 +69,7 @@ private:
     std::unique_ptr<ItemRepository> mItemRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
+    std::unique_ptr<CharacterModelRepository> mCharacterModelRepository;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

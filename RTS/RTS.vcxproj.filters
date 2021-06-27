@@ -276,6 +276,9 @@
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\character\CharacterModelRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -603,6 +606,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\character\CharacterModelRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

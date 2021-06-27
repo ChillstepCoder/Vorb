@@ -25,7 +25,8 @@ public:
 private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;
 	ResourceManager& mResourceManager;
-	vg::Texture mCircleTexture;
+    vg::Texture mCircleTexture;
+    vg::Texture mSquareTexture;
 	const EntityComponentSystem& mSystem;
 	const World& mWorld;
 };

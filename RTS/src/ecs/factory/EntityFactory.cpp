@@ -2,10 +2,10 @@
 #include "EntityFactory.h"
 
 #include "ecs/EntityDefinitionRepository.h"
-
 #include "ecs/EntityComponentSystem.h"
-
 #include "ecs/component/EntityDefinition.h"
+
+#include "character/CharacterModelRepository.h"
 
 #include "ResourceManager.h"
 #include <Vorb/graphics/TextureCache.h>
@@ -32,7 +32,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {
                 auto& modelCmp = registry.emplace<CharacterModelComponent>(newEntity);
-                modelCmp.mModel.load(mResourceManager.getTextureCache(), "face/female/Female_Average_Wide", "body/thin", "hair/longB");
+                mResourceManager.getCharacterModelRepository().initRandomCharacterModelAsRandomGender(modelCmp);
                 break;
             }
             case ComponentTypes::Combat: {

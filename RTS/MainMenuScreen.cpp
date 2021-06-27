@@ -390,9 +390,8 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, f32 targetHeight, c
     // TODO: Delta time dependent?
     // Zoom
 	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
-	float adjustedTargetscale = mTargetScale * ((playerControlCmp.mPlayerControlFlags & (ui16)PlayerControlFlags::SPRINTING) ? 0.9f : 1.0f);
-    if (abs(adjustedTargetscale - mScale) > 0.001f) {
-        mScale = vmath::lerp(mScale, adjustedTargetscale, 0.3f);
+    if (abs(mTargetScale - mScale) > 0.001f) {
+        mScale = vmath::lerp(mScale, mTargetScale, 0.3f);
         mCamera2D->setScale(mScale);
     }
 	const float cameraHeight = 1.0f / mScale * 1000.0f; // Height in meters

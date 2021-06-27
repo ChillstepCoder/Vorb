@@ -151,11 +151,11 @@ private:
     std::vector<CityRoad> mRoads;
     std::vector<entt::entity> mBusinesses;
 
-    std::unique_ptr<CityPlotter> mCityPlotter;
-    std::unique_ptr<CityPlanner> mCityPlanner;
-    std::unique_ptr<CityBuilder> mCityBuilder;
     std::unique_ptr<CityResidentManager> mCityResidentManager;
     std::unique_ptr<CityBusinessManager> mCityBusinessManager;
+    std::unique_ptr<CityPlanner> mCityPlanner;
+    std::unique_ptr<CityPlotter> mCityPlotter;
+    std::unique_ptr<CityBuilder> mCityBuilder;
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;

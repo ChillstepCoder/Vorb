@@ -148,6 +148,7 @@
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\character\CharacterModelRepository.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\city\City.cpp" />
@@ -240,6 +241,7 @@
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\AgentTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
+    <ClInclude Include="src\character\CharacterModelRepository.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\City.h" />
