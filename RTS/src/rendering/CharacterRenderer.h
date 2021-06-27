@@ -6,7 +6,7 @@
 
 class CharacterRenderer {
 public:
-	static void render(vg::SpriteBatch& sb, const CharacterModel& model, const f32v2& xyPos, f32 zPos, float angle, float alpha);
+	static void render(vg::SpriteBatch& sb, const CharacterModel& model, const f32v2& xyPos, f32 zPos, f32 depthOffset, float angle, float alpha);
 };
 
 //  TODO: This is temp af

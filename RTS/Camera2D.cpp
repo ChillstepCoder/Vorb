@@ -58,6 +58,12 @@ glm::vec2 Camera2D::convertScreenToWorld(const glm::vec2& screenCoords) const {
     return rv;
 }
 
+glm::vec2 Camera2D::convertWorldToScreen(const glm::vec2& worldCoords) const {
+    f32v2 rv = worldCoords - _position;
+    rv /= _scale;
+    return rv;
+}
+
 // Simple AABB test to see if a box is in the camera view
 bool Camera2D::isBoxInView(const glm::vec2& position, const glm::vec2& dimensions) {
 

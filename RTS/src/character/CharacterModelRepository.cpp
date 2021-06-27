@@ -26,14 +26,12 @@ void CharacterModelRepository::gatherCharacterModelParts() {
 }
 
 void CharacterModelRepository::initRandomCharacterModelAsRandomGender(CharacterModelComponent& cmp) {
-    PreciseTimer timer;
     if (Random::getCachedRandom() % 2 == 0) {
         initRandomCharacterModelAsFemale(cmp);
     }
     else {
         initRandomCharacterModelAsMale(cmp);
     }
-    std::cout << " character model initialized in " << timer.stop() << " ms\n";
 }
 
 void CharacterModelRepository::initRandomCharacterModelAsFemale(CharacterModelComponent& cmp) {

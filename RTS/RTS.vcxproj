@@ -163,6 +163,7 @@
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
+    <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
@@ -239,8 +240,8 @@
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
-    <ClInclude Include="src\ai\AgentTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
+    <ClInclude Include="src\ai\tasks\IAgentTask.h" />
     <ClInclude Include="src\character\CharacterModelRepository.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
@@ -263,6 +264,7 @@
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
+    <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\ComponentDefinition.h" />

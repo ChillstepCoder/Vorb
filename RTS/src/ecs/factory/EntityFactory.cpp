@@ -55,6 +55,10 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 registry.emplace<PersonAIComponent>(newEntity);
                 break;
             }
+            case ComponentTypes::Inventory: {
+                registry.emplace<InventoryComponent>(newEntity, DEFAULT_CARRY_WEIGHT);
+                break;
+            }
             case ComponentTypes::Physics: {
                 auto& physics = registry.emplace<PhysicsComponent>(newEntity, mEcs.mWorld, position, false);
                 physics.mQueryActorTypes = ACTORTYPE_HUMAN;
@@ -87,7 +91,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 assert(false); // Missing type
                 break;
         }
-        static_assert(enum_cast(ComponentTypes::COUNT) == 12, "Update component construction");
+        static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Update component construction");
     }
 
     return newEntity;

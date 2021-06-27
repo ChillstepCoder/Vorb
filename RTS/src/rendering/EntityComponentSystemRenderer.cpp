@@ -53,15 +53,18 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 }
 
 void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
+	// TODO: This should not be using spritebatch. It should use a custom 
+	// renderer so that it can add screen depth like the world shaders do
 	mSpriteBatch->begin();
 
     auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha, frameAlpha](auto& physCmp, auto& modelCmp) {
+	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha, frameAlpha, camera](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
 		f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
 		f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
-		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, interpolatedXY, interpolatedZ, rotation, alpha);
+		const f32 screenDepthOffset = -camera.convertWorldToScreen(interpolatedXY).y;
+		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, interpolatedXY, interpolatedZ, screenDepthOffset, rotation, alpha);
 	});
 
 	mSpriteBatch->end();

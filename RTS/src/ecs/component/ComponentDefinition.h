@@ -16,10 +16,11 @@
 #include "ecs/component/SoldierAIComponent.h"
 #include "ecs/component/UndeadAIComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
+#include "ecs/component/InventoryComponent.h"
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
-static_assert(enum_cast(ComponentTypes::COUNT) == 12, "Update component includes");
+static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Update component includes");
 
 struct ComponentDefinition {
     ComponentDefinition(ComponentTypes type) : type(type) {};
@@ -32,4 +33,4 @@ struct ComponentDefinition {
         SimpleSpriteComponentDef simpleSprite;
     };
 };
-static_assert(enum_cast(ComponentTypes::COUNT) == 12, "Set any needed component def");
+static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Set any needed component def");
