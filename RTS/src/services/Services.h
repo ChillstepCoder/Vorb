@@ -1,8 +1,10 @@
 #pragma once
 
+
 #include <Vorb/ThreadPool.h>
 
-#include "pathfinding/PathFinder.h"
+class PathFinder;
+class ResourceManager;
 
 struct ThreadPoolWorkerData {
 };
@@ -16,5 +18,6 @@ public:
 
     using Threadpool = entt::service_locator<vcore::ThreadPool<ThreadPoolWorkerData>>;
     using PathFinder = entt::service_locator<PathFinder>;
+    using ResourceManager = entt::service_locator<ResourceManager>;
 };
 

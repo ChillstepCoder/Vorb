@@ -1,7 +1,10 @@
 #pragma once
 
-// TODO: ItemID.h
-#include "item/Item.h"
+#include "item/ItemStack.h"
+
+enum class WorkStorageID {
+    HAULING,
+};
 
 enum class GearSlotType {
     BUNDLE,
@@ -31,10 +34,17 @@ public:
     f32 getMaxCarryWeight() const { return mMaxCarryWeight; }
     f32 getTotalCarryWeight() const { return mTotalCarryWeight; }
 
+    bool addOrDropItemStackToPersonalStorage(ItemStack itemStack);
+    ItemStack removeItemStackFromPersonalStorage(ItemStack itemStack);
+    bool addOrDropItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID);
+    std::vector<ItemStack>& getMutableWorkingStorage(int workingStorageID);
+    void eraseWorkingStorage(int workingStorageID);
+
 private:
     ItemID mGear[GEAR_SLOT_COUNT];
-    // TODO: More memory efficient data structure?
-    std::vector<ItemStack> mInternalStorage; // Pockets, backpack, ect
+    // TODO: More memory efficient data structures?
+    std::vector<ItemStack> mPersonalStorage; // Pockets, backpack, ect
+    std::map<int, std::vector<ItemStack>> mWorkingStorage; // Maps inventory to work tasks and such
     f32 mMaxCarryWeight = 0.0f;
     f32 mTotalCarryWeight = 0.0f;
 };

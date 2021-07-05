@@ -5,6 +5,10 @@
 
 #include "world/WorldGrid.h"
 
+#include "services/Services.h"
+#include "ResourceManager.h"
+#include "item/ItemRepository.h"
+#include "item/Item.h"
 
 ChunkRenderData::~ChunkRenderData() {
     // Empty
@@ -180,6 +184,80 @@ Chunk& Chunk::getRightNeighbor() const {
 
 Chunk& Chunk::getBottomNeighbor() const {
     return mWorldGrid->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
+}
+
+const ItemStack* Chunk::tryGetItemStackAt(TileIndex i) const {
+    auto&& it = mItemsOnFloor.find(i);
+    if (it == mItemsOnFloor.end()) {
+        return nullptr;
+    }
+    return &it->second;
+}
+
+bool Chunk::tryAddFullItemStackAt(TileIndex i, ItemStack itemStack) {
+    auto&& it = mItemsOnFloor.find(i);
+    if (it != mItemsOnFloor.end()) {
+        if (it->second.id != itemStack.id) {
+            // Can't merge different item types
+            return false;
+        }
+        // Check if we can fit our entire stack on existing stack
+        const ui32 newTotal = it->second.quantity + itemStack.quantity;
+        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+        if (newTotal > itemRepo.getItem(itemStack.id).getStackSize()) {
+            // Can't fit stack
+            return false;
+        }
+        else {
+            // Increase existing stack size
+            it->second.quantity += itemStack.quantity;
+            // Notify stockpile
+            if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
+                assert(false);
+            }
+            return true;
+        }
+    }
+    mItemsOnFloor[i] = itemStack;
+    // Notify stockpile
+    if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
+        assert(false);
+    }
+    return true;
+}
+
+ItemStack Chunk::tryAddPartialItemStackAt(TileIndex i, ItemStack itemStack) {
+    auto&& it = mItemsOnFloor.find(i);
+    if (it != mItemsOnFloor.end()) {
+        if (it->second.id != itemStack.id) {
+            // Can't merge different item types
+            return itemStack;
+        }
+        // Check if we can fit our entire stack on existing stack
+        const ui32 newTotal = it->second.quantity + itemStack.quantity;
+        ui32 quantityToAdd = itemStack.quantity;
+
+        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+        const ui32 stackSize = itemRepo.getItem(itemStack.id).getStackSize();
+        if (newTotal > stackSize) {
+            // Can't fit full stack
+            quantityToAdd = stackSize - it->second.quantity;
+        }
+        // Increase existing stack size
+        it->second.quantity += quantityToAdd;
+        itemStack.quantity -= quantityToAdd;
+        // Notify stockpile
+        if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
+            assert(false);
+        }
+        return itemStack;
+    }
+    mItemsOnFloor[i] = itemStack;
+    // Notify stockpile
+    if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
+        assert(false);
+    }
+    return itemStack;
 }
 
 ChunkID::ChunkID(const f32v2 worldPos) {

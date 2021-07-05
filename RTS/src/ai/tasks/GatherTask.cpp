@@ -6,6 +6,13 @@
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
+#include "ecs/component/InventoryComponent.h"
+#include "services/Services.h"
+#include "ResourceManager.h"
+#include "item/ItemRepository.h"
+#include "world/Tile.h"
+#include "Random.h"
+
 GatherTask::GatherTask(LiteTileHandle tileTarget, TileResource resource) :
     mTileTarget(tileTarget),
     mResource(resource) {
@@ -98,11 +105,27 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
         enum_cast(layer),
         INTERACT_TICKS,
         0,
-        [&world, this](bool, TimedTileInteractComponent& cmp) {
-            TileHandle tileHandle = world.getTileHandleAtWorldPos(mTileTarget.getWorldPos());
+        [&world, &registry, agent, this](bool, TimedTileInteractComponent& cmp) {
             // TODO: Interact lock???
+            TileHandle& tileHandle = cmp.mWorldInteractPos;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
+            const TileData& tileData = TileRepository::getTileData(tileHandle.tile.layers[cmp.mTileLayer]);
             world.setTileLayerAt(tileHandle, TILE_ID_NONE, static_cast<TileLayer>(cmp.mTileLayer));
+            // Award loot
+            InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+            for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
+                const ItemDropDef& dropDef = tileData.itemDrops[i];
+                ItemStack stack;
+                if (dropDef.countRange.y <= dropDef.countRange.x) {
+                    stack.quantity = dropDef.countRange.y;
+                }
+                else {
+                    stack.quantity = Random::getCachedRandom() % (dropDef.countRange.y - dropDef.countRange.x) + dropDef.countRange.x;
+                }
+                // TODO: More efficient lookup
+                stack.id = Services::ResourceManager::ref().getItemRepository().getItem(dropDef.itemName).getID();
+                invCmp.addOrDropItemStackToWorkingStorage(stack, enum_cast(WorkStorageID::HAULING));
+            }
         }
     );
     
@@ -119,9 +142,16 @@ void GatherTask::pathToHome(World& world, entt::registry& registry, entt::entity
 
     navCmp.setPathWithCallback(
         Services::PathFinder::ref().generatePathSynchronous(world, mReturnPos, physCmp.getXYPosition()),
-        [this](bool success) {
+        [this, &registry, agent, &world](bool success) {
             if (success == true) {
-                // TODO: Drop resources
+                // Drop resources into the stockpile
+                InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+                std::vector<ItemStack> items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
+                // TODO: Path to target pos
+                for (auto&& it : items) {
+                    assert(false);
+                }
+                invCmp.eraseWorkingStorage(enum_cast(WorkStorageID::HAULING));
                 mState = GatherTaskState::SUCCESS;
             }
             else {

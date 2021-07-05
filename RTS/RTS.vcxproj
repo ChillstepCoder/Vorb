@@ -157,8 +157,8 @@
     <ClCompile Include="src\city\CityBusinessManager.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
     <ClCompile Include="src\city\CityPlotter.cpp" />
+    <ClCompile Include="src\city\CityQuartermaster.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
-    <ClCompile Include="src\city\CityItemManager.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
@@ -183,6 +183,7 @@
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
+    <ClCompile Include="src\item\ItemStockpile.cpp" />
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
@@ -254,8 +255,8 @@
     <ClInclude Include="src\city\CityPlanner.h" />
     <ClInclude Include="src\city\CityPlot.h" />
     <ClInclude Include="src\city\CityPlotter.h" />
+    <ClInclude Include="src\city\CityQuartermaster.h" />
     <ClInclude Include="src\city\CityResidentManager.h" />
-    <ClInclude Include="src\city\CityItemManager.h" />
     <ClInclude Include="src\city\RoomNode.h" />
     <ClInclude Include="src\crafting\CraftingConst.h" />
     <ClInclude Include="src\crafting\CraftingRepository.h" />
@@ -293,6 +294,8 @@
     <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
+    <ClInclude Include="src\item\ItemStack.h" />
+    <ClInclude Include="src\item\ItemStockpile.h" />
     <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />

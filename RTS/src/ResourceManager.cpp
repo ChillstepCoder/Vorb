@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ResourceManager.h"
 
+#include "rendering/SpriteRepository.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/TextureAtlas.h"
 #include "rendering/ShaderLoader.h"
@@ -187,6 +188,14 @@ void ResourceManager::loadFiles() {
 
 const SpriteData& ResourceManager::getSprite(const std::string& spriteName) {
     return mSpriteRepository->getSprite(spriteName);
+}
+
+vg::TextureCache& ResourceManager::getTextureCache() {
+    return mSpriteRepository->getTextureCache();
+}
+
+const TextureAtlas& ResourceManager::getTextureAtlas() const {
+    return mSpriteRepository->getTextureAtlas();
 }
 
 void ResourceManager::generateNormalMaps() {

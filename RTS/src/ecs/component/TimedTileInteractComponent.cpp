@@ -16,7 +16,7 @@ TimedTileInteractComponent::TimedTileInteractComponent(
     mRepeatCount(repeatCount),
     mInteractFinishedCallback(callback)
 {
-
+    interactPos.tile.
 }
 
 TimedTileInteractSystem::TimedTileInteractSystem(World& world) : mWorld(world) {
@@ -25,7 +25,8 @@ TimedTileInteractSystem::TimedTileInteractSystem(World& world) : mWorld(world) {
 
 void TimedTileInteractSystem::update(entt::registry& registry) {
     auto view = registry.view<TimedTileInteractComponent>();
-
+    // TODO: what happens if the chunk we are interacting with is deallocated?
+    // TODO: SafeTileHandle (refcounted)
     // TODO: Is it safe to remove in iteration or is this undefined?
     for (auto entity : view) {
         auto& cmp = view.get<TimedTileInteractComponent>(entity);

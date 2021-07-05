@@ -42,7 +42,7 @@ private:
 
 	void updateCamera(const f32v2& targetCenter, f32 targetHeight, const vui::GameTime& gameTime);
 
-    std::unique_ptr<ResourceManager> mResourceManager;
+    ResourceManager* mResourceManager = nullptr;
 	std::unique_ptr<World> mWorld;
 
     // Rendering

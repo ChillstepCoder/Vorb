@@ -3,8 +3,7 @@
 // TODO: instead have the ItemRenderer manage this mapping
 #include "rendering/SpriteData.h"
 
-typedef ui32 ItemID;
-constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
+#include "item/ItemStack.h"
 
 enum class ItemType {
     UNKNOWN,
@@ -20,11 +19,6 @@ enum class ItemType {
 };
 KEG_ENUM_DECL(ItemType);
 
-struct ItemStack {
-    ItemID id = INVALID_ITEM_ID;
-    ui32 quantity = 0;
-};
-
 class Item
 {
     friend class ItemRepository;
@@ -33,6 +27,7 @@ public:
     ItemID getID() const { return mId; }
     f32 getValue() const { return mValue; }
     f32 getWeight() const { return mWeight; }
+    ui32 getStackSize() const { return mStackSize; }
 
 protected:
     nString mName;

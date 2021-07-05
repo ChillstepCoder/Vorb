@@ -10,6 +10,8 @@
 // Once items are purchased/traded, debt is subtracted, and the items are shipped by other means,
 // either instantly, or by transport
 
+// TODO: Merge with stockpile, quartermaster???
+
 class ItemTradeManager
 {
 public:

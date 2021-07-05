@@ -141,7 +141,6 @@ const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
     ui32v2(1,  1), // TOP_RIGHT
 };
 
-
 enum AXIS {
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL   = 1
@@ -174,6 +173,11 @@ struct TileIndex {
 	ui16 index;
 };
 
+// Items
+typedef ui32 ItemID;
+constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
+
+// Enum cast
 template<typename E>
 constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 	return static_cast<typename std::underlying_type<E>::type>(e);

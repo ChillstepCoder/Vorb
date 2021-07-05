@@ -67,6 +67,10 @@ public:
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
 
+	const ItemStack* tryGetItemStackAtWorldPos(const f32v2& worldPos) const;
+    bool tryAddFullItemStackAt(const f32v2& worldPos, ItemStack itemStack);
+    ItemStack tryAddPartialItemStackAt(const f32v2& worldPos, ItemStack itemStack); // Returns remaining item stack, which can be 0
+
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }

@@ -1,12 +1,12 @@
 #pragma once
 
 DECL_VIO(class IOManager);
+DECL_VG(class TextureCache);
 
 #include "world/Tile.h"
 
-#include "rendering/SpriteRepository.h"
-
-
+class SpriteRepository;
+class TextureAtlas;
 class MaterialManager;
 class ParticleSystemManager;
 class BuildingDescriptionRepository;
@@ -31,12 +31,13 @@ public:
 
     SpriteRepository& getSpriteRepository() { return *mSpriteRepository; }
     // TODO: Replace?
-    vg::TextureCache& getTextureCache() { return mSpriteRepository->getTextureCache(); }
-    const TextureAtlas& getTextureAtlas() const { return mSpriteRepository->getTextureAtlas(); }
+    vg::TextureCache& getTextureCache();
+    const TextureAtlas& getTextureAtlas() const;
     const MaterialManager& getMaterialManager() const { return *mMaterialManager; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
+    ItemRepository& getItemRepository() const { return *mItemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     CharacterModelRepository& getCharacterModelRepository() const { return *mCharacterModelRepository; }
 

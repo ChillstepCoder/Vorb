@@ -5,6 +5,7 @@
 #include "ResourceManager.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/SpriteRepository.h"
 #include <Vorb/graphics/SamplerState.h>
 
 GPUTextureManipulator::GPUTextureManipulator(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :

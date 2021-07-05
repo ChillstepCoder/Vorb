@@ -39,7 +39,7 @@ constexpr f64 TICK_RATE_MS = 40.0;
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
-	  mResourceManager(std::make_unique<ResourceManager>()),
+	  mResourceManager(&Services::ResourceManager::ref()),
       mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()))),
       mWorld(std::make_unique<World>(*mResourceManager))
 {
@@ -127,8 +127,11 @@ void MainMenuScreen::build() {
 		mTestClick = mCamera2D->convertScreenToWorld(screenPos);
 
 		if (event.button == vui::MouseButton::RIGHT) {
-			mIsRightButtonDown = true;
-            mLastRightClickPosition = screenPos;
+			// If we are making a villager with G, dont freeze screen
+			if (!vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
+				mIsRightButtonDown = true;
+				mLastRightClickPosition = screenPos;
+			}
 		}
 
 		// Set tiles
