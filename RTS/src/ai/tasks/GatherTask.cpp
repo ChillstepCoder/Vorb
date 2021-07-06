@@ -107,10 +107,10 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
         0,
         [&world, &registry, agent, this](bool, TimedTileInteractComponent& cmp) {
             // TODO: Interact lock???
-            TileHandle& tileHandle = cmp.mWorldInteractPos;
+            auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
-            const TileData& tileData = TileRepository::getTileData(tileHandle.tile.layers[cmp.mTileLayer]);
-            world.setTileLayerAt(tileHandle, TILE_ID_NONE, static_cast<TileLayer>(cmp.mTileLayer));
+            const TileData& tileData = TileRepository::getTileData(tileRef->tile.layers[cmp.mTileLayer]);
+            tileRef->tile.layers[cmp.mTileLayer] = TILE_ID_NONE;
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
             for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {

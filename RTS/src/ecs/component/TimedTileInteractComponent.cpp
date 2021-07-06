@@ -4,19 +4,19 @@
 #include "World.h"
 
 TimedTileInteractComponent::TimedTileInteractComponent(
-    TileHandle interactPos,
+    TileHandle interactTile,
     ui8 tileLayer,
     ui32 ticksUntilFinished,
     ui16 repeatCount,
     std::function<void(bool, TimedTileInteractComponent&)> callback /*= nullptr*/
 ) :
-    mWorldInteractPos(interactPos),
+    mInteractTile(std::make_unique<TileRef>(interactTile)),
     mTileLayer(tileLayer),
     mTimer(ticksUntilFinished, false /*tickAtStart*/),
     mRepeatCount(repeatCount),
     mInteractFinishedCallback(callback)
 {
-    interactPos.tile.
+   //TODO: interactPos.tile.
 }
 
 TimedTileInteractSystem::TimedTileInteractSystem(World& world) : mWorld(world) {
@@ -25,8 +25,6 @@ TimedTileInteractSystem::TimedTileInteractSystem(World& world) : mWorld(world) {
 
 void TimedTileInteractSystem::update(entt::registry& registry) {
     auto view = registry.view<TimedTileInteractComponent>();
-    // TODO: what happens if the chunk we are interacting with is deallocated?
-    // TODO: SafeTileHandle (refcounted)
     // TODO: Is it safe to remove in iteration or is this undefined?
     for (auto entity : view) {
         auto& cmp = view.get<TimedTileInteractComponent>(entity);
@@ -37,6 +35,7 @@ void TimedTileInteractSystem::update(entt::registry& registry) {
             }
             if (cmp.mCurrRepeat >= cmp.mRepeatCount) {
                 // Remove the component
+                cmp.mInteractTile.reset();
                 registry.remove<TimedTileInteractComponent>(entity);
             }
             else {

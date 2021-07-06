@@ -172,27 +172,23 @@ TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2
 
 TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	TileHandle handle;
-	handle.chunk = &getChunkAtPosition(worldPos);
-	if (handle.chunk->getState() == ChunkState::FINISHED) {
+	const Chunk* chunk = &getChunkAtPosition(worldPos);
+	if (chunk->getState() == ChunkState::FINISHED) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		handle.index = ui16(y * CHUNK_WIDTH + x);
-		handle.tile = handle.chunk->getTileAt(handle.index);
-		return handle;
+		return chunk->getTileHandleAt(TileIndex(x, y));
 	}
 	return TileHandle();
 }
 
 TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
     TileHandle handle;
-	// TODO: Chunk pos doesnt know how to handle integers, it thinks its chunk coords
-    handle.chunk = &getChunkAtPosition(f32v2(worldPos));
-    if (handle.chunk->getState() == ChunkState::FINISHED) {
+    // TODO: Chunk pos doesn't know how to handle integers, it thinks its chunk coords
+    const Chunk* chunk = &getChunkAtPosition(f32v2(worldPos));
+    if (chunk->getState() == ChunkState::FINISHED) {
         unsigned x = worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         unsigned y = worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        handle.index = ui16(y * CHUNK_WIDTH + x);
-        handle.tile = handle.chunk->getTileAt(handle.index);
-        return handle;
+        return chunk->getTileHandleAt(TileIndex(x, y));
     }
     return TileHandle();
 }
@@ -466,7 +462,7 @@ void World::updateSun() {
 bool World::updateChunk(Chunk& chunk) {
 	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
 		if (chunk.mRefCount) {
-			// Waiting on a thread to release us
+			// Waiting on a thread or handle to release us
 			return false;
 		}
 		// Unload

@@ -95,13 +95,33 @@ struct LiteTileHandle {
 struct TileHandle {
 
     TileHandle() {};
-    TileHandle(const Chunk* chunk, TileIndex index) : chunk(chunk), index(index) {};
-    TileHandle(const Chunk* chunk, TileIndex index, Tile tile) : chunk(chunk), index(index), tile(tile) {};
+    TileHandle(const Chunk* chunk, TileIndex index);
 
     bool isValid() const { return chunk != nullptr; }
 	Chunk* getMutableChunk() { return const_cast<Chunk*>(chunk); }
 
+	TileHandle& operator=(const TileHandle& other) {
+		chunk = other.chunk;
+		const_cast<TileIndex&>(index) = other.index;
+		const_cast<Tile&>(tile) = other.tile;
+		return *this;
+	}
+
     const Chunk* chunk = nullptr;
+    const TileIndex index;
+    const Tile tile;
+};
+
+// DOES NOT PROVIDE THREAD SAFE READ/WRITE
+struct TileRef {
+    TileRef(TileHandle handle);
+    TileRef(Chunk* chunk, TileIndex index);
+    ~TileRef() { release(); }
+    void release();
+
+    TileRef& operator=(const TileRef& other) = delete;
+
+    Chunk* chunk = nullptr;
     TileIndex index;
     Tile tile;
 };
@@ -112,6 +132,8 @@ class Chunk {
 	friend class ChunkRenderer;
 	friend class ChunkMesher;
 	friend class RenderContext; // For debug rendering of neighbors only
+	friend struct TileHandle;
+	friend struct TileRef;
 public:
 	Chunk();
 	~Chunk();
@@ -127,10 +149,11 @@ public:
 	ChunkState getState() const { return mState; }
 	const ChunkID& getChunkID() const { return mChunkId; }
 
-	TileHandle getLeftTile(const TileIndex index) const;
-	TileHandle getRightTile(const TileIndex index) const;
-	TileHandle getTopTile(const TileIndex index) const;
-	TileHandle getBottomTile(const TileIndex index) const;
+	TileHandle getTileHandleAt(const TileIndex index) const;
+	TileHandle getLeftTileHandle(const TileIndex index) const;
+	TileHandle getRightTileHandle(const TileIndex index) const;
+	TileHandle getTopTileHandle(const TileIndex index) const;
+	TileHandle getBottomTileHandle(const TileIndex index) const;
 	// Get neighbors starting from top left
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
@@ -142,6 +165,12 @@ public:
 	bool isInvalid() const { return mState == ChunkState::INVALID; }
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
 	bool isFinished() const { return isDataReady() && mDataReadyNeighborCount == 4; }
+
+    Tile& getMutableTileAt(TileIndex i) {
+        assert(i < CHUNK_SIZE);
+        assert(mState == ChunkState::FINISHED);
+		return mTiles[i];
+	}
 
     Tile getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
@@ -207,4 +236,8 @@ private:
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;
+
+	// Thread safety
+	// TODO: Reader/writer lock
+	std::mutex mMutex;
 };

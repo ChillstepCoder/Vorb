@@ -69,69 +69,57 @@ void Chunk::dispose() {
     mChunkRenderData.mBaseDirty = true;
 }
 
-TileHandle Chunk::getLeftTile(const TileIndex index) const {
+TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
+    return TileHandle(this, index);
+}
+
+TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
     const ui16 x = index.getX();
     if (x > 0) {
-        TileHandle handle(this, index - 1);
-        handle.tile = mTiles[handle.index];
-        return handle;
+        return TileHandle(this, index - 1);
     }
-    Chunk& leftNeighbor = getLeftNeighbor();
+    const Chunk& leftNeighbor = getLeftNeighbor();
     if (leftNeighbor.isDataReady()) {
-        TileHandle handle(&leftNeighbor, index + CHUNK_WIDTH - 1);
-        handle.tile = leftNeighbor.mTiles[handle.index];
-        return handle;
+        return TileHandle(&leftNeighbor, index + CHUNK_WIDTH - 1);
     }
 	return TileHandle();
 }
 
-TileHandle Chunk::getRightTile(const TileIndex index) const {
+TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
     const ui16 x = index.getX();
     if (x < CHUNK_WIDTH - 1) {
-        TileHandle handle(this, index + 1);
-        handle.tile = mTiles[handle.index];
-        return handle;
+        return TileHandle(this, index + 1);
     }
 
-    Chunk& rightNeighbor = getRightNeighbor();
+    const Chunk& rightNeighbor = getRightNeighbor();
     if (rightNeighbor.isDataReady()) {
-        TileHandle handle(&rightNeighbor, index - CHUNK_WIDTH + 1);
-        handle.tile = rightNeighbor.mTiles[handle.index];
-        return handle;
+        return TileHandle(&rightNeighbor, index - CHUNK_WIDTH + 1);
     }
     return TileHandle();
 }
 
-TileHandle Chunk::getTopTile(const TileIndex index) const {
+TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
     const ui16 y = index.getY();
     if (y < CHUNK_WIDTH - 1) {
-        TileHandle handle(this, index + CHUNK_WIDTH);
-        handle.tile = mTiles[handle.index];
-        return handle;
+        return TileHandle(this, index + CHUNK_WIDTH);
     }
 
     Chunk& topNeighbor = getTopNeighbor();
 	if (topNeighbor.isDataReady()) {
-        TileHandle handle(&topNeighbor, index + CHUNK_WIDTH - CHUNK_SIZE);
-        handle.tile = topNeighbor.mTiles[handle.index];
-        return handle;
+        return TileHandle(&topNeighbor, index + CHUNK_WIDTH - CHUNK_SIZE);
 	}
     return TileHandle();
 }
 
-TileHandle Chunk::getBottomTile(const TileIndex index) const {
+TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
     const ui16 y = index.getY();
     if (y > 0) {
-        TileHandle handle(this, index - CHUNK_WIDTH);
-        handle.tile = mTiles[handle.index];
-        return handle;
+        return TileHandle(this, index - CHUNK_WIDTH);
     }
 
     Chunk& bottomNeighbor = getBottomNeighbor();
     if (bottomNeighbor.isDataReady()) {
-        TileHandle handle(&bottomNeighbor, index - CHUNK_WIDTH + CHUNK_SIZE);
-        handle.tile = bottomNeighbor.mTiles[handle.index];
-        return handle;
+        return TileHandle(&bottomNeighbor, index - CHUNK_WIDTH + CHUNK_SIZE);
     }
 	return TileHandle();
 }
@@ -141,29 +129,29 @@ void Chunk::getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const
     // TODO: Branchless interior nodes? :thinkies:
 
 	{ // Bottom 3
-		TileHandle bottom = getBottomTile(index);
+		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
 			neighbors[(int)NeighborIndex::BOTTOM] = bottom.tile;
-			TileHandle bottomLeft = bottom.chunk->getLeftTile(bottom.index);
+			TileHandle bottomLeft = bottom.chunk->getLeftTileHandle(bottom.index);
             neighbors[(int)NeighborIndex::BOTTOM_LEFT] = bottomLeft.tile;
-            TileHandle bottomRight = bottom.chunk->getRightTile(bottom.index);
+            TileHandle bottomRight = bottom.chunk->getRightTileHandle(bottom.index);
             neighbors[(int)NeighborIndex::BOTTOM_RIGHT] = bottomRight.tile;
 		}
 	}
 
 	// Left
-    neighbors[(int)NeighborIndex::LEFT] = getLeftTile(index).tile;
+    neighbors[(int)NeighborIndex::LEFT] = getLeftTileHandle(index).tile;
 
     // Right
-    neighbors[(int)NeighborIndex::RIGHT] = getRightTile(index).tile;
+    neighbors[(int)NeighborIndex::RIGHT] = getRightTileHandle(index).tile;
 
     { // Top 3
-        TileHandle top = getTopTile(index);
+        TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
             neighbors[(int)NeighborIndex::TOP] = top.tile;
-            TileHandle topLeft = top.chunk->getLeftTile(top.index);
+            TileHandle topLeft = top.chunk->getLeftTileHandle(top.index);
             neighbors[(int)NeighborIndex::TOP_LEFT] = topLeft.tile;
-            TileHandle topRight = top.chunk->getRightTile(top.index);
+            TileHandle topRight = top.chunk->getRightTileHandle(top.index);
             neighbors[(int)NeighborIndex::TOP_RIGHT] = topRight.tile;
         }
     }
@@ -271,3 +259,32 @@ ChunkID::ChunkID(ui32 id) :
     pos.x = id % WorldData::WORLD_WIDTH_CHUNKS;
     pos.y = id / WorldData::WORLD_WIDTH_CHUNKS;
 };
+
+TileRef::TileRef(Chunk* chunk, TileIndex index) :
+    chunk(chunk),
+    index(index),
+    tile(chunk->mTiles[index]) {
+    chunk->incRef();
+}
+
+TileRef::TileRef(TileHandle handle) :
+    chunk(const_cast<Chunk*>(handle.chunk)), // FUCK YOU I DO WHAT I WANT
+    index(handle.index),
+    tile(chunk->mTiles[handle.index]) {
+    chunk->incRef();
+}
+
+void TileRef::release()
+{
+    if (chunk) {
+        chunk->decRef();
+        chunk = nullptr;
+    }
+}
+
+TileHandle::TileHandle(const Chunk* chunk, TileIndex index) :
+    chunk(chunk),
+    index(index),
+    tile(chunk->mTiles[index]) {
+
+}
