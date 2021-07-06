@@ -16,7 +16,8 @@ TimedTileInteractComponent::TimedTileInteractComponent(
     mRepeatCount(repeatCount),
     mInteractFinishedCallback(callback)
 {
-   //TODO: interactPos.tile.
+    assert(!mInteractTile->tile.hasFlag(TILE_FLAG_IS_INTERACTING));
+    mInteractTile->tile.setTileFlag(TILE_FLAG_IS_INTERACTING);
 }
 
 TimedTileInteractSystem::TimedTileInteractSystem(World& world) : mWorld(world) {
@@ -34,7 +35,8 @@ void TimedTileInteractSystem::update(entt::registry& registry) {
                 cmp.mInteractFinishedCallback(true, cmp);
             }
             if (cmp.mCurrRepeat >= cmp.mRepeatCount) {
-                // Remove the component
+                // Remove the component and clear the interact flag
+                cmp.mInteractTile->tile.clearTileFlag(TILE_FLAG_IS_INTERACTING);
                 cmp.mInteractTile.reset();
                 registry.remove<TimedTileInteractComponent>(entity);
             }

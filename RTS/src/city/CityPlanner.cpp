@@ -78,11 +78,11 @@ void CityPlanner::generatePlan(CityPlot& plot) {
     // TODO: Dont just spam lumbermill
     const BuildingDescription& desc = buildingRepo.getBuildingDescription("lumbermill");
     // TODO: rotation to road
-    const ui16v2 plotDims(plot.aabb.z, plot.aabb.w);
+    const ui16v2 plotDims(plot.aabb.dims);
     // TODO:  aspect ratio
     //plotDims.y = plotDims.x * desc.minAspectRatio;
 
-    const ui32v2 bottomLeftPos(plot.aabb.x, plot.aabb.y); // TODO: Actual position
+    const ui32v2 bottomLeftPos(plot.aabb.pos); // TODO: Actual position
     Cartesian dir = Cartesian::UP;
     if (plot.neighborRoads[enum_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
         dir = Cartesian::LEFT;

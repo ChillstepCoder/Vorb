@@ -52,7 +52,7 @@ enum class RoadType {
 struct CityRoad {
     ui32v2 startPos;
     ui32v2 endPos;
-    ui32v4 aabb;
+    ui32AABB aabb;
     ui32 width;
     RoadType type = RoadType::PAVED;
     RoadID id;

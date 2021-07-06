@@ -34,6 +34,7 @@ struct Tile {
 
 	void setTileFlag(TileFlags flag) { tileFlags |= flag; }
 	void clearTileFlag(TileFlags flag) { tileFlags &= (~flag); }
+	bool hasFlag(TileFlags flag) const { return tileFlags & flag; }
 
 	union {
 		struct {

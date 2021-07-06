@@ -3,20 +3,22 @@
 #include "CityPlotter.h"
 #include "city/City.h"
 
+#include "World.h"
+
 #include "Random.h"
 
 // c = center, r = halfwidth
-bool testAABBAABB_SIMD(const ui32v4& a, const ui32v4& b)
+bool testAABBAABB_SIMD(const ui32AABB& a, const ui32AABB& b)
 {
     // SIMD optimized AABB-AABB test
     // Optimized by removing conditional branches
-    const i64 cxa = a.x + a.z / 2;
-    const i64 cya = a.y + a.w / 2;
-    const i64 cxb = b.x + b.z / 2;
-    const i64 cyb = b.y + b.w / 2;
+    const i64 cxa = a.x + a.width / 2;
+    const i64 cya = a.y + a.height / 2;
+    const i64 cxb = b.x + b.width / 2;
+    const i64 cyb = b.y + b.height / 2;
     // -1 to check if within
-    const bool x = std::fabs((i64)cxa - (i64)cxb) <= (((i64)a.z + (i64)b.z) / 2) - 1;
-    const bool y = std::fabs((i64)cya - (i64)cyb) <= (((i64)a.w + (i64)b.w) / 2) - 1;
+    const bool x = std::fabs((i64)cxa - (i64)cxb) <= (((i64)a.width + (i64)b.width) / 2) - 1;
+    const bool y = std::fabs((i64)cya - (i64)cyb) <= (((i64)a.height + (i64)b.height) / 2) - 1;
 
     return x && y;
 }
@@ -97,14 +99,14 @@ CityPlot* CityPlotter::reservePlotForBuilding(const ui32v2& minPlotDims, const u
         }
 
         // Min dims check
-        if ((plot.aabb.z < minPlotDims.x && plot.aabb.w < minPlotDims.y) ||
-            (plot.aabb.z < minPlotDims.y && plot.aabb.w < minPlotDims.x)) {
+        if ((plot.aabb.width < minPlotDims.x && plot.aabb.height < minPlotDims.y) ||
+            (plot.aabb.width < minPlotDims.y && plot.aabb.height < minPlotDims.x)) {
             continue;
         }
 
         // Max dims check
-        if ((plot.aabb.z > maxPlotDims.x && plot.aabb.w > maxPlotDims.y) ||
-            (plot.aabb.z > maxPlotDims.y && plot.aabb.w > maxPlotDims.x)) {
+        if ((plot.aabb.width > maxPlotDims.x && plot.aabb.height > maxPlotDims.y) ||
+            (plot.aabb.width > maxPlotDims.y && plot.aabb.height > maxPlotDims.x)) {
             // TODO: Check if a split would be good here
             // Since the plot is too big, maybe it can be split.
             // oversizedPlots.emplace_back(plot.id);
@@ -132,15 +134,15 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
 
     // TODO: Rectangles?
     // Dimensions
-    newDistrict->aabb.z = size;
-    newDistrict->aabb.w = size;
+    newDistrict->aabb.width = size;
+    newDistrict->aabb.height = size;
 
     // Check if we have parent or we are root
     if (!parent) {
         // Initialize AABB
         const ui32v2& cityCenter = mCity.getCityCenterWorldPos();
-        newDistrict->aabb.x = cityCenter.x - newDistrict->aabb.z / 2;
-        newDistrict->aabb.y = cityCenter.y - newDistrict->aabb.w / 2;
+        newDistrict->aabb.x = cityCenter.x - newDistrict->aabb.width / 2;
+        newDistrict->aabb.y = cityCenter.y - newDistrict->aabb.height / 2;
 
         newDistrict->districtGridIndex = DISTRICT_GRID_SIZE / 2;
         mDistrictGrid[newDistrict->districtGridIndex] = newDistrict.get();
@@ -194,19 +196,19 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
         switch (randDirection) {
             case enum_cast(Cartesian::DOWN):
                 newDistrict->aabb.x = parent->aabb.x;
-                newDistrict->aabb.y = parent->aabb.y - newDistrict->aabb.w;
+                newDistrict->aabb.y = parent->aabb.y - newDistrict->aabb.height;
                 break;
             case enum_cast(Cartesian::LEFT):
-                newDistrict->aabb.x = parent->aabb.x - newDistrict->aabb.z;
+                newDistrict->aabb.x = parent->aabb.x - newDistrict->aabb.width;
                 newDistrict->aabb.y = parent->aabb.y;
                 break;
             case enum_cast(Cartesian::RIGHT):
-                newDistrict->aabb.x = parent->aabb.x + parent->aabb.z;
+                newDistrict->aabb.x = parent->aabb.x + parent->aabb.width;
                 newDistrict->aabb.y = parent->aabb.y;
                 break;
             case enum_cast(Cartesian::UP):
                 newDistrict->aabb.x = parent->aabb.x;
-                newDistrict->aabb.y = parent->aabb.y + parent->aabb.w;
+                newDistrict->aabb.y = parent->aabb.y + parent->aabb.height;
                 break;
         }
 
@@ -219,17 +221,17 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
     // Plot Roads
     constexpr ui32 MAIN_ROAD_WIDTH = 5;
     {
-        const ui32v2 startPos(newDistrict->aabb.x, newDistrict->aabb.y + newDistrict->aabb.w / 2);
+        const ui32v2 startPos(newDistrict->aabb.x, newDistrict->aabb.y + newDistrict->aabb.height / 2);
         addRoad(*newDistrict,
             startPos,
-            ui32v2(startPos.x + newDistrict->aabb.z, startPos.y),
+            ui32v2(startPos.x + newDistrict->aabb.width, startPos.y),
             MAIN_ROAD_WIDTH, AXIS_HORIZONTAL);
     }
     {
-        const ui32v2 startPos(newDistrict->aabb.x + newDistrict->aabb.z / 2, newDistrict->aabb.y);
+        const ui32v2 startPos(newDistrict->aabb.x + newDistrict->aabb.width / 2, newDistrict->aabb.y);
         addRoad(*newDistrict,
             startPos,
-            ui32v2(startPos.x, startPos.y + newDistrict->aabb.w),
+            ui32v2(startPos.x, startPos.y + newDistrict->aabb.height),
             MAIN_ROAD_WIDTH, AXIS_VERTICAL);
     }
 
@@ -238,14 +240,31 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
     const ui32 stop = mPlots.size();
     for (ui32 i = rootPlotIndex; i < stop; ++i) {
         // TODO: Holding a reference to the plot will cause a memory corruption after the split
-        CityPlotIndex rightId = splitPlotAlongAxis(ui32v2(mPlots[i].aabb.x + mPlots[i].aabb.z / 2, 0), i, AXIS_VERTICAL);
-        const ui32v2 horizontalSplit = ui32v2(0, mPlots[i].aabb.y + mPlots[i].aabb.w / 2);
+        CityPlotIndex rightId = splitPlotAlongAxis(ui32v2(mPlots[i].aabb.x + mPlots[i].aabb.width / 2, 0), i, AXIS_VERTICAL);
+        const ui32v2 horizontalSplit = ui32v2(0, mPlots[i].aabb.y + mPlots[i].aabb.height / 2);
         splitPlotAlongAxis(horizontalSplit, i, AXIS_HORIZONTAL);
         splitPlotAlongAxis(horizontalSplit, rightId, AXIS_HORIZONTAL);
     }
 
     mDistricts.emplace_back(std::move(newDistrict));
     return mDistricts.back().get();
+}
+
+bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
+    bool wasConflict = false;
+    mCity.mWorld.efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk&, Tile& tile) {
+        // TODO: Look into forcing branch prediction, we should rarely conflict
+        if (tile.hasFlag(TILE_FLAG_IN_CITY)) {
+            wasConflict = true;
+        }
+        else {
+            tile.setTileFlag(TILE_FLAG_IN_CITY);
+            // TODO: REMOVE DEBUG
+            tile.groundLayer = TILE_ID_NONE;
+        }
+    });
+
+    return wasConflict;
 }
 
 CityPlot* CityPlotter::addPlot(ui32v2 dims)
@@ -261,7 +280,7 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
     road.width = width;
     if (axis == AXIS_VERTICAL) {
         assert(road.startPos.y < road.endPos.y);
-        road.aabb = {
+        road.aabb.data = {
             road.startPos.x - road.width / 2,
             road.startPos.y,
             road.width,
@@ -270,7 +289,7 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
     }
     else {
         assert(road.startPos.x < road.endPos.x);
-        road.aabb = {
+        road.aabb.data = {
             road.startPos.x,
             road.startPos.y - road.width / 2,
             road.endPos.x - road.startPos.x,
@@ -294,15 +313,15 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
 }
 
 // TODO: Shared
-bool pointIsWithinAABB(const ui32v2& point, const ui32v4& aabb) {
+bool pointIsWithinAABB(const ui32v2& point, const ui32AABB& aabb) {
     return point.x > aabb.x &&
            point.y > aabb.y &&
-           point.x < aabb.x + aabb.z &&
-           point.y < aabb.y + aabb.w;
+           point.x < aabb.x + aabb.width &&
+           point.y < aabb.y + aabb.height;
 }
 
 // Returns false if we deleted the plot
-bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32v4& aabb, OPT CityRoad* road) {
+bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB& aabb, OPT CityRoad* road) {
 
     // Need to check fully enveloped cases
     // First test AABB+AABB collision to see if we even have a split
@@ -315,11 +334,11 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32v4
     // TODO: Utility for getting corners
     const ui32v2 corners[4] = {
         { aabb.x, aabb.y },
-        { aabb.x + aabb.z, aabb.y},
-        { aabb.x, aabb.y + aabb.w },
-        { aabb.x + aabb.z, aabb.y + aabb.w}
+        { aabb.x + aabb.width, aabb.y},
+        { aabb.x, aabb.y + aabb.height },
+        { aabb.x + aabb.width, aabb.y + aabb.height}
     };
-    ui32v4 thisAABB = mPlots[plotIndex].aabb;
+    const ui32AABB& thisAABB = mPlots[plotIndex].aabb;
     bool intersects[4] = {
         pointIsWithinAABB(corners[0], thisAABB),
         pointIsWithinAABB(corners[1], thisAABB),
@@ -451,9 +470,9 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32v4
         // TODO: Utility for getting corners
         const ui32v2 myCorners[4] = {
             { plot.aabb.x, plot.aabb.y },
-            { plot.aabb.x + plot.aabb.z, plot.aabb.y},
-            { plot.aabb.x, plot.aabb.y + plot.aabb.w },
-            { plot.aabb.x + plot.aabb.z, plot.aabb.y + plot.aabb.w}
+            { plot.aabb.x + plot.aabb.width, plot.aabb.y},
+            { plot.aabb.x, plot.aabb.y + plot.aabb.height },
+            { plot.aabb.x + plot.aabb.width, plot.aabb.y + plot.aabb.height}
         };
 
         int numSplits = 0;
@@ -515,8 +534,7 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32v4
     }
 }
 
-CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex plot, int axis)
-{
+CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex plot, int axis) {
 
     // TODO: Optimize arithmetic if necessary
     int oppositeAxis = !axis;
@@ -526,7 +544,7 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
     assert(offset != 0 && offset < plotToSplit.aabb[oppositeAxis] + plotToSplit.aabb[oppositeAxis + 2]);
     // TODO: pass down road neighbors
     // Add new plot
-    ui32v4 newAABB = plotToSplit.aabb;
+    ui32AABB newAABB = plotToSplit.aabb;
     newAABB[oppositeAxis] = plotToSplit.aabb[oppositeAxis] + offset;
     newAABB[oppositeAxis + 2] = plotToSplit.aabb[oppositeAxis + 2] - offset;
     // Shrink old plot

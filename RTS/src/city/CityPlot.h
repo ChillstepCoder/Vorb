@@ -16,7 +16,7 @@ typedef ui32 CityPlotIndex;
 
 struct CityPlot {
     CityPlot() {};
-    CityPlot(const ui32v4& aabb, CityPlotIndex plotIndex, CityDistrict* parentDistrict) :
+    CityPlot(const ui32AABB& aabb, CityPlotIndex plotIndex, CityDistrict* parentDistrict) :
         aabb(aabb), plotIndex(plotIndex), parentDistrict(parentDistrict) {
     };
 
@@ -24,7 +24,7 @@ struct CityPlot {
         neighborRoads[enum_cast(dir)] = id;
     }
 
-    ui32v4 aabb;
+    ui32AABB aabb;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
     CityDistrict* parentDistrict = nullptr;
     bool isFree = true;

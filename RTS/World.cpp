@@ -318,6 +318,36 @@ void World::enumVisibleRegions(const Camera2D& camera, std::function<void(const 
     }
 }
 
+void World::efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func) {
+	// TODO: implement locking (write/read)
+	// TODO: handle this without asserts
+	// Start at bottom left
+	ui32v2 worldPos;
+	ui32 spanX = CHUNK_WIDTH; // Logically these initial values wont actually be used, but need to please compiler
+	ui32 spanY = CHUNK_WIDTH;
+	for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.height;) {
+        for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.height;) {
+            TileHandle cornerHandle = getTileHandleAtWorldPos(worldPos);
+            assert(cornerHandle.chunk && cornerHandle.chunk->isDataReady());
+            Chunk& chunk = *cornerHandle.getMutableChunk();
+            const ui32 distFromRightEdge = CHUNK_WIDTH - cornerHandle.index.getX();
+            const ui32 distFromTopEdge = CHUNK_WIDTH - cornerHandle.index.getY();
+            spanX = std::min(distFromRightEdge, aabb.width);
+            spanY = std::min(distFromTopEdge, aabb.height); // TODO: Prob clever way to move this up a loop
+            const ui32 x = cornerHandle.index.getX();
+            const ui32 y = cornerHandle.index.getY();
+			for (ui32 dy = 0; dy < spanY; ++dy) {
+				for (ui32 dx = 0; dx < spanX; ++dx) {
+					func(chunk, chunk.mTiles[TileIndex(x + dx, y + dy)]);
+				}
+			}
+			assert(false);
+			worldPos.x += spanX;
+		}
+		worldPos.y += spanY;
+	}
+}
+
 void World::updateClientEcsData(const Camera2D& camera) {
     const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
     mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));

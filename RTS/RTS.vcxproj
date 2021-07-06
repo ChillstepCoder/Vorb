@@ -331,6 +331,7 @@
     <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
+    <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\IntersectionHit.h" />
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />

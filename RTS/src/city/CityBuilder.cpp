@@ -84,8 +84,8 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     CityRoad& road = mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
-    for (ui32 y = road.aabb.y; y < road.aabb.y + road.aabb.w; ++y) {
-        for (ui32 x = road.aabb.x; x < road.aabb.x + road.aabb.z; ++x) {
+    for (ui32 y = road.aabb.y; y < road.aabb.y + road.aabb.height; ++y) {
+        for (ui32 x = road.aabb.x; x < road.aabb.x + road.aabb.width; ++x) {
             mWorld.setTileAt(ui32v2(x, y), Tile(tileId, TILE_ID_NONE, TILE_ID_NONE, 0));
         }
     }

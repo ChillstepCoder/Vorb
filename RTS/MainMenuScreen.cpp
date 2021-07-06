@@ -101,7 +101,8 @@ void MainMenuScreen::build() {
             sDebugOptions.mCities = !sDebugOptions.mCities;
         }
         else if (event.keyCode == VKEY_R) {
-			mRenderContext.reloadShaders();
+			// TODO: Fix this
+			//mRenderContext.reloadShaders();
         }
         else if (event.keyCode == VKEY_N) {
 			mRenderContext.selectNextDebugShader();

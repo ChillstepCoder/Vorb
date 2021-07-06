@@ -219,7 +219,7 @@ private:
 
 	ChunkID mChunkId;
 	f32v2 mWorldPos = f32v2(0.0f);
-	std::vector<Tile> mTiles;
+	std::vector<Tile> mTiles; // TODO: Memory recycler
 	// TODO: Custom data structure?
 	// TODO: Morton order + lower/upper bound to find closest?
 	// TODO: Only track loose items, let stockpiles track their own items? Problem is 

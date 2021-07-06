@@ -21,7 +21,7 @@ enum class DistrictTypes {
 // Which represents the overarching structure of a city
 // TODO: Polygon shape? Merging?
 struct CityDistrict {
-    ui32v4 aabb;
+    ui32AABB aabb;
     DistrictTypes type;
     CityDistrict* children[4]; // S,W,E,N
     CityDistrict* parent = nullptr;

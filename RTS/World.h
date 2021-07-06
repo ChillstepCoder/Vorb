@@ -75,8 +75,9 @@ public:
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 
-    void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const;
-    void enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const;
+    void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk&)> func) const;
+    void enumVisibleRegions(const Camera2D& camera, std::function<void(const Region&)> func) const;
+	void efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func);
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
 	void updateClientEcsData(const Camera2D& camera);

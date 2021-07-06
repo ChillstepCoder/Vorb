@@ -28,6 +28,7 @@ public:
 
 private:
     CityDistrict* addDistrict(DistrictTypes type, CityDistrict* parent, ui32 size);
+    bool markDistrictTilesAsOwned(CityDistrict& district); // Returns false if there was a conflict
     CityPlot* addPlot(ui32v2 dims);
 
     // axis 0 = horizontal, 1 = vertical
@@ -35,7 +36,7 @@ private:
 
     // Takes a plot and an input AABB, then splits the plot into sub plots by subtracting the AABB volume.
     // Returns false if we deleted the plot and need to try to split this index again
-    bool splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32v4& aabb, OPT CityRoad* road);
+    bool splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB& aabb, OPT CityRoad* road);
 
     // Split a plot into two plots. Returns index of new plot.
     // axis 0 = split horizontally, 1 = split vertically

@@ -85,6 +85,7 @@ struct b2Vec2;
 #endif
 
 #include "util/MathUtil.hpp"
+#include "util/AABB.hpp"
 
 // Comment out for larger chunks
 // #define USE_SMALL_CHUNK_WIDTH

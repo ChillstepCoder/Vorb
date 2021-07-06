@@ -136,7 +136,7 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
             default:
                 color = color4(1.0f, 1.0f, 1.0f, ROOM_COLOR_ALPHA);
         };
-        DebugRenderer::drawQuad(f32v2(district.aabb.x, district.aabb.y), f32v2(district.aabb.z, district.aabb.w), color, PERIOD_FRAMES);
+        DebugRenderer::drawQuad(f32v2(district.aabb.pos), f32v2(district.aabb.dims), color, PERIOD_FRAMES);
     }
 
     // Render plots
@@ -151,7 +151,7 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
             // Everything else
             color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
         }
-        DebugRenderer::drawAABB(f32v2(plot.aabb.x, plot.aabb.y), f32v2(plot.aabb.z, plot.aabb.w), color, PERIOD_FRAMES);
+        DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), color, PERIOD_FRAMES);
     }
 }
 
