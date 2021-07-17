@@ -34,11 +34,11 @@ private:
 class ItemStockpile
 {
     friend class ItemReservation;
-
-    ItemStockpile(World& world, const ui32v4& aabb, entt::entity ownerEntity = INVALID_ENTITY);
+public:
+    ItemStockpile(World& world, const ui32AABB& aabb, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
-    bool isValid() { return mAABB.z != 0; } // If we have 0 width we are null
+    bool isValid() { return mAABB.width != 0; } // If we have 0 width we are null
 
     void renderDebug() const;
     // Returns the leftover stack, if quantity is 0, itemStack was consumed
@@ -48,6 +48,8 @@ class ItemStockpile
     bool tryGetBestPositionToInsertItemStack(ItemStack stack, OUT ui32v2* outPos);
     bool tryGetClosestPositionOfItem(const f32v2& pos, ItemID itemId, OUT ui32v2* outPos) const;
     CALLER_DELETE std::unique_ptr<ItemReservation> tryReserveItemStack(ItemStack itemStack, ui32 minimumQuantity);
+
+    const ui32AABB& getAABB() const { return mAABB; }
 
 private:
     void releaseReservation(ItemReservation* reservation);
@@ -60,7 +62,7 @@ private:
 
     // TODO: MultiAABB
     World& mWorld;
-    ui32v4 mAABB = ui32v4(0);
+    ui32AABB mAABB = ui32AABB(0);
     entt::entity mOwnerEntity = INVALID_ENTITY;
     std::map<ItemID, ItemRecord> mItemContents;
     std::set<ItemReservation*> mReservations;

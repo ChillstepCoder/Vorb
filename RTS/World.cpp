@@ -341,7 +341,6 @@ void World::efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk
 					func(chunk, chunk.mTiles[TileIndex(x + dx, y + dy)]);
 				}
 			}
-			assert(false);
 			worldPos.x += spanX;
 		}
 		worldPos.y += spanY;

@@ -31,7 +31,7 @@ bool ItemReservation::fulfillQuantity(ui32 quantity) {
     return false;
 }
 
-ItemStockpile::ItemStockpile(World& world, const ui32v4& aabb, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+ItemStockpile::ItemStockpile(World& world, const ui32AABB& aabb, entt::entity ownerEntity /*= INVALID_ENTITY*/)
     : mWorld(world)
     , mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
@@ -46,7 +46,7 @@ ItemStockpile::~ItemStockpile() {
 }
 
 void ItemStockpile::renderDebug() const {
-    DebugRenderer::drawQuad(f32v2(mAABB.x, mAABB.y), f32v2(mAABB.z, mAABB.w), color4(1.0f, 1.0f, 0.0f, 0.3f));
+    DebugRenderer::drawQuad(f32v2(mAABB.pos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
 }
 
 ItemStack ItemStockpile::tryAddItemStackAt (ItemStack stack, ui32v2 pos) {
@@ -60,8 +60,8 @@ bool ItemStockpile::tryGetBestPositionToInsertItemStack(ItemStack stack, OUT ui3
     f32 closestDistSq = FLT_MAX;
     assert(outPos);
 
-    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.w; ++y) {
-        for (ui32 x = mAABB.x; x < mAABB.x + mAABB.z; ++x) {
+    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
+        for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             f32v2 tilePos(x, y);
             const ItemStack* item = mWorld.tryGetItemStackAtWorldPos(tilePos);
             if (!item || item->id == stack.id) {
@@ -83,8 +83,8 @@ bool ItemStockpile::tryGetClosestPositionOfItem(const f32v2& pos, ItemID itemId,
     assert(outPos);
     bool found = false;
 
-    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.w; ++y) {
-        for (ui32 x = mAABB.x; x < mAABB.x + mAABB.z; ++x) {
+    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
+        for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             f32v2 tilePos(x, y);
             const ItemStack* item = mWorld.tryGetItemStackAtWorldPos(tilePos);
             if (item && item->id == itemId) {

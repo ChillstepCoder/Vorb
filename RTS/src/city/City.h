@@ -8,6 +8,7 @@ class CityPlanner;
 class CityBuilder;
 class CityResidentManager;
 class CityBusinessManager;
+class CityQuartermaster;
 class World;
 
 
@@ -111,6 +112,7 @@ class City
     friend class CityPlotter;
     friend class CityResidentManager;
     friend class CityBusinessManager;
+    friend class CityQuartermaster;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
@@ -156,6 +158,7 @@ private:
     std::unique_ptr<CityPlanner> mCityPlanner;
     std::unique_ptr<CityPlotter> mCityPlotter;
     std::unique_ptr<CityBuilder> mCityBuilder;
+    std::unique_ptr<CityQuartermaster> mCityQuartermaster;
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;

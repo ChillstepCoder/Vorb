@@ -6,6 +6,7 @@
 #include "CityBuilder.h"
 #include "CityResidentManager.h"
 #include "CityBusinessManager.h"
+#include "CityQuartermaster.h"
 #include "ecs/business/BusinessRepository.h"
 #include "World.h"
 #include "ResourceManager.h"
@@ -29,6 +30,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
     mCityResidentManager = std::make_unique<CityResidentManager>(*this);
     mCityBusinessManager = std::make_unique<CityBusinessManager>(*this);
+    mCityQuartermaster = std::make_unique<CityQuartermaster>(*this);
 
     mCityPlotter->initAsTier(0);
 
