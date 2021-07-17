@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\graphics\BlendState.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="DebugRenderer.cpp" />
@@ -236,6 +237,7 @@
     <ClCompile Include="TileSet.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="Camera2D.h" />
     <ClInclude Include="DebugRenderer.h" />
