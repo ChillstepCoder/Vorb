@@ -8,6 +8,10 @@ CityQuartermaster::CityQuartermaster(City& city) : mCity(city) {
 
 }
 
+CityQuartermaster::~CityQuartermaster() {
+
+}
+
 bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB& aabb) {
     if (checkStockpileOverlap(aabb)) {
         return false;

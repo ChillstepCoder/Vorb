@@ -9,6 +9,7 @@ class City;
 class CityQuartermaster {
 public:
     CityQuartermaster(City& city);
+    ~CityQuartermaster();
 
     // creates an unowned stockpile, returns false if conflicts with existing stockpile
     bool tryCreateCityStockpileAt(const ui32AABB& aabb);

@@ -62,7 +62,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	}
 	// Remove any navigation component if we are applying movement input
 	entt::entity entityId = (entt::entity)reinterpret_cast<entt::id_type>(physCmp.mBody->GetUserData());
-	registry.remove_if_exists<NavigationComponent>(entityId);
+	registry.remove<NavigationComponent>(entityId);
 
 	// Facing
 	if (isSprinting) {

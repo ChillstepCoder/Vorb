@@ -185,7 +185,7 @@ void DebugRenderer::render(const f32m4& viewMatrix)
         newMesh.lifetime = lineIt.first.first;
         newMesh.id = lineIt.first.second;
         glGenBuffers(1, &newMesh.vbo);
-        newMesh.numVerts = lines.size() * 2;
+        newMesh.numVerts = (GLsizei)(lines.size() * 2);
         newMesh.type = DebugMeshType::LINES;
 
         std::vector<SimpleMeshVertex> lineVertices(newMesh.numVerts);
