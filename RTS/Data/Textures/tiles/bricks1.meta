@@ -1,0 +1,5 @@
+dims_cells: [1,1]
+tiles:
+  - name: bricks1
+    cell_rect: [0,0,1,1]
+    lod_color: [127,127,127]

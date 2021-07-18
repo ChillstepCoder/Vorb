@@ -1,0 +1,8 @@
+dims_cells: [1,1]
+tiles:
+  - name: mega_tree
+    cell_rect: [0,0,1,1]
+    dims_meters: [7.0, 8.0]
+    lod_color: [51,107,56]
+    rand_flip: true
+    offset: [0.0,0.1]

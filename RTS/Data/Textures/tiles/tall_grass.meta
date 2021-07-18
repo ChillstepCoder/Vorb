@@ -1,0 +1,10 @@
+dims_cells: [2,1]
+tiles:
+  - name: tall_grass
+    method: flora
+    cell_rect: [0,0,1,1]
+    opaque: false
+  - name: tall_grass_2
+    method: flora
+    cell_rect: [1,0,1,1]
+    opaque: false
