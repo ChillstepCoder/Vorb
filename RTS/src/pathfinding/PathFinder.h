@@ -4,6 +4,7 @@ class World;
 
 typedef ui32v2 PathPoint;
 
+// TODO: Can this be contiguous?
 struct Path {
     std::unique_ptr<PathPoint[]> points;
     ui32 numPoints = 0;

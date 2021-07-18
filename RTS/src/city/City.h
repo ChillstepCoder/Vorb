@@ -125,6 +125,7 @@ public:
     CityPlotter& getCityPlotter() { return *mCityPlotter; }
     CityBusinessManager& getBusinessManager() { return *mCityBusinessManager; }
     BuildingDescriptionRepository& getBuildingRepository() { return mBuildingRepository; }
+    CityQuartermaster& getCityQuartermaster() { return *mCityQuartermaster; }
 
     // Accessors
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }

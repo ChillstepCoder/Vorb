@@ -14,6 +14,8 @@ public:
     // creates an unowned stockpile, returns false if conflicts with existing stockpile
     bool tryCreateCityStockpileAt(const ui32AABB& aabb);
 
+    ItemStockpile* tryGetClosestStockpileToPoint(const ui32v2 position);
+
 
 private:
     bool checkStockpileOverlap(const ui32AABB& aabb) const;

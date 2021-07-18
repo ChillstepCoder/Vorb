@@ -6,16 +6,21 @@
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
+#include "city/City.h"
+#include "city/CityQuartermaster.h"
+
 #include "ecs/component/InventoryComponent.h"
 #include "services/Services.h"
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
+#include "item/ItemStockpile.h"
 #include "world/Tile.h"
 #include "Random.h"
 
-GatherTask::GatherTask(LiteTileHandle tileTarget, TileResource resource) :
+GatherTask::GatherTask(LiteTileHandle tileTarget, TileResource resource, City* city) :
     mTileTarget(tileTarget),
-    mResource(resource) {
+    mResource(resource),
+    mCity(city) {
 
 }
 
@@ -39,11 +44,17 @@ bool GatherTask::tick(World& world, entt::registry& registry, entt::entity agent
         case GatherTaskState::HARVESTING: {
             // Once the component is destroyed, we are done
             if (!registry.try_get<TimedTileInteractComponent>(agent)) {
-                pathToHome(world, registry, agent);
+                pathToStockpile(world, registry, agent);
             }
             break;
         }
-        case GatherTaskState::PATH_TO_HOME:
+        case GatherTaskState::PATH_TO_STOCKPILE:
+            // Awaiting callback
+            break;
+        case GatherTaskState::PICK_STOCKPILE_SLOT:
+            addItemToStockpile(world, registry, agent);
+            break;
+        case GatherTaskState::PATH_TO_STOCKPILE_SLOT:
             // Awaiting callback
             break;
         case GatherTaskState::SUCCESS:
@@ -70,9 +81,6 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
         mState = GatherTaskState::FAIL;
         return;
     }
-
-    // TODO: temp    
-    mReturnPos = physCmp.getXYPosition();
 
     navCmp.setPathWithCallback(
         Services::PathFinder::ref().generatePathSynchronous(world, mTileTarget.getWorldPos(), physCmp.getXYPosition()),
@@ -141,25 +149,23 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
     return true;
 }
 
-void GatherTask::pathToHome(World& world, entt::registry& registry, entt::entity agent)
-{
+// TODO: HaulTask
+void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mPath);
 
+    assert(mCity);
+    const f32v2& myPos = physCmp.getXYPosition();
+    ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
+    ui32v2 stockpileCenter = closestStockpile->getAABB().getCenter();
+
+    // Path to the stockpile
     navCmp.setPathWithCallback(
-        Services::PathFinder::ref().generatePathSynchronous(world, mReturnPos, physCmp.getXYPosition()),
-        [this, &registry, agent, &world](bool success) {
-            if (success == true) {
-                // Drop resources into the stockpile
-                InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-                std::vector<ItemStack> items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
-                // TODO: Path to target pos
-                for (auto&& it : items) {
-                    assert(false);
-                }
-                invCmp.eraseWorkingStorage(enum_cast(WorkStorageID::HAULING));
-                mState = GatherTaskState::SUCCESS;
+        Services::PathFinder::ref().generatePathSynchronous(world, stockpileCenter, myPos),
+        [this, &registry, agent, &world, stockpileCenter](bool success) {
+            if (success) {
+                mState = GatherTaskState::PICK_STOCKPILE_SLOT;
             }
             else {
                 // Failed to path, fail he task
@@ -168,5 +174,39 @@ void GatherTask::pathToHome(World& world, entt::registry& registry, entt::entity
         }
     );
 
-    mState = GatherTaskState::PATH_TO_HOME;
+    mState = GatherTaskState::PATH_TO_STOCKPILE;
+}
+
+void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt::entity agent) {
+    // Drop resources into the stockpile
+    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+    std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
+    if (items.empty()) {
+        mState = GatherTaskState::SUCCESS;
+        return;
+    }
+
+    const f32v2& myPos = physCmp.getXYPosition();
+    // TODO: Just get at point? This is another lookup
+    ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
+    // TODO: Path to target pos
+    // Insert each item into stockpile storage
+    // Get stockpile at position
+    ItemStack& stack = items[0];
+    ui32v2 posToInsert;
+    if (closestStockpile->tryGetBestPositionToInsertItemStack(stack, &posToInsert)) {
+        // Walk to the point and drop the item, no pathing
+        NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
+        navCmp.setSimpleLinearTargetPoint(posToInsert, [this, agent, &registry](bool success) {
+            if (success) {
+                PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+                const f32v2& myPos = physCmp.getXYPosition();
+                ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
+                mState = GatherTaskState::PICK_STOCKPILE_SLOT;
+            }
+            mState = GatherTaskState::PICK_STOCKPILE_SLOT;
+        });
+    }
+    invCmp.eraseWorkingStorage(enum_cast(WorkStorageID::HAULING));
 }

@@ -16,7 +16,39 @@ constexpr float MIN_DISTANCE = 0.9f; // This is extra large to account for steer
 constexpr float ACCELERATION = 0.013f;
 //constexpr int QUADRANTS = 5; //bad name
 
-inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+inline void updateVelocity(const f32v2& targetVelocity, PhysicsComponent& physCmp) {
+    f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
+    float velocityDist = glm::length(velocityOffset);
+    // TODO: DELTATIME
+    //myPhysCmp.mBody->ApplyForce(reinterpret_cast<const b2Vec2&>(targetVelocity * 0.025f), myPhysCmp.mBody->GetWorldCenter(), true);
+    if (velocityDist <= ACCELERATION) {
+        physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
+    }
+    else {
+        const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
+        velocityOffset = (velocityOffset / velocityDist) * ACCELERATION + currentLinearVelocity;
+        physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
+    }
+}
+
+void updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+    const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - physCmp.getXYPosition();
+    const float distance2 = glm::length2(offset);
+    if (distance2 <= SQ(MIN_DISTANCE)) {
+        // Target reached
+        physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+        if (navCmp.mFinishedCallback) {
+            navCmp.mFinishedCallback(true /* success */);
+            navCmp.mFinishedCallback = nullptr;
+        }
+        return;
+    }
+
+    const f32v2 targetVelocity = (offset / std::sqrt(distance2)) * navCmp.mSpeed/* * (cmp.mColliding ? 0.2f : 1.0f)*/;
+    updateVelocity(targetVelocity, physCmp);
+}
+
+void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
 	
 	// TODO: do this conversion in the generator?
 	f32v2 nextPoint = f32v2(navCmp.mPath->points[navCmp.mCurrentPoint]) + f32v2(0.5f);
@@ -96,8 +128,9 @@ inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, Ph
 	// TODO: Do we need this?
 	physCmp.mDir = targetDir;
 
-	const float ARC_LENGTH = DEG_TO_RAD(175.0f);
+    updateVelocity(targetVelocity, physCmp);
 
+    //const float ARC_LENGTH = DEG_TO_RAD(175.0f);
 	//// Look for undead allies
 	//std::vector<EntityDistSortKey> actors = world.queryActorsInArc(physCmp.getXYPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, ACTORTYPE_NONE, true, QUADRANTS, entity);
 	//float closest[5] = { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX };
@@ -130,18 +163,6 @@ inline void updateComponent(entt::entity entity, NavigationComponent& navCmp, Ph
 
 	// Disable friction while we are navigating
 	//myPhysCmp.mFrictionEnabled = false;
-	f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
-	float velocityDist = glm::length(velocityOffset);
-	// TODO: DELTATIME
-	//myPhysCmp.mBody->ApplyForce(reinterpret_cast<const b2Vec2&>(targetVelocity * 0.025f), myPhysCmp.mBody->GetWorldCenter(), true);
-	if (velocityDist <= ACCELERATION) {
-		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
-	}
-	else {
-		const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
-		velocityOffset = (velocityOffset / velocityDist) * ACCELERATION + currentLinearVelocity;
-		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
-	}
 	
 }
 
@@ -153,19 +174,34 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
         if (navCmp.mPath && navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
             auto& physCmp = view.get<PhysicsComponent>(entity);
-			updateComponent(entity, navCmp, physCmp, world);
+			switch (navCmp.mNavigationType) {
+                case NavigationType::PATH:
+					updateComponentPath(entity, navCmp, physCmp, world);
+                    break;
+                case NavigationType::SIMPLE_LINEAR:
+                    updateComponentSimpleLinear(entity, navCmp, physCmp, world);
+                    break;
+				default:
+					assert(false);
+			}
 		}
 	}
 }
 
+void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback) {
+    mNavigationType = NavigationType::SIMPLE_LINEAR;
+	mSimpleTargetPoint = targetPoint;
+    mFinishedCallback = finishedCallback;
+}
+
 void NavigationComponent::setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {
+    mNavigationType = NavigationType::PATH;
 	mPath = std::move(path);
 	mCurrentPoint = 0;
 	mFinishedCallback = finishedCallback;
 }
 
-void NavigationComponent::abortPath()
-{
+void NavigationComponent::abort() {
 	mPath = nullptr;
 	if (mFinishedCallback) {
 		mFinishedCallback(false /*success*/);

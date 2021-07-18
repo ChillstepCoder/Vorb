@@ -18,7 +18,7 @@ PersonAISystem::PersonAISystem(World& world)
 }
 
 // TODO: Refactor
-inline void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
+inline void updateComponentPath(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
@@ -86,6 +86,6 @@ void PersonAISystem::update(entt::registry& registry)
     for (auto entity : view) {
         PersonAIComponent& ai = view.get<PersonAIComponent>(entity);
         PhysicsComponent& physics = view.get<PhysicsComponent>(entity);
-        updateComponent(mWorld, registry, entity, ai, physics);
+        updateComponentPath(mWorld, registry, entity, ai, physics);
     }
 }

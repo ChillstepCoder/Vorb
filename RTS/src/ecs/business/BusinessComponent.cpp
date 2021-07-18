@@ -77,7 +77,7 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
         LiteTileHandle handle = gatherCmp.mScannedTiles.back();
         gatherCmp.mScannedTiles.pop_back();
 
-        IAgentTaskPtr newTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather);
+        IAgentTaskPtr newTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather, businessCmp.mCity);
         gatherList.emplace_back(std::move(newTask));
     }
 }

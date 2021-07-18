@@ -7,6 +7,8 @@ struct ui32AABB {
 
     ui32& operator[](int i) { return data[i]; }
 
+    ui32v2 getCenter() const { return pos + dims / 2u; }
+
     union {
         ui32v4 data;
         struct {
