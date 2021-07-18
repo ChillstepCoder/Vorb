@@ -55,7 +55,7 @@ namespace keg {
 
     struct ReadContext {
     public:
-        YAMLReader reader;
+        YAMLReader reader; // This must remain as the start of the ReadContext due to  IOManager::parseFileAsKegObjectMap
         Environment* env;
     };
 

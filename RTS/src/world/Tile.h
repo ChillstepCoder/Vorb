@@ -2,44 +2,110 @@
 
 #include "rendering/SpriteData.h"
 
-#include <Vorb/io/Keg.h>
+#include "TileCollisionShape.h"
 
+constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
+constexpr int TILE_LAYER_GROUND = 0;
+constexpr int TILE_LAYER_MID = 1;
+constexpr int TILE_LAYER_TOP = 2;
+constexpr int TILE_LAYER_COUNT = 3;
 
 enum class TileLayer {
 	Ground = 0,
 	Mid = 1,
 	Top = 2,
+	COUNT = 3
 };
+static_assert(TILE_LAYER_COUNT == enum_cast(TileLayer::COUNT));
+
+enum TileFlags : ui8 {
+	TILE_FLAG_IS_INTERACTING = 1 << 0,
+	TILE_FLAG_IS_STOCKPILE   = 1 << 1, // True if owned by a stockpile
+	TILE_FLAG_IN_CITY        = 1 << 2, // True if inside city limits
+	TILE_FLAG_TERM           = 1 << 7,
+};
+static_assert(TILE_FLAG_TERM <= 0x80); // Must fit into a byte
 
 struct Tile {
+	Tile() {};
+    Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
+    Tile(TileID ground, TileID mid, TileID top, ui16 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos){ }
+
+	void setTileFlag(TileFlags flag) { tileFlags |= flag; }
+	void clearTileFlag(TileFlags flag) { tileFlags &= (~flag); }
+	bool hasFlag(TileFlags flag) const { return tileFlags & flag; }
+
 	union {
 		struct {
 			TileID groundLayer; // Dirt, foundation, earth
-			TileID midLayer; // Carpet, boards, walls, trees
-			TileID topLayer; // Furniture, props
+			TileID midLayer; // Carpet, boards, walls, flora
+			TileID topLayer; // Furniture, props, trees
 		};
-		TileID layers[3];
+		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
+	ui8 baseZPosition = 0;
+	ui8 tileFlags = 0;
 };
+
+enum class TileShape {
+    FLOOR, // Ground level, no shadow
+	THIN,  // Trees
+    THICK, // Solid walls
+    ROOF,  // Top level flat
+	COUNT
+};
+KEG_ENUM_DECL(TileShape);
+
+enum class TileResource {
+	NONE,
+	WOOD,
+	STONE,
+	COUNT
+};
+KEG_ENUM_DECL(TileResource);
+
+// Collision info
+const float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT + 1] = {
+    0.0f,   // FLOOR
+    0.5f,   // BOX
+    0.1f,   // SMALL_CIRCLE
+    0.175f, // MEDIUM_CIRCLE
+	0.0f,   // COUNT (Null)
+};
+static_assert((int)TileCollisionShape::COUNT == 4, "Update");
+
+struct ItemDropDef {
+	nString itemName;
+	ui32v2 countRange;
+};
+KEG_TYPE_DECL(ItemDropDef);
 
 struct TileData {
     SpriteData spriteData;
-    ui16 collisionBits = 0;
+	TileCollisionShape collisionShape = TileCollisionShape::FLOOR;
+	f32 colliderHeight = 1.0f;
+	f32 pathWeight = 1.0f;
     ui8v2 dims = ui8v2(1); // 4x4 is max size
 	ui8 rootPos = 0;
 	std::string name;
-	std::string textureName;
+    std::string textureName;
+    std::string resourceName;
+	TileShape shape = TileShape::FLOOR;
+	TileResource resource = TileResource::NONE;
+	Array<ItemDropDef> itemDrops;
 };
 KEG_TYPE_DECL(TileData);
 
+// TODO: non static
 class TileRepository {
 	friend class ResourceManager;
 public:
-	static TileData getTileData(TileID tileId) {
+	static const TileData& getTileData(TileID tileId) {
+		assert(sTileData.find(tileId) != sTileData.end());
 		return sTileData[tileId];
 	}
-	static TileData getTileData(const std::string& name) {
+	static const TileData& getTileData(const std::string& name) {
 		// TOOD: Hashed string and error handling
 		TileID id = sTileIdMapping[name];
 		return sTileData[id];

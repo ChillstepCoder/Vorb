@@ -1,0 +1,21 @@
+lumbermill:
+  building: lumbermill
+  requires_building: false
+  desired_employees: 2
+  max_employees: 6
+  gather:
+    priority: 1
+    resource: wood
+  produce:
+    priority: 0
+#    items:
+#    - name: wood_planks
+#      weight: 1.0
+#      preferred_recipe: wood_planks_01
+  retail:
+    priority: 2
+#    sell_weight: 1.0
+#    buy_weight: 0.7
+#    item_tags:
+#      - wood
+#      - tools

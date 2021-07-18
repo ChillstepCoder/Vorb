@@ -18,8 +18,12 @@ Camera2D::~Camera2D()
 void Camera2D::init(int screenWidth, int screenHeight) {
     _screenWidth = screenWidth;
     _screenHeight = screenHeight;
-    _orthoMatrix = glm::ortho(0.0f, (float)_screenWidth, 0.0f, (float)_screenHeight);
+    _orthoMatrix = glm::ortho(0.0f, (float)_screenWidth, 0.0f, (float)_screenHeight, -256.0f, 256.0f);
 }
+
+// TODO: Investigate Pixels per unit
+// https://blogs.unity3d.com/2015/06/19/pixel-perfect-2d/
+// const int PPU = 16;
 
 // updates the camera matrix if needed
 void Camera2D::update() {
@@ -27,8 +31,11 @@ void Camera2D::update() {
     // Only update if our position or scale have changed
 	if (_needsMatrixUpdate) {
 
-		// Round for fixing grid issues
-        const float roundScale = round(_scale);
+		// Round for fixing pixel grid issues when zoomed in
+        float roundScale = _scale;
+        if (_scale > 25.0f) {
+            roundScale = round(roundScale);
+        }
 
         // Camera Translation
         glm::vec3 translate(round(-_position.x * roundScale + _screenWidth / 2), round(-_position.y * roundScale + _screenHeight / 2), 0.0f);
@@ -45,7 +52,16 @@ void Camera2D::update() {
 glm::vec2 Camera2D::convertScreenToWorld(const glm::vec2& screenCoords) const {
     const f32m4 invCamera = glm::inverse(_cameraMatrix);
     const f32v2 scaledCoords = (f32v2(screenCoords.x / _screenWidth, 1.0f - screenCoords.y / _screenHeight) - 0.5f) * 2.0f;
-    return f32v2(f32v4(scaledCoords, 0.0f, 0.0f) * invCamera) + _position;
+    f32v2 rv = f32v2(f32v4(scaledCoords, 0.0f, 0.0f) * invCamera) + _position;
+    // TODO: This happened twice... problem with the camera???
+    assert(!isnan(rv.x + rv.y));
+    return rv;
+}
+
+glm::vec2 Camera2D::convertWorldToScreen(const glm::vec2& worldCoords) const {
+    f32v2 rv = worldCoords - _position;
+    rv /= _scale;
+    return rv;
 }
 
 // Simple AABB test to see if a box is in the camera view

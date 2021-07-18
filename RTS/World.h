@@ -1,14 +1,23 @@
 #pragma once
 #include <Vorb/graphics/Texture.h>
-#include <Vorb/ecs/Entity.h>
 #include <functional>
 #include <optional>
 
 #include "actor/ActorTypes.h"
 #include "TileSet.h"
 #include "world/Tile.h"
+#include "ecs/ClientEcsData.h"
+#include "ecs/factory/EntityType.h"
+#include "services/Services.h"
 
-#include "world/Chunk.h"
+#include "world/WorldGrid.h"
+#include "world/WorldData.h"
+
+#include "util/IntersectionHit.h"
+
+constexpr float SECONDS_PER_DAY = 1440.0f;
+constexpr float HOURS_PER_DAY = 24.0f;
+constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 
 DECL_VG(class SpriteBatch);
 
@@ -16,71 +25,125 @@ struct b2BodyDef;
 class b2Body;
 class b2World;
 class Camera2D;
+class City;
 class ContactListener;
-class ChunkRenderer;
 class ChunkGenerator;
 class EntityComponentSystem;
 class ResourceManager;
-
-struct TileHandle {
-	Chunk* chunk = nullptr;
-	Tile tile;
-	TileIndex index;
-};
+class EntityFactory;
+struct CityGraph;
 
 class World
 {
 	friend class EntityComponentSystem;
+	friend class WorldEditor;
 public:
 	World(ResourceManager& resourceManager);
 	~World();
 
+	void initPostLoad();
+	void update(const f32v2& playerPos, const Camera2D& camera);
 
-	void init(EntityComponentSystem& ecs);
-	void draw(const Camera2D& camera);
-	void update(float deltaTime, const f32v2& playerPos, const Camera2D& camera); // TODO: Multiplayer?
-	void updateWorldMousePos(const Camera2D& camera);
+	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = (entt::entity)0);
+	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except = (entt::entity)0);
 
-	const f32v2& getCurrentWorldMousePos() const { return mWorldMousePos; }
-
-	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except = ENTITY_ID_NONE);
-	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except = ENTITY_ID_NONE);
-
+	entt::entity createEntity(const f32v2& pos, const nString& typeName);
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
+	void createCityAt(const ui32v2& worldPos);
+
+	void setTileAt(const ui32v2& worldPos, Tile tile);
+    void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
+    void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);
+
+	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 
 	// Internal public interface
-	Chunk* getChunkAtPosition(const f32v2& worldPos);
-	Chunk* getChunkOrCreateAtPosition(const f32v2& worldPos);
-	Chunk* getChunkOrCreateAtPosition(ChunkID chunkId);
+    Chunk& getChunkAtPosition(const f32v2& worldPos);
+    Chunk& getChunkAtPosition(const ui32v2& worldPos);
+    Chunk& getChunkAtPosition(ChunkID chunkId);
+    const Chunk& getChunkAtPosition(ChunkID chunkId) const;
 
-	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera);
-	TileHandle getTileHandleAtWorldPos(const f32v2& worldPos);
+	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const;
+    TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
+    TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
 
+	const ItemStack* tryGetItemStackAtWorldPos(const f32v2& worldPos) const;
+    bool tryAddFullItemStackAt(const f32v2& worldPos, ItemStack itemStack);
+    ItemStack tryAddPartialItemStackAt(const f32v2& worldPos, ItemStack itemStack); // Returns remaining item stack, which can be 0
+
+	const ClientECSData& getClientECSData() const { return mClientEcsData; }
+	const ResourceManager& getResourceManager() const { return mResourceManager; }
+	EntityComponentSystem& getECS() const { return *mEcs; }
+
+    void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk&)> func) const;
+    void enumVisibleRegions(const Camera2D& camera, std::function<void(const Region&)> func) const;
+	void efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func);
+
+	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
+	void updateClientEcsData(const Camera2D& camera);
+
+    void setTimeOfDay(float time);
+	// [-1.0, 1.0]
+    float getSunHeight() const { return mSunHeight; }
+    float getSunPosition() const { return mSunPosition; }
+    float getTimeOfDay() const { return mTimeOfDay; }
+	const f32v3& getSunColor() const { return mSunColor; }
+	const CityGraph& getCities() const { return *mCities; }
+	City* getClosestCityToPoint(const f32v2& pos) const;
+
+	IntersectionHit tryGetRaycastIntersect(const f32v2& start, const f32v2& end, f32 zPos);
 	
 private:
 
-	// Returns true if should be removed
+	// TODO: Composition? WorldClock? idk
+    void updateSun();
+    /// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
-	void updateChunkNeighbors(Chunk& chunk);
-	bool shouldChunkLoad(ChunkID chunkId, float addOffset = 0.0f);
-	void initChunk(Chunk& chunk, ChunkID chunkId);
+	void onChunkDataReady(Chunk& chunk);
+	void dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id);
+	void tryCreateNeighbors(Chunk& chunk);
+	void tryCreateNeighbor(Chunk& chunk, const ChunkID& id);
+	bool isChunkInLoadDistance(const ChunkID& chunkId, float addOffset = 0.0f);
 
-	// Resources
-	EntityComponentSystem* mEcs = nullptr;
+	void initChunk(Chunk& chunk);
+	void generateChunkAsync(Chunk& chunk);
+
+	// Editor functions
+	void editorInvalidateWorldGen();
+
+    // ECS
+    ClientECSData mClientEcsData;
+    std::unique_ptr<EntityComponentSystem> mEcs;
+
+	// Physics
 	std::unique_ptr<b2World> mPhysWorld;
 	std::unique_ptr<ContactListener> mContactListener;
-	std::unique_ptr<ChunkGenerator> mChunkGenerator;
+
+	// Generation
+    std::unique_ptr<ChunkGenerator> mChunkGenerator;
+
+	// Factories
+	std::unique_ptr<EntityFactory> mEntityFactory;
+
+	// Resource handle
+	ResourceManager& mResourceManager;
+
+	// Cities
+	std::unique_ptr<CityGraph> mCities;
 
 	// Data
-	f32v2 mWorldMousePos = f32v2(0.0f);
-	f32v2 mLoadRange = f32v2(0.0f);
-	f32v2 mLoadCenter = f32v2(0.0f);
-	bool mDirty = true;
-	
-	// TODO: Chunk paging for cache performance on updates
-	std::map<ChunkID, std::unique_ptr<Chunk> > mChunks;
+	f32v2 mViewRange = f32v2(0.0f);
+    f32v2 mLoadCenter = f32v2(0.0f);
+    f32   mLoadRangeSq = 0.0f;
+	// Sunlight
+	float mSunHeight = 1.0f;
+	float mSunPosition = 0.0f; // [-1, 1]
+	float mTimeOfDay = 0.0f; // span of 24:00
+	f32v3 mSunColor = f32v3(1.0f);
 
-	// Rendering
-	std::unique_ptr<ChunkRenderer> mChunkRenderer;
+	bool mDirty = true;
+	// TODO: Chunk paging for tile data?
+	WorldGrid mWorldGrid;
+	std::vector<Chunk*> mActiveChunks;
 };
 

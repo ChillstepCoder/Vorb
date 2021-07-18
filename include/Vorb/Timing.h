@@ -27,12 +27,66 @@
 
 #include <chrono>
 
+// TODO: Instead use steady_clock?
+typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
+
+// Inteded for use inside the game loop to deterministically count ticks for updates
+class TickCounter {
+public:
+    // For tickPeriod 1 == 0
+    TickCounter() = default;
+    TickCounter(ui32 tickPeriod, bool tickAtStart);
+
+    // Returns true on the tick period
+    // Only call this once per gameplay tick per counter
+    bool tryTick();
+    void reset();
+
+    f32 getTickDelta() const { return (f32)mCurTick / mTickPeriod; }
+
+protected:
+    ui32 mTickPeriod = 0;
+    ui32 mCurTick = 0;
+};
+
+// Used to synchronize update rates for objects with time
+class TickingTimer {
+public:
+    TickingTimer(f64 msPerTick, f64 maxMSPerFrame);
+
+    void setMsPerTick(f64 msPerTick) { mMsPerTick = msPerTick; }
+    void startFrame();
+    // Returns true while we should be ticking
+    bool tryTick();
+
+    f32 getFrameAlpha() { return (f32)(mAccumulator / mMsPerTick); }
+
+protected:
+    TimePoint mCurrTime;
+    f64 mAccumulator = 0.0;
+    f64 mMsPerTick;
+    f64 mMaxMsPerFrame;
+};
+
+// Used for delaying a specific event for a period of time. Intended for single use timers
+class ResumeTimer {
+public:
+    ResumeTimer(f64 timeInSeconds);
+
+    bool tryResume();
+
+protected:
+    f64 mMsUntilResume;
+    TimePoint mStart;
+};
+
 class PreciseTimer {
 public:
     PreciseTimer() {
         start();
     }
     void start();
+    /// Returns time in MS
     f64 stop();
 
     const bool& isRunning() const {
@@ -40,7 +94,7 @@ public:
     }
 private:
     bool m_timerRunning = false;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+    TimePoint m_start;
 };
 
 class AccumulationTimer {
@@ -62,7 +116,7 @@ private:
     };
 
     bool m_timerRunning = false;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+    TimePoint m_start;
     std::map<nString, AccumNode> m_accum;
     std::map<nString, AccumNode>::iterator m_it;
 };

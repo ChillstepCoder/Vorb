@@ -117,6 +117,18 @@ bool vorb::io::Path::isNiceFile() const {
     return true;
 }
 
+nString vorb::io::Path::getFileNameNoExtension() const
+{
+    nString leaf = getLeaf();
+    for (int c = leaf.size() - 1; c > 0; --c) {
+        // Trim extension, keep going for multiple extensions
+        if (leaf[c] == '.') {
+            leaf.resize(c);
+        }
+    }
+    return leaf;
+}
+
 bool vio::Path::isValid() const {
     if (isNull()) return false;
     return fs::exists(fs::path(m_path));

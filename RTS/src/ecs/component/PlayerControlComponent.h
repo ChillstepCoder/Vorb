@@ -1,8 +1,6 @@
 #pragma once
-#include <Vorb/ecs/Entity.h>
-#include <Vorb/ecs/ComponentTable.hpp>
 
-class EntityComponentSystem;
+struct ClientECSData;
 class World;
 
 enum class PlayerControlFlags : ui16 {
@@ -13,9 +11,7 @@ struct PlayerControlComponent {
 	ui16 mPlayerControlFlags = 0;
 };
 
-class PlayerControlComponentTable : public vecs::ComponentTable<PlayerControlComponent> {
+class PlayerControlSystem {
 public:
-	static const std::string& NAME;
-
-	void update(EntityComponentSystem& ecs, World& world);
+	void update(entt::registry& registry, World& world, const ClientECSData& clientData);
 };

@@ -7,6 +7,11 @@
 #include "Vorb/ui/GameWindow.h"
 #include "Vorb/ui/KeyMappings.inl"
 
+#if defined(VORB_IMPL_IMGUI)
+#include "Vorb/ui/imgui/imgui.h"
+#include "Vorb/ui/imgui/backends/imgui_impl_sdl.h"
+#endif
+
 #if defined(VORB_IMPL_UI_GLFW) || defined(VORB_IMPL_UI_SFML)
 vui::KeyModifiers vui::impl::InputDispatcherEventCatcher::mods = {};
 #endif
@@ -130,9 +135,22 @@ void convert(vui::MouseButton& mb, const ui8& sb) {
 
 i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     InputEvent ie;
+    bool suppressKeyboard = false;
+    bool suppressMouse = false;
+#ifdef VORB_IMPL_IMGUI
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplSDL2_ProcessEvent(e);
+    if (io.WantCaptureKeyboard) {
+        suppressKeyboard = true;
+    }
+    if (io.WantCaptureMouse) {
+        suppressMouse = true;
+    }
+#endif
 
     switch (e->type) {
     case SDL_KEYDOWN:
+        if (suppressKeyboard) return 0;
         convert(ie.key.mod, e->key.keysym.mod);
         ie.key.keyCode = vui::impl::mapping[SDL_GetScancodeFromKey(e->key.keysym.sym) + 1];
         ie.key.scanCode = e->key.keysym.scancode;
@@ -142,6 +160,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         vui::InputDispatcher::key.onEvent();
         break;
     case SDL_KEYUP:
+        if (suppressKeyboard) return 0;
         convert(ie.key.mod, e->key.keysym.mod);
         ie.key.keyCode = vui::impl::mapping[SDL_GetScancodeFromKey(e->key.keysym.sym) + 1];
         ie.key.scanCode = e->key.keysym.scancode;
@@ -151,6 +170,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         vui::InputDispatcher::key.onEvent();
         break;
     case SDL_MOUSEMOTION:
+        if (suppressMouse) return 0;
         ie.mouseMotion.x = e->motion.x;
         ie.mouseMotion.y = e->motion.y;
         ie.mouseMotion.dx = e->motion.xrel;
@@ -161,6 +181,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         vui::InputDispatcher::mouse.onEvent(ie.mouseMotion);
         break;
     case SDL_MOUSEBUTTONDOWN:
+        if (suppressMouse) return 0;
         convert(ie.mouseButton.button, e->button.button);
         ie.mouseButton.x = e->button.x;
         ie.mouseButton.y = e->button.y;
@@ -170,6 +191,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
 		vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = true;
         break;
     case SDL_MOUSEBUTTONUP:
+        if (suppressMouse) return 0;
         convert(ie.mouseButton.button, e->button.button);
         ie.mouseButton.x = e->button.x;
         ie.mouseButton.y = e->button.y;
@@ -179,6 +201,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = false;
         break;
     case SDL_MOUSEWHEEL:
+        if (suppressMouse) return 0;
         ie.mouseWheel.x = vui::InputDispatcher::mouse.m_lastPos.x;
         ie.mouseWheel.y = vui::InputDispatcher::mouse.m_lastPos.y;
         ie.mouseWheel.dx = e->wheel.x;
@@ -244,6 +267,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         }
         break;
     case SDL_TEXTINPUT:
+        if (suppressKeyboard) return 0;
         memcpy(ie.text.text, e->text.text, 32);
         mbstowcs(ie.text.wtext, ie.text.text, 16);
         vui::InputDispatcher::key.onText(ie.text);

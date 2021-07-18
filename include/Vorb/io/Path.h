@@ -90,6 +90,8 @@ namespace vorb {
             /// @return The last time this path was modified
             time_t getLastModTime() const;
 
+            nString getFileNameNoExtension() const;
+
             /// Add a string to the end of this path's value
             /// @param s: String addition
             /// @return Self

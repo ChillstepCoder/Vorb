@@ -1,0 +1,17 @@
+blood:
+  type: blood
+  max_particles: 1200
+  particle_size: [0.05, 0.45]
+  particle_lifetime: [115.0, 118.0]
+  launch_angle_horizontal: 360.0
+  launch_angle_vertical: [0.0, 89.0]
+  speed: [0.1, 0.13]
+  air_damping: 0.98
+  hit_damping: 0.25
+  gravity_mult: 0.75
+  material: blood
+  post_material: metaball_blood
+  duration: 3.0
+  looping: false
+  emissive: false
+  layer: 0

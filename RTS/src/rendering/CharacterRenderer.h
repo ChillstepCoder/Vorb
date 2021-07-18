@@ -3,8 +3,12 @@
 
 #include <Vorb/graphics/SpriteBatch.h>
 
+
 class CharacterRenderer {
 public:
-	static void render(vg::SpriteBatch& sb, const CharacterModel& model, const f32v2& pos, float angle);
+	static void render(vg::SpriteBatch& sb, const CharacterModel& model, const f32v2& xyPos, f32 zPos, f32 depthOffset, float angle, float alpha);
 };
+
+//  TODO: This is temp af
+extern vg::Texture sShadowTexture;
 

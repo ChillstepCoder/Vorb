@@ -1,6 +1,8 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/ui/MainGame.h"
 
+#include <Vorb/math/VorbMath.hpp>
+
 #include <thread>
 
 #if defined(VORB_IMPL_UI_SDL)
@@ -194,13 +196,15 @@ void vui::MainGame::run() {
 }
 
 void vui::MainGame::refreshElapsedTime() {
-    ui32 ct = MS_TIME;
-    f64 et = (ct - m_lastMS) / 1000.0;
-    m_lastMS = ct;
+    ui32 curTimeMs = MS_TIME;
+    f64 elapsedMs = curTimeMs - m_lastMS;
+    f64 elapsedSec = (elapsedMs) / 1000.0;
+    m_lastMS = curTimeMs;
 
     m_lastTime = m_curTime;
-    m_curTime.elapsed = et;
-    m_curTime.total += et;
+    m_curTime.elapsedSec = elapsedSec;
+    m_curTime.totalSec += elapsedSec;
+    m_curTime.deltaTime = vmath::clamp((float)(elapsedMs / 16.0), 0.5f, 2.0f); // Shoot for 16ms per frame (~60hz)
 }
 void vui::MainGame::onUpdateFrame() {
     // Perform the screen's update logic

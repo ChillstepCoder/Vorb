@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -76,7 +76,7 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\RelWithDebInfo;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,10 +97,12 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,46 +130,103 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\build\release\vorb.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttf.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2main.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetype.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glew.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enet.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_lib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\png.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlib.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\zlib.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL_ttf.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL2main.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL2.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\lua_lib.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\png.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\freetype.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\bz2.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\glew.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\enet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\graphics\BlendState.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
-    <ClCompile Include="EntityComponentSystem.cpp" />
-    <ClCompile Include="EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="Noise.cpp" />
-    <ClCompile Include="src\actor\HumanActorFactory.cpp" />
-    <ClCompile Include="src\actor\PlayerActorFactory.cpp" />
-    <ClCompile Include="src\actor\UndeadActorFactory.cpp" />
+    <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\character\CharacterModelRepository.cpp" />
+    <ClCompile Include="src\city\Building.cpp" />
+    <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
+    <ClCompile Include="src\city\City.cpp" />
+    <ClCompile Include="src\city\CityBuilder.cpp" />
+    <ClCompile Include="src\city\BuildingGrammar.cpp" />
+    <ClCompile Include="src\city\CityBusinessManager.cpp" />
+    <ClCompile Include="src\city\CityPlanner.cpp" />
+    <ClCompile Include="src\city\CityPlotter.cpp" />
+    <ClCompile Include="src\city\CityQuartermaster.cpp" />
+    <ClCompile Include="src\city\CityResidentManager.cpp" />
+    <ClCompile Include="src\crafting\CraftingRepository.cpp" />
+    <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
+    <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
+    <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
+    <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
+    <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
-    <ClCompile Include="src\ecs\component\UndeadAIComponent.cpp" />
+    <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
+    <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
+    <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
+    <ClCompile Include="src\editor\WorldEditor.cpp" />
+    <ClCompile Include="src\generation\WorldGenerationData.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
+    <ClCompile Include="src\item\Item.cpp" />
+    <ClCompile Include="src\item\ItemRepository.cpp" />
+    <ClCompile Include="src\item\ItemStockpile.cpp" />
+    <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
+    <ClCompile Include="src\particles\ParticleSystem.cpp" />
+    <ClCompile Include="src\particles\ParticleSystemData.cpp" />
+    <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
+    <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
+    <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
+    <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\LightData.cpp" />
+    <ClCompile Include="src\rendering\LightRenderer.cpp" />
+    <ClCompile Include="src\rendering\Material.cpp" />
+    <ClCompile Include="src\rendering\MaterialManager.cpp" />
+    <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
+    <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\QuadMesh.cpp" />
+    <ClCompile Include="src\rendering\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
+    <ClCompile Include="src\rendering\RenderContext.cpp" />
+    <ClCompile Include="src\rendering\ShaderLoader.cpp" />
+    <ClCompile Include="src\rendering\SpriteData.cpp" />
+    <ClCompile Include="src\rendering\SpriteRepository.cpp" />
+    <ClCompile Include="src\rendering\TextureAtlas.cpp" />
+    <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
+    <ClCompile Include="src\services\Services.cpp" />
+    <ClCompile Include="src\TextureManip.cpp" />
+    <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
+    <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\TileUtil.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
+    <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
+    <ClCompile Include="src\world\TileScanner.cpp" />
+    <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObject.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -178,42 +237,118 @@
     <ClCompile Include="TileSet.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="Camera2D.h" />
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="MainMenuScreen.h" />
-    <ClInclude Include="EntityComponentSystem.h" />
-    <ClInclude Include="EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
-    <ClInclude Include="src\actor\HumanActorFactory.h" />
-    <ClInclude Include="src\actor\IActorFactory.h" />
-    <ClInclude Include="src\actor\PlayerActorFactory.h" />
-    <ClInclude Include="src\actor\UndeadActorFactory.h" />
+    <ClInclude Include="src\ai\tasks\GatherTask.h" />
+    <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\character\CharacterModelRepository.h" />
+    <ClInclude Include="src\city\Building.h" />
+    <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
+    <ClInclude Include="src\city\City.h" />
+    <ClInclude Include="src\city\CityBuilder.h" />
+    <ClInclude Include="src\city\BuildingGrammar.h" />
+    <ClInclude Include="src\city\CityBusinessManager.h" />
+    <ClInclude Include="src\city\CityConst.h" />
+    <ClInclude Include="src\city\CityDistrict.h" />
+    <ClInclude Include="src\city\CityPlanner.h" />
+    <ClInclude Include="src\city\CityPlot.h" />
+    <ClInclude Include="src\city\CityPlotter.h" />
+    <ClInclude Include="src\city\CityQuartermaster.h" />
+    <ClInclude Include="src\city\CityResidentManager.h" />
+    <ClInclude Include="src\city\RoomNode.h" />
+    <ClInclude Include="src\crafting\CraftingConst.h" />
+    <ClInclude Include="src\crafting\CraftingRepository.h" />
+    <ClInclude Include="src\ecs\business\BusinessComponent.h" />
+    <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
+    <ClInclude Include="src\ecs\business\BusinessRepository.h" />
+    <ClInclude Include="src\ecs\ClientEcsData.h" />
+    <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
+    <ClInclude Include="src\ecs\component\InventoryComponent.h" />
+    <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
+    <ClInclude Include="src\ecs\component\ComponentDefinition.h" />
     <ClInclude Include="src\ecs\component\CorpseComponent.h" />
+    <ClInclude Include="src\ecs\component\DynamicLightComponent.h" />
+    <ClInclude Include="src\ecs\component\ComponentTypes.h" />
+    <ClInclude Include="src\ecs\component\EntityDefinition.h" />
     <ClInclude Include="src\ecs\component\NavigationComponent.h" />
     <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
+    <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
+    <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="src\ecs\EntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />
+    <ClInclude Include="src\ecs\factory\EntityFactory.h" />
+    <ClInclude Include="src\ecs\factory\EntityType.h" />
+    <ClInclude Include="src\editor\ImguiViews.hpp" />
+    <ClInclude Include="src\editor\WorldEditor.h" />
+    <ClInclude Include="src\FeatureConst.h" />
+    <ClInclude Include="src\generation\NoiseFunction.hpp" />
+    <ClInclude Include="src\generation\WorldGenerationData.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
+    <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
+    <ClInclude Include="src\item\ItemRepository.h" />
+    <ClInclude Include="src\item\ItemStack.h" />
+    <ClInclude Include="src\item\ItemStockpile.h" />
+    <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\Noise.h" />
+    <ClInclude Include="src\particles\ParticleSystem.h" />
+    <ClInclude Include="src\particles\ParticleSystemData.h" />
+    <ClInclude Include="src\particles\ParticleSystemManager.h" />
+    <ClInclude Include="src\pathfinding\PathFinder.h" />
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
+    <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\CityDebugRenderer.h" />
+    <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\LightData.h" />
+    <ClInclude Include="src\rendering\LightRenderer.h" />
+    <ClInclude Include="src\rendering\Material.h" />
+    <ClInclude Include="src\rendering\MaterialManager.h" />
+    <ClInclude Include="src\rendering\MaterialRenderer.h" />
+    <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
+    <ClInclude Include="src\rendering\QuadMesh.h" />
+    <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\rendering\TileVertex.h" />
+    <ClInclude Include="src\rendering\RenderContext.h" />
+    <ClInclude Include="src\rendering\ShaderLoader.h" />
     <ClInclude Include="src\rendering\SpriteData.h" />
+    <ClInclude Include="src\rendering\SpriteRepository.h" />
+    <ClInclude Include="src\rendering\TextureAtlas.h" />
+    <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\screens\WorldEditorScreen.h" />
+    <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
+    <ClInclude Include="src\util\AABB.hpp" />
+    <ClInclude Include="src\util\IntersectionHit.h" />
+    <ClInclude Include="src\util\IntersectionUtil.h" />
+    <ClInclude Include="src\util\MathUtil.hpp" />
+    <ClInclude Include="src\util\TileUtil.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
+    <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
+    <ClInclude Include="src\world\TileCollisionShape.h" />
+    <ClInclude Include="src\world\TileScanner.h" />
+    <ClInclude Include="src\world\WorldData.h" />
+    <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObject.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TextureManip.h" />
     <ClInclude Include="World.h" />
     <ClInclude Include="TileSet.h" />
     <ClInclude Include="Utils.h" />

@@ -1,6 +1,8 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/Timing.h"
 
+#include <iostream> // TODO: Remove
+
 #ifndef VORB_USING_PCH
 #include "Vorb/compat.h"
 #endif // !VORB_USING_PCH
@@ -14,7 +16,9 @@
 typedef std::chrono::milliseconds ms;
 
 const f64 MS_PER_SECOND = 1000.0;
+const f64 SECONDS_PER_MS = 0.001;
 
+// TODO: Steady clock?
 void PreciseTimer::start() {
     m_timerRunning = true;
     m_start = std::chrono::high_resolution_clock::now();
@@ -135,4 +139,61 @@ f32 FpsLimiter::endFrame() {
     }
 
     return m_fps;
+}
+
+TickingTimer::TickingTimer(f64 msPerTick, f64 maxMSPerFrame) :
+    mMsPerTick(msPerTick),
+    mMaxMsPerFrame(maxMSPerFrame) {
+    // This will delay a tick at the start
+    mCurrTime = std::chrono::high_resolution_clock::now();
+}
+
+void TickingTimer::startFrame()
+{
+    TimePoint newTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64, std::milli> frameTime = newTime - mCurrTime;
+    mCurrTime = newTime;
+    if (frameTime.count() > mMaxMsPerFrame) { // Clamp
+        frameTime = std::chrono::duration<f64, std::milli>(mMaxMsPerFrame);
+    }
+
+    mAccumulator += frameTime.count();
+}
+
+bool TickingTimer::tryTick() {
+    if (mAccumulator >= mMsPerTick) {
+        mAccumulator -= mMsPerTick;
+        return true;
+    }
+    return false;
+}
+
+ResumeTimer::ResumeTimer(f64 timeInSeconds) {
+    mStart = std::chrono::high_resolution_clock::now();
+}
+
+bool ResumeTimer::tryResume() {
+    TimePoint now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64> timeSinceStart = now - mStart;
+    // compute how many ticks behind we are
+    mStart = now;
+    return timeSinceStart.count() > mMsUntilResume;
+}
+
+TickCounter::TickCounter(ui32 tickPeriod, bool tickAtStart)
+    : mTickPeriod(tickPeriod) {
+
+    mCurTick = tickAtStart ? tickPeriod : 0;
+}
+
+bool TickCounter::tryTick() {
+    if (++mCurTick >= mTickPeriod) {
+        mCurTick = 0;
+        return true;
+    }
+    return false;
+}
+
+void TickCounter::reset() {
+    mCurTick = 0;
 }

@@ -34,7 +34,7 @@ namespace vorb {
             void dispose();
 
             /// Binds vertex array, index buffer, and issues a draw command
-            void draw();
+            void draw() const;
         private:
             union {
                 struct {
@@ -43,7 +43,7 @@ namespace vorb {
                 };
                 ui32 m_buffers[2]; ///< Storage for both buffers used by this mesh
             };
-            ui32 m_vao; ///< VAO with vertex attribute pointing to 0
+            ui32 m_vao = 0; ///< VAO with vertex attribute pointing to 0
         };
     }
 }

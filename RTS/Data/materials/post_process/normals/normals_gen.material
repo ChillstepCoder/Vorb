@@ -1,0 +1,3 @@
+normals_gen:
+  vert: normals_gen.vert
+  frag: normals_gen.frag

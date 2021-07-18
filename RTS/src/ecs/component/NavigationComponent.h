@@ -1,24 +1,39 @@
 #pragma once
 
 #include "actor/ActorTypes.h"
-#include <Vorb/ecs/ComponentTable.hpp>
+#include "pathfinding/PathFinder.h"
 
-class EntityComponentSystem;
 class World;
+
+enum class NavigationType {
+	PATH,
+	SIMPLE_LINEAR,
+	INVALID
+};
 
 struct NavigationComponent {
 
-	// TODO Pathfinding
-	// TODO Entity handles
-	f32v2 mTargetPos = f32v2(0.0f);
+	// Make sure navigation component is destroyed before the callback owner is destroyed
+    // Callback should ideally only be set from the same entity
+    void setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback);
+	void setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback);
+	void abort();
+
 	float mSpeed = 1.0f;
-	bool mHasTarget = false;
-	bool mColliding = false;
+	union {
+		struct {
+			std::unique_ptr<Path> mPath;
+			ui32 mCurrentPoint = 0;
+		};
+		ui32v2 mSimpleTargetPoint;
+	};
+	bool mColliding = false; // Colliding with another agent
+	ui8 mFramesUntilNextRayCheck = 0;
+	std::function<void(bool)> mFinishedCallback = nullptr;
+	NavigationType mNavigationType = NavigationType::INVALID;
 };
 
-class NavigationComponentTable : public vecs::ComponentTable<NavigationComponent> {
+class NavigationComponentSystem {
 public:
-	static const std::string& NAME;
-
-	void update(EntityComponentSystem& ecs, World& world);
+	void update(entt::registry& registry, World& world);
 };

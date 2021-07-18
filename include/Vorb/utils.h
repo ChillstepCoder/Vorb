@@ -89,7 +89,7 @@ inline void convertWToMBString(const cwString ws, nString& resultString) {
 }
 inline const std::wstring convertMBToWString(const cString s) {
     size_t l = strlen(s);
-    std::wstring resultString = new wchar_t[l + 1];
+    std::wstring resultString;
     resultString.resize(l + 1);
     size_t numConverted = 0;
 #if defined(__APPLE__) || defined(__linux__)

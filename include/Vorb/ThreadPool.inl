@@ -1,22 +1,6 @@
-template<typename T>
-vcore::ThreadPool<T>::~ThreadPool() {
-    destroy();
-}
 
 template<typename T>
-void vcore::ThreadPool<T>::clearTasks() {
-    // Dequeue all tasks
-    IThreadPoolTask<T>* task;
-    while (m_tasks.try_dequeue(task));
-    while (m_tasks.try_dequeue(task));
-}
-
-template<typename T>
-void vcore::ThreadPool<T>::init(ui32 size) {
-    // Check if its already initialized
-    if (m_isInitialized) return;
-    m_isInitialized = true;
-
+vorb::core::ThreadPool<T>::ThreadPool(ui32 size) {
     /// Allocate all threads
     m_workers.resize(size);
     for (ui32 i = 0; i < size; i++) {
@@ -24,50 +8,56 @@ void vcore::ThreadPool<T>::init(ui32 size) {
     }
 }
 
+
 template<typename T>
-void vcore::ThreadPool<T>::destroy() {
-    if (!m_isInitialized) return;
+vcore::ThreadPool<T>::~ThreadPool() {
+    mStop.store(true);
 
-    // Tell threads to quit
-    for (size_t i = 0; i < m_workers.size(); i++) {
-        m_workers[i]->data.stop = true;
-    }
-
+    // Clear out the queue
     clearTasks();
 
-    // Run quit tasks
-    std::vector<QuitThreadPoolTask<T> > quitTasks(m_workers.size() * 2); // Extra tasks just in case
-    for (size_t i = 0; i < quitTasks.size(); i++) {
-        m_tasks.enqueue(&quitTasks[i]);
+    // Tell all threads to wake up and close, as they are currently hanging on a semaphore
+    for (size_t i = 0; i < m_workers.size(); i++) {
+        addTask([](T*) {
+            return;
+        }, nullptr);
     }
-    
+
     // Join all threads
     for (size_t i = 0; i < m_workers.size(); i++) {
         m_workers[i]->join();
         delete m_workers[i];
     }
+}
 
-    clearTasks();
+template<typename T>
+void vcore::ThreadPool<T>::clearTasks() {
+    // Dequeue all tasks
+    ThreadPoolTaskProcs<T> task;
+    while (mTasks.try_dequeue(task));
+}
 
-    // Free memory
-    std::vector<WorkerThread*>().swap(m_workers);
-
-    // We are no longer initialized
-    m_isInitialized = false;
+template<typename T>
+void vorb::core::ThreadPool<T>::mainThreadUpdate() {
+    std::function<void()> proc;
+    // TODO: limit + bulk dequeue
+    while (mMainThreadProcs.try_dequeue(proc)) {
+        proc();
+    }
 }
 
 template<typename T>
 void vcore::ThreadPool<T>::workerThreadFunc(T* data) {
-    data->stop = false;
-    IThreadPoolTask<T>* task;
+    ThreadPoolTaskProcs<T> task;
 
     while (true) {
         // Check for exit
-        if (data->stop) return;
-
-        m_tasks.wait_dequeue(task);
-        task->execute(data);
-        task->isFinished = true;
-        task->cleanup();
+        if (mStop.load()) return;
+        // Note that threads will be stuck waiting here until the process ends
+        mTasks.wait_dequeue(task);
+        task.first(data);
+        if (task.second) {
+            mMainThreadProcs.enqueue(task.second);
+        }
     }
 }

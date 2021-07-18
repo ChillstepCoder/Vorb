@@ -1,0 +1,43 @@
+*ERROR: Failed to load data\materials\color_noise.png texture must be smaller than 2048 
+*ERROR: Failed to load data\textures\character\body\female_back.png texture must be smaller than 2048 
+*ERROR: Failed to load data\textures\character\body\female_front.png texture must be smaller than 2048 
+*ERROR: At TextureAtlas::allocateTexture. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context B. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At Init render context. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Init render context. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Init render context B. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render A. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render A. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render D. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render D. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render D. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Init render context. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Shadow GBuffer Init. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Shadow GBuffer Init. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Shadow GBuffer Init. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At Shadow GBuffer Init. Error code 1281: GL_INVALID_VALUE 

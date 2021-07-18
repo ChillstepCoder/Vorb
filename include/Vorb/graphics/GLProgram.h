@@ -35,7 +35,7 @@
 #undef minor
 #endif//VORB_COMPILER_GCC
 
-#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 1
+#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 3
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_MINOR 3
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_REVISION 0
 
@@ -146,11 +146,23 @@ namespace vorb {
             const VGAttribute& getAttribute(const nString& name) const {
                 return m_attributes.at(name);
             }
+            const VGAttribute* tryGetAttribute(const nString& name) const {
+                auto&& it = m_attributes.find(name);
+                return it != m_attributes.end() ? &it->second : nullptr;
+            }
             /// Gets a uniform index
             /// @param name: The uniform's name
             /// @return Uniform location
             const VGUniform& getUniform(const nString& name) const {
                 return m_uniforms.at(name);
+            }
+
+            /// Gets a uniform index, if it exists
+            /// @param name: The uniform's name
+            /// @return Uniform location
+            const VGUniform* tryGetUniform(const nString& name) const {
+                auto&& it = m_uniforms.find(name);
+                return it != m_uniforms.end() ? &it->second : nullptr;
             }
 
             /// Gets the current semantic binding
@@ -171,6 +183,8 @@ namespace vorb {
             static VGProgram getCurrentProgram() {
                 return m_programInUse;
             }
+
+            const UniformMap& getUniforms() const { return m_uniforms; }
 
             Event<const nString&> onShaderCompilationError; ///< Event signaled during addShader when an error occurs
             Event<const nString&> onProgramLinkError; ///< Event signaled during link when an error occurs

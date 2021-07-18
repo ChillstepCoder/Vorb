@@ -2,12 +2,15 @@
 #include "World.h"
 
 #include "Camera2D.h"
-#include "EntityComponentSystem.h"
+#include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
 #include "physics/ContactListener.h"
 
+#include "ecs/factory/EntityFactory.h"
+
+#include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
@@ -19,190 +22,572 @@
 #include "physics/PhysQueryCallback.h"
 #include "Utils.h"
 
+#include "city/City.h"
+
+// TODO: remove?
+#include "ResourceManager.h"
+#include "particles/ParticleSystemManager.h"
+
+#include "util/TileUtil.h"
+
+// For raycast
+inline f32 fastFloorf(f32 x) {
+    return FastConversion<f32, f32>::floor(x);
+}
+inline f64 fastCeilf(f32 x) {
+    return FastConversion<f32, f32>::ceiling(x);
+}
+
+
 
 #define ENABLE_DEBUG_RENDER 1
-#if ENABLE_DEBUG_RENDER == 1
-#include <Vorb/ui/InputDispatcher.h>
-static bool s_debugToggle = false;
-static bool s_wasTogglePressed = false;
-#endif
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
+// Chunks to load
+#ifdef DEBUG
+constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
+#else
+constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
+#endif
 
-World::World(ResourceManager& resourceManager) {
-	mChunkRenderer = std::make_unique<ChunkRenderer>(resourceManager);
-	mChunkGenerator = std::make_unique<ChunkGenerator>();
+#ifdef USE_SMALL_CHUNK_WIDTH
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;
+#else
+const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
+#endif
+
+World::World(ResourceManager& resourceManager) :
+	mResourceManager(resourceManager)
+{
+    // Init generation
+    mChunkGenerator = std::make_unique<ChunkGenerator>();
+
+    // Init ECS
+    mEcs = std::make_unique<EntityComponentSystem>(*this);
+
+    // Init factories
+	mEntityFactory = std::make_unique<EntityFactory>(*mEcs, mResourceManager);
+
+    // Init physics
+    mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
+    mContactListener = std::make_unique<ContactListener>(*mEcs);
+    mPhysWorld->SetContactListener(mContactListener.get());
+
+	// Cities
+	mCities = std::make_unique<CityGraph>();
+
+	// Static load range for now
+	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
 }
 
 World::~World() {
 
 }
 
-void World::init(EntityComponentSystem& ecs) {
-	assert(!mEcs);
-	mEcs = &ecs;
-	mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
-
-	mContactListener = std::make_unique<ContactListener>(*mEcs);
-	mPhysWorld->SetContactListener(mContactListener.get());
+void World::initPostLoad() {
+    // Init regions
+    for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
+        mChunkGenerator->GenerateRegionLODTextureAsync(mWorldGrid.getRegion(i));
+    }
 }
 
-void World::draw(const Camera2D& camera) {
-
-#if ENABLE_DEBUG_RENDER == 1
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
-		if (!s_wasTogglePressed) {
-			s_wasTogglePressed = true;
-			s_debugToggle = !s_debugToggle;
-		}
-	}
-	else {
-		s_wasTogglePressed = false;
-	}
-#endif
-
-	for (auto&& chunk : mChunks) {
-		mChunkRenderer->RenderChunk(*chunk.second.get(), camera);
-	}
-
-	// TODO: This feels wrong
-	updateWorldMousePos(camera);
-}
-
-void World::update(float deltaTime, const f32v2& playerPos, const Camera2D& camera) {
+void World::update(const f32v2& playerPos, const Camera2D& camera) {
 	assert(mEcs);
 
+	Services::Threadpool::ref().mainThreadUpdate();
+
+	updateSun();
+
 	mLoadCenter = playerPos;
-
-	getChunkOrCreateAtPosition(playerPos);
-	updateWorldMousePos(camera);
 	
-	mLoadRange.x = std::max(camera.getScreenWidth() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
-	mLoadRange.y = std::max(camera.getScreenHeight() * (1.0f / camera.getScale()) * 0.5f, (float)CHUNK_WIDTH);
-
-	// Corners
-	for (auto it = mChunks.begin(); it != mChunks.end(); /* no iASSSSncrement */) {
-		Chunk& chunk = *it->second;
-		if (updateChunk(chunk)) {
-			chunk.dispose();
-			mChunks.erase(it++);
-		}
-		else {
-			++it;
-		}
+	// TODO: This now asserts out of bounds
+	Chunk& playerChunk = getChunkAtPosition(playerPos);
+	if (playerChunk.isInvalid()) {
+		initChunk(playerChunk);
 	}
+	
+	const f32v2 topRight = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), 0.0f));
+	const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth() * 0.5f, camera.getScreenHeight() * 0.5f));
+
+    mViewRange.x = topRight.x - center.x + CHUNK_WIDTH / 2;
+	mViewRange.y = topRight.y - center.y + CHUNK_WIDTH / 2;
+
+	// Always load an extra border of chunks
+	mViewRange.x = MAX(mViewRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
+	mViewRange.y = MAX(mViewRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
+
+    for (size_t i = 0; i < mActiveChunks.size();) {
+        Chunk& chunk = *mActiveChunks[i];
+        if (updateChunk(chunk)) {
+            chunk.dispose();
+			mActiveChunks[i] = mActiveChunks.back();
+			mActiveChunks.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
+
+	// Update cities
+	for (auto&& it : mCities->mNodes) {
+		it->update();
+	}
+
+	// TODO: Give physworld ownership to physicssystem?
+	mEcs->mPhysicsSystem.updateFrameBegin(mEcs->mRegistry);
 
 	// Update physics
-	mPhysWorld->Step(deltaTime, 1, 1);
+	mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
+
+	// Update particles (TODO: Ecs?)
+	mResourceManager.getParticleSystemManager().update(playerPos);
+
+	// Update ECS
+    mEcs->update(mClientEcsData);
 }
 
-void World::updateWorldMousePos(const Camera2D& camera) {
-	const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
-	mWorldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+Chunk& World::getChunkAtPosition(const f32v2& worldPos) {
+	return getChunkAtPosition(ChunkID(worldPos));
 }
 
-Chunk* World::getChunkAtPosition(const f32v2& worldPos) {
-	ChunkID chunkId(worldPos);
-	std::map<ChunkID, std::unique_ptr<Chunk>>::iterator it = mChunks.find(chunkId);
-	if (it != mChunks.end()) {
-		return it->second.get();
-	}
-
-	return nullptr;
+Chunk& World::getChunkAtPosition(ChunkID chunkId) {
+	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
+	return mWorldGrid.getChunk(chunkId.id);
 }
 
-Chunk* World::getChunkOrCreateAtPosition(const f32v2& worldPos) {
-	ChunkID chunkId(worldPos);
-	return getChunkOrCreateAtPosition(chunkId);
+const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
+	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
+    return mWorldGrid.getChunk(chunkId.id);
 }
 
-Chunk* World::getChunkOrCreateAtPosition(ChunkID chunkId) {
-	auto it = mChunks.find(chunkId);
-	if (it != mChunks.end()) {
-		return it->second.get();
-	}
-
-	// Create
-	auto newChunkIt = mChunks.insert(std::make_pair(chunkId, std::make_unique<Chunk>()));
-	Chunk* newChunk = newChunkIt.first->second.get();
-	initChunk(*newChunk, chunkId);
-	mChunkGenerator->GenerateChunk(*newChunk);
-	return newChunk;
+Chunk& World::getChunkAtPosition(const ui32v2& worldPos) {
+    return getChunkAtPosition(ChunkID(worldPos));
 }
 
-TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) {
+TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const {
 	assert(false); // Implement!
 	return TileHandle();
 }
 
-TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) {
+TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	TileHandle handle;
-	handle.chunk = getChunkAtPosition(worldPos);
-	if (handle.chunk) {
-		unsigned x = (unsigned)floor(worldPos.x) & (CHUNK_WIDTH - 1); // Fast modulus
-		unsigned y = (unsigned)floor(worldPos.y) & (CHUNK_WIDTH - 1); // Fast modulus
-		handle.index = ui16(y * CHUNK_WIDTH + x);
-		handle.tile = handle.chunk->getTileAt(handle.index);
+	const Chunk* chunk = &getChunkAtPosition(worldPos);
+	if (chunk->getState() == ChunkState::FINISHED) {
+		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+		return chunk->getTileHandleAt(TileIndex(x, y));
 	}
-	return handle;
+	return TileHandle();
+}
+
+TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
+    TileHandle handle;
+    // TODO: Chunk pos doesn't know how to handle integers, it thinks its chunk coords
+    const Chunk* chunk = &getChunkAtPosition(f32v2(worldPos));
+    if (chunk->getState() == ChunkState::FINISHED) {
+        unsigned x = worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        unsigned y = worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        return chunk->getTileHandleAt(TileIndex(x, y));
+    }
+    return TileHandle();
+}
+
+const ItemStack* World::tryGetItemStackAtWorldPos(const f32v2& worldPos) const {
+	const Chunk& chunk = getChunkAtPosition(worldPos);
+	if (chunk.getState() == ChunkState::FINISHED) {
+		// TODO: Utility?
+		unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+		unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+		return chunk.tryGetItemStackAt(TileIndex(x, y));
+	}
+	return nullptr;
+}
+
+bool World::tryAddFullItemStackAt(const f32v2& worldPos, ItemStack itemStack) {
+    Chunk& chunk = getChunkAtPosition(worldPos);
+    if (chunk.getState() == ChunkState::FINISHED) {
+        // TODO: Utility?
+        unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        return chunk.tryAddFullItemStackAt(TileIndex(x, y), itemStack);
+    }
+    return false;
+}
+
+ItemStack World::tryAddPartialItemStackAt(const f32v2& worldPos, ItemStack itemStack) {
+    Chunk& chunk = getChunkAtPosition(worldPos);
+    if (chunk.getState() == ChunkState::FINISHED) {
+        // TODO: Utility?
+        unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        return chunk.tryAddPartialItemStackAt(TileIndex(x, y), itemStack);
+    }
+    return itemStack;
+}
+
+void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
+{
+    // Stick to positive numbers
+    f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+	if (isnan(bottomLeftCorner.x + bottomLeftCorner.y)) return;
+
+	// Start one chunk down for mountains
+	bottomLeftCorner.y -= CHUNK_WIDTH;
+	if (bottomLeftCorner.x < 0.0f) {
+		bottomLeftCorner.x = 0.0f;
+	}
+    if (bottomLeftCorner.y < 0.0f) {
+        bottomLeftCorner.y = 0.0f;
+    }
+
+    const ChunkID bottomLeftID(bottomLeftCorner);
+
+	ChunkID enumerator = bottomLeftID;
+    
+    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
+    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
+    ui32 widthInChunks = (ui32)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
+	ui32 heightInChunks = (ui32)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1) + 1;
+
+	if (widthInChunks + enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS) {
+		widthInChunks -= (widthInChunks + enumerator.pos.x) - WorldData::WORLD_WIDTH_CHUNKS + 1;
+	}
+    if (heightInChunks + enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
+		heightInChunks -= (heightInChunks + enumerator.pos.y) - WorldData::WORLD_WIDTH_CHUNKS + 1;
+    }
+	// Dont crash if we go out of world
+	if (enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS || enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
+		return;
+	}
+
+	while (true) {
+        if (enumerator.pos.x - bottomLeftID.pos.x > widthInChunks) {
+            enumerator.pos.x -= widthInChunks + 1;
+			enumerator = enumerator.getTopID();
+        }
+        if (enumerator.pos.y - bottomLeftID.pos.y > heightInChunks) {
+            // Off screen
+            return;
+        }
+		const Chunk& chunk = getChunkAtPosition(enumerator);
+        if (!chunk.isInvalid()) {
+            func(chunk);
+        }
+        enumerator = enumerator.getRightID();
+	}
+}
+
+void World::enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const {
+    // Stick to positive numbers
+    const f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
+
+    const RegionID bottomLeftID(bottomLeftCorner);
+
+    RegionID enumerator = bottomLeftID;
+
+    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
+    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
+    ui32 widthInRegions = (ui32)((scaledWidth + WorldData::REGION_WIDTH_TILES / 2) / WorldData::REGION_WIDTH_TILES + 1);
+    ui32 heightInRegions = (ui32)((scaledHeight + WorldData::REGION_WIDTH_TILES / 2) / WorldData::REGION_WIDTH_TILES + 1);
+
+    if (widthInRegions + enumerator.pos.x >= WorldData::WORLD_WIDTH_REGIONS) {
+        widthInRegions -= (widthInRegions + enumerator.pos.x) - WorldData::WORLD_WIDTH_REGIONS + 1;
+    }
+    if (heightInRegions + enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
+        heightInRegions -= (heightInRegions + enumerator.pos.y) - WorldData::WORLD_WIDTH_REGIONS + 1;
+    }
+    // Dont crash if we go out of world
+    if (enumerator.pos.x >= WorldData::WORLD_WIDTH_REGIONS || enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
+        return;
+    }
+
+    while (true) {
+        if (enumerator.pos.x - bottomLeftID.pos.x > widthInRegions) {
+            enumerator.pos.x -= widthInRegions + 1;
+            enumerator = enumerator.getTopID();
+        }
+        if (enumerator.pos.y - bottomLeftID.pos.y > heightInRegions) {
+            // Off screen
+            return;
+        }
+		assert(enumerator.id < WorldData::WORLD_SIZE_REGIONS);
+        const Region& region = mWorldGrid.getRegion(enumerator.id);
+        func(region);
+        enumerator = enumerator.getRightID();
+    }
+}
+
+void World::efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func) {
+	// TODO: implement locking (write/read)
+	// TODO: handle this without asserts
+	// Start at bottom left
+	ui32v2 worldPos;
+	ui32 spanX = CHUNK_WIDTH; // Logically these initial values wont actually be used, but need to please compiler
+	ui32 spanY = CHUNK_WIDTH;
+	for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.height;) {
+        for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.height;) {
+            TileHandle cornerHandle = getTileHandleAtWorldPos(worldPos);
+            assert(cornerHandle.chunk && cornerHandle.chunk->isDataReady());
+            Chunk& chunk = *cornerHandle.getMutableChunk();
+            const ui32 distFromRightEdge = CHUNK_WIDTH - cornerHandle.index.getX();
+            const ui32 distFromTopEdge = CHUNK_WIDTH - cornerHandle.index.getY();
+            spanX = std::min(distFromRightEdge, aabb.width);
+            spanY = std::min(distFromTopEdge, aabb.height); // TODO: Prob clever way to move this up a loop
+            const ui32 x = cornerHandle.index.getX();
+            const ui32 y = cornerHandle.index.getY();
+			for (ui32 dy = 0; dy < spanY; ++dy) {
+				for (ui32 dx = 0; dx < spanX; ++dx) {
+					func(chunk, chunk.mTiles[TileIndex(x + dx, y + dy)]);
+				}
+			}
+			worldPos.x += spanX;
+		}
+		worldPos.y += spanY;
+	}
+}
+
+void World::updateClientEcsData(const Camera2D& camera) {
+    const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
+    mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+}
+
+void World::setTimeOfDay(float time) {
+	assert(time >= 0.0f && time <= HOURS_PER_DAY);
+
+	// Get initial
+    updateSun();
+
+	// Offset debug time
+	const f64 timeOffset = time - mTimeOfDay;
+	sDebugOptions.mTimeOffset += timeOffset * SECONDS_PER_HOUR;
+
+	// TODO: Better time manager
+	// Update with new offset
+	updateSun();
+}
+
+City* World::getClosestCityToPoint(const f32v2& pos) const
+{
+	City* closest = nullptr;
+	f32 closestDist2 = FLT_MAX;
+	for (auto&& city : mCities->mNodes) {
+		const f32 dist2 = glm::length2(f32v2(city->getCityCenterWorldPos()) - pos);
+		if (dist2 < closestDist2) {
+			closestDist2 = dist2;
+			closest = city.get();
+		}
+	}
+	return closest;
+}
+
+IntersectionHit World::tryGetRaycastIntersect(const f32v2& start, const f32v2& end, f32 zPos)
+{
+	// TODO: Use Z position
+	UNUSED(zPos);
+    //Find All Distances To Next Voxel In Each Direction
+	f32 currDist = 0.0f;
+	f32v2 currentPos = start;
+	// TODO: do we care about the world wrap lol
+	ui32v2 currentCellPos = currentPos;
+	const f32v2 offset = end - start;
+	const f32 rayLength = glm::length(offset);
+	const f32v2 direction = offset / rayLength;
+
+	while (currDist < rayLength) {
+		f32v2 next;
+		f32v2 r;
+		// X-Distance
+		if (direction.x > 0) {
+			if (currentPos.x == (i32)currentPos.x) next.x = currentPos.x + 1;
+			else next.x = fastCeilf(currentPos.x);
+			r.x = (next.x - currentPos.x) / direction.x;
+		}
+		else if (direction.x < 0) {
+			if (currentPos.x == (i32)currentPos.x) next.x = currentPos.x - 1;
+			else next.x = fastFloorf(currentPos.x);
+			r.x = (next.x - currentPos.x) / direction.x;
+		}
+		else {
+			r.x = FLT_MAX;
+		}
+
+		// Y-Distance
+		if (direction.y > 0) {
+			if (currentPos.y == (i32)currentPos.y) next.y = currentPos.y + 1;
+			else next.y = fastCeilf(currentPos.y);
+			r.y = (next.y - currentPos.y) / direction.y;
+		}
+		else if (direction.y < 0) {
+			if (currentPos.y == (i32)currentPos.y) next.y = currentPos.y - 1;
+			else next.y = fastFloorf(currentPos.y);
+			r.y = (next.y - currentPos.y) / direction.y;
+		}
+		else {
+			r.y = FLT_MAX;
+		}
+
+		// Get minimum movement to the next cell
+		f32 rat;
+		if (r.x < r.y) {
+			// Move In The X-Direction
+			rat = r.x;
+			currentPos += direction * rat;
+			if (direction.x > 0) ++currentCellPos.x;
+			else if (direction.x < 0) --currentCellPos.x;
+		}
+		else {
+			// Move In The Y-Direction
+			rat = r.y;
+			currentPos += direction * rat;
+			if (direction.y > 0) ++currentCellPos.y;
+			else if (direction.y < 0) --currentCellPos.y;
+		}
+
+		TileHandle tile = getTileHandleAtWorldPos(currentCellPos);
+
+		// Check collision
+		// TODO: Pass in collision radius
+		IntersectionHit hit = TileUtil::tryRayTileIntersect(tile.tile, currentCellPos, start, end, 0.3f);
+		if (hit.didHit()) {
+			return hit;
+		}
+
+		// Add The Distance The Ray Has Traversed
+		currDist += rat;
+	}
+
+	return IntersectionHit();
+}
+
+void World::updateSun() {
+    const float SUNRISE_TIME = 6.0f; // 6am
+    const float SUNSET_TIME = 19.0f; // 7pm
+	const float SUN_HEIGHT_EXPONENT = 0.5f; // Smaller exponent means brighter days
+	const float DAY_SPAN = SUNSET_TIME - SUNRISE_TIME;
+	// TODO: Better time manager
+	const f64 adjustedTime = sTotalTimeSeconds + sDebugOptions.mTimeOffset;
+    mTimeOfDay = (float)fmod(adjustedTime / (f64)SECONDS_PER_HOUR, (f64)HOURS_PER_DAY);
+
+	const float dayDelta = (mTimeOfDay - SUNRISE_TIME) / DAY_SPAN;
+	mSunHeight = sin(dayDelta * M_PIF);
+	if (mSunHeight > 0.0f) {
+		// We can only do exponent curve on nonzero numbers
+		mSunHeight = pow(mSunHeight, SUN_HEIGHT_EXPONENT);
+	}
+	mSunPosition = vmath::lerp(-1.0f, 1.0f, dayDelta);
+
+	// Colors
+    f32v3 sunSet(1.0f, 0.5f, 0);
+    f32v3 sunPeak(1.0f, 1.0f, 1.0f);
+    const float c = vmath::max(mSunHeight, 0.0f);
+	mSunColor = f32v3(
+        vmath::lerp(sunSet.r, sunPeak.r, c),
+		vmath::lerp(sunSet.g, sunPeak.g, c),
+		vmath::lerp(sunSet.b, sunPeak.b, c)
+	);
 }
 
 bool World::updateChunk(Chunk& chunk) {
-	if (!shouldChunkLoad(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
+	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
+		if (chunk.mRefCount) {
+			// Waiting on a thread or handle to release us
+			return false;
+		}
 		// Unload
 		return true;
 	}
-	
-	updateChunkNeighbors(chunk);
+
+	if (chunk.isDataReady()) {
+		// Check for new neighbors
+		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
+			tryCreateNeighbors(chunk);
+		}
+	}
 	
 	return false;
 }
 
-void World::updateChunkNeighbors(Chunk& chunk) {
+void World::onChunkDataReady(Chunk& chunk) {
+	// Don't update neighbors until we are data ready
+	assert(chunk.isDataReady());
 	// Neighbors
-	ChunkID myId = chunk.getChunkID();
-	// Left
-	if (!chunk.mNeighborLeft) {
-		ChunkID leftChunk = myId.getLeftID();
-		if (shouldChunkLoad(leftChunk)) {
-			chunk.mNeighborLeft = getChunkOrCreateAtPosition(leftChunk);
-		}
+	const ChunkID& myId = chunk.getChunkID();
+    dataReadyTryNotifyNeighbor(chunk, myId.getLeftID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getTopID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getRightID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getBottomID());
+	
+	assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
+}
+
+void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
+	Chunk& neighbor = mWorldGrid.getChunk(id.id);
+    if (neighbor.isDataReady()) {
+		// Set up data ready ref counts
+		++neighbor.mDataReadyNeighborCount;
+		++chunk.mDataReadyNeighborCount;
 	}
-	if (!chunk.mNeighborTop) {
-		ChunkID topChunk = myId.getTopID();
-		if (shouldChunkLoad(topChunk)) {
-			chunk.mNeighborTop = getChunkOrCreateAtPosition(topChunk);
-		}
-	}
-	if (!chunk.mNeighborRight) {
-		ChunkID rightChunk = myId.getRightID();
-		if (shouldChunkLoad(rightChunk)) {
-			chunk.mNeighborRight = getChunkOrCreateAtPosition(rightChunk);
-		}
-	}
-	if (!chunk.mNeighborBottom) {
-		ChunkID bottomChunk = myId.getBottomID();
-		if (shouldChunkLoad(bottomChunk)) {
-			chunk.mNeighborBottom = getChunkOrCreateAtPosition(bottomChunk);
-		}
+	else if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
+		// Create the chunk, but dont update neighbor count until its done
+		initChunk(neighbor);
 	}
 }
 
-bool World::shouldChunkLoad(ChunkID chunkPos, float addOffset /* = 0.0f*/)
+void World::tryCreateNeighbors(Chunk& chunk) {
+    // Neighbors
+    const ChunkID& myId = chunk.getChunkID();
+	tryCreateNeighbor(chunk, myId.getLeftID());
+	tryCreateNeighbor(chunk, myId.getTopID());
+	tryCreateNeighbor(chunk, myId.getRightID());
+	tryCreateNeighbor(chunk, myId.getBottomID());
+}
+
+void World::tryCreateNeighbor(Chunk& chunk, const ChunkID& id) {
+    Chunk& neighbor = mWorldGrid.getChunk(id.id);
+    if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
+        // Create the chunk, but dont update neighbor count until its done
+        initChunk(neighbor);
+    }
+}
+
+bool World::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 0.0f*/)
 {
 	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
 	const f32v2 offset = centerPos - mLoadCenter;
 
-	// TODO: only need to check this at the edges
-	return (abs(offset.x) + addOffset <= mLoadRange.x && abs(offset.y) + addOffset <= mLoadRange.y);
+	return glm::length2(offset) <= mLoadRangeSq + addOffset;
 }
 
-void World::initChunk(Chunk& chunk, ChunkID chunkId) {
-	chunk.init(chunkId);
+void World::initChunk(Chunk& chunk)
+{
+	const ChunkID& chunkId = chunk.getChunkID();
+    // If this is a sentinel chunk, stop here
+    if (chunkId.isSentinelID()) {
+        return;
+    }
+
+    generateChunkAsync(chunk);
+    mActiveChunks.push_back(&chunk);
 }
 
-std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+void World::generateChunkAsync(Chunk& chunk) {
+	chunk.mState = ChunkState::LOADING;
+	chunk.incRef();
+	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
+        mChunkGenerator->GenerateChunk(chunk);
+    }, [&]() {
+        chunk.mState = ChunkState::FINISHED;
+		onChunkDataReady(chunk);
+		chunk.decRef();
+    });
+}
+
+void World::editorInvalidateWorldGen() {
+	initPostLoad();
+}
+
+std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {
 	// TODO: No allocation?
 
 	// Empty mask = all types
@@ -213,7 +598,7 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	// TODO: Components as well? Better lookup?
 	std::vector<EntityDistSortKey> entities;
 
-	PhysQueryCallback queryCallBack(entities, pos, mEcs->getPhysicsComponents(), includeMask, excludeMask, radius, except);
+	PhysQueryCallback queryCallBack(entities, pos, mEcs->mRegistry, includeMask, excludeMask, radius, except);
 	b2AABB aabb;
 	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
@@ -243,7 +628,7 @@ inline void testExtremePoint(const f32v2& point, b2AABB& aabb) {
 	}
 }
 
-std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, vecs::EntityID except /*= ENTITY_ID_NONE*/) {
+std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except /*= (entt::entity)0*/) {
 	const float halfAngle = arcAngle * 0.5f;
 
 	// Empty mask = all types
@@ -288,13 +673,14 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
 #if ENABLE_DEBUG_RENDER == 1
 			if (s_debugToggle) {
+				assert(false); // Can we do shared debug  toggle
 				DebugRenderer::drawLine(pos, (pos + axisExtrema[i] * radius) - pos, color4(0.0f, 1.0f, 0.0f), 1);
 			}
 #endif
 		}
 	}
 
-	ArcQueryCallback queryCallBack(entities, pos, mEcs->getPhysicsComponents(), includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
+	ArcQueryCallback queryCallBack(entities, pos, mEcs->mRegistry, includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
 	mPhysWorld->QueryAABB(&queryCallBack, aabb);
 
 	if (sorted) {
@@ -322,6 +708,56 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 	return entities;
 }
 
+entt::entity World::createEntity(const f32v2& pos, const nString& typeName) {
+	return mEntityFactory->createEntity(pos, typeName);
+}
+
 b2Body* World::createPhysBody(const b2BodyDef* bodyDef) {
 	return mPhysWorld->CreateBody(bodyDef);
+}
+
+void World::createCityAt(const ui32v2& worldPos) {
+	std::unique_ptr<City> newCity = std::make_unique<City>(worldPos, *this);
+	mCities->mNodes.emplace_back(std::move(newCity));
+}
+
+void World::setTileAt(const ui32v2& worldPos, Tile tile) {
+
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+	assert(handle.isValid());
+    if (handle.isValid()) {
+        Chunk* chunk = handle.getMutableChunk();
+        chunk->setTileAt(handle.index, tile);
+    }
+}
+
+void World::setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer) {
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+	setTileLayerAt(handle, id, layer);
+}
+
+void World::setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer) {
+    assert(handle.isValid());
+    if (handle.isValid()) {
+        Chunk* chunk = handle.getMutableChunk();
+        chunk->setTileAt(handle.index, id, layer);
+    }
+}
+
+bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
+	TileHandle handle = getTileHandleAtWorldPos(worldPos);
+	if (handle.isValid()) {
+		for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
+			TileID tileId = handle.tile.layers[i];
+			if (tileId != INVALID_TILE_INDEX) {
+				if (TileRepository::getTileData(tileId).resource == resource) {
+					if (outLayer) {
+						*outLayer = (TileLayer)i;
+					}
+					return true;
+				}
+			}
+		}
+	}
+	return false;
 }

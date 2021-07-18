@@ -7,7 +7,7 @@
 class PhysQueryCallback : public b2QueryCallback
 {
 public:
-	PhysQueryCallback(std::vector<EntityDistSortKey>& entities, f32v2 pos, const PhysicsComponentTable& physicsComponents, ActorTypesMask includeMask, ActorTypesMask excludeMask, float radius, vecs::EntityID except);
+	PhysQueryCallback(std::vector<EntityDistSortKey>& entities, f32v2 pos, const entt::registry& registry, ActorTypesMask includeMask, ActorTypesMask excludeMask, float radius, entt::entity except);
 	virtual bool ReportFixture(b2Fixture* fixture) override;
 
 	bool satisfiesMask(ActorTypes type) {
@@ -17,16 +17,16 @@ public:
 protected:
 	std::vector<EntityDistSortKey>& mEntities;
 	f32v2 mPos;
-	const PhysicsComponentTable& mPhysicsComponents;
+	const entt::registry& mRegistry;
 	ActorTypesMask mIncludeMask;
 	ActorTypesMask mExcludeMask;
 	float mRadius;
-	vecs::EntityID mExcept;
+	entt::entity mExcept;
 };
 
 class ArcQueryCallback : public PhysQueryCallback {
 public:
-	ArcQueryCallback(std::vector<EntityDistSortKey>& entities, f32v2 pos, const PhysicsComponentTable& physicsComponents, ActorTypesMask includeMask, ActorTypesMask excludeMask, float radius, vecs::EntityID except, f32v2 normal, float halfAngle, int quadrants);
+	ArcQueryCallback(std::vector<EntityDistSortKey>& entities, f32v2 pos, const entt::registry& registry, ActorTypesMask includeMask, ActorTypesMask excludeMask, float radius, entt::entity except, f32v2 normal, float halfAngle, int quadrants);
 
 	virtual bool ReportFixture(b2Fixture* fixture) override;
 

@@ -1,0 +1,11 @@
+dims_cells: [1,3]
+tiles:
+  - name: watertop
+    cell_rect: [0,0,1,1]
+    lod_color: [0,0,255]
+  - name: water
+    cell_rect: [0,1,1,1]
+    lod_color: [0,0,255]
+  - name: waterbot
+    cell_rect: [0,2,1,1]
+    lod_color: [0,0,255]

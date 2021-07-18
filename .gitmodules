@@ -1,0 +1,6 @@
+[submodule "RTS/dependencies/entt"]
+	path = RTS/dependencies/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "include/Vorb/ui/imgui"]
+	path = include/Vorb/ui/imgui
+	url = https://github.com/ocornut/imgui.git

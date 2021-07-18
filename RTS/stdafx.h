@@ -29,6 +29,7 @@
 /************************************************************************/
 /* Other                                                                */
 /************************************************************************/
+#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -44,6 +45,13 @@
 #include <Vorb/math/VorbMath.hpp>
 #include <Vorb/Constants.h>
 #include <Vorb/types.h>
+#include <Vorb/Timing.h>
+#include <Vorb/io/Keg.h>
+#include <Vorb/io/Path.h>
+
+#include <entt/entt.hpp>
+
+constexpr entt::entity INVALID_ENTITY = (entt::entity)(UINT32_MAX);
 
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)
@@ -76,34 +84,140 @@ struct b2Vec2;
 #define M_SQRT1_2  0.707106781186547524401f  // 1/sqrt(2)
 #endif
 
-#define DEG_TO_RAD(x) ((x) * M_PIf / 180.0f)
-#define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
+#include "util/MathUtil.hpp"
+#include "util/AABB.hpp"
 
-const int CHUNK_WIDTH = 128;
-const int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
-const int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
-const ui16 INVALID_TILE_INDEX = 0xffff;
+// Comment out for larger chunks
+// #define USE_SMALL_CHUNK_WIDTH
+
+#ifdef USE_SMALL_CHUNK_WIDTH
+constexpr int CHUNK_WIDTH = 64;
+static_assert(CHUNK_WIDTH == 64, "Adjust bitwise operators below");
+#define TILE_INDEX_Y_SHIFT 6
+#define TILE_INDEX_X_MASK 0x3f
+#else
+constexpr int CHUNK_WIDTH = 128;
+static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
+#define TILE_INDEX_Y_SHIFT 7
+#define TILE_INDEX_X_MASK 0x7f
+#endif
+
+constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
+constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
+constexpr ui16 INVALID_TILE_INDEX = 0xffff;
+
+// Cartesian
+enum class Cartesian {
+    DOWN = 0, //-y  south
+    LEFT = 1, //-x  west
+    RIGHT = 2, //+x east
+    UP = 3,  //+y    north
+    NONE = 100
+};
+constexpr int CARTESIAN_COUNT = 4; 
+constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
+    Cartesian::UP,
+    Cartesian::RIGHT,
+    Cartesian::LEFT,
+    Cartesian::DOWN,
+};
+const i32v2 CARTESIAN_OFFSETS[CARTESIAN_COUNT] = {
+    i32v2(0, -1), // DOWN
+    i32v2(-1, 0), // LEFT
+    i32v2(1,  0), // RIGHT
+    i32v2(0,  1), // UP
+};
+// Corner winding
+constexpr int CORNER_COUNT = 4;
+enum class CornerWinding {
+    BOTTOM_LEFT  = 0,
+    BOTTOM_RIGHT = 1,
+    TOP_LEFT     = 2,
+    TOP_RIGHT    = 3
+};
+const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
+    ui32v2(0,  0), // BOTTOM_LEFT
+    ui32v2(1,  0), // BOTTOM_RIGHT
+    ui32v2(0,  1), // TOP_LEFT
+    ui32v2(1,  1), // TOP_RIGHT
+};
+
+enum AXIS {
+    AXIS_HORIZONTAL = 0,
+    AXIS_VERTICAL   = 1
+};
+
+// TODO: Remove
+// We are in 3/4 perspective
+constexpr float Z_TO_XY_RATIO = 0.75f;
 
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
 	TileIndex(ui16 index) : index(index) {};
-	TileIndex(unsigned x, unsigned y) : index((y << 7) + x) {
-		assert(getX() == x && getY() == y && index == y * 128 + x);
-	};
+    TileIndex(const TileIndex& index) : index(index.index) {};
+	TileIndex(unsigned x, unsigned y) : index((y << TILE_INDEX_Y_SHIFT) + x) {};
 
-	inline ui16 getX() { return index & 0x7f; }
-	inline ui16 getY() { return index >> 7; }
+	inline ui16 getX() const { return index & TILE_INDEX_X_MASK; }
+	inline ui16 getY() const { return index >> TILE_INDEX_Y_SHIFT; }
 
 	operator ui16() const { return index; }
 
+	TileIndex& operator++() {
+		++index;
+		return *this;
+	}
+    TileIndex& operator--() {
+        --index;
+        return *this;
+    }
+
 	ui16 index;
 };
-static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators above");
 
+// Items
+typedef ui32 ItemID;
+constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
+
+// Enum cast
 template<typename E>
 constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 	return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+// **************** BEBUG *****************
+extern bool s_debugToggle;
+extern bool s_wasTogglePressed;
+extern float sFps;
+
+struct DebugOptions {
+	f64 mTimeOffset = 0.0f;
+    bool mWireframe = false;
+    bool mChunkBoundaries = false;
+	bool mCities = false;
+};
+
+extern DebugOptions sDebugOptions;
+
+// **************** ERRORS *****************
+//yes 1, no 0
+extern i32 showYesNoBox(const nString& message);
+extern i32 showYesNoCancelBox(const nString& message);
+extern void showMessage(const nString& message);
+
+extern nString getFullPath(const cString initialDir);
+extern void pError(const cString message);
+extern void pError(const nString& message);
+
+extern bool checkGlError(const nString& errorLocation);
+
+extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
+extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
+
+// Useful for determining the size of a class pre-compile time
+template <size_t S> class Sizer { };
+#define SIZER(type) Sizer<sizeof(type)> 
+
+
+#define IS_ENABLED(d) d == 1
 
 #endif // stdafx_h__RTS

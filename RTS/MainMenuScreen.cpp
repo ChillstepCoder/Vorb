@@ -4,12 +4,12 @@
 #include "App.h"
 
 #include <Vorb/math/VorbMath.hpp>
-#include <Vorb/graphics/SpriteBatch.h>
-#include <Vorb/graphics/TextureCache.h>
-#include <Vorb/graphics/DepthState.h>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/graphics/SpriteFont.h>
+#include <Vorb/graphics/TextureCache.h>
 #include <glm/gtx/rotate_vector.hpp>
+
+#include "DebugRenderer.h"
 
 #include <box2d/b2_body.h>
 #include <box2d/b2_contact.h>
@@ -19,40 +19,43 @@
 #include "World.h"
 #include "Utils.h"
 
-#include "actor/HumanActorFactory.h"
-#include "actor/UndeadActorFactory.h"
-#include "actor/PlayerActorFactory.h"
-
 #include "ResourceManager.h"
+#include "particles/ParticleSystemManager.h"
 
 #include "physics/ContactListener.h"
+#include "rendering/RenderContext.h"
 
-#include "DebugRenderer.h"
+#include "TextureManip.h"
+#include "Random.h"
+
+#include "ui/UIInteractMenuPopup.h"
+
+#include <SDL.h>
+
+#include <Vorb/ui/imgui/imgui.h>
+
+constexpr ui32 MAX_TICKS_PER_UPDATE = 2;
+constexpr f64 TICK_RATE_MS = 40.0;
 
 MainMenuScreen::MainMenuScreen(const App* app) 
-	: IAppScreen<App>(app) {
-
-	// TODO: This is kinda stupid
-	if (WeaponRegistry::s_allWeaponItems.empty()) {
-		ArmorRegistry::loadArmors();
-		WeaponRegistry::loadWeapons();
-		ShieldRegistry::loadShields();
-	}
-
-	mSb = std::make_unique<vg::SpriteBatch>();
-	mResourceManager = std::make_unique<ResourceManager>();
+	: IAppScreen<App>(app),
+	  mResourceManager(&Services::ResourceManager::ref()),
+      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()))),
+      mWorld(std::make_unique<World>(*mResourceManager))
+{
 
 	mCamera2D = std::make_unique<Camera2D>();
 
-	mWorld = std::make_unique<World>(*mResourceManager);
-	mEcs = std::make_unique<EntityComponentSystem>(*mWorld);
+    // TODO: This is kinda stupid
+    if (WeaponRegistry::s_allWeaponItems.empty()) {
+        ArmorRegistry::loadArmors();
+        WeaponRegistry::loadWeapons();
+        ShieldRegistry::loadShields();
+    }
 
-	mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(*mResourceManager, *mEcs, *mWorld);
-	mSpriteFont = std::make_unique<vg::SpriteFont>();
+	// Starting time of day to noon
+	mWorld->setTimeOfDay(12.0f);
 
-	mHumanActorFactory = std::make_unique<HumanActorFactory>(*mEcs, *mResourceManager);
-	mUndeadActorFactory = std::make_unique<UndeadActorFactory>(*mEcs, *mResourceManager);
-	mPlayerActorFactory = std::make_unique<PlayerActorFactory>(*mEcs, *mResourceManager);
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
 	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
@@ -74,33 +77,63 @@ i32 MainMenuScreen::getPreviousScreen() const {
 }
 
 void MainMenuScreen::build() {
-	mWorld->init(*mEcs);
-	mSb->init();
-	mSpriteFont->init("data/fonts/chintzy.ttf", 32);
-
-	mCircleTexture = mResourceManager->getTextureCache().addTexture("data/textures/circle_dir.png");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 	mCamera2D->setScale(mScale);
 
-    mResourceManager->loadResources("data/textures");
-    mResourceManager->loadResources("data/tiles");
+    mResourceManager->gatherFiles("data");
+	mResourceManager->loadFiles();
+
+    mRenderContext.initPostLoad();
+    mResourceManager->writeDebugAtlas();
+
+	mWorld->initPostLoad();
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
 		if (event.keyCode == VKEY_B) {
-			mDebugOptions.mWireframe = !mDebugOptions.mWireframe;
-		}
+			sDebugOptions.mWireframe = !sDebugOptions.mWireframe;
+        } else if (event.keyCode == VKEY_C) {
+            sDebugOptions.mChunkBoundaries = !sDebugOptions.mChunkBoundaries;
+        }
+        else if (event.keyCode == VKEY_V) {
+            sDebugOptions.mCities = !sDebugOptions.mCities;
+        }
+        else if (event.keyCode == VKEY_R) {
+			// TODO: Fix this
+			//mRenderContext.reloadShaders();
+        }
+        else if (event.keyCode == VKEY_N) {
+			mRenderContext.selectNextDebugShader();
+        }
+        else if (event.keyCode == VKEY_L) {
+			auto&& ecs = mWorld->getECS();
+			if (ecs.mRegistry.try_get<DynamicLightComponent>(mPlayerEntity)) {
+				// Remove existing
+				ecs.mRegistry.remove<DynamicLightComponent>(mPlayerEntity);
+			} else {
+				// Add new
+				ecs.mRegistry.emplace<DynamicLightComponent>(mPlayerEntity);
+			}
+        }
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mScale = glm::clamp(mScale + event.dy * 1.5f, 5.0f, 100.f);
-		mCamera2D->setScale(mScale);
+		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.03f, 1020.f);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
-		mTestClick = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y));
+		const f32v2 screenPos(event.x, event.y);
+		mTestClick = mCamera2D->convertScreenToWorld(screenPos);
+
+		if (event.button == vui::MouseButton::RIGHT) {
+			// If we are making a villager with G, dont freeze screen
+			if (!vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
+				mIsRightButtonDown = true;
+				mLastRightClickPosition = screenPos;
+			}
+		}
 
 		// Set tiles
 		//int tileIndex = m_tileGrid->getTileIndexFromScreenPos(m_testClick, *m_camera2D);
@@ -110,7 +143,8 @@ void MainMenuScreen::build() {
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
 		constexpr float VEL_MULT = 0.0001f;
 		constexpr float VEL_EXP = 0.4f;
-		const f32v2 worldPos = mCamera2D->convertScreenToWorld(f32v2(event.x, event.y));
+		const f32v2 screenPos(event.x, event.y);
+		const f32v2 worldPos = mCamera2D->convertScreenToWorld(screenPos);
 		const f32v2 offset = worldPos - mTestClick;
 		const float mag = glm::length(offset);
 		const float power = pow(mag * VEL_MULT, VEL_EXP);
@@ -122,43 +156,87 @@ void MainMenuScreen::build() {
 			velocity = (offset / mag) * power;
 		}
 
-		vecs::EntityID newActor = 0;
+		entt::entity newActor = INVALID_ENTITY;
 		if (event.button == vui::MouseButton::LEFT) {
             /*newActor = mUndeadActorFactory->createActor(
                 mTestClick,
                 vio::Path("data/textures/circle_dir.png"),
                 vio::Path("")
             );*/
-			//TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-			//handle.chunk->setTileAt(handle.index, Tile::TILE_STONE_1);
-		}
-		else if (event.button == vui::MouseButton::RIGHT) {
-            /*newActor = mHumanActorFactory->createActor(
-                mTestClick,
-                vio::Path("data/textures/circle_dir.png"),
-                vio::Path("")
-            );*/
-            //TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-            //handle.chunk->setTileAt(handle.index, Tile::TILE_GRASS_0);
+
+			if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
+                // Teleport
+                auto&& ecs = mWorld->getECS();
+				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(mPlayerEntity)) {
+					phys->teleportToPoint(worldPos);
+				}
+			}
+			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
+                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                if (handle.isValid()) {
+					Chunk* chunk = handle.getMutableChunk();
+					ui16 height = chunk->getTileAt(handle.index).baseZPosition + 5;
+					chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
+                }
+			}
+            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_E)) {
+                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                if (handle.isValid()) {
+                    Chunk* chunk = handle.getMutableChunk();
+                    ui16 height = chunk->getTileAt(handle.index).baseZPosition;
+                    chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
+                }
+            }
+            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_C)) {
+                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+				mWorld->createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
+            }
+			else {
+				if (mRightClickInteractPopup) {
+					mRightClickInteractPopup.reset();
+				}
+			}
+        }
+        else if (event.button == vui::MouseButton::RIGHT) {
+            mIsRightButtonDown = false;
+			if (vui::InputDispatcher::key.isKeyPressed(VKEY_P)) {
+                const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
+                mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
+			}
+			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
+                mWorld->createEntity(worldPos, "villager");
+			}
+            else {
+                if (mRightClickInteractPopup) {
+                    mRightClickInteractPopup.reset();
+					SDL_WarpMouseInWindow(static_cast<SDL_Window*>(m_app->getWindow().getHandle()), mLastRightClickPosition.x, mLastRightClickPosition.y);
+				}
+				else {
+					// Right click picking
+					mSelectedTilePosition = worldPos;
+					// Enable context menu
+					mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
+				}
+			}
 		}
 
 		// Apply velocity
-		if (newActor) {
-			auto& physComp = mEcs->getPhysicsComponentFromEntity(newActor);
-			velocity = velocity;
-			physComp.mBody->ApplyForce(reinterpret_cast<b2Vec2&>(velocity), physComp.mBody->GetWorldCenter(), true);
+		if (newActor != INVALID_ENTITY) {
+            /*auto& physcomp = mecs->getphysicscomponentfromentity(newactor);
+            velocity = velocity;
+            physcomp.mbody->applyforce(reinterpret_cast<b2vec2&>(velocity), physcomp.mbody->getworldcenter(), true);*/
 		}
 	});
 
-
 	// Add player
-	mPlayerEntity = mPlayerActorFactory->createActor(f32v2(0.0f),
-		vio::Path("data/textures/circle_dir.png"),
-		vio::Path(""));
+	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
+	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
+	mCamera2D->setPosition(WorldData::WORLD_CENTER);
+
 }
 
 void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
-	mSb->dispose();
+	
 }
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
@@ -169,80 +247,195 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
 
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
-	const float deltaTime = /*gameTime.elapsed / (1.0f / 60.0f)*/ 1.0f;
-	//static const f32v2 CAM_VELOCITY(5.0f, 5.0f);
-	//f32v2 offset(0.0f);
+	mGameTimer.startFrame();
 
-	// Camera movement
-	/*if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT) || vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
-		offset.x -= CAM_VELOCITY.x * deltaTime;
+    bool didUpdateCamera = false;
+
+    // Store mouse position and other useful things
+	mWorld->updateClientEcsData(*mCamera2D);
+
+	while (mGameTimer.tryTick()) {
+
+		// DEBUG Time advance
+		static constexpr float TIME_ADVANCE_MULT = 4.0f;
+		if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
+			if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+                sDebugOptions.mTimeOffset -= gameTime.elapsedSec * 250.0f;
+			}
+			else {
+				sDebugOptions.mTimeOffset -= gameTime.elapsedSec * TIME_ADVANCE_MULT;
+			}
+		}
+        else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
+            if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+                sDebugOptions.mTimeOffset += gameTime.elapsedSec * 250.0f;
+            }
+			else {
+				sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
+			}
+			mGameTimer.setMsPerTick(MS_PER_GAME_TICK / TIME_ADVANCE_MULT);
+		}
+		else {
+            mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
+		}
+
+        // Update camera
+        // TODO: Copy paste bad
+        const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+        const f32v2& playerXYPos = physCmp.getXYPosition();
+		if (!mIsRightButtonDown && !mRightClickInteractPopup) {
+			f32v2 targetPos = playerXYPos;
+			targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
+			updateCamera(targetPos, physCmp.getZPosition(), gameTime);
+		}
+		didUpdateCamera = true;
+
+		// World update after camera
+        mWorld->update(playerXYPos, *mCamera2D);
 	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT) || vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
-		offset.x += CAM_VELOCITY.x * deltaTime;
+	// Always update camera one last time using interpolated position
+	// TODO: Copy paste bad
+	const f32 frameAlpha = mGameTimer.getFrameAlpha();
+	const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+    const f32v2& playerXYPos = physCmp.getXYInterpolated(frameAlpha);
+	if (!mIsRightButtonDown && !mRightClickInteractPopup) {
+		f32v2 targetPos = playerXYPos;
+		targetPos.y += physCmp.getZInterpolated(frameAlpha) * Z_TO_XY_RATIO;
+		updateCamera(targetPos, physCmp.getZInterpolated(frameAlpha), gameTime);
 	}
+    didUpdateCamera = true;
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_UP) || vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
-		offset.y += CAM_VELOCITY.x * deltaTime;
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_DOWN) || vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
-		offset.y -= CAM_VELOCITY.x * deltaTime;
-	}
-
-	if (offset.x != 0.0f || offset.y != 0.0f) {
-		mCamera2D->offsetPosition(offset);
-	}*/
-
-	// Camera follow
-	const f32v2& playerPos = mEcs->getPhysicsComponentFromEntity(mPlayerEntity).getPosition();
-	const f32v2& offset = mWorld->getCurrentWorldMousePos() - playerPos;
-	mCamera2D->setPosition(playerPos + offset * 0.2f);
-	mCamera2D->update();
-
-	mWorld->update(deltaTime, playerPos, *mCamera2D);
-
-	mEcs->update(deltaTime);
-
-	// Update
-	mFps = vmath::lerp(mFps, m_app->getFps(), 0.85f);
 }
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	const f32 frameAlpha = mGameTimer.getFrameAlpha();
 
-	mWorld->draw(*mCamera2D);
+    // Grab fps
+    sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
+    mFps = sFps;
 
-	if (mDebugOptions.mWireframe) {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    auto&& ecs = mWorld->getECS();
+	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
+	const f32v2& xyPos = cmp.getXYPosition();
+	mRenderContext.renderFrame(*mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
+
+	// Draw selection drag
+	if (mIsRightButtonDown) {
+		const ui32v2 tilePos = mWorld->getClientECSData().worldMousePos;
+		DebugRenderer::drawQuad(tilePos, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.5f));
+	}
+
+	// Handle interact menu TODO: Notify to get this out of here
+	if (mRightClickInteractPopup) {
+        // Render selected
+        ui32v2 worldPosInt = mSelectedTilePosition;
+		DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+
+		// Draw vectors to corners
+		f32v2 interactPopupPositionWorld = mCamera2D->convertScreenToWorld(mLastRightClickPosition);
+		const color4 lineColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
+		DebugRenderer::drawLineBetweenPoints(mSelectedTilePosition, interactPopupPositionWorld, lineColor);
+		
+		const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
+		// TODO: Notify
+		if (result & INTERACT_MENU_RESULT_PATHFIND) {
+			NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
+			cmp.mPath = Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos);
+			cmp.mCurrentPoint = 0;
+			DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
+		}
+		else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+            }
+		}
+        else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+            }
+        }
+        else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+            }
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
+
+		// If we had a result, close window
+		if (result) {
+			mRightClickInteractPopup.reset();
+            ImGui::GetIO().WantCaptureKeyboard = false;
+            ImGui::GetIO().WantCaptureMouse = false;
+			
+			// Warp mouse
+			SDL_WarpMouseInWindow(static_cast<SDL_Window*>(m_app->getWindow().getHandle()), mLastRightClickPosition.x, mLastRightClickPosition.y);
+		}
+	} 
+
+    /*mSb->begin();
+    char fpsString[64];
+    sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
+    mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
+    mSb->end();
+    mSb->render(mCamera2D->getScreenSize());*/
+	
+}
+
+void MainMenuScreen::updateCamera(const f32v2& targetCenter, f32 targetHeight, const vui::GameTime& gameTime) {
+	UNUSED(targetHeight);
+	// TODO: use targetHeight to affect zoom
+    // TODO: Delta time dependent?
+    // Zoom
+	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
+    if (abs(mTargetScale - mScale) > 0.001f) {
+        mScale = vmath::lerp(mScale, mTargetScale, 0.3f);
+        mCamera2D->setScale(mScale);
+    }
+	const float cameraHeight = 1.0f / mScale * 1000.0f; // Height in meters
+
+    const f32v2& currentPos = mCamera2D->getPosition();
+
+    // Camera follow
+    const f32v2& offsetToMouse = mWorld->getClientECSData().worldMousePos - currentPos;
+    constexpr float LOOK_SCALE = 1.0f;
+	mTargetCameraPosition = targetCenter + offsetToMouse * LOOK_SCALE;
+
+	const f32v2 offsetToTarget = mTargetCameraPosition - currentPos;
+	const float distanceToTarget = glm::length(offsetToTarget);
+	const f32v2 normalToTarget = offsetToTarget / distanceToTarget;
+
+	constexpr float MAX_SPEED_MPS = 0.15f;
+	const f32 maxSpeed = MAX_SPEED_MPS * cameraHeight;
+    f32v2 maxTargetVelocity = normalToTarget * maxSpeed;
+
+    // How fast are we going in the correct direction?
+    const f32v2 projectedVelocity = (glm::dot(mCameraVelocity, maxTargetVelocity) / glm::length2(maxTargetVelocity)) * maxTargetVelocity;
+	const f32 projectedSpeed = glm::length(projectedVelocity);
+    
+    bool isDecelerating = false;
+    if (distanceToTarget < maxSpeed * 10.0f) {
+        maxTargetVelocity *= (distanceToTarget / (maxSpeed * 10.0f));
+        if (projectedSpeed >= glm::length(maxTargetVelocity)) {
+            isDecelerating = true;
+        }
+	}
+
+	// Smooth accelerate, abrupt decelerate
+	if (isDecelerating) {
+		mCameraVelocity = vmath::lerp(mCameraVelocity, maxTargetVelocity, 0.9f);
 	}
 	else {
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	}
+		mCameraVelocity = vmath::lerp(mCameraVelocity, maxTargetVelocity, 0.1f);
+    }
 
-	// Axis render
-	DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
-	DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
-	//DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 1.0f) * 4.0f, color4(0.0f, 0.0f, 1.0f));
+    mCamera2D->setPosition(currentPos + mCameraVelocity);
 
-	//mEcsRenderer->renderPhysicsDebug(*m_camera2D);
-	mEcsRenderer->renderSimpleSprites(*mCamera2D);
-	mEcsRenderer->renderCharacterModels(*mCamera2D);
-
-	if (vui::InputDispatcher::mouse.isButtonPressed(vui::MouseButton::LEFT)) {
-		mSb->draw(mCircleTexture.id, mTestClick - f32v2(8.0f), f32v2(16.0f), color4(1.0f, 0.0f, 1.0f));
-		const f32v2 pos = mCamera2D->convertScreenToWorld(vui::InputDispatcher::mouse.getPosition());
-		DebugRenderer::drawVector(mTestClick, pos - mTestClick, color4(1.0f, 0.0f, 0.0f));
-	}
-
-	DebugRenderer::renderLines(mCamera2D->getCameraMatrix());
-
-	mSb->begin();
-	char fpsString[64];
-	sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
-	mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
-	mSb->end();
-	mSb->render(mCamera2D->getScreenSize());
-
-	
+    mCamera2D->update();
 }

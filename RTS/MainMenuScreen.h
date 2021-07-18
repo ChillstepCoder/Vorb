@@ -4,27 +4,21 @@
 #include <Vorb/graphics/Texture.h>
 
 // TODO: MOVE
-#include "EntityComponentSystem.h"
-#include "EntityComponentSystemRenderer.h"
+#include "ecs/EntityComponentSystem.h"
+
+constexpr f64 MS_PER_GAME_TICK = 40.0;
+constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
 class App;
 class Camera2D;
-class UndeadActorFactory;
-class HumanActorFactory;
-class PlayerActorFactory;
 class ResourceManager;
+class RenderContext;
+class UIInteractMenuPopup;
 
-DECL_VG(class SpriteBatch);
-DECL_VG(class SpriteFont);
 DECL_VUI(class InputDispatcher);
 
 class World;
 class b2World;
-
-// TODO: New file
-struct DebugOptions {
-	bool mWireframe = false;
-};
 
 class MainMenuScreen : public vui::IAppScreen<App>
 {
@@ -45,28 +39,39 @@ public:
 	virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
-	std::unique_ptr<vg::SpriteBatch> mSb;
-	std::unique_ptr<vg::SpriteFont> mSpriteFont;
 
-    std::unique_ptr<ResourceManager> mResourceManager;
+	void updateCamera(const f32v2& targetCenter, f32 targetHeight, const vui::GameTime& gameTime);
+
+    ResourceManager* mResourceManager = nullptr;
 	std::unique_ptr<World> mWorld;
-	std::unique_ptr<Camera2D> mCamera2D;
-	vg::Texture mCircleTexture;
 
-	std::unique_ptr<EntityComponentSystem> mEcs;
-	std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
+    // Rendering
+    std::unique_ptr<Camera2D> mCamera2D;
+    RenderContext& mRenderContext;
 
-	std::unique_ptr<HumanActorFactory> mHumanActorFactory;
-	std::unique_ptr<UndeadActorFactory> mUndeadActorFactory;
-	std::unique_ptr<PlayerActorFactory> mPlayerActorFactory;
-
-
-	float mScale = 50.0f;
-	float mFps = 0.0f;
+	float mTargetScale = 50.0f;
+    float mScale = 50.0f;
+    float mFps = 0.0f;
 
 	f32v2 mTestClick = f32v2(0.0f);
-	vecs::EntityID mPlayerEntity = 0;
+	entt::entity mPlayerEntity = (entt::entity)0;
 
-	DebugOptions mDebugOptions;
+	// Camera
+	f32v2 mTargetCameraPosition = f32v2(0.0f);
+	f32v2 mCameraVelocity = f32v2(0.0f);
+
+	// Pathfinding test
+	ui32v2 mPathFindStart = ui32v2(0);
+	bool mIsPathfinding = false;
+
+    // UI
+	f32v2 mSelectedTilePosition = f32v2(0.0f);
+	f32v2 mLastRightClickPosition = f32v2(0.0f);
+	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
+
+	bool mIsRightButtonDown = false;
+
+	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
+
 };
 

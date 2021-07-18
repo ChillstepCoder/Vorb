@@ -1,0 +1,5 @@
+tiles:
+  - name: con_squash
+    method: connected_wall
+    lod_color: [129,144,160]
+    opaque: true

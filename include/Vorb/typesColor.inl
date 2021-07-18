@@ -93,6 +93,9 @@ public:
     bool operator==(const ColorRGB8& rhs) const {
         return (r == rhs.r && g == rhs.g && b == rhs.b);
     }
+    bool operator!=(const ColorRGB8& rhs) const {
+        return (r != rhs.r || g != rhs.g || b != rhs.b);
+    }
 
     union {
         struct {

@@ -15,6 +15,8 @@
 #ifndef InputDispatcher_h__
 #define InputDispatcher_h__
 
+// Comment out to remove imgui
+#define VORB_IMPL_IMGUI
 
 #include "KeyboardEventDispatcher.h"
 #include "MouseInputDispatcher.h"

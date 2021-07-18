@@ -162,6 +162,12 @@ namespace vorb {
             const f32& getMaxFPS() const {
                 return m_displayMode.maxFPS;
             }
+            const ui32 getGLMinorVersion() const {
+                return m_displayMode.minor;
+            }
+            const ui32 getGLMajorVersion() const {
+                return m_displayMode.major;
+            }
             WindowHandle getHandle() const {
                 return m_window;
             }

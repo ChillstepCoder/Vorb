@@ -17,6 +17,7 @@ public:
     void update();
 
     glm::vec2 convertScreenToWorld(const glm::vec2& screenCoords) const;
+    glm::vec2 convertWorldToScreen(const glm::vec2& worldCoords) const;
 
     bool isBoxInView(const glm::vec2& position, const glm::vec2& dimensions);
 

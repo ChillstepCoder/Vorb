@@ -36,8 +36,9 @@ namespace vorb {
          */
         struct GameTime {
         public:
-            UNIT_SPACE(SECONDS) f64 total; ///< Total time since the update/draw loop started.
-            UNIT_SPACE(SECONDS) f64 elapsed; ///< Elapsed time of the previous frame.
+            f64 totalSec; ///< Total time since the update/draw loop started.
+            f64 elapsedSec; ///< Elapsed time of the previous frame.
+            f32 deltaTime;
         };
         
         /*! @brief An entry point for an graphical application.
@@ -116,9 +117,9 @@ namespace vorb {
             bool checkScreenChange();
 
             // Steps Performed During Game Loop
-            void refreshElapsedTime();
-            void onUpdateFrame();
-            void onRenderFrame();
+            virtual void refreshElapsedTime();
+            virtual void onUpdateFrame();
+            virtual void onRenderFrame();
 
             GameWindow m_window; ///< The application's window
         

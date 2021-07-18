@@ -1,0 +1,3 @@
+chunk_lod:
+  vert: chunk_lod.vert
+  frag: chunk_lod.frag

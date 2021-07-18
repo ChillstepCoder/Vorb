@@ -1,6 +1,5 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/voxel/VoxelTextureStitcher.h"
-#include "Vorb/ecs/BitTable.hpp"
 
 vvox::VoxelTextureStitcher::VoxelTextureStitcher(ui32 tilesPerRow /*= 16u*/) {
     m_tilesPerRow = tilesPerRow;

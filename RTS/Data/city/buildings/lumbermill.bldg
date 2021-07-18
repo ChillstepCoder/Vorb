@@ -1,0 +1,13 @@
+lumbermill:
+  width_range: [30, 40]
+  public_room_count_range: [2, 2]
+  private_room_count_range: [0, 0]
+  min_aspect_ratio: 1.0
+  public_room_grammars:
+    - bb
+    - b|0
+  public_rooms:
+    - name: large_stockpile
+      count_range: [2, 2]
+  function: lumbermill
+  employs: [1, 5]

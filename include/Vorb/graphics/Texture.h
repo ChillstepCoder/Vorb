@@ -40,8 +40,8 @@ namespace vorb {
                 height(h) {
                 // Empty
             }
-            void bind();
-            void unbind();
+            void bind() const;
+            void unbind() const;
 
             vg::TextureTarget textureTarget;
             VGTexture id; ///< OpenGL texture ID

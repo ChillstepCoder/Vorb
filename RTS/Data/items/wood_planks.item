@@ -1,0 +1,5 @@
+wood_planks:
+  texture: item_wood
+  type: material
+  value: 0.3
+  weight: 0.3

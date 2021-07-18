@@ -63,7 +63,7 @@ namespace vorb {
             void init();
             void dispose();
 
-            void begin();
+            void begin(size_t reserveCount = 0);
 
             void draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const color4& tint1, const color4& tint2, GradientType grad, f32 depth = 0.0f);
             void draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const color4& tint, f32 depth = 0.0f);

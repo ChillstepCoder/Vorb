@@ -1,0 +1,5 @@
+wood_scrap:
+  texture: item_wood
+  type: material
+  value: 0.01
+  weight: 0.05
