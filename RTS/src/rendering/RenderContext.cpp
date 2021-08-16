@@ -11,6 +11,7 @@
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/ParticleSystemRenderer.h"
+#include "rendering/ItemRenderer.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
@@ -48,6 +49,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mEcsRenderer            = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
     mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer, screenResolution);
     mCityDebugRenderer      = std::make_unique<CityDebugRenderer>();
+    mBatchedItemRenderer    = std::make_unique<BatchedItemRenderer>(resourceManager, *mMaterialRenderer);
     checkGlError("Renderer init");
 
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
@@ -141,6 +143,20 @@ void RenderContext::initPostLoad() {
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 }
 
+void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld) {
+    // Set renderData
+    mRenderData.mainCamera = camera;
+    mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
+    mRenderData.sunHeight = mWorld.getSunHeight();
+    mRenderData.sunColor = mWorld.getSunColor();
+    mRenderData.timeOfDay = mWorld.getTimeOfDay();
+    mRenderData.sunPosition = mWorld.getSunPosition();
+    mRenderData.playerPos = playerPos;
+    mRenderData.mousePosWorld = mousePosWorld;
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
 void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
 
 
@@ -150,19 +166,10 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         lodState = ChunkRenderLOD::LOD_TEXTURE;
     }
 
-    // Set renderData
-    mRenderData.mainCamera = &camera;
-    mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
-    mRenderData.sunHeight = mWorld.getSunHeight();
-    mRenderData.sunColor = mWorld.getSunColor();
-    mRenderData.timeOfDay = mWorld.getTimeOfDay();
-    mRenderData.sunPosition = mWorld.getSunPosition();
-    mRenderData.playerPos = playerPos;
-    mRenderData.mousePosWorld = mousePosWorld;
-
+    // TODO: Should this happen here? Maybe assert instead?
+    beginFrame(&camera, playerPos, mousePosWorld);
+    
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
-
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     // Cutout pass
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
@@ -280,7 +287,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         });
     }
 
-    DebugRenderer::render(camera.getCameraMatrix());
+    DebugRenderer::render(camera.getVPMatrix());
 
     // *** Post processes ***
     // Disable depth testing for post processing

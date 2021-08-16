@@ -34,7 +34,7 @@ void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera2D& camera) c
 	});
 
 	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix());
+	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix());
 }
 
 void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) const {
@@ -49,7 +49,7 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 	});
 
 	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
+	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
 }
 
 void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
@@ -68,7 +68,7 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 	});
 
 	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &depthState);
+	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &depthState);
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer) {
@@ -96,5 +96,5 @@ void EntityComponentSystemRenderer::renderInteractUI(const Camera2D& camera) con
     });
 
     mSpriteBatch->end();
-    mSpriteBatch->render(f32m4(1.0f), camera.getCameraMatrix(), nullptr, &vg::DepthState::FULL);
+    mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
 }

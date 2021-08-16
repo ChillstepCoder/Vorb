@@ -126,6 +126,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             //if (tileHandle.tile.layers[cmp.mTileLayer])
             const TileData& tileData = TileRepository::getTileData(tileRef->tile.layers[cmp.mTileLayer]);
             tileRef->tile.layers[cmp.mTileLayer] = TILE_ID_NONE;
+            tileRef->chunk->dirtyMesh();
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
             for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
@@ -198,15 +199,29 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
     if (closestStockpile->tryGetBestPositionToInsertItemStack(stack, &posToInsert)) {
         // Walk to the point and drop the item, no pathing
         NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
-        navCmp.setSimpleLinearTargetPoint(posToInsert, [this, agent, &registry](bool success) {
+        navCmp.setSimpleLinearTargetPoint(posToInsert, [this, agent, &registry, posToInsert](bool success) {
+
             if (success) {
                 PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
                 const f32v2& myPos = physCmp.getXYPosition();
                 ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
-                mState = GatherTaskState::PICK_STOCKPILE_SLOT;
+                InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+                std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
+                ItemStack& stackToAdd = items[0];
+                stackToAdd = closestStockpile->tryAddItemStackAt(stackToAdd, posToInsert);
+                if (stackToAdd.isNull()) {
+                    items[0] = items.back();
+                    items.pop_back();
+                }
+                // TODO: Check if stockpile has no more room
+                if (items.empty()) {
+                    invCmp.eraseWorkingStorage(enum_cast(WorkStorageID::HAULING));
+                    mState = GatherTaskState::SUCCESS;
+                    return;
+                }
             }
             mState = GatherTaskState::PICK_STOCKPILE_SLOT;
         });
+        mState = GatherTaskState::PATH_TO_STOCKPILE_SLOT;
     }
-    invCmp.eraseWorkingStorage(enum_cast(WorkStorageID::HAULING));
 }

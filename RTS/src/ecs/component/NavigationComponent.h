@@ -19,14 +19,14 @@ struct NavigationComponent {
 	void setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback);
 	void abort();
 
-	float mSpeed = 1.0f;
+    float mSpeed = 1.0f;
 	union {
 		struct {
-			std::unique_ptr<Path> mPath;
-			ui32 mCurrentPoint = 0;
+			ui32 mCurrentPoint;
 		};
-		ui32v2 mSimpleTargetPoint;
-	};
+		ui32v2 mSimpleTargetPoint = ui32v2(0);
+    };
+    std::unique_ptr<Path> mPath;
 	bool mColliding = false; // Colliding with another agent
 	ui8 mFramesUntilNextRayCheck = 0;
 	std::function<void(bool)> mFinishedCallback = nullptr;

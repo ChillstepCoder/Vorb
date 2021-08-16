@@ -2,10 +2,12 @@
 
 class ResourceManager;
 class Camera2D;
+class ICamera;
 class Material;
 class MaterialRenderer;
 class ParticleSystemRenderer;
 class CityDebugRenderer;
+class BatchedItemRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ChunkRenderer;
@@ -26,7 +28,7 @@ struct GlobalRenderData {
     f32v3 sunColor;
     f32v3 playerPos;
     f32v2 mousePosWorld;
-    const Camera2D* mainCamera = nullptr;
+    const ICamera* mainCamera = nullptr;
 };
 
 // Singleton
@@ -43,6 +45,8 @@ public:
     static RenderContext& getInstance();
 
     void initPostLoad();
+
+    void beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld); // Called automatically by beginFrame
     void renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
 
     void reloadShaders();
@@ -76,6 +80,7 @@ private:
     mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
+    mutable std::unique_ptr<BatchedItemRenderer> mBatchedItemRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

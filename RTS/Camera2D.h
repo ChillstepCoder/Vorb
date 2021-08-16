@@ -2,9 +2,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+class ICamera {
+public:
+    virtual const glm::mat4& getVPMatrix() const = 0;
+    virtual f32 getScale() const = 0;
+};
+
 
 //Camera class for 2D games
-class Camera2D
+class Camera2D : public ICamera
 {
 public:
     Camera2D();
@@ -30,8 +36,8 @@ public:
 
     //getters
     const glm::vec2& getPosition() const { return _position; }
-    float getScale() const { return _scale; }
-    const glm::mat4& getCameraMatrix() const { return _cameraMatrix; }
+    float getScale() const override { return _scale; }
+    const glm::mat4& getVPMatrix() const override { return _cameraMatrix; }
     float getAspectRatio() const { return (float)_screenWidth / (float)_screenHeight; }
     float getScreenWidth() const { return (float)_screenWidth; }
     float getScreenHeight() const { return (float)_screenHeight; }

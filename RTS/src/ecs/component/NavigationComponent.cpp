@@ -172,18 +172,18 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
-        if (navCmp.mPath && navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
-            auto& physCmp = view.get<PhysicsComponent>(entity);
-			switch (navCmp.mNavigationType) {
-                case NavigationType::PATH:
-					updateComponentPath(entity, navCmp, physCmp, world);
-                    break;
-                case NavigationType::SIMPLE_LINEAR:
-                    updateComponentSimpleLinear(entity, navCmp, physCmp, world);
-                    break;
-				default:
-					assert(false);
-			}
+        auto& physCmp = view.get<PhysicsComponent>(entity);
+        switch (navCmp.mNavigationType) {
+            case NavigationType::PATH:
+                if (navCmp.mPath && navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
+                    updateComponentPath(entity, navCmp, physCmp, world);
+                }
+                break;
+            case NavigationType::SIMPLE_LINEAR:
+                updateComponentSimpleLinear(entity, navCmp, physCmp, world);
+                break;
+            default:
+                assert(false);
 		}
 	}
 }

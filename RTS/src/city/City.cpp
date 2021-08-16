@@ -17,7 +17,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     : mCityCenterWorldPos(cityCenterWorldPos)
     , mWorld(world)
     , mBuildingRepository(mWorld.getResourceManager().getBuildingRepository())
-    , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 1, 1)
+    , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)
 {
 
     TileHandle root = mWorld.getTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
@@ -33,6 +33,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     mCityQuartermaster = std::make_unique<CityQuartermaster>(*this);
 
     mCityPlotter->initAsTier(0);
+    mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
 
     // Add test business
     mWorld.getResourceManager().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");

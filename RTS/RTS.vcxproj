@@ -149,6 +149,7 @@
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\character\CharacterModelRepository.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
@@ -199,6 +200,7 @@
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\Material.cpp" />
@@ -215,6 +217,7 @@
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
@@ -245,6 +248,7 @@
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\camera\Camera3D.h" />
     <ClInclude Include="src\character\CharacterModelRepository.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
@@ -313,6 +317,7 @@
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\Material.h" />
@@ -330,6 +335,7 @@
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />

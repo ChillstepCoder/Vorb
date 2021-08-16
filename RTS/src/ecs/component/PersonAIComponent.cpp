@@ -18,7 +18,7 @@ PersonAISystem::PersonAISystem(World& world)
 }
 
 // TODO: Refactor
-inline void updateComponentPath(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
+inline void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
@@ -58,26 +58,7 @@ inline void updateComponentPath(World& world, entt::registry& registry, entt::en
 
     // Sense danger
 
-    //switch (ai.currentTask) {
-    //    case PersonAITask::IDLE: {
-    //        // Ask city for work
-    //        ai.currentTask = PersonAITask::CHOP_WOOD;
-    //        break;
-    //    }
-    //    case PersonAITask::CHOP_WOOD: {
-    //        // TODO: Change this instead to a task VirtualFunction
-    //        // Task chains
-    //        updateChopWoodTask(world, ai, physics);
-    //        break;
-    //    }
-    //    case PersonAITask::BUILD:
-    //        break;
-    //    case PersonAITask::SLEEP:
-    //        break;
-    //    default:
-    //        assert(false);
-    //        break;
-    //}
+    // Needs
 }
 
 void PersonAISystem::update(entt::registry& registry)
@@ -86,6 +67,6 @@ void PersonAISystem::update(entt::registry& registry)
     for (auto entity : view) {
         PersonAIComponent& ai = view.get<PersonAIComponent>(entity);
         PhysicsComponent& physics = view.get<PhysicsComponent>(entity);
-        updateComponentPath(mWorld, registry, entity, ai, physics);
+        updateComponent(mWorld, registry, entity, ai, physics);
     }
 }

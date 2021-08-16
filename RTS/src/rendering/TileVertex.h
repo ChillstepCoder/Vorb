@@ -20,7 +20,10 @@ public:
     ui16 atlasPage;
     ui8 height; // Defines world height to vertex
     ui8 shadowState;
-    ui8 padding[4];
+    union {
+        ui8 padding[4];
+        i8v3 normal; // TODO: 3D test only
+    };
 };
 
 // Need power of 2 alignment

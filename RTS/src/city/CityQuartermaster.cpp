@@ -26,9 +26,10 @@ ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const ui32v2 pos
     ItemStockpile* best = nullptr;
     f32 bestDistance2 = FLT_MAX;
     // TODO: Heuristic
+    // Morton order?
     for (auto& stockpile : mAllStockpiles) {
         ui32v2 offset = stockpile->getAABB().pos - position;
-        f32 distance2 = glm::length2(offset);
+        const f32 distance2 = glm::length2(f32v2(offset));
         if (distance2 < bestDistance2) {
             best = stockpile.get();
             bestDistance2 = distance2;

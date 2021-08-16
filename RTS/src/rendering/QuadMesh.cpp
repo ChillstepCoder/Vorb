@@ -30,8 +30,15 @@ void initSharedQuadIndices() {
 }
 
 QuadMesh::QuadMesh() {
+    init();
+}
 
-    { // Create VAO
+QuadMesh::~QuadMesh() {
+    destroy();
+}
+
+void QuadMesh::init() {
+    if (mVao == 0) { // Create VAO
         glGenVertexArrays(1, &mVao);
         glBindVertexArray(mVao);
 
@@ -47,17 +54,22 @@ QuadMesh::QuadMesh() {
     }
 }
 
-QuadMesh::~QuadMesh() {
+void QuadMesh::destroy() {
     if (mVbo != 0) {
         glDeleteBuffers(1, &mVbo);
+        mVbo = 0;
     }
     // TODO: Shared
     if (mIbo != 0) {
         glDeleteBuffers(1, &mIbo);
+        mIbo = 0;
     }
     if (mVao != 0) {
         glDeleteVertexArrays(1, &mVao);
+        mVao = 0;
     }
+
+    mIndexCount = 0;
 }
 
 void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture texture, QuadMeshDrawMode drawMode) {

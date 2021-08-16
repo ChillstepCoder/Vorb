@@ -112,7 +112,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAv
                 assert(false); //Not implemented
                 break;
             case MaterialUniform::VPMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getCameraMatrix()[0][0]);
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getVPMatrix()[0][0]);
                 break;
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
