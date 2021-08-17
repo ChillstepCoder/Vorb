@@ -4,7 +4,7 @@
 #include "Material.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/RenderContext.h"
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
 
 #include <Vorb/graphics/SamplerState.h>
 

@@ -4,7 +4,7 @@
 #include "world/Chunk.h"
 #include "rendering/TileVertex.h"
 #include "rendering/RenderContext.h"
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
 
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SamplerState.h>

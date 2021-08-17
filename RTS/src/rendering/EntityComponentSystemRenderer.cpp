@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "EntityComponentSystemRenderer.h"
 #include "ecs/EntityComponentSystem.h"
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
 #include "World.h"
 
 #include "ResourceManager.h"
@@ -52,7 +52,7 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera2D& camera) 
 	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
 }
 
-void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
+void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera, const f32m4& vp, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
 	// TODO: This should not be using spritebatch. It should use a custom 
 	// renderer so that it can add screen depth like the world shaders do
 	mSpriteBatch->begin();
@@ -68,7 +68,7 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 	});
 
 	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &depthState);
+	mSpriteBatch->render(f32m4(1.0f), vp, nullptr, &depthState);
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer) {

@@ -143,12 +143,12 @@
   <ItemGroup>
     <ClCompile Include="..\src\graphics\BlendState.cpp" />
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\camera\Camera2D.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\character\CharacterModelRepository.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
@@ -242,13 +242,14 @@
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="App.h" />
-    <ClInclude Include="Camera2D.h" />
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\camera\Camera2D.h" />
     <ClInclude Include="src\camera\Camera3D.h" />
+    <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\character\CharacterModelRepository.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />

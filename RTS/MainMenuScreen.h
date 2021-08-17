@@ -11,6 +11,7 @@ constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
 class App;
 class Camera2D;
+class Camera3D;
 class ResourceManager;
 class RenderContext;
 class UIInteractMenuPopup;
@@ -47,6 +48,7 @@ private:
 
     // Rendering
     std::unique_ptr<Camera2D> mCamera2D;
+    std::unique_ptr<Camera3D> mCamera3D;
     RenderContext& mRenderContext;
 
 	float mTargetScale = 50.0f;
@@ -70,6 +72,8 @@ private:
 	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 
 	bool mIsRightButtonDown = false;
+	bool mIs3DMode = false;
+	f32 m3DFoV = 75.0f;
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 

@@ -143,7 +143,6 @@ void Test3DScreen::onExit(const vui::GameTime& gameTime) {
 
 void Test3DScreen::update(const vui::GameTime& gameTime)
 {
-    mCamera.update();
 
     f32v3 position = mCamera.getPosition();
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
@@ -170,6 +169,10 @@ void Test3DScreen::update(const vui::GameTime& gameTime)
     fov = glm::clamp(fov, 1.0f, 179.0f);
     mCamera.setFieldOfView(fov);
     mCamera.setPosition(f64v3(position));
+    mCamera.lookAt(f32v3(0.5f));
+
+
+    mCamera.update();
 }
 
 void Test3DScreen::draw(const vui::GameTime& gameTime) {

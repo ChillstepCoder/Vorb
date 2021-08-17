@@ -47,7 +47,7 @@ public:
     void initPostLoad();
 
     void beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld); // Called automatically by beginFrame
-    void renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
+    void renderFrame(const ICamera* camera, const Camera2D& camera2d, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
 
     void reloadShaders();
     void selectNextDebugShader();

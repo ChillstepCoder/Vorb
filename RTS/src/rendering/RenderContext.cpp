@@ -16,6 +16,9 @@
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
 
+#include "camera/ICamera.h"
+#include "camera/Camera2D.h"
+
 #include "city/City.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -157,17 +160,18 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mou
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
+void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
 
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
-    if (camera.getScale() < 1.5f) {
-        lodState = ChunkRenderLOD::LOD_TEXTURE;
+    if (camera->getScale() < 1.5f) {
+        // TODO: Remove for 2D
+        //lodState = ChunkRenderLOD::LOD_TEXTURE;
     }
 
     // TODO: Should this happen here? Maybe assert instead?
-    beginFrame(&camera, playerPos, mousePosWorld);
+    beginFrame(camera, playerPos, mousePosWorld);
     
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
 
@@ -177,7 +181,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         vg::BlendState::set(vg::BlendStateType::REPLACE);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        mChunkRenderer->renderChunksZCutout(mWorld, camera);
+        mChunkRenderer->renderChunksZCutout(mWorld, camera2d);
     }
 
     // Main geometry pass
@@ -199,19 +203,19 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    mChunkRenderer->renderWorld(mWorld, camera, lodState);
+    mChunkRenderer->renderWorld(mWorld, camera2d, lodState);
 
     //mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f, frameAlpha);
-    mEcsRenderer->renderInteractUI(camera);
+    mEcsRenderer->renderCharacterModels(camera2d, camera->getVPMatrix(), vg::DepthState::FULL, 1.0f, frameAlpha);
+    mEcsRenderer->renderInteractUI(camera2d);
 
     // Particles
     // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         vg::DepthState::READ.set();
         // TODO: Replace With BlendState
-        mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
+        mParticleSystemRenderer->renderParticleSystems(camera2d, &activeGbuffer, true);
         vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
         vg::DepthState::FULL.set();
     }
@@ -226,7 +230,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // TODO: Replace With BlendState
         glBlendFunc(GL_ONE, GL_ZERO);
-        mChunkRenderer->renderWorldShadows(mWorld, camera);
+        mChunkRenderer->renderWorldShadows(mWorld, camera2d);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         activeGbuffer.useGeometry();
     }
@@ -256,7 +260,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        mWorld.enumVisibleChunks(camera, [](const Chunk& chunk) {
+        mWorld.enumVisibleChunks(camera2d, [](const Chunk& chunk) {
             if (chunk.isDataReady()) {
                 DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
                 color4 neighborColor(1.0f, 0.0f, 0.0f);
@@ -282,19 +286,19 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         });
 
         // Debug region boundaries
-        mWorld.enumVisibleRegions(camera, [](const Region& region) {
+        mWorld.enumVisibleRegions(camera2d, [](const Region& region) {
             DebugRenderer::drawBox(region.getWorldPos(), f32v2(WorldData::REGION_WIDTH_TILES), color4(1.0f, 0.0f, 0.0f));
         });
     }
 
-    DebugRenderer::render(camera.getVPMatrix());
+    DebugRenderer::render(camera->getVPMatrix());
 
     // *** Post processes ***
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.20f, frameAlpha);
+    mEcsRenderer->renderCharacterModels(camera2d, camera->getVPMatrix(), vg::DepthState::NONE, 0.20f, frameAlpha);
 
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
@@ -328,7 +332,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
 
     //  Dynamic  light
     glBlendFunc(GL_ONE, GL_ONE);
-    mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
+    mEcsRenderer->renderDynamicLightComponents(camera2d, *mLightRenderer);
 
     activeGbuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
@@ -347,7 +351,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
     vg::DepthState::NONE.set();
     // UI last
-    renderUI(camera);
+    renderUI(camera2d);
 
     // Swap
     mPrevGBuffer = mActiveGBuffer;

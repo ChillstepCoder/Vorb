@@ -14,7 +14,8 @@
 #include <box2d/b2_body.h>
 #include <box2d/b2_contact.h>
 
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
+#include "camera/Camera3D.h"
 
 #include "World.h"
 #include "Utils.h"
@@ -44,8 +45,9 @@ MainMenuScreen::MainMenuScreen(const App* app)
       mWorld(std::make_unique<World>(*mResourceManager))
 {
 
-	mCamera2D = std::make_unique<Camera2D>();
-
+    mCamera2D = std::make_unique<Camera2D>();
+    mCamera3D = std::make_unique<Camera3D>();
+	
     // TODO: This is kinda stupid
     if (WeaponRegistry::s_allWeaponItems.empty()) {
         ArmorRegistry::loadArmors();
@@ -57,8 +59,9 @@ MainMenuScreen::MainMenuScreen(const App* app)
 	mWorld->setTimeOfDay(12.0f);
 
 
-	// TODO: A battle is just a graph, with connections between units who are engaging. When engaging units do not need to do any area
-	// checks. When initiating combat, area checks can be stopped. Units simply check the graph and do AI based on what is around them.
+	// TODO: A battle is just a graph, with connections between units who are engaging. Engaging units do not need to do any area
+	// checks, simply distance checks to graph neighbors. When initiating combat, area checks can be stopped.
+	// Units simply check the graph and do AI based on what is around them.
 	// units use BFS to update the graph when a connection is broken, drawing new connections as needed.
 	// Unit can simulate every single frame since its merely checking a few neighbor pointers, but these are cache misses.
 	// Try do group things spatially so cache misses are few. Allocate a single buffer.
@@ -81,6 +84,8 @@ void MainMenuScreen::build() {
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
 	mCamera2D->setScale(mScale);
+
+	mCamera3D->init((f32)m_app->getWindow().getWidth() / m_app->getWindow().getHeight());
 
     mResourceManager->gatherFiles("data");
 	mResourceManager->loadFiles();
@@ -116,7 +121,10 @@ void MainMenuScreen::build() {
 				// Add new
 				ecs.mRegistry.emplace<DynamicLightComponent>(mPlayerEntity);
 			}
-        }
+		}
+		else if (event.keyCode == VKEY_Y) {
+			mIs3DMode = !mIs3DMode;
+		}
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
@@ -231,7 +239,8 @@ void MainMenuScreen::build() {
 	// Add player
 	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
 	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
-	mCamera2D->setPosition(WorldData::WORLD_CENTER);
+    mCamera2D->setPosition(WorldData::WORLD_CENTER);
+    mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
 
 }
 
@@ -318,7 +327,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame(*mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
+	mRenderContext.renderFrame((mIs3DMode ? (ICamera*)(mCamera3D.get()) : (ICamera*)(mCamera2D.get())), *mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
 
 	// Draw selection drag
 	if (mIsRightButtonDown) {
@@ -341,8 +350,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 		// TODO: Notify
 		if (result & INTERACT_MENU_RESULT_PATHFIND) {
 			NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-			cmp.mPath = Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos);
-			cmp.mCurrentPoint = 0;
+			cmp.setPathWithCallback(Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos), nullptr);
 			DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
 		}
 		else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
@@ -436,6 +444,22 @@ void MainMenuScreen::updateCamera(const f32v2& targetCenter, f32 targetHeight, c
     }
 
     mCamera2D->setPosition(currentPos + mCameraVelocity);
-
     mCamera2D->update();
+
+	mCamera3D->setPosition(f32v3(mCamera2D->getPosition().x, mCamera2D->getPosition().y, 5.0f));
+	mCamera3D->lookAt(mCamera3D->getPosition() + f32v3(0.0f, 10.0f, -5.0f));
+
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_UP)) {
+		m3DFoV -= 0.4f;
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_DOWN)) {
+		m3DFoV += 0.4f;
+    }
+	m3DFoV = glm::clamp(m3DFoV, 1.0f, 179.0f);
+	if (mCamera3D->getFieldOfView() != m3DFoV) {
+		mCamera3D->setFieldOfView(m3DFoV);
+		std::cout << " FoV " << m3DFoV << std::endl;
+	}
+	mCamera3D->update();
+
 }

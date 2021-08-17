@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ChunkRenderer.h"
 #include "TileSet.h"
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
 #include "world/Chunk.h"
 #include "World.h"
 #include "ResourceManager.h"

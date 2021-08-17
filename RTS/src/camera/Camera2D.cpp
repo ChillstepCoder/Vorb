@@ -16,7 +16,7 @@ Camera2D::~Camera2D()
 }
 
 void Camera2D::init(int screenWidth, int screenHeight) {
-    _screenWidth = screenWidth;
+    _screenWidth  = screenWidth;
     _screenHeight = screenHeight;
     _orthoMatrix = glm::ortho(0.0f, (float)_screenWidth, 0.0f, (float)_screenHeight, -256.0f, 256.0f);
 }

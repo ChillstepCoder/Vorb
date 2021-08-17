@@ -34,6 +34,8 @@ public:
     ChunkMesher(const TextureAtlas& textureAtlas);
     ~ChunkMesher();
 
+    void set3DMeshMode(bool should3DMesh) { m3DMeshMode = should3DMesh; }
+
     // Updatemesh?
     bool createMeshAsync(const Chunk& chunk);
     bool createLODTextureAsync(const Chunk& chunk);
@@ -49,6 +51,6 @@ private:
     std::vector<TileMeshData*> mFreeTileMeshData;
     int mNumMeshTasksRunning = 0;
 
-    
+    bool m3DMeshMode = false;
 };
 

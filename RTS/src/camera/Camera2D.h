@@ -1,13 +1,8 @@
 #pragma once
+#include "ICamera.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-class ICamera {
-public:
-    virtual const glm::mat4& getVPMatrix() const = 0;
-    virtual f32 getScale() const = 0;
-};
-
 
 //Camera class for 2D games
 class Camera2D : public ICamera

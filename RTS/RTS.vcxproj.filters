@@ -33,9 +33,6 @@
     <ClCompile Include="TileSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Camera2D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DebugRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -297,6 +294,9 @@
     <ClCompile Include="src\camera\Camera3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\camera\Camera2D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -309,9 +309,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TileSet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Camera2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils.h">
@@ -651,6 +648,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera\Camera3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\camera\Camera2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\camera\ICamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
