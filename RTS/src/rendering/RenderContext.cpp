@@ -85,26 +85,26 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     checkGlError("GBuffer init");
 
     // Shadow GBuffer
-    vg::GBufferAttachment shadowAttachments[1];
-    // Shadow alpha and source height
-    shadowAttachments[0].format = vg::TextureInternalFormat::R16;
-    shadowAttachments[0].number = 0;
-    shadowAttachments[0].pixelFormat = vg::TextureFormat::RED;
-    shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
-    mShadowGBuffer.setSize(ui32v2(mScreenResolution));
-    mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
-    mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
-    checkGlError("Shadow GBuffer Init");
+    //vg::GBufferAttachment shadowAttachments[1];
+    //// Shadow alpha and source height
+    //shadowAttachments[0].format = vg::TextureInternalFormat::R16;
+    //shadowAttachments[0].number = 0;
+    //shadowAttachments[0].pixelFormat = vg::TextureFormat::RED;
+    //shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
+    //mShadowGBuffer.setSize(ui32v2(mScreenResolution));
+    //mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
+    //mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+    //checkGlError("Shadow GBuffer Init");
 
-    // Shadow GBuffer
+    // ZCutout GBuffer
     vg::GBufferAttachment zCutoutAttachments[1];
-    // Shadow alpha and source height
+    // ZCutout alpha and source height
     zCutoutAttachments[0].format = vg::TextureInternalFormat::R8;
     zCutoutAttachments[0].number = 0;
     zCutoutAttachments[0].pixelFormat = vg::TextureFormat::RED;
     zCutoutAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
     mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
-    mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
+    mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(zCutoutAttachments, 1), vg::TextureInternalFormat::NONE);
     checkGlError("Z Cutout GBuffer Init");
 }
 
@@ -175,14 +175,14 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
 
-    // Cutout pass
-    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+    // Cutout pass (wtf is this?)
+    /*if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         mZCutoutGBuffer.useGeometry();
         vg::BlendState::set(vg::BlendStateType::REPLACE);
         glClear(GL_COLOR_BUFFER_BIT);
 
         mChunkRenderer->renderChunksZCutout(mWorld, camera2d);
-    }
+    }*/
 
     // Main geometry pass
     activeGbuffer.useGeometry();
@@ -211,7 +211,6 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     mEcsRenderer->renderInteractUI(camera2d);
 
     // Particles
-    // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         vg::DepthState::READ.set();
         // TODO: Replace With BlendState
@@ -224,21 +223,21 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    // Shadows
-    mShadowGBuffer.useGeometry();
-    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // TODO: Replace With BlendState
-        glBlendFunc(GL_ONE, GL_ZERO);
-        mChunkRenderer->renderWorldShadows(mWorld, camera2d);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        activeGbuffer.useGeometry();
-    }
-    else {
-        // TODO: Can we not do this every frame?
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        activeGbuffer.useGeometry();
-    }
+    //// Shadows
+    //mShadowGBuffer.useGeometry();
+    //if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    // TODO: Replace With BlendState
+    //    glBlendFunc(GL_ONE, GL_ZERO);
+    //    mChunkRenderer->renderWorldShadows(mWorld, camera2d);
+    //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //    activeGbuffer.useGeometry();
+    //}
+    //else {
+    //    // TODO: Can we not do this every frame?
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    activeGbuffer.useGeometry();
+    //}
 
     // City Debug
     if (sDebugOptions.mCities) {
@@ -325,10 +324,10 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
 
     // Sun Shadows
-    if (mRenderData.sunHeight > 0.0f) {
+    /*if (mRenderData.sunHeight > 0.0f) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         mMaterialRenderer->renderFullScreenQuad(*mSunShadowMaterial);
-    }
+    }*/
 
     //  Dynamic  light
     glBlendFunc(GL_ONE, GL_ONE);

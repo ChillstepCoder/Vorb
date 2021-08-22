@@ -57,7 +57,6 @@ public:
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return mGBuffers[mActiveGBuffer]; }
     const vg::GBuffer& getPrevGBuffer() const { return mGBuffers[mPrevGBuffer]; }
-    const vg::GBuffer& getShadowGBuffer() const { return mShadowGBuffer; }
     const vg::GBuffer& getZCutoutGBuffer() const { return mZCutoutGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
@@ -89,7 +88,6 @@ private:
     int mPrevGBuffer = 1;
     int mActiveGBuffer = 0;
     vg::GBuffer mGBuffers[2];
-    vg::GBuffer mShadowGBuffer;
     vg::GBuffer mZCutoutGBuffer;
     const World& mWorld;
 

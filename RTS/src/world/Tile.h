@@ -49,10 +49,9 @@ struct Tile {
 };
 
 enum class TileShape {
-    FLOOR, // Ground level, no shadow
-	THIN,  // Trees
-    THICK, // Solid walls
-    ROOF,  // Top level flat
+	THIN,  // Trees and flora
+    BLOCK, // Most blocks
+	// Custom TODO
 	COUNT
 };
 KEG_ENUM_DECL(TileShape);
@@ -91,7 +90,7 @@ struct TileData {
 	std::string name;
     std::string textureName;
     std::string resourceName;
-	TileShape shape = TileShape::FLOOR;
+	TileShape shape = TileShape::BLOCK;
 	TileResource resource = TileResource::NONE;
 	Array<ItemDropDef> itemDrops;
 };

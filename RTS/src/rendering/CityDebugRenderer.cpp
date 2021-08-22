@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CityDebugRenderer.h"
 
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
 #include "DebugRenderer.h"
 
 #include "box2d/b2_collision.h"

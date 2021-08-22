@@ -656,5 +656,8 @@
     <ClInclude Include="src\camera\ICamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\Tweener.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

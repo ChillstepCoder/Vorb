@@ -38,6 +38,8 @@
 constexpr ui32 MAX_TICKS_PER_UPDATE = 2;
 constexpr f64 TICK_RATE_MS = 40.0;
 
+const f32v2 CAMERA_Z_RANGE = f32v2(2.0f, 1024.0f);
+
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(&Services::ResourceManager::ref()),
@@ -83,7 +85,7 @@ void MainMenuScreen::build() {
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
-	mCamera2D->setScale(mScale);
+	mCamera2D->setScale(m2dScale);
 
 	mCamera3D->init((f32)m_app->getWindow().getWidth() / m_app->getWindow().getHeight());
 
@@ -124,11 +126,19 @@ void MainMenuScreen::build() {
 		}
 		else if (event.keyCode == VKEY_Y) {
 			mIs3DMode = !mIs3DMode;
-		}
+        }
+        else if (event.keyCode == VKEY_Q) {
+            mCameraCartesianDirection = CARTESIAN_NEIGHBORS[enum_cast(mCameraCartesianDirection)][1];
+            mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[enum_cast(mCameraCartesianDirection)];
+        }
+        else if (event.keyCode == VKEY_E) {
+            mCameraCartesianDirection = CARTESIAN_NEIGHBORS[enum_cast(mCameraCartesianDirection)][0];
+            mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[enum_cast(mCameraCartesianDirection)];
+        }
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mTargetScale = glm::clamp(mTargetScale + event.dy * mTargetScale * 0.2f, 0.03f, 1020.f);
+		mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + event.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_Z_RANGE.x, CAMERA_Z_RANGE.y);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -241,6 +251,7 @@ void MainMenuScreen::build() {
 	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
     mCamera2D->setPosition(WorldData::WORLD_CENTER);
     mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
+	mCameraPositionTweener = f32v3(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 5.0f);
 
 }
 
@@ -261,7 +272,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
     bool didUpdateCamera = false;
 
     // Store mouse position and other useful things
-	mWorld->updateClientEcsData(*mCamera2D);
+	mWorld->updateClientEcsData(*mCamera2D, mCameraCartesianDirection);
 
 	while (mGameTimer.tryTick()) {
 
@@ -293,9 +304,8 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
         const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
         const f32v2& playerXYPos = physCmp.getXYPosition();
 		if (!mIsRightButtonDown && !mRightClickInteractPopup) {
-			f32v2 targetPos = playerXYPos;
-			targetPos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
-			updateCamera(targetPos, physCmp.getZPosition(), gameTime);
+			f32v3 targetPos(playerXYPos.x, playerXYPos.y, physCmp.getZPosition());
+			updateCamera(targetPos, gameTime);
 		}
 		didUpdateCamera = true;
 
@@ -304,13 +314,13 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 	}
 	// Always update camera one last time using interpolated position
 	// TODO: Copy paste bad
+	// TODO: wtf is this tho
 	const f32 frameAlpha = mGameTimer.getFrameAlpha();
 	const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
     const f32v2& playerXYPos = physCmp.getXYInterpolated(frameAlpha);
-	if (!mIsRightButtonDown && !mRightClickInteractPopup) {
-		f32v2 targetPos = playerXYPos;
-		targetPos.y += physCmp.getZInterpolated(frameAlpha) * Z_TO_XY_RATIO;
-		updateCamera(targetPos, physCmp.getZInterpolated(frameAlpha), gameTime);
+    if (!mIsRightButtonDown && !mRightClickInteractPopup) {
+        f32v3 targetPos(playerXYPos.x, playerXYPos.y, physCmp.getZPosition());
+        updateCamera(targetPos, gameTime);
 	}
     didUpdateCamera = true;
 
@@ -396,58 +406,33 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	
 }
 
-void MainMenuScreen::updateCamera(const f32v2& targetCenter, f32 targetHeight, const vui::GameTime& gameTime) {
-	UNUSED(targetHeight);
+void MainMenuScreen::updateCamera(const f32v3& targetCenter, const vui::GameTime& gameTime) {
 	// TODO: use targetHeight to affect zoom
     // TODO: Delta time dependent?
     // Zoom
 	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
-    if (abs(mTargetScale - mScale) > 0.001f) {
-        mScale = vmath::lerp(mScale, mTargetScale, 0.3f);
-        mCamera2D->setScale(mScale);
-    }
-	const float cameraHeight = 1.0f / mScale * 1000.0f; // Height in meters
 
+    mCamera2D->setScale(m2dScale);
     const f32v2& currentPos = mCamera2D->getPosition();
 
     // Camera follow
-    const f32v2& offsetToMouse = mWorld->getClientECSData().worldMousePos - currentPos;
-    constexpr float LOOK_SCALE = 1.0f;
-	mTargetCameraPosition = targetCenter + offsetToMouse * LOOK_SCALE;
+    constexpr float MAX_SPEED_MPS = 0.15f;
+    const f32 maxSpeed = MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z;
+	f32v3 targetPos(targetCenter.x, targetCenter.y, mCameraPositionTweener.mTarget.z);
+	mCameraPositionTweener.setTarget(targetPos);
+	mCameraPositionTweener.setMaxSpeed(MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z);
 
-	const f32v2 offsetToTarget = mTargetCameraPosition - currentPos;
-	const float distanceToTarget = glm::length(offsetToTarget);
-	const f32v2 normalToTarget = offsetToTarget / distanceToTarget;
+	mCameraPositionTweener.update(1.0f);
+	mCameraDirectionTweener.update(1.0f);
 
-	constexpr float MAX_SPEED_MPS = 0.15f;
-	const f32 maxSpeed = MAX_SPEED_MPS * cameraHeight;
-    f32v2 maxTargetVelocity = normalToTarget * maxSpeed;
-
-    // How fast are we going in the correct direction?
-    const f32v2 projectedVelocity = (glm::dot(mCameraVelocity, maxTargetVelocity) / glm::length2(maxTargetVelocity)) * maxTargetVelocity;
-	const f32 projectedSpeed = glm::length(projectedVelocity);
-    
-    bool isDecelerating = false;
-    if (distanceToTarget < maxSpeed * 10.0f) {
-        maxTargetVelocity *= (distanceToTarget / (maxSpeed * 10.0f));
-        if (projectedSpeed >= glm::length(maxTargetVelocity)) {
-            isDecelerating = true;
-        }
-	}
-
-	// Smooth accelerate, abrupt decelerate
-	if (isDecelerating) {
-		mCameraVelocity = vmath::lerp(mCameraVelocity, maxTargetVelocity, 0.9f);
-	}
-	else {
-		mCameraVelocity = vmath::lerp(mCameraVelocity, maxTargetVelocity, 0.1f);
-    }
-
-    mCamera2D->setPosition(currentPos + mCameraVelocity);
+    const f32v3 lookAtOffset(mCameraDirectionTweener.mCurr.x, mCameraDirectionTweener.mCurr.y, mCameraDirectionZOffset);
+    mCamera3D->lookAt(mCamera3D->getPosition() + lookAtOffset);
+	
+	mCamera2D->setPosition(mCameraPositionTweener.mCurr);
     mCamera2D->update();
 
-	mCamera3D->setPosition(f32v3(mCamera2D->getPosition().x, mCamera2D->getPosition().y, 5.0f));
-	mCamera3D->lookAt(mCamera3D->getPosition() + f32v3(0.0f, 10.0f, -5.0f));
+	mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z);
+	
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_UP)) {
 		m3DFoV -= 0.4f;

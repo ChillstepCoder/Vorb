@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define UP_ABSOLUTE (f32v3(0.0f, 1.0f, 0.0f))
+#define UP_ABSOLUTE (f32v3(0.0f, 0.0f, 1.0f))
 
 Camera3D::Camera3D() {
     // Empty
@@ -92,8 +92,8 @@ void Camera3D::rollFromMouse(float dx, float speed) {
 
 void Camera3D::lookAt(const f32v3& pos) {
     mDirection = glm::normalize(pos - mPosition);
-    mRight = glm::normalize(glm::cross(UP_ABSOLUTE, mDirection));
-    mUp = glm::normalize(glm::cross(mDirection, mRight));
+    mRight = glm::normalize(glm::cross(mDirection, UP_ABSOLUTE));
+    mUp = glm::normalize(glm::cross(mRight, mDirection));
     mViewChanged = true;
 }
 

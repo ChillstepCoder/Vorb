@@ -80,7 +80,7 @@ public:
 	void efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func);
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
-	void updateClientEcsData(const Camera2D& camera);
+	void updateClientEcsData(const Camera2D& camera, Cartesian worldLookCardinalDirection);
 
     void setTimeOfDay(float time);
 	// [-1.0, 1.0]

@@ -146,9 +146,6 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
     if (!renderData.mIsBuildingBaseMesh && renderData.mBaseDirty) {
          mMesher->createMeshAsync(chunk);
     }
-    if (!renderData.mIsBuildingFloraMesh && renderData.mFloraDirty) {
-        mMesher->createHighDetailFloraMeshAsync(chunk);
-    }
 }
 
 void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
@@ -164,11 +161,12 @@ void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& c
     if (renderData.mChunkMesh) {
         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
         if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
-            if (renderData.mFloraMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraMaterial);
+            if (renderData.mBillboardMesh) {
+                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mBillboardMesh, *mFloraMaterial);
             }
             else {
-                mMesher->createHighDetailFloraMeshAsync(chunk);
+                // TODO: I feel lazy is bad here...
+                mMesher->createMeshAsync(chunk);
             }
         }
     }
@@ -193,17 +191,17 @@ void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture te
 
 void ChunkRenderer::RenderShadows(const Chunk& chunk, const Camera2D& camera)
 {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    QuadMesh* mesh = renderData.mChunkMesh.get();
-    if (mesh && mesh->isValid()) {
-        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial);
+    /* ChunkRenderData& renderData = chunk.mChunkRenderData;
+     QuadMesh* mesh = renderData.mChunkMesh.get();
+     if (mesh && mesh->isValid()) {
+         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial);
 
-        if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
-            if (renderData.mFloraMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraShadowMaterial);
-            }
-        }
-    }
+         if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
+             if (renderData.mFloraMesh) {
+                 RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraShadowMaterial);
+             }
+         }
+     }*/
 }
 
 void ChunkRenderer::ReloadShaders() {
@@ -221,10 +219,6 @@ void ChunkRenderer::InitPostLoad()
     assert(mStandardMaterial);
     mFloraMaterial = mResourceManager.getMaterialManager().getMaterial("flora");
     assert(mFloraMaterial);
-    mShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow");
-    assert(mShadowMaterial);
-    mFloraShadowMaterial = mResourceManager.getMaterialManager().getMaterial("flora_shadow");
-    assert(mFloraShadowMaterial);
     mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
     assert(mLODMaterial);
     mZCutoutMaterial = mResourceManager.getMaterialManager().getMaterial("z_cutout");

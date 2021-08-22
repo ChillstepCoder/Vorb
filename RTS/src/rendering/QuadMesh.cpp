@@ -107,6 +107,7 @@ void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture te
 void QuadMesh::draw(const vg::GLProgram& program) const {
     // Make sure we have been initialized
     assert(mVao);
+    if (!mIndexCount) return;
 
     glBindVertexArray(mVao);
     bindVertexAttribs(program);

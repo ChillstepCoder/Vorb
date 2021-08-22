@@ -152,11 +152,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAv
             case MaterialUniform::ZoomScale:
                 glUniform1f(it.second, renderData.mainCamera->getScale());
                 break;
-            case MaterialUniform::FboShadowHeight:
-                glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
-                glUniform1i(it.second, availableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowGBuffer().getGeometryTexture(0));
-                break;
             case MaterialUniform::FboZCutout:
                 glActiveTexture(GL_TEXTURE0 + availableTextureIndex);
                 glUniform1i(it.second, availableTextureIndex++);
@@ -169,7 +164,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32* nextAv
                 glUniform2f(it.second, renderData.mousePosWorld.x, renderData.mousePosWorld.y);
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 22, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 21, "Update for new uniform type");
     }
     if (nextAvailableTextureIndex) {
         *nextAvailableTextureIndex = availableTextureIndex;

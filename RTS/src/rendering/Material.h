@@ -23,7 +23,6 @@ enum class MaterialUniform {
     PrevFboDepth,
     PixelDims,
     ZoomScale,
-    FboShadowHeight,
     FboZCutout,
     PlayerPosWorld,
     MousePosWorld,

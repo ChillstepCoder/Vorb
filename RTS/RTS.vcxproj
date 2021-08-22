@@ -345,6 +345,7 @@
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\TileUtil.h" />
+    <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\Region.h" />

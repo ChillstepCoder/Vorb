@@ -5,10 +5,8 @@ std::unordered_map<std::string, TileID> TileRepository::sTileIdMapping;
 std::unordered_map<TileID, TileData> TileRepository::sTileData;
 
 KEG_ENUM_DEF(TileShape, TileShape, kt) {
-    kt.addValue("Floor", TileShape::FLOOR);
     kt.addValue("Thin", TileShape::THIN);
-    kt.addValue("Thick", TileShape::THICK);
-    kt.addValue("Roof", TileShape::ROOF);
+    kt.addValue("Thick", TileShape::BLOCK);
 }
 
 KEG_ENUM_DEF(TileResource, TileResource, kt) {

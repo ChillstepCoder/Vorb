@@ -18,6 +18,7 @@ struct TileMeshData {
         mTileVertices.reserve(AVERAGE_VERTICES_PER_CHUNK);
     }
     std::vector<TileVertex> mTileVertices;
+    std::vector<TileVertex> mBillboardVertices;
     color3 mLODTexturePixelBuffer[CHUNK_SIZE];
 };
 
@@ -39,7 +40,6 @@ public:
     // Updatemesh?
     bool createMeshAsync(const Chunk& chunk);
     bool createLODTextureAsync(const Chunk& chunk);
-    bool createHighDetailFloraMeshAsync(const Chunk& chunk);
 
 private:
 

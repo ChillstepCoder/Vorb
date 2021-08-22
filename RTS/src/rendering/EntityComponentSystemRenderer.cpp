@@ -73,9 +73,10 @@ void EntityComponentSystemRenderer::renderCharacterModels(const Camera2D& camera
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer) {
     auto& ecs = mWorld.getECS();
+	// TODO: 3D
 	ecs.mRegistry.view<PhysicsComponent, DynamicLightComponent>().each([&](auto& physCmp, auto& lightCmp) {
 		f32v2 pos = physCmp.getXYPosition();
-		pos.y += physCmp.getZPosition() * Z_TO_XY_RATIO;
+		pos.y += physCmp.getZPosition() * 0.75f; // Magic z_to_xy_ratio
 		lightRenderer.RenderLight(pos, lightCmp.mLightData, camera);
 	});
 }

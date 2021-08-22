@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "World.h"
 
-#include "Camera2D.h"
+#include "camera/Camera2D.h"
 #include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
@@ -347,9 +347,10 @@ void World::efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk
 	}
 }
 
-void World::updateClientEcsData(const Camera2D& camera) {
+void World::updateClientEcsData(const Camera2D& camera, Cartesian worldLookCardinalDirection) {
     const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
     mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+	mClientEcsData.worldLookCardinalDirection = worldLookCardinalDirection;
 }
 
 void World::setTimeOfDay(float time) {

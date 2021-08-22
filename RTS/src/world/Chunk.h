@@ -22,13 +22,11 @@ struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
-    std::unique_ptr<QuadMesh> mFloraMesh = nullptr;
+    std::unique_ptr<QuadMesh> mBillboardMesh = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mBaseDirty = true;
 	bool mLODDirty = true;
-	bool mFloraDirty = true;
 	bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
-	bool mIsBuildingFloraMesh = false;
 };
 
 struct ChunkID {
@@ -184,8 +182,6 @@ public:
 
 	void dirtyMesh() {
         mChunkRenderData.mBaseDirty = true;
-        // TODO: Don't dirty the flora mesh always
-        mChunkRenderData.mFloraDirty = true;
 	}
 
     void setTileAt(TileIndex i, Tile tile) {

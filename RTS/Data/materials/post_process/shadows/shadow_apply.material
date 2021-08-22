@@ -1,3 +1,0 @@
-shadow_apply:
-  vert: shadow_apply.vert
-  frag: shadow_apply.frag

@@ -115,6 +115,12 @@ enum class Cartesian {
     NONE = 100
 };
 constexpr int CARTESIAN_COUNT = 4; 
+constexpr Cartesian CARTESIAN_NEIGHBORS[CARTESIAN_COUNT][2] = {
+    { Cartesian::LEFT, Cartesian::RIGHT }, // DOWN
+    { Cartesian::UP, Cartesian::DOWN }, // LEFT
+    { Cartesian::DOWN, Cartesian::UP }, // RIGHT
+    { Cartesian::RIGHT, Cartesian::LEFT }, // UP
+};
 constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
     Cartesian::UP,
     Cartesian::RIGHT,
@@ -142,14 +148,17 @@ const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
     ui32v2(1,  1), // TOP_RIGHT
 };
 
-enum AXIS {
+enum AXIS_2D {
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL   = 1
 };
 
-// TODO: Remove
-// We are in 3/4 perspective
-constexpr float Z_TO_XY_RATIO = 0.75f;
+enum AXIS_3D {
+    AXIS_X = 0,
+    AXIS_Y = 1,
+    AXIS_Z = 2
+};
+
 
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
@@ -217,7 +226,17 @@ extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time 
 template <size_t S> class Sizer { };
 #define SIZER(type) Sizer<sizeof(type)> 
 
-
 #define IS_ENABLED(d) d == 1
+
+template<int M>
+inline bool IsEnabled() {
+    return true;
+}
+
+template<>
+inline bool IsEnabled<0>() {
+    return false;
+}
+
 
 #endif // stdafx_h__RTS

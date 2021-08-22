@@ -23,21 +23,36 @@ constexpr float JUMP_VELOCITY = 0.15f;
 //	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
 //}
 
-f32v2 getMovementDir(World& world) {
+const f32v2 MOVEMENT_AXIS[4]{
+	f32v2(AXIS_X, AXIS_Y), // Cartesian::DOWN
+	f32v2(AXIS_Y, AXIS_X), // Cartesian::LEFT
+	f32v2(AXIS_Y, AXIS_X), // Cartesian::RIGHT
+	f32v2(AXIS_X, AXIS_Y), // Cartesian::UP
+};
+const f32v2 MOVEMENT_SIGNS[4]{
+	f32v2(-1.0f, -1.0f), // Cartesian::DOWN
+	f32v2(-1.0f, 1.0f),  // Cartesian::LEFT
+	f32v2(1.0f, -1.0f),  // Cartesian::RIGHT
+	f32v2(1.0f, 1.0f),   // Cartesian::UP
+};
+
+f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
 	f32v2 moveDir(0.0f);
+	int cartesianIndex = enum_cast(clientData.worldLookCardinalDirection);
+	const f32v2 axis = MOVEMENT_AXIS[cartesianIndex];
 	// Movement
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
-		moveDir.y = 1.0f;
+		moveDir[axis.y] = MOVEMENT_SIGNS[cartesianIndex][0];
 	}
 	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
-		moveDir.y = -1.0f;
+		moveDir[axis.y] = -MOVEMENT_SIGNS[cartesianIndex][0];
 	}
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
-		moveDir.x = -1.0f;
+		moveDir[axis.x] = -MOVEMENT_SIGNS[cartesianIndex][1];
 	}
 	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
-		moveDir.x = 1.0f;
+		moveDir[axis.x] = MOVEMENT_SIGNS[cartesianIndex][1];
 	}
 
 	// Normalize or return 0
@@ -55,7 +70,7 @@ f32v2 getMovementDir(World& world) {
 void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
 	bool isSprinting = controlCmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
-	const f32v2 moveDir = getMovementDir(world);
+	const f32v2 moveDir = getMovementDir(world, clientData);
 
 	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
 		return;
