@@ -18,7 +18,7 @@ struct TileMeshData {
         mTileVertices.reserve(AVERAGE_VERTICES_PER_CHUNK);
     }
     std::vector<TileVertex> mTileVertices;
-    std::vector<TileVertex> mBillboardVertices;
+    std::vector<BillboardVertex> mBillboardVertices;
     color3 mLODTexturePixelBuffer[CHUNK_SIZE];
 };
 

@@ -30,6 +30,12 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
 	assert(mState == ChunkState::INVALID);
 	mChunkId = chunkId;
     mWorldPos = chunkId.getWorldPos();
+    mAABB.x = mWorldPos.x;
+    mAABB.y = mWorldPos.y;
+    mAABB.z = -1.0f;
+    mAABB.width = CHUNK_WIDTH;
+    mAABB.depth = CHUNK_WIDTH;
+    mAABB.height = 1.0f;
 }
 
 void Chunk::allocateTiles() {
@@ -66,7 +72,7 @@ void Chunk::dispose() {
     
     // Reset render data
     mChunkRenderData.mLODDirty = true;
-    mChunkRenderData.mBaseDirty = true;
+    mChunkRenderData.mMeshDirty = true;
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {

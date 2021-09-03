@@ -36,7 +36,7 @@ private:
 
     // Takes a plot and an input AABB, then splits the plot into sub plots by subtracting the AABB volume.
     // Returns false if we deleted the plot and need to try to split this index again
-    bool splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB& aabb, OPT CityRoad* road);
+    bool splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB2& aabb, OPT CityRoad* road);
 
     // Split a plot into two plots. Returns index of new plot.
     // axis 0 = split horizontally, 1 = split vertically

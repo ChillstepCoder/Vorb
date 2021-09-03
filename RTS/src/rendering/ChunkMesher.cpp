@@ -13,8 +13,6 @@ constexpr float LAYER_DEPTH_ADD = 0.001f;
 constexpr float AMBIENT_OCCLUSION_MULT = 0.7f;
 constexpr float NO_AMBIENT_OCCLUSION = 1.0f;
 
-static TileVertex sVertices[MAX_VERTICES_PER_CHUNK];
-
 // TODO: Method(s) file?
 struct ConnectedWallData {
     union {
@@ -257,12 +255,12 @@ const i32v3 QUAD_FACING_ADJACENT_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
 };
 
 const f32v3 BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
-    f32v3(0, 0, 0), // LEFT
-    f32v3(0, 0, 0), // FRONT
-    f32v3(1.0f, 0, 0), // RIGHT
-    f32v3(0, 1.0f, 0), // BACK
-    f32v3(0, 0, 1.0f),  // TOP
-    f32v3(0, 0, 0) // BOTTOM
+    f32v3(0, 0, -1.0), // LEFT
+    f32v3(0, 0, -1.0), // FRONT
+    f32v3(1.0f, 0, -1.0), // RIGHT
+    f32v3(0, 1.0f, -1.0), // BACK
+    f32v3(0, 0, 0.0f),  // TOP
+    f32v3(0, 0, -1.0) // BOTTOM
 };
 
 const ExposedNeighborBits EXPOSED_NEIGHBOR_CARDINAL[4] = {
@@ -293,6 +291,10 @@ const QuadFacing EXPOSED_NEIGHBOR_QUAD_FACINGS[4] = {
     QuadFacing::BACK
 };
 
+// Prevent rounding errors, 0.0001 is half a pixel
+constexpr f32 UV_EPSILON = 0.0001f;
+constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
+
 void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing facing, const SpriteData& spriteData, const f32v4& uvs) {
     static constexpr float EPSILON = 0.005f;
 
@@ -308,13 +310,16 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
     f32v4 adjustedUvs;
     if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
         // Flip horizontal
-        adjustedUvs.x = uvs.x + uvs.z;
-        adjustedUvs.y = uvs.y;
-        adjustedUvs.z = -uvs.z;
-        adjustedUvs.w = uvs.w;
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
     }
     else {
-        adjustedUvs = uvs;
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
     }
 
     color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
@@ -330,8 +335,6 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
         vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbl.color = bottomColor;
         vbl.atlasPage = spriteData.atlasPage;
-        vbl.shadowState = (ui8)0;
-        vbl.height = 0;
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
@@ -342,8 +345,6 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
         vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbr.color = bottomColor;
         vbr.atlasPage = spriteData.atlasPage;
-        vbr.shadowState = (ui8)0;
-        vbr.height = 0;
         vbr.pos[axis.x] += spriteData.dimsMeters.x + EPSILON;
     }
 
@@ -357,8 +358,6 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
         vtl.uvs.y = adjustedUvs.y;
         vtl.color = topColor;
         vtl.atlasPage = spriteData.atlasPage;
-        vtl.shadowState = (ui8)0;
-        vtl.height = 0;
         vtl.pos[axis.y] += spriteData.dimsMeters.y + EPSILON;
     }
     { // Top Right
@@ -370,10 +369,92 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
         vtr.uvs.y = adjustedUvs.y;
         vtr.color = topColor;
         vtr.atlasPage = spriteData.atlasPage;
-        vtr.shadowState = (ui8)0;
-        vtr.height = 0;
         vtr.pos[axis.x] += spriteData.dimsMeters.x + EPSILON;
         vtr.pos[axis.y] += spriteData.dimsMeters.y + EPSILON;
+    }
+}
+
+void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, QuadFacing facing, const SpriteData& spriteData, const f32v4& uvs) {
+    static constexpr float EPSILON = 0.005f;
+
+    vertexData.resize(vertexData.size() + 4);
+    BillboardVertex* verts = &vertexData.back() - 3;
+
+    //// Center the sprite
+    //// TODO: This shouldnt be hard coded to xy
+    //const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
+    tilePosition.x += 0.5f;
+    tilePosition.y += 0.5f;
+
+    f32v4 adjustedUvs;
+    if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
+    color4 bottomColor = topColor;
+    const i32v2& axis = QUAD_FACING_AXIS[enum_cast(facing)];
+    const f32 halfX = spriteData.dimsMeters.x * 0.5f;
+
+    { // Bottom Left
+        BillboardVertex& vbl = verts[0];
+        vbl.rootPos.x = tilePosition.x;
+        vbl.rootPos.y = tilePosition.y;
+        vbl.rootPos.z = tilePosition.z;
+        vbl.uvs.x = adjustedUvs.x;
+        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbl.color = bottomColor;
+        vbl.atlasPage = spriteData.atlasPage;
+        vbl.xzOffset.x = -halfX;
+        vbl.xzOffset.y = 0.0f;
+    }
+    { // Bottom Right
+        BillboardVertex& vbr = verts[1];
+        vbr.rootPos.x = tilePosition.x;
+        vbr.rootPos.y = tilePosition.y;
+        vbr.rootPos.z = tilePosition.z;
+        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbr.color = bottomColor;
+        vbr.atlasPage = spriteData.atlasPage;
+        vbr.xzOffset.x = halfX;
+        vbr.xzOffset.y = 0.0f;
+    }
+
+    const f32 topZ = tilePosition.z + spriteData.dimsMeters.y;
+    { // Top Left
+        BillboardVertex& vtl = verts[2];
+        vtl.rootPos.x = tilePosition.x;
+        vtl.rootPos.y = tilePosition.y;
+        vtl.rootPos.z = tilePosition.z;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = topColor;
+        vtl.atlasPage = spriteData.atlasPage;
+        vtl.xzOffset.x = -halfX;
+        vtl.xzOffset.y = spriteData.dimsMeters.y;
+    }
+    { // Top Right
+        BillboardVertex& vtr = verts[3];
+        vtr.rootPos.x = tilePosition.x;
+        vtr.rootPos.y = tilePosition.y;
+        vtr.rootPos.z = tilePosition.z;
+        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vtr.uvs.y = adjustedUvs.y;
+        vtr.color = topColor;
+        vtr.atlasPage = spriteData.atlasPage;
+        vtr.xzOffset.x = halfX;
+        vtr.xzOffset.y = spriteData.dimsMeters.y;
     }
 }
 
@@ -393,7 +474,7 @@ inline int getTileHeight(const Tile& neighbor, int layerIndex) {
 }
 
 void addTileFlora(
-    std::vector<TileVertex>& vertexData,
+    std::vector<BillboardVertex>& vertexData,
     const Chunk& chunk,
     const TileIndex& tileIndex,
     int layerIndex,
@@ -425,7 +506,7 @@ void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePo
             // TODO: This shouldn't have to be hard coded to floor
             // We do not mesh TileShape::THIN here, it is a billboard
             if (shape == TileShape::BLOCK) {
-                addQuad(vertexData, tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::BOTTOM)], QuadFacing::BOTTOM, spriteData, spriteData.uvs);
+                addQuad(vertexData, tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)], QuadFacing::TOP, spriteData, spriteData.uvs);
             }
             static_assert(enum_cast(TileShape::COUNT) == 2);
             break;
@@ -552,7 +633,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
 
     // TODO: Move somewhere else?
-    chunk.mChunkRenderData.mBaseDirty = false;
+    chunk.mChunkRenderData.mMeshDirty = false;
     chunk.mChunkRenderData.mLODDirty = false;
     chunk.incRef();
     
@@ -561,7 +642,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         const f32v2& chunkPos = chunk.getWorldPos();
 
         std::vector<TileVertex>& vertexData = meshData->mTileVertices;
-        std::vector<TileVertex>& billboardVertexData = meshData->mBillboardVertices;
+        std::vector<BillboardVertex>& billboardVertexData = meshData->mBillboardVertices;
         color3* lodData = meshData->mLODTexturePixelBuffer;
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
@@ -609,16 +690,16 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         }
         if (meshData->mTileVertices.size()) {
             QuadMesh& mesh = *renderData.mChunkMesh;
-            mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), mTextureAtlas.getAtlasTexture(), QuadMeshDrawMode::STATIC);
+            mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), QuadMeshDrawMode::STATIC);
             meshData->mTileVertices.clear();
         }
 
         if (!renderData.mBillboardMesh) {
-            renderData.mBillboardMesh = std::make_unique<QuadMesh>();
+            renderData.mBillboardMesh = std::make_unique<BillboardMesh>();
         }
         if (meshData->mBillboardVertices.size()) {
-            QuadMesh& mesh = *renderData.mBillboardMesh;
-            mesh.setData(meshData->mBillboardVertices.data(), meshData->mBillboardVertices.size(), mTextureAtlas.getAtlasTexture(), QuadMeshDrawMode::DYNAMIC);
+            BillboardMesh& mesh = *renderData.mBillboardMesh;
+            mesh.setData(meshData->mBillboardVertices.data(), meshData->mBillboardVertices.size(), QuadMeshDrawMode::DYNAMIC);
             meshData->mBillboardVertices.clear();
         }
 

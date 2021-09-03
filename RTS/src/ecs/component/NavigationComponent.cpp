@@ -89,7 +89,7 @@ void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, Physi
 	if (navCmp.mFramesUntilNextRayCheck == 0) {
 		constexpr f32 STEER_MULT = 1.5f;
 		f32v2 steerVector = targetVelocity * STEER_MULT; //Look ahead
-		IntersectionHit hit = world.tryGetRaycastIntersect(physCmp.getXYPosition(), physCmp.getXYPosition() + steerVector, physCmp.getZPosition());
+		IntersectionHit2D hit = world.tryGetRaycastIntersect2D(physCmp.getXYPosition(), physCmp.getXYPosition() + steerVector, physCmp.getZPosition());
 		if (hit.didHit()) {
 			// Something in the way!
 			f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);

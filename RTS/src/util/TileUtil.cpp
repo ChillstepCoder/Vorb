@@ -4,7 +4,7 @@
 
 #include "DebugRenderer.h"
 
-IntersectionHit TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& tilePos, const f32v2& start, const f32v2& end, f32 rayThickness /*= 0.0f*/) {
+IntersectionHit2D TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& tilePos, const f32v2& start, const f32v2& end, f32 rayThickness /*= 0.0f*/) {
     
     // Get the biggest collider shape
     TileCollisionShape biggestShape = TileCollisionShape::COUNT;
@@ -25,7 +25,7 @@ IntersectionHit TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& ti
 
     // No collide
     if (biggestShape == TileCollisionShape::COUNT) {
-        return IntersectionHit();
+        return IntersectionHit2D();
     }
 
     switch (biggestShape) {
@@ -48,5 +48,5 @@ IntersectionHit TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& ti
             break;
     }
     static_assert((int)TileCollisionShape::COUNT == 4, "Update");
-    return IntersectionHit();
+    return IntersectionHit2D();
 }

@@ -93,7 +93,7 @@ template <typename T> int sgn(T val) {
 }
 
 //https://noonat.github.io/intersect/#aabb-vs-segment
-IntersectionHit IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const f32v2& offset, const f32v2& aabbCenter, const f32v2& aabbRadii, f32v2 padding /*= f32v2(0.0f)*/) {
+IntersectionHit2D IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const f32v2& offset, const f32v2& aabbCenter, const f32v2& aabbRadii, f32v2 padding /*= f32v2(0.0f)*/) {
     const f32 scaleX = 1.0f / offset.x;
     const f32 scaleY = 1.0f / offset.y;
     const f32 signX = sgn(scaleX);
@@ -103,16 +103,16 @@ IntersectionHit IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const f
     const f32 farTimeX = (aabbCenter.x + signX * (aabbRadii.x + padding.x) - pos.x) * scaleX;
     const f32 farTimeY = (aabbCenter.y + signY * (aabbRadii.y + padding.y) - pos.y) * scaleY;
     if (nearTimeX > farTimeY || nearTimeY > farTimeX) {
-        return IntersectionHit();
+        return IntersectionHit2D();
     }
     const f32 nearTime = nearTimeX > nearTimeY ? nearTimeX : nearTimeY;
     const f32 farTime = farTimeX < farTimeY ? farTimeX : farTimeY;
 
     if (nearTime >= 1 || farTime <= 0) {
-        return IntersectionHit();
+        return IntersectionHit2D();
     }
 
-    IntersectionHit hit;
+    IntersectionHit2D hit;
     hit.time = vmath::clamp(nearTime, 0.0f, 1.0f);
     if (nearTimeX > nearTimeY) {
         hit.normal.x = -signX;
@@ -132,9 +132,9 @@ IntersectionHit IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const f
 }
 
 // https://gamedev.stackexchange.com/questions/18422/line-segment-circle-intersection-x-value-seems-wrong
-IntersectionHit IntersectionUtil::segmentCircleIntersect(const f32v2& p1, const f32v2& p2, const f32v2& circleCenter, const f32 radius, f32 padding /*= 0.0f*/)
+IntersectionHit2D IntersectionUtil::segmentCircleIntersect(const f32v2& p1, const f32v2& p2, const f32v2& circleCenter, const f32 radius, f32 padding /*= 0.0f*/)
 {
-    IntersectionHit hit;
+    IntersectionHit2D hit;
 
     const f32 adjustedRadius = radius + padding;
 
@@ -200,4 +200,65 @@ IntersectionHit IntersectionUtil::segmentCircleIntersect(const f32v2& p1, const 
     // the radius.  This is the center of the circle at the time of collision
     // and is different than the result from Doswa
     return hit; // No hit
+}
+
+// https://github.com/BSVino/MathForGameDevelopers/blob/line-box-intersection/math/collision.cpp
+bool ClipLine(int d, const f32AABB3& aabbBox, const f32v3& v0, const f32v3& v1, float& f_low, float& f_high)
+{
+    // f_low and f_high are the results from all clipping so far. We'll write our results back out to those parameters.
+
+    // f_dim_low and f_dim_high are the results we're calculating for this current dimension.
+    float f_dim_low, f_dim_high;
+
+    // Find the point of intersection in this dimension only as a fraction of the total vector http://youtu.be/USjbg5QXk3g?t=3m12s
+    f_dim_low = (aabbBox.pos[d] - v0[d]) / (v1[d] - v0[d]);
+    f_dim_high = (aabbBox.getMax(d) - v0[d]) / (v1[d] - v0[d]);
+
+    // Make sure low is less than high
+    if (f_dim_high < f_dim_low)
+        std::swap(f_dim_high, f_dim_low);
+
+    // If this dimension's high is less than the low we got then we definitely missed. http://youtu.be/USjbg5QXk3g?t=7m16s
+    if (f_dim_high < f_low)
+        return false;
+
+    // Likewise if the low is less than the high.
+    if (f_dim_low > f_high)
+        return false;
+
+    // Add the clip from this dimension to the previous results http://youtu.be/USjbg5QXk3g?t=5m32s
+    f_low = std::max(f_dim_low, f_low);
+    f_high = std::min(f_dim_high, f_high);
+
+    if (f_low > f_high)
+        return false;
+
+    return true;
+}
+
+// Find the intersection of a line from v0 to v1 and an axis-aligned bounding box http://www.youtube.com/watch?v=USjbg5QXk3g
+IntersectionHit3D IntersectionUtil::LineAABBIntersection(const f32AABB3& aabbBox, const f32v3& v0, const f32v3& v1) {
+    IntersectionHit3D hit;
+
+    float f_low = 0;
+    float f_high = 1;
+
+    if (!ClipLine(0, aabbBox, v0, v1, f_low, f_high))
+        return hit;
+
+    if (!ClipLine(1, aabbBox, v0, v1, f_low, f_high))
+        return hit;
+
+    if (!ClipLine(2, aabbBox, v0, v1, f_low, f_high))
+        return hit;
+
+    // The formula for I: http://youtu.be/USjbg5QXk3g?t=6m24s
+    const f32v3 b = v1 - v0;
+
+    hit.position = v0 + b * f_low;
+    hit.shape = IntersectionHitShape::AABB;
+    hit.closeTime = f_low;
+    hit.farTime = f_high;
+
+    return hit;
 }

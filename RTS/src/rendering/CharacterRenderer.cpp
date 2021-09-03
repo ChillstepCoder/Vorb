@@ -6,7 +6,6 @@ vg::Texture sShadowTexture;
 void renderPart(vg::SpriteBatch& sb, const vg::Texture& body, const f32v2& pos, f32 zPos, const f32v2& offset, const f32v2& additionalOffset, f32v4& uvRect, float size, float depth, float alpha) {
 	f32v2 sizeVec(size);
 	f32v2 newPos = pos + offset - sizeVec.x * 0.5f;
-	newPos.y += zPos * 0.75f; // Magic z_to_xy_ratio
 	sb.draw(body.id, &uvRect, nullptr, newPos, -additionalOffset, sizeVec, 0.0f /*rotation*/, color4(1.0f, 1.0f, 1.0f, alpha), depth + zPos);
 }
 

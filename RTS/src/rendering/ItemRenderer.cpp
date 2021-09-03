@@ -43,7 +43,7 @@ void BatchedItemRenderer::addItemStackToBatch(ui32v2& pos, ItemStack& itemStack)
 void BatchedItemRenderer::finishBatch(BatchID batchID) {
     assert(mInProgressBatch != INVALID_BATCH_ID);
     // TODO: Fix texture param
-    mItemMeshes[mInProgressBatch].setData(mInProgressBatchData.data(), mInProgressBatchData.size(), 0 /* TODO FIX */, QuadMeshDrawMode::STATIC);
+    mItemMeshes[mInProgressBatch].setData(mInProgressBatchData.data(), mInProgressBatchData.size(), QuadMeshDrawMode::STATIC);
     mInProgressBatch = INVALID_BATCH_ID;
 }
 

@@ -10,8 +10,6 @@ SpriteData DEFAULT_SPRITE_DATA;
 SpriteRepository::SpriteRepository(vio::IOManager& ioManager) :
     mIoManager(ioManager)
 {
-    mTextureCache = std::make_unique<vg::TextureCache>();
-    mTextureCache->init(&mIoManager);
     mTextureAtlas = std::make_unique<TextureAtlas>();
     mTileSpriteLoader = std::make_unique<TileSpriteLoader>(*this, *mTextureAtlas, mIoManager);
 }

@@ -1,3 +1,0 @@
-flora:
-  vert: flora.vert
-  frag: standard_tile.frag

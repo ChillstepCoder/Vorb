@@ -31,7 +31,7 @@ bool ItemReservation::fulfillQuantity(ui32 quantity) {
     return false;
 }
 
-ItemStockpile::ItemStockpile(World& world, const ui32AABB& aabb, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity /*= INVALID_ENTITY*/)
     : mWorld(world)
     , mAABB(aabb)
     , mOwnerEntity(ownerEntity) {

@@ -12,6 +12,7 @@
 // exception handling
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
+#include <vorb/io/FileOps.h>
 
 
 KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
@@ -119,7 +120,7 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
             mSpriteRepository.mSprites.insert(std::make_pair(std::move(metaData.name), std::move(sprite)));
         }
         else {
-            std::string textureName = getTextureNameFromFilePath(filePath);
+            std::string textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
             auto it = mSpriteRepository.mSprites.find(textureName);
             if (it != mSpriteRepository.mSprites.end()) {
                 assert(false); // Sprite name conflict! Mod conflict?
@@ -185,16 +186,10 @@ void TileSpriteLoader::getFileMetadata(const vio::Path& imageFilePath, const ui3
         SpriteMetaData * newData = new SpriteMetaData;
         newData->cellRect = ui16v4(0, 0, 1, 1);
         newData->pixelRect = ui16v4(0, 0, fileDimsPx.x, fileDimsPx.y);
-        newData->name = getTextureNameFromFilePath(imageFilePath);
+        newData->name = vio::getLeafNameFromFilePathNoExtension(imageFilePath);
         newData->dimsMeters = f32v2(fileDimsPx) / 16.0f; // Arbitrary
         metaData.spriteMetaData.setData(newData, 1);
         metaData.cellDimsPx = metaData.fileDimsPx;
     }
     return;
-}
-
-std::string TileSpriteLoader::getTextureNameFromFilePath(const vio::Path& path) {
-    std::string textureName = path.getLeaf();
-    textureName.resize(textureName.size() - 4); // Chop off .png
-    return textureName;
 }

@@ -15,6 +15,7 @@
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
+#include <vorb/io/FileOps.h>
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
@@ -34,16 +35,18 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
 ResourceManager::ResourceManager() {
     
     mIoManager = std::make_unique<vio::IOManager>();
+    mTextureCache = std::make_unique<vg::TextureCache>();
+    mTextureCache->init(mIoManager.get());
 
     mSpriteRepository = std::make_unique<SpriteRepository>(*mIoManager);
-    mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository);
+    mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository, *mTextureCache);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
-    mCharacterModelRepository = std::make_unique<CharacterModelRepository>(getTextureCache());
+    mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mTextureCache);
 }
 
 ResourceManager::~ResourceManager() {
@@ -125,7 +128,18 @@ void ResourceManager::loadFiles() {
 
     // Load Textures
     for (auto&& entry : mTextureFiles) {
-        mSpriteRepository->loadSpriteTexture(entry);
+        if (vio::containsSubpath(entry, "_noatlas")) {
+            // TODO: Allow custom sampler state
+            mTextureCache->addTexture(
+                entry,
+                vio::getLeafNameFromFilePathNoExtension(entry),
+                vg::TextureTarget::TEXTURE_2D,
+                &vg::SamplerState::LINEAR_WRAP
+            );
+        }
+        else {
+            mSpriteRepository->loadSpriteTexture(entry);
+        }
     }
     mTextureFiles.clear();
 
@@ -191,7 +205,7 @@ const SpriteData& ResourceManager::getSprite(const std::string& spriteName) {
 }
 
 vg::TextureCache& ResourceManager::getTextureCache() {
-    return mSpriteRepository->getTextureCache();
+    return *mTextureCache;
 }
 
 const TextureAtlas& ResourceManager::getTextureAtlas() const {

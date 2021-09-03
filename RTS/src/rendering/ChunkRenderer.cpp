@@ -46,7 +46,7 @@ void ChunkRenderer::renderChunksZCutout(const World& world, const Camera2D& came
             // Only render 
             ChunkRenderData& renderData = chunk.mChunkRenderData;
             if (renderData.mChunkMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
+                RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
             }
         }
     });
@@ -74,11 +74,11 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
         // Render region LODs first due to depth sort
         ui32 nextTextureIndex;
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
-        vg::DepthState::NONE.set();
+        //vg::DepthState::NONE.set();
         world.enumVisibleRegions(camera, [&](const Region& region) {
             RenderLODTextureBindless(region.getWorldPos(), region.mRenderData.mLODTexture, WorldData::REGION_WIDTH_TILES, camera, nextTextureIndex);
         });
-        vg::DepthState::FULL.set();
+        //vg::DepthState::FULL.set();
 
         world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
             if (chunk.isFinished()) {
@@ -143,7 +143,7 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camer
 
 void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingBaseMesh && renderData.mBaseDirty) {
+    if (!renderData.mIsBuildingBaseMesh && renderData.mMeshDirty) {
          mMesher->createMeshAsync(chunk);
     }
 }
@@ -159,10 +159,10 @@ void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& c
 	// mutable render data
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (renderData.mChunkMesh) {
-        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
+        RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mChunkMesh, *mStandardMaterial);
         if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
             if (renderData.mBillboardMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mBillboardMesh, *mFloraMaterial);
+                RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mBillboardMesh, *mBillboardMaterial);
             }
             else {
                 // TODO: I feel lazy is bad here...
@@ -217,8 +217,8 @@ void ChunkRenderer::InitPostLoad()
 {
 	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
     assert(mStandardMaterial);
-    mFloraMaterial = mResourceManager.getMaterialManager().getMaterial("flora");
-    assert(mFloraMaterial);
+    mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
+    assert(mBillboardMaterial);
     mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
     assert(mLODMaterial);
     mZCutoutMaterial = mResourceManager.getMaterialManager().getMaterial("z_cutout");

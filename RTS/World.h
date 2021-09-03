@@ -24,6 +24,7 @@ DECL_VG(class SpriteBatch);
 struct b2BodyDef;
 class b2Body;
 class b2World;
+class ICamera;
 class Camera2D;
 class City;
 class ContactListener;
@@ -42,7 +43,7 @@ public:
 	~World();
 
 	void initPostLoad();
-	void update(const f32v2& playerPos, const Camera2D& camera);
+	void update(const f32v2& playerPos, const ICamera& camera);
 
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = (entt::entity)0);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except = (entt::entity)0);
@@ -63,7 +64,7 @@ public:
     Chunk& getChunkAtPosition(ChunkID chunkId);
     const Chunk& getChunkAtPosition(ChunkID chunkId) const;
 
-	TileHandle getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const;
+    TileHandle getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
 
@@ -75,9 +76,9 @@ public:
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 
-    void enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk&)> func) const;
-    void enumVisibleRegions(const Camera2D& camera, std::function<void(const Region&)> func) const;
-	void efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func);
+    void enumVisibleChunks(const ICamera& camera, std::function<void(const Chunk&)> func) const;
+    void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
+	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func);
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
 	void updateClientEcsData(const Camera2D& camera, Cartesian worldLookCardinalDirection);
@@ -85,18 +86,18 @@ public:
     void setTimeOfDay(float time);
 	// [-1.0, 1.0]
     float getSunHeight() const { return mSunHeight; }
-    float getSunPosition() const { return mSunPosition; }
+    const f32v3& getSunPosition() const { return mSunPosition; }
     float getTimeOfDay() const { return mTimeOfDay; }
 	const f32v3& getSunColor() const { return mSunColor; }
 	const CityGraph& getCities() const { return *mCities; }
 	City* getClosestCityToPoint(const f32v2& pos) const;
 
-	IntersectionHit tryGetRaycastIntersect(const f32v2& start, const f32v2& end, f32 zPos);
+    IntersectionHit2D tryGetRaycastIntersect2D(const f32v2& start, const f32v2& end, f32 zPos);
 	
 private:
 
 	// TODO: Composition? WorldClock? idk
-    void updateSun();
+    void updateSun(const ICamera& camera);
     /// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
 	void onChunkDataReady(Chunk& chunk);
@@ -132,18 +133,18 @@ private:
 	std::unique_ptr<CityGraph> mCities;
 
 	// Data
-	f32v2 mViewRange = f32v2(0.0f);
     f32v2 mLoadCenter = f32v2(0.0f);
     f32   mLoadRangeSq = 0.0f;
 	// Sunlight
 	float mSunHeight = 1.0f;
-	float mSunPosition = 0.0f; // [-1, 1]
+	f32v3 mSunPosition = f32v3(0.0f, 0.0f, 1.0f);
 	float mTimeOfDay = 0.0f; // span of 24:00
 	f32v3 mSunColor = f32v3(1.0f);
 
 	bool mDirty = true;
 	// TODO: Chunk paging for tile data?
 	WorldGrid mWorldGrid;
-	std::vector<Chunk*> mActiveChunks;
+    std::vector<Chunk*> mActiveChunks;
+    std::vector<Chunk*> mVisibleChunks;
 };
 

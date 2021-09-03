@@ -43,7 +43,6 @@ private:
 
     // If no meta file, returns  default sprite data
     void getFileMetadata(const vio::Path& imageFilePath, const ui32v2& fileDimsPx, OUT SpritesheetFileData& metaData);
-    std::string getTextureNameFromFilePath(const vio::Path& path);
 
     const vio::IOManager& mIoManager;
     SpriteRepository& mSpriteRepository;

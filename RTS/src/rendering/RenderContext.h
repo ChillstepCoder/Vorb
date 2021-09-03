@@ -13,6 +13,7 @@ class GPUTextureManipulator;
 class ChunkRenderer;
 class LightRenderer;
 class World;
+class QuadMesh;
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -23,7 +24,8 @@ struct GlobalRenderData {
     VGTexture atlas;
     f32 time;
     f32 sunHeight;
-    f32 sunPosition;
+    f32v3 sunPositionCameraRelative;
+    f32 cameraZAngle;
     f32 timeOfDay;
     f32v3 sunColor;
     f32v3 playerPos;
@@ -62,6 +64,8 @@ public:
 
 private:
     void renderUI(const Camera2D& camera);
+    void renderSky(const  ICamera* camera);
+    void buildHorizonMesh();
 
     static RenderContext* sInstance;
 
@@ -90,11 +94,13 @@ private:
     vg::GBuffer mGBuffers[2];
     vg::GBuffer mZCutoutGBuffer;
     const World& mWorld;
+    std::unique_ptr<QuadMesh> mHorizonQuad;
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
     const Material* mSunShadowMaterial = nullptr;
     const Material* mSunLightMaterial = nullptr;
+    const Material* mSkyMaterial = nullptr;
     const Material* mLightPassThroughMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };

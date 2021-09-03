@@ -64,7 +64,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     if (height > 0.3) {
         tile.groundLayer = rock1;
         // Mountains
-        tile.baseZPosition = (ui16)((height - 0.3) / 0.004);
+        tile.baseZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
     }
     else if (height < -0.45) {
         tile.groundLayer = water;
@@ -99,12 +99,18 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     }
 
     const f32v2& chunkPosWorld = chunk.getWorldPos();
+    f32 maxHeight = 1.0f;
     for (int y = 0; y < CHUNK_WIDTH; ++y) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            chunk.setTileFromGeneration(TileIndex(x, y), GenerateTileAtPos(tilePosWorld));
+            Tile tile = GenerateTileAtPos(tilePosWorld);
+            if (tile.baseZPosition + 1.0f > maxHeight) {
+                maxHeight = tile.baseZPosition + 1.0f;
+            }
+            chunk.setTileFromGeneration(TileIndex(x, y), std::move(tile));
         }
     }
+    chunk.mAABB.height = maxHeight;
 
     //std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }

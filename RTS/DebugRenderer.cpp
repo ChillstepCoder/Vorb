@@ -36,28 +36,38 @@ void main() {
 
 struct DebugLine {
     DebugLine(const f32v2& pos1, const f32v2& pos2, const color4& colr)
+        : position1(pos1.x, pos1.y, 0.0f)
+        , position2(pos2.x, pos2.y, 0.0f)
+        , color(colr) {
+    }
+    DebugLine(const f32v3& pos1, const f32v3& pos2, const color4& colr)
         : position1(pos1)
         , position2(pos2)
         , color(colr) {
     }
-    f32v2 position1;
-    f32v2 position2;
+    f32v3 position1;
+    f32v3 position2;
     color4 color;
 };
 
 struct DebugQuad {
     DebugQuad(const f32v2& position, const f32v2& dims, const color4& colr)
+        : position(position.x, position.y, 0.0f)
+        , dims(dims)
+        , color(colr) {
+    }
+    DebugQuad(const f32v3& position, const f32v2& dims, const color4& colr)
         : position(position)
         , dims(dims)
         , color(colr) {
     }
-    f32v2 position;
+    f32v3 position;
     f32v2 dims;
     color4 color;
 };
 
 struct SimpleMeshVertex {
-    f32v2 position;
+    f32v3 position;
     color4 color;
 };
 
@@ -91,9 +101,23 @@ void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 col
     lines.emplace_back(end, end + glm::rotate(tipRay, -rotVal), color);
 }
 
+void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+{
+    const f32v3 end = origin + vec;
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, end, color);
+}
+
 void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
 	const f32v2 end = origin + vec;
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, end, color);
+}
+
+void DebugRenderer::drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
+{
+    const f32v3 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
@@ -225,11 +249,11 @@ void DebugRenderer::render(const f32m4& viewMatrix)
             // TODO: Time instead of frames
             quadVertices[index].position = q.position;
             quadVertices[index].color = q.color;
-            quadVertices[index + 1].position = q.position + f32v2(q.dims.x, 0.0f);
+            quadVertices[index + 1].position = q.position + f32v3(q.dims.x, 0.0f, 0.0f);
             quadVertices[index + 1].color = q.color;
-            quadVertices[index + 2].position = q.position + f32v2(q.dims.x, q.dims.y);
+            quadVertices[index + 2].position = q.position + f32v3(q.dims.x, q.dims.y, 0.0f);
             quadVertices[index + 2].color = q.color;
-            quadVertices[index + 3].position = q.position + f32v2(0.0f, q.dims.y);
+            quadVertices[index + 3].position = q.position + f32v3(0.0f, q.dims.y, 0.0f);
             quadVertices[index + 3].color = q.color;
             index += 4;
         }
@@ -245,29 +269,17 @@ void DebugRenderer::render(const f32m4& viewMatrix)
     for (size_t i = 0; i < sDebugMeshes.size();) {
         auto&& mesh = sDebugMeshes[i];
         // Lines
+        glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glVertexAttribPointer(sProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
+        glVertexAttribPointer(sProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
+        glUniformMatrix4fv(sProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         if (mesh.type == DebugMeshType::LINES) {
-            glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
             glLineWidth(2.0f);
-
-            glVertexAttribPointer(sProgram.getAttribute("vPosition"), 2, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
-            glVertexAttribPointer(sProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
-            glUniformMatrix4fv(sProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
-
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);
         }
         // Quads
         else {
-            glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-            glVertexAttribPointer(sProgram.getAttribute("vPosition"), 2, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
-            glVertexAttribPointer(sProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
-            glUniformMatrix4fv(sProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
-
             glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
         }
 

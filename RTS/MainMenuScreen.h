@@ -57,6 +57,7 @@ public:
 private:
 
 	void updateCamera(const f32v3& targetCenter, const vui::GameTime& gameTime);
+	void updateTilePicking();
 
     ResourceManager* mResourceManager = nullptr;
 	std::unique_ptr<World> mWorld;
@@ -87,6 +88,8 @@ private:
 	f32v2 mSelectedTilePosition = f32v2(0.0f);
 	f32v2 mLastRightClickPosition = f32v2(0.0f);
 	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
+	f32v2 mMousePosition = f32v2(0.0f);
+	f32v3 mMousePickRay = f32v3(0.0f);
 
 	bool mIsRightButtonDown = false;
 	bool mIs3DMode = true;

@@ -35,7 +35,7 @@ class ItemStockpile
 {
     friend class ItemReservation;
 public:
-    ItemStockpile(World& world, const ui32AABB& aabb, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() { return mAABB.width != 0; } // If we have 0 width we are null
@@ -49,7 +49,7 @@ public:
     bool tryGetClosestPositionOfItem(const f32v2& pos, ItemID itemId, OUT ui32v2* outPos) const;
     CALLER_DELETE std::unique_ptr<ItemReservation> tryReserveItemStack(ItemStack itemStack, ui32 minimumQuantity);
 
-    const ui32AABB& getAABB() const { return mAABB; }
+    const ui32AABB2& getAABB() const { return mAABB; }
 
 private:
     void releaseReservation(ItemReservation* reservation);
@@ -62,7 +62,7 @@ private:
 
     // TODO: MultiAABB
     World& mWorld;
-    ui32AABB mAABB = ui32AABB(0);
+    ui32AABB2 mAABB = ui32AABB2(0);
     entt::entity mOwnerEntity = INVALID_ENTITY;
     std::map<ItemID, ItemRecord> mItemContents;
     std::set<ItemReservation*> mReservations;

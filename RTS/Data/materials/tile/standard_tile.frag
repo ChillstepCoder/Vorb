@@ -12,9 +12,10 @@ void main() {
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
 	
-    if (fColor.a <= 0.99) {
+    if (fColor.a < 0.85) {
         discard;
     }
+	fColor.a = 1.0;
 	
 	
 	// Normal is always the next page

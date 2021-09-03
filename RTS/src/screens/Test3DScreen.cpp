@@ -186,7 +186,7 @@ void Test3DScreen::draw(const vui::GameTime& gameTime) {
     mRenderContext.beginFrame(&mCamera, f32v3(0.0f), f32v2(0.0f));
 
     const Material* material = mResourceManager->getMaterialManager().getMaterial("standard_tile");
-    mRenderContext.getMaterialRenderer().renderQuadMesh(*mQuadMesh, *material);
+    mRenderContext.getMaterialRenderer().renderMesh(*mQuadMesh, *material);
 
     checkGlError("RenderContext::FrameEnd");
 }

@@ -38,7 +38,7 @@
 constexpr ui32 MAX_TICKS_PER_UPDATE = 2;
 constexpr f64 TICK_RATE_MS = 40.0;
 
-const f32v2 CAMERA_Z_RANGE = f32v2(2.0f, 1024.0f);
+const f32v2 CAMERA_Z_RANGE = f32v2(1.0f, 1024.0f);
 
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
@@ -152,10 +152,19 @@ void MainMenuScreen::build() {
 				mLastRightClickPosition = screenPos;
 			}
 		}
+		else if (event.button == vui::MouseButton::LEFT) {
+			// Ray pick
+			TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
+		}
 
 		// Set tiles
 		//int tileIndex = m_tileGrid->getTileIndexFromScreenPos(m_testClick, *m_camera2D);
 		//m_tileGrid->setTile(tileIndex, TileGrid::STONE_1);
+	});
+
+	vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
+		mMousePosition.x = event.x;
+		mMousePosition.y = event.y;
 	});
 
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -310,7 +319,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 		didUpdateCamera = true;
 
 		// World update after camera
-        mWorld->update(playerXYPos, *mCamera2D);
+        mWorld->update(playerXYPos, *mCamera3D);
 	}
 	// Always update camera one last time using interpolated position
 	// TODO: Copy paste bad
@@ -323,6 +332,8 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
         updateCamera(targetPos, gameTime);
 	}
     didUpdateCamera = true;
+
+	updateTilePicking();
 
 }
 
@@ -445,6 +456,24 @@ void MainMenuScreen::updateCamera(const f32v3& targetCenter, const vui::GameTime
 		mCamera3D->setFieldOfView(m3DFoV);
 		std::cout << " FoV " << m3DFoV << std::endl;
 	}
+
+	// Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
+	const f32 zNearAlpha = glm::clamp(mCamera3D->getPosition().z * 0.001f, 0.0f, 1.0f);
+	const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
+	mCamera3D->setClippingPlane(zNear, mCamera3D->getFarClip());
+
 	mCamera3D->update();
 
+}
+
+void MainMenuScreen::updateTilePicking() {
+	const f32 normalizedX = (mMousePosition.x / (f32)m_app->getWindow().getWidth()) * 2.0f - 1.0f;
+	const f32 normalizedY = -((mMousePosition.y / (f32)m_app->getWindow().getHeight()) * 2.0f - 1.0f);
+	f32v4 pickRayClipSpace(normalizedX, normalizedY, -1.0f, 1.0f);
+	f32v4 pickRayEyeSpace = glm::inverse(mCamera3D->getProjectionMatrix()) * pickRayClipSpace;
+	pickRayEyeSpace.z = -1.0f;
+	pickRayEyeSpace.w = 0.0f;
+	f32v4 pickRayWorldSpace = glm::inverse(mCamera3D->getViewMatrix()) * pickRayEyeSpace;
+	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
+	mMousePickRay = glm::normalize(pickRayXYZ);
 }

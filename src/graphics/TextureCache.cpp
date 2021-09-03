@@ -173,6 +173,47 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
     return texture;
 }
 
+
+vg::Texture vg::TextureCache::addTexture(
+    const vio::Path& filePath,
+    const nString& textureName,
+    vg::TextureTarget textureTarget      /* = vg::TextureTarget::TEXTURE_2D*/,
+    SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
+    vg::TextureInternalFormat internalFormat     /* = vg::TextureInternalFormat::RGBA */,
+    vg::TextureFormat textureFormat      /* = vg::TextureFormat::RGBA */,
+    i32 mipmapLevels       /* = INT_MAX */,
+    bool flipV              /* = false*/) {
+
+    // Check if the texture is already cached.
+    Texture texture = findTexture(textureName);
+    if (texture.id) return texture;
+
+    // Get absolute path of texture.
+    vio::Path texPath;
+    resolvePath(filePath, texPath);
+
+    // Load the pixel data.
+    vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
+    if (!rs.data) return Texture();
+    texture.width = rs.width;
+    texture.height = rs.height;
+    texture.textureTarget = textureTarget;
+
+    // Upload the texture through GpuMemory.
+    texture.id = GpuMemory::uploadTexture(&rs,
+        TexturePixelType::UNSIGNED_BYTE,
+        textureTarget,
+        samplingParameters,
+        internalFormat,
+        textureFormat,
+        mipmapLevels);
+
+    // Store the texture in the cache.
+    insertTexture(textureName, texture);
+    return texture;
+}
+
+
 void vg::TextureCache::addTexture(const vio::Path& filePath, const Texture& texture) {
     insertTexture(filePath, texture);
 }

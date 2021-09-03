@@ -12,13 +12,14 @@ CityQuartermaster::~CityQuartermaster() {
 
 }
 
-bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB& aabb) {
+bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb) {
     if (checkStockpileOverlap(aabb)) {
         return false;
     }
 
     // Create new stockpile and leave unassigned (city ownership)
     mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mCity.mWorld, aabb));
+    return true;
 }
 
 ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const ui32v2 position) {
@@ -39,7 +40,7 @@ ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const ui32v2 pos
     return best;
 }
 
-bool CityQuartermaster::checkStockpileOverlap(const ui32AABB& aabb) const{
+bool CityQuartermaster::checkStockpileOverlap(const ui32AABB2& aabb) const{
     for (auto& stockpile : mAllStockpiles) {
         if (testAABBAABB_SIMD(stockpile->getAABB(), aabb)) {
             return true;

@@ -71,6 +71,7 @@ private:
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<CharacterModelRepository> mCharacterModelRepository;
+    std::unique_ptr<vg::TextureCache> mTextureCache;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

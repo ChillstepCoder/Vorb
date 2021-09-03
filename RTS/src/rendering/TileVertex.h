@@ -18,13 +18,27 @@ public:
     f32v2 uvs; //TODO: ui16v2?
     color4 color;
     ui16 atlasPage;
-    ui8 height; // Defines world height to vertex
-    ui8 shadowState;
-    union {
-        ui8 padding[4];
-        i8v3 normal; // TODO: 3D test only
-    };
+    i8v3 normal; // TODO: 3D test only
+    ui8 padding[3];
 };
 
 // Need power of 2 alignment
 static_assert(sizeof(TileVertex) == 32, "Power of 2 byte alignment needed");
+
+struct BillboardVertex {
+public:
+    BillboardVertex() {};
+    BillboardVertex(const f32v3& pos, const f32v2& xzOffset, const f32v2& uvs, const color4& color, ui16 atlasPage) :
+        rootPos(pos), xzOffset(xzOffset), uvs(uvs), color(color), atlasPage(atlasPage) {
+    }
+
+    f32v3 rootPos;
+    f32v2 xzOffset; // TOOD: ui16v2?
+    f32v2 uvs; //TODO: ui16v2?
+    color4 color;
+    ui16 atlasPage;
+    ui8 PADDING_NEED_TO_COMPRESS[30];
+};
+// Need power of 2 alignment
+// 64 is bad!!!
+static_assert(sizeof(BillboardVertex) == 64, "Power of 2 byte alignment needed");

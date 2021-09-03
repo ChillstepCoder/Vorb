@@ -3,6 +3,10 @@
 
 #include <SDL2/SDL.h>
 
+// TODO: This isnt enough for high detail meshes like trees..
+static constexpr int MIP_LEVELS = 4;
+constexpr bool DEBUG_MIPS = false;
+
 TextureAtlas::TextureAtlas()
 {
     glGenTextures(1, &mAtlasTexture);
@@ -102,7 +106,6 @@ ui32v2 TextureAtlas::getPageCoordsFromCellIndex(unsigned cellIndex) {
 }
 
 void TextureAtlas::allocateTexture() {
-    static constexpr int MIP_LEVELS = 4;
     // Set up the storage
     glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
 
@@ -139,10 +142,12 @@ void TextureAtlas::writeDebugPages() {
     ui8* pixels = new ui8[width * height * sizeof(color4) * mPages.size()];
 
     glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
-    glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    for (size_t i = 0; i < mPages.size(); i++) {
-        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(pixels + i * bytesPerPage, width, height, 32 /*depthbytes*/, 4 * width, 0xFF, 0xFF00, 0xFF0000, 0x0);
-        SDL_SaveBMP(surface, ("atlas" + std::to_string(i) + ".bmp").c_str());
+    for (int m = 0; m < (DEBUG_MIPS ? MIP_LEVELS : 1); ++m) {
+        glGetTexImage(GL_TEXTURE_2D_ARRAY, m, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        for (size_t i = 0; i < mPages.size(); i++) {
+            SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(pixels + i * (bytesPerPage >> m), width >> m, height >> m, 32 /*depthbytes*/, 4 * (width >> m), 0xFF, 0xFF00, 0xFF0000, 0x0);
+            SDL_SaveBMP(surface, ("atlas" + std::to_string(i) + "_" + std::to_string(m) + ".bmp").c_str());
+        }
     }
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 

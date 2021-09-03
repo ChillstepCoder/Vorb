@@ -21,7 +21,7 @@ public:
 
     // Frustum wrappers
     bool pointInFrustum(const f32v3& pos) const { return mFrustum.pointInFrustum(pos); }
-    bool sphereInFrustum(const f32v3& pos, float radius) const { return mFrustum.sphereInFrustum(pos, radius); }
+    bool sphereIsVisible(const f32v3& pos, float radius) const override { return mFrustum.sphereInFrustum(pos, radius); }
 
     // Setters
     void setOrientation(const f32q& orientation);
@@ -39,13 +39,15 @@ public:
     f32v3 getPickRay(const f32v2& ndcScreenPos) const;
 
     //getters
-    const f32v3& getPosition() const { return mPosition; }
+    const f32v3 getPosition() const override { return mPosition; }
     const f32v3& getDirection() const { return mDirection; }
-    const f32v3& getRight() const { return mRight; }
+    const f32v3& getRightVector() const override { return mRight; }
+    const f32v3& getFrontVector() const override { return mDirection; }
     const f32v3& getUp() const { return mUp; }
+    f32 getZAngle() const override { return atan2f(mDirection.y, mDirection.x) + M_PI; }
 
     const f32m4& getProjectionMatrix() const { return mP; }
-    const f32m4& getViewMatrix() const { return mV; }
+    const f32m4& getViewMatrix() const override { return mV; }
     const f32m4& getVPMatrix() const override { return mVP; }
 
     const f32& getNearClip() const { return mZNear; }
@@ -62,7 +64,7 @@ protected:
     void updateView();
 
     f32 mZNear = 0.1f;
-    f32 mZFar = 100000.0f;
+    f32 mZFar = 200000.0f;
     f32 mFieldOfView = 75.0f;
     f32 mAspectRatio = 4.0f / 3.0f;
     bool mViewChanged = true;

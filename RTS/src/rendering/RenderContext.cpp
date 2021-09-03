@@ -12,6 +12,7 @@
 #include "rendering/MaterialManager.h"
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/ItemRenderer.h"
+#include "rendering/QuadMesh.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
@@ -142,8 +143,11 @@ void RenderContext::initPostLoad() {
 
     mSunShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
+    mSkyMaterial = mResourceManager.getMaterialManager().getMaterial("sky");
     mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
+
+    buildHorizonMesh();
 }
 
 void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld) {
@@ -153,7 +157,8 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mou
     mRenderData.sunHeight = mWorld.getSunHeight();
     mRenderData.sunColor = mWorld.getSunColor();
     mRenderData.timeOfDay = mWorld.getTimeOfDay();
-    mRenderData.sunPosition = mWorld.getSunPosition();
+    mRenderData.sunPositionCameraRelative = mWorld.getSunPosition();
+    mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
     mRenderData.mousePosWorld = mousePosWorld;
 
@@ -191,10 +196,14 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     // Clear screen
     vg::DepthState::FULL.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // TODO: Remove color buffer clear, doing it just to reduce ghosting
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //vg::DepthState::NONE.set();
+    //renderSky(camera);
+    //vg::DepthState::FULL.set();
 
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -209,6 +218,9 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera2d, camera->getVPMatrix(), vg::DepthState::FULL, 1.0f, frameAlpha);
     mEcsRenderer->renderInteractUI(camera2d);
+
+    // Horizon
+    mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
     // Particles
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
@@ -259,7 +271,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        mWorld.enumVisibleChunks(camera2d, [](const Chunk& chunk) {
+        mWorld.enumVisibleChunks(*camera, [](const Chunk& chunk) {
             if (chunk.isDataReady()) {
                 DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
                 color4 neighborColor(1.0f, 0.0f, 0.0f);
@@ -285,7 +297,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
         });
 
         // Debug region boundaries
-        mWorld.enumVisibleRegions(camera2d, [](const Region& region) {
+        mWorld.enumVisibleRegions(*camera, [](const Region& region) {
             DebugRenderer::drawBox(region.getWorldPos(), f32v2(WorldData::REGION_WIDTH_TILES), color4(1.0f, 0.0f, 0.0f));
         });
     }
@@ -340,6 +352,11 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
 
     // Final Lighting
     mMaterialRenderer->renderFullScreenQuad(*mLightPassThroughMaterial);
+
+    // Sky
+   /* vg::DepthState::READ.set();
+    renderSky(camera);
+    vg::DepthState::FULL.set();*/
 
     // Copy depth for emissive rendering, so we can still depth test
     vg::DepthState::WRITE.set();
@@ -397,4 +414,57 @@ void RenderContext::renderUI(const Camera2D& camera) {
 
     mSb->end();
     mSb->render(mScreenResolution);
+}
+
+void RenderContext::renderSky(const ICamera* camera) {
+    // Sun Light
+    mMaterialRenderer->renderFullScreenQuad(*mSkyMaterial);
+}
+
+void RenderContext::buildHorizonMesh()
+{
+    mHorizonQuad = std::make_unique<QuadMesh>();
+    TileVertex verts[4];
+    constexpr float QUAD_WIDTH = 190000.0f;
+    constexpr float Z_POS = -6.0f;
+    const color3 waterColor3 = TileRepository::getTileData("water").spriteData.lodColor;
+    const color4 waterColor(waterColor3.r, waterColor3.g, waterColor3.b, 255u);
+
+    { // Bottom Left
+        TileVertex& vbl = verts[0];
+        vbl.pos.x = -QUAD_WIDTH;
+        vbl.pos.y = -QUAD_WIDTH;
+        vbl.pos.z = Z_POS;
+        vbl.uvs.x = 0.0f;
+        vbl.uvs.y = 0.0f;
+        vbl.color = waterColor;
+    }
+    { // Bottom Right
+        TileVertex& vbr = verts[1];
+        vbr.pos.x = QUAD_WIDTH;
+        vbr.pos.y = -QUAD_WIDTH;
+        vbr.pos.z = Z_POS;
+        vbr.uvs.x = 0.0f;
+        vbr.uvs.y = 0.0f;
+        vbr.color = waterColor;
+    }
+    { // Top Left
+        TileVertex& vtl = verts[2];
+        vtl.pos.x = -QUAD_WIDTH;
+        vtl.pos.y = QUAD_WIDTH;
+        vtl.pos.z = Z_POS;
+        vtl.uvs.x = 0.0f;
+        vtl.uvs.y = 0.0f;
+        vtl.color = waterColor;
+    }
+    { // Top Right
+        TileVertex& vtr = verts[3];
+        vtr.pos.x = QUAD_WIDTH;
+        vtr.pos.y = QUAD_WIDTH;
+        vtr.pos.z = Z_POS;
+        vtr.uvs.x = 0.0f;
+        vtr.uvs.y = 0.0f;
+        vtr.color = waterColor;
+    }
+    mHorizonQuad->setData(verts, 4, QuadMeshDrawMode::STATIC);
 }

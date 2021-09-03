@@ -10,8 +10,14 @@ KEG_TYPE_DEF_SAME_NAME(MaterialAtlasTextureInputData, kt) {
     kt.addValue("unpage", keg::Value::basic(offsetof(MaterialAtlasTextureInputData, uniformPageName), keg::BasicType::STRING));
 }
 
+KEG_TYPE_DEF_SAME_NAME(MaterialTextureInputData, kt) {
+    kt.addValue("name", keg::Value::basic(offsetof(MaterialTextureInputData, textureName), keg::BasicType::STRING));
+    kt.addValue("uniform", keg::Value::basic(offsetof(MaterialTextureInputData, uniformName), keg::BasicType::STRING));
+}
+
 KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
     kt.addValue("atlas_textures", keg::Value::array(offsetof(MaterialData, atlasTextures), keg::Value::custom(0, "MaterialAtlasTextureInputData", false)));
+    kt.addValue("textures", keg::Value::array(offsetof(MaterialData, textures), keg::Value::custom(0, "MaterialTextureInputData", false)));
     kt.addValue("vert", keg::Value::basic(offsetof(MaterialData, vertexShaderName), keg::BasicType::STRING));
     kt.addValue("frag", keg::Value::basic(offsetof(MaterialData, fragmentShaderName), keg::BasicType::STRING));
 }
@@ -37,8 +43,12 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("FboZCutout", MaterialUniform::FboZCutout),
     std::make_pair("PlayerPosWorld", MaterialUniform::PlayerPosWorld),
     std::make_pair("MousePosWorld", MaterialUniform::MousePosWorld),
+    std::make_pair("CameraRight", MaterialUniform::CameraRight),
+    std::make_pair("CameraFront", MaterialUniform::CameraFront),
+    std::make_pair("CameraPos", MaterialUniform::CameraPos),
+    std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
 };
-static_assert((int)MaterialUniform::COUNT == 21, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 25, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     auto&& it = sUniformLookup.find(str);
@@ -48,12 +58,18 @@ extern MaterialUniform lookupMaterialUniform(const nString& str) {
     return MaterialUniform::INVALID;
 }
 
-void Material::use() const {
+void Material::use(OUT ui32& nextAvailableTextureIndex) const {
 
     mProgram.use();
 
     for (auto&& atlasTextureInput : mInputAtlasTextures) {
         glUniform4fv(atlasTextureInput.uvRectUniform, 1, &atlasTextureInput.uvRect[0]);
         glUniform1fv(atlasTextureInput.pageUniform, 1, &atlasTextureInput.page);
+    }
+
+    for (auto&& textureInput : mInputTextures) {
+        glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+        glUniform1i(textureInput.textureUniform, nextAvailableTextureIndex++);
+        glBindTexture(GL_TEXTURE_2D, textureInput.texture);
     }
 }

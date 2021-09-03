@@ -25,13 +25,21 @@ public:
     void offsetPosition(const glm::vec2& offset) { _position += offset; _needsMatrixUpdate = true; }
     void offsetScale(float offset) { _scale += offset; if (_scale < 0.001f) _scale = 0.001f; _needsMatrixUpdate = true; }
 
+    // TODO: no
+    bool sphereIsVisible(const f32v3& pos, float radius) const override { return true; }
+
     //setters
     void setPosition(const glm::vec2& newPosition) { _position = newPosition; _needsMatrixUpdate = true; }
     void setScale(float newScale) { _scale = newScale; _needsMatrixUpdate = true; }
 
     //getters
-    const glm::vec2& getPosition() const { return _position; }
+    const f32v3& getRightVector() const override { return f32v3(1.0f, 0.0f, 0.0f); }
+    const f32v3& getFrontVector() const override { return f32v3(0.0f, 1.0f, 0.0f); }
+    f32 getZAngle() const override { return 0.0f; }
+    const glm::vec2& getPos() const { return _position; }
+    const f32v3 getPosition() const override { return f32v3(_position.x, _position.y, 0.0f); }
     float getScale() const override { return _scale; }
+    const glm::mat4& getViewMatrix() const override { return _cameraMatrix; }
     const glm::mat4& getVPMatrix() const override { return _cameraMatrix; }
     float getAspectRatio() const { return (float)_screenWidth / (float)_screenHeight; }
     float getScreenWidth() const { return (float)_screenWidth; }

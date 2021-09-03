@@ -26,6 +26,10 @@ enum class MaterialUniform {
     FboZCutout,
     PlayerPosWorld,
     MousePosWorld,
+    CameraRight,
+    CameraFront,
+    CameraPos,
+    CameraZAngle,
     COUNT
 };
 
@@ -38,8 +42,15 @@ struct MaterialAtlasTextureInputData {
 };
 KEG_TYPE_DECL(MaterialAtlasTextureInputData);
 
+struct MaterialTextureInputData {
+    nString textureName;
+    nString uniformName;
+};
+KEG_TYPE_DECL(MaterialTextureInputData);
+
 struct MaterialData {
     Array<MaterialAtlasTextureInputData> atlasTextures;
+    Array<MaterialTextureInputData> textures;
     nString vertexShaderName;
     nString fragmentShaderName;
 };
@@ -51,13 +62,18 @@ struct MaterialAtlasTextureInput {
     VGUniform uvRectUniform;
     VGUniform pageUniform;
 };
+struct MaterialTextureInput {
+    VGTexture texture;
+    VGUniform textureUniform;
+};
 
 class Material {
 public:
 
-    void use() const;
+    void use(OUT ui32& nextAvailableTextureIndex) const;
 
     std::vector<std::pair<MaterialUniform, VGUniform> > mUniforms;
     std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;
+    std::vector<MaterialTextureInput> mInputTextures;
     mutable vg::GLProgram mProgram; //  TODO: Handle
 };

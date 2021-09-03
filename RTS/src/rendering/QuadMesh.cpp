@@ -11,14 +11,15 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/RasterizerState.h>
 
-constexpr unsigned MAX_INDICES = CHUNK_SIZE * 4 * 6;
+// Define all possible templates for Mesh class
+// Each function definition should be proceeded by this
 
 bool sQuadIndicesInitialized = false;
-ui32 sQuadIndices[MAX_INDICES];
+ui32 sQuadIndices[MAX_MESH_INDICES];
 
 void initSharedQuadIndices() {
     ui32 i = 0;
-    for (ui32 v = 0; i < MAX_INDICES; v += 4u) {
+    for (ui32 v = 0; i < MAX_MESH_INDICES; v += 4u) {
         sQuadIndices[i++] = v;
         sQuadIndices[i++] = v + 2;
         sQuadIndices[i++] = v + 3;
@@ -29,15 +30,15 @@ void initSharedQuadIndices() {
     sQuadIndicesInitialized = true;
 }
 
-QuadMesh::QuadMesh() {
+MeshBase::MeshBase() {
     init();
 }
 
-QuadMesh::~QuadMesh() {
+MeshBase::~MeshBase() {
     destroy();
 }
 
-void QuadMesh::init() {
+void MeshBase::init() {
     if (mVao == 0) { // Create VAO
         glGenVertexArrays(1, &mVao);
         glBindVertexArray(mVao);
@@ -54,7 +55,7 @@ void QuadMesh::init() {
     }
 }
 
-void QuadMesh::destroy() {
+void MeshBase::destroy() {
     if (mVbo != 0) {
         glDeleteBuffers(1, &mVbo);
         mVbo = 0;
@@ -72,39 +73,7 @@ void QuadMesh::destroy() {
     mIndexCount = 0;
 }
 
-void QuadMesh::setData(const TileVertex* meshData, int vertexCount, VGTexture texture, QuadMeshDrawMode drawMode) {
-
-    if (!sQuadIndicesInitialized) {
-        initSharedQuadIndices();
-    }
-
-    mTexture = texture;
-
-    const unsigned indexCount = (vertexCount / 4) * 6;
-    assert(indexCount < MAX_INDICES);
-
-    // build IBO (todo: shared)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
-    // Orphan the buffer for speed
-    // TODO: Do we want dynamic draw or static/stream?
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(ui32), nullptr, enum_cast(drawMode));
-
-    mIndexCount = indexCount;
-    // TODO: Can we get away with just a single IBO?
-    // Set data
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexCount * sizeof(ui32), sQuadIndices);
-
-    const int bufferSizeBytes = vertexCount * sizeof(TileVertex);
-
-    glBindBuffer(GL_ARRAY_BUFFER, mVbo);
-    // Orphan the buffer for speed
-    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, enum_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, meshData);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-void QuadMesh::draw(const vg::GLProgram& program) const {
+void MeshBase::draw(const vg::GLProgram& program) const {
     // Make sure we have been initialized
     assert(mVao);
     if (!mIndexCount) return;
@@ -126,18 +95,33 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
 
         program.enableVertexAttribArrays();
         glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, pos));
-        glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, uvs));
-        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, atlasPage));
-
+        if (const VGAttribute* uvAttribute = program.tryGetAttribute("vUV")) {
+            glVertexAttribPointer(*uvAttribute, 2, GL_FLOAT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, uvs));
+        }
+        if (const VGAttribute* atlasAttribute = program.tryGetAttribute("vAtlasPage")) {
+            glVertexAttribPointer(*atlasAttribute, 1, GL_UNSIGNED_SHORT, false, sizeof(TileVertex), (void*)offsetof(TileVertex, atlasPage));
+        }
         if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
             glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, color));
-        }
-        if (const VGAttribute* heightAttribute = program.tryGetAttribute("vHeight")) {
-            glVertexAttribPointer(*heightAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, height));
-        }
-        if (const VGAttribute* shadowAttribute = program.tryGetAttribute("vShadowState")) {
-            glVertexAttribPointer(*shadowAttribute, 1, GL_UNSIGNED_BYTE, false, sizeof(TileVertex), (void*)offsetof(TileVertex, shadowState));
         }
     }
 }
 
+void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
+    // TODO: can we not do this every time?
+    if (mLastUsedProgram != &program) {
+        mLastUsedProgram = &program;
+
+        glBindBuffer(GL_ARRAY_BUFFER, mVbo);
+
+        program.enableVertexAttribArrays();
+        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, rootPos));
+        glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
+        glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, uvs));
+        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, atlasPage));
+
+        if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
+            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, color));
+        }
+    }
+}

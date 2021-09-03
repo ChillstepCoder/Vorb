@@ -46,7 +46,7 @@ private:
 
     const MaterialRenderer& mMaterialRenderer;
     const Material* mStandardMaterial = nullptr;
-    const Material* mFloraMaterial = nullptr;
+    const Material* mBillboardMaterial = nullptr;
     const Material* mLODMaterial = nullptr;
     const Material* mZCutoutMaterial = nullptr;
 };

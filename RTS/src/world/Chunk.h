@@ -4,8 +4,11 @@
 #include "world/WorldData.h"
 #include "item/ItemStack.h"
 
+#include "util/AABB.hpp"
+
 class Chunk;
 class QuadMesh;
+class BillboardMesh;
 
 const ui32 CHUNK_ID_INVALID = UINT32_MAX;
 constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
@@ -22,9 +25,9 @@ struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
-    std::unique_ptr<QuadMesh> mBillboardMesh = nullptr;
+    std::unique_ptr<BillboardMesh> mBillboardMesh = nullptr;
 	VGTexture mLODTexture = 0;
-	bool mBaseDirty = true;
+	bool mMeshDirty = true;
 	bool mLODDirty = true;
 	bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
 };
@@ -160,6 +163,8 @@ public:
 	Chunk& getRightNeighbor() const;
 	Chunk& getBottomNeighbor() const;
 
+	const f32AABB3& getAABB() const { return mAABB; }
+
 	bool isInvalid() const { return mState == ChunkState::INVALID; }
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
 	bool isFinished() const { return isDataReady() && mDataReadyNeighborCount == 4; }
@@ -181,7 +186,7 @@ public:
 	}
 
 	void dirtyMesh() {
-        mChunkRenderData.mBaseDirty = true;
+        mChunkRenderData.mMeshDirty = true;
 	}
 
     void setTileAt(TileIndex i, Tile tile) {
@@ -217,6 +222,7 @@ private:
 
 	ChunkID mChunkId;
 	f32v2 mWorldPos = f32v2(0.0f);
+	f32AABB3 mAABB = f32AABB3(0.0f);
 	std::vector<Tile> mTiles; // TODO: Memory recycler
 	// TODO: Custom data structure?
 	// TODO: Morton order + lower/upper bound to find closest?
