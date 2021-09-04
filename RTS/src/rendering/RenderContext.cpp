@@ -420,7 +420,7 @@ void RenderContext::buildHorizonMesh()
 {
     mHorizonQuad = std::make_unique<QuadMesh>();
     TileVertex verts[4];
-    constexpr float QUAD_WIDTH = 95000.0f;
+    constexpr float QUAD_WIDTH = 140000.0f;
     constexpr float Z_POS = -6.0f;
     const color3 waterColor3 = TileRepository::getTileData("water").spriteData.lodColor;
     const color4 waterColor(waterColor3.r, waterColor3.g, waterColor3.b, 255u);

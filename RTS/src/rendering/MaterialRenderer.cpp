@@ -105,11 +105,23 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::SunPosition:
                 glUniform3fv(it.second, 1, &renderData.sunPositionCameraRelative[0]);
                 break;
-            case MaterialUniform::WVPMatrix:
-                assert(false); //Not implemented
+            case MaterialUniform::VMatrix:
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getViewMatrix()[0][0]);
+                break;
+            case MaterialUniform::InverseVMatrix:
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getInverseViewMatrix()[0][0]);
+                break;
+            case MaterialUniform::PMatrix:
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getProjectionMatrix()[0][0]);
+                break;
+            case MaterialUniform::InversePMatrix:
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getInverseProjectionMatrix()[0][0]);
                 break;
             case MaterialUniform::VPMatrix:
                 glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getVPMatrix()[0][0]);
+                break;
+            case MaterialUniform::InverseVPMatrix:
+                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getInverseVPMatrix()[0][0]);
                 break;
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
@@ -178,6 +190,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 25, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 29, "Update for new uniform type");
     }
 }

@@ -2,8 +2,13 @@
 
 class ICamera {
 public:
-    virtual const glm::mat4& getVPMatrix() const = 0;
-    virtual const glm::mat4& getViewMatrix() const = 0;
+    virtual const f32m4& getViewMatrix() const = 0;
+    virtual const f32m4& getInverseViewMatrix() const = 0;
+    virtual const f32m4& getProjectionMatrix() const = 0;
+    virtual const f32m4& getInverseProjectionMatrix() const = 0;
+    virtual const f32m4& getVPMatrix() const = 0;
+    virtual const f32m4& getInverseVPMatrix() const = 0;
+
     virtual f32 getScale() const = 0;
     virtual const f32v3& getRightVector() const = 0;
     virtual const f32v3& getFrontVector() const = 0;

@@ -406,11 +406,10 @@ void World::updateSun(const ICamera& camera) {
 
 	const f32 sunDelta = (mTimeOfDay - SUNRISE_TIME) / 24.0f;
 	const f32 sunRotate = sunDelta * M_PI * 2.0f;
-	mSunPosition = glm::rotateY(f32v3(1.0f, 0.0f, 0.0f), -sunRotate);
-    mSunPosition = glm::rotateZ(mSunPosition, camera.getZAngle());
+    mSunPosition = glm::rotateY(f32v3(-1.0f, 0.0f, 0.0f), sunRotate);
     mSunHeight = glm::min(mSunPosition.z + SUN_HEIGHT_OFFSET, 0.999f); // Store sun height before modification, cap at an epsilon to fix sampler issue
-    mSunPosition += f32v3(0.0f, 0.0f, 0.85f); // Make it more up lol
-	mSunPosition = glm::normalize(mSunPosition);
+    mSunPosition.z += 0.2f; // Make it more up lol
+    mSunPosition = glm::normalize(mSunPosition);
 
 	mSkyRotMatrix = glm::rotate(sunRotate, f32v3(0.0f, 1.0f, 0.0f));
 

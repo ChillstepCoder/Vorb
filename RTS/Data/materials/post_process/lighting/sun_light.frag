@@ -7,7 +7,7 @@ in vec2 fUV;
 
 out vec4 fColor;
 
-float AMBIENT = 0.2;
+const float AMBIENT = 0.1;
 
 void main() {
 	float depth = texture(FboDepth, fUV).r;

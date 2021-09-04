@@ -46,9 +46,12 @@ public:
     const f32v3& getUp() const { return mUp; }
     f32 getZAngle() const override { return atan2f(mDirection.y, mDirection.x) + M_PI; }
 
-    const f32m4& getProjectionMatrix() const { return mP; }
     const f32m4& getViewMatrix() const override { return mV; }
+    const f32m4& getInverseViewMatrix() const override { return mInverseV; }
+    const f32m4& getProjectionMatrix() const override { return mP; }
+    const f32m4& getInverseProjectionMatrix() const override { return mInverseP; }
     const f32m4& getVPMatrix() const override { return mVP; }
+    const f32m4& getInverseVPMatrix() const override { return mInverseVP; }
 
     const f32& getNearClip() const { return mZNear; }
     const f32& getFarClip() const { return mZFar; }
@@ -77,8 +80,11 @@ protected:
 
     f32m4 mW;
     f32m4 mP;
+    f32m4 mInverseP;
     f32m4 mV;
+    f32m4 mInverseV;
     f32m4 mVP;
+    f32m4 mInverseVP;
     f32m4 mWVP;
 
     vg::Frustum mFrustum; ///< For frustum culling

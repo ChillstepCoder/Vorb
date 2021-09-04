@@ -39,8 +39,14 @@ public:
     const glm::vec2& getPos() const { return _position; }
     const f32v3 getPosition() const override { return f32v3(_position.x, _position.y, 0.0f); }
     float getScale() const override { return _scale; }
+
     const glm::mat4& getViewMatrix() const override { return _cameraMatrix; }
+    const glm::mat4& getInverseViewMatrix() const override { return glm::inverse(_cameraMatrix); }
+    const glm::mat4& getProjectionMatrix() const override { return f32m4(1.0f); }
+    const glm::mat4& getInverseProjectionMatrix() const override { return f32m4(1.0f); }
     const glm::mat4& getVPMatrix() const override { return _cameraMatrix; }
+    const glm::mat4& getInverseVPMatrix() const override { return glm::inverse(_cameraMatrix); }
+
     float getAspectRatio() const { return (float)_screenWidth / (float)_screenHeight; }
     float getScreenWidth() const { return (float)_screenWidth; }
     float getScreenHeight() const { return (float)_screenHeight; }

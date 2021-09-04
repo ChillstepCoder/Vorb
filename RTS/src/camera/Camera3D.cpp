@@ -38,6 +38,7 @@ void Camera3D::update() {
 
     if (updateFrustum) {
         mVP = mP * mV;
+        mInverseVP = glm::inverse(mVP);
         mWVP = mVP * mW;
         mFrustum.updateFromWVP(mWVP);
     }
@@ -46,11 +47,13 @@ void Camera3D::update() {
 void Camera3D::updateView() {
     mW = glm::translate(glm::mat4(), mPosition);
     mV = glm::lookAt(f32v3(0.0f), mDirection, mUp);
+    mInverseV = glm::inverse(mV);
 }
 
 void Camera3D::updateProjection() {
     mFrustum.setCamInternals(mFieldOfView, mAspectRatio, mZNear, mZFar);
     mP = glm::perspective(glm::radians(mFieldOfView), mAspectRatio, mZNear, mZFar);
+    mInverseP = glm::inverse(mP);
 }
 
 void Camera3D::applyRotation(const f32q& rot) {
