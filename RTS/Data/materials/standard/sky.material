@@ -1,0 +1,10 @@
+sky:
+  vert: sky.vert
+  frag: sky.frag
+#  atlas_textures:
+#    - name: sky_gradient
+#      unrect: GradientRect
+#      unpage: GradientAtlasPage
+  textures:
+    - name: starfield
+      uniform: StarfieldTexture

@@ -328,9 +328,7 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
 
     { // Bottom Left
         TileVertex& vbl = verts[0];
-        vbl.pos.x = tilePosition.x;
-        vbl.pos.y = tilePosition.y;
-        vbl.pos.z = tilePosition.z;
+        vbl.pos = tilePosition;
         vbl.uvs.x = adjustedUvs.x;
         vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbl.color = bottomColor;
@@ -338,9 +336,7 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
-        vbr.pos.x = tilePosition.x;
-        vbr.pos.y = tilePosition.y;
-        vbr.pos.z = tilePosition.z;
+        vbr.pos = tilePosition;
         vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
         vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbr.color = bottomColor;
@@ -348,12 +344,9 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
         vbr.pos[axis.x] += spriteData.dimsMeters.x + EPSILON;
     }
 
-    const f32 topZ = tilePosition.z + spriteData.dimsMeters.y;
     { // Top Left
         TileVertex& vtl = verts[2];
-        vtl.pos.x = tilePosition.x;
-        vtl.pos.y = tilePosition.y;
-        vtl.pos.z = tilePosition.z;
+        vtl.pos = tilePosition;
         vtl.uvs.x = adjustedUvs.x;
         vtl.uvs.y = adjustedUvs.y;
         vtl.color = topColor;
@@ -362,9 +355,7 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
     }
     { // Top Right
         TileVertex& vtr = verts[3];
-        vtr.pos.x = tilePosition.x;
-        vtr.pos.y = tilePosition.y;
-        vtr.pos.z = tilePosition.z;
+        vtr.pos = tilePosition;
         vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
         vtr.uvs.y = adjustedUvs.y;
         vtr.color = topColor;

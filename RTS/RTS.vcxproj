@@ -212,6 +212,7 @@
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
+    <ClCompile Include="src\rendering\Skybox.cpp" />
     <ClCompile Include="src\rendering\SpriteData.cpp" />
     <ClCompile Include="src\rendering\SpriteRepository.cpp" />
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
@@ -328,6 +329,7 @@
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\rendering\Skybox.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />

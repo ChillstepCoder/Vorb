@@ -13,6 +13,7 @@
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/QuadMesh.h"
+#include "rendering/Skybox.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
@@ -143,11 +144,12 @@ void RenderContext::initPostLoad() {
 
     mSunShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
-    mSkyMaterial = mResourceManager.getMaterialManager().getMaterial("sky");
     mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 
     buildHorizonMesh();
+    mSkyBox = std::make_unique<Skybox>();
+    mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
 }
 
 void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld) {
@@ -196,21 +198,18 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     // Clear screen
     vg::DepthState::FULL.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    // TODO: Replace With BlendState
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    //vg::DepthState::NONE.set();
-    //renderSky(camera);
-    //vg::DepthState::FULL.set();
 
     if (sDebugOptions.mWireframe) {
+        glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     else {
+        glClear(GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+    // TODO: Replace With BlendState
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     mChunkRenderer->renderWorld(mWorld, camera2d, lodState);
 
@@ -218,6 +217,9 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderCharacterModels(camera2d, camera->getVPMatrix(), vg::DepthState::FULL, 1.0f, frameAlpha);
     mEcsRenderer->renderInteractUI(camera2d);
+    
+    // Sky
+    mSkyBox->render(*mMaterialRenderer);
 
     // Horizon
     mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
@@ -333,6 +335,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Sun Light
+    // TODO: Collapse this into lightPassThrough?
     mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
 
     // Sun Shadows
@@ -414,11 +417,6 @@ void RenderContext::renderUI(const Camera2D& camera) {
 
     mSb->end();
     mSb->render(mScreenResolution);
-}
-
-void RenderContext::renderSky(const ICamera* camera) {
-    // Sun Light
-    mMaterialRenderer->renderFullScreenQuad(*mSkyMaterial);
 }
 
 void RenderContext::buildHorizonMesh()

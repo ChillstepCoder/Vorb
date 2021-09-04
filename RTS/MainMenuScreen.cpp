@@ -418,7 +418,6 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 }
 
 void MainMenuScreen::updateCamera(const f32v3& targetCenter, const vui::GameTime& gameTime) {
-	// TODO: use targetHeight to affect zoom
     // TODO: Delta time dependent?
     // Zoom
 	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);

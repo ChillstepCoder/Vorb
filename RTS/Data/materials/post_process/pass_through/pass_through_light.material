@@ -5,6 +5,3 @@ pass_through_light:
     - name: sky_gradient
       unrect: GradientRect
       unpage: GradientAtlasPage
-  textures:
-    - name: starfield
-      uniform: StarfieldTexture

@@ -14,6 +14,7 @@ class ChunkRenderer;
 class LightRenderer;
 class World;
 class QuadMesh;
+class Skybox;
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -64,7 +65,6 @@ public:
 
 private:
     void renderUI(const Camera2D& camera);
-    void renderSky(const  ICamera* camera);
     void buildHorizonMesh();
 
     static RenderContext* sInstance;
@@ -95,12 +95,12 @@ private:
     vg::GBuffer mZCutoutGBuffer;
     const World& mWorld;
     std::unique_ptr<QuadMesh> mHorizonQuad;
+    std::unique_ptr<Skybox> mSkyBox;
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
     const Material* mSunShadowMaterial = nullptr;
     const Material* mSunLightMaterial = nullptr;
-    const Material* mSkyMaterial = nullptr;
     const Material* mLightPassThroughMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };

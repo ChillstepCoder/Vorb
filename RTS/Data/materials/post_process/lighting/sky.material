@@ -1,7 +1,0 @@
-sky:
-  vert: pass_through.vert
-  frag: sky.frag
-  atlas_textures:
-    - name: sky_gradient
-      unrect: GradientRect
-      unpage: GradientAtlasPage
