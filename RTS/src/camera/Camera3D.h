@@ -75,9 +75,11 @@ protected:
     f32v3 mRight = f32v3(0.0f, 0.0f, 1.0f);
     f32v3 mUp = f32v3(0.0f, 1.0f, 0.0f);
 
+    f32m4 mW;
     f32m4 mP;
     f32m4 mV;
     f32m4 mVP;
+    f32m4 mWVP;
 
     vg::Frustum mFrustum; ///< For frustum culling
 };

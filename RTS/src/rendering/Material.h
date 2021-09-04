@@ -12,7 +12,6 @@ enum class MaterialUniform {
     SunColor,
     SunHeight,
     SunPosition,
-    WMatrix,
     WVPMatrix,
     VPMatrix,
     Fbo0,
@@ -30,6 +29,7 @@ enum class MaterialUniform {
     CameraFront,
     CameraPos,
     CameraZAngle,
+    SkyRotMatrix,
     COUNT
 };
 

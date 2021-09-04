@@ -1,4 +1,3 @@
-uniform mat4 World;
 uniform mat4 VP;
 uniform float Time;
 uniform vec3 CameraRight;
@@ -25,10 +24,10 @@ void main() {
 	vertexPosition.z += vXZOffset.y;
 	vertexPosition.xyz += CameraRight * vXZOffset.x;
 	
-	vec4 worldPos = World * vertexPosition;
+	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
-    worldPos.x += getWindAtPosition(Time, worldPos);
+    worldPos.x += getWindAtPosition(Time, vertexPosition);
 	
 	
 	vec4 glPos = VP * worldPos;

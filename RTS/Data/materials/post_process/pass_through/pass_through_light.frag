@@ -1,7 +1,7 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D Fbo0;
 uniform sampler2D FboLight;
-uniform sampler2D PrevFboDepth;
+uniform sampler2D FboDepth;
 // uniform sampler2D StarfieldTexture;
 uniform vec4 GradientRect;
 uniform vec3 CameraFront;
@@ -18,7 +18,7 @@ out vec4 fColor;
 
 void main() {
 
-	float depth = texture(PrevFboDepth, fUV).r;
+	float depth = texture(FboDepth, fUV).r;
 	float isSky = step(0.999999999, depth);
 	float isGround = 1.0 - isSky;
 	

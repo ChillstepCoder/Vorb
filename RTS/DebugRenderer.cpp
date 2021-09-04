@@ -15,13 +15,14 @@ namespace {
     const cString VERT_SRC = R"(
 // Uniforms
 uniform mat4 unWVP;
+uniform vec3 CameraPos;
 // Input
 in vec4 vPosition; // Position in object space
 in vec4 vColor;
 out vec4 fColor;
 void main() {
   fColor = vColor;
-  gl_Position = unWVP * vPosition;
+  gl_Position = unWVP * (vPosition - vec4(CameraPos, 0.0));
 }
 )";
     const cString FRAG_SRC = R"(
@@ -191,7 +192,7 @@ void DebugRenderer::drawPath(const Path& path, color4 color, int lifeTime /*= 0*
     }
 }
 
-void DebugRenderer::render(const f32m4& viewMatrix)
+void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 {
 
     if (!sProgram.isCreated()) {
@@ -274,6 +275,7 @@ void DebugRenderer::render(const f32m4& viewMatrix)
         glVertexAttribPointer(sProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
         glVertexAttribPointer(sProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
         glUniformMatrix4fv(sProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+        glUniform3fv(sProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         if (mesh.type == DebugMeshType::LINES) {
             glLineWidth(2.0f);
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);

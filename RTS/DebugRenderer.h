@@ -18,7 +18,7 @@ public:
 	static void drawPath(const Path& path, color4 color, int lifeTime = 0, int id = 0);
 
 	// TODO: static void drawText()
-	static void render(const f32m4& viewMatrix);
+	static void render(const f32v3& cameraPos, const f32m4& viewMatrix);
 	static void clearAllMeshesWithId(int id);
 	static void clearAll();
 };

@@ -15,6 +15,7 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include <box2d/b2_world.h>
 #include <box2d/b2_fixture.h>
@@ -410,6 +411,9 @@ void World::updateSun(const ICamera& camera) {
     mSunHeight = glm::min(mSunPosition.z + SUN_HEIGHT_OFFSET, 0.999f); // Store sun height before modification, cap at an epsilon to fix sampler issue
     mSunPosition += f32v3(0.0f, 0.0f, 0.85f); // Make it more up lol
 	mSunPosition = glm::normalize(mSunPosition);
+
+	mSkyRotMatrix = glm::rotate(sunRotate, f32v3(0.0f, 1.0f, 0.0f));
+
 	// Colors
     f32v3 sunSet(1.0f, 0.5f, 0.0f);
     f32v3 sunPeak(1.0f, 1.0f, 1.0f);

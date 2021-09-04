@@ -31,6 +31,7 @@ struct GlobalRenderData {
     f32v3 sunColor;
     f32v3 playerPos;
     f32v2 mousePosWorld;
+    f32m4 skyRotMatrix;
     const ICamera* mainCamera = nullptr;
 };
 

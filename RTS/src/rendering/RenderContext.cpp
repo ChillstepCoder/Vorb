@@ -163,6 +163,7 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mou
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
     mRenderData.mousePosWorld = mousePosWorld;
+    mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
@@ -267,10 +268,6 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
         mCityDebugRenderer->clearMeshes();
     }
 
-    // Debug Axis render at origin
-    DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
-    DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
-
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
         mWorld.enumVisibleChunks(*camera, [](const Chunk& chunk) {
@@ -304,7 +301,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
         });
     }
 
-    DebugRenderer::render(camera->getVPMatrix());
+    DebugRenderer::render(camera->getPosition(), camera->getVPMatrix());
 
     // *** Post processes ***
     // Disable depth testing for post processing
@@ -423,15 +420,15 @@ void RenderContext::buildHorizonMesh()
 {
     mHorizonQuad = std::make_unique<QuadMesh>();
     TileVertex verts[4];
-    constexpr float QUAD_WIDTH = 190000.0f;
+    constexpr float QUAD_WIDTH = 95000.0f;
     constexpr float Z_POS = -6.0f;
     const color3 waterColor3 = TileRepository::getTileData("water").spriteData.lodColor;
     const color4 waterColor(waterColor3.r, waterColor3.g, waterColor3.b, 255u);
 
     { // Bottom Left
         TileVertex& vbl = verts[0];
-        vbl.pos.x = -QUAD_WIDTH;
-        vbl.pos.y = -QUAD_WIDTH;
+        vbl.pos.x = -QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vbl.pos.y = -QUAD_WIDTH + WorldData::WORLD_CENTER.y;
         vbl.pos.z = Z_POS;
         vbl.uvs.x = 0.0f;
         vbl.uvs.y = 0.0f;
@@ -439,8 +436,8 @@ void RenderContext::buildHorizonMesh()
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
-        vbr.pos.x = QUAD_WIDTH;
-        vbr.pos.y = -QUAD_WIDTH;
+        vbr.pos.x = QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vbr.pos.y = -QUAD_WIDTH + WorldData::WORLD_CENTER.y;
         vbr.pos.z = Z_POS;
         vbr.uvs.x = 0.0f;
         vbr.uvs.y = 0.0f;
@@ -448,8 +445,8 @@ void RenderContext::buildHorizonMesh()
     }
     { // Top Left
         TileVertex& vtl = verts[2];
-        vtl.pos.x = -QUAD_WIDTH;
-        vtl.pos.y = QUAD_WIDTH;
+        vtl.pos.x = -QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vtl.pos.y = QUAD_WIDTH + WorldData::WORLD_CENTER.y;
         vtl.pos.z = Z_POS;
         vtl.uvs.x = 0.0f;
         vtl.uvs.y = 0.0f;
@@ -457,8 +454,8 @@ void RenderContext::buildHorizonMesh()
     }
     { // Top Right
         TileVertex& vtr = verts[3];
-        vtr.pos.x = QUAD_WIDTH;
-        vtr.pos.y = QUAD_WIDTH;
+        vtr.pos.x = QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vtr.pos.y = QUAD_WIDTH + WorldData::WORLD_CENTER.y;
         vtr.pos.z = Z_POS;
         vtr.uvs.x = 0.0f;
         vtr.uvs.y = 0.0f;

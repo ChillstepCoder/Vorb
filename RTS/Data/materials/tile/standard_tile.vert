@@ -1,5 +1,5 @@
-uniform mat4 World;
 uniform mat4 VP;
+uniform vec3 CameraPos;
 
 in vec4 vPosition;
 in vec2 vUV;
@@ -14,6 +14,6 @@ void main() {
     fTint = vTint;
     fUV = vUV;
     fAtlasPage = vAtlasPage;
-    vec4 worldPos = World * vPosition;
+    vec4 worldPos = vPosition - vec4(CameraPos, 0.0);
     gl_Position = VP * worldPos;
 }

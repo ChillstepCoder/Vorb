@@ -105,12 +105,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::SunPosition:
                 glUniform3fv(it.second, 1, &renderData.sunPositionCameraRelative[0]);
                 break;
-            case MaterialUniform::WMatrix: {
-                // TODO: Get rid or replace no op
-                f32m4 world(1.0f);
-                glUniformMatrix4fv(it.second, 1, false, &world[0][0]);
-                break;
-            }
             case MaterialUniform::WVPMatrix:
                 assert(false); //Not implemented
                 break;
@@ -180,6 +174,9 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1f(it.second, zAngle);
                 break;
             }
+            case MaterialUniform::SkyRotMatrix:
+                glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
+                break;
         }
         static_assert((int)MaterialUniform::COUNT == 25, "Update for new uniform type");
     }

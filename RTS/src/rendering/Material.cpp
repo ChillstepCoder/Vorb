@@ -28,7 +28,6 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("SunColor", MaterialUniform::SunColor),
     std::make_pair("SunHeight", MaterialUniform::SunHeight),
     std::make_pair("SunPosition", MaterialUniform::SunPosition),
-    std::make_pair("World", MaterialUniform::WMatrix),
     std::make_pair("VP", MaterialUniform::VPMatrix),
     std::make_pair("WVP", MaterialUniform::WVPMatrix),
     std::make_pair("Atlas", MaterialUniform::Atlas),
@@ -47,6 +46,7 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("CameraFront", MaterialUniform::CameraFront),
     std::make_pair("CameraPos", MaterialUniform::CameraPos),
     std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
+    std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
 };
 static_assert((int)MaterialUniform::COUNT == 25, "Update for new material uniform");
 

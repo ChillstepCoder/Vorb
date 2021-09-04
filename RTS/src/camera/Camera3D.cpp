@@ -38,12 +38,14 @@ void Camera3D::update() {
 
     if (updateFrustum) {
         mVP = mP * mV;
-        mFrustum.updateFromWVP(mVP);
+        mWVP = mVP * mW;
+        mFrustum.updateFromWVP(mWVP);
     }
 }
 
 void Camera3D::updateView() {
-    mV = glm::lookAt(f32v3(mPosition), f32v3(mPosition) + mDirection, mUp);
+    mW = glm::translate(glm::mat4(), mPosition);
+    mV = glm::lookAt(f32v3(0.0f), mDirection, mUp);
 }
 
 void Camera3D::updateProjection() {
