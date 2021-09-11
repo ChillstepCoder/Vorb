@@ -14,21 +14,7 @@
 // Define all possible templates for Mesh class
 // Each function definition should be proceeded by this
 
-bool sQuadIndicesInitialized = false;
-ui32 sQuadIndices[MAX_MESH_INDICES];
-
-void initSharedQuadIndices() {
-    ui32 i = 0;
-    for (ui32 v = 0; i < MAX_MESH_INDICES; v += 4u) {
-        sQuadIndices[i++] = v;
-        sQuadIndices[i++] = v + 2;
-        sQuadIndices[i++] = v + 3;
-        sQuadIndices[i++] = v + 3;
-        sQuadIndices[i++] = v + 1;
-        sQuadIndices[i++] = v;
-    }
-    sQuadIndicesInitialized = true;
-}
+VGBuffer MeshBase::sIbo = 0;
 
 MeshBase::MeshBase() {
     init();
@@ -38,17 +24,39 @@ MeshBase::~MeshBase() {
     destroy();
 }
 
+void MeshBase::initStaticIBO() {
+    if (sIbo) {
+        return;
+    }
+
+    ui32 i = 0;
+    std::vector<ui32> quadIndices(MAX_MESH_INDICES);
+    for (ui32 v = 0; i < MAX_MESH_INDICES; v += 4u) {
+        quadIndices[i++] = v;
+        quadIndices[i++] = v + 2;
+        quadIndices[i++] = v + 3;
+        quadIndices[i++] = v + 3;
+        quadIndices[i++] = v + 1;
+        quadIndices[i++] = v;
+    }
+
+    glGenBuffers(1, &sIbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_MESH_INDICES * sizeof(ui32), quadIndices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 void MeshBase::init() {
     if (mVao == 0) { // Create VAO
         glGenVertexArrays(1, &mVao);
         glBindVertexArray(mVao);
 
         glGenBuffers(1, &mVbo);
-        // TODO: Shared IBO?
-        glGenBuffers(1, &mIbo);
 
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
+
+        assert(sIbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sIbo);
 
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -59,11 +67,6 @@ void MeshBase::destroy() {
     if (mVbo != 0) {
         glDeleteBuffers(1, &mVbo);
         mVbo = 0;
-    }
-    // TODO: Shared
-    if (mIbo != 0) {
-        glDeleteBuffers(1, &mIbo);
-        mIbo = 0;
     }
     if (mVao != 0) {
         glDeleteVertexArrays(1, &mVao);

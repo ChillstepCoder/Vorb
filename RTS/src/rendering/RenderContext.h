@@ -1,7 +1,7 @@
 #pragma once
 
 class ResourceManager;
-class Camera2D;
+class Camera3D;
 class ICamera;
 class Material;
 class MaterialRenderer;
@@ -51,7 +51,7 @@ public:
     void initPostLoad();
 
     void beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld); // Called automatically by beginFrame
-    void renderFrame(const ICamera* camera, const Camera2D& camera2d, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
+    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
 
     void reloadShaders();
     void selectNextDebugShader();
@@ -65,7 +65,7 @@ public:
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
-    void renderUI(const Camera2D& camera);
+    void renderUI(const Camera3D& camera);
     void buildHorizonMesh();
 
     static RenderContext* sInstance;

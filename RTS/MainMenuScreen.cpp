@@ -348,7 +348,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame((mIs3DMode ? (ICamera*)(mCamera3D.get()) : (ICamera*)(mCamera2D.get())), *mCamera2D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
+	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
 
 	// Draw selection drag
 	if (mIsRightButtonDown) {

@@ -365,7 +365,7 @@ void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing
     }
 }
 
-void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, QuadFacing facing, const SpriteData& spriteData, const f32v4& uvs) {
+void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, const SpriteData& spriteData, const f32v4& uvs) {
     static constexpr float EPSILON = 0.005f;
 
     vertexData.resize(vertexData.size() + 4);
@@ -394,7 +394,6 @@ void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, QuadF
 
     color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
     color4 bottomColor = topColor;
-    const i32v2& axis = QUAD_FACING_AXIS[enum_cast(facing)];
     const f32 halfX = spriteData.dimsMeters.x * 0.5f;
 
     { // Bottom Left
@@ -449,6 +448,81 @@ void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, QuadF
     }
 }
 
+void addCross(std::vector<TileVertex>& vertexData, f32v3 cornerPosition, const SpriteData& spriteData, const f32v4& uvs, float width) {
+    static constexpr float EPSILON = 0.005f;
+
+    vertexData.resize(vertexData.size() + 8);
+    TileVertex* verts = &vertexData.back() - 7;
+
+    // Center the sprite
+    // TODO: This shouldnt be hard coded to xy
+    const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
+
+    f32v4 adjustedUvs;
+    if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(cornerPosition.x, cornerPosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
+    color4 bottomColor = topColor;
+
+    for (int i = 0; i < 2; ++i) {
+        f32 offset = i * width;
+        f32 invOffset = width - offset;
+        { // Bottom Left
+            TileVertex& vbl = *(verts++);
+            vbl.pos = cornerPosition;
+            vbl.uvs.x = adjustedUvs.x;
+            vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbl.color = bottomColor;
+            vbl.atlasPage = spriteData.atlasPage;
+            vbl.pos.y += offset;
+        }
+        { // Bottom Right
+            TileVertex& vbr = *(verts++);
+            vbr.pos = cornerPosition;
+            vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbr.color = bottomColor;
+            vbr.atlasPage = spriteData.atlasPage;
+            vbr.pos.x += width;
+            vbr.pos.y += invOffset;
+        }
+
+        { // Top Left
+            TileVertex& vtl = *(verts++);
+            vtl.pos = cornerPosition;
+            vtl.uvs.x = adjustedUvs.x;
+            vtl.uvs.y = adjustedUvs.y;
+            vtl.color = topColor;
+            vtl.atlasPage = spriteData.atlasPage;
+            vtl.pos.y += offset;
+            vtl.pos.z += width;
+        }
+        { // Top Right
+            TileVertex& vtr = *(verts++);
+            vtr.pos = cornerPosition;
+            vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vtr.uvs.y = adjustedUvs.y;
+            vtr.color = topColor;
+            vtr.atlasPage = spriteData.atlasPage;
+            vtr.pos.x += width;
+            vtr.pos.y += invOffset;
+            vtr.pos.z += width;
+        }
+    }
+}
+
 inline int getTileHeight(const Tile& neighbor, int layerIndex) {
     const TileID tileId = neighbor.layers[layerIndex];
     if (tileId == TILE_ID_NONE) {
@@ -465,7 +539,7 @@ inline int getTileHeight(const Tile& neighbor, int layerIndex) {
 }
 
 void addTileFlora(
-    std::vector<BillboardVertex>& vertexData,
+    std::vector<TileVertex>& vertexData,
     const Chunk& chunk,
     const TileIndex& tileIndex,
     int layerIndex,
@@ -485,10 +559,14 @@ void addTileFlora(
     const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
     const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
 
-    const int ITER_STEPS = 3;
-    for (int i = 0; i < ITER_STEPS; ++i) {
-        addQuad(vertexData, f32v3(tileWorldPos.x + (i % 2) / 16.0f, tileWorldPos.y + i / (float)ITER_STEPS, tile.baseZPosition), QuadFacing::FRONT, spriteData, spriteData.uvs);
+    for (int i = 0; i < 5; ++i) {
+        float width = vmath::lerp(0.3f, 0.6f, Random::getCachedRandomf());
+        addCross(vertexData, f32v3(tileWorldPos.x + Random::getCachedRandomf(), tileWorldPos.y + Random::getCachedRandomf(), tile.baseZPosition), spriteData, spriteData.uvs, width);
     }
+        /*const int ITER_STEPS = 3;
+        for (int i = 0; i < ITER_STEPS; ++i) {
+            addQuad(vertexData, f32v3(tileWorldPos.x + (i % 2) / 16.0f, tileWorldPos.y + i / (float)ITER_STEPS, tile.baseZPosition), spriteData, spriteData.uvs);
+        }*/
 }
 
 void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePosition, const SpriteData& spriteData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
@@ -648,6 +726,12 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     }
                     const TileData& tileData = TileRepository::getTileData(layerTile);
                     const SpriteData& spriteData = tileData.spriteData;
+
+                    if (spriteData.method == TileTextureMethod::FLORA) {
+                        // FLORA IS DONE IN SEPARATE PASS
+                        continue;
+                    }
+
                     if (spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
                         // Set LOD pixel
                         // TODO: expand trees
@@ -657,13 +741,10 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     // Tile mesh
                     // TODO: Baked AO using a gradient texture instead of vertex colors
                     // Flora mesh ONLY
-                    if (spriteData.method == TileTextureMethod::FLORA) {
-                        addTileFlora(billboardVertexData, chunk, index, layerIndex, tileData, spriteData);
-                    }
-                    else if (tileData.shape == TileShape::THIN) {
+                    if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         f32v3 tilePosition(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition);
-                        addQuad(billboardVertexData, tilePosition, QuadFacing::FRONT, spriteData, spriteData.uvs);
+                        addQuad(billboardVertexData, tilePosition, spriteData, spriteData.uvs);
                     }
                     else {
                         // Standard blocks
@@ -748,6 +829,72 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
         // LOD
         uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
+
+        // Recycle and flag as free
+        mFreeTileMeshData.push_back(meshData);
+        chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
+
+        // Update refcount
+        --mNumMeshTasksRunning;
+        chunk.decRef();
+    });
+    return true;
+}
+
+bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
+
+    TileMeshData* meshData = tryGetFreeTileMeshData();
+    if (!meshData) {
+        return false;
+    }
+
+    ++mNumMeshTasksRunning;
+    chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = true;
+
+    // TODO: Move somewhere else?
+    chunk.mChunkRenderData.mHighDetailFloraMeshDirty = false;
+    chunk.incRef();
+
+    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+        const f32v2& chunkPos = chunk.getWorldPos();
+
+        std::vector<TileVertex>& vertexData = meshData->mTileVertices;
+        std::vector<BillboardVertex>& billboardVertexData = meshData->mBillboardVertices;
+
+        for (int y = 0; y < CHUNK_WIDTH; ++y) {
+            for (int x = 0; x < CHUNK_WIDTH; ++x) {
+                //  TODO: Multiple world layers
+                TileIndex index(x, y);
+                const Tile& tile = chunk.mTiles[index];
+                // Flora is never ground level
+                for (int layerIndex = TILE_LAYER_MID; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
+                    TileID layerTile = tile.layers[layerIndex];
+                    if (layerTile == TILE_ID_NONE) {
+                        continue;
+                    }
+                    const TileData& tileData = TileRepository::getTileData(layerTile);
+                    const SpriteData& spriteData = tileData.spriteData;
+                    // TODO: Baked AO using a gradient texture instead of vertex colors
+                    // Flora mesh ONLY
+                    if (spriteData.method == TileTextureMethod::FLORA) {
+                        addTileFlora(vertexData, chunk, index, layerIndex, tileData, spriteData);
+                    }
+                }
+            }
+        }
+    }, [this, &chunk, meshData]() {
+
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+
+        if (!renderData.mHighDetailFloraMesh) {
+            renderData.mHighDetailFloraMesh = std::make_unique<QuadMesh>();
+        }
+        if (meshData->mTileVertices.size()) {
+            QuadMesh& mesh = *renderData.mHighDetailFloraMesh;
+            mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), QuadMeshDrawMode::STATIC);
+            meshData->mTileVertices.clear();
+        }
 
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);

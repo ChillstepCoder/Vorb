@@ -73,6 +73,7 @@ void Chunk::dispose() {
     // Reset render data
     mChunkRenderData.mLODDirty = true;
     mChunkRenderData.mMeshDirty = true;
+    mChunkRenderData.mHighDetailFloraMeshDirty = true;
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {

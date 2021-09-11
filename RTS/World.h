@@ -76,7 +76,7 @@ public:
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 
-    void enumVisibleChunks(const ICamera& camera, std::function<void(const Chunk&)> func) const;
+    void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
 	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func);
 

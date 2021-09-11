@@ -40,6 +40,7 @@ public:
     // Updatemesh?
     bool createMeshAsync(const Chunk& chunk);
     bool createLODTextureAsync(const Chunk& chunk);
+    bool createHighDetailFloraMeshAsync(const Chunk& chunk);
 
 private:
 

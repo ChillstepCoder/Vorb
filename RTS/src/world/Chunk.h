@@ -25,11 +25,14 @@ struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
+    std::unique_ptr<QuadMesh> mHighDetailFloraMesh = nullptr;
     std::unique_ptr<BillboardMesh> mBillboardMesh = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mMeshDirty = true;
+	bool mHighDetailFloraMeshDirty = true;
 	bool mLODDirty = true;
-	bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
+    bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
+    bool mIsBuildingHighDetailFloraMesh = false; // When true, we are waiting for our mesh to be completed
 };
 
 struct ChunkID {
@@ -146,7 +149,8 @@ public:
 	void dispose();
 
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
-	const f32v2& getWorldPos() const { return mWorldPos; }
+    const f32v2& getWorldPos() const { return mWorldPos; }
+    const f32v3& getWorldPosCenter3D() const { return f32v3(mWorldPos.x + HALF_CHUNK_WIDTH, mWorldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
 	ChunkState getState() const { return mState; }
 	const ChunkID& getChunkID() const { return mChunkId; }
 
@@ -186,7 +190,9 @@ public:
 	}
 
 	void dirtyMesh() {
+		// TODO: Not both
         mChunkRenderData.mMeshDirty = true;
+        mChunkRenderData.mHighDetailFloraMeshDirty = true;
 	}
 
     void setTileAt(TileIndex i, Tile tile) {

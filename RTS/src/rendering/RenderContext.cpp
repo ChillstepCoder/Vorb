@@ -19,7 +19,7 @@
 #include "EntityComponentSystemRenderer.h"
 
 #include "camera/ICamera.h"
-#include "camera/Camera2D.h"
+#include "camera/Camera3D.h"
 
 #include "city/City.h"
 
@@ -47,6 +47,10 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mWorld(world),
     mScreenResolution(screenResolution)
 {
+    // Mesh init
+    MeshBase::initStaticIBO();
+    checkGlError("Meshbase init");
+
     // Init renderers
     mMaterialRenderer       = std::make_unique<MaterialRenderer>(*this);
     mLightRenderer          = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
@@ -168,18 +172,18 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mou
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
+void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
 
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
-    if (camera->getScale() < 1.5f) {
+    if (camera.getScale() < 1.5f) {
         // TODO: Remove for 2D
         //lodState = ChunkRenderLOD::LOD_TEXTURE;
     }
 
     // TODO: Should this happen here? Maybe assert instead?
-    beginFrame(camera, playerPos, mousePosWorld);
+    beginFrame(&camera, playerPos, mousePosWorld);
     
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
 
@@ -212,12 +216,12 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    mChunkRenderer->renderWorld(mWorld, camera2d, lodState);
+    mChunkRenderer->renderWorld(mWorld, camera, lodState);
 
     //mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderCharacterModels(camera2d, camera->getVPMatrix(), vg::DepthState::FULL, 1.0f, frameAlpha);
-    mEcsRenderer->renderInteractUI(camera2d);
+    mEcsRenderer->renderCharacterModels(camera, camera.getVPMatrix(), vg::DepthState::FULL, 1.0f, frameAlpha);
+    mEcsRenderer->renderInteractUI(camera);
     
     // Sky
     mSkyBox->render(*mMaterialRenderer);
@@ -229,7 +233,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         vg::DepthState::READ.set();
         // TODO: Replace With BlendState
-        mParticleSystemRenderer->renderParticleSystems(camera2d, &activeGbuffer, true);
+        mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
         vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
         vg::DepthState::FULL.set();
     }
@@ -270,7 +274,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        mWorld.enumVisibleChunks(*camera, [](const Chunk& chunk) {
+        mWorld.enumVisibleChunks([](const Chunk& chunk) {
             if (chunk.isDataReady()) {
                 DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
                 color4 neighborColor(1.0f, 0.0f, 0.0f);
@@ -296,19 +300,19 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
         });
 
         // Debug region boundaries
-        mWorld.enumVisibleRegions(*camera, [](const Region& region) {
+        mWorld.enumVisibleRegions(camera, [](const Region& region) {
             DebugRenderer::drawBox(region.getWorldPos(), f32v2(WorldData::REGION_WIDTH_TILES), color4(1.0f, 0.0f, 0.0f));
         });
     }
 
-    DebugRenderer::render(camera->getPosition(), camera->getVPMatrix());
+    DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
     // *** Post processes ***
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    mEcsRenderer->renderCharacterModels(camera2d, camera->getVPMatrix(), vg::DepthState::NONE, 0.20f, frameAlpha);
+    mEcsRenderer->renderCharacterModels(camera, camera.getVPMatrix(), vg::DepthState::NONE, 0.20f, frameAlpha);
 
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
@@ -343,7 +347,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
 
     //  Dynamic  light
     glBlendFunc(GL_ONE, GL_ONE);
-    mEcsRenderer->renderDynamicLightComponents(camera2d, *mLightRenderer);
+    mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
 
     activeGbuffer.unuse();
     mCurrentFramebufferDims = mScreenResolution;
@@ -367,7 +371,7 @@ void RenderContext::renderFrame(const ICamera* camera, const Camera2D& camera2d,
     //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
     vg::DepthState::NONE.set();
     // UI last
-    renderUI(camera2d);
+    renderUI(camera);
 
     // Swap
     mPrevGBuffer = mActiveGBuffer;
@@ -388,7 +392,7 @@ void RenderContext::selectNextDebugShader() {
     }
 }
 
-void RenderContext::renderUI(const Camera2D& camera) {
+void RenderContext::renderUI(const Camera3D& camera) {
     mSb->begin();
     char buffer[255];
     const float GAP_SIZE = 64.0f;

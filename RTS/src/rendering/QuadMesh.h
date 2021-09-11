@@ -20,6 +20,8 @@ public:
     MeshBase();
     virtual ~MeshBase();
 
+    static void initStaticIBO();
+
     void init(); ///< Called automatically on construction, but can be safely called twice to no effect
     void destroy();
 
@@ -34,7 +36,7 @@ protected:
 
     VGVertexArray mVao = 0; ///< Vertex Array Object
     VGBuffer mVbo = 0; ///< Vertex Buffer Object
-    VGBuffer mIbo = 0; ///< Index Buffer Object
+    static VGBuffer sIbo; ///< Index Buffer Object
     ui32 mIndexCount = 0; ///< Current capacity of the m_ibo
     mutable const vg::GLProgram* mLastUsedProgram = nullptr;
     ui32AABB2 mAABB = ui32AABB2(0, 0, UINT32_MAX, UINT32_MAX);  ///< Optional AABB to describe the bounds
@@ -43,7 +45,7 @@ protected:
 template <typename VERTEX>
 class Mesh : public MeshBase {
 public:
-    void setData(const VERTEX* meshData, int vertexCount, QuadMeshDrawMode drawMode);
+    void setData(const VERTEX* meshData, unsigned vertexCount, QuadMeshDrawMode drawMode);
 };
 
 class QuadMesh : public Mesh<TileVertex> {
@@ -57,33 +59,17 @@ private:
 };
 
 // Templated Mesh implementation
-constexpr unsigned MAX_MESH_INDICES = CHUNK_SIZE * 4 * 6;
-extern bool sQuadIndicesInitialized;
-extern ui32 sQuadIndices[MAX_MESH_INDICES];
-extern void initSharedQuadIndices();
+constexpr unsigned MAX_MESH_INDICES = CHUNK_SIZE * 12 * 6;
 
 template <typename VERTEX>
-void Mesh<VERTEX>::setData(const VERTEX* meshData, int vertexCount, QuadMeshDrawMode drawMode) {
-
-    if (!sQuadIndicesInitialized) {
-        initSharedQuadIndices();
-    }
+void Mesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount, QuadMeshDrawMode drawMode) {
 
     const unsigned indexCount = (vertexCount / 4) * 6;
     assert(indexCount < MAX_MESH_INDICES);
 
-    // build IBO (todo: shared)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
-    // Orphan the buffer for speed
-    // TODO: Do we want dynamic draw or static/stream?
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(ui32), nullptr, enum_cast(drawMode));
-
     mIndexCount = indexCount;
-    // TODO: Can we get away with just a single IBO?
-    // Set data
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexCount * sizeof(ui32), sQuadIndices);
 
-    const int bufferSizeBytes = vertexCount * sizeof(VERTEX);
+    const unsigned bufferSizeBytes = vertexCount * sizeof(VERTEX);
 
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     // Orphan the buffer for speed

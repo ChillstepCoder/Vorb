@@ -243,8 +243,7 @@ ItemStack World::tryAddPartialItemStackAt(const f32v2& worldPos, ItemStack itemS
     return itemStack;
 }
 
-void World::enumVisibleChunks(const ICamera& camera, std::function<void(const Chunk& chunk)> func) const {
-
+void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
 	for (auto&& chunk : mVisibleChunks) {
 		func(*chunk);
 	}
