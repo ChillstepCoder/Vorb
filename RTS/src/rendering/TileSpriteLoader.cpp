@@ -53,9 +53,9 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         pError("Failed to load " + filePath.getString() + " texture must be smaller than " + std::to_string(TEXTURE_ATLAS_WIDTH_PX));
         return false;
     }
+    // TODO: Make sure this is fine
     if (!(rs.width % TEXTURE_ATLAS_CELL_WIDTH_PX == 0 && rs.height % TEXTURE_ATLAS_CELL_WIDTH_PX == 0)) {
-        std::cerr << "Failed to load " << filePath.getString() << " dimensions must be divisible by " << std::to_string(TEXTURE_ATLAS_CELL_WIDTH_PX) << "\n";
-        return false;
+        printf(("Warning - " + filePath.getString() + " dimensions are not evenly divisible by " + std::to_string(TEXTURE_ATLAS_CELL_WIDTH_PX)).c_str());
     }
 
     SpritesheetFileData sheetMetaData;

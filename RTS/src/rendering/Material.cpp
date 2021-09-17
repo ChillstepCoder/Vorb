@@ -45,14 +45,13 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("ZoomScale", MaterialUniform::ZoomScale),
     std::make_pair("FboZCutout", MaterialUniform::FboZCutout),
     std::make_pair("PlayerPosWorld", MaterialUniform::PlayerPosWorld),
-    std::make_pair("MousePosWorld", MaterialUniform::MousePosWorld),
     std::make_pair("CameraRight", MaterialUniform::CameraRight),
     std::make_pair("CameraFront", MaterialUniform::CameraFront),
     std::make_pair("CameraPos", MaterialUniform::CameraPos),
     std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
     std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
 };
-static_assert((int)MaterialUniform::COUNT == 29, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 28, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     auto&& it = sUniformLookup.find(str);

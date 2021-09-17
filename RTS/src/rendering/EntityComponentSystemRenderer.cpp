@@ -30,7 +30,7 @@ void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera3D& camera) c
 	auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent>().each([this](auto& cmp) {
 		// TODO: 3D???
-		mSpriteBatch->draw(mCircleTexture.id, cmp.getXYPosition() - cmp.mCollisionRadius, f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
+		mSpriteBatch->draw(mCircleTexture.id, (cmp.getXYPosition() - cmp.mCollisionRadius), f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
 	});
 
 	mSpriteBatch->end();
@@ -52,22 +52,19 @@ void EntityComponentSystemRenderer::renderSimpleSprites(const Camera3D& camera) 
 	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
 }
 
-void EntityComponentSystemRenderer::renderCharacterModels(const Camera3D& camera, const f32m4& vp, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha) {
+void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 alpha, f32 frameAlpha) {
 	// TODO: This should not be using spritebatch. It should use a custom 
 	// renderer so that it can add screen depth like the world shaders do
-	mSpriteBatch->begin();
-
+	
     auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([this, alpha, frameAlpha, camera](auto& physCmp, auto& modelCmp) {
+	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([&](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
 		f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
 		f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
-		CharacterRenderer::render(*mSpriteBatch, modelCmp.mModel, interpolatedXY, interpolatedZ, 0.0f, rotation, alpha);
+		renderer.render(camera, materialRenderer, modelCmp.mModel, f32v3(interpolatedXY.x, interpolatedXY.y, interpolatedZ), rotation, alpha);
 	});
 
-	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), vp, nullptr, &depthState);
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {

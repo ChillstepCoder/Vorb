@@ -19,8 +19,8 @@ struct IntersectionHit2D {
 
 struct IntersectionHit3D {
     f32v3 position;
-    f32 closeTime = 0.0f;
-    f32 farTime = 0.0f;
+    f32 closeTime = FLT_MAX;
+    f32 farTime = FLT_MAX;
     IntersectionHitShape shape = IntersectionHitShape::NO_HIT;
 
     bool didHit() { return shape != IntersectionHitShape::NO_HIT; }

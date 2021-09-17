@@ -47,6 +47,7 @@ public:
     void writeDebugAtlas() const;
     
 private:
+    void gatherRecursive(const vio::Path& folderPath);
     bool loadTiles(const vio::Path& filePath);
 
     // Tasks

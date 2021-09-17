@@ -294,9 +294,6 @@
     <ClCompile Include="src\camera\Camera3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\camera\Camera2D.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\Skybox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -651,9 +648,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera\Camera3D.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\camera\Camera2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera\ICamera.h">

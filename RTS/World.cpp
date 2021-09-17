@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "World.h"
 
-#include "camera/Camera2D.h"
 #include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
@@ -24,21 +23,13 @@
 #include "Utils.h"
 
 #include "city/City.h"
+#include "camera/ICamera.h"
 
 // TODO: remove?
 #include "ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
 
 #include "util/TileUtil.h"
-
-// For raycast
-inline f32 fastFloorf(f32 x) {
-    return FastConversion<f32, f32>::floor(x);
-}
-inline f64 fastCeilf(f32 x) {
-    return FastConversion<f32, f32>::ceiling(x);
-}
-
 
 
 #define ENABLE_DEBUG_RENDER 1
@@ -163,25 +154,147 @@ Chunk& World::getChunkAtPosition(const ui32v2& worldPos) {
     return getChunkAtPosition(ChunkID(worldPos));
 }
 
+inline f32 fastFloorf(f32 x) {
+    return FastConversion<f32, f32>::floor(x);
+}
+inline f32 fastCeilf(f32 x) {
+    return FastConversion<f32, f32>::ceiling(x);
+}
+
 TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const {
 	const f32v3 rayStart = camera.getPosition();
 	PreciseTimer timer;
+
+	// TODO: https://vercidium.com/blog/optimised-voxel-raymarching/
+
 	constexpr f32 RAY_CHECK_LENGTH = 10000.0f;
 	f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
-	ui32 duration = 300;
+
+	const ui32 duration = 300;
 	bool didHit = false;
+	std::vector<std::pair<IntersectionHit3D, Chunk*> > sortedHits;
 	for (auto&& chunk : mVisibleChunks) {
+        if (!chunk->isDataReady()) {
+            continue;
+        }
         IntersectionHit3D hit = IntersectionUtil::LineAABBIntersection(chunk->getAABB(), rayStart, rayEnd);
         if (hit.didHit()) {
-			didHit = true;
-            DebugRenderer::drawBox(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
-            DebugRenderer::drawVector(rayStart, hit.position - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
-			f32v3 farIntersect = (rayEnd - rayStart) * hit.farTime + rayStart;
-            DebugRenderer::drawVector(hit.position, farIntersect - hit.position, color4(0.0f, 1.0f, 0.0f), duration);
+            sortedHits.push_back(std::make_pair(hit, chunk));
         }
 	}
-	if (!didHit) {
-		DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+	if (sortedHits.empty()) {
+        DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+        return TileHandle();
+	}
+
+	// Sort for nearest
+	std::sort(sortedHits.begin(), sortedHits.end(), [](const std::pair<IntersectionHit3D, Chunk*>& a, const std::pair<IntersectionHit3D, Chunk*>& b) -> bool {
+		return a.first.closeTime < b.first.closeTime;
+	});
+
+	for (auto&& hitPair : sortedHits) {
+		IntersectionHit3D& hit = hitPair.first;
+		Chunk* chunk = hitPair.second;
+		f32v3 currentPos = hit.position;
+		i32v3 currentVoxelPos = i32v3(fastFloor(currentPos.x), fastFloor(currentPos.y), fastFloor(currentPos.z));
+        f32v3 farIntersect = (rayEnd - rayStart) * hit.farTime + rayStart;
+        const f32v3 offset = farIntersect - hit.position;
+        const f32 maxDistance = glm::length(offset);
+        DebugRenderer::drawBox(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
+        DebugRenderer::drawVector(rayStart, hit.position - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+        DebugRenderer::drawVector(hit.position, offset, color4(0.0f, 1.0f, 0.0f), duration);
+        DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f), duration);
+		float currDistance = 0.0f;
+
+		while (currDistance < maxDistance) {
+
+			TileIndex index = TileIndex(currentVoxelPos.x % CHUNK_WIDTH, currentVoxelPos.y % CHUNK_WIDTH);
+			
+            Tile tile = chunk->getTileAt(index);
+            if ((int)tile.baseZPosition >= currentVoxelPos.z) {
+                DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+                DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+				return TileHandle(chunk, index);
+            }
+            DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 0.0f, 0.0f), duration);
+
+			f32v3 next;
+			f32v3 r;
+
+			// X-Distance
+			if (rayDir.x > 0) {
+				if (currentPos.x == fastCeilf(currentPos.x)) next.x = currentPos.x + 1;
+				else next.x = fastCeilf(currentPos.x);
+				r.x = (next.x - currentPos.x) / rayDir.x;
+			}
+			else if (rayDir.x < 0) {
+				if (currentPos.x == fastFloorf(currentPos.x)) next.x = currentPos.x - 1;
+				else next.x = fastFloorf(currentPos.x);
+				r.x = (next.x - currentPos.x) / rayDir.x;
+			}
+			else {
+				r.x = FLT_MAX;
+			}
+
+			// Y-Distance
+			if (rayDir.y > 0) {
+				if (currentPos.y == fastCeilf(currentPos.y)) next.y = currentPos.y + 1;
+				else next.y = fastCeilf(currentPos.y);
+				r.y = (next.y - currentPos.y) / rayDir.y;
+			}
+			else if (rayDir.y < 0) {
+				if (currentPos.y == fastFloorf(currentPos.y)) next.y = currentPos.y - 1;
+				else next.y = fastFloorf(currentPos.y);
+				r.y = (next.y - currentPos.y) / rayDir.y;
+			}
+			else {
+				r.y = FLT_MAX;
+			}
+
+			// Z-Distance
+			if (rayDir.z > 0) {
+				if (currentPos.z == fastCeilf(currentPos.z)) next.z = currentPos.z + 1;
+				else next.z = fastCeilf(currentPos.z);
+				r.z = (next.z - currentPos.z) / rayDir.z;
+			}
+			else if (rayDir.z < 0) {
+				if (currentPos.z == fastFloorf(currentPos.z)) next.z = currentPos.z - 1;
+				else next.z = fastFloorf(currentPos.z);
+				r.z = (next.z - currentPos.z) / rayDir.z;
+			}
+			else {
+				r.z = FLT_MAX;
+			}
+			f32v3 prevPos = currentPos; // DEBUG
+			// Get Minimum Movement To The Next Voxel
+			f32 rat;
+			if (r.x < r.y && r.x < r.z) {
+				// Move In The X-Direction
+				rat = r.x;
+				currentPos += rayDir * rat;
+				if (rayDir.x > 0) currentVoxelPos.x++;
+				else if (rayDir.x < 0) currentVoxelPos.x--;
+			}
+			else if (r.y < r.z) {
+				// Move In The Y-Direction
+				rat = r.y;
+				currentPos += rayDir * rat;
+				if (rayDir.y > 0) currentVoxelPos.y++;
+				else if (rayDir.y < 0) currentVoxelPos.y--;
+			}
+			else {
+				// Move In The Z-Direction
+				rat = r.z;
+				currentPos += rayDir * rat;
+				if (rayDir.z > 0) currentVoxelPos.z++;
+				else if (rayDir.z < 0) currentVoxelPos.z--;
+            }
+            DebugRenderer::drawVector(currentPos, currentPos - prevPos, color4(0.0f, 0.0f, 1.0f), duration);
+
+
+			// Add The Distance The Ray Has Traversed
+			currDistance += rat;
+		}
 	}
 	std::cout << "Pick time " << timer.stop() << std::endl;
 	return TileHandle();
@@ -288,9 +401,7 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
 	}
 }
 
-void World::updateClientEcsData(const Camera2D& camera, Cartesian worldLookCardinalDirection) {
-    const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
-    mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+void World::updateClientEcsData(Cartesian worldLookCardinalDirection) {
 	mClientEcsData.worldLookCardinalDirection = worldLookCardinalDirection;
 }
 

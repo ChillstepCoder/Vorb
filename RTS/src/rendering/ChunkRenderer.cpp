@@ -159,13 +159,6 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk, const Camera3D& camera) {
     }
 }
 
-void ChunkRenderer::UpdateHighDetailFloraMesh(const Chunk& chunk) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingHighDetailFloraMesh && renderData.mLODDirty) {
-        mMesher->createHighDetailFloraMeshAsync(chunk);
-    }
-}
-
 void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (!renderData.mIsBuildingBaseMesh && renderData.mLODDirty) {

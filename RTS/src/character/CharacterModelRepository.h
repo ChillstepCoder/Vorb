@@ -3,13 +3,14 @@
 DECL_VG(class TextureCache);
 
 struct CharacterModelComponent;
+class SpriteRepository;
 
 typedef std::vector<nString> CharacterModelPartSet;
 
 class CharacterModelRepository
 {
 public:
-    CharacterModelRepository(vg::TextureCache& textureCache);
+    CharacterModelRepository(SpriteRepository& spriteRepository);
 
     void gatherCharacterModelParts();
 
@@ -31,7 +32,7 @@ private:
     CharacterModelPartSet androgynousBodyParts;
     CharacterModelPartSet androgynousFaceParts;
 
-    vg::TextureCache& mTextureCache;
+    SpriteRepository& mSpriteRepository;
 
 };
 

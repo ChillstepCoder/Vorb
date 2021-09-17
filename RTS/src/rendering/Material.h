@@ -28,7 +28,6 @@ enum class MaterialUniform {
     ZoomScale,
     FboZCutout,
     PlayerPosWorld,
-    MousePosWorld,
     CameraRight,
     CameraFront,
     CameraPos,

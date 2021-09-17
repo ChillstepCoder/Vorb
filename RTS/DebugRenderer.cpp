@@ -130,7 +130,6 @@ void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end,
 }
 
 void DebugRenderer::drawBox(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-
     const f32v2 topRight = origin + dims;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, origin + f32v2(dims.x, 0.0f), color);
@@ -138,6 +137,16 @@ void DebugRenderer::drawBox(const f32v2& origin, const f32v2& dims, color4 color
     lines.emplace_back(topRight, topRight - f32v2(dims.x, 0.0f), color);
     lines.emplace_back(topRight, topRight - f32v2(0.0f, dims.x), color);
 
+}
+
+void DebugRenderer::drawBox(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
+{
+    const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, origin + f32v3(dims.x, 0.0f, 0.0f), color);
+    lines.emplace_back(origin, origin + f32v3(0.0f, dims.y, 0.0f), color);
+    lines.emplace_back(topRight, topRight - f32v3(dims.x, 0.0f, 0.0f), color);
+    lines.emplace_back(topRight, topRight - f32v3(0.0f, dims.x, 0.0f), color);
 }
 
 void DebugRenderer::drawQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)

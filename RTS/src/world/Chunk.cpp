@@ -32,10 +32,10 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
     mWorldPos = chunkId.getWorldPos();
     mAABB.x = mWorldPos.x;
     mAABB.y = mWorldPos.y;
-    mAABB.z = -1.0f;
+    mAABB.z = -2.0f;
     mAABB.width = CHUNK_WIDTH;
     mAABB.depth = CHUNK_WIDTH;
-    mAABB.height = 1.0f;
+    mAABB.height = 4.0f;
 }
 
 void Chunk::allocateTiles() {
@@ -294,4 +294,8 @@ TileHandle::TileHandle(const Chunk* chunk, TileIndex index) :
     index(index),
     tile(chunk->mTiles[index]) {
 
+}
+
+f32v2 TileHandle::getWorldPos() {
+    return chunk->getWorldPos() + f32v2(index.getX(), index.getY());
 }

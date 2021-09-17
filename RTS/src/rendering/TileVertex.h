@@ -19,7 +19,8 @@ public:
     color4 color;
     ui16 atlasPage;
     i8v3 normal; // TODO: 3D test only
-    ui8 padding[3];
+    ui8 windInfluence = 0;
+    ui8 padding[2];
 };
 
 // Need power of 2 alignment
@@ -37,7 +38,8 @@ public:
     f32v2 uvs; //TODO: ui16v2?
     color4 color;
     ui16 atlasPage;
-    ui8 PADDING_NEED_TO_COMPRESS[30];
+    ui8 windInfluence = 0;
+    ui8 PADDING_NEED_TO_COMPRESS[29];
 };
 // Need power of 2 alignment
 // 64 is bad!!!

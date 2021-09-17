@@ -4,7 +4,6 @@
 #include "world/Chunk.h"
 #include "rendering/TileVertex.h"
 #include "rendering/RenderContext.h"
-#include "camera/Camera2D.h"
 
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SamplerState.h>
@@ -107,6 +106,9 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
             glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, color));
         }
+        if (const VGAttribute* windAttribute = program.tryGetAttribute("vWindInfluence")) {
+            glVertexAttribPointer(program.getAttribute("vWindInfluence"), 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, windInfluence));
+        }
     }
 }
 
@@ -122,6 +124,7 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
         glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, uvs));
         glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, atlasPage));
+        glVertexAttribPointer(program.getAttribute("vWindInfluence"), 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, windInfluence));
 
         if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
             glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, color));

@@ -3,8 +3,6 @@
 
 #include <Vorb/graphics/Frustum.h>
 
-#include "Camera2D.h"
-
 class Camera3D : public ICamera
 {
 public:

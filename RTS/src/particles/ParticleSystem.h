@@ -2,8 +2,6 @@
 
 #include "ParticleSystemData.h"
 
-class Camera2D;
-
 // A particle is also vertex data, and is streamed to the GPU. It is both data and rendering
 struct Particle {
     f32v3 mPosition;

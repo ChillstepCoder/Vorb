@@ -433,6 +433,7 @@ void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, const
         vtl.atlasPage = spriteData.atlasPage;
         vtl.xzOffset.x = -halfX;
         vtl.xzOffset.y = spriteData.dimsMeters.y;
+        vtl.windInfluence = 255u;
     }
     { // Top Right
         BillboardVertex& vtr = verts[3];
@@ -445,6 +446,7 @@ void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, const
         vtr.atlasPage = spriteData.atlasPage;
         vtr.xzOffset.x = halfX;
         vtr.xzOffset.y = spriteData.dimsMeters.y;
+        vtr.windInfluence = 255u;
     }
 }
 
@@ -487,6 +489,7 @@ void addCross(std::vector<TileVertex>& vertexData, f32v3 cornerPosition, const S
             vbl.color = bottomColor;
             vbl.atlasPage = spriteData.atlasPage;
             vbl.pos.y += offset;
+            vbl.windInfluence = 0;
         }
         { // Bottom Right
             TileVertex& vbr = *(verts++);
@@ -497,6 +500,7 @@ void addCross(std::vector<TileVertex>& vertexData, f32v3 cornerPosition, const S
             vbr.atlasPage = spriteData.atlasPage;
             vbr.pos.x += width;
             vbr.pos.y += invOffset;
+            vbr.windInfluence = 0;
         }
 
         { // Top Left
@@ -508,6 +512,7 @@ void addCross(std::vector<TileVertex>& vertexData, f32v3 cornerPosition, const S
             vtl.atlasPage = spriteData.atlasPage;
             vtl.pos.y += offset;
             vtl.pos.z += width;
+            vtl.windInfluence = 255u;
         }
         { // Top Right
             TileVertex& vtr = *(verts++);
@@ -519,6 +524,7 @@ void addCross(std::vector<TileVertex>& vertexData, f32v3 cornerPosition, const S
             vtr.pos.x += width;
             vtr.pos.y += invOffset;
             vtr.pos.z += width;
+            vtr.windInfluence = 255u;
         }
     }
 }
@@ -544,7 +550,9 @@ void addTileFlora(
     const TileIndex& tileIndex,
     int layerIndex,
     const TileData& tileData,
-    const SpriteData& spriteData
+    const SpriteData& spriteData,
+    const Tile& rightTile,
+    const Tile& topTile
 ) {
     const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
@@ -559,9 +567,19 @@ void addTileFlora(
     const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
     const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
 
+    const int x = tileIndex.getX();
+    const int y = tileIndex.getY();
+    // Allow overlap when adjacent tiles are the same
+    const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    ui32 rnd = Random::getThreadSafe(x, y);
+    // TODO: Allow grass overlap if right and upper neighbors are same tile + height
     for (int i = 0; i < 5; ++i) {
-        float width = vmath::lerp(0.3f, 0.6f, Random::getCachedRandomf());
-        addCross(vertexData, f32v3(tileWorldPos.x + Random::getCachedRandomf(), tileWorldPos.y + Random::getCachedRandomf(), tile.baseZPosition), spriteData, spriteData.uvs, width);
+        const float width = vmath::lerp(0.3f, 0.6f, Random::getCachedRandomfSpecific(rnd));
+        const float xOffset = Random::getCachedRandomfSpecific(rnd + 1) * (1.0f - width * rightXMult);
+        const float yOffset = Random::getCachedRandomfSpecific(rnd + 2) * (1.0f - width * topXMult);
+        addCross(vertexData, f32v3(tileWorldPos.x + xOffset, tileWorldPos.y + yOffset, tile.baseZPosition), spriteData, spriteData.uvs, width);
+        rnd += i * 73; // Add random prime
     }
         /*const int ITER_STEPS = 3;
         for (int i = 0; i < ITER_STEPS; ++i) {
@@ -878,7 +896,10 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
                     // TODO: Baked AO using a gradient texture instead of vertex colors
                     // Flora mesh ONLY
                     if (spriteData.method == TileTextureMethod::FLORA) {
-                        addTileFlora(vertexData, chunk, index, layerIndex, tileData, spriteData);
+                        Tile rightTile = chunk.getRightTileHandle(index).tile;
+                        Tile topTile = chunk.getTopTileHandle(index).tile;
+                    
+                        addTileFlora(vertexData, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
                     }
                 }
             }
@@ -898,7 +919,7 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
 
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
-        chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
+        chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = false;
 
         // Update refcount
         --mNumMeshTasksRunning;

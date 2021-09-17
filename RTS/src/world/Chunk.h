@@ -103,6 +103,7 @@ struct TileHandle {
 
     bool isValid() const { return chunk != nullptr; }
 	Chunk* getMutableChunk() { return const_cast<Chunk*>(chunk); }
+	f32v2 getWorldPos();
 
 	TileHandle& operator=(const TileHandle& other) {
 		chunk = other.chunk;

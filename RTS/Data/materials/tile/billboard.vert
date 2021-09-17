@@ -9,6 +9,7 @@ in vec2 vXZOffset;
 in vec2 vUV;
 in vec4 vTint;
 in float vAtlasPage;
+in float vWindInfluence;
 
 out vec2 fUV;
 flat out float fAtlasPage;
@@ -27,8 +28,7 @@ void main() {
 	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
-    worldPos.x += getWindAtPosition(Time, vertexPosition);
-	
+    worldPos.x += getWindAtPosition(Time, vertexPosition) * vWindInfluence;
 	
 	vec4 glPos = VP * worldPos;
 	vec4 screenCamera = VP * vec4(CameraFront, 0.0);
@@ -37,9 +37,7 @@ void main() {
 	// Lean away at top
 	vec3 glPosNoX = vec3(0.0, min(glPos.y, -1.0), glPos.z);
 	float angle = 1.0 - dot(screenCamera.xyz, normalize(glPosNoX));
-	// Funny inverted fisheye lol
-	//float aa = pow(angle, 0.6);
-	//glPos.y += vXZOffset.y * aa * 6.0;
+	
 	angle = min(pow(angle, 0.4) * vXZOffset.y, 1.0);
 	worldPos.xyz += CameraFront * angle;
 	glPos = VP * worldPos;

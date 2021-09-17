@@ -46,7 +46,7 @@ ResourceManager::ResourceManager() {
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
-    mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mTextureCache);
+    mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mSpriteRepository);
 }
 
 ResourceManager::~ResourceManager() {
@@ -62,61 +62,7 @@ bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
 }
 
 void ResourceManager::gatherFiles(const vio::Path& folderPath) {
-    vio::Directory directory;
-    if (!folderPath.asDirectory(&directory)) {
-        // TODO: Better error messaging
-        assert(false);
-    }
-
-    vio::DirectoryEntries entries;
-    if (!directory.appendEntries(entries)) {
-        // Empty directory
-        return;
-    }
-
-    for (auto&& entry : entries) {
-        // Recurse
-        // TODO: Map lookup for minor optimization
-        if (entry.isDirectory()) {
-            gatherFiles(entry);
-        } else if (fileHasExtension(entry, ".png")) {
-            mTextureFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".room")) {
-            mRoomFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".bldg")) {
-            mBuildingFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".tile")) {
-            mTileFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".material")) {
-            mMaterialFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".vert")) {
-            ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".frag")) {
-            ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
-        }
-        else if (fileHasExtension(entry, ".part")) {
-            mParticleSystemFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".ent")) {
-            mEntityFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".recipe")) {
-            mRecipeFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".item")) {
-            mItemFiles.emplace_back(entry);
-        }
-        else if (fileHasExtension(entry, ".business")) {
-            mBusinessFiles.emplace_back(entry);
-        }
-        // TODO: .ttf?
-    }
+    gatherRecursive(folderPath);
 
     mCharacterModelRepository->gatherCharacterModelParts();
 
@@ -219,6 +165,66 @@ void ResourceManager::generateNormalMaps() {
 
 void ResourceManager::writeDebugAtlas() const {
     mSpriteRepository->mTextureAtlas->writeDebugPages();
+}
+
+void ResourceManager::gatherRecursive(const vio::Path& folderPath)
+{
+    vio::Directory directory;
+    if (!folderPath.asDirectory(&directory)) {
+        // TODO: Better error messaging
+        assert(false);
+    }
+
+    vio::DirectoryEntries entries;
+    if (!directory.appendEntries(entries)) {
+        // Empty directory
+        return;
+    }
+
+    for (auto&& entry : entries) {
+        // Recurse
+        // TODO: Map lookup for minor optimization
+        if (entry.isDirectory()) {
+            gatherRecursive(entry);
+        }
+        else if (fileHasExtension(entry, ".png")) {
+            mTextureFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".room")) {
+            mRoomFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".bldg")) {
+            mBuildingFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".tile")) {
+            mTileFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".material")) {
+            mMaterialFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".vert")) {
+            ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);
+        }
+        else if (fileHasExtension(entry, ".frag")) {
+            ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
+        }
+        else if (fileHasExtension(entry, ".part")) {
+            mParticleSystemFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".ent")) {
+            mEntityFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".recipe")) {
+            mRecipeFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".item")) {
+            mItemFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".business")) {
+            mBusinessFiles.emplace_back(entry);
+        }
+        // TODO: .ttf?
+    }
 }
 
 bool ResourceManager::loadTiles(const vio::Path& filePath) {

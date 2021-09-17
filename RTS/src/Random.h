@@ -10,6 +10,7 @@ namespace Random {
     extern void initCachedRandom(unsigned count);
     extern ui32 getCachedRandom();
     extern float getCachedRandomf();
+    extern float getCachedRandomfSpecific(ui32 i);
 
     extern ui32 getThreadSafe(ui32 x, ui32 y);
     extern float getThreadSafef(ui32 x, ui32 y);

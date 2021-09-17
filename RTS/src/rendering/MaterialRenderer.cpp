@@ -4,7 +4,7 @@
 #include "Material.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/RenderContext.h"
-#include "camera/Camera2D.h"
+#include "camera/ICamera.h"
 
 #include <Vorb/graphics/SamplerState.h>
 
@@ -169,9 +169,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::PlayerPosWorld:
                 glUniform3f(it.second, renderData.playerPos.x, renderData.playerPos.y, renderData.playerPos.z);
                 break;
-            case MaterialUniform::MousePosWorld:
-                glUniform2f(it.second, renderData.mousePosWorld.x, renderData.mousePosWorld.y);
-                break;
             case MaterialUniform::CameraRight:
                 glUniform3fv(it.second, 1, &renderData.mainCamera->getRightVector()[0]);
                 break;
@@ -190,6 +187,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 29, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 28, "Update for new uniform type");
     }
 }

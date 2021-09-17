@@ -35,7 +35,6 @@ public:
 private:
     // Different rendering methods
     void UpdateMesh(const Chunk& chunk, const Camera3D& camera);
-    void UpdateHighDetailFloraMesh(const Chunk& chunk);
     void UpdateLODTexture(const Chunk& chunk);
     void RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera);
     void RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera);

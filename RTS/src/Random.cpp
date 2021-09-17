@@ -43,6 +43,10 @@ extern float Random::getCachedRandomf() {
     return (cachedRandom[++cachedRandomIndex % (unsigned)cachedRandom.size()] & 0x01fffffff) / (float)0x01fffffff;
 }
 
+extern float Random::getCachedRandomfSpecific(ui32 i) {
+    return (cachedRandom[i % cachedRandom.size()] & 0x01fffffff) / (float)0x01fffffff;
+}
+
 extern ui32 Random::getThreadSafe(ui32 x, ui32 y) {
     ui32 a = x * 2366207 + y * 2745229 - 23747;
     a = (a ^ 61) ^ (a >> 16);

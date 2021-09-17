@@ -1,6 +1,7 @@
 #pragma once
 
-DECL_VG(class TextureCache);
+class SpriteData;
+class SpriteRepository;
 
 #include <Vorb/graphics/Texture.h>
 
@@ -13,11 +14,11 @@ enum CharacterModelTextureIndex {
 
 class CharacterModel {
 public:
-	void load(vg::TextureCache& textureCache, const std::string& face, const std::string& body, const std::string& hair);
+	void load(SpriteRepository& spriteRepository, const std::string& face, const std::string& body, const std::string& hair);
 
-	vg::Texture mFaceTextures[3];
-	vg::Texture mHairTextures[3];
-	vg::Texture mBodyTextures[3];
+	const SpriteData* mFaceSprites[3];
+	const SpriteData* mHairSprites[3];
+	const SpriteData* mBodySprites[3];
 	bool isMale = false;
 };
 

@@ -110,7 +110,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
             chunk.setTileFromGeneration(TileIndex(x, y), std::move(tile));
         }
     }
-    chunk.mAABB.height = maxHeight;
+    chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
 
     //std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }

@@ -8,6 +8,7 @@ class MaterialRenderer;
 class ParticleSystemRenderer;
 class CityDebugRenderer;
 class BatchedItemRenderer;
+class CharacterRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ChunkRenderer;
@@ -30,7 +31,6 @@ struct GlobalRenderData {
     f32 timeOfDay;
     f32v3 sunColor;
     f32v3 playerPos;
-    f32v2 mousePosWorld;
     f32m4 skyRotMatrix;
     const ICamera* mainCamera = nullptr;
 };
@@ -50,8 +50,8 @@ public:
 
     void initPostLoad();
 
-    void beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld); // Called automatically by beginFrame
-    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
+    void beginFrame(const ICamera* camera, f32v3 playerPos); // Called automatically by beginFrame
+    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha);
 
     void reloadShaders();
     void selectNextDebugShader();
@@ -85,6 +85,7 @@ private:
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
     mutable std::unique_ptr<BatchedItemRenderer> mBatchedItemRenderer;
+    mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

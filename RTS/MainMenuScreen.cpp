@@ -14,7 +14,6 @@
 #include <box2d/b2_body.h>
 #include <box2d/b2_contact.h>
 
-#include "camera/Camera2D.h"
 #include "camera/Camera3D.h"
 
 #include "World.h"
@@ -47,7 +46,6 @@ MainMenuScreen::MainMenuScreen(const App* app)
       mWorld(std::make_unique<World>(*mResourceManager))
 {
 
-    mCamera2D = std::make_unique<Camera2D>();
     mCamera3D = std::make_unique<Camera3D>();
 	
     // TODO: This is kinda stupid
@@ -84,8 +82,6 @@ i32 MainMenuScreen::getPreviousScreen() const {
 void MainMenuScreen::build() {
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
-	mCamera2D->init((int)screenSize.x, (int)screenSize.y);
-	mCamera2D->setScale(m2dScale);
 
 	mCamera3D->init((f32)m_app->getWindow().getWidth() / m_app->getWindow().getHeight());
 
@@ -143,13 +139,11 @@ void MainMenuScreen::build() {
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
 		const f32v2 screenPos(event.x, event.y);
-		mTestClick = mCamera2D->convertScreenToWorld(screenPos);
 
 		if (event.button == vui::MouseButton::RIGHT) {
 			// If we are making a villager with G, dont freeze screen
 			if (!vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
 				mIsRightButtonDown = true;
-				mLastRightClickPosition = screenPos;
 			}
 		}
 		else if (event.button == vui::MouseButton::LEFT) {
@@ -157,9 +151,6 @@ void MainMenuScreen::build() {
 			TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
 		}
 
-		// Set tiles
-		//int tileIndex = m_tileGrid->getTileIndexFromScreenPos(m_testClick, *m_camera2D);
-		//m_tileGrid->setTile(tileIndex, TileGrid::STONE_1);
 	});
 
 	vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
@@ -171,17 +162,11 @@ void MainMenuScreen::build() {
 		constexpr float VEL_MULT = 0.0001f;
 		constexpr float VEL_EXP = 0.4f;
 		const f32v2 screenPos(event.x, event.y);
-		const f32v2 worldPos = mCamera2D->convertScreenToWorld(screenPos);
-		const f32v2 offset = worldPos - mTestClick;
-		const float mag = glm::length(offset);
-		const float power = pow(mag * VEL_MULT, VEL_EXP);
-		f32v2 velocity;
-		if (mag == 0.0f) {
-			velocity = f32v2(0.0f);
+        TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
+		if (!pickHandle.isValid()) {
+			return;
 		}
-		else {
-			velocity = (offset / mag) * power;
-		}
+		f32v2 worldPos = pickHandle.getWorldPos();
 
 		entt::entity newActor = INVALID_ENTITY;
 		if (event.button == vui::MouseButton::LEFT) {
@@ -195,7 +180,10 @@ void MainMenuScreen::build() {
                 // Teleport
                 auto&& ecs = mWorld->getECS();
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(mPlayerEntity)) {
-					phys->teleportToPoint(worldPos);
+					TileHandle tile = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
+					if (tile.isValid()) {
+						phys->teleportToPoint(tile.getWorldPos());
+					}
 				}
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
@@ -236,7 +224,6 @@ void MainMenuScreen::build() {
             else {
                 if (mRightClickInteractPopup) {
                     mRightClickInteractPopup.reset();
-					SDL_WarpMouseInWindow(static_cast<SDL_Window*>(m_app->getWindow().getHandle()), mLastRightClickPosition.x, mLastRightClickPosition.y);
 				}
 				else {
 					// Right click picking
@@ -258,7 +245,6 @@ void MainMenuScreen::build() {
 	// Add player
 	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
 	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
-    mCamera2D->setPosition(WorldData::WORLD_CENTER);
     mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
 	mCameraPositionTweener = f32v3(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 5.0f);
 
@@ -278,10 +264,8 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 	mGameTimer.startFrame();
 
-    bool didUpdateCamera = false;
-
-    // Store mouse position and other useful things
-	mWorld->updateClientEcsData(*mCamera2D, mCameraCartesianDirection);
+    // Store camera shit
+	mWorld->updateClientEcsData(mCameraCartesianDirection);
 
 	while (mGameTimer.tryTick()) {
 
@@ -312,26 +296,13 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
         // TODO: Copy paste bad
         const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
         const f32v2& playerXYPos = physCmp.getXYPosition();
-		if (!mIsRightButtonDown && !mRightClickInteractPopup) {
-			f32v3 targetPos(playerXYPos.x, playerXYPos.y, physCmp.getZPosition());
-			updateCamera(targetPos, gameTime);
-		}
-		didUpdateCamera = true;
 
 		// World update after camera
         mWorld->update(playerXYPos, *mCamera3D);
 	}
 	// Always update camera one last time using interpolated position
-	// TODO: Copy paste bad
 	// TODO: wtf is this tho
-	const f32 frameAlpha = mGameTimer.getFrameAlpha();
-	const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
-    const f32v2& playerXYPos = physCmp.getXYInterpolated(frameAlpha);
-    if (!mIsRightButtonDown && !mRightClickInteractPopup) {
-        f32v3 targetPos(playerXYPos.x, playerXYPos.y, physCmp.getZPosition());
-        updateCamera(targetPos, gameTime);
-	}
-    didUpdateCamera = true;
+    updateCamera(gameTime);
 
 	updateTilePicking();
 
@@ -348,13 +319,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), mWorld->getClientECSData().worldMousePos, frameAlpha);
-
-	// Draw selection drag
-	if (mIsRightButtonDown) {
-		const ui32v2 tilePos = mWorld->getClientECSData().worldMousePos;
-		DebugRenderer::drawQuad(tilePos, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.5f));
-	}
+	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha);
 
 	// Handle interact menu TODO: Notify to get this out of here
 	if (mRightClickInteractPopup) {
@@ -363,7 +328,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 		DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
 
 		// Draw vectors to corners
-		f32v2 interactPopupPositionWorld = mCamera2D->convertScreenToWorld(mLastRightClickPosition);
+		f32v2 interactPopupPositionWorld = mSelectedTilePosition;
 		const color4 lineColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
 		DebugRenderer::drawLineBetweenPoints(mSelectedTilePosition, interactPopupPositionWorld, lineColor);
 		
@@ -392,7 +357,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE));
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 1u));
             }
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
@@ -402,33 +367,25 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 			mRightClickInteractPopup.reset();
             ImGui::GetIO().WantCaptureKeyboard = false;
             ImGui::GetIO().WantCaptureMouse = false;
-			
-			// Warp mouse
-			SDL_WarpMouseInWindow(static_cast<SDL_Window*>(m_app->getWindow().getHandle()), mLastRightClickPosition.x, mLastRightClickPosition.y);
 		}
 	} 
-
-    /*mSb->begin();
-    char fpsString[64];
-    sprintf_s(fpsString, sizeof(fpsString), "FPS %d", (int)std::round(mFps));
-    mSb->drawString(mSpriteFont.get(), fpsString, f32v2(0.0f, mCamera2D->getScreenHeight() - 32.0f), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f));
-    mSb->end();
-    mSb->render(mCamera2D->getScreenSize());*/
 	
 }
 
-void MainMenuScreen::updateCamera(const f32v3& targetCenter, const vui::GameTime& gameTime) {
+void MainMenuScreen::updateCamera(const vui::GameTime& gameTime) {
+	// Target player
+    const f32 frameAlpha = mGameTimer.getFrameAlpha();
+    const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+    const f32v2& playerXYPos = physCmp.getXYInterpolated(frameAlpha);
+
     // TODO: Delta time dependent?
     // Zoom
 	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
 
-    mCamera2D->setScale(m2dScale);
-    const f32v2& currentPos = mCamera2D->getPosition();
-
     // Camera follow
-    constexpr float MAX_SPEED_MPS = 0.15f;
+    constexpr float MAX_SPEED_MPS = 0.3f;
     const f32 maxSpeed = MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z;
-	f32v3 targetPos(targetCenter.x, targetCenter.y, mCameraPositionTweener.mTarget.z);
+	f32v3 targetPos(playerXYPos.x, playerXYPos.y, mCameraPositionTweener.mTarget.z);
 	mCameraPositionTweener.setTarget(targetPos);
 	mCameraPositionTweener.setMaxSpeed(MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z);
 
@@ -437,12 +394,8 @@ void MainMenuScreen::updateCamera(const f32v3& targetCenter, const vui::GameTime
 
     const f32v3 lookAtOffset(mCameraDirectionTweener.mCurr.x, mCameraDirectionTweener.mCurr.y, mCameraDirectionZOffset);
     mCamera3D->lookAt(mCamera3D->getPosition() + lookAtOffset);
-	
-	mCamera2D->setPosition(mCameraPositionTweener.mCurr);
-    mCamera2D->update();
 
 	mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z);
-	
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_UP)) {
 		m3DFoV -= 0.4f;

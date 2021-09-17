@@ -11,7 +11,6 @@ constexpr f64 MS_PER_GAME_TICK = 40.0;
 constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
 class App;
-class Camera2D;
 class Camera3D;
 class ResourceManager;
 class RenderContext;
@@ -56,21 +55,18 @@ public:
 
 private:
 
-	void updateCamera(const f32v3& targetCenter, const vui::GameTime& gameTime);
+	void updateCamera(const vui::GameTime& gameTime);
 	void updateTilePicking();
 
     ResourceManager* mResourceManager = nullptr;
 	std::unique_ptr<World> mWorld;
 
     // Rendering
-    std::unique_ptr<Camera2D> mCamera2D;
     std::unique_ptr<Camera3D> mCamera3D;
     RenderContext& mRenderContext;
 
-    float m2dScale = 50.0f;
     float mFps = 0.0f;
 
-	f32v2 mTestClick = f32v2(0.0f);
 	entt::entity mPlayerEntity = (entt::entity)0;
 
 	// Camera
@@ -86,7 +82,6 @@ private:
 
     // UI
 	f32v2 mSelectedTilePosition = f32v2(0.0f);
-	f32v2 mLastRightClickPosition = f32v2(0.0f);
 	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
 	f32v3 mMousePickRay = f32v3(0.0f);

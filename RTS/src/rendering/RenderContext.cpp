@@ -13,6 +13,7 @@
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/QuadMesh.h"
+#include "rendering/CharacterRenderer.h"
 #include "rendering/Skybox.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
@@ -50,19 +51,6 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     // Mesh init
     MeshBase::initStaticIBO();
     checkGlError("Meshbase init");
-
-    // Init renderers
-    mMaterialRenderer       = std::make_unique<MaterialRenderer>(*this);
-    mLightRenderer          = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
-    mChunkRenderer          = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
-    mEcsRenderer            = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
-    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer, screenResolution);
-    mCityDebugRenderer      = std::make_unique<CityDebugRenderer>();
-    mBatchedItemRenderer    = std::make_unique<BatchedItemRenderer>(resourceManager, *mMaterialRenderer);
-    checkGlError("Renderer init");
-
-    mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
-    checkGlError("Init texture manipulator");
 
     // int UI resources
     mSb         = std::make_unique<vg::SpriteBatch>();
@@ -131,6 +119,22 @@ RenderContext& RenderContext::getInstance() {
 }
 
 void RenderContext::initPostLoad() {
+
+    // Initialize renderer after material assets are loaded
+    mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager());
+    // Init renderers
+    mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
+    mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
+    mChunkRenderer = std::make_unique<ChunkRenderer>(mResourceManager, *mMaterialRenderer);
+    mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
+    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+    mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
+    mBatchedItemRenderer = std::make_unique<BatchedItemRenderer>(mResourceManager, *mMaterialRenderer);
+    checkGlError("Renderer init");
+    mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
+    checkGlError("Init texture manipulator");
+
+    // TODO: These can be eliminated and put into constructor???
     mLightRenderer->InitPostLoad();
     mChunkRenderer->InitPostLoad();
     mTextureManipulator->InitPostLoad();
@@ -156,7 +160,7 @@ void RenderContext::initPostLoad() {
     mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
 }
 
-void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mousePosWorld) {
+void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos) {
     // Set renderData
     mRenderData.mainCamera = camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
@@ -166,13 +170,12 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos, f32v2 mou
     mRenderData.sunPositionCameraRelative = mWorld.getSunPosition();
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
-    mRenderData.mousePosWorld = mousePosWorld;
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
+void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha) {
 
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
@@ -183,7 +186,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 m
     }
 
     // TODO: Should this happen here? Maybe assert instead?
-    beginFrame(&camera, playerPos, mousePosWorld);
+    beginFrame(&camera, playerPos);
     
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
 
@@ -217,10 +220,10 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 m
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
+    mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
 
-    //mEcsRenderer->renderPhysicsDebug(camera);
+    mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderCharacterModels(camera, camera.getVPMatrix(), vg::DepthState::FULL, 1.0f, frameAlpha);
     mEcsRenderer->renderInteractUI(camera);
     
     // Sky
@@ -312,7 +315,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32v2 m
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    mEcsRenderer->renderCharacterModels(camera, camera.getVPMatrix(), vg::DepthState::NONE, 0.20f, frameAlpha);
+    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
 
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...

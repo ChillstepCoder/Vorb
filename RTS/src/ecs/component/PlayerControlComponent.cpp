@@ -10,7 +10,7 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-constexpr float BASE_SPEED = 0.4;
+constexpr float BASE_SPEED = 0.3;
 constexpr float ACCELERATION = 0.05f;
 
 constexpr float ATTACK_RADIUS = 5.0f;
@@ -83,16 +83,6 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	if (isSprinting) {
 		physCmp.mDir = moveDir;
 	}
-	else {
-		// Prevent NAN
-		const f32v2 offset = clientData.worldMousePos - physCmp.getXYPosition();
-		if (offset.x == 0.0f && offset.y == 0.0f) {
-			physCmp.mDir = moveDir;
-		}
-		else {
-			physCmp.mDir = glm::normalize(offset);
-		}
-	}
 
 	float speed = BASE_SPEED;
 	float dotp = glm::dot(moveDir, glm::normalize(physCmp.mDir));
@@ -104,7 +94,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
 	speed *= 1.0f - (speedLerp * 0.5f);
 
-	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 2.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
+	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
 	f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
 	float velocityDist = glm::length(velocityOffset);
 
