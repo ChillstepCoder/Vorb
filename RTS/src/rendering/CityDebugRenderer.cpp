@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "CityDebugRenderer.h"
 
-#include "camera/Camera2D.h"
 #include "DebugRenderer.h"
 
 #include "box2d/b2_collision.h"
@@ -9,6 +8,8 @@
 #include "city/CityBuilder.h"
 #include "city/CityPlanner.h"
 #include "city/CityPlotter.h"
+#include "city/CityQuartermaster.h"
+#include "item/ItemStockpile.h"
 
 constexpr int DEBUG_ID_CITY = 123;
 
@@ -152,6 +153,13 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
             color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
         }
         DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), color, PERIOD_FRAMES);
+    }
+}
+
+void CityDebugRenderer::renderCityQuartermasterDebug(const CityQuartermaster& cityPotter) const
+{
+    for (auto&& stockpile : cityPotter.mAllStockpiles) {
+        stockpile->renderDebug();
     }
 }
 

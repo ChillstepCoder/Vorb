@@ -18,11 +18,11 @@ namespace MathUtil {
 
     namespace Easing {
         inline float easeInOutCubic(float x) {
-            return x < 0.5 ? 4.0f * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
+            return x < 0.5f ? 4.0f * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
         }
 
         inline float easeInOutQuad(float x) {
-            return x < 0.5 ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2;
+            return x < 0.5f ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2;
         }
 
         inline float easeInOutSine(float x) {

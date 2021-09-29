@@ -268,6 +268,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
             mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
             mCityDebugRenderer->renderCityPlotterDebug(city->getCityPlotter());
+            mCityDebugRenderer->renderCityQuartermasterDebug(city->getCityQuartermaster());
         }
         mCityDebugRenderer->finishRenderFrame();
     }

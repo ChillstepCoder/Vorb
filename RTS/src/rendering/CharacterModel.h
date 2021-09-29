@@ -1,6 +1,6 @@
 #pragma once
 
-class SpriteData;
+struct SpriteData;
 class SpriteRepository;
 
 #include <Vorb/graphics/Texture.h>

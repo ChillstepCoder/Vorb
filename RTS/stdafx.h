@@ -240,5 +240,7 @@ inline bool IsEnabled<0>() {
     return false;
 }
 
+const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
+
 
 #endif // stdafx_h__RTS

@@ -2,8 +2,8 @@
 #include "QuadMesh.h"
 
 #include "world/Chunk.h"
-#include "rendering/TileVertex.h"
 #include "rendering/RenderContext.h"
+#include "Random.h"
 
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SamplerState.h>
@@ -12,6 +12,11 @@
 
 // Define all possible templates for Mesh class
 // Each function definition should be proceeded by this
+// 
+// Prevent rounding errors, 0.0001 is half a pixel
+constexpr f32 UV_EPSILON = 0.0001f;
+constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
+static constexpr float EPSILON = 0.005f;
 
 VGBuffer MeshBase::sIbo = 0;
 
@@ -88,6 +93,159 @@ void MeshBase::draw(const vg::GLProgram& program) const {
     glBindVertexArray(0);
 }
 
+void QuadMesh::reserveQuadCount(size_t count) {
+    mVertexData.reserve(count * 4u);
+}
+
+void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, const i32v2& xyAxis, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal) {
+
+    mVertexData.resize(mVertexData.size() + 4);
+    assert(!mVertexData.empty());
+    TileVertex* verts = &mVertexData.back() - 3;
+
+    // Center the sprite
+    // TODO: This shouldnt be hard coded to xy
+    const f32v2 offset(-(float)((xyDims.x - 1) / 2) + xyOffset.x, xyOffset.y);
+    tilePosition.x += offset.x;
+    tilePosition.y += offset.y;
+
+    f32v4 adjustedUvs;
+    if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    { // Bottom Left
+        TileVertex& vbl = verts[0];
+        vbl.pos = tilePosition;
+        vbl.uvs.x = adjustedUvs.x;
+        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbl.color = color;
+        vbl.atlasPage = spriteAtlasPage;
+    }
+    { // Bottom Right
+        TileVertex& vbr = verts[1];
+        vbr.pos = tilePosition;
+        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbr.color = color;
+        vbr.atlasPage = spriteAtlasPage;
+        vbr.pos[xyAxis.x] += xyDims.x + EPSILON;
+    }
+
+    { // Top Left
+        TileVertex& vtl = verts[2];
+        vtl.pos = tilePosition;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = color;
+        vtl.atlasPage = spriteAtlasPage;
+        vtl.pos[xyAxis.y] += xyDims.y + EPSILON;
+    }
+    { // Top Right
+        TileVertex& vtr = verts[3];
+        vtr.pos = tilePosition;
+        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vtr.uvs.y = adjustedUvs.y;
+        vtr.color = color;
+        vtr.atlasPage = spriteAtlasPage;
+        vtr.pos[xyAxis.x] += xyDims.x + EPSILON;
+        vtr.pos[xyAxis.y] += xyDims.y + EPSILON;
+    }
+}
+
+void QuadMesh::addCross(f32v3 cornerPosition, ui16 spriteAtlasPage, const f32v4& uvs, float width, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence) {
+    mVertexData.resize(mVertexData.size() + 8);
+    TileVertex* verts = &mVertexData.back() - 7;
+
+    f32v4 adjustedUvs;
+    if (shouldRandFlipHorizontal && Random::getThreadSafef(cornerPosition.x, cornerPosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
+    color4 bottomColor = topColor;
+
+    for (int i = 0; i < 2; ++i) {
+        f32 offset = i * width;
+        f32 invOffset = width - offset;
+        { // Bottom Left
+            TileVertex& vbl = *(verts++);
+            vbl.pos = cornerPosition;
+            vbl.uvs.x = adjustedUvs.x;
+            vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbl.color = color;
+            vbl.atlasPage = spriteAtlasPage;
+            vbl.pos.y += offset;
+            vbl.windInfluence = 0;
+        }
+        { // Bottom Right
+            TileVertex& vbr = *(verts++);
+            vbr.pos = cornerPosition;
+            vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbr.color = color;
+            vbr.atlasPage = spriteAtlasPage;
+            vbr.pos.x += width;
+            vbr.pos.y += invOffset;
+            vbr.windInfluence = 0;
+        }
+
+        { // Top Left
+            TileVertex& vtl = *(verts++);
+            vtl.pos = cornerPosition;
+            vtl.uvs.x = adjustedUvs.x;
+            vtl.uvs.y = adjustedUvs.y;
+            vtl.color = color;
+            vtl.atlasPage = spriteAtlasPage;
+            vtl.pos.y += offset;
+            vtl.pos.z += width;
+            vtl.windInfluence = windInfluence;
+        }
+        { // Top Right
+            TileVertex& vtr = *(verts++);
+            vtr.pos = cornerPosition;
+            vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vtr.uvs.y = adjustedUvs.y;
+            vtr.color = color;
+            vtr.atlasPage = spriteAtlasPage;
+            vtr.pos.x += width;
+            vtr.pos.y += invOffset;
+            vtr.pos.z += width;
+            vtr.windInfluence = windInfluence;
+        }
+    }
+}
+
+void QuadMesh::finishMesh(QuadMeshDrawMode drawMode) {
+    if (mVertexData.size()) {
+        setData(mVertexData.data(), mVertexData.size(), drawMode);
+        std::vector<TileVertex>().swap(mVertexData);
+    }
+    else {
+        destroy(); // Mesh is now empty, destroy if it was valid
+    }
+}
+
 void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     // TODO: can we not do this every time?
     if (mLastUsedProgram != &program) {
@@ -109,6 +267,101 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         if (const VGAttribute* windAttribute = program.tryGetAttribute("vWindInfluence")) {
             glVertexAttribPointer(program.getAttribute("vWindInfluence"), 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, windInfluence));
         }
+    }
+}
+
+void BillboardMesh::reserveQuadCount(size_t count) {
+    mVertexData.reserve(count * 4u);
+}
+
+void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal) {
+    mVertexData.resize(mVertexData.size() + 4);
+    BillboardVertex* verts = &mVertexData.back() - 3;
+
+    //// Center the sprite
+    //// TODO: This shouldnt be hard coded to xy
+    //const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
+    tilePosition.x += 0.5f;
+    tilePosition.y += 0.5f;
+
+    f32v4 adjustedUvs;
+    if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    const f32 halfX = xyDims.x * 0.5f;
+
+    { // Bottom Left
+        BillboardVertex& vbl = verts[0];
+        vbl.rootPos.x = tilePosition.x;
+        vbl.rootPos.y = tilePosition.y;
+        vbl.rootPos.z = tilePosition.z;
+        vbl.uvs.x = adjustedUvs.x;
+        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbl.color = color;
+        vbl.atlasPage = spriteAtlasPage;
+        vbl.xzOffset.x = -halfX;
+        vbl.xzOffset.y = 0.0f;
+    }
+    { // Bottom Right
+        BillboardVertex& vbr = verts[1];
+        vbr.rootPos.x = tilePosition.x;
+        vbr.rootPos.y = tilePosition.y;
+        vbr.rootPos.z = tilePosition.z;
+        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbr.color = color;
+        vbr.atlasPage = spriteAtlasPage;
+        vbr.xzOffset.x = halfX;
+        vbr.xzOffset.y = 0.0f;
+    }
+
+    const f32 topZ = tilePosition.z + xyDims.y;
+    { // Top Left
+        BillboardVertex& vtl = verts[2];
+        vtl.rootPos.x = tilePosition.x;
+        vtl.rootPos.y = tilePosition.y;
+        vtl.rootPos.z = tilePosition.z;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = color;
+        vtl.atlasPage = spriteAtlasPage;
+        vtl.xzOffset.x = -halfX;
+        vtl.xzOffset.y = xyDims.y;
+        vtl.windInfluence = 255u;
+    }
+    { // Top Right
+        BillboardVertex& vtr = verts[3];
+        vtr.rootPos.x = tilePosition.x;
+        vtr.rootPos.y = tilePosition.y;
+        vtr.rootPos.z = tilePosition.z;
+        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vtr.uvs.y = adjustedUvs.y;
+        vtr.color = color;
+        vtr.atlasPage = spriteAtlasPage;
+        vtr.xzOffset.x = halfX;
+        vtr.xzOffset.y = xyDims.y;
+        vtr.windInfluence = 255u;
+    }
+}
+
+void BillboardMesh::finishMesh(QuadMeshDrawMode drawMode) {
+    if (mVertexData.size()) {
+        setData(mVertexData.data(), mVertexData.size(), drawMode);
+        std::vector<BillboardVertex>().swap(mVertexData);
+    }
+    else {
+        destroy(); // Mesh is now empty, destroy if it was valid
     }
 }
 

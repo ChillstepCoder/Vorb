@@ -5,6 +5,7 @@
 
 class ResourceManager;
 class MaterialRenderer;
+class ItemRepository;
 class ItemStack;
 
 typedef ui32 BatchID;
@@ -18,15 +19,16 @@ public:
 
     BatchID beginNewBatch(ui32 reserveQuadCount = 0);
     void beginBatch(BatchID batchID, ui32 reserveQuadCount = 0);
-    void addItemStackToBatch(ui32v2& pos, ItemStack& itemStack);
+    void addItemStackToBatch(const ui32v2& pos, const ItemStack& itemStack);
     void finishBatch(BatchID batchID);
     void deleteBatch(BatchID batchID);
     void renderBatches();
-    void renderItemStackOnGroundSingle(ui32v2& pos, ItemStack& itemStack);
+    void renderItemStackOnGroundSingle(const ui32v2& pos, const ItemStack& itemStack);
 
 private:
     ResourceManager& mResourceManager;
     MaterialRenderer& mMaterialRenderer;
+    ItemRepository& mItemRepository;
 
     std::vector<QuadMesh> mItemMeshes;
     std::vector<TileVertex> mInProgressBatchData;

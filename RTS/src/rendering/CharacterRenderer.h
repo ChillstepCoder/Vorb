@@ -5,7 +5,7 @@
 
 class MaterialRenderer;
 class MaterialManager;
-class SpriteData;
+struct SpriteData;
 class Material;
 class Camera3D;
 struct BillboardVertex;

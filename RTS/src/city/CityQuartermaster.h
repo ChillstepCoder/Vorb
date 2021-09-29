@@ -7,6 +7,7 @@ class City;
 // resource allocation and trade between cities
 // TODO: Should trade be separated?
 class CityQuartermaster {
+    friend class CityDebugRenderer;
 public:
     CityQuartermaster(City& city);
     ~CityQuartermaster();

@@ -25,6 +25,7 @@
 
 constexpr float FLORA_RENDER_DISTANCE_2 = SQ(320.0f);
 constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
+static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
 	mResourceManager(resourceManager),
@@ -46,7 +47,7 @@ void ChunkRenderer::renderChunksZCutout(const World& world, const Camera3D& came
 
             // Only render 
             ChunkRenderData& renderData = chunk.mChunkRenderData;
-            if (renderData.mChunkMesh) {
+            if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
                 RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
             }
         }
@@ -155,6 +156,7 @@ void ChunkRenderer::UpdateMesh(const Chunk& chunk, const Camera3D& camera) {
         }
         else if (distanceToCamera2 > FLORA_UNLOAD_DISTANCE_2 && renderData.mHighDetailFloraMesh) {
             renderData.mHighDetailFloraMesh.reset();
+            renderData.mHighDetailFloraMeshDirty = true;
         }
     }
 }
@@ -169,18 +171,14 @@ void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
 void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera) {
 	// mutable render data
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mChunkMesh) {
+    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
         MaterialRenderer& renderer = RenderContext::getInstance().getMaterialRenderer();
-        if (renderData.mHighDetailFloraMesh) {
+        if (renderData.mHighDetailFloraMesh && renderData.mHighDetailFloraMesh->isValid()) {
             renderer.renderMesh(*renderData.mHighDetailFloraMesh, *mStandardMaterial);
         }
         renderer.renderMesh(*renderData.mChunkMesh, *mStandardMaterial);
-        if (renderData.mBillboardMesh) {
+        if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
             renderer.renderMesh(*renderData.mBillboardMesh, *mBillboardMaterial);
-        }
-        else {
-            // TODO: I feel lazy is bad here...
-            mMesher->createMeshAsync(chunk);
         }
     }
     else {

@@ -22,6 +22,7 @@ KEG_ENUM_DECL(ItemType);
 class Item
 {
     friend class ItemRepository;
+    friend class BatchedItemRenderer;
 public:
     const nString& getName() const { return mName; }
     ItemID getID() const { return mId; }

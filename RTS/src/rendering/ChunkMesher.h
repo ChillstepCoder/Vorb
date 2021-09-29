@@ -9,16 +9,8 @@ class TextureAtlas;
 struct TileData;
 struct SpriteData;
 
-constexpr int MAX_VERTICES_PER_CHUNK = CHUNK_SIZE * 4 * 4;
-constexpr int MAX_INDICES_PER_CHUNK = CHUNK_SIZE * 4 * 6;
-constexpr int AVERAGE_VERTICES_PER_CHUNK = MAX_VERTICES_PER_CHUNK / 2;
 
 struct TileMeshData {
-    TileMeshData() {
-        mTileVertices.reserve(AVERAGE_VERTICES_PER_CHUNK);
-    }
-    std::vector<TileVertex> mTileVertices;
-    std::vector<BillboardVertex> mBillboardVertices;
     color3 mLODTexturePixelBuffer[CHUNK_SIZE];
 };
 

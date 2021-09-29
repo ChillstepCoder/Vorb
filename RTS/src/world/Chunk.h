@@ -25,8 +25,8 @@ struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
-    std::unique_ptr<QuadMesh> mHighDetailFloraMesh = nullptr;
-    std::unique_ptr<BillboardMesh> mBillboardMesh = nullptr;
+	std::unique_ptr<QuadMesh> mHighDetailFloraMesh = nullptr;
+	std::unique_ptr<BillboardMesh> mBillboardMesh = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mMeshDirty = true;
 	bool mHighDetailFloraMeshDirty = true;

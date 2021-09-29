@@ -295,239 +295,6 @@ const QuadFacing EXPOSED_NEIGHBOR_QUAD_FACINGS[4] = {
 constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
 
-void addQuad(std::vector<TileVertex>& vertexData, f32v3 tilePosition, QuadFacing facing, const SpriteData& spriteData, const f32v4& uvs) {
-    static constexpr float EPSILON = 0.005f;
-
-    vertexData.resize(vertexData.size() + 4);
-    TileVertex* verts = &vertexData.back() - 3;
-
-    // Center the sprite
-    // TODO: This shouldnt be hard coded to xy
-    const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
-    tilePosition.x += offset.x;
-    tilePosition.y += offset.y;
-
-    f32v4 adjustedUvs;
-    if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
-        // Flip horizontal
-        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-    else {
-        adjustedUvs.x = uvs.x + UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = uvs.z - UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-
-    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
-    color4 bottomColor = topColor;
-    const i32v2& axis = QUAD_FACING_AXIS[enum_cast(facing)];
-
-    { // Bottom Left
-        TileVertex& vbl = verts[0];
-        vbl.pos = tilePosition;
-        vbl.uvs.x = adjustedUvs.x;
-        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbl.color = bottomColor;
-        vbl.atlasPage = spriteData.atlasPage;
-    }
-    { // Bottom Right
-        TileVertex& vbr = verts[1];
-        vbr.pos = tilePosition;
-        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbr.color = bottomColor;
-        vbr.atlasPage = spriteData.atlasPage;
-        vbr.pos[axis.x] += spriteData.dimsMeters.x + EPSILON;
-    }
-
-    { // Top Left
-        TileVertex& vtl = verts[2];
-        vtl.pos = tilePosition;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = topColor;
-        vtl.atlasPage = spriteData.atlasPage;
-        vtl.pos[axis.y] += spriteData.dimsMeters.y + EPSILON;
-    }
-    { // Top Right
-        TileVertex& vtr = verts[3];
-        vtr.pos = tilePosition;
-        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vtr.uvs.y = adjustedUvs.y;
-        vtr.color = topColor;
-        vtr.atlasPage = spriteData.atlasPage;
-        vtr.pos[axis.x] += spriteData.dimsMeters.x + EPSILON;
-        vtr.pos[axis.y] += spriteData.dimsMeters.y + EPSILON;
-    }
-}
-
-void addQuad(std::vector<BillboardVertex>& vertexData, f32v3 tilePosition, const SpriteData& spriteData, const f32v4& uvs) {
-    static constexpr float EPSILON = 0.005f;
-
-    vertexData.resize(vertexData.size() + 4);
-    BillboardVertex* verts = &vertexData.back() - 3;
-
-    //// Center the sprite
-    //// TODO: This shouldnt be hard coded to xy
-    //const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
-    tilePosition.x += 0.5f;
-    tilePosition.y += 0.5f;
-
-    f32v4 adjustedUvs;
-    if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
-        // Flip horizontal
-        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-    else {
-        adjustedUvs.x = uvs.x + UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = uvs.z - UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-
-    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
-    color4 bottomColor = topColor;
-    const f32 halfX = spriteData.dimsMeters.x * 0.5f;
-
-    { // Bottom Left
-        BillboardVertex& vbl = verts[0];
-        vbl.rootPos.x = tilePosition.x;
-        vbl.rootPos.y = tilePosition.y;
-        vbl.rootPos.z = tilePosition.z;
-        vbl.uvs.x = adjustedUvs.x;
-        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbl.color = bottomColor;
-        vbl.atlasPage = spriteData.atlasPage;
-        vbl.xzOffset.x = -halfX;
-        vbl.xzOffset.y = 0.0f;
-    }
-    { // Bottom Right
-        BillboardVertex& vbr = verts[1];
-        vbr.rootPos.x = tilePosition.x;
-        vbr.rootPos.y = tilePosition.y;
-        vbr.rootPos.z = tilePosition.z;
-        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbr.color = bottomColor;
-        vbr.atlasPage = spriteData.atlasPage;
-        vbr.xzOffset.x = halfX;
-        vbr.xzOffset.y = 0.0f;
-    }
-
-    const f32 topZ = tilePosition.z + spriteData.dimsMeters.y;
-    { // Top Left
-        BillboardVertex& vtl = verts[2];
-        vtl.rootPos.x = tilePosition.x;
-        vtl.rootPos.y = tilePosition.y;
-        vtl.rootPos.z = tilePosition.z;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = topColor;
-        vtl.atlasPage = spriteData.atlasPage;
-        vtl.xzOffset.x = -halfX;
-        vtl.xzOffset.y = spriteData.dimsMeters.y;
-        vtl.windInfluence = 255u;
-    }
-    { // Top Right
-        BillboardVertex& vtr = verts[3];
-        vtr.rootPos.x = tilePosition.x;
-        vtr.rootPos.y = tilePosition.y;
-        vtr.rootPos.z = tilePosition.z;
-        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vtr.uvs.y = adjustedUvs.y;
-        vtr.color = topColor;
-        vtr.atlasPage = spriteData.atlasPage;
-        vtr.xzOffset.x = halfX;
-        vtr.xzOffset.y = spriteData.dimsMeters.y;
-        vtr.windInfluence = 255u;
-    }
-}
-
-void addCross(std::vector<TileVertex>& vertexData, f32v3 cornerPosition, const SpriteData& spriteData, const f32v4& uvs, float width) {
-    static constexpr float EPSILON = 0.005f;
-
-    vertexData.resize(vertexData.size() + 8);
-    TileVertex* verts = &vertexData.back() - 7;
-
-    // Center the sprite
-    // TODO: This shouldnt be hard coded to xy
-    const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
-
-    f32v4 adjustedUvs;
-    if ((spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP) && Random::getThreadSafef(cornerPosition.x, cornerPosition.y) > 0.5f) {
-        // Flip horizontal
-        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-    else {
-        adjustedUvs.x = uvs.x + UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = uvs.z - UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-
-    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
-    color4 bottomColor = topColor;
-
-    for (int i = 0; i < 2; ++i) {
-        f32 offset = i * width;
-        f32 invOffset = width - offset;
-        { // Bottom Left
-            TileVertex& vbl = *(verts++);
-            vbl.pos = cornerPosition;
-            vbl.uvs.x = adjustedUvs.x;
-            vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
-            vbl.color = bottomColor;
-            vbl.atlasPage = spriteData.atlasPage;
-            vbl.pos.y += offset;
-            vbl.windInfluence = 0;
-        }
-        { // Bottom Right
-            TileVertex& vbr = *(verts++);
-            vbr.pos = cornerPosition;
-            vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-            vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
-            vbr.color = bottomColor;
-            vbr.atlasPage = spriteData.atlasPage;
-            vbr.pos.x += width;
-            vbr.pos.y += invOffset;
-            vbr.windInfluence = 0;
-        }
-
-        { // Top Left
-            TileVertex& vtl = *(verts++);
-            vtl.pos = cornerPosition;
-            vtl.uvs.x = adjustedUvs.x;
-            vtl.uvs.y = adjustedUvs.y;
-            vtl.color = topColor;
-            vtl.atlasPage = spriteData.atlasPage;
-            vtl.pos.y += offset;
-            vtl.pos.z += width;
-            vtl.windInfluence = 255u;
-        }
-        { // Top Right
-            TileVertex& vtr = *(verts++);
-            vtr.pos = cornerPosition;
-            vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-            vtr.uvs.y = adjustedUvs.y;
-            vtr.color = topColor;
-            vtr.atlasPage = spriteData.atlasPage;
-            vtr.pos.x += width;
-            vtr.pos.y += invOffset;
-            vtr.pos.z += width;
-            vtr.windInfluence = 255u;
-        }
-    }
-}
 
 inline int getTileHeight(const Tile& neighbor, int layerIndex) {
     const TileID tileId = neighbor.layers[layerIndex];
@@ -545,7 +312,7 @@ inline int getTileHeight(const Tile& neighbor, int layerIndex) {
 }
 
 void addTileFlora(
-    std::vector<TileVertex>& vertexData,
+    QuadMesh& floraMesh,
     const Chunk& chunk,
     const TileIndex& tileIndex,
     int layerIndex,
@@ -578,22 +345,36 @@ void addTileFlora(
         const float width = vmath::lerp(0.3f, 0.6f, Random::getCachedRandomfSpecific(rnd));
         const float xOffset = Random::getCachedRandomfSpecific(rnd + 1) * (1.0f - width * rightXMult);
         const float yOffset = Random::getCachedRandomfSpecific(rnd + 2) * (1.0f - width * topXMult);
-        addCross(vertexData, f32v3(tileWorldPos.x + xOffset, tileWorldPos.y + yOffset, tile.baseZPosition), spriteData, spriteData.uvs, width);
+        floraMesh.addCross(
+            f32v3(tileWorldPos.x + xOffset, tileWorldPos.y + yOffset, tile.baseZPosition),
+            spriteData.atlasPage,
+            spriteData.uvs,
+            width,
+            COLOR_WHITE,
+            spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP,
+            255u
+        );
         rnd += i * 73; // Add random prime
     }
-        /*const int ITER_STEPS = 3;
-        for (int i = 0; i < ITER_STEPS; ++i) {
-            addQuad(vertexData, f32v3(tileWorldPos.x + (i % 2) / 16.0f, tileWorldPos.y + i / (float)ITER_STEPS, tile.baseZPosition), spriteData, spriteData.uvs);
-        }*/
 }
 
-void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePosition, const SpriteData& spriteData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
+void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const SpriteData& spriteData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
+    bool shouldRandFlip = spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP;
     switch (spriteData.method) {
         case TileTextureMethod::SIMPLE: {
             // TODO: This shouldn't have to be hard coded to floor
             // We do not mesh TileShape::THIN here, it is a billboard
             if (shape == TileShape::BLOCK) {
-                addQuad(vertexData, tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)], QuadFacing::TOP, spriteData, spriteData.uvs);
+                quadMesh.addAxisAlignedQuad(
+                    tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                    spriteData.dimsMeters,
+                    spriteData.offset,
+                    QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                    spriteData.atlasPage,
+                    spriteData.uvs,
+                    COLOR_WHITE,
+                    shouldRandFlip
+                );
             }
             static_assert(enum_cast(TileShape::COUNT) == 2);
             break;
@@ -620,13 +401,31 @@ void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePo
             const ConnectedWallData& data = sConnectedWallData[exposedBits];
             if (data.data == 0) {
                 // We are fully surrounded, just render top
-                addQuad(vertexData, tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)], QuadFacing::TOP, spriteData, spriteData.uvs);
+                quadMesh.addAxisAlignedQuad(
+                    tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                    spriteData.dimsMeters,
+                    spriteData.offset,
+                    QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                    spriteData.atlasPage,
+                    spriteData.uvs,
+                    COLOR_WHITE,
+                    shouldRandFlip
+                );
             }
             else {
                 // Render top
                 // Check if we need to render the base layer first
                 if (data.a < 0x10) {
-                    addQuad(vertexData, tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)], QuadFacing::TOP, spriteData, spriteData.uvs);
+                    quadMesh.addAxisAlignedQuad(
+                        tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                        spriteData.dimsMeters,
+                        spriteData.offset,
+                        QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                        spriteData.atlasPage,
+                        spriteData.uvs,
+                        COLOR_WHITE,
+                        shouldRandFlip
+                    );
                 }
                 // Render up to 4 textures depending on configuration
                 f32v3 tilePosRoof = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)];
@@ -639,7 +438,17 @@ void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePo
                     uvs.x += offsets.x * uvs.z;
                     uvs.y += offsets.y * uvs.w;
                     tilePosRoof.z += 0.005f;
-                    addQuad(vertexData, tilePosRoof, QuadFacing::TOP, spriteData, uvs);
+
+                    quadMesh.addAxisAlignedQuad(
+                        tilePosRoof,
+                        spriteData.dimsMeters,
+                        spriteData.offset,
+                        QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                        spriteData.atlasPage,
+                        spriteData.uvs,
+                        COLOR_WHITE,
+                        shouldRandFlip
+                    );
                 }
 
                 // Get height offsets to adjacent tiles
@@ -665,7 +474,16 @@ void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePo
                         f32v4 uvs = spriteData.uvs;
                         uvs.x += offsets.x * uvs.z;
                         uvs.y += offsets.y * uvs.w;
-                        addQuad(vertexData, quadPos, quadFacing, spriteData, uvs);
+                        quadMesh.addAxisAlignedQuad(
+                            quadPos,
+                            spriteData.dimsMeters,
+                            spriteData.offset,
+                            QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                            spriteData.atlasPage,
+                            spriteData.uvs,
+                            COLOR_WHITE,
+                            shouldRandFlip
+                        );
 
                         // See if we need to add additional "tower" quads if we are exposed deeper on the bottom
                         for (int i = 1; i < heightDiffs[c]; ++i) {
@@ -694,7 +512,16 @@ void addBlock(std::vector<TileVertex>& vertexData, TileShape shape, f32v3 tilePo
                             // TODO: this resize here...
 
                             // TODO: Stretched quads?
-                            addQuad(vertexData, f32v3(quadPos.x, quadPos.y, quadPos.z - i), quadFacing, spriteData, uvs);
+                            quadMesh.addAxisAlignedQuad(
+                                f32v3(quadPos.x, quadPos.y, quadPos.z - i),
+                                spriteData.dimsMeters,
+                                spriteData.offset,
+                                QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                                spriteData.atlasPage,
+                                spriteData.uvs,
+                                COLOR_WHITE,
+                                shouldRandFlip
+                            );
                         }
                     }
                 }
@@ -717,19 +544,28 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     }
     
     ++mNumMeshTasksRunning;
+    assert(!chunk.mChunkRenderData.mIsBuildingBaseMesh);
     chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
 
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mMeshDirty = false;
     chunk.mChunkRenderData.mLODDirty = false;
     chunk.incRef();
+
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (!renderData.mChunkMesh) {
+        renderData.mChunkMesh = std::make_unique<QuadMesh>();
+        renderData.mBillboardMesh = std::make_unique<BillboardMesh>();
+    }
     
-    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
-        ChunkRenderData& renderData = chunk.mChunkRenderData;
+    Services::Threadpool::ref().addTask([&chunk, meshData, &renderData](ThreadPoolWorkerData* workerData) {
         const f32v2& chunkPos = chunk.getWorldPos();
 
-        std::vector<TileVertex>& vertexData = meshData->mTileVertices;
-        std::vector<BillboardVertex>& billboardVertexData = meshData->mBillboardVertices;
+        QuadMesh& quadMesh = *renderData.mChunkMesh;
+        quadMesh.reserveQuadCount(CHUNK_SIZE * 2); // Most chunks will have less than 2 quads per tile
+        BillboardMesh& billboardMesh = *renderData.mBillboardMesh;
+        billboardMesh.reserveQuadCount(CHUNK_SIZE); // Most chunks will have less than 1 quad per tile
+
         color3* lodData = meshData->mLODTexturePixelBuffer;
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
@@ -762,11 +598,11 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         f32v3 tilePosition(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition);
-                        addQuad(billboardVertexData, tilePosition, spriteData, spriteData.uvs);
+                        billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP));
                     }
                     else {
                         // Standard blocks
-                        addBlock(vertexData, tileData.shape, f32v3(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition), spriteData, index, chunk, layerIndex);
+                        addBlock(quadMesh, tileData.shape, f32v3(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition), spriteData, index, chunk, layerIndex);
                     }
                 }
             }
@@ -775,23 +611,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        if (!renderData.mChunkMesh) {
-            renderData.mChunkMesh = std::make_unique<QuadMesh>();
-        }
-        if (meshData->mTileVertices.size()) {
-            QuadMesh& mesh = *renderData.mChunkMesh;
-            mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), QuadMeshDrawMode::STATIC);
-            meshData->mTileVertices.clear();
-        }
-
-        if (!renderData.mBillboardMesh) {
-            renderData.mBillboardMesh = std::make_unique<BillboardMesh>();
-        }
-        if (meshData->mBillboardVertices.size()) {
-            BillboardMesh& mesh = *renderData.mBillboardMesh;
-            mesh.setData(meshData->mBillboardVertices.data(), meshData->mBillboardVertices.size(), QuadMeshDrawMode::DYNAMIC);
-            meshData->mBillboardVertices.clear();
-        }
+        renderData.mChunkMesh->finishMesh(QuadMeshDrawMode::DYNAMIC);
+        renderData.mBillboardMesh->finishMesh(QuadMeshDrawMode::DYNAMIC);
 
         // LOD
         uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
@@ -815,6 +636,7 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
     }
 
     ++mNumMeshTasksRunning;
+    assert(!chunk.mChunkRenderData.mIsBuildingBaseMesh);
     chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
     chunk.mChunkRenderData.mLODDirty = false;
     chunk.incRef();
@@ -861,24 +683,25 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
 bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
 
-    TileMeshData* meshData = tryGetFreeTileMeshData();
-    if (!meshData) {
-        return false;
-    }
-
     ++mNumMeshTasksRunning;
+    assert(!chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh);
     chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = true;
 
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mHighDetailFloraMeshDirty = false;
     chunk.incRef();
 
-    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
-        ChunkRenderData& renderData = chunk.mChunkRenderData;
-        const f32v2& chunkPos = chunk.getWorldPos();
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (!renderData.mHighDetailFloraMesh) {
+        renderData.mHighDetailFloraMesh = std::make_unique<QuadMesh>();
+    }
 
-        std::vector<TileVertex>& vertexData = meshData->mTileVertices;
-        std::vector<BillboardVertex>& billboardVertexData = meshData->mBillboardVertices;
+    Services::Threadpool::ref().addTask([&chunk, &renderData](ThreadPoolWorkerData* workerData) {
+        const f32v2& chunkPos = chunk.getWorldPos();
+        QuadMesh& floraMesh = *renderData.mHighDetailFloraMesh;
+        // This is usually not enough but might as well try
+        // TODO: Reserve based on graphics settings
+        floraMesh.reserveQuadCount(CHUNK_SIZE * 3);
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
@@ -899,26 +722,18 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
                         Tile rightTile = chunk.getRightTileHandle(index).tile;
                         Tile topTile = chunk.getTopTileHandle(index).tile;
                     
-                        addTileFlora(vertexData, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
+                        addTileFlora(floraMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
                     }
                 }
             }
         }
-    }, [this, &chunk, meshData]() {
+    }, [this, &chunk]() {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        if (!renderData.mHighDetailFloraMesh) {
-            renderData.mHighDetailFloraMesh = std::make_unique<QuadMesh>();
-        }
-        if (meshData->mTileVertices.size()) {
-            QuadMesh& mesh = *renderData.mHighDetailFloraMesh;
-            mesh.setData(meshData->mTileVertices.data(), meshData->mTileVertices.size(), QuadMeshDrawMode::STATIC);
-            meshData->mTileVertices.clear();
-        }
+        renderData.mHighDetailFloraMesh->finishMesh(QuadMeshDrawMode::DYNAMIC);
 
         // Recycle and flag as free
-        mFreeTileMeshData.push_back(meshData);
         chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = false;
 
         // Update refcount
