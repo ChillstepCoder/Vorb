@@ -597,8 +597,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     // Flora mesh ONLY
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
-                        f32v3 tilePosition(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition);
-                        billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP));
+                        f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
+                        billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u);
                     }
                     else {
                         // Standard blocks

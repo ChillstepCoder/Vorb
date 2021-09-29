@@ -274,15 +274,9 @@ void BillboardMesh::reserveQuadCount(size_t count) {
     mVertexData.reserve(count * 4u);
 }
 
-void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal) {
+void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence) {
     mVertexData.resize(mVertexData.size() + 4);
     BillboardVertex* verts = &mVertexData.back() - 3;
-
-    //// Center the sprite
-    //// TODO: This shouldnt be hard coded to xy
-    //const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
-    tilePosition.x += 0.5f;
-    tilePosition.y += 0.5f;
 
     f32v4 adjustedUvs;
     if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
@@ -298,8 +292,9 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 sprite
         adjustedUvs.z = uvs.z - UV_EPSILON_2;
         adjustedUvs.w = uvs.w - UV_EPSILON_2;
     }
-
-    const f32 halfX = xyDims.x * 0.5f;
+    i16v2 compressedOffset = i16v2(xyOffset * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
+    i16v2 compressedDims = i16v2(xyDims * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
+    const i16 halfX = xyDims.x * 0.5f * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO;
 
     { // Bottom Left
         BillboardVertex& vbl = verts[0];
@@ -310,8 +305,8 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 sprite
         vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbl.color = color;
         vbl.atlasPage = spriteAtlasPage;
-        vbl.xzOffset.x = -halfX;
-        vbl.xzOffset.y = 0.0f;
+        vbl.xzOffset.x = compressedOffset.x - halfX;
+        vbl.xzOffset.y = compressedOffset.y;
     }
     { // Bottom Right
         BillboardVertex& vbr = verts[1];
@@ -322,8 +317,8 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 sprite
         vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbr.color = color;
         vbr.atlasPage = spriteAtlasPage;
-        vbr.xzOffset.x = halfX;
-        vbr.xzOffset.y = 0.0f;
+        vbr.xzOffset.x = compressedOffset.x + halfX;
+        vbr.xzOffset.y = compressedOffset.y;
     }
 
     const f32 topZ = tilePosition.z + xyDims.y;
@@ -336,9 +331,9 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 sprite
         vtl.uvs.y = adjustedUvs.y;
         vtl.color = color;
         vtl.atlasPage = spriteAtlasPage;
-        vtl.xzOffset.x = -halfX;
-        vtl.xzOffset.y = xyDims.y;
-        vtl.windInfluence = 255u;
+        vtl.xzOffset.x = compressedOffset.x - halfX;
+        vtl.xzOffset.y = compressedOffset.y + compressedDims.y;
+        vtl.windInfluence = windInfluence;
     }
     { // Top Right
         BillboardVertex& vtr = verts[3];
@@ -349,9 +344,9 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 sprite
         vtr.uvs.y = adjustedUvs.y;
         vtr.color = color;
         vtr.atlasPage = spriteAtlasPage;
-        vtr.xzOffset.x = halfX;
-        vtr.xzOffset.y = xyDims.y;
-        vtr.windInfluence = 255u;
+        vtr.xzOffset.x = compressedOffset.x + halfX;
+        vtr.xzOffset.y = compressedOffset.y + compressedDims.y;
+        vtr.windInfluence = windInfluence;
     }
 }
 
@@ -374,7 +369,7 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
 
         program.enableVertexAttribArrays();
         glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, rootPos));
-        glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
+        glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
         glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, uvs));
         glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, atlasPage));
         glVertexAttribPointer(program.getAttribute("vWindInfluence"), 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, windInfluence));

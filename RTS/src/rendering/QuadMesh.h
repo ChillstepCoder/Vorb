@@ -63,7 +63,7 @@ private:
 class BillboardMesh : public Mesh<BillboardVertex> {
 public:
     void reserveQuadCount(size_t count);
-    void addQuad(f32v3 tilePosition, const f32v2& xyDims, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal);
+    void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence);
     void finishMesh(QuadMeshDrawMode drawMode);
 
 private:

@@ -26,21 +26,22 @@ public:
 // Need power of 2 alignment
 static_assert(sizeof(TileVertex) == 32, "Power of 2 byte alignment needed");
 
+constexpr float BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO = 100.0f;
 struct BillboardVertex {
 public:
     BillboardVertex() {};
-    BillboardVertex(const f32v3& pos, const f32v2& xzOffset, const f32v2& uvs, const color4& color, ui16 atlasPage) :
+    BillboardVertex(const f32v3& pos, const i16v2& xzOffset, const f32v2& uvs, const color4& color, ui16 atlasPage) :
         rootPos(pos), xzOffset(xzOffset), uvs(uvs), color(color), atlasPage(atlasPage) {
     }
 
     f32v3 rootPos;
-    f32v2 xzOffset; // TOOD: ui16v2?
+    i16v2 xzOffset;
     f32v2 uvs; //TODO: ui16v2?
     color4 color;
     ui16 atlasPage;
     ui8 windInfluence = 0;
-    ui8 PADDING_NEED_TO_COMPRESS[29];
+    ui8 PADDING;
 };
 // Need power of 2 alignment
 // 64 is bad!!!
-static_assert(sizeof(BillboardVertex) == 64, "Power of 2 byte alignment needed");
+static_assert(sizeof(BillboardVertex) == 32, "Power of 2 byte alignment needed");

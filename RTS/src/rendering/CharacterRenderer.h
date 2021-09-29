@@ -6,6 +6,7 @@
 class MaterialRenderer;
 class MaterialManager;
 struct SpriteData;
+class BillboardMesh;
 class Material;
 class Camera3D;
 struct BillboardVertex;
@@ -17,7 +18,7 @@ public:
 	void render(const Camera3D& camera, const MaterialRenderer& materialRenderer, const CharacterModel& model, const f32v3& position, float angle, float alpha);
 
 private:
-	void buildPart(std::vector<BillboardVertex>& vertexData, const f32v3& rootPos, const f32v2& offset, const SpriteData& spriteData, bool shouldFlip, float width, float depth, float alpha);
+	void buildPart(BillboardMesh& mesh, const f32v3& rootPos, const f32v2& offset, const SpriteData& spriteData, bool shouldFlip, float width, float alpha);
 
 	const Material* mMaterial;
 };

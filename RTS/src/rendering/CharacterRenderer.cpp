@@ -49,7 +49,7 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
 
     //std::cout << angle << " " << index << std::endl;
 
-    std::vector<BillboardVertex> verts;
+    BillboardMesh mesh;
     const f32v3 cameraOffset2D(-camera.getDirection().x * 0.09f, -camera.getDirection().y * 0.09f, 0.0f);
     
     static const float SIZE = 1.4f;
@@ -57,13 +57,12 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
     static const float HEAD_OFFSET_MULT_X = 0.04f;
     const f32v2 headOffset = f32v2(SIZE * HEAD_OFFSET_MULT_X * headOffsetX, SIZE * HEAD_OFFSET_MULT_Y);
     const f32v2 bodyOffset = f32v2(0.0f, 0.0f * SIZE * 0.25f); // TODO: THIS IS DISABLED
-    buildPart(verts, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, 0.0f, alpha);
-    buildPart(verts, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, 0.0f, alpha);
-    buildPart(verts, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, 0.0f, alpha);
+    buildPart(mesh, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, alpha);
+    buildPart(mesh, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, alpha);
+    buildPart(mesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
 
     // TODO: Store in component
-    BillboardMesh mesh;
-    mesh.setData(verts.data(), verts.size(), QuadMeshDrawMode::STREAM);
+    mesh.finishMesh(QuadMeshDrawMode::STREAM);
     materialRenderer.renderMesh(mesh, *mMaterial);
     // Render shadow part
     // TODO: move over to decal system
@@ -77,86 +76,6 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
 constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
 
-void CharacterRenderer::buildPart(std::vector<BillboardVertex>& vertexData, const f32v3& rootPos, const f32v2& offset, const SpriteData& spriteData, bool shouldFlip, float width, float depth, float alpha) {
-    vertexData.resize(vertexData.size() + 4);
-
-    BillboardVertex* verts = &vertexData.back() - 3;
-
-    //// Center the sprite
-    //// TODO: This shouldn't be hard coded to xy
-    //const f32v2 offset(-(float)((spriteData.dimsMeters.x - 1) / 2) + spriteData.offset.x, spriteData.offset.y);
-    //tilePosition.x += 0.5f;
-    //tilePosition.y += 0.5f;
-
-    f32v4 adjustedUvs;
-    const f32v4& uvs = spriteData.uvs;
-    if (shouldFlip) {
-        // Flip horizontal
-        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-    else {
-        adjustedUvs.x = uvs.x + UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = uvs.z - UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-
-    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)(alpha * 255));
-    color4 bottomColor = topColor;
-    const f32 halfX = width * 0.5f;
-
-    { // Bottom Left
-        BillboardVertex& vbl = verts[0];
-        vbl.rootPos.x = rootPos.x;
-        vbl.rootPos.y = rootPos.y;
-        vbl.rootPos.z = rootPos.z;
-        vbl.uvs.x = adjustedUvs.x;
-        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbl.color = bottomColor;
-        vbl.atlasPage = spriteData.atlasPage;
-        vbl.xzOffset.x = offset.x - halfX;
-        vbl.xzOffset.y = offset.y;
-    }
-    { // Bottom Right
-        BillboardVertex& vbr = verts[1];
-        vbr.rootPos.x = rootPos.x;
-        vbr.rootPos.y = rootPos.y;
-        vbr.rootPos.z = rootPos.z;
-        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbr.color = bottomColor;
-        vbr.atlasPage = spriteData.atlasPage;
-        vbr.xzOffset.x = offset.x + halfX;
-        vbr.xzOffset.y = offset.y;
-    }
-
-    { // Top Left
-        BillboardVertex& vtl = verts[2];
-        vtl.rootPos.x = rootPos.x;
-        vtl.rootPos.y = rootPos.y;
-        vtl.rootPos.z = rootPos.z;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = topColor;
-        vtl.atlasPage = spriteData.atlasPage;
-        vtl.xzOffset.x = offset.x - halfX;
-        vtl.xzOffset.y = offset.y + width;
-        vtl.windInfluence = 0;
-    }
-    { // Top Right
-        BillboardVertex& vtr = verts[3];
-        vtr.rootPos.x = rootPos.x;
-        vtr.rootPos.y = rootPos.y;
-        vtr.rootPos.z = rootPos.z;
-        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vtr.uvs.y = adjustedUvs.y;
-        vtr.color = topColor;
-        vtr.atlasPage = spriteData.atlasPage;
-        vtr.xzOffset.x = offset.x + halfX;
-        vtr.xzOffset.y = offset.y + width;
-        vtr.windInfluence = 0;
-    }
+void CharacterRenderer::buildPart(BillboardMesh& mesh, const f32v3& rootPos, const f32v2& offset, const SpriteData& spriteData, bool shouldFlip, float width, float alpha) {
+    mesh.addQuad(rootPos, f32v2(width, width), offset, spriteData.atlasPage, spriteData.uvs, color4(1.0f, 1.0f, 1.0f, alpha), shouldFlip, 0u);
 }
