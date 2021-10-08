@@ -323,39 +323,6 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
     return TileHandle();
 }
 
-const ItemStack* World::tryGetItemStackAtWorldPos(const f32v2& worldPos) const {
-	const Chunk& chunk = getChunkAtPosition(worldPos);
-	if (chunk.getState() == ChunkState::FINISHED) {
-		// TODO: Utility?
-		unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-		unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return chunk.tryGetItemStackAt(TileIndex(x, y));
-	}
-	return nullptr;
-}
-
-bool World::tryAddFullItemStackAt(const f32v2& worldPos, ItemStack itemStack) {
-    Chunk& chunk = getChunkAtPosition(worldPos);
-    if (chunk.getState() == ChunkState::FINISHED) {
-        // TODO: Utility?
-        unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk.tryAddFullItemStackAt(TileIndex(x, y), itemStack);
-    }
-    return false;
-}
-
-ItemStack World::tryAddPartialItemStackAt(const f32v2& worldPos, ItemStack itemStack) {
-    Chunk& chunk = getChunkAtPosition(worldPos);
-    if (chunk.getState() == ChunkState::FINISHED) {
-        // TODO: Utility?
-        unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk.tryAddPartialItemStackAt(TileIndex(x, y), itemStack);
-    }
-    return itemStack;
-}
-
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
 	for (auto&& chunk : mVisibleChunks) {
 		func(*chunk);

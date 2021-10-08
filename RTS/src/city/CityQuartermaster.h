@@ -17,6 +17,8 @@ public:
 
     ItemStockpile* tryGetClosestStockpileToPoint(const ui32v2 position);
 
+    const std::vector<std::unique_ptr<ItemStockpile>>& getStockpiles() const { return mAllStockpiles; }
+
 
 private:
     bool checkStockpileOverlap(const ui32AABB2& aabb) const;

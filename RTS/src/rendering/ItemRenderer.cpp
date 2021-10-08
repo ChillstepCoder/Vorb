@@ -1,125 +1,169 @@
 #include "stdafx.h"
 #include "ItemRenderer.h"
 #include "item/ItemRepository.h"
+#include "item/ItemStockpile.h"
+
+#include "services/Services.h"
 
 #include "ResourceManager.h"
 #include "MaterialRenderer.h"
+#include "MaterialManager.h"
 
-BatchedItemRenderer::BatchedItemRenderer(ResourceManager& resourceManager, MaterialRenderer& materialRenderer)
+ItemRenderer::ItemRenderer(ResourceManager& resourceManager, MaterialRenderer& materialRenderer)
     : mResourceManager(resourceManager)
     , mMaterialRenderer(materialRenderer)
     , mItemRepository(resourceManager.getItemRepository()) {
 
+    mItemMeshMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+    mItemBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
+
 }
 
-BatchID BatchedItemRenderer::beginNewBatch(ui32 reserveQuadCount /*= 0*/) {
-    assert(mInProgressBatch == INVALID_BATCH_ID);
-
-    BatchID id = mItemMeshes.size();
-    mItemMeshes.emplace_back();
-    mInProgressBatch = id;
-    mInProgressBatchData.clear();
-    if (reserveQuadCount) {
-        mInProgressBatchData.reserve(reserveQuadCount);
+void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) const {
+    ItemStockpileRenderData& renderData = stockpile.mRenderData;
+    // TODO: Multithread?
+    if (!renderData.mBillboardMesh) {
+        renderData.mBillboardMesh = std::make_unique<BillboardMesh>();
     }
-    return id;
-}
+    BillboardMesh& mesh = *renderData.mBillboardMesh;
 
-void BatchedItemRenderer::beginBatch(BatchID batchID, ui32 reserveQuadCount /*= 0*/) {
-    assert(mInProgressBatch == INVALID_BATCH_ID);
-    assert(batchID < mItemMeshes.size());
+    mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
 
-    mItemMeshes[batchID].init();
-    mInProgressBatch = batchID;
-    mInProgressBatchData.clear();
-    if (reserveQuadCount) {
-        mInProgressBatchData.reserve(reserveQuadCount);
+    for (auto& it : stockpile.mItemContents) {
+        ItemID itemID = it.first;
+        const ItemStockpileRecord& record = it.second;
+
+        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+        const Item& item = itemRepo.getItem(itemID);
+        // Only points are billboards
+        if (item.mShape != ItemStorageShape::POINT) {
+            continue;
+        }
+
+        const SpriteData& spriteData = item.mSpriteData;
+
+        for (ui32 index : record.stackLocations) {
+            const ItemStack& stack = stockpile.mStorage[index];
+            // TODO: Z
+            ui32v2 pos2d = stockpile.mAABB.pos + ui32v2(index / stockpile.mAABB.width, index % stockpile.mAABB.width);
+            f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
+            for (ui32 i = 0; i < stack.quantity; ++i) {
+                f32v3 billboardPos = pos;
+                // TODO: Not just 5 by 5
+                constexpr ui32 w = 5;
+                constexpr float spacingRatio = 1.0f / w;
+                billboardPos.x += (i % w) * spacingRatio;
+                billboardPos.y += ((i % (w * w)) / w) * spacingRatio;
+                billboardPos.z += (i / (w * w)) * spacingRatio;
+                mesh.addQuad(billboardPos, spriteData.dimsMeters * spacingRatio, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false, 0u);
+            }
+        }
     }
+
+    mesh.finishMesh(QuadMeshDrawMode::DYNAMIC);
+
+    renderData.mBillboardMeshDirty = false;
 }
 
-void BatchedItemRenderer::addItemStackToBatch(const ui32v2& pos, const ItemStack& itemStack) {
-    assert(mInProgressBatch != INVALID_BATCH_ID);
-    
-    static constexpr float EPSILON = 0.005f;
-    static constexpr f32 UV_EPSILON = 0.0001f;
-    static constexpr f32 UV_EPSILON_2 = 0.0002f;
+void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const {
 
-    mInProgressBatchData.resize(mInProgressBatchData.size() + 4);
-    TileVertex* verts = &mInProgressBatchData.back() - 3;
+    ItemStockpileRenderData& renderData = stockpile.mRenderData;
+    // TODO: Multithread?
+    if (!renderData.mQuadMesh) {
+        renderData.mQuadMesh = std::make_unique<QuadMesh>();
+    }
+    QuadMesh& mesh = *renderData.mQuadMesh;
 
+    mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
+
+    for (auto& it : stockpile.mItemContents) {
+        ItemID itemID = it.first;
+        const ItemStockpileRecord& record = it.second;
+
+        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+        const Item& item = itemRepo.getItem(itemID);
+        // Only points are billboards
+        switch (item.mShape) {
+            case ItemStorageShape::POINT:
+                continue; // These are billboards
+            case ItemStorageShape::PLANK:
+                addItemStackPlanks(record, item, stockpile, mesh);
+                break;
+            case ItemStorageShape::LOG:
+                break;
+            case ItemStorageShape::INGOT:
+                break;
+            default:
+                break;
+        }
+        static_assert(enum_cast(ItemStorageShape::COUNT) == 4, "Update for new mesh type");
+    }
+
+    mesh.finishMesh(QuadMeshDrawMode::DYNAMIC);
+
+    renderData.mBillboardMeshDirty = false;
+}
+
+void ItemRenderer::addItemStackToMesh(BillboardMesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
+{
     const Item& item = mItemRepository.getItem(itemStack.id);
     const SpriteData& spriteData = item.mSpriteData;
     const f32v4& uvs = spriteData.uvs;
-    f32v4 adjustedUvs;
-    adjustedUvs.x = uvs.x + UV_EPSILON;
-    adjustedUvs.y = uvs.y + UV_EPSILON;
-    adjustedUvs.z = uvs.z - UV_EPSILON_2;
-    adjustedUvs.w = uvs.w - UV_EPSILON_2;
-
-    color4 topColor = color4((ui8)255u, (ui8)255u, (ui8)255u);
-    color4 bottomColor = topColor;
-
-    // TODO: Variable Z
-    f32v3 currentPos(pos.x, pos.y, 0.1f);
-
-    { // Bottom Left
-        TileVertex& vbl = verts[0];
-        vbl.pos = currentPos;
-        vbl.uvs.x = adjustedUvs.x;
-        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbl.color = bottomColor;
-        vbl.atlasPage = spriteData.atlasPage;
-    }
-    { // Bottom Right
-        TileVertex& vbr = verts[1];
-        vbr.pos = currentPos;
-        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbr.color = bottomColor;
-        vbr.atlasPage = spriteData.atlasPage;
-        vbr.pos.x += spriteData.dimsMeters.x + EPSILON;
-    }
-
-    { // Top Left
-        TileVertex& vtl = verts[2];
-        vtl.pos = currentPos;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = topColor;
-        vtl.atlasPage = spriteData.atlasPage;
-        vtl.pos.y += spriteData.dimsMeters.y + EPSILON;
-    }
-    { // Top Right
-        TileVertex& vtr = verts[3];
-        vtr.pos = currentPos;
-        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vtr.uvs.y = adjustedUvs.y;
-        vtr.color = topColor;
-        vtr.atlasPage = spriteData.atlasPage;
-        vtr.pos.x += spriteData.dimsMeters.x + EPSILON;
-        vtr.pos.y += spriteData.dimsMeters.y + EPSILON;
-    }
+    mesh.addQuad(pos, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP, 0u);
 }
 
-void BatchedItemRenderer::finishBatch(BatchID batchID) {
-    assert(mInProgressBatch != INVALID_BATCH_ID);
-    // TODO: Fix texture param
-    mItemMeshes[mInProgressBatch].setData(mInProgressBatchData.data(), mInProgressBatchData.size(), QuadMeshDrawMode::STATIC);
-    mInProgressBatch = INVALID_BATCH_ID;
-}
-
-void BatchedItemRenderer::deleteBatch(BatchID batchID) {
-    assert(mInProgressBatch == INVALID_BATCH_ID);
-    assert(batchID < mItemMeshes.size());
-    mItemMeshes[batchID].destroy();
-}
-
-void BatchedItemRenderer::renderBatches()
+void ItemRenderer::renderStockpile(const ItemStockpile& stockpile) const
 {
+    ItemStockpileRenderData& renderData = stockpile.mRenderData;
 
+    // TODO: Multithreaded?
+    if (renderData.mBillboardMeshDirty) {
+        updateStockpileBillboardMesh(stockpile);
+    }
+
+    if (renderData.mQuadMeshDirty) {
+        updateStockpileQuadMesh(stockpile);
+    }
+
+    if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
+        renderMesh(*renderData.mBillboardMesh);
+    }
+    if (renderData.mQuadMesh && renderData.mQuadMesh->isValid()) {
+        renderMesh(*renderData.mQuadMesh);
+    }
 }
 
-void BatchedItemRenderer::renderItemStackOnGroundSingle(const ui32v2& pos, const ItemStack& itemStack)
-{
+void ItemRenderer::renderMesh(const BillboardMesh& itemMesh) const {
+    mMaterialRenderer.renderMesh(itemMesh, *mItemBillboardMaterial);
+}
+
+void ItemRenderer::renderMesh(const QuadMesh& itemMesh) const {
+    mMaterialRenderer.renderMesh(itemMesh, *mItemMeshMaterial);
+}
+
+void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const {
+
+    const SpriteData& spriteData = item.mSpriteData;
+
+    for (ui32 index : record.stackLocations) {
+        const ItemStack& stack = stockpile.mStorage[index];
+        // TODO: Z
+        ui32v2 pos2d = stockpile.mAABB.pos + ui32v2(index / stockpile.mAABB.width, index % stockpile.mAABB.width);
+        f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
+        for (ui32 i = 0; i < stack.quantity; ++i) {
+            f32v3 boxPos = pos;
+            // TODO: Not just 5 by 5
+            constexpr ui32 w = 5;
+            constexpr float spacingRatio = 1.0f / w;
+            boxPos.x += (i % w) * spacingRatio;
+            boxPos.y += ((i % (w * w)) / w) * spacingRatio;
+            boxPos.z += (i / (w * w)) * spacingRatio;
+            // TODO: Bottom
+            // TODO: Cull edges, merging
+            for (int i = enum_cast(QuadFacing::LEFT); i <= enum_cast(QuadFacing::TOP); ++i) {
+                mesh.addAxisAlignedQuad(boxPos + OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[i] * spacingRatio, f32v2(spacingRatio), f32v2(0.0f), QUAD_FACING_AXIS[i], spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+            }
+        }
+    }
 
 }

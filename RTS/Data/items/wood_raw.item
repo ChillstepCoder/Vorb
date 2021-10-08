@@ -3,3 +3,5 @@ wood_raw:
   type: material
   value: 0.2
   weight: 0.4
+  stack_size: 100
+  shape: plank

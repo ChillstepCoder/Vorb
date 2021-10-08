@@ -22,8 +22,9 @@ void main() {
     fUV = vUV;
     fAtlasPage = vAtlasPage;
 	vec4 vertexPosition = vPosition;
-	vertexPosition.z += vXZOffset.y;
-	vertexPosition.xyz += CameraRight * vXZOffset.x;
+	vec2 xzOffsetUncompressed = vXZOffset / 100.0; // Matches C++ compression ratio
+	vertexPosition.z += xzOffsetUncompressed.y;
+	vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
 	
 	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
     
@@ -38,7 +39,7 @@ void main() {
 	vec3 glPosNoX = vec3(0.0, min(glPos.y, -1.0), glPos.z);
 	float angle = 1.0 - dot(screenCamera.xyz, normalize(glPosNoX));
 	
-	angle = min(pow(angle, 0.4) * vXZOffset.y, 1.0);
+	angle = min(pow(angle, 0.4) * xzOffsetUncompressed.y, 1.0);
 	worldPos.xyz += CameraFront * angle;
 	glPos = VP * worldPos;
 	

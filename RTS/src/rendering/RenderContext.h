@@ -7,7 +7,7 @@ class Material;
 class MaterialRenderer;
 class ParticleSystemRenderer;
 class CityDebugRenderer;
-class BatchedItemRenderer;
+class ItemRenderer;
 class CharacterRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
@@ -84,7 +84,7 @@ private:
     mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
-    mutable std::unique_ptr<BatchedItemRenderer> mBatchedItemRenderer;
+    mutable std::unique_ptr<ItemRenderer> mItemRenderer;
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
 
     // UI

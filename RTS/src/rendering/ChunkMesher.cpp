@@ -225,44 +225,6 @@ void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-// TODO: Do we need bottom?
-enum class QuadFacing {
-    LEFT,
-    FRONT,
-    RIGHT,
-    BACK,
-    TOP,
-    BOTTOM,
-    COUNT
-};
-
-const i32v2 QUAD_FACING_AXIS[enum_cast(QuadFacing::COUNT)] = {
-    i32v2(AXIS_Y, AXIS_Z), // LEFT
-    i32v2(AXIS_X, AXIS_Z),  // FRONT
-    i32v2(AXIS_Y, AXIS_Z),  // RIGHT
-    i32v2(AXIS_X, AXIS_Z), // BACK
-    i32v2(AXIS_X, AXIS_Y),  // TOP
-    i32v2(AXIS_X, AXIS_Y)   // BOTTOM
-};
-
-const i32v3 QUAD_FACING_ADJACENT_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
-    i32v3(-1, 0, 0), // LEFT
-    i32v3(0, -1, 0), // FRONT
-    i32v3(1, 0, 0), // RIGHT
-    i32v3(0, 1, 0), // BACK
-    i32v3(0, 0, 1),  // TOP
-    i32v3(0, 0, -1)  // BOTTOM
-};
-
-const f32v3 BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
-    f32v3(0, 0, -1.0), // LEFT
-    f32v3(0, 0, -1.0), // FRONT
-    f32v3(1.0f, 0, -1.0), // RIGHT
-    f32v3(0, 1.0f, -1.0), // BACK
-    f32v3(0, 0, 0.0f),  // TOP
-    f32v3(0, 0, -1.0) // BOTTOM
-};
-
 const ExposedNeighborBits EXPOSED_NEIGHBOR_CARDINAL[4] = {
     EN_BOTTOM,
     EN_LEFT,
@@ -445,7 +407,7 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
                         spriteData.offset,
                         QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
                         spriteData.atlasPage,
-                        spriteData.uvs,
+                        uvs,
                         COLOR_WHITE,
                         shouldRandFlip
                     );
@@ -480,7 +442,7 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
                             spriteData.offset,
                             QUAD_FACING_AXIS[enum_cast(quadFacing)],
                             spriteData.atlasPage,
-                            spriteData.uvs,
+                            uvs,
                             COLOR_WHITE,
                             shouldRandFlip
                         );
@@ -518,7 +480,7 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
                                 spriteData.offset,
                                 QUAD_FACING_AXIS[enum_cast(quadFacing)],
                                 spriteData.atlasPage,
-                                spriteData.uvs,
+                                uvs,
                                 COLOR_WHITE,
                                 shouldRandFlip
                             );

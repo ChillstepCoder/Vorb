@@ -12,8 +12,8 @@ class CityDebugRenderer
 public:
     void renderCityPlannerDebug(const CityPlanner& cityPlanner) const;
     void renderCityBuilderDebug(const CityBuilder& cityBuilder) const;
-    void renderCityPlotterDebug(const CityPlotter& cityPotter) const;
-    void renderCityQuartermasterDebug(const CityQuartermaster& cityPotter) const;
+    void renderCityPlotterDebug(const CityPlotter& cityPlotter) const;
+    void renderCityQuartermasterDebug(const CityQuartermaster& cityQuartermaster) const;
 
     void finishRenderFrame();
     void clearMeshes();

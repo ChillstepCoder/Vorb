@@ -19,6 +19,9 @@
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
 
+// TODO: Move to renderer?
+#include "city/CityQuartermaster.h"
+
 #include "camera/ICamera.h"
 #include "camera/Camera3D.h"
 
@@ -129,7 +132,7 @@ void RenderContext::initPostLoad() {
     mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
     mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-    mBatchedItemRenderer = std::make_unique<BatchedItemRenderer>(mResourceManager, *mMaterialRenderer);
+    mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
     checkGlError("Renderer init");
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
     checkGlError("Init texture manipulator");
@@ -225,7 +228,17 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
-    
+
+    // Render city stuff such as stockpiles
+    const CityGraph& cities = mWorld.getCities();
+    for (auto&& city : cities.mNodes) {
+        // Stockpiles
+        const CityQuartermaster& quarterMaster = city->getCityQuartermaster();
+        for (auto& it : quarterMaster.getStockpiles()) {
+            mItemRenderer->renderStockpile(*it);
+        }
+    }
+
     // Sky
     mSkyBox->render(*mMaterialRenderer);
 

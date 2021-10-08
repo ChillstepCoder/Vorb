@@ -108,6 +108,12 @@ constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 constexpr ui16 INVALID_TILE_INDEX = 0xffff;
 
+// Enum cast
+template<typename E>
+constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
 // Cartesian
 enum class Cartesian {
     DOWN = 0, //-y  south
@@ -161,6 +167,54 @@ enum AXIS_3D {
     AXIS_Z = 2
 };
 
+// QUAD FACINGS
+// TODO: Do we need bottom?
+enum class QuadFacing {
+    LEFT,
+    FRONT,
+    RIGHT,
+    BACK,
+    TOP,
+    BOTTOM,
+    COUNT
+};
+
+const i32v2 QUAD_FACING_AXIS[enum_cast(QuadFacing::COUNT)] = {
+    i32v2(AXIS_Y, AXIS_Z), // LEFT
+    i32v2(AXIS_X, AXIS_Z),  // FRONT
+    i32v2(AXIS_Y, AXIS_Z),  // RIGHT
+    i32v2(AXIS_X, AXIS_Z), // BACK
+    i32v2(AXIS_X, AXIS_Y),  // TOP
+    i32v2(AXIS_X, AXIS_Y)   // BOTTOM
+};
+
+const i32v3 QUAD_FACING_ADJACENT_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+    i32v3(-1, 0, 0), // LEFT
+    i32v3(0, -1, 0), // FRONT
+    i32v3(1, 0, 0), // RIGHT
+    i32v3(0, 1, 0), // BACK
+    i32v3(0, 0, 1),  // TOP
+    i32v3(0, 0, -1)  // BOTTOM
+};
+
+const f32v3 BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+    f32v3(0, 0, -1.0), // LEFT
+    f32v3(0, 0, -1.0), // FRONT
+    f32v3(1.0f, 0, -1.0), // RIGHT
+    f32v3(0, 1.0f, -1.0), // BACK
+    f32v3(0, 0, 0.0f),  // TOP
+    f32v3(0, 0, -1.0) // BOTTOM
+};
+
+const f32v3 OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+    f32v3(0, 0, 0.0), // LEFT
+    f32v3(0, 0, 0.0), // FRONT
+    f32v3(1.0f, 0, 0.0), // RIGHT
+    f32v3(0, 1.0f, 0.0), // BACK
+    f32v3(0, 0, 1.0f),  // TOP
+    f32v3(0, 0, 0.0) // BOTTOM
+};
+
 
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
@@ -188,12 +242,6 @@ struct TileIndex {
 // Items
 typedef ui32 ItemID;
 constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
-
-// Enum cast
-template<typename E>
-constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
-	return static_cast<typename std::underlying_type<E>::type>(e);
-}
 
 // **************** BEBUG *****************
 extern bool s_debugToggle;

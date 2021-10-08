@@ -91,7 +91,7 @@ void ResourceManager::loadFiles() {
 
     // Load item definitions
     for (auto&& entry : mItemFiles) {
-        mItemRepository->loadItemFile(entry);
+        mItemRepository->loadItemFile(entry, *mSpriteRepository);
     }
 
     // Load Tiles

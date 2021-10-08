@@ -102,15 +102,15 @@ void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) c
     }
 }
 
-void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) const {
+void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) const {
 
     if (!mNeedsMeshes) {
         return;
     }
 
     // Render districts
-    for (size_t i = 0; i < cityPotter.mDistricts.size(); ++i) {
-        const CityDistrict& district = *cityPotter.mDistricts[i];
+    for (size_t i = 0; i < cityPlotter.mDistricts.size(); ++i) {
+        const CityDistrict& district = *cityPlotter.mDistricts[i];
         color4 color;
         switch (district.type) {
             case DistrictTypes::Rural:
@@ -141,8 +141,8 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
     }
 
     // Render plots
-    for (size_t i = 0; i < cityPotter.mPlots.size(); ++i) {
-        const auto& plot = cityPotter.mPlots[i];
+    for (size_t i = 0; i < cityPlotter.mPlots.size(); ++i) {
+        const auto& plot = cityPlotter.mPlots[i];
         color4 color;
         if (i == 0) {
             // City center
@@ -156,9 +156,9 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
     }
 }
 
-void CityDebugRenderer::renderCityQuartermasterDebug(const CityQuartermaster& cityPotter) const
+void CityDebugRenderer::renderCityQuartermasterDebug(const CityQuartermaster& cityQuartermaster) const
 {
-    for (auto&& stockpile : cityPotter.mAllStockpiles) {
+    for (auto&& stockpile : cityQuartermaster.mAllStockpiles) {
         stockpile->renderDebug();
     }
 }

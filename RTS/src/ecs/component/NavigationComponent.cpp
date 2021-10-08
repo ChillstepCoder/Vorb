@@ -183,8 +183,10 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
                 updateComponentSimpleLinear(entity, navCmp, physCmp, world);
                 break;
             default:
-                assert(false);
+				// TODO: This isn't supposed to happen maybe? :thinkies:
+				continue;
 		}
+		static_assert((int)NavigationType::INVALID == 2, "Update for new nav");
 	}
 }
 

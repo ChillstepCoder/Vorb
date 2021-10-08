@@ -215,12 +215,6 @@ public:
 		--mRefCount;
 	}
 
-	// Items
-	const ItemStack* tryGetItemStackAt(TileIndex i) const; // Do not hold onto this pointer, it will invalidate
-	bool tryAddFullItemStackAt(TileIndex i, ItemStack itemStack);
-	// Returns remaining item stack, which can be 0
-	ItemStack tryAddPartialItemStackAt(TileIndex i, ItemStack itemStack);
-
 private:
 
 	void setTileFromGeneration(TileIndex i, Tile&& tile) {
@@ -231,12 +225,6 @@ private:
 	f32v2 mWorldPos = f32v2(0.0f);
 	f32AABB3 mAABB = f32AABB3(0.0f);
 	std::vector<Tile> mTiles; // TODO: Memory recycler
-	// TODO: Custom data structure?
-	// TODO: Morton order + lower/upper bound to find closest?
-	// TODO: Only track loose items, let stockpiles track their own items? Problem is 
-	// then you run into item conflicts, have to check stockpile AND loose? or just pass ownership of loose
-	// to stockpile even if it doesn't belong?
-	std::map<TileIndex, ItemStack> mItemsOnFloor;
 	ChunkState mState = ChunkState::INVALID;
 
 	// Refcount for threading

@@ -19,10 +19,21 @@ enum class ItemType {
 };
 KEG_ENUM_DECL(ItemType);
 
+enum class ItemStorageShape {
+    POINT,
+    QUAD_SHAPES_START,
+    PLANK = QUAD_SHAPES_START,
+    LOG,
+    INGOT,
+    COUNT
+};
+KEG_ENUM_DECL(ItemStorageShape);
+
 class Item
 {
     friend class ItemRepository;
-    friend class BatchedItemRenderer;
+    friend class ItemRenderer;
+    friend class ItemStockpile;
 public:
     const nString& getName() const { return mName; }
     ItemID getID() const { return mId; }
@@ -32,8 +43,8 @@ public:
 
 protected:
     nString mName;
-    nString mTextureName;
     ItemType mType = ItemType::UNKNOWN;
+    ItemStorageShape mShape = ItemStorageShape::POINT;
     ItemID mId;
     SpriteData mSpriteData; // TODO: instead have the ItemRenderer manage this mapping
     f32 mValue = 1.0f;

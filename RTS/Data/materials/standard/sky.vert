@@ -10,6 +10,7 @@ out vec3 fPosition;
 
 void main() {
   fUV = vUV;
-  fPosition = normalize(vPosition.xyz);
-  gl_Position = VP * SkyRotMatrix * vPosition;
+  vec3 relPosition =  vPosition.xyz - CameraPos;
+  fPosition = normalize(relPosition);
+  gl_Position = VP * SkyRotMatrix * vec4(relPosition, 1.0);
 }
