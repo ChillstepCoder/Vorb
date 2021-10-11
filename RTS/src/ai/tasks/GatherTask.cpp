@@ -208,7 +208,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
                 InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
                 std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
                 ItemStack& stackToAdd = items[0];
-                stackToAdd = closestStockpile->tryAddItemStackAt(stackToAdd, posToInsert);
+                stackToAdd = closestStockpile->tryAddItemStackAt(stackToAdd, posToInsert, 1);
                 if (stackToAdd.isNull()) {
                     items[0] = items.back();
                     items.pop_back();

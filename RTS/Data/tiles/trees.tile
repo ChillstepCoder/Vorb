@@ -7,7 +7,7 @@ tree_large:
   resource: wood
   drops:
     - item: wood_raw
-      count: [100, 120]
+      count: [25, 35]
 tree_small:
   tex: tree_small
   dims: [1,2]
@@ -17,7 +17,7 @@ tree_small:
   resource: wood
   drops:
     - item: wood_raw
-      count: [40, 60]
+      count: [3, 6]
 tree_huge:
   tex: mega_tree
   dims: [7,8]

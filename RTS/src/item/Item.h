@@ -46,10 +46,11 @@ protected:
     ItemType mType = ItemType::UNKNOWN;
     ItemStorageShape mShape = ItemStorageShape::POINT;
     ItemID mId;
-    SpriteData mSpriteData; // TODO: instead have the ItemRenderer manage this mapping
+    SpriteData mSpriteData; // TODO: instead have the ItemRenderer manage this mapping?
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;
     ui32 mStackSize = 10;
+    ui32v3 mStackDims = ui32v3(5, 5, 5);
 };
 KEG_TYPE_DECL(Item);
 

@@ -59,7 +59,7 @@ public:
 
     void renderDebug() const;
     // Returns the leftover stack, if quantity is 0, itemStack was consumed
-    ItemStack tryAddItemStackAt(ItemStack stack, ui32v2 pos);
+    ItemStack tryAddItemStackAt(ItemStack stack, ui32v2 pos, ui32 maxQuantityToAdd);
     // Returns true if item stack can be partially placed, stores world position
     // in outPos
     bool tryGetBestPositionToInsertItemStack(ItemStack stack, OUT ui32v2* outPos);

@@ -194,6 +194,8 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
     mNavigationType = NavigationType::SIMPLE_LINEAR;
 	mSimpleTargetPoint = targetPoint;
     mFinishedCallback = finishedCallback;
+
+    DebugRenderer::drawBox(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
 }
 
 void NavigationComponent::setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {

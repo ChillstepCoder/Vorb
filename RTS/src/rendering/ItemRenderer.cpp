@@ -145,23 +145,28 @@ void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const I
 
     const SpriteData& spriteData = item.mSpriteData;
 
+    const ui32v3& stackDims = item.mStackDims;
+    const ui32 stackLayer = stackDims.x * stackDims.y;
+    f32v3 spacingRatio = f32v3(1.0f / stackDims.x, 1.0f / stackDims.y, 1.0f / stackDims.z);
+
     for (ui32 index : record.stackLocations) {
         const ItemStack& stack = stockpile.mStorage[index];
         // TODO: Z
-        ui32v2 pos2d = stockpile.mAABB.pos + ui32v2(index / stockpile.mAABB.width, index % stockpile.mAABB.width);
+        ui32v2 pos2d = stockpile.mAABB.pos + ui32v2(index % stockpile.mAABB.width, index / stockpile.mAABB.width);
         f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
         for (ui32 i = 0; i < stack.quantity; ++i) {
             f32v3 boxPos = pos;
             // TODO: Not just 5 by 5
             constexpr ui32 w = 5;
-            constexpr float spacingRatio = 1.0f / w;
-            boxPos.x += (i % w) * spacingRatio;
-            boxPos.y += ((i % (w * w)) / w) * spacingRatio;
-            boxPos.z += (i / (w * w)) * spacingRatio;
+            boxPos.x += (i % stackDims.x) * spacingRatio.x;
+            boxPos.y += ((i % stackLayer) / stackDims.x) * spacingRatio.y;
+            boxPos.z += (i / stackLayer) * spacingRatio.z;
             // TODO: Bottom
             // TODO: Cull edges, merging
             for (int i = enum_cast(QuadFacing::LEFT); i <= enum_cast(QuadFacing::TOP); ++i) {
-                mesh.addAxisAlignedQuad(boxPos + OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[i] * spacingRatio, f32v2(spacingRatio), f32v2(0.0f), QUAD_FACING_AXIS[i], spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                const f32v2& axis = QUAD_FACING_AXIS[i];
+                const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
+                mesh.addAxisAlignedQuad(boxPos + OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[i] * spacingRatio, dims, f32v2(0.0f, 0.0f), axis, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
             }
         }
     }

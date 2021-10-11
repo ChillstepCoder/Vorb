@@ -105,9 +105,9 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
 
     // Center the sprite
     // TODO: This shouldnt be hard coded to xy
-    const f32v2 offset(-(float)((xyDims.x - 1) / 2) + xyOffset.x, xyOffset.y);
-    tilePosition.x += offset.x;
-    tilePosition.y += offset.y;
+    //const f32v2 offset(-(float)((xyDims.x - 1) / 2) + xyOffset.x, xyOffset.y);
+    tilePosition.x += xyOffset.x;
+    tilePosition.y += xyOffset.y;
 
     f32v4 adjustedUvs;
     if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {

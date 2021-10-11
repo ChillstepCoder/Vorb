@@ -54,12 +54,13 @@ void ItemStockpile::renderDebug() const {
     DebugRenderer::drawQuad(f32v2(mAABB.pos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
 }
 
-ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos) {
-    //ItemStack newStack = mWorld.tryAddPartialItemStackAt(pos, stack);
+ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui32 maxQuantityToAdd) {
 
+    const ui32 stackQuantity = glm::min(maxQuantityToAdd, itemStack.quantity);
     const ui32 index = (pos.y - mAABB.y) * mAABB.width + pos.x - mAABB.x;
     assert(index < mStorage.size());
     ItemStack& existingStack = mStorage[index];
+
 
 
     ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
@@ -69,7 +70,7 @@ ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos) {
     if (existingStack.isNull()) {
         // We can put the full stack here
         // TODO: Make sure the current stack isn't overfull?
-        const ui32 quantityToAdd = std::min(stackSize, itemStack.quantity);
+        const ui32 quantityToAdd = std::min(stackSize, stackQuantity);
         existingStack.id = itemStack.id;
         existingStack.quantity = quantityToAdd;
         itemStack.quantity -= quantityToAdd;
@@ -88,8 +89,8 @@ ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos) {
         }
 
         // Check if we can fit our entire stack on existing stack
-        const ui32 newTotal = existingStack.quantity + itemStack.quantity;
-        ui32 quantityToAdd = itemStack.quantity;
+        const ui32 newTotal = existingStack.quantity + stackQuantity;
+        ui32 quantityToAdd = stackQuantity;
 
         if (newTotal > stackSize) {
             // Can't fit full stack

@@ -12,6 +12,7 @@ struct ItemDef {
     f32 value = 1.0f;
     f32 weight = 0.01f;
     ui32 stackSize = 10;
+    ui32v3 stackDims = ui32v3(5, 5, 5);
 };
 KEG_TYPE_DEF_SAME_NAME(ItemDef, kt) {
     kt.addValue("type", keg::Value::custom(offsetof(ItemDef, type), "ItemType", true));
@@ -20,6 +21,7 @@ KEG_TYPE_DEF_SAME_NAME(ItemDef, kt) {
     kt.addValue("value", keg::Value::basic(offsetof(ItemDef, value), keg::BasicType::F32));
     kt.addValue("weight", keg::Value::basic(offsetof(ItemDef, weight), keg::BasicType::F32));
     kt.addValue("stack_size", keg::Value::basic(offsetof(ItemDef, stackSize), keg::BasicType::UI32));
+    kt.addValue("stack_dims", keg::Value::basic(offsetof(ItemDef, stackDims), keg::BasicType::UI32_V3));
 }
 
 ItemRepository::ItemRepository(vio::IOManager& ioManager) :
@@ -45,6 +47,7 @@ void ItemRepository::loadItemFile(const vio::Path& filePath, SpriteRepository& s
         newItem.mValue = def.value;
         newItem.mWeight = def.weight;
         newItem.mStackSize = def.stackSize;
+        newItem.mStackDims = def.stackDims;
         
         // TODO: Check for mod conflicts
         mItemIdLookup[key] = newItem.mId;
