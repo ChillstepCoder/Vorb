@@ -5,6 +5,7 @@
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
+#include "world/TileRepository.h"
 #include "physics/ContactListener.h"
 
 #include "ecs/factory/EntityFactory.h"

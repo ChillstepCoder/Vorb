@@ -15,6 +15,7 @@ class ItemRepository;
 class CraftingRepository;
 class BusinessRepository;
 class CharacterModelRepository;
+struct SpriteData;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?

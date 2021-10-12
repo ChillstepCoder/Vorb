@@ -17,6 +17,7 @@
 #include "camera/Camera3D.h"
 
 #include "World.h"
+#include "world/TileRepository.h"
 #include "Utils.h"
 
 #include "ResourceManager.h"
@@ -321,56 +322,10 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	const f32v2& xyPos = cmp.getXYPosition();
 	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha);
 
-	// Handle interact menu TODO: Notify to get this out of here
-	if (mRightClickInteractPopup) {
-        // Render selected
-        ui32v2 worldPosInt = mSelectedTilePosition;
-		DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+	tryUpdateAndRenderInteractPopup(xyPos);
 
-		// Draw vectors to corners
-		f32v2 interactPopupPositionWorld = mSelectedTilePosition;
-		const color4 lineColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
-		DebugRenderer::drawLineBetweenPoints(mSelectedTilePosition, interactPopupPositionWorld, lineColor);
-		
-		const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
-		// TODO: Notify
-		if (result & INTERACT_MENU_RESULT_PATHFIND) {
-			NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-			cmp.setPathWithCallback(Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos), nullptr);
-			DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
-		}
-		else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
-            // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
-            }
-		}
-        else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
-            // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
-            }
-        }
-        else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
-            // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 1u));
-            }
-        }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
-
-		// If we had a result, close window
-		if (result) {
-			mRightClickInteractPopup.reset();
-            ImGui::GetIO().WantCaptureKeyboard = false;
-            ImGui::GetIO().WantCaptureMouse = false;
-		}
-	} 
-	
 }
+
 
 void MainMenuScreen::updateCamera(const vui::GameTime& gameTime) {
 	// Target player
@@ -428,4 +383,56 @@ void MainMenuScreen::updateTilePicking() {
 	f32v4 pickRayWorldSpace = glm::inverse(mCamera3D->getViewMatrix()) * pickRayEyeSpace;
 	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
 	mMousePickRay = glm::normalize(pickRayXYZ);
+}
+
+
+void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
+    // Handle interact menu TODO: Notify to get this out of here
+    if (mRightClickInteractPopup) {
+        // Render selected
+        ui32v2 worldPosInt = mSelectedTilePosition;
+        DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+
+        // Draw vectors to corners
+        f32v2 interactPopupPositionWorld = mSelectedTilePosition;
+        const color4 lineColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
+        DebugRenderer::drawLineBetweenPoints(mSelectedTilePosition, interactPopupPositionWorld, lineColor);
+
+        const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
+        // TODO: Notify
+        if (result & INTERACT_MENU_RESULT_PATHFIND) {
+            NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
+            cmp.setPathWithCallback(Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos), nullptr);
+            DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
+        }
+        else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+            }
+        }
+        else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+            }
+        }
+        else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 1u));
+            }
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
+
+        // If we had a result, close window
+        if (result) {
+            mRightClickInteractPopup.reset();
+            ImGui::GetIO().WantCaptureKeyboard = false;
+            ImGui::GetIO().WantCaptureMouse = false;
+        }
+    }
 }

@@ -41,7 +41,7 @@ struct f32AABB3 {
     f32 getMaxX() const { return x + width; }
     f32 getMaxY() const { return y + depth; }
     f32 getMaxZ() const { return z + height; }
-    f32 getMax(f32 d) const { return pos[d] + dims[d]; }
+    f32 getMax(ui32 d) const { return pos[d] + dims[d]; }
 
     union {
         f32 data[6];

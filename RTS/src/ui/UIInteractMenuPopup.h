@@ -12,7 +12,6 @@ enum UIInteractMenuResultFlags : ui32 {
     INTERACT_MENU_RESULT_COUNT      = 5
 };
 
-
 // Right click interact menu
 class UIInteractMenuPopup
 {

@@ -14,7 +14,7 @@
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
-#include "world/Tile.h"
+#include "world/TileRepository.h"
 #include "Random.h"
 
 GatherTask::GatherTask(LiteTileHandle tileTarget, TileResource resource, City* city) :

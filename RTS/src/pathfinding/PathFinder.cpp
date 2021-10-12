@@ -2,6 +2,7 @@
 #include "PathFinder.h"
 
 #include "World.h"
+#include "world/TileRepository.h"
 
 #include "DebugRenderer.h"
 #define PATH_DEBUG 1

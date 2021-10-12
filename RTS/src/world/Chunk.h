@@ -1,16 +1,15 @@
 #pragma once
 
-#include "Tile.h"
-#include "world/WorldData.h"
-#include "item/ItemStack.h"
+#include "ChunkID.h"
+#include "TileHandle.h"
 
+#include "item/ItemStack.h"
 #include "util/AABB.hpp"
 
 class Chunk;
 class QuadMesh;
 class BillboardMesh;
 
-const ui32 CHUNK_ID_INVALID = UINT32_MAX;
 constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
 class WorldGrid;
@@ -35,40 +34,6 @@ struct ChunkRenderData {
     bool mIsBuildingHighDetailFloraMesh = false; // When true, we are waiting for our mesh to be completed
 };
 
-struct ChunkID {
-    ChunkID() : id(CHUNK_ID_INVALID), pos(CHUNK_ID_INVALID) {}
-    ChunkID(const ChunkID& other) { *this = other; }
-	ChunkID(ui32 id);
-    ChunkID(const ui32v2& pos) : pos(pos) { initIdFromPos(); };
-    ChunkID(ui32v2&& pos) : pos(pos) { initIdFromPos(); };
-    ChunkID(ui32 xPos, ui32 yPos) : pos(xPos, yPos) { initIdFromPos(); };
-    ChunkID(const f32v2 worldPos);
-
-    // For std::map
-    bool operator<(const ChunkID& other) const { return id < other.id; }
-    bool operator!=(const ChunkID& other) const { return id != other.id; }
-    bool operator==(const ChunkID& other) const { return id == other.id; }
-
-    f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
-    ChunkID getLeftID() const { return ChunkID(ui32v2(pos.x - 1, pos.y)); }
-    ChunkID getTopID() const { return ChunkID(ui32v2(pos.x, pos.y + 1)); }
-    ChunkID getRightID() const { return ChunkID(ui32v2(pos.x + 1, pos.y)); }
-    ChunkID getBottomID() const { return ChunkID(ui32v2(pos.x, pos.y - 1)); }
-
-	// Return true if we should never load
-	bool isSentinelID() const {
-		return pos.x == 0 || pos.y == 0 || pos.x == WorldData::WORLD_WIDTH_CHUNKS - 1 || pos.y == WorldData::WORLD_WIDTH_CHUNKS - 1;
-	}
-
-	ui32v2 pos;
-	ui32 id;
-
-private:
-	inline void initIdFromPos() {
-		id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
-	}
-};
-
 enum class NeighborIndex {
 	BOTTOM_LEFT  = 0,
 	BOTTOM       = 1,
@@ -79,56 +44,6 @@ enum class NeighborIndex {
 	TOP          = 6,
 	TOP_RIGHT    = 7,
 	COUNT        = 8
-};
-
-struct LiteTileHandle {
-    LiteTileHandle() {};
-    LiteTileHandle(ChunkID chunkID, TileIndex index) : chunkID(chunkID), index(index) {};
-
-	f32v2 getWorldPos() const {
-		f32v2 rv = chunkID.getWorldPos();
-		rv.x += index.getX();
-		rv.y += index.getY();
-		return rv;
-	}
-
-	ChunkID chunkID;
-	TileIndex index;
-};
-
-struct TileHandle {
-
-    TileHandle() {};
-    TileHandle(const Chunk* chunk, TileIndex index);
-
-    bool isValid() const { return chunk != nullptr; }
-	Chunk* getMutableChunk() { return const_cast<Chunk*>(chunk); }
-	f32v2 getWorldPos();
-
-	TileHandle& operator=(const TileHandle& other) {
-		chunk = other.chunk;
-		const_cast<TileIndex&>(index) = other.index;
-		const_cast<Tile&>(tile) = other.tile;
-		return *this;
-	}
-
-    const Chunk* chunk = nullptr;
-    const TileIndex index;
-    const Tile tile;
-};
-
-// DOES NOT PROVIDE THREAD SAFE READ/WRITE
-struct TileRef {
-    TileRef(TileHandle handle);
-    TileRef(Chunk* chunk, TileIndex index);
-    ~TileRef() { release(); }
-    void release();
-
-    TileRef& operator=(const TileRef& other) = delete;
-
-    Chunk* chunk = nullptr;
-    TileIndex index;
-    Tile& tile;
 };
 
 class Chunk {

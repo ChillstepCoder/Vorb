@@ -7,6 +7,7 @@
 
 #include "world/WorldData.h"
 #include "world/Region.h"
+#include "world/TileRepository.h"
 
 #include "services/Services.h"
 

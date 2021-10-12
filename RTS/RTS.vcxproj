@@ -228,9 +228,12 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
+    <ClCompile Include="src\world\TileHandle.cpp" />
+    <ClCompile Include="src\world\TileRepository.cpp" />
     <ClCompile Include="src\world\TileScanner.cpp" />
     <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObject.cpp" />
+    <ClCompile Include="src\world\WorldObjectQuery.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -348,13 +351,17 @@
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
+    <ClInclude Include="src\world\ChunkID.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\TileCollisionShape.h" />
+    <ClInclude Include="src\world\TileHandle.h" />
+    <ClInclude Include="src\world\TileRepository.h" />
     <ClInclude Include="src\world\TileScanner.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObject.h" />
+    <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureManip.h" />
     <ClInclude Include="World.h" />

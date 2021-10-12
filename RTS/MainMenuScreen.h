@@ -53,10 +53,12 @@ public:
 	virtual void update(const vui::GameTime& gameTime) override;
 	virtual void draw(const vui::GameTime& gameTime) override;
 
+
 private:
 
 	void updateCamera(const vui::GameTime& gameTime);
-	void updateTilePicking();
+    void updateTilePicking();
+    void tryUpdateAndRenderInteractPopup(const f32v2& xyPos);
 
     ResourceManager* mResourceManager = nullptr;
 	std::unique_ptr<World> mWorld;

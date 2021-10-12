@@ -4,7 +4,9 @@
 #include "services/Services.h"
 
 #include "world/Chunk.h"
+#include "world/TileRepository.h"
 #include "rendering/QuadMesh.h"
+#include "rendering/SpriteData.h"
 #include "Random.h"
 #include <Vorb/graphics/SamplerState.h>
 

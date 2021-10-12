@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "TileUtil.h"
+#include "world/TileRepository.h"
 
 #include "DebugRenderer.h"
 

@@ -3,6 +3,7 @@
 #include "ResourceManager.h"
 #include "TextureAtlas.h"
 #include "World.h"
+#include "world/TileRepository.h"
 
 #include "TextureManip.h"
 #include "rendering/MaterialRenderer.h"

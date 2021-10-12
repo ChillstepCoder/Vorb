@@ -4,6 +4,8 @@
 #include "World.h"
 #include "ecs/EntityComponentSystem.h"
 
+#include "world/TileRepository.h"
+
 #include <box2d/b2_body.h>
 #include <box2d/b2_circle_shape.h>
 #include <box2d/b2_fixture.h>
