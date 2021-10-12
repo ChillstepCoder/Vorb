@@ -36,7 +36,7 @@ void WorldObjectQuery::refresh() {
             // Stockpiles
             const CityQuartermaster& quarterMaster = city->getCityQuartermaster();
             for (auto& it : quarterMaster.getStockpiles()) {
-                if (pointIsWithinAABB(mTilePos, it->getAABB())) {
+                if (pointIsWithinAABBInclusive(mTilePos, it->getAABB())) {
                     mStockpileAtTile = it.get();
                 }
             }
@@ -47,9 +47,4 @@ void WorldObjectQuery::refresh() {
     // TODO: more precise
     const f32v2 queryPos(mTilePos.x + 0.5f, mTilePos.y + 0.5f);
     mEntitiesAtTile = mWorld.queryActorsInRadius(queryPos, 0.5f, ACTORTYPE_ANY, 0, true);
-    for (auto&& ent : mEntitiesAtTile) {
-        if (CharacterDetailsComponent* cmp = mWorld.getECS().mRegistry.try_get<CharacterDetailsComponent>(ent.second)) {
-            std::cout << "SELECTED ENTITY " << cmp->name << "!\n";
-        }
-    }
 }

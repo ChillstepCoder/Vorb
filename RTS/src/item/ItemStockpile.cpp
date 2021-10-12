@@ -41,6 +41,13 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
 
     mStorage.resize(mAABB.width * mAABB.height);
 
+    // Set stockpile flags
+    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
+        for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
+            TileRef(world.getTileHandleAtWorldPos(ui32v2(x, y))).tile->setTileFlag(TILE_FLAG_IS_STOCKPILE);
+        }
+    }
+
 }
 
 ItemStockpile::~ItemStockpile() {

@@ -30,8 +30,10 @@ struct Tile {
     Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
     Tile(TileID ground, TileID mid, TileID top, ui16 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos){ }
 
-	void setTileFlag(TileFlags flag) { tileFlags |= flag; }
-	void clearTileFlag(TileFlags flag) { tileFlags &= (~flag); }
+    void setTileFlag(TileFlags flag) { tileFlags |= flag; }
+    void setTileFlags(TileFlags flags) { tileFlags = flags; }
+    void clearTileFlag(TileFlags flag) { tileFlags &= (~flag); }
+    void clearTileFlags() { tileFlags = 0; }
 	bool hasFlag(TileFlags flag) const { return tileFlags & flag; }
 
 	union {

@@ -113,7 +113,10 @@ public:
 
     void setTileAt(TileIndex i, Tile tile) {
 		assert(i < CHUNK_SIZE);
-        mTiles[i] = tile;
+		Tile& oldTile = mTiles[i];
+		TileFlags newFlags = TileFlags(oldTile.tileFlags | tile.tileFlags);
+        oldTile = tile;
+        oldTile.setTileFlags(newFlags); // Union tile flags
 		dirtyMesh();
     }
 

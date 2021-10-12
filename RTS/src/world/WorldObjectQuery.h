@@ -24,6 +24,8 @@ public:
     Building* getBuilding() const { return mBuildingAtTile; }
     const std::vector<EntityDistSortKey>& getEntities() const { return mEntitiesAtTile; }
     TileHandle getTileHandle() const { return TileHandle(mTileRef.chunk, mTileRef.index); }
+    World& getWorld() const { return mWorld; }
+    const f32v2& getTilePos() const { return mTilePos; }
 
 private:
     ItemStockpile* mStockpileAtTile = nullptr;

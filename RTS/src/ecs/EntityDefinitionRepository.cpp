@@ -37,6 +37,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         }
         else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::CharacterDetails)]) {
             ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::CharacterDetails);
+            fileData.characterDetails.name = nullptr; // Initialize
             keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(CharacterDetailsComponentDef));
         }
         else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::DynamicLight)]) {

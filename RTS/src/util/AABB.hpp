@@ -83,6 +83,14 @@ inline bool testAABBAABB_SIMD(const ui32AABB2& a, const ui32AABB2& b) {
 }
 
 // TODO: Shared
+// TODO: this is confusing, inclusive for stockpile, noninclusive for AABB splits for cities
+inline bool pointIsWithinAABBInclusive(const ui32v2& point, const ui32AABB2& aabb) {
+    return point.x >= aabb.x &&
+        point.y >= aabb.y &&
+        point.x < aabb.x + aabb.width &&
+        point.y < aabb.y + aabb.height;
+}
+
 inline bool pointIsWithinAABB(const ui32v2& point, const ui32AABB2& aabb) {
     return point.x > aabb.x &&
         point.y > aabb.y &&

@@ -22,6 +22,8 @@
 #include "Utils.h"
 
 #include "ResourceManager.h"
+#include "item/ItemRepository.h"
+#include "item/ItemStockpile.h"
 #include "particles/ParticleSystemManager.h"
 
 #include "physics/ContactListener.h"
@@ -228,11 +230,11 @@ void MainMenuScreen::build() {
                     mRightClickInteractPopup.reset();
 				}
 				else {
-					WorldObjectQuery worldObject(*mWorld, worldPos);
+					WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
 					// Right click picking
 					mSelectedTilePosition = worldPos;
 					// Enable context menu
-					mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
+					mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
 				}
 			}
 		}
@@ -428,7 +430,23 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
                 handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 1u));
             }
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 5, "update");
+        else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {
+            // grass
+			WorldObjectQuery& worldObjects = mRightClickInteractPopup->getWorldObjects();
+			ItemStockpile* stockPile = worldObjects.getStockpile();
+			assert(stockPile);
+			ItemStack woodPile;
+			woodPile.id = mResourceManager->getItemRepository().getItem("wood_raw").getID();
+			woodPile.quantity = 25;
+			ui32v2 bestPos;
+			if (stockPile->tryGetBestPositionToInsertItemStack(woodPile, &bestPos)) {
+				stockPile->tryAddItemStackAt(woodPile, bestPos, woodPile.quantity);
+			}
+        }
+        else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
+
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 8, "update");
 
         // If we had a result, close window
         if (result) {

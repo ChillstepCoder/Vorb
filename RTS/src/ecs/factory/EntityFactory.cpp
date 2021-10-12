@@ -45,7 +45,12 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
             }
             case ComponentTypes::CharacterDetails: {
                 auto& characterDetails = registry.emplace<CharacterDetailsComponent>(newEntity);
-                characterDetails.name = cdef.characterDetails.name;
+                if (cdef.characterDetails.name) {
+                    characterDetails.name = cdef.characterDetails.name;
+                }
+                else {
+                    characterDetails.name = "UNNAMED CHARACTER";
+                }
                 break;
             }
             case ComponentTypes::DynamicLight: {
