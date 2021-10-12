@@ -124,8 +124,8 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             // TODO: Interact lock???
             auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
-            const TileData& tileData = TileRepository::getTileData(tileRef->tile.layers[cmp.mTileLayer]);
-            tileRef->tile.layers[cmp.mTileLayer] = TILE_ID_NONE;
+            const TileData& tileData = TileRepository::getTileData(tileRef->tile->layers[cmp.mTileLayer]);
+            tileRef->tile->layers[cmp.mTileLayer] = TILE_ID_NONE;
             tileRef->chunk->dirtyMesh();
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);

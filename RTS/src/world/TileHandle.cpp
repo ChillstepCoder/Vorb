@@ -7,14 +7,34 @@
 TileRef::TileRef(Chunk* chunk, TileIndex index) :
     chunk(chunk),
     index(index),
-    tile(chunk->mTiles[index]) {
+    tile(&chunk->mTiles[index]) {
     chunk->incRef();
 }
 
 TileRef::TileRef(TileHandle handle) :
     chunk(const_cast<Chunk*>(handle.chunk)), // FUCK YOU I DO WHAT I WANT
     index(handle.index),
-    tile(chunk->mTiles[handle.index]) {
+    tile(&chunk->mTiles[handle.index]) {
+    chunk->incRef();
+}
+
+TileRef::TileRef() {
+
+}
+
+void TileRef::acquire(TileHandle handle) {
+    assert(!chunk);
+    chunk = const_cast<Chunk*>(handle.chunk); // FUCK YOU I DO WHAT I WANT;
+    index = handle.index;
+    tile = &chunk->mTiles[index];
+    chunk->incRef();
+}
+
+void TileRef::acquire(Chunk* newChunk, TileIndex newIndex) {
+    assert(!chunk);
+    chunk = newChunk;
+    index = newIndex;
+    tile = &chunk->mTiles[newIndex];
     chunk->incRef();
 }
 

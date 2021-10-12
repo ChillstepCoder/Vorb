@@ -43,14 +43,18 @@ struct TileHandle {
 
 // DOES NOT PROVIDE THREAD SAFE READ/WRITE
 struct TileRef {
+    TileRef();
     TileRef(TileHandle handle);
     TileRef(Chunk* chunk, TileIndex index);
     ~TileRef() { release(); }
+
+    void acquire(TileHandle handle);
+    void acquire(Chunk* chunk, TileIndex index);
     void release();
 
     TileRef& operator=(const TileRef& other) = delete;
 
     Chunk* chunk = nullptr;
     TileIndex index;
-    Tile& tile;
+    Tile* tile = nullptr;
 };
