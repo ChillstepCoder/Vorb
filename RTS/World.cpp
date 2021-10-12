@@ -163,6 +163,8 @@ inline f32 fastCeilf(f32 x) {
 }
 
 TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const {
+	constexpr bool ENABLE_DEBUG_PICK_RENDER = false;
+
 	const f32v3 rayStart = camera.getPosition();
 	PreciseTimer timer;
 
@@ -183,8 +185,10 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
             sortedHits.push_back(std::make_pair(hit, chunk));
         }
 	}
-	if (sortedHits.empty()) {
-        DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+    if (sortedHits.empty()) {
+		if (ENABLE_DEBUG_PICK_RENDER) {
+			DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+		}
         return TileHandle();
 	}
 
@@ -201,10 +205,12 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
         f32v3 farIntersect = (rayEnd - rayStart) * hit.farTime + rayStart;
         const f32v3 offset = farIntersect - hit.position;
         const f32 maxDistance = glm::length(offset);
-        DebugRenderer::drawBox(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
-        DebugRenderer::drawVector(rayStart, hit.position - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
-        DebugRenderer::drawVector(hit.position, offset, color4(0.0f, 1.0f, 0.0f), duration);
-        DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f), duration);
+		if (ENABLE_DEBUG_PICK_RENDER) {
+			DebugRenderer::drawBox(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
+			DebugRenderer::drawVector(rayStart, hit.position - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+			DebugRenderer::drawVector(hit.position, offset, color4(0.0f, 1.0f, 0.0f), duration);
+			DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f), duration);
+		}
 		float currDistance = 0.0f;
 
 		while (currDistance < maxDistance) {
@@ -213,11 +219,15 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
 			
             Tile tile = chunk->getTileAt(index);
             if ((int)tile.baseZPosition >= currentVoxelPos.z) {
-                DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
-                DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+				if (ENABLE_DEBUG_PICK_RENDER) {
+					DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+					DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+				}
 				return TileHandle(chunk, index);
             }
-            DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 0.0f, 0.0f), duration);
+			if (ENABLE_DEBUG_PICK_RENDER) {
+				DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 0.0f, 0.0f), duration);
+			}
 
 			f32v3 next;
 			f32v3 r;
@@ -290,7 +300,9 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
 				if (rayDir.z > 0) currentVoxelPos.z++;
 				else if (rayDir.z < 0) currentVoxelPos.z--;
             }
-            DebugRenderer::drawVector(currentPos, currentPos - prevPos, color4(0.0f, 0.0f, 1.0f), duration);
+			if (ENABLE_DEBUG_PICK_RENDER) {
+				DebugRenderer::drawVector(currentPos, currentPos - prevPos, color4(0.0f, 0.0f, 1.0f), duration);
+			}
 
 
 			// Add The Distance The Ray Has Traversed
@@ -617,6 +629,12 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
 	mPhysWorld->QueryAABB(&queryCallBack, aabb);
+
+#if ENABLE_DEBUG_RENDER == 1
+    //if (s_debugToggle) {
+        DebugRenderer::drawAABB(aabb, color4(0.0f, 1.0f, 0.0f), 100);
+    //}
+#endif
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {

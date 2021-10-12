@@ -18,6 +18,7 @@
 
 #include "World.h"
 #include "world/TileRepository.h"
+#include "world/WorldObjectQuery.h"
 #include "Utils.h"
 
 #include "ResourceManager.h"
@@ -227,6 +228,7 @@ void MainMenuScreen::build() {
                     mRightClickInteractPopup.reset();
 				}
 				else {
+					WorldObjectQuery worldObject(*mWorld, worldPos);
 					// Right click picking
 					mSelectedTilePosition = worldPos;
 					// Enable context menu

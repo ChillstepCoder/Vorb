@@ -8,26 +8,28 @@ class Building;
 class Chunk;
 
 #include "world/TileHandle.h"
+#include "actor/ActorTypes.h"
 
 class WorldObjectQuery {
     friend class UIInteractMenuPopup;
 public:
-    WorldObjectQuery(World& world, ui32v2& tilePos);
+    WorldObjectQuery(World& world, f32v2& tilePos);
 
     void refresh();
+    void release() { mTileRef.release(); }
 
-    bool isValid() const { return handle.isValid(); }
+    bool isValid() const { return mTileRef.isValid(); }
 
     ItemStockpile* getStockpile() const { return mStockpileAtTile; }
     Building* getBuilding() const { return mBuildingAtTile; }
-    const std::vector<entt::entity>& getEntities() const { return mEntitiesAtTile; }
-    TileHandle getTileHandle() const { return handle; }
+    const std::vector<EntityDistSortKey>& getEntities() const { return mEntitiesAtTile; }
+    TileHandle getTileHandle() const { return TileHandle(mTileRef.chunk, mTileRef.index); }
 
 private:
     ItemStockpile* mStockpileAtTile = nullptr;
     Building* mBuildingAtTile = nullptr;
-    std::vector<entt::entity> mEntitiesAtTile;
+    std::vector<EntityDistSortKey> mEntitiesAtTile;
     World& mWorld;
-    ui32v2& mTilePos;
-    TileHandle handle;
+    f32v2& mTilePos;
+    TileRef mTileRef;
 };

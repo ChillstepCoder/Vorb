@@ -35,6 +35,10 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::Corpse)]) {
             entityDef->components.emplace_back(ComponentTypes::Corpse);
         }
+        else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::CharacterDetails)]) {
+            ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::CharacterDetails);
+            keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(CharacterDetailsComponentDef));
+        }
         else if (key == ComponentTypeStrings[enum_cast(ComponentTypes::DynamicLight)]) {
             entityDef->components.emplace_back(ComponentTypes::DynamicLight);
         }
@@ -72,7 +76,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else {
             pError("Tried to load invalid .entt component type \"" + key + "\"");
         }
-        static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Parse new component type");
+        static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Parse new component type");
         // Load data
         //BuildingDescription description
     }))) {

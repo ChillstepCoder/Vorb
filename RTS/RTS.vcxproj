@@ -163,6 +163,7 @@
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
@@ -232,7 +233,6 @@
     <ClCompile Include="src\world\TileRepository.cpp" />
     <ClCompile Include="src\world\TileScanner.cpp" />
     <ClCompile Include="src\world\WorldGrid.cpp" />
-    <ClCompile Include="src\world\WorldObject.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -273,6 +273,7 @@
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
+    <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
@@ -360,7 +361,6 @@
     <ClInclude Include="src\world\TileScanner.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
-    <ClInclude Include="src\world\WorldObject.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureManip.h" />

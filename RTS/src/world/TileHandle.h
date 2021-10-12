@@ -51,6 +51,7 @@ struct TileRef {
     void acquire(TileHandle handle);
     void acquire(Chunk* chunk, TileIndex index);
     void release();
+    bool isValid() const { return chunk != nullptr; }
 
     TileRef& operator=(const TileRef& other) = delete;
 
