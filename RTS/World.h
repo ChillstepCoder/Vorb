@@ -29,6 +29,7 @@ class Camera2D;
 class City;
 class ContactListener;
 class ChunkGenerator;
+class ItemStockpileRegistry;
 class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
@@ -71,6 +72,7 @@ public:
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
+	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
@@ -129,6 +131,9 @@ private:
 
 	// Cities
 	std::unique_ptr<CityGraph> mCities;
+
+	// Stockpiles
+	std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
 
 	// Data
     f32v2 mLoadCenter = f32v2(0.0f);

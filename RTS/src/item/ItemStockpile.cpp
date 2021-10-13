@@ -39,6 +39,8 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
     , mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
 
+    assert(mAABB.width <= MAX_STOCKPILE_WIDTH && mAABB.height <= MAX_STOCKPILE_WIDTH);
+
     mStorage.resize(mAABB.width * mAABB.height);
 
     // Set stockpile flags

@@ -4,6 +4,8 @@
 
 #include "rendering/QuadMesh.h"
 
+constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;
+
 class ItemStockpile;
 class World;
 

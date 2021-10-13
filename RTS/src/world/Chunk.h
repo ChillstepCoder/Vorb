@@ -32,6 +32,7 @@ struct ChunkRenderData {
 	bool mLODDirty = true;
     bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
     bool mIsBuildingHighDetailFloraMesh = false; // When true, we are waiting for our mesh to be completed
+	bool mIsVisible = false;
 };
 
 enum class NeighborIndex {
@@ -88,6 +89,7 @@ public:
 	bool isInvalid() const { return mState == ChunkState::INVALID; }
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
 	bool isFinished() const { return isDataReady() && mDataReadyNeighborCount == 4; }
+	bool isVisible() const { return mChunkRenderData.mIsVisible; }
 
     Tile& getMutableTileAt(TileIndex i) {
         assert(i < CHUNK_SIZE);
@@ -142,7 +144,6 @@ private:
 	ChunkID mChunkId;
 	f32v2 mWorldPos = f32v2(0.0f);
 	f32AABB3 mAABB = f32AABB3(0.0f);
-	std::vector<Tile> mTiles; // TODO: Memory recycler
 	ChunkState mState = ChunkState::INVALID;
 
 	// Refcount for threading
@@ -150,6 +151,8 @@ private:
 
 	ui8 mDataReadyNeighborCount = 0;
 	WorldGrid* mWorldGrid = nullptr;
+
+    std::vector<Tile> mTiles; // TODO: Memory recycler
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;

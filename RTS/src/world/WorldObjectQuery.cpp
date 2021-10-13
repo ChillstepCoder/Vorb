@@ -37,7 +37,7 @@ void WorldObjectQuery::refresh() {
             const CityQuartermaster& quarterMaster = city->getCityQuartermaster();
             for (auto& it : quarterMaster.getStockpiles()) {
                 if (pointIsWithinAABBInclusive(mTilePos, it->getAABB())) {
-                    mStockpileAtTile = it.get();
+                    mStockpileAtTile = it;
                 }
             }
         }

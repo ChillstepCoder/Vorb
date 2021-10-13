@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -186,6 +186,7 @@
     <ClCompile Include="src\item\Item.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
     <ClCompile Include="src\item\ItemStockpile.cpp" />
+    <ClCompile Include="src\item\ItemStockpileRegistry.cpp" />
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
@@ -306,6 +307,7 @@
     <ClInclude Include="src\item\ItemRepository.h" />
     <ClInclude Include="src\item\ItemStack.h" />
     <ClInclude Include="src\item\ItemStockpile.h" />
+    <ClInclude Include="src\item\ItemStockpileRegistry.h" />
     <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />

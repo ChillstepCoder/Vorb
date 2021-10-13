@@ -7,6 +7,7 @@
 #include "world/ChunkGenerator.h"
 #include "world/TileRepository.h"
 #include "physics/ContactListener.h"
+#include "item/ItemStockpileRegistry.h"
 
 #include "ecs/factory/EntityFactory.h"
 
@@ -70,6 +71,9 @@ World::World(ResourceManager& resourceManager) :
 	// Cities
 	mCities = std::make_unique<CityGraph>();
 
+	// Stockpiles
+	mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
+
 	// Static load range for now
 	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
 }
@@ -115,6 +119,10 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 			const f32v2& worldPos = chunk.getWorldPos();
 			if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS)) {
 				mVisibleChunks.push_back(&chunk);
+				chunk.mChunkRenderData.mIsVisible = true;
+			}
+			else {
+                chunk.mChunkRenderData.mIsVisible = false;
 			}
 		}
     }

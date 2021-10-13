@@ -306,6 +306,9 @@
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\item\ItemStockpileRegistry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -678,6 +681,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\item\ItemStockpileRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
