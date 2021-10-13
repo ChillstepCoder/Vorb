@@ -7,15 +7,21 @@ class City;
 // resource allocation and trade between cities
 // TODO: Should trade be separated?
 class CityQuartermaster {
+    friend class CityDebugRenderer;
 public:
     CityQuartermaster(City& city);
+    ~CityQuartermaster();
 
     // creates an unowned stockpile, returns false if conflicts with existing stockpile
-    bool tryCreateCityStockpileAt(const ui32AABB& aabb);
+    bool tryCreateCityStockpileAt(const ui32AABB2& aabb);
+
+    ItemStockpile* tryGetClosestStockpileToPoint(const ui32v2 position);
+
+    const std::vector<std::unique_ptr<ItemStockpile>>& getStockpiles() const { return mAllStockpiles; }
 
 
 private:
-    bool checkStockpileOverlap(const ui32AABB& aabb) const;
+    bool checkStockpileOverlap(const ui32AABB2& aabb) const;
     // TODO: Sorted with Fast AABB search algorithm?
     std::vector<std::unique_ptr<ItemStockpile>> mAllStockpiles;
     City& mCity;

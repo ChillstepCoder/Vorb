@@ -4,7 +4,7 @@
 class ResourceManager;
 class MaterialRenderer;
 class Material;
-class Camera2D;
+class Camera3D;
 
 
 // TODO: IRendererBase?
@@ -15,7 +15,7 @@ public:
     LightRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
     ~LightRenderer();
 
-    void RenderLight(const f32v2& position, const LightData& lightData, const Camera2D& camera) const;
+    void RenderLight(const f32v2& position, const LightData& lightData, const Camera3D& camera) const;
 
     void InitPostLoad();
 

@@ -5,10 +5,13 @@ struct Path;
 class DebugRenderer
 {
 public:
-	static void drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime = 0, int id = 0);
+    static void drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime = 0, int id = 0);
+    static void drawVector(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime = 0, int id = 0);
+    static void drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime = 0, int id = 0);
     static void drawBox(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
+    static void drawBox(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
     static void drawQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const b2AABB& aabb, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, color4 color, int lifeTime = 0, int id = 0);
@@ -16,7 +19,7 @@ public:
 	static void drawPath(const Path& path, color4 color, int lifeTime = 0, int id = 0);
 
 	// TODO: static void drawText()
-	static void render(const f32m4& viewMatrix);
+	static void render(const f32v3& cameraPos, const f32m4& viewMatrix);
 	static void clearAllMeshesWithId(int id);
 	static void clearAll();
 };

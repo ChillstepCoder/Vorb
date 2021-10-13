@@ -6,6 +6,7 @@
 #include "ecs/component/PlayerControlComponent.h"
 #include "ecs/component/CombatComponent.h"
 #include "ecs/component/CorpseComponent.h"
+#include "ecs/component/CharacterDetailsComponent.h"
 #include "ecs/component/DynamicLightComponent.h"
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/PersonAIComponent.h"
@@ -20,7 +21,7 @@
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
-static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Update component includes");
+static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Update component includes");
 
 struct ComponentDefinition {
     ComponentDefinition(ComponentTypes type) : type(type) {};
@@ -29,8 +30,9 @@ struct ComponentDefinition {
     // Union based on type
     ComponentTypes type;
     union {
-        PhysicsComponentDef      physics;
-        SimpleSpriteComponentDef simpleSprite;
+        PhysicsComponentDef          physics;
+        SimpleSpriteComponentDef     simpleSprite;
+        CharacterDetailsComponentDef characterDetails;
     };
 };
-static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Set any needed component def");
+static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Set any needed component def");

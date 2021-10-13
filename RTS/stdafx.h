@@ -93,11 +93,13 @@ struct b2Vec2;
 #ifdef USE_SMALL_CHUNK_WIDTH
 constexpr int CHUNK_WIDTH = 64;
 static_assert(CHUNK_WIDTH == 64, "Adjust bitwise operators below");
+constexpr float CHUNK_DIAGONAL_RADIUS = 90.51f;
 #define TILE_INDEX_Y_SHIFT 6
 #define TILE_INDEX_X_MASK 0x3f
 #else
 constexpr int CHUNK_WIDTH = 128;
 static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
+constexpr float CHUNK_DIAGONAL_RADIUS = 181.02f;
 #define TILE_INDEX_Y_SHIFT 7
 #define TILE_INDEX_X_MASK 0x7f
 #endif
@@ -105,6 +107,12 @@ static_assert(CHUNK_WIDTH == 128, "Adjust bitwise operators below");
 constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 constexpr ui16 INVALID_TILE_INDEX = 0xffff;
+
+// Enum cast
+template<typename E>
+constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
 
 // Cartesian
 enum class Cartesian {
@@ -115,6 +123,12 @@ enum class Cartesian {
     NONE = 100
 };
 constexpr int CARTESIAN_COUNT = 4; 
+constexpr Cartesian CARTESIAN_NEIGHBORS[CARTESIAN_COUNT][2] = {
+    { Cartesian::LEFT, Cartesian::RIGHT }, // DOWN
+    { Cartesian::UP, Cartesian::DOWN }, // LEFT
+    { Cartesian::DOWN, Cartesian::UP }, // RIGHT
+    { Cartesian::RIGHT, Cartesian::LEFT }, // UP
+};
 constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
     Cartesian::UP,
     Cartesian::RIGHT,
@@ -142,14 +156,65 @@ const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
     ui32v2(1,  1), // TOP_RIGHT
 };
 
-enum AXIS {
+enum AXIS_2D {
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL   = 1
 };
 
-// TODO: Remove
-// We are in 3/4 perspective
-constexpr float Z_TO_XY_RATIO = 0.75f;
+enum AXIS_3D {
+    AXIS_X = 0,
+    AXIS_Y = 1,
+    AXIS_Z = 2
+};
+
+// QUAD FACINGS
+// TODO: Do we need bottom?
+enum class QuadFacing {
+    LEFT,
+    FRONT,
+    RIGHT,
+    BACK,
+    TOP,
+    BOTTOM,
+    COUNT
+};
+
+const i32v2 QUAD_FACING_AXIS[enum_cast(QuadFacing::COUNT)] = {
+    i32v2(AXIS_Y, AXIS_Z), // LEFT
+    i32v2(AXIS_X, AXIS_Z),  // FRONT
+    i32v2(AXIS_Y, AXIS_Z),  // RIGHT
+    i32v2(AXIS_X, AXIS_Z), // BACK
+    i32v2(AXIS_X, AXIS_Y),  // TOP
+    i32v2(AXIS_X, AXIS_Y)   // BOTTOM
+};
+
+const i32v3 QUAD_FACING_ADJACENT_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+    i32v3(-1, 0, 0), // LEFT
+    i32v3(0, -1, 0), // FRONT
+    i32v3(1, 0, 0), // RIGHT
+    i32v3(0, 1, 0), // BACK
+    i32v3(0, 0, 1),  // TOP
+    i32v3(0, 0, -1)  // BOTTOM
+};
+
+const f32v3 BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+    f32v3(0, 0, -1.0), // LEFT
+    f32v3(0, 0, -1.0), // FRONT
+    f32v3(1.0f, 0, -1.0), // RIGHT
+    f32v3(0, 1.0f, -1.0), // BACK
+    f32v3(0, 0, 0.0f),  // TOP
+    f32v3(0, 0, -1.0) // BOTTOM
+};
+
+const f32v3 OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+    f32v3(0, 0, 0.0), // LEFT
+    f32v3(0, 0, 0.0), // FRONT
+    f32v3(1.0f, 0, 0.0), // RIGHT
+    f32v3(0, 1.0f, 0.0), // BACK
+    f32v3(0, 0, 1.0f),  // TOP
+    f32v3(0, 0, 0.0) // BOTTOM
+};
+
 
 struct TileIndex {
 	TileIndex() : index(INVALID_TILE_INDEX) {};
@@ -177,12 +242,6 @@ struct TileIndex {
 // Items
 typedef ui32 ItemID;
 constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
-
-// Enum cast
-template<typename E>
-constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
-	return static_cast<typename std::underlying_type<E>::type>(e);
-}
 
 // **************** BEBUG *****************
 extern bool s_debugToggle;
@@ -217,7 +276,19 @@ extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time 
 template <size_t S> class Sizer { };
 #define SIZER(type) Sizer<sizeof(type)> 
 
-
 #define IS_ENABLED(d) d == 1
+
+template<int M>
+inline bool IsEnabled() {
+    return true;
+}
+
+template<>
+inline bool IsEnabled<0>() {
+    return false;
+}
+
+const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
+
 
 #endif // stdafx_h__RTS

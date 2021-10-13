@@ -8,8 +8,8 @@
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
 
-CharacterModelRepository::CharacterModelRepository(vg::TextureCache& textureCache) :
-    mTextureCache(textureCache) {
+CharacterModelRepository::CharacterModelRepository(SpriteRepository& spriteRepository) :
+    mSpriteRepository(spriteRepository) {
 
 }
 
@@ -36,7 +36,7 @@ void CharacterModelRepository::initRandomCharacterModelAsRandomGender(CharacterM
 
 void CharacterModelRepository::initRandomCharacterModelAsFemale(CharacterModelComponent& cmp) {
     cmp.mModel.load(
-        mTextureCache,
+        mSpriteRepository,
         getRandomPart(femaleFaceParts, androgynousFaceParts), 
         getRandomPart(femaleBodyParts, androgynousBodyParts),
         getRandomPart(femaleHairParts, androgynousHairParts)
@@ -45,7 +45,7 @@ void CharacterModelRepository::initRandomCharacterModelAsFemale(CharacterModelCo
 
 void CharacterModelRepository::initRandomCharacterModelAsMale(CharacterModelComponent& cmp) {
     cmp.mModel.load(
-        mTextureCache,
+        mSpriteRepository,
         getRandomPart(maleFaceParts, androgynousFaceParts),
         getRandomPart(maleBodyParts, androgynousBodyParts),
         getRandomPart(maleHairParts, androgynousHairParts)
@@ -79,7 +79,7 @@ void CharacterModelRepository::gatherPartsInDirectory(vio::Path directoryPath, C
             // Trim the end, for example _side.png
             // The character model will automatically grab all files
             // when it loads.
-            nString fileStr = entry.getString();
+            nString fileStr = vio::getLeafNameFromFilePathNoExtension(entry.getString());
             for (int i = fileStr.size() - 1; i >= 0; --i) {
                 if (fileStr[i] == '_') {
                     fileStr.resize(i);

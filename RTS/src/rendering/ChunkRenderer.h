@@ -5,7 +5,7 @@
 DECL_VG(class SpriteBatch);
 
 class ResourceManager;
-class Camera2D;
+class Camera3D;
 class ChunkMesher;
 class TextureAtlas;
 class MaterialRenderer;
@@ -24,9 +24,9 @@ public:
 	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
-    void renderChunksZCutout(const World& world, const Camera2D& camera);
-    void renderWorld(const World& world, const Camera2D& camera, ChunkRenderLOD lod);
-    void renderWorldShadows(const World& world, const Camera2D& camera);
+    void renderChunksZCutout(const World& world, const Camera3D& camera);
+    void renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod);
+    //void renderWorldShadows(const World& world, const Camera2D& camera);
 
 	// TODO: Deep LOD?
 	void ReloadShaders();
@@ -34,21 +34,19 @@ public:
     void InitPostLoad();
 private:
     // Different rendering methods
-    void UpdateMesh(const Chunk& chunk);
+    void UpdateMesh(const Chunk& chunk, const Camera3D& camera);
     void UpdateLODTexture(const Chunk& chunk);
-    void RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& camera);
-    void RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera2D& camera);
-    void RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera2D& camera, ui32 textureIndex);
-    void RenderShadows(const Chunk& chunk, const Camera2D& camera);
+    void RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera);
+    void RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera);
+    void RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera, ui32 textureIndex);
+    //void RenderShadows(const Chunk& chunk, const Camera2D& camera);
 
 	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
     const Material* mStandardMaterial = nullptr;
-    const Material* mShadowMaterial = nullptr;
-    const Material* mFloraMaterial = nullptr;
-    const Material* mFloraShadowMaterial = nullptr;
+    const Material* mBillboardMaterial = nullptr;
     const Material* mLODMaterial = nullptr;
     const Material* mZCutoutMaterial = nullptr;
 };

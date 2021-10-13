@@ -1,3 +1,0 @@
-flora_shadow:
-  vert: flora_shadow.vert
-  frag: shadow.frag

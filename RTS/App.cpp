@@ -11,7 +11,9 @@
 #include <Vorb/ui/ScreenList.h>
 #include <Vorb/sound/SoundEngine.h>
 
-#if IS_ENABLED(FEATURE_WORLD_EDITOR)
+#if IS_ENABLED(FEATURE_TEST_3D)
+#include "screens/Test3DScreen.h"
+#elif IS_ENABLED(FEATURE_WORLD_EDITOR)
 #include "screens/WorldEditorScreen.h"
 #endif
 
@@ -27,7 +29,11 @@ App::~App() {
 
 void App::addScreens() {
 
-#if IS_ENABLED(FEATURE_WORLD_EDITOR)
+#if IS_ENABLED(FEATURE_TEST_3D)
+    mTest3DScreen = std::make_unique<Test3DScreen>(this);
+    m_screenList.addScreen(mTest3DScreen.get());
+    m_screenList.setScreen(mTest3DScreen->getIndex());
+#elif IS_ENABLED(FEATURE_WORLD_EDITOR)
 	mWorldEditorScreen = std::make_unique<WorldEditorScreen>(this);
     m_screenList.addScreen(mWorldEditorScreen.get());
     m_screenList.setScreen(mWorldEditorScreen->getIndex());

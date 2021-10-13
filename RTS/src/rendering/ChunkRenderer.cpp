@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ChunkRenderer.h"
 #include "TileSet.h"
-#include "Camera2D.h"
+#include "camera/Camera3D.h"
 #include "world/Chunk.h"
 #include "World.h"
 #include "ResourceManager.h"
@@ -23,7 +23,9 @@
 #include <Vorb/ui/InputDispatcher.h>
 #endif
 
-constexpr float FLORA_RENDER_SCALE_THRESHOLD = 20.0f;
+constexpr float FLORA_RENDER_DISTANCE_2 = SQ(320.0f);
+constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
+static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
 	mResourceManager(resourceManager),
@@ -36,23 +38,23 @@ ChunkRenderer::~ChunkRenderer() {
 	
 }
 
-void ChunkRenderer::renderChunksZCutout(const World& world, const Camera2D& camera)
+void ChunkRenderer::renderChunksZCutout(const World& world, const Camera3D& camera)
 {
-    world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+    world.enumVisibleChunks([&](const Chunk& chunk) {
         if (chunk.isFinished()) {
             // Check chunk mesh for update
-            UpdateMesh(chunk);
+            UpdateMesh(chunk, camera);
 
             // Only render 
             ChunkRenderData& renderData = chunk.mChunkRenderData;
-            if (renderData.mChunkMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
+            if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+                RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
             }
         }
     });
 }
 
-void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, ChunkRenderLOD lod)
+void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod)
 {
 #if ENABLE_DEBUG_RENDER == 1
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
@@ -74,16 +76,16 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
         // Render region LODs first due to depth sort
         ui32 nextTextureIndex;
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
-        vg::DepthState::NONE.set();
+        //vg::DepthState::NONE.set();
         world.enumVisibleRegions(camera, [&](const Region& region) {
             RenderLODTextureBindless(region.getWorldPos(), region.mRenderData.mLODTexture, WorldData::REGION_WIDTH_TILES, camera, nextTextureIndex);
         });
-        vg::DepthState::FULL.set();
+        //vg::DepthState::FULL.set();
 
-        world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+        world.enumVisibleChunks([&](const Chunk& chunk) {
             if (chunk.isFinished()) {
                 // Check chunk mesh for update
-                UpdateMesh(chunk);
+                UpdateMesh(chunk, camera);
 
                 RenderMeshOrLODTexture(chunk, camera);
             }
@@ -97,7 +99,7 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
 
         // Render all chunks
         std::vector<const Chunk*> chunksNeedingUpdate;
-        world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
+        world.enumVisibleChunks([&](const Chunk& chunk) {
             if (chunk.isFinished()) {
                 // Check LOD for update
                 //UpdateLODTexture(chunk);
@@ -132,22 +134,30 @@ void ChunkRenderer::renderWorld(const World& world, const Camera2D& camera, Chun
     static_assert((int)ChunkRenderLOD::COUNT == 2, "Update for new rendering style");
 }
 
-void ChunkRenderer::renderWorldShadows(const World& world, const Camera2D& camera)
-{
-    world.enumVisibleChunks(camera, [&](const Chunk& chunk) {
-        if (chunk.isFinished()) {
-            RenderShadows(chunk, camera);
-        }
-    });
-}
+//void ChunkRenderer::renderWorldShadows(const World& world)
+//{
+//    world.enumVisibleChunks([&](const Chunk& chunk) {
+//        if (chunk.isFinished()) {
+//            RenderShadows(chunk, camera);
+//        }
+//    });
+//}
 
-void ChunkRenderer::UpdateMesh(const Chunk& chunk) {
+void ChunkRenderer::UpdateMesh(const Chunk& chunk, const Camera3D& camera) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingBaseMesh && renderData.mBaseDirty) {
+    if (!renderData.mIsBuildingBaseMesh && renderData.mMeshDirty) {
          mMesher->createMeshAsync(chunk);
     }
-    if (!renderData.mIsBuildingFloraMesh && renderData.mFloraDirty) {
-        mMesher->createHighDetailFloraMeshAsync(chunk);
+
+    if (!renderData.mIsBuildingHighDetailFloraMesh) {
+        const f32 distanceToCamera2 = glm::length2(camera.getPosition() - chunk.getWorldPosCenter3D());
+        if (distanceToCamera2 < FLORA_RENDER_DISTANCE_2 && renderData.mHighDetailFloraMeshDirty) {
+            mMesher->createHighDetailFloraMeshAsync(chunk);
+        }
+        else if (distanceToCamera2 > FLORA_UNLOAD_DISTANCE_2 && renderData.mHighDetailFloraMesh) {
+            renderData.mHighDetailFloraMesh.reset();
+            renderData.mHighDetailFloraMeshDirty = true;
+        }
     }
 }
 
@@ -158,18 +168,17 @@ void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
     }
 }
 
-void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& camera) {
+void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera) {
 	// mutable render data
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mChunkMesh) {
-        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mChunkMesh, *mStandardMaterial);
-        if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
-            if (renderData.mFloraMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraMaterial);
-            }
-            else {
-                mMesher->createHighDetailFloraMeshAsync(chunk);
-            }
+    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+        MaterialRenderer& renderer = RenderContext::getInstance().getMaterialRenderer();
+        if (renderData.mHighDetailFloraMesh && renderData.mHighDetailFloraMesh->isValid()) {
+            renderer.renderMesh(*renderData.mHighDetailFloraMesh, *mStandardMaterial);
+        }
+        renderer.renderMesh(*renderData.mChunkMesh, *mStandardMaterial);
+        if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
+            renderer.renderMesh(*renderData.mBillboardMesh, *mBillboardMaterial);
         }
     }
     else {
@@ -177,34 +186,34 @@ void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera2D& c
     }
 }
 
-void ChunkRenderer::RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera2D& camera) {
+void ChunkRenderer::RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera) {
     if (texture) {
         const f32v4 rect(worldPos.x, worldPos.y, width, width);
         RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTexture(*mLODMaterial, texture, rect);
     }
 }
 
-void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera2D& camera, ui32 textureIndex) {
+void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera, ui32 textureIndex) {
     if (texture) {
         const f32v4 rect(worldPos.x, worldPos.y, width, width);
         RenderContext::getInstance().getMaterialRenderer().renderMaterialToQuadWithTextureBindless(*mLODMaterial, texture, textureIndex, rect);
     }
 }
 
-void ChunkRenderer::RenderShadows(const Chunk& chunk, const Camera2D& camera)
-{
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    QuadMesh* mesh = renderData.mChunkMesh.get();
-    if (mesh && mesh->isValid()) {
-        RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial);
-
-        if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
-            if (renderData.mFloraMesh) {
-                RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraShadowMaterial);
-            }
-        }
-    }
-}
+//void ChunkRenderer::RenderShadows(const Chunk& chunk)
+//{
+//    /* ChunkRenderData& renderData = chunk.mChunkRenderData;
+//     QuadMesh* mesh = renderData.mChunkMesh.get();
+//     if (mesh && mesh->isValid()) {
+//         RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*mesh, *mShadowMaterial);
+//
+//         if (camera.getScale() > FLORA_RENDER_SCALE_THRESHOLD) {
+//             if (renderData.mFloraMesh) {
+//                 RenderContext::getInstance().getMaterialRenderer().renderQuadMesh(*renderData.mFloraMesh, *mFloraShadowMaterial);
+//             }
+//         }
+//     }*/
+//}
 
 void ChunkRenderer::ReloadShaders() {
 	// reload dirty via timestamp
@@ -219,12 +228,8 @@ void ChunkRenderer::InitPostLoad()
 {
 	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
     assert(mStandardMaterial);
-    mFloraMaterial = mResourceManager.getMaterialManager().getMaterial("flora");
-    assert(mFloraMaterial);
-    mShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow");
-    assert(mShadowMaterial);
-    mFloraShadowMaterial = mResourceManager.getMaterialManager().getMaterial("flora_shadow");
-    assert(mFloraShadowMaterial);
+    mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
+    assert(mBillboardMaterial);
     mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
     assert(mLODMaterial);
     mZCutoutMaterial = mResourceManager.getMaterialManager().getMaterial("z_cutout");

@@ -102,7 +102,7 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\zlibd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL_ttfd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL2maind.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL2d.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\lua_libd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\pngd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\freetyped.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\bz2d.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\glewd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\enetd.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -137,18 +137,18 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\zlib.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL_ttf.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL2main.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\SDL2.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\lua_lib.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\png.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\freetype.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\bz2.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\glew.lib;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib\enet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\box2d\build\src\RelWithDebInfo\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttf.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2main.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_lib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\png.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetype.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glew.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\graphics\BlendState.cpp" />
     <ClCompile Include="App.cpp" />
-    <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenuScreen.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\character\CharacterModelRepository.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
@@ -163,6 +163,7 @@
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
@@ -199,6 +200,7 @@
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\Material.cpp" />
@@ -210,11 +212,13 @@
     <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
+    <ClCompile Include="src\rendering\Skybox.cpp" />
     <ClCompile Include="src\rendering\SpriteData.cpp" />
     <ClCompile Include="src\rendering\SpriteRepository.cpp" />
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
@@ -225,9 +229,11 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
+    <ClCompile Include="src\world\TileHandle.cpp" />
+    <ClCompile Include="src\world\TileRepository.cpp" />
     <ClCompile Include="src\world\TileScanner.cpp" />
     <ClCompile Include="src\world\WorldGrid.cpp" />
-    <ClCompile Include="src\world\WorldObject.cpp" />
+    <ClCompile Include="src\world\WorldObjectQuery.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -239,12 +245,13 @@
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="App.h" />
-    <ClInclude Include="Camera2D.h" />
     <ClInclude Include="DebugRenderer.h" />
     <ClInclude Include="MainMenuScreen.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\camera\Camera3D.h" />
+    <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\character\CharacterModelRepository.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
@@ -266,6 +273,7 @@
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
     <ClInclude Include="src\ecs\ClientEcsData.h" />
+    <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
@@ -313,6 +321,7 @@
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\Material.h" />
@@ -322,6 +331,7 @@
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\rendering\Skybox.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />
@@ -330,6 +340,7 @@
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
@@ -338,15 +349,19 @@
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\TileUtil.h" />
+    <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
+    <ClInclude Include="src\world\ChunkID.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\TileCollisionShape.h" />
+    <ClInclude Include="src\world\TileHandle.h" />
+    <ClInclude Include="src\world\TileRepository.h" />
     <ClInclude Include="src\world\TileScanner.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
-    <ClInclude Include="src\world\WorldObject.h" />
+    <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureManip.h" />
     <ClInclude Include="World.h" />

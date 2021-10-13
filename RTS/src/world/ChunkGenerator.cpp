@@ -7,6 +7,7 @@
 
 #include "world/WorldData.h"
 #include "world/Region.h"
+#include "world/TileRepository.h"
 
 #include "services/Services.h"
 
@@ -64,7 +65,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     if (height > 0.3) {
         tile.groundLayer = rock1;
         // Mountains
-        tile.baseZPosition = (ui16)((height - 0.3) / 0.004);
+        tile.baseZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
     }
     else if (height < -0.45) {
         tile.groundLayer = water;
@@ -76,7 +77,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
             tile.topLayer = smallTree;
         }
         if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
-           // tile.midLayer = tallGrass;
+            tile.midLayer = tallGrass;
         }
     }
     else {
@@ -99,12 +100,18 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     }
 
     const f32v2& chunkPosWorld = chunk.getWorldPos();
+    f32 maxHeight = 1.0f;
     for (int y = 0; y < CHUNK_WIDTH; ++y) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            chunk.setTileFromGeneration(TileIndex(x, y), GenerateTileAtPos(tilePosWorld));
+            Tile tile = GenerateTileAtPos(tilePosWorld);
+            if (tile.baseZPosition + 1.0f > maxHeight) {
+                maxHeight = tile.baseZPosition + 1.0f;
+            }
+            chunk.setTileFromGeneration(TileIndex(x, y), std::move(tile));
         }
     }
+    chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
 
     //std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }

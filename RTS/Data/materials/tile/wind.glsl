@@ -68,7 +68,7 @@ float getWindAtPosition(in float Time, in vec4 worldPos) {
     float windForce = fbm(vec2(worldPos.x + Time * 0.2, worldPos.y)) * AMPLITUDE;
     // Rolling wind
     windForce += sin((worldPos.x - worldPos.y) * 0.2 + Time * 0.5) * 0.2;
-    return windForce * worldPos.z;
+    return windForce;
 }
 
 // ***********************************************************************************

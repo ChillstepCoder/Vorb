@@ -9,15 +9,8 @@ class TextureAtlas;
 struct TileData;
 struct SpriteData;
 
-constexpr int MAX_VERTICES_PER_CHUNK = CHUNK_SIZE * 4 * 4;
-constexpr int MAX_INDICES_PER_CHUNK = CHUNK_SIZE * 4 * 6;
-constexpr int AVERAGE_VERTICES_PER_CHUNK = MAX_VERTICES_PER_CHUNK / 2;
 
 struct TileMeshData {
-    TileMeshData() {
-        mTileVertices.reserve(AVERAGE_VERTICES_PER_CHUNK);
-    }
-    std::vector<TileVertex> mTileVertices;
     color3 mLODTexturePixelBuffer[CHUNK_SIZE];
 };
 
@@ -34,6 +27,8 @@ public:
     ChunkMesher(const TextureAtlas& textureAtlas);
     ~ChunkMesher();
 
+    void set3DMeshMode(bool should3DMesh) { m3DMeshMode = should3DMesh; }
+
     // Updatemesh?
     bool createMeshAsync(const Chunk& chunk);
     bool createLODTextureAsync(const Chunk& chunk);
@@ -49,6 +44,6 @@ private:
     std::vector<TileMeshData*> mFreeTileMeshData;
     int mNumMeshTasksRunning = 0;
 
-    
+    bool m3DMeshMode = false;
 };
 

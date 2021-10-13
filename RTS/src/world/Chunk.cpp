@@ -30,6 +30,12 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
 	assert(mState == ChunkState::INVALID);
 	mChunkId = chunkId;
     mWorldPos = chunkId.getWorldPos();
+    mAABB.x = mWorldPos.x;
+    mAABB.y = mWorldPos.y;
+    mAABB.z = -2.0f;
+    mAABB.width = CHUNK_WIDTH;
+    mAABB.depth = CHUNK_WIDTH;
+    mAABB.height = 4.0f;
 }
 
 void Chunk::allocateTiles() {
@@ -66,7 +72,8 @@ void Chunk::dispose() {
     
     // Reset render data
     mChunkRenderData.mLODDirty = true;
-    mChunkRenderData.mBaseDirty = true;
+    mChunkRenderData.mMeshDirty = true;
+    mChunkRenderData.mHighDetailFloraMeshDirty = true;
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
@@ -172,119 +179,4 @@ Chunk& Chunk::getRightNeighbor() const {
 
 Chunk& Chunk::getBottomNeighbor() const {
     return mWorldGrid->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
-}
-
-const ItemStack* Chunk::tryGetItemStackAt(TileIndex i) const {
-    auto&& it = mItemsOnFloor.find(i);
-    if (it == mItemsOnFloor.end()) {
-        return nullptr;
-    }
-    return &it->second;
-}
-
-bool Chunk::tryAddFullItemStackAt(TileIndex i, ItemStack itemStack) {
-    auto&& it = mItemsOnFloor.find(i);
-    if (it != mItemsOnFloor.end()) {
-        if (it->second.id != itemStack.id) {
-            // Can't merge different item types
-            return false;
-        }
-        // Check if we can fit our entire stack on existing stack
-        const ui32 newTotal = it->second.quantity + itemStack.quantity;
-        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
-        if (newTotal > itemRepo.getItem(itemStack.id).getStackSize()) {
-            // Can't fit stack
-            return false;
-        }
-        else {
-            // Increase existing stack size
-            it->second.quantity += itemStack.quantity;
-            // Notify stockpile
-            if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
-                assert(false);
-            }
-            return true;
-        }
-    }
-    mItemsOnFloor[i] = itemStack;
-    // Notify stockpile
-    if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
-        assert(false);
-    }
-    return true;
-}
-
-ItemStack Chunk::tryAddPartialItemStackAt(TileIndex i, ItemStack itemStack) {
-    auto&& it = mItemsOnFloor.find(i);
-    if (it != mItemsOnFloor.end()) {
-        if (it->second.id != itemStack.id) {
-            // Can't merge different item types
-            return itemStack;
-        }
-        // Check if we can fit our entire stack on existing stack
-        const ui32 newTotal = it->second.quantity + itemStack.quantity;
-        ui32 quantityToAdd = itemStack.quantity;
-
-        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
-        const ui32 stackSize = itemRepo.getItem(itemStack.id).getStackSize();
-        if (newTotal > stackSize) {
-            // Can't fit full stack
-            quantityToAdd = stackSize - it->second.quantity;
-        }
-        // Increase existing stack size
-        it->second.quantity += quantityToAdd;
-        itemStack.quantity -= quantityToAdd;
-        // Notify stockpile
-        if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
-            assert(false);
-        }
-        return itemStack;
-    }
-    mItemsOnFloor[i] = itemStack;
-    // Notify stockpile
-    if (mTiles[i].tileFlags & TILE_FLAG_IS_STOCKPILE) {
-        assert(false);
-    }
-    return itemStack;
-}
-
-ChunkID::ChunkID(const f32v2 worldPos) {
-    assert(worldPos.x >= 0.0f && worldPos.y >= 0.0f);
-	pos = i32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
-    id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
-}
-
-ChunkID::ChunkID(ui32 id) : 
-    id(id) { 
-    pos.x = id % WorldData::WORLD_WIDTH_CHUNKS;
-    pos.y = id / WorldData::WORLD_WIDTH_CHUNKS;
-};
-
-TileRef::TileRef(Chunk* chunk, TileIndex index) :
-    chunk(chunk),
-    index(index),
-    tile(chunk->mTiles[index]) {
-    chunk->incRef();
-}
-
-TileRef::TileRef(TileHandle handle) :
-    chunk(const_cast<Chunk*>(handle.chunk)), // FUCK YOU I DO WHAT I WANT
-    index(handle.index),
-    tile(chunk->mTiles[handle.index]) {
-    chunk->incRef();
-}
-
-void TileRef::release()
-{
-    if (chunk) {
-        chunk->decRef();
-        chunk = nullptr;
-    }
-}
-
-TileHandle::TileHandle(const Chunk* chunk, TileIndex index) :
-    chunk(chunk),
-    index(index),
-    tile(chunk->mTiles[index]) {
-
 }

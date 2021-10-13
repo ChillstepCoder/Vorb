@@ -88,7 +88,7 @@ void WorldEditorScreen::update(const vui::GameTime& gameTime) {
 
 	const float deltaTime = /*gameTime.elapsed / (1.0f / 60.0f)*/ 1.0f;
     // Do this first
-    mWorld->updateClientEcsData(*mCamera2D);
+    mWorld->updateClientEcsData(*mCamera2Dm Cartesian::UP);
 
     // DEBUG Time advance
     static constexpr float TIME_ADVANCE_MULT = 100.0f;

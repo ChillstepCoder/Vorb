@@ -15,6 +15,7 @@ class ItemRepository;
 class CraftingRepository;
 class BusinessRepository;
 class CharacterModelRepository;
+struct SpriteData;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -47,6 +48,7 @@ public:
     void writeDebugAtlas() const;
     
 private:
+    void gatherRecursive(const vio::Path& folderPath);
     bool loadTiles(const vio::Path& filePath);
 
     // Tasks
@@ -71,6 +73,7 @@ private:
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<CharacterModelRepository> mCharacterModelRepository;
+    std::unique_ptr<vg::TextureCache> mTextureCache;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

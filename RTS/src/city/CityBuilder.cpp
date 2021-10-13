@@ -5,6 +5,7 @@
 #include "CityPlanner.h"
 
 #include "World.h"
+#include "world/TileRepository.h"
 
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"

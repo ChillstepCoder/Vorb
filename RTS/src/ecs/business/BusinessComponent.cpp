@@ -12,7 +12,7 @@
 const int UPDATE_INTERVAL = 60;
 
 // TODO: Smarter scanning, dont scan same area twice
-constexpr int SCAN_FRAMES_DELAY = 3600; // Approx 1 minute
+constexpr int SCAN_FRAMES_DELAY = 600; 
 constexpr int MAX_TILES_TO_SCAN_FOR = 64;
 constexpr ui32 MAX_SCAN_DISTANCE = 128;
 constexpr ui32 MAX_RETURN_TILES = 32;
@@ -77,7 +77,7 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
         LiteTileHandle handle = gatherCmp.mScannedTiles.back();
         gatherCmp.mScannedTiles.pop_back();
 
-        IAgentTaskPtr newTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather);
+        IAgentTaskPtr newTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather, businessCmp.mCity);
         gatherList.emplace_back(std::move(newTask));
     }
 }

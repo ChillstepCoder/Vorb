@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "CityDebugRenderer.h"
 
-#include "Camera2D.h"
 #include "DebugRenderer.h"
 
 #include "box2d/b2_collision.h"
@@ -9,6 +8,8 @@
 #include "city/CityBuilder.h"
 #include "city/CityPlanner.h"
 #include "city/CityPlotter.h"
+#include "city/CityQuartermaster.h"
+#include "item/ItemStockpile.h"
 
 constexpr int DEBUG_ID_CITY = 123;
 
@@ -101,15 +102,15 @@ void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) c
     }
 }
 
-void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) const {
+void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) const {
 
     if (!mNeedsMeshes) {
         return;
     }
 
     // Render districts
-    for (size_t i = 0; i < cityPotter.mDistricts.size(); ++i) {
-        const CityDistrict& district = *cityPotter.mDistricts[i];
+    for (size_t i = 0; i < cityPlotter.mDistricts.size(); ++i) {
+        const CityDistrict& district = *cityPlotter.mDistricts[i];
         color4 color;
         switch (district.type) {
             case DistrictTypes::Rural:
@@ -140,8 +141,8 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
     }
 
     // Render plots
-    for (size_t i = 0; i < cityPotter.mPlots.size(); ++i) {
-        const auto& plot = cityPotter.mPlots[i];
+    for (size_t i = 0; i < cityPlotter.mPlots.size(); ++i) {
+        const auto& plot = cityPlotter.mPlots[i];
         color4 color;
         if (i == 0) {
             // City center
@@ -152,6 +153,13 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPotter) co
             color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
         }
         DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), color, PERIOD_FRAMES);
+    }
+}
+
+void CityDebugRenderer::renderCityQuartermasterDebug(const CityQuartermaster& cityQuartermaster) const
+{
+    for (auto&& stockpile : cityQuartermaster.mAllStockpiles) {
+        stockpile->renderDebug();
     }
 }
 

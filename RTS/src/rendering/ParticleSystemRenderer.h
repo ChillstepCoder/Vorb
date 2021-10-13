@@ -1,7 +1,7 @@
 #pragma once
 
 class ResourceManager;
-class Camera2D;
+class Camera3D;
 class MaterialRenderer;
 class ParticleSystem;
 struct ParticleSystemData;
@@ -15,9 +15,9 @@ public:
     ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
     ~ParticleSystemRenderer();
 
-    void renderParticleSystems(const Camera2D& camera, vg::GBuffer* activeGbuffer, bool renderLitSystems);
+    void renderParticleSystems(const Camera3D& camera, vg::GBuffer* activeGbuffer, bool renderLitSystems);
 private:
-    void renderParticleSystem(const Camera2D& camera, const ParticleSystem& particleSystem);
+    void renderParticleSystem(const Camera3D& camera, const ParticleSystem& particleSystem);
     vg::GBuffer getOrCreateFramebufferForParticleSystem(const nString& name);
     void renderPostProcess(const ParticleSystemData& particleSystemData, vg::GBuffer& gBuffer);
 

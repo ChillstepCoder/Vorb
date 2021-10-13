@@ -43,6 +43,16 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 registry.emplace<CorpseComponent>(newEntity);
                 break;
             }
+            case ComponentTypes::CharacterDetails: {
+                auto& characterDetails = registry.emplace<CharacterDetailsComponent>(newEntity);
+                if (cdef.characterDetails.name) {
+                    characterDetails.name = cdef.characterDetails.name;
+                }
+                else {
+                    characterDetails.name = "UNNAMED CHARACTER";
+                }
+                break;
+            }
             case ComponentTypes::DynamicLight: {
                 registry.emplace<DynamicLightComponent>(newEntity);
                 break;
@@ -91,7 +101,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 assert(false); // Missing type
                 break;
         }
-        static_assert(enum_cast(ComponentTypes::COUNT) == 13, "Update component construction");
+        static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Update component construction");
     }
 
     return newEntity;

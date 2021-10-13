@@ -8,8 +8,8 @@
 #include <Vorb/graphics/TextureCache.h> //TODO: Remove
 #include <Vorb/graphics/GLProgram.h>
 
-MaterialManager::MaterialManager(vio::IOManager& ioManager, SpriteRepository& spriteRepository) :
-    mIoManager(ioManager), mSpriteRepository(spriteRepository) {
+MaterialManager::MaterialManager(vio::IOManager& ioManager, SpriteRepository& spriteRepository, vg::TextureCache& textureCache) :
+    mIoManager(ioManager), mSpriteRepository(spriteRepository), mTextureCache(textureCache) {
 
 }
 
@@ -55,6 +55,16 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
             input.uvRectUniform = newMaterial.mProgram.getUniform(textureData.uniformRectName);
             input.pageUniform = newMaterial.mProgram.getUniform(textureData.uniformPageName);
             newMaterial.mInputAtlasTextures.emplace_back(std::move(input));
+        }
+
+        for (int i = 0; i < materialData.textures.size(); ++i) {
+            const MaterialTextureInputData& textureData = materialData.textures[i];
+            MaterialTextureInput input;
+            input.textureUniform = newMaterial.mProgram.getUniform(textureData.uniformName);
+            vg::Texture texture = mTextureCache.findTexture(textureData.textureName);
+            input.texture = texture.id;
+            assert(texture.id != 0);
+            newMaterial.mInputTextures.emplace_back(std::move(input));
         }
 
         // Get uniforms from shader

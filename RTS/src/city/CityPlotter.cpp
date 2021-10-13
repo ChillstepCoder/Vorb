@@ -297,7 +297,7 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
 }
 
 // Returns false if we deleted the plot
-bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB& aabb, OPT CityRoad* road) {
+bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB2& aabb, OPT CityRoad* road) {
 
     // Need to check fully enveloped cases
     // First test AABB+AABB collision to see if we even have a split
@@ -314,7 +314,7 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
         { aabb.x, aabb.y + aabb.height },
         { aabb.x + aabb.width, aabb.y + aabb.height}
     };
-    const ui32AABB& thisAABB = mPlots[plotIndex].aabb;
+    const ui32AABB2& thisAABB = mPlots[plotIndex].aabb;
     bool intersects[4] = {
         pointIsWithinAABB(corners[0], thisAABB),
         pointIsWithinAABB(corners[1], thisAABB),
@@ -520,7 +520,7 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
     assert(offset != 0 && offset < plotToSplit.aabb[oppositeAxis] + plotToSplit.aabb[oppositeAxis + 2]);
     // TODO: pass down road neighbors
     // Add new plot
-    ui32AABB newAABB = plotToSplit.aabb;
+    ui32AABB2 newAABB = plotToSplit.aabb;
     newAABB[oppositeAxis] = plotToSplit.aabb[oppositeAxis] + offset;
     newAABB[oppositeAxis + 2] = plotToSplit.aabb[oppositeAxis + 2] - offset;
     // Shrink old plot

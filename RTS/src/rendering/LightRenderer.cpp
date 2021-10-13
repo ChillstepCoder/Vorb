@@ -6,7 +6,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "ResourceManager.h"
-#include "Camera2D.h"
+#include "camera/Camera3D.h"
 
 static_assert((int)LightShape::Count == 1, "Update this file to handle new light shape");
 static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle new attenuation type");
@@ -24,7 +24,7 @@ LightRenderer::~LightRenderer() {
     }
 }
 
-void LightRenderer::RenderLight(const f32v2& position, const LightData& lightData, const Camera2D& camera) const {
+void LightRenderer::RenderLight(const f32v2& position, const LightData& lightData, const Camera3D& camera) const {
 
     mMaterialRenderer.bindMaterialForRender(*mPointLightMaterial);
 

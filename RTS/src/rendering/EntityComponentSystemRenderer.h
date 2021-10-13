@@ -1,14 +1,15 @@
 #pragma once
-#include "Camera2D.h"
 
 #include <Vorb/graphics/Texture.h>
 
 DECL_VG(class SpriteBatch)
 DECL_VG(class DepthState)
 
-class Camera2D;
+class Camera3D;
 class PhysicsSystem;
+class CharacterRenderer;
 class EntityComponentSystem;
+class MaterialRenderer;
 class ResourceManager;
 class World;
 class LightRenderer;
@@ -16,11 +17,11 @@ class LightRenderer;
 class EntityComponentSystemRenderer {
 public:
 	EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world);
-	void renderPhysicsDebug(const Camera2D& camera) const;
-	void renderSimpleSprites(const Camera2D& camera) const;
-	void renderCharacterModels(const Camera2D& camera, const vg::DepthState& depthState, f32 alpha, f32 frameAlpha);
-	void renderDynamicLightComponents(const Camera2D& camera, const LightRenderer& lightRenderer);
-	void renderInteractUI(const Camera2D& camera) const;
+	void renderPhysicsDebug(const Camera3D& camera) const;
+	void renderSimpleSprites(const Camera3D& camera) const;
+	void renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 alpha, f32 frameAlpha);
+	void renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer);
+	void renderInteractUI(const Camera3D& camera) const;
 
 private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;

@@ -1,0 +1,3 @@
+simple_color:
+  vert: simple_color.vert
+  frag: simple_color.frag

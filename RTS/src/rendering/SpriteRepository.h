@@ -21,13 +21,11 @@ public:
     const SpriteData& getSprite(const std::string& spriteName);
     bool loadSpriteTexture(const vio::Path& filePath);
 
-    vg::TextureCache& getTextureCache() { return *mTextureCache; }
     const TextureAtlas& getTextureAtlas() { return *mTextureAtlas; }
     SpriteDataMap& getSprites() { return mSprites; }
 
 private:
     std::unique_ptr<TileSpriteLoader> mTileSpriteLoader;
-    std::unique_ptr<vg::TextureCache> mTextureCache;
     std::unique_ptr<TextureAtlas> mTextureAtlas;
     SpriteDataMap mSprites;
 

@@ -19,7 +19,7 @@ ParticleSystemRenderer::~ParticleSystemRenderer() {
 
 }
 
-void ParticleSystemRenderer::renderParticleSystems(const Camera2D& camera, vg::GBuffer* activeGbuffer, bool renderLitSystems) {
+void ParticleSystemRenderer::renderParticleSystems(const Camera3D& camera, vg::GBuffer* activeGbuffer, bool renderLitSystems) {
 
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_POINT_SPRITE);
@@ -72,7 +72,7 @@ void ParticleSystemRenderer::renderParticleSystems(const Camera2D& camera, vg::G
     glDisable(GL_POINT_SPRITE);
 }
 
-void ParticleSystemRenderer::renderParticleSystem(const Camera2D& camera, const ParticleSystem& particleSystem) {
+void ParticleSystemRenderer::renderParticleSystem(const Camera3D& camera, const ParticleSystem& particleSystem) {
     if (!particleSystem.mParticles.size()) {
         return;
     }

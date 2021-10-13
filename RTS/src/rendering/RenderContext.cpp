@@ -3,6 +3,7 @@
 #include "ResourceManager.h"
 #include "TextureAtlas.h"
 #include "World.h"
+#include "world/TileRepository.h"
 
 #include "TextureManip.h"
 #include "rendering/MaterialRenderer.h"
@@ -11,9 +12,19 @@
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/ParticleSystemRenderer.h"
+#include "rendering/ItemRenderer.h"
+#include "rendering/QuadMesh.h"
+#include "rendering/CharacterRenderer.h"
+#include "rendering/Skybox.h"
 #include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
+
+// TODO: Move to renderer?
+#include "city/CityQuartermaster.h"
+
+#include "camera/ICamera.h"
+#include "camera/Camera3D.h"
 
 #include "city/City.h"
 
@@ -41,17 +52,9 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mWorld(world),
     mScreenResolution(screenResolution)
 {
-    // Init renderers
-    mMaterialRenderer       = std::make_unique<MaterialRenderer>(*this);
-    mLightRenderer          = std::make_unique<LightRenderer>(resourceManager, *mMaterialRenderer);
-    mChunkRenderer          = std::make_unique<ChunkRenderer>(resourceManager, *mMaterialRenderer);
-    mEcsRenderer            = std::make_unique<EntityComponentSystemRenderer>(resourceManager, world);
-    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(resourceManager, *mMaterialRenderer, screenResolution);
-    mCityDebugRenderer      = std::make_unique<CityDebugRenderer>();
-    checkGlError("Renderer init");
-
-    mTextureManipulator = std::make_unique<GPUTextureManipulator>(resourceManager, *mMaterialRenderer);
-    checkGlError("Init texture manipulator");
+    // Mesh init
+    MeshBase::initStaticIBO();
+    checkGlError("Meshbase init");
 
     // int UI resources
     mSb         = std::make_unique<vg::SpriteBatch>();
@@ -80,26 +83,26 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     checkGlError("GBuffer init");
 
     // Shadow GBuffer
-    vg::GBufferAttachment shadowAttachments[1];
-    // Shadow alpha and source height
-    shadowAttachments[0].format = vg::TextureInternalFormat::R16;
-    shadowAttachments[0].number = 0;
-    shadowAttachments[0].pixelFormat = vg::TextureFormat::RED;
-    shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
-    mShadowGBuffer.setSize(ui32v2(mScreenResolution));
-    mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
-    mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
-    checkGlError("Shadow GBuffer Init");
+    //vg::GBufferAttachment shadowAttachments[1];
+    //// Shadow alpha and source height
+    //shadowAttachments[0].format = vg::TextureInternalFormat::R16;
+    //shadowAttachments[0].number = 0;
+    //shadowAttachments[0].pixelFormat = vg::TextureFormat::RED;
+    //shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
+    //mShadowGBuffer.setSize(ui32v2(mScreenResolution));
+    //mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
+    //mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+    //checkGlError("Shadow GBuffer Init");
 
-    // Shadow GBuffer
+    // ZCutout GBuffer
     vg::GBufferAttachment zCutoutAttachments[1];
-    // Shadow alpha and source height
+    // ZCutout alpha and source height
     zCutoutAttachments[0].format = vg::TextureInternalFormat::R8;
     zCutoutAttachments[0].number = 0;
     zCutoutAttachments[0].pixelFormat = vg::TextureFormat::RED;
     zCutoutAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
     mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
-    mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
+    mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(zCutoutAttachments, 1), vg::TextureInternalFormat::NONE);
     checkGlError("Z Cutout GBuffer Init");
 }
 
@@ -120,6 +123,22 @@ RenderContext& RenderContext::getInstance() {
 }
 
 void RenderContext::initPostLoad() {
+
+    // Initialize renderer after material assets are loaded
+    mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager());
+    // Init renderers
+    mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
+    mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
+    mChunkRenderer = std::make_unique<ChunkRenderer>(mResourceManager, *mMaterialRenderer);
+    mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
+    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+    mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
+    mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
+    checkGlError("Renderer init");
+    mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
+    checkGlError("Init texture manipulator");
+
+    // TODO: These can be eliminated and put into constructor???
     mLightRenderer->InitPostLoad();
     mChunkRenderer->InitPostLoad();
     mTextureManipulator->InitPostLoad();
@@ -139,39 +158,50 @@ void RenderContext::initPostLoad() {
     mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
     mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
+
+    buildHorizonMesh();
+    mSkyBox = std::make_unique<Skybox>();
+    mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
 }
 
-void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha) {
+void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos) {
+    // Set renderData
+    mRenderData.mainCamera = camera;
+    mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
+    mRenderData.sunHeight = mWorld.getSunHeight();
+    mRenderData.sunColor = mWorld.getSunColor();
+    mRenderData.timeOfDay = mWorld.getTimeOfDay();
+    mRenderData.sunPositionCameraRelative = mWorld.getSunPosition();
+    mRenderData.cameraZAngle = camera->getZAngle();
+    mRenderData.playerPos = playerPos;
+    mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha) {
 
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
     if (camera.getScale() < 1.5f) {
-        lodState = ChunkRenderLOD::LOD_TEXTURE;
+        // TODO: Remove for 2D
+        //lodState = ChunkRenderLOD::LOD_TEXTURE;
     }
 
-    // Set renderData
-    mRenderData.mainCamera = &camera;
-    mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
-    mRenderData.sunHeight = mWorld.getSunHeight();
-    mRenderData.sunColor = mWorld.getSunColor();
-    mRenderData.timeOfDay = mWorld.getTimeOfDay();
-    mRenderData.sunPosition = mWorld.getSunPosition();
-    mRenderData.playerPos = playerPos;
-    mRenderData.mousePosWorld = mousePosWorld;
-
+    // TODO: Should this happen here? Maybe assert instead?
+    beginFrame(&camera, playerPos);
+    
     vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-    // Cutout pass
-    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+    // Cutout pass (wtf is this?)
+    /*if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         mZCutoutGBuffer.useGeometry();
         vg::BlendState::set(vg::BlendStateType::REPLACE);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        mChunkRenderer->renderChunksZCutout(mWorld, camera);
-    }
+        mChunkRenderer->renderChunksZCutout(mWorld, camera2d);
+    }*/
 
     // Main geometry pass
     activeGbuffer.useGeometry();
@@ -180,27 +210,43 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     // Clear screen
     vg::DepthState::FULL.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // TODO: Remove color buffer clear, doing it just to reduce ghosting
-
-    // TODO: Replace With BlendState
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if (sDebugOptions.mWireframe) {
+        glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     else {
+        glClear(GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
+    // TODO: Replace With BlendState
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
+    mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
 
-    //mEcsRenderer->renderPhysicsDebug(camera);
+    mEcsRenderer->renderPhysicsDebug(camera);
     //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::FULL, 1.0f, frameAlpha);
     mEcsRenderer->renderInteractUI(camera);
 
+    // Render city stuff such as stockpiles
+    const CityGraph& cities = mWorld.getCities();
+    for (auto&& city : cities.mNodes) {
+        // Stockpiles
+        const CityQuartermaster& quarterMaster = city->getCityQuartermaster();
+        for (auto& it : quarterMaster.getStockpiles()) {
+            mItemRenderer->renderStockpile(*it);
+        }
+    }
+
+    // Sky
+    mSkyBox->render(*mMaterialRenderer);
+
+    // Horizon
+    mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
+
     // Particles
-    // ISSUE: Particles are always in shadow, even if they have only vertical velocity.
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         vg::DepthState::READ.set();
         // TODO: Replace With BlendState
@@ -213,21 +259,21 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    // Shadows
-    mShadowGBuffer.useGeometry();
-    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // TODO: Replace With BlendState
-        glBlendFunc(GL_ONE, GL_ZERO);
-        mChunkRenderer->renderWorldShadows(mWorld, camera);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        activeGbuffer.useGeometry();
-    }
-    else {
-        // TODO: Can we not do this every frame?
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        activeGbuffer.useGeometry();
-    }
+    //// Shadows
+    //mShadowGBuffer.useGeometry();
+    //if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    // TODO: Replace With BlendState
+    //    glBlendFunc(GL_ONE, GL_ZERO);
+    //    mChunkRenderer->renderWorldShadows(mWorld, camera2d);
+    //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //    activeGbuffer.useGeometry();
+    //}
+    //else {
+    //    // TODO: Can we not do this every frame?
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    activeGbuffer.useGeometry();
+    //}
 
     // City Debug
     if (sDebugOptions.mCities) {
@@ -236,6 +282,7 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
             mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
             mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
             mCityDebugRenderer->renderCityPlotterDebug(city->getCityPlotter());
+            mCityDebugRenderer->renderCityQuartermasterDebug(city->getCityQuartermaster());
         }
         mCityDebugRenderer->finishRenderFrame();
     }
@@ -243,13 +290,9 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         mCityDebugRenderer->clearMeshes();
     }
 
-    // Debug Axis render at origin
-    DebugRenderer::drawVector(f32v2(0.0f), f32v2(5.0f, 0.0f), color4(1.0f, 0.0f, 0.0f));
-    DebugRenderer::drawVector(f32v2(0.0f), f32v2(0.0f, 5.0f), color4(0.0f, 1.0f, 0.0f));
-
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        mWorld.enumVisibleChunks(camera, [](const Chunk& chunk) {
+        mWorld.enumVisibleChunks([](const Chunk& chunk) {
             if (chunk.isDataReady()) {
                 DebugRenderer::drawBox(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
                 color4 neighborColor(1.0f, 0.0f, 0.0f);
@@ -280,14 +323,14 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
         });
     }
 
-    DebugRenderer::render(camera.getCameraMatrix());
+    DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
     // *** Post processes ***
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    mEcsRenderer->renderCharacterModels(camera, vg::DepthState::NONE, 0.20f, frameAlpha);
+    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
 
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
@@ -311,13 +354,14 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Sun Light
+    // TODO: Collapse this into lightPassThrough?
     mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
 
     // Sun Shadows
-    if (mRenderData.sunHeight > 0.0f) {
+    /*if (mRenderData.sunHeight > 0.0f) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         mMaterialRenderer->renderFullScreenQuad(*mSunShadowMaterial);
-    }
+    }*/
 
     //  Dynamic  light
     glBlendFunc(GL_ONE, GL_ONE);
@@ -330,6 +374,11 @@ void RenderContext::renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 m
 
     // Final Lighting
     mMaterialRenderer->renderFullScreenQuad(*mLightPassThroughMaterial);
+
+    // Sky
+   /* vg::DepthState::READ.set();
+    renderSky(camera);
+    vg::DepthState::FULL.set();*/
 
     // Copy depth for emissive rendering, so we can still depth test
     vg::DepthState::WRITE.set();
@@ -361,7 +410,7 @@ void RenderContext::selectNextDebugShader() {
     }
 }
 
-void RenderContext::renderUI(const Camera2D& camera) {
+void RenderContext::renderUI(const Camera3D& camera) {
     mSb->begin();
     char buffer[255];
     const float GAP_SIZE = 64.0f;
@@ -387,4 +436,52 @@ void RenderContext::renderUI(const Camera2D& camera) {
 
     mSb->end();
     mSb->render(mScreenResolution);
+}
+
+void RenderContext::buildHorizonMesh()
+{
+    mHorizonQuad = std::make_unique<QuadMesh>();
+    TileVertex verts[4];
+    constexpr float QUAD_WIDTH = 140000.0f;
+    constexpr float Z_POS = -6.0f;
+    const color3 waterColor3 = TileRepository::getTileData("water").spriteData.lodColor;
+    const color4 waterColor(waterColor3.r, waterColor3.g, waterColor3.b, 255u);
+
+    { // Bottom Left
+        TileVertex& vbl = verts[0];
+        vbl.pos.x = -QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vbl.pos.y = -QUAD_WIDTH + WorldData::WORLD_CENTER.y;
+        vbl.pos.z = Z_POS;
+        vbl.uvs.x = 0.0f;
+        vbl.uvs.y = 0.0f;
+        vbl.color = waterColor;
+    }
+    { // Bottom Right
+        TileVertex& vbr = verts[1];
+        vbr.pos.x = QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vbr.pos.y = -QUAD_WIDTH + WorldData::WORLD_CENTER.y;
+        vbr.pos.z = Z_POS;
+        vbr.uvs.x = 0.0f;
+        vbr.uvs.y = 0.0f;
+        vbr.color = waterColor;
+    }
+    { // Top Left
+        TileVertex& vtl = verts[2];
+        vtl.pos.x = -QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vtl.pos.y = QUAD_WIDTH + WorldData::WORLD_CENTER.y;
+        vtl.pos.z = Z_POS;
+        vtl.uvs.x = 0.0f;
+        vtl.uvs.y = 0.0f;
+        vtl.color = waterColor;
+    }
+    { // Top Right
+        TileVertex& vtr = verts[3];
+        vtr.pos.x = QUAD_WIDTH + WorldData::WORLD_CENTER.x;
+        vtr.pos.y = QUAD_WIDTH + WorldData::WORLD_CENTER.y;
+        vtr.pos.z = Z_POS;
+        vtr.uvs.x = 0.0f;
+        vtr.uvs.y = 0.0f;
+        vtr.color = waterColor;
+    }
+    mHorizonQuad->setData(verts, 4, QuadMeshDrawMode::STATIC);
 }

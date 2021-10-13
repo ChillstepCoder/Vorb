@@ -1,11 +1,11 @@
 #include "stdafx.h"
 #include "World.h"
 
-#include "Camera2D.h"
 #include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
+#include "world/TileRepository.h"
 #include "physics/ContactListener.h"
 
 #include "ecs/factory/EntityFactory.h"
@@ -15,6 +15,7 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/math/VectorMath.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include <box2d/b2_world.h>
 #include <box2d/b2_fixture.h>
@@ -23,21 +24,13 @@
 #include "Utils.h"
 
 #include "city/City.h"
+#include "camera/ICamera.h"
 
 // TODO: remove?
 #include "ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
 
 #include "util/TileUtil.h"
-
-// For raycast
-inline f32 fastFloorf(f32 x) {
-    return FastConversion<f32, f32>::floor(x);
-}
-inline f64 fastCeilf(f32 x) {
-    return FastConversion<f32, f32>::ceiling(x);
-}
-
 
 
 #define ENABLE_DEBUG_RENDER 1
@@ -92,12 +85,12 @@ void World::initPostLoad() {
     }
 }
 
-void World::update(const f32v2& playerPos, const Camera2D& camera) {
+void World::update(const f32v2& playerPos, const ICamera& camera) {
 	assert(mEcs);
 
 	Services::Threadpool::ref().mainThreadUpdate();
 
-	updateSun();
+	updateSun(camera);
 
 	mLoadCenter = playerPos;
 	
@@ -106,27 +99,24 @@ void World::update(const f32v2& playerPos, const Camera2D& camera) {
 	if (playerChunk.isInvalid()) {
 		initChunk(playerChunk);
 	}
-	
-	const f32v2 topRight = camera.convertScreenToWorld(f32v2(camera.getScreenWidth(), 0.0f));
-	const f32v2 center = camera.convertScreenToWorld(f32v2(camera.getScreenWidth() * 0.5f, camera.getScreenHeight() * 0.5f));
 
-    mViewRange.x = topRight.x - center.x + CHUNK_WIDTH / 2;
-	mViewRange.y = topRight.y - center.y + CHUNK_WIDTH / 2;
-
-	// Always load an extra border of chunks
-	mViewRange.x = MAX(mViewRange.x, CHUNK_WIDTH) + CHUNK_WIDTH;
-	mViewRange.y = MAX(mViewRange.y, CHUNK_WIDTH) + CHUNK_WIDTH;
-
+	mVisibleChunks.clear();
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
         if (updateChunk(chunk)) {
             chunk.dispose();
 			mActiveChunks[i] = mActiveChunks.back();
 			mActiveChunks.pop_back();
+			continue;
         }
-        else {
-            ++i;
-        }
+        ++i;
+		// Determine visibility
+		if (!chunk.isInvalid()) {
+			const f32v2& worldPos = chunk.getWorldPos();
+			if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS)) {
+				mVisibleChunks.push_back(&chunk);
+			}
+		}
     }
 
 	// Update cities
@@ -165,8 +155,161 @@ Chunk& World::getChunkAtPosition(const ui32v2& worldPos) {
     return getChunkAtPosition(ChunkID(worldPos));
 }
 
-TileHandle World::getTileHandleAtScreenPos(const f32v2& screenPos, const Camera2D& camera) const {
-	assert(false); // Implement!
+inline f32 fastFloorf(f32 x) {
+    return FastConversion<f32, f32>::floor(x);
+}
+inline f32 fastCeilf(f32 x) {
+    return FastConversion<f32, f32>::ceiling(x);
+}
+
+TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const {
+	constexpr bool ENABLE_DEBUG_PICK_RENDER = false;
+
+	const f32v3 rayStart = camera.getPosition();
+	PreciseTimer timer;
+
+	// TODO: https://vercidium.com/blog/optimised-voxel-raymarching/
+
+	constexpr f32 RAY_CHECK_LENGTH = 10000.0f;
+	f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
+
+	const ui32 duration = 300;
+	bool didHit = false;
+	std::vector<std::pair<IntersectionHit3D, Chunk*> > sortedHits;
+	for (auto&& chunk : mVisibleChunks) {
+        if (!chunk->isDataReady()) {
+            continue;
+        }
+        IntersectionHit3D hit = IntersectionUtil::LineAABBIntersection(chunk->getAABB(), rayStart, rayEnd);
+        if (hit.didHit()) {
+            sortedHits.push_back(std::make_pair(hit, chunk));
+        }
+	}
+    if (sortedHits.empty()) {
+		if (ENABLE_DEBUG_PICK_RENDER) {
+			DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+		}
+        return TileHandle();
+	}
+
+	// Sort for nearest
+	std::sort(sortedHits.begin(), sortedHits.end(), [](const std::pair<IntersectionHit3D, Chunk*>& a, const std::pair<IntersectionHit3D, Chunk*>& b) -> bool {
+		return a.first.closeTime < b.first.closeTime;
+	});
+
+	for (auto&& hitPair : sortedHits) {
+		IntersectionHit3D& hit = hitPair.first;
+		Chunk* chunk = hitPair.second;
+		f32v3 currentPos = hit.position;
+		i32v3 currentVoxelPos = i32v3(fastFloor(currentPos.x), fastFloor(currentPos.y), fastFloor(currentPos.z));
+        f32v3 farIntersect = (rayEnd - rayStart) * hit.farTime + rayStart;
+        const f32v3 offset = farIntersect - hit.position;
+        const f32 maxDistance = glm::length(offset);
+		if (ENABLE_DEBUG_PICK_RENDER) {
+			DebugRenderer::drawBox(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
+			DebugRenderer::drawVector(rayStart, hit.position - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
+			DebugRenderer::drawVector(hit.position, offset, color4(0.0f, 1.0f, 0.0f), duration);
+			DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f), duration);
+		}
+		float currDistance = 0.0f;
+
+		while (currDistance < maxDistance) {
+
+			TileIndex index = TileIndex(currentVoxelPos.x % CHUNK_WIDTH, currentVoxelPos.y % CHUNK_WIDTH);
+			
+            Tile tile = chunk->getTileAt(index);
+            if ((int)tile.baseZPosition >= currentVoxelPos.z) {
+				if (ENABLE_DEBUG_PICK_RENDER) {
+					DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+					DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+				}
+				return TileHandle(chunk, index);
+            }
+			if (ENABLE_DEBUG_PICK_RENDER) {
+				DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 0.0f, 0.0f), duration);
+			}
+
+			f32v3 next;
+			f32v3 r;
+
+			// X-Distance
+			if (rayDir.x > 0) {
+				if (currentPos.x == fastCeilf(currentPos.x)) next.x = currentPos.x + 1;
+				else next.x = fastCeilf(currentPos.x);
+				r.x = (next.x - currentPos.x) / rayDir.x;
+			}
+			else if (rayDir.x < 0) {
+				if (currentPos.x == fastFloorf(currentPos.x)) next.x = currentPos.x - 1;
+				else next.x = fastFloorf(currentPos.x);
+				r.x = (next.x - currentPos.x) / rayDir.x;
+			}
+			else {
+				r.x = FLT_MAX;
+			}
+
+			// Y-Distance
+			if (rayDir.y > 0) {
+				if (currentPos.y == fastCeilf(currentPos.y)) next.y = currentPos.y + 1;
+				else next.y = fastCeilf(currentPos.y);
+				r.y = (next.y - currentPos.y) / rayDir.y;
+			}
+			else if (rayDir.y < 0) {
+				if (currentPos.y == fastFloorf(currentPos.y)) next.y = currentPos.y - 1;
+				else next.y = fastFloorf(currentPos.y);
+				r.y = (next.y - currentPos.y) / rayDir.y;
+			}
+			else {
+				r.y = FLT_MAX;
+			}
+
+			// Z-Distance
+			if (rayDir.z > 0) {
+				if (currentPos.z == fastCeilf(currentPos.z)) next.z = currentPos.z + 1;
+				else next.z = fastCeilf(currentPos.z);
+				r.z = (next.z - currentPos.z) / rayDir.z;
+			}
+			else if (rayDir.z < 0) {
+				if (currentPos.z == fastFloorf(currentPos.z)) next.z = currentPos.z - 1;
+				else next.z = fastFloorf(currentPos.z);
+				r.z = (next.z - currentPos.z) / rayDir.z;
+			}
+			else {
+				r.z = FLT_MAX;
+			}
+			f32v3 prevPos = currentPos; // DEBUG
+			// Get Minimum Movement To The Next Voxel
+			f32 rat;
+			if (r.x < r.y && r.x < r.z) {
+				// Move In The X-Direction
+				rat = r.x;
+				currentPos += rayDir * rat;
+				if (rayDir.x > 0) currentVoxelPos.x++;
+				else if (rayDir.x < 0) currentVoxelPos.x--;
+			}
+			else if (r.y < r.z) {
+				// Move In The Y-Direction
+				rat = r.y;
+				currentPos += rayDir * rat;
+				if (rayDir.y > 0) currentVoxelPos.y++;
+				else if (rayDir.y < 0) currentVoxelPos.y--;
+			}
+			else {
+				// Move In The Z-Direction
+				rat = r.z;
+				currentPos += rayDir * rat;
+				if (rayDir.z > 0) currentVoxelPos.z++;
+				else if (rayDir.z < 0) currentVoxelPos.z--;
+            }
+			if (ENABLE_DEBUG_PICK_RENDER) {
+				DebugRenderer::drawVector(currentPos, currentPos - prevPos, color4(0.0f, 0.0f, 1.0f), duration);
+			}
+
+
+			// Add The Distance The Ray Has Traversed
+			currDistance += rat;
+		}
+	}
+	std::cout << "Pick time " << timer.stop() << std::endl;
 	return TileHandle();
 }
 
@@ -193,132 +336,23 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
     return TileHandle();
 }
 
-const ItemStack* World::tryGetItemStackAtWorldPos(const f32v2& worldPos) const {
-	const Chunk& chunk = getChunkAtPosition(worldPos);
-	if (chunk.getState() == ChunkState::FINISHED) {
-		// TODO: Utility?
-		unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-		unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return chunk.tryGetItemStackAt(TileIndex(x, y));
-	}
-	return nullptr;
-}
-
-bool World::tryAddFullItemStackAt(const f32v2& worldPos, ItemStack itemStack) {
-    Chunk& chunk = getChunkAtPosition(worldPos);
-    if (chunk.getState() == ChunkState::FINISHED) {
-        // TODO: Utility?
-        unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk.tryAddFullItemStackAt(TileIndex(x, y), itemStack);
-    }
-    return false;
-}
-
-ItemStack World::tryAddPartialItemStackAt(const f32v2& worldPos, ItemStack itemStack) {
-    Chunk& chunk = getChunkAtPosition(worldPos);
-    if (chunk.getState() == ChunkState::FINISHED) {
-        // TODO: Utility?
-        unsigned x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        unsigned y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk.tryAddPartialItemStackAt(TileIndex(x, y), itemStack);
-    }
-    return itemStack;
-}
-
-void World::enumVisibleChunks(const Camera2D& camera, std::function<void(const Chunk& chunk)> func) const
-{
-    // Stick to positive numbers
-    f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
-	if (isnan(bottomLeftCorner.x + bottomLeftCorner.y)) return;
-
-	// Start one chunk down for mountains
-	bottomLeftCorner.y -= CHUNK_WIDTH;
-	if (bottomLeftCorner.x < 0.0f) {
-		bottomLeftCorner.x = 0.0f;
-	}
-    if (bottomLeftCorner.y < 0.0f) {
-        bottomLeftCorner.y = 0.0f;
-    }
-
-    const ChunkID bottomLeftID(bottomLeftCorner);
-
-	ChunkID enumerator = bottomLeftID;
-    
-    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
-    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
-    ui32 widthInChunks = (ui32)((scaledWidth + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1);
-	ui32 heightInChunks = (ui32)((scaledHeight + CHUNK_WIDTH / 2) / CHUNK_WIDTH + 1) + 1;
-
-	if (widthInChunks + enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS) {
-		widthInChunks -= (widthInChunks + enumerator.pos.x) - WorldData::WORLD_WIDTH_CHUNKS + 1;
-	}
-    if (heightInChunks + enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
-		heightInChunks -= (heightInChunks + enumerator.pos.y) - WorldData::WORLD_WIDTH_CHUNKS + 1;
-    }
-	// Dont crash if we go out of world
-	if (enumerator.pos.x >= WorldData::WORLD_WIDTH_CHUNKS || enumerator.pos.y >= WorldData::WORLD_WIDTH_CHUNKS) {
-		return;
-	}
-
-	while (true) {
-        if (enumerator.pos.x - bottomLeftID.pos.x > widthInChunks) {
-            enumerator.pos.x -= widthInChunks + 1;
-			enumerator = enumerator.getTopID();
-        }
-        if (enumerator.pos.y - bottomLeftID.pos.y > heightInChunks) {
-            // Off screen
-            return;
-        }
-		const Chunk& chunk = getChunkAtPosition(enumerator);
-        if (!chunk.isInvalid()) {
-            func(chunk);
-        }
-        enumerator = enumerator.getRightID();
+void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
+	for (auto&& chunk : mVisibleChunks) {
+		func(*chunk);
 	}
 }
 
-void World::enumVisibleRegions(const Camera2D& camera, std::function<void(const Region& chunk)> func) const {
-    // Stick to positive numbers
-    const f32v2 bottomLeftCorner = glm::max(camera.convertScreenToWorld(f32v2(0.0f, camera.getScreenHeight())), 0.0f);
-
-    const RegionID bottomLeftID(bottomLeftCorner);
-
-    RegionID enumerator = bottomLeftID;
-
-    const float scaledWidth = camera.getScreenWidth() / camera.getScale();
-    const float scaledHeight = camera.getScreenHeight() / camera.getScale();
-    ui32 widthInRegions = (ui32)((scaledWidth + WorldData::REGION_WIDTH_TILES / 2) / WorldData::REGION_WIDTH_TILES + 1);
-    ui32 heightInRegions = (ui32)((scaledHeight + WorldData::REGION_WIDTH_TILES / 2) / WorldData::REGION_WIDTH_TILES + 1);
-
-    if (widthInRegions + enumerator.pos.x >= WorldData::WORLD_WIDTH_REGIONS) {
-        widthInRegions -= (widthInRegions + enumerator.pos.x) - WorldData::WORLD_WIDTH_REGIONS + 1;
-    }
-    if (heightInRegions + enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
-        heightInRegions -= (heightInRegions + enumerator.pos.y) - WorldData::WORLD_WIDTH_REGIONS + 1;
-    }
-    // Dont crash if we go out of world
-    if (enumerator.pos.x >= WorldData::WORLD_WIDTH_REGIONS || enumerator.pos.y >= WorldData::WORLD_WIDTH_REGIONS) {
-        return;
-    }
-
-    while (true) {
-        if (enumerator.pos.x - bottomLeftID.pos.x > widthInRegions) {
-            enumerator.pos.x -= widthInRegions + 1;
-            enumerator = enumerator.getTopID();
+void World::enumVisibleRegions(const ICamera& camera, std::function<void(const Region& chunk)> func) const {
+    for (int i = 0; i < mWorldGrid.numRegions(); ++i) {
+        const Region& region = mWorldGrid.getRegion(i);
+        const f32v2& worldPos = region.getWorldPos();
+        if (camera.sphereIsVisible(f32v3(worldPos.x + WorldData::REGION_WIDTH_TILES, worldPos.y + WorldData::REGION_WIDTH_TILES, 0.0f), WorldData::REGION_DIAGONAL_RADIUS)) {
+            func(region);
         }
-        if (enumerator.pos.y - bottomLeftID.pos.y > heightInRegions) {
-            // Off screen
-            return;
-        }
-		assert(enumerator.id < WorldData::WORLD_SIZE_REGIONS);
-        const Region& region = mWorldGrid.getRegion(enumerator.id);
-        func(region);
-        enumerator = enumerator.getRightID();
     }
 }
 
-void World::efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk&, Tile&)> func) {
+void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func) {
 	// TODO: implement locking (write/read)
 	// TODO: handle this without asserts
 	// Start at bottom left
@@ -347,24 +381,17 @@ void World::efficientEnumTileAABB(const ui32AABB& aabb, std::function<void(Chunk
 	}
 }
 
-void World::updateClientEcsData(const Camera2D& camera) {
-    const i32v2& mousePos = vui::InputDispatcher::mouse.getPosition();
-    mClientEcsData.worldMousePos = camera.convertScreenToWorld(f32v2(mousePos.x, mousePos.y));
+void World::updateClientEcsData(Cartesian worldLookCardinalDirection) {
+	mClientEcsData.worldLookCardinalDirection = worldLookCardinalDirection;
 }
 
 void World::setTimeOfDay(float time) {
 	assert(time >= 0.0f && time <= HOURS_PER_DAY);
 
-	// Get initial
-    updateSun();
-
 	// Offset debug time
 	const f64 timeOffset = time - mTimeOfDay;
 	sDebugOptions.mTimeOffset += timeOffset * SECONDS_PER_HOUR;
 
-	// TODO: Better time manager
-	// Update with new offset
-	updateSun();
 }
 
 City* World::getClosestCityToPoint(const f32v2& pos) const
@@ -381,7 +408,7 @@ City* World::getClosestCityToPoint(const f32v2& pos) const
 	return closest;
 }
 
-IntersectionHit World::tryGetRaycastIntersect(const f32v2& start, const f32v2& end, f32 zPos)
+IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v2& end, f32 zPos)
 {
 	// TODO: Use Z position
 	UNUSED(zPos);
@@ -448,7 +475,7 @@ IntersectionHit World::tryGetRaycastIntersect(const f32v2& start, const f32v2& e
 
 		// Check collision
 		// TODO: Pass in collision radius
-		IntersectionHit hit = TileUtil::tryRayTileIntersect(tile.tile, currentCellPos, start, end, 0.3f);
+		IntersectionHit2D hit = TileUtil::tryRayTileIntersect(tile.tile, currentCellPos, start, end, 0.3f);
 		if (hit.didHit()) {
 			return hit;
 		}
@@ -457,28 +484,27 @@ IntersectionHit World::tryGetRaycastIntersect(const f32v2& start, const f32v2& e
 		currDist += rat;
 	}
 
-	return IntersectionHit();
+	return IntersectionHit2D();
 }
 
-void World::updateSun() {
+void World::updateSun(const ICamera& camera) {
     const float SUNRISE_TIME = 6.0f; // 6am
-    const float SUNSET_TIME = 19.0f; // 7pm
-	const float SUN_HEIGHT_EXPONENT = 0.5f; // Smaller exponent means brighter days
-	const float DAY_SPAN = SUNSET_TIME - SUNRISE_TIME;
+	const float SUN_HEIGHT_OFFSET = 0.3f; // Smaller exponent means brighter days
 	// TODO: Better time manager
 	const f64 adjustedTime = sTotalTimeSeconds + sDebugOptions.mTimeOffset;
     mTimeOfDay = (float)fmod(adjustedTime / (f64)SECONDS_PER_HOUR, (f64)HOURS_PER_DAY);
 
-	const float dayDelta = (mTimeOfDay - SUNRISE_TIME) / DAY_SPAN;
-	mSunHeight = sin(dayDelta * M_PIF);
-	if (mSunHeight > 0.0f) {
-		// We can only do exponent curve on nonzero numbers
-		mSunHeight = pow(mSunHeight, SUN_HEIGHT_EXPONENT);
-	}
-	mSunPosition = vmath::lerp(-1.0f, 1.0f, dayDelta);
+	const f32 sunDelta = (mTimeOfDay - SUNRISE_TIME) / 24.0f;
+	const f32 sunRotate = sunDelta * M_PI * 2.0f;
+    mSunPosition = glm::rotateY(f32v3(-1.0f, 0.0f, 0.0f), sunRotate);
+    mSunHeight = glm::min(mSunPosition.z + SUN_HEIGHT_OFFSET, 0.999f); // Store sun height before modification, cap at an epsilon to fix sampler issue
+    mSunPosition.z += 0.2f; // Make it more up lol
+    mSunPosition = glm::normalize(mSunPosition);
+
+	mSkyRotMatrix = glm::rotate(sunRotate, f32v3(0.0f, 1.0f, 0.0f));
 
 	// Colors
-    f32v3 sunSet(1.0f, 0.5f, 0);
+    f32v3 sunSet(1.0f, 0.5f, 0.0f);
     f32v3 sunPeak(1.0f, 1.0f, 1.0f);
     const float c = vmath::max(mSunHeight, 0.0f);
 	mSunColor = f32v3(
@@ -603,6 +629,12 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
 	mPhysWorld->QueryAABB(&queryCallBack, aabb);
+
+#if ENABLE_DEBUG_RENDER == 1
+    //if (s_debugToggle) {
+        DebugRenderer::drawAABB(aabb, color4(0.0f, 1.0f, 0.0f), 100);
+    //}
+#endif
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {

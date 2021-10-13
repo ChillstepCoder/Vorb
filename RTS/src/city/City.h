@@ -125,6 +125,7 @@ public:
     CityPlotter& getCityPlotter() { return *mCityPlotter; }
     CityBusinessManager& getBusinessManager() { return *mCityBusinessManager; }
     BuildingDescriptionRepository& getBuildingRepository() { return mBuildingRepository; }
+    CityQuartermaster& getCityQuartermaster() { return *mCityQuartermaster; }
 
     // Accessors
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
@@ -162,7 +163,7 @@ private:
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;
-    ui32v4 mCityAABB; // x,y,w,h
+    ui32AABB2 mCityAABB; // x,y,w,h
 
     ui32 mPopulation = 0;
     ui32 mPopulationCapacityRemaining = 0;

@@ -58,26 +58,7 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
 
     // Sense danger
 
-    //switch (ai.currentTask) {
-    //    case PersonAITask::IDLE: {
-    //        // Ask city for work
-    //        ai.currentTask = PersonAITask::CHOP_WOOD;
-    //        break;
-    //    }
-    //    case PersonAITask::CHOP_WOOD: {
-    //        // TODO: Change this instead to a task VirtualFunction
-    //        // Task chains
-    //        updateChopWoodTask(world, ai, physics);
-    //        break;
-    //    }
-    //    case PersonAITask::BUILD:
-    //        break;
-    //    case PersonAITask::SLEEP:
-    //        break;
-    //    default:
-    //        assert(false);
-    //        break;
-    //}
+    // Needs
 }
 
 void PersonAISystem::update(entt::registry& registry)

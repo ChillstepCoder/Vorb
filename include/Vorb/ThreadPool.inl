@@ -40,9 +40,14 @@ void vcore::ThreadPool<T>::clearTasks() {
 template<typename T>
 void vorb::core::ThreadPool<T>::mainThreadUpdate() {
     std::function<void()> proc;
-    // TODO: limit + bulk dequeue
+    // TODO: bulk dequeue?
+    constexpr unsigned MAX_MS = 4;
+    PreciseTimer timer;
     while (mMainThreadProcs.try_dequeue(proc)) {
         proc();
+        if (timer.stop() > MAX_MS) {
+            break;
+        }
     }
 }
 

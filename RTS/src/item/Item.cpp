@@ -13,3 +13,11 @@ KEG_ENUM_DEF(ItemType, ItemType, kt) {
     kt.addValue("quest", ItemType::QUEST);
 }
 static_assert(enum_cast(ItemType::TYPES) == 9, "Update def");
+
+KEG_ENUM_DEF(ItemStorageShape, ItemStorageShape, kt) {
+    kt.addValue("point", ItemStorageShape::POINT);
+    kt.addValue("plank", ItemStorageShape::PLANK);
+    kt.addValue("log", ItemStorageShape::LOG);
+    kt.addValue("ingot", ItemStorageShape::INGOT);
+}
+static_assert(enum_cast(ItemStorageShape::COUNT) == 4, "Update def");

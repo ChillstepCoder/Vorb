@@ -1,16 +1,21 @@
 #pragma once
 
 class ResourceManager;
-class Camera2D;
+class Camera3D;
+class ICamera;
 class Material;
 class MaterialRenderer;
 class ParticleSystemRenderer;
 class CityDebugRenderer;
+class ItemRenderer;
+class CharacterRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ChunkRenderer;
 class LightRenderer;
 class World;
+class QuadMesh;
+class Skybox;
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -21,12 +26,13 @@ struct GlobalRenderData {
     VGTexture atlas;
     f32 time;
     f32 sunHeight;
-    f32 sunPosition;
+    f32v3 sunPositionCameraRelative;
+    f32 cameraZAngle;
     f32 timeOfDay;
     f32v3 sunColor;
     f32v3 playerPos;
-    f32v2 mousePosWorld;
-    const Camera2D* mainCamera = nullptr;
+    f32m4 skyRotMatrix;
+    const ICamera* mainCamera = nullptr;
 };
 
 // Singleton
@@ -43,7 +49,9 @@ public:
     static RenderContext& getInstance();
 
     void initPostLoad();
-    void renderFrame(const Camera2D& camera, f32v3 playerPos, f32v2 mousePosWorld, f32 frameAlpha);
+
+    void beginFrame(const ICamera* camera, f32v3 playerPos); // Called automatically by beginFrame
+    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha);
 
     void reloadShaders();
     void selectNextDebugShader();
@@ -53,12 +61,12 @@ public:
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return mGBuffers[mActiveGBuffer]; }
     const vg::GBuffer& getPrevGBuffer() const { return mGBuffers[mPrevGBuffer]; }
-    const vg::GBuffer& getShadowGBuffer() const { return mShadowGBuffer; }
     const vg::GBuffer& getZCutoutGBuffer() const { return mZCutoutGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
-    void renderUI(const Camera2D& camera);
+    void renderUI(const Camera3D& camera);
+    void buildHorizonMesh();
 
     static RenderContext* sInstance;
 
@@ -76,6 +84,8 @@ private:
     mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
+    mutable std::unique_ptr<ItemRenderer> mItemRenderer;
+    mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
@@ -84,9 +94,10 @@ private:
     int mPrevGBuffer = 1;
     int mActiveGBuffer = 0;
     vg::GBuffer mGBuffers[2];
-    vg::GBuffer mShadowGBuffer;
     vg::GBuffer mZCutoutGBuffer;
     const World& mWorld;
+    std::unique_ptr<QuadMesh> mHorizonQuad;
+    std::unique_ptr<Skybox> mSkyBox;
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
