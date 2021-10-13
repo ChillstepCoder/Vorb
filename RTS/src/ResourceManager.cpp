@@ -12,6 +12,7 @@
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
 #include "character/CharacterModelRepository.h"
+#include "world/TileRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
