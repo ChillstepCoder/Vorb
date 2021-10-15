@@ -22,6 +22,7 @@
 
 // TODO: Move to renderer?
 #include "city/CityQuartermaster.h"
+#include "item/ItemStockpileRegistry.h"
 
 #include "camera/ICamera.h"
 #include "camera/Camera3D.h"
@@ -230,15 +231,14 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
 
-    // Render city stuff such as stockpiles
-    const CityGraph& cities = mWorld.getCities();
-    for (auto&& city : cities.mNodes) {
-        // Stockpiles
-        const CityQuartermaster& quarterMaster = city->getCityQuartermaster();
-        for (auto& it : quarterMaster.getStockpiles()) {
-            mItemRenderer->renderStockpile(*it);
+    // Render stockpiles
+    for (auto&& stockPilePtr : mWorld.getItemStockpileRegistry().getAllStockpiles()) {
+        if (stockPilePtr->isVisible()) {
+            mItemRenderer->renderStockpile(*stockPilePtr);
         }
     }
+
+    // Render loose items
 
     // Sky
     mSkyBox->render(*mMaterialRenderer);

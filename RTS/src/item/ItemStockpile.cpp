@@ -53,10 +53,22 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
 }
 
 ItemStockpile::~ItemStockpile() {
+
+    onDestroy(this);
+
     // TODO: Run a function on the reservation?
     for (auto&& it : mReservations) {
         it->mStockpile = nullptr;
     }
+}
+
+bool ItemStockpile::isVisible() const {
+    for (const ChunkID& chunkId : mResidingChunks) {
+        if (mWorld.getWorldGrid().getChunk(chunkId).isVisible()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void ItemStockpile::renderDebug() const {

@@ -68,6 +68,8 @@ void vg::Frustum::updateFromWVP(const f32m4& WVP) {
         -WVP[1][0] + WVP[1][3],
         -WVP[2][0] + WVP[2][3],
         -WVP[3][0] + WVP[3][3]);
+    // NAN check
+    assert(m_planes[P_LEFT].normal.x == m_planes[P_LEFT].normal.x);
 }
 
 void vg::Frustum::update(const f32v3& position, const f32v3& dir, const f32v3& up) {
@@ -113,14 +115,18 @@ void vg::Frustum::update(const f32v3& position, const f32v3& dir, const f32v3& u
 
 bool vg::Frustum::pointInFrustum(const f32v3& pos) const {
     for (int p = 0; p < 4; p++) { //*************************************** IGNORING FAR AND NEAR CLIPPING PLANE
-        if (m_planes[p].distance(pos) <= 0) return false;
+        if (m_planes[p].distance(pos) <= 0) {
+            return false;
+        }
     }
     return true;
 }
 
 bool vg::Frustum::sphereInFrustum(const f32v3& pos, f32 radius) const {
     for (int p = 0; p < 4; p++) { //*************************************** IGNORING FAR AND NEAR CLIPPING PLANE
-        if (m_planes[p].distance(pos) <= -radius) return false;
+        if (m_planes[p].distance(pos) <= -radius) {
+            return false;
+        }
     }
     return true;
 }

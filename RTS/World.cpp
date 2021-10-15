@@ -333,15 +333,22 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 }
 
 TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
-    TileHandle handle;
-    // TODO: Chunk pos doesn't know how to handle integers, it thinks its chunk coords
-    const Chunk* chunk = &getChunkAtPosition(f32v2(worldPos));
+	return getTileHandleAtWorldPos(f32v2(worldPos));
+}
+
+TileCollision World::getTileCollisionAtWorldPos(const f32v2& worldPos) const
+{
+    const Chunk* chunk = &getChunkAtPosition(worldPos);
     if (chunk->getState() == ChunkState::FINISHED) {
-        unsigned x = worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        unsigned y = worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getTileHandleAt(TileIndex(x, y));
+        ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        return chunk->getTileCollisionAt(TileIndex(x, y));
     }
-    return TileHandle();
+    return TileCollision();
+}
+
+TileCollision World::getTileCollisionAtWorldPos(const ui32v2& worldPos) const {
+    return getTileCollisionAtWorldPos(f32v2(worldPos));
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
@@ -418,8 +425,7 @@ City* World::getClosestCityToPoint(const f32v2& pos) const
 
 IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v2& end, f32 zPos)
 {
-	// TODO: Use Z position
-	UNUSED(zPos);
+
     //Find All Distances To Next Voxel In Each Direction
 	f32 currDist = 0.0f;
 	f32v2 currentPos = start;
@@ -479,11 +485,11 @@ IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v
 			else if (direction.y < 0) --currentCellPos.y;
 		}
 
-		TileHandle tile = getTileHandleAtWorldPos(currentCellPos);
+		TileCollision collision = getTileCollisionAtWorldPos(currentCellPos);
 
 		// Check collision
 		// TODO: Pass in collision radius
-		IntersectionHit2D hit = TileUtil::tryRayTileIntersect(tile.tile, currentCellPos, start, end, 0.3f);
+		IntersectionHit2D hit = TileUtil::tryRayTileIntersect(collision, currentCellPos, start, end, zPos, 0.3f);
 		if (hit.didHit()) {
 			return hit;
 		}

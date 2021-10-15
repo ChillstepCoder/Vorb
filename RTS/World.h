@@ -68,11 +68,14 @@ public:
     TileHandle getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
+    TileCollision getTileCollisionAtWorldPos(const f32v2& worldPos) const;
+    TileCollision getTileCollisionAtWorldPos(const ui32v2& worldPos) const;
 
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
+	const WorldGrid& getWorldGrid() const { return mWorldGrid; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;

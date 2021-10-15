@@ -21,6 +21,8 @@ public:
 
 
 private:
+    void onStockpileDestroy(Sender s, ItemStockpile* stockPile);
+
     // TODO: Sorted with Fast AABB search algorithm?
     std::vector<ItemStockpile*> mAllStockpiles;
     City& mCity;

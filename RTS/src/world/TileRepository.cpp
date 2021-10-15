@@ -8,6 +8,8 @@ KEG_TYPE_DEF_SAME_NAME(TileData, kt) {
     kt.addValue("name", keg::Value::basic(offsetof(TileData, name), keg::BasicType::STRING));
     kt.addValue("tex", keg::Value::basic(offsetof(TileData, textureName), keg::BasicType::STRING));
     kt.addValue("col", keg::Value::custom(offsetof(TileData, collisionShape), "TileCollisionShape", true));
+    kt.addValue("width", keg::Value::basic(offsetof(TileData, colliderDimsXY.x), keg::BasicType::F32));
+    kt.addValue("depth", keg::Value::basic(offsetof(TileData, colliderDimsXY.y), keg::BasicType::F32));
     kt.addValue("height", keg::Value::basic(offsetof(TileData, colliderHeight), keg::BasicType::F32));
     kt.addValue("path_weight", keg::Value::basic(offsetof(TileData, pathWeight), keg::BasicType::F32));
     kt.addValue("dims", keg::Value::basic(offsetof(TileData, dims), keg::BasicType::UI8_V2));

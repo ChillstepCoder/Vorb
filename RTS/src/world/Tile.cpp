@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "world/Tile.h"
 
+#include "world/TileRepository.h"
+
 
 KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Thin", TileShape::THIN);
@@ -14,10 +16,9 @@ KEG_ENUM_DEF(TileResource, TileResource, kt) {
 }
 
 KEG_ENUM_DEF(TileCollisionShape, TileCollisionShape, kt) {
-    kt.addValue("none", TileCollisionShape::FLOOR);
+    kt.addValue("none", TileCollisionShape::NONE);
     kt.addValue("box", TileCollisionShape::BOX);
-    kt.addValue("small_circle", TileCollisionShape::SMALL_CIRCLE);
-    kt.addValue("medium_circle", TileCollisionShape::MEDIUM_CIRCLE);
+    kt.addValue("circle", TileCollisionShape::CIRCLE);
 }
 
 KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
@@ -26,4 +27,15 @@ KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
 }
 
 
+TileCollision Tile::buildTileCollision() const {
+    TileCollision collision;
+    collision.baseZPosition = baseZPosition;
 
+    // Custom tile collision only occurs on TILE_LAYER_TOP
+    const TileData& tileData = TileRepository::getTileData(topLayer);
+    collision.shape = tileData.collisionShape;
+    collision.colliderHeightUnscaled = (ui16)(tileData.colliderHeight * UINT8_MAX);
+    collision.colliderDimsUnscaledXY = i8v2(glm::round(tileData.colliderDimsXY * (f32)TILE_COLLIDER_DIMS_SCALE));
+
+    return collision;
+}

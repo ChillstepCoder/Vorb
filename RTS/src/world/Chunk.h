@@ -76,6 +76,8 @@ public:
 	TileHandle getRightTileHandle(const TileIndex index) const;
 	TileHandle getTopTileHandle(const TileIndex index) const;
 	TileHandle getBottomTileHandle(const TileIndex index) const;
+
+    TileCollision getTileCollisionAt(const TileIndex index) const;
 	// Get neighbors starting from top left
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
@@ -113,19 +115,9 @@ public:
         mChunkRenderData.mHighDetailFloraMeshDirty = true;
 	}
 
-    void setTileAt(TileIndex i, Tile tile) {
-		assert(i < CHUNK_SIZE);
-		Tile& oldTile = mTiles[i];
-		TileFlags newFlags = TileFlags(oldTile.tileFlags | tile.tileFlags);
-        oldTile = tile;
-        oldTile.setTileFlags(newFlags); // Union tile flags
-		dirtyMesh();
-    }
-
-	void setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
-        mTiles[i].layers[(int)layer] = tileId;
-        dirtyMesh();
-	}
+    void setTileAt(TileIndex i, Tile tile);
+	void setTileAt(TileIndex i, TileID tileId, TileLayer layer);
+	void setTileCollisionAt(TileIndex i, TileCollision collision);
 
 	void incRef() const {
 		++mRefCount;
@@ -135,11 +127,17 @@ public:
 		--mRefCount;
 	}
 
+	// Events
+	Event<Chunk*> onDispose;
+
 private:
 
 	void setTileFromGeneration(TileIndex i, Tile&& tile) {
 		mTiles[i] = tile;
+		updateTileCollisionAt(i);
 	}
+
+	void updateTileCollisionAt(TileIndex i);
 
 	ChunkID mChunkId;
 	f32v2 mWorldPos = f32v2(0.0f);
@@ -153,6 +151,7 @@ private:
 	WorldGrid* mWorldGrid = nullptr;
 
     std::vector<Tile> mTiles; // TODO: Memory recycler
+	std::vector<TileCollision> mCollision; // TODO: Don't keep this in memory when its not needed?
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;

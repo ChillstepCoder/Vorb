@@ -18,8 +18,8 @@ public:
     void lookAt(const f32v3& pos);
 
     // Frustum wrappers
-    bool pointInFrustum(const f32v3& pos) const { return mFrustum.pointInFrustum(pos); }
-    bool sphereIsVisible(const f32v3& pos, float radius) const override { return mFrustum.sphereInFrustum(pos, radius); }
+    bool pointInFrustum(const f32v3& pos) const { return mFrustum.pointInFrustum(pos - mPosition); }
+    bool sphereIsVisible(const f32v3& pos, float radius) const override { return mFrustum.sphereInFrustum(pos - mPosition, radius); }
 
     // Setters
     void setOrientation(const f32q& orientation);
@@ -76,14 +76,12 @@ protected:
     f32v3 mRight = f32v3(0.0f, 0.0f, 1.0f);
     f32v3 mUp = f32v3(0.0f, 1.0f, 0.0f);
 
-    f32m4 mW;
     f32m4 mP;
     f32m4 mInverseP;
     f32m4 mV;
     f32m4 mInverseV;
     f32m4 mVP;
     f32m4 mInverseVP;
-    f32m4 mWVP;
 
     vg::Frustum mFrustum; ///< For frustum culling
 };

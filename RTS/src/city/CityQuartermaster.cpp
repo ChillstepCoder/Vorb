@@ -20,7 +20,8 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb) {
     
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
-        mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mCity.mWorld, aabb));
+        mAllStockpiles.emplace_back(newStockpile);
+        newStockpile->onDestroy.add(makeDelegate(this, &CityQuartermaster::onStockpileDestroy));
         return true;
     }
     return false;
@@ -42,5 +43,14 @@ ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const ui32v2 pos
     }
 
     return best;
+}
+
+void CityQuartermaster::onStockpileDestroy(Sender s, ItemStockpile* stockPile) {
+    for (size_t i = 0; i < mAllStockpiles.size(); ++i) {
+        if (mAllStockpiles[i] == stockPile) {
+            mAllStockpiles[i] = mAllStockpiles.back();
+            mAllStockpiles.pop_back();
+        }
+    }
 }
 

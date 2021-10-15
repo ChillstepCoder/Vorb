@@ -120,6 +120,9 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             if (ImGui::Button("DEBUG: Add 25 wood", buttonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD;
             }
+            if (ImGui::Button("DEBUG: Destroy", buttonSize)) {
+                resultFlags |= INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK;
+            }
             break;
         }
         case UIInteractMenuState::SELECTED_AGENT: {
@@ -135,7 +138,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
 
     }
-    static_assert(INTERACT_MENU_RESULT_COUNT == 8, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 9, "update");
     static_assert(enum_cast(UIInteractMenuState::COUNT) == 4, "update");
 
     ImGui::End();

@@ -238,6 +238,12 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         // Load data
         keg::parse((ui8*)&tile, value, readContext, &KEG_GLOBAL_TYPE(TileData));
 
+        // If depth is uninitialized, set it to width
+        if (tile.colliderDimsXY.y == -1.0f) {
+            tile.colliderDimsXY.y = tile.colliderDimsXY.x;
+        }
+        tile.colliderDimsXY = glm::clamp(tile.colliderDimsXY, -0.5f, 0.5f);
+
         // TODO: Serialize the string > ID mapping
         TileID nextId = ++mIdGenerator;
         assert(nextId < 0xffff); // Make sure we dont roll over

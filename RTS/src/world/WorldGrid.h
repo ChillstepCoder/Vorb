@@ -8,6 +8,8 @@ public:
 
     Chunk& getChunk(ui32 i) { return mChunks[i]; }
     const Chunk& getChunk(ui32 i) const { return mChunks[i]; }
+    Chunk& getChunk(ChunkID id) { return mChunks[id.id]; }
+    const Chunk& getChunk(ChunkID id) const { return mChunks[id.id]; }
     
     Region& getRegion(ui32 i) { return mRegions[i]; }
     const Region& getRegion(ui32 i) const { return mRegions[i]; }

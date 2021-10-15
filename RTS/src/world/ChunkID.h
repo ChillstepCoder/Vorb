@@ -46,3 +46,15 @@ private:
         id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
     }
 };
+// Hash function
+namespace std {
+    template <>
+    struct hash<ChunkID>
+    {
+        size_t operator()(const ChunkID& id) const
+        {
+            // Compute individual hash values for two data members and combine them using XOR and bit shifting
+            return hash<ui32>()(id.id);
+        }
+    };
+}

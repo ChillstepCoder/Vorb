@@ -5,6 +5,7 @@
 #include "city/City.h"
 #include "city/CityQuartermaster.h"
 #include "item/ItemStockpile.h"
+#include "item/ItemStockpileRegistry.h"
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
@@ -30,14 +31,13 @@ void WorldObjectQuery::refresh() {
     // TODO: Tile flag city?
     // Stockpile
     if (handle.tile.hasFlag(TILE_FLAG_IS_STOCKPILE)) {
-        // Render city stuff such as stockpiles
-        const CityGraph& cities = mWorld.getCities();
-        for (auto&& city : cities.mNodes) {
-            // Stockpiles
-            const CityQuartermaster& quarterMaster = city->getCityQuartermaster();
-            for (auto& it : quarterMaster.getStockpiles()) {
-                if (pointIsWithinAABBInclusive(mTilePos, it->getAABB())) {
-                    mStockpileAtTile = it;
+        const ChunkID id = handle.chunk->getChunkID();
+        const auto* stockPiles = mWorld.getItemStockpileRegistry().tryGetStockpilesAtChunkPosition(id);
+        if (stockPiles) {
+            for (auto& stockpile : *stockPiles) {
+                if (pointIsWithinAABBInclusive(mTilePos, stockpile->getAABB())) {
+                    mStockpileAtTile = stockpile;
+                    break;
                 }
             }
         }

@@ -41,13 +41,17 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
 void Chunk::allocateTiles() {
     // TODO: Not always
     mTiles.resize(CHUNK_SIZE);
+    mCollision.resize(CHUNK_SIZE);
 }
 
 void Chunk::freeTiles() {
     std::vector<Tile>().swap(mTiles);
+    std::vector<TileCollision>().swap(mCollision);
 }
 
 void Chunk::dispose() {
+
+    onDispose(this);
 
     if (isDataReady()) {
         Chunk& leftNeighbor = getLeftNeighbor();
@@ -74,6 +78,18 @@ void Chunk::dispose() {
     mChunkRenderData.mLODDirty = true;
     mChunkRenderData.mMeshDirty = true;
     mChunkRenderData.mHighDetailFloraMeshDirty = true;
+    mChunkRenderData.mIsVisible = false;
+
+    if (mChunkRenderData.mLODTexture) {
+        glDeleteTextures(1, &mChunkRenderData.mLODTexture);
+        mChunkRenderData.mLODTexture = 0;
+    }
+
+    mChunkRenderData.mBillboardMesh.reset();
+    mChunkRenderData.mChunkMesh.reset();
+    mChunkRenderData.mHighDetailFloraMesh.reset();
+
+    freeTiles();
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
@@ -131,6 +147,10 @@ TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
 	return TileHandle();
 }
 
+TileCollision Chunk::getTileCollisionAt(const TileIndex index) const {
+    return mCollision[index];
+}
+
 void Chunk::getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const {
 
     // TODO: Branchless interior nodes? :thinkies:
@@ -179,4 +199,41 @@ Chunk& Chunk::getRightNeighbor() const {
 
 Chunk& Chunk::getBottomNeighbor() const {
     return mWorldGrid->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
+}
+
+void Chunk::setTileAt(TileIndex i, Tile tile) {
+    assert(i < CHUNK_SIZE);
+    Tile& oldTile = mTiles[i];
+    TileFlags newFlags = TileFlags(oldTile.tileFlags | tile.tileFlags);
+    oldTile = tile;
+    oldTile.setTileFlags(newFlags); // Union tile flags
+    // Update collision
+    updateTileCollisionAt(i);
+
+    dirtyMesh();
+}
+
+void Chunk::setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
+    mTiles[i].layers[(int)layer] = tileId;
+    // Update collision
+    if (layer == TileLayer::Top) {
+        updateTileCollisionAt(i);
+    }
+    dirtyMesh();
+}
+
+void Chunk::setTileCollisionAt(TileIndex i, TileCollision collision) {
+    mCollision[i] = collision;
+}
+
+void Chunk::updateTileCollisionAt(TileIndex i) {
+    const Tile& tile = mTiles[i];
+    TileCollision& collision = mCollision[i];
+    if (tile.topLayer != TILE_ID_NONE) {
+        collision = tile.buildTileCollision();
+    }
+    else {
+        collision = TileCollision();
+        collision.baseZPosition = tile.baseZPosition;
+    }
 }

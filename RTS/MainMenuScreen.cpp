@@ -24,6 +24,7 @@
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
+#include "item/ItemStockpileRegistry.h"
 #include "particles/ParticleSystemManager.h"
 
 #include "physics/ContactListener.h"
@@ -443,10 +444,16 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
 				stockPile->tryAddItemStackAt(woodPile, bestPos, woodPile.quantity);
 			}
         }
+        else if (result & INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK) {
+            // grass
+            WorldObjectQuery& worldObjects = mRightClickInteractPopup->getWorldObjects();
+            ItemStockpile* stockPile = worldObjects.getStockpile();
+			mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
+        }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
 
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 8, "update");
+        static_assert(INTERACT_MENU_RESULT_COUNT == 9, "update");
 
         // If we had a result, close window
         if (result) {

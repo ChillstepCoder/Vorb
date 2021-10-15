@@ -3,6 +3,7 @@
 #include "Item.h"
 
 #include "rendering/QuadMesh.h"
+#include "world/ChunkID.h"
 
 constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;
 
@@ -52,12 +53,14 @@ class ItemStockpile
 {
     friend class ItemReservation;
     friend class ItemRenderer;
+    friend class ItemStockpileRegistry;
     friend class RenderContext;
 public:
     ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
-    bool isValid() { return mAABB.width != 0; } // If we have 0 width we are null
+    bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
+    bool isVisible() const;
 
     void renderDebug() const;
     // Returns the leftover stack, if quantity is 0, itemStack was consumed
@@ -70,6 +73,9 @@ public:
 
     const ui32AABB2& getAABB() const { return mAABB; }
 
+    // Events
+    Event<ItemStockpile*> onDestroy;
+
 private:
     void releaseReservation(ItemReservation* reservation);
     void dirtyMeshForItem(const Item& item);
@@ -80,6 +86,7 @@ private:
     ui32 mZPos = 0; // TODO: Use this
     entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
 
+    std::vector<ChunkID> mResidingChunks;
     std::vector<ItemStack> mStorage;
     std::map<ItemID, ItemStockpileRecord> mItemContents;
     std::set<ItemReservation*> mReservations;

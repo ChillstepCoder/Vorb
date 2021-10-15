@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TileCollisionShape.h"
+#include "TileCollision.h"
 
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 typedef ui16 TileID;
@@ -36,11 +36,13 @@ struct Tile {
     void clearTileFlags() { tileFlags = 0; }
 	bool hasFlag(TileFlags flag) const { return tileFlags & flag; }
 
+	TileCollision buildTileCollision() const;
+
 	union {
 		struct {
-			TileID groundLayer; // Dirt, foundation, earth
-			TileID midLayer; // Carpet, boards, walls, flora
-			TileID topLayer; // Furniture, props, trees
+			TileID groundLayer; // Dirt, foundation, earth    // ALWAYS BOX COLLISION
+			TileID midLayer; // Carpet, boards, flora         // NO COLLIDE ONLY
+			TileID topLayer; // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
 		};
 		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
@@ -63,16 +65,6 @@ enum class TileResource {
 	COUNT
 };
 KEG_ENUM_DECL(TileResource);
-
-// Collision info
-const float TileCollisionShapeRadii[(int)TileCollisionShape::COUNT + 1] = {
-    0.0f,   // FLOOR
-    0.5f,   // BOX
-    0.1f,   // SMALL_CIRCLE
-    0.175f, // MEDIUM_CIRCLE
-	0.0f,   // COUNT (Null)
-};
-static_assert((int)TileCollisionShape::COUNT == 4, "Update");
 
 struct ItemDropDef {
 	nString itemName;
