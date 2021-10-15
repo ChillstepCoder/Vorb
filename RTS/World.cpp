@@ -7,6 +7,7 @@
 #include "world/ChunkGenerator.h"
 #include "world/TileRepository.h"
 #include "physics/ContactListener.h"
+#include "physics/ContactFilter.h"
 #include "item/ItemStockpileRegistry.h"
 
 #include "ecs/factory/EntityFactory.h"
@@ -67,6 +68,8 @@ World::World(ResourceManager& resourceManager) :
     mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
     mContactListener = std::make_unique<ContactListener>(*mEcs);
     mPhysWorld->SetContactListener(mContactListener.get());
+    mContactFilter = std::make_unique<ContactFilter>();
+    mPhysWorld->SetContactFilter(mContactFilter.get());
 
 	// Cities
 	mCities = std::make_unique<CityGraph>();

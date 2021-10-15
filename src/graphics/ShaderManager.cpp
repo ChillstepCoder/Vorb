@@ -151,9 +151,11 @@ vg::GLProgram& vg::ShaderManager::getProgram(const nString& name) {
 }
 
 void vg::ShaderManager::triggerShaderCompilationError(Sender s VORB_UNUSED, const nString& n) {
+    printf("Shader compilation error: %s\n", n.c_str());
     onShaderCompilationError(n);
 }
 
 void vg::ShaderManager::triggerProgramLinkError(Sender s VORB_UNUSED, const nString& n) {
+    printf("Shader link error: %s\n", n.c_str());
     onProgramLinkError(n);
 }

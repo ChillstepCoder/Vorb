@@ -102,7 +102,8 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const TileCollision& co
                 float vDotN = glm::dot(currentVelocity, impulseNormal);
                 cmp.setLinearVelocity(currentVelocity - vDotN * 2.0f * impulseNormal);
 			}
-		}
+        }
+        [[fallthrough]];
         case TileCollisionShape::NONE:
         case TileCollisionShape::BOX: {
             offsetToCollider.x = vmath::clamp(offsetToCollider.x, -0.5f, 0.5f);
@@ -264,7 +265,7 @@ void PhysicsComponent::addCollider(entt::entity entityId, ColliderShapes shape, 
 			b2FixtureDef fixtureDef;
 			fixtureDef.shape = &dynamicCircle;
 			fixtureDef.density = 1.0f;
-			fixtureDef.userData = reinterpret_cast<void*>(entityId);
+			fixtureDef.userData.pointer = static_cast<uintptr_t>(entityId);
 
 			mBody->CreateFixture(&fixtureDef);
 			break;

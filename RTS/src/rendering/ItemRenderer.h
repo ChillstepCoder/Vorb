@@ -6,7 +6,7 @@
 class ResourceManager;
 class MaterialRenderer;
 class ItemRepository;
-class ItemStack;
+struct ItemStack;
 class Material;
 class ItemStockpile;
 class Item;

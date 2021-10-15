@@ -28,6 +28,7 @@ class ICamera;
 class Camera2D;
 class City;
 class ContactListener;
+class ContactFilter;
 class ChunkGenerator;
 class ItemStockpileRegistry;
 class EntityComponentSystem;
@@ -121,7 +122,8 @@ private:
 
 	// Physics
 	std::unique_ptr<b2World> mPhysWorld;
-	std::unique_ptr<ContactListener> mContactListener;
+    std::unique_ptr<ContactListener> mContactListener;
+    std::unique_ptr<ContactFilter> mContactFilter;
 
 	// Generation
     std::unique_ptr<ChunkGenerator> mChunkGenerator;

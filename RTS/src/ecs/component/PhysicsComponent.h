@@ -45,6 +45,10 @@ public:
 	const float getZPosition() const {
 		return mZPosition;
 	}
+	const f32v3 getPosition() const {
+		const f32v2& xy = getXYPosition();
+		return f32v3(xy.x, xy.y, mZPosition);
+	}
 
 	f32v2 getXYInterpolated(f32 frameAlpha) const {
         const f32v2& nextXY = getXYPosition();

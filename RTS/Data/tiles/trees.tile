@@ -1,7 +1,8 @@
 tree_large:
   tex: tree_large
   dims: [3,3]
-  col: medium_circle
+  col: circle
+  width: 0.175
   shape: Thin
   height: 3.0
   resource: wood
@@ -11,7 +12,8 @@ tree_large:
 tree_small:
   tex: tree_small
   dims: [1,2]
-  col: small_circle
+  col: circle
+  width: 0.1
   shape: Thin
   height: 2.0
   resource: wood

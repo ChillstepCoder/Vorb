@@ -7,7 +7,7 @@
 
 // TODO: Shared util?
 inline entt::entity extractEntity(b2Fixture* fixture) {
-    return (entt::entity)reinterpret_cast<entt::id_type>(fixture->GetUserData());
+    return (entt::entity)static_cast<entt::id_type>(fixture->GetUserData().pointer);
 }
 
 ContactListener::ContactListener(EntityComponentSystem& ecs)

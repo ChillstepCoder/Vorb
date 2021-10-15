@@ -55,8 +55,9 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
     static const float SIZE = 1.4f;
     static const float HEAD_OFFSET_MULT_Y = 0.28f;
     static const float HEAD_OFFSET_MULT_X = 0.04f;
-    const f32v2 headOffset = f32v2(SIZE * HEAD_OFFSET_MULT_X * headOffsetX, SIZE * HEAD_OFFSET_MULT_Y);
-    const f32v2 bodyOffset = f32v2(0.0f, 0.0f * SIZE * 0.25f); // TODO: THIS IS DISABLED
+    const f32v2 globalOffset = f32v2(0.0f, -0.18f);
+    const f32v2 headOffset = f32v2(SIZE * HEAD_OFFSET_MULT_X * headOffsetX, SIZE * HEAD_OFFSET_MULT_Y) + globalOffset;
+    const f32v2 bodyOffset = f32v2(0.0f, 0.0f * SIZE * 0.25f) + globalOffset; // TODO: THIS IS DISABLED
     buildPart(mesh, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, alpha);
     buildPart(mesh, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, alpha);
     buildPart(mesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
