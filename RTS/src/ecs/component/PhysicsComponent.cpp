@@ -13,6 +13,7 @@
 constexpr float MIN_Z_SPEED = -0.24f;
 constexpr float TOP_COLLISION_THRESHOLD = 0.75f;
 constexpr float TOP_COLLISION_DEPTH = 1.0f - TOP_COLLISION_THRESHOLD;
+constexpr float REFILTER_HEIGHT_CHANGE = 0.2f;
 // This prevents tunelling when falling
 static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
 
@@ -183,36 +184,44 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const TileCollision& co
 inline void updateComponent(World& world, PhysicsComponent& cmp) {
     const f32v2& xyVel = cmp.getLinearVelocity();
 
-	// TODO: TestBit
-	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
-		cmp.mDir = glm::normalize(xyVel);
-	}
+    // TODO: TestBit
+    if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
+        cmp.mDir = glm::normalize(xyVel);
+    }
 
     // Handle gravity and Z velocity
     if (cmp.mZVelocity < MIN_Z_SPEED) {
         cmp.mZVelocity = MIN_Z_SPEED;
     }
-	cmp.mZPosition += cmp.mZVelocity;
-	cmp.mZVelocity -= GRAVITY_FORCE;
+    cmp.mZPosition += cmp.mZVelocity;
+    cmp.mZVelocity -= GRAVITY_FORCE;
 
 
-	const f32v2& xyPosition = cmp.getXYPosition();
+    const f32v2& xyPosition = cmp.getXYPosition();
 
-	// TODO: Handle larger colliders
-	const f32v2 cornerPositions[4] = {
-		xyPosition + f32v2(-0.5f,-0.5f), // Bottom left
-		xyPosition + f32v2( 0.5f,-0.5f), // Bottom right
-		xyPosition + f32v2(-0.5f, 0.5f), // Top left
-		xyPosition + f32v2( 0.5f, 0.5f), // Top right
-	};
+    // TODO: Handle larger colliders
+    const f32v2 cornerPositions[4] = {
+        xyPosition + f32v2(-0.5f,-0.5f), // Bottom left
+        xyPosition + f32v2(0.5f,-0.5f), // Bottom right
+        xyPosition + f32v2(-0.5f, 0.5f), // Top left
+        xyPosition + f32v2(0.5f, 0.5f), // Top right
+    };
 
-	// TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
-	for (int i = 0; i < 4; ++i) {
-		TileCollision collision = world.getTileCollisionAtWorldPos(cornerPositions[i]);
-		// TODO: This can reduntantly collide
-		const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-		resolveCircleTileCollision(tileCenter, collision, cmp);
-	}
+    // TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
+    for (int i = 0; i < 4; ++i) {
+        TileCollision collision = world.getTileCollisionAtWorldPos(cornerPositions[i]);
+        // TODO: This can reduntantly collide
+        const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
+        resolveCircleTileCollision(tileCenter, collision, cmp);
+    }
+
+    // Refilters for pseudo3d collision
+    if (fabs(cmp.mZPosition - cmp.mLastZPositionAtRefilter) > REFILTER_HEIGHT_CHANGE) {
+        cmp.mLastZPositionAtRefilter = cmp.mZPosition;
+        b2Fixture* f = cmp.mBody->GetFixtureList();
+        f->Refilter();
+    }
+
 }
 
 

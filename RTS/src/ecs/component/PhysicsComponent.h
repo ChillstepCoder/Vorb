@@ -20,6 +20,7 @@ enum class ColliderShapes {
 };
 KEG_ENUM_DECL(ColliderShapes);
 
+// TODO: Investigate the cost of stable pointer ( using in_place_delete = std::true_type;)  https://skypjack.github.io/entt/md_docs_md_entity.html
 class PhysicsComponent {
 public:
 	PhysicsComponent(World& world, const f32v2& centerPosition, bool isStatic);
@@ -76,8 +77,10 @@ public:
 	f32 mPrevZPosition = 0.0f;
 	f32v2 mDir = f32v2(0.0f, -1.0f);
     f32 mCollisionRadius = 0.0f;
+    f32 mCollisionHeight = 1.0f;
     f32 mZPosition = 0.0f;
     f32 mZVelocity = 0.0f;
+	f32 mLastZPositionAtRefilter = 0.0f;
     b2Body* mBody = nullptr;
 
     ui8 mFlags = 0u;

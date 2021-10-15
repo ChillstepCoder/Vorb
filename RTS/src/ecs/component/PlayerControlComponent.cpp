@@ -76,7 +76,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 		return;
 	}
 	// Remove any navigation component if we are applying movement input
-	entt::entity entityId = (entt::entity)reinterpret_cast<entt::id_type>(physCmp.mBody->GetUserData());
+	entt::entity entityId = static_cast<entt::entity>(physCmp.mBody->GetUserData().pointer);
 	registry.remove<NavigationComponent>(entityId);
 
 	// Facing

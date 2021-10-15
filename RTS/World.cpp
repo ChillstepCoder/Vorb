@@ -68,7 +68,7 @@ World::World(ResourceManager& resourceManager) :
     mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
     mContactListener = std::make_unique<ContactListener>(*mEcs);
     mPhysWorld->SetContactListener(mContactListener.get());
-    mContactFilter = std::make_unique<ContactFilter>();
+    mContactFilter = std::make_unique<ContactFilter>(*mEcs);
     mPhysWorld->SetContactFilter(mContactFilter.get());
 
 	// Cities
