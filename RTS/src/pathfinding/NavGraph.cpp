@@ -98,7 +98,7 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
                 for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
                     for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                         const ui32 id = djNodes[djNodeIDs[y * SUBCHUNK_WIDTH + x]].id;
-                        DebugRenderer::drawFilledQuad(chunk.getWorldPos() + f32v2(cornerX + x, cornerY + y), f32v2(1.0f), color4((100 + 100 * id) % 255, (120 * id) % 255, (25 + 60 * id) % 255, 100), debugLifetime);
+                        //DebugRenderer::drawFilledQuad(chunk.getWorldPos() + f32v2(cornerX + x, cornerY + y), f32v2(1.0f), color4((100 + 100 * id) % 255, (120 * id) % 255, (25 + 60 * id) % 255, 100), debugLifetime);
                     }
                 }
 
@@ -118,6 +118,28 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
                 DebugRenderer::drawLine(cornerPos + offset * 0.5f, f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)]), color4(0.0f, 1.0f, 1.0f), debugLifetime);
             }
         }
+        for (int k = 0; k < navNodes.size(); ++k) {
+            auto&& node = navNodes[k];
+            for (int i = 0; i < node.edges.size() - 1; ++i) {
+                for (int j = i + 1; j < node.edges.size(); ++j) {
+                    ui32 id = k;
+                    color4 color = color4(255, 0, 0);
+                    NavNodeEdge& edge1 = node.edges[i];
+                    NavNodeEdge& edge2 = node.edges[j];
+                    f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
+                    f32v2 cornerPos1 = chunk.getWorldPos() + f32v2(edge1.start.getX(), edge1.start.getY());
+                    if (edge1.dir == Cartesian::RIGHT) cornerPos1.x += 1.0f;
+                    else if (edge1.dir == Cartesian::UP) cornerPos1.y += 1.0f;
+                    f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
+                    f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge2.dir)]) * (f32)(edge2.length);
+                    f32v2 cornerPos2 = chunk.getWorldPos() + f32v2(edge2.start.getX(), edge2.start.getY());
+                    if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
+                    else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
+                    f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
+                    DebugRenderer::drawLineBetweenPoints(pos1, pos2, color, debugLifetime);
+                }
+            }
+        }
     }
 
     // Iterate through outer sub chunks (has chunk neighbors)
@@ -127,11 +149,11 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
 void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, ui16* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
 {
     std::vector<TileCollision>& tileCollision = chunk.getAllTileCollision();
-    ui32 prevNodeId = djNodes[0].id;
     ui32 currNodeId;
     i32v2 start(0);
     int length = 0;
     i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[enum_cast(dir)] * (SUBCHUNK_WIDTH - 1);
+    ui32 prevNodeId = djNodes[subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x].id;
     i32v2 chunkRelativePos(cornerX, cornerY);
     i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[enum_cast(dir)].x, cornerY + CARTESIAN_NORMALS[enum_cast(dir)].y);
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
@@ -144,7 +166,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
         if (currNodeId != prevNodeId) {
             // Finish edge
             if (length != 0) {
-                addNodeEdge(navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+                addNodeEdge(navNodeIdTable, prevNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
                 length = 0;
             }
             prevNodeId = currNodeId;
@@ -178,7 +200,7 @@ void NavGraph::addNodeEdge(ui16* navNodeIdTable, const ui32 djIndex, std::vector
     // Add nav node if it doesnt exist yet
     ui16& navNodeId = navNodeIdTable[djIndex];
     if (navNodeId == UINT16_MAX) {
-        navNodeId = navNodes.size();
+        navNodeId = (ui16)navNodes.size();
         currNavNode = &navNodes.emplace_back();
     }
     else {
