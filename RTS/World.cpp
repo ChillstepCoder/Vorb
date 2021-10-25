@@ -77,6 +77,9 @@ World::World(ResourceManager& resourceManager) :
 	// Stockpiles
 	mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
 
+	// Nav graph
+	mNavGraph = std::make_unique<NavGraph>(*this);
+
 	// Static load range for now
 	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
 }
@@ -217,10 +220,10 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
         const f32v3 offset = farIntersect - hit.position;
         const f32 maxDistance = glm::length(offset);
 		if (ENABLE_DEBUG_PICK_RENDER) {
-			DebugRenderer::drawBox(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
+			DebugRenderer::drawWireQuad(f32v2(chunk->getAABB().x, chunk->getAABB().y), f32v2(chunk->getAABB().width, chunk->getAABB().depth), color4(1.0f, 0.0f, 0.0f), duration);
 			DebugRenderer::drawVector(rayStart, hit.position - rayStart, color4(1.0f, 0.0f, 0.0f), duration);
 			DebugRenderer::drawVector(hit.position, offset, color4(0.0f, 1.0f, 0.0f), duration);
-			DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f), duration);
+			DebugRenderer::drawWireQuad(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 1.0f), duration);
 		}
 		float currDistance = 0.0f;
 
@@ -231,13 +234,13 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
             Tile tile = chunk->getTileAt(index);
             if ((int)tile.baseZPosition >= currentVoxelPos.z) {
 				if (ENABLE_DEBUG_PICK_RENDER) {
-					DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
-					DebugRenderer::drawBox(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+					DebugRenderer::drawWireQuad(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
+					DebugRenderer::drawWireQuad(f32v2(currentVoxelPos.x, currentVoxelPos.y), f32v2(1.0f, 1.0f), color4(1.0f, 1.0f, 0.0f), duration);
 				}
 				return TileHandle(chunk, index);
             }
 			if (ENABLE_DEBUG_PICK_RENDER) {
-				DebugRenderer::drawBox(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 0.0f, 0.0f), duration);
+				DebugRenderer::drawWireQuad(f32v3(currentVoxelPos), f32v2(1.0f, 1.0f), color4(1.0f, 0.0f, 0.0f), duration);
 			}
 
 			f32v3 next;
@@ -546,12 +549,20 @@ bool World::updateChunk(Chunk& chunk) {
 		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
 			tryCreateNeighbors(chunk);
 		}
+		else if (chunk.mDirtyNavGraph) {
+            // Update nav graph when all neighbors are loaded
+			mNavGraph->buildNavNodesForChunkSynchronous(chunk);
+			chunk.mDirtyNavGraph = false;
+		}
 	}
 	
 	return false;
 }
 
 void World::onChunkDataReady(Chunk& chunk) {
+	// Update nav graph
+	mNavGraph->buildNavNodesForChunkSynchronous(chunk);
+
 	// Don't update neighbors until we are data ready
 	assert(chunk.isDataReady());
 	// Neighbors
@@ -791,6 +802,18 @@ void World::setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer) {
         Chunk* chunk = handle.getMutableChunk();
         chunk->setTileAt(handle.index, id, layer);
     }
+}
+
+void World::setTileFlagAt(const ui32v2& worldPos, TileFlags flag) {
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+    Chunk* chunk = handle.getMutableChunk();
+    chunk->setTileFlagAt(handle.index, flag);
+}
+
+void World::setTileCollisionNavFlagAt(const ui32v2& worldPos, TileCollisionNavFlags flag) {
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+    Chunk* chunk = handle.getMutableChunk();
+    chunk->setTileCollisionNavFlagAt(handle.index, flag);
 }
 
 bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {

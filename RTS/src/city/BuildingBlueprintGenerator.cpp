@@ -41,6 +41,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBuildingA
     }
 
     std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos);
+    assert(plotSize.x > 2 && plotSize.y > 2);
     bp->id = mCurrentId;
     BuildingBlueprint* bPtr = bp.get();
     mGeneratingBuildings.insert(bPtr);
@@ -118,7 +119,11 @@ void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp) const
             }
             // Add this room
             ++roomCount->x;
+            --availablePublicRooms;
             node.nodeType = bp.desc.publicRooms[roomIndex++].id;
+            if (availablePublicRooms == 0) {
+                break;
+            }
             // Wrap
             if (roomIndex >= publicRoomCount) {
                 roomIndex = 0;
@@ -213,6 +218,7 @@ void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 av
     if (node->numChildren == 0) {
         return;
     }
+    assert(currentOffset.x < 10000 && currentOffset.y < 10000);
 
     // TODO: Worry about even vs odd?
     const ui16 myDesiredRadius = node->desiredWidth / 2;
@@ -240,6 +246,7 @@ void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 av
 
         child.offsetFromZero = currentOffset;
         child.offsetFromZero.x += xOffset;
+        assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
         placeChildrenRecursive(nodes, &child, childWidthSpan, maxXOffsetPerLayer, child.offsetFromZero);
         currentOffset.y += widthSegmentSize * 2;
     }
@@ -257,9 +264,11 @@ void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp) const {
 }
 
 void applyForceOffset(ui16v2& offset, const f32v2& force, const ui16v2& dims) {
+    assert(offset.x < 10000 && offset.y < 10000);
     i32v2 newOffset = i32v2(offset) + i32v2(force);
     offset.x = vmath::clamp(newOffset.x, 1, dims.x - 2);
     offset.y = vmath::clamp(newOffset.y, 1, dims.y - 2);
+    assert(offset.x < 10000 && offset.y < 10000);
 }
 
 void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) const {
@@ -286,6 +295,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) const {
     // Place the root
     root->offsetFromZero = i16v2(vmath::min(maxDepthOffsetPerLayer / 2, root->desiredWidth / 2), dims.y / 2);
     if (root->offsetFromZero.x == 0) root->offsetFromZero.x = 1u;
+    assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
     // We will generate to the right, then will rotate the coordinates around based on the cartesian
     placeChildrenRecursive(bp.nodes, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero);
@@ -318,6 +328,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) const {
     for (auto&& room : bp.nodes) {
         room.offsetFromZero.x = vmath::clamp(room.offsetFromZero.x, (ui16)1u, bp.dims.x);
         room.offsetFromZero.y = vmath::clamp(room.offsetFromZero.y, (ui16)1u, bp.dims.y);
+        assert(room.offsetFromZero.x < 10000 && room.offsetFromZero.y < 10000);
     }
 
     // Spread rooms apart based on circular collision
@@ -427,6 +438,7 @@ RoomWallOuterDir OPPOSITE_WALL_DIRS[4] = {
 
 void extendWallStart(RoomWall& wall, const i16v2& offset) {
     wall.startPos += offset;
+    assert(wall.startPos.x >= 0 && wall.startPos.y >= 0);
     ++wall.length;
 }
 
@@ -441,6 +453,7 @@ void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
     const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
 
     wall.startPos += expandOffset;
+    assert(wall.startPos.x >= 0 && wall.startPos.y >= 0);
     wall.endPos += expandOffset;
     extendWallEnd(*wall.startAdjacent, expandOffset);
     extendWallStart(*wall.endAdjacent, expandOffset);
@@ -471,6 +484,7 @@ void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
     const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
 
     wall.startPos += expandOffset;
+    assert(wall.startPos.x >= 0 && wall.startPos.y >= 0);
     wall.endPos += expandOffset;
     // TODO: This is invalid as it will expand 1 bits into owned territory?
     // TODO: Can we delete the bit array with new method?
@@ -937,6 +951,7 @@ void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& 
     for (int i = 0; i < room.numWalls; ++i) {
         RoomWall& wall = room.walls[i];
         wall.startPos = room.offsetFromZero;
+        assert(wall.startPos.x >= 0 && wall.startPos.y >= 0);
         wall.endPos = room.offsetFromZero;
         wall.length = 1;
     }

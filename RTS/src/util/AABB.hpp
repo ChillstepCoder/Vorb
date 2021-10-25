@@ -7,7 +7,17 @@ struct ui32AABB2 {
 
     ui32& operator[](int i) { return data[i]; }
 
+    const ui32v2& getBottomLeft() const { return pos; }
     ui32v2 getCenter() const { return pos + dims / 2u; }
+    ui32v2 getTopLeft() const { return pos + ui32v2(0, dims.y); };
+    ui32v2 getTopRight() const { return pos + dims; };
+    ui32v2 getBottomRight() const { return pos + ui32v2(dims.x, 0); };
+    void getCorners(ui32v2 aabbCorners[4]) const {
+        aabbCorners[0] = { x, y };
+        aabbCorners[1] = { x + width, y };
+        aabbCorners[2] = { x, y + height };
+        aabbCorners[3] = { x + width, y + height };
+    }
 
     union {
         ui32v4 data;

@@ -26,16 +26,12 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& re
 }
 
 void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera3D& camera) const {
-	//mSpriteBatch->begin();
 
 	auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent>().each([this](auto& cmp) {
-		DebugRenderer::drawCircle(cmp.getPosition(), cmp.mCollisionRadius, color4(1.0f, 0.0f, 0.0f));
-		//mSpriteBatch->draw(mCircleTexture.id, (cmp.getXYPosition() - cmp.mCollisionRadius), f32v2(cmp.mCollisionRadius * 2.0f), color4(1.0f, 0.0f, 0.0f));
+        DebugRenderer::drawCircle(cmp.getPosition(), cmp.mCollisionRadius, color4(1.0f, 0.0f, 0.0f));
+        //DebugRenderer::drawCircle(cmp.getPosition() + f32v3(0.0f, 0.0f, cmp.mCollisionHeight), cmp.mCollisionRadius, color4(0.5f, 0.0f, 0.0f));
 	});
-
-	//mSpriteBatch->end();
-	//mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix());
 }
 
 void EntityComponentSystemRenderer::renderSimpleSprites(const Camera3D& camera) const {

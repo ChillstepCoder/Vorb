@@ -9,6 +9,7 @@
 class Chunk;
 class QuadMesh;
 class BillboardMesh;
+class NavGraph;
 
 constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
@@ -77,7 +78,8 @@ public:
 	TileHandle getTopTileHandle(const TileIndex index) const;
 	TileHandle getBottomTileHandle(const TileIndex index) const;
 
-    TileCollision getTileCollisionAt(const TileIndex index) const;
+    const TileCollision& getTileCollisionAt(const TileIndex index) const;
+	std::vector<TileCollision>& getAllTileCollision() { return mCollision; }
 	// Get neighbors starting from top left
 	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
 
@@ -87,6 +89,11 @@ public:
 	Chunk& getBottomNeighbor() const;
 
 	const f32AABB3& getAABB() const { return mAABB; }
+
+	// Items
+	std::map<TileIndex, ItemStack>& getItemsOnGround() { return mItemsOnGround; }
+	void dropItemStackOnGround(ItemStack item);
+	ItemStack getItemStackOnGround(TileIndex pos);
 
 	bool isInvalid() const { return mState == ChunkState::INVALID; }
 	bool isDataReady() const { return mState > ChunkState::LOADING; }
@@ -109,6 +116,8 @@ public:
         return mTiles[i];
 	}
 
+	void dirtyNavGraph() { mDirtyNavGraph = true; }
+
 	void dirtyMesh() {
 		// TODO: Not both
         mChunkRenderData.mMeshDirty = true;
@@ -118,6 +127,8 @@ public:
     void setTileAt(TileIndex i, Tile tile);
 	void setTileAt(TileIndex i, TileID tileId, TileLayer layer);
 	void setTileCollisionAt(TileIndex i, TileCollision collision);
+    void setTileFlagAt(TileIndex i, TileFlags flag);
+    void setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag);
 
 	void incRef() const {
 		++mRefCount;
@@ -143,6 +154,7 @@ private:
 	f32v2 mWorldPos = f32v2(0.0f);
 	f32AABB3 mAABB = f32AABB3(0.0f);
 	ChunkState mState = ChunkState::INVALID;
+	bool mDirtyNavGraph = false;
 
 	// Refcount for threading
 	mutable ui8 mRefCount = 0;
@@ -152,6 +164,7 @@ private:
 
     std::vector<Tile> mTiles; // TODO: Memory recycler
 	std::vector<TileCollision> mCollision; // TODO: Don't keep this in memory when its not needed?
+	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	// For use by ChunkRenderer
 	mutable ChunkRenderData mChunkRenderData;

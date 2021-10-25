@@ -15,6 +15,7 @@ class CityPlotter
     friend class CityDebugRenderer;
 public:
     CityPlotter(City& city);
+    ~CityPlotter();
 
     void initAsTier(int tier);
 
@@ -28,6 +29,9 @@ public:
 
 private:
     CityDistrict* addDistrict(DistrictTypes type, CityDistrict* parent, ui32 size);
+
+    void generateAlleysForUnroadedPlots(CityDistrict& newDistrict);
+
     bool markDistrictTilesAsOwned(CityDistrict& district); // Returns false if there was a conflict
     CityPlot* addPlot(ui32v2 dims);
 
@@ -40,12 +44,12 @@ private:
 
     // Split a plot into two plots. Returns index of new plot.
     // axis 0 = split horizontally, 1 = split vertically
-    CityPlotIndex splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex plot, int axis);
+    CityPlotIndex splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex plot, int axis, RoadID roadID);
+    void tryConnectRoad(CityPlotIndex plotIndex, const ui32AABB2& roadAabb, RoadID roadID);
 
     // First plot is root plot
-    std::vector<CityPlot> mPlots;
+    std::vector<std::unique_ptr<CityPlot>> mPlots;
     //std::vector<CityPlotIndex> mFreePlots;
-    std::vector<CityRoad> mRoads;
     std::vector<std::unique_ptr<CityDistrict>> mDistricts;
 
     CityDistrict* mDistrictGrid[DISTRICT_GRID_SIZE] = {};

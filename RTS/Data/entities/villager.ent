@@ -2,7 +2,7 @@ person_ai:
 character_model:
 physics:
   collider_shape: circle
-  collider_radius: 0.3
+  collider_radius: 0.24
   is_static: true
 inventory:
 character_details:

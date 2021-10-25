@@ -34,6 +34,7 @@ class ItemStockpileRegistry;
 class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
+class NavGraph;
 struct CityGraph;
 
 class World
@@ -57,6 +58,8 @@ public:
 	void setTileAt(const ui32v2& worldPos, Tile tile);
     void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
     void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);
+    void setTileFlagAt(const ui32v2& worldPos, TileFlags flag);
+    void setTileCollisionNavFlagAt(const ui32v2& worldPos, TileCollisionNavFlags flag);
 
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 
@@ -139,6 +142,9 @@ private:
 
 	// Stockpiles
 	std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
+
+	// Nav graph
+	std::unique_ptr<NavGraph> mNavGraph;
 
 	// Data
     f32v2 mLoadCenter = f32v2(0.0f);

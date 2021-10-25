@@ -3,6 +3,7 @@
 
 #include "rendering/QuadMesh.h"
 
+#include "pathfinding/NavGraph.h"
 #include "world/WorldGrid.h"
 
 #include "services/Services.h"
@@ -147,7 +148,7 @@ TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
 	return TileHandle();
 }
 
-TileCollision Chunk::getTileCollisionAt(const TileIndex index) const {
+const TileCollision& Chunk::getTileCollisionAt(const TileIndex index) const {
     return mCollision[index];
 }
 
@@ -223,12 +224,29 @@ void Chunk::setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
 }
 
 void Chunk::setTileCollisionAt(TileIndex i, TileCollision collision) {
+    TileCollisionNavFlags oldFlags = mCollision[i].flags;
     mCollision[i] = collision;
+    mCollision[i].flags = TileCollisionNavFlags((ui8)collision.flags | (ui8)oldFlags);
+}
+
+void Chunk::setTileFlagAt(TileIndex i, TileFlags flag) {
+    mTiles[i].setTileFlag(flag);
+}
+
+void Chunk::setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag) {
+    mCollision[i].flags = TileCollisionNavFlags((ui8)mCollision[i].flags | (ui8)flag);
 }
 
 void Chunk::updateTileCollisionAt(TileIndex i) {
     const Tile& tile = mTiles[i];
     TileCollision& collision = mCollision[i];
+    TileCollisionNavFlags oldFlags = collision.flags;
+
+    // Dirty navgraph when collision changes
+    if (collision.baseZPosition != tile.baseZPosition) {
+        dirtyNavGraph();
+    }
+
     if (tile.topLayer != TILE_ID_NONE) {
         collision = tile.buildTileCollision();
     }
@@ -236,4 +254,5 @@ void Chunk::updateTileCollisionAt(TileIndex i) {
         collision = TileCollision();
         collision.baseZPosition = tile.baseZPosition;
     }
+    collision.flags = TileCollisionNavFlags((ui8)collision.flags | (ui8)oldFlags);
 }

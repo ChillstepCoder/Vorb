@@ -20,12 +20,12 @@ CityBuilder::CityBuilder(City& city, World& world)
 void CityBuilder::update()
 {
     // Grab new plans
-    //if (mInProgressBlueprints.empty()) {
-    if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
-        debugBuildInstant(*bp);
-        mInProgressBlueprints.emplace_back(std::move(bp));
+    if (mInProgressBlueprints.empty()) {
+        if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
+            debugBuildInstant(*bp);
+            //mInProgressBlueprints.emplace_back(std::move(bp));
+        }
     }
-    //}
 
     // FILO queue right now
     while (mRoadsToBuild.size()) {
@@ -53,7 +53,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
         0, // NONE
         0, // FLOOR
         0, // DOOR
-        0, // WALL
+        2, // WALL
     };
 
     for (int y = 0; y < bp.dims.y; ++y) {
@@ -82,7 +82,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     static TileID bricksId = TileRepository::getTile("bricks1");
     static TileID grassId = TileRepository::getTile("grass1");
 
-    CityRoad& road = mCity.mRoads[roadId];
+    CityRoad& road = *mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
     for (ui32 y = road.aabb.y; y < road.aabb.y + road.aabb.height; ++y) {

@@ -54,9 +54,12 @@ struct CityRoad {
     ui32v2 endPos;
     ui32AABB2 aabb;
     ui32 width;
+    ui32 length;
     RoadType type = RoadType::PAVED;
     RoadID id;
-    std::vector<RoadID> neighborRoads;
+    AXIS_2D axis;
+
+    std::vector<std::pair<ui32, CityRoad*>> neighborRoads;
     bool mIsBuilt = false;
 };
 

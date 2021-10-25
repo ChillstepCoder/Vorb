@@ -5,6 +5,7 @@
 
 #include "box2d/b2_collision.h"
 
+#include "city/City.h"
 #include "city/CityBuilder.h"
 #include "city/CityPlanner.h"
 #include "city/CityPlotter.h"
@@ -37,7 +38,7 @@ void renderBlueprint(BuildingBlueprint& bp) {
     
     aabb.upperBound.x = aabb.lowerBound.x + bp.dims.x;
     aabb.upperBound.y = aabb.lowerBound.y + bp.dims.y;
-    DebugRenderer::drawAABB(aabb, color4(0.7f, 0.4f, 0.0f), PERIOD_FRAMES);
+    DebugRenderer::drawAABB(aabb, color4(0.7f, 0.4f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
     // Render the room graph in world space
     int i = 0;
     for (auto&& node : bp.nodes) {
@@ -48,17 +49,17 @@ void renderBlueprint(BuildingBlueprint& bp) {
         nodeAabb.upperBound.y = nodeAabb.lowerBound.y + 1;
 
         const color4& color = ROOM_COLORS[i % MAX_ROOM_COLORS];
-        DebugRenderer::drawAABB(nodeAabb, color4(color.r, color.g, color.b, 255u), PERIOD_FRAMES);
+        DebugRenderer::drawAABB(nodeAabb, color4(color.r, color.g, color.b, 255u), PERIOD_FRAMES, DEBUG_ID_CITY);
         // Draw parent line
         if (node.parentRoom != INVALID_ROOM_ID) {
             RoomNode& parent = bp.nodes[node.parentRoom];
             const f32v2 startPos(nodeAabb.lowerBound.x + 0.5f, nodeAabb.lowerBound.y + 0.5f);
             const f32v2 endPos(bp.bottomLeftWorldPos.x + parent.offsetFromZero.x + 0.5f, bp.bottomLeftWorldPos.y + parent.offsetFromZero.y + 0.5f);
             if (node.isPrivate) {
-                DebugRenderer::drawLine(startPos, endPos - startPos, color4(1.0f, 1.0f, 0.0f), PERIOD_FRAMES);
+                DebugRenderer::drawLine(startPos, endPos - startPos, color4(1.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
             }
             else {
-                DebugRenderer::drawLine(startPos, endPos - startPos, color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES);
+                DebugRenderer::drawLine(startPos, endPos - startPos, color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
             }
         }
         ++i;
@@ -72,7 +73,7 @@ void renderBlueprint(BuildingBlueprint& bp) {
             if (id != INVALID_ROOM_ID) {
                 const ui32v2 worldPos = bp.bottomLeftWorldPos + ui32v2(x, y);
                 const color4& color = ROOM_COLORS[(int)id % MAX_ROOM_COLORS];
-                DebugRenderer::drawQuad(f32v2(worldPos), f32v2(1.0f), color, PERIOD_FRAMES);
+                DebugRenderer::drawFilledQuad(f32v2(worldPos), f32v2(1.0f), color, PERIOD_FRAMES, DEBUG_ID_CITY);
             }
         }
     }
@@ -137,22 +138,70 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) c
             default:
                 color = color4(1.0f, 1.0f, 1.0f, ROOM_COLOR_ALPHA);
         };
-        DebugRenderer::drawQuad(f32v2(district.aabb.pos), f32v2(district.aabb.dims), color, PERIOD_FRAMES);
+        DebugRenderer::drawFilledQuad(f32v2(district.aabb.pos), f32v2(district.aabb.dims), color, PERIOD_FRAMES, DEBUG_ID_CITY);
     }
 
     // Render plots
     for (size_t i = 0; i < cityPlotter.mPlots.size(); ++i) {
-        const auto& plot = cityPlotter.mPlots[i];
+        const auto& plot = *cityPlotter.mPlots[i];
         color4 color;
-        if (i == 0) {
-            // City center
-            color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
+        color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
+        DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), color, PERIOD_FRAMES, DEBUG_ID_CITY);
+        // Plot edges
+        if (plot.neighborRoads[enum_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
+            DebugRenderer::drawLine(f32v2(plot.aabb.pos), f32v2(0.0f, plot.aabb.dims.y), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
         }
-        else {
-            // Everything else
-            color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
+        if (plot.neighborRoads[enum_cast(Cartesian::RIGHT)] != INVALID_ROAD_ID) {
+            DebugRenderer::drawLine(f32v2(plot.aabb.pos.x + plot.aabb.dims.x, plot.aabb.pos.y), f32v2(0.0f, plot.aabb.dims.y), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
         }
-        DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), color, PERIOD_FRAMES);
+        if (plot.neighborRoads[enum_cast(Cartesian::DOWN)] != INVALID_ROAD_ID) {
+            DebugRenderer::drawLine(f32v2(plot.aabb.pos.x, plot.aabb.pos.y), f32v2(plot.aabb.dims.x, 0.0f), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
+        }
+        if (plot.neighborRoads[enum_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
+            DebugRenderer::drawLine(f32v2(plot.aabb.pos.x, plot.aabb.pos.y + plot.aabb.dims.y), f32v2(plot.aabb.dims.x, 0.0f), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
+        }
+    }
+
+    // Render roads, starting with root road and traversing
+    if (cityPlotter.mCity.mRoads.size()) {
+        std::set<CityRoad*> visitedRoads;
+        std::queue<CityRoad*> roadsToVisit;
+        int i = 0;
+        CityRoad* road = cityPlotter.mCity.mRoads[i].get();
+        visitedRoads.insert(road);
+        color4 roadColor = color4(1.0f, 1.0f, 0.0f);
+        while (road) {
+
+            DebugRenderer::drawCircle(f32v3(road->startPos.x, road->startPos.y, 0.0f) + f32v3(0.5f, 0.5f, 0.0f), road->width * 0.5f, roadColor, PERIOD_FRAMES, DEBUG_ID_CITY);
+            DebugRenderer::drawCircle(f32v3(road->endPos.x, road->endPos.y, 0.0f) + f32v3(0.5f, 0.5f, 0.0f), road->width * 0.5f, roadColor, PERIOD_FRAMES, DEBUG_ID_CITY);
+            DebugRenderer::drawLineBetweenPoints(f32v2(road->startPos) + f32v2(0.5f), f32v2(road->endPos) + f32v2(0.5f), roadColor, PERIOD_FRAMES, DEBUG_ID_CITY);
+
+            for (size_t j = 0; j < road->neighborRoads.size(); ++j) {
+                CityRoad* neighbor = road->neighborRoads[j].second;
+                if (visitedRoads.find(neighbor) == visitedRoads.end()) {
+                    roadsToVisit.push(neighbor);
+                    visitedRoads.insert(neighbor);
+                }
+            }
+
+            if (roadsToVisit.size()) {
+                road = roadsToVisit.front();
+                roadsToVisit.pop();
+            }
+            else {
+                road = nullptr;
+                for (++i; i < cityPlotter.mCity.mRoads.size(); ++i) {
+                    CityRoad* r = cityPlotter.mCity.mRoads[i].get();
+                    if (visitedRoads.find(r) == visitedRoads.end()) {
+                        road = r;
+                        visitedRoads.insert(road);
+                        assert(road->neighborRoads.size() == 0);
+                        roadColor = color4(1.0f, 0.0f, 0.0f);
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 

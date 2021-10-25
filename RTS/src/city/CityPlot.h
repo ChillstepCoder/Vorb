@@ -24,6 +24,18 @@ struct CityPlot {
         neighborRoads[enum_cast(dir)] = id;
     }
 
+    RoadID getNeighborRoad(Cartesian dir) {
+        return neighborRoads[enum_cast(dir)];
+    }
+
+    int getAdjacentRoadCount() const {
+        int count = 0;
+        for (int i = 0; i < CARTESIAN_COUNT; ++i) {
+            count += (int)(neighborRoads[i] != INVALID_ROAD_ID);
+        }
+        return count;
+    }
+
     ui32AABB2 aabb;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
     CityDistrict* parentDistrict = nullptr;

@@ -5,7 +5,6 @@ grass2:
 rock1:
   tex: con_squash
   col: box
-  path_weight: 0.0
 bricks1:
   tex: bricks1
 water:

@@ -79,12 +79,12 @@ bool onSegment(ui32v2 p, ui32v2 q, ui32v2 r) {
 // 0 --> p, q and r are colinear 
 // 1 --> Clockwise 
 // 2 --> Counterclockwise 
-int orientation(ui32v2 p, ui32v2 q, ui32v2 r)
+int orientation(f32v2 p, f32v2 q, f32v2 r)
 {
     // See https://www.geeksforgeeks.org/orientation-3-ordered-points/ 
     // for details of below formula. 
     int val = (q.y - p.y) * (r.x - q.x) -
-        (q.x - p.x) * (r.y - q.y);
+              (q.x - p.x) * (r.y - q.y);
 
     if (val == 0) return 0;  // colinear 
 
@@ -93,7 +93,8 @@ int orientation(ui32v2 p, ui32v2 q, ui32v2 r)
 
 // The main function that returns true if line segment 'p1q1' 
 // and 'p2q2' intersect. 
-bool doIntersect(ui32v2 p1, ui32v2 q1, ui32v2 p2, ui32v2 q2)
+// https://www.geeksforgeeks.org/check-if-two-given-line-segments-intersect/
+bool doIntersect(f32v2 p1, f32v2 q1, f32v2 p2, f32v2 q2)
 {
     // Find the four orientations needed for general and 
     // special cases 
@@ -123,7 +124,7 @@ bool doIntersect(ui32v2 p1, ui32v2 q1, ui32v2 p2, ui32v2 q2)
 }
 // TODO: Optimize? Find intersection distance?
 bool roadDoesIntersect(const CityRoad& roadA, const CityRoad& roadB) {
-    return doIntersect(roadA.startPos, roadB.startPos, roadA.endPos, roadB.endPos);
+    return doIntersect(roadA.startPos, roadA.endPos, roadB.startPos, roadB.endPos);
 }
 
 RoadID City::addRoad(CityRoad& road)
@@ -132,17 +133,63 @@ RoadID City::addRoad(CityRoad& road)
     assert(road.neighborRoads.empty());
     RoadID id = mRoads.size();
     road.id = id;
-    mRoads.emplace_back(road);
-    CityRoad& newRoad = mRoads.back();
+    mRoads.emplace_back(std::make_unique<CityRoad>(road));
+    CityRoad& newRoad = *mRoads.back();
     // Set up neighbors for pathing and such
     for (size_t i = 0; i < mRoads.size() - 1; ++i) {
         // Intersection test
-        CityRoad& road = mRoads[i];
+        CityRoad& road = *mRoads[i];
         if (roadDoesIntersect(newRoad, road)) {
-            newRoad.neighborRoads.emplace_back(i);
-            road.neighborRoads.emplace_back(mRoads.size() - 1);
+            // Compute the distances along each road
+            ui32 d1, d2;
+            if (newRoad.axis == AXIS_HORIZONTAL) {
+                if (road.axis == AXIS_VERTICAL) {
+                    d1 = road.startPos.x - newRoad.startPos.x;
+                    d2 = newRoad.startPos.y - road.startPos.y;
+                }
+                else {
+                    // Colinear
+                    if (road.endPos.x == newRoad.startPos.x) {
+                        d1 = 0;
+                        d2 = road.length;
+                    }
+                    else {
+                        d1 = newRoad.length;
+                        d2 = 0;
+                    }
+                }
+            }
+            else {
+                if (road.axis == AXIS_HORIZONTAL) {
+                    d1 = road.startPos.y - newRoad.startPos.y;
+                    d2 = newRoad.startPos.x - road.startPos.x;
+                }
+                else {
+                    // Colinear
+                    if (road.endPos.y == newRoad.startPos.y) {
+                        d1 = 0;
+                        d2 = road.length;
+                    }
+                    else {
+                        d1 = newRoad.length;
+                        d2 = 0;
+                    }
+                }
+            }
+            // TODO: Sort based on distance
+            newRoad.neighborRoads.emplace_back(std::make_pair(d1, &road));
+            road.neighborRoads.emplace_back(std::make_pair(d2, &newRoad));
         }
     }
+
+    // Update tile flags with road info
+    ui32v2 worldPos;
+    for (worldPos.y = newRoad.aabb.pos.y; worldPos.y < newRoad.aabb.pos.y + newRoad.aabb.dims.y; ++worldPos.y) {
+        for (worldPos.x = newRoad.aabb.pos.x; worldPos.x < newRoad.aabb.pos.x + newRoad.aabb.dims.x; ++worldPos.x) {
+            mWorld.setTileCollisionNavFlagAt(worldPos, COLLISION_NAV_FLAG_ROAD);
+        }
+    }
+
     mCityBuilder->addRoadToBuild(id);
     return id;
 }

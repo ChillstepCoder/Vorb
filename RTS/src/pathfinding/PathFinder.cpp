@@ -206,6 +206,8 @@ const i32v2 NODE_CORNER_NEIGHBORS[9] = {
    i32v2(NODE_DIR_UP,   NODE_DIR_RIGHT), // NODE_DIR_UP_RIGHT
 };
 
+// TODO: https://gamedev.stackexchange.com/questions/94148/pathfinding-tile-based-navigation-mesh
+
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
 std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal) {
     // TODO: Profiling
@@ -252,10 +254,11 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
         node.isInClosedList = true;
 
         const ui32v2 nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
+        const TileCollision startCollision = world.getTileCollisionAtWorldPos(nodePoint);
         
 #if PATH_DEBUG == 1
         if (debugCount > 255) debugCount = 0;
-        DebugRenderer::drawQuad(nodePoint, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), 200, 0);
+        DebugRenderer::drawFilledQuad(nodePoint, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), 200, 0);
 #endif
 
         // Precompute collision weights and points for neighbors
@@ -275,17 +278,25 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
                 pathWeights[i] = 0.0f;
                 continue;
             }
-            TileHandle tile = world.getTileHandleAtWorldPos(nextPoint);
-            // TODO: CollisionMap for less lookups
-            f32 weight = 1.0f;
-            for (int l = 0; l < 3; ++l) {
-                TileID tileId = tile.tile.layers[l];
-                if (tileId != TILE_ID_NONE) {
-                    const TileData tileData = TileRepository::getTileData(tileId);
-                    weight *= tileData.pathWeight;
-                }
+            TileCollision collision = world.getTileCollisionAtWorldPos(nextPoint);
+            f32 weight = (collision.pathWeight / 255.0f);
+            if (collision.baseZPosition == startCollision.baseZPosition + 1) {
+                // Upward
+                pathWeights[i] = (collision.pathWeight / 255.0f) * 0.5f;
             }
-            pathWeights[i] = weight;
+            else if (collision.baseZPosition >= startCollision.baseZPosition + 2) {
+                // Too tall!
+                pathWeights[i] = 0.0f;
+            }
+            else {
+                // Standard or downward
+                pathWeights[i] = (collision.pathWeight / 255.0f);
+            }
+
+            // ROADS ARE WORTH MORE
+            if (collision.flags & COLLISION_NAV_FLAG_ROAD) {
+                pathWeights[i] *= 2.0f;
+            }
         }
 
         // Check neighbors
@@ -309,7 +320,7 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
                     return nullptr;
                 }
                 AStarNode& nextNode = getNodeLookup(nextPoint, bottomLeftPoint);
-                const ui32 cost = node.g + MOVEMENT_COSTS[dir];
+                const ui32 cost = node.g + MOVEMENT_COSTS[dir] / pathWeights[i];
                 if (nextNode.isInOpenList) {
                     if (cost < nextNode.g) {
                         // Reparent the node

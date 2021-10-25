@@ -185,7 +185,7 @@ void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end,
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawBox(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     const f32v2 topRight = origin + dims;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, origin + f32v2(dims.x, 0.0f), color);
@@ -195,7 +195,7 @@ void DebugRenderer::drawBox(const f32v2& origin, const f32v2& dims, color4 color
 
 }
 
-void DebugRenderer::drawBox(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
+void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
     const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
@@ -205,10 +205,15 @@ void DebugRenderer::drawBox(const f32v3& origin, const f32v2& dims, color4 color
     lines.emplace_back(topRight, topRight - f32v3(0.0f, dims.x, 0.0f), color);
 }
 
-void DebugRenderer::drawQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
+void DebugRenderer::drawFilledQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
+}
+
+void DebugRenderer::reserveFilledQuads(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
+    auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
+    quads.reserve(quads.size() + count);
 }
 
 void DebugRenderer::drawAABB(const b2AABB& aabb, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
@@ -464,7 +469,17 @@ void DebugRenderer::clearAllMeshesWithId(int id)
             ++i;
         }
     }
-    sDebugMeshes.clear();
+    for (size_t i = 0; i < sDebugCircleMeshes.size();) {
+        auto&& mesh = sDebugCircleMeshes[i];
+        if (mesh.id == id) {
+            glDeleteBuffers(1, &mesh.vbo);
+            sDebugCircleMeshes[i] = sDebugCircleMeshes.back();
+            sDebugCircleMeshes.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
 }
 
 void DebugRenderer::clearAll()
@@ -472,5 +487,9 @@ void DebugRenderer::clearAll()
     for (auto&& mesh : sDebugMeshes) {
         glDeleteBuffers(1, &mesh.vbo);
     }
+    for (auto&& mesh : sDebugCircleMeshes) {
+        glDeleteBuffers(1, &mesh.vbo);
+    }
     sDebugMeshes.clear();
+    sDebugCircleMeshes.clear();
 }

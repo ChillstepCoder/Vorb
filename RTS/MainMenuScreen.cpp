@@ -108,6 +108,9 @@ void MainMenuScreen::build() {
         else if (event.keyCode == VKEY_V) {
             sDebugOptions.mCities = !sDebugOptions.mCities;
         }
+        else if (event.keyCode == VKEY_J) {
+            sDebugOptions.mNavGraph = !sDebugOptions.mNavGraph;
+        }
         else if (event.keyCode == VKEY_R) {
 			// TODO: Fix this
 			//mRenderContext.reloadShaders();
@@ -396,7 +399,7 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
     if (mRightClickInteractPopup) {
         // Render selected
         ui32v2 worldPosInt = mSelectedTilePosition;
-        DebugRenderer::drawQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+        DebugRenderer::drawFilledQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
 
         // Draw vectors to corners
         f32v2 interactPopupPositionWorld = mSelectedTilePosition;
@@ -428,7 +431,7 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 1u));
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {

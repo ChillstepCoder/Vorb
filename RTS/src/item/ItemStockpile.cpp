@@ -72,7 +72,7 @@ bool ItemStockpile::isVisible() const {
 }
 
 void ItemStockpile::renderDebug() const {
-    DebugRenderer::drawQuad(f32v2(mAABB.pos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
+    DebugRenderer::drawFilledQuad(f32v2(mAABB.pos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
 }
 
 ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui32 maxQuantityToAdd) {

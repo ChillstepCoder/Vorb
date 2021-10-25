@@ -4,6 +4,7 @@
 
 constexpr ui32 CHUNK_ID_INVALID = UINT32_MAX;
 
+// TODO: Shrink?
 struct ChunkID {
     ChunkID() : id(CHUNK_ID_INVALID), pos(CHUNK_ID_INVALID) {}
     ChunkID(const ChunkID& other) { *this = other; }

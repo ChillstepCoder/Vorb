@@ -45,7 +45,6 @@ void BuildingGrammar::buildRoomGraph(OUT std::vector<RoomNode>& graph) const {
     ui32 ruleBufferCount = 1;
     ui32 totalNodes = 1;
 
-    std::cout << "BUILD ROOM GRAPH ";
     while (currentIndex < totalNodes && totalNodes < maxNodes) {
         RoomNode& currentNode = graph[currentIndex];
         const ui32 currentRuleIndex = ruleBuffer[currentIndex];

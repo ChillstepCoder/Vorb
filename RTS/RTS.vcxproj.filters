@@ -312,6 +312,9 @@
     <ClCompile Include="src\physics\ContactFilter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\pathfinding\NavGraph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -690,6 +693,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\ContactFilter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pathfinding\NavGraph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

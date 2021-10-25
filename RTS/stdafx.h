@@ -104,6 +104,11 @@ constexpr float CHUNK_DIAGONAL_RADIUS = 181.02f;
 #define TILE_INDEX_X_MASK 0x7f
 #endif
 
+constexpr int SUBCHUNK_WIDTH = 16;
+constexpr int SUBCHUNK_WIDTH_SQ = SQ(SUBCHUNK_WIDTH);
+constexpr int MIN_SUBCHUNKS_PER_CHUNK_ROW = CHUNK_WIDTH / SUBCHUNK_WIDTH;
+constexpr int MIN_SUBCHUNKS_PER_CHUNK = SQ(MIN_SUBCHUNKS_PER_CHUNK_ROW);
+
 constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 constexpr ui16 INVALID_TILE_INDEX = 0xffff;
@@ -115,7 +120,7 @@ constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
 }
 
 // Cartesian
-enum class Cartesian {
+enum class Cartesian : ui8 {
     DOWN = 0, //-y  south
     LEFT = 1, //-x  west
     RIGHT = 2, //+x east
@@ -135,11 +140,23 @@ constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
     Cartesian::LEFT,
     Cartesian::DOWN,
 };
-const i32v2 CARTESIAN_OFFSETS[CARTESIAN_COUNT] = {
+const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
     i32v2(0, -1), // DOWN
     i32v2(-1, 0), // LEFT
     i32v2(1,  0), // RIGHT
     i32v2(0,  1), // UP
+};
+const i32v2 CARTESIAN_EDGE_DIRS[CARTESIAN_COUNT] = {
+    i32v2(1, 0), // DOWN
+    i32v2(0, 1), // LEFT
+    i32v2(0, 1), // RIGHT
+    i32v2(1, 0), // UP
+};
+const i32v2 CARTESIAN_EDGE_INDEX_OFFSET_MULTS[CARTESIAN_COUNT] = {
+    i32v2(0, 0), // DOWN
+    i32v2(0, 0), // LEFT
+    i32v2(1, 0), // RIGHT
+    i32v2(0, 1), // UP
 };
 // Corner winding
 constexpr int CORNER_COUNT = 4;
@@ -253,6 +270,7 @@ struct DebugOptions {
     bool mWireframe = false;
     bool mChunkBoundaries = false;
 	bool mCities = false;
+    bool mNavGraph = false;
 };
 
 extern DebugOptions sDebugOptions;
@@ -273,8 +291,8 @@ extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the upda
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
 // Useful for determining the size of a class pre-compile time
-template <size_t S> class Sizer { };
-#define SIZER(type) Sizer<sizeof(type)> 
+//https://stackoverflow.com/questions/20979565/how-can-i-print-the-result-of-sizeof-at-compile-time-in-c
+#define SIZER(type) char (*__kaboom)[sizeof(type)] = 1;
 
 #define IS_ENABLED(d) d == 1
 

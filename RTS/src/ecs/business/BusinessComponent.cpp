@@ -60,7 +60,7 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
             gatherCmp.mScannedTiles = TileScanner::scanForResource(world, gatherCmp.mResourceToGather, businessCmp.mCity->getCityCenterWorldPos(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
             std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
             for (auto&& it : gatherCmp.mScannedTiles) {
-                DebugRenderer::drawBox(it.getWorldPos(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+                DebugRenderer::drawWireQuad(it.getWorldPos(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
             }
         }
     }

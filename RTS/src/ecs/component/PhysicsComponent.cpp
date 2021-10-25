@@ -76,7 +76,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const TileCollision& co
 		// We are above, do nothing
 		return;
 	}
-	else if (zOffset > -TOP_COLLISION_DEPTH || zOffset < -1.0f) { // If we are colliding with top, or stuck underneath (fix tunnel)
+	else if (zOffset > -TOP_COLLISION_DEPTH || (zOffset < -10.0f && cmp.getZPosition() < -10.0f)) { // If we are colliding with top, or stuck underneath world (fix tunnel)
 		// We are colliding with the top, snap us up
 		// TODO: we could compare this to the depression of the XY so we don't pop straight up on the corners when climbing?
 		isCollidingWithTop = true;

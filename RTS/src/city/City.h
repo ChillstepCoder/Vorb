@@ -113,6 +113,7 @@ class City
     friend class CityResidentManager;
     friend class CityBusinessManager;
     friend class CityQuartermaster;
+    friend class CityDebugRenderer;
 
 public:
     City(const ui32v2& cityCenterWorldPos, World& world);
@@ -151,7 +152,7 @@ private:
     // All chunks that contain the city
     std::vector<Chunk*> mChunks;
     std::vector<Building> mBuildings;
-    std::vector<CityRoad> mRoads;
+    std::vector<std::unique_ptr<CityRoad>> mRoads;
     std::vector<entt::entity> mBusinesses;
 
     std::unique_ptr<CityResidentManager> mCityResidentManager;

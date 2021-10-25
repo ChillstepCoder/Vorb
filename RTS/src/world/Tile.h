@@ -21,6 +21,7 @@ enum TileFlags : ui8 {
 	TILE_FLAG_IS_INTERACTING = 1 << 0,
 	TILE_FLAG_IS_STOCKPILE   = 1 << 1, // True if owned by a stockpile
 	TILE_FLAG_IN_CITY        = 1 << 2, // True if inside city limits
+	TILE_FLAG_HAS_ITEM_STACK = 1 << 3,
 	TILE_FLAG_TERM           = 1 << 7,
 };
 static_assert(TILE_FLAG_TERM <= 0x80); // Must fit into a byte
@@ -28,7 +29,7 @@ static_assert(TILE_FLAG_TERM <= 0x80); // Must fit into a byte
 struct Tile {
 	Tile() {};
     Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
-    Tile(TileID ground, TileID mid, TileID top, ui16 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos){ }
+    Tile(TileID ground, TileID mid, TileID top, ui8 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos){ }
 
     void setTileFlag(TileFlags flag) { tileFlags |= flag; }
     void setTileFlags(TileFlags flags) { tileFlags = flags; }

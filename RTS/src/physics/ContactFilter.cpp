@@ -11,11 +11,12 @@ ContactFilter::ContactFilter(EntityComponentSystem& ecs) : mEcs(ecs)
 }
 
 bool ContactFilter::ShouldCollide(b2Fixture* fixtureA, b2Fixture* fixtureB) {
-    bool shouldCollide = b2ContactFilter::ShouldCollide(fixtureA, fixtureB);
+    // TODO: we could potentially not call this, if we don't use groupIndex or categoryBits
+    const bool shouldCollide = b2ContactFilter::ShouldCollide(fixtureA, fixtureB);
     if (!shouldCollide) {
         return false;
     }
-    // 3D checking
+    // Pseudo-3D checking
     entt::entity entityA = static_cast<entt::entity>(fixtureA->GetUserData().pointer);
     entt::entity entityB = static_cast<entt::entity>(fixtureB->GetUserData().pointer);
     const PhysicsComponent& physA = mEcs.mRegistry.get<PhysicsComponent>(entityA);
@@ -28,6 +29,6 @@ bool ContactFilter::ShouldCollide(b2Fixture* fixtureA, b2Fixture* fixtureB) {
     }
     else {
         // B is below
-        return posDiff >= -physB.mCollisionHeight;
+        return -posDiff <= physB.mCollisionHeight;
     }
 }

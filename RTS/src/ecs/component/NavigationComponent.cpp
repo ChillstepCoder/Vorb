@@ -10,6 +10,9 @@
 
 #include "World.h"
 
+
+constexpr float JUMP_VELOCITY = 0.15f; // Matches player control component
+
 constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
 
 constexpr float MIN_DISTANCE = 0.9f; // This is extra large to account for steering to steer around obstacles
@@ -51,14 +54,16 @@ void updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
 	
 	// TODO: do this conversion in the generator?
-	f32v2 nextPoint = f32v2(navCmp.mPath->points[navCmp.mCurrentPoint]) + f32v2(0.5f);
+	const ui32v2 nextTilePos = navCmp.mPath->points[navCmp.mCurrentPoint];
+	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
-	if (navCmp.mCurrentPoint < navCmp.mPath->numPoints - 1) {
-		f32v2 nextNextPoint = f32v2(navCmp.mPath->points[navCmp.mCurrentPoint + 1]) + f32v2(0.5f);
-		constexpr f32 TARGET_EASE = 0.05f;
-		nextPoint += glm::normalize(nextNextPoint - nextPoint) + TARGET_EASE;
-	}
+	// THIS BREAKS WALL STEERING THO :C
+    /*if (navCmp.mCurrentPoint < navCmp.mPath->numPoints - 1) {
+        f32v2 nextNextPoint = f32v2(navCmp.mPath->points[navCmp.mCurrentPoint + 1]) + f32v2(0.5f);
+        constexpr f32 TARGET_EASE = 0.05f;
+        nextPoint += glm::normalize(nextNextPoint - nextPoint) + TARGET_EASE;
+    }*/
 
 	const f32v2& offset = nextPoint - physCmp.getXYPosition();
 	const float distance2 = glm::length2(offset);
@@ -92,28 +97,39 @@ void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, Physi
 		IntersectionHit2D hit = world.tryGetRaycastIntersect2D(physCmp.getXYPosition(), physCmp.getXYPosition() + steerVector, physCmp.getZPosition());
 		if (hit.didHit()) {
 			// Something in the way!
-			f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
-			// Large negative is positive
-			if (angle < -M_PI) {
-				angle = M_2_PI - angle;
-			}
 
-			constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
-			if (angle > 0.0f) {
-				targetVelocity = glm::rotate(targetVelocity, -STEERING_ADJUST);
-				steerVector = targetVelocity * STEER_MULT;
-				targetDir = glm::normalize(targetVelocity);
+			// Check if we need to climb
+			TileCollision nextCollision = world.getTileCollisionAtWorldPos(hit.tilePos);
+			if (hit.tilePos == nextTilePos && nextCollision.baseZPosition > physCmp.getZPosition() && nextCollision.baseZPosition < physCmp.getZPosition() + 1.1f) {
+				// Climb
+                physCmp.setZVelocity(JUMP_VELOCITY);
 			}
 			else {
-				targetVelocity = glm::rotate(targetVelocity, STEERING_ADJUST);
-				steerVector = targetVelocity * STEER_MULT;
-				targetDir = glm::normalize(targetVelocity);
-			}
+				// Steer
 
-			// Debug render
-            DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
-            DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
-			DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+				f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
+				// Large negative is positive
+				if (angle < -M_PI) {
+					angle = M_2_PI - angle;
+				}
+
+				constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
+				if (angle > 0.0f) {
+					targetVelocity = glm::rotate(targetVelocity, -STEERING_ADJUST);
+					steerVector = targetVelocity * STEER_MULT;
+					targetDir = glm::normalize(targetVelocity);
+				}
+				else {
+					targetVelocity = glm::rotate(targetVelocity, STEERING_ADJUST);
+					steerVector = targetVelocity * STEER_MULT;
+					targetDir = glm::normalize(targetVelocity);
+				}
+
+				// Debug render
+				DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
+				DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
+				DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+			}
 		}
 		else {
 			// No hits so relax for a bit
@@ -195,7 +211,7 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
 	mSimpleTargetPoint = targetPoint;
     mFinishedCallback = finishedCallback;
 
-    DebugRenderer::drawBox(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
+    DebugRenderer::drawWireQuad(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
 }
 
 void NavigationComponent::setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {

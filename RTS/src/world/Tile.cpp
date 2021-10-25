@@ -36,6 +36,7 @@ TileCollision Tile::buildTileCollision() const {
     collision.shape = tileData.collisionShape;
     collision.colliderHeightUnscaled = (ui16)(tileData.colliderHeight * UINT8_MAX);
     collision.colliderDimsUnscaledXY = i8v2(glm::round(tileData.colliderDimsXY * (f32)TILE_COLLIDER_DIMS_SCALE));
+    collision.pathWeight = tileData.pathWeight;
 
     return collision;
 }

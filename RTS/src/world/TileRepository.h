@@ -8,7 +8,7 @@ struct TileData {
     TileCollisionShape collisionShape = TileCollisionShape::NONE;
     f32 colliderHeight = 1.0f;
     f32v2 colliderDimsXY = f32v2(0.5f, -1.0f);
-    f32 pathWeight = 1.0f;
+    ui8 pathWeight = 255;
     ui8v2 dims = ui8v2(1); // 4x4 is max size
     ui8 rootPos = 0;
     std::string name;

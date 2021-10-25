@@ -3,6 +3,8 @@
 #include "CityPlotter.h"
 #include "city/City.h"
 
+#include "util/MathUtil.hpp"
+
 #include "World.h"
 
 #include "Random.h"
@@ -10,6 +12,11 @@
 CityPlotter::CityPlotter(City& city) :
     mCity(city)
 {
+}
+
+CityPlotter::~CityPlotter()
+{
+
 }
 
 void CityPlotter::initAsTier(int tier)
@@ -78,19 +85,19 @@ CityPlot* CityPlotter::reservePlotForBuilding(const ui32v2& minPlotDims, const u
     // TODO: Not heap
     //std::vector<CityPlotIndex> oversizedPlots;
     for (auto&& plot : mPlots) {
-        if (!plot.isFree) {
+        if (!plot->isFree) {
             continue;
         }
 
         // Min dims check
-        if ((plot.aabb.width < minPlotDims.x && plot.aabb.height < minPlotDims.y) ||
-            (plot.aabb.width < minPlotDims.y && plot.aabb.height < minPlotDims.x)) {
+        if ((plot->aabb.width < minPlotDims.x || plot->aabb.height < minPlotDims.y) ||
+            (plot->aabb.width < minPlotDims.y || plot->aabb.height < minPlotDims.x)) {
             continue;
         }
 
         // Max dims check
-        if ((plot.aabb.width > maxPlotDims.x && plot.aabb.height > maxPlotDims.y) ||
-            (plot.aabb.width > maxPlotDims.y && plot.aabb.height > maxPlotDims.x)) {
+        if ((plot->aabb.width > maxPlotDims.x || plot->aabb.height > maxPlotDims.y) ||
+            (plot->aabb.width > maxPlotDims.y || plot->aabb.height > maxPlotDims.x)) {
             // TODO: Check if a split would be good here
             // Since the plot is too big, maybe it can be split.
             // oversizedPlots.emplace_back(plot.id);
@@ -98,8 +105,8 @@ CityPlot* CityPlotter::reservePlotForBuilding(const ui32v2& minPlotDims, const u
         }
 
         // This plot is now reserved for any use, and can no longer change
-        plot.isFree = false;
-        return &plot;
+        plot->isFree = false;
+        return plot.get();
     }
 
     // TODO: Use oversizedPlots
@@ -150,7 +157,7 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
             if (!parent->children[randDirection] && randDirection != enum_cast(parent->parentDirection)) {
                 // Possibly valid child, check if it fits in the grid
 
-                newCoords = parentCoords + CARTESIAN_OFFSETS[randDirection];
+                newCoords = parentCoords + CARTESIAN_NORMALS[randDirection];
                 if (!mDistrictGrid[newCoords.y * DISTRICT_GRID_WIDTH + newCoords.x]) {
                     // Valid!
                     break;
@@ -199,8 +206,8 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
         ++parent->numChildren;
     }
     // Added the root plot
-    const ui32 rootPlotIndex = mPlots.size();
-    mPlots.emplace_back(newDistrict->aabb, 0, newDistrict.get());
+    const ui32 rootPlotIndex = (ui32)mPlots.size();
+    mPlots.emplace_back(std::make_unique<CityPlot>(newDistrict->aabb, 0, newDistrict.get()));
 
     // Plot Roads
     constexpr ui32 MAIN_ROAD_WIDTH = 5;
@@ -220,18 +227,156 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
     }
 
     // For each new plot, split them into 4 smaller
-    // TODO: This is crashing
-    const ui32 stop = mPlots.size();
-    for (ui32 i = rootPlotIndex; i < stop; ++i) {
-        // TODO: Holding a reference to the plot will cause a memory corruption after the split
-        CityPlotIndex rightId = splitPlotAlongAxis(ui32v2(mPlots[i].aabb.x + mPlots[i].aabb.width / 2, 0), i, AXIS_VERTICAL);
-        const ui32v2 horizontalSplit = ui32v2(0, mPlots[i].aabb.y + mPlots[i].aabb.height / 2);
-        splitPlotAlongAxis(horizontalSplit, i, AXIS_HORIZONTAL);
-        splitPlotAlongAxis(horizontalSplit, rightId, AXIS_HORIZONTAL);
+    {
+        const ui32 stop = (ui32)mPlots.size();
+        for (ui32 i = rootPlotIndex; i < stop; ++i) {
+            CityPlotIndex rightId = splitPlotAlongAxis(ui32v2(mPlots[i]->aabb.x + mPlots[i]->aabb.width / 2, 0), i, AXIS_VERTICAL, INVALID_ROAD_ID);
+            const ui32v2 horizontalSplit = ui32v2(0, mPlots[i]->aabb.y + mPlots[i]->aabb.height / 2);
+            splitPlotAlongAxis(horizontalSplit, i, AXIS_HORIZONTAL, INVALID_ROAD_ID);
+            splitPlotAlongAxis(horizontalSplit, rightId, AXIS_HORIZONTAL, INVALID_ROAD_ID);
+        }
     }
 
+    // Generate alleys for any unroaded plots
+    generateAlleysForUnroadedPlots(*newDistrict);
+    
     mDistricts.emplace_back(std::move(newDistrict));
     return mDistricts.back().get();
+}
+
+void CityPlotter::generateAlleysForUnroadedPlots(CityDistrict &district) {
+    const ui32 stop = (ui32)mPlots.size();
+    const ui32 roadStop = (ui32)mCity.mRoads.size();
+    for (ui32 i = 0; i < stop; ++i) {
+        CityPlot& plot = *mPlots[i];
+        if (plot.getAdjacentRoadCount() == 0) {
+            // Find a road to connect an alley to
+            CityRoad* closestRoad = nullptr;
+            int closestDistance = INT_MAX;
+            ui32v2 newStart;
+            ui32v2 newEnd;
+            int axis;
+            for (ui32 r = 0; r < roadStop; ++r) {
+                CityRoad& road = *mCity.mRoads[r];
+                if (road.startPos.y == road.endPos.y) {
+                    // Vertical roads
+                    if (plot.aabb.getTopLeft().y < road.startPos.y) {
+                        // We are below the road
+                        if (plot.aabb.pos.x > road.startPos.x && plot.aabb.pos.x < road.endPos.x) {
+                            // Left side is in line with road
+                            int distance = road.startPos.y - plot.aabb.getTopLeft().y;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newStart = plot.aabb.getBottomLeft();
+                                newEnd = ui32v2(newStart.x, road.startPos.y);
+                                axis = AXIS_VERTICAL;
+                            }
+                        }
+                        else if (plot.aabb.getTopRight().x > road.startPos.x && plot.aabb.getTopRight().x < road.endPos.x) {
+                            // Right side is in line with road
+                            int distance = road.startPos.y - plot.aabb.getTopRight().y;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newStart = plot.aabb.getBottomRight();
+                                newEnd = ui32v2(newStart.x, road.startPos.y);
+                                axis = AXIS_VERTICAL;
+                            }
+                        }
+                    }
+                    else if (plot.aabb.getBottomLeft().y > road.startPos.y) {
+                        // We are above the road
+                        if (plot.aabb.pos.x > road.startPos.x && plot.aabb.pos.x < road.endPos.x) {
+                            // Left side is in line with road
+                            int distance = road.startPos.y - plot.aabb.getBottomLeft().y;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newEnd = plot.aabb.getTopLeft();
+                                newStart = ui32v2(newEnd.x, road.startPos.y);
+                                axis = AXIS_VERTICAL;
+                            }
+                        }
+                        else if (plot.aabb.getBottomRight().x > road.startPos.x && plot.aabb.getBottomRight().x < road.endPos.x) {
+                            // Right side is in line with road
+                            int distance = road.startPos.y - plot.aabb.getBottomRight().y;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newEnd = plot.aabb.getTopRight();
+                                newStart = ui32v2(newEnd.x, road.startPos.y);
+                                axis = AXIS_VERTICAL;
+                            }
+                        }
+                    }
+                }
+                else {
+                    assert(road.startPos.x == road.endPos.x);
+                    // Horizontal roads
+                    if (plot.aabb.getTopRight().x < road.startPos.x) {
+                        // We are left of the road
+                        if (plot.aabb.pos.y > road.startPos.y && plot.aabb.pos.y < road.endPos.y) {
+                            // Bottom side is in line with road
+                            int distance = road.startPos.x - plot.aabb.getBottomRight().x;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newStart = plot.aabb.getBottomLeft();
+                                newEnd = ui32v2(road.startPos.x, newStart.y);
+                                axis = AXIS_HORIZONTAL;
+                            }
+                        }
+                        else if (plot.aabb.getTopRight().y > road.startPos.y && plot.aabb.getTopRight().y < road.endPos.y) {
+                            // Top side is in line with road
+                            int distance = road.startPos.x - plot.aabb.getTopRight().x;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newStart = plot.aabb.getTopLeft();
+                                newEnd = ui32v2(road.startPos.x, newStart.y);
+                                axis = AXIS_HORIZONTAL;
+                            }
+                        }
+                    }
+                    else if (plot.aabb.getBottomLeft().x > road.startPos.x) {
+                        // We are right of the road
+                        if (plot.aabb.pos.y > road.startPos.y && plot.aabb.pos.y < road.endPos.y) {
+                            // Bottom side is in line with road
+                            int distance = road.startPos.x - plot.aabb.getBottomLeft().x;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newEnd = plot.aabb.getBottomRight();
+                                newStart = ui32v2(road.startPos.x, newEnd.y);
+                                axis = AXIS_HORIZONTAL;
+                            }
+                        }
+                        else if (plot.aabb.getTopLeft().y > road.startPos.y && plot.aabb.getTopLeft().y < road.endPos.y) {
+                            // Top side is in line with road
+                            int distance = road.startPos.x - plot.aabb.getTopLeft().x;
+                            if (distance < closestDistance) {
+                                closestRoad = &road;
+                                closestDistance = distance;
+                                newEnd = plot.aabb.getTopRight();
+                                newStart = ui32v2(road.startPos.x, newEnd.y);
+                                axis = AXIS_HORIZONTAL;
+                            }
+                        }
+                    }
+                }
+            }
+            if (closestRoad) {
+                addRoad(
+                    district,
+                    newStart,
+                    newEnd,
+                    1,
+                    axis
+                );
+            }
+        }
+    }
 }
 
 bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
@@ -262,29 +407,32 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
     road.startPos = startPos;
     road.endPos = endPos;
     road.width = width;
+    road.axis = static_cast<AXIS_2D>(axis);
     if (axis == AXIS_VERTICAL) {
         assert(road.startPos.y < road.endPos.y);
+        road.length = road.endPos.y - road.startPos.y;
         road.aabb.data = {
             road.startPos.x - road.width / 2,
             road.startPos.y,
             road.width,
-            road.endPos.y - road.startPos.y
+            road.length
         };
     }
     else {
         assert(road.startPos.x < road.endPos.x);
+        road.length = road.endPos.x - road.startPos.x;
         road.aabb.data = {
             road.startPos.x,
             road.startPos.y - road.width / 2,
-            road.endPos.x - road.startPos.x,
+            road.length,
             road.width
         };
     }
     district.roads.emplace_back(mCity.addRoad(road));
 
     // Don't do recursive splitting
-    size_t stop = mPlots.size();
-    for (size_t i = 0; i < stop;) {
+    ui32 stop = (ui32)mPlots.size();
+    for (ui32 i = 0; i < stop;) {
         if (splitPlotByAABBIntersect(i, road.aabb, &road)) {
             ++i;
         }
@@ -299,28 +447,32 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
 // Returns false if we deleted the plot
 bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB2& aabb, OPT CityRoad* road) {
 
-    // Need to check fully enveloped cases
-    // First test AABB+AABB collision to see if we even have a split
-    if (!testAABBAABB_SIMD(mPlots[plotIndex].aabb, aabb)) {
-        return true;
-    }
+    const ui32AABB2& plotAABB = mPlots[plotIndex]->aabb;
+    const ui32v2 plotBottomLeft = plotAABB.getBottomLeft();
+    const ui32v2 plotBottomRight = plotAABB.getBottomRight();
+    const ui32v2 plotTopLeft = plotAABB.getTopLeft();
+    const ui32v2 plotTopRight = plotAABB.getTopRight();
 
     const RoadID roadId = road ? road->id : INVALID_ROAD_ID;
 
-    // TODO: Utility for getting corners
-    const ui32v2 corners[4] = {
-        { aabb.x, aabb.y },
-        { aabb.x + aabb.width, aabb.y},
-        { aabb.x, aabb.y + aabb.height },
-        { aabb.x + aabb.width, aabb.y + aabb.height}
-    };
-    const ui32AABB2& thisAABB = mPlots[plotIndex].aabb;
+    tryConnectRoad(plotIndex, aabb, roadId);
+
+    // Need to check fully enveloped cases
+    // First test AABB+AABB collision to see if we even have a split
+    if (!testAABBAABB_SIMD(mPlots[plotIndex]->aabb, aabb)) {
+        return true;
+    }
+
+    ui32v2 aabbCorners[4];
+    aabb.getCorners(aabbCorners);
+
     bool intersects[4] = {
-        pointIsWithinAABB(corners[0], thisAABB),
-        pointIsWithinAABB(corners[1], thisAABB),
-        pointIsWithinAABB(corners[2], thisAABB),
-        pointIsWithinAABB(corners[3], thisAABB)
+        pointIsWithinAABB(aabbCorners[0], plotAABB),
+        pointIsWithinAABB(aabbCorners[1], plotAABB),
+        pointIsWithinAABB(aabbCorners[2], plotAABB),
+        pointIsWithinAABB(aabbCorners[3], plotAABB)
     };
+
 
     // TODO: Test edge case where the AABB is completely outside the box
     // Split with left to right bias
@@ -336,32 +488,27 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
         // |          |   b   |
         // |__________|_______|
 
-        mPlots[plotIndex].setNeighborRoad(Cartesian::RIGHT, roadId);
         // Do a vertical split
-        CityPlotIndex plotB = splitPlotAlongAxis(corners[enum_cast(CornerWinding::BOTTOM_LEFT)], plotIndex, AXIS_VERTICAL);
-        mPlots[plotB].setNeighborRoad(Cartesian::UP, roadId);
+        CityPlotIndex plotB = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::BOTTOM_LEFT)], plotIndex, AXIS_VERTICAL, roadId);
         // Do a horizontal split on the new plot
-        CityPlotIndex plotC = splitPlotAlongAxis(corners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotB, AXIS_HORIZONTAL);
+        CityPlotIndex plotC = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotB, AXIS_HORIZONTAL, roadId);
         if (intersects[enum_cast(CornerWinding::TOP_LEFT)]) {
             // Split again along top right horizontal
-            CityPlotIndex plotD = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_LEFT)], plotC, AXIS_HORIZONTAL);
-            mPlots[plotD].setNeighborRoad(Cartesian::DOWN, roadId);
+            CityPlotIndex plotD = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_LEFT)], plotC, AXIS_HORIZONTAL, roadId);
             if (intersects[enum_cast(CornerWinding::TOP_RIGHT)]) {
                 // If we reach here, the entire quad is interior, split the interior plot and delete it
-                mPlots[plotC] = mPlots[splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_RIGHT)], plotC, AXIS_VERTICAL)];
-                mPlots[plotC].setNeighborRoad(Cartesian::LEFT, roadId);
+                mPlots[plotC] = std::move(mPlots[splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)], plotC, AXIS_VERTICAL, roadId)]);
                 mPlots.pop_back();
             }
             else {
                 // Need to delete and swap node as it is fully inside the aabb
-                mPlots[plotC] = mPlots[plotD];
+                mPlots[plotC] = std::move(mPlots[plotD]);
                 mPlots.pop_back();
             }
         }
         else if (intersects[enum_cast(CornerWinding::BOTTOM_RIGHT)]) {
             // Have a free plot along the right, so split and delete interior
-            mPlots[plotC] = mPlots[splitPlotAlongAxis(corners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotC, AXIS_VERTICAL)];
-            mPlots[plotC].setNeighborRoad(Cartesian::LEFT, roadId);
+            mPlots[plotC] = std::move(mPlots[splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotC, AXIS_VERTICAL, roadId)]);
             mPlots.pop_back();
         }
         else {
@@ -380,19 +527,16 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
         // |         a        |
         // |__________________|
 
-        mPlots[plotIndex].setNeighborRoad(Cartesian::UP, roadId);
-        CityPlotIndex plotB = splitPlotAlongAxis(corners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotIndex, AXIS_HORIZONTAL);
-        CityPlotIndex plotC = splitPlotAlongAxis(corners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotB, AXIS_VERTICAL);
-        mPlots[plotC].setNeighborRoad(Cartesian::LEFT, roadId);
+        CityPlotIndex plotB = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotIndex, AXIS_HORIZONTAL, roadId);
+        CityPlotIndex plotC = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)], plotB, AXIS_VERTICAL, roadId);
         if (intersects[enum_cast(CornerWinding::TOP_RIGHT)]) {
             // b is interior, split and swap and pop
-            mPlots[plotB] = mPlots[splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_RIGHT)], plotB, AXIS_HORIZONTAL)];
-            mPlots[plotB].setNeighborRoad(Cartesian::DOWN, roadId);
+            mPlots[plotB] = std::move(mPlots[splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)], plotB, AXIS_HORIZONTAL, roadId)]);
             mPlots.pop_back();
         }
         else {
             // Fully interior, so delete
-            mPlots[plotB] = mPlots[plotC];
+            mPlots[plotB] = std::move(mPlots[plotC]);
             mPlots.pop_back();
         }
         return true;
@@ -405,18 +549,16 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
         // |          *---*---|
         // |          | b | d |
         // |__________|___|___|
-        CityPlotIndex plotB = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_LEFT)], plotIndex, AXIS_VERTICAL);
-        CityPlotIndex plotC = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_LEFT)], plotB, AXIS_HORIZONTAL);
-        mPlots[plotC].setNeighborRoad(Cartesian::DOWN, roadId);
+        CityPlotIndex plotB = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_LEFT)], plotIndex, AXIS_VERTICAL, roadId);
+        CityPlotIndex plotC = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_LEFT)], plotB, AXIS_HORIZONTAL, roadId);
         if (intersects[enum_cast(CornerWinding::TOP_RIGHT)]) {
             // Split then swap+pop
-            mPlots[plotB] = mPlots[splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_RIGHT)], plotB, AXIS_VERTICAL)];
-            mPlots[plotB].setNeighborRoad(Cartesian::LEFT, roadId);
+            mPlots[plotB] = std::move(mPlots[splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)], plotB, AXIS_VERTICAL, roadId)]);
             mPlots.pop_back();
         }
         else {
             // We are fully interior, swap+pop
-            mPlots[plotB] = mPlots[plotC];
+            mPlots[plotB] = std::move(mPlots[plotC]);
             mPlots.pop_back();
         }
         return true;
@@ -430,21 +572,18 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
         // |---*--------------|
         // | a |      c       |
         // |___|______________|
-        CityPlotIndex plotB = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_RIGHT)], plotIndex, AXIS_HORIZONTAL);
-
-        mPlots[plotB].setNeighborRoad(Cartesian::DOWN, roadId);
+        CityPlotIndex plotB = splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)], plotIndex, AXIS_HORIZONTAL, roadId);
         // Swap and pop with split for last node
-        mPlots[plotIndex] = mPlots[splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_RIGHT)], plotIndex, AXIS_VERTICAL)];
-        mPlots[plotIndex].setNeighborRoad(Cartesian::LEFT, roadId);
+        mPlots[plotIndex] = std::move(mPlots[splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)], plotIndex, AXIS_VERTICAL, roadId)]);
         mPlots.pop_back();
         return true;
     }
     else {
         // Else all the points lie completely outside the plot, which might mean the quad envelops us or splits us
-        CityPlot& plot = mPlots[plotIndex];
+        CityPlot& plot = *mPlots[plotIndex];
 
         // TODO: Utility for getting corners
-        const ui32v2 myCorners[4] = {
+        const ui32v2 plotCorners[4] = {
             { plot.aabb.x, plot.aabb.y },
             { plot.aabb.x + plot.aabb.width, plot.aabb.y},
             { plot.aabb.x, plot.aabb.y + plot.aabb.height },
@@ -455,53 +594,49 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
 
         // Test ray AABB intersects for the 4 sides of the AABB and split along those edges
         // Right ray
-        if (corners[enum_cast(CornerWinding::TOP_RIGHT)].x < myCorners[enum_cast(CornerWinding::TOP_RIGHT)].x) {
+        if (aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)].x < plotCorners[enum_cast(CornerWinding::TOP_RIGHT)].x) {
             // We know we intersect from aabb test, so we dont need to check if we go beyond
-            CityPlotIndex rightId = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_RIGHT)], plotIndex, AXIS_VERTICAL);
-            mPlots[rightId].setNeighborRoad(Cartesian::LEFT, roadId);
+            splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_RIGHT)], plotIndex, AXIS_VERTICAL, roadId);
             ++numSplits;
         }
         // Left ray
-        if (corners[enum_cast(CornerWinding::TOP_LEFT)].x > myCorners[enum_cast(CornerWinding::TOP_LEFT)].x) {
+        if (aabbCorners[enum_cast(CornerWinding::TOP_LEFT)].x > plotCorners[enum_cast(CornerWinding::TOP_LEFT)].x) {
             // We know we intersect from aabb test, so we dont need to check if we go beyond
-            CityPlotIndex leftId = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_LEFT)], plotIndex, AXIS_VERTICAL);
-            mPlots[leftId].setNeighborRoad(Cartesian::RIGHT, roadId); 
+            splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_LEFT)], plotIndex, AXIS_VERTICAL, roadId);
             ++numSplits;
             // Delete our new plot because its inside
             mPlots.pop_back();
         }
         else if (numSplits) {
             // We are fully inside the box on the left of the first split, so pop and swap
-            mPlots[plotIndex] = mPlots.back();
+            mPlots[plotIndex] = std::move(mPlots.back());
             mPlots.pop_back();
         }
 
         const int prevSplits = numSplits;
         // Top Ray
-        if (corners[enum_cast(CornerWinding::TOP_LEFT)].y < myCorners[enum_cast(CornerWinding::TOP_LEFT)].y) {
+        if (aabbCorners[enum_cast(CornerWinding::TOP_LEFT)].y < plotCorners[enum_cast(CornerWinding::TOP_LEFT)].y) {
             // We know we intersect from aabb test, so we dont need to check if we go beyond
-            CityPlotIndex topId = splitPlotAlongAxis(corners[enum_cast(CornerWinding::TOP_LEFT)], plotIndex, AXIS_HORIZONTAL);
-            mPlots[topId].setNeighborRoad(Cartesian::DOWN, roadId);
+            splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::TOP_LEFT)], plotIndex, AXIS_HORIZONTAL, roadId);
             ++numSplits;
         }
         // Bottom ray
-        if (corners[enum_cast(CornerWinding::BOTTOM_LEFT)].y > myCorners[enum_cast(CornerWinding::BOTTOM_LEFT)].y) {
+        if (aabbCorners[enum_cast(CornerWinding::BOTTOM_LEFT)].y > plotCorners[enum_cast(CornerWinding::BOTTOM_LEFT)].y) {
             // We know we intersect from aabb test, so we don't need to check if we go beyond
-            splitPlotAlongAxis(corners[enum_cast(CornerWinding::BOTTOM_LEFT)], plotIndex, AXIS_HORIZONTAL);
-            mPlots[plotIndex].setNeighborRoad(Cartesian::UP, roadId);
+            splitPlotAlongAxis(aabbCorners[enum_cast(CornerWinding::BOTTOM_LEFT)], plotIndex, AXIS_HORIZONTAL, roadId);
             ++numSplits;
             // Delete our new plot because its inside
             mPlots.pop_back();
         }
         else if (numSplits > prevSplits) {
             // We are fully inside the box on the bottom of the first split, so pop and swap
-            mPlots[plotIndex] = mPlots.back();
+            mPlots[plotIndex] = std::move(mPlots.back());
             mPlots.pop_back();
         }
 
         // Check if we are fully enveloped, and pop and swap if so
         if (!numSplits) {
-            mPlots[plotIndex] = mPlots.back();
+            mPlots[plotIndex] = std::move(mPlots.back());
             mPlots.pop_back();
             // Failure case, we were enveloped with no split
             return false;
@@ -510,15 +645,14 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
     }
 }
 
-CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex plot, int axis) {
+CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex plot, int axis, RoadID roadID) {
 
     // TODO: Optimize arithmetic if necessary
     int oppositeAxis = !axis;
     assert(axis == 0 || axis == 1);
-    CityPlot& plotToSplit = mPlots[plot];
+    CityPlot& plotToSplit = *mPlots[plot];
     ui32 offset = splitPoint[oppositeAxis] - plotToSplit.aabb[oppositeAxis];
     assert(offset != 0 && offset < plotToSplit.aabb[oppositeAxis] + plotToSplit.aabb[oppositeAxis + 2]);
-    // TODO: pass down road neighbors
     // Add new plot
     ui32AABB2 newAABB = plotToSplit.aabb;
     newAABB[oppositeAxis] = plotToSplit.aabb[oppositeAxis] + offset;
@@ -527,10 +661,65 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
     plotToSplit.aabb[oppositeAxis + 2] = offset;
     
     // Finally emplace
-    mPlots.emplace_back(newAABB, mPlots.size(), plotToSplit.parentDistrict);
+    CityPlot& newPlot = *mPlots.emplace_back(std::make_unique<CityPlot>(newAABB, mPlots.size(), plotToSplit.parentDistrict));
 
-    Cartesian splitDir = axis == AXIS_HORIZONTAL ? Cartesian::RIGHT : Cartesian::UP;
-    mPlots.back().setNeighborRoad(axis == AXIS_HORIZONTAL ? Cartesian::LEFT : Cartesian::DOWN, plotToSplit.neighborRoads[enum_cast(splitDir)]);
-    plotToSplit.setNeighborRoad(splitDir, INVALID_ROAD_ID);
-    return mPlots.size() - 1;
+    // Adjust neighbor connections
+    if (axis == AXIS_HORIZONTAL) {
+        newPlot.setNeighborRoad(Cartesian::UP, plotToSplit.getNeighborRoad(Cartesian::UP));
+        plotToSplit.setNeighborRoad(Cartesian::UP, roadID);
+        newPlot.setNeighborRoad(Cartesian::DOWN, roadID);
+        newPlot.setNeighborRoad(Cartesian::LEFT, plotToSplit.getNeighborRoad(Cartesian::LEFT));
+        newPlot.setNeighborRoad(Cartesian::RIGHT, plotToSplit.getNeighborRoad(Cartesian::RIGHT));
+    }
+    else {
+        newPlot.setNeighborRoad(Cartesian::RIGHT, plotToSplit.getNeighborRoad(Cartesian::RIGHT));
+        plotToSplit.setNeighborRoad(Cartesian::RIGHT, roadID);
+        newPlot.setNeighborRoad(Cartesian::LEFT, roadID);
+        newPlot.setNeighborRoad(Cartesian::UP, plotToSplit.getNeighborRoad(Cartesian::UP));
+        newPlot.setNeighborRoad(Cartesian::DOWN, plotToSplit.getNeighborRoad(Cartesian::DOWN));
+    }
+    return (CityPlotIndex)(mPlots.size() - 1);
+}
+
+void CityPlotter::tryConnectRoad(CityPlotIndex plotIndex, const ui32AABB2& roadAabb, RoadID roadID) {
+    if (roadID == INVALID_ROAD_ID) {
+        return;
+    }
+    CityPlot& plot = *mPlots[plotIndex];
+    const ui32AABB2& plotAABB = plot.aabb;
+    ui32v2 plotAABBCorners[4];
+    plotAABB.getCorners(plotAABBCorners);
+
+    ui32v2 roadAABBCorners[4];
+    roadAabb.getCorners(roadAABBCorners);
+
+    // Edge kiss hookup roads
+    if (MathUtil::areParallelSegmentsTouching(
+        roadAABBCorners[enum_cast(CornerWinding::BOTTOM_LEFT)],
+        roadAABBCorners[enum_cast(CornerWinding::TOP_LEFT)],
+        plotAABBCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)],
+        plotAABBCorners[enum_cast(CornerWinding::TOP_RIGHT)])) {
+        plot.setNeighborRoad(Cartesian::RIGHT, roadID);
+    }
+    else if (MathUtil::areParallelSegmentsTouching(
+        roadAABBCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)],
+        roadAABBCorners[enum_cast(CornerWinding::TOP_RIGHT)],
+        plotAABBCorners[enum_cast(CornerWinding::BOTTOM_LEFT)],
+        plotAABBCorners[enum_cast(CornerWinding::TOP_LEFT)])) {
+        plot.setNeighborRoad(Cartesian::LEFT, roadID);
+    }
+    if (MathUtil::areParallelSegmentsTouching(
+        roadAABBCorners[enum_cast(CornerWinding::BOTTOM_LEFT)],
+        roadAABBCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)],
+        plotAABBCorners[enum_cast(CornerWinding::TOP_LEFT)],
+        plotAABBCorners[enum_cast(CornerWinding::TOP_RIGHT)])) {
+        plot.setNeighborRoad(Cartesian::UP, roadID);
+    }
+    else if (MathUtil::areParallelSegmentsTouching(
+        roadAABBCorners[enum_cast(CornerWinding::TOP_LEFT)],
+        roadAABBCorners[enum_cast(CornerWinding::TOP_RIGHT)],
+        plotAABBCorners[enum_cast(CornerWinding::BOTTOM_LEFT)],
+        plotAABBCorners[enum_cast(CornerWinding::BOTTOM_RIGHT)])) {
+        plot.setNeighborRoad(Cartesian::DOWN, roadID);
+    }
 }
