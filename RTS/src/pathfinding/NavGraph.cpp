@@ -25,11 +25,6 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
     navNodes.clear();
     navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK);
 
-    // Reserve our debug rendering
-    const ui32 debugLifetime = 250;
-    if (sDebugOptions.mNavGraph) {
-        DebugRenderer::reserveFilledQuads(CHUNK_SIZE, debugLifetime);
-    }
     // TODO: Separate internal with border chunks for faster lookups??
     // Iterate through sub chunks
     std::vector<TileCollision>& tileCollision = chunk.getAllTileCollision();
@@ -83,7 +78,7 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
                 }
             }
             // Now, iterate through the edges to produce nav nodes with edge information
-            ui16 navNodeIdTable[SUBCHUNK_WIDTH_SQ];
+            NavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
             memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
             buildEdges(chunk, cornerX, cornerY, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::DOWN);
@@ -91,62 +86,63 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
             buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::RIGHT);
             buildEdges(chunk, cornerX, cornerY + SUBCHUNK_WIDTH - 1, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::UP);
 
-            // DEBUG RENDER
-            if (sDebugOptions.mNavGraph) {
-                // Draw cell ownership
-                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(cornerX, cornerY), f32v2(SUBCHUNK_WIDTH), color4(0, 233, 255, 25), debugLifetime);
-                for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
-                    for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
-                        const ui32 id = djNodes[djNodeIDs[y * SUBCHUNK_WIDTH + x]].id;
-                        //DebugRenderer::drawFilledQuad(chunk.getWorldPos() + f32v2(cornerX + x, cornerY + y), f32v2(1.0f), color4((100 + 100 * id) % 255, (120 * id) % 255, (25 + 60 * id) % 255, 100), debugLifetime);
-                    }
-                }
-
-            }
-        }
-    }
-
-    // Debug draw edges
-    if (sDebugOptions.mNavGraph) {
-        for (auto&& node : navNodes) {
-            for (auto&& edge : node.edges) {
-                f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
-                if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
-                else if (edge.dir == Cartesian::UP) cornerPos.y += 1.0f;
-                f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge.dir)]) * (f32)(edge.length);
-                DebugRenderer::drawLine(cornerPos, offset, color4(0.0f, 1.0f, 1.0f), debugLifetime);
-                DebugRenderer::drawLine(cornerPos + offset * 0.5f, f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)]), color4(0.0f, 1.0f, 1.0f), debugLifetime);
-            }
-        }
-        for (int k = 0; k < navNodes.size(); ++k) {
-            auto&& node = navNodes[k];
-            for (int i = 0; i < node.edges.size() - 1; ++i) {
-                for (int j = i + 1; j < node.edges.size(); ++j) {
-                    ui32 id = k;
-                    color4 color = color4(255, 0, 0);
-                    NavNodeEdge& edge1 = node.edges[i];
-                    NavNodeEdge& edge2 = node.edges[j];
-                    f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
-                    f32v2 cornerPos1 = chunk.getWorldPos() + f32v2(edge1.start.getX(), edge1.start.getY());
-                    if (edge1.dir == Cartesian::RIGHT) cornerPos1.x += 1.0f;
-                    else if (edge1.dir == Cartesian::UP) cornerPos1.y += 1.0f;
-                    f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
-                    f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge2.dir)]) * (f32)(edge2.length);
-                    f32v2 cornerPos2 = chunk.getWorldPos() + f32v2(edge2.start.getX(), edge2.start.getY());
-                    if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
-                    else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
-                    f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
-                    DebugRenderer::drawLineBetweenPoints(pos1, pos2, color, debugLifetime);
+            // Update all nav indices
+            for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
+                const int cornerY = sy * SUBCHUNK_WIDTH;
+                for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
+                    const int cornerX = sx * SUBCHUNK_WIDTH;
+                    TileIndex index(cornerX + x, cornerY + y);
+                    TileCollision& collision = tileCollision[index];
+                    const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
+                    const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
+                    const NavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
+                    collision.navNodeIndex = navNodeIndex;
                 }
             }
         }
     }
-
     // Iterate through outer sub chunks (has chunk neighbors)
-    std::cout << "Generated nav graph for " << chunk.getChunkID().id << " in " << timer.stop() << "ms\n";
+    // std::cout << "Generated nav graph for " << chunk.getChunkID().id << " in " << timer.stop() << "ms\n";
 }
 
-void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, ui16* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
+void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
+{
+    std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
+    for (auto&& node : navNodes) {
+        for (auto&& edge : node.edges) {
+            f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
+            if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
+            else if (edge.dir == Cartesian::UP) cornerPos.y += 1.0f;
+            f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge.dir)]) * (f32)(edge.length);
+            DebugRenderer::drawLine(cornerPos, offset, color4(0.0f, 1.0f, 1.0f), lifetime);
+            DebugRenderer::drawLine(cornerPos + offset * 0.5f, f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)]), color4(0.0f, 1.0f, 1.0f), lifetime);
+        }
+    }
+    for (int k = 0; k < navNodes.size(); ++k) {
+        auto&& node = navNodes[k];
+        for (int i = 0; i < node.edges.size() - 1; ++i) {
+            for (int j = i + 1; j < node.edges.size(); ++j) {
+                ui32 id = k;
+                color4 color = color4(255, 0, 0);
+                NavNodeEdge& edge1 = node.edges[i];
+                NavNodeEdge& edge2 = node.edges[j];
+                f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
+                f32v2 cornerPos1 = chunk.getWorldPos() + f32v2(edge1.start.getX(), edge1.start.getY());
+                if (edge1.dir == Cartesian::RIGHT) cornerPos1.x += 1.0f;
+                else if (edge1.dir == Cartesian::UP) cornerPos1.y += 1.0f;
+                f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
+                f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge2.dir)]) * (f32)(edge2.length);
+                f32v2 cornerPos2 = chunk.getWorldPos() + f32v2(edge2.start.getX(), edge2.start.getY());
+                if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
+                else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
+                f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
+                DebugRenderer::drawLineBetweenPoints(pos1, pos2, color, lifetime);
+            }
+        }
+    }
+}
+
+void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
 {
     std::vector<TileCollision>& tileCollision = chunk.getAllTileCollision();
     ui32 currNodeId;
@@ -166,7 +162,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
         if (currNodeId != prevNodeId) {
             // Finish edge
             if (length != 0) {
-                addNodeEdge(navNodeIdTable, prevNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+                addNodeEdge(chunk, navNodeIdTable, prevNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
                 length = 0;
             }
             prevNodeId = currNodeId;
@@ -181,7 +177,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
             ++length;
         }
         else if (length != 0) {
-            addNodeEdge(navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+            addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
             length = 0;
         }
         const i32v2& edgeDir = CARTESIAN_EDGE_DIRS[enum_cast(dir)];
@@ -191,17 +187,17 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
     }
     // Add final edge if we reached end
     if (length != 0) {
-        addNodeEdge(navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+        addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
     }
 }
 
-void NavGraph::addNodeEdge(ui16* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex start, int length, Cartesian dir) {
+void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex start, int length, Cartesian dir) {
     NavNode* currNavNode;
     // Add nav node if it doesnt exist yet
     ui16& navNodeId = navNodeIdTable[djIndex];
     if (navNodeId == UINT16_MAX) {
         navNodeId = (ui16)navNodes.size();
-        currNavNode = &navNodes.emplace_back();
+        currNavNode = &navNodes.emplace_back(chunk);
     }
     else {
         currNavNode = &navNodes[navNodeId];

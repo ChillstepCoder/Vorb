@@ -83,10 +83,10 @@ int orientation(f32v2 p, f32v2 q, f32v2 r)
 {
     // See https://www.geeksforgeeks.org/orientation-3-ordered-points/ 
     // for details of below formula. 
-    int val = (q.y - p.y) * (r.x - q.x) -
+    const f32 val = (q.y - p.y) * (r.x - q.x) -
               (q.x - p.x) * (r.y - q.y);
 
-    if (val == 0) return 0;  // colinear 
+    if (abs(val) < 0.0001f) return 0;  // colinear 
 
     return (val > 0) ? 1 : 2; // clock or counterclock wise 
 }
@@ -131,7 +131,7 @@ RoadID City::addRoad(CityRoad& road)
 {
     // It is OUR job to set up neighbors
     assert(road.neighborRoads.empty());
-    RoadID id = mRoads.size();
+    RoadID id = (RoadID)mRoads.size();
     road.id = id;
     mRoads.emplace_back(std::make_unique<CityRoad>(road));
     CityRoad& newRoad = *mRoads.back();

@@ -6,6 +6,12 @@ typedef ui32v2 PathPoint;
 
 // TODO: Can this be contiguous?
 struct Path {
+    std::unique_ptr<PathPoint[]> points; // TODO: Can we wrap this into the path allocation???
+    ui32 numPoints = 0;
+    bool finishedGenerating = false;
+};
+
+struct CoarsePath {
     std::unique_ptr<PathPoint[]> points;
     ui32 numPoints = 0;
     bool finishedGenerating = false;
@@ -24,9 +30,9 @@ public:
 
     // Fine grid paths
     std::unique_ptr<Path> generatePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal);
-    void generatePathAsynchronous();
+    void generatePathAsynchronous(); // TODO: DO
 
     // Coarse grid paths
-    void generateLODChunkPathSynchronous();
+    std::unique_ptr<CoarsePath> generateCoarsePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal);
 };
 

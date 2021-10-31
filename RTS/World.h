@@ -75,11 +75,14 @@ public:
     TileCollision getTileCollisionAtWorldPos(const f32v2& worldPos) const;
     TileCollision getTileCollisionAtWorldPos(const ui32v2& worldPos) const;
 
+	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
+
 	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
 	const WorldGrid& getWorldGrid() const { return mWorldGrid; }
+	const NavGraph& getNavGraph() const { return *mNavGraph; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
@@ -108,6 +111,7 @@ private:
     /// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
 	void onChunkDataReady(Chunk& chunk);
+	void onChunkAllNeighborsDataReady(Chunk& chunk);
 	void dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id);
 	void tryCreateNeighbors(Chunk& chunk);
 	void tryCreateNeighbor(Chunk& chunk, const ChunkID& id);

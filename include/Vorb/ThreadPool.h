@@ -67,6 +67,7 @@ namespace vorb {
             /// Getters
             i32 getNumWorkers() const { return m_workers.size(); }
             size_t getTasksSizeApprox() const { return mTasks.size_approx(); }
+            size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }
         private:
             VORB_NON_COPYABLE(ThreadPool);
             // Typedef for func ptr

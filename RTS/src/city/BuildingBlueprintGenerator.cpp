@@ -255,10 +255,10 @@ void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 av
 void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp) const {
     for (size_t i = 0; i < bp.nodes.size(); ++i) {
         RoomNode& room = bp.nodes[i];
-        room.id = i;
+        room.id = (RoomNodeID)i;
 
         RoomDescription& desc = mBuildingRepo.getRoomDescriptionFromID(room.nodeType);
-        room.desiredWidth = round(lerp(desc.minWidth, desc.maxWidth, bp.sizeAlpha));
+        room.desiredWidth = (ui16)round(lerp(desc.minWidth, desc.maxWidth, bp.sizeAlpha));
         room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
 }
@@ -302,7 +302,6 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) const {
 
     // Rotate all coordinates around for Cartesian direction
     // Left is the base case so do nothing for that
-    i32v2 cartesianDirection;
     switch (bp.entrySide) {
         case Cartesian::DOWN:
             for (auto&& room : bp.nodes) {

@@ -39,7 +39,7 @@ void BuildingGrammar::buildFromStrings(const Array<nString>& strings) {
 
 void BuildingGrammar::buildRoomGraph(OUT std::vector<RoomNode>& graph) const {
     ui8 ruleBuffer[255];
-    const ui32 maxNodes = graph.size();
+    const ui32 maxNodes = (ui32)graph.size();
     RoomNodeID currentIndex = 0; // Start with door node
     ruleBuffer[currentIndex] = 0;
     ui32 ruleBufferCount = 1;

@@ -6,6 +6,8 @@
 #include "item/ItemStack.h"
 #include "util/AABB.hpp"
 
+extern bool IS_SHUTTING_DOWN;
+
 class Chunk;
 class QuadMesh;
 class BillboardMesh;
@@ -17,7 +19,8 @@ class WorldGrid;
 
 enum class ChunkState {
 	INVALID,
-	LOADING,
+	LOADING_TILES,
+	GENERATING_NAVGRAPH,
 	FINISHED,
 };
 
@@ -96,8 +99,8 @@ public:
 	ItemStack getItemStackOnGround(TileIndex pos);
 
 	bool isInvalid() const { return mState == ChunkState::INVALID; }
-	bool isDataReady() const { return mState > ChunkState::LOADING; }
-	bool isFinished() const { return isDataReady() && mDataReadyNeighborCount == 4; }
+	bool isDataReady() const { return mState > ChunkState::LOADING_TILES; }
+	bool isFinished() const { return mState == ChunkState::FINISHED && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
 	bool isVisible() const { return mChunkRenderData.mIsVisible; }
 
     Tile& getMutableTileAt(TileIndex i) {

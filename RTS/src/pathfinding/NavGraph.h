@@ -21,8 +21,10 @@ struct NavNodeEdge {
 static_assert(sizeof(NavNodeEdge) == 4, "Keep small");
 
 struct NavNode {
+    NavNode(Chunk& chunk) : chunk(chunk) {}
     // TODO: Experiment with static array, max size is 152 edges in worst case? prob not cache efficient...
     // TODO: Memory pool?
+    Chunk& chunk;
     std::vector<NavNodeEdge> edges;
 };
 
@@ -38,18 +40,16 @@ public:
     NavGraph(World& world);
     // TODO: async
     void buildNavNodesForChunkSynchronous(Chunk& chunk);
+    void debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime);
 
-    const NavNode* tryGetNode(NavNodeIndexPair index) const {
-        auto&& it = mNodes.find(index.chunkId);
-        if (it == mNodes.end()) return nullptr;
-        return &it->second[index.index];
+    const NavNode* getNode(NavNodeIndexPair index) const {
+        return &mNodes[index.chunkId][index.index];
     }
 
 private:
-    void buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, ui16* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir);
-    void addNodeEdge(ui16* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex start, int length, Cartesian dir);
+    void buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir);
+    void addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex start, int length, Cartesian dir);
 
-    std::map<ui32 /* chunkId */, std::vector<NavNode>> mNodes;
-    //std::unordered_map<NavNodeEdge, std::vector<NavNodeIndex>> mEdgeLookup;
+    std::vector<NavNode> mNodes[WorldData::WORLD_SIZE_CHUNKS];
     World& mWorld;
 };

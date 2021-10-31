@@ -71,7 +71,7 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
 
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     // If we already have a path, wait for it to finish
-    if (navCmp.mPath) {
+    if (navCmp.mFinePath || navCmp.mCoarsePath) {
         return;
     }
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
@@ -82,8 +82,8 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
         return;
     }
 
-    navCmp.setPathWithCallback(
-        Services::PathFinder::ref().generatePathSynchronous(world, mTileTarget.getWorldPos(), physCmp.getXYPosition()),
+    navCmp.setCoarsePathWithCallback(
+        Services::PathFinder::ref().generateCoarsePathSynchronous(world, physCmp.getXYPosition(), mTileTarget.getWorldPos()),
         [this](bool success) {
             if (success == true) {
                 mState = GatherTaskState::BEGIN_HARVEST;
@@ -144,7 +144,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             }
         }
     );
-    
+
     mState = GatherTaskState::HARVESTING;
 
     return true;
@@ -154,7 +154,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
-    assert(!navCmp.mPath);
+    assert(!navCmp.mCoarsePath);
 
     assert(mCity);
     const f32v2& myPos = physCmp.getXYPosition();
@@ -162,8 +162,8 @@ void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::e
     ui32v2 stockpileCenter = closestStockpile->getAABB().getCenter();
 
     // Path to the stockpile
-    navCmp.setPathWithCallback(
-        Services::PathFinder::ref().generatePathSynchronous(world, stockpileCenter, myPos),
+    navCmp.setCoarsePathWithCallback(
+        Services::PathFinder::ref().generateCoarsePathSynchronous(world, myPos, stockpileCenter),
         [this, &registry, agent, &world, stockpileCenter](bool success) {
             if (success) {
                 mState = GatherTaskState::PICK_STOCKPILE_SLOT;

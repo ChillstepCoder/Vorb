@@ -6,7 +6,8 @@
 class World;
 
 enum class NavigationType {
-	PATH,
+	FINE_PATH,
+	COARSE_PATH,
 	SIMPLE_LINEAR,
 	INVALID
 };
@@ -16,7 +17,8 @@ struct NavigationComponent {
 	// Make sure navigation component is destroyed before the callback owner is destroyed
     // Callback should ideally only be set from the same entity
     void setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback);
-	void setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback);
+	void setFinePathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback);
+	void setCoarsePathWithCallback(std::unique_ptr<CoarsePath> coarsePath, std::function<void(bool)> finishedCallback);
 	void abort();
 
     float mSpeed = 1.0f;
@@ -26,8 +28,11 @@ struct NavigationComponent {
 		};
 		ui32v2 mSimpleTargetPoint = ui32v2(0);
     };
-    std::unique_ptr<Path> mPath;
+    std::unique_ptr<Path> mFinePath;
+    std::unique_ptr<CoarsePath> mCoarsePath;
+	ui32 mCurrentCoarsePoint;
 	bool mColliding = false; // Colliding with another agent
+	bool mFailedToPath = false;
 	ui8 mFramesUntilNextRayCheck = 0;
 	std::function<void(bool)> mFinishedCallback = nullptr;
 	NavigationType mNavigationType = NavigationType::INVALID;

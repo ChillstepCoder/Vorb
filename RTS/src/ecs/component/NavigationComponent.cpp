@@ -40,7 +40,7 @@ void updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
     if (distance2 <= SQ(MIN_DISTANCE)) {
         // Target reached
         physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
-        if (navCmp.mFinishedCallback) {
+        if (navCmp.mNavigationType == NavigationType::SIMPLE_LINEAR && navCmp.mFinishedCallback) {
             navCmp.mFinishedCallback(true /* success */);
             navCmp.mFinishedCallback = nullptr;
         }
@@ -51,10 +51,10 @@ void updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
     updateVelocity(targetVelocity, physCmp);
 }
 
-void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
 	
 	// TODO: do this conversion in the generator?
-	const ui32v2 nextTilePos = navCmp.mPath->points[navCmp.mCurrentPoint];
+	const ui32v2 nextTilePos = navCmp.mFinePath->points[navCmp.mCurrentPoint];
 	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
@@ -69,20 +69,20 @@ void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, Physi
 	const float distance2 = glm::length2(offset);
 	if (distance2 <= SQ(MIN_DISTANCE)) {
         ++navCmp.mCurrentPoint;
-        if (navCmp.mCurrentPoint >= navCmp.mPath->numPoints) {
+        if (navCmp.mCurrentPoint >= navCmp.mFinePath->numPoints) {
 			// Target reached
             physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
-			navCmp.mPath = nullptr;
-			if (navCmp.mFinishedCallback) {
+			navCmp.mFinePath = nullptr;
+			if (navCmp.mNavigationType == NavigationType::FINE_PATH && navCmp.mFinishedCallback) {
 				navCmp.mFinishedCallback(true /* success */);
 				navCmp.mFinishedCallback = nullptr;
 			}
-			return;
+			return true;
 		}
 		else {
 			// Immediately raycheck each time we get to a new point
 			navCmp.mFramesUntilNextRayCheck = 0;
-			nextPoint = f32v2(navCmp.mPath->points[navCmp.mCurrentPoint]) + f32v2(0.5f);
+			nextPoint = f32v2(navCmp.mFinePath->points[navCmp.mCurrentPoint]) + f32v2(0.5f);
 		}
 	}
 
@@ -146,6 +146,8 @@ void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, Physi
 
     updateVelocity(targetVelocity, physCmp);
 
+	return false;
+
     //const float ARC_LENGTH = DEG_TO_RAD(175.0f);
 	//// Look for undead allies
 	//std::vector<EntityDistSortKey> actors = world.queryActorsInArc(physCmp.getXYPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, ACTORTYPE_NONE, true, QUADRANTS, entity);
@@ -182,6 +184,52 @@ void updateComponentPath(entt::entity entity, NavigationComponent& navCmp, Physi
 	
 }
 
+bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+
+	f32v2 nextCoarseTilePos= f32v2(navCmp.mCoarsePath->points[navCmp.mCurrentCoarsePoint]) + f32v2(0.5f);
+
+	const f32v2& offset = nextCoarseTilePos - physCmp.getXYPosition();
+	const float distance2 = glm::length2(offset);
+	if (distance2 > SQ(MIN_DISTANCE)) {
+        if (!navCmp.mFinePath) {
+            navCmp.mCurrentPoint = 0;
+            navCmp.mFinePath = Services::PathFinder::ref().generatePathSynchronous(world, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos));
+            if (navCmp.mFinePath) {
+                DebugRenderer::drawPath(*navCmp.mFinePath, color4(1.0f, 0.0f, 1.0f), 200);
+			}
+			else {
+				navCmp.mCoarsePath = nullptr;
+				navCmp.mFailedToPath = true;
+				return true;
+			}
+        }
+    }
+	if (!navCmp.mFinePath || updateComponentFinePath(entity, navCmp, physCmp, world)) {
+        // TODO: Re-use memory?
+        navCmp.mFinePath = nullptr;
+
+        ++navCmp.mCurrentCoarsePoint;
+        if (navCmp.mCurrentCoarsePoint >= navCmp.mCoarsePath->numPoints) {
+            // Target reached
+            physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+            navCmp.mFinePath = nullptr;
+            navCmp.mCoarsePath = nullptr;
+            if (navCmp.mFinishedCallback) {
+                navCmp.mFinishedCallback(true /* success */);
+                navCmp.mFinishedCallback = nullptr;
+            }
+            return true;
+        }
+        else {
+            // Immediately raycheck each time we get to a new point
+            navCmp.mFramesUntilNextRayCheck = 0;
+            nextCoarseTilePos = f32v2(navCmp.mCoarsePath->points[navCmp.mCurrentCoarsePoint]) + f32v2(0.5f);
+        }
+	}
+
+	return false;
+}
+
 void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 	// Update components
     auto view = registry.view<NavigationComponent, PhysicsComponent>();
@@ -190,9 +238,15 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
         auto& physCmp = view.get<PhysicsComponent>(entity);
         switch (navCmp.mNavigationType) {
-            case NavigationType::PATH:
-                if (navCmp.mPath && navCmp.mCurrentPoint < navCmp.mPath->numPoints) {
-                    updateComponentPath(entity, navCmp, physCmp, world);
+            case NavigationType::FINE_PATH:
+                if (navCmp.mFinePath && navCmp.mCurrentPoint < navCmp.mFinePath->numPoints) {
+                    updateComponentFinePath(entity, navCmp, physCmp, world);
+                }
+                break;
+            case NavigationType::COARSE_PATH:
+				// TODO: Are these checks pointless?
+                if (navCmp.mCoarsePath && navCmp.mCurrentCoarsePoint < navCmp.mCoarsePath->numPoints) {
+                    updateComponentCoarsePath(entity, navCmp, physCmp, world);
                 }
                 break;
             case NavigationType::SIMPLE_LINEAR:
@@ -202,7 +256,7 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 				// TODO: This isn't supposed to happen maybe? :thinkies:
 				continue;
 		}
-		static_assert((int)NavigationType::INVALID == 2, "Update for new nav");
+		static_assert((int)NavigationType::INVALID == 3, "Update for new nav");
 	}
 }
 
@@ -210,19 +264,31 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
     mNavigationType = NavigationType::SIMPLE_LINEAR;
 	mSimpleTargetPoint = targetPoint;
     mFinishedCallback = finishedCallback;
+    mFailedToPath = false;
 
     DebugRenderer::drawWireQuad(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
 }
 
-void NavigationComponent::setPathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {
-    mNavigationType = NavigationType::PATH;
-	mPath = std::move(path);
+void NavigationComponent::setFinePathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {
+    mNavigationType = NavigationType::FINE_PATH;
+	mFinePath = std::move(path);
 	mCurrentPoint = 0;
+	mFailedToPath = false;
 	mFinishedCallback = finishedCallback;
 }
 
+void NavigationComponent::setCoarsePathWithCallback(std::unique_ptr<CoarsePath> coarsePath, std::function<void(bool)> finishedCallback) {
+    mNavigationType = NavigationType::COARSE_PATH;
+    mCoarsePath = std::move(coarsePath);
+    mCurrentPoint = 0;
+    mFailedToPath = false;
+	mCurrentCoarsePoint = 0;
+    mFinishedCallback = finishedCallback;
+}
+
 void NavigationComponent::abort() {
-	mPath = nullptr;
+    mFailedToPath = true; // TODO: Is this correct? Did we really "fail"
+	mFinePath = nullptr;
 	if (mFinishedCallback) {
 		mFinishedCallback(false /*success*/);
 		mFinishedCallback = nullptr;

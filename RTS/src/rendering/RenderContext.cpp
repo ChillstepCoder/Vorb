@@ -413,8 +413,8 @@ void RenderContext::selectNextDebugShader() {
 void RenderContext::renderUI(const Camera3D& camera) {
     mSb->begin();
     char buffer[255];
-    const float GAP_SIZE = 64.0f;
-    const float START_MULT = 0.9f;
+    const float GAP_SIZE = 60.0f;
+    const float START_MULT = 0.8f;
     float yOffset = 0.0f;
     const f32v2 scale(1.0f);
 
@@ -423,6 +423,14 @@ void RenderContext::renderUI(const Camera3D& camera) {
     yOffset += GAP_SIZE;
 
     sprintf_s(buffer, sizeof(buffer), "ZoomScale: %.2f", camera.getScale());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 

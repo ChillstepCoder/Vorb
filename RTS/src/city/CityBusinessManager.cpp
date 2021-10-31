@@ -29,7 +29,7 @@ bool CityBusinessManager::tryEmploy(entt::entity personToEmploy)
     
     for (auto entity : view) {
         auto& cmp = view.get<BusinessComponent>(entity);
-        size_t employeeCount = cmp.mEmployees.size();
+        ui32 employeeCount = (ui32)cmp.mEmployees.size();
         if (employeeCount < cmp.mMaxEmployeeCount) {
             // Need large number since we can go negative on score influence if we have more than
             // desired

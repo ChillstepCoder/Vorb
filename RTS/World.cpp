@@ -85,7 +85,7 @@ World::World(ResourceManager& resourceManager) :
 }
 
 World::~World() {
-
+	IS_SHUTTING_DOWN = true;
 }
 
 void World::initPostLoad() {
@@ -357,6 +357,16 @@ TileCollision World::getTileCollisionAtWorldPos(const ui32v2& worldPos) const {
     return getTileCollisionAtWorldPos(f32v2(worldPos));
 }
 
+const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const
+{
+	const Chunk& chunk = getChunkAtPosition(f32v2(worldPos)); // TODO: Stop casting??
+	if (!chunk.isDataReady()) return nullptr;
+    ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+    ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+	const TileCollision& collision = chunk.getTileCollisionAt(TileIndex(x, y));
+	return mNavGraph->getNode({ chunk.getChunkID().id, collision.navNodeIndex });
+}
+
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
 	for (auto&& chunk : mVisibleChunks) {
 		func(*chunk);
@@ -549,10 +559,14 @@ bool World::updateChunk(Chunk& chunk) {
 		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
 			tryCreateNeighbors(chunk);
 		}
-		else if (chunk.mDirtyNavGraph) {
+		else if (chunk.mDirtyNavGraph && chunk.mState != ChunkState::GENERATING_NAVGRAPH) {
             // Update nav graph when all neighbors are loaded
+			// TODO: Async?
 			mNavGraph->buildNavNodesForChunkSynchronous(chunk);
 			chunk.mDirtyNavGraph = false;
+            if (sDebugOptions.mNavGraph) {
+                mNavGraph->debugDrawNavGraphForChunk(chunk, 250);
+            }
 		}
 	}
 	
@@ -560,8 +574,6 @@ bool World::updateChunk(Chunk& chunk) {
 }
 
 void World::onChunkDataReady(Chunk& chunk) {
-	// Update nav graph
-	mNavGraph->buildNavNodesForChunkSynchronous(chunk);
 
 	// Don't update neighbors until we are data ready
 	assert(chunk.isDataReady());
@@ -575,12 +587,36 @@ void World::onChunkDataReady(Chunk& chunk) {
 	assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
 }
 
+void World::onChunkAllNeighborsDataReady(Chunk& chunk) {
+	chunk.incRef();
+	if (chunk.mState == ChunkState::GENERATING_NAVGRAPH) {
+        Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
+            // Update nav graph on worker thread
+            mNavGraph->buildNavNodesForChunkSynchronous(chunk);
+        }, [&]() {
+
+            if (sDebugOptions.mNavGraph) {
+				mNavGraph->debugDrawNavGraphForChunk(chunk, 250);
+            }
+
+            chunk.mState = ChunkState::FINISHED;
+            chunk.decRef();
+        });
+	}
+}
+
 void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
 	Chunk& neighbor = mWorldGrid.getChunk(id.id);
     if (neighbor.isDataReady()) {
 		// Set up data ready ref counts
 		++neighbor.mDataReadyNeighborCount;
 		++chunk.mDataReadyNeighborCount;
+		if (neighbor.mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT) {
+			onChunkAllNeighborsDataReady(neighbor);
+		}
+        if (chunk.mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT) {
+            onChunkAllNeighborsDataReady(chunk);
+		}
 	}
 	else if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
 		// Create the chunk, but dont update neighbor count until its done
@@ -626,12 +662,12 @@ void World::initChunk(Chunk& chunk)
 }
 
 void World::generateChunkAsync(Chunk& chunk) {
-	chunk.mState = ChunkState::LOADING;
+	chunk.mState = ChunkState::LOADING_TILES;
 	chunk.incRef();
 	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
         mChunkGenerator->GenerateChunk(chunk);
     }, [&]() {
-        chunk.mState = ChunkState::FINISHED;
+        chunk.mState = ChunkState::GENERATING_NAVGRAPH;
 		onChunkDataReady(chunk);
 		chunk.decRef();
     });

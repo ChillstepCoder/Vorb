@@ -11,6 +11,8 @@
 #include "item/ItemRepository.h"
 #include "item/Item.h"
 
+bool IS_SHUTTING_DOWN = false;
+
 ChunkRenderData::~ChunkRenderData() {
     // Empty
     // TODO: RAII Wrapper for safety
@@ -51,6 +53,7 @@ void Chunk::freeTiles() {
 }
 
 void Chunk::dispose() {
+    assert(IS_SHUTTING_DOWN || mRefCount == 0);
 
     onDispose(this);
 
@@ -238,6 +241,10 @@ void Chunk::setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag) {
 }
 
 void Chunk::updateTileCollisionAt(TileIndex i) {
+
+    // TODO: Multithreaded write, queued write
+    assert(mState != ChunkState::GENERATING_NAVGRAPH);
+
     const Tile& tile = mTiles[i];
     TileCollision& collision = mCollision[i];
     TileCollisionNavFlags oldFlags = collision.flags;

@@ -294,7 +294,7 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
     }
     i16v2 compressedOffset = i16v2(xyOffset * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
     i16v2 compressedDims = i16v2(xyDims * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
-    const i16 halfX = xyDims.x * 0.5f * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO;
+    const i16 halfX = (i16)(xyDims.x * 0.5f * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
 
     { // Bottom Left
         BillboardVertex& vbl = verts[0];

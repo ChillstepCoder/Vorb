@@ -264,6 +264,14 @@ void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
 }
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
+    // Hacky load screen
+    std::cout << "LOADING... \n";
+    update(gameTime);
+    while (Services::Threadpool::ref().getTasksSizeApprox()) {
+		Sleep(1);
+        update(gameTime);
+    }
+    std::cout << "\n DONE\n";
 }
 
 void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
@@ -319,6 +327,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
+
 	const f32 frameAlpha = mGameTimer.getFrameAlpha();
 
     // Grab fps
@@ -410,12 +419,12 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-            cmp.setPathWithCallback(Services::PathFinder::ref().generatePathSynchronous(*mWorld, worldPosInt, xyPos), nullptr);
-            DebugRenderer::drawPath(*cmp.mPath, color4(1.0f, 0.0f, 1.0f), 200);
+            cmp.setCoarsePathWithCallback(Services::PathFinder::ref().generateCoarsePathSynchronous(*mWorld, xyPos, worldPosInt), nullptr);
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+			// TODO: HANDLE RACE CONDITION
             if (handle.isValid()) {
                 handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
             }
