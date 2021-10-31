@@ -22,8 +22,7 @@ void CityBuilder::update()
     // Grab new plans
     if (mInProgressBlueprints.empty()) {
         if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
-            debugBuildInstant(*bp);
-            //mInProgressBlueprints.emplace_back(std::move(bp));
+            mInProgressBlueprints.emplace_back(std::move(bp));
         }
     }
 

@@ -3,6 +3,7 @@
 #include "CityPlanner.h"
 #include "City.h"
 #include "CityPlotter.h"
+#include "BuildingDescriptionRepository.h"
 
 #include "Random.h"
 

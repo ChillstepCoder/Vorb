@@ -20,6 +20,13 @@ KEG_TYPE_DEF_SAME_NAME(BusinessGatherComponentDef, kt) {
     kt.addValue("resource", keg::Value::custom(offsetof(BusinessGatherComponentDef, mResourceToFind), "TileResource", true));
 }
 
+struct BusinessBuildComponentDef : BusinessComponentDefinition {
+    ui32 mPriority = PRIORITY_NO_COMPONENT;
+};
+KEG_TYPE_DEF_SAME_NAME(BusinessBuildComponentDef, kt) {
+    kt.addValue("priority", keg::Value::basic(offsetof(BusinessBuildComponentDef, mPriority), keg::BasicType::UI32));
+}
+
 struct BusinessProduceComponentDef : BusinessComponentDefinition {
     ui32 mPriority = PRIORITY_NO_COMPONENT;
 };
@@ -34,11 +41,12 @@ KEG_TYPE_DEF_SAME_NAME(BusinessRetailComponentDef, kt) {
     kt.addValue("priority", keg::Value::basic(offsetof(BusinessRetailComponentDef, mPriority), keg::BasicType::UI32));
 }
 
-// TODO: Should we shrink this? Right now it uses maximum memory for all components
+// TODO: Should we shrink this? Right now it uses maximum memory for all components, maybe vector of component defs?
 struct BusinessDef {
     nString mBuildingName;
     bool mRequiresBuilding = true;
     BusinessGatherComponentDef mGather;
+    BusinessBuildComponentDef mBuild;
     BusinessProduceComponentDef mProduce;
     BusinessRetailComponentDef mRetail;
     BusinessTypeID mTypeId;
@@ -49,6 +57,7 @@ KEG_TYPE_DEF_SAME_NAME(BusinessDef, kt) {
     kt.addValue("building", keg::Value::basic(offsetof(BusinessDef, mBuildingName), keg::BasicType::STRING));
     kt.addValue("requires_building", keg::Value::basic(offsetof(BusinessDef, mRequiresBuilding), keg::BasicType::BOOL));
     kt.addValue("gather", keg::Value::custom(offsetof(BusinessDef, mGather), "BusinessGatherComponentDef", false));
+    kt.addValue("build", keg::Value::custom(offsetof(BusinessDef, mBuild), "BusinessBuildComponentDef", false));
     kt.addValue("produce", keg::Value::custom(offsetof(BusinessDef, mProduce), "BusinessProduceComponentDef", false));
     kt.addValue("retail", keg::Value::custom(offsetof(BusinessDef, mRetail), "BusinessRetailComponentDef", false));
     kt.addValue("max_employees", keg::Value::basic(offsetof(BusinessDef, mMaxEmployeeCount), keg::BasicType::UI32));
@@ -106,6 +115,9 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
     if (def.mGather.mPriority != PRIORITY_NO_COMPONENT) {
         auto&& cmp = registry.emplace<BusinessGatherComponent>(newEntity);
         cmp.mResourceToGather = def.mGather.mResourceToFind;
+    }
+    if (def.mBuild.mPriority != PRIORITY_NO_COMPONENT) {
+        auto&& cmp = registry.emplace<BusinessBuildComponent>(newEntity);
     }
     if (def.mProduce.mPriority != PRIORITY_NO_COMPONENT) {
         registry.emplace<BusinessProduceComponent>(newEntity);

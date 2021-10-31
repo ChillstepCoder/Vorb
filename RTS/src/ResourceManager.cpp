@@ -7,6 +7,7 @@
 #include "rendering/ShaderLoader.h"
 #include "particles/ParticleSystemManager.h"
 #include "city/Building.h"
+#include "city/BuildingDescriptionRepository.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"

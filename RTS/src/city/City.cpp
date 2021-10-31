@@ -7,6 +7,7 @@
 #include "CityResidentManager.h"
 #include "CityBusinessManager.h"
 #include "CityQuartermaster.h"
+#include "BuildingDescriptionRepository.h"
 #include "ecs/business/BusinessRepository.h"
 #include "World.h"
 #include "ResourceManager.h"

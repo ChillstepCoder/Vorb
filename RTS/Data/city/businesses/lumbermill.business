@@ -3,6 +3,8 @@ lumbermill:
   requires_building: false
   desired_employees: 2
   max_employees: 6
+  build:
+    priority: 2
   gather:
     priority: 1
     resource: wood

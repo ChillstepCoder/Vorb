@@ -45,6 +45,11 @@ struct BusinessGatherComponent {
     std::vector<LiteTileHandle> mScannedTiles;
 };
 
+// Construct
+struct BusinessBuildComponent {
+    ui32 mPriority;
+};
+
 // Produce
 struct ProduceItemDesc {
     ItemID mItem;

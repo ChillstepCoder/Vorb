@@ -2,8 +2,7 @@
 
 #include "IAgentTask.h"
 
-// TODO: we only need LiteTileHandle
-#include "world/Chunk.h"
+#include "world/TileHandle.h"
 
 class City;
 

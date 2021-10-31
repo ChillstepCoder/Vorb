@@ -42,11 +42,12 @@ BusinessSystem::BusinessSystem(World& world) :
 
 }
 
+// TODO: Rename to task type?
 enum TaskPriorities {
     TASK_PRIORITY_RETAIL,
-    TASK_PRIORITY_GATHER
+    TASK_PRIORITY_BUILD,
+    TASK_PRIORITY_GATHER,
 };
-
 
 void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp) {
     // Gathering currently requires a city
@@ -82,6 +83,16 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
     }
 }
 
+void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, BusinessComponent& businessCmp) {
+    // Gathering currently requires a city
+    assert(businessCmp.mCity);
+
+
+    // Update gather tasks
+    TaskList& buildList = businessCmp.mTasksToDo[TASK_PRIORITY_BUILD];
+   
+}
+
 void updateBusiness(World& world, entt::registry& registry, entt::entity entity, BusinessComponent& cmp) {
     BusinessProduceComponent* produceCmp = registry.try_get<BusinessProduceComponent>(entity);
     if (produceCmp) {
@@ -91,6 +102,11 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
     BusinessGatherComponent* gatherCmp = registry.try_get<BusinessGatherComponent>(entity);
     if (gatherCmp) {
         updateGatherComponent(world, *gatherCmp, cmp);
+    }
+
+    BusinessBuildComponent* buildCmp = registry.try_get<BusinessBuildComponent>(entity);
+    if (buildCmp) {
+        updateBuildComponent(world, *buildCmp, cmp);
     }
 
     BusinessRetailComponent* retailCmp = registry.try_get<BusinessRetailComponent>(entity);

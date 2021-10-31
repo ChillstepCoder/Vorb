@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "BuildingBlueprintGenerator.h"
+#include "BuildingDescriptionRepository.h"
 
 #include "services/Services.h"
 
