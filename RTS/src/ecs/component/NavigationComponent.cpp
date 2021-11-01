@@ -109,8 +109,8 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
 				f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
 				// Large negative is positive
-				if (angle < -M_PI) {
-					angle = M_2_PI - angle;
+				if (angle < -M_PIF) {
+					angle = M_2_PIF - angle;
 				}
 
 				constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);

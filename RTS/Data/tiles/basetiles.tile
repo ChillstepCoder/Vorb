@@ -5,11 +5,20 @@ grass2:
 rock1:
   tex: con_squash
   col: box
+  recipe:
+    - item: wood_raw
+      count: 5
 bricks1:
   tex: bricks1
+  recipe:
+    - item: wood_raw
+      count: 3
 water:
   tex: water
 door:
   tex: door
+  recipe:
+    - item: wood_raw
+      count: 3
 tall_grass:
   tex: tall_grass

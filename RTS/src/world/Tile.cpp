@@ -21,6 +21,11 @@ KEG_ENUM_DEF(TileCollisionShape, TileCollisionShape, kt) {
     kt.addValue("circle", TileCollisionShape::CIRCLE);
 }
 
+KEG_TYPE_DEF_SAME_NAME(ItemInputDef, kt) {
+    kt.addValue("item", keg::Value::basic(offsetof(ItemInputDef, itemName), keg::BasicType::STRING));
+    kt.addValue("count", keg::Value::basic(offsetof(ItemInputDef, count), keg::BasicType::UI32));
+}
+
 KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
     kt.addValue("item", keg::Value::basic(offsetof(ItemDropDef, itemName), keg::BasicType::STRING));
     kt.addValue("count", keg::Value::basic(offsetof(ItemDropDef, countRange), keg::BasicType::UI32_V2));

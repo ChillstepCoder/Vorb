@@ -3,7 +3,6 @@
 #include "TileCollision.h"
 
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
-typedef ui16 TileID;
 constexpr int TILE_LAYER_GROUND = 0;
 constexpr int TILE_LAYER_MID = 1;
 constexpr int TILE_LAYER_TOP = 2;
@@ -66,6 +65,17 @@ enum class TileResource {
 	COUNT
 };
 KEG_ENUM_DECL(TileResource);
+
+struct ItemInputDef {
+	nString itemName;
+	ui32 count;
+};
+KEG_TYPE_DECL(ItemInputDef);
+
+struct ItemDrop {
+    ItemID id;
+    ui32v2 countRange;
+};
 
 struct ItemDropDef {
 	nString itemName;

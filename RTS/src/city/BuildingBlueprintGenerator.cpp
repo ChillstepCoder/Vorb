@@ -13,19 +13,6 @@ bool boundsCheckRoom(i16 pos, i16 dim) {
 }
 
 
-BuildingBlueprint::BuildingBlueprint(
-    const BuildingDescription& desc,
-    float sizeAlpha,
-    Cartesian entrySide,
-    ui16v2 dims,
-    ui32v2 bottomLeftWorldPos
-) :
-    desc(desc), sizeAlpha(sizeAlpha), entrySide(entrySide), dims(dims), bottomLeftWorldPos(bottomLeftWorldPos) {
-
-}
-
-
-
 BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo) :
     mBuildingRepo(buildingRepo)
 {
@@ -468,7 +455,7 @@ void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
             // TODO: Can we optimize this so we don't run it every time?
         }
         bp.ownerArray[index] = room.id;
-        bp.tiles[index].type = BlueprintTileType::FLOOR;
+        bp.tiles[index].type = BlueprintTileType::FLOOR_1;
         // Step
         outerPos += iterateOffset;
     }
@@ -501,7 +488,7 @@ void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
         if (ownerId == INVALID_ROOM_ID) {
             ++sizeAdd;
             bp.ownerArray[index] = room.id;
-            bp.tiles[index].type = BlueprintTileType::FLOOR;
+            bp.tiles[index].type = BlueprintTileType::FLOOR_1;
         }
         // Step
         outerPos += iterateOffset;
@@ -943,7 +930,7 @@ void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& 
     ui16 index = getIndexAtPos(room.offsetFromZero, bp.dims.x);
     // Init root node
     room.size = 1;
-    bp.tiles[index].type = BlueprintTileType::FLOOR;
+    bp.tiles[index].type = BlueprintTileType::FLOOR_1;
     bp.ownerArray[index] = room.id;
 
     // Init 4 base walls
@@ -993,10 +980,10 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 if (canConnectToOutside) {
 
                     canConnectToOutside = false;
-                    if (bp.tiles[nodeIndex].type == BlueprintTileType::WALL && bp.tiles[nextIndex].type == BlueprintTileType::FLOOR) {
+                    if (bp.tiles[nodeIndex].type == BlueprintTileType::WALL && bp.tiles[nextIndex].type == BlueprintTileType::FLOOR_1) {
                         bp.tiles[nodeIndex].type = BlueprintTileType::DOOR;
                     }
-                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR) {
+                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR_1) {
 
                         bp.tiles[nextIndex].type = BlueprintTileType::DOOR;
                     }
@@ -1007,7 +994,7 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 RoomNode& adjacent = bp.nodes[nextId];
                 if (adjacent.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
 
-                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR) {
+                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR_1) {
 
                         const i16v2 outerPos = nextPos + directionOffset;
                         // Bounds check
@@ -1027,7 +1014,7 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                         }
 
                         i16 outerIndex = getIndexAtPos(outerPos, bp.dims.x);
-                        if (bp.tiles[outerIndex].type <= BlueprintTileType::FLOOR) {
+                        if (bp.tiles[outerIndex].type <= BlueprintTileType::FLOOR_1) {
                             isConnected[nextId] = true;
                             room.adjacentRooms[room.numAdjacentRooms++] = nextId;
                             adjacent.adjacentRooms[adjacent.numAdjacentRooms++] = bp.ownerArray[nodeIndex];

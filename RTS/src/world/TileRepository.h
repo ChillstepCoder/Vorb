@@ -3,6 +3,8 @@
 #include "Tile.h"
 #include "rendering/SpriteData.h"
 
+#include "item/ItemStack.h"
+
 struct TileData {
     SpriteData spriteData;
     TileCollisionShape collisionShape = TileCollisionShape::NONE;
@@ -16,7 +18,10 @@ struct TileData {
     std::string resourceName;
     TileShape shape = TileShape::BLOCK;
     TileResource resource = TileResource::NONE;
-    Array<ItemDropDef> itemDrops;
+    std::vector<ItemDrop> itemDrops;
+    std::vector<ItemStack> recipe;
+    Array<ItemDropDef> itemDropsFileData;
+    Array<ItemInputDef> recipeFileData;
 };
 KEG_TYPE_DECL(TileData);
 
@@ -25,7 +30,7 @@ class TileRepository {
     friend class ResourceManager;
 public:
     static const TileData& getTileData(TileID tileId) {
-        assert(sTileData.find(tileId) != sTileData.end());
+        assert(tileId < sTileData.size());
         return sTileData[tileId];
     }
     static const TileData& getTileData(const std::string& name) {
@@ -39,5 +44,5 @@ public:
 
 private:
     static std::unordered_map<std::string, TileID> sTileIdMapping;
-    static std::unordered_map<TileID, TileData> sTileData;
+    static std::vector<TileData> sTileData;
 };

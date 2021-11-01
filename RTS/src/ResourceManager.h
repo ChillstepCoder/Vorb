@@ -77,8 +77,6 @@ private:
 
     std::unique_ptr<vio::IOManager> mIoManager;
 
-    TileID mIdGenerator = 0; // Generates IDs
-
     bool mHasLoadedResources = false;
     bool mHasGathered = false;
 };

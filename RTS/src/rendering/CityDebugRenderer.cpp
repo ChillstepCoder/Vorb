@@ -98,7 +98,7 @@ void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) c
         return;
     }
 
-    for (auto&& bp : cityBuilder.mInProgressBlueprints) {
+    for (auto&& bp : cityBuilder.mWaitingBlueprints) {
         renderBlueprint(*bp);
     }
 }

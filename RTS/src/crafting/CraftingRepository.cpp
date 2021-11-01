@@ -45,9 +45,9 @@ void CraftingRepository::loadRecipeFile(const ItemRepository& itemRepo, const vi
         keg::parse((ui8*)&def, value, readContext, &KEG_GLOBAL_TYPE(CraftingRecipeDef));
 
         CraftingRecipe& recipe = mCraftingRecipes.emplace_back();
-        recipe.mId = mCraftingRecipes.size() - 1;
+        recipe.mId = (CraftingRecipeID)(mCraftingRecipes.size() - 1);
         // Inputs
-        recipe.mNumInputs = def.inputs.size();
+        recipe.mNumInputs = (ui32)def.inputs.size();
         assert(recipe.mNumInputs < MAX_CRAFTING_RECIPE_INPUTS);
         for (size_t i = 0; i < def.inputs.size(); ++i) {
             const ItemStackDef& itemStackDef = def.inputs[i];

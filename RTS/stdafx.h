@@ -263,9 +263,13 @@ struct TileIndex {
 	ui16 index;
 };
 
+// Tiles
+typedef ui16 TileID;
+
 // Items
 typedef ui32 ItemID;
 constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
+
 
 // **************** BEBUG *****************
 extern bool s_debugToggle;

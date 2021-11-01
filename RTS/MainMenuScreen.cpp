@@ -198,7 +198,7 @@ void MainMenuScreen::build() {
                 TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
                 if (handle.isValid()) {
 					Chunk* chunk = handle.getMutableChunk();
-					ui16 height = chunk->getTileAt(handle.index).baseZPosition + 5;
+					ui8 height = chunk->getTileAt(handle.index).baseZPosition + 5;
 					chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
                 }
 			}
@@ -206,7 +206,7 @@ void MainMenuScreen::build() {
                 TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
                 if (handle.isValid()) {
                     Chunk* chunk = handle.getMutableChunk();
-                    ui16 height = chunk->getTileAt(handle.index).baseZPosition;
+					ui8 height = chunk->getTileAt(handle.index).baseZPosition;
                     chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
                 }
             }

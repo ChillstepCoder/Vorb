@@ -20,6 +20,9 @@ public:
 
     void update();
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
+    BuildingBlueprint* aquireBlueprintToBuild(entt::entity businessId);
+
+    void onBlueprintComplete(BuildingBlueprint* bp);
 
 private:
 
@@ -28,7 +31,8 @@ private:
 
     City& mCity;
     World& mWorld;
-    std::vector<std::unique_ptr<BuildingBlueprint>> mInProgressBlueprints;
+    std::list<std::unique_ptr<BuildingBlueprint>> mWaitingBlueprints;
+    std::vector<std::pair<std::unique_ptr<BuildingBlueprint>, entt::entity /*business owner*/>> mInProgressBlueprints;
     std::vector<RoadID> mRoadsToBuild;
 
 

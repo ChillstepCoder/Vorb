@@ -97,6 +97,8 @@ void ResourceManager::loadFiles() {
     }
 
     // Load Tiles
+    // Assuming single tile per file, definitely less than actual but, good enough. 10 is arbitrary
+    TileRepository::sTileData.reserve(mTileFiles.size() + 10);
     for (auto&& entry : mTileFiles) {
         // TODO: Tilemanager?
         loadTiles(entry);
@@ -143,6 +145,26 @@ void ResourceManager::loadFiles() {
     // Load business definitions
     for (auto&& entry : mBusinessFiles) {
         mBusinessRepository->loadBusinessFile(entry);
+    }
+
+    // Hookup tile references
+    for (auto&& tile : TileRepository::sTileData) {
+        // Item Drops
+        assert(tile.itemDrops.size() == 0); // No double load
+        tile.itemDrops.resize(tile.itemDropsFileData.size());
+        for (size_t i = 0; i < tile.itemDrops.size(); ++i) {
+            tile.itemDrops[i].countRange = tile.itemDropsFileData[i].countRange;
+            tile.itemDrops[i].id = mItemRepository->getItem(tile.itemDropsFileData[i].itemName).getID();
+        }
+        tile.itemDropsFileData.setData();
+
+        // Recipes
+        tile.recipe.resize(tile.recipeFileData.size());
+        for (size_t i = 0; i < tile.recipe.size(); ++i) {
+            tile.recipe[i].quantity = tile.recipeFileData[i].count;
+            tile.recipe[i].id = mItemRepository->getItem(tile.recipeFileData[i].itemName).getID();
+        }
+        tile.recipeFileData.setData();
     }
 
     mHasLoadedResources = true;
@@ -230,6 +252,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
 }
 
 bool ResourceManager::loadTiles(const vio::Path& filePath) {
+    // TODO: Non arbitrary?
     // Read file
     return mIoManager->parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
@@ -245,14 +268,14 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         }
         tile.colliderDimsXY = glm::clamp(tile.colliderDimsXY, -0.5f, 0.5f);
 
-        // TODO: Serialize the string > ID mapping
-        TileID nextId = ++mIdGenerator;
+        TileID nextId = (TileID)TileRepository::sTileData.size();
         assert(nextId < 0xffff); // Make sure we dont roll over
         assert(TileRepository::sTileIdMapping.find(key) == TileRepository::sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
         tile.spriteData = getSprite(tile.textureName);
         assert(tile.spriteData.isValid()); // TODO: Error msg
         TileRepository::sTileIdMapping[key] = nextId;
-        TileRepository::sTileData[nextId] = std::move(tile);
+        // TODO: Serialize the string > ID mapping
+        TileRepository::sTileData.emplace_back(std::move(tile));
     }));
 }

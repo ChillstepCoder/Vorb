@@ -661,7 +661,7 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
     plotToSplit.aabb[oppositeAxis + 2] = offset;
     
     // Finally emplace
-    CityPlot& newPlot = *mPlots.emplace_back(std::make_unique<CityPlot>(newAABB, mPlots.size(), plotToSplit.parentDistrict));
+    CityPlot& newPlot = *mPlots.emplace_back(std::make_unique<CityPlot>(newAABB, (CityPlotIndex)mPlots.size(), plotToSplit.parentDistrict));
 
     // Adjust neighbor connections
     if (axis == AXIS_HORIZONTAL) {

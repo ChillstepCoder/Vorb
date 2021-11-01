@@ -11,10 +11,11 @@
 
 class City;
 class World;
+struct BuildingBlueprint;
 
 typedef std::vector<IAgentTaskPtr> TaskList;
 
-// TODO: We are probably leaking IAgentTask here if the agnet is destroyed with active
+// TODO: We are probably leaking IAgentTask here if the agent is destroyed with active
 // tasks, but using the destructor will probably result in us freeing from copies.
 // Shared_ptr would work but is heavyweight
 struct BusinessComponent {
@@ -48,6 +49,7 @@ struct BusinessGatherComponent {
 // Construct
 struct BusinessBuildComponent {
     ui32 mPriority;
+    BuildingBlueprint* mCurrentBlueprint;
 };
 
 // Produce

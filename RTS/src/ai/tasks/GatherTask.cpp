@@ -130,16 +130,15 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
             for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
-                const ItemDropDef& dropDef = tileData.itemDrops[i];
+                const ItemDrop& drop = tileData.itemDrops[i];
                 ItemStack stack;
-                if (dropDef.countRange.y <= dropDef.countRange.x) {
-                    stack.quantity = dropDef.countRange.y;
+                if (drop.countRange.y <= drop.countRange.x) {
+                    stack.quantity = drop.countRange.y;
                 }
                 else {
-                    stack.quantity = Random::getCachedRandom() % (dropDef.countRange.y - dropDef.countRange.x) + dropDef.countRange.x;
+                    stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
                 }
-                // TODO: More efficient lookup
-                stack.id = Services::ResourceManager::ref().getItemRepository().getItem(dropDef.itemName).getID();
+                stack.id = drop.id;
                 invCmp.addOrDropItemStackToWorkingStorage(stack, enum_cast(WorkStorageID::HAULING));
             }
         }

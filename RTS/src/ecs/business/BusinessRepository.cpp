@@ -118,6 +118,7 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
     }
     if (def.mBuild.mPriority != PRIORITY_NO_COMPONENT) {
         auto&& cmp = registry.emplace<BusinessBuildComponent>(newEntity);
+        cmp.mCurrentBlueprint = nullptr;
     }
     if (def.mProduce.mPriority != PRIORITY_NO_COMPONENT) {
         registry.emplace<BusinessProduceComponent>(newEntity);

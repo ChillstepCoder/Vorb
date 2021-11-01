@@ -3,6 +3,7 @@
 #include "CityBuilder.h"
 #include "City.h"
 #include "CityPlanner.h"
+#include "BuildingBlueprint.h"
 
 #include "World.h"
 #include "world/TileRepository.h"
@@ -20,9 +21,10 @@ CityBuilder::CityBuilder(City& city, World& world)
 void CityBuilder::update()
 {
     // Grab new plans
-    if (mInProgressBlueprints.empty()) {
+    if (mWaitingBlueprints.empty()) {
         if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
-            mInProgressBlueprints.emplace_back(std::move(bp));
+            //mWaitingBlueprints.push_front(std::move(bp));
+            debugBuildInstant(*bp);
         }
     }
 
@@ -31,35 +33,49 @@ void CityBuilder::update()
         debugBuildInstant(mRoadsToBuild.back());
         mRoadsToBuild.pop_back();
     }
+}
 
+BuildingBlueprint* CityBuilder::aquireBlueprintToBuild(entt::entity businessId) {
+    // TODO: Priority?
+    if (mWaitingBlueprints.empty()) {
+        return nullptr;
+    }
+    mInProgressBlueprints.emplace_back(std::make_pair(std::move(mWaitingBlueprints.front()), businessId));
+    mWaitingBlueprints.pop_front();
+    return mInProgressBlueprints.back().first.get();
+}
+
+void CityBuilder::onBlueprintComplete(BuildingBlueprint* bp)
+{
+    for (size_t i = 0; i < mInProgressBlueprints.size(); ++i) {
+        if (mInProgressBlueprints[i].first.get() == bp) {
+            mInProgressBlueprints[i] = std::move(mInProgressBlueprints.back());
+            mInProgressBlueprints.pop_back();
+            return;
+        }
+    }
+    assert(false); // Failed to find blueprint
 }
 
 void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
-    static TileID wallId = TileRepository::getTile("rock1");
-    static TileID bricksId = TileRepository::getTile("bricks1");
-    static TileID doorId = TileRepository::getTile("door");
 
     ui32v2 worldPos = bp.bottomLeftWorldPos;
 
-    static TileID BUILD_TILES[(int)BlueprintTileType::TYPES] = {
-        TILE_ID_NONE,// NONE
-        bricksId,// FLOOR
-        doorId,// DOOR
-        wallId,// WALL
-    };
+   
     static int BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
         0, // NONE
         0, // FLOOR
         0, // DOOR
         2, // WALL
     };
+    static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
 
     for (int y = 0; y < bp.dims.y; ++y) {
         for (int x = 0; x < bp.dims.x; ++x) {
             const int index = y * bp.dims.x + x;
             const BlueprintTileType type = bp.tiles[index].type;
-            const TileID tile = BUILD_TILES[enum_cast(type)];
+            const TileID tile = bp.tileIDs[enum_cast(type)];
             if (tile != TILE_ID_NONE) {
                 const int height = BUILD_HEIGHTS[enum_cast(type)];
                 mWorld.setTileAt(worldPos + ui32v2(x, y), Tile(tile, TILE_ID_NONE, TILE_ID_NONE, height));

@@ -152,6 +152,7 @@
     <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\character\CharacterModelRepository.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
+    <ClCompile Include="src\city\BuildingBlueprint.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\city\BuildingDescriptionRepository.cpp" />
     <ClCompile Include="src\city\City.cpp" />

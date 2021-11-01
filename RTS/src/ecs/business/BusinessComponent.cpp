@@ -2,6 +2,8 @@
 #include "BusinessComponent.h"
 
 #include "city/City.h"
+#include "city/CityBuilder.h"
+#include "city/BuildingBlueprint.h"
 
 #include "world/TileScanner.h"
 
@@ -83,10 +85,17 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
     }
 }
 
-void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, BusinessComponent& businessCmp) {
+void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, BusinessComponent& businessCmp, entt::entity entity) {
     // Gathering currently requires a city
     assert(businessCmp.mCity);
 
+    if (!buildCmp.mCurrentBlueprint) {
+        buildCmp.mCurrentBlueprint = businessCmp.mCity->getCityBuilder().aquireBlueprintToBuild(entity);
+        if (!buildCmp.mCurrentBlueprint) {
+            return;
+        }
+        // Generate all tasks
+    }
 
     // Update gather tasks
     TaskList& buildList = businessCmp.mTasksToDo[TASK_PRIORITY_BUILD];
@@ -106,7 +115,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
 
     BusinessBuildComponent* buildCmp = registry.try_get<BusinessBuildComponent>(entity);
     if (buildCmp) {
-        updateBuildComponent(world, *buildCmp, cmp);
+        updateBuildComponent(world, *buildCmp, cmp, entity);
     }
 
     BusinessRetailComponent* retailCmp = registry.try_get<BusinessRetailComponent>(entity);

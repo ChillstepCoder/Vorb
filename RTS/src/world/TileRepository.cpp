@@ -2,7 +2,7 @@
 #include "TileRepository.h"
 
 std::unordered_map<std::string, TileID> TileRepository::sTileIdMapping;
-std::unordered_map<TileID, TileData> TileRepository::sTileData;
+std::vector<TileData> TileRepository::sTileData;
 
 KEG_TYPE_DEF_SAME_NAME(TileData, kt) {
     kt.addValue("name", keg::Value::basic(offsetof(TileData, name), keg::BasicType::STRING));
@@ -16,5 +16,6 @@ KEG_TYPE_DEF_SAME_NAME(TileData, kt) {
     kt.addValue("root", keg::Value::basic(offsetof(TileData, rootPos), keg::BasicType::UI8));
     kt.addValue("shape", keg::Value::custom(offsetof(TileData, shape), "TileShape", true));
     kt.addValue("resource", keg::Value::custom(offsetof(TileData, resource), "TileResource", true));
-    kt.addValue("drops", keg::Value::array(offsetof(TileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
+    kt.addValue("drops", keg::Value::array(offsetof(TileData, itemDropsFileData), keg::Value::custom(0, "ItemDropDef", false)));
+    kt.addValue("recipe", keg::Value::array(offsetof(TileData, recipeFileData), keg::Value::custom(0, "ItemInputDef", false)));
 }

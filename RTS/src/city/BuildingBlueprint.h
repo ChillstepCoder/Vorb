@@ -4,7 +4,7 @@
 
 enum class BlueprintTileType : ui8 {
     NONE = 0, // THIS SHOULD ALWAYS BE 0
-    FLOOR = 1, // THIS SHOULD ALWAYS BE 1
+    FLOOR_1 = 1, // THIS SHOULD ALWAYS BE 1
     DOOR,
     WALL,
     TYPES
@@ -32,6 +32,8 @@ struct BuildingBlueprint {
     std::vector<RoomNode> nodes;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
+
+    TileID tileIDs[enum_cast(BlueprintTileType::TYPES)];
 
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
     bool isGenerating = true;

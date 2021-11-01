@@ -10,7 +10,7 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-constexpr float BASE_SPEED = 0.3;
+constexpr float BASE_SPEED = 0.3f;
 constexpr float ACCELERATION = 0.05f;
 
 constexpr float ATTACK_RADIUS = 5.0f;
@@ -23,11 +23,11 @@ constexpr float JUMP_VELOCITY = 0.15f;
 //	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
 //}
 
-const f32v2 MOVEMENT_AXIS[4]{
-	f32v2(AXIS_X, AXIS_Y), // Cartesian::DOWN
-	f32v2(AXIS_Y, AXIS_X), // Cartesian::LEFT
-	f32v2(AXIS_Y, AXIS_X), // Cartesian::RIGHT
-	f32v2(AXIS_X, AXIS_Y), // Cartesian::UP
+const i32v2 MOVEMENT_AXIS[4]{
+	i32v2(AXIS_X, AXIS_Y), // Cartesian::DOWN
+	i32v2(AXIS_Y, AXIS_X), // Cartesian::LEFT
+	i32v2(AXIS_Y, AXIS_X), // Cartesian::RIGHT
+	i32v2(AXIS_X, AXIS_Y), // Cartesian::UP
 };
 const f32v2 MOVEMENT_SIGNS[4]{
 	f32v2(-1.0f, -1.0f), // Cartesian::DOWN
@@ -39,7 +39,7 @@ const f32v2 MOVEMENT_SIGNS[4]{
 f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
 	f32v2 moveDir(0.0f);
 	int cartesianIndex = enum_cast(clientData.worldLookCardinalDirection);
-	const f32v2 axis = MOVEMENT_AXIS[cartesianIndex];
+	const i32v2& axis = MOVEMENT_AXIS[cartesianIndex];
 	// Movement
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
 		moveDir[axis.y] = MOVEMENT_SIGNS[cartesianIndex][0];
