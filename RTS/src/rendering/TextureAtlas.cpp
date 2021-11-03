@@ -19,7 +19,7 @@ TextureAtlas::~TextureAtlas()
     glDeleteTextures(1, &mAtlasTexture);
 }
 
-f32v4 TextureAtlas::writePixels(unsigned cellIndex, unsigned cellsX, unsigned cellsY, const color4* srcPixels, unsigned srcWidthPx) {
+f32v4 TextureAtlas::writePixels(ui32 cellIndex, ui32 cellsX, ui32 cellsY, const color4* srcPixels, ui32 srcResourceWidthPx, ui32 srcRectWidthPx, ui32 srcRectHeightPx) {
     f32v4 uvRect;
     const ui32v2 coords = getPageCoordsFromCellIndex(cellIndex);
     const unsigned pageIndex = getPageIndexFromCellIndex(cellIndex);
@@ -28,24 +28,24 @@ f32v4 TextureAtlas::writePixels(unsigned cellIndex, unsigned cellsX, unsigned ce
         addPage();
     }
 
-    assert(cellsX < TEXTURE_ATLAS_CELLS_PER_ROW && cellsY < TEXTURE_ATLAS_CELLS_PER_ROW);
+    assert(cellsX <= TEXTURE_ATLAS_CELLS_PER_ROW && cellsY <= TEXTURE_ATLAS_CELLS_PER_ROW);
 
     auto& dstPixels = mPages[pageIndex].pixels;
 
     // Copy each row to the atlas
-    for (unsigned pxY = 0; pxY < TEXTURE_ATLAS_CELL_WIDTH_PX * cellsY; ++pxY) {
+    for (unsigned pxY = 0; pxY < srcRectHeightPx; ++pxY) {
         const unsigned dstY = (coords.y * TEXTURE_ATLAS_CELL_WIDTH_PX + pxY);
         memcpy(
             &dstPixels[dstY * TEXTURE_ATLAS_WIDTH_PX + (unsigned)coords.x * TEXTURE_ATLAS_CELL_WIDTH_PX],
-            &srcPixels[pxY * srcWidthPx],
-            sizeof(color4) * TEXTURE_ATLAS_CELL_WIDTH_PX * cellsX
+            &srcPixels[pxY * srcResourceWidthPx],
+            sizeof(color4) * srcRectWidthPx
         );
     }
 
     uvRect.x = (float)coords.x / TEXTURE_ATLAS_CELLS_PER_ROW;
     uvRect.y = (float)coords.y / TEXTURE_ATLAS_CELLS_PER_ROW;
-    uvRect.z = (float)cellsX / TEXTURE_ATLAS_CELLS_PER_ROW;
-    uvRect.w = (float)cellsY / TEXTURE_ATLAS_CELLS_PER_ROW;
+    uvRect.z = (float)srcRectWidthPx / TEXTURE_ATLAS_WIDTH_PX;
+    uvRect.w = (float)srcRectHeightPx / TEXTURE_ATLAS_WIDTH_PX;
 
     mPages[pageIndex].dirty = true;
     return uvRect;
@@ -120,8 +120,8 @@ void TextureAtlas::allocateTexture() {
     // Set up tex parameters
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, (int)MIP_LEVELS);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LOD, (int)MIP_LEVELS);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);

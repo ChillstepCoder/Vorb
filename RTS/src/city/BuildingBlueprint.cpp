@@ -16,7 +16,7 @@ BuildingBlueprint::BuildingBlueprint(
     tileIDs[enum_cast(BlueprintTileType::NONE)] = 0;
     tileIDs[enum_cast(BlueprintTileType::FLOOR_1)] = TileRepository::getTile("bricks1");
     tileIDs[enum_cast(BlueprintTileType::DOOR)] = TileRepository::getTile("door");
-    tileIDs[enum_cast(BlueprintTileType::WALL)] = TileRepository::getTile("rock1");
+    tileIDs[enum_cast(BlueprintTileType::WALL)] = TileRepository::getTile("wood_wall_gothic");
     static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
 
 }

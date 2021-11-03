@@ -5,8 +5,12 @@
 #include "CityConst.h"
 #include "city/BuildingGrammar.h"
 #include "item/ItemTradeManager.h"
+#include "util/BitArray.h"
 
 #include "city/CityPlot.h"
+
+// TODO: Specific for roofs?
+#include "rendering/QuadMesh.h"
 
 // TODO: Move to data?
 enum class BuildingFunction : ui16 {
@@ -24,18 +28,26 @@ struct RoomDescription {
     f32 desiredAspectRatio; // Width / Height
 };
 
+struct BuildingRenderData {
+    QuadMesh mRoofMesh;
+    bool mRoofMeshDirty = false;
+};
+
 // TODO: Can we optimize passing this around so theres no copies?
 class Building {
 public:
     // Building bounds are a series of corner segments
-    ui32v2 mBottomLeftWorldPos;
+    ui32AABB2 mAABB;
     std::vector<RoomNode> mGraph;
+    BitArray mOwnedTilesInAABB;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;
 
     // Entity defining the function of our building, may also own other buildings
     entt::entity mBusinessEntity = INVALID_ENTITY;
+
+    mutable BuildingRenderData mRenderData;
 
     // TODO: Move to Business?
     //ItemTradeManager mTradeManager; // TODO: This is a large copy and we pass building by value

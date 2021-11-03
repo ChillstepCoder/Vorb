@@ -44,6 +44,7 @@ enum ExposedNeighborBits {
 };
 
 const f32v2 CONNECTED_WALL_DIMS = f32v2(6.0f, 5.0f);
+const f32v2 VERTICAL_WALL_DIMS = f32v2(1.0f, 3.0f);
 
 inline bool isBitSet(int v, ExposedNeighborBits bit) {
     return v & bit;
@@ -110,6 +111,13 @@ f32v2 getUvsOffsetsFromConnectedWallIndex(int index) {
     f32v2 rv;
     rv.x = float(index % (int)CONNECTED_WALL_DIMS.x);
     rv.y = float(index / (int)CONNECTED_WALL_DIMS.x);
+    return rv;
+}
+
+f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
+    f32v2 rv;
+    rv.x = float(index % (int)VERTICAL_WALL_DIMS.x);
+    rv.y = VERTICAL_WALL_DIMS.y - float(index / (int)VERTICAL_WALL_DIMS.x) - 1;
     return rv;
 }
 
@@ -322,8 +330,337 @@ void addTileFlora(
     }
 }
 
+void addTileFloraBillboard(
+    BillboardMesh& billboardMesh,
+    const Chunk& chunk,
+    const TileIndex& tileIndex,
+    int layerIndex,
+    const TileData& tileData,
+    const SpriteData& spriteData,
+    const Tile& rightTile,
+    const Tile& topTile
+) {
+    const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
+    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
+    const TileID tileId = tile.layers[layerIndex];
+
+    const f32v2 tileWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+
+    /*Tile neighbors[8];
+    chunk.getTileNeighbors(tileIndex, neighbors);
+
+    const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+    const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+    const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
+
+    const int x = tileIndex.getX();
+    const int y = tileIndex.getY();
+    // Allow overlap when adjacent tiles are the same
+    const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    ui32 rnd = Random::getThreadSafe(x, y);
+    // TODO: Allow grass overlap if right and upper neighbors are same tile + height
+    for (int i = 0; i < 5; ++i) {
+        const float width = vmath::lerp(0.3f, 0.6f, Random::getCachedRandomfSpecific(rnd));
+        const float xOffset = Random::getCachedRandomfSpecific(rnd + 1) * (1.0f - width * rightXMult);
+        const float yOffset = Random::getCachedRandomfSpecific(rnd + 2) * (1.0f - width * topXMult);
+
+        // Handle variant UVs
+        const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
+        ui32 variantIndex = (rnd + 15992) % variantCount;
+        ui32 variantY = variantIndex / spriteData.variantCount.y;
+        ui32 variantX = variantIndex % spriteData.variantCount.y;
+
+        f32v4 uvs = spriteData.uvs;
+        uvs.x += variantX * spriteData.uvs.z;
+        uvs.y += variantY * spriteData.uvs.w;
+
+        billboardMesh.addQuad(
+            f32v3(tileWorldPos.x + xOffset, tileWorldPos.y + yOffset, tile.baseZPosition),
+            spriteData.dimsMeters,
+            f32v2(0.0f),
+            spriteData.atlasPage,
+            spriteData.uvs,
+            COLOR_WHITE,
+            (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP),
+            255u
+        );
+        rnd += i * 73; // Add random prime
+    }
+}
+
+void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, QuadMesh& quadMesh, f32v3 tilePosition, const SpriteData& spriteData) {
+    const bool shouldRandFlip = spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP;
+    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
+    const TileID tileId = tile.layers[layerIndex];
+
+    const f32v2 xyWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+    const f32v3 tileWorldPos(xyWorldPos.x, xyWorldPos.y, tile.baseZPosition);
+
+    Tile neighbors[8];
+    chunk.getTileNeighbors(tileIndex, neighbors);
+
+    unsigned exposedBits = 0;
+    for (int i = 0; i < 8; ++i) {
+        const Tile& neighbor = neighbors[i];
+        // If neighbor is different tile, or is lower than us, we are exposed to this neighbor
+        // TODO: Better occlusion of solid blocks?
+        if (neighbor.layers[layerIndex] != tileId || neighbor.baseZPosition < tile.baseZPosition) {
+            exposedBits |= (1 << i);
+        }
+    }
+    const ConnectedWallData& data = sConnectedWallData[exposedBits];
+    if (data.data == 0) {
+        // We are fully surrounded, just render top
+        quadMesh.addAxisAlignedQuad(
+            tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+            spriteData.dimsMeters,
+            spriteData.offset,
+            QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+            spriteData.atlasPage,
+            spriteData.uvs,
+            COLOR_WHITE,
+            shouldRandFlip
+        );
+    }
+    else {
+        // Render top
+        // Check if we need to render the base layer first
+        if (data.a < 0x10) {
+            quadMesh.addAxisAlignedQuad(
+                tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                spriteData.dimsMeters,
+                spriteData.offset,
+                QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                spriteData.atlasPage,
+                spriteData.uvs,
+                COLOR_WHITE,
+                shouldRandFlip
+            );
+        }
+        // Render up to 4 textures depending on configuration
+        f32v3 tilePosRoof = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)];
+        for (int i = 0; i < 4; ++i) {
+            const ui16 textureIndex = data.dataArray[i];
+            if (textureIndex == 0) break;
+
+            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(textureIndex);
+            f32v4 uvs = spriteData.uvs;
+            uvs.x += offsets.x * uvs.z;
+            uvs.y += offsets.y * uvs.w;
+            tilePosRoof.z += 0.005f;
+
+            quadMesh.addAxisAlignedQuad(
+                tilePosRoof,
+                spriteData.dimsMeters,
+                spriteData.offset,
+                QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                spriteData.atlasPage,
+                uvs,
+                COLOR_WHITE,
+                shouldRandFlip
+            );
+        }
+
+        // Get height offsets to adjacent tiles
+        const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+        int heightDiffs[4];
+        heightDiffs[0] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+        heightDiffs[1] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::LEFT], layerIndex);
+        heightDiffs[2] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::RIGHT], layerIndex);
+        heightDiffs[3] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);
+
+        for (int c = 0; c < 4; ++c) {
+            ExposedNeighborBits cardinal = EXPOSED_NEIGHBOR_CARDINAL[c];
+            const ExposedNeighborBits* adjacents = EXPOSED_NEIGHBOR_ADJACENTS[c];
+            QuadFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
+            // Render exposed cardinal wall if needed
+            if (isBitSet(exposedBits, cardinal)) {
+                const f32v3 quadPos = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
+                // Simple 2 bit LUT that converts cardinals to 1 or 2
+                const unsigned sideCheck = ((exposedBits & adjacents[0]) > 0) | (((exposedBits & adjacents[1]) > 0) << 1);
+                const ui16 val = sExposedWallLookup[sideCheck];
+
+                const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                f32v4 uvs = spriteData.uvs;
+                uvs.x += offsets.x * uvs.z;
+                uvs.y += offsets.y * uvs.w;
+                quadMesh.addAxisAlignedQuad(
+                    quadPos,
+                    spriteData.dimsMeters,
+                    spriteData.offset,
+                    QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                    spriteData.atlasPage,
+                    uvs,
+                    COLOR_WHITE,
+                    shouldRandFlip
+                );
+
+                // See if we need to add additional "tower" quads if we are exposed deeper on the bottom
+                for (int i = 1; i < heightDiffs[c]; ++i) {
+                    unsigned sideCheck = 0;
+                    const NeighborIndex* adjacents = EXPOSED_NEIGHBOR_ADJACENT_INDICES[c];
+                    const Tile& leftNeighbor = neighbors[(int)adjacents[0]];
+                    const Tile& rightNeighbor = neighbors[(int)adjacents[1]];
+                    int adjustedZPosition = tile.baseZPosition - i;
+                    if (leftNeighbor.baseZPosition < adjustedZPosition || leftNeighbor.layers[layerIndex] != tileId) {
+                        sideCheck |= 1;
+                    }
+                    if (rightNeighbor.baseZPosition < adjustedZPosition || rightNeighbor.layers[layerIndex] != tileId) {
+                        sideCheck |= 2;
+                    }
+                    // New exposure check for left and right on towers
+                    const ui16 val = sExposedWallLookup[sideCheck];
+                    if (val == 0) {
+                        continue;
+                    }
+
+                    const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
+                    f32v4 uvs = spriteData.uvs;
+                    uvs.x += offsets.x * uvs.z;
+                    // + 1 for the tall wall variants
+                    uvs.y += (offsets.y + 1) * uvs.w;
+                    // TODO: this resize here...
+
+                    // TODO: Stretched quads?
+                    quadMesh.addAxisAlignedQuad(
+                        f32v3(quadPos.x, quadPos.y, quadPos.z - i),
+                        spriteData.dimsMeters,
+                        spriteData.offset,
+                        QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                        spriteData.atlasPage,
+                        uvs,
+                        COLOR_WHITE,
+                        shouldRandFlip
+                    );
+                }
+            }
+        }
+    }
+}
+
+void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, QuadMesh& quadMesh, f32v3 tilePosition, const SpriteData& spriteData) {
+    const bool shouldRandFlip = spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP;
+    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
+    const TileID tileId = tile.layers[layerIndex];
+
+    const f32v2 xyWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+    const f32v3 tileWorldPos(xyWorldPos.x, xyWorldPos.y, tile.baseZPosition);
+
+    Tile neighbors[8];
+    chunk.getTileNeighbors(tileIndex, neighbors);
+
+    unsigned exposedBits = 0;
+    for (int i = 0; i < 8; ++i) {
+        const Tile& neighbor = neighbors[i];
+        // If neighbor is different tile, or is lower than us, we are exposed to this neighbor
+        // TODO: Better occlusion of solid blocks?
+        if (neighbor.layers[layerIndex] != tileId || neighbor.baseZPosition < tile.baseZPosition) {
+            exposedBits |= (1 << i);
+        }
+    }
+    const ConnectedWallData& data = sConnectedWallData[exposedBits];
+    if (data.data == 0) {
+        // We are fully surrounded, just render top
+        quadMesh.addAxisAlignedQuad(
+            tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+            spriteData.dimsMeters,
+            spriteData.offset,
+            QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+            spriteData.atlasPage,
+            spriteData.uvs,
+            COLOR_WHITE,
+            shouldRandFlip
+        );
+    }
+    else {
+        // Render top
+        quadMesh.addAxisAlignedQuad(
+            tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+            spriteData.dimsMeters,
+            spriteData.offset,
+            QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+            spriteData.atlasPage,
+            spriteData.uvs,
+            COLOR_WHITE,
+            shouldRandFlip
+        );
+
+        // Get height offsets to adjacent tiles
+        const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+        int heightDiffs[4];
+        heightDiffs[0] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+        heightDiffs[1] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::LEFT], layerIndex);
+        heightDiffs[2] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::RIGHT], layerIndex);
+        heightDiffs[3] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);
+
+        for (int c = 0; c < 4; ++c) {
+            ExposedNeighborBits cardinal = EXPOSED_NEIGHBOR_CARDINAL[c];
+            const ExposedNeighborBits* adjacents = EXPOSED_NEIGHBOR_ADJACENTS[c];
+            QuadFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
+            // Render exposed cardinal wall if needed
+            if (isBitSet(exposedBits, cardinal)) {
+                const f32v3 quadPos = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
+                // Simple 2 bit LUT that converts cardinals to 1 or 2
+                const unsigned sideCheck = ((exposedBits & adjacents[0]) > 0) | (((exposedBits & adjacents[1]) > 0) << 1);
+                const ui16 val = 2;
+
+                const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(val);
+                f32v4 uvs = spriteData.uvs;
+                uvs.x += offsets.x * uvs.z;
+                uvs.y += offsets.y * uvs.w;
+                quadMesh.addAxisAlignedQuad(
+                    quadPos,
+                    spriteData.dimsMeters,
+                    spriteData.offset,
+                    QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                    spriteData.atlasPage,
+                    uvs,
+                    COLOR_WHITE,
+                    shouldRandFlip
+                );
+
+                // See if we need to add additional "tower" quads if we are exposed deeper on the bottom
+                for (int i = 1; i < heightDiffs[c]; ++i) {
+                    unsigned sideCheck = 0;
+                    const NeighborIndex* adjacents = EXPOSED_NEIGHBOR_ADJACENT_INDICES[c];
+                    const Tile& leftNeighbor = neighbors[(int)adjacents[0]];
+                    const Tile& rightNeighbor = neighbors[(int)adjacents[1]];
+                    int adjustedZPosition = tile.baseZPosition - i;
+                    if (leftNeighbor.baseZPosition < adjustedZPosition || leftNeighbor.layers[layerIndex] != tileId) {
+                        sideCheck |= 1;
+                    }
+                    if (rightNeighbor.baseZPosition < adjustedZPosition || rightNeighbor.layers[layerIndex] != tileId) {
+                        sideCheck |= 2;
+                    }
+                    // New exposure check for left and right on towers
+                    const ui16 val = glm::max(2 - i, 0);
+
+                    const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(val);
+                    f32v4 uvs = spriteData.uvs;
+                    uvs.x += offsets.x * uvs.z;
+                    // + 1 for the tall wall variants
+                    uvs.y += offsets.y * uvs.w;
+                    // TODO: this resize here...
+
+                    // TODO: Stretched quads?
+                    quadMesh.addAxisAlignedQuad(
+                        f32v3(quadPos.x, quadPos.y, quadPos.z - i),
+                        spriteData.dimsMeters,
+                        spriteData.offset,
+                        QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                        spriteData.atlasPage,
+                        uvs,
+                        COLOR_WHITE,
+                        shouldRandFlip
+                    );
+                }
+            }
+        }
+    }
+}
+
 void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const SpriteData& spriteData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
-    bool shouldRandFlip = spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP;
     switch (spriteData.method) {
         case TileTextureMethod::SIMPLE: {
             // TODO: This shouldn't have to be hard coded to floor
@@ -337,159 +674,33 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
                     spriteData.atlasPage,
                     spriteData.uvs,
                     COLOR_WHITE,
-                    shouldRandFlip
+                    spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP
                 );
             }
             static_assert(enum_cast(TileShape::COUNT) == 2);
             break;
         }
         case TileTextureMethod::CONNECTED_WALL: {
-            const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-            const TileID tileId = tile.layers[layerIndex];
-
-            const f32v2 xyWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
-            const f32v3 tileWorldPos(xyWorldPos.x, xyWorldPos.y, tile.baseZPosition);
-
-            Tile neighbors[8];
-            chunk.getTileNeighbors(tileIndex, neighbors);
-
-            unsigned exposedBits = 0;
-            for (int i = 0; i < 8; ++i) {
-                const Tile& neighbor = neighbors[i];
-                // If neighbor is different tile, or is lower than us, we are exposed to this neighbor
-                // TODO: Better occlusion of solid blocks?
-                if (neighbor.layers[layerIndex] != tileId || neighbor.baseZPosition < tile.baseZPosition) {
-                    exposedBits |= (1 << i);
-                }
-            }
-            const ConnectedWallData& data = sConnectedWallData[exposedBits];
-            if (data.data == 0) {
-                // We are fully surrounded, just render top
-                quadMesh.addAxisAlignedQuad(
-                    tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
-                    spriteData.dimsMeters,
-                    spriteData.offset,
-                    QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
-                    spriteData.atlasPage,
-                    spriteData.uvs,
-                    COLOR_WHITE,
-                    shouldRandFlip
-                );
-            }
-            else {
-                // Render top
-                // Check if we need to render the base layer first
-                if (data.a < 0x10) {
-                    quadMesh.addAxisAlignedQuad(
-                        tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
-                        spriteData.dimsMeters,
-                        spriteData.offset,
-                        QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
-                        spriteData.atlasPage,
-                        spriteData.uvs,
-                        COLOR_WHITE,
-                        shouldRandFlip
-                    );
-                }
-                // Render up to 4 textures depending on configuration
-                f32v3 tilePosRoof = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)];
-                for (int i = 0; i < 4; ++i) {
-                    const ui16 textureIndex = data.dataArray[i];
-                    if (textureIndex == 0) break;
-
-                    const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(textureIndex);
-                    f32v4 uvs = spriteData.uvs;
-                    uvs.x += offsets.x * uvs.z;
-                    uvs.y += offsets.y * uvs.w;
-                    tilePosRoof.z += 0.005f;
-
-                    quadMesh.addAxisAlignedQuad(
-                        tilePosRoof,
-                        spriteData.dimsMeters,
-                        spriteData.offset,
-                        QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
-                        spriteData.atlasPage,
-                        uvs,
-                        COLOR_WHITE,
-                        shouldRandFlip
-                    );
-                }
-
-                // Get height offsets to adjacent tiles
-                const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
-                int heightDiffs[4];
-                heightDiffs[0] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
-                heightDiffs[1] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::LEFT], layerIndex);
-                heightDiffs[2] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::RIGHT], layerIndex);
-                heightDiffs[3] = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);
-
-                for (int c = 0; c < 4; ++c) {
-                    ExposedNeighborBits cardinal = EXPOSED_NEIGHBOR_CARDINAL[c];
-                    const ExposedNeighborBits* adjacents = EXPOSED_NEIGHBOR_ADJACENTS[c];
-                    QuadFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
-                    // Render exposed cardinal wall if needed
-                    if (isBitSet(exposedBits, cardinal)) {
-                        const f32v3 quadPos = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
-                        // Simple 2 bit LUT that converts cardinals to 1 or 2
-                        const unsigned sideCheck = ((exposedBits & adjacents[0]) > 0) | (((exposedBits & adjacents[1]) > 0) << 1);
-                        const ui16 val = sExposedWallLookup[sideCheck];
-
-                        const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-                        f32v4 uvs = spriteData.uvs;
-                        uvs.x += offsets.x * uvs.z;
-                        uvs.y += offsets.y * uvs.w;
-                        quadMesh.addAxisAlignedQuad(
-                            quadPos,
-                            spriteData.dimsMeters,
-                            spriteData.offset,
-                            QUAD_FACING_AXIS[enum_cast(quadFacing)],
-                            spriteData.atlasPage,
-                            uvs,
-                            COLOR_WHITE,
-                            shouldRandFlip
-                        );
-
-                        // See if we need to add additional "tower" quads if we are exposed deeper on the bottom
-                        for (int i = 1; i < heightDiffs[c]; ++i) {
-                            unsigned sideCheck = 0;
-                            const NeighborIndex* adjacents = EXPOSED_NEIGHBOR_ADJACENT_INDICES[c];
-                            const Tile& leftNeighbor = neighbors[(int)adjacents[0]];
-                            const Tile& rightNeighbor = neighbors[(int)adjacents[1]];
-                            int adjustedZPosition = tile.baseZPosition - i;
-                            if (leftNeighbor.baseZPosition < adjustedZPosition || leftNeighbor.layers[layerIndex] != tileId) {
-                                sideCheck |= 1;
-                            }
-                            if (rightNeighbor.baseZPosition < adjustedZPosition || rightNeighbor.layers[layerIndex] != tileId) {
-                                sideCheck |= 2;
-                            }
-                            // New exposure check for left and right on towers
-                            const ui16 val = sExposedWallLookup[sideCheck];
-                            if (val == 0) {
-                                continue;
-                            }
-
-                            const f32v2 offsets = getUvsOffsetsFromConnectedWallIndex(val);
-                            f32v4 uvs = spriteData.uvs;
-                            uvs.x += offsets.x * uvs.z;
-                            // + 1 for the tall wall variants
-                            uvs.y += (offsets.y + 1) * uvs.w;
-                            // TODO: this resize here...
-
-                            // TODO: Stretched quads?
-                            quadMesh.addAxisAlignedQuad(
-                                f32v3(quadPos.x, quadPos.y, quadPos.z - i),
-                                spriteData.dimsMeters,
-                                spriteData.offset,
-                                QUAD_FACING_AXIS[enum_cast(quadFacing)],
-                                spriteData.atlasPage,
-                                uvs,
-                                COLOR_WHITE,
-                                shouldRandFlip
-                            );
-                        }
-                    }
-                }
-            }
+            addBlockConnectedWall(chunk, tileIndex, layerIndex, quadMesh, tilePosition, spriteData);
+            break;
+        }
+        case TileTextureMethod::VERTICAL: {
+            addBlockVertical(chunk, tileIndex, layerIndex, quadMesh, tilePosition, spriteData);
+            break;
+        }
+        case TileTextureMethod::WORLD_TILING: {
+            int xOff = (ui32)tilePosition.x % 8;
+            int yOff = 7 - (ui32)tilePosition.y % 8;
+            quadMesh.addAxisAlignedQuad(
+                tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                spriteData.dimsMeters,
+                spriteData.offset,
+                QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                spriteData.atlasPage,
+                spriteData.uvs + f32v4(xOff / 8.0f, yOff / 8.0f, 0.0f, 0.0f),
+                COLOR_WHITE,
+                spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP
+            );
             break;
         }
         case TileTextureMethod::FLORA: {
@@ -497,6 +708,7 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
             break;
         }
     }
+    static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
 
@@ -545,11 +757,6 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     const TileData& tileData = TileRepository::getTileData(layerTile);
                     const SpriteData& spriteData = tileData.spriteData;
 
-                    if (spriteData.method == TileTextureMethod::FLORA) {
-                        // FLORA IS DONE IN SEPARATE PASS
-                        continue;
-                    }
-
                     if (spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
                         // Set LOD pixel
                         // TODO: expand trees
@@ -561,10 +768,18 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     // Flora mesh ONLY
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
-                        f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
-                        billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u);
+                        if (spriteData.method == TileTextureMethod::FLORA) {
+                            f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
+                            Tile rightTile = chunk.getRightTileHandle(index).tile;
+                            Tile topTile = chunk.getTopTileHandle(index).tile;
+                            addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
+                        }
+                        else {
+                            f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
+                            billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u);
+                        }
                     }
-                    else {
+                    else if (spriteData.method != TileTextureMethod::FLORA) { // CROSS FLORA IS DONE IN SEPARATE PASS
                         // Standard blocks
                         addBlock(quadMesh, tileData.shape, f32v3(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition), spriteData, index, chunk, layerIndex);
                     }
@@ -682,7 +897,8 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
                     const SpriteData& spriteData = tileData.spriteData;
                     // TODO: Baked AO using a gradient texture instead of vertex colors
                     // Flora mesh ONLY
-                    if (spriteData.method == TileTextureMethod::FLORA) {
+                    // Thin becomes billboard
+                    if (spriteData.method == TileTextureMethod::FLORA && tileData.shape != TileShape::THIN) {
                         Tile rightTile = chunk.getRightTileHandle(index).tile;
                         Tile topTile = chunk.getTopTileHandle(index).tile;
                     

@@ -10,7 +10,6 @@
 
 struct DisjointSetNode {
     ui32 id;
-    bool connectedToEdge;
 };
 
 NavGraph::NavGraph(World& world) : mWorld(world)
@@ -72,7 +71,7 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
                     // If we haven't been joined, make a new node
                     if (!assigned) {
                         djNodeIDs[djArryIndex] = totalSets;
-                        djNodes[totalSets] = { totalSets, false };
+                        djNodes[totalSets] = { totalSets };
                         ++totalSets;
                     }
                 }

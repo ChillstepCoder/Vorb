@@ -15,7 +15,7 @@ public:
     }
 
     f32v3 pos; // TOOD: ui16v3?
-    f32v2 uvs; //TODO: ui16v2?
+    f32v2 uvs; //TODO: ui16v2? (since its 4096x4096 ui16 will work per pixel)
     color4 color;
     ui16 atlasPage;
     i8v3 normal; // TODO: 3D test only

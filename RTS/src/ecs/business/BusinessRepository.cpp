@@ -83,7 +83,7 @@ void BusinessRepository::loadBusinessFile(const vio::Path& filePath)
         BusinessDef& def = *mBusinesses.emplace_back(std::make_unique<BusinessDef>());
         keg::parse((ui8*)&def, value, readContext, &KEG_GLOBAL_TYPE(BusinessDef));
 
-        def.mTypeId = mBusinesses.size() - 1;
+        def.mTypeId = (BusinessTypeID)(mBusinesses.size() - 1);
 
         // TODO: Check for mod conflicts
         mBusinessesFromName[key] = def.mTypeId;

@@ -202,6 +202,8 @@
     <ClCompile Include="src\physics\ContactListener.cpp" />
     <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
     <ClCompile Include="src\Random.cpp" />
+    <ClCompile Include="src\rendering\BuildingMesher.cpp" />
+    <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
@@ -229,6 +231,7 @@
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
+    <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
     <ClCompile Include="src\util\TileUtil.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
@@ -329,6 +332,8 @@
     <ClInclude Include="src\physics\ContactListener.h" />
     <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="src\Random.h" />
+    <ClInclude Include="src\rendering\BuildingMesher.h" />
+    <ClInclude Include="src\rendering\BuildingRenderer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
@@ -357,6 +362,7 @@
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
     <ClInclude Include="src\util\AABB.hpp" />
+    <ClInclude Include="src\util\BitArray.h" />
     <ClInclude Include="src\util\IntersectionHit.h" />
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />

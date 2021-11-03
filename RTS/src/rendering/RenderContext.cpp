@@ -105,6 +105,13 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
     mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(zCutoutAttachments, 1), vg::TextureInternalFormat::NONE);
     checkGlError("Z Cutout GBuffer Init");
+
+    int maxTextureSize;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
+    if (maxTextureSize < TEXTURE_ATLAS_WIDTH_PX) {
+        pError("GFX card does not support 4k textures :(");
+        assert(false);
+    }
 }
 
 RenderContext::~RenderContext() {

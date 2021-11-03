@@ -76,7 +76,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
             // Small Tree
             tile.topLayer = smallTree;
         }
-        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
+        if (abs(height) < 0.3 && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
             tile.midLayer = tallGrass;
         }
     }

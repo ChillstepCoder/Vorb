@@ -226,14 +226,18 @@ CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent,
             MAIN_ROAD_WIDTH, AXIS_VERTICAL);
     }
 
-    // For each new plot, split them into 4 smaller
+    // For each new plot, split them into 16 smaller
     {
-        const ui32 stop = (ui32)mPlots.size();
-        for (ui32 i = rootPlotIndex; i < stop; ++i) {
-            CityPlotIndex rightId = splitPlotAlongAxis(ui32v2(mPlots[i]->aabb.x + mPlots[i]->aabb.width / 2, 0), i, AXIS_VERTICAL, INVALID_ROAD_ID);
-            const ui32v2 horizontalSplit = ui32v2(0, mPlots[i]->aabb.y + mPlots[i]->aabb.height / 2);
-            splitPlotAlongAxis(horizontalSplit, i, AXIS_HORIZONTAL, INVALID_ROAD_ID);
-            splitPlotAlongAxis(horizontalSplit, rightId, AXIS_HORIZONTAL, INVALID_ROAD_ID);
+        // TODO: Splitting twice doesnt work cause roads
+        constexpr int NUM_SPLITS = 1;
+        for (int numSplits = 0; numSplits < NUM_SPLITS; ++numSplits) {
+            const ui32 stop = (ui32)mPlots.size();
+            for (ui32 i = rootPlotIndex; i < stop; ++i) {
+                CityPlotIndex rightId = splitPlotAlongAxis(ui32v2(mPlots[i]->aabb.x + mPlots[i]->aabb.width / 2, 0), i, AXIS_VERTICAL, INVALID_ROAD_ID);
+                const ui32v2 horizontalSplit = ui32v2(0, mPlots[i]->aabb.y + mPlots[i]->aabb.height / 2);
+                splitPlotAlongAxis(horizontalSplit, i, AXIS_HORIZONTAL, INVALID_ROAD_ID);
+                splitPlotAlongAxis(horizontalSplit, rightId, AXIS_HORIZONTAL, INVALID_ROAD_ID);
+            }
         }
     }
 

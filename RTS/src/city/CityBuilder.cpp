@@ -67,26 +67,34 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
         0, // NONE
         0, // FLOOR
         0, // DOOR
-        2, // WALL
+        3, // WALL
     };
     static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
 
-    for (int y = 0; y < bp.dims.y; ++y) {
-        for (int x = 0; x < bp.dims.x; ++x) {
-            const int index = y * bp.dims.x + x;
+    // Register with the city
+    Building newBuilding;
+    newBuilding.mAABB.pos = bp.bottomLeftWorldPos;
+    newBuilding.mAABB.dims = bp.dims;
+    newBuilding.mOwnedTilesInAABB.resizeAndZero(bp.dims.x * bp.dims.y);
+
+    // Set world tiles and track occupied bits
+    for (ui32 y = 0; y < bp.dims.y; ++y) {
+        for (ui32 x = 0; x < bp.dims.x; ++x) {
+            const ui32 index = y * bp.dims.x + x;
             const BlueprintTileType type = bp.tiles[index].type;
-            const TileID tile = bp.tileIDs[enum_cast(type)];
-            if (tile != TILE_ID_NONE) {
-                const int height = BUILD_HEIGHTS[enum_cast(type)];
-                mWorld.setTileAt(worldPos + ui32v2(x, y), Tile(tile, TILE_ID_NONE, TILE_ID_NONE, height));
+            if (type != BlueprintTileType::NONE) {
+                const TileID tile = bp.tileIDs[enum_cast(type)];
+                if (tile != TILE_ID_NONE) {
+                    const int height = BUILD_HEIGHTS[enum_cast(type)];
+                    // TODO: Always ground??
+                    newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
+                    mWorld.setTileAt(worldPos + ui32v2(x, y), Tile(tile, TILE_ID_NONE, TILE_ID_NONE, height, TILE_FLAG_IS_BUILDING));
+                }
             }
         }
     }
-
-    // Register with the city
-    Building newBuilding;
-    // TODO: This is an expensive copy
-    newBuilding.mGraph = bp.nodes;
+    
+    newBuilding.mGraph = std::move(bp.nodes);
     newBuilding.mFunction = bp.desc.function;
     newBuilding.mPlotIndex = bp.plotIndex;
     mCity.addCompletedBuilding(std::move(newBuilding));

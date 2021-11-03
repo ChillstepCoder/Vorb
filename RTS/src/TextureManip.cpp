@@ -107,12 +107,38 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                     }
                     break;
                 }
+                case TileTextureMethod::VERTICAL: {
+                    for (int y = 0; y < TILE_TEX_METHOD_VERTICAL_WALL_HEIGHT; ++y) {
+                        for (int x = 0; x < TILE_TEX_METHOD_VERTICAL_WALL_WIDTH; ++x) {
+                            glUniform4f(
+                                uvUniform,
+                                sprite->uvs.x + x * sprite->uvs.z,
+                                sprite->uvs.y + y * sprite->uvs.w,
+                                sprite->uvs.z,
+                                sprite->uvs.w
+                            );
+                            mQuadVbo.draw();
+                        }
+                    }
+                    break;
+                }
+                case TileTextureMethod::WORLD_TILING: {
+                    glUniform4f(
+                        uvUniform,
+                        sprite->uvs.x,
+                        sprite->uvs.y,
+                        sprite->uvs.z * 8.0f,
+                        sprite->uvs.w * 8.0f
+                    );
+                    mQuadVbo.draw();
+                    break;
+                }
                 default:
                     assert(0); // Implement missing type
                     break;
             }
         }
-        static_assert((int)TileTextureMethod::COUNT == 4, "Implement normal generation for new method");
+        static_assert((int)TileTextureMethod::COUNT == 6, "Implement normal generation for new method");
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

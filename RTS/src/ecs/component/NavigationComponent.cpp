@@ -271,6 +271,7 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
 
 void NavigationComponent::setFinePathWithCallback(std::unique_ptr<Path> path, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::FINE_PATH;
+	mCoarsePath = nullptr;
 	mFinePath = std::move(path);
 	mCurrentPoint = 0;
 	mFailedToPath = false;
@@ -279,6 +280,7 @@ void NavigationComponent::setFinePathWithCallback(std::unique_ptr<Path> path, st
 
 void NavigationComponent::setCoarsePathWithCallback(std::unique_ptr<CoarsePath> coarsePath, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::COARSE_PATH;
+	mFinePath = nullptr;
     mCoarsePath = std::move(coarsePath);
     mCurrentPoint = 0;
     mFailedToPath = false;

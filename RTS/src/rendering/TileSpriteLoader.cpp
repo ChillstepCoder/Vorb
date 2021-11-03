@@ -24,6 +24,7 @@ KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
     kt.addValue("rand_flip", keg::Value::basic(offsetof(SpriteMetaData, randFlip), keg::BasicType::BOOL));
     kt.addValue("opaque", keg::Value::basic(offsetof(SpriteMetaData, opaque), keg::BasicType::BOOL));
     kt.addValue("offset", keg::Value::basic(offsetof(SpriteMetaData, offset), keg::BasicType::F32_V2));
+    kt.addValue("variant_count", keg::Value::basic(offsetof(SpriteMetaData, variantCount), keg::BasicType::UI32_V2));
 }
 
 KEG_TYPE_DEF(SpritesheetFileData, SpritesheetFileData, kt) {
@@ -84,20 +85,20 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         // TODO: Ensure this is correct usage of pixelRect.zw
         const ui32v2 tileDims(ceil((float)metaData.pixelRect.z / TEXTURE_ATLAS_CELL_WIDTH_PX), ceil((float)metaData.pixelRect.w / TEXTURE_ATLAS_CELL_WIDTH_PX));
         assert(tileDims.x * tileDims.y > 0);
-        assert(tileDims.x < TEXTURE_ATLAS_CELLS_PER_ROW / 2); // Need room for normal maps
+        assert(tileDims.x <= TEXTURE_ATLAS_CELLS_PER_ROW/* / 2*/); // Need room for normal maps
         const unsigned sourceOffset = (unsigned)metaData.pixelRect.y * rs.width + metaData.pixelRect.x;
         const color4* sourceBytes = (color4*)(rs.bytesUI8v4 + sourceOffset);
         switch (metaData.method) {
             case TileTextureMethod::SIMPLE:
             case TileTextureMethod::FLORA: {
                 ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
-                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
+                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width, metaData.pixelRect.z, metaData.pixelRect.w);
                 sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
                 break;
             }
             case TileTextureMethod::CONNECTED_WALL: {
                 ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
-                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width);
+                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width, metaData.pixelRect.z, metaData.pixelRect.w);
                 sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
 
                 // Correct dims per tile
@@ -105,10 +106,34 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
                 sprite.uvs.w /= TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT;
                 break;
             }
+            case TileTextureMethod::VERTICAL: {
+                ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
+                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width, metaData.pixelRect.z, metaData.pixelRect.w);
+                sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+
+                // Correct dims per tile
+                sprite.uvs.z /= TILE_TEX_METHOD_VERTICAL_WALL_WIDTH;
+                sprite.uvs.w /= TILE_TEX_METHOD_VERTICAL_WALL_HEIGHT;
+                break;
+            }
+            case TileTextureMethod::WORLD_TILING: {
+                ui32 index = mTextureMapper->mapBox(tileDims.x, tileDims.y);
+                sprite.uvs = mTextureAtlas.writePixels(index, tileDims.x, tileDims.y, sourceBytes, rs.width, metaData.pixelRect.z, metaData.pixelRect.w);
+                sprite.atlasPage = mTextureAtlas.getPageIndexFromCellIndex(index);
+
+                // TODO: INPUTS
+                sprite.uvs.z /= 8;
+                sprite.uvs.w /= 8;
+                break;
+            }
             default:
                 assert(false);
         }
-        static_assert(enum_cast(TileTextureMethod::COUNT) == 4, "Update above for UVs");
+        static_assert(enum_cast(TileTextureMethod::COUNT) == 6, "Update above for UVs");
+
+        // Handle variants
+        sprite.uvs.z /= metaData.variantCount.x;
+        sprite.uvs.w /= metaData.variantCount.y;
 
         // Insert the sprite
         if (metaData.name.size()) {
