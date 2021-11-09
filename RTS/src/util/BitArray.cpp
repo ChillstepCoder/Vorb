@@ -23,12 +23,13 @@ void BitArray::resizeAndZero(ui32 size) {
 
 void BitArray::setBitTo(ui32 index, bool val) {
     const ui32 i = index >> 3;
-    const ui32 j = index - (i << 3);
+    const ui8 j = (ui8)(index - (i << 3));
     static_assert(BITS_PER_ELEMENT == 8);
-    mData[i] = (ui8)((ui32)val << j);
+    const ui8 bit = ((ui8)val << j);
+    mData[i] = (mData[i] & (~(1ui8 << j))) | bit;
 }
 
-bool BitArray::getBit(ui32 index) {
+bool BitArray::getBit(ui32 index) const {
     const ui32 i = index >> 3;
     const ui32 j = index - (i << 3);
     static_assert(BITS_PER_ELEMENT == 8);
@@ -37,4 +38,22 @@ bool BitArray::getBit(ui32 index) {
 
 void BitArray::zeroAllBits() {
     memset(mData.data(), 0, mData.size() * BITS_PER_ELEMENT);
+}
+
+void BitArray::debugPrint(int width, int height) const
+{
+    for (ui32 y = 0; y < height; ++y) {
+        printf("%2d| ", y);
+        for (ui32 x = 0; x < width; ++x) {
+            const ui32 index = y * width + x;
+            assert(index < mData.size() / 8);
+            printf("%2d ", (int)getBit(index));
+        }
+        std::cout << "\n";
+    }
+    std::cout << "  | ";
+    for (ui32 x = 0; x < width; ++x) {
+        printf("%2d ", x);
+    }
+    std::cout << std::endl;
 }

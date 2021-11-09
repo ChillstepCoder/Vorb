@@ -9,6 +9,7 @@ namespace Random {
     // Low quality but extremely fast RNG
     extern void initCachedRandom(unsigned count);
     extern ui32 getCachedRandom();
+    extern ui32 getCachedRandomSpecific(ui32 i);
     extern float getCachedRandomf();
     extern float getCachedRandomfSpecific(ui32 i);
 

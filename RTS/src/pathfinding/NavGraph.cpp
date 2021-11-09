@@ -112,7 +112,7 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
             f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
             if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
             else if (edge.dir == Cartesian::UP) cornerPos.y += 1.0f;
-            f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge.dir)]) * (f32)(edge.length);
+            f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)(edge.length);
             DebugRenderer::drawLine(cornerPos, offset, color4(0.0f, 1.0f, 1.0f), lifetime);
             DebugRenderer::drawLine(cornerPos + offset * 0.5f, f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)]), color4(0.0f, 1.0f, 1.0f), lifetime);
         }
@@ -125,12 +125,12 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
                 color4 color = color4(255, 0, 0);
                 NavNodeEdge& edge1 = node.edges[i];
                 NavNodeEdge& edge2 = node.edges[j];
-                f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
+                f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
                 f32v2 cornerPos1 = chunk.getWorldPos() + f32v2(edge1.start.getX(), edge1.start.getY());
                 if (edge1.dir == Cartesian::RIGHT) cornerPos1.x += 1.0f;
                 else if (edge1.dir == Cartesian::UP) cornerPos1.y += 1.0f;
                 f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
-                f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge2.dir)]) * (f32)(edge2.length);
+                f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge2.dir)]) * (f32)(edge2.length);
                 f32v2 cornerPos2 = chunk.getWorldPos() + f32v2(edge2.start.getX(), edge2.start.getY());
                 if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
                 else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
@@ -179,7 +179,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
             addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
             length = 0;
         }
-        const i32v2& edgeDir = CARTESIAN_EDGE_DIRS[enum_cast(dir)];
+        const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[enum_cast(dir)];
         adjWorldPos += edgeDir;
         chunkRelativePos += edgeDir;
         subChunkRelativePos += edgeDir;

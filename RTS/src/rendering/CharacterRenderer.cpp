@@ -63,7 +63,7 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
     buildPart(mesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
 
     // TODO: Store in component
-    mesh.finishMesh(QuadMeshDrawMode::STREAM);
+    mesh.finishMesh(MeshDrawMode::STREAM);
     materialRenderer.renderMesh(mesh, *mMaterial);
     // Render shadow part
     // TODO: move over to decal system

@@ -261,6 +261,7 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
 
         // Load data
         keg::parse((ui8*)&tile, value, readContext, &KEG_GLOBAL_TYPE(TileData));
+        tile.name = key;
 
         // If depth is uninitialized, set it to width
         if (tile.colliderDimsXY.y == -1.0f) {

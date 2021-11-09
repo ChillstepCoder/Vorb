@@ -191,7 +191,7 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
 	bool didHit = false;
 	std::vector<std::pair<IntersectionHit3D, Chunk*> > sortedHits;
 	for (auto&& chunk : mVisibleChunks) {
-        if (!chunk->isDataReady()) {
+        if (!chunk->isFinished()) {
             continue;
         }
         IntersectionHit3D hit = IntersectionUtil::LineAABBIntersection(chunk->getAABB(), rayStart, rayEnd);
@@ -214,6 +214,7 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
 	for (auto&& hitPair : sortedHits) {
 		IntersectionHit3D& hit = hitPair.first;
 		Chunk* chunk = hitPair.second;
+
 		f32v3 currentPos = hit.position;
 		i32v3 currentVoxelPos = i32v3(fastFloor(currentPos.x), fastFloor(currentPos.y), fastFloor(currentPos.z));
         f32v3 farIntersect = (rayEnd - rayStart) * hit.farTime + rayStart;
@@ -374,7 +375,7 @@ void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) cons
 }
 
 void World::enumVisibleRegions(const ICamera& camera, std::function<void(const Region& chunk)> func) const {
-    for (int i = 0; i < mWorldGrid.numRegions(); ++i) {
+    for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
         const Region& region = mWorldGrid.getRegion(i);
         const f32v2& worldPos = region.getWorldPos();
         if (camera.sphereIsVisible(f32v3(worldPos.x + WorldData::REGION_WIDTH_TILES, worldPos.y + WorldData::REGION_WIDTH_TILES, 0.0f), WorldData::REGION_DIAGONAL_RADIUS)) {
@@ -525,7 +526,7 @@ void World::updateSun(const ICamera& camera) {
     mTimeOfDay = (float)fmod(adjustedTime / (f64)SECONDS_PER_HOUR, (f64)HOURS_PER_DAY);
 
 	const f32 sunDelta = (mTimeOfDay - SUNRISE_TIME) / 24.0f;
-	const f32 sunRotate = sunDelta * M_PI * 2.0f;
+	const f32 sunRotate = sunDelta * M_PIF * 2.0f;
     mSunPosition = glm::rotateY(f32v3(-1.0f, 0.0f, 0.0f), sunRotate);
     mSunHeight = glm::min(mSunPosition.z + SUN_HEIGHT_OFFSET, 0.999f); // Store sun height before modification, cap at an epsilon to fix sampler issue
     mSunPosition.z += 0.2f; // Make it more up lol

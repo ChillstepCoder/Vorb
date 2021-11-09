@@ -61,13 +61,13 @@ float norm( in float f )
 }
 
 
-const float AMPLITUDE = 0.3;
+const float AMPLITUDE = 0.7;
 
 float getWindAtPosition(in float Time, in vec4 worldPos) {
     // Standard wind forces
-    float windForce = fbm(vec2(worldPos.x + Time * 0.2, worldPos.y)) * AMPLITUDE;
+    float windForce = fbm(vec2(worldPos.x + Time * 0.075, worldPos.y)) * AMPLITUDE;
     // Rolling wind
-    windForce += sin((worldPos.x - worldPos.y) * 0.2 + Time * 0.5) * 0.2;
+    windForce += sin((worldPos.x - worldPos.y) * 0.1 + Time * 0.2) * 0.4 * AMPLITUDE;
     return windForce;
 }
 

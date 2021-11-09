@@ -120,6 +120,8 @@ public:
     City(const ui32v2& cityCenterWorldPos, World& world);
     ~City();
 
+    VORB_NON_COPYABLE(City);
+
     void update();
 
     CityBuilder& getCityBuilder() { return *mCityBuilder; }
@@ -131,6 +133,7 @@ public:
 
     // Accessors
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
+    const std::vector<Building>& getBuildings() { return mBuildings; }
 
     // Mutators
     void addResidentToCity(entt::entity entity);

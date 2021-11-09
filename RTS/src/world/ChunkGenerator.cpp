@@ -41,6 +41,13 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     static TileID smallTree = TileRepository::getTile("tree_small");
     static TileID water = TileRepository::getTile("water");
 
+    static TileID flowers = TileRepository::getTile("flowers");
+    static TileID flower = TileRepository::getTile("flower");
+    static TileID shrub = TileRepository::getTile("shrub");
+    static TileID smallBush = TileRepository::getTile("small_bush");
+    static TileID bush = TileRepository::getTile("bush");
+    static TileID largeBush = TileRepository::getTile("large_bush");
+
     Tile tile(grass1, TILE_ID_NONE, TILE_ID_NONE);
 
     //  TODO: Precompute and interpolate, can cubic interpolate and others
@@ -72,12 +79,30 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
     }
     else if (height < -0.1 || height > 0.1) {
         // Standard grass layer
-        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.95f) {
-            // Small Tree
-            tile.topLayer = smallTree;
-        }
-        if (abs(height) < 0.3 && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
-            tile.midLayer = tallGrass;
+        if (abs(height) < 0.3) {
+            // Fields
+            const float fNoise = sWorldGenData.mFlowerNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+            if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.999f) {
+                tile.topLayer = bush;
+            }
+            else if (Random::getThreadSafef(worldPos.y, worldPos.x) > 0.999f) {
+                tile.topLayer = smallBush;
+            }
+            else if (Random::getThreadSafef(worldPos.x, offsetToCenter.y) > 0.99f) {
+                tile.topLayer = shrub;
+            }
+            else if (fNoise > 0.35f && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.7f) {
+                tile.topLayer = flowers;
+            }
+            else if (fNoise < 0.1f && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.5f) {
+                tile.topLayer = flower;
+            }
+            else if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.9995f) {
+                tile.topLayer = largeBush;
+            }
+            if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
+                tile.midLayer = tallGrass;
+            }
         }
     }
     else {

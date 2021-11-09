@@ -7,6 +7,7 @@
 
 #include "TextureManip.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/BuildingRenderer.h"
 #include "rendering/ChunkRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "rendering/CityDebugRenderer.h"
@@ -142,6 +143,7 @@ void RenderContext::initPostLoad() {
     mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
     mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
+    mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
     checkGlError("Renderer init");
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
     checkGlError("Init texture manipulator");
@@ -232,9 +234,11 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     mChunkRenderer->renderWorld(mWorld, camera, lodState);
+    
+    // COMMENT OUT TO DISABLE CHARACTER
     mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
-
     mEcsRenderer->renderPhysicsDebug(camera);
+    
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
 
@@ -246,6 +250,15 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     // Render loose items
+
+    // Render building roofs
+    const CityGraph& cities = mWorld.getCities();
+    for (auto&& city : cities.mNodes) {
+        const std::vector<Building>& buildings = city->getBuildings();
+        for (auto& building : buildings) {
+            mBuildingRenderer->renderBuildingRoof(building);
+        }
+    }
 
     // Sky
     mSkyBox->render(*mMaterialRenderer);
@@ -498,5 +511,5 @@ void RenderContext::buildHorizonMesh()
         vtr.uvs.y = 0.0f;
         vtr.color = waterColor;
     }
-    mHorizonQuad->setData(verts, 4, QuadMeshDrawMode::STATIC);
+    mHorizonQuad->setData(verts, 4, MeshDrawMode::STATIC);
 }

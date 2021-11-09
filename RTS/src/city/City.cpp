@@ -196,8 +196,7 @@ RoadID City::addRoad(CityRoad& road)
 }
 
 BuildingID City::addCompletedBuilding(Building&& building) {
-    mBuildings.emplace_back(building);
-    Building& newBuilding = mBuildings.back();
+    Building& newBuilding = mBuildings.emplace_back((Building&&)building);
     newBuilding.mId = (BuildingID)(mBuildings.size() - 1);
 
     return newBuilding.mId;

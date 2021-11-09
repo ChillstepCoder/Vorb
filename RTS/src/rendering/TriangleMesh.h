@@ -1,0 +1,48 @@
+#pragma once
+
+#include <Vorb/graphics/gtypes.h>
+#include "MeshBase.h"
+
+#include "rendering/TileVertex.h"
+
+template <typename VERTEX>
+class ITriangleMesh : public MeshBase {
+public:
+    ITriangleMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(ITriangleMesh);
+
+    void setData(const VERTEX* meshData, unsigned vertexCount, MeshDrawMode drawMode);
+};
+
+class TriangleMesh : public ITriangleMesh<TriangleVertex> {
+public:
+    TriangleMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(TriangleMesh);
+
+    void init() override;
+
+    void reserveTriangleCount(size_t count);
+    void addTriangle(TriangleVertex verts[3]);
+    void draw(const vg::GLProgram& program) const override;
+    void finishMesh(MeshDrawMode drawMode) override;
+
+private:
+    void bindVertexAttribs(const vg::GLProgram& program) const override;                
+
+    std::vector<TriangleVertex> mVertexData; // TODO: Recycle?
+};
+
+// Templated Mesh implementation
+template <typename VERTEX>
+void ITriangleMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount, MeshDrawMode drawMode) {
+
+    mIndexCount = vertexCount;
+    const unsigned bufferSizeBytes = vertexCount * sizeof(VERTEX);
+
+    glBindBuffer(GL_ARRAY_BUFFER, mVbo);
+    // Orphan the buffer for speed
+    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, enum_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, meshData);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}

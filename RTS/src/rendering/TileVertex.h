@@ -45,3 +45,21 @@ public:
 // Need power of 2 alignment
 // 64 is bad!!!
 static_assert(sizeof(BillboardVertex) == 32, "Power of 2 byte alignment needed");
+
+struct TriangleVertex {
+public:
+    TriangleVertex() {};
+    TriangleVertex(const f32v3& pos, const f32v3& normal, const f32v2& uvs, const color4& color, ui16 atlasPage) :
+        pos(pos), uvs(uvs), normal(normal), color(color), atlasPage(atlasPage) {
+    }
+
+    f32v3 pos;
+    f32v3 normal;
+    f32v2 uvs;
+    f32v4 uvTiling;
+    color4 color;
+    ui16 atlasPage;
+    ui8 padding[8];
+};
+// Need power of 2 alignment
+static_assert(sizeof(TriangleVertex) == 64, "Power of 2 byte alignment needed");

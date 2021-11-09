@@ -38,6 +38,11 @@ extern ui32 Random::getCachedRandom() {
     return cachedRandom[++cachedRandomIndex % (unsigned)cachedRandom.size()];
 }
 
+extern ui32 Random::getCachedRandomSpecific(ui32 i) {
+    assert(hasInitCachedRandom);
+    return cachedRandom[i % (unsigned)cachedRandom.size()];
+}
+
 extern float Random::getCachedRandomf() {
     assert(hasInitCachedRandom);
     return (cachedRandom[++cachedRandomIndex % (unsigned)cachedRandom.size()] & 0x01fffffff) / (float)0x01fffffff;

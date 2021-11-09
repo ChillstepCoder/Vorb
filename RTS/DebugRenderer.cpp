@@ -179,8 +179,12 @@ void DebugRenderer::drawLine(const f32v3& origin, const f32v3& vec, color4 color
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
-{
+void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/) {
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, end, color);
+}
+
+void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }

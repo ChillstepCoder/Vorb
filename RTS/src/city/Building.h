@@ -9,8 +9,8 @@
 
 #include "city/CityPlot.h"
 
-// TODO: Specific for roofs?
 #include "rendering/QuadMesh.h"
+#include "rendering/TriangleMesh.h"
 
 // TODO: Move to data?
 enum class BuildingFunction : ui16 {
@@ -29,13 +29,22 @@ struct RoomDescription {
 };
 
 struct BuildingRenderData {
-    QuadMesh mRoofMesh;
-    bool mRoofMeshDirty = false;
+    std::unique_ptr<QuadMesh> mRoofMesh;
+    std::unique_ptr<TriangleMesh> mRoofTriangleMesh;
+    bool mRoofMeshDirty = true;
 };
 
 // TODO: Can we optimize passing this around so theres no copies?
 class Building {
 public:
+    friend class BuildingRenderer;
+    friend class BuildingMesher;
+
+    Building() {};
+    ~Building() {};
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(Building);
+
     // Building bounds are a series of corner segments
     ui32AABB2 mAABB;
     std::vector<RoomNode> mGraph;
@@ -47,6 +56,7 @@ public:
     // Entity defining the function of our building, may also own other buildings
     entt::entity mBusinessEntity = INVALID_ENTITY;
 
+private:
     mutable BuildingRenderData mRenderData;
 
     // TODO: Move to Business?

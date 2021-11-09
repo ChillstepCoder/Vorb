@@ -90,7 +90,9 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
         description.typeID = newID;
         mRoomTypes[key] = newID;
         mRoomDescriptions.emplace_back(std::move(description));
-    })));
+    }))) {
+        // Do nothing on success
+    }
 }
 
 void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path& filePath)

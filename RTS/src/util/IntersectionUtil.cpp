@@ -202,6 +202,28 @@ IntersectionHit2D IntersectionUtil::segmentCircleIntersect(const f32v2& p1, cons
     return hit; // No hit
 }
 
+//https://stackoverflow.com/questions/2931573/determining-if-two-rays-intersect
+IntersectionHit2D IntersectionUtil::rayRayIntersect(const f32v2& p1, const f32v2& r1, const f32v2& p2, const f32v2& r2) {
+    IntersectionHit2D rv;
+
+    const f32 dx = p2.x - p1.x;
+    const f32 dy = p2.y - p1.y;
+    const f32 det = r2.x * r1.y - r2.y * r1.x;
+    if (det == 0) {
+        return rv;
+    }
+    const f32 u = (dy * r2.x - dx * r2.y) / det;
+    const f32 v = (dy * r1.x - dx * r1.y) / det;
+
+    if (u >= 0.0f && v >= 0.0f) {
+        rv.shape = IntersectionHitShape::RAY;
+        rv.position = p1 * u;
+        rv.time = u;
+    }
+
+    return rv;
+}
+
 // https://github.com/BSVino/MathForGameDevelopers/blob/line-box-intersection/math/collision.cpp
 bool ClipLine(int d, const f32AABB3& aabbBox, const f32v3& v0, const f32v3& v1, float& f_low, float& f_high)
 {

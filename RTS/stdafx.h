@@ -48,6 +48,7 @@
 #include <Vorb/Timing.h>
 #include <Vorb/io/Keg.h>
 #include <Vorb/io/Path.h>
+#include <vorb/decorators.h>
 
 #include <entt/entt.hpp>
 
@@ -125,7 +126,8 @@ enum class Cartesian : ui8 {
     LEFT = 1, //-x  west
     RIGHT = 2, //+x east
     UP = 3,  //+y    north
-    NONE = 100
+    NONE = 100,
+    INVALID = 101
 };
 constexpr int CARTESIAN_COUNT = 4; 
 constexpr Cartesian CARTESIAN_NEIGHBORS[CARTESIAN_COUNT][2] = {
@@ -146,11 +148,17 @@ const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
     i32v2(1,  0), // RIGHT
     i32v2(0,  1), // UP
 };
-const i32v2 CARTESIAN_EDGE_DIRS[CARTESIAN_COUNT] = {
+const i32v2 CARTESIAN_EDGE_DIRS_ABS[CARTESIAN_COUNT] = {
     i32v2(1, 0), // DOWN
     i32v2(0, 1), // LEFT
     i32v2(0, 1), // RIGHT
     i32v2(1, 0), // UP
+};
+const i32v2 CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[CARTESIAN_COUNT] = {
+    i32v2(1, 0), // DOWN
+    i32v2(0, -1), // LEFT
+    i32v2(0, 1), // RIGHT
+    i32v2(-1, 0), // UP
 };
 const i32v2 CARTESIAN_EDGE_INDEX_OFFSET_MULTS[CARTESIAN_COUNT] = {
     i32v2(0, 0), // DOWN
@@ -164,7 +172,8 @@ enum class CornerWinding {
     BOTTOM_LEFT  = 0,
     BOTTOM_RIGHT = 1,
     TOP_LEFT     = 2,
-    TOP_RIGHT    = 3
+    TOP_RIGHT    = 3,
+    NONE
 };
 const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
     ui32v2(0,  0), // BOTTOM_LEFT

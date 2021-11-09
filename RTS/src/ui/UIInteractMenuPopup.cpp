@@ -109,6 +109,9 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             if (ImGui::Button("Plant Tree", buttonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PLANT_TREE;
             }
+            if (ImGui::Button("Plant Pine Tree", buttonSize)) {
+                resultFlags |= INTERACT_MENU_RESULT_PLANT_TREE_2;
+            }
             if (ImGui::Button("Build Wall", buttonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_BUILD_WALL;
             }
@@ -138,7 +141,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
 
     }
-    static_assert(INTERACT_MENU_RESULT_COUNT == 9, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 10, "update");
     static_assert(enum_cast(UIInteractMenuState::COUNT) == 4, "update");
 
     ImGui::End();

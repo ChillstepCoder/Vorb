@@ -412,7 +412,7 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
         // Offset into next cell
         position = ui32v2(i32v2(position) + CARTESIAN_NORMALS[enum_cast(edge.dir)]);
         // Offset to center of edge
-        position += ui32v2(f32v2(CARTESIAN_EDGE_DIRS[enum_cast(edge.dir)]) * (f32)edge.length * 0.5f);
+        position += ui32v2(f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)edge.length * 0.5f);
         const NavNode* nextNode = world.tryGetNavNodeAtWorldPos(position);
         auto&& closedIt = sCoarseClosedList.find(nextNode);
         if (closedIt != sCoarseClosedList.end()) {

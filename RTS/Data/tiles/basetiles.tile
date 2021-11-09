@@ -27,5 +27,5 @@ door:
     - item: wood_raw
       count: 3
 tall_grass:
-  tex: grass_paint
+  tex: grass_variants
   shape: Thin

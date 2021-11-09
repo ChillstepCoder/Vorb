@@ -3,7 +3,8 @@
 enum class IntersectionHitShape {
     NO_HIT,
     CIRCLE,
-    AABB
+    AABB,
+    RAY
 };
 
 // https://noonat.github.io/intersect/#aabb-vs-segment

@@ -9,6 +9,7 @@ class ParticleSystemRenderer;
 class CityDebugRenderer;
 class ItemRenderer;
 class CharacterRenderer;
+class BuildingRenderer;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ChunkRenderer;
@@ -86,6 +87,7 @@ private:
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
     mutable std::unique_ptr<ItemRenderer> mItemRenderer;
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
+    mutable std::unique_ptr<BuildingRenderer> mBuildingRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

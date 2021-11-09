@@ -126,7 +126,7 @@ void Test3DScreen::build() {
     mQuadMesh = std::make_unique<QuadMesh>();
     std::vector<TileVertex> tileData;
     genCubeMesh(tileData);
-    mQuadMesh->setData(tileData.data(), tileData.size(), 0, QuadMeshDrawMode::STATIC);
+    mQuadMesh->setData(tileData.data(), tileData.size(), 0, MeshDrawMove::STATIC);
 
     // Camera
     mCamera.setPosition(f64v3(-10.0f, -2.0f, 0.0f));

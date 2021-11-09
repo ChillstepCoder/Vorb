@@ -162,8 +162,8 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
-		mMousePosition.x = event.x;
-		mMousePosition.y = event.y;
+		mMousePosition.x = (f32)event.x;
+		mMousePosition.y = (f32)event.y;
 	});
 
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -436,11 +436,31 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
                 handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
             }
         }
+        else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
+            }
+        }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
                 handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
+            }
+        }
+        else if (result & INTERACT_MENU_RESULT_INSPECT) {
+            // grass
+            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
+            if (handle.isValid()) {
+				std::cout << "\nINSPECTING TILE AT " << xyPos.x << " " << xyPos.y << std::endl;
+				if (handle.tile.groundLayer != INVALID_TILE_INDEX)
+                    std::cout << "  Base: " << TileRepository::getTileData(handle.tile.groundLayer).name << "\n";
+                if (handle.tile.midLayer != INVALID_TILE_INDEX)
+                    std::cout << "   Mid: " << TileRepository::getTileData(handle.tile.midLayer).name << "\n";
+                if (handle.tile.topLayer != INVALID_TILE_INDEX)
+                    std::cout << "   Top: " << TileRepository::getTileData(handle.tile.topLayer).name << "\n\n";
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {
@@ -465,7 +485,7 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
 
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 9, "update");
+        static_assert(INTERACT_MENU_RESULT_COUNT == 10, "update");
 
         // If we had a result, close window
         if (result) {

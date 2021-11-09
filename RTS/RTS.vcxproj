@@ -102,7 +102,7 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\box2d\build\bin\Debug\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;..\RTS\dependencies\box2d\build\bin\Debug\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -214,6 +214,7 @@
     <ClCompile Include="src\rendering\Material.cpp" />
     <ClCompile Include="src\rendering\MaterialManager.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
+    <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\QuadMesh.cpp" />
     <ClCompile Include="src\rendering\ChunkMesher.cpp" />
@@ -225,6 +226,7 @@
     <ClCompile Include="src\rendering\SpriteRepository.cpp" />
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
+    <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
@@ -344,6 +346,7 @@
     <ClInclude Include="src\rendering\Material.h" />
     <ClInclude Include="src\rendering\MaterialManager.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
+    <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
@@ -356,6 +359,7 @@
     <ClInclude Include="src\rendering\SpriteRepository.h" />
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
+    <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\screens\WorldEditorScreen.h" />

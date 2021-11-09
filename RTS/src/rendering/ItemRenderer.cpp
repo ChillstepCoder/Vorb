@@ -60,7 +60,7 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
         }
     }
 
-    mesh.finishMesh(QuadMeshDrawMode::DYNAMIC);
+    mesh.finishMesh(MeshDrawMode::DYNAMIC);
 
     renderData.mBillboardMeshDirty = false;
 }
@@ -99,7 +99,7 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
         static_assert(enum_cast(ItemStorageShape::COUNT) == 4, "Update for new mesh type");
     }
 
-    mesh.finishMesh(QuadMeshDrawMode::DYNAMIC);
+    mesh.finishMesh(MeshDrawMode::DYNAMIC);
 
     renderData.mBillboardMeshDirty = false;
 }

@@ -10,6 +10,9 @@
 #include "Random.h"
 #include <Vorb/graphics/SamplerState.h>
 
+// For grass noise
+#include "generation/WorldGenerationData.h"
+
 constexpr int MAX_CONCURRENT_MESH_TASKS = 10;
 constexpr float LAYER_DEPTH_ADD = 0.001f;
 constexpr float AMBIENT_OCCLUSION_MULT = 0.7f;
@@ -359,28 +362,41 @@ void addTileFloraBillboard(
     const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
     const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
     ui32 rnd = Random::getThreadSafe(x, y);
+    ui32 batchCount;
+    if (spriteData.bunchCount.x == spriteData.bunchCount.y) {
+        batchCount = spriteData.bunchCount.x;
+    }
+    else {
+        batchCount = spriteData.bunchCount.x + Random::getCachedRandomSpecific(rnd++) % (spriteData.bunchCount.y - spriteData.bunchCount.x);
+    }
     // TODO: Allow grass overlap if right and upper neighbors are same tile + height
-    for (int i = 0; i < 5; ++i) {
-        const float width = vmath::lerp(0.3f, 0.6f, Random::getCachedRandomfSpecific(rnd));
-        const float xOffset = Random::getCachedRandomfSpecific(rnd + 1) * (1.0f - width * rightXMult);
-        const float yOffset = Random::getCachedRandomfSpecific(rnd + 2) * (1.0f - width * topXMult);
+    for (int i = 0; i < batchCount; ++i) {
+        const float width = vmath::lerp(spriteData.sizeRange.x, spriteData.sizeRange.y, Random::getCachedRandomfSpecific(rnd++));
+        const float xOffset = Random::getCachedRandomfSpecific(rnd++) * (1.0f - width * rightXMult);
+        const float yOffset = Random::getCachedRandomfSpecific(rnd++) * (1.0f - width * topXMult);
 
-        // Handle variant UVs
-        const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
-        ui32 variantIndex = (rnd + 15992) % variantCount;
-        ui32 variantY = variantIndex / spriteData.variantCount.y;
-        ui32 variantX = variantIndex % spriteData.variantCount.y;
-
+        // TODO: SHARED FUNCTION
         f32v4 uvs = spriteData.uvs;
-        uvs.x += variantX * spriteData.uvs.z;
-        uvs.y += variantY * spriteData.uvs.w;
+        const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
+
+        if (variantCount) {
+            f32 grassNoise = -sWorldGenData.mGrassNoise.compute((f64)tileWorldPos.x + i * 0.2, (f64)tileWorldPos.y + i * 0.2);
+
+            // Handle variant UVs
+            ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
+            ui32 variantY = variantIndex / spriteData.variantCount.x;
+            ui32 variantX = variantIndex % spriteData.variantCount.x;
+
+            uvs.x += variantX * spriteData.uvs.z;
+            uvs.y += variantY * spriteData.uvs.w;
+        }
 
         billboardMesh.addQuad(
             f32v3(tileWorldPos.x + xOffset, tileWorldPos.y + yOffset, tile.baseZPosition),
-            spriteData.dimsMeters,
+            spriteData.dimsMeters * width,
             f32v2(0.0f),
             spriteData.atlasPage,
-            spriteData.uvs,
+            uvs,
             COLOR_WHITE,
             (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP),
             255u
@@ -776,7 +792,23 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                         }
                         else {
                             f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
-                            billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u);
+
+                            f32v4 uvs = spriteData.uvs;
+                            const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
+
+                            if (variantCount) {
+                                f32 grassNoise = sWorldGenData.mGrassNoise.compute((f64)tilePosition.x, (f64)tilePosition.y);
+
+                                // Handle variant UVs
+                                ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
+                                ui32 variantY = variantIndex / spriteData.variantCount.x;
+                                ui32 variantX = variantIndex % spriteData.variantCount.x;
+
+                                uvs.x += variantX * spriteData.uvs.z;
+                                uvs.y += variantY * spriteData.uvs.w;
+                            }
+
+                            billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u);
                         }
                     }
                     else if (spriteData.method != TileTextureMethod::FLORA) { // CROSS FLORA IS DONE IN SEPARATE PASS
@@ -790,8 +822,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        renderData.mChunkMesh->finishMesh(QuadMeshDrawMode::DYNAMIC);
-        renderData.mBillboardMesh->finishMesh(QuadMeshDrawMode::DYNAMIC);
+        renderData.mChunkMesh->finishMesh(MeshDrawMode::DYNAMIC);
+        renderData.mBillboardMesh->finishMesh(MeshDrawMode::DYNAMIC);
 
         // LOD
         uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
@@ -911,7 +943,7 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        renderData.mHighDetailFloraMesh->finishMesh(QuadMeshDrawMode::DYNAMIC);
+        renderData.mHighDetailFloraMesh->finishMesh(MeshDrawMode::DYNAMIC);
 
         // Recycle and flag as free
         chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = false;

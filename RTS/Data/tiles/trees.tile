@@ -11,11 +11,22 @@ tree_large:
       count: [25, 35]
 tree_small:
   tex: tree_small
-  dims: [1,2]
+  dims: [3,4]
   col: circle
   width: 0.1
   shape: Thin
-  height: 2.0
+  height: 4.0
+  resource: wood
+  drops:
+    - item: wood_raw
+      count: [3, 6]
+tree_pine:
+  tex: tree_pine
+  dims: [3,4]
+  col: circle
+  width: 0.1
+  shape: Thin
+  height: 4.0
   resource: wood
   drops:
     - item: wood_raw

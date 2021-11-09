@@ -25,6 +25,8 @@ KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
     kt.addValue("opaque", keg::Value::basic(offsetof(SpriteMetaData, opaque), keg::BasicType::BOOL));
     kt.addValue("offset", keg::Value::basic(offsetof(SpriteMetaData, offset), keg::BasicType::F32_V2));
     kt.addValue("variant_count", keg::Value::basic(offsetof(SpriteMetaData, variantCount), keg::BasicType::UI32_V2));
+    kt.addValue("bunch_count", keg::Value::basic(offsetof(SpriteMetaData, bunchCount), keg::BasicType::UI32_V2));
+    kt.addValue("size_range", keg::Value::basic(offsetof(SpriteMetaData, sizeRange), keg::BasicType::F32_V2));
 }
 
 KEG_TYPE_DEF(SpritesheetFileData, SpritesheetFileData, kt) {
@@ -132,8 +134,12 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         static_assert(enum_cast(TileTextureMethod::COUNT) == 6, "Update above for UVs");
 
         // Handle variants
+        sprite.variantCount = metaData.variantCount;
         sprite.uvs.z /= metaData.variantCount.x;
         sprite.uvs.w /= metaData.variantCount.y;
+        // TODO: Separate into a separate structure for faster copy?
+        sprite.bunchCount = metaData.bunchCount;
+        sprite.variantCount = metaData.variantCount;
 
         // Insert the sprite
         if (metaData.name.size()) {

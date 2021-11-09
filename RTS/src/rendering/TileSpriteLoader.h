@@ -19,7 +19,9 @@ struct SpriteMetaData {
     TileTextureMethod method = TileTextureMethod::SIMPLE;
     std::string name;
     f32v2 offset = f32v2(0.0f);
-    ui32v2 variantCount = ui32v2(1, 1);
+    ui32v2 variantCount = ui32v2(1);
+    ui32v2 bunchCount = ui32v2(1);
+    f32v2 sizeRange = f32v2(1.0f);
     bool randFlip = false;
     bool opaque   = false;
 };

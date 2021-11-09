@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "QuadMesh.h"
 
-#include "world/Chunk.h"
-#include "rendering/RenderContext.h"
 #include "Random.h"
 
 #include <Vorb/graphics/GLProgram.h>
@@ -17,81 +15,6 @@
 constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
 static constexpr float EPSILON = 0.005f;
-
-VGBuffer MeshBase::sIbo = 0;
-
-MeshBase::MeshBase() {
-    init();
-}
-
-MeshBase::~MeshBase() {
-    destroy();
-}
-
-void MeshBase::initStaticIBO() {
-    if (sIbo) {
-        return;
-    }
-
-    ui32 i = 0;
-    std::vector<ui32> quadIndices(MAX_MESH_INDICES);
-    for (ui32 v = 0; i < MAX_MESH_INDICES; v += 4u) {
-        quadIndices[i++] = v;
-        quadIndices[i++] = v + 2;
-        quadIndices[i++] = v + 3;
-        quadIndices[i++] = v + 3;
-        quadIndices[i++] = v + 1;
-        quadIndices[i++] = v;
-    }
-
-    glGenBuffers(1, &sIbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_MESH_INDICES * sizeof(ui32), quadIndices.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-void MeshBase::init() {
-    if (mVao == 0) { // Create VAO
-        glGenVertexArrays(1, &mVao);
-        glBindVertexArray(mVao);
-
-        glGenBuffers(1, &mVbo);
-
-        glBindBuffer(GL_ARRAY_BUFFER, mVbo);
-
-        assert(sIbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sIbo);
-
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-}
-
-void MeshBase::destroy() {
-    if (mVbo != 0) {
-        glDeleteBuffers(1, &mVbo);
-        mVbo = 0;
-    }
-    if (mVao != 0) {
-        glDeleteVertexArrays(1, &mVao);
-        mVao = 0;
-    }
-
-    mIndexCount = 0;
-}
-
-void MeshBase::draw(const vg::GLProgram& program) const {
-    // Make sure we have been initialized
-    assert(mVao);
-    if (!mIndexCount) return;
-
-    glBindVertexArray(mVao);
-    bindVertexAttribs(program);
-
-    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
-
-    glBindVertexArray(0);
-}
 
 void QuadMesh::reserveQuadCount(size_t count) {
     mVertexData.reserve(count * 4u);
@@ -236,7 +159,7 @@ void QuadMesh::addCross(f32v3 cornerPosition, ui16 spriteAtlasPage, const f32v4&
     }
 }
 
-void QuadMesh::finishMesh(QuadMeshDrawMode drawMode) {
+void QuadMesh::finishMesh(MeshDrawMode drawMode) {
     if (mVertexData.size()) {
         setData(mVertexData.data(), mVertexData.size(), drawMode);
         std::vector<TileVertex>().swap(mVertexData);
@@ -350,7 +273,7 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
     }
 }
 
-void BillboardMesh::finishMesh(QuadMeshDrawMode drawMode) {
+void BillboardMesh::finishMesh(MeshDrawMode drawMode) {
     if (mVertexData.size()) {
         setData(mVertexData.data(), mVertexData.size(), drawMode);
         std::vector<BillboardVertex>().swap(mVertexData);

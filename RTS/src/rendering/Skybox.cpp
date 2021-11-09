@@ -55,7 +55,7 @@ void Skybox::init(const Material* material) {
     }
 
     mSkyboxMesh = std::make_unique<QuadMesh>();
-    mSkyboxMesh->setData(verts, NUM_VERTS, QuadMeshDrawMode::STATIC);
+    mSkyboxMesh->setData(verts, NUM_VERTS, MeshDrawMode::STATIC);
 
 }
 
