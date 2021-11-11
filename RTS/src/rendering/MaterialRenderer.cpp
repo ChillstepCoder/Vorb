@@ -103,6 +103,9 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1f(it.second, renderData.sunHeight);
                 break;
             case MaterialUniform::SunPosition:
+                glUniform3fv(it.second, 1, &renderData.sunPositionWorld[0]);
+                break;
+            case MaterialUniform::SunPositionCameraRelative:
                 glUniform3fv(it.second, 1, &renderData.sunPositionCameraRelative[0]);
                 break;
             case MaterialUniform::VMatrix:
@@ -175,6 +178,9 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::CameraFront:
                 glUniform3fv(it.second, 1, &renderData.mainCamera->getFrontVector()[0]);
                 break;
+            case MaterialUniform::CameraUp:
+                glUniform3fv(it.second, 1, &renderData.mainCamera->getUpVector()[0]);
+                break;
             case MaterialUniform::CameraPos:
                 glUniform3fv(it.second, 1, &renderData.mainCamera->getPosition()[0]);
                 break;
@@ -187,6 +193,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 28, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 30, "Update for new uniform type");
     }
 }

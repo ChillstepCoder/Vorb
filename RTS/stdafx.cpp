@@ -5,11 +5,7 @@
 UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
-bool s_debugToggle = false;
-bool s_wasTogglePressed = false;
 float sFps = 0.0f;
-
-DebugOptions sDebugOptions;
 
 void showMessage(const nString& message VORB_MAYBE_UNUSED)
 {

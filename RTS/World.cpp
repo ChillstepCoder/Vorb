@@ -6,6 +6,7 @@
 #include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
 #include "world/TileRepository.h"
+#include "weather/CloudManager.h"
 #include "physics/ContactListener.h"
 #include "physics/ContactFilter.h"
 #include "item/ItemStockpileRegistry.h"
@@ -34,6 +35,7 @@
 
 #include "util/TileUtil.h"
 
+#include "options/DebugOptions.h"
 
 #define ENABLE_DEBUG_RENDER 1
 
@@ -79,6 +81,9 @@ World::World(ResourceManager& resourceManager) :
 
 	// Nav graph
 	mNavGraph = std::make_unique<NavGraph>(*this);
+
+	// Weather
+	mCloudManager = std::make_unique<CloudManager>(*this);
 
 	// Static load range for now
 	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
@@ -146,6 +151,9 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 
 	// Update particles (TODO: Ecs?)
 	mResourceManager.getParticleSystemManager().update(playerPos);
+
+	// Update weather
+	mCloudManager->update();
 
 	// Update ECS
     mEcs->update(mClientEcsData);
@@ -696,9 +704,7 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	mPhysWorld->QueryAABB(&queryCallBack, aabb);
 
 #if ENABLE_DEBUG_RENDER == 1
-    //if (s_debugToggle) {
         DebugRenderer::drawAABB(aabb, color4(0.0f, 1.0f, 0.0f), 100);
-    //}
 #endif
 
 	if (sorted) {
@@ -769,10 +775,7 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 		if (angle > startAngle && angle < endAngle) {
 			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
 #if ENABLE_DEBUG_RENDER == 1
-			if (s_debugToggle) {
-				assert(false); // Can we do shared debug  toggle
-				DebugRenderer::drawLine(pos, (pos + axisExtrema[i] * radius) - pos, color4(0.0f, 1.0f, 0.0f), 1);
-			}
+			DebugRenderer::drawLine(pos, (pos + axisExtrema[i] * radius) - pos, color4(0.0f, 1.0f, 0.0f), 1);
 #endif
 		}
 	}
@@ -787,19 +790,17 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 	}
 
 #if ENABLE_DEBUG_RENDER == 1
-	if (s_debugToggle) {
-		static const int lifetime = 1;
+	static const int lifetime = 1;
 
-		const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
-		const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
-		const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
-		const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
+	const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
+	const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
+	const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
+	const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
 
-		DebugRenderer::drawAABB(bottomLeft, bottomRight, topLeft, topRight, color4(1.0f, 0.0f, 1.0f), lifetime);
-		DebugRenderer::drawLine(pos, point1 - pos, color4(0.0f, 0.0f, 1.0f), lifetime);
-		DebugRenderer::drawLine(pos, point2 - pos, color4(0.0f, 0.0f, 1.0f), lifetime);
-		DebugRenderer::drawLine(pos, scaledNormal, color4(0.0f, 0.0f, 1.0f), lifetime);
-	}
+	DebugRenderer::drawAABB(bottomLeft, bottomRight, topLeft, topRight, color4(1.0f, 0.0f, 1.0f), lifetime);
+	DebugRenderer::drawLine(pos, point1 - pos, color4(0.0f, 0.0f, 1.0f), lifetime);
+	DebugRenderer::drawLine(pos, point2 - pos, color4(0.0f, 0.0f, 1.0f), lifetime);
+	DebugRenderer::drawLine(pos, scaledNormal, color4(0.0f, 0.0f, 1.0f), lifetime);
 #endif
 
 	return entities;

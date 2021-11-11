@@ -34,6 +34,7 @@ namespace vorb {
             ALPHA_PREMULTIPLIED,
             ADDITIVE,
             REPLACE,
+            MULTIPLY,
             COUNT
         };
         KEG_ENUM_DECL(BlendStateType);
@@ -47,9 +48,13 @@ namespace vorb {
             void set() const;
             static void set(const BlendStateType state);
 
+            static void restorePrevious();
+
             GLenum srcFactor;
             GLenum dstFactor;
 
+            static BlendState CURR;
+            static BlendState PREV;
             // TODO: glBlendEquation?
         };
 
@@ -75,9 +80,10 @@ namespace vorb {
                 vg::BlendState(GL_ONE, GL_ONE_MINUS_SRC_ALPHA),       // ALPHA_PREMULTIPLIED
                 vg::BlendState(GL_SRC_ALPHA, GL_ONE),                 // ADDITIVE
                 vg::BlendState(GL_ONE, GL_ZERO),                      // REPLACE
+                vg::BlendState(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA), // MULTIPLY
             }
         };
-        static_assert((int)vg::BlendStateType::COUNT == 4, "Add new blend states above");
+        static_assert((int)vg::BlendStateType::COUNT == 5, "Add new blend states above");
 
     }
 }

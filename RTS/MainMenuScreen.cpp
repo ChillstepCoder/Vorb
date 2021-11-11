@@ -39,6 +39,8 @@
 
 #include <Vorb/ui/imgui/imgui.h>
 
+#include "options/DebugOptions.h"
+
 constexpr ui32 MAX_TICKS_PER_UPDATE = 2;
 constexpr f64 TICK_RATE_MS = 40.0;
 
@@ -47,7 +49,7 @@ const f32v2 CAMERA_Z_RANGE = f32v2(1.0f, 1024.0f);
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(&Services::ResourceManager::ref()),
-      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()))),
+      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()))),
       mWorld(std::make_unique<World>(*mResourceManager))
 {
 
@@ -138,6 +140,9 @@ void MainMenuScreen::build() {
         else if (event.keyCode == VKEY_E) {
             mCameraCartesianDirection = CARTESIAN_NEIGHBORS[enum_cast(mCameraCartesianDirection)][0];
             mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[enum_cast(mCameraCartesianDirection)];
+        }
+        else if (event.keyCode == VKEY_T) {
+			sDebugOptions.mShowTweaker = !sDebugOptions.mShowTweaker;
         }
 	});
 
@@ -340,6 +345,8 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha);
 
 	tryUpdateAndRenderInteractPopup(xyPos);
+
+	mRenderContext.endFrame();
 
 }
 

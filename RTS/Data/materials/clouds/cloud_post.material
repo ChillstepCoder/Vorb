@@ -1,0 +1,7 @@
+cloud_post:
+  vert: cloud_post.vert
+  frag: cloud_post.frag
+  atlas_textures:
+    - name: cloud_color
+      unrect: unCloudTextureRect
+      unpage: unCloudTexturePage

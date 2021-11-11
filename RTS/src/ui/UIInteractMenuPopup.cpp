@@ -35,10 +35,6 @@ UIInteractMenuPopup::~UIInteractMenuPopup()
 UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 {
     ui32 resultFlags = 0;
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(mWindow);
-    ImGui::NewFrame();
     const ImVec2 buttonSize(150, 25);
     
     ImGui::SetNextWindowPos(ImVec2(mScreenPos.x, mScreenPos.y));
@@ -145,10 +141,6 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
     static_assert(enum_cast(UIInteractMenuState::COUNT) == 4, "update");
 
     ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    ImGui::EndFrame();
 
     return static_cast<UIInteractMenuResultFlags>(resultFlags);
 }

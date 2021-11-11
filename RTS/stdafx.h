@@ -280,20 +280,8 @@ typedef ui32 ItemID;
 constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
 
 
-// **************** BEBUG *****************
-extern bool s_debugToggle;
-extern bool s_wasTogglePressed;
+// **************** FPS *****************
 extern float sFps;
-
-struct DebugOptions {
-	f64 mTimeOffset = 0.0f;
-    bool mWireframe = false;
-    bool mChunkBoundaries = false;
-	bool mCities = false;
-    bool mNavGraph = false;
-};
-
-extern DebugOptions sDebugOptions;
 
 // **************** ERRORS *****************
 //yes 1, no 0

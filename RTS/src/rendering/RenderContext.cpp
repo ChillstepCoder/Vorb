@@ -5,21 +5,22 @@
 #include "World.h"
 #include "world/TileRepository.h"
 
-#include "TextureManip.h"
-#include "rendering/MaterialRenderer.h"
-#include "rendering/BuildingRenderer.h"
-#include "rendering/ChunkRenderer.h"
-#include "rendering/LightRenderer.h"
-#include "rendering/CityDebugRenderer.h"
-#include "rendering/MaterialManager.h"
-#include "rendering/ParticleSystemRenderer.h"
-#include "rendering/ItemRenderer.h"
-#include "rendering/QuadMesh.h"
-#include "rendering/CharacterRenderer.h"
-#include "rendering/Skybox.h"
-#include "TextureManip.h"
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
+#include "rendering/BuildingRenderer.h"
+#include "rendering/CharacterRenderer.h"
+#include "rendering/ChunkRenderer.h"
+#include "rendering/CityDebugRenderer.h"
+#include "rendering/CloudRenderer.h"
+#include "rendering/DebugTweakerPanel.h"
+#include "rendering/ItemRenderer.h"
+#include "rendering/LightRenderer.h"
+#include "rendering/MaterialManager.h"
+#include "rendering/MaterialRenderer.h"
+#include "rendering/ParticleSystemRenderer.h"
+#include "rendering/QuadMesh.h"
+#include "rendering/Skybox.h"
+#include "TextureManip.h"
 
 // TODO: Move to renderer?
 #include "city/CityQuartermaster.h"
@@ -37,6 +38,12 @@
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/colors.h>
 
+#include <Vorb/ui/imgui/imgui.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+
+#include "options/DebugOptions.h"
+
 // TODO: Render a string to the screen for these, Debug Render: %s (gone for pass_through)
 // TODO: Instead of single shader these should be able to be shader chains.
 const std::string sPassthroughMaterialNames[] = {
@@ -49,10 +56,11 @@ const std::string sPassthroughMaterialNames[] = {
 
 RenderContext* RenderContext::sInstance = nullptr;
 
-RenderContext::RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution) :
+RenderContext::RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window) :
     mResourceManager(resourceManager),
     mWorld(world),
-    mScreenResolution(screenResolution)
+    mScreenResolution(screenResolution),
+    mWindow(window)
 {
     // Mesh init
     MeshBase::initStaticIBO();
@@ -113,15 +121,18 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
         pError("GFX card does not support 4k textures :(");
         assert(false);
     }
+
+    // Debugging
+    mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>(screenResolution);
 }
 
 RenderContext::~RenderContext() {
 
 }
 
-RenderContext& RenderContext::initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution) {
+RenderContext& RenderContext::initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window) {
     if (!sInstance) {
-        sInstance = new RenderContext(resourceManager, world, screenResolution);
+        sInstance = new RenderContext(resourceManager, world, screenResolution, window);
     }
     return *sInstance;
 }
@@ -144,6 +155,7 @@ void RenderContext::initPostLoad() {
     mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
     mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
     mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
+    mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     checkGlError("Renderer init");
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
     checkGlError("Init texture manipulator");
@@ -172,6 +184,7 @@ void RenderContext::initPostLoad() {
     buildHorizonMesh();
     mSkyBox = std::make_unique<Skybox>();
     mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
+
 }
 
 void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos) {
@@ -181,12 +194,18 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos) {
     mRenderData.sunHeight = mWorld.getSunHeight();
     mRenderData.sunColor = mWorld.getSunColor();
     mRenderData.timeOfDay = mWorld.getTimeOfDay();
-    mRenderData.sunPositionCameraRelative = mWorld.getSunPosition();
+    const f32v3& sun = mWorld.getSunPosition();
+    mRenderData.sunPositionWorld = sun;
+    mRenderData.sunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(mWindow);
+    ImGui::NewFrame();
 }
 
 void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha) {
@@ -260,11 +279,16 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         }
     }
 
+
     // Sky
     mSkyBox->render(*mMaterialRenderer);
 
     // Horizon
     mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
+
+    // Clouds
+    mCloudRenderer->renderClouds(mWorld.getCloudManager(), &activeGbuffer, camera);
+
 
     // Particles
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
@@ -411,11 +435,22 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // UI last
     renderUI(camera);
 
+    // Debugging
+    if (sDebugOptions.mShowTweaker) {
+        mDebugTweakerPanel->updateAndRender();
+    }
+
     // Swap
     mPrevGBuffer = mActiveGBuffer;
     mActiveGBuffer = !mActiveGBuffer;
 
     checkGlError("RenderContext::FrameEnd");
+}
+
+void RenderContext::endFrame() {
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::EndFrame();
 }
 
 void RenderContext::reloadShaders() {

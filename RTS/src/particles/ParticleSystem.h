@@ -13,6 +13,7 @@ struct Particle {
 constexpr unsigned PARTICLE_SIZE_SCALE = 1024;
 static_assert(sizeof(Particle) == 32, "Power of 2 byte alignment needed");
 
+// TODO: OPTIMIZE - https://vercidium.com/blog/opengl-particle-systems/
 class ParticleSystem
 {
     friend class ParticleSystemRenderer;

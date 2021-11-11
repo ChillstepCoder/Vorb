@@ -27,6 +27,7 @@ const vg::DepthState vg::DepthState::FULL(true, vg::DepthFunction::LESS, true);
 const vg::DepthState vg::DepthState::WRITE(false, vg::DepthFunction::ALWAYS, true);
 const vg::DepthState vg::DepthState::READ(true, vg::DepthFunction::LESS, false);
 const vg::DepthState vg::DepthState::NONE(false, vg::DepthFunction::ALWAYS, false);
+const vg::DepthState vg::DepthState::FULL_LEQUAL(true, vg::DepthFunction::LEQUAL, true);
 vg::DepthState vg::DepthState::CURR(false, vg::DepthFunction::ALWAYS, false);
 vg::DepthState vg::DepthState::PREV(false, vg::DepthFunction::ALWAYS, false);
 

@@ -80,7 +80,7 @@ void CharacterModelRepository::gatherPartsInDirectory(vio::Path directoryPath, C
             // The character model will automatically grab all files
             // when it loads.
             nString fileStr = vio::getLeafNameFromFilePathNoExtension(entry.getString());
-            for (int i = fileStr.size() - 1; i >= 0; --i) {
+            for (int i = (int)fileStr.size() - 1; i >= 0; --i) {
                 if (fileStr[i] == '_') {
                     fileStr.resize(i);
                     break;

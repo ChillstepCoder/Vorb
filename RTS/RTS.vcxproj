@@ -193,6 +193,7 @@
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
+    <ClCompile Include="src\options\DebugOptions.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
@@ -207,6 +208,8 @@
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
+    <ClCompile Include="src\rendering\CloudRenderer.cpp" />
+    <ClCompile Include="src\rendering\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
@@ -236,6 +239,7 @@
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
     <ClCompile Include="src\util\TileUtil.cpp" />
+    <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
@@ -325,6 +329,7 @@
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\Noise.h" />
+    <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\particles\ParticleSystem.h" />
     <ClInclude Include="src\particles\ParticleSystemData.h" />
     <ClInclude Include="src\particles\ParticleSystemManager.h" />
@@ -339,6 +344,8 @@
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
+    <ClInclude Include="src\rendering\CloudRenderer.h" />
+    <ClInclude Include="src\rendering\DebugTweakerPanel.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
@@ -372,6 +379,7 @@
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\TileUtil.h" />
     <ClInclude Include="src\util\Tweener.h" />
+    <ClInclude Include="src\weather\CloudManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\ChunkID.h" />

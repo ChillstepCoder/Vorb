@@ -28,6 +28,7 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("SunColor", MaterialUniform::SunColor),
     std::make_pair("SunHeight", MaterialUniform::SunHeight),
     std::make_pair("SunPosition", MaterialUniform::SunPosition),
+    std::make_pair("SunPositionCameraRelative", MaterialUniform::SunPositionCameraRelative),
     std::make_pair("V", MaterialUniform::VMatrix),
     std::make_pair("InverseV", MaterialUniform::InverseVMatrix),
     std::make_pair("P", MaterialUniform::PMatrix),
@@ -47,11 +48,12 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("PlayerPosWorld", MaterialUniform::PlayerPosWorld),
     std::make_pair("CameraRight", MaterialUniform::CameraRight),
     std::make_pair("CameraFront", MaterialUniform::CameraFront),
+    std::make_pair("CameraUp", MaterialUniform::CameraUp),
     std::make_pair("CameraPos", MaterialUniform::CameraPos),
     std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
     std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
 };
-static_assert((int)MaterialUniform::COUNT == 28, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 30, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     auto&& it = sUniformLookup.find(str);

@@ -1,22 +1,26 @@
 #pragma once
 
-class ResourceManager;
+class BuildingRenderer;
 class Camera3D;
+class CharacterRenderer;
+class ChunkRenderer;
+class CityDebugRenderer;
+class CloudRenderer;
+class DebugTweakerPanel;
+class EntityComponentSystemRenderer;
+class GPUTextureManipulator;
 class ICamera;
+class ItemRenderer;
+class LightRenderer;
 class Material;
 class MaterialRenderer;
 class ParticleSystemRenderer;
-class CityDebugRenderer;
-class ItemRenderer;
-class CharacterRenderer;
-class BuildingRenderer;
-class EntityComponentSystemRenderer;
-class GPUTextureManipulator;
-class ChunkRenderer;
-class LightRenderer;
-class World;
 class QuadMesh;
+class ResourceManager;
 class Skybox;
+class World;
+
+struct SDL_Window;
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -27,6 +31,7 @@ struct GlobalRenderData {
     VGTexture atlas;
     f32 time;
     f32 sunHeight;
+    f32v3 sunPositionWorld;
     f32v3 sunPositionCameraRelative;
     f32 cameraZAngle;
     f32 timeOfDay;
@@ -39,20 +44,21 @@ struct GlobalRenderData {
 // Singleton
 class RenderContext {
 protected:
-    RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution);
+    RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window);
     ~RenderContext();
 
 public:
     RenderContext(RenderContext& other) = delete;
     void operator=(const RenderContext&) = delete;
 
-    static RenderContext& initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution);
+    static RenderContext& initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window);
     static RenderContext& getInstance();
 
     void initPostLoad();
 
     void beginFrame(const ICamera* camera, f32v3 playerPos); // Called automatically by beginFrame
     void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha);
+    void endFrame();
 
     void reloadShaders();
     void selectNextDebugShader();
@@ -78,6 +84,7 @@ private:
     ResourceManager& mResourceManager;
 
     // Renderers
+    mutable std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
     mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
     mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
@@ -88,10 +95,12 @@ private:
     mutable std::unique_ptr<ItemRenderer> mItemRenderer;
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
     mutable std::unique_ptr<BuildingRenderer> mBuildingRenderer;
+    mutable std::unique_ptr<CloudRenderer> mCloudRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
     std::unique_ptr<vg::SpriteFont> mSpriteFont;
+    SDL_Window* mWindow;
 
     int mPrevGBuffer = 1;
     int mActiveGBuffer = 0;

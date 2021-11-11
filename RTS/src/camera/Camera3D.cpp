@@ -131,7 +131,7 @@ f32v3 Camera3D::worldToScreenPointLogZ(const f32v3& worldPoint, f32 zFar) const 
 
 f32v3 Camera3D::getPickRay(const f32v2& ndcScreenPos) const {
     f32v4 clipRay(ndcScreenPos.x, ndcScreenPos.y, -1.0f, 1.0f);
-    f32v4 eyeRay = glm::inverse(mP) * clipRay;
+    f32v4 eyeRay = mInverseP * clipRay;
     eyeRay = f32v4(eyeRay.x, eyeRay.y, -1.0f, 0.0f);
-    return glm::normalize(f32v3(glm::inverse(mV) * eyeRay));
+    return glm::normalize(f32v3(mInverseV * eyeRay));
 }

@@ -30,6 +30,7 @@ class City;
 class ContactListener;
 class ContactFilter;
 class ChunkGenerator;
+class CloudManager;
 class ItemStockpileRegistry;
 class EntityComponentSystem;
 class ResourceManager;
@@ -74,6 +75,7 @@ public:
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
     TileCollision getTileCollisionAtWorldPos(const f32v2& worldPos) const;
     TileCollision getTileCollisionAtWorldPos(const ui32v2& worldPos) const;
+    const f32v2& getLoadCenter() const { return mLoadCenter; }
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
 
@@ -82,7 +84,8 @@ public:
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
 	const WorldGrid& getWorldGrid() const { return mWorldGrid; }
-	const NavGraph& getNavGraph() const { return *mNavGraph; }
+    const NavGraph& getNavGraph() const { return *mNavGraph; }
+    const CloudManager& getCloudManager() const { return *mCloudManager; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
@@ -149,6 +152,9 @@ private:
 
 	// Nav graph
 	std::unique_ptr<NavGraph> mNavGraph;
+
+	// Clouds
+	std::unique_ptr<CloudManager> mCloudManager;
 
 	// Data
     f32v2 mLoadCenter = f32v2(0.0f);

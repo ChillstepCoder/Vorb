@@ -79,7 +79,7 @@ void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp) const
 {
     assert(bp.desc.publicRooms.size());
     ui8v2 countLookup[255]; // (current, max)
-    ui32 publicRoomCount = bp.desc.publicRooms.size();
+    ui32 publicRoomCount = (ui32)bp.desc.publicRooms.size();
     ui32 availablePublicRooms = 0;
 
     { // Pre-pass set up count lookup
@@ -124,7 +124,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) c
     const size_t numPublicRooms = bp.nodes.size();
     ui8v2 countLookup[255]; // (current, max)
     assert(numPublicRooms);
-    size_t privateRoomCount = round(bp.sizeAlpha * (bp.desc.privateRoomCountRange.y - bp.desc.privateRoomCountRange.x) + bp.desc.privateRoomCountRange.x);
+    ui32 privateRoomCount = round(bp.sizeAlpha * (bp.desc.privateRoomCountRange.y - bp.desc.privateRoomCountRange.x) + bp.desc.privateRoomCountRange.x);
     if (!privateRoomCount) {
         return;
     }
@@ -154,7 +154,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) c
         if (publicRoom.numChildren < MAX_CHILD_ROOMS && countLookup[privateIndex].x < countLookup[privateIndex].y) {
             // We can fit a private room here
             // Next node index is our child
-            publicRoom.childRooms[publicRoom.numChildren++] = bp.nodes.size();
+            publicRoom.childRooms[publicRoom.numChildren++] = (RoomNodeID)bp.nodes.size();
             // Append the room
             RoomNode privateRoom;
             privateRoom.nodeType = bp.desc.privateRooms[privateIndex].id;
@@ -224,7 +224,7 @@ void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 av
     f32 childWidthSpan = desiredWidthSpan / node->numChildren;
     f32 widthSegmentSize = desiredWidthSpan / (node->numChildren * 2);
     // Start at the top
-    currentOffset.y -= widthSegmentSize * (node->numChildren - 1);
+    currentOffset.y -= (ui16)(widthSegmentSize * (node->numChildren - 1));
     for (int i = 0; i < node->numChildren; ++i) {
         RoomNode& child = nodes[node->childRooms[i]];
         const ui16 childDesiredRadius = child.desiredWidth / 2;

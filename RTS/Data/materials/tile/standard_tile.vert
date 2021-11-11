@@ -12,7 +12,7 @@ out vec2 fUV;
 flat out float fAtlasPage;
 out vec4 fTint;
 
-#include "wind.glsl"
+#include "../util/wind.glsl"
 
 void main() {
     fTint = vTint;

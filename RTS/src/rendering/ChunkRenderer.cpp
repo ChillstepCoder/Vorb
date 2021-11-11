@@ -56,17 +56,6 @@ void ChunkRenderer::renderChunksZCutout(const World& world, const Camera3D& came
 
 void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod)
 {
-#if ENABLE_DEBUG_RENDER == 1
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_R)) {
-        if (!s_wasTogglePressed) {
-            s_wasTogglePressed = true;
-            s_debugToggle = !s_debugToggle;
-        }
-    }
-    else {
-        s_wasTogglePressed = false;
-    }
-#endif
 
     ChunkID chunkId;
     const Chunk* chunk;
