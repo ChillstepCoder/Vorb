@@ -78,3 +78,9 @@ void Material::use(OUT ui32& nextAvailableTextureIndex) const {
         glBindTexture(GL_TEXTURE_2D, textureInput.texture);
     }
 }
+
+void Material::dispose() {
+    mUniforms.clear();
+    mInputAtlasTextures.clear();
+    mInputTextures.clear();
+}

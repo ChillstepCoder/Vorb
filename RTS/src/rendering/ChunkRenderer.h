@@ -28,9 +28,6 @@ public:
     void renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod);
     //void renderWorldShadows(const World& world, const Camera2D& camera);
 
-	// TODO: Deep LOD?
-	void ReloadShaders();
-
     void InitPostLoad();
 private:
     // Different rendering methods

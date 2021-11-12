@@ -42,6 +42,9 @@ public:
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     CharacterModelRepository& getCharacterModelRepository() const { return *mCharacterModelRepository; }
 
+    // Hot reload
+    void reloadMaterials();
+
     bool hasLoadedResources() const { return mHasLoadedResources; }
 
     void generateNormalMaps();

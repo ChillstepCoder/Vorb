@@ -204,15 +204,6 @@ void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture te
 //     }*/
 //}
 
-void ChunkRenderer::ReloadShaders() {
-	// reload dirty via timestamp
-	assert(false);
-	//for (auto& material : mMaterials) {
-		//material.dispose();
-	//}
-	InitPostLoad();
-}
-
 void ChunkRenderer::InitPostLoad()
 {
 	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");

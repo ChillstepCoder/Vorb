@@ -64,6 +64,19 @@ bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
 }
 
 void ResourceManager::gatherFiles(const vio::Path& folderPath) {
+
+    // Make sure we clear all vectors each gather
+    mTextureFiles.clear();
+    mMaterialFiles.clear();
+    mTileFiles.clear();
+    mParticleSystemFiles.clear();
+    mRoomFiles.clear();
+    mBuildingFiles.clear();
+    mEntityFiles.clear();
+    mItemFiles.clear();
+    mRecipeFiles.clear();
+    mBusinessFiles.clear();
+
     gatherRecursive(folderPath);
 
     mCharacterModelRepository->gatherCharacterModelParts();
@@ -73,6 +86,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
 void ResourceManager::loadFiles() {
     assert(mHasGathered);
+
 
     // Load Textures
     for (auto&& entry : mTextureFiles) {
@@ -89,7 +103,6 @@ void ResourceManager::loadFiles() {
             mSpriteRepository->loadSpriteTexture(entry);
         }
     }
-    mTextureFiles.clear();
 
     // Load item definitions
     for (auto&& entry : mItemFiles) {
@@ -103,7 +116,6 @@ void ResourceManager::loadFiles() {
         // TODO: Tilemanager?
         loadTiles(entry);
     }
-    mTileFiles.clear();
 
     // Load recipe definitions
     for (auto&& entry : mRecipeFiles) {
@@ -114,25 +126,21 @@ void ResourceManager::loadFiles() {
     for (auto&& entry : mMaterialFiles) {
         mMaterialManager->loadMaterial(entry);
     };
-    mMaterialFiles.clear();
 
     // Load particle Systems
     for (auto&& entry : mParticleSystemFiles) {
         mParticleSystemManager->loadParticleSystemData(entry);
     };
-    mMaterialFiles.clear();
 
     // Load Rooms
     for (auto&& entry : mRoomFiles) {
         mBuildingRepository->loadRoomDescriptionFile(entry);
     }
-    mRoomFiles.clear();
 
     // Load Buildings
     for (auto&& entry : mBuildingFiles) {
         mBuildingRepository->loadBuildingDescriptionFile(entry);
     }
-    mBuildingFiles.clear();
 
     // Update textures
     mSpriteRepository->mTextureAtlas->uploadDirtyPages();
@@ -180,6 +188,18 @@ vg::TextureCache& ResourceManager::getTextureCache() {
 
 const TextureAtlas& ResourceManager::getTextureAtlas() const {
     return mSpriteRepository->getTextureAtlas();
+}
+
+void ResourceManager::reloadMaterials() {
+    std::cout << "RELOADING MATERIALS...\n";
+
+    ShaderLoader::clearAllCachedPrograms();
+    vg::ShaderManager::disposeAllPrograms();
+    for (auto&& entry : mMaterialFiles) {
+        mMaterialManager->loadMaterial(entry);
+    };
+
+    std::cout << "...DONE\n";
 }
 
 void ResourceManager::generateNormalMaps() {

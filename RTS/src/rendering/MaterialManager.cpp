@@ -38,11 +38,23 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
         keg::Error error = keg::parse((ui8*)&materialData, value, context, &KEG_GLOBAL_TYPE(MaterialData));
         assert(error == keg::Error::NONE);
 
-        Material newMaterial;
+        // Check if material already exists and replace if so
+        Material* newMaterial;
+        auto&& it = mNameToMaterialIDMap.find(key);
+        if (it != mNameToMaterialIDMap.end()) {
+            newMaterial = mMaterials[it->second].get();
+            newMaterial->dispose();
+        }
+        else {
+            // Store material
+            MaterialID newId = (MaterialID)mMaterials.size();
+            newMaterial = mMaterials.emplace_back(std::make_unique<Material>()).get();
+            mNameToMaterialIDMap[key] = newId;
+        }
 
         // Get shader
-        newMaterial.mProgram = ShaderLoader::getOrCreateProgram(materialData.vertexShaderName, materialData.fragmentShaderName);
-        assert(newMaterial.mProgram.isLinked());
+        newMaterial->mProgram = ShaderLoader::getOrCreateProgram(materialData.vertexShaderName, materialData.fragmentShaderName);
+        assert(newMaterial->mProgram.isLinked());
 
         for (int i = 0; i < materialData.atlasTextures.size(); ++i) {
             const MaterialAtlasTextureInputData& textureData = materialData.atlasTextures[i];
@@ -52,33 +64,28 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
             MaterialAtlasTextureInput input;
             input.uvRect = sprite.uvs;
             input.page = sprite.atlasPage;
-            input.uvRectUniform = newMaterial.mProgram.getUniform(textureData.uniformRectName);
-            input.pageUniform = newMaterial.mProgram.getUniform(textureData.uniformPageName);
-            newMaterial.mInputAtlasTextures.emplace_back(std::move(input));
+            input.uvRectUniform = newMaterial->mProgram.getUniform(textureData.uniformRectName);
+            input.pageUniform = newMaterial->mProgram.getUniform(textureData.uniformPageName);
+            newMaterial->mInputAtlasTextures.emplace_back(std::move(input));
         }
 
         for (int i = 0; i < materialData.textures.size(); ++i) {
             const MaterialTextureInputData& textureData = materialData.textures[i];
             MaterialTextureInput input;
-            input.textureUniform = newMaterial.mProgram.getUniform(textureData.uniformName);
+            input.textureUniform = newMaterial->mProgram.getUniform(textureData.uniformName);
             vg::Texture texture = mTextureCache.findTexture(textureData.textureName);
             input.texture = texture.id;
             assert(texture.id != 0);
-            newMaterial.mInputTextures.emplace_back(std::move(input));
+            newMaterial->mInputTextures.emplace_back(std::move(input));
         }
 
         // Get uniforms from shader
-        for (auto&& uniform : newMaterial.mProgram.getUniforms()) {
+        for (auto&& uniform : newMaterial->mProgram.getUniforms()) {
             MaterialUniform matUniform = lookupMaterialUniform(uniform.first);
             if (matUniform != MaterialUniform::INVALID) {
-                newMaterial.mUniforms.emplace_back(lookupMaterialUniform(uniform.first), uniform.second);
+                newMaterial->mUniforms.emplace_back(lookupMaterialUniform(uniform.first), uniform.second);
             }
         }
-
-        // Store material
-        MaterialID newId = (MaterialID)mMaterials.size();
-        mMaterials.emplace_back(std::move(newMaterial));
-        mNameToMaterialIDMap[key] = newId;
         
     });
     context.reader.forAllInMap(rootObject, &f);
@@ -88,13 +95,13 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
 }
 
 const Material* MaterialManager::getMaterial(MaterialID id) const {
-    return &mMaterials.at(id);
+    return mMaterials.at(id).get();
 }
 
 const Material* MaterialManager::getMaterial(const nString& strId) const {
     auto&& it = mNameToMaterialIDMap.find(strId);
     if (it != mNameToMaterialIDMap.end()) {
-        return getMaterial(it->second);
+        return mMaterials[it->second].get();
     }
     return nullptr;
 }

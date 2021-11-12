@@ -76,6 +76,8 @@ class Material {
 public:
 
     void use(OUT ui32& nextAvailableTextureIndex) const;
+    // Doesn't dispose program
+    void dispose();
 
     std::vector<std::pair<MaterialUniform, VGUniform> > mUniforms;
     std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;

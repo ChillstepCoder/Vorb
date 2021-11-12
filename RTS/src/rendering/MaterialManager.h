@@ -18,7 +18,7 @@ public:
     const Material* getMaterial(const nString& strId) const;
 
 private:
-    std::vector<Material> mMaterials;
+    std::vector<std::unique_ptr<Material>> mMaterials;
     std::unordered_map<nString, MaterialID> mNameToMaterialIDMap;
     vio::IOManager& mIoManager;
     vg::TextureCache& mTextureCache;

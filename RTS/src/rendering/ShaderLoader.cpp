@@ -5,6 +5,7 @@
 #include <Vorb/graphics/ShaderManager.h>
 
 std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> ShaderLoader::sProgramCache;
+// TODO: Pretty sure these are non functional
 std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
 
@@ -98,6 +99,10 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
         vg::ShaderManager::registerProgram(name, program);
     }
     return program;
+}
+
+void ShaderLoader::clearAllCachedPrograms() {
+    sProgramCache.clear();
 }
 
 void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath)

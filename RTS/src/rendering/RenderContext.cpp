@@ -453,10 +453,6 @@ void RenderContext::endFrame() {
     ImGui::EndFrame();
 }
 
-void RenderContext::reloadShaders() {
-    mChunkRenderer->ReloadShaders();
-}
-
 void RenderContext::selectNextDebugShader() {
     //mChunkRenderer->SelectNextShader();
     ++mPassthroughRenderMode;

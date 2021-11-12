@@ -60,7 +60,6 @@ public:
     void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha);
     void endFrame();
 
-    void reloadShaders();
     void selectNextDebugShader();
 
     const GlobalRenderData& getRenderData() const { return mRenderData; }

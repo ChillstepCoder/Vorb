@@ -28,7 +28,7 @@ public:
     static vg::GLProgram getProgram(const nString& name);
 
     /// Gets or creates a program from two shader paths
-    static vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName);
+    static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName);
 
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
@@ -46,6 +46,8 @@ public:
     static void registerFragmentShaderPath(const nString& name, const vio::Path& path) {
         sFragmentShaderNameToPath[name] = path;
     }
+
+    static void clearAllCachedPrograms();
 
 private:
     // Tries to look up the full path from the shader names
