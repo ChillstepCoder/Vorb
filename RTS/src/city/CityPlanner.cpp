@@ -77,7 +77,7 @@ void CityPlanner::generatePlan(CityPlot& plot) {
 
     // Generate floorplan size
     // TODO: Dont just spam lumbermill
-    const BuildingDescription& desc = buildingRepo.getBuildingDescription("lumbermill");
+    const BuildingDescription& desc = buildingRepo.getBuildingDescription("small_house");
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.dims);
     // TODO:  aspect ratio

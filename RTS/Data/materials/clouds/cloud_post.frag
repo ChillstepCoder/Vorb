@@ -30,5 +30,8 @@ void main() {
 	vec2 tex = ((norm.xy + vec2(1.0)) * 0.5);
 	tex.y = 1.0 - tex.y;
 	fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
-	fColor.rgb = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient);
+	// Fake scattering
+	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient);
+	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient);
+	fColor.rgb = frontRGB * 0.7 + backRGB * 0.3;
 }

@@ -7,6 +7,7 @@
 
 #include "Random.h"
 
+#include "generation/WorldGenerationData.h"
 
 CloudManager::CloudManager(const World& world) : mWorld(world)
 {
@@ -20,16 +21,27 @@ CloudManager::~CloudManager()
 
 void CloudManager::update() {
 
+    // TODO: Async load
     const f32v2& loadCenter = mWorld.getLoadCenter();
     f32v3 pos(loadCenter.x, loadCenter.y, 16.0f);
     static bool hasinit = false;
+    mClouds.reserve(10000);
     if (!hasinit) {
+        PreciseTimer timer;
         hasinit = true;
-        for (int y = -100; y < 100; y += 5) {
-            for (int x = -100; x < 100; x += 5) {
-                addCloudAt(pos + f32v3(x + Random::getCachedRandomfSpecific(x * 123 + y * 43) * 2.0, y + Random::getCachedRandomfSpecific(x * 1233 + y * 443) * 2.0, Random::getCachedRandomfSpecific(x * 13 + y * 3) * 16.0f), Random::getCachedRandomfSpecific(x + y * 25) * 4.0f + 10.0f);
+        for (int y = -1000; y < 1000; y += 2) {
+            for (int x = -1000; x < 1000; x += 2) {
+                if (Random::getCachedRandomfSpecific(x * 2232 + y * 14302) >= 0.4f) {
+                    const float n = sWorldGenData.mCloudsNoise.compute(x, y);
+                    if (n > 0.3f) {
+                        float size = (n - 0.3f) * 6.0f + 5.0f;
+                        float heightOffset = Random::getCachedRandomfSpecific(x * 14102 + y * 2315) * 3.0f + (n - 0.3f) * 3.0f;
+                        addCloudAt(pos + f32v3(x, y, heightOffset), size);
+                    }
+                }
             }
         }
+        std::cout << "Generated all clouds in " << timer.stop() << " ms\n";
     }
 }
 

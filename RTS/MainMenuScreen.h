@@ -76,8 +76,8 @@ private:
     Cartesian mCameraCartesianDirection = Cartesian::UP;
     Tweener<f32v3> mCameraPositionTweener = Tweener<f32v3>(f32v3(0.0f));
 	SphericalTweener<f32v3> mCameraDirectionTweener = SphericalTweener<f32v3>(TARGET_CAMERA_NORMALS_3D[enum_cast(Cartesian::UP)]);
-	f32 mCameraDirectionZOffset = -0.5f;
-
+	f32 mCameraDirectionZOffset = -0.3f;
+	
 	// Pathfinding test
 	ui32v2 mPathFindStart = ui32v2(0);
 	bool mIsPathfinding = false;

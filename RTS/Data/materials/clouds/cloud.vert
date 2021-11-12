@@ -26,7 +26,9 @@ void main() {
 	vec2 xzOffsetUncompressed = vXZOffset / 100.0; // Matches C++ compression ratio
 	vertexPosition.xyz += CameraUp * xzOffsetUncompressed.y;
 	vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
-	fPosition = xzOffsetUncompressed - vec2(0.0, 5.0);
+	// Hacky way to make the x,z offsets all 1
+	fPosition = clamp(xzOffsetUncompressed * 10.0, -1.0, 1.0);
+	fPosition = (fPosition + 1.0) * 0.5; // 0 - 1 range
 	
 	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
 

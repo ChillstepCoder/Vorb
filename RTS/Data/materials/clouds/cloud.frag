@@ -2,6 +2,9 @@ uniform sampler2DArray Atlas;
 uniform mat4 InverseP;
 uniform mat4 P;
 
+uniform vec4 unSphereNormalRect;
+uniform float unSphereNormalPage;
+
 in vec2 fUV;
 in vec2 fPosition;
 flat in float fAtlasPage;
@@ -12,7 +15,8 @@ layout (location = 1) out vec4 fNormal;
 
 void main() {
     fColor.a = texture(Atlas, vec3(fUV, fAtlasPage)).a * fTint.a;
-	vec3 norm = normalize(vec3((fPosition.xy / 10.0), 1.0));
+	vec3 norm = texture(Atlas, vec3(unSphereNormalRect.xy + fPosition * unSphereNormalRect.zw, unSphereNormalPage)).rgb;
+	norm = norm * 2.0 - 1.0;
 	fColor.rgb = norm;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average

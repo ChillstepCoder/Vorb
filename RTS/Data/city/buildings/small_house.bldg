@@ -1,6 +1,6 @@
 small_house:
   width_range: [20, 30]
-  public_room_count_range: [3, 6]
+  public_room_count_range: [2, 4]
   private_room_count_range: [1, 2]
   min_aspect_ratio: 1.0
   public_room_grammars:

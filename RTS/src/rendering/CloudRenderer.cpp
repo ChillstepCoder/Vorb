@@ -48,7 +48,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
         cloudManager.mCloudMesh = std::make_unique<BillboardMesh>();
         const SpriteData& spriteData = mResourceManager.getSprite("cloud");
         for (auto&& cloud : cloudManager.mClouds) {
-            cloudManager.mCloudMesh->addQuad(cloud.pos, f32v2(cloud.size), f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, true, 0);
+            cloudManager.mCloudMesh->addQuad(cloud.pos, f32v2(cloud.size), f32v2(0.0f, -cloud.size * 0.5f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, true, 0);
         }
         cloudManager.mCloudMesh->finishMesh(MeshDrawMode::STREAM);
     }
@@ -59,11 +59,9 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     mGBuffers[0].useGeometry();
     glClear(GL_COLOR_BUFFER_BIT);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer ? activeGbuffer->getDepthTexture() : 0, 0);
-    checkGlError("AttachDepthParticle");
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
     mMaterialRenderer.renderMesh(*cloudManager.mCloudMesh, *mCloudMaterial);
-    
 
     blurNormals();
 

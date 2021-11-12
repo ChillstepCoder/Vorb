@@ -29,7 +29,7 @@ void main() {
 	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
     
     // Wind
-    worldPos.x += getWindAtPosition(Time, vertexPosition) * vWindInfluence;
+    worldPos.x += getWindAtPosition(Time, vPosition) * vWindInfluence;
 	
 	vec4 glPos = VP * worldPos;
 	vec4 screenCamera = VP * vec4(CameraFront, 0.0);

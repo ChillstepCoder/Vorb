@@ -171,7 +171,11 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         code |= corners[1] << 2;
         code |= corners[2] << 1;
         code |= corners[3];
-        assert(code); // Must be nonzero or we walked off the edge
+
+        if (!code) {
+            //assert(code); // Must be nonzero or we walked off the edge
+            return;
+        }
         Cartesian nextEdge = mCornerNextEdgeLookupTable[code];
         if (nextEdge == Cartesian::NONE) {
             std::cout << "Edge detection failed due to bad corner\n";

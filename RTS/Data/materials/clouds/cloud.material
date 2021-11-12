@@ -1,3 +1,7 @@
 cloud:
   vert: cloud.vert
   frag: cloud.frag
+  atlas_textures:
+    - name: sphere_normal
+      unrect: unSphereNormalRect
+      unpage: unSphereNormalPage

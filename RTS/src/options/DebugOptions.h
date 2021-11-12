@@ -7,7 +7,7 @@ struct DebugOptions {
     bool mCities = false;
     bool mNavGraph = false;
     int mCloudBlurPasses = 3;
-    float mCloudBlurRadius = 2.252f;
+    float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
     bool mShowTweaker = false;
 };
