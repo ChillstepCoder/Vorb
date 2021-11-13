@@ -15,5 +15,7 @@ public:
     virtual const f32v3& getUpVector() const = 0;
     virtual const f32v3 getPosition() const = 0;
     virtual f32 getZAngle() const = 0;
+    virtual f32 getZNear() const = 0;
+    virtual f32 getZFar() const = 0;
     virtual bool sphereIsVisible(const f32v3& pos, float radius) const = 0;
 };

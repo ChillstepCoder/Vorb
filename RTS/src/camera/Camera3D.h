@@ -43,6 +43,8 @@ public:
     const f32v3& getFrontVector() const override { return mDirection; }
     const f32v3& getUpVector() const override { return mUp; }
     f32 getZAngle() const override { return atan2f(mDirection.y, mDirection.x) + M_PIF; }
+    f32 getZNear() const override { return mZNear; }
+    f32 getZFar() const override { return mZFar; };
 
     const f32m4& getViewMatrix() const override { return mV; }
     const f32m4& getInverseViewMatrix() const override { return mInverseV; }

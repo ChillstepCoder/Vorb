@@ -53,6 +53,4 @@ void main() {
 	fColor.rgb += isSky * (sunAngle * 0.5 + max(pow(sunAngle - 0.95, 0.3), 0.0) * 2.0);
 	fColor.a = 1.0;
 	
-	
-	// Uncomment for depth render
 }

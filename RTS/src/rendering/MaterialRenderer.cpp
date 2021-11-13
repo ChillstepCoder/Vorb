@@ -197,7 +197,10 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
+            case MaterialUniform::CameraZRange:
+                glUniform2f(it.second, renderData.mainCamera->getZNear(), renderData.mainCamera->getZFar());
+                break;
         }
-        static_assert((int)MaterialUniform::COUNT == 31, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 32, "Update for new uniform type");
     }
 }
