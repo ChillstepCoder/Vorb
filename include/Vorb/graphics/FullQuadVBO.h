@@ -49,4 +49,6 @@ namespace vorb {
 }
 namespace vg = vorb::graphics;
 
+extern vg::FullQuadVBO sGlobalFullQuadVBO;
+
 #endif // !Vorb_FullQuadVBO_h__

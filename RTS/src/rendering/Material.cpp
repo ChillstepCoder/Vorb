@@ -52,8 +52,9 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("CameraPos", MaterialUniform::CameraPos),
     std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
     std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
+    std::make_pair("ScreenResolution", MaterialUniform::ScreenResolution),
 };
-static_assert((int)MaterialUniform::COUNT == 30, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 31, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     auto&& it = sUniformLookup.find(str);

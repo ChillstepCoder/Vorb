@@ -7,7 +7,6 @@ class ParticleSystem;
 struct ParticleSystemData;
 
 #include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/FullQuadVBO.h>
 
 class ParticleSystemRenderer
 {
@@ -26,7 +25,6 @@ private:
 
     // For use in multipass
     std::map<nString, vg::GBuffer> mGBuffers;
-    vg::FullQuadVBO mFullQuadVbo;
     f32v2 mGbufferDims;
 };
 

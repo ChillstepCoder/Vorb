@@ -4,13 +4,7 @@ class RenderContext;
 class Material;
 class MeshBase;
 
-#include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/DepthState.h>
-
-enum FboGeometryLayers {
-    FBO_GEOMETRY_COLOR  = 0,
-    FBO_GEOMETRY_NORMAL = 1
-};
 
 class MaterialRenderer {
 public:
@@ -28,6 +22,5 @@ public:
 private:
     void uploadUniforms(const Material& material, OUT ui32& nextAvailableTextureIndex) const;
     // TODO: Subsections, like a UI render
-    vg::FullQuadVBO mQuadVBO;
     const RenderContext& mRenderContext;
 };

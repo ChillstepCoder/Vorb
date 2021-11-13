@@ -7,7 +7,6 @@ class Material;
 class Camera3D;
 
 #include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/FullQuadVBO.h>
 
 class CloudRenderer
 {
@@ -24,7 +23,6 @@ private:
     const MaterialRenderer& mMaterialRenderer;
 
     vg::GBuffer mGBuffers[2];
-    vg::FullQuadVBO mFullQuadVbo;
     f32v2 mGbufferDims;
 
     const Material* mCloudMaterial = nullptr;

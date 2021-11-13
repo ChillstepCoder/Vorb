@@ -19,36 +19,35 @@ void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::G
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment.number, GL_TEXTURE_2D, texID, 0);
 }
 
-vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::TextureInternalFormat lightFormat) {
-    // Create texture targets
-    if (lightFormat != vg::TextureInternalFormat::NONE) {
-        m_textures.setData(attachments.size() + 1);
-    }
-    else {
-        // No light storage
-        m_textures.setData(attachments.size());
-    }
-    glGenTextures((GLsizei)m_textures.size(), &m_textures[0]);
+vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, vg::TextureInternalFormat lightFormat) {
 
     // Make the framebuffer
     glGenFramebuffers(1, &m_fboGeom);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
 
-    // Add the attachments
-    VGEnum* bufs = (VGEnum*)alloca(attachments.size() * sizeof(VGEnum));
-    for (ui32 i = 0; i < attachments.size(); i++) {
-        bufs[i] = GL_COLOR_ATTACHMENT0 + attachments[i].number;
-        initTarget(m_size, m_textures[i], attachments[i]);
-    }
+    glGenTextures((GLsizei)1, &m_texGeom);
+    initTarget(m_size, m_texGeom, geometryAttachment);
 
+    ui32 numAttachments = 1;
+    if (normalAttachment) {
+        glGenTextures((GLsizei)1, &m_texNormal);
+        initTarget(m_size, m_texNormal, *normalAttachment);
+        ++numAttachments;
+    }
+    // Add the attachments
+    VGEnum bufs[2];
+    for (ui32 i = 0; i < numAttachments; i++) {
+        bufs[i] = GL_COLOR_ATTACHMENT0 + i;
+    }
     // Set the output location for pixels
-    glDrawBuffers((GLsizei)attachments.size(), bufs);
+    glDrawBuffers((GLsizei)numAttachments, bufs);
 
     // Make the framebuffer for lighting
     if (lightFormat != vg::TextureInternalFormat::NONE) {
         glGenFramebuffers(1, &m_fboLight);
         glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-        initTarget(m_size, m_textures[m_textures.size() - 1], { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
+        glGenTextures((GLsizei)1, &m_texLight);
+        initTarget(m_size, m_texLight, { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
         checkError();
     }
 
@@ -112,9 +111,17 @@ void vg::GBuffer::dispose() {
         glDeleteFramebuffers(1, &m_fboLight);
         m_fboLight = 0;
     }
-    if (m_textures.size()) {
-        glDeleteTextures((GLsizei)m_textures.size(), &m_textures[0]);
-        m_textures.setData(0);
+    if (m_texGeom) {
+        glDeleteTextures(1, &m_texGeom);
+        m_texGeom = 0;
+    }
+    if (m_texNormal) {
+        glDeleteTextures(1, &m_texNormal);
+        m_texNormal = 0;
+    }
+    if (m_texLight) {
+        glDeleteTextures(1, &m_texLight);
+        m_texLight = 0;
     }
     if (m_texDepth) {
         glDeleteTextures(1, &m_texDepth);
@@ -179,16 +186,23 @@ bool vorb::graphics::GBuffer::checkError() {
     }
     return false;
 }
-
-void vg::GBuffer::bindGeometryTexture(size_t i, ui32 textureUnit) {
+void vg::GBuffer::bindGeometryTexture(ui32 textureUnit) {
+    assert(m_texGeom);
     glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(GL_TEXTURE_2D, m_textures[i]);
+    glBindTexture(GL_TEXTURE_2D, m_texGeom);
+}
+void vg::GBuffer::bindNormalTexture(ui32 textureUnit) {
+    assert(m_texNormal);
+    glActiveTexture(GL_TEXTURE0 + textureUnit);
+    glBindTexture(GL_TEXTURE_2D, m_texNormal);
 }
 void vg::GBuffer::bindDepthTexture(ui32 textureUnit) {
+    assert(m_texDepth);
     glActiveTexture(GL_TEXTURE0 + textureUnit);
     glBindTexture(GL_TEXTURE_2D, m_texDepth);
 }
 void vg::GBuffer::bindLightTexture(ui32 textureUnit) {
+    assert(m_texLight);
     glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(GL_TEXTURE_2D, getLightTexture());
+    glBindTexture(GL_TEXTURE_2D, m_texLight);
 }

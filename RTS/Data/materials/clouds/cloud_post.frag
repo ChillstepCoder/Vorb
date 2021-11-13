@@ -1,7 +1,6 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D CloudFbo;
 uniform vec3 SunPositionCameraRelative;
-uniform vec2 unPixelDims;
 uniform float unAmbient;
 
 uniform vec4 unCloudTextureRect;
@@ -18,7 +17,7 @@ layout (location = 1) out vec4 fNormal;
 void main() {
     // fColor = texture(CloudFbo, fUV);
 	float baseAlpha = texture2D(CloudFbo, fUV).a;
-	//vec3 norm = normalize(blur13noalpha(CloudFbo, fUV, unPixelDims, vec2(baseAlpha * 3.0, 0.0)));
+	//vec3 norm = normalize(blur13noalpha(CloudFbo, fUV, ScreenResolution, vec2(baseAlpha * 3.0, 0.0)));
 	vec3 norm = normalize(texture2D(CloudFbo, fUV).rgb);
 	
 	float z = step(0.000001, norm.z);

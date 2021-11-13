@@ -113,9 +113,8 @@ void MainMenuScreen::build() {
         else if (event.keyCode == VKEY_J) {
             sDebugOptions.mNavGraph = !sDebugOptions.mNavGraph;
         }
-        else if (event.keyCode == VKEY_R) {
-			// TODO: Fix this
-			//mRenderContext.reloadShaders();
+        else if (event.keyCode == VKEY_R && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)) {
+			mResourceManager->reloadMaterials();
         }
         else if (event.keyCode == VKEY_N) {
 			mRenderContext.selectNextDebugShader();

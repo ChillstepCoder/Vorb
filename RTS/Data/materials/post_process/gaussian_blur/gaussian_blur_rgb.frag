@@ -1,5 +1,5 @@
 uniform sampler2D unInputFbo;
-uniform vec2 unPixelDims;
+uniform vec2 ScreenResolution;
 uniform vec2 unDirection;
 
 in vec2 fUV;
@@ -9,7 +9,7 @@ out vec4 fColor;
 
 void main() {
     float baseAlpha = texture(unInputFbo, fUV).a;
-	//fColor.rgb = normalize(blur13noalpha(unInputFbo, fUV, unPixelDims, unDirection * baseAlpha));
-	fColor.rgb = blur13noalpha(unInputFbo, fUV, unPixelDims, unDirection * baseAlpha);
+	//fColor.rgb = normalize(blur13noalpha(unInputFbo, fUV, ScreenResolution, unDirection * baseAlpha));
+	fColor.rgb = blur13noalpha(unInputFbo, fUV, ScreenResolution, unDirection * baseAlpha);
 	fColor.a = baseAlpha;
 }

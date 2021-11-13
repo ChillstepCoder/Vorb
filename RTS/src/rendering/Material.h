@@ -35,6 +35,7 @@ enum class MaterialUniform {
     CameraPos,
     CameraZAngle,
     SkyRotMatrix,
+    ScreenResolution,
     COUNT
 };
 

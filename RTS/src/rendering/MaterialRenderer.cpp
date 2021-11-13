@@ -7,11 +7,11 @@
 #include "camera/ICamera.h"
 
 #include <Vorb/graphics/SamplerState.h>
+#include <Vorb/graphics/FullQuadVBO.h>
 
 MaterialRenderer::MaterialRenderer(const RenderContext& renderContext) :
     mRenderContext(renderContext)
 {
-    mQuadVBO.init();
 }
 
 MaterialRenderer::~MaterialRenderer()
@@ -23,7 +23,7 @@ void MaterialRenderer::renderFullScreenQuad(const Material& material) const {
 
     bindMaterialForRender(material, nullptr);
 
-    mQuadVBO.draw();
+    sGlobalFullQuadVBO.draw();
 }
 
 void MaterialRenderer::renderMesh(const MeshBase& mesh, const Material& material) const
@@ -50,7 +50,7 @@ void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material,
     VGUniform rectUniform = material.mProgram.getUniform("Rect");
     glUniform4fv(rectUniform, 1, &(worldSpaceRect.x));
 
-    mQuadVBO.draw();
+    sGlobalFullQuadVBO.draw();
 }
 
 void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect) {
@@ -65,7 +65,7 @@ void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const Material& m
     VGUniform rectUniform = material.mProgram.getUniform("Rect");
     glUniform4fv(rectUniform, 1, &(worldSpaceRect.x));
 
-    mQuadVBO.draw();
+    sGlobalFullQuadVBO.draw();
 }
 
 void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) const {
@@ -129,7 +129,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(FBO_GEOMETRY_COLOR));
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture());
                 break;
             case MaterialUniform::FboLight:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
@@ -144,17 +144,17 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::FboNormals:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture(FBO_GEOMETRY_NORMAL));
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getNormalTexture());
                 break;
             case MaterialUniform::PrevFbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getGeometryTexture(FBO_GEOMETRY_COLOR));
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevFinalGBuffer().getGeometryTexture());
                 break;
             case MaterialUniform::PrevFboDepth:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevGBuffer().getDepthTexture());
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevFinalGBuffer().getDepthTexture());
                 break;
             case MaterialUniform::PixelDims: {
                 const f32v2 pixelDims = 1.0f / mRenderContext.getCurrentFramebufferDims();
@@ -167,7 +167,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::FboZCutout:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getZCutoutGBuffer().getGeometryTexture(0));
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getZCutoutGBuffer().getGeometryTexture());
                 break;
             case MaterialUniform::PlayerPosWorld:
                 glUniform3f(it.second, renderData.playerPos.x, renderData.playerPos.y, renderData.playerPos.z);
@@ -192,7 +192,12 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::SkyRotMatrix:
                 glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
                 break;
+            case MaterialUniform::ScreenResolution: {
+                const f32v2& pixelDims = mRenderContext.getCurrentFramebufferDims();
+                glUniform2f(it.second, pixelDims.x, pixelDims.y);
+                break;
+            }
         }
-        static_assert((int)MaterialUniform::COUNT == 30, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 31, "Update for new uniform type");
     }
 }

@@ -9,6 +9,8 @@ struct DebugOptions {
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
+    float mDepthOfFieldBlurRadius = 10.0f;
+    int mDepthOfFieldBlurPasses = 2;
     bool mShowTweaker = false;
 };
 

@@ -7,6 +7,7 @@ class ChunkRenderer;
 class CityDebugRenderer;
 class CloudRenderer;
 class DebugTweakerPanel;
+class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
 class ICamera;
@@ -65,8 +66,8 @@ public:
     const GlobalRenderData& getRenderData() const { return mRenderData; }
     ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
-    const vg::GBuffer& getActiveGBuffer() const { return mGBuffers[mActiveGBuffer]; }
-    const vg::GBuffer& getPrevGBuffer() const { return mGBuffers[mPrevGBuffer]; }
+    const vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
+    const vg::GBuffer& getPrevFinalGBuffer() const { return mGBuffers[mPrevGBufferIndex]; }
     const vg::GBuffer& getZCutoutGBuffer() const { return mZCutoutGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
@@ -95,14 +96,16 @@ private:
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
     mutable std::unique_ptr<BuildingRenderer> mBuildingRenderer;
     mutable std::unique_ptr<CloudRenderer> mCloudRenderer;
+    mutable std::unique_ptr<DepthOfFieldPostProcess> mDepthOfField;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
     std::unique_ptr<vg::SpriteFont> mSpriteFont;
     SDL_Window* mWindow;
 
-    int mPrevGBuffer = 1;
-    int mActiveGBuffer = 0;
+    int mPrevGBufferIndex = 1;
+    int mActiveGBufferIndex = 0;
+    vg::GBuffer* mActiveGBuffer = nullptr;
     vg::GBuffer mGBuffers[2];
     vg::GBuffer mZCutoutGBuffer;
     const World& mWorld;

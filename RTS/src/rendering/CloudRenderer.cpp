@@ -10,6 +10,7 @@
 #include "rendering/SpriteData.h"
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
+#include <Vorb/graphics/FullQuadVBO.h>
 
 #include "options/DebugOptions.h"
 
@@ -22,18 +23,15 @@ CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRen
     mPostMaterial = mResourceManager.getMaterialManager().getMaterial("cloud_post");
     mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_rgb");
 
-    // TODO: Shared
-    mFullQuadVbo.init();
-
-    vg::GBufferAttachment attachments[1];
+    vg::GBufferAttachment attachment;
     // Color
-    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGBA16F;
-    attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
-    attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RGBA;
-    attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::HALF_FLOAT;
+    attachment.format = vg::TextureInternalFormat::RGBA16F;
+    attachment.number = FBO_GEOMETRY_COLOR;
+    attachment.pixelFormat = vg::TextureFormat::RGBA;
+    attachment.pixelType = vg::TexturePixelType::HALF_FLOAT;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mGbufferDims));
-        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::RGBA16F);
+        mGBuffers[i].init(attachment, nullptr);
     }
     //mGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     checkGlError("CloudRenderer GBuffer init");
@@ -86,24 +84,23 @@ void CloudRenderer::blurNormals() {
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
-    glUniform2f(mBlurMaterial->mProgram.getUniform("unPixelDims"), mGbufferDims.x, mGbufferDims.y);
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
     for (int i = 0; i < sDebugOptions.mCloudBlurPasses; ++i) {
 
         // Horizontal
-        mGBuffers[0].bindGeometryTexture(0, nextTexture);
+        mGBuffers[0].bindGeometryTexture(nextTexture);
         mGBuffers[1].useGeometry();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mCloudBlurRadius, 0.0f);
-        mFullQuadVbo.draw();
+        sGlobalFullQuadVBO.draw();
 
         // Vertical
-        mGBuffers[1].bindGeometryTexture(0, nextTexture);
+        mGBuffers[1].bindGeometryTexture(nextTexture);
         mGBuffers[0].useGeometry();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mCloudBlurRadius);
-        mFullQuadVbo.draw();
+        sGlobalFullQuadVBO.draw();
     }
 }
 
@@ -116,15 +113,11 @@ void CloudRenderer::renderFboToScreen()
     glUniform1f(mPostMaterial->mProgram.getUniform("unAmbient"), sDebugOptions.mCloudAmbient);
 
     if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
-        mGBuffers[0].bindGeometryTexture(0, nextTexture);
+        mGBuffers[0].bindGeometryTexture(nextTexture);
         glUniform1i(*inputUniform, nextTexture);
-    }
-
-    if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("unPixelDims")) {
-        glUniform2f(*inputUniform, mGbufferDims.x, mGbufferDims.y);
     }
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    mFullQuadVbo.draw();
+    sGlobalFullQuadVBO.draw();
 }

@@ -12,7 +12,6 @@
 #include <Vorb/graphics/GLRenderTarget.h>
 
 #include "rendering/Material.h"
-#include <Vorb/graphics/FullQuadVBO.h>
 
 class TextureAtlas;
 class ResourceManager;
@@ -81,7 +80,6 @@ private:
     ResourceManager& mResourceManager;
     const MaterialRenderer& mMaterialRenderer;
     const Material* mNormalsMaterial = nullptr;
-    vg::FullQuadVBO mQuadVbo;
 };
 
 class Camera2D;

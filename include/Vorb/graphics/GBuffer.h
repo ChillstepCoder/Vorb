@@ -42,6 +42,14 @@
 #define GBUFFER_INTERNAL_FORMAT_DEPTH vg::TextureInternalFormat::RG32F
 #define GBUFFER_INTERNAL_FORMAT_LIGHT vg::TextureInternalFormat::RGB16F
 
+
+enum FboGeometryLayers {
+    FBO_GEOMETRY_COLOR = 0,
+    FBO_GEOMETRY_NORMAL = 1,
+    FBO_GEOMETRY_MAX_COUNT = 2
+};
+
+
 namespace vorb {
     namespace graphics {
          /*! @brief Information that specifies size and location of a texture in the GBuffer
@@ -69,7 +77,7 @@ namespace vorb {
 
             /// Create the value-based render targets
             /// @return Self
-            GBuffer& init(const Array<GBufferAttachment>& attachments, vg::TextureInternalFormat lightFormat);
+            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, vg::TextureInternalFormat lightFormat = vg::TextureInternalFormat::NONE);
             /// Attach a depth buffer to this GBuffer
             /// @param depthFormat: Precision used for depth buffer
             /// @return Self
@@ -93,7 +101,9 @@ namespace vorb {
             /// Bind Geometry Texture
             /// @param i: Which Geometry texture to bind
             /// @param textureUnit Position to bind texture
-            void bindGeometryTexture(size_t i, ui32 textureUnit);
+            void bindGeometryTexture(ui32 textureUnit);
+
+            void bindNormalTexture(ui32 textureUnit);
 
             /// Bind Depth Texture
             /// @param textureUnit Position to bind texture
@@ -103,13 +113,17 @@ namespace vorb {
             /// @param textureUnit Position to bind texture
             void bindLightTexture(ui32 textureUnit);
 
-            /// @return OpenGL texture IDs
-            const VGTexture& getGeometryTexture(size_t i) const {
-                return m_textures[i];
-            }
             /// @return Light texture
+            const VGTexture& getGeometryTexture() const {
+                return m_texGeom;
+            }
+
             const VGTexture& getLightTexture() const {
-                return m_textures[m_textures.size() - 1];
+                return m_texLight;
+            }
+            
+            const VGTexture& getNormalTexture() const {
+                return m_texNormal;
             }
 
             void setSize(ui32 width, ui32 height) {
@@ -141,13 +155,32 @@ namespace vorb {
                 return m_texDepth;
             }
 
+            void setDepthTexture(VGTexture tex) {
+                m_texDepth = tex;
+            }
+            void setLightTexture(VGTexture tex) {
+                m_texLight = tex;
+            }
+            void setNormalTexture(VGTexture tex) {
+                m_texNormal = tex;
+            }
+
+            VGFramebuffer getFboLight() {
+                return m_fboLight;
+            }
+            void setFboLight(VGFramebuffer fboLight) {
+                m_fboLight = fboLight;
+            }
+
             bool checkError();
         private:
             ui32v2 m_size; ///< The width and height of the GBuffer
 
             VGFramebuffer m_fboGeom = 0; ///< The rendering target for geometry
             VGFramebuffer m_fboLight = 0; ///< The rendering target for light
-            Array<VGTexture> m_textures; ///< An array of all the textures
+            VGTexture m_texGeom = 0; ///< Normal texture of GBuffer
+            VGTexture m_texNormal = 0; ///< Normal texture of GBuffer
+            VGTexture m_texLight = 0; ///< Light texture of GBuffer
             VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
         };
     }

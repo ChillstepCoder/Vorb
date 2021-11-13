@@ -8,11 +8,12 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 
+#include <Vorb/graphics/FullQuadVBO.h>
+
 ParticleSystemRenderer::ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2 & gbufferDims) :
     mResourceManager(resourceManager),
     mMaterialRenderer(materialRenderer),
     mGbufferDims(gbufferDims) {
-    mFullQuadVbo.init();
 }
 
 ParticleSystemRenderer::~ParticleSystemRenderer() {
@@ -131,14 +132,14 @@ vg::GBuffer ParticleSystemRenderer::getOrCreateFramebufferForParticleSystem(cons
     }
 
     vg::GBuffer newGBuffer;
-    vg::GBufferAttachment attachments[1];
+    vg::GBufferAttachment attachment;
     // Color
-    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::R8;
-    attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
-    attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RED;
-    attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    attachment.format = vg::TextureInternalFormat::R8;
+    attachment.number = FBO_GEOMETRY_COLOR;
+    attachment.pixelFormat = vg::TextureFormat::RED;
+    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     newGBuffer.setSize(ui32v2(mGbufferDims));
-    newGBuffer.init(Array<vg::GBufferAttachment>(attachments, 1), vg::TextureInternalFormat::R8);
+    newGBuffer.init(attachment, nullptr);
     //newGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     checkGlError("Particle GBuffer init");
     mGBuffers[name] = newGBuffer;
@@ -153,7 +154,7 @@ void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particl
     mMaterialRenderer.bindMaterialForRender(*material);
 
     if (const VGUniform* inputUniform = material->mProgram.tryGetUniform("ParticleFbo")) {
-        gBuffer.bindGeometryTexture(0, 0);
+        gBuffer.bindGeometryTexture(0);
         glUniform1i(*inputUniform, 0);
     }
 
@@ -163,7 +164,7 @@ void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particl
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(particleSystemData.postBlendState);
-    mFullQuadVbo.draw();
+    sGlobalFullQuadVBO.draw();
 
     vg::DepthState::NONE.set();
 }

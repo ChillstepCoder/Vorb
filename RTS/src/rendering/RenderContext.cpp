@@ -13,6 +13,7 @@
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/DebugTweakerPanel.h"
+#include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "rendering/MaterialManager.h"
@@ -37,6 +38,7 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/colors.h>
+#include <Vorb/graphics/FullQuadVBO.h>
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
@@ -73,6 +75,8 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     mSpriteFont->init("data/fonts/chintzy.ttf", 32);
     checkGlError("SB init");
 
+    sGlobalFullQuadVBO.init();
+
     // GBuffer
     vg::GBufferAttachment attachments[2];
     // Color
@@ -87,7 +91,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[FBO_GEOMETRY_NORMAL].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(Array<vg::GBufferAttachment>(attachments, 2), vg::TextureInternalFormat::RGBA16F);
+        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], vg::TextureInternalFormat::RGBA16F);
         mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     }
     checkGlError("GBuffer init");
@@ -105,14 +109,14 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     //checkGlError("Shadow GBuffer Init");
 
     // ZCutout GBuffer
-    vg::GBufferAttachment zCutoutAttachments[1];
+    vg::GBufferAttachment zCutoutAttachment;
     // ZCutout alpha and source height
-    zCutoutAttachments[0].format = vg::TextureInternalFormat::R8;
-    zCutoutAttachments[0].number = 0;
-    zCutoutAttachments[0].pixelFormat = vg::TextureFormat::RED;
-    zCutoutAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
+    zCutoutAttachment.format = vg::TextureInternalFormat::R8;
+    zCutoutAttachment.number = 0;
+    zCutoutAttachment.pixelFormat = vg::TextureFormat::RED;
+    zCutoutAttachment.pixelType = vg::TexturePixelType::FLOAT;
     mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
-    mZCutoutGBuffer.init(Array<vg::GBufferAttachment>(zCutoutAttachments, 1), vg::TextureInternalFormat::NONE);
+    mZCutoutGBuffer.init(zCutoutAttachment, nullptr);
     checkGlError("Z Cutout GBuffer Init");
 
     int maxTextureSize;
@@ -156,6 +160,7 @@ void RenderContext::initPostLoad() {
     mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
     mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
     mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+    mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     checkGlError("Renderer init");
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
     checkGlError("Init texture manipulator");
@@ -221,7 +226,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Should this happen here? Maybe assert instead?
     beginFrame(&camera, playerPos);
     
-    vg::GBuffer& activeGbuffer = mGBuffers[mActiveGBuffer];
+    mActiveGBuffer = &mGBuffers[mActiveGBufferIndex];
 
     // Cutout pass (wtf is this?)
     /*if (lodState == ChunkRenderLOD::FULL_DETAIL) {
@@ -233,8 +238,8 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }*/
 
     // Main geometry pass
-    activeGbuffer.useGeometry();
-    mCurrentFramebufferDims = activeGbuffer.getSize();
+    mActiveGBuffer->useGeometry();
+    mCurrentFramebufferDims = mActiveGBuffer->getSize();
 
     // Clear screen
     vg::DepthState::FULL.set();
@@ -287,14 +292,14 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
     // Clouds
-    mCloudRenderer->renderClouds(mWorld.getCloudManager(), &activeGbuffer, camera);
+    mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
 
 
     // Particles
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
         vg::DepthState::READ.set();
         // TODO: Replace With BlendState
-        mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, true);
+        mParticleSystemRenderer->renderParticleSystems(camera, mActiveGBuffer, true);
         vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
         vg::DepthState::FULL.set();
     }
@@ -373,6 +378,8 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
 
+    mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
+
     // Render characters that are behind geometry with some transparency
     //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
 
@@ -389,11 +396,11 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Disable depth testing for post processing
     // TODO: Swap chains?
     // TODO: This should be at top
-    activeGbuffer.unuse();
+    mActiveGBuffer->unuse();
     mCurrentFramebufferDims = mScreenResolution;
 
     // *** Lighting ***
-    activeGbuffer.useLight();
+    mActiveGBuffer->useLight();
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -411,7 +418,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glBlendFunc(GL_ONE, GL_ONE);
     mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
 
-    activeGbuffer.unuse();
+    mActiveGBuffer->unuse();
     mCurrentFramebufferDims = mScreenResolution;
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     vg::DepthState::NONE.set();
@@ -425,9 +432,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     vg::DepthState::FULL.set();*/
 
     // Copy depth for emissive rendering, so we can still depth test
-    vg::DepthState::WRITE.set();
-    mMaterialRenderer->renderFullScreenQuad(*mCopyDepthMaterial);
-    vg::DepthState::READ.set();
+    //vg::DepthState::WRITE.set();
+    //mMaterialRenderer->renderFullScreenQuad(*mCopyDepthMaterial);
+   // vg::DepthState::READ.set();
 
     // Unlit Particles
     //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
@@ -441,8 +448,8 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     // Swap
-    mPrevGBuffer = mActiveGBuffer;
-    mActiveGBuffer = !mActiveGBuffer;
+    mPrevGBufferIndex = mActiveGBufferIndex;
+    mActiveGBufferIndex = !mActiveGBufferIndex;
 
     checkGlError("RenderContext::FrameEnd");
 }

@@ -7,12 +7,12 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/SpriteRepository.h"
 #include <Vorb/graphics/SamplerState.h>
+#include <Vorb/graphics/FullQuadVBO.h>
 
 GPUTextureManipulator::GPUTextureManipulator(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
     mResourceManager(resourceManager),
     mMaterialRenderer(materialRenderer)
 {
-    mQuadVbo.init();
 }
 
 // Generates baked normal maps for every texture in the texture atlas
@@ -89,7 +89,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                 case TileTextureMethod::SIMPLE:
                 case TileTextureMethod::FLORA: {
                     glUniform4f(uvUniform, sprite->uvs.x, sprite->uvs.y, sprite->uvs.z, sprite->uvs.w);
-                    mQuadVbo.draw();
+                    sGlobalFullQuadVBO.draw();
                     break;
                 }
                 case TileTextureMethod::CONNECTED_WALL: {
@@ -102,7 +102,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                                 sprite->uvs.z,
                                 sprite->uvs.w
                             );
-                            mQuadVbo.draw();
+                            sGlobalFullQuadVBO.draw();
                         }
                     }
                     break;
@@ -117,7 +117,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                                 sprite->uvs.z,
                                 sprite->uvs.w
                             );
-                            mQuadVbo.draw();
+                            sGlobalFullQuadVBO.draw();
                         }
                     }
                     break;
@@ -130,7 +130,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                         sprite->uvs.z * 8.0f,
                         sprite->uvs.w * 8.0f
                     );
-                    mQuadVbo.draw();
+                    sGlobalFullQuadVBO.draw();
                     break;
                 }
                 default:
