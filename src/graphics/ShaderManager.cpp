@@ -46,7 +46,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse fragment shader code
-    ShaderParser::parseFragmentShader(fragSrc, parsedFragSrc, fragIOM);
+    ShaderParser::parseFragmentOrGeometryShader(fragSrc, parsedFragSrc, fragIOM);
 
     // Create the fragment shader
     ShaderSource srcFrag;
@@ -54,6 +54,83 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     if (defines) srcFrag.sources.push_back(defines);
     srcFrag.sources.push_back(parsedFragSrc.c_str());
     if (!program.addShader(srcFrag)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Set the attributes
+    program.setAttributes(attributeNames, semantics);
+    // Link the program
+    if (!program.link()) {
+        program.dispose();
+        return m_nilProgram;
+    }
+    // Set uniforms
+    program.initUniforms();
+
+    program.onShaderCompilationError -= makeDelegate(triggerShaderCompilationError);
+    program.onProgramLinkError -= makeDelegate(triggerProgramLinkError);
+    return program;
+}
+
+vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString geomSrc,
+    vio::IOManager* vertIOM /*= nullptr*/,
+    vio::IOManager* fragIOM /*= nullptr*/,
+    vio::IOManager* geomIOM /*= nullptr*/,
+    const cString defines /*= nullptr*/) {
+    vio::IOManager ioManager;
+    // Use default ioManager
+    if (!vertIOM) vertIOM = &ioManager;
+    if (!fragIOM) fragIOM = &ioManager;
+    if (!geomIOM) geomIOM = &ioManager;
+
+    std::vector<nString> attributeNames;
+    std::vector<VGSemantic> semantics;
+    nString parsedVertSrc;
+    nString parsedFragSrc;
+    nString parsedGeomSrc;
+
+    // Allocate program object
+    GLProgram program(true);
+    program.onShaderCompilationError += makeDelegate(triggerShaderCompilationError);
+    program.onProgramLinkError += makeDelegate(triggerProgramLinkError);
+
+    // Parse vertex shader code
+    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc,
+        attributeNames, semantics, vertIOM);
+
+    // Create vertex shader
+    ShaderSource srcVert;
+    srcVert.stage = vg::ShaderType::VERTEX_SHADER;
+    if (defines) srcVert.sources.push_back(defines);
+    srcVert.sources.push_back(parsedVertSrc.c_str());
+    if (!program.addShader(srcVert)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Parse fragment shader code
+    ShaderParser::parseFragmentOrGeometryShader(fragSrc, parsedFragSrc, fragIOM);
+
+    // Create the fragment shader
+    ShaderSource srcFrag;
+    srcFrag.stage = vg::ShaderType::FRAGMENT_SHADER;
+    if (defines) srcFrag.sources.push_back(defines);
+    srcFrag.sources.push_back(parsedFragSrc.c_str());
+    if (!program.addShader(srcFrag)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Parse geometry shader code
+    ShaderParser::parseFragmentOrGeometryShader(geomSrc, parsedGeomSrc, geomIOM);
+
+    // Create the geometry shader
+    ShaderSource srcGeom;
+    srcGeom.stage = vg::ShaderType::GEOMETRY_SHADER;
+    if (defines) srcGeom.sources.push_back(defines);
+    srcGeom.sources.push_back(parsedGeomSrc.c_str());
+    if (!program.addShader(srcGeom)) {
         program.dispose();
         return m_nilProgram;
     }
@@ -112,6 +189,63 @@ vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath
 
     return createProgram(vertSrc.c_str(), fragSrc.c_str(), &vertIOM, &fragIOM, defines);
 }
+
+
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(
+    const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath,
+    vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/)
+{
+    vio::IOManager ioManager;
+    vio::Path vertSearchDir;
+    vio::Path fragSearchDir;
+    vio::Path geomSearchDir;
+
+    vio::IOManager vertIOM;
+    vio::IOManager fragIOM;
+    vio::IOManager geomIOM;
+    if (iom) {
+        vertIOM = *iom;
+        fragIOM = *iom;
+        geomIOM = *iom;
+    }
+    else {
+        vertIOM = ioManager;
+        fragIOM = ioManager;
+        geomIOM = ioManager;
+    }
+
+    // Set search dir to same dir as the files
+    vertSearchDir = vertPath;
+    fragSearchDir = fragPath;
+    geomSearchDir = geometryPath;
+    vertSearchDir--;
+    fragSearchDir--;
+    geomSearchDir--;
+    vertIOM.setSearchDirectory(vertSearchDir);
+    fragIOM.setSearchDirectory(fragSearchDir);
+    geomIOM.setSearchDirectory(geomSearchDir);
+
+    nString vertSrc;
+    nString fragSrc;
+    nString geomSrc;
+
+    // Load in the files with error checking
+    if (!vertIOM.readFileToString(vertPath, vertSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + vertPath.getString());
+        return m_nilProgram;
+    }
+    if (!fragIOM.readFileToString(fragPath, fragSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + fragPath.getString());
+        return m_nilProgram;
+    }
+    if (!fragIOM.readFileToString(geometryPath, geomSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + geometryPath.getString());
+        return m_nilProgram;
+    }
+
+    return createProgram(vertSrc.c_str(), fragSrc.c_str(), geomSrc.c_str(), &vertIOM, &fragIOM, &geomIOM, defines);
+}
+
 
 void vg::ShaderManager::disposeAllPrograms() {
     for (auto& it : m_programMap) {

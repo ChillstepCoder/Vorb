@@ -20,9 +20,9 @@ void Skybox::init(const Material* material) {
 
 
     for (unsigned f = 0; f < 6; ++f) {
-        const i32v2& axis = QUAD_FACING_AXIS[f];
+        const i32v2& axis = CUBE_FACING_AXIS[f];
         f32v3 bottomLeft(-RADIUS);
-        bottomLeft += OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[f] * DIAMETER;
+        bottomLeft += OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[f] * DIAMETER;
         { // Bottom Left
             TileVertex& vbl = *(v++);
             vbl.pos = bottomLeft;

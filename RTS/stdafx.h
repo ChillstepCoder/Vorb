@@ -202,7 +202,7 @@ enum AXIS_3D {
 
 // QUAD FACINGS
 // TODO: Do we need bottom?
-enum class QuadFacing {
+enum class CubeFacing {
     LEFT,
     FRONT,
     RIGHT,
@@ -212,7 +212,7 @@ enum class QuadFacing {
     COUNT
 };
 
-const i32v2 QUAD_FACING_AXIS[enum_cast(QuadFacing::COUNT)] = {
+const i32v2 CUBE_FACING_AXIS[enum_cast(CubeFacing::COUNT)] = {
     i32v2(AXIS_Y, AXIS_Z), // LEFT
     i32v2(AXIS_X, AXIS_Z),  // FRONT
     i32v2(AXIS_Y, AXIS_Z),  // RIGHT
@@ -221,7 +221,7 @@ const i32v2 QUAD_FACING_AXIS[enum_cast(QuadFacing::COUNT)] = {
     i32v2(AXIS_X, AXIS_Y)   // BOTTOM
 };
 
-const i32v3 QUAD_FACING_ADJACENT_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+const i32v3 CUBE_FACING_NORMALS[enum_cast(CubeFacing::COUNT)] = {
     i32v3(-1, 0, 0), // LEFT
     i32v3(0, -1, 0), // FRONT
     i32v3(1, 0, 0), // RIGHT
@@ -230,7 +230,16 @@ const i32v3 QUAD_FACING_ADJACENT_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
     i32v3(0, 0, -1)  // BOTTOM
 };
 
-const f32v3 BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+const i32v2 CUBE_FACING_TANGENTS[enum_cast(CubeFacing::COUNT)] = {
+    i32v2(1, 0),   // LEFT
+    i32v2(-1,  0), // FRONT
+    i32v2(-1, 0),  // RIGHT
+    i32v2(1, 0),   // BACK
+    i32v2(0, 1),   // TOP
+    i32v2(0, -1)   // BOTTOM
+};
+
+const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, -1.0), // LEFT
     f32v3(0, 0, -1.0), // FRONT
     f32v3(1.0f, 0, -1.0), // RIGHT
@@ -239,7 +248,7 @@ const f32v3 BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
     f32v3(0, 0, -1.0) // BOTTOM
 };
 
-const f32v3 OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::COUNT)] = {
+const f32v3 OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, 0.0), // LEFT
     f32v3(0, 0, 0.0), // FRONT
     f32v3(1.0f, 0, 0.0), // RIGHT

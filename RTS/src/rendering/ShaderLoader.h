@@ -28,11 +28,11 @@ public:
     static vg::GLProgram getProgram(const nString& name);
 
     /// Gets or creates a program from two shader paths
-    static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName);
+    static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName = "");
 
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath,
+    static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath = "",
         vio::IOManager* iom = nullptr, const cString defines = nullptr);
 
     /// Creates a program using passed code, and does error checking
@@ -46,21 +46,32 @@ public:
     static void registerFragmentShaderPath(const nString& name, const vio::Path& path) {
         sFragmentShaderNameToPath[name] = path;
     }
+    static void registerGeometryShaderPath(const nString& name, const vio::Path& path) {
+        sGeometryShaderNameToPath[name] = path;
+    }
 
     static void clearAllCachedPrograms();
 
 private:
-    // Tries to look up the full path from the shader names
     static void tryGetCachedPaths(
         const nString& vertexShaderName,
         const nString& fragmentShaderName,
         OUT vio::Path& resultVertPath,
         OUT vio::Path& resultFragPath
     );
+    static void tryGetCachedPaths(
+        const nString& vertexShaderName,
+        const nString& fragmentShaderName,
+        const nString& geometryShaderName,
+        OUT vio::Path& resultVertPath,
+        OUT vio::Path& resultFragPath,
+        OUT vio::Path& resultGeomPath
+    );
 
-    static std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> sProgramCache;
+    static std::map<std::pair<nString /*vert*/, nString /*frag + geom*/>, vg::GLProgram> sProgramCache;
     static std::map<nString, vio::Path> sVertexShaderNameToPath;
     static std::map<nString, vio::Path> sFragmentShaderNameToPath;
+    static std::map<nString, vio::Path> sGeometryShaderNameToPath;
 };
 
 #endif // ShaderLoader_h__

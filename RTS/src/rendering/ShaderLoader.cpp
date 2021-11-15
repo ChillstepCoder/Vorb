@@ -5,9 +5,9 @@
 #include <Vorb/graphics/ShaderManager.h>
 
 std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> ShaderLoader::sProgramCache;
-// TODO: Pretty sure these are non functional
 std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
+std::map<nString, vio::Path> ShaderLoader::sGeometryShaderNameToPath;
 
 namespace {
     void printShaderError(Sender s VORB_MAYBE_UNUSED, const nString& n) {
@@ -28,8 +28,9 @@ vg::GLProgram ShaderLoader::getProgram(const nString& name) {
     return vg::ShaderManager::getProgram(name);
 }
 
-vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName) {
-    auto id = std::make_pair(vertexShaderName, fragmentShaderName);
+vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName /*= ""*/) {
+    
+    auto id = std::make_pair(vertexShaderName, fragmentShaderName + geometryShaderName);
     auto&& it = sProgramCache.find(id);
     if (it != sProgramCache.end()) {
         return it->second;
@@ -37,14 +38,20 @@ vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, 
 
     vio::Path vertPath;
     vio::Path fragPath;
-    tryGetCachedPaths(vertexShaderName, fragmentShaderName, vertPath, fragPath);
+    vio::Path geomPath;
+    if (geometryShaderName.size()) {
+        tryGetCachedPaths(vertexShaderName, fragmentShaderName, geometryShaderName, vertPath, fragPath, geomPath);
+    }
+    else {
+        tryGetCachedPaths(vertexShaderName, fragmentShaderName, vertPath, fragPath);
+    }
 
-    vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName, vertPath, fragPath);
+    vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName + geometryShaderName, vertPath, fragPath, geomPath);
     sProgramCache.insert(std::make_pair(id, newProgram));
     return newProgram;
 }
 
-CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath,
+CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/,
     vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/) {
     vg::ShaderManager::onFileIOFailure += makeDelegate(printFileIOError);
     vg::ShaderManager::onShaderCompilationError += makeDelegate(printShaderError);
@@ -54,10 +61,21 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
 
     vg::GLProgram program;
     while (true) {
-        program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, iom, defines);
+        // Optional geometry stage
+        if (!geometryPath.isNull()) {
+            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, geometryPath, iom, defines);
+        }
+        else {
+            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, iom, defines);
+        }
         if (program.isLinked()) break;
         program.dispose();
-        printf("Enter any key to try recompiling with Vertex Shader: %s and Fragment Shader %s\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString());
+        if (geometryPath.isNull()) {
+            printf("Enter any key to try recompiling with Vertex Shader: %s and Fragment Shader %s\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString());
+        }
+        else {
+            printf("Enter any key to try recompiling with Vertex Shader: %s and Fragment Shader: %s and Geometry Shader: %s\nEnter Z to abort.\n", vertPath.getCString(), fragPath.getCString(), geometryPath.getCString());
+        }
         char tmp;
         std::cin >> tmp;
         if (tmp == 'Z' || tmp == 'z') break;
@@ -123,6 +141,37 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
         }
         else {
             resultFragPath = fragmentShaderName;
+        }
+    }
+}
+
+void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, const nString& geometryShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath, OUT vio::Path& resultGeomPath)
+{
+    {
+        auto&& it = sVertexShaderNameToPath.find(vertexShaderName);
+        if (it != sVertexShaderNameToPath.end()) {
+            resultVertPath = it->second;
+        }
+        else {
+            resultVertPath = vertexShaderName;
+        }
+    }
+    {
+        auto&& it = sFragmentShaderNameToPath.find(fragmentShaderName);
+        if (it != sFragmentShaderNameToPath.end()) {
+            resultFragPath = it->second;
+        }
+        else {
+            resultFragPath = fragmentShaderName;
+        }
+    }
+    {
+        auto&& it = sGeometryShaderNameToPath.find(geometryShaderName);
+        if (it != sGeometryShaderNameToPath.end()) {
+            resultGeomPath = it->second;
+        }
+        else {
+            resultGeomPath = fragmentShaderName;
         }
     }
 }

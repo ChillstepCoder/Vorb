@@ -163,10 +163,10 @@ void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const I
             boxPos.z += (i / stackLayer) * spacingRatio.z;
             // TODO: Bottom
             // TODO: Cull edges, merging
-            for (int i = enum_cast(QuadFacing::LEFT); i <= enum_cast(QuadFacing::TOP); ++i) {
-                const f32v2& axis = QUAD_FACING_AXIS[i];
+            for (int i = enum_cast(CubeFacing::LEFT); i <= enum_cast(CubeFacing::TOP); ++i) {
+                const f32v2& axis = CUBE_FACING_AXIS[i];
                 const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
-                mesh.addAxisAlignedQuad(boxPos + OBJECT_QUAD_FACING_GEOMETRY_OFFSETS[i] * spacingRatio, dims, f32v2(0.0f, 0.0f), axis, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                mesh.addAxisAlignedQuad(boxPos + OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[i] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)i, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
             }
         }
     }

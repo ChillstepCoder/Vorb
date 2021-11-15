@@ -1,7 +1,10 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D CloudFbo;
+uniform sampler2D FboDepth;
 uniform vec3 SunPositionCameraRelative;
 uniform float unAmbient;
+uniform mat4 InverseV;
+uniform mat4 InverseP;
 
 uniform vec4 unCloudTextureRect;
 uniform float unCloudTexturePage;
@@ -19,6 +22,7 @@ void main() {
 	float baseAlpha = texture2D(CloudFbo, fUV).a;
 	//vec3 norm = normalize(blur13noalpha(CloudFbo, fUV, ScreenResolution, vec2(baseAlpha * 3.0, 0.0)));
 	vec3 norm = normalize(texture2D(CloudFbo, fUV).rgb);
+	float depth = texture2D(FboDepth, fUV).r;
 	
 	float z = step(0.000001, norm.z);
 	if (z == 0.0) {
@@ -30,7 +34,7 @@ void main() {
 	tex.y = 1.0 - tex.y;
 	fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
 	// Fake scattering
-	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient);
-	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient);
+	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient, 1.0, depth, fUV);
+	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient, 1.0, depth, fUV);
 	fColor.rgb = frontRGB * 0.7 + backRGB * 0.3;
 }

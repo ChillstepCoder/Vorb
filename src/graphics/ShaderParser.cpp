@@ -71,7 +71,7 @@ void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& r
     }
 }
 
-void vg::ShaderParser::parseFragmentShader(const cString inputCode, OUT nString& resultCode, vio::IOManager* iom /*= nullptr*/) {
+void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager* iom /*= nullptr*/) {
     if (m_semantics.empty()) initSemantics();
     isNormalComment = false;
     isBlockComment = false;

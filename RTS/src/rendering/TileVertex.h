@@ -14,13 +14,13 @@ public:
         pos(pos), uvs(uvs), color(color), atlasPage(atlasPage) {
     }
 
-    f32v3 pos; // TOOD: ui16v3?
-    f32v2 uvs; //TODO: ui16v2? (since its 4096x4096 ui16 will work per pixel)
+    f32v3 pos;
+    f32v2 uvs;
     color4 color;
     ui16 atlasPage;
-    i8v3 normal; // TODO: 3D test only
+    i8v3 normal;
+    i8v2 tangent; // for normal mapping
     ui8 windInfluence = 0;
-    ui8 padding[2];
 };
 
 // Need power of 2 alignment

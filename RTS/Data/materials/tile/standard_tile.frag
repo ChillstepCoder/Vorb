@@ -3,6 +3,7 @@ uniform sampler2DArray Atlas;
 in vec2 fUV;
 flat in float fAtlasPage;
 in vec4 fTint;
+in mat3 fTBN;
 
 layout (location = 0) out vec4 fColor;
 layout (location = 1) out vec4 fNormal;
@@ -19,6 +20,9 @@ void main() {
 	
 	
 	// Normal is always the next page
-	fNormal = texture(Atlas, vec3(fUV, fAtlasPage + 1.0));
+	vec3 normal = texture(Atlas, vec3(fUV, fAtlasPage + 1.0)).rgb;
+	normal = normal * 2.0 - 1.0;
+	normal = normalize(fTBN * normal);
+	fNormal.rgb = (normal + 1.0) * 0.5;
 	fNormal.a = fColor.a;
 }

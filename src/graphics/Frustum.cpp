@@ -37,7 +37,7 @@ void vg::Frustum::setCamInternals(f32 fov, f32 aspectRatio, f32 znear, f32 zfar)
     m_fw = m_fh * m_aspectRatio;
 }
 
-void vg::Frustum::updateFromWVP(const f32m4& WVP) {
+void vg::Frustum::updateFromWVP(const f32m4& WVP, const f32m4& inverseVP) {
     m_planes[P_NEAR].setCoefficients(
         WVP[0][2] + WVP[0][3],
         WVP[1][2] + WVP[1][3],
@@ -68,6 +68,8 @@ void vg::Frustum::updateFromWVP(const f32m4& WVP) {
         -WVP[1][0] + WVP[1][3],
         -WVP[2][0] + WVP[2][3],
         -WVP[3][0] + WVP[3][3]);
+
+    updateFrustumCorners(inverseVP);
     // NAN check
     assert(m_planes[P_LEFT].normal.x == m_planes[P_LEFT].normal.x);
 }
@@ -129,4 +131,21 @@ bool vg::Frustum::sphereInFrustum(const f32v3& pos, f32 radius) const {
         }
     }
     return true;
+}
+
+void vorb::graphics::Frustum::updateFrustumCorners(const f32m4& inverseVP) {
+    unsigned i = 0;
+    for (unsigned int x = 0; x < 2; ++x) {
+        for (unsigned int y = 0; y < 2; ++y) {
+            for (unsigned int z = 0; z < 2; ++z) {
+                const glm::vec4 pt =
+                    inverseVP * glm::vec4(
+                        2.0f * x - 1.0f,
+                        2.0f * y - 1.0f,
+                        2.0f * z - 1.0f,
+                        1.0f);
+                m_frustumCornersWorldSpace[i] = pt / pt.w;
+            }
+        }
+    }
 }

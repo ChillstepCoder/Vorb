@@ -18,6 +18,7 @@ void main() {
 	//oColor.rgb = oColor.rgb * 0.0001 + (fNormal + vec3(1.0)) * 0.5;
 	
 	// Normal is always the next page
-	oNormal.rgb = fNormal;//;texture(Atlas, vec3(fUV, fAtlasPage + 1.0));
+	// TODO: Normal mapping
+	oNormal.rgb = (fNormal + 1.0) * 0.5;//;texture(Atlas, vec3(fUV, fAtlasPage + 1.0));
 	oNormal.a = oColor.a;
 }

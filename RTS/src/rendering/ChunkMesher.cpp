@@ -259,11 +259,11 @@ const NeighborIndex EXPOSED_NEIGHBOR_ADJACENT_INDICES[4][2] = {
     { NeighborIndex::LEFT, NeighborIndex::RIGHT }, // EN_TOP
 };
 
-const QuadFacing EXPOSED_NEIGHBOR_QUAD_FACINGS[4] = {
-    QuadFacing::FRONT,
-    QuadFacing::LEFT,
-    QuadFacing::RIGHT,
-    QuadFacing::BACK
+const CubeFacing EXPOSED_NEIGHBOR_QUAD_FACINGS[4] = {
+    CubeFacing::FRONT,
+    CubeFacing::LEFT,
+    CubeFacing::RIGHT,
+    CubeFacing::BACK
 };
 
 // Prevent rounding errors, 0.0001 is half a pixel
@@ -429,10 +429,10 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
     if (data.data == 0) {
         // We are fully surrounded, just render top
         quadMesh.addAxisAlignedQuad(
-            tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+            tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
             spriteData.dimsMeters,
             spriteData.offset,
-            QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+            CubeFacing::TOP,
             spriteData.atlasPage,
             spriteData.uvs,
             COLOR_WHITE,
@@ -444,10 +444,10 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
         // Check if we need to render the base layer first
         if (data.a < 0x10) {
             quadMesh.addAxisAlignedQuad(
-                tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
                 spriteData.dimsMeters,
                 spriteData.offset,
-                QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                CubeFacing::TOP,
                 spriteData.atlasPage,
                 spriteData.uvs,
                 COLOR_WHITE,
@@ -455,7 +455,7 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
             );
         }
         // Render up to 4 textures depending on configuration
-        f32v3 tilePosRoof = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)];
+        f32v3 tilePosRoof = tileWorldPos + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)];
         for (int i = 0; i < 4; ++i) {
             const ui16 textureIndex = data.dataArray[i];
             if (textureIndex == 0) break;
@@ -470,7 +470,7 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
                 tilePosRoof,
                 spriteData.dimsMeters,
                 spriteData.offset,
-                QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                CubeFacing::TOP,
                 spriteData.atlasPage,
                 uvs,
                 COLOR_WHITE,
@@ -489,10 +489,10 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
         for (int c = 0; c < 4; ++c) {
             ExposedNeighborBits cardinal = EXPOSED_NEIGHBOR_CARDINAL[c];
             const ExposedNeighborBits* adjacents = EXPOSED_NEIGHBOR_ADJACENTS[c];
-            QuadFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
+            CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
             // Render exposed cardinal wall if needed
             if (isBitSet(exposedBits, cardinal)) {
-                const f32v3 quadPos = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
+                const f32v3 quadPos = tileWorldPos + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
                 // Simple 2 bit LUT that converts cardinals to 1 or 2
                 const unsigned sideCheck = ((exposedBits & adjacents[0]) > 0) | (((exposedBits & adjacents[1]) > 0) << 1);
                 const ui16 val = sExposedWallLookup[sideCheck];
@@ -505,7 +505,7 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
                     quadPos,
                     spriteData.dimsMeters,
                     spriteData.offset,
-                    QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                    quadFacing,
                     spriteData.atlasPage,
                     uvs,
                     COLOR_WHITE,
@@ -543,7 +543,7 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
                         f32v3(quadPos.x, quadPos.y, quadPos.z - i),
                         spriteData.dimsMeters,
                         spriteData.offset,
-                        QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                        quadFacing,
                         spriteData.atlasPage,
                         uvs,
                         COLOR_WHITE,
@@ -579,10 +579,10 @@ void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerI
     if (data.data == 0) {
         // We are fully surrounded, just render top
         quadMesh.addAxisAlignedQuad(
-            tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+            tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
             spriteData.dimsMeters,
             spriteData.offset,
-            QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+            CubeFacing::TOP,
             spriteData.atlasPage,
             spriteData.uvs,
             COLOR_WHITE,
@@ -592,10 +592,10 @@ void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerI
     else {
         // Render top
         quadMesh.addAxisAlignedQuad(
-            tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+            tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
             spriteData.dimsMeters,
             spriteData.offset,
-            QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+            CubeFacing::TOP,
             spriteData.atlasPage,
             spriteData.uvs,
             COLOR_WHITE,
@@ -613,10 +613,10 @@ void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerI
         for (int c = 0; c < 4; ++c) {
             ExposedNeighborBits cardinal = EXPOSED_NEIGHBOR_CARDINAL[c];
             const ExposedNeighborBits* adjacents = EXPOSED_NEIGHBOR_ADJACENTS[c];
-            QuadFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
+            CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
             // Render exposed cardinal wall if needed
             if (isBitSet(exposedBits, cardinal)) {
-                const f32v3 quadPos = tileWorldPos + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
+                const f32v3 quadPos = tileWorldPos + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
                 // Simple 2 bit LUT that converts cardinals to 1 or 2
                 const unsigned sideCheck = ((exposedBits & adjacents[0]) > 0) | (((exposedBits & adjacents[1]) > 0) << 1);
                 const ui16 val = 2;
@@ -629,7 +629,7 @@ void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerI
                     quadPos,
                     spriteData.dimsMeters,
                     spriteData.offset,
-                    QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                    quadFacing,
                     spriteData.atlasPage,
                     uvs,
                     COLOR_WHITE,
@@ -664,7 +664,7 @@ void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerI
                         f32v3(quadPos.x, quadPos.y, quadPos.z - i),
                         spriteData.dimsMeters,
                         spriteData.offset,
-                        QUAD_FACING_AXIS[enum_cast(quadFacing)],
+                        quadFacing,
                         spriteData.atlasPage,
                         uvs,
                         COLOR_WHITE,
@@ -683,10 +683,10 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
             // We do not mesh TileShape::THIN here, it is a billboard
             if (shape == TileShape::BLOCK) {
                 quadMesh.addAxisAlignedQuad(
-                    tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                    tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
                     spriteData.dimsMeters,
                     spriteData.offset,
-                    QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                    CubeFacing::TOP,
                     spriteData.atlasPage,
                     spriteData.uvs,
                     COLOR_WHITE,
@@ -708,10 +708,10 @@ void addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const Spr
             int xOff = (ui32)tilePosition.x % 8;
             int yOff = 7 - (ui32)tilePosition.y % 8;
             quadMesh.addAxisAlignedQuad(
-                tilePosition + BOX_QUAD_FACING_GEOMETRY_OFFSETS[enum_cast(QuadFacing::TOP)],
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
                 spriteData.dimsMeters,
                 spriteData.offset,
-                QUAD_FACING_AXIS[enum_cast(QuadFacing::TOP)],
+                CubeFacing::TOP,
                 spriteData.atlasPage,
                 spriteData.uvs + f32v4(xOff / 8.0f, yOff / 8.0f, 0.0f, 0.0f),
                 COLOR_WHITE,

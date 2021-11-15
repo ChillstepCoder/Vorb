@@ -2,6 +2,7 @@ uniform mat4 VP;
 uniform float Time;
 uniform vec3 CameraRight;
 uniform vec3 CameraFront;
+uniform vec3 CameraUp;
 uniform vec3 CameraPos;
 
 in vec4 vPosition;
@@ -14,6 +15,7 @@ in float vWindInfluence;
 out vec2 fUV;
 flat out float fAtlasPage;
 out vec4 fTint;
+out mat3 fTBN;
 
 #include "../util/wind.glsl"
 
@@ -48,6 +50,10 @@ void main() {
 	//fTint.g = 0.0;
 	//fTint.b = 0.0;
 	
+	// Hardcoded for facing the camera
+	//fTBN = mat3(-CameraUp, -CameraRight, -CameraFront);
+	// Hardcoded for facing up
+	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
 	
     gl_Position = glPos;
 }

@@ -53,7 +53,7 @@ namespace vorb {
             /// @param inputCode: The input code to use for parsing
             /// @param resultCode: The stored resulting code after parse
             /// @param iom: Optional iomanager to use for include lookups
-            static void parseFragmentShader(const cString inputCode, OUT nString& resultCode,
+            static void parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode,
                                             vio::IOManager* iom = nullptr);
             
             static Event<nString> onParseError; ///< Event that fires on a parsing error

@@ -6,11 +6,14 @@ in vec4 vPosition;
 in vec2 vUV;
 in vec4 vTint;
 in float vAtlasPage;
+in vec3 vNormal;
+in vec2 vTangent;
 in float vWindInfluence;
 
 out vec2 fUV;
 flat out float fAtlasPage;
 out vec4 fTint;
+out mat3 fTBN;
 
 #include "../util/wind.glsl"
 
@@ -20,6 +23,11 @@ void main() {
     fAtlasPage = vAtlasPage;
     vec4 worldPos = vPosition - vec4(CameraPos, 0.0);
     worldPos.x += getWindAtPosition(Time, vPosition) * vWindInfluence;
+	
+	vec3 normal = normalize(vNormal);
+	vec3 tangent = normalize(vec3(vTangent, 0));
+	vec3 binormal = cross(normal, tangent);
+	fTBN = mat3(tangent, binormal, normal);
 
     gl_Position = VP * worldPos;
 }

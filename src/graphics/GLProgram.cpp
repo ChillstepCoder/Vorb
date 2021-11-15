@@ -69,6 +69,12 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
                 return false;
             }
             break;
+        case ShaderType::GEOMETRY_SHADER:
+            if (m_idGS != 0) {
+                onShaderCompilationError("Attempting to add another fragment shader");
+                return false;
+            }
+            break;
         default:
             onShaderCompilationError("Shader stage is not supported");
             return false;
@@ -113,6 +119,9 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
             break;
         case ShaderType::FRAGMENT_SHADER:
             m_idFS = idS;
+            break;
+        case ShaderType::GEOMETRY_SHADER:
+            m_idGS = idS;
             break;
         default:
             break;

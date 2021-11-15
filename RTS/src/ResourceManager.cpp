@@ -252,6 +252,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         else if (fileHasExtension(entry, ".frag")) {
             ShaderLoader::registerFragmentShaderPath(entry.getLeaf(), entry);
         }
+        else if (fileHasExtension(entry, ".geom")) {
+            ShaderLoader::registerGeometryShaderPath(entry.getLeaf(), entry);
+        }
         else if (fileHasExtension(entry, ".part")) {
             mParticleSystemFiles.emplace_back(entry);
         }

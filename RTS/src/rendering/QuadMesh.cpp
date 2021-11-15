@@ -20,11 +20,15 @@ void QuadMesh::reserveQuadCount(size_t count) {
     mVertexData.reserve(count * 4u);
 }
 
-void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, const i32v2& xyAxis, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal) {
+void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, CubeFacing axis, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal) {
 
     mVertexData.resize(mVertexData.size() + 4);
     assert(!mVertexData.empty());
     TileVertex* verts = &mVertexData.back() - 3;
+
+    const i32v2& xyAxis = CUBE_FACING_AXIS[enum_cast(axis)];
+    const i8v3 normal(CUBE_FACING_NORMALS[enum_cast(axis)]);
+    const i8v2 tangent(CUBE_FACING_TANGENTS[enum_cast(axis)]);
 
     // Center the sprite
     // TODO: This shouldnt be hard coded to xy
@@ -54,6 +58,8 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
         vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbl.color = color;
         vbl.atlasPage = spriteAtlasPage;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
     }
     { // Bottom Right
         TileVertex& vbr = verts[1];
@@ -63,6 +69,8 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
         vbr.color = color;
         vbr.atlasPage = spriteAtlasPage;
         vbr.pos[xyAxis.x] += xyDims.x + EPSILON;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
     }
 
     { // Top Left
@@ -73,6 +81,8 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
         vtl.color = color;
         vtl.atlasPage = spriteAtlasPage;
         vtl.pos[xyAxis.y] += xyDims.y + EPSILON;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
     }
     { // Top Right
         TileVertex& vtr = verts[3];
@@ -83,6 +93,8 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
         vtr.atlasPage = spriteAtlasPage;
         vtr.pos[xyAxis.x] += xyDims.x + EPSILON;
         vtr.pos[xyAxis.y] += xyDims.y + EPSILON;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
     }
 }
 
@@ -188,7 +200,13 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
             glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, color));
         }
         if (const VGAttribute* windAttribute = program.tryGetAttribute("vWindInfluence")) {
-            glVertexAttribPointer(program.getAttribute("vWindInfluence"), 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, windInfluence));
+            glVertexAttribPointer(*windAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(TileVertex), (void*)offsetof(TileVertex, windInfluence));
+        }
+        if (const VGAttribute* normalAttribute = program.tryGetAttribute("vNormal")) {
+            glVertexAttribPointer(*normalAttribute, 3, GL_BYTE, false, sizeof(TileVertex), (void*)offsetof(TileVertex, normal));
+        }
+        if (const VGAttribute* tangentAttribute = program.tryGetAttribute("vTangent")) {
+            glVertexAttribPointer(*tangentAttribute, 2, GL_BYTE, false, sizeof(TileVertex), (void*)offsetof(TileVertex, tangent));
         }
     }
 }

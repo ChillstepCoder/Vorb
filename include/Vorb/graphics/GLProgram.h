@@ -194,6 +194,7 @@ namespace vorb {
             VGProgram m_id = 0; ///< Program
             VGShader m_idVS = 0; ///< Vertex shader
             VGShader m_idFS = 0; ///< Fragment shader
+            VGShader m_idGS = 0; ///< Geometry shader
 
             bool m_isLinked = false; ///< Keeps track of link status
 

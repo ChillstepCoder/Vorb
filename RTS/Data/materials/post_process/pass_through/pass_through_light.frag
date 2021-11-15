@@ -1,5 +1,6 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D Fbo0;
+uniform sampler2D FboNormals;
 uniform sampler2D FboLight;
 uniform sampler2D FboDepth;
 uniform vec4 GradientRect;
@@ -8,7 +9,11 @@ uniform float GradientAtlasPage;
 uniform float SunHeight;
 uniform float Time;
 uniform mat4 InverseVP;
+uniform mat4 InverseV;
+uniform mat4 InverseP;
 
+
+#include "../../util/lighting.glsl"
 
 in vec2 fUV;
 
@@ -51,6 +56,15 @@ void main() {
 	fColor.rgb += sunAngle * max(pow(sunIntensity, 0.5) - 0.1, 0.0);
 	// Sky sun glow + sun texture
 	fColor.rgb += isSky * (sunAngle * 0.5 + max(pow(sunAngle - 0.95, 0.3), 0.0) * 2.0);
+	
+	// Sun phong
+	vec3 normal = texture(FboNormals, fUV).rgb;
+	normal = normal * 2.0 - 1.0;
+	float roughness = 1.0 - (isGround * 0.7);
+	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(isSky, 0.5), roughness, depth, fUV);
+	
+	
+	
 	fColor.a = 1.0;
 	
 }

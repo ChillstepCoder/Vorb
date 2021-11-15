@@ -60,6 +60,7 @@ struct MaterialData {
     Array<MaterialTextureInputData> textures;
     nString vertexShaderName;
     nString fragmentShaderName;
+    nString geometryShaderName;
 };
 KEG_TYPE_DECL(MaterialData);
 

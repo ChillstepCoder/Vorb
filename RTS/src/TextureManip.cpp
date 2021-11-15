@@ -79,16 +79,20 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
         glUniform1i(atlasUniform, nextAvailableTextureIndex);
         glUniform2f(pixelDimsUniform, 1.0f / TEXTURE_ATLAS_WIDTH_PX, 1.0f / TEXTURE_ATLAS_WIDTH_PX);
         
-
+      
+        
         // Loop through each sprite on this layer
         for (SpriteData* sprite : it.second) {
-
+            // Extend by variant
+            f32v4 uvs = sprite->uvs;
+            uvs.z *= sprite->variantCount.x;
+            uvs.w *= sprite->variantCount.y;
             // Method specific generation
             switch (sprite->method)
             {
                 case TileTextureMethod::SIMPLE:
                 case TileTextureMethod::FLORA: {
-                    glUniform4f(uvUniform, sprite->uvs.x, sprite->uvs.y, sprite->uvs.z, sprite->uvs.w);
+                    glUniform4fv(uvUniform, 1, &uvs.x);
                     sGlobalFullQuadVBO.draw();
                     break;
                 }
@@ -97,10 +101,10 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                         for (int x = 0; x < TILE_TEX_METHOD_CONNECTED_WALL_WIDTH; ++x) {
                             glUniform4f(
                                 uvUniform,
-                                sprite->uvs.x + x * sprite->uvs.z,
-                                sprite->uvs.y + y * sprite->uvs.w,
-                                sprite->uvs.z,
-                                sprite->uvs.w
+                                uvs.x + x * uvs.z,
+                                uvs.y + y * uvs.w,
+                                uvs.z,
+                                uvs.w
                             );
                             sGlobalFullQuadVBO.draw();
                         }
@@ -112,10 +116,10 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                         for (int x = 0; x < TILE_TEX_METHOD_VERTICAL_WALL_WIDTH; ++x) {
                             glUniform4f(
                                 uvUniform,
-                                sprite->uvs.x + x * sprite->uvs.z,
-                                sprite->uvs.y + y * sprite->uvs.w,
-                                sprite->uvs.z,
-                                sprite->uvs.w
+                                uvs.x + x * uvs.z,
+                                uvs.y + y * uvs.w,
+                                uvs.z,
+                                uvs.w
                             );
                             sGlobalFullQuadVBO.draw();
                         }
@@ -125,10 +129,10 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
                 case TileTextureMethod::WORLD_TILING: {
                     glUniform4f(
                         uvUniform,
-                        sprite->uvs.x,
-                        sprite->uvs.y,
-                        sprite->uvs.z * 8.0f,
-                        sprite->uvs.w * 8.0f
+                        uvs.x,
+                        uvs.y,
+                        uvs.z * 8.0f,
+                        uvs.w * 8.0f
                     );
                     sGlobalFullQuadVBO.draw();
                     break;

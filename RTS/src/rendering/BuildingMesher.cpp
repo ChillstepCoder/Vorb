@@ -308,7 +308,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             const ui32 index = y * aabb.dims.x + x;
             if (ownedTiles.getBit(index)) {
                 f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, 3.0051f);
-                mesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), i32v2(AXIS_X, AXIS_Y), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                mesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
             }
         }
     }

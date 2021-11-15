@@ -21,6 +21,7 @@
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/Skybox.h"
+#include "rendering/post_process/ShadowRenderer.h"
 #include "TextureManip.h"
 
 // TODO: Move to renderer?
@@ -161,6 +162,7 @@ void RenderContext::initPostLoad() {
     mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
     mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+    mShadowRenderer = std::make_unique<ShadowRenderer>();
     checkGlError("Renderer init");
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
     checkGlError("Init texture manipulator");
@@ -181,7 +183,6 @@ void RenderContext::initPostLoad() {
         }
     }
 
-    mSunShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
     mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
@@ -192,7 +193,7 @@ void RenderContext::initPostLoad() {
 
 }
 
-void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos) {
+void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     // Set renderData
     mRenderData.mainCamera = camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
@@ -205,6 +206,9 @@ void RenderContext::beginFrame(const ICamera* camera, f32v3 playerPos) {
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
+
+    // Shadows
+    mShadowRenderer->beginFrame(*camera, sun);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -372,6 +376,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         });
     }
 
+    // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
     // *** Post processes ***
@@ -471,10 +476,11 @@ void RenderContext::selectNextDebugShader() {
 void RenderContext::renderUI(const Camera3D& camera) {
     mSb->begin();
     char buffer[255];
-    const float GAP_SIZE = 60.0f;
-    const float START_MULT = 0.8f;
+    f32 scales = 1.0f;
+    const float GAP_SIZE = 50.0f * scales;
+    const float START_MULT = 0.75f;
     float yOffset = 0.0f;
-    const f32v2 scale(1.0f);
+    const f32v2 scale(scales);
 
     sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
@@ -499,6 +505,12 @@ void RenderContext::renderUI(const Camera3D& camera) {
     sprintf_s(buffer, sizeof(buffer), "SunPosition: %.2f", mWorld.getSunPosition());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;*/
+
+    if (mPassthroughRenderMode != 0) {
+        sprintf_s(buffer, sizeof(buffer), "DEBUG FBO: %s", sPassthroughMaterialNames[mPassthroughRenderMode].c_str());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+    }
 
     mSb->end();
     mSb->render(mScreenResolution);

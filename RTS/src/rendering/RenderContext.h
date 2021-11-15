@@ -19,6 +19,7 @@ class ParticleSystemRenderer;
 class QuadMesh;
 class ResourceManager;
 class Skybox;
+class ShadowRenderer;
 class World;
 
 struct SDL_Window;
@@ -57,7 +58,7 @@ public:
 
     void initPostLoad();
 
-    void beginFrame(const ICamera* camera, f32v3 playerPos); // Called automatically by beginFrame
+    void beginFrame(const Camera3D* camera, f32v3 playerPos); // Called automatically by beginFrame
     void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha);
     void endFrame();
 
@@ -97,6 +98,7 @@ private:
     mutable std::unique_ptr<BuildingRenderer> mBuildingRenderer;
     mutable std::unique_ptr<CloudRenderer> mCloudRenderer;
     mutable std::unique_ptr<DepthOfFieldPostProcess> mDepthOfField;
+    mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
@@ -114,7 +116,6 @@ private:
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
-    const Material* mSunShadowMaterial = nullptr;
     const Material* mSunLightMaterial = nullptr;
     const Material* mLightPassThroughMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
