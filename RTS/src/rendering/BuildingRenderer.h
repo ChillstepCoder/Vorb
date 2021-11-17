@@ -15,6 +15,7 @@ public:
     ~BuildingRenderer();
 
     void renderBuildingRoof(const Building& building);
+    void renderBuildingRoofShadows(const Building& building);
 
 private:
 
@@ -24,5 +25,6 @@ private:
     const MaterialRenderer& mMaterialRenderer;
     const Material* mRoofMaterial = nullptr;
     const Material* mRoofBaseMaterial = nullptr;
+    const Material* mRoofShadowMaterial = nullptr;
 };
 

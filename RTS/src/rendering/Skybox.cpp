@@ -37,13 +37,6 @@ void Skybox::init(const Material* material) {
             vbr.pos[axis.x] += DIAMETER;
         }
 
-        { // Top Left
-            TileVertex& vtl = *(v++);
-            vtl.pos = bottomLeft;
-            vtl.uvs.x = 0.0f;
-            vtl.uvs.y = 0.0f;
-            vtl.pos[axis.y] += DIAMETER;
-        }
         { // Top Right
             TileVertex& vtr = *(v++);
             vtr.pos = bottomLeft;
@@ -51,6 +44,13 @@ void Skybox::init(const Material* material) {
             vtr.uvs.y = 0.0f;
             vtr.pos[axis.x] += DIAMETER;
             vtr.pos[axis.y] += DIAMETER;
+        }
+        { // Top Left
+            TileVertex& vtl = *(v++);
+            vtl.pos = bottomLeft;
+            vtl.uvs.x = 0.0f;
+            vtl.uvs.y = 0.0f;
+            vtl.pos[axis.y] += DIAMETER;
         }
     }
 

@@ -8,6 +8,24 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/RasterizerState.h>
 
+
+const f32v2 CUBE_FACING_AXIS_DIRECTIONS[enum_cast(CubeFacing::COUNT)] = {
+    f32v2(-1, 1), // LEFT
+    f32v2(1,  1),  // FRONT
+    f32v2(1,  1),  // RIGHT
+    f32v2(-1, 1), // BACK
+    f32v2(1,  1),  // TOP
+    f32v2(-1, -1)   // BOTTOM
+};
+const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
+    f32v2(1, 0), // LEFT
+    f32v2(0, 0),  // FRONT
+    f32v2(0, 0),  // RIGHT
+    f32v2(1, 0), // BACK
+    f32v2(0, 0),  // TOP
+    f32v2(1, 1)   // BOTTOM
+};
+
 // Define all possible templates for Mesh class
 // Each function definition should be proceeded by this
 // 
@@ -29,12 +47,18 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
     const i32v2& xyAxis = CUBE_FACING_AXIS[enum_cast(axis)];
     const i8v3 normal(CUBE_FACING_NORMALS[enum_cast(axis)]);
     const i8v2 tangent(CUBE_FACING_TANGENTS[enum_cast(axis)]);
+    const f32v2& xyAxisDirection = CUBE_FACING_AXIS_DIRECTIONS[enum_cast(axis)];
+    const f32v2& initialOffsetMult = CUBE_FACING_AXIS_INITIAL_OFFSETS[enum_cast(axis)];
 
     // Center the sprite
     // TODO: This shouldnt be hard coded to xy
     //const f32v2 offset(-(float)((xyDims.x - 1) / 2) + xyOffset.x, xyOffset.y);
     tilePosition.x += xyOffset.x;
     tilePosition.y += xyOffset.y;
+
+    // Offset for back faces so we can invert direction and have proper back face culling
+    tilePosition[xyAxis.x] += xyDims.x * initialOffsetMult.x;
+    tilePosition[xyAxis.y] += xyDims.y * initialOffsetMult.y;
 
     f32v4 adjustedUvs;
     if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
@@ -68,34 +92,34 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
         vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
         vbr.color = color;
         vbr.atlasPage = spriteAtlasPage;
-        vbr.pos[xyAxis.x] += xyDims.x + EPSILON;
+        vbr.pos[xyAxis.x] += (xyDims.x + EPSILON) * xyAxisDirection.x;
         vbr.normal = normal;
         vbr.tangent = tangent;
     }
-
-    { // Top Left
-        TileVertex& vtl = verts[2];
-        vtl.pos = tilePosition;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = color;
-        vtl.atlasPage = spriteAtlasPage;
-        vtl.pos[xyAxis.y] += xyDims.y + EPSILON;
-        vtl.normal = normal;
-        vtl.tangent = tangent;
-    }
     { // Top Right
-        TileVertex& vtr = verts[3];
+        TileVertex& vtr = verts[2];
         vtr.pos = tilePosition;
         vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
         vtr.uvs.y = adjustedUvs.y;
         vtr.color = color;
         vtr.atlasPage = spriteAtlasPage;
-        vtr.pos[xyAxis.x] += xyDims.x + EPSILON;
-        vtr.pos[xyAxis.y] += xyDims.y + EPSILON;
+        vtr.pos[xyAxis.x] += (xyDims.x + EPSILON) * xyAxisDirection.x;
+        vtr.pos[xyAxis.y] += (xyDims.y + EPSILON) * xyAxisDirection.y;
         vtr.normal = normal;
         vtr.tangent = tangent;
     }
+    { // Top Left
+        TileVertex& vtl = verts[3];
+        vtl.pos = tilePosition;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = color;
+        vtl.atlasPage = spriteAtlasPage;
+        vtl.pos[xyAxis.y] += (xyDims.y + EPSILON) * xyAxisDirection.y;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+    
 }
 
 void QuadMesh::addCross(f32v3 cornerPosition, ui16 spriteAtlasPage, const f32v4& uvs, float width, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence) {
@@ -263,21 +287,8 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
     }
 
     const f32 topZ = tilePosition.z + xyDims.y;
-    { // Top Left
-        BillboardVertex& vtl = verts[2];
-        vtl.rootPos.x = tilePosition.x;
-        vtl.rootPos.y = tilePosition.y;
-        vtl.rootPos.z = tilePosition.z;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = color;
-        vtl.atlasPage = spriteAtlasPage;
-        vtl.xzOffset.x = compressedOffset.x - halfX;
-        vtl.xzOffset.y = compressedOffset.y + compressedDims.y;
-        vtl.windInfluence = windInfluence;
-    }
     { // Top Right
-        BillboardVertex& vtr = verts[3];
+        BillboardVertex& vtr = verts[2];
         vtr.rootPos.x = tilePosition.x;
         vtr.rootPos.y = tilePosition.y;
         vtr.rootPos.z = tilePosition.z;
@@ -289,6 +300,20 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
         vtr.xzOffset.y = compressedOffset.y + compressedDims.y;
         vtr.windInfluence = windInfluence;
     }
+    { // Top Left
+        BillboardVertex& vtl = verts[3];
+        vtl.rootPos.x = tilePosition.x;
+        vtl.rootPos.y = tilePosition.y;
+        vtl.rootPos.z = tilePosition.z;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = color;
+        vtl.atlasPage = spriteAtlasPage;
+        vtl.xzOffset.x = compressedOffset.x - halfX;
+        vtl.xzOffset.y = compressedOffset.y + compressedDims.y;
+        vtl.windInfluence = windInfluence;
+    }
+    
 }
 
 void BillboardMesh::finishMesh(MeshDrawMode drawMode) {
@@ -311,10 +336,15 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         program.enableVertexAttribArrays();
         glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, rootPos));
         glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
-        glVertexAttribPointer(program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, uvs));
-        glVertexAttribPointer(program.getAttribute("vAtlasPage"), 1, GL_UNSIGNED_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, atlasPage));
-        glVertexAttribPointer(program.getAttribute("vWindInfluence"), 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, windInfluence));
-
+        if (const VGAttribute* attr = program.tryGetAttribute("vUV")) {
+            glVertexAttribPointer(*attr, 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, uvs));
+        }
+        if (const VGAttribute* attr = program.tryGetAttribute("vAtlasPage")) {
+            glVertexAttribPointer(*attr, 1, GL_UNSIGNED_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, atlasPage));
+        }
+        if (const VGAttribute* attr = program.tryGetAttribute("vWindInfluence")) {
+            glVertexAttribPointer(*attr, 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, windInfluence));
+        }
         if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
             glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, color));
         }

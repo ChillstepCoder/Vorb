@@ -14,7 +14,7 @@ DebugTweakerPanel::DebugTweakerPanel(const f32v2& screenDims) : mScreenDims(scre
 void DebugTweakerPanel::updateAndRender()
 {
     constexpr float WINDOW_WIDTH = 400.0f;
-    constexpr float WINDOW_HEIGHT = 200.0f;
+    constexpr float WINDOW_HEIGHT = 400.0f;
     ImGui::SetNextWindowPos(ImVec2(mScreenDims.x - WINDOW_WIDTH - 5, 150.0f));
     ImGui::SetNextWindowSize(ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT));
     const ImVec2 buttonSize(WINDOW_WIDTH, 25);
@@ -32,6 +32,13 @@ void DebugTweakerPanel::updateAndRender()
     ImGui::Text("Depth of Field");
     ImGui::SliderInt("DoF Blur Passes", &sDebugOptions.mDepthOfFieldBlurPasses, 0, 15);
     ImGui::SliderFloat("DoF Blur Radius", &sDebugOptions.mDepthOfFieldBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::EndGroup();
+
+
+    ImGui::BeginGroup();
+    ImGui::Text("Shadows");
+    ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
     ImGui::EndGroup();
 
     ImGui::End();

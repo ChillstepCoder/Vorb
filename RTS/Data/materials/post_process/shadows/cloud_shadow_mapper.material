@@ -1,0 +1,4 @@
+cloud_shadow_mapper:
+  vert: cloud_shadow_mapper.vert
+  frag: cloud_shadow_mapper.frag
+  geom: cloud_shadow_mapper.geom

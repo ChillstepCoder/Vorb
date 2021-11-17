@@ -19,9 +19,11 @@ CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRen
     mMaterialRenderer(materialRenderer),
     mGbufferDims(gbufferDims)
 {
+
     mCloudMaterial = mResourceManager.getMaterialManager().getMaterial("cloud");
     mPostMaterial = mResourceManager.getMaterialManager().getMaterial("cloud_post");
     mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_rgb");
+    mCloudShadowMaterial = mResourceManager.getMaterialManager().getMaterial("cloud_shadow_mapper");
 
     vg::GBufferAttachment attachment;
     // Color
@@ -33,7 +35,6 @@ CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRen
         mGBuffers[i].setSize(ui32v2(mGbufferDims));
         mGBuffers[i].init(attachment, nullptr);
     }
-    //mGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     checkGlError("CloudRenderer GBuffer init");
 }
 
@@ -74,6 +75,12 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
 
     // Restore previous
     prevDepthState.set();
+}
+
+void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager) {
+    if (cloudManager.mCloudMesh) {
+        mMaterialRenderer.renderMesh(*cloudManager.mCloudMesh, *mCloudShadowMaterial);
+    }
 }
 
 void CloudRenderer::blurNormals() {

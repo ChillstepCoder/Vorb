@@ -22,6 +22,7 @@
 #include "rendering/QuadMesh.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
+#include "rendering/RenderStats.h"
 #include "TextureManip.h"
 
 // TODO: Move to renderer?
@@ -52,7 +53,7 @@
 const std::string sPassthroughMaterialNames[] = {
     "pass_through",
     "depth",
-    "outline",
+    "shadow_depth_debug",
     "motion_blur",
     "normals"
 };
@@ -93,7 +94,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
         mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], vg::TextureInternalFormat::RGBA16F);
-        mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
+        mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
     }
     checkGlError("GBuffer init");
 
@@ -106,7 +107,6 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     //shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
     //mShadowGBuffer.setSize(ui32v2(mScreenResolution));
     //mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
-    //mShadowGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     //checkGlError("Shadow GBuffer Init");
 
     // ZCutout GBuffer
@@ -162,7 +162,7 @@ void RenderContext::initPostLoad() {
     mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
     mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-    mShadowRenderer = std::make_unique<ShadowRenderer>();
+    mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
     checkGlError("Renderer init");
     mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
     checkGlError("Init texture manipulator");
@@ -194,6 +194,7 @@ void RenderContext::initPostLoad() {
 }
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
+    RenderStats::clear();
     // Set renderData
     mRenderData.mainCamera = camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
@@ -202,23 +203,33 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     mRenderData.timeOfDay = mWorld.getTimeOfDay();
     const f32v3& sun = mWorld.getSunPosition();
     mRenderData.sunPositionWorld = sun;
+    std::cout << "Sunposition " << sun.x << " " << sun.y << " " << sun.z << std::endl;
     mRenderData.sunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
 
+    mRenderData.sunRight = glm::normalize(glm::cross(sun, f32v3(0.0f, 0.0f, 1.0f)));
+    mRenderData.sunUp = glm::normalize(glm::cross(sun, mRenderData.sunRight));
+
     // Shadows
     mShadowRenderer->beginFrame(*camera, sun);
+    mRenderData.shadowFrustumMatrices = mShadowRenderer->getShadowFrustumMatrices();
+    mRenderData.shadowCascadePlaneDistances = mShadowRenderer->getShadowCascadePlaneDistances();
+    mRenderData.shadowMap = mShadowRenderer->getShadowMap();
+    mRenderData.shadowFrustumMatricesCount = MAX_SHADOW_CASCADE_LEVELS;
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame(mWindow);
     ImGui::NewFrame();
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 }
 
 void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha) {
-
 
     ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
@@ -280,6 +291,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Render loose items
 
     // Render building roofs
+    // TODO: Frustum cull
     const CityGraph& cities = mWorld.getCities();
     for (auto&& city : cities.mNodes) {
         const std::vector<Building>& buildings = city->getBuildings();
@@ -288,16 +300,48 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         }
     }
 
+    // Clouds
+    mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
 
     // Sky
+    glEnable(GL_DEPTH_CLAMP);
+    glDisable(GL_CULL_FACE); // TODO: Fix geometry so we dont have to disable cull face
     mSkyBox->render(*mMaterialRenderer);
+    glEnable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_CLAMP);
 
     // Horizon
     mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
-    // Clouds
-    mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
+    // Shadows
+    if (mRenderData.sunHeight > 0.01f) {
+        mShadowRenderer->useShadowBuffer();
+        glEnable(GL_DEPTH_CLAMP);
 
+        vg::DepthState::FULL.set();
+        // Render all shadow casters
+        //glCullFace(GL_FRONT);
+        mChunkRenderer->renderWorldShadows(mWorld, camera, lodState, mShadowRenderer->getMaxDistance());
+
+        //glCullFace(GL_BACK);
+        // TODO: Frustum cull
+        mCloudRenderer->renderCloudShadows(mWorld.getCloudManager());
+
+        const CityGraph& cities = mWorld.getCities();
+        for (auto&& city : cities.mNodes) {
+            const std::vector<Building>& buildings = city->getBuildings();
+            for (auto& building : buildings) {
+                mBuildingRenderer->renderBuildingRoofShadows(building);
+            }
+        }
+
+
+        glDisable(GL_DEPTH_CLAMP);
+
+        mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer);
+
+        mActiveGBuffer->useGeometry();
+    }
 
     // Particles
     if (lodState == ChunkRenderLOD::FULL_DETAIL) {
@@ -387,16 +431,16 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render characters that are behind geometry with some transparency
     //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
-
-    // Final Pass through process
-    // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
-    if (mPassthroughRenderMode != 0) {
+        // Depth debug
+    if (mPassthroughRenderMode == 1) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
         assert(postMat);
 
         // TODO: Swap chain for this to work
         mMaterialRenderer->renderFullScreenQuad(*postMat);
     }
+
 
     // Disable depth testing for post processing
     // TODO: Swap chains?
@@ -413,15 +457,10 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Collapse this into lightPassThrough?
     mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
 
-    // Sun Shadows
-    /*if (mRenderData.sunHeight > 0.0f) {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        mMaterialRenderer->renderFullScreenQuad(*mSunShadowMaterial);
-    }*/
-
     //  Dynamic  light
     glBlendFunc(GL_ONE, GL_ONE);
     mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
+
 
     mActiveGBuffer->unuse();
     mCurrentFramebufferDims = mScreenResolution;
@@ -444,6 +483,18 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Unlit Particles
     //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
     vg::DepthState::NONE.set();
+
+
+    // Final Pass through process
+    // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
+    if (mPassthroughRenderMode > 1) {
+        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        assert(postMat);
+
+        // TODO: Swap chain for this to work
+        mMaterialRenderer->renderFullScreenQuad(*postMat);
+    }
+
     // UI last
     renderUI(camera);
 
@@ -477,7 +528,7 @@ void RenderContext::renderUI(const Camera3D& camera) {
     mSb->begin();
     char buffer[255];
     f32 scales = 1.0f;
-    const float GAP_SIZE = 50.0f * scales;
+    const float GAP_SIZE = 35.0f * scales;
     const float START_MULT = 0.75f;
     float yOffset = 0.0f;
     const f32v2 scale(scales);
@@ -495,6 +546,14 @@ void RenderContext::renderUI(const Camera3D& camera) {
     yOffset += GAP_SIZE;
 
     sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "DrawCalls: %u", RenderStats::sDrawCalls);
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "Polygons: %u", RenderStats::sPolyCount);
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 

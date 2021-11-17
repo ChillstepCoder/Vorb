@@ -69,6 +69,7 @@ namespace vorb {
         // Encapsulates a simple OpenGL program and its shaders
         class GLProgram {
         public:
+            // TODO: IDs instead of strings
             typedef std::pair<nString, VGAttribute> AttributeBinding; ///< Binds attribute names to locations
             typedef std::map<nString, VGAttribute> AttributeMap; ///< Dictionary of attribute locations by name
             typedef std::map<nString, VGUniform> UniformMap; ///< Dictionary of uniform locations by name

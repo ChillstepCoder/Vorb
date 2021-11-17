@@ -3,7 +3,6 @@
 
 #include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
-#include "rendering/ChunkRenderer.h"
 #include "world/ChunkGenerator.h"
 #include "world/TileRepository.h"
 #include "weather/CloudManager.h"
@@ -530,12 +529,12 @@ void World::updateSun(const ICamera& camera) {
     const float SUNRISE_TIME = 6.0f; // 6am
 	const float SUN_HEIGHT_OFFSET = 0.3f; // Smaller exponent means brighter days
 	// TODO: Better time manager
-	const f64 adjustedTime = sTotalTimeSeconds + sDebugOptions.mTimeOffset;
+	const f64 adjustedTime = /*sTotalTimeSeconds + */sDebugOptions.mTimeOffset;
     mTimeOfDay = (float)fmod(adjustedTime / (f64)SECONDS_PER_HOUR, (f64)HOURS_PER_DAY);
 
 	const f32 sunDelta = (mTimeOfDay - SUNRISE_TIME) / 24.0f;
 	const f32 sunRotate = sunDelta * M_PIF * 2.0f;
-    mSunPosition = glm::rotateY(f32v3(-1.0f, 0.0f, 0.0f), sunRotate);
+    mSunPosition = glm::rotateY(f32v3(-1.0f, 0.1f, 0.0f), sunRotate);
     mSunHeight = glm::min(mSunPosition.z + SUN_HEIGHT_OFFSET, 0.999f); // Store sun height before modification, cap at an epsilon to fix sampler issue
     mSunPosition.z += 0.2f; // Make it more up lol
     mSunPosition = glm::normalize(mSunPosition);

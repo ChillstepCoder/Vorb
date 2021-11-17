@@ -58,26 +58,56 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
 {
 
     ChunkID chunkId;
-    const Chunk* chunk;
 
     if (lod == ChunkRenderLOD::FULL_DETAIL) {
 
         // Render region LODs first due to depth sort
         ui32 nextTextureIndex;
+        mLODedChunksToRender.clear();
+
+        // NEW
+        mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
+        world.enumVisibleChunks([&](const Chunk& chunk) {
+            if (chunk.isFinished()) {
+
+                UpdateMesh(chunk, camera);
+
+                ChunkRenderData& renderData = chunk.mChunkRenderData;
+                if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+                    TryRenderFloraMesh(chunk, mStandardMaterial);
+                    TryRenderBaseMesh(chunk, mStandardMaterial);
+                }
+                else {
+                    mLODedChunksToRender.emplace_back(&chunk);
+                }
+            }
+        });
+        mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
+        world.enumVisibleChunks([&](const Chunk& chunk) {
+            ChunkRenderData& renderData = chunk.mChunkRenderData;
+            TryRenderBillboardMesh(chunk, mBillboardMaterial);
+        });
+
+        // LODed chunks
+        mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
+        for (auto&& chunk : mLODedChunksToRender) {
+            ChunkRenderData& renderData = chunk->mChunkRenderData;
+            RenderLODTextureBindless(chunk->getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera, nextTextureIndex);
+        }
+        // OLD
+        //world.enumVisibleChunks([&](const Chunk& chunk) {
+        //    if (chunk.isFinished()) {
+        //        // Check chunk mesh for update
+        //        UpdateMesh(chunk, camera);
+
+        //        RenderMeshOrLODTexture(chunk, camera);
+        //    }
+        //});
+
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
         //vg::DepthState::NONE.set();
         world.enumVisibleRegions(camera, [&](const Region& region) {
             RenderLODTextureBindless(region.getWorldPos(), region.mRenderData.mLODTexture, WorldData::REGION_WIDTH_TILES, camera, nextTextureIndex);
-        });
-        //vg::DepthState::FULL.set();
-
-        world.enumVisibleChunks([&](const Chunk& chunk) {
-            if (chunk.isFinished()) {
-                // Check chunk mesh for update
-                UpdateMesh(chunk, camera);
-
-                RenderMeshOrLODTexture(chunk, camera);
-            }
         });
         
     }
@@ -123,6 +153,22 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
     static_assert((int)ChunkRenderLOD::COUNT == 2, "Update for new rendering style");
 }
 
+void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camera, ChunkRenderLOD lod, f32 maxDistance) {
+    assert(lod == ChunkRenderLOD::FULL_DETAIL);
+
+    // Render region LODs first due to depth sort
+    const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
+
+    mMaterialRenderer.bindMaterialForRender(*mShadowMapperMaterial);
+    world.enumVisibleChunks([&](const Chunk& chunk) {
+        if (chunk.isFinished()) {
+            if (glm::length2(chunk.getWorldPosCenter3D() - camera.getPosition()) <= maxDistSQ) {
+                TryRenderBaseMesh(chunk, mShadowMapperMaterial);
+            }
+        }
+    });
+}
+
 //void ChunkRenderer::renderWorldShadows(const World& world)
 //{
 //    world.enumVisibleChunks([&](const Chunk& chunk) {
@@ -157,23 +203,45 @@ void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
     }
 }
 
-void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera) {
-	// mutable render data
+void ChunkRenderer::TryRenderBaseMesh(const Chunk& chunk, const Material* material) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-        MaterialRenderer& renderer = RenderContext::getInstance().getMaterialRenderer();
-        if (renderData.mHighDetailFloraMesh && renderData.mHighDetailFloraMesh->isValid()) {
-            renderer.renderMesh(*renderData.mHighDetailFloraMesh, *mStandardMaterial);
-        }
-        renderer.renderMesh(*renderData.mChunkMesh, *mStandardMaterial);
-        if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
-            renderer.renderMesh(*renderData.mBillboardMesh, *mBillboardMaterial);
-        }
-    }
-    else {
-        RenderLODTexture(chunk.getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera);
+        renderData.mChunkMesh->draw(material->mProgram);
     }
 }
+
+void ChunkRenderer::TryRenderFloraMesh(const Chunk& chunk, const Material* material) {
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (renderData.mHighDetailFloraMesh && renderData.mHighDetailFloraMesh->isValid()) {
+        renderData.mHighDetailFloraMesh->draw(material->mProgram);
+    }
+}
+
+void ChunkRenderer::TryRenderBillboardMesh(const Chunk& chunk, const Material* material) {
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
+        renderData.mBillboardMesh->draw(material->mProgram);
+    }
+}
+
+//
+//void ChunkRenderer::RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera) {
+//	// mutable render data
+//    ChunkRenderData& renderData = chunk.mChunkRenderData;
+//    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+//        MaterialRenderer& renderer = RenderContext::getInstance().getMaterialRenderer();
+//        if (renderData.mHighDetailFloraMesh && renderData.mHighDetailFloraMesh->isValid()) {
+//            renderer.renderMesh(*renderData.mHighDetailFloraMesh, *mStandardMaterial);
+//        }
+//        renderer.renderMesh(*renderData.mChunkMesh, *mStandardMaterial);
+//        if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
+//            renderer.renderMesh(*renderData.mBillboardMesh, *mBillboardMaterial);
+//        }
+//    }
+//    else {
+//        RenderLODTexture(chunk.getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera);
+//    }
+//}
 
 void ChunkRenderer::RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera) {
     if (texture) {
@@ -207,11 +275,9 @@ void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture te
 void ChunkRenderer::InitPostLoad()
 {
 	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-    assert(mStandardMaterial);
     mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
-    assert(mBillboardMaterial);
     mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
-    assert(mLODMaterial);
     mZCutoutMaterial = mResourceManager.getMaterialManager().getMaterial("z_cutout");
-    assert(mZCutoutMaterial);
+    mShadowMapperMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
+    mShadowMapperMaterialBillboard = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
 }

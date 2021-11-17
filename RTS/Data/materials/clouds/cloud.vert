@@ -10,7 +10,6 @@ in vec2 vXZOffset;
 in vec2 vUV;
 in vec4 vTint;
 in float vAtlasPage;
-in float vWindInfluence;
 
 out vec2 fUV;
 out vec2 fPosition;

@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "MeshBase.h"
 
+#include "rendering/RenderStats.h"
+
 VGBuffer MeshBase::sQuadIbo = 0;
 
 MeshBase::MeshBase() {
@@ -20,10 +22,10 @@ void MeshBase::initStaticIBO() {
     std::vector<ui32> quadIndices(MAX_MESH_INDICES);
     for (ui32 v = 0; i < MAX_MESH_INDICES; v += 4u) {
         quadIndices[i++] = v;
+        quadIndices[i++] = v + 1;
+        quadIndices[i++] = v + 2;
         quadIndices[i++] = v + 2;
         quadIndices[i++] = v + 3;
-        quadIndices[i++] = v + 3;
-        quadIndices[i++] = v + 1;
         quadIndices[i++] = v;
     }
 
@@ -72,6 +74,7 @@ void MeshBase::draw(const vg::GLProgram& program) const {
     bindVertexAttribs(program);
 
     glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
+    RenderStats::recordDrawCall(mIndexCount / 3);
 
     glBindVertexArray(0);
 }

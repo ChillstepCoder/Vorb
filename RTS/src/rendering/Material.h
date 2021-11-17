@@ -1,5 +1,5 @@
 #pragma once
-\
+
 #include <Vorb/graphics/GLProgram.h>
 
 DECL_VG(class Texture);
@@ -37,6 +37,11 @@ enum class MaterialUniform {
     SkyRotMatrix,
     ScreenResolution,
     CameraZRange,
+    ShadowFrustumMatrices,
+    ShadowMap,
+    ShadowCascadePlaneDistances,
+    SunUp,
+    SunRight,
     COUNT
 };
 

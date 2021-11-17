@@ -55,13 +55,27 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
     std::make_pair("ScreenResolution", MaterialUniform::ScreenResolution),
     std::make_pair("CameraZRange", MaterialUniform::CameraZRange),
+    std::make_pair("ShadowFrustumMatrices", MaterialUniform::ShadowFrustumMatrices),
+    std::make_pair("ShadowMap", MaterialUniform::ShadowMap),
+    std::make_pair("ShadowCascadePlaneDistances", MaterialUniform::ShadowCascadePlaneDistances),
+    std::make_pair("SunUp", MaterialUniform::SunUp),
+    std::make_pair("SunRight", MaterialUniform::SunRight),
 };
-static_assert((int)MaterialUniform::COUNT == 32, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 37, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
-    auto&& it = sUniformLookup.find(str);
-    if (it != sUniformLookup.end()) {
-        return it->second;
+    // For arrays we remove the array syntax
+    if (str[str.size() - 1] == ']') {
+        auto&& it = sUniformLookup.find(str.substr(0, str.size() - 3));
+        if (it != sUniformLookup.end()) {
+            return it->second;
+        }
+    }
+    else {
+        auto&& it = sUniformLookup.find(str);
+        if (it != sUniformLookup.end()) {
+            return it->second;
+        }
     }
     return MaterialUniform::INVALID;
 }

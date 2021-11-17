@@ -17,6 +17,7 @@ BuildingRenderer::BuildingRenderer(ResourceManager& resourceManager, const Mater
 {
     mRoofMaterial = mResourceManager.getMaterialManager().getMaterial("standard_roof");
     mRoofBaseMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+    mRoofShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
     mMesher = std::make_unique<BuildingMesher>(resourceManager);
 }
 
@@ -37,4 +38,8 @@ void BuildingRenderer::renderBuildingRoof(const Building& building)
 
     mMaterialRenderer.renderMesh(*building.mRenderData.mRoofTriangleMesh, *mRoofMaterial);
     mMaterialRenderer.renderMesh(*building.mRenderData.mRoofMesh, *mRoofBaseMaterial);
+}
+
+void BuildingRenderer::renderBuildingRoofShadows(const Building& building) {
+    mMaterialRenderer.renderMesh(*building.mRenderData.mRoofTriangleMesh, *mRoofShadowMaterial);
 }

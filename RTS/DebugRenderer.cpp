@@ -11,6 +11,8 @@
 #include <box2d/b2_collision.h>
 #include "pathfinding/PathFinder.h"
 
+#include "rendering/RenderStats.h"
+
 namespace {
     const cString VERT_SRC = R"(
 // Uniforms
@@ -359,10 +361,12 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         if (mesh.type == DebugMeshType::LINES) {
             glLineWidth(2.0f);
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);
+            RenderStats::recordDrawCall(mesh.numVerts / 2);
         }
         // Quads
         else {
             glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
+            RenderStats::recordDrawCall(mesh.numVerts / 2);
         }
 
         if (mesh.lifetime <= 0) {
@@ -440,6 +444,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         glUniformMatrix4fv(sCircleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         glUniform3fv(sCircleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
+        RenderStats::recordDrawCall(mesh.numVerts / 2);
 
         if (mesh.lifetime <= 0) {
             glDeleteBuffers(1, &mesh.vbo);

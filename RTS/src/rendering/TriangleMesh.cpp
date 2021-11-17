@@ -6,6 +6,8 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/RasterizerState.h>
 
+#include "rendering/RenderStats.h"
+
 void TriangleMesh::init() {
     if (mVao == 0) { // Create VAO
         glGenVertexArrays(1, &mVao);
@@ -47,6 +49,7 @@ void TriangleMesh::draw(const vg::GLProgram& program) const {
     bindVertexAttribs(program);
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     glDrawArrays(GL_TRIANGLES, 0 /* first */, (GLsizei)mIndexCount);
+    RenderStats::recordDrawCall(mIndexCount / 3);
 
     glBindVertexArray(0);
 }

@@ -185,7 +185,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform3fv(it.second, 1, &renderData.mainCamera->getPosition()[0]);
                 break;
             case MaterialUniform::CameraZAngle: {
-                const f32 zAngle = atan2f(renderData.mainCamera->getFrontVector().y, renderData.mainCamera->getFrontVector().x) + M_PI;
+                const f32 zAngle = atan2f(renderData.mainCamera->getFrontVector().y, renderData.mainCamera->getFrontVector().x) + M_PIF;
                 glUniform1f(it.second, zAngle);
                 break;
             }
@@ -200,7 +200,24 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::CameraZRange:
                 glUniform2f(it.second, renderData.mainCamera->getZNear(), renderData.mainCamera->getZFar());
                 break;
+            case MaterialUniform::ShadowFrustumMatrices:
+                glUniformMatrix4fv(it.second, renderData.shadowFrustumMatricesCount, false, &(*renderData.shadowFrustumMatrices)[0][0]);
+                break;
+            case MaterialUniform::ShadowCascadePlaneDistances:
+                glUniform1fv(it.second, renderData.shadowFrustumMatricesCount, renderData.shadowCascadePlaneDistances);
+                break;
+            case MaterialUniform::ShadowMap:
+                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glUniform1i(it.second, nextAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.shadowMap);
+                break;
+            case MaterialUniform::SunUp:
+                glUniform3fv(it.second, 1, &renderData.sunUp[0]);
+                break;
+            case MaterialUniform::SunRight:
+                glUniform3fv(it.second, 1, &renderData.sunRight[0]);
+                break;
         }
-        static_assert((int)MaterialUniform::COUNT == 32, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 37, "Update for new uniform type");
     }
 }

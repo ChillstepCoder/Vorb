@@ -41,7 +41,7 @@
 
 #include "options/DebugOptions.h"
 
-constexpr ui32 MAX_TICKS_PER_UPDATE = 2;
+constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;
 
 const f32v2 CAMERA_Z_RANGE = f32v2(1.0f, 1024.0f);
@@ -288,30 +288,32 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
     // Store camera shit
 	mWorld->updateClientEcsData(mCameraCartesianDirection);
 
-	while (mGameTimer.tryTick()) {
+    // DEBUG Time advance
+    static constexpr float TIME_ADVANCE_MULT = 4.0f;
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
+        if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+            sDebugOptions.mTimeOffset -= gameTime.elapsedSec * 250.0f;
+        }
+        else {
+            sDebugOptions.mTimeOffset -= gameTime.elapsedSec * TIME_ADVANCE_MULT;
+        }
+        mGameTimer.setMsPerTick(MS_PER_GAME_TICK / 2.0f);
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
+        if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+            sDebugOptions.mTimeOffset += gameTime.elapsedSec * 250.0f;
+        }
+        else {
+            sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
+        }
+        mGameTimer.setMsPerTick(MS_PER_GAME_TICK / 2.0f);
+    }
+    else {
+        mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
+    }
 
-		// DEBUG Time advance
-		static constexpr float TIME_ADVANCE_MULT = 4.0f;
-		if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
-			if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-                sDebugOptions.mTimeOffset -= gameTime.elapsedSec * 250.0f;
-			}
-			else {
-				sDebugOptions.mTimeOffset -= gameTime.elapsedSec * TIME_ADVANCE_MULT;
-			}
-		}
-        else if (vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
-            if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-                sDebugOptions.mTimeOffset += gameTime.elapsedSec * 250.0f;
-            }
-			else {
-				sDebugOptions.mTimeOffset += gameTime.elapsedSec * TIME_ADVANCE_MULT;
-			}
-			mGameTimer.setMsPerTick(MS_PER_GAME_TICK / TIME_ADVANCE_MULT);
-		}
-		else {
-            mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
-		}
+    int ticks = 0;
+	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         // Update camera
         // TODO: Copy paste bad

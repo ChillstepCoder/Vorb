@@ -140,7 +140,6 @@ vg::GBuffer ParticleSystemRenderer::getOrCreateFramebufferForParticleSystem(cons
     attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     newGBuffer.setSize(ui32v2(mGbufferDims));
     newGBuffer.init(attachment, nullptr);
-    //newGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT24);
     checkGlError("Particle GBuffer init");
     mGBuffers[name] = newGBuffer;
     return newGBuffer;

@@ -39,7 +39,7 @@ void Camera3D::update() {
     if (updateFrustum) {
         mVP = mP * mV;
         mInverseVP = glm::inverse(mVP);
-        mFrustum.updateFromWVP(mVP, mInverseVP);
+        mFrustum.updateFromWVP(mVP);
     }
 }
 

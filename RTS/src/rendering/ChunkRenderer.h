@@ -26,6 +26,7 @@ public:
 
     void renderChunksZCutout(const World& world, const Camera3D& camera);
     void renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod);
+    void renderWorldShadows(const World& world, const Camera3D& camera, ChunkRenderLOD lod, f32 maxDistance);
     //void renderWorldShadows(const World& world, const Camera2D& camera);
 
     void InitPostLoad();
@@ -33,7 +34,10 @@ private:
     // Different rendering methods
     void UpdateMesh(const Chunk& chunk, const Camera3D& camera);
     void UpdateLODTexture(const Chunk& chunk);
-    void RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera);
+    void TryRenderBaseMesh(const Chunk& chunk, const Material* material);
+    void TryRenderFloraMesh(const Chunk& chunk, const Material* material);
+    void TryRenderBillboardMesh(const Chunk& chunk, const Material* material);
+    //void RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera);
     void RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera);
     void RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera, ui32 textureIndex);
     //void RenderShadows(const Chunk& chunk, const Camera2D& camera);
@@ -42,9 +46,13 @@ private:
 	ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
+    const Material* mShadowMapperMaterial = nullptr;
+    const Material* mShadowMapperMaterialBillboard = nullptr;
     const Material* mStandardMaterial = nullptr;
     const Material* mBillboardMaterial = nullptr;
     const Material* mLODMaterial = nullptr;
     const Material* mZCutoutMaterial = nullptr;
+
+    std::vector<const Chunk*> mLODedChunksToRender;
 };
 

@@ -200,11 +200,17 @@ bool vg::GLProgram::link() {
 
     // Link The Program
     glAttachShader(m_id, m_idVS);
+    if (m_idGS) glAttachShader(m_id, m_idGS);
     glAttachShader(m_id, m_idFS);
     glLinkProgram(m_id);
 
     // Detach and delete shaders
     glDetachShader(m_id, m_idVS);
+    if (m_idGS) {
+        glDetachShader(m_id, m_idGS);
+        glDeleteShader(m_idGS);
+        m_idGS = 0;
+    }
     glDetachShader(m_id, m_idFS);
     glDeleteShader(m_idVS);
     glDeleteShader(m_idFS);

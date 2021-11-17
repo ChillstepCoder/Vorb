@@ -14,6 +14,7 @@ public:
     CloudRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
 
     void renderClouds(const CloudManager& cloudManager, vg::GBuffer* activeGbuffer, const Camera3D& camera);
+    void renderCloudShadows(const CloudManager& cloudManager);
 
 private:
     void blurNormals();
@@ -28,5 +29,6 @@ private:
     const Material* mCloudMaterial = nullptr;
     const Material* mPostMaterial = nullptr;
     const Material* mBlurMaterial = nullptr;
+    const Material* mCloudShadowMaterial = nullptr;
 };
 

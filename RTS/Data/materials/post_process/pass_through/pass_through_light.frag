@@ -25,7 +25,8 @@ void main() {
 	float isSky = step(0.999999999, depth);
 	float isGround = 1.0 - isSky;
 	
-    fColor.rgb = texture(FboLight, fUV).rgb * texture(Fbo0, fUV).rgb;
+	vec3 fboColor = texture(FboLight, fUV).rgb * texture(Fbo0, fUV).rgb;
+    fColor.rgb = fboColor;
 	
 	// =====================================================
 	// ==                     HAZE                        ==
@@ -63,8 +64,8 @@ void main() {
 	float roughness = 1.0 - (isGround * 0.7);
 	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(isSky, 0.5), roughness, depth, fUV);
 	
-	
-	
+	// Uncomment for passthrough
+	//fColor.rgb = fColor.rgb * 0.00001 + fboColor;
 	fColor.a = 1.0;
 	
 }

@@ -40,7 +40,7 @@ void BitArray::zeroAllBits() {
     memset(mData.data(), 0, mData.size() * BITS_PER_ELEMENT);
 }
 
-void BitArray::debugPrint(int width, int height) const
+void BitArray::debugPrint(ui32 width, ui32 height) const
 {
     for (ui32 y = 0; y < height; ++y) {
         printf("%2d| ", y);

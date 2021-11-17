@@ -11,6 +11,8 @@ struct DebugOptions {
     float mCloudAmbient = 0.5f;
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
+    float mShadowZMult = 2.50f;
+    float mShadowNearSize = 17.0f;
     bool mShowTweaker = false;
 };
 

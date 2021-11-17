@@ -11,7 +11,7 @@ public:
     bool getBit(ui32 index) const;
     void zeroAllBits();
 
-    void debugPrint(int width, int height) const;
+    void debugPrint(ui32 width, ui32 height) const;
 private:
     std::vector<ui8> mData;
 };

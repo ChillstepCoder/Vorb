@@ -35,11 +35,17 @@ struct GlobalRenderData {
     f32 sunHeight;
     f32v3 sunPositionWorld;
     f32v3 sunPositionCameraRelative;
+    f32v3 sunUp;
+    f32v3 sunRight;
     f32 cameraZAngle;
     f32 timeOfDay;
     f32v3 sunColor;
     f32v3 playerPos;
     f32m4 skyRotMatrix;
+    const f32m4* shadowFrustumMatrices;
+    const f32* shadowCascadePlaneDistances;
+    VGTexture shadowMap;
+    ui32 shadowFrustumMatricesCount;
     const ICamera* mainCamera = nullptr;
 };
 

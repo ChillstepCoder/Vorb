@@ -103,5 +103,7 @@ const Material* MaterialManager::getMaterial(const nString& strId) const {
     if (it != mNameToMaterialIDMap.end()) {
         return mMaterials[it->second].get();
     }
+    std::cout << "Failed to find material " << strId << std::endl;
+    assert(false);
     return nullptr;
 }
