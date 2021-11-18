@@ -239,7 +239,7 @@ void BillboardMesh::reserveQuadCount(size_t count) {
     mVertexData.reserve(count * 4u);
 }
 
-void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence) {
+void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
     mVertexData.resize(mVertexData.size() + 4);
     BillboardVertex* verts = &mVertexData.back() - 3;
 
@@ -272,6 +272,7 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
         vbl.atlasPage = spriteAtlasPage;
         vbl.xzOffset.x = compressedOffset.x - halfX;
         vbl.xzOffset.y = compressedOffset.y;
+        vbl.roughness = roughness;
     }
     { // Bottom Right
         BillboardVertex& vbr = verts[1];
@@ -284,6 +285,7 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
         vbr.atlasPage = spriteAtlasPage;
         vbr.xzOffset.x = compressedOffset.x + halfX;
         vbr.xzOffset.y = compressedOffset.y;
+        vbr.roughness = roughness;
     }
 
     const f32 topZ = tilePosition.z + xyDims.y;
@@ -299,6 +301,7 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
         vtr.xzOffset.x = compressedOffset.x + halfX;
         vtr.xzOffset.y = compressedOffset.y + compressedDims.y;
         vtr.windInfluence = windInfluence;
+        vtr.roughness = roughness;
     }
     { // Top Left
         BillboardVertex& vtl = verts[3];
@@ -312,6 +315,7 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
         vtl.xzOffset.x = compressedOffset.x - halfX;
         vtl.xzOffset.y = compressedOffset.y + compressedDims.y;
         vtl.windInfluence = windInfluence;
+        vtl.roughness = roughness;
     }
     
 }
@@ -334,6 +338,7 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
         program.enableVertexAttribArrays();
+        // TODO: no more string lookup attributes :C
         glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, rootPos));
         glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
         if (const VGAttribute* attr = program.tryGetAttribute("vUV")) {
@@ -345,8 +350,11 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
         if (const VGAttribute* attr = program.tryGetAttribute("vWindInfluence")) {
             glVertexAttribPointer(*attr, 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, windInfluence));
         }
-        if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
-            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, color));
+        if (const VGAttribute* attr = program.tryGetAttribute("vTint")) {
+            glVertexAttribPointer(*attr, 4, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, color));
+        }
+        if (const VGAttribute* attr = program.tryGetAttribute("vRoughness")) {
+            glVertexAttribPointer(*attr, 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, roughness));
         }
     }
 }

@@ -78,5 +78,5 @@ constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
 
 void CharacterRenderer::buildPart(BillboardMesh& mesh, const f32v3& rootPos, const f32v2& offset, const SpriteData& spriteData, bool shouldFlip, float width, float alpha) {
-    mesh.addQuad(rootPos, f32v2(width, width), offset, spriteData.atlasPage, spriteData.uvs, color4(1.0f, 1.0f, 1.0f, alpha), shouldFlip, 0u);
+    mesh.addQuad(rootPos, f32v2(width, width), offset, spriteData.atlasPage, spriteData.uvs, color4(1.0f, 1.0f, 1.0f, alpha), shouldFlip, 0u, 200u);
 }

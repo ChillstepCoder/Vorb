@@ -399,7 +399,8 @@ void addTileFloraBillboard(
             uvs,
             COLOR_WHITE,
             (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP),
-            255u
+            255u,
+            51u // Roughness
         );
         rnd += i * 73; // Add random prime
     }
@@ -808,7 +809,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                                 uvs.y += variantY * spriteData.uvs.w;
                             }
 
-                            billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u);
+                            billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u, 0u);
                         }
                     }
                     else if (spriteData.method != TileTextureMethod::FLORA) { // CROSS FLORA IS DONE IN SEPARATE PASS

@@ -69,7 +69,7 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     attachment.pixelFormat = vg::TextureFormat::RGB;
     attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     mShadowApplyGBuffer.setSize(ui32v2(mGBufferDims));
-    mShadowApplyGBuffer.init(attachment, nullptr);
+    mShadowApplyGBuffer.init(attachment, nullptr, nullptr);
 
     // Materials
     mShadowMapperMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
@@ -178,6 +178,7 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer) {
     mShadowApplyGBuffer.setDepthTexture(activeGBuffer->getDepthTexture());
     mShadowApplyGBuffer.setLightTexture(activeGBuffer->getLightTexture());
     mShadowApplyGBuffer.setNormalTexture(activeGBuffer->getNormalTexture());
+    mShadowApplyGBuffer.setRoughnessTexture(activeGBuffer->getRoughnessTexture());
     mShadowApplyGBuffer.setFboLight(activeGBuffer->getFboLight());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGBuffer->getDepthTexture(), 0);
 

@@ -127,7 +127,7 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 		// Determine visibility
 		if (!chunk.isInvalid()) {
 			const f32v2& worldPos = chunk.getWorldPos();
-			if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS)) {
+			if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS + 30.0f /*padding for camera pan fix :C WHY*/)) { // TODO: Broken + AABB Test?
 				mVisibleChunks.push_back(&chunk);
 				chunk.mChunkRenderData.mIsVisible = true;
 			}
@@ -385,7 +385,7 @@ void World::enumVisibleRegions(const ICamera& camera, std::function<void(const R
     for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
         const Region& region = mWorldGrid.getRegion(i);
         const f32v2& worldPos = region.getWorldPos();
-        if (camera.sphereIsVisible(f32v3(worldPos.x + WorldData::REGION_WIDTH_TILES, worldPos.y + WorldData::REGION_WIDTH_TILES, 0.0f), WorldData::REGION_DIAGONAL_RADIUS)) {
+        if (camera.sphereIsVisible(f32v3(worldPos.x + WorldData::REGION_WIDTH_TILES, worldPos.y + WorldData::REGION_WIDTH_TILES, 0.0f), WorldData::REGION_DIAGONAL_RADIUS + 100.0f)) { // TODO: Broken
             func(region);
         }
     }

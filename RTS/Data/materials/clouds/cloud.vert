@@ -10,11 +10,13 @@ in vec2 vXZOffset;
 in vec2 vUV;
 in vec4 vTint;
 in float vAtlasPage;
+in float vRoughness;
 
 out vec2 fUV;
 out vec2 fPosition;
 flat out float fAtlasPage;
 out vec4 fTint;
+out float fRoughness;
 
 
 void main() {
@@ -37,4 +39,6 @@ void main() {
 	
 	vec4 glPos = VP * worldPos;
     gl_Position = glPos;
+	
+	fRoughness = vRoughness;
 }

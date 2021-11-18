@@ -19,7 +19,7 @@ void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::G
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment.number, GL_TEXTURE_2D, texID, 0);
 }
 
-vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, vg::TextureInternalFormat lightFormat) {
+vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, vg::TextureInternalFormat lightFormat) {
 
     // Make the framebuffer
     glGenFramebuffers(1, &m_fboGeom);
@@ -34,8 +34,13 @@ vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, cons
         initTarget(m_size, m_texNormal, *normalAttachment);
         ++numAttachments;
     }
+    if (roughnessAttachment) {
+        glGenTextures((GLsizei)1, &m_texRoughness);
+        initTarget(m_size, m_texRoughness, *roughnessAttachment);
+        ++numAttachments;
+    }
     // Add the attachments
-    VGEnum bufs[2];
+    VGEnum bufs[3];
     for (ui32 i = 0; i < numAttachments; i++) {
         bufs[i] = GL_COLOR_ATTACHMENT0 + i;
     }

@@ -21,6 +21,7 @@ public:
     i8v3 normal;
     i8v2 tangent; // for normal mapping
     ui8 windInfluence = 0;
+    // TODO: Roughness :/
 };
 
 // Need power of 2 alignment
@@ -40,7 +41,7 @@ public:
     color4 color;
     ui16 atlasPage;
     ui8 windInfluence = 0;
-    ui8 PADDING;
+    ui8 roughness;
 };
 // Need power of 2 alignment
 // 64 is bad!!!
@@ -59,7 +60,8 @@ public:
     f32v4 uvTiling;
     color4 color;
     ui16 atlasPage;
-    ui8 padding[8];
+    ui8 roughness;
+    ui8 padding[7];
 };
 // Need power of 2 alignment
 static_assert(sizeof(TriangleVertex) == 64, "Power of 2 byte alignment needed");

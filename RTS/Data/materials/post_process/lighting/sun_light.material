@@ -1,3 +1,0 @@
-sun_light:
-  vert: pass_through.vert
-  frag: sun_light.frag

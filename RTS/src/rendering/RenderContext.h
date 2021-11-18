@@ -79,6 +79,7 @@ public:
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
 
 private:
+    void renderDebug(const Camera3D& camera);
     void renderUI(const Camera3D& camera);
     void buildHorizonMesh();
 
@@ -122,8 +123,7 @@ private:
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
-    const Material* mSunLightMaterial = nullptr;
-    const Material* mLightPassThroughMaterial = nullptr;
+    const Material* mSceneLightingMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };
 

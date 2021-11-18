@@ -33,12 +33,13 @@ CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRen
     attachment.pixelType = vg::TexturePixelType::HALF_FLOAT;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mGbufferDims));
-        mGBuffers[i].init(attachment, nullptr);
+        mGBuffers[i].init(attachment, nullptr, nullptr);
     }
     checkGlError("CloudRenderer GBuffer init");
 }
 
 void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* activeGbuffer, const Camera3D& camera) {
+    assert(activeGbuffer);
     const vg::DepthState prevDepthState = vg::DepthState::CURR;
     //vg::DepthState::WRITE.set();
     vg::DepthState::FULL.set();
@@ -47,7 +48,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
         cloudManager.mCloudMesh = std::make_unique<BillboardMesh>();
         const SpriteData& spriteData = mResourceManager.getSprite("cloud");
         for (auto&& cloud : cloudManager.mClouds) {
-            cloudManager.mCloudMesh->addQuad(cloud.pos, f32v2(cloud.size), f32v2(0.0f, -cloud.size * 0.5f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, true, 0);
+            cloudManager.mCloudMesh->addQuad(cloud.pos, f32v2(cloud.size), f32v2(0.0f, -cloud.size * 0.5f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, true, 0u, 240u);
         }
         cloudManager.mCloudMesh->finishMesh(MeshDrawMode::STREAM);
     }
@@ -57,7 +58,8 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     glClear(GL_COLOR_BUFFER_BIT);
     mGBuffers[0].useGeometry();
     glClear(GL_COLOR_BUFFER_BIT);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer ? activeGbuffer->getDepthTexture() : 0, 0);
+    // Depth share
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer->getDepthTexture(), 0);
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
     mMaterialRenderer.renderMesh(*cloudManager.mCloudMesh, *mCloudMaterial);

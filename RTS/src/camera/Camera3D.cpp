@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "options/DebugOptions.h"
+
 #define UP_ABSOLUTE (f32v3(0.0f, 0.0f, 1.0f))
 
 Camera3D::Camera3D() {
@@ -39,7 +41,9 @@ void Camera3D::update() {
     if (updateFrustum) {
         mVP = mP * mV;
         mInverseVP = glm::inverse(mVP);
-        mFrustum.updateFromWVP(mVP);
+        if (!sDebugOptions.mPauseFrustum) {
+            mFrustum.updateFromWVP(mVP);
+        }
     }
 }
 
@@ -49,7 +53,9 @@ void Camera3D::updateView() {
 }
 
 void Camera3D::updateProjection() {
-    mFrustum.setCamInternals(mFieldOfView, mAspectRatio, mZNear, mZFar);
+    if (!sDebugOptions.mPauseFrustum) {
+        mFrustum.setCamInternals(mFieldOfView, mAspectRatio, mZNear, mZFar);
+    }
     mP = glm::perspective(glm::radians(mFieldOfView), mAspectRatio, mZNear, mZFar);
     mInverseP = glm::inverse(mP);
 }

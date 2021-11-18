@@ -1,11 +1,12 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D Fbo0;
 uniform sampler2D FboNormals;
-uniform sampler2D FboLight;
 uniform sampler2D FboDepth;
+uniform sampler2D FboRoughness;
 uniform vec4 GradientRect;
 uniform vec3 SunPosition;
 uniform float GradientAtlasPage;
+uniform vec3 SunColor;
 uniform float SunHeight;
 uniform float Time;
 uniform mat4 InverseVP;
@@ -19,29 +20,37 @@ in vec2 fUV;
 
 out vec4 fColor;
 
+const float AMBIENT = 0.1;
+
 void main() {
 
 	float depth = texture(FboDepth, fUV).r;
 	float isSky = step(0.999999999, depth);
 	float isGround = 1.0 - isSky;
 	
-	vec3 fboColor = texture(FboLight, fUV).rgb * texture(Fbo0, fUV).rgb;
-    fColor.rgb = fboColor;
+	// =====================================================
+	// ==                     Sunlight color              ==
+	// =====================================================
+	
+	vec3 fboColor = texture(Fbo0, fUV).rgb;
+	float hazeIntensity = max(SunHeight, 0.0);
+	float sunIntensity = hazeIntensity * (1.0 - AMBIENT);
+	float lightTotal = sunIntensity + AMBIENT;
+    fColor.rgb = (isGround * lightTotal * SunColor + isSky) * fboColor;
 	
 	// =====================================================
 	// ==                     HAZE                        ==
 	// =====================================================
-	float sunIntensity = max(SunHeight, 0.0);
 	float adjustedDepth = pow(depth, 500.0);
-	float depthHaze = min(adjustedDepth * (pow(sunIntensity, 0.5) + 0.1 * isGround), 1.0);
+	float depthHaze = min(adjustedDepth * (pow(hazeIntensity, 0.5) + 0.1 * isGround), 1.0);
 	vec2 adjustedUV = fUV;
-	adjustedUV.y = sunIntensity;
+	adjustedUV.y = hazeIntensity;
 	vec3 sunTextureColor = texture(Atlas, vec3(GradientRect.xy + adjustedUV * GradientRect.zw, GradientAtlasPage)).rgb;
 	// Day Haze
 	fColor.rgb = fColor.rgb * (1.0 - depthHaze * isGround) + depthHaze * sunTextureColor;
 
 	// Night Haze
-	float nightHaze = 1.0 - adjustedDepth * isGround * (1.0 - pow(sunIntensity, 0.2));
+	float nightHaze = 1.0 - adjustedDepth * isGround * (1.0 - pow(hazeIntensity, 0.2));
 	fColor.rgb *= nightHaze;
 	
 	// =====================================================
@@ -54,14 +63,15 @@ void main() {
 	float sunAngle = max(pow(dot(SunPosition, normalize(rayWorld.xyz)), 64.0), 0.0);
 	
 	// Sun Glow
-	fColor.rgb += sunAngle * max(pow(sunIntensity, 0.5) - 0.1, 0.0);
+	fColor.rgb += sunAngle * max(pow(hazeIntensity, 0.5) - 0.1, 0.0);
 	// Sky sun glow + sun texture
 	fColor.rgb += isSky * (sunAngle * 0.5 + max(pow(sunAngle - 0.95, 0.3), 0.0) * 2.0);
 	
 	// Sun phong
 	vec3 normal = texture(FboNormals, fUV).rgb;
 	normal = normal * 2.0 - 1.0;
-	float roughness = 1.0 - (isGround * 0.7);
+	float roughness = texture(FboRoughness, fUV).r;
+	roughness = max(roughness, isSky);
 	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(isSky, 0.5), roughness, depth, fUV);
 	
 	// Uncomment for passthrough

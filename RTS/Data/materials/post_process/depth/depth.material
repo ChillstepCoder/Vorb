@@ -1,3 +1,0 @@
-depth:
-  vert: pass_through.vert
-  frag: depth.frag

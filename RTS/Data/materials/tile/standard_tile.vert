@@ -14,6 +14,7 @@ out vec2 fUV;
 flat out float fAtlasPage;
 out vec4 fTint;
 out mat3 fTBN;
+out float fRoughness;
 
 #include "../util/wind.glsl"
 
@@ -28,6 +29,8 @@ void main() {
 	vec3 tangent = normalize(vec3(vTangent, 0));
 	vec3 binormal = cross(normal, tangent);
 	fTBN = mat3(tangent, binormal, normal);
+	
+	fRoughness = 0.2;
 
     gl_Position = VP * worldPos;
 }

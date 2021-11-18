@@ -46,7 +46,8 @@
 enum FboGeometryLayers {
     FBO_GEOMETRY_COLOR = 0,
     FBO_GEOMETRY_NORMAL = 1,
-    FBO_GEOMETRY_MAX_COUNT = 2
+    FBO_GEOMETRY_ROUGHNESS = 2,
+    FBO_GEOMETRY_MAX_COUNT = 3
 };
 
 
@@ -77,7 +78,7 @@ namespace vorb {
 
             /// Create the value-based render targets
             /// @return Self
-            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, vg::TextureInternalFormat lightFormat = vg::TextureInternalFormat::NONE);
+            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, vg::TextureInternalFormat lightFormat = vg::TextureInternalFormat::NONE);
             /// Attach a depth buffer to this GBuffer
             /// @param depthFormat: Precision used for depth buffer
             /// @return Self
@@ -114,63 +115,34 @@ namespace vorb {
             void bindLightTexture(ui32 textureUnit);
 
             /// @return Light texture
-            const VGTexture& getGeometryTexture() const {
-                return m_texGeom;
-            }
-
-            const VGTexture& getLightTexture() const {
-                return m_texLight;
-            }
-            
-            const VGTexture& getNormalTexture() const {
-                return m_texNormal;
-            }
+            const VGTexture& getGeometryTexture() const {  return m_texGeom;  }
+            const VGTexture& getLightTexture() const { return m_texLight; }
+            const VGTexture& getNormalTexture() const { return m_texNormal; }
+            const VGTexture& getRoughnessTexture() const { return m_texRoughness;  }
 
             void setSize(ui32 width, ui32 height) {
                 m_size.x = width;
                 m_size.y = height;
             }
-
-            void setSize(const ui32v2& size) {
-                m_size = size;
-            }
+            void setSize(const ui32v2& size) { m_size = size; }
 
             /// @return Size of the GBuffer in pixels (W,H)
-            const ui32v2& getSize() const {
-                return m_size;
-            }
+            const ui32v2& getSize() const { return m_size; }
             /// @return Width of the GBuffer in pixels
-            const ui32& getWidth() const {
-                return m_size.x;
-            }
+            const ui32& getWidth() const { return m_size.x; }
             /// @return Height of the GBuffer in pixels
-            const ui32& getHeight() const {
-                return m_size.y;
-            }
+            const ui32& getHeight() const { return m_size.y; }
 
-            const VGFramebuffer& getGeometryID() const {
-                return m_fboGeom;
-            }
-            const VGTexture& getDepthTexture() const {
-                return m_texDepth;
-            }
+            const VGFramebuffer& getFboGeometry() const { return m_fboGeom; }
+            const VGTexture& getDepthTexture() const { return m_texDepth; }
 
-            void setDepthTexture(VGTexture tex) {
-                m_texDepth = tex;
-            }
-            void setLightTexture(VGTexture tex) {
-                m_texLight = tex;
-            }
-            void setNormalTexture(VGTexture tex) {
-                m_texNormal = tex;
-            }
+            void setDepthTexture(VGTexture tex) { m_texDepth = tex; }
+            void setLightTexture(VGTexture tex) { m_texLight = tex; }
+            void setNormalTexture(VGTexture tex) { m_texNormal = tex; }
+            void setRoughnessTexture(VGTexture tex) { m_texRoughness = tex; }
 
-            VGFramebuffer getFboLight() {
-                return m_fboLight;
-            }
-            void setFboLight(VGFramebuffer fboLight) {
-                m_fboLight = fboLight;
-            }
+            VGFramebuffer getFboLight() { return m_fboLight; }
+            void setFboLight(VGFramebuffer fboLight) { m_fboLight = fboLight; }
 
             bool checkError();
         private:
@@ -182,6 +154,7 @@ namespace vorb {
             VGTexture m_texNormal = 0; ///< Normal texture of GBuffer
             VGTexture m_texLight = 0; ///< Light texture of GBuffer
             VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
+            VGTexture m_texRoughness = 0; ///< Roughness texture of GBuffer
         };
     }
 }

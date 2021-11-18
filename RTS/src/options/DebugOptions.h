@@ -2,10 +2,6 @@
 
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
-    bool mWireframe = false;
-    bool mChunkBoundaries = false;
-    bool mCities = false;
-    bool mNavGraph = false;
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
@@ -13,6 +9,12 @@ struct DebugOptions {
     int mDepthOfFieldBlurPasses = 3;
     float mShadowZMult = 2.50f;
     float mShadowNearSize = 17.0f;
+    f32v3 mShadowColor = f32v3(186.0f / 255.0f, 197.0f / 255.0f, 202.0f / 255.0f);
+    bool mPauseFrustum = false;
+    bool mWireframe = false;
+    bool mChunkBoundaries = false;
+    bool mCities = false;
+    bool mNavGraph = false;
     bool mShowTweaker = false;
 };
 

@@ -22,9 +22,9 @@ DepthOfFieldPostProcess::DepthOfFieldPostProcess(ResourceManager& resourceManage
     attachment.pixelFormat = vg::TextureFormat::RGB;
     attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     mGBuffers[0].setSize(ui32v2(mGbufferDims));
-    mGBuffers[0].init(attachment, nullptr);
+    mGBuffers[0].init(attachment, nullptr, nullptr);
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
-    mGBuffers[1].init(attachment, nullptr);
+    mGBuffers[1].init(attachment, nullptr, nullptr);
 
     mMaterial = mResourceManager.getMaterialManager().getMaterial("depth_of_field");
 
@@ -76,6 +76,7 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
     mGBuffers[0].setDepthTexture(prevGBuffer->getDepthTexture());
     mGBuffers[0].setLightTexture(prevGBuffer->getLightTexture());
     mGBuffers[0].setNormalTexture(prevGBuffer->getNormalTexture());
+    mGBuffers[0].setRoughnessTexture(prevGBuffer->getRoughnessTexture());
     mGBuffers[0].setFboLight(prevGBuffer->getFboLight());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, prevGBuffer->getDepthTexture(), 0);
 

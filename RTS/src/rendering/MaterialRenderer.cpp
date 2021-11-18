@@ -9,6 +9,8 @@
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
 
+#include "options/DebugOptions.h"
+
 MaterialRenderer::MaterialRenderer(const RenderContext& renderContext) :
     mRenderContext(renderContext)
 {
@@ -146,6 +148,11 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getNormalTexture());
                 break;
+            case MaterialUniform::FboRoughness:
+                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glUniform1i(it.second, nextAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getRoughnessTexture());
+                break;
             case MaterialUniform::PrevFbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
@@ -210,6 +217,9 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.shadowMap);
+            break;
+            case MaterialUniform::ShadowColor:
+                glUniform3fv(it.second, 1, &sDebugOptions.mShadowColor[0]);
                 break;
             case MaterialUniform::SunUp:
                 glUniform3fv(it.second, 1, &renderData.sunUp[0]);
@@ -217,7 +227,8 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::SunRight:
                 glUniform3fv(it.second, 1, &renderData.sunRight[0]);
                 break;
+
         }
-        static_assert((int)MaterialUniform::COUNT == 37, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 39, "Update for new uniform type");
     }
 }

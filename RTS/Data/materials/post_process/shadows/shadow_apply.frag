@@ -7,6 +7,7 @@ uniform mat4 InverseP;
 uniform mat4 InverseV;
 uniform vec2 CameraZRange;
 uniform float SunHeight;
+uniform vec3 ShadowColor;
 
 uniform float ShadowCascadePlaneDistances[4];
 uniform mat4 ShadowFrustumMatrices[4];
@@ -36,6 +37,7 @@ float getShadow(vec4 viewSpacePosition) {
 	
 	int layer = cascadeCount;
     for (int i = 0; i < cascadeCount; ++i) {
+	    // This branch is fine because local kernel will all follow same path usually
 		if (depthValue < ShadowCascadePlaneDistances[i]) {
 			layer = i;
 			break;
@@ -53,23 +55,23 @@ float getShadow(vec4 viewSpacePosition) {
 		
 	// get depth of current fragment from light's perspective
 	float currentDepth = projCoords.z;
-	if (currentDepth  > 1.0) {
-		return 0.0;
-	}
+	//if (currentDepth  > 1.0) {
+	//	return 0.0;
+	//}
 	// calculate bias (based on depth map resolution and slope)
 	
 	vec3 normal = texture(FboNormals, fUV).rgb * 2.0 - 1.0;
-	float layerBiasMult = pow(layer, 4.0) * 0.0024; // More bias further from camera
+	float layerBiasMult = pow(layer, 4.0) * 0.006; // More bias further from camera
 	float bias = max((0.02 + layerBiasMult) * (1.0 - dot(normal, SunPosition)), 0.005);
-	if (layer == cascadeCount) {
-		bias *= 1 / (CameraZRange.y * 0.5);
-	}
-	else {
+	
+	//if (layer == cascadeCount) {
+	//	bias *= 1 / (CameraZRange.y * 0.5);
+	//}
+	//else {
 		bias *= 1 / (ShadowCascadePlaneDistances[layer] * 0.5);
-	}
+	//}
 	
-	
-	// PCF
+	// PCF (TODO: Replace with VSM)
 	float shadow = 0.0;
 	vec2 texelSize = 1.0 / vec2(textureSize(ShadowMap, 0));
 	for(int x = -1; x <= 1; ++x) {
@@ -82,14 +84,12 @@ float getShadow(vec4 viewSpacePosition) {
 		}    
 	}
 	shadow /= 9.0;
-	//shadow = texture(ShadowMap, vec3(projCoords.xy, layer)).r;
-	//cshadow = (currentDepth - bias) > shadow ? 1.0 : 0.0;      
 		
 	// keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
-	if(projCoords.z > 1.0)
-	{
-		shadow = 0.0;
-	}
+	//if(projCoords.z > 1.0)
+	//{
+	//	shadow = 0.0;
+	//}
 	return shadow;
 }
 
@@ -99,6 +99,9 @@ void main() {
 	
 	// Final color
     fColor = texture(Fbo0, fUV);
-	fColor.rgb = fColor.rgb * (1.0 - shadow * 0.5 * SunHeight);
+	float shadowMult = shadow * 0.5 * SunHeight;
+	float isShadowed = step(0.0001, shadow);
+	// Multiply by ShadowColor to give more hue to shadows
+	fColor.rgb = fColor.rgb * (1.0 - shadowMult) * ShadowColor * isShadowed + fColor.rgb * (1.0 - isShadowed); 
 	//step(88.0, -viewSpacePosition.z)
 }

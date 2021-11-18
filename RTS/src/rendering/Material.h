@@ -23,6 +23,7 @@ enum class MaterialUniform {
     FboLight,
     FboDepth,
     FboNormals,
+    FboRoughness,
     PrevFbo0,
     PrevFboDepth,
     PixelDims,
@@ -40,6 +41,7 @@ enum class MaterialUniform {
     ShadowFrustumMatrices,
     ShadowMap,
     ShadowCascadePlaneDistances,
+    ShadowColor,
     SunUp,
     SunRight,
     COUNT

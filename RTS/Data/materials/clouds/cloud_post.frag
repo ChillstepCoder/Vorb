@@ -16,6 +16,7 @@ in vec2 fUV;
 
 layout (location = 0) out vec4 fColor;
 layout (location = 1) out vec4 fNormal;
+layout (location = 2) out vec4 fRoughness;
 
 void main() {
     // fColor = texture(CloudFbo, fUV);
@@ -37,4 +38,7 @@ void main() {
 	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient, 1.0, depth, fUV);
 	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient, 1.0, depth, fUV);
 	fColor.rgb = frontRGB * 0.7 + backRGB * 0.3;
+	
+	fRoughness.r = 0.9;
+	fRoughness.a = 1.0;
 }

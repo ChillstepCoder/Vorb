@@ -55,7 +55,7 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
                 billboardPos.x += (i % w) * spacingRatio;
                 billboardPos.y += ((i % (w * w)) / w) * spacingRatio;
                 billboardPos.z += (i / (w * w)) * spacingRatio;
-                mesh.addQuad(billboardPos, spriteData.dimsMeters * spacingRatio, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false, 0u);
+                mesh.addQuad(billboardPos, spriteData.dimsMeters * spacingRatio, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false, 0u, 0u);
             }
         }
     }
@@ -109,7 +109,7 @@ void ItemRenderer::addItemStackToMesh(BillboardMesh& mesh, const f32v3& pos, con
     const Item& item = mItemRepository.getItem(itemStack.id);
     const SpriteData& spriteData = item.mSpriteData;
     const f32v4& uvs = spriteData.uvs;
-    mesh.addQuad(pos, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP, 0u);
+    mesh.addQuad(pos, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP, 0u, 0u);
 }
 
 void ItemRenderer::renderStockpile(const ItemStockpile& stockpile) const

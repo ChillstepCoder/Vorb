@@ -52,10 +52,11 @@
 // TODO: Instead of single shader these should be able to be shader chains.
 const std::string sPassthroughMaterialNames[] = {
     "pass_through",
-    "depth",
+    "depth_debug",
+    //"motion_blur",
+    "normals",
     "shadow_depth_debug",
-    "motion_blur",
-    "normals"
+    "roughness_debug",
 };
 
 RenderContext* RenderContext::sInstance = nullptr;
@@ -80,7 +81,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     sGlobalFullQuadVBO.init();
 
     // GBuffer
-    vg::GBufferAttachment attachments[2];
+    vg::GBufferAttachment attachments[3];
     // Color
     attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGB8;
     attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
@@ -91,9 +92,14 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[FBO_GEOMETRY_NORMAL].number = FBO_GEOMETRY_NORMAL;
     attachments[FBO_GEOMETRY_NORMAL].pixelFormat = vg::TextureFormat::RGB;
     attachments[FBO_GEOMETRY_NORMAL].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    // Normals
+    attachments[FBO_GEOMETRY_ROUGHNESS].format = vg::TextureInternalFormat::R8;
+    attachments[FBO_GEOMETRY_ROUGHNESS].number = FBO_GEOMETRY_ROUGHNESS;
+    attachments[FBO_GEOMETRY_ROUGHNESS].pixelFormat = vg::TextureFormat::RED;
+    attachments[FBO_GEOMETRY_ROUGHNESS].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], vg::TextureInternalFormat::RGBA16F);
+        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS], vg::TextureInternalFormat::RGBA16F);
         mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
     }
     checkGlError("GBuffer init");
@@ -117,7 +123,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     zCutoutAttachment.pixelFormat = vg::TextureFormat::RED;
     zCutoutAttachment.pixelType = vg::TexturePixelType::FLOAT;
     mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
-    mZCutoutGBuffer.init(zCutoutAttachment, nullptr);
+    mZCutoutGBuffer.init(zCutoutAttachment, nullptr, nullptr);
     checkGlError("Z Cutout GBuffer Init");
 
     int maxTextureSize;
@@ -183,8 +189,7 @@ void RenderContext::initPostLoad() {
         }
     }
 
-    mSunLightMaterial = mResourceManager.getMaterialManager().getMaterial("sun_light");
-    mLightPassThroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through_light");
+    mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 
     buildHorizonMesh();
@@ -195,20 +200,20 @@ void RenderContext::initPostLoad() {
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     RenderStats::clear();
-    // Set renderData
+    // Misc renderData
     mRenderData.mainCamera = camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
-    mRenderData.sunHeight = mWorld.getSunHeight();
-    mRenderData.sunColor = mWorld.getSunColor();
     mRenderData.timeOfDay = mWorld.getTimeOfDay();
-    const f32v3& sun = mWorld.getSunPosition();
-    mRenderData.sunPositionWorld = sun;
-    std::cout << "Sunposition " << sun.x << " " << sun.y << " " << sun.z << std::endl;
-    mRenderData.sunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.playerPos = playerPos;
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
 
+    // Sun
+    const f32v3& sun = mWorld.getSunPosition();
+    mRenderData.sunColor = mWorld.getSunColor();
+    mRenderData.sunHeight = mWorld.getSunHeight();
+    mRenderData.sunPositionWorld = sun;
+    mRenderData.sunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
     mRenderData.sunRight = glm::normalize(glm::cross(sun, f32v3(0.0f, 0.0f, 1.0f)));
     mRenderData.sunUp = glm::normalize(glm::cross(sun, mRenderData.sunRight));
 
@@ -338,19 +343,20 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
         glDisable(GL_DEPTH_CLAMP);
 
+        vg::DepthState::NONE.set();
         mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer);
 
         mActiveGBuffer->useGeometry();
     }
 
     // Particles
-    if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-        vg::DepthState::READ.set();
-        // TODO: Replace With BlendState
-        mParticleSystemRenderer->renderParticleSystems(camera, mActiveGBuffer, true);
-        vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
-        vg::DepthState::FULL.set();
-    }
+    //if (lodState == ChunkRenderLOD::FULL_DETAIL) {
+    //    vg::DepthState::READ.set();
+    //    // TODO: Replace With BlendState
+    //    mParticleSystemRenderer->renderParticleSystems(camera, mActiveGBuffer, true);
+    //    vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
+    //    vg::DepthState::FULL.set();
+    //}
 
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -372,6 +378,110 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     //    activeGbuffer.useGeometry();
     //}
 
+    // Debug rendering
+    renderDebug(camera);
+
+    // *** Post processes ***
+    // Disable depth testing for post processing
+    vg::DepthState::NONE.set();
+
+    mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
+
+    // Render characters that are behind geometry with some transparency
+    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
+        // Depth debug
+    if (mPassthroughRenderMode == 1) {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        assert(postMat);
+
+        // TODO: Swap chain for this to work
+        mMaterialRenderer->renderFullScreenQuad(*postMat);
+    }
+
+
+    //// Disable depth testing for post processing
+    //// TODO: Swap chains?
+    //// TODO: This should be at top
+    //mActiveGBuffer->unuse();
+    //mCurrentFramebufferDims = mScreenResolution;
+    //// *** Lighting ***
+    //mActiveGBuffer->useLight();
+    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    //glClear(GL_COLOR_BUFFER_BIT);
+
+    //// Sun Light
+    //// TODO: Collapse this into lightPassThrough?
+    //mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
+
+    ////  Dynamic  light
+    //glBlendFunc(GL_ONE, GL_ONE);
+    //mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
+
+
+    mActiveGBuffer->unuse();
+    mCurrentFramebufferDims = mScreenResolution;
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    vg::DepthState::NONE.set();
+
+    // Final Lighting
+    mMaterialRenderer->renderFullScreenQuad(*mSceneLightingMaterial);
+
+    // Sky
+   /* vg::DepthState::READ.set();
+    renderSky(camera);
+    vg::DepthState::FULL.set();*/
+
+    // Copy depth for emissive rendering, so we can still depth test
+    //vg::DepthState::WRITE.set();
+    //mMaterialRenderer->renderFullScreenQuad(*mCopyDepthMaterial);
+   // vg::DepthState::READ.set();
+
+    // Unlit Particles
+    //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
+    vg::DepthState::NONE.set();
+
+
+    // Final Pass through process
+    // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
+    if (mPassthroughRenderMode > 1) {
+        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        assert(postMat);
+
+        // TODO: Swap chain for this to work
+        mMaterialRenderer->renderFullScreenQuad(*postMat);
+    }
+
+    // UI last
+    renderUI(camera);
+
+    // Debugging
+    if (sDebugOptions.mShowTweaker) {
+        mDebugTweakerPanel->updateAndRender(mActiveGBuffer, camera.getAspectRatio());
+    }
+
+    // Swap
+    mPrevGBufferIndex = mActiveGBufferIndex;
+    mActiveGBufferIndex = !mActiveGBufferIndex;
+
+    checkGlError("RenderContext::FrameEnd");
+}
+
+void RenderContext::endFrame() {
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::EndFrame();
+}
+
+void RenderContext::selectNextDebugShader() {
+    //mChunkRenderer->SelectNextShader();
+    ++mPassthroughRenderMode;
+    if (mPassthroughRenderMode >= mPassthroughMaterials.size()) {
+        mPassthroughRenderMode = 0;
+    }
+}
+
+void RenderContext::renderDebug(const Camera3D& camera) {
     // City Debug
     if (sDebugOptions.mCities) {
         const CityGraph& cities = mWorld.getCities();
@@ -422,106 +532,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
-
-    // *** Post processes ***
-    // Disable depth testing for post processing
-    vg::DepthState::NONE.set();
-
-    mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
-
-    // Render characters that are behind geometry with some transparency
-    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
-        // Depth debug
-    if (mPassthroughRenderMode == 1) {
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-        assert(postMat);
-
-        // TODO: Swap chain for this to work
-        mMaterialRenderer->renderFullScreenQuad(*postMat);
-    }
-
-
-    // Disable depth testing for post processing
-    // TODO: Swap chains?
-    // TODO: This should be at top
-    mActiveGBuffer->unuse();
-    mCurrentFramebufferDims = mScreenResolution;
-
-    // *** Lighting ***
-    mActiveGBuffer->useLight();
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // Sun Light
-    // TODO: Collapse this into lightPassThrough?
-    mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
-
-    //  Dynamic  light
-    glBlendFunc(GL_ONE, GL_ONE);
-    mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
-
-
-    mActiveGBuffer->unuse();
-    mCurrentFramebufferDims = mScreenResolution;
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    vg::DepthState::NONE.set();
-
-    // Final Lighting
-    mMaterialRenderer->renderFullScreenQuad(*mLightPassThroughMaterial);
-
-    // Sky
-   /* vg::DepthState::READ.set();
-    renderSky(camera);
-    vg::DepthState::FULL.set();*/
-
-    // Copy depth for emissive rendering, so we can still depth test
-    //vg::DepthState::WRITE.set();
-    //mMaterialRenderer->renderFullScreenQuad(*mCopyDepthMaterial);
-   // vg::DepthState::READ.set();
-
-    // Unlit Particles
-    //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
-    vg::DepthState::NONE.set();
-
-
-    // Final Pass through process
-    // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
-    if (mPassthroughRenderMode > 1) {
-        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
-        assert(postMat);
-
-        // TODO: Swap chain for this to work
-        mMaterialRenderer->renderFullScreenQuad(*postMat);
-    }
-
-    // UI last
-    renderUI(camera);
-
-    // Debugging
-    if (sDebugOptions.mShowTweaker) {
-        mDebugTweakerPanel->updateAndRender();
-    }
-
-    // Swap
-    mPrevGBufferIndex = mActiveGBufferIndex;
-    mActiveGBufferIndex = !mActiveGBufferIndex;
-
-    checkGlError("RenderContext::FrameEnd");
-}
-
-void RenderContext::endFrame() {
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    ImGui::EndFrame();
-}
-
-void RenderContext::selectNextDebugShader() {
-    //mChunkRenderer->SelectNextShader();
-    ++mPassthroughRenderMode;
-    if (mPassthroughRenderMode >= mPassthroughMaterials.size()) {
-        mPassthroughRenderMode = 0;
-    }
 }
 
 void RenderContext::renderUI(const Camera3D& camera) {
