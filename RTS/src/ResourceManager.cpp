@@ -96,7 +96,8 @@ void ResourceManager::loadFiles() {
                 entry,
                 vio::getLeafNameFromFilePathNoExtension(entry),
                 vg::TextureTarget::TEXTURE_2D,
-                &vg::SamplerState::LINEAR_WRAP
+                &vg::SamplerState::LINEAR_WRAP,
+                vg::TextureInternalFormat::COMPRESSED_RGBA
             );
         }
         else {

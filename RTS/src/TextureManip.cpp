@@ -158,5 +158,6 @@ void GPUTextureManipulator::InitPostLoad() {
 
     // Generate mipmaps
     const TextureAtlas& atlas = mResourceManager.getTextureAtlas();
+    atlas.compressTextures();
     atlas.generateMipMaps();
 }

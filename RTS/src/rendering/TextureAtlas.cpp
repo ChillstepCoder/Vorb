@@ -54,7 +54,7 @@ f32v4 TextureAtlas::writePixels(ui32 cellIndex, ui32 cellsX, ui32 cellsY, const 
 void TextureAtlas::uploadDirtyPages()
 {
     if (mNeedsReallocate) {
-        allocateTexture();
+        allocateTexture(mAtlasTexture, GL_RGBA8);
         // Upload all pages
         glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
         for (size_t i = 0; i < mPages.size(); i++) {
@@ -77,6 +77,18 @@ void TextureAtlas::generateMipMaps() const {
     glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
+void TextureAtlas::compressTextures() const {
+    std::vector<ui8> data;
+    data.resize(TEXTURE_ATLAS_SIZE_PX * mPages.size() * sizeof(color4));
+    glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
+    glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+
+    allocateTexture(mAtlasTexture, GL_COMPRESSED_RGBA);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+    checkGlError("TextureAtlas::compressTextures");
 }
 
 void TextureAtlas::addPage() {
@@ -105,15 +117,17 @@ ui32v2 TextureAtlas::getPageCoordsFromCellIndex(unsigned cellIndex) {
     return rv;
 }
 
-void TextureAtlas::allocateTexture() {
+// TODO: this is not const
+void TextureAtlas::allocateTexture(ui32 texture, int internalFormat) const {
     // Set up the storage
-    glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
 
     // Set up all the mipmap storage
     ui32 width = TEXTURE_ATLAS_WIDTH_PX;
     for (ui32 i = 0; i < MIP_LEVELS; i++) {
         assert(width > 0);
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, i, GL_RGBA8, width, width, (GLsizei)mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        // TODO: Compress (breaks normal generation so we need to post compress)
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, i, internalFormat, width, width, (GLsizei)mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         width >>= 1;
     }
 

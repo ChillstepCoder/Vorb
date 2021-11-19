@@ -26,6 +26,7 @@ public:
     f32v4 writePixels(ui32 cellIndex, ui32 cellsX, ui32 cellsY, const color4* srcPixels, ui32 srcResourceWidthPx, ui32 srcRectWidthPx, ui32 srcRectHeightPx);
     void uploadDirtyPages();
     void generateMipMaps() const;
+    void compressTextures() const;
 
     void writeDebugPages();
 
@@ -37,10 +38,10 @@ private:
     void addPage();
     void uploadPage(AtlasPage& page);
     ui32v2 getPageCoordsFromCellIndex(unsigned cellIndex);
-    void allocateTexture();
+    void allocateTexture(ui32 texture, int internalFormat) const;
 
     std::vector<AtlasPage> mPages;
-    VGTexture mAtlasTexture;
-    bool mNeedsReallocate;
+    mutable VGTexture mAtlasTexture;
+    mutable bool mNeedsReallocate;
 };
 
