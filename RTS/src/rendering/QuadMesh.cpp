@@ -8,6 +8,10 @@
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/RasterizerState.h>
 
+#include "rendering/RenderStats.h"
+
+// Must match glsl
+constexpr ui32 MAX_UNIFORM_ARRAY_SIZE = 256; // TODO: Query hardware + defines? Need to assert if uniform buffer size < 16kb
 
 const f32v2 CUBE_FACING_AXIS_DIRECTIONS[enum_cast(CubeFacing::COUNT)] = {
     f32v2(-1, 1), // LEFT
@@ -357,4 +361,137 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
             glVertexAttribPointer(*attr, 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, roughness));
         }
     }
+}
+
+void TBOBillboardMesh::reserveQuadCount(size_t count) {
+    mTextureData.reserve(count);
+}
+
+void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
+    UNUSED(color);
+    // Signal for a new batch
+    if (mTextureData.empty()) {
+        mTypes.clear();
+    }
+    constexpr int TYPE_MULT = 1000;
+
+    f32v4 adjustedUvs;
+    if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    TBOBillboardUniformData uniformData = TBOBillboardUniformData{ adjustedUvs, f32v3((f32)spriteAtlasPage, windInfluence / 255.0f, roughness / 255.0f) };
+
+    f32 typeSize;
+    auto&& it = mTypes.find(uniformData);
+    if (it == mTypes.end()) {
+        if (mLastTypeIndex == MAX_UNIFORM_ARRAY_SIZE /*max types per batch*/) {
+            //assert(false); // Too many!
+            return;
+        }
+        typeSize = mLastTypeIndex * TYPE_MULT;
+        mTypes[uniformData] = mLastTypeIndex++;
+    }
+    else {
+        typeSize = it->second * TYPE_MULT;
+    }
+
+    // Dual encoding 
+    typeSize += xyDims.x;
+
+    mTextureData.push_back({ tilePosition, typeSize });
+}
+
+void TBOBillboardMesh::draw(const vg::GLProgram& program) const {
+    // Make sure we have been initialized
+    assert(mVao);
+    if (!mIndexCount) return;
+
+    glBindVertexArray(mVao);
+    bindVertexAttribs(program);
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // Hack, no data at all, the shader generates vertex positions
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sQuadIbo);
+
+    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
+    RenderStats::recordDrawCall(mIndexCount / 3); 
+
+    glBindVertexArray(0);
+}
+
+void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
+{
+    if (mTextureData.size()) {
+        mIndexCount = mTextureData.size() * 6;
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_TEXTURE_BUFFER, mVbo);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(TBOBillboardInstanceData) * mTextureData.size(), mTextureData.data(), GL_STATIC_DRAW);
+
+        if (!mTboTexture) {
+            glGenTextures(1, &mTboTexture);
+        }
+        glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, mVbo);
+
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+        std::vector<TBOBillboardInstanceData>().swap(mTextureData);
+
+        // Set uniforms
+        if (!mUbo) {
+            glGenBuffers(1, &mUbo);
+            glBindBuffer(GL_UNIFORM_BUFFER, mUbo);
+            // 2 arrays of data
+            glBufferData(GL_UNIFORM_BUFFER, MAX_UNIFORM_ARRAY_SIZE * sizeof(f32v4) * 2, NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
+        }
+        else {
+            glBindBuffer(GL_UNIFORM_BUFFER, mUbo);
+        }
+        for (auto&& it = mTypes.begin(); it != mTypes.end(); ++it) {
+            ui32 index = it->second;
+            // base alignment is 16 for uniform block
+            glBufferSubData(GL_UNIFORM_BUFFER, index * sizeof(f32v4), sizeof(f32v4), &it->first.uvRect.x);
+            glBufferSubData(GL_UNIFORM_BUFFER, MAX_UNIFORM_ARRAY_SIZE * sizeof(f32v4) + index * sizeof(f32v4), sizeof(f32v3), &it->first.atlasPageRoughnessWind.x);
+        }
+
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    else {
+        destroy();
+    }
+}
+
+void TBOBillboardMesh::destroy() {
+    MeshBase::destroy();
+    if (mTboTexture) {
+        glDeleteTextures(1, &mTboTexture);
+        mTboTexture = 0;
+    }
+    if (mUbo) {
+        glDeleteBuffers(1, &mUbo);
+        mUbo = 0;
+    }
+    mTypes.clear();
+    std::vector<TBOBillboardInstanceData>().swap(mTextureData);
+}
+
+void TBOBillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
+    glActiveTexture(GL_TEXTURE10);
+    glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
+    glBindBuffer(GL_TEXTURE_BUFFER, mVbo);
+
+    // Bind uniforms
+    // GLSL ensures binding point 1
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mUbo);
+    glUniform1i(glGetUniformLocation(program.getID(), "UnTboPositionTypeSize"), 10);
 }

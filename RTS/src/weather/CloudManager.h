@@ -1,7 +1,9 @@
 #pragma once
 
-class BillboardMesh;
+
 class World;
+class BillboardMesh;
+
 
 struct Cloud {
     f32v3 pos;

@@ -1,0 +1,3 @@
+tbo_billboard:
+  vert: tbo_billboard.vert
+  frag: standard_tile.frag

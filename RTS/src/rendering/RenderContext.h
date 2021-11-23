@@ -29,6 +29,35 @@ struct SDL_Window;
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
 
+// Must match layout of GlobalUbo.glsl
+// Padding to match the required boundaries for each type https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
+//struct GlobalUboData {
+//    f32m4 V;
+//    f32m4 InverseV;
+//    f32m4 P;
+//    f32m4 InverseP;
+//    f32m4 VP;
+//    f32m4 InverseVP;
+//    f32v3 sunPosition;
+//    f32; //padding
+//    f32v3 SunPositionCameraRelative;
+//    f32; //padding
+//    f32v3 SunUp;
+//    f32; //padding
+//    f32v3 SunRight;
+//    f32; //padding
+//    f32v3 SunColor;
+//    f32; //padding
+//    f32v3 PlayerPosWorld;
+//    f32; //padding
+//    f32v3 CameraRight;
+//    f32; //padding
+//    f32v3 CameraFront;
+//    f32; //padding
+//    f32v3 CameraUp;
+//    f32; //padding
+//};
+
 struct GlobalRenderData {
     VGTexture atlas;
     f32 time;

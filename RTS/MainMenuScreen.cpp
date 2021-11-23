@@ -323,8 +323,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 		// World update after camera
         mWorld->update(playerXYPos, *mCamera3D);
 	}
-	// Always update camera one last time using interpolated position
-	// TODO: wtf is this tho
+	// TODO: Actual usage of deltatime?
     updateCamera(gameTime);
 
 	updateTilePicking();

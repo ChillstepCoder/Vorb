@@ -6,10 +6,10 @@
 class MaterialRenderer;
 class MaterialManager;
 struct SpriteData;
-class BillboardMesh;
 class Material;
 class Camera3D;
 struct BillboardVertex;
+class BillboardMesh;
 
 // TODO: Cutout rendering - see pathfinder wrath of the righteous
 class CharacterRenderer {

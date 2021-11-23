@@ -61,7 +61,7 @@ class SphericalTweener : public Tweener<T> {
 public:
     SphericalTweener(T start, f32 maxSpeed = 0.3f, f32 accel = 0.1f) : Tweener<T>(start, maxSpeed, accel) {  }
     void update(f32 deltaTime) override {
-        Tweener<T>::mCurr = vmath::lerp(Tweener<T>::mCurr, Tweener<T>::mTarget, 0.09f);
+        Tweener<T>::mCurr = vmath::lerp(Tweener<T>::mCurr, Tweener<T>::mTarget, Tweener<T>::mAccel);
         Tweener<T>::mCurr = glm::normalize(Tweener<T>::mCurr);
     }
 };

@@ -27,6 +27,7 @@ public:
 // Need power of 2 alignment
 static_assert(sizeof(TileVertex) == 32, "Power of 2 byte alignment needed");
 
+// https://gamedev.net/forums/topic/663329-particles-batching-vs-instancing/5196688/
 constexpr float BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO = 100.0f;
 struct BillboardVertex {
 public:
@@ -44,7 +45,6 @@ public:
     ui8 roughness;
 };
 // Need power of 2 alignment
-// 64 is bad!!!
 static_assert(sizeof(BillboardVertex) == 32, "Power of 2 byte alignment needed");
 
 struct TriangleVertex {

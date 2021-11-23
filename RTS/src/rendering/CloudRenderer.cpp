@@ -27,10 +27,10 @@ CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRen
 
     vg::GBufferAttachment attachment;
     // Color
-    attachment.format = vg::TextureInternalFormat::RGBA16F;
+    attachment.format = vg::TextureInternalFormat::RGBA8;
     attachment.number = FBO_GEOMETRY_COLOR;
     attachment.pixelFormat = vg::TextureFormat::RGBA;
-    attachment.pixelType = vg::TexturePixelType::HALF_FLOAT;
+    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mGbufferDims));
         mGBuffers[i].init(attachment, nullptr, nullptr);

@@ -45,6 +45,65 @@ private:
     std::vector<BillboardVertex> mVertexData; // TODO: Recycle?
 };
 
+// TODO: 16 bit
+struct TBOBillboardInstanceData {
+    f32v3 position;
+    f32 typeSize; // Lookup into uniform array
+
+    //f32v3 rootPos;
+    //i16v2 xzHalfDims;
+    //ui16v4 uvRect; //TODO: ui16v2?
+    //ui16 atlasPage;
+    //color4 color;
+    //ui8 windInfluence = 0;
+    //ui8 roughness;
+};
+static_assert(sizeof(TBOBillboardInstanceData) == 16);
+struct TBOBillboardUniformData {
+    f32v4 uvRect; //TODO: ui16v2?
+    f32v3 atlasPageRoughnessWind;
+
+    bool operator==(const TBOBillboardUniformData& other) const {
+        return uvRect == other.uvRect && atlasPageRoughnessWind == other.atlasPageRoughnessWind;
+    }
+};
+class TboInstanceDataHashFunction {
+public:
+    size_t operator()(const TBOBillboardUniformData& d) const
+    {
+        return (size_t)std::hash<f32>{}(d.uvRect.x) ^
+            (size_t)std::hash<f32>{}(d.uvRect.y * 127.0f) ^
+            (size_t)std::hash<f32>{}(d.uvRect.z * 255.0f) ^
+            (size_t)std::hash<f32>{}(d.uvRect.w * 156.0f) ^
+            (size_t)std::hash<int>{}((int)d.atlasPageRoughnessWind.x * 25) ^
+            (size_t)std::hash<int>{}((int)d.atlasPageRoughnessWind.y * 64) ^
+            (size_t)std::hash<int>{}((int)d.atlasPageRoughnessWind.z * 525);
+    }
+};
+
+class TBOBillboardMesh : public IQuadMesh<TBOBillboardInstanceData> {
+public:
+    TBOBillboardMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(TBOBillboardMesh);
+
+    void reserveQuadCount(size_t count);
+    void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness);
+    void draw(const vg::GLProgram& program) const override;
+    void finishMesh(MeshDrawMode drawMode) override;
+    void destroy() override;
+
+private:
+
+    void bindVertexAttribs(const vg::GLProgram& program) const override;
+
+    std::vector<TBOBillboardInstanceData> mTextureData; // TODO: Recycle?
+    std::unordered_map<TBOBillboardUniformData, ui32, TboInstanceDataHashFunction> mTypes;
+    ui32 mInstanceCount = 0;
+    ui32 mLastTypeIndex = 0;
+    VGTexture mTboTexture = 0;
+    VGBuffer mUbo = 0;
+};
+
 // Templated Mesh implementation
 template <typename VERTEX>
 void IQuadMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount, MeshDrawMode drawMode) {

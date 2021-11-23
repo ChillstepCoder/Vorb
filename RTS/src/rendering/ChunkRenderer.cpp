@@ -66,7 +66,8 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
         mLODedChunksToRender.clear();
 
         // NEW
-        mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
+        // Billboards first to reduce overdraw
+        mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
         world.enumVisibleChunks([&](const Chunk& chunk) {
             if (chunk.isFinished()) {
 
@@ -74,18 +75,18 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
 
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
                 if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-                    TryRenderFloraMesh(chunk, mStandardMaterial);
-                    TryRenderBaseMesh(chunk, mStandardMaterial);
+                    TryRenderBillboardMesh(chunk, mBillboardMaterial);
                 }
                 else {
                     mLODedChunksToRender.emplace_back(&chunk);
                 }
             }
         });
-        mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
+        mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
         world.enumVisibleChunks([&](const Chunk& chunk) {
             ChunkRenderData& renderData = chunk.mChunkRenderData;
-            TryRenderBillboardMesh(chunk, mBillboardMaterial);
+            TryRenderFloraMesh(chunk, mStandardMaterial);
+            TryRenderBaseMesh(chunk, mStandardMaterial);
         });
 
         // LODed chunks
@@ -275,7 +276,11 @@ void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture te
 void ChunkRenderer::InitPostLoad()
 {
 	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+#if USE_INSTANCED_BILLBOARDS == 1
+    mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("tbo_billboard");
+#else
     mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
+#endif
     mLODMaterial = mResourceManager.getMaterialManager().getMaterial("chunk_lod");
     mZCutoutMaterial = mResourceManager.getMaterialManager().getMaterial("z_cutout");
     mShadowMapperMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");

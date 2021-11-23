@@ -20,7 +20,7 @@ public:
     static void initStaticIBO();
 
     virtual void init(); ///< Called automatically on construction, but can be safely called twice to no effect
-    void destroy();
+    virtual void destroy();
 
     virtual void draw(const vg::GLProgram& program) const;
 

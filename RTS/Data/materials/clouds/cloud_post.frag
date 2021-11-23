@@ -9,7 +9,6 @@ uniform mat4 InverseP;
 uniform vec4 unCloudTextureRect;
 uniform float unCloudTexturePage;
 
-#include "../util/gaussian_blur.glsl"
 #include "../util/lighting.glsl"
 
 in vec2 fUV;

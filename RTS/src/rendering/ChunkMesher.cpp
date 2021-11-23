@@ -334,7 +334,7 @@ void addTileFlora(
 }
 
 void addTileFloraBillboard(
-    BillboardMesh& billboardMesh,
+    ChunkBillboardMesh& billboardMesh,
     const Chunk& chunk,
     const TileIndex& tileIndex,
     int layerIndex,
@@ -748,7 +748,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (!renderData.mChunkMesh) {
         renderData.mChunkMesh = std::make_unique<QuadMesh>();
-        renderData.mBillboardMesh = std::make_unique<BillboardMesh>();
+        renderData.mBillboardMesh = std::make_unique<ChunkBillboardMesh>();
     }
     
     Services::Threadpool::ref().addTask([&chunk, meshData, &renderData](ThreadPoolWorkerData* workerData) {
@@ -756,7 +756,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
         QuadMesh& quadMesh = *renderData.mChunkMesh;
         quadMesh.reserveQuadCount(CHUNK_SIZE * 2); // Most chunks will have less than 2 quads per tile
-        BillboardMesh& billboardMesh = *renderData.mBillboardMesh;
+        ChunkBillboardMesh& billboardMesh = *renderData.mBillboardMesh;
         billboardMesh.reserveQuadCount(CHUNK_SIZE); // Most chunks will have less than 1 quad per tile
 
         color3* lodData = meshData->mLODTexturePixelBuffer;
