@@ -2,7 +2,7 @@ uniform sampler2D unInputFbo;
 uniform sampler2D FboDepth;
 uniform vec2 ScreenResolution;
 uniform vec2 unDirection;
-uniform vec2 CameraZRange;
+#include "../../GlobalUbo.glsl"
 
 in vec2 fUV;
 

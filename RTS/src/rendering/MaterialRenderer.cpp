@@ -81,8 +81,6 @@ void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32*
 
 // TODO: Batch upload uniforms so we dont do it multiple times redundantly
 void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAvailableTextureIndex) const {
-    //  TODO: We are redundant with the texture uniform uploads. Can uniform buffer object save us here?
-    // https://www.khronos.org/opengl/wiki/Uniform_Buffer_Object
     const GlobalRenderData& renderData = mRenderContext.getRenderData();
     // Bind uniforms
     for (auto&& it : material.mUniforms) {
@@ -91,42 +89,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.atlas);
-                break;
-            case MaterialUniform::Time:
-                glUniform1f(it.second, (float)sTotalTimeSeconds);
-                break;
-            case MaterialUniform::TimeOfDay:
-                glUniform1f(it.second, renderData.timeOfDay);
-                break;
-            case MaterialUniform::SunColor:
-                glUniform3f(it.second, renderData.sunColor.x, renderData.sunColor.y, renderData.sunColor.z);
-                break;
-            case MaterialUniform::SunHeight:
-                glUniform1f(it.second, renderData.sunHeight);
-                break;
-            case MaterialUniform::SunPosition:
-                glUniform3fv(it.second, 1, &renderData.sunPositionWorld[0]);
-                break;
-            case MaterialUniform::SunPositionCameraRelative:
-                glUniform3fv(it.second, 1, &renderData.sunPositionCameraRelative[0]);
-                break;
-            case MaterialUniform::VMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getViewMatrix()[0][0]);
-                break;
-            case MaterialUniform::InverseVMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getInverseViewMatrix()[0][0]);
-                break;
-            case MaterialUniform::PMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getProjectionMatrix()[0][0]);
-                break;
-            case MaterialUniform::InversePMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getInverseProjectionMatrix()[0][0]);
-                break;
-            case MaterialUniform::VPMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getVPMatrix()[0][0]);
-                break;
-            case MaterialUniform::InverseVPMatrix:
-                glUniformMatrix4fv(it.second, 1, false, &renderData.mainCamera->getInverseVPMatrix()[0][0]);
                 break;
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
@@ -176,21 +138,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getZCutoutGBuffer().getGeometryTexture());
                 break;
-            case MaterialUniform::PlayerPosWorld:
-                glUniform3f(it.second, renderData.playerPos.x, renderData.playerPos.y, renderData.playerPos.z);
-                break;
-            case MaterialUniform::CameraRight:
-                glUniform3fv(it.second, 1, &renderData.mainCamera->getRightVector()[0]);
-                break;
-            case MaterialUniform::CameraFront:
-                glUniform3fv(it.second, 1, &renderData.mainCamera->getFrontVector()[0]);
-                break;
-            case MaterialUniform::CameraUp:
-                glUniform3fv(it.second, 1, &renderData.mainCamera->getUpVector()[0]);
-                break;
-            case MaterialUniform::CameraPos:
-                glUniform3fv(it.second, 1, &renderData.mainCamera->getPosition()[0]);
-                break;
             case MaterialUniform::CameraZAngle: {
                 const f32 zAngle = atan2f(renderData.mainCamera->getFrontVector().y, renderData.mainCamera->getFrontVector().x) + M_PIF;
                 glUniform1f(it.second, zAngle);
@@ -204,9 +151,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
-            case MaterialUniform::CameraZRange:
-                glUniform2f(it.second, renderData.mainCamera->getZNear(), renderData.mainCamera->getZFar());
-                break;
             case MaterialUniform::ShadowFrustumMatrices:
                 glUniformMatrix4fv(it.second, renderData.shadowFrustumMatricesCount, false, &(*renderData.shadowFrustumMatrices)[0][0]);
                 break;
@@ -221,14 +165,8 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::ShadowColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mShadowColor[0]);
                 break;
-            case MaterialUniform::SunUp:
-                glUniform3fv(it.second, 1, &renderData.sunUp[0]);
-                break;
-            case MaterialUniform::SunRight:
-                glUniform3fv(it.second, 1, &renderData.sunRight[0]);
-                break;
 
         }
-        static_assert((int)MaterialUniform::COUNT == 39, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 19, "Update for new uniform type");
     }
 }

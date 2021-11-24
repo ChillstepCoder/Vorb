@@ -25,51 +25,15 @@ class World;
 struct SDL_Window;
 
 #include <Vorb/graphics/GBuffer.h>
+#include "rendering/GlobalUboData.h"
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
 
-// Must match layout of GlobalUbo.glsl
-// Padding to match the required boundaries for each type https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
-//struct GlobalUboData {
-//    f32m4 V;
-//    f32m4 InverseV;
-//    f32m4 P;
-//    f32m4 InverseP;
-//    f32m4 VP;
-//    f32m4 InverseVP;
-//    f32v3 sunPosition;
-//    f32; //padding
-//    f32v3 SunPositionCameraRelative;
-//    f32; //padding
-//    f32v3 SunUp;
-//    f32; //padding
-//    f32v3 SunRight;
-//    f32; //padding
-//    f32v3 SunColor;
-//    f32; //padding
-//    f32v3 PlayerPosWorld;
-//    f32; //padding
-//    f32v3 CameraRight;
-//    f32; //padding
-//    f32v3 CameraFront;
-//    f32; //padding
-//    f32v3 CameraUp;
-//    f32; //padding
-//};
-
 struct GlobalRenderData {
+    GlobalUboData globalUboData;
     VGTexture atlas;
-    f32 time;
-    f32 sunHeight;
-    f32v3 sunPositionWorld;
-    f32v3 sunPositionCameraRelative;
-    f32v3 sunUp;
-    f32v3 sunRight;
     f32 cameraZAngle;
-    f32 timeOfDay;
-    f32v3 sunColor;
-    f32v3 playerPos;
     f32m4 skyRotMatrix;
     const f32m4* shadowFrustumMatrices;
     const f32* shadowCascadePlaneDistances;
@@ -149,6 +113,7 @@ private:
     const World& mWorld;
     std::unique_ptr<QuadMesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
+    VGBuffer mGlobalUbo = 0;
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;

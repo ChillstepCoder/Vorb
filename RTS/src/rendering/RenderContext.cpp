@@ -48,6 +48,8 @@
 
 #include "options/DebugOptions.h"
 
+constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
+
 // TODO: Render a string to the screen for these, Debug Render: %s (gone for pass_through)
 // TODO: Instead of single shader these should be able to be shader chains.
 const std::string sPassthroughMaterialNames[] = {
@@ -135,10 +137,17 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
 
     // Debugging
     mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>(screenResolution);
+
+    // UBO
+    glGenBuffers(1, &mGlobalUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, mGlobalUbo);
+    glBufferData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 RenderContext::~RenderContext() {
-
+    glDeleteBuffers(1, &mGlobalUbo);
 }
 
 RenderContext& RenderContext::initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window) {
@@ -199,23 +208,33 @@ void RenderContext::initPostLoad() {
 }
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
+    GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
     // Misc renderData
     mRenderData.mainCamera = camera;
     mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
-    mRenderData.timeOfDay = mWorld.getTimeOfDay();
     mRenderData.cameraZAngle = camera->getZAngle();
-    mRenderData.playerPos = playerPos;
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
+    // Ubo data
+    uboData.Time = sTotalTimeSeconds;
+    uboData.TimeOfDay = mWorld.getTimeOfDay();
+    uboData.PlayerPosWorld = playerPos;
 
     // Sun
     const f32v3& sun = mWorld.getSunPosition();
-    mRenderData.sunColor = mWorld.getSunColor();
-    mRenderData.sunHeight = mWorld.getSunHeight();
-    mRenderData.sunPositionWorld = sun;
-    mRenderData.sunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
-    mRenderData.sunRight = glm::normalize(glm::cross(sun, f32v3(0.0f, 0.0f, 1.0f)));
-    mRenderData.sunUp = glm::normalize(glm::cross(sun, mRenderData.sunRight));
+    uboData.SunColor = mWorld.getSunColor();
+    uboData.SunHeight = mWorld.getSunHeight();
+    uboData.SunPosition = sun;
+    uboData.SunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
+    uboData.SunRight = glm::normalize(glm::cross(sun, f32v3(0.0f, 0.0f, 1.0f)));
+    uboData.SunUp = glm::normalize(glm::cross(sun, uboData.SunRight));
+
+    // Camera data
+    uboData.CameraPos = camera->getPosition();
+    uboData.CameraFront = camera->getFrontVector();
+    uboData.CameraRight = camera->getRightVector();
+    uboData.CameraUp = camera->getUpVector();
+    uboData.CameraZRange = f32v2(camera->getZNear(), camera->getZFar());
 
     // Shadows
     mShadowRenderer->beginFrame(*camera, sun);
@@ -223,6 +242,14 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     mRenderData.shadowCascadePlaneDistances = mShadowRenderer->getShadowCascadePlaneDistances();
     mRenderData.shadowMap = mShadowRenderer->getShadowMap();
     mRenderData.shadowFrustumMatricesCount = MAX_SHADOW_CASCADE_LEVELS;
+
+    // Update ubo
+    glBindBuffer(GL_UNIFORM_BUFFER, mGlobalUbo);
+    // Camera matrices
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, CAMERA_MATRICES_BYTE_SIZE, &camera->getViewMatrix()[0][0]);
+    // Rest of the UBO
+    glBufferSubData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE, sizeof(GlobalUboData), &uboData);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -319,7 +346,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
     // Shadows
-    if (mRenderData.sunHeight > 0.01f) {
+    if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
         mShadowRenderer->useShadowBuffer();
         glEnable(GL_DEPTH_CLAMP);
 

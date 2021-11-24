@@ -1,6 +1,5 @@
 uniform sampler2DArray Atlas;
-uniform mat4 InverseP;
-uniform mat4 P;
+#include "../GlobalUbo.glsl"
 
 uniform vec4 unSphereNormalRect;
 uniform float unSphereNormalPage;

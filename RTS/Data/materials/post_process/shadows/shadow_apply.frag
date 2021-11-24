@@ -2,12 +2,8 @@ uniform sampler2D Fbo0;
 uniform sampler2D FboDepth;
 uniform sampler2D FboNormals;
 uniform sampler2DArray ShadowMap;
-uniform vec3 SunPosition;
-uniform mat4 InverseP;
-uniform mat4 InverseV;
-uniform vec2 CameraZRange;
-uniform float SunHeight;
 uniform vec3 ShadowColor;
+#include "../../GlobalUbo.glsl"
 
 uniform float ShadowCascadePlaneDistances[4];
 uniform mat4 ShadowFrustumMatrices[4];

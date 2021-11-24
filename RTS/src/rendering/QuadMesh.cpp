@@ -363,17 +363,20 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     }
 }
 
+void TBOBillboardMesh::beginMesh() {
+    mTextureData.clear();
+}
+
 void TBOBillboardMesh::reserveQuadCount(size_t count) {
     mTextureData.reserve(count);
 }
 
 void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
-    UNUSED(color);
+    UNUSED(color, xyOffset);
     // Signal for a new batch
     if (mTextureData.empty()) {
         mTypes.clear();
     }
-    constexpr int TYPE_MULT = 1000;
 
     f32v4 adjustedUvs;
     if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
@@ -392,27 +395,70 @@ void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f3
 
     TBOBillboardUniformData uniformData = TBOBillboardUniformData{ adjustedUvs, f32v3((f32)spriteAtlasPage, windInfluence / 255.0f, roughness / 255.0f) };
 
-    f32 typeSize;
+    f32 type;
     auto&& it = mTypes.find(uniformData);
     if (it == mTypes.end()) {
         if (mLastTypeIndex == MAX_UNIFORM_ARRAY_SIZE /*max types per batch*/) {
             //assert(false); // Too many!
             return;
         }
-        typeSize = mLastTypeIndex * TYPE_MULT;
+        type = (f32)mLastTypeIndex;
         mTypes[uniformData] = mLastTypeIndex++;
     }
     else {
-        typeSize = it->second * TYPE_MULT;
+        type = (f32)it->second;
     }
 
-    // Dual encoding 
-    typeSize += xyDims.x;
-
-    mTextureData.push_back({ tilePosition, typeSize });
+    mTextureData.push_back({ tilePosition, type, xyDims.x, xyDims.y });
 }
 
 void TBOBillboardMesh::draw(const vg::GLProgram& program) const {
+
+    // Check if we should sort
+    // TODO: Implement proper sorting. IBO sorting???
+    //f32v3 cameraPos = f32v3(16384, 16384, 0.0f);
+    //// lol get fucking rekt
+    //std::vector<TBOBillboardInstanceData>& textureData = const_cast<std::vector<TBOBillboardInstanceData>&>(mTextureData);
+    //if (mDepthSortMode != DepthSortMode::NONE && mTextureData.size()) {
+    //    PreciseTimer timer;
+    //    bool didSort = false;
+    //    if (mDepthSortMode == DepthSortMode::FRONT_TO_BACK) {
+    //        if (!std::is_sorted(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
+    //            const float dist1 = glm::distance2(left.position, cameraPos);
+    //            const float dist2 = glm::distance2(right.position, cameraPos);
+    //            return dist1 < dist2;
+    //        })) {
+    //            didSort = true;
+    //            std::sort(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
+    //                const float dist1 = glm::distance2(left.position, cameraPos);
+    //                const float dist2 = glm::distance2(right.position, cameraPos);
+    //                return dist1 < dist2;
+    //            });
+    //        }
+    //    }
+    //    else {
+    //        if (!std::is_sorted(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
+    //            const float dist1 = glm::distance2(left.position, cameraPos);
+    //            const float dist2 = glm::distance2(right.position, cameraPos);
+    //            return dist1 > dist2;
+    //        })) {
+    //            didSort = true;
+    //            std::sort(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
+    //                const float dist1 = glm::distance2(left.position, cameraPos);
+    //                const float dist2 = glm::distance2(right.position, cameraPos);
+    //                return dist1 > dist2;
+    //            });
+    //        }
+    //    }
+    //    // lol get fucking rekt
+    //    if (didSort) {
+    //        const_cast<TBOBillboardMesh*>(this)->finishMesh(MeshDrawMode::STREAM);
+    //        std::cout << " Sorted in " << timer.stop() << " MS\n";
+    //    }
+    //   
+    //}
+
+
     // Make sure we have been initialized
     assert(mVao);
     if (!mIndexCount) return;
@@ -435,28 +481,32 @@ void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
         mIndexCount = mTextureData.size() * 6;
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_TEXTURE_BUFFER, mVbo);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(TBOBillboardInstanceData) * mTextureData.size(), mTextureData.data(), GL_STATIC_DRAW);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(TBOBillboardInstanceData) * mTextureData.size(), nullptr, (GLenum)drawMode);
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(TBOBillboardInstanceData) * mTextureData.size(), mTextureData.data());
 
         if (!mTboTexture) {
             glGenTextures(1, &mTboTexture);
+            glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mVbo);
         }
-        glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, mVbo);
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-        std::vector<TBOBillboardInstanceData>().swap(mTextureData);
+        if (mDepthSortMode == DepthSortMode::NONE) {
+            std::vector<TBOBillboardInstanceData>().swap(mTextureData);
+        }
 
         // Set uniforms
         if (!mUbo) {
             glGenBuffers(1, &mUbo);
             glBindBuffer(GL_UNIFORM_BUFFER, mUbo);
             // 2 arrays of data
-            glBufferData(GL_UNIFORM_BUFFER, MAX_UNIFORM_ARRAY_SIZE * sizeof(f32v4) * 2, NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
+            glBufferData(GL_UNIFORM_BUFFER, MAX_UNIFORM_ARRAY_SIZE * sizeof(f32v4) * 2, nullptr, GL_STATIC_DRAW); // allocate 152 bytes of memory
         }
         else {
             glBindBuffer(GL_UNIFORM_BUFFER, mUbo);
         }
+        // TODO: Dont do this every sort update
         for (auto&& it = mTypes.begin(); it != mTypes.end(); ++it) {
             ui32 index = it->second;
             // base alignment is 16 for uniform block

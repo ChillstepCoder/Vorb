@@ -34,8 +34,12 @@ void CloudManager::update() {
                 if (Random::getCachedRandomfSpecific(x * 2232 + y * 14302) >= 0.4f) {
                     const float n = sWorldGenData.mCloudsNoise.compute(x, y);
                     if (n > 0.3f) {
-                        float size = (n - 0.3f) * 6.0f + 5.0f;
-                        float heightOffset = Random::getCachedRandomfSpecific(x * 14102 + y * 2315) * 3.0f + (n - 0.3f) * 3.0f;
+                        float size = (n - 0.3f) * 6.0f + 25.0f;
+                        float heightOffset = Random::getCachedRandomfSpecific(x * 14102 + y * 2315) * 3.0f + (n - 0.3f) * 3.0f + 25.0f;
+                        if (n > 0.6f) {
+                            size += 30.0f;
+                            heightOffset += 10.0f;
+                        }
                         addCloudAt(pos + f32v3(x, y, heightOffset), size);
                     }
                 }

@@ -1,5 +1,4 @@
-uniform mat4 VP;
-uniform vec3 CameraPos;
+#include "../GlobalUbo.glsl"
 
 // Input
 in vec4 vPosition; // Position in screen space

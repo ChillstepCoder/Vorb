@@ -1,16 +1,5 @@
-uniform mat4 VP;
-uniform float Time;
-uniform vec3 CameraRight;
-uniform vec3 CameraFront;
-uniform vec3 CameraUp;
-uniform vec3 CameraPos;
-
-in vec4 vPosition;
-in vec2 vXZOffset;
-in vec2 vUV;
-in vec4 vTint;
-in float vAtlasPage;
-in float vRoughness;
+#include "../GlobalUbo.glsl"
+#include "../TboBillboardShared.glsl"
 
 out vec2 fUV;
 out vec2 fPosition;
@@ -18,18 +7,32 @@ flat out float fAtlasPage;
 out vec4 fTint;
 out float fRoughness;
 
-
 void main() {
-    fTint = vTint;
-    fUV = vUV;
-    fAtlasPage = vAtlasPage;
+
+	vec4 vPosition = vec4(getPositionFromTbo(), 1.0);
+	vec3 typeSize = getTypeSizeFromTbo();
+	vec2 vDims = typeSize.yz;
+	int type = int(typeSize.x);
+	
+	// Get uniform info
+	vec3 atlasPageRoughnessWind = UnAtlasPageRoughnessWind[type].rgb;
+	fRoughness = atlasPageRoughnessWind.g;
+	
+	// Compute uvs
+    fUV = getUvsFromType(type);
+    fAtlasPage = atlasPageRoughnessWind.r;
+	
+	// Compute position
+	vec2 vertexOffsets = getVertexOffsets();
 	vec4 vertexPosition = vPosition;
-	vec2 xzOffsetUncompressed = vXZOffset / 100.0; // Matches C++ compression ratio
+	vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
 	vertexPosition.xyz += CameraUp * xzOffsetUncompressed.y;
 	vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
 	// Hacky way to make the x,z offsets all 1
 	fPosition = clamp(xzOffsetUncompressed * 10.0, -1.0, 1.0);
 	fPosition = (fPosition + 1.0) * 0.5; // 0 - 1 range
+
+    fTint = vec4(1.0);
 	
 	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
 
@@ -40,5 +43,4 @@ void main() {
 	vec4 glPos = VP * worldPos;
     gl_Position = glPos;
 	
-	fRoughness = vRoughness;
 }

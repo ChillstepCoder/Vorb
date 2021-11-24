@@ -8,6 +8,7 @@ class Camera3D;
 
 #include <Vorb/graphics/GBuffer.h>
 
+// TODO: Read this : https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.17.2030&rep=rep1&type=pdf
 class CloudRenderer
 {
 public:

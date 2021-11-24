@@ -45,7 +45,8 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     vg::DepthState::FULL.set();
 
     if (!cloudManager.mCloudMesh) {
-        cloudManager.mCloudMesh = std::make_unique<BillboardMesh>();
+        cloudManager.mCloudMesh = std::make_unique<TBOBillboardMesh>();
+        //cloudManager.mCloudMesh->setDepthSortMode(DepthSortMode::BACK_TO_FRONT);
         const SpriteData& spriteData = mResourceManager.getSprite("cloud");
         for (auto&& cloud : cloudManager.mClouds) {
             cloudManager.mCloudMesh->addQuad(cloud.pos, f32v2(cloud.size), f32v2(0.0f, -cloud.size * 0.5f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, true, 0u, 240u);
@@ -62,7 +63,10 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer->getDepthTexture(), 0);
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    mMaterialRenderer.renderMesh(*cloudManager.mCloudMesh, *mCloudMaterial);
+    mMaterialRenderer.bindMaterialForRender(*mCloudMaterial);
+
+    glUniform1f(glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
+    cloudManager.mCloudMesh->draw(mCloudMaterial->mProgram);
 
     blurNormals();
 
@@ -80,8 +84,10 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
 }
 
 void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager) {
+    mMaterialRenderer.bindMaterialForRender(*mCloudShadowMaterial);
+    glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     if (cloudManager.mCloudMesh) {
-        mMaterialRenderer.renderMesh(*cloudManager.mCloudMesh, *mCloudShadowMaterial);
+        cloudManager.mCloudMesh->draw(mCloudShadowMaterial->mProgram);
     }
 }
 

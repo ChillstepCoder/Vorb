@@ -4,21 +4,26 @@ in vec2 vXZOffset;
 in vec2 vUV;
 in float vAtlasPage;
 
-uniform vec3 SunUp;
-uniform vec3 SunRight;
-uniform vec3 CameraPos;
+#include "../../GlobalUbo.glsl"
+#include "../../TboBillboardShared.glsl"
 
 out vec2 gUV;
 flat out float gAtlasPage;
 
 void main() {
-  vec3 vertexPosition = vPosition;
-  vec2 xzOffsetUncompressed = vXZOffset / 100.0; // Matches C++ compression ratio
+  vec4 vPosition = vec4(getPositionFromTbo(), 1.0);
+  vec3 typeSize = getTypeSizeFromTbo();
+  vec2 vDims = typeSize.yz;
+  int type = int(typeSize.x);
+  
+  vec2 vertexOffsets = getVertexOffsets();
+  vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
+  vec3 vertexPosition = vPosition.xyz;
   vertexPosition += SunUp * xzOffsetUncompressed.y;
   vertexPosition += SunRight * xzOffsetUncompressed.x;
-  vec3 position = vec3(vPosition.x + vXZOffset.x, vPosition.y + vXZOffset.y, vPosition.z);
+  vertexPosition -= SunPosition * vDims.x * 0.5;
   gl_Position = vec4(vertexPosition - CameraPos, 1.0);
   
-  gUV = vUV;
-  gAtlasPage = vAtlasPage;
+  gUV = getUvsFromType(type);
+  gAtlasPage = UnAtlasPageRoughnessWind[type].r;
 }

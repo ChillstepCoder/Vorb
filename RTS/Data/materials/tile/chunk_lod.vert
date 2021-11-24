@@ -2,8 +2,8 @@
 in vec2 vPosition; // Position in screen space
 
 uniform vec4 Rect;
-uniform mat4 VP;
-uniform vec3 CameraPos;
+
+#include "../GlobalUbo.glsl"
 
 // Output
 out vec2 fUV;

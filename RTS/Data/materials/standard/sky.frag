@@ -1,9 +1,6 @@
 // TODO: Indoor mask
-uniform float SunHeight;
 uniform sampler2D StarfieldTexture;
-uniform float Time;
-//uniform vec4 GradientRect;
-//uniform float GradientAtlasPage;
+#include "../GlobalUbo.glsl"
 
 in vec2 fUV;
 in vec3 fPosition;

@@ -4,14 +4,8 @@ uniform sampler2D FboNormals;
 uniform sampler2D FboDepth;
 uniform sampler2D FboRoughness;
 uniform vec4 GradientRect;
-uniform vec3 SunPosition;
 uniform float GradientAtlasPage;
-uniform vec3 SunColor;
-uniform float SunHeight;
-uniform float Time;
-uniform mat4 InverseVP;
-uniform mat4 InverseV;
-uniform mat4 InverseP;
+#include "../../GlobalUbo.glsl"
 
 
 #include "../../util/lighting.glsl"

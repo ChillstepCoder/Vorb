@@ -24,18 +24,6 @@ KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
 }
 
 const std::map<nString, MaterialUniform> sUniformLookup = {
-    std::make_pair("Time", MaterialUniform::Time),
-    std::make_pair("TimeOfDay", MaterialUniform::TimeOfDay),
-    std::make_pair("SunColor", MaterialUniform::SunColor),
-    std::make_pair("SunHeight", MaterialUniform::SunHeight),
-    std::make_pair("SunPosition", MaterialUniform::SunPosition),
-    std::make_pair("SunPositionCameraRelative", MaterialUniform::SunPositionCameraRelative),
-    std::make_pair("V", MaterialUniform::VMatrix),
-    std::make_pair("InverseV", MaterialUniform::InverseVMatrix),
-    std::make_pair("P", MaterialUniform::PMatrix),
-    std::make_pair("InverseP", MaterialUniform::InversePMatrix),
-    std::make_pair("VP", MaterialUniform::VPMatrix),
-    std::make_pair("InverseVP", MaterialUniform::InverseVPMatrix),
     std::make_pair("Atlas", MaterialUniform::Atlas),
     std::make_pair("Fbo0", MaterialUniform::Fbo0),
     std::make_pair("FboLight", MaterialUniform::FboLight),
@@ -47,23 +35,15 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("PixelDims", MaterialUniform::PixelDims),
     std::make_pair("ZoomScale", MaterialUniform::ZoomScale),
     std::make_pair("FboZCutout", MaterialUniform::FboZCutout),
-    std::make_pair("PlayerPosWorld", MaterialUniform::PlayerPosWorld),
-    std::make_pair("CameraRight", MaterialUniform::CameraRight),
-    std::make_pair("CameraFront", MaterialUniform::CameraFront),
-    std::make_pair("CameraUp", MaterialUniform::CameraUp),
-    std::make_pair("CameraPos", MaterialUniform::CameraPos),
     std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
     std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
     std::make_pair("ScreenResolution", MaterialUniform::ScreenResolution),
-    std::make_pair("CameraZRange", MaterialUniform::CameraZRange),
     std::make_pair("ShadowFrustumMatrices", MaterialUniform::ShadowFrustumMatrices),
     std::make_pair("ShadowMap", MaterialUniform::ShadowMap),
     std::make_pair("ShadowCascadePlaneDistances", MaterialUniform::ShadowCascadePlaneDistances),
     std::make_pair("ShadowColor", MaterialUniform::ShadowColor),
-    std::make_pair("SunUp", MaterialUniform::SunUp),
-    std::make_pair("SunRight", MaterialUniform::SunRight),
 };
-static_assert((int)MaterialUniform::COUNT == 39, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 19, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     // For arrays we remove the array syntax

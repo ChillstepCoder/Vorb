@@ -78,12 +78,15 @@ protected:
     f32v3 mRight = f32v3(0.0f, 0.0f, 1.0f);
     f32v3 mUp = f32v3(0.0f, 1.0f, 0.0f);
 
-    f32m4 mP;
-    f32m4 mInverseP;
+    // This must match layout of GlobalUbo.glsl for fast data store copy
+    //  ****************
     f32m4 mV;
     f32m4 mInverseV;
+    f32m4 mP;
+    f32m4 mInverseP;
     f32m4 mVP;
     f32m4 mInverseVP;
+    //  ****************
 
     vg::Frustum mFrustum; ///< For frustum culling
 };

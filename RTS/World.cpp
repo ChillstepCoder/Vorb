@@ -40,12 +40,8 @@
 
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
-// Chunks to load
-#ifdef DEBUG
+
 constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
-#else
-constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
-#endif
 
 #ifdef USE_SMALL_CHUNK_WIDTH
 const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;

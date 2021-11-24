@@ -10,12 +10,15 @@ struct DebugOptions {
     float mShadowZMult = 2.50f;
     float mShadowNearSize = 17.0f;
     f32v3 mShadowColor = f32v3(186.0f / 255.0f, 197.0f / 255.0f, 202.0f / 255.0f);
+    bool mDisableShadows = false;
     bool mPauseFrustum = false;
     bool mWireframe = false;
     bool mChunkBoundaries = false;
     bool mCities = false;
     bool mNavGraph = false;
     bool mShowTweaker = false;
+    f32 mLoadRangeSq;
+    f32 mLoadRange;
 };
 
 extern DebugOptions sDebugOptions;

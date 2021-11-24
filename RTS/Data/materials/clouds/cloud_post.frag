@@ -1,10 +1,8 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D CloudFbo;
 uniform sampler2D FboDepth;
-uniform vec3 SunPositionCameraRelative;
 uniform float unAmbient;
-uniform mat4 InverseV;
-uniform mat4 InverseP;
+#include "../GlobalUbo.glsl"
 
 uniform vec4 unCloudTextureRect;
 uniform float unCloudTexturePage;

@@ -2,7 +2,7 @@
 
 
 class World;
-class BillboardMesh;
+class TBOBillboardMesh;
 
 
 struct Cloud {
@@ -22,7 +22,7 @@ public:
 private:
     void addCloudAt(const f32v3& pos, f32 size);
 
-    mutable std::unique_ptr<BillboardMesh> mCloudMesh;
+    mutable std::unique_ptr<TBOBillboardMesh> mCloudMesh;
     std::vector<Cloud> mClouds;
     const World& mWorld;
 };

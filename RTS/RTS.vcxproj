@@ -350,6 +350,7 @@
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\DebugTweakerPanel.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\GlobalUboData.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
@@ -363,6 +364,7 @@
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />

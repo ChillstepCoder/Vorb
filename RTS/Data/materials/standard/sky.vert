@@ -2,7 +2,8 @@
 in vec4 vPosition;
 in vec2 vUV;
 
-uniform mat4 VP;
+#include "../GlobalUbo.glsl"
+
 uniform mat4 SkyRotMatrix;
 
 out vec2 fUV;

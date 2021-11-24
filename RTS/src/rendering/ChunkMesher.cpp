@@ -750,6 +750,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         renderData.mChunkMesh = std::make_unique<QuadMesh>();
         renderData.mBillboardMesh = std::make_unique<ChunkBillboardMesh>();
     }
+    renderData.mBillboardMesh->beginMesh();
     
     Services::Threadpool::ref().addTask([&chunk, meshData, &renderData](ThreadPoolWorkerData* workerData) {
         const f32v2& chunkPos = chunk.getWorldPos();

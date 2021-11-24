@@ -4,6 +4,7 @@
 #include "MeshBase.h"
 
 #include "rendering/TileVertex.h"
+#include "rendering/RenderCommon.h"
 
 template <typename VERTEX>
 class IQuadMesh : public MeshBase {
@@ -48,7 +49,9 @@ private:
 // TODO: 16 bit
 struct TBOBillboardInstanceData {
     f32v3 position;
-    f32 typeSize; // Lookup into uniform array
+    f32 type; // Lookup into uniform array
+    f32 sizeX;
+    f32 sizeY;
 
     //f32v3 rootPos;
     //i16v2 xzHalfDims;
@@ -58,7 +61,7 @@ struct TBOBillboardInstanceData {
     //ui8 windInfluence = 0;
     //ui8 roughness;
 };
-static_assert(sizeof(TBOBillboardInstanceData) == 16);
+static_assert(sizeof(TBOBillboardInstanceData) == 24);
 struct TBOBillboardUniformData {
     f32v4 uvRect; //TODO: ui16v2?
     f32v3 atlasPageRoughnessWind;
@@ -86,11 +89,13 @@ public:
     TBOBillboardMesh() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TBOBillboardMesh);
 
+    void beginMesh();
     void reserveQuadCount(size_t count);
     void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness);
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
     void destroy() override;
+    void setDepthSortMode(DepthSortMode mode) { mDepthSortMode = mode; }
 
 private:
 
@@ -102,6 +107,8 @@ private:
     ui32 mLastTypeIndex = 0;
     VGTexture mTboTexture = 0;
     VGBuffer mUbo = 0;
+    DepthSortMode mDepthSortMode = DepthSortMode::NONE;
+    
 };
 
 // Templated Mesh implementation
