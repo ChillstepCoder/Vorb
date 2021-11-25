@@ -28,7 +28,7 @@ public:
     void loadFiles();
 
     // Resource Accessors
-    const SpriteData& getSprite(const std::string& spriteName);
+    const SpriteData& getSprite(const std::string& spriteName) const;
 
     SpriteRepository& getSpriteRepository() { return *mSpriteRepository; }
     // TODO: Replace?

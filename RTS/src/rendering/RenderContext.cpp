@@ -333,7 +333,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     // Clouds
-    mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
+    if (!sDebugOptions.mDisableClouds) {
+        mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
+    }
 
     // Sky
     glEnable(GL_DEPTH_CLAMP);
@@ -357,7 +359,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
         //glCullFace(GL_BACK);
         // TODO: Frustum cull
-        mCloudRenderer->renderCloudShadows(mWorld.getCloudManager());
+        if (!sDebugOptions.mDisableClouds) {
+            mCloudRenderer->renderCloudShadows(mWorld.getCloudManager(), camera, mShadowRenderer->getMaxDistance());
+        }
 
         const CityGraph& cities = mWorld.getCities();
         for (auto&& city : cities.mNodes) {

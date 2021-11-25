@@ -49,6 +49,8 @@ public:
 	void initPostLoad();
 	void update(const f32v2& playerPos, const ICamera& camera);
 
+	void lazyInit();
+
 	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = INVALID_ENTITY);
 	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except = INVALID_ENTITY);
 
@@ -158,7 +160,6 @@ private:
 
 	// Data
     f32v2 mLoadCenter = f32v2(0.0f);
-    f32   mLoadRangeSq = 0.0f;
 	// Sunlight
 	float mSunHeight = 1.0f;
 	f32v3 mSunPosition = f32v3(0.0f, 0.0f, 1.0f);
@@ -166,6 +167,7 @@ private:
 	f32v3 mSunColor = f32v3(1.0f);
 	f32m4 mSkyRotMatrix = f32m4(1.0f);
 
+	bool mNeedsLazyInit = true;
 	bool mDirty = true;
 	// TODO: Chunk paging for tile data?
 	WorldGrid mWorldGrid;

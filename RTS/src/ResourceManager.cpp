@@ -179,7 +179,7 @@ void ResourceManager::loadFiles() {
     mHasLoadedResources = true;
 }
 
-const SpriteData& ResourceManager::getSprite(const std::string& spriteName) {
+const SpriteData& ResourceManager::getSprite(const std::string& spriteName) const {
     return mSpriteRepository->getSprite(spriteName);
 }
 

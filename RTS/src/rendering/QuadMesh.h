@@ -95,6 +95,7 @@ public:
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
     void destroy() override;
+    void clearForRecycleRetainMemory();
     void setDepthSortMode(DepthSortMode mode) { mDepthSortMode = mode; }
 
 private:

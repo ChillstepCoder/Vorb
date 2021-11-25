@@ -535,6 +535,11 @@ void TBOBillboardMesh::destroy() {
     std::vector<TBOBillboardInstanceData>().swap(mTextureData);
 }
 
+void TBOBillboardMesh::clearForRecycleRetainMemory() {
+    mTypes.clear();
+    mTextureData.clear();
+}
+
 void TBOBillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     glActiveTexture(GL_TEXTURE10);
     glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);

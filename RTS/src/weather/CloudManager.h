@@ -3,11 +3,20 @@
 
 class World;
 class TBOBillboardMesh;
+struct SpriteData;
+
+#include "world/ChunkID.h"
 
 
-struct Cloud {
-    f32v3 pos;
-    f32 size;
+struct CloudBatch {
+    CloudBatch() = default;
+    ~CloudBatch();
+
+    VORB_MOVABLE(CloudBatch);
+
+    f32v3 mRootPos;
+    f32 mBoundsRadius;
+    std::unique_ptr<TBOBillboardMesh> mMesh;
 };
 
 class CloudManager
@@ -17,13 +26,33 @@ public:
     CloudManager(const World& world);
     ~CloudManager();
 
+    void init();
     void update();
 
 private:
-    void addCloudAt(const f32v3& pos, f32 size);
+    void updateGridShift();
+    void tryGenerateCloudBatchAt(i32v2 chunkPos);
+    void destroyCloudBatch(CloudBatch& batch);
+    void spawnNewCloudWaveX(i32 dir);
+    void spawnNewCloudWaveY(i32 dir);
 
-    mutable std::unique_ptr<TBOBillboardMesh> mCloudMesh;
-    std::vector<Cloud> mClouds;
+    const SpriteData* mCloudSpriteData; // TODO: Mesher?
+    std::vector<CloudBatch> mCloudBatches;
+    std::vector<std::unique_ptr<TBOBillboardMesh>> mRecycledMeshes;
+    std::vector<i32v2> mCloudSpawnOffsets;
+    std::unordered_map<i32 /*yOffset*/, i32 /*xOffset*/> mCloudBoundsCheckMap;
+
+
+    i32v2 mLastCenterPosition;
+    // This is actually genius - TODO: Can this be used for chunks?
+    f32 mDx = 0.0f;
+    f32 mDy = 0.0f;
+    f32 mLoadRangeSQ;
+    ui32 mTickCount = 0;
+    //void addCloudAt(const f32v3& pos, f32 size);
+
+    //mutable std::unique_ptr<TBOBillboardMesh> mCloudMesh;
+    //std::vector<Cloud> mClouds;
     const World& mWorld;
 };
 

@@ -49,8 +49,8 @@ const f32v2 CAMERA_Z_RANGE = f32v2(1.0f, 1024.0f);
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
 	  mResourceManager(&Services::ResourceManager::ref()),
-      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()))),
-      mWorld(std::make_unique<World>(*mResourceManager))
+      mWorld(std::make_unique<World>(*mResourceManager)), 
+      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
 {
 
     mCamera3D = std::make_unique<Camera3D>();

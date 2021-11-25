@@ -48,12 +48,12 @@ struct TileRef {
     TileRef(Chunk* chunk, TileIndex index);
     ~TileRef() { release(); }
 
+    //VORB_NON_COPYABLE_BUT_MOVABLE(TileRef);
+
     void acquire(TileHandle handle);
     void acquire(Chunk* chunk, TileIndex index);
     void release();
     bool isValid() const { return chunk != nullptr; }
-
-    TileRef& operator=(const TileRef& other) = delete;
 
     Chunk* chunk = nullptr;
     TileIndex index;

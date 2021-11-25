@@ -20,11 +20,24 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     const ImVec2 buttonSize(WINDOW_WIDTH, 25);
 
     ImGui::Begin("Value Tweaker", &sDebugOptions.mShowTweaker, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+    ui32 ID = 10;
+
+    //PushOverrideID //POPID
+
+    if (ImGui::CollapsingHeader("Game Settings")) {
+        if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.3f", ImGuiSliderFlags_Logarithmic)) {
+            sDebugOptions.mLoadRangeSq = SQ(sDebugOptions.mLoadRange);
+        }
+    }
     
     if (ImGui::CollapsingHeader("Clouds")) {
+        ImGui::PushID(++ID);
+        ImGui::Checkbox("Disable", &sDebugOptions.mDisableClouds);
         ImGui::SliderInt("Cloud Blur Passes", &sDebugOptions.mCloudBlurPasses, 0, 15);
         ImGui::SliderFloat("Cloud Blur Radius", &sDebugOptions.mCloudBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f);
+        ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Cloud Speed", &sDebugOptions.mCloudSpeed, 0.0f, 100.0f);
+        ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Depth of Field")) {
@@ -33,11 +46,13 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     }
 
     if (ImGui::CollapsingHeader("Shadows")) {
+        ImGui::PushID(++ID);
         ImGui::Checkbox("Disable Shadows", &sDebugOptions.mDisableShadows);
         ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::ColorPicker3("Shadow Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         std::cout << sDebugOptions.mShadowColor.x << " " << sDebugOptions.mShadowColor.y << " " << sDebugOptions.mShadowColor.z << std::endl;
+        ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Toggles")) {

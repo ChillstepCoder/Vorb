@@ -7,6 +7,8 @@ in float vAtlasPage;
 #include "../../GlobalUbo.glsl"
 #include "../../TboBillboardShared.glsl"
 
+uniform vec3 UnRootPos;
+
 out vec2 gUV;
 flat out float gAtlasPage;
 
@@ -22,7 +24,7 @@ void main() {
   vertexPosition += SunUp * xzOffsetUncompressed.y;
   vertexPosition += SunRight * xzOffsetUncompressed.x;
   vertexPosition -= SunPosition * vDims.x * 0.5;
-  gl_Position = vec4(vertexPosition - CameraPos, 1.0);
+  gl_Position = vec4(vertexPosition + (UnRootPos - CameraPos), 1.0);
   
   gUV = getUvsFromType(type);
   gAtlasPage = UnAtlasPageRoughnessWind[type].r;

@@ -1,6 +1,8 @@
 #include "../GlobalUbo.glsl"
 #include "../TboBillboardShared.glsl"
 
+uniform vec3 UnRootPos;
+
 out vec2 fUV;
 out vec2 fPosition;
 flat out float fAtlasPage;
@@ -34,7 +36,7 @@ void main() {
 
     fTint = vec4(1.0);
 	
-	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
+	vec4 worldPos = vertexPosition + vec4(UnRootPos - CameraPos, 0.0);
 
 	//fTint.r = 1.0 - angle;
 	//fTint.g = 0.0;

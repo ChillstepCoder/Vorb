@@ -24,6 +24,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     TileHandle root = mWorld.getTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
     mChunks.push_back(root.getMutableChunk());
     // This belongs to us, don't go away
+    // TODO: Need to release later
     mChunks.back()->incRef();
 
     mCityPlotter = std::make_unique<CityPlotter>(*this);

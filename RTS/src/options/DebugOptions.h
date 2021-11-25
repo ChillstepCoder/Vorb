@@ -1,24 +1,39 @@
 #pragma once
 
+constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
+
+#ifdef USE_SMALL_CHUNK_WIDTH
+constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;
+#else
+constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
+#endif
+
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
+    // Clouds
+    bool mDisableClouds = false;
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
+    float mCloudSpeed = 0.2f;
+    // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
+    // Shadows
     float mShadowZMult = 2.50f;
     float mShadowNearSize = 17.0f;
     f32v3 mShadowColor = f32v3(186.0f / 255.0f, 197.0f / 255.0f, 202.0f / 255.0f);
     bool mDisableShadows = false;
+    // Toggles
     bool mPauseFrustum = false;
     bool mWireframe = false;
     bool mChunkBoundaries = false;
     bool mCities = false;
     bool mNavGraph = false;
     bool mShowTweaker = false;
-    f32 mLoadRangeSq;
-    f32 mLoadRange;
+    // Game settings
+    f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
+    f32 mLoadRange = CHUNK_LOAD_RANGE;
 };
 
 extern DebugOptions sDebugOptions;

@@ -18,7 +18,7 @@ public:
     SpriteRepository(vio::IOManager& ioManager);
     ~SpriteRepository();
 
-    const SpriteData& getSprite(const std::string& spriteName);
+    const SpriteData& getSprite(const std::string& spriteName) const;
     bool loadSpriteTexture(const vio::Path& filePath);
 
     const TextureAtlas& getTextureAtlas() { return *mTextureAtlas; }

@@ -19,7 +19,7 @@ SpriteRepository::~SpriteRepository()
 
 }
 
-const SpriteData& SpriteRepository::getSprite(const std::string& spriteName) {
+const SpriteData& SpriteRepository::getSprite(const std::string& spriteName) const {
 
     auto it = mSprites.find(spriteName);
     if (it != mSprites.end()) {

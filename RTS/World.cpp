@@ -41,14 +41,6 @@
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 
-constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
-
-#ifdef USE_SMALL_CHUNK_WIDTH
-const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;
-#else
-const float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
-#endif
-
 World::World(ResourceManager& resourceManager) :
 	mResourceManager(resourceManager)
 {
@@ -77,11 +69,8 @@ World::World(ResourceManager& resourceManager) :
 	// Nav graph
 	mNavGraph = std::make_unique<NavGraph>(*this);
 
-	// Weather
-	mCloudManager = std::make_unique<CloudManager>(*this);
-
-	// Static load range for now
-	mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
+    // Weather (Init post load because it contains rendering and requires render context to be initialized, TODO: Fix this)
+    mCloudManager = std::make_unique<CloudManager>(*this);
 }
 
 World::~World() {
@@ -89,6 +78,7 @@ World::~World() {
 }
 
 void World::initPostLoad() {
+
     // Init regions
     for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
         mChunkGenerator->GenerateRegionLODTextureAsync(mWorldGrid.getRegion(i));
@@ -103,6 +93,11 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 	updateSun(camera);
 
 	mLoadCenter = playerPos;
+
+	// TODO: More explicit initialization?
+	if (mNeedsLazyInit) {
+		lazyInit();
+	}
 	
 	// TODO: This now asserts out of bounds
 	Chunk& playerChunk = getChunkAtPosition(playerPos);
@@ -152,6 +147,11 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 
 	// Update ECS
     mEcs->update(mClientEcsData);
+}
+
+void World::lazyInit() {
+    mCloudManager->init();
+	mNeedsLazyInit = false;
 }
 
 Chunk& World::getChunkAtPosition(const f32v2& worldPos) {
@@ -650,7 +650,7 @@ bool World::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 
 	const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
 	const f32v2 offset = centerPos - mLoadCenter;
 
-	return glm::length2(offset) <= mLoadRangeSq + addOffset;
+	return glm::length2(offset) <= sDebugOptions.mLoadRangeSq + addOffset;
 }
 
 void World::initChunk(Chunk& chunk)

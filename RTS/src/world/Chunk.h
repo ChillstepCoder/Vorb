@@ -142,10 +142,12 @@ public:
     void setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag);
 
 	void incRef() const {
+		assert(IS_MAIN_THREAD());
 		++mRefCount;
 	}
 
-	void decRef() const {
+    void decRef() const {
+        assert(IS_MAIN_THREAD());
 		--mRefCount;
 	}
 

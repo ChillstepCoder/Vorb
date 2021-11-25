@@ -3,6 +3,7 @@
 
 #include "weather/CloudManager.h"
 
+#include "camera/Camera3D.h"
 #include "ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
@@ -44,16 +45,6 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     //vg::DepthState::WRITE.set();
     vg::DepthState::FULL.set();
 
-    if (!cloudManager.mCloudMesh) {
-        cloudManager.mCloudMesh = std::make_unique<TBOBillboardMesh>();
-        //cloudManager.mCloudMesh->setDepthSortMode(DepthSortMode::BACK_TO_FRONT);
-        const SpriteData& spriteData = mResourceManager.getSprite("cloud");
-        for (auto&& cloud : cloudManager.mClouds) {
-            cloudManager.mCloudMesh->addQuad(cloud.pos, f32v2(cloud.size), f32v2(0.0f, -cloud.size * 0.5f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, true, 0u, 240u);
-        }
-        cloudManager.mCloudMesh->finishMesh(MeshDrawMode::STREAM);
-    }
-
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     mGBuffers[1].useGeometry();
     glClear(GL_COLOR_BUFFER_BIT);
@@ -66,7 +57,14 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     mMaterialRenderer.bindMaterialForRender(*mCloudMaterial);
 
     glUniform1f(glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
-    cloudManager.mCloudMesh->draw(mCloudMaterial->mProgram);
+    const GLuint rootPosUniform = glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnRootPos");
+
+    for (auto&& batch : cloudManager.mCloudBatches) {
+        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius)) {
+            glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
+            batch.mMesh->draw(mCloudMaterial->mProgram);
+        }
+    }
 
     blurNormals();
 
@@ -83,11 +81,19 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     prevDepthState.set();
 }
 
-void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager) {
+void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
     mMaterialRenderer.bindMaterialForRender(*mCloudShadowMaterial);
+    const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
     glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
-    if (cloudManager.mCloudMesh) {
-        cloudManager.mCloudMesh->draw(mCloudShadowMaterial->mProgram);
+    const GLuint rootPosUniform = glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnRootPos");
+
+    for (auto&& batch : cloudManager.mCloudBatches) {
+        // TODO: Profile the sphere check
+        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius) &&
+            glm::distance2(batch.mRootPos, camera.getPosition()) < maxDistSQ + SQ(batch.mBoundsRadius)) {
+            glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
+            batch.mMesh->draw(mCloudShadowMaterial->mProgram);
+        }
     }
 }
 
