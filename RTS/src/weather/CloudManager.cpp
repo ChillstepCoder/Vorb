@@ -166,8 +166,8 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
     const f32 size = 20.0f;
     
     CloudBatch& newBatch = mCloudBatches.emplace_back();
-    newBatch.mRootPos = f32v3(pos.x + mDx + (rand() % 1000) / 30.0f, pos.y + mDy + CHUNK_WIDTH / 2, 20.0f);
-    newBatch.mBoundsRadius = 10.0f;
+    newBatch.mRootPos = f32v3(pos.x + mDx, pos.y + mDy, 60.0f);
+    newBatch.mBoundsRadius = CHUNK_DIAGONAL_RADIUS + 10.0f;
     if (mRecycledMeshes.size()) {
         newBatch.mMesh = std::move(mRecycledMeshes.back());
         mRecycledMeshes.pop_back();
@@ -175,8 +175,12 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
     else {
         newBatch.mMesh = std::make_unique<TBOBillboardMesh>();
     }
-    f32v3 quadPos(0.0f);
-    newBatch.mMesh->addQuad(quadPos, f32v2(size), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+    for (int y = -CHUNK_WIDTH/2; y < CHUNK_WIDTH / 2; y += 8) {
+        for (int x = -CHUNK_WIDTH/2; x < CHUNK_WIDTH / 2; x += 8) {
+            f32v3 quadPos(x + (rand() % 1000) / 30.0f, y + (rand() % 1000) / 30.0f, (rand() % 1000) / 30.0f);
+            newBatch.mMesh->addQuad(quadPos, f32v2(size), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+        }
+    }
     newBatch.mMesh->finishMesh(MeshDrawMode::STATIC);
 }
 

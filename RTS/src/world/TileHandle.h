@@ -48,7 +48,7 @@ struct TileRef {
     TileRef(Chunk* chunk, TileIndex index);
     ~TileRef() { release(); }
 
-    //VORB_NON_COPYABLE_BUT_MOVABLE(TileRef);
+    VORB_NON_COPYABLE_BUT_MOVABLE(TileRef);
 
     void acquire(TileHandle handle);
     void acquire(Chunk* chunk, TileIndex index);

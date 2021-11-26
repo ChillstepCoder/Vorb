@@ -22,7 +22,7 @@
 UIInteractMenuPopup::UIInteractMenuPopup(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery) :
     mScreenPos(screenPos),
     mWindow(window),
-    mWorldObjectQuery(worldObjectQuery)
+    mWorldObjectQuery(std::move(worldObjectQuery))
 {
 
 }

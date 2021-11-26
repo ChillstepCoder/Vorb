@@ -15,7 +15,7 @@ class WorldObjectQuery {
 public:
     WorldObjectQuery(World& world, f32v2& tilePos);
 
-    //VORB_NON_COPYABLE_BUT_MOVABLE(WorldObjectQuery);
+    VORB_NON_COPYABLE_BUT_MOVABLE(WorldObjectQuery);
 
     void refresh();
     void release() { mTileRef.release(); }
