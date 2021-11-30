@@ -8,6 +8,8 @@
 #include "World.h"
 #include "ResourceManager.h"
 
+#include "services/Services.h"
+
 #include "Random.h"
 
 #include "options/DebugOptions.h"
@@ -20,7 +22,7 @@ constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
 
-#define DEBUG_CLOUD_RENDER 1
+#define DEBUG_CLOUD_RENDER 0
 
 CloudManager::CloudManager(const World& world) : mWorld(world)
 {
@@ -102,7 +104,7 @@ void CloudManager::update() {
             }
             else {
                 // Check bounds in X direction
-                if (offset.x < it->second || offset.x > -it->second) {
+                if ((offset.x < it->second || offset.x > -it->second)) {
                     destroyCloudBatch(batch);
                 }
                 else {
@@ -118,8 +120,14 @@ void CloudManager::update() {
         }
     }
 
+    // Lightweight update for all generating batches
+    for (auto&& it : mGeneratingBatches) {
+        it.second.mRootPos.x += sDebugOptions.mCloudSpeed;
+    }
+
     // Spawn new waves
     mDx += sDebugOptions.mCloudSpeed;
+    mDxTotal += sDebugOptions.mCloudSpeed;
     if (mDx >= CHUNK_WIDTH) {
         spawnNewCloudWaveX(CLOUD_DIR_LEFT);
     }
@@ -142,20 +150,24 @@ void CloudManager::updateGridShift() {
         if (offsetSinceLastTick.x < 0) {
             // We went left
             mDx += -offsetSinceLastTick.x * CHUNK_WIDTH;
+            mDxTotal += -offsetSinceLastTick.x * CHUNK_WIDTH;
         }
         else {
             // We went right
             mDx -= offsetSinceLastTick.x * CHUNK_WIDTH;
+            mDxTotal -= offsetSinceLastTick.x * CHUNK_WIDTH;
         }
     }
     if (offsetSinceLastTick.y != 0) {
         if (offsetSinceLastTick.y < 0) {
             // We went back
             mDy += -offsetSinceLastTick.y * CHUNK_WIDTH;
+            mDyTotal += -offsetSinceLastTick.y * CHUNK_WIDTH;
         }
         else {
             // We went forward
             mDy -= offsetSinceLastTick.y * CHUNK_WIDTH;
+            mDyTotal += -offsetSinceLastTick.y * CHUNK_WIDTH;
         }
     }
     mLastCenterPosition = centerChunkPos;
@@ -163,10 +175,11 @@ void CloudManager::updateGridShift() {
 
 void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
     f32v2 pos(chunkPos.x * CHUNK_WIDTH, chunkPos.y * CHUNK_WIDTH);
-    const f32 size = 20.0f;
+    const f32 size = 10.0f;
     
-    CloudBatch& newBatch = mCloudBatches.emplace_back();
-    newBatch.mRootPos = f32v3(pos.x + mDx, pos.y + mDy, 60.0f);
+    ui32 index = ++mGeneratingIndexLast;
+    CloudBatch& newBatch = mGeneratingBatches[index];
+    newBatch.mRootPos = f32v3(pos.x + mDx, pos.y + mDy, 110.0f);
     newBatch.mBoundsRadius = CHUNK_DIAGONAL_RADIUS + 10.0f;
     if (mRecycledMeshes.size()) {
         newBatch.mMesh = std::move(mRecycledMeshes.back());
@@ -175,20 +188,50 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
     else {
         newBatch.mMesh = std::make_unique<TBOBillboardMesh>();
     }
-    for (int y = -CHUNK_WIDTH/2; y < CHUNK_WIDTH / 2; y += 8) {
-        for (int x = -CHUNK_WIDTH/2; x < CHUNK_WIDTH / 2; x += 8) {
-            f32v3 quadPos(x + (rand() % 1000) / 30.0f, y + (rand() % 1000) / 30.0f, (rand() % 1000) / 30.0f);
-            newBatch.mMesh->addQuad(quadPos, f32v2(size), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+
+    f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
+
+    TBOBillboardMesh* mesh = newBatch.mMesh.get();
+    Services::Threadpool::ref().addTask([mesh, size, genPos, this](ThreadPoolWorkerData*) {
+        for (int y = -CHUNK_WIDTH / 2; y <= CHUNK_WIDTH / 2; y += 8) {
+            for (int x = -CHUNK_WIDTH / 2; x <= CHUNK_WIDTH / 2; x += 8) {
+                const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
+                const f32 n = sWorldGenData.mCloudsNoise.compute(trueGenPos.x, trueGenPos.y);
+                if (n > 0.3f) {
+                    constexpr f32 RAND_OFFSET_FACTOR = 8.0f;
+                    constexpr f32 HEIGHT_OFFSET_FACTOR = 8.0f;
+                    constexpr f32 SCALE_OFFSET_FACTOR = 10.0f;
+                    const float xr = Random::getThreadSafef((ui32)(genPos.x + x), (ui32)(genPos.y + y)) * RAND_OFFSET_FACTOR;
+                    const float yr = Random::getThreadSafef((ui32)(genPos.y + x), (ui32)(genPos.x - y)) * RAND_OFFSET_FACTOR;
+                    const float zr = Random::getThreadSafef((ui32)(genPos.x + y), (ui32)(genPos.y - x)) * HEIGHT_OFFSET_FACTOR;
+                    const float sr = Random::getThreadSafef((ui32)(genPos.y - x), (ui32)(genPos.x + genPos.y + y)) * SCALE_OFFSET_FACTOR;
+                    const float stretchr = Random::getThreadSafef((ui32)(-4152.0 + genPos.x - y), (ui32)(24152.0 -genPos.x - genPos.y + x)) * 0.6f;
+                    const f32 nSize = n * 10.0f;
+                    f32 newSize = size + sr + nSize;
+                    if (Random::getThreadSafe(trueGenPos.x, trueGenPos.y) % 80 == 0) {
+                        newSize += 80.0f;
+                    }
+                    const f32 heightOffset = sWorldGenData.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
+                    const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
+                    mesh->addQuad(quadPos, f32v2(newSize, (newSize) * (1.0 - stretchr)), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+                }
+            }
         }
-    }
-    newBatch.mMesh->finishMesh(MeshDrawMode::STATIC);
+    }, [&newBatch, index, this]() {
+        newBatch.mMesh->finishMesh(MeshDrawMode::STATIC);
+        auto&& it = mGeneratingBatches.find(index);
+        if (newBatch.mMesh->isValid()) { // If we actually generated a cloud mesh, store it as active
+            mCloudBatches.emplace_back(std::move(it->second));
+        }
+        mGeneratingBatches.erase(it);
+    });
 }
 
 void CloudManager::destroyCloudBatch(CloudBatch& batch)
 {
     ui32 index = ((const char*)&batch - (const char*)&mCloudBatches[0]) / sizeof(CloudBatch); // Get the index in our vector
     assert(&batch == &mCloudBatches[index]);
-    if (mRecycledMeshes.size() < MAX_MESH_RECYCLES) {
+    if (batch.mMesh->isValid() && mRecycledMeshes.size() < MAX_MESH_RECYCLES) {
         batch.mMesh->clearForRecycleRetainMemory();
         mRecycledMeshes.push_back(std::move(batch.mMesh));
     }

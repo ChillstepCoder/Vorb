@@ -19,6 +19,10 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include "rendering/ChunkMesher.h"
+
+#include "services/Services.h"
+
 #include <box2d/b2_world.h>
 #include <box2d/b2_fixture.h>
 
@@ -77,8 +81,8 @@ World::~World() {
 	IS_SHUTTING_DOWN = true;
 }
 
-void World::initPostLoad() {
-
+void World::initPostLoad(ChunkMesher& chunkMesher) {
+	mChunkMesher = &chunkMesher;
     // Init regions
     for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
         mChunkGenerator->GenerateRegionLODTextureAsync(mWorldGrid.getRegion(i));
@@ -116,7 +120,7 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
         }
         ++i;
 		// Determine visibility
-		if (!chunk.isInvalid()) {
+		if (chunk.isDataReady()) {
 			const f32v2& worldPos = chunk.getWorldPos();
 			if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS + 30.0f /*padding for camera pan fix :C WHY*/)) { // TODO: Broken + AABB Test?
 				mVisibleChunks.push_back(&chunk);
@@ -129,6 +133,7 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
     }
 
 	// Update cities
+	// TODO: Amortized
 	for (auto&& it : mCities->mNodes) {
 		it->update();
 	}
@@ -334,7 +339,7 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
 TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	TileHandle handle;
 	const Chunk* chunk = &getChunkAtPosition(worldPos);
-	if (chunk->getState() == ChunkState::FINISHED) {
+	if (chunk->isDataReady()) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
 		return chunk->getTileHandleAt(TileIndex(x, y));
@@ -349,7 +354,7 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
 TileCollision World::getTileCollisionAtWorldPos(const f32v2& worldPos) const
 {
     const Chunk* chunk = &getChunkAtPosition(worldPos);
-    if (chunk->getState() == ChunkState::FINISHED) {
+    if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         return chunk->getTileCollisionAt(TileIndex(x, y));
@@ -550,7 +555,7 @@ void World::updateSun(const ICamera& camera) {
 
 bool World::updateChunk(Chunk& chunk) {
 	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
-		if (chunk.mRefCount) {
+		if (chunk.mRefCount.load()) {
 			// Waiting on a thread or handle to release us
 			return false;
 		}
@@ -563,15 +568,16 @@ bool World::updateChunk(Chunk& chunk) {
 		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
 			tryCreateNeighbors(chunk);
 		}
-		else if (chunk.mDirtyNavGraph && chunk.mState != ChunkState::GENERATING_NAVGRAPH) {
+		else if (chunk.mDirtyNavGraph && chunk.mIsNavmeshing.load(/*memory order relaxed?*/) == false) {
             // Update nav graph when all neighbors are loaded
 			// TODO: Async?
-			mNavGraph->buildNavNodesForChunkSynchronous(chunk);
-			chunk.mDirtyNavGraph = false;
-            if (sDebugOptions.mNavGraph) {
-                mNavGraph->debugDrawNavGraphForChunk(chunk, 250);
-            }
+            chunk.mDirtyNavGraph = false;
+            mNavGraph->buildNavNodesForChunkAsync(chunk);
 		}
+	}
+	else if (chunk.mRefCount.load() == 0){
+		// If we are not in use, we are done generating
+		onChunkDataReady(chunk);
 	}
 	
 	return false;
@@ -579,6 +585,7 @@ bool World::updateChunk(Chunk& chunk) {
 
 void World::onChunkDataReady(Chunk& chunk) {
 
+    chunk.setState(ChunkState::FINISHED);
 	// Don't update neighbors until we are data ready
 	assert(chunk.isDataReady());
 	// Neighbors
@@ -592,21 +599,11 @@ void World::onChunkDataReady(Chunk& chunk) {
 }
 
 void World::onChunkAllNeighborsDataReady(Chunk& chunk) {
-	chunk.incRef();
-	if (chunk.mState == ChunkState::GENERATING_NAVGRAPH) {
-        Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
-            // Update nav graph on worker thread
-            mNavGraph->buildNavNodesForChunkSynchronous(chunk);
-        }, [&]() {
-
-            if (sDebugOptions.mNavGraph) {
-				mNavGraph->debugDrawNavGraphForChunk(chunk, 250);
-            }
-
-            chunk.mState = ChunkState::FINISHED;
-            chunk.decRef();
-        });
-	}
+	// Dirty our nav graph
+    chunk.mDirtyNavGraph = true;
+	// Update our mesh
+    chunk.dirtyMesh();
+    mChunkMesher->updateMesh(chunk, f32v3(mLoadCenter, 0.0f));
 }
 
 void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
@@ -662,23 +659,20 @@ void World::initChunk(Chunk& chunk)
     }
 
     generateChunkAsync(chunk);
-    mActiveChunks.push_back(&chunk);
 }
 
 void World::generateChunkAsync(Chunk& chunk) {
 	chunk.mState = ChunkState::LOADING_TILES;
-	chunk.incRef();
+    chunk.incRef();
+    mActiveChunks.push_back(&chunk);
 	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
         mChunkGenerator->GenerateChunk(chunk);
-    }, [&]() {
-        chunk.mState = ChunkState::GENERATING_NAVGRAPH;
-		onChunkDataReady(chunk);
-		chunk.decRef();
-    });
+        chunk.decRef();
+    }, nullptr);
 }
 
 void World::editorInvalidateWorldGen() {
-	initPostLoad();
+	initPostLoad(*mChunkMesher);
 }
 
 std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {

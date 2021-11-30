@@ -9,6 +9,9 @@
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
 
+// TODO: Config
+#include "options/DebugOptions.h"
+
 GPUTextureManipulator::GPUTextureManipulator(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
     mResourceManager(resourceManager),
     mMaterialRenderer(materialRenderer)
@@ -20,7 +23,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
 {
     PreciseTimer timer;
 
-    glTextureBarrier();
+    //glTextureBarrier();
     GLuint mFramebufferID = 0;
     glGenFramebuffers(1, &mFramebufferID);
     glBindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
@@ -49,10 +52,10 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
     VGUniform atlasUniform = mNormalsMaterial->mProgram.getUniform("unAtlasPage");
 
     // Generate temporary texture
-    VGTexture tmpPageTexture;
+   /* VGTexture tmpPageTexture;
     glGenTextures(1, &tmpPageTexture);
     glBindTexture(GL_TEXTURE_2D, tmpPageTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);*/
 
     // Set up tex parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, (int)0);
@@ -146,8 +149,8 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glTextureBarrier();
-    glDeleteTextures(1, &tmpPageTexture);
+    //glTextureBarrier();
+    //glDeleteTextures(1, &tmpPageTexture);
     printf("Generated normal maps in %.2lf ms\n", timer.stop());
     checkGlError("Generate Normal Maps End");
 }
@@ -158,6 +161,9 @@ void GPUTextureManipulator::InitPostLoad() {
 
     // Generate mipmaps
     const TextureAtlas& atlas = mResourceManager.getTextureAtlas();
-    atlas.compressTextures();
+    if (sDebugOptions.mUseCompressedAtlas) {
+        atlas.compressTextures();
+    }
     atlas.generateMipMaps();
+    glFlush();
 }

@@ -28,7 +28,6 @@ class WorldGrid;
 enum class ChunkState {
 	INVALID,
 	LOADING_TILES,
-	GENERATING_NAVGRAPH,
 	FINISHED,
 };
 
@@ -64,7 +63,8 @@ class Chunk {
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;
 	friend class ChunkMesher;
-	friend class RenderContext; // For debug rendering of neighbors only
+    friend class RenderContext; // For debug rendering of neighbors only
+    friend class NavGraph;
 	friend struct TileHandle;
 	friend struct TileRef;
 public:
@@ -107,9 +107,11 @@ public:
 	ItemStack getItemStackOnGround(TileIndex pos);
 
 	bool isInvalid() const { return mState == ChunkState::INVALID; }
-	bool isDataReady() const { return mState > ChunkState::LOADING_TILES; }
+	bool isDataReady() const { return mState == ChunkState::FINISHED; }
 	bool isFinished() const { return mState == ChunkState::FINISHED && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
 	bool isVisible() const { return mChunkRenderData.mIsVisible; }
+
+	void setState(ChunkState state) { mState = state; }
 
     Tile& getMutableTileAt(TileIndex i) {
         assert(i < CHUNK_SIZE);
@@ -141,13 +143,14 @@ public:
     void setTileFlagAt(TileIndex i, TileFlags flag);
     void setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag);
 
-	void incRef() const {
-		assert(IS_MAIN_THREAD());
+	inline void incRef() const {
+		assert(IS_MAIN_THREAD()); // Only main thread is allowed to incref
+		assert(mRefCount.load() < 250);
 		++mRefCount;
 	}
 
-    void decRef() const {
-        assert(IS_MAIN_THREAD());
+    inline void decRef() const {
+		assert(mRefCount.load());
 		--mRefCount;
 	}
 
@@ -170,7 +173,10 @@ private:
 	bool mDirtyNavGraph = false;
 
 	// Refcount for threading
-	mutable ui8 mRefCount = 0;
+	mutable std::atomic_uchar mRefCount = 0;
+
+	// Atomic tasking checks
+	std::atomic_bool mIsNavmeshing = false;
 
 	ui8 mDataReadyNeighborCount = 0;
 	WorldGrid* mWorldGrid = nullptr;

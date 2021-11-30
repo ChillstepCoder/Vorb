@@ -62,6 +62,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBuildingA
         // Main thread
         mGeneratingBuildings.erase(mGeneratingBuildings.find(bPtr));
         bPtr->isGenerating = false;
+        std::cout << "BBB\n";
     });
     return bp;
 }

@@ -18,7 +18,6 @@ void Skybox::init(const Material* material) {
     TileVertex verts[NUM_VERTS];
     TileVertex* v = verts;
 
-
     for (unsigned f = 0; f < 6; ++f) {
         const i32v2& axis = CUBE_FACING_AXIS[f];
         f32v3 bottomLeft(-RADIUS);

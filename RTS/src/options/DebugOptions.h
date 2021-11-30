@@ -15,7 +15,7 @@ struct DebugOptions {
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
-    float mCloudSpeed = 0.2f;
+    float mCloudSpeed = 0.0f;//0.05f;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
@@ -34,6 +34,12 @@ struct DebugOptions {
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;
+    // Camera settings
+    f32 mFoV = 75.0f;
+
+    // TODO: FILE CONFIG
+    bool mUseCompressedAtlas = false;
+    bool mVSYNC = false;
 };
 
 extern DebugOptions sDebugOptions;

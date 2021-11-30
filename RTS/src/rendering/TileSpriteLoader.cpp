@@ -57,9 +57,9 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         return false;
     }
     // TODO: Make sure this is fine
-    if (!(rs.width % TEXTURE_ATLAS_CELL_WIDTH_PX == 0 && rs.height % TEXTURE_ATLAS_CELL_WIDTH_PX == 0)) {
-        printf(("Warning - " + filePath.getString() + " dimensions are not evenly divisible by " + std::to_string(TEXTURE_ATLAS_CELL_WIDTH_PX) + "\n").c_str());
-    }
+    //if (!(rs.width % TEXTURE_ATLAS_CELL_WIDTH_PX == 0 && rs.height % TEXTURE_ATLAS_CELL_WIDTH_PX == 0)) {
+    //    printf(("Warning - " + filePath.getString() + " dimensions are not evenly divisible by " + std::to_string(TEXTURE_ATLAS_CELL_WIDTH_PX) + "\n").c_str());
+    //}
 
     SpritesheetFileData sheetMetaData;
     getFileMetadata(filePath, ui32v2(rs.width, rs.height), sheetMetaData);

@@ -90,7 +90,6 @@ private:
 
 	bool mIsRightButtonDown = false;
 	bool mIs3DMode = true;
-	f32 m3DFoV = 75.0f;
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 

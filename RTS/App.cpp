@@ -17,6 +17,9 @@
 #include "screens/WorldEditorScreen.h"
 #endif
 
+// TODO: Config
+#include "options/DebugOptions.h"
+
 
 // size of global cached random table
 const unsigned CACHED_RANDOM_SIZE = 65536;
@@ -44,10 +47,42 @@ void App::addScreens() {
 #endif
 }
 
+void setPriorityToMax() {
+#ifdef VORB_OS_WINDOWS
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+#else
+    struct sched_param params;
+
+    params.sched_priority = sched_get_priority_max(SCHED_FIFO);
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
+#endif
+}
+
+void setPriorityToNormal() {
+#ifdef VORB_OS_WINDOWS
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+#else
+    struct sched_param params;
+
+    params.sched_priority = (sched_get_priority_max(SCHED_FIFO) + sched_get_priority_min(SCHED_FIFO)) / 2; // No idea if this is even right
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
+#endif
+}
+
 void App::onInit() {
+    setPriorityToMax();
+
 	Services::init();
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);
+
+    // Init events
+    vui::InputDispatcher::key.onFocusGained.addFunctor([](Sender) {
+        setPriorityToMax();
+    });
+    vui::InputDispatcher::key.onFocusLost.addFunctor([](Sender) {
+        setPriorityToNormal();
+    });
 
 }
 
@@ -60,4 +95,10 @@ void App::refreshElapsedTime() {
 	sTotalTimeSeconds = m_curTime.totalSec;
 	// Loss of precision here should be fine
 	sElapsedSecondsSinceLastFrame = (f32)m_curTime.elapsedSec;
+}
+
+void App::onUpdateFrame() {
+    MainGame::onUpdateFrame();
+    // Update window settings
+    getWindow().setSwapInterval(sDebugOptions.mVSYNC ? vorb::ui::GameSwapInterval::V_SYNC : vorb::ui::GameSwapInterval::UNLIMITED_FPS);
 }

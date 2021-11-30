@@ -98,6 +98,8 @@ public:
     void clearForRecycleRetainMemory();
     void setDepthSortMode(DepthSortMode mode) { mDepthSortMode = mode; }
 
+    bool isInProgress() const { return mIsInProgress; }
+
 private:
 
     void bindVertexAttribs(const vg::GLProgram& program) const override;
@@ -105,10 +107,10 @@ private:
     std::vector<TBOBillboardInstanceData> mTextureData; // TODO: Recycle?
     std::unordered_map<TBOBillboardUniformData, ui32, TboInstanceDataHashFunction> mTypes;
     ui32 mInstanceCount = 0;
-    ui32 mLastTypeIndex = 0;
     VGTexture mTboTexture = 0;
     VGBuffer mUbo = 0;
     DepthSortMode mDepthSortMode = DepthSortMode::NONE;
+    bool mIsInProgress = false;
     
 };
 

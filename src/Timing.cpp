@@ -197,3 +197,12 @@ bool TickCounter::tryTick() {
 void TickCounter::reset() {
     mCurTick = 0;
 }
+
+ScopedTimer::ScopedTimer(const char* label, int indentLevel) : PreciseTimer(), mLabel(label), mIndentLevel(indentLevel)
+{
+
+}
+
+ScopedTimer::~ScopedTimer() {
+    printf("%*s%s finished in %.3lf ms\n", mIndentLevel, "", mLabel, stop());
+}

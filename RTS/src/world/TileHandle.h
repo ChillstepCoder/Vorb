@@ -48,7 +48,15 @@ struct TileRef {
     TileRef(Chunk* chunk, TileIndex index);
     ~TileRef() { release(); }
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(TileRef);
+    VORB_NON_COPYABLE(TileRef);
+    TileRef(TileRef&& o) {
+        // Moving calls destructor on other, so we should reaquire
+        acquire(o.chunk, o.index);
+    }
+    TileRef& operator=(TileRef&& o) {
+        // Moving calls destructor on other, so we should reaquire
+        acquire(o.chunk, o.index);
+    }
 
     void acquire(TileHandle handle);
     void acquire(Chunk* chunk, TileIndex index);

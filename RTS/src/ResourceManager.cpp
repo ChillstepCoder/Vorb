@@ -65,6 +65,8 @@ bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
 
 void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
+    PreciseTimer timer;
+
     // Make sure we clear all vectors each gather
     mTextureFiles.clear();
     mMaterialFiles.clear();
@@ -82,101 +84,136 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mCharacterModelRepository->gatherCharacterModelParts();
 
     mHasGathered = true;
+
+    std::cout << "Gathered files in " << timer.stop() << " ms" << std::endl;
 }
 
 void ResourceManager::loadFiles() {
     assert(mHasGathered);
 
+    PreciseTimer totalTimer;
 
     // Load Textures
-    for (auto&& entry : mTextureFiles) {
-        if (vio::containsSubpath(entry, "_noatlas")) {
-            // TODO: Allow custom sampler state
-            mTextureCache->addTexture(
-                entry,
-                vio::getLeafNameFromFilePathNoExtension(entry),
-                vg::TextureTarget::TEXTURE_2D,
-                &vg::SamplerState::LINEAR_WRAP,
-                vg::TextureInternalFormat::COMPRESSED_RGBA
-            );
-        }
-        else {
-            mSpriteRepository->loadSpriteTexture(entry);
+    {
+        ScopedTimer timer("Texture load");
+        for (auto&& entry : mTextureFiles) {
+            if (vio::containsSubpath(entry, "_noatlas")) {
+                // TODO: Allow custom sampler state
+                mTextureCache->addTexture(
+                    entry,
+                    vio::getLeafNameFromFilePathNoExtension(entry),
+                    vg::TextureTarget::TEXTURE_2D,
+                    &vg::SamplerState::LINEAR_WRAP,
+                    vg::TextureInternalFormat::COMPRESSED_RGBA
+                );
+            }
+            else {
+                mSpriteRepository->loadSpriteTexture(entry);
+            }
         }
     }
 
     // Load item definitions
-    for (auto&& entry : mItemFiles) {
-        mItemRepository->loadItemFile(entry, *mSpriteRepository);
+    {
+        ScopedTimer timer("Item load");
+        for (auto&& entry : mItemFiles) {
+            mItemRepository->loadItemFile(entry, *mSpriteRepository);
+        }
     }
 
     // Load Tiles
     // Assuming single tile per file, definitely less than actual but, good enough. 10 is arbitrary
-    TileRepository::sTileData.reserve(mTileFiles.size() + 10);
-    for (auto&& entry : mTileFiles) {
-        // TODO: Tilemanager?
-        loadTiles(entry);
+    {
+        ScopedTimer timer("Tile load");
+        TileRepository::sTileData.reserve(mTileFiles.size() + 10);
+        for (auto&& entry : mTileFiles) {
+            // TODO: Tilemanager?
+            loadTiles(entry);
+        }
     }
 
     // Load recipe definitions
-    for (auto&& entry : mRecipeFiles) {
-        mCraftingRepository->loadRecipeFile(*mItemRepository, entry);
+    {
+        ScopedTimer timer("Recipe load");
+        for (auto&& entry : mRecipeFiles) {
+            mCraftingRepository->loadRecipeFile(*mItemRepository, entry);
+        }
     }
 
     // Load Materials
-    for (auto&& entry : mMaterialFiles) {
-        mMaterialManager->loadMaterial(entry);
-    };
-
-    // Load particle Systems
-    for (auto&& entry : mParticleSystemFiles) {
-        mParticleSystemManager->loadParticleSystemData(entry);
-    };
-
-    // Load Rooms
-    for (auto&& entry : mRoomFiles) {
-        mBuildingRepository->loadRoomDescriptionFile(entry);
+    {
+        ScopedTimer timer("Material load");
+        for (auto&& entry : mMaterialFiles) {
+            mMaterialManager->loadMaterial(entry);
+        };
     }
 
-    // Load Buildings
-    for (auto&& entry : mBuildingFiles) {
-        mBuildingRepository->loadBuildingDescriptionFile(entry);
+    // Load particle Systems
+    {
+        ScopedTimer timer("Particle load");
+        for (auto&& entry : mParticleSystemFiles) {
+            mParticleSystemManager->loadParticleSystemData(entry);
+        };
+    }
+
+    // Load Rooms
+    {
+        ScopedTimer timer("City load");
+        for (auto&& entry : mRoomFiles) {
+            mBuildingRepository->loadRoomDescriptionFile(entry);
+        }
+
+        // Load Buildings
+        for (auto&& entry : mBuildingFiles) {
+            mBuildingRepository->loadBuildingDescriptionFile(entry);
+        }
+
+        // Load business definitions
+        for (auto&& entry : mBusinessFiles) {
+            mBusinessRepository->loadBusinessFile(entry);
+        }
     }
 
     // Update textures
-    mSpriteRepository->mTextureAtlas->uploadDirtyPages();
+    {
+        ScopedTimer timer("Atlas upload");
+        mSpriteRepository->mTextureAtlas->uploadDirtyPages();
+    }
 
     // Load entity definitions
-    for (auto&& entry : mEntityFiles) {
-        mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
+    {
+        ScopedTimer timer("Entity load");
+        for (auto&& entry : mEntityFiles) {
+            mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
+        }
     }
-
-    // Load business definitions
-    for (auto&& entry : mBusinessFiles) {
-        mBusinessRepository->loadBusinessFile(entry);
-    }
-
+    
     // Hookup tile references
-    for (auto&& tile : TileRepository::sTileData) {
-        // Item Drops
-        assert(tile.itemDrops.size() == 0); // No double load
-        tile.itemDrops.resize(tile.itemDropsFileData.size());
-        for (size_t i = 0; i < tile.itemDrops.size(); ++i) {
-            tile.itemDrops[i].countRange = tile.itemDropsFileData[i].countRange;
-            tile.itemDrops[i].id = mItemRepository->getItem(tile.itemDropsFileData[i].itemName).getID();
-        }
-        tile.itemDropsFileData.setData();
+    {
+        ScopedTimer timer("Tile referencing");
+        for (auto&& tile : TileRepository::sTileData) {
+            // Item Drops
+            assert(tile.itemDrops.size() == 0); // No double load
+            tile.itemDrops.resize(tile.itemDropsFileData.size());
+            for (size_t i = 0; i < tile.itemDrops.size(); ++i) {
+                tile.itemDrops[i].countRange = tile.itemDropsFileData[i].countRange;
+                tile.itemDrops[i].id = mItemRepository->getItem(tile.itemDropsFileData[i].itemName).getID();
+            }
+            tile.itemDropsFileData.setData();
 
-        // Recipes
-        tile.recipe.resize(tile.recipeFileData.size());
-        for (size_t i = 0; i < tile.recipe.size(); ++i) {
-            tile.recipe[i].quantity = tile.recipeFileData[i].count;
-            tile.recipe[i].id = mItemRepository->getItem(tile.recipeFileData[i].itemName).getID();
+            // Recipes
+            tile.recipe.resize(tile.recipeFileData.size());
+            for (size_t i = 0; i < tile.recipe.size(); ++i) {
+                tile.recipe[i].quantity = tile.recipeFileData[i].count;
+                tile.recipe[i].id = mItemRepository->getItem(tile.recipeFileData[i].itemName).getID();
+            }
+            tile.recipeFileData.setData();
         }
-        tile.recipeFileData.setData();
     }
 
     mHasLoadedResources = true;
+
+    std::cout << "Loaded resources in " << totalTimer.stop() << " ms" << std::endl;
 }
 
 const SpriteData& ResourceManager::getSprite(const std::string& spriteName) const {

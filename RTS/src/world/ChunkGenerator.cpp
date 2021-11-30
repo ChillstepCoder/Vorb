@@ -180,6 +180,7 @@ void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region, color3* recur
             }
         }
     }, [&, pixelData]() {
+        PreciseTimer timer;
         RegionRenderData& renderData = region.mRenderData;
         if (!renderData.mLODTexture) {
             glGenTextures(1, &renderData.mLODTexture);

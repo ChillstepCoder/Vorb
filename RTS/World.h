@@ -8,7 +8,6 @@
 #include "world/Tile.h"
 #include "ecs/ClientEcsData.h"
 #include "ecs/factory/EntityType.h"
-#include "services/Services.h"
 
 #include "world/WorldGrid.h"
 #include "world/WorldData.h"
@@ -36,6 +35,7 @@ class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
 class NavGraph;
+class ChunkMesher;
 struct CityGraph;
 
 class World
@@ -46,7 +46,7 @@ public:
 	World(ResourceManager& resourceManager);
 	~World();
 
-	void initPostLoad();
+	void initPostLoad(ChunkMesher& chunkMesher);
 	void update(const f32v2& playerPos, const ICamera& camera);
 
 	void lazyInit();
@@ -157,6 +157,9 @@ private:
 
 	// Clouds
 	std::unique_ptr<CloudManager> mCloudManager;
+
+	// Meshing
+	ChunkMesher* mChunkMesher = nullptr;
 
 	// Data
     f32v2 mLoadCenter = f32v2(0.0f);

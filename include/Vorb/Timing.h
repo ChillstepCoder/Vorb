@@ -92,9 +92,18 @@ public:
     const bool& isRunning() const {
         return m_timerRunning;
     }
-private:
+protected:
     bool m_timerRunning = false;
     TimePoint m_start;
+};
+
+class ScopedTimer : public PreciseTimer {
+public:
+    ScopedTimer(const char* label, int indentLevel = 0);
+    ~ScopedTimer();
+private:
+    const char* mLabel;
+    int mIndentLevel = 0;
 };
 
 class AccumulationTimer {

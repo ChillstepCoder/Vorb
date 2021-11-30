@@ -26,12 +26,15 @@
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 #include "particles/ParticleSystemManager.h"
+#include "services/Services.h"
 
 #include "physics/ContactListener.h"
 #include "rendering/RenderContext.h"
 
 #include "TextureManip.h"
 #include "Random.h"
+
+#include "rendering/ChunkRenderer.h"
 
 #include "ui/UIInteractMenuPopup.h"
 
@@ -46,12 +49,17 @@ constexpr f64 TICK_RATE_MS = 40.0;
 
 const f32v2 CAMERA_Z_RANGE = f32v2(1.0f, 1024.0f);
 
+#define WRITE_DEBUG_ATLAS 0
+
 MainMenuScreen::MainMenuScreen(const App* app) 
 	: IAppScreen<App>(app),
-	  mResourceManager(&Services::ResourceManager::ref()),
-      mWorld(std::make_unique<World>(*mResourceManager)), 
-      mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
+    mResourceManager(&Services::ResourceManager::ref()),
+    mWorld(std::make_unique<World>(*mResourceManager)),
+    mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
 {
+
+    // TODO: Config
+    sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
 
     mCamera3D = std::make_unique<Camera3D>();
 	
@@ -95,10 +103,20 @@ void MainMenuScreen::build() {
     mResourceManager->gatherFiles("data");
 	mResourceManager->loadFiles();
 
-    mRenderContext.initPostLoad();
-    mResourceManager->writeDebugAtlas();
-
-	mWorld->initPostLoad();
+    {
+        ScopedTimer timer("Render context init");
+        mRenderContext.initPostLoad();
+    }
+#if WRITE_DEBUG_ATLAS == 1
+    {
+        ScopedTimer timer("Write debug atlas");
+        mResourceManager->writeDebugAtlas();
+    }
+#endif
+    {
+        ScopedTimer timer("World init");
+        mWorld->initPostLoad(mRenderContext.getChunkRenderer().getMesher());
+    }
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
@@ -269,13 +287,15 @@ void MainMenuScreen::destroy(const vui::GameTime& gameTime) {
 
 void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
     // Hacky load screen
-    std::cout << "LOADING... \n";
-    update(gameTime);
-    while (Services::Threadpool::ref().getTasksSizeApprox()) {
-		Sleep(1);
+    {
+        ScopedTimer timer("Main thread preload hack");
         update(gameTime);
+        while (Services::Threadpool::ref().getTasksSizeApprox()) {
+            Sleep(1);
+            update(gameTime);
+        }
+        std::cout << "\n DONE\n";
     }
-    std::cout << "\n DONE\n";
 }
 
 void MainMenuScreen::onExit(const vui::GameTime& gameTime) {
@@ -376,16 +396,8 @@ void MainMenuScreen::updateCamera(const vui::GameTime& gameTime) {
 
 	mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z);
 
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_UP)) {
-		m3DFoV -= 0.4f;
-    }
-    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_DOWN)) {
-		m3DFoV += 0.4f;
-    }
-	m3DFoV = glm::clamp(m3DFoV, 1.0f, 179.0f);
-	if (mCamera3D->getFieldOfView() != m3DFoV) {
-		mCamera3D->setFieldOfView(m3DFoV);
-		std::cout << " FoV " << m3DFoV << std::endl;
+	if (mCamera3D->getFieldOfView() != sDebugOptions.mFoV) {
+		mCamera3D->setFieldOfView(sDebugOptions.mFoV);
 	}
 
 	// Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera

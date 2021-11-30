@@ -28,10 +28,10 @@ constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
 static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
 ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
-	mResourceManager(resourceManager),
-	mMaterialRenderer(materialRenderer)
+    mResourceManager(resourceManager),
+    mMaterialRenderer(materialRenderer),
+    mMesher(std::make_unique<ChunkMesher>(resourceManager.getTextureAtlas()))
 {
-    mMesher = std::make_unique<ChunkMesher>(resourceManager.getTextureAtlas());
 }
 
 ChunkRenderer::~ChunkRenderer() {
@@ -40,18 +40,18 @@ ChunkRenderer::~ChunkRenderer() {
 
 void ChunkRenderer::renderChunksZCutout(const World& world, const Camera3D& camera)
 {
-    world.enumVisibleChunks([&](const Chunk& chunk) {
-        if (chunk.isFinished()) {
-            // Check chunk mesh for update
-            UpdateMesh(chunk, camera);
+    //world.enumVisibleChunks([&](const Chunk& chunk) {
+    //    if (chunk.isFinished()) {
+    //        // Check chunk mesh for update
+    //        mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
 
-            // Only render 
-            ChunkRenderData& renderData = chunk.mChunkRenderData;
-            if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-                RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
-            }
-        }
-    });
+    //        // Only render 
+    //        ChunkRenderData& renderData = chunk.mChunkRenderData;
+    //        if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+    //            RenderContext::getInstance().getMaterialRenderer().renderMesh(*renderData.mChunkMesh, *mZCutoutMaterial);
+    //        }
+    //    }
+    //});
 }
 
 void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod)
@@ -71,7 +71,7 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
         world.enumVisibleChunks([&](const Chunk& chunk) {
             if (chunk.isFinished()) {
 
-                UpdateMesh(chunk, camera);
+                mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
 
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
                 if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
@@ -140,11 +140,11 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
             return dista2 < distb2;
         });
 
-        for (const Chunk* chunk : chunksNeedingUpdate) {
-            if (!mMesher->createLODTextureAsync(*chunk)) {
-                break;
-            }
-        }
+        /* for (const Chunk* chunk : chunksNeedingUpdate) {
+             if (!mMesher->createLODTextureAsync(*chunk)) {
+                 break;
+             }
+         }*/
 
         // Render region LODs
         world.enumVisibleRegions(camera, [&](const Region& region) {
@@ -179,30 +179,6 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camer
 //    });
 //}
 
-void ChunkRenderer::UpdateMesh(const Chunk& chunk, const Camera3D& camera) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingBaseMesh && renderData.mMeshDirty) {
-         mMesher->createMeshAsync(chunk);
-    }
-
-    if (!renderData.mIsBuildingHighDetailFloraMesh) {
-        const f32 distanceToCamera2 = glm::length2(camera.getPosition() - chunk.getWorldPosCenter3D());
-        if (distanceToCamera2 < FLORA_RENDER_DISTANCE_2 && renderData.mHighDetailFloraMeshDirty) {
-            mMesher->createHighDetailFloraMeshAsync(chunk);
-        }
-        else if (distanceToCamera2 > FLORA_UNLOAD_DISTANCE_2 && renderData.mHighDetailFloraMesh) {
-            renderData.mHighDetailFloraMesh.reset();
-            renderData.mHighDetailFloraMeshDirty = true;
-        }
-    }
-}
-
-void ChunkRenderer::UpdateLODTexture(const Chunk& chunk) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingBaseMesh && renderData.mLODDirty) {
-        mMesher->createLODTextureAsync(chunk);
-    }
-}
 
 void ChunkRenderer::TryRenderBaseMesh(const Chunk& chunk, const Material* material) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;

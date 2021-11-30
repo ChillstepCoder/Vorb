@@ -25,5 +25,8 @@ public:
 #elif IS_ENABLED(FEATURE_WORLD_EDITOR)
     std::unique_ptr<WorldEditorScreen> mWorldEditorScreen;
 #endif
+protected:
+    void onUpdateFrame() override;
+
 };
 

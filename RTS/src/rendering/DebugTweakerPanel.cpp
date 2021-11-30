@@ -25,33 +25,39 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     //PushOverrideID //POPID
 
     if (ImGui::CollapsingHeader("Game Settings")) {
-        if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.3f", ImGuiSliderFlags_Logarithmic)) {
+        ImGui::Checkbox("VSYNC", &sDebugOptions.mVSYNC);
+        if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.1f")) {
             sDebugOptions.mLoadRangeSq = SQ(sDebugOptions.mLoadRange);
         }
+    }
+
+    if (ImGui::CollapsingHeader("Camera Settings")) {
+        ImGui::SliderFloat("FoV", &sDebugOptions.mFoV, 1.0f, 179.0f, "%.1f");
     }
     
     if (ImGui::CollapsingHeader("Clouds")) {
         ImGui::PushID(++ID);
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableClouds);
-        ImGui::SliderInt("Cloud Blur Passes", &sDebugOptions.mCloudBlurPasses, 0, 15);
-        ImGui::SliderFloat("Cloud Blur Radius", &sDebugOptions.mCloudBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Cloud Speed", &sDebugOptions.mCloudSpeed, 0.0f, 100.0f);
+        ImGui::SliderInt("Blur Passes", &sDebugOptions.mCloudBlurPasses, 0, 15);
+        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mCloudBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f, "%.3f");
+        ImGui::SliderFloat("Speed", &sDebugOptions.mCloudSpeed, 0.0f, 50.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Depth of Field")) {
-        ImGui::SliderInt("DoF Blur Passes", &sDebugOptions.mDepthOfFieldBlurPasses, 0, 15);
-        ImGui::SliderFloat("DoF Blur Radius", &sDebugOptions.mDepthOfFieldBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::PushID(++ID);
+        ImGui::SliderInt("Blur Passes", &sDebugOptions.mDepthOfFieldBlurPasses, 0, 15);
+        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mDepthOfFieldBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Shadows")) {
         ImGui::PushID(++ID);
-        ImGui::Checkbox("Disable Shadows", &sDebugOptions.mDisableShadows);
+        ImGui::Checkbox("Disable", &sDebugOptions.mDisableShadows);
         ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::ColorPicker3("Shadow Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        std::cout << sDebugOptions.mShadowColor.x << " " << sDebugOptions.mShadowColor.y << " " << sDebugOptions.mShadowColor.z << std::endl;
+        ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
     }
 
@@ -69,12 +75,12 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             const ImVec2 dims(WINDOW_WIDTH, WINDOW_WIDTH / aspectRatio);
             ImGui::Text("Geometry");
             ImGui::Image((ImTextureID)activeGBuffer->getGeometryTexture(), dims, uv0, uv1);
-            ImGui::Text("Depth");
-            ImGui::Image((ImTextureID)activeGBuffer->getDepthTexture(), dims, uv0, uv1);
             ImGui::Text("Normals");
             ImGui::Image((ImTextureID)activeGBuffer->getNormalTexture(), dims, uv0, uv1);
             ImGui::Text("Roughness");
             ImGui::Image((ImTextureID)activeGBuffer->getRoughnessTexture(), dims, uv0, uv1);
+            ImGui::Text("Depth");
+            ImGui::Image((ImTextureID)activeGBuffer->getDepthTexture(), dims, uv0, uv1);
         }
     }
 

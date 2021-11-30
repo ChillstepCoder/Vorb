@@ -365,6 +365,7 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
 
 void TBOBillboardMesh::beginMesh() {
     mTextureData.clear();
+    mIsInProgress = true;
 }
 
 void TBOBillboardMesh::reserveQuadCount(size_t count) {
@@ -398,12 +399,13 @@ void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f3
     f32 type;
     auto&& it = mTypes.find(uniformData);
     if (it == mTypes.end()) {
-        if (mLastTypeIndex == MAX_UNIFORM_ARRAY_SIZE /*max types per batch*/) {
+        size_t index = mTypes.size();
+        if (index == MAX_UNIFORM_ARRAY_SIZE /*max types per batch*/) {
             //assert(false); // Too many!
             return;
         }
-        type = (f32)mLastTypeIndex;
-        mTypes[uniformData] = mLastTypeIndex++;
+        type = (f32)index;
+        mTypes[uniformData] = (ui32)index;
     }
     else {
         type = (f32)it->second;
@@ -519,6 +521,7 @@ void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
     else {
         destroy();
     }
+    mIsInProgress = false;
 }
 
 void TBOBillboardMesh::destroy() {
@@ -538,6 +541,7 @@ void TBOBillboardMesh::destroy() {
 void TBOBillboardMesh::clearForRecycleRetainMemory() {
     mTypes.clear();
     mTextureData.clear();
+    mIndexCount = 0;
 }
 
 void TBOBillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {

@@ -4,6 +4,9 @@
 #include "World.h"
 #include "world/Chunk.h"
 #include "DebugRenderer.h"
+#include "options/DebugOptions.h"
+
+#include "services/Services.h"
 
 // 0 or 1 for rendering debug
 #define DEBUG_RENDER_NAV_NODES 1
@@ -101,7 +104,34 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
         }
     }
     // Iterate through outer sub chunks (has chunk neighbors)
-    // std::cout << "Generated nav graph for " << chunk.getChunkID().id << " in " << timer.stop() << "ms\n";
+}
+
+void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
+
+    // TODO: Race conditions
+    chunk.incRef();
+    chunk.mIsNavmeshing.store(true);
+    if (sDebugOptions.mNavGraph) {
+        Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
+            // Update nav graph on worker thread
+            buildNavNodesForChunkSynchronous(chunk);
+            chunk.mIsNavmeshing.store(false);
+            chunk.decRef();
+        }, [&]() {
+
+            if (sDebugOptions.mNavGraph) {
+                debugDrawNavGraphForChunk(chunk, 250);
+            }
+        });
+    }
+    else {
+        Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
+            // Update nav graph on worker thread
+            buildNavNodesForChunkSynchronous(chunk);
+            chunk.mIsNavmeshing.store(false);
+            chunk.decRef();
+        }, nullptr);
+    }
 }
 
 void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)

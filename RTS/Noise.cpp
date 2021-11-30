@@ -4,15 +4,19 @@
 #include <Vorb/utils.h>
 
 
+constexpr f64 SQRT_3 = 1.7320508075688772935274463415058723669428052538103806280558069794; // Eliminate sqrt3
+constexpr f64 SQRT_5 = 2.2360679774997896964091736687312762354406183596115257242708972454; // Eliminate sqrt5
+
+
 // The gradients are the midpoints of the vertices of a cube.
-const f64 grad3[12][3] = {
+constexpr f64 grad3[12][3] = {
     { 1, 1, 0 }, { -1, 1, 0 }, { 1, -1, 0 }, { -1, -1, 0 },
     { 1, 0, 1 }, { -1, 0, 1 }, { 1, 0, -1 }, { -1, 0, -1 },
     { 0, 1, 1 }, { 0, -1, 1 }, { 0, 1, -1 }, { 0, -1, -1 }
 };
 
 // The gradients are the midpoints of the vertices of a hypercube.
-const f64 grad4[32][4] = {
+constexpr f64 grad4[32][4] = {
     { 0, 1, 1, 1 }, { 0, 1, 1, -1 }, { 0, 1, -1, 1 }, { 0, 1, -1, -1 },
     { 0, -1, 1, 1 }, { 0, -1, 1, -1 }, { 0, -1, -1, 1 }, { 0, -1, -1, -1 },
     { 1, 0, 1, 1 }, { 1, 0, 1, -1 }, { 1, 0, -1, 1 }, { 1, 0, -1, -1 },
@@ -25,7 +29,7 @@ const f64 grad4[32][4] = {
 
 
 // Permutation table.  The same list is repeated twice.
-const int perm[512] = {
+constexpr int perm[512] = {
     151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142,
     8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203, 117,
     35, 11, 32, 57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165, 71,
@@ -55,7 +59,7 @@ const int perm[512] = {
 
 
 // A lookup table to traverse the simplex around a given point in 4D.
-const int simplex[64][4] = {
+constexpr int simplex[64][4] = {
     { 0, 1, 2, 3 }, { 0, 1, 3, 2 }, { 0, 0, 0, 0 }, { 0, 2, 3, 1 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 1, 2, 3, 0 },
     { 0, 2, 1, 3 }, { 0, 0, 0, 0 }, { 0, 3, 1, 2 }, { 0, 3, 2, 1 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 1, 3, 2, 0 },
     { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 },
@@ -293,7 +297,7 @@ f64v2 Noise::cellular(const f64v3& P) {
 
 #define offsetfmult 1.45
 
-inline int fastfloor(const f64 x) { return x > 0 ? (int)x : (int)x - 1; }
+inline i64 fastfloor(const f64 x) { return x > 0 ? (i64)x : (i64)x - 1; }
 
 inline f64 dot(const f64* g, const f64 x, const f64 y) { return g[0] * x + g[1] * y; }
 inline f64 dot(const f64* g, const f64 x, const f64 y, const f64 z) { return g[0] * x + g[1] * y + g[2] * z; }
@@ -359,20 +363,19 @@ f64 Noise::fractal(const int octaves, const f64 persistence, const f64 freq, con
 	return total / maxAmplitude;
 }
 
-
 // 2D raw Simplex noise
 f64 Noise::raw(const f64 x, const f64 y) {
 	// Noise contributions from the three corners
 	f64 n0, n1, n2;
 
 	// Skew the input space to determine which simplex cell we're in
-	f64 F2 = 0.5 * (sqrtf(3.0) - 1.0);
+	f64 F2 = 0.5 * (SQRT_3 - 1.0);
 	// Hairy factor for 2D
 	f64 s = (x + y) * F2;
-	int i = fastFloor(x + s);
-	int j = fastFloor(y + s);
+	i64 i = fastFloor(x + s);
+	i64 j = fastFloor(y + s);
 
-	f64 G2 = (3.0 - sqrtf(3.0)) / 6.0;
+	f64 G2 = (3.0 - SQRT_3) / 6.0;
 	f64 t = (i + j) * G2;
 	// Unskew the cell origin back to (x,y) space
 	f64 X0 = i - t;
@@ -436,9 +439,9 @@ f64 Noise::raw(const f64 x, const f64 y, const f64 z) {
 	// Skew the input space to determine which simplex cell we're in
 	const f64 F3 = 1.0 / 3.0;
 	f64 s = (x + y + z) * F3; // Very nice and simple skew factor for 3D
-	int i = fastFloor(x + s);
-	int j = fastFloor(y + s);
-	int k = fastFloor(z + s);
+	i64 i = fastFloor(x + s);
+	i64 j = fastFloor(y + s);
+	i64 k = fastFloor(z + s);
 
 	const f64 G3 = 1.0 / 6.0; // Very nice and simple unskew factor, too
 	f64 t = (i + j + k) * G3;
@@ -525,16 +528,16 @@ f64 Noise::raw(const f64 x, const f64 y, const f64 z) {
 // 4D raw Simplex noise
 f64 Noise::raw(const f64 x, const f64 y, const f64 z, const f64 w) {
 	// The skewing and unskewing factors are hairy again for the 4D case
-	f64 F4 = (sqrtf(5.0) - 1.0) / 4.0;
-	f64 G4 = (5.0 - sqrtf(5.0)) / 20.0;
+	f64 F4 = (SQRT_5 - 1.0) / 4.0;
+	f64 G4 = (5.0 - SQRT_5) / 20.0;
 	f64 n0, n1, n2, n3, n4; // Noise contributions from the five corners
 
 	// Skew the (x,y,z,w) space to determine which cell of 24 simplices we're in
 	f64 s = (x + y + z + w) * F4; // Factor for 4D skewing
-	int i = fastFloor(x + s);
-	int j = fastFloor(y + s);
-	int k = fastFloor(z + s);
-	int l = fastFloor(w + s);
+	i64 i = fastFloor(x + s);
+	i64 j = fastFloor(y + s);
+	i64 k = fastFloor(z + s);
+	i64 l = fastFloor(w + s);
 	f64 t = (i + j + k + l) * G4; // Factor for 4D unskewing
 	f64 X0 = i - t; // Unskew the cell origin back to (x,y,z,w) space
 	f64 Y0 = j - t;

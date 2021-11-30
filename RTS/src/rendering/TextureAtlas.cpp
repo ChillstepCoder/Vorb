@@ -74,21 +74,36 @@ void TextureAtlas::uploadDirtyPages()
 }
 
 void TextureAtlas::generateMipMaps() const {
+    ScopedTimer timer("Generate mipmaps", 6);
     glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 void TextureAtlas::compressTextures() const {
+    ScopedTimer timer("Total texture compression", 6);
     std::vector<ui8> data;
-    data.resize(TEXTURE_ATLAS_SIZE_PX * mPages.size() * sizeof(color4));
-    glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
-    glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+    {
+        ScopedTimer timer("Read atlas texture", 8);
+        data.resize(TEXTURE_ATLAS_SIZE_PX * mPages.size() * sizeof(color4));
+        glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
+        glGetTexImage(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+        //glFinish();
+    }
 
-    allocateTexture(mAtlasTexture, GL_COMPRESSED_RGBA);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
-    checkGlError("TextureAtlas::compressTextures");
+    {
+        ScopedTimer timer("Allocate compressed texture", 8);
+        allocateTexture(mAtlasTexture, GL_COMPRESSED_RGBA);
+        //glFinish();
+    }
+    {
+        ScopedTimer timer("Upload texture", 8);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, mAtlasTexture);
+        //glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_COMPRESSED_RGBA, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, mPages.size(), 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX, mPages.size(), GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+        checkGlError("TextureAtlas::compressTextures");
+        //glFinish();
+    }
 }
 
 void TextureAtlas::addPage() {

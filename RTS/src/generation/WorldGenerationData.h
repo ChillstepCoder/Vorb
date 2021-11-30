@@ -10,6 +10,7 @@ struct WorldGenerationData {
     NoiseFunction mGrassNoise            = { "Grass", 9, 0.68, 0.0005, {0.0, 0.0} };
     NoiseFunction mFlowerNoise           = { "Flowers", 5, 0.7, 0.01, {0.0, 0.0} };
     NoiseFunction mCloudsNoise           = { "Clouds", 5, 0.7, 0.001, {0.0, 0.0} };
+    NoiseFunction mCloudHeightNoise      = { "CloudsHeight", 2, 0.8, 0.001, {4000.0, -5000.0} };
 
     bool mIsDirty = false;
 };

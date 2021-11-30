@@ -6,6 +6,7 @@
 
 class Chunk;
 class TextureAtlas;
+class Camera3D;
 struct TileData;
 struct SpriteData;
 
@@ -27,14 +28,12 @@ public:
     ChunkMesher(const TextureAtlas& textureAtlas);
     ~ChunkMesher();
 
-    void set3DMeshMode(bool should3DMesh) { m3DMeshMode = should3DMesh; }
+    void updateMesh(const Chunk& chunk, const f32v3& cameraPos);
 
-    // Updatemesh?
+private:
     bool createMeshAsync(const Chunk& chunk);
     bool createLODTextureAsync(const Chunk& chunk);
     bool createHighDetailFloraMeshAsync(const Chunk& chunk);
-
-private:
 
     TileMeshData* tryGetFreeTileMeshData();
 
@@ -43,7 +42,5 @@ private:
     // Passed to worker threads for use, then returned to storage
     std::vector<TileMeshData*> mFreeTileMeshData;
     int mNumMeshTasksRunning = 0;
-
-    bool m3DMeshMode = false;
 };
 

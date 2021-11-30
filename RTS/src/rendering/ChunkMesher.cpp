@@ -13,7 +13,7 @@
 // For grass noise
 #include "generation/WorldGenerationData.h"
 
-constexpr int MAX_CONCURRENT_MESH_TASKS = 10;
+constexpr int MAX_CONCURRENT_MESH_TASKS = 1000; // TODO: Delete this bullshit
 constexpr float LAYER_DEPTH_ADD = 0.001f;
 constexpr float AMBIENT_OCCLUSION_MULT = 0.7f;
 constexpr float NO_AMBIENT_OCCLUSION = 1.0f;
@@ -217,6 +217,25 @@ ChunkMesher::~ChunkMesher()
     for (TileMeshData* data : mFreeTileMeshData) {
         delete data;
     }
+}
+
+void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
+    UNUSED(cameraPos);
+    ChunkRenderData& renderData = chunk.mChunkRenderData;
+    if (!renderData.mIsBuildingBaseMesh && renderData.mMeshDirty) {
+        createMeshAsync(chunk);
+    }
+
+    /*if (!renderData.mIsBuildingHighDetailFloraMesh) {
+        const f32 distanceToCamera2 = glm::length2(camera.getPosition() - chunk.getWorldPosCenter3D());
+        if (distanceToCamera2 < FLORA_RENDER_DISTANCE_2 && renderData.mHighDetailFloraMeshDirty) {
+            createHighDetailFloraMeshAsync(chunk);
+        }
+        else if (distanceToCamera2 > FLORA_UNLOAD_DISTANCE_2 && renderData.mHighDetailFloraMesh) {
+            renderData.mHighDetailFloraMesh.reset();
+            renderData.mHighDetailFloraMeshDirty = true;
+        }
+    }*/
 }
 
 void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
@@ -752,7 +771,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     }
     renderData.mBillboardMesh->beginMesh();
     
-    Services::Threadpool::ref().addTask([&chunk, meshData, &renderData](ThreadPoolWorkerData* workerData) {
+    Services::Threadpool::ref().addTask([&chunk, meshData, &renderData](ThreadPoolWorkerData*) {
         const f32v2& chunkPos = chunk.getWorldPos();
 
         QuadMesh& quadMesh = *renderData.mChunkMesh;
@@ -824,13 +843,14 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        renderData.mChunkMesh->finishMesh(MeshDrawMode::DYNAMIC);
-        renderData.mBillboardMesh->finishMesh(MeshDrawMode::DYNAMIC);
+        renderData.mChunkMesh->finishMesh(MeshDrawMode::STATIC);
+        renderData.mBillboardMesh->finishMesh(MeshDrawMode::STATIC);
 
         // LOD
         uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
 
         // Recycle and flag as free
+        PreciseTimer timer4;
         mFreeTileMeshData.push_back(meshData);
         chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
 
@@ -877,7 +897,7 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
 
 
     }, [this, &chunk, meshData]() {
-
+        PreciseTimer timer;
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
         // LOD
@@ -942,10 +962,10 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
             }
         }
     }, [this, &chunk]() {
-
+        PreciseTimer timer;
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        renderData.mHighDetailFloraMesh->finishMesh(MeshDrawMode::DYNAMIC);
+        renderData.mHighDetailFloraMesh->finishMesh(MeshDrawMode::STATIC);
 
         // Recycle and flag as free
         chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = false;

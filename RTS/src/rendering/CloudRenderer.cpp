@@ -60,7 +60,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     const GLuint rootPosUniform = glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnRootPos");
 
     for (auto&& batch : cloudManager.mCloudBatches) {
-        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius)) {
+        if (camera.sphereIsVisible(f32v3(batch.mRootPos.x, batch.mRootPos.y, batch.mBoundsRadius), batch.mBoundsRadius)) {
             glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
             batch.mMesh->draw(mCloudMaterial->mProgram);
         }
@@ -89,7 +89,7 @@ void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const C
 
     for (auto&& batch : cloudManager.mCloudBatches) {
         // TODO: Profile the sphere check
-        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius) &&
+        if (camera.sphereIsVisible(f32v3(batch.mRootPos.x, batch.mRootPos.y, batch.mBoundsRadius), batch.mBoundsRadius) &&
             glm::distance2(batch.mRootPos, camera.getPosition()) < maxDistSQ + SQ(batch.mBoundsRadius)) {
             glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
             batch.mMesh->draw(mCloudShadowMaterial->mProgram);

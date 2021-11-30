@@ -5,6 +5,8 @@
 #include "World.h"
 #include "world/TileRepository.h"
 
+#include "services/Services.h"
+
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
 #include "rendering/BuildingRenderer.h"
@@ -144,6 +146,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     glBufferData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 }
 
 RenderContext::~RenderContext() {
@@ -164,46 +167,64 @@ RenderContext& RenderContext::getInstance() {
 
 void RenderContext::initPostLoad() {
 
-    // Initialize renderer after material assets are loaded
-    mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager());
-    // Init renderers
     mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
-    mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
-    mChunkRenderer = std::make_unique<ChunkRenderer>(mResourceManager, *mMaterialRenderer);
-    mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
-    mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-    mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-    mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
-    mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
-    mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-    mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-    mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-    checkGlError("Renderer init");
-    mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
-    checkGlError("Init texture manipulator");
 
     // TODO: These can be eliminated and put into constructor???
-    mLightRenderer->InitPostLoad();
-    mChunkRenderer->InitPostLoad();
-    mTextureManipulator->InitPostLoad();
+    {
+        ScopedTimer timer("Finish atlas normals and mips", 2);
+        mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
+        mTextureManipulator->InitPostLoad();
+        checkGlError("Init texture manipulator");
+    }
+
+    // Initialize renderer after material assets are loaded
+    {
+        // Init renderers
+        ScopedTimer timer("renderer allocations", 2);
+        mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager());
+        mChunkRenderer = std::make_unique<ChunkRenderer>(mResourceManager, *mMaterialRenderer);
+        mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
+        mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
+        mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
+        mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
+        mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
+        mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        checkGlError("Renderer init");
+    }
 
     // Init all passthrough materials
-    for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-        const Material* material = mResourceManager.getMaterialManager().getMaterial(sPassthroughMaterialNames[i]);
-        if (material) {
-            mPassthroughMaterials.emplace_back(material);
+    {
+        ScopedTimer timer("Passthrough init", 2);
+        for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
+            const Material* material = mResourceManager.getMaterialManager().getMaterial(sPassthroughMaterialNames[i]);
+            if (material) {
+                mPassthroughMaterials.emplace_back(material);
+            }
+            else {
+                pError("Missing material for pass through: " + std::string(sPassthroughMaterialNames[i]));
+            }
         }
-        else {
-            pError("Missing material for pass through: " + std::string(sPassthroughMaterialNames[i]));
-        }
+    }
+
+    {
+        ScopedTimer timer("Chunk renderer init", 2);
+        mChunkRenderer->InitPostLoad();
+        mLightRenderer->InitPostLoad();
     }
 
     mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
 
-    buildHorizonMesh();
-    mSkyBox = std::make_unique<Skybox>();
-    mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
+    {
+        
+        ScopedTimer timer("Skybox init", 2);
+        buildHorizonMesh();
+        mSkyBox = std::make_unique<Skybox>();
+        mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
+    }
 
 }
 
@@ -548,6 +569,11 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
                 if (chunk.getRightNeighbor().isDataReady()) {
                     DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH, CHUNK_WIDTH * 0.5f), f32v2(-6.0f, 0.0f), neighborColor);
+                }
+                // Count refs
+                int refCount = chunk.mRefCount.load();
+                for (int i = 0; i < refCount; ++i) {
+                    DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(CHUNK_WIDTH / 2) + f32v2(i * 2, 0), f32v2(2.0f), color4(1.0f, 0.0f, 1.0f));
                 }
             }
             else {

@@ -30,10 +30,10 @@ public:
     //void renderWorldShadows(const World& world, const Camera2D& camera);
 
     void InitPostLoad();
+
+    ChunkMesher& getMesher() { return *mMesher; }
 private:
     // Different rendering methods
-    void UpdateMesh(const Chunk& chunk, const Camera3D& camera);
-    void UpdateLODTexture(const Chunk& chunk);
     void TryRenderBaseMesh(const Chunk& chunk, const Material* material);
     void TryRenderFloraMesh(const Chunk& chunk, const Material* material);
     void TryRenderBillboardMesh(const Chunk& chunk, const Material* material);
@@ -42,7 +42,6 @@ private:
     void RenderLODTextureBindless(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera, ui32 textureIndex);
     //void RenderShadows(const Chunk& chunk, const Camera2D& camera);
 
-	std::unique_ptr<ChunkMesher> mMesher;
 	ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
@@ -54,5 +53,7 @@ private:
     const Material* mZCutoutMaterial = nullptr;
 
     std::vector<const Chunk*> mLODedChunksToRender;
+
+    std::unique_ptr<ChunkMesher> mMesher;
 };
 

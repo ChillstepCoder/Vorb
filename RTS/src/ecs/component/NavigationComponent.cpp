@@ -3,6 +3,7 @@
 #include "NavigationComponent.h"
 
 #include "ecs/EntityComponentSystem.h"
+#include "services/Services.h"
 
 #include "DebugRenderer.h"
 
