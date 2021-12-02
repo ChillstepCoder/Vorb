@@ -55,7 +55,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     if (ImGui::CollapsingHeader("Shadows")) {
         ImGui::PushID(++ID);
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableShadows);
-        ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Update Rate Seconds", &sDebugOptions.mShadowUpdateRateSeconds, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();

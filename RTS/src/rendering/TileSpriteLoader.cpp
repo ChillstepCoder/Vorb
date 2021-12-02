@@ -171,20 +171,19 @@ void TileSpriteLoader::getFileMetadata(const vio::Path& imageFilePath, const ui3
 
     // Find meta file
     std::string metaFilePath = imageFilePath.getString();
-    metaFilePath.resize(metaFilePath.size() - 4); // Chop of .png
+    metaFilePath.resize(metaFilePath.size() - 4); // Chop off .png
     metaFilePath += ".meta";
 
     // Meta file is optional, and describes sprites
     if (mIoManager.fileExists(metaFilePath)) {
         // Read file
-        nString data;
-        mIoManager.readFileToString(metaFilePath, data);
-        if (data.empty()) return;
+        mIoManager.readFileToString(metaFilePath, mDataBuffer);
+        if (mDataBuffer.empty()) return;
 
         // Convert to YAML
         keg::ReadContext context;
         context.env = keg::getGlobalEnvironment();
-        context.reader.init(data.c_str());
+        context.reader.init(mDataBuffer.c_str());
         keg::Node rootObject = context.reader.getFirst();
 
         try {

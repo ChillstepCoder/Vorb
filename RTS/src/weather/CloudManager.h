@@ -15,7 +15,7 @@ struct CloudBatch {
     VORB_MOVABLE(CloudBatch);
 
     f32v3 mRootPos;
-    f32 mBoundsRadius;
+    f32 mBoundsRadius; // TODO: AABB
     std::unique_ptr<TBOBillboardMesh> mMesh;
 };
 

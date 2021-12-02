@@ -41,6 +41,7 @@ public:
     ~TileSpriteLoader();
 
     bool loadSpriteTexture(const vio::Path& filePath);
+    bool loadSpriteTextureDirectlyToAtlas(const vio::Path& filePath);
 
 private:
 
@@ -51,5 +52,7 @@ private:
     SpriteRepository& mSpriteRepository;
     TextureAtlas& mTextureAtlas;
     std::unique_ptr<vvox::VoxelTextureStitcher> mTextureMapper;
+
+    nString mDataBuffer;
 };
 

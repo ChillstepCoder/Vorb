@@ -21,12 +21,15 @@ public:
 
     void useShadowBuffer();
 
-    vg::GBuffer* renderShadows(vg::GBuffer* activeGBuffer);
+    vg::GBuffer* renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos);
 
     const f32m4* getShadowFrustumMatrices() const { return mLightVP; }
     const f32* getShadowCascadePlaneDistances() const { return mPlaneDistances; }
     const VGTexture getShadowMap() const { return mShadowDepthMaps; }
     const f32 getMaxDistance() const;
+    const f32v3& getLastUpdatedSunPosition() const { return mLastUpdatedSunPosition; }
+
+    bool shouldUpdateShadowsThisFrame() const { return mShouldUpdateShadowsThisFrame; }
 
 private:
     void updateFrustumCorners(const f32m4& projection, const f32m4& view);
@@ -38,9 +41,17 @@ private:
     vg::GBuffer mShadowApplyGBuffer;
     VGFramebuffer mShadowMapFBO;
     VGTexture mShadowDepthMaps;
+    f32 mLastCamZAngle = 0.0f;
+    f32 mLastCamZNear = 0.0f;
+    f32v3 mLastCameraPos = f32v3(0.0f);
+    f32v3 mLastUpdatedCameraPos = f32v3(0.0f);
+    f32v3 mLastSunPosition = f32v3(0.0f);
+    f32v3 mLastUpdatedSunPosition = f32v3(0.0f);
     f32v2 mGBufferDims;
     f32v4 mFrustumCornersWorldSpace[SHADOW_FRUSTUM_CORNER_COUNT];
     f32m4 mLightVP[MAX_SHADOW_CASCADE_LEVELS];
     f32 mPlaneDistances[MAX_SHADOW_CASCADE_LEVELS];
+    f32 mLastUpdateTime = 0.0f;
+    bool mShouldUpdateShadowsThisFrame = true;
 };
 

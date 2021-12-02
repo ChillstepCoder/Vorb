@@ -24,6 +24,7 @@ void main() {
     fUV = getUvsFromType(type);
     fAtlasPage = atlasPageRoughnessWind.r;
 	
+	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();
 	vec4 vertexPosition = vPosition;
@@ -37,6 +38,7 @@ void main() {
     fTint = vec4(1.0);
 	
 	vec4 worldPos = vertexPosition + vec4(UnRootPos - CameraPos, 0.0);
+	worldPos.xyz += cos((vPosition.x + UnRootPos.x) * 0.05 - sin((vPosition.y + UnRootPos.y) * 0.05)) * 10.0;
 
 	//fTint.r = 1.0 - angle;
 	//fTint.g = 0.0;

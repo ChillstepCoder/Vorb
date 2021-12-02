@@ -243,12 +243,15 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
     // Sun
     const f32v3& sun = mWorld.getSunPosition();
+    mShadowRenderer->beginFrame(*camera, sun);
+
+    const f32v3 lastSunPosition = mShadowRenderer->getLastUpdatedSunPosition();
     uboData.SunColor = mWorld.getSunColor();
     uboData.SunHeight = mWorld.getSunHeight();
-    uboData.SunPosition = sun;
-    uboData.SunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(sun.x, sun.y, sun.z, 1.0f)));
-    uboData.SunRight = glm::normalize(glm::cross(sun, f32v3(0.0f, 0.0f, 1.0f)));
-    uboData.SunUp = glm::normalize(glm::cross(sun, uboData.SunRight));
+    uboData.SunPosition = lastSunPosition;
+    uboData.SunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(lastSunPosition.x, lastSunPosition.y, lastSunPosition.z, 1.0f)));
+    uboData.SunRight = glm::normalize(glm::cross(lastSunPosition, f32v3(0.0f, 0.0f, 1.0f)));
+    uboData.SunUp = glm::normalize(glm::cross(lastSunPosition, uboData.SunRight));
 
     // Camera data
     uboData.CameraPos = camera->getPosition();
@@ -258,7 +261,6 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     uboData.CameraZRange = f32v2(camera->getZNear(), camera->getZFar());
 
     // Shadows
-    mShadowRenderer->beginFrame(*camera, sun);
     mRenderData.shadowFrustumMatrices = mShadowRenderer->getShadowFrustumMatrices();
     mRenderData.shadowCascadePlaneDistances = mShadowRenderer->getShadowCascadePlaneDistances();
     mRenderData.shadowMap = mShadowRenderer->getShadowMap();
@@ -370,33 +372,35 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Shadows
     if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
-        mShadowRenderer->useShadowBuffer();
-        glEnable(GL_DEPTH_CLAMP);
+        if (mShadowRenderer->shouldUpdateShadowsThisFrame()) {
+            mShadowRenderer->useShadowBuffer();
+            glEnable(GL_DEPTH_CLAMP);
 
-        vg::DepthState::FULL.set();
-        // Render all shadow casters
-        //glCullFace(GL_FRONT);
-        mChunkRenderer->renderWorldShadows(mWorld, camera, lodState, mShadowRenderer->getMaxDistance());
+            vg::DepthState::FULL.set();
+            // Render all shadow casters
+            //glCullFace(GL_FRONT);
+            mChunkRenderer->renderWorldShadows(mWorld, camera, lodState, mShadowRenderer->getMaxDistance());
 
-        //glCullFace(GL_BACK);
-        // TODO: Frustum cull
-        if (!sDebugOptions.mDisableClouds) {
-            mCloudRenderer->renderCloudShadows(mWorld.getCloudManager(), camera, mShadowRenderer->getMaxDistance());
-        }
-
-        const CityGraph& cities = mWorld.getCities();
-        for (auto&& city : cities.mNodes) {
-            const std::vector<Building>& buildings = city->getBuildings();
-            for (auto& building : buildings) {
-                mBuildingRenderer->renderBuildingRoofShadows(building);
+            //glCullFace(GL_BACK);
+            // TODO: Frustum cull
+            if (!sDebugOptions.mDisableClouds) {
+                mCloudRenderer->renderCloudShadows(mWorld.getCloudManager(), camera, mShadowRenderer->getMaxDistance());
             }
+
+            const CityGraph& cities = mWorld.getCities();
+            for (auto&& city : cities.mNodes) {
+                const std::vector<Building>& buildings = city->getBuildings();
+                for (auto& building : buildings) {
+                    mBuildingRenderer->renderBuildingRoofShadows(building);
+                }
+            }
+
+
+            glDisable(GL_DEPTH_CLAMP);
         }
-
-
-        glDisable(GL_DEPTH_CLAMP);
 
         vg::DepthState::NONE.set();
-        mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer);
+        mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer, camera.getPosition());
 
         mActiveGBuffer->useGeometry();
     }

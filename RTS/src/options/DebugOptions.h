@@ -11,7 +11,7 @@ constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
-    bool mDisableClouds = false;
+    bool mDisableClouds = true;// false;
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
@@ -20,9 +20,10 @@ struct DebugOptions {
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
     // Shadows
-    float mShadowZMult = 2.50f;
+    float mShadowZMult = 1.5f;//2.50f;
     float mShadowNearSize = 17.0f;
     f32v3 mShadowColor = f32v3(186.0f / 255.0f, 197.0f / 255.0f, 202.0f / 255.0f);
+    f32 mShadowUpdateRateSeconds = 0.02f;
     bool mDisableShadows = false;
     // Toggles
     bool mPauseFrustum = false;

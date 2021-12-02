@@ -28,9 +28,16 @@ void main() {
 	}
 	
 	fNormal = vec4((norm + 1.0) * 0.5, 1.0);
-	vec2 tex = ((norm.xy + vec2(1.0)) * 0.5);
+	// OLD
+	//vec2 tex = ((norm.xy + vec2(1.0)) * 0.5);
+	//tex.y = 1.0 - tex.y;
+	//fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
+	
+	// NEW
+	vec2 tex = vec2(0.0, max(computeDiffuse(norm, SunPositionCameraRelative), 0.001));
 	tex.y = 1.0 - tex.y;
 	fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
+	
 	// Fake scattering
 	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient, 1.0, depth, fUV);
 	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient, 1.0, depth, fUV);

@@ -243,7 +243,7 @@ void Chunk::setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag) {
 void Chunk::updateTileCollisionAt(TileIndex i) {
 
     // TODO: Multithreaded read, queued write
-    assert(!mIsNavmeshing);
+    //assert(!mIsNavmeshing);
 
     const Tile& tile = mTiles[i];
     TileCollision& collision = mCollision[i];

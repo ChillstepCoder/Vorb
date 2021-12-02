@@ -76,16 +76,39 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     mShadowApplyMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
 }
 
+constexpr f32 SUN_POSITION_UPDATE_THRESH_SQ = SQ(0.001f);
+constexpr f32 CAMERA_POSITION_UPDATE_THRESH_SQ = SQ(1.0f);
+
 void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPositionWorld) {
 
-    const float zNear = camera.getZNear();
+    f32 camZNear = camera.getZNear();
+    f32 camZAngle = camera.getZAngle();
+    {   // Check if we need to update this frame based on camera motion and time
+        mLastCameraPos = camera.getPosition();
+        mLastSunPosition = sunPositionWorld;
 
-    mPlaneDistances[0] = zNear + sDebugOptions.mShadowNearSize;
+        if (glm::distance2(sunPositionWorld, mLastUpdatedSunPosition) < SUN_POSITION_UPDATE_THRESH_SQ &&
+            glm::distance2(camera.getPosition(), mLastUpdatedCameraPos) < CAMERA_POSITION_UPDATE_THRESH_SQ &&
+            camZAngle == mLastCamZAngle &&
+            camZNear == mLastCamZNear &&
+            sTotalTimeSeconds - mLastUpdateTime < sDebugOptions.mShadowUpdateRateSeconds) {
+            mShouldUpdateShadowsThisFrame = false;
+            return;
+        }
+        mLastUpdatedCameraPos = mLastCameraPos;
+        mLastUpdatedSunPosition = mLastSunPosition;
+        mLastCamZAngle = camZAngle;
+        mLastCamZNear = camZNear;
+        mLastUpdateTime = sTotalTimeSeconds;
+        mShouldUpdateShadowsThisFrame = true;
+    }
+
+    mPlaneDistances[0] = camZNear + sDebugOptions.mShadowNearSize;
     mPlaneDistances[1] = mPlaneDistances[0] + 40.0f;
     mPlaneDistances[2] = mPlaneDistances[1] + 100.0f;
     mPlaneDistances[3] = mPlaneDistances[2] + 600.0f;
     const float zPlanes[MAX_SHADOW_CASCADE_LEVELS + 1] = {
-        zNear,
+        camZNear,
         mPlaneDistances[0],
         mPlaneDistances[1],
         mPlaneDistances[2],
@@ -107,11 +130,6 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
         }
         center /= SHADOW_FRUSTUM_CORNER_COUNT;
 
-        // Round to nearest texel (doesnt seem to work lol)
-        const f32 f = (zPlanes[i + 1] - zPlanes[i]) / f32(DEPTH_MAP_RESOLUTION);
-        center.x = glm::round(center.x / f) * f;
-        center.y = glm::round(center.y / f) * f;
-
         // View matrix
         f32m4 lightV = glm::lookAt(
             center + sunPositionWorld,
@@ -128,7 +146,7 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
         float maxZ = std::numeric_limits<float>::min();
         for (int i = 0; i < SHADOW_FRUSTUM_CORNER_COUNT; ++i)
         {
-            const f32v4& v = mFrustumCornersWorldSpace[i];
+            const f32v4 v = mFrustumCornersWorldSpace[i];
             const auto trf = lightV * v;
             minX = std::min(minX, trf.x);
             maxX = std::max(maxX, trf.x);
@@ -153,7 +171,44 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
             maxZ *= zMult;
         }
 
-        const f32m4 lightP = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
+        // Quantize positions to texel sizes to reduce flicker
+        f32 xSpan = maxX - minX;
+        f32 ySpan = maxY - minY;
+        f32 xTexelSize = xSpan / DEPTH_MAP_RESOLUTION;
+        f32 yTexelSize = ySpan / DEPTH_MAP_RESOLUTION;
+
+        f32 offsetX = ceilf(camera.getPosition().x / xTexelSize);
+        f32 offsetY = ceilf(camera.getPosition().y / yTexelSize);
+
+        offsetX = (camera.getPosition().x / xTexelSize - offsetX) * xTexelSize;
+        offsetY = (camera.getPosition().y / yTexelSize - offsetY) * yTexelSize;
+
+        /*minX += camera.getPosition().x;
+        minY += camera.getPosition().y;
+        maxX += camera.getPosition().x;
+        maxY += camera.getPosition().y;*/
+
+        // Quantize scale (reduce flicker)
+        //f32 scaleX = 2.0f / (maxX - minX);
+        //f32 scaleY = 2.0f / (maxY - minY);
+        //f32 scaleQuantizer = sDebugOptions.mShadowScaleQuantizer;
+        //scaleX = 1.0f / ceilf(1.0f / scaleX * scaleQuantizer) * scaleQuantizer;
+        //scaleY = 1.0f / ceilf(1.0f / scaleY * scaleQuantizer) * scaleQuantizer;
+
+        //float offsetX = -0.5f * (maxX + minX) * scaleX; // Offset value for x dimension
+        //float offsetY = -0.5f * (maxY + minY) * scaleY; // Offset value for y dimension
+
+        //float halfTextureSize = 0.5f * DEPTH_MAP_RESOLUTION;
+        //offsetX = ceilf(offsetX) / halfTextureSize;
+        //offsetY = ceilf(offsetY) / halfTextureSize;/*
+        /*minX -= camera.getPosition().x;
+        maxX -= camera.getPosition().x;
+        minY -= camera.getPosition().y;
+        maxY -= camera.getPosition().y;
+        minZ -= camera.getPosition().z;
+        maxZ -= camera.getPosition().z;*/
+
+        const f32m4 lightP = glm::ortho(minX - offsetX, maxX - offsetX, minY - offsetY, maxY - offsetY, minZ, maxZ);
         mLightVP[i] = lightP * lightV;
     }
 }
@@ -165,12 +220,16 @@ void ShadowRenderer::useShadowBuffer() {
     glClear(GL_DEPTH_BUFFER_BIT);
 }
 
-vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer) {
+vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos) {
     assert(activeGBuffer);
+
+    f32v3 offset = cameraPos - mLastUpdatedCameraPos;
 
     mShadowApplyGBuffer.useGeometry();
 
     mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial);
+
+    glUniform3fv(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
 
     sGlobalFullQuadVBO.draw();
 

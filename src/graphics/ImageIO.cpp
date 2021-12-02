@@ -537,3 +537,138 @@ bool vg::ImageIO::save(const vio::Path& path, const void* inData, const ui32& w,
 //
 //    return true;
 }
+//
+//vg::ScopedPNGLoader::ScopedPNGLoader(const vio::Path& path, const ImageIOFormat& format /*= ImageIOFormat::RGBA_UI8*/) : mFormat(format)
+//{
+//    mFile = fopen(path.getCString(), "rb");
+//
+//    if (!mFile)
+//    {
+//        mError = "Unable to open file";
+//        return;
+//    }
+//
+//    char header[8];
+//
+//    fread(header, 1, 8, mFile);
+//
+//    if (png_sig_cmp((png_const_bytep)header, 0, 8))
+//    {
+//        mError = "File type not recognized";
+//        return;
+//    }
+//
+//    /* initialize stuff */
+//    // TODO: do we need to delete this???
+//    mPngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+//
+//    if (!mPngPtr)
+//    {
+//        mError = "Format not recognized";
+//        return;
+//    }
+//
+//    png_infop info_ptr;
+//
+//    info_ptr = png_create_info_struct((png_structp)mPngPtr);
+//
+//    if (!info_ptr)
+//    {
+//        mError = "Unable to retrieve image information";
+//        return;
+//    }
+//
+//    if (setjmp(png_jmpbuf((png_structp)mPngPtr)))
+//    {
+//        mError = "File corrupt";
+//        return;
+//    }
+//
+//    png_byte color_type;
+//    //png_byte bit_depth;
+//    //int number_of_passes;
+//
+//    png_init_io((png_structp)mPngPtr, mFile);
+//    png_set_sig_bytes((png_structp)mPngPtr, 8);
+//    png_read_info((png_structp)mPngPtr, info_ptr);
+//
+//    mDims.x = png_get_image_width((png_structp)mPngPtr, info_ptr);
+//    mDims.y = png_get_image_height((png_structp)mPngPtr, info_ptr);
+//    color_type = png_get_color_type((png_structp)mPngPtr, info_ptr);
+//    //bit_depth=png_get_bit_depth(png_ptr, info_ptr);
+//
+//    //number_of_passes=png_set_interlace_handling(png_ptr);
+//
+//    if (color_type == PNG_COLOR_TYPE_PALETTE)
+//    {
+//        png_set_palette_to_rgb((png_structp)mPngPtr);
+//        color_type = PNG_COLOR_TYPE_RGB;
+//    }
+//
+//    if ((color_type == PNG_COLOR_TYPE_RGB) && (mFormat == ImageIOFormat::RGBA_UI8))
+//        png_set_add_alpha((png_structp)mPngPtr, 0xff, PNG_FILLER_AFTER);
+//    else if ((color_type == PNG_COLOR_TYPE_RGBA) && (mFormat == ImageIOFormat::RGB_UI8))
+//        png_set_strip_alpha((png_structp)mPngPtr);
+//
+//    png_read_update_info((png_structp)mPngPtr, info_ptr);
+//    color_type = png_get_color_type((png_structp)mPngPtr, info_ptr);
+//
+//    if (setjmp(png_jmpbuf((png_structp)mPngPtr)))
+//    {
+//        mError = "File corrupt";
+//        return;
+//    }
+//}
+//
+//vg::ScopedPNGLoader::~ScopedPNGLoader()
+//{
+//    fclose(mFile);
+//
+//    if (mError.size()) {
+//        printf("PNG Load error: %s", mError.c_str());
+//    }
+//}
+//
+//void vg::ScopedPNGLoader::loadIntoDestination(unsigned char* dst, size_t rowSize)
+//{
+//
+//    int channels = 0;
+//    int depth = 0;
+//    if (mFormat == ImageIOFormat::RGB_UI8)
+//    {
+//        channels = 3;
+//        depth = 1;
+//    }
+//    else if (mFormat == ImageIOFormat::RGBA_UI8)
+//    {
+//        channels = 4;
+//        depth = 1;
+//    }
+//    else if (mFormat == ImageIOFormat::RGB_UI16)
+//    {
+//        channels = 4;
+//        depth = 2;
+//    }
+//    else if (mFormat == ImageIOFormat::RGBA_UI16)
+//    {
+//        channels = 4;
+//        depth = 2;
+//    }
+//    else {
+//        return;
+//    }
+//
+//    std::vector<png_bytep> rowPointers(mDims.y);
+//    png_byte* imageData = (png_byte*)dst;
+//
+//    size_t pos = 0;
+//    size_t stride = rowSize * channels * depth;
+//
+//    for (ui32 y = 0; y < mDims.y; ++y)
+//    {
+//        rowPointers[y] = &imageData[pos];
+//        pos += stride;
+//    }
+//
+//    png_read_image((png_structp)mPngPtr, rowPointers.data());
+//}

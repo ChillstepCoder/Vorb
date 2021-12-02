@@ -1,6 +1,4 @@
-uniform mat4 VP;
-uniform float Time;
-uniform vec3 CameraPos;
+#include "../GlobalUbo.glsl"
 
 in vec4 vPosition;
 in vec3 vNormal;

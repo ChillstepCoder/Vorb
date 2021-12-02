@@ -83,6 +83,25 @@ namespace vorb {
             Event<nString> onError;
         };
 
+        /*class ScopedPNGLoader {
+        public:
+            ScopedPNGLoader(const vio::Path& path, const ImageIOFormat& format = ImageIOFormat::RGBA_UI8);
+            ~ScopedPNGLoader();
+
+            ui32 getWidth() const { return mDims.x; }
+            ui32 getHeight() const { return mDims.y; }
+            const ui32v2& getDims() const { return mDims; }
+
+            void loadIntoDestination(unsigned char* dst, size_t rowSize);
+
+        private:
+            nString mError;
+            ImageIOFormat mFormat;
+            ui32v2 mDims;
+            FILE* mFile;
+            void* mPngPtr;
+        };*/
+
         /// Destroys the resource in the destructor
         class ScopedBitmapResource : public BitmapResource {
         public:

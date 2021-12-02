@@ -23,7 +23,7 @@ public:
     ~TextureAtlas();
 
     // Returns UVRect
-    f32v4 writePixels(ui32 cellIndex, ui32 cellsX, ui32 cellsY, const color4* srcPixels, ui32 srcResourceWidthPx, ui32 srcRectWidthPx, ui32 srcRectHeightPx);
+    f32v4 writePixels(ui32 cellIndex, ui32 cellsX, ui32 cellsY, const color4* srcPixels, ui32 srcResourceWidthPx, ui32 srcRectWidthPx, ui32 srcRectHeightPx); 
     void uploadDirtyPages();
     void generateMipMaps() const;
     void compressTextures() const;

@@ -7,6 +7,7 @@ uniform vec3 ShadowColor;
 
 uniform float ShadowCascadePlaneDistances[4];
 uniform mat4 ShadowFrustumMatrices[4];
+uniform vec3 CameraOffset;
 
 in vec2 fUV;
 
@@ -28,7 +29,7 @@ vec4 viewPosFromDepth(float depth, vec2 fboUV) {
 }
 
 float getShadow(vec4 viewSpacePosition) {
-	vec4 worldSpacePosition = InverseV * viewSpacePosition;
+	vec4 worldSpacePosition = InverseV * viewSpacePosition + vec4(CameraOffset, 0.0);
     float depthValue = abs(viewSpacePosition.z);
 	
 	int layer = cascadeCount;
@@ -58,6 +59,7 @@ float getShadow(vec4 viewSpacePosition) {
 	
 	vec3 normal = texture(FboNormals, fUV).rgb * 2.0 - 1.0;
 	float layerBiasMult = pow(layer, 4.0) * 0.006; // More bias further from camera
+	layerBiasMult = 0.0;
 	float bias = max((0.02 + layerBiasMult) * (1.0 - dot(normal, SunPosition)), 0.005);
 	
 	//if (layer == cascadeCount) {
@@ -69,17 +71,19 @@ float getShadow(vec4 viewSpacePosition) {
 	
 	// PCF (TODO: Replace with VSM)
 	float shadow = 0.0;
-	vec2 texelSize = 1.0 / vec2(textureSize(ShadowMap, 0));
-	for(int x = -1; x <= 1; ++x) {
-		for(int y = -1; y <= 1; ++y) {
-			float pcfDepth = texture(
-						ShadowMap,
-						vec3(projCoords.xy + vec2(x, y) * texelSize, layer)
-						).r; 
-			shadow += (currentDepth - bias) > pcfDepth ? 1.0 : 0.0;        
-		}    
-	}
-	shadow /= 9.0;
+	//vec2 texelSize = 1.0 / vec2(textureSize(ShadowMap, 0));
+	//for(int x = -1; x <= 1; ++x) {
+	//	for(int y = -1; y <= 1; ++y) {
+	//		float pcfDepth = texture(
+	//					ShadowMap,
+	//					vec3(projCoords.xy + vec2(x, y) * texelSize, layer)
+	//					).r; 
+	//		shadow += (currentDepth - bias) > pcfDepth ? 1.0 : 0.0;        
+	//	}    
+	//}
+	//shadow /= 9.0;
+	float pcfDepth = texture(ShadowMap, vec3(projCoords.xy, layer)).r;
+	shadow = (currentDepth - bias) > pcfDepth ? 1.0 : 0.0; 
 		
 	// keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
 	//if(projCoords.z > 1.0)
