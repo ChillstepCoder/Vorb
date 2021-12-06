@@ -78,7 +78,7 @@ void vg::GpuMemory::uploadTexture(VGTexture texture,
     m_totalVramUsage += vramUsage;
     m_textureVramUsage += vramUsage;
     // Unbind texture
-    glBindTexture((VGEnum)textureTarget, texture);
+    glBindTexture((VGEnum)textureTarget, 0);
 }
 
 void vg::GpuMemory::uploadTexture(VGTexture texture,

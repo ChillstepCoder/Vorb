@@ -1,0 +1,3 @@
+shadow_variance:
+  vert: shadow_variance.vert
+  frag: shadow_variance.frag

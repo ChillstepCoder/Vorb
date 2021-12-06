@@ -53,7 +53,8 @@ namespace vorb {
 		    static SamplerState POINT_WRAP;
 		    static SamplerState POINT_CLAMP;
 		    static SamplerState LINEAR_WRAP;
-		    static SamplerState LINEAR_CLAMP;
+            static SamplerState LINEAR_CLAMP;
+            static SamplerState LINEAR_CLAMP_BORDER;
 		    static SamplerState POINT_WRAP_MIPMAP;
 		    static SamplerState POINT_CLAMP_MIPMAP;
 		    static SamplerState LINEAR_WRAP_MIPMAP;

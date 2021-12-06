@@ -25,7 +25,7 @@ public:
 
     const f32m4* getShadowFrustumMatrices() const { return mLightVP; }
     const f32* getShadowCascadePlaneDistances() const { return mPlaneDistances; }
-    const VGTexture getShadowMap() const { return mShadowDepthMaps; }
+    const VGTexture getShadowMap() const { return mShadowMapGBuffer.getGeometryTexture(); }
     const f32 getMaxDistance() const;
     const f32v3& getLastUpdatedSunPosition() const { return mLastUpdatedSunPosition; }
 
@@ -33,14 +33,20 @@ public:
 
 private:
     void updateFrustumCorners(const f32m4& projection, const f32m4& view);
+    void generateMipmaps();
+    void blurShadowMap();
 
     ResourceManager& mResourceManager;
     const MaterialRenderer& mMaterialRenderer;
     const Material* mShadowMapperMaterial = nullptr;
+    const Material* mShadowVarianceMaterial = nullptr;
     const Material* mShadowApplyMaterial = nullptr;
-    vg::GBuffer mShadowApplyGBuffer;
-    VGFramebuffer mShadowMapFBO;
-    VGTexture mShadowDepthMaps;
+    const Material* mShadowMipMaterial = nullptr;
+    const Material* mBlurMaterial = nullptr;
+    vg::GBuffer mShadowMipGBuffer; // TODO: Can we combine this with the blur gbuffer?
+    vg::GBuffer mShadowBlurGBuffers[2];
+    vg::GBuffer mShadowMapGBuffer;
+    vg::GBuffer mShadowMapApplyGBuffer;
     f32 mLastCamZAngle = 0.0f;
     f32 mLastCamZNear = 0.0f;
     f32v3 mLastCameraPos = f32v3(0.0f);

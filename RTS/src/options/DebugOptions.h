@@ -22,8 +22,10 @@ struct DebugOptions {
     // Shadows
     float mShadowZMult = 1.5f;//2.50f;
     float mShadowNearSize = 17.0f;
-    f32v3 mShadowColor = f32v3(186.0f / 255.0f, 197.0f / 255.0f, 202.0f / 255.0f);
+    f32v3 mShadowColor = f32v3(0.0f / 255.0f, 40.0f / 255.0f, 50.0f / 255.0f);
     f32 mShadowUpdateRateSeconds = 0.02f;
+    int mShadowBlurPasses = 3;
+    float mShadowBlurRadius = 1.5f;
     bool mDisableShadows = false;
     // Toggles
     bool mPauseFrustum = false;

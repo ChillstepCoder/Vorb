@@ -155,6 +155,11 @@ void TextureAtlas::allocateTexture(ui32 texture, int internalFormat) const {
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
 
+    // TODO: Figure this out
+    //GLint maxAnisotropy = 0;
+    //glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
+    //glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+
     // Unbind
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 

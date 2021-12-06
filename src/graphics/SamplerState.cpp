@@ -59,6 +59,9 @@ vg::SamplerState         vg::SamplerState::LINEAR_WRAP(TextureMinFilter::LINEAR,
 vg::SamplerState        vg::SamplerState::LINEAR_CLAMP(TextureMinFilter::LINEAR,                 TextureMagFilter::LINEAR,
                                                        TextureWrapMode::CLAMP_EDGE,              TextureWrapMode::CLAMP_EDGE,  TextureWrapMode::CLAMP_EDGE);
 
+
+vg::SamplerState vg::SamplerState::LINEAR_CLAMP_BORDER(TextureMinFilter::LINEAR, TextureMagFilter::LINEAR, TextureWrapMode::CLAMP_EDGE, TextureWrapMode::CLAMP_BORDER, TextureWrapMode::CLAMP_BORDER);
+
 vg::SamplerState   vg::SamplerState::POINT_WRAP_MIPMAP(TextureMinFilter::NEAREST_MIPMAP_NEAREST, TextureMagFilter::NEAREST,
                                                        TextureWrapMode::REPEAT,                  TextureWrapMode::REPEAT,      TextureWrapMode::REPEAT);
 

@@ -8,12 +8,17 @@
 #include "rendering/MaterialManager.h"
 
 #include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/SamplerState.h>
+#include <Vorb/graphics/BlendState.h>
 
 #include "options/DebugOptions.h"
 
 //#include "DebugRenderer.h"
 
-constexpr int DEPTH_MAP_RESOLUTION = 4096;// 8192;
+constexpr int DEPTH_MAP_RESOLUTION = 4096;
+
+
+constexpr int MIP_LEVELS = 4; // TODO: Make this dynamic
 
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps
 // https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
@@ -22,58 +27,74 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     mResourceManager(resourceManager), mMaterialRenderer(materialRenderer), mGBufferDims(gbufferDims)
 {
 
-    // Shadowmap buffer
-    glGenFramebuffers(1, &mShadowMapFBO);
+    {// Shadow map gbuffers
+        vg::GBufferAttachment attachment;
+        // Color
+        attachment.format = vg::TextureInternalFormat::RG32F;
+        attachment.number = FBO_GEOMETRY_COLOR;
+        attachment.pixelFormat = vg::TextureFormat::RG;
+        attachment.pixelType = vg::TexturePixelType::FLOAT;
 
-    glGenTextures(1, &mShadowDepthMaps);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, mShadowDepthMaps);
-    glTexImage3D(
-        GL_TEXTURE_2D_ARRAY,
-        0,
-        GL_DEPTH_COMPONENT32F,
-        DEPTH_MAP_RESOLUTION,
-        DEPTH_MAP_RESOLUTION,
-        MAX_SHADOW_CASCADE_LEVELS + 1,
-        0,
-        GL_DEPTH_COMPONENT,
-        GL_FLOAT,
-        nullptr);
+        mShadowMapGBuffer.setSize(ui32v2(DEPTH_MAP_RESOLUTION));
+        mShadowMapGBuffer.init(attachment, nullptr, nullptr, vg::TextureInternalFormat::NONE, MAX_SHADOW_CASCADE_LEVELS + 1);
+        mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
+        constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
+        vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D_ARRAY);
 
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-    constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMapFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mShadowDepthMaps, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-
-    int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!";
-        throw 0;
+        mShadowMapGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32, MAX_SHADOW_CASCADE_LEVELS + 1);
+        checkGlError("Shadow FBO init");
     }
-    checkGlError("Shadow FBO init");
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    {// Shadow mip gbuffer
+        //vg::GBufferAttachment attachment;
+        //// Color
+        //attachment.format = vg::TextureInternalFormat::RG8;
+        //attachment.number = FBO_GEOMETRY_COLOR;
+        //attachment.pixelFormat = vg::TextureFormat::RG;
+        //attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+        //mShadowMipGBuffer.setSize(ui32v2(mGBufferDims));
+        //mShadowMipGBuffer.init(attachment, nullptr, nullptr);
+        //mShadowMipGBuffer.initMipLevelsGeom(attachment, MIP_LEVELS/*TODO: dynamic*/);
 
-    vg::GBufferAttachment attachment;
-    // Color
-    // TODO: SWAP CHAIN
-    attachment.format = vg::TextureInternalFormat::RGB8;
-    attachment.number = FBO_GEOMETRY_COLOR;
-    attachment.pixelFormat = vg::TextureFormat::RGB;
-    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    mShadowApplyGBuffer.setSize(ui32v2(mGBufferDims));
-    mShadowApplyGBuffer.init(attachment, nullptr, nullptr);
+        //checkGlError("Shadow mips init");
+    }
+
+    {// Shadow blur gbuffer
+        vg::GBufferAttachment attachment;
+        // Color
+        attachment.format = vg::TextureInternalFormat::RG8;
+        attachment.number = FBO_GEOMETRY_COLOR;
+        attachment.pixelFormat = vg::TextureFormat::RG;
+        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+        for (int i = 0; i < 2; ++i) {
+            mShadowBlurGBuffers[i].setSize(ui32v2(mGBufferDims));
+            mShadowBlurGBuffers[i].init(attachment, nullptr, nullptr);
+        }
+
+        checkGlError("Shadow FBO 2 init");
+    }
+
+    { // Shadow apply gbuffer
+        vg::GBufferAttachment attachment;
+        // Color
+        attachment.format = vg::TextureInternalFormat::RGB8;
+        attachment.number = FBO_GEOMETRY_COLOR;
+        attachment.pixelFormat = vg::TextureFormat::RGB;
+        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+        mShadowMapApplyGBuffer.setSize(ui32v2(mGBufferDims));
+        mShadowMapApplyGBuffer.init(attachment, nullptr, nullptr);
+
+        checkGlError("Shadow FBO 2 init");
+    }
 
     // Materials
     mShadowMapperMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
+    mShadowVarianceMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_variance");
     mShadowApplyMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
+    mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_shadows");
+    mShadowMipMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mipmap");
+
 }
 
 constexpr f32 SUN_POSITION_UPDATE_THRESH_SQ = SQ(0.001f);
@@ -214,34 +235,47 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
 }
 
 void ShadowRenderer::useShadowBuffer() {
-    assert(mShadowMapFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMapFBO);
+    assert(mShadowMapGBuffer.getFboGeometry());
+    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMapGBuffer.getFboGeometry());
     glViewport(0, 0, DEPTH_MAP_RESOLUTION, DEPTH_MAP_RESOLUTION);
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos) {
+
     assert(activeGBuffer);
 
     f32v3 offset = cameraPos - mLastUpdatedCameraPos;
 
-    mShadowApplyGBuffer.useGeometry();
+    mShadowBlurGBuffers[0].useGeometry();
+    mMaterialRenderer.bindMaterialForRender(*mShadowVarianceMaterial);
 
-    mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial);
+    glUniform3fv(glGetUniformLocation(mShadowVarianceMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
 
-    glUniform3fv(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
+    sGlobalFullQuadVBO.draw();
+
+    blurShadowMap();
+
+    // Apply shadows
+    mShadowMapApplyGBuffer.useGeometry();
+    ui32 nextTextureIndex = 0;
+    mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
+
+    mShadowBlurGBuffers[0].bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
+    glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
 
     sGlobalFullQuadVBO.draw();
 
     // Share textures with previous gbuffer since this will become new active gbuffer
-    mShadowApplyGBuffer.setDepthTexture(activeGBuffer->getDepthTexture());
-    mShadowApplyGBuffer.setLightTexture(activeGBuffer->getLightTexture());
-    mShadowApplyGBuffer.setNormalTexture(activeGBuffer->getNormalTexture());
-    mShadowApplyGBuffer.setRoughnessTexture(activeGBuffer->getRoughnessTexture());
-    mShadowApplyGBuffer.setFboLight(activeGBuffer->getFboLight());
+    mShadowMapApplyGBuffer.setDepthTexture(activeGBuffer->getDepthTexture());
+    mShadowMapApplyGBuffer.setLightTexture(activeGBuffer->getLightTexture());
+    mShadowMapApplyGBuffer.setNormalTexture(activeGBuffer->getNormalTexture());
+    mShadowMapApplyGBuffer.setRoughnessTexture(activeGBuffer->getRoughnessTexture());
+    mShadowMapApplyGBuffer.setFboLight(activeGBuffer->getFboLight());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGBuffer->getDepthTexture(), 0);
 
-    return &mShadowApplyGBuffer;
+    return &mShadowMapApplyGBuffer;
 }
 
 const f32 ShadowRenderer::getMaxDistance() const {
@@ -263,5 +297,47 @@ void ShadowRenderer::updateFrustumCorners(const f32m4& projection, const f32m4& 
                 mFrustumCornersWorldSpace[i++] = pt / pt.w;
             }
         }
+    }
+}
+
+void ShadowRenderer::generateMipmaps() {
+
+    ui32 nextTextureIndex = 0;
+
+    mMaterialRenderer.bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
+    VGUniform inputUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unInputTexture");
+
+    for (int i = 0; i < MIP_LEVELS; ++i) {
+
+        sGlobalFullQuadVBO.draw();
+    }
+
+}
+
+void ShadowRenderer::blurShadowMap()
+{
+    ui32 nextTexture = 0;
+    mMaterialRenderer.bindMaterialForRender(*mBlurMaterial, &nextTexture);
+
+    vg::DepthState::NONE.set();
+    vg::BlendState::set(vg::BlendStateType::ALPHA);
+
+    const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
+    const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
+    for (int i = 0; i < sDebugOptions.mShadowBlurPasses; ++i) {
+
+        // Horizontal
+        mShadowBlurGBuffers[0].bindGeometryTexture(nextTexture, GL_TEXTURE_2D);
+        mShadowBlurGBuffers[1].useGeometry();
+        glUniform1i(fboUniform, nextTexture);
+        glUniform2f(dirUniform, sDebugOptions.mShadowBlurRadius, 0.0f);
+        sGlobalFullQuadVBO.draw();
+
+        // Vertical
+        mShadowBlurGBuffers[1].bindGeometryTexture(nextTexture, GL_TEXTURE_2D);
+        mShadowBlurGBuffers[0].useGeometry();
+        glUniform1i(fboUniform, nextTexture);
+        glUniform2f(dirUniform, 0.0f, sDebugOptions.mShadowBlurRadius);
+        sGlobalFullQuadVBO.draw();
     }
 }

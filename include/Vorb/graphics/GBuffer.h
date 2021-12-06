@@ -78,17 +78,19 @@ namespace vorb {
 
             /// Create the value-based render targets
             /// @return Self
-            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, vg::TextureInternalFormat lightFormat = vg::TextureInternalFormat::NONE);
+            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, vg::TextureInternalFormat lightFormat = vg::TextureInternalFormat::NONE, int layerCount = 1);
             /// Attach a depth buffer to this GBuffer
             /// @param depthFormat: Precision used for depth buffer
             /// @return Self
-            GBuffer& initDepth(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH_COMPONENT32);
+            GBuffer& initDepth(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH_COMPONENT32, int layerCount = 1);
             /// Attack a depth and stencil buffer to this GBuffer
             /// @param depthFormat: Precision used for depth and stencil buffer
             /// @return Self
             GBuffer& initDepthStencil(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH24_STENCIL8);
 
-            void initTarget(const ui32v2& _size, const ui32& texID, const GBufferAttachment& attachment);
+            void initMipLevelsGeom(const vg::GBufferAttachment& geomAttachment, int maxDepth = 0xff);
+
+            void initTarget(const ui32v2& _size, const ui32& texID, const GBufferAttachment& attachment, int layerCount = 1);
             /// Destroy all render targets
             void dispose();
 
@@ -102,17 +104,17 @@ namespace vorb {
             /// Bind Geometry Texture
             /// @param i: Which Geometry texture to bind
             /// @param textureUnit Position to bind texture
-            void bindGeometryTexture(ui32 textureUnit);
+            void bindGeometryTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
 
-            void bindNormalTexture(ui32 textureUnit);
+            void bindNormalTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
 
             /// Bind Depth Texture
             /// @param textureUnit Position to bind texture
-            void bindDepthTexture(ui32 textureUnit);
+            void bindDepthTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
             
             /// Bind Light Texture
             /// @param textureUnit Position to bind texture
-            void bindLightTexture(ui32 textureUnit);
+            void bindLightTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
 
             /// @return Light texture
             const VGTexture& getGeometryTexture() const {  return m_texGeom;  }
@@ -147,6 +149,7 @@ namespace vorb {
             bool checkError();
         private:
             ui32v2 m_size; ///< The width and height of the GBuffer
+            int mLayerCount = 1;
 
             VGFramebuffer m_fboGeom = 0; ///< The rendering target for geometry
             VGFramebuffer m_fboLight = 0; ///< The rendering target for light

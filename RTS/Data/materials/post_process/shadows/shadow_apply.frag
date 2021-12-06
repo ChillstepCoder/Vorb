@@ -1,107 +1,18 @@
 uniform sampler2D Fbo0;
-uniform sampler2D FboDepth;
-uniform sampler2D FboNormals;
-uniform sampler2DArray ShadowMap;
+uniform sampler2D unShadowFbo;
 uniform vec3 ShadowColor;
-#include "../../GlobalUbo.glsl"
-
-uniform float ShadowCascadePlaneDistances[4];
-uniform mat4 ShadowFrustumMatrices[4];
-uniform vec3 CameraOffset;
 
 in vec2 fUV;
 
-const int cascadeCount = 4;
-
 out vec4 fColor;
 
-// TODO: SHARED
-vec4 viewPosFromDepth(float depth, vec2 fboUV) {
-    float z = depth * 2.0 - 1.0;
-
-    vec4 clipSpacePosition = vec4(fboUV * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = InverseP * clipSpacePosition;
-
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-
-    return viewSpacePosition;
-}
-
-float getShadow(vec4 viewSpacePosition) {
-	vec4 worldSpacePosition = InverseV * viewSpacePosition + vec4(CameraOffset, 0.0);
-    float depthValue = abs(viewSpacePosition.z);
-	
-	int layer = cascadeCount;
-    for (int i = 0; i < cascadeCount; ++i) {
-	    // This branch is fine because local kernel will all follow same path usually
-		if (depthValue < ShadowCascadePlaneDistances[i]) {
-			layer = i;
-			break;
-		}
-	}
-	
-	// Get the position of our fragment relative to the light view
-	vec4 fragPosLightSpace = ShadowFrustumMatrices[layer] * vec4(worldSpacePosition.xyz, 1.0);
-	
-	// Remove shadow acne with bias
-	// perform perspective divide
-	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-	// transform to [0,1] range
-	projCoords = projCoords * 0.5 + 0.5;
-		
-	// get depth of current fragment from light's perspective
-	float currentDepth = projCoords.z;
-	//if (currentDepth  > 1.0) {
-	//	return 0.0;
-	//}
-	// calculate bias (based on depth map resolution and slope)
-	
-	vec3 normal = texture(FboNormals, fUV).rgb * 2.0 - 1.0;
-	float layerBiasMult = pow(layer, 4.0) * 0.006; // More bias further from camera
-	layerBiasMult = 0.0;
-	float bias = max((0.02 + layerBiasMult) * (1.0 - dot(normal, SunPosition)), 0.005);
-	
-	//if (layer == cascadeCount) {
-	//	bias *= 1 / (CameraZRange.y * 0.5);
-	//}
-	//else {
-		bias *= 1 / (ShadowCascadePlaneDistances[layer] * 0.5);
-	//}
-	
-	// PCF (TODO: Replace with VSM)
-	float shadow = 0.0;
-	//vec2 texelSize = 1.0 / vec2(textureSize(ShadowMap, 0));
-	//for(int x = -1; x <= 1; ++x) {
-	//	for(int y = -1; y <= 1; ++y) {
-	//		float pcfDepth = texture(
-	//					ShadowMap,
-	//					vec3(projCoords.xy + vec2(x, y) * texelSize, layer)
-	//					).r; 
-	//		shadow += (currentDepth - bias) > pcfDepth ? 1.0 : 0.0;        
-	//	}    
-	//}
-	//shadow /= 9.0;
-	float pcfDepth = texture(ShadowMap, vec3(projCoords.xy, layer)).r;
-	shadow = (currentDepth - bias) > pcfDepth ? 1.0 : 0.0; 
-		
-	// keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
-	//if(projCoords.z > 1.0)
-	//{
-	//	shadow = 0.0;
-	//}
-	return shadow;
-}
-
 void main() {
-    vec4 viewSpacePosition = viewPosFromDepth(texture(FboDepth, fUV).r, fUV);
-	float shadow = getShadow(viewSpacePosition);
+    float shadow = texture(unShadowFbo, fUV).r;
+	float g = texture(unShadowFbo, fUV).g;
 	
-	// Final color
-    fColor = texture(Fbo0, fUV);
-	float shadowMult = shadow * 0.5 * SunHeight;
-	float isShadowed = step(0.0001, shadow);
-	// Multiply by ShadowColor to give more hue to shadows
-	fColor.rgb = fColor.rgb * (1.0 - shadowMult) * ShadowColor * isShadowed + fColor.rgb * (1.0 - isShadowed); 
-	//step(88.0, -viewSpacePosition.z)
+    vec3 fboColor = texture(Fbo0, fUV).rgb;
+	
+	fColor.rgb = fboColor * shadow * ShadowColor + fboColor * (1.0 - shadow);
+	//fColor.rgb = 0.000001 * fColor.rgb + g;
+	fColor.a = 1.0;
 }

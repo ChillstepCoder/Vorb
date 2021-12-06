@@ -38,7 +38,6 @@ void vg::GLProgram::dispose() {
 
     // Delete the program
     if (m_id) {
-     
         glDeleteProgram(m_id);
         m_id = 0;
         m_isLinked = false;
