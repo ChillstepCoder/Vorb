@@ -189,23 +189,26 @@ void vorb::graphics::GBuffer::initMipLevelsGeom(const vg::GBufferAttachment& geo
 
     ui32 width = m_size.x / 2;
     ui32 height = m_size.y / 2;
-    for (ui32 i = 1; i <= maxDepth; ++i) {
+    glBindTexture(GL_TEXTURE_2D, m_texGeom);
+    for (mMipLevels = 1; mMipLevels <= maxDepth; ++mMipLevels) {
         assert(width > 0);
         // TODO: Compress (breaks normal generation so we need to post compress)
         if (mLayerCount <= 1) {
-            glBindTexture(GL_TEXTURE_2D, m_texGeom);
-            glTexImage2D(GL_TEXTURE_2D, 1, (VGEnum)geomAttachment.format, width, height, 0, (VGEnum)geomAttachment.pixelFormat, (VGEnum)geomAttachment.pixelType, nullptr);
+            glTexImage2D(GL_TEXTURE_2D, mMipLevels, (VGEnum)geomAttachment.format, width, height, 0, (VGEnum)geomAttachment.pixelFormat, (VGEnum)geomAttachment.pixelType, nullptr);
             checkError();
         }
         else {
+            assert(false); // I dont think this is right
             glBindTexture(GL_TEXTURE_2D_ARRAY, m_texGeom);
-            glTexImage3D(GL_TEXTURE_2D_ARRAY, 1, (VGEnum)geomAttachment.format, width, height, mLayerCount, 0, (VGEnum)geomAttachment.pixelFormat, (VGEnum)geomAttachment.pixelType, nullptr);
+            glTexImage3D(GL_TEXTURE_2D_ARRAY, mMipLevels, (VGEnum)geomAttachment.format, width, height, mLayerCount, 0, (VGEnum)geomAttachment.pixelFormat, (VGEnum)geomAttachment.pixelType, nullptr);
             checkError();
         }
         if (width == 1 || height == 1) break;
         width = width / 2;
         height = height / 2;
     }
+    glGenerateMipmap(GL_TEXTURE_2D); // TODO: is allocating images needed?
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void vorb::graphics::GBuffer::unuse() {

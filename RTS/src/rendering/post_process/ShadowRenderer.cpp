@@ -18,7 +18,7 @@
 constexpr int DEPTH_MAP_RESOLUTION = 4096;
 
 
-constexpr int MIP_LEVELS = 4; // TODO: Make this dynamic
+constexpr int MAX_MIP_LEVELS = 12; // TODO: Make this dynamic?
 
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps
 // https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
@@ -47,17 +47,17 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     }
 
     {// Shadow mip gbuffer
-        //vg::GBufferAttachment attachment;
-        //// Color
-        //attachment.format = vg::TextureInternalFormat::RG8;
-        //attachment.number = FBO_GEOMETRY_COLOR;
-        //attachment.pixelFormat = vg::TextureFormat::RG;
-        //attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-        //mShadowMipGBuffer.setSize(ui32v2(mGBufferDims));
-        //mShadowMipGBuffer.init(attachment, nullptr, nullptr);
-        //mShadowMipGBuffer.initMipLevelsGeom(attachment, MIP_LEVELS/*TODO: dynamic*/);
+        vg::GBufferAttachment attachment;
+        // Color
+        attachment.format = vg::TextureInternalFormat::RGB32F;
+        attachment.number = FBO_GEOMETRY_COLOR;
+        attachment.pixelFormat = vg::TextureFormat::RGB;
+        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+        mShadowMipGBuffer.setSize(ui32v2(mGBufferDims));
+        mShadowMipGBuffer.init(attachment, nullptr, nullptr);
+        mShadowMipGBuffer.initMipLevelsGeom(attachment, MAX_MIP_LEVELS);
 
-        //checkGlError("Shadow mips init");
+        checkGlError("Shadow mips init");
     }
 
     {// Shadow blur gbuffer
@@ -248,22 +248,29 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
 
     f32v3 offset = cameraPos - mLastUpdatedCameraPos;
 
-    mShadowBlurGBuffers[0].useGeometry();
+    mShadowMipGBuffer.useGeometry();
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer.getGeometryTexture(), 0);
     mMaterialRenderer.bindMaterialForRender(*mShadowVarianceMaterial);
 
     glUniform3fv(glGetUniformLocation(mShadowVarianceMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
 
     sGlobalFullQuadVBO.draw();
 
-    blurShadowMap();
+    generateMipmaps();
+    //blurShadowMap();
 
     // Apply shadows
     mShadowMapApplyGBuffer.useGeometry();
     ui32 nextTextureIndex = 0;
     mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
-    mShadowBlurGBuffers[0].bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
+    mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
+    vg::SamplerState::LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
     glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
+
+    VGUniform mipCountUniform = glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unMipCount");
+    ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();
+    glUniform1i(mipCountUniform, mipCount);
 
     sGlobalFullQuadVBO.draw();
 
@@ -306,11 +313,28 @@ void ShadowRenderer::generateMipmaps() {
 
     mMaterialRenderer.bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
     VGUniform inputUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unInputTexture");
+    VGUniform levelUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unPreviousLevel");
+    mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex);
+    vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D);
+    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMipGBuffer.getFboGeometry());
+    glUniform1i(inputUniform, nextTextureIndex);
 
-    for (int i = 0; i < MIP_LEVELS; ++i) {
-
+    ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();
+    ui32 width = mShadowMipGBuffer.getSize().x / 2;
+    ui32 height = mShadowMipGBuffer.getSize().y / 2;
+    for (int i = 0; i < mipCount; ++i) {
+        glUniform1i(levelUniform, i);
+        glTextureBarrier();
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer.getGeometryTexture(), i + 1); // Write to next level
+        GLenum buf = GL_COLOR_ATTACHMENT0;
+        glDrawBuffers((GLsizei)1, &buf);
+        glTextureBarrier();
+        glViewport(0.0f, 0.0f, width, height);
         sGlobalFullQuadVBO.draw();
+        width /= 2;
+        height /= 2;
     }
+    checkGlError("Generate Shadow Mips");
 
 }
 

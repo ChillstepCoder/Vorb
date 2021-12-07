@@ -134,6 +134,7 @@ namespace vorb {
             const ui32& getWidth() const { return m_size.x; }
             /// @return Height of the GBuffer in pixels
             const ui32& getHeight() const { return m_size.y; }
+            const ui32& getNumMipLevels() const { return mMipLevels; }
 
             const VGFramebuffer& getFboGeometry() const { return m_fboGeom; }
             const VGTexture& getDepthTexture() const { return m_texDepth; }
@@ -149,7 +150,6 @@ namespace vorb {
             bool checkError();
         private:
             ui32v2 m_size; ///< The width and height of the GBuffer
-            int mLayerCount = 1;
 
             VGFramebuffer m_fboGeom = 0; ///< The rendering target for geometry
             VGFramebuffer m_fboLight = 0; ///< The rendering target for light
@@ -158,6 +158,8 @@ namespace vorb {
             VGTexture m_texLight = 0; ///< Light texture of GBuffer
             VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
             VGTexture m_texRoughness = 0; ///< Roughness texture of GBuffer
+            int mLayerCount = 1;
+            ui32 mMipLevels = 0;
         };
     }
 }
