@@ -379,7 +379,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
+            glDisable(GL_CULL_FACE);
             mChunkRenderer->renderWorldShadows(mWorld, camera, lodState, mShadowRenderer->getMaxDistance());
+            glEnable(GL_CULL_FACE);
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull

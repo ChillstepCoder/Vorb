@@ -1,4 +1,5 @@
 //uniform sampler2D Fbo0;
+uniform sampler2D FboNormal;
 uniform sampler2D FboDepth;
 uniform sampler2DArray ShadowMap;
 uniform vec3 ShadowColor;
@@ -50,7 +51,7 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 	float d = currentDepth - moments.x; // Distance from the mean
 	float pMax = variance / (variance + d * d); // maximum percentage of values greater than equal to currentDepth
 	// Reduce light bleeding hack
-	pMax = linstep(0.8, 1.0, pMax);
+	pMax = linstep(0.98, 1.0, pMax);
 	
 	
 	// Get world position of occluder
@@ -69,42 +70,55 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 	//return currentDepth > pixelDepth ? 1.0 : 0.0; 
 }
 
-vec2 getShadow(vec4 viewSpacePosition) {
-	vec4 worldSpacePosition = InverseV * viewSpacePosition + vec4(CameraOffset, 0.0);
-    float depthValue = abs(viewSpacePosition.z);
-	
-	int layer = cascadeCount - 1;
-    for (int i = 0; i < cascadeCount; ++i) {
-	    // This branch is fine because local kernel will all follow same path usually
-		if (depthValue < ShadowCascadePlaneDistances[i]) {
-			layer = i;
-			break;
-		}
-	}
-	
-	// Get the position of our fragment relative to the light view
-	vec4 fragPosLightSpace = ShadowFrustumMatrices[layer] * vec4(worldSpacePosition.xyz, 1.0);
+vec2 getShadowAndDistAtLayer(int layer, vec3 worldSpacePosition) {
+  // Get the position of our fragment relative to the light view
+	vec4 fragPosLightSpace = ShadowFrustumMatrices[layer] * vec4(worldSpacePosition, 1.0);
 	
 	// Remove shadow acne with bias
 	// perform perspective divide
 	vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 	// transform to [0,1] range
 	projCoords = projCoords * 0.5 + 0.5;
-		
-	vec2 shadowAndDist = getShadowVariance(projCoords, layer, worldSpacePosition.xyz, inverse(ShadowFrustumMatrices[layer]));
-	//shadowAndDist.g = length( - worldSpacePosition);
-		
-	// keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
-	//if(projCoords.z > 1.0)
-	//{
-	//	shadow = 0.0;
-	//}
+	
+	vec2 shadowAndDist = getShadowVariance(projCoords, layer, worldSpacePosition, inverse(ShadowFrustumMatrices[layer]));
+
+	return shadowAndDist;
+}
+
+vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
+	vec4 worldSpacePosition = InverseV * viewSpacePosition + vec4(CameraOffset, 0.0);
+	// Bias with normals
+	worldSpacePosition.xyz -= normal * 0.04;
+    float depthValue = abs(viewSpacePosition.z);
+	
+	float dist = 0.0;
+	int layer = cascadeCount - 1;
+    for (int i = 0; i < cascadeCount; ++i) {
+	    // This branch is fine because local kernel will all follow same path usually
+		if (depthValue < ShadowCascadePlaneDistances[i]) {
+		    if (i > 0) {
+			    // Store distance from previous plane so we can blend
+		        dist = depthValue - ShadowCascadePlaneDistances[i - 1];
+				dist = clamp(dist, 0.0, 10.0) / 10.0;
+			}
+			layer = i;
+			break;
+		}
+	}
+	
+	vec2 shadowAndDist = getShadowAndDistAtLayer(layer, worldSpacePosition.xyz);
+	if (layer > 0) {
+	   shadowAndDist = mix(getShadowAndDistAtLayer(layer - 1, worldSpacePosition.xyz), shadowAndDist, dist);
+	}
+	
 	return shadowAndDist;
 }
 
 void main() {
+	vec3 normal = texture(FboNormal, fUV).rgb * 2.0 - 1.0;
+	normal.z *= 0.0; // No Z bias
     vec4 viewSpacePosition = viewPosFromDepth(texture(FboDepth, fUV).r, fUV, InverseP);
-	vec2 shadowAndDist = getShadow(viewSpacePosition);
+	vec2 shadowAndDist = getShadow(viewSpacePosition, normal);
 	
 	// Final color
     //fColor = texture(Fbo0, fUV);

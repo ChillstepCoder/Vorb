@@ -319,7 +319,7 @@ void addTileFlora(
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
     const TileID tileId = tile.layers[layerIndex];
 
-    const f32v2 tileWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+    const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
 
     /*Tile neighbors[8];
     chunk.getTileNeighbors(tileIndex, neighbors);
@@ -366,7 +366,7 @@ void addTileFloraBillboard(
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
     const TileID tileId = tile.layers[layerIndex];
 
-    const f32v2 tileWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+    const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
 
     /*Tile neighbors[8];
     chunk.getTileNeighbors(tileIndex, neighbors);
@@ -430,7 +430,7 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
     const TileID tileId = tile.layers[layerIndex];
 
-    const f32v2 xyWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+    const f32v2 xyWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
     const f32v3 tileWorldPos(xyWorldPos.x, xyWorldPos.y, tile.baseZPosition);
 
     Tile neighbors[8];
@@ -580,7 +580,7 @@ void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerI
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
     const TileID tileId = tile.layers[layerIndex];
 
-    const f32v2 xyWorldPos = chunk.getWorldPos() + f32v2(tileIndex.getX(), tileIndex.getY());
+    const f32v2 xyWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
     const f32v3 tileWorldPos(xyWorldPos.x, xyWorldPos.y, tile.baseZPosition);
 
     Tile neighbors[8];
@@ -772,7 +772,6 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     renderData.mBillboardMesh->beginMesh();
     
     Services::Threadpool::ref().addTask([&chunk, meshData, &renderData](ThreadPoolWorkerData*) {
-        const f32v2& chunkPos = chunk.getWorldPos();
 
         QuadMesh& quadMesh = *renderData.mChunkMesh;
         quadMesh.reserveQuadCount(CHUNK_SIZE * 2); // Most chunks will have less than 2 quads per tile
@@ -806,13 +805,13 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         if (spriteData.method == TileTextureMethod::FLORA) {
-                            f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
+                            f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
                             Tile rightTile = chunk.getRightTileHandle(index).tile;
                             Tile topTile = chunk.getTopTileHandle(index).tile;
                             addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
                         }
                         else {
-                            f32v3 tilePosition(x + chunkPos.x + 0.5f, y + chunkPos.y + 0.5f, tile.baseZPosition);
+                            f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
 
                             f32v4 uvs = spriteData.uvs;
                             const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
@@ -834,7 +833,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     }
                     else if (spriteData.method != TileTextureMethod::FLORA) { // CROSS FLORA IS DONE IN SEPARATE PASS
                         // Standard blocks
-                        addBlock(quadMesh, tileData.shape, f32v3(x + chunkPos.x, y + chunkPos.y, tile.baseZPosition), spriteData, index, chunk, layerIndex);
+                        addBlock(quadMesh, tileData.shape, f32v3(x, y, tile.baseZPosition), spriteData, index, chunk, layerIndex);
                     }
                 }
             }
@@ -930,7 +929,6 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
     }
 
     Services::Threadpool::ref().addTask([&chunk, &renderData](ThreadPoolWorkerData* workerData) {
-        const f32v2& chunkPos = chunk.getWorldPos();
         QuadMesh& floraMesh = *renderData.mHighDetailFloraMesh;
         // This is usually not enough but might as well try
         // TODO: Reserve based on graphics settings

@@ -18,7 +18,7 @@
 constexpr int DEPTH_MAP_RESOLUTION = 4096;
 
 
-constexpr int MAX_MIP_LEVELS = 12; // TODO: Make this dynamic?
+constexpr int MAX_MIP_LEVELS = 9; // TODO: Make this dynamic?
 
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps
 // https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
@@ -40,7 +40,10 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
         mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
         constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
         glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
-        vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D_ARRAY);
+        vg::SamplerState::LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D_ARRAY);
+        GLint maxAnisotropy = 0;
+        glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
+        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 
         mShadowMapGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32, MAX_SHADOW_CASCADE_LEVELS + 1);
         checkGlError("Shadow FBO init");
@@ -195,8 +198,9 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
         // Quantize positions to texel sizes to reduce flicker
         f32 xSpan = maxX - minX;
         f32 ySpan = maxY - minY;
-        f32 xTexelSize = xSpan / DEPTH_MAP_RESOLUTION;
-        f32 yTexelSize = ySpan / DEPTH_MAP_RESOLUTION;
+        f32 scaleFactor = 256.0f;
+        f32 xTexelSize = xSpan / (DEPTH_MAP_RESOLUTION / scaleFactor);
+        f32 yTexelSize = ySpan / (DEPTH_MAP_RESOLUTION / scaleFactor);
 
         f32 offsetX = ceilf(camera.getPosition().x / xTexelSize);
         f32 offsetY = ceilf(camera.getPosition().y / yTexelSize);
@@ -229,7 +233,29 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
         minZ -= camera.getPosition().z;
         maxZ -= camera.getPosition().z;*/
 
-        const f32m4 lightP = glm::ortho(minX - offsetX, maxX - offsetX, minY - offsetY, maxY - offsetY, minZ, maxZ);
+      /*  minX -= offsetX;
+        minY -= offsetY;
+        maxX -= offsetX;
+        maxY -= offsetY;
+        if (i == 0) std::cout << minX << " " << maxX << " " << minY << " " << maxY << " " << minZ << " " << maxZ << std::endl;*/
+
+        //// recalculate view based on our quantized position
+        //center = f32v3((minX + maxX) * 0.5, (minY + maxY) * 0.5, 0.0f);
+        //lightV = glm::lookAt(
+        //    center + sunPositionWorld,
+        //    center,
+        //    f32v3(0.0f, 1.0f, 0.0f)
+        //);
+        offsetX = 0.0f;
+        offsetY = 0.0f;
+
+        const int PADDING = 10;
+        minX -= PADDING;
+        maxX += PADDING;
+        minY -= PADDING;
+        maxY += PADDING;
+
+        const f32m4 lightP = glm::ortho(minX + offsetX, maxX + offsetX, minY + offsetY, maxY + offsetY, minZ, maxZ);
         mLightVP[i] = lightP * lightV;
     }
 }
@@ -244,6 +270,10 @@ void ShadowRenderer::useShadowBuffer() {
 
 vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos) {
 
+    // Mip it
+    mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
+    glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     assert(activeGBuffer);
 
     f32v3 offset = cameraPos - mLastUpdatedCameraPos;

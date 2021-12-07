@@ -85,6 +85,8 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
         mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
         world.enumVisibleChunks([&](const Chunk& chunk) {
             ChunkRenderData& renderData = chunk.mChunkRenderData;
+            f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+            glUniform3fv(glGetUniformLocation(mStandardMaterial->mProgram.getID(), "unOffset"), 1, &offset.x);
             TryRenderFloraMesh(chunk, mStandardMaterial);
             TryRenderBaseMesh(chunk, mStandardMaterial);
         });
@@ -164,6 +166,8 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camer
     world.enumVisibleChunks([&](const Chunk& chunk) {
         if (chunk.isFinished()) {
             if (glm::length2(chunk.getWorldPosCenter3D() - camera.getPosition()) <= maxDistSQ) {
+                f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+                glUniform3fv(glGetUniformLocation(mShadowMapperMaterial->mProgram.getID(), "unOffset"), 1, &offset.x);
                 TryRenderBaseMesh(chunk, mShadowMapperMaterial);
             }
         }

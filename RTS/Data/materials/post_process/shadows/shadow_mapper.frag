@@ -13,5 +13,5 @@ void main()
   float moment2 = depth * depth + 0.25 * (dx * dx + dy * dy);
 
   // Variance shadow mapping
-  fColor = vec4(depth, moment2, 0.0, 1.0);
+  fColor = vec4(depth,  moment2, 0.0, 1.0);
 }

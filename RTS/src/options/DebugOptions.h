@@ -20,7 +20,7 @@ struct DebugOptions {
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
     // Shadows
-    float mShadowZMult = 1.5f;//2.50f;
+    float mShadowZMult = 6.0f;//2.50f;
     float mShadowNearSize = 17.0f;
     f32v3 mShadowColor = f32v3(0.0f / 255.0f, 40.0f / 255.0f, 50.0f / 255.0f);
     f32 mShadowUpdateRateSeconds = 0.02f;

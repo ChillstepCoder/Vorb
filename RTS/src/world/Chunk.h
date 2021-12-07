@@ -79,6 +79,7 @@ public:
 
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
     const f32v2& getWorldPos() const { return mWorldPos; }
+	const f32v3 getWorldPos3D() const { return f32v3(mWorldPos.x, mWorldPos.y, 0.0f); }
     f32v3 getWorldPosCenter3D() const { return f32v3(mWorldPos.x + HALF_CHUNK_WIDTH, mWorldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
 	ChunkState getState() const { return mState; }
 	const ChunkID& getChunkID() const { return mChunkId; }
