@@ -43,6 +43,7 @@ private:
     const Material* mShadowApplyMaterial = nullptr;
     const Material* mShadowMipMaterial = nullptr;
     const Material* mBlurMaterial = nullptr;
+    const Material* mShadowFinalMaterial = nullptr;
     vg::GBuffer mShadowMipGBuffer; // TODO: Can we combine this with the blur gbuffer?
     vg::GBuffer mShadowBlurGBuffers[2];
     vg::GBuffer mShadowMapGBuffer;

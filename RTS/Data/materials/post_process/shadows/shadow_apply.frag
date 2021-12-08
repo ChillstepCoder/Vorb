@@ -1,6 +1,4 @@
-uniform sampler2D Fbo0;
 uniform sampler2D unShadowFbo;
-uniform vec3 ShadowColor;
 uniform int unMipCount;
 
 in vec2 fUV;
@@ -37,8 +35,6 @@ void main() {
 	}
 
 	
-    vec3 fboColor = texture(Fbo0, fUV).rgb;
-	
-	fColor.rgb = fboColor * shadow * ShadowColor + fboColor * (1.0 - shadow);
+	fColor.r = shadow;
 	fColor.a = 1.0;
 }

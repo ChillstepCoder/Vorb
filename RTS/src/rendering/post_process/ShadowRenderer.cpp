@@ -52,10 +52,10 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     {// Shadow mip gbuffer
         vg::GBufferAttachment attachment;
         // Color
-        attachment.format = vg::TextureInternalFormat::RGB32F;
+        attachment.format = vg::TextureInternalFormat::RGB16F;
         attachment.number = FBO_GEOMETRY_COLOR;
         attachment.pixelFormat = vg::TextureFormat::RGB;
-        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+        attachment.pixelType = vg::TexturePixelType::FLOAT;
         mShadowMipGBuffer.setSize(ui32v2(mGBufferDims));
         mShadowMipGBuffer.init(attachment, nullptr, nullptr);
         mShadowMipGBuffer.initMipLevelsGeom(attachment, MAX_MIP_LEVELS);
@@ -66,9 +66,9 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     {// Shadow blur gbuffer
         vg::GBufferAttachment attachment;
         // Color
-        attachment.format = vg::TextureInternalFormat::RG8;
+        attachment.format = vg::TextureInternalFormat::R8;
         attachment.number = FBO_GEOMETRY_COLOR;
-        attachment.pixelFormat = vg::TextureFormat::RG;
+        attachment.pixelFormat = vg::TextureFormat::RED;
         attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
         for (int i = 0; i < 2; ++i) {
             mShadowBlurGBuffers[i].setSize(ui32v2(mGBufferDims));
@@ -88,7 +88,7 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
         mShadowMapApplyGBuffer.setSize(ui32v2(mGBufferDims));
         mShadowMapApplyGBuffer.init(attachment, nullptr, nullptr);
 
-        checkGlError("Shadow FBO 2 init");
+        checkGlError("Shadow FBO 3 init");
     }
 
     // Materials
@@ -97,6 +97,7 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     mShadowApplyMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_shadows");
     mShadowMipMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mipmap");
+    mShadowFinalMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_final");
 
 }
 
@@ -287,22 +288,37 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
     sGlobalFullQuadVBO.draw();
 
     generateMipmaps();
-    //blurShadowMap();
 
-    // Apply shadows
-    mShadowMapApplyGBuffer.useGeometry();
-    ui32 nextTextureIndex = 0;
-    mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
+    { // Apply shadows
+        mShadowBlurGBuffers[0].useGeometry();
+        ui32 nextTextureIndex = 0;
+        mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
-    mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
-    vg::SamplerState::LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
-    glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
+        mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
+        vg::SamplerState::LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
+        glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
 
-    VGUniform mipCountUniform = glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unMipCount");
-    ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();
-    glUniform1i(mipCountUniform, mipCount);
+        VGUniform mipCountUniform = glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unMipCount");
+        ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();
+        glUniform1i(mipCountUniform, mipCount);
 
-    sGlobalFullQuadVBO.draw();
+        sGlobalFullQuadVBO.draw();
+    }
+
+    blurShadowMap();
+
+    // Render to screen
+    {
+        mShadowMapApplyGBuffer.useGeometry();
+        ui32 nextTextureIndex = 0;
+        mMaterialRenderer.bindMaterialForRender(*mShadowFinalMaterial, &nextTextureIndex);
+
+        mShadowBlurGBuffers[0].bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
+        vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D); // TODO: Set once?
+        glUniform1i(glGetUniformLocation(mShadowFinalMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
+
+        sGlobalFullQuadVBO.draw();
+    }
 
     // Share textures with previous gbuffer since this will become new active gbuffer
     mShadowMapApplyGBuffer.setDepthTexture(activeGBuffer->getDepthTexture());
