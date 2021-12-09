@@ -2,7 +2,6 @@
 uniform sampler2D FboNormal;
 uniform sampler2D FboDepth;
 uniform sampler2DArray ShadowMap;
-uniform vec3 ShadowColor;
 #include "../../GlobalUbo.glsl"
 
 uniform float ShadowCascadePlaneDistances[4];
@@ -13,7 +12,7 @@ in vec2 fUV;
 
 const int cascadeCount = 4;
 
-out vec4 fColor;
+out vec3 fColor;
 
 // TODO: SHARED
 vec4 viewPosFromDepth(float depth, vec2 fboUV, mat4 inverseP) {
@@ -59,15 +58,12 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 
     vec4 clipSpacePosition = vec4(projCoords.xy * 2.0 - 1.0, z, 1.0);
     vec4 occluderWorldSpacePos = inverseLight * clipSpacePosition;
-	//if (occluderWorldSpacePos == worldCoords) {
-	//    occluderWorldSpacePos.x += 10;
-	//}
+	
+	
     float distance = length(occluderWorldSpacePos.rgb - worldCoords);
 	float shadow = 1.0 - min(max(p, pMax), 1.0);
-	distance = clamp(distance, 0.0, 10.0);
+	distance = clamp(distance, 0.0, 20.0);
 	return vec2(shadow, distance);
-	//float pixelDepth = texture(ShadowMap, vec3(projCoords.xy, layer)).r;
-	//return currentDepth > pixelDepth ? 1.0 : 0.0; 
 }
 
 vec2 getShadowAndDistAtLayer(int layer, vec3 worldSpacePosition) {
@@ -117,18 +113,15 @@ vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
 void main() {
 	vec3 normal = texture(FboNormal, fUV).rgb * 2.0 - 1.0;
 	normal.z *= 0.0; // No Z bias
-    vec4 viewSpacePosition = viewPosFromDepth(texture(FboDepth, fUV).r, fUV, InverseP);
+	float depth = texture(FboDepth, fUV).r;
+    vec4 viewSpacePosition = viewPosFromDepth(depth, fUV, InverseP);
 	vec2 shadowAndDist = getShadow(viewSpacePosition, normal);
 	
 	// Final color
     //fColor = texture(Fbo0, fUV);
-	float shadowMult = shadowAndDist.x * 0.5 * SunHeight; // TODO: Move sun height out?
-	// Multiply by ShadowColor to give more hue to shadows
-	//fColor.rgb = fColor.rgb * shadowMult * ShadowColor + fColor.rgb * (1.0 - shadowMult);
-	fColor.r = shadowMult;
+	fColor.r = shadowAndDist.x;
 	// TODO: remove?
-	fColor.g = step(0.000001, shadowMult);
+	fColor.g = step(0.0001, shadowAndDist.x);
 	fColor.b = shadowAndDist.y;
-	fColor.a = 1.0;
 	//step(88.0, -viewSpacePosition.z)
 }

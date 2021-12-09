@@ -19,6 +19,7 @@ float blur9s(sampler2D image, vec2 uv, vec2 resolution, vec2 direction) {
 }
 
 void main() {
+    float start = texture2D(unInputFbo, fUV).r;
 	fColor.r = blur9s(unInputFbo, fUV, ScreenResolution, unDirection).r;
 	fColor.a = 1.0;
 	//fColor.rgba = blur5(unInputFbo, fUV, ScreenResolution, unDirection).rgba;

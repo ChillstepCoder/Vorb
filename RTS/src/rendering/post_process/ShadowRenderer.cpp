@@ -49,6 +49,7 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
         checkGlError("Shadow FBO init");
     }
 
+    // TODO: Can we compress depth size (alpha channel)
     {// Shadow mip gbuffer
         vg::GBufferAttachment attachment;
         // Color
@@ -285,9 +286,14 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
 
     glUniform3fv(glGetUniformLocation(mShadowVarianceMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
 
+    // Need to store alpha as replace
+    vg::BlendState::set(vorb::graphics::BlendStateType::REPLACE);
+
     sGlobalFullQuadVBO.draw();
 
     generateMipmaps();
+
+    vg::BlendState::restorePrevious();
 
     { // Apply shadows
         mShadowBlurGBuffers[0].useGeometry();

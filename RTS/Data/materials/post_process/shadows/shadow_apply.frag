@@ -17,24 +17,32 @@ void main() {
 	}
 	// Find penumbra width
 	float q = 0;
-	// Skip first level
-	for (int level = 1; level < MIP_COUNT && q == 0; ++level) {
-	  if (val[level].g == 1.0) q = val[level].b;
+	int level;
+	for (level = 0; level < MIP_COUNT; ++level) {
+	    if (val[level].g == 1.0) {
+	        q = val[level].b;
+			break;
+	    }
 	}
-	
+	float mult = 2.5;
+	if (level == 0) {
+	   q = 1.0;
+	   mult = 1.0;
+	}
 	// Select penumbra levels
 	int down;
+	float interp;
+	float l;
 	if (q > 0.0) {
-	  if (q < 1.0) q = 1.0;
-	  float l = log2(q);
-	  if (l > MIP_COUNT - 1) l = MIP_COUNT - 1;
+	  q = max(q, 1.0);
+	  l = log2(q);
+	  l = min(l, float(MIP_COUNT - 1));
 	  down = int(floor(l));
 	  int up = down + 1;
-	  float interp = l - down;
+	  interp = l - down;
 	  shadow = (mix(val[down].r, val[up].r, interp));
 	}
-
 	
-	fColor.r = shadow;
+	fColor.r = min(shadow * mult, 1.0);
 	fColor.a = 1.0;
 }
