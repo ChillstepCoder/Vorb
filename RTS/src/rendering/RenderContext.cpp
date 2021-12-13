@@ -15,6 +15,7 @@
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/DebugTweakerPanel.h"
+#include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/LightRenderer.h"
@@ -191,6 +192,7 @@ void RenderContext::initPostLoad() {
         mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
         mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         checkGlError("Renderer init");
     }
@@ -379,9 +381,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            glDisable(GL_CULL_FACE);
             mChunkRenderer->renderWorldShadows(mWorld, camera, lodState, mShadowRenderer->getMaxDistance());
-            glEnable(GL_CULL_FACE);
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
@@ -443,6 +443,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Disable depth testing for post processing
     vg::DepthState::NONE.set();
 
+    mActiveGBuffer = mAmbientOcclusion->render(mActiveGBuffer);
     mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
 
     // Render characters that are behind geometry with some transparency
@@ -537,6 +538,14 @@ void RenderContext::selectNextDebugShader() {
     if (mPassthroughRenderMode >= mPassthroughMaterials.size()) {
         mPassthroughRenderMode = 0;
     }
+}
+
+VGTexture RenderContext::getShadowTexture() const {
+    return mShadowRenderer->getShadowTexture();
+}
+
+VGTexture RenderContext::getSSAOTexture() const {
+    return mAmbientOcclusion->getSSAOTexture();
 }
 
 void RenderContext::renderDebug(const Camera3D& camera) {

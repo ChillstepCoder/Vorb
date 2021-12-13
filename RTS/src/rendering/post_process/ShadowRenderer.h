@@ -30,6 +30,7 @@ public:
     const f32v3& getLastUpdatedSunPosition() const { return mLastUpdatedSunPosition; }
 
     bool shouldUpdateShadowsThisFrame() const { return mShouldUpdateShadowsThisFrame; }
+    VGTexture getShadowTexture() const;
 
 private:
     void updateFrustumCorners(const f32m4& projection, const f32m4& view);
@@ -43,11 +44,9 @@ private:
     const Material* mShadowApplyMaterial = nullptr;
     const Material* mShadowMipMaterial = nullptr;
     const Material* mBlurMaterial = nullptr;
-    const Material* mShadowFinalMaterial = nullptr;
     vg::GBuffer mShadowMipGBuffer; // TODO: Can we combine this with the blur gbuffer?
     vg::GBuffer mShadowBlurGBuffers[2];
     vg::GBuffer mShadowMapGBuffer;
-    vg::GBuffer mShadowMapApplyGBuffer;
     f32 mLastCamZAngle = 0.0f;
     f32 mLastCamZNear = 0.0f;
     f32v3 mLastCameraPos = f32v3(0.0f);

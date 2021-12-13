@@ -52,6 +52,16 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::PopID();
     }
 
+    if (ImGui::CollapsingHeader("Ambient Occlusion")) {
+        ImGui::PushID(++ID);
+        ImGui::Checkbox("Disable", &sDebugOptions.mAmbientOcclusionDisabled);
+        ImGui::SliderInt("Blur Passes", &sDebugOptions.mAmbientOcclusionBlurPasses, 0, 15);
+        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mAmbientOcclusionBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Bias", &sDebugOptions.mAmbientOcclusionBias, 0.0f, 0.2f);
+        ImGui::SliderFloat("Radius", &sDebugOptions.mAmbientOcclusionRadius, 0.001f, 4.0f);
+        ImGui::PopID();
+    }
+
     if (ImGui::CollapsingHeader("Shadows")) {
         ImGui::PushID(++ID);
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableShadows);

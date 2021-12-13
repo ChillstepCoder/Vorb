@@ -27,9 +27,11 @@ float computeSpecular(vec3 normal, vec3 lightDir, vec3 position) {
   return spec;
 }
 
-vec3 computePhong(vec3 color, vec3 normal, vec3 lightDir, float ambient, float roughness, float depth, vec2 fboUV) {
+vec3 computePhong(vec3 color, vec3 normal, vec3 lightDir, float ambient, float roughness, float depth, vec2 fboUV, float shadow) {
+   float lightAmount = 1.0 - shadow;
+   // TODO: diffuseAmount
    vec3 position = worldPosFromDepth(depth, fboUV);
-   float diffuse = computeDiffuse(normal, lightDir);
-   float specular = computeSpecular(normal, lightDir, position) * (1.0 - roughness);
+   float diffuse = computeDiffuse(normal, lightDir) * lightAmount;
+   float specular = computeSpecular(normal, lightDir, position) * (1.0 - roughness) * lightAmount;
    return color * (((ambient + (1.0 - ambient) * diffuse) + specular));
 }

@@ -161,12 +161,22 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.shadowMap);
-            break;
+                break;
             case MaterialUniform::ShadowColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mShadowColor[0]);
                 break;
+            case MaterialUniform::ShadowTexture:
+                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glUniform1i(it.second, nextAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowTexture());
+                break;
+            case MaterialUniform::SSAOTexture:
+                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glUniform1i(it.second, nextAvailableTextureIndex++);
+                glBindTexture(GL_TEXTURE_2D, mRenderContext.getSSAOTexture());
+                break;
 
         }
-        static_assert((int)MaterialUniform::COUNT == 19, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 21, "Update for new uniform type");
     }
 }

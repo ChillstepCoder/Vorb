@@ -74,22 +74,12 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
         for (int i = 0; i < 2; ++i) {
             mShadowBlurGBuffers[i].setSize(ui32v2(mGBufferDims));
             mShadowBlurGBuffers[i].init(attachment, nullptr, nullptr);
+            mShadowBlurGBuffers[i].bindGeometryTexture(0);
+            vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D);
         }
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         checkGlError("Shadow FBO 2 init");
-    }
-
-    { // Shadow apply gbuffer
-        vg::GBufferAttachment attachment;
-        // Color
-        attachment.format = vg::TextureInternalFormat::RGB8;
-        attachment.number = FBO_GEOMETRY_COLOR;
-        attachment.pixelFormat = vg::TextureFormat::RGB;
-        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-        mShadowMapApplyGBuffer.setSize(ui32v2(mGBufferDims));
-        mShadowMapApplyGBuffer.init(attachment, nullptr, nullptr);
-
-        checkGlError("Shadow FBO 3 init");
     }
 
     // Materials
@@ -98,7 +88,6 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     mShadowApplyMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
     mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_shadows");
     mShadowMipMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mipmap");
-    mShadowFinalMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_final");
 
 }
 
@@ -251,6 +240,7 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
         offsetX = 0.0f;
         offsetY = 0.0f;
 
+        // Pad for blending
         const int PADDING = 10;
         minX -= PADDING;
         maxX += PADDING;
@@ -313,32 +303,15 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
 
     blurShadowMap();
 
-    // Render to screen
-    {
-        mShadowMapApplyGBuffer.useGeometry();
-        ui32 nextTextureIndex = 0;
-        mMaterialRenderer.bindMaterialForRender(*mShadowFinalMaterial, &nextTextureIndex);
-
-        mShadowBlurGBuffers[0].bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
-        vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D); // TODO: Set once?
-        glUniform1i(glGetUniformLocation(mShadowFinalMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
-
-        sGlobalFullQuadVBO.draw();
-    }
-
-    // Share textures with previous gbuffer since this will become new active gbuffer
-    mShadowMapApplyGBuffer.setDepthTexture(activeGBuffer->getDepthTexture());
-    mShadowMapApplyGBuffer.setLightTexture(activeGBuffer->getLightTexture());
-    mShadowMapApplyGBuffer.setNormalTexture(activeGBuffer->getNormalTexture());
-    mShadowMapApplyGBuffer.setRoughnessTexture(activeGBuffer->getRoughnessTexture());
-    mShadowMapApplyGBuffer.setFboLight(activeGBuffer->getFboLight());
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGBuffer->getDepthTexture(), 0);
-
-    return &mShadowMapApplyGBuffer;
+    return activeGBuffer;
 }
 
 const f32 ShadowRenderer::getMaxDistance() const {
     return mPlaneDistances[MAX_SHADOW_CASCADE_LEVELS-1];
+}
+
+VGTexture ShadowRenderer::getShadowTexture() const {
+    return mShadowBlurGBuffers[0].getGeometryTexture();
 }
 
 void ShadowRenderer::updateFrustumCorners(const f32m4& projection, const f32m4& view) {

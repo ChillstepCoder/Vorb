@@ -3,8 +3,11 @@ uniform sampler2D Fbo0;
 uniform sampler2D FboNormals;
 uniform sampler2D FboDepth;
 uniform sampler2D FboRoughness;
+uniform sampler2D ShadowTexture;
+uniform sampler2D SSAOTexture;
 uniform vec4 GradientRect;
 uniform float GradientAtlasPage;
+uniform vec3 ShadowColor;
 #include "../../GlobalUbo.glsl"
 
 
@@ -21,6 +24,8 @@ void main() {
 	float depth = texture(FboDepth, fUV).r;
 	float isSky = step(0.999999999, depth);
 	float isGround = 1.0 - isSky;
+	float shadow = texture(ShadowTexture, fUV).r;
+	float isShadow = step(0.0001, shadow);
 	
 	// =====================================================
 	// ==                     Sunlight color              ==
@@ -66,10 +71,20 @@ void main() {
 	normal = normal * 2.0 - 1.0;
 	float roughness = texture(FboRoughness, fUV).r;
 	roughness = max(roughness, isSky);
-	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(isSky, 0.5), roughness, depth, fUV);
+	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(isSky, 0.5), roughness, depth, fUV, shadow);
 	
-	// Uncomment for passthrough
-	//fColor.rgb = fColor.rgb * 0.00001 + fboColor;
+	// =====================================================
+	// ==                     SHADOW                      ==
+	// =====================================================
+	float shadowMult = shadow * 0.5 * SunHeight;
+	fColor.rgb = fColor.rgb * shadowMult * ShadowColor + fColor.rgb * (1.0 - shadowMult);
+	
+	// =====================================================
+	// ==                     SSAO                        ==
+	// =====================================================
+	float ssao = texture(SSAOTexture, fUV).r;
+	fColor.rgb = fColor.rgb * vec3(ssao);
+	
 	fColor.a = 1.0;
 	
 }

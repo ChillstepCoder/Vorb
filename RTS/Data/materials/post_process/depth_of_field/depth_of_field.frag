@@ -26,7 +26,6 @@ void main() {
     fColor.rgb = blur13noalpha(unInputFbo, fUV, ScreenResolution, unDirection * blurValue);
 	fColor.a = 1.0;
 	
-	
 	//fColor.rgb =  fColor.rgb * 0.00001 + blurValue;
 	
 }

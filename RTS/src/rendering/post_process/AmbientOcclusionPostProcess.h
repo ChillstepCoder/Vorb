@@ -6,12 +6,14 @@ class Material;
 
 #include <Vorb/graphics/GBuffer.h>
 
-class DepthOfFieldPostProcess {
+class AmbientOcclusionPostProcess {
 public:
-    DepthOfFieldPostProcess(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
+    AmbientOcclusionPostProcess(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
 
     // Returns target gbuffer
     vg::GBuffer* render(vg::GBuffer* prevGBuffer);
+
+    VGTexture getSSAOTexture() const;
 
 private:
     ResourceManager& mResourceManager;
@@ -21,6 +23,9 @@ private:
     vg::GBuffer mGBuffers[2];
     f32v2 mGbufferDims;
 
-    const Material* mMaterial = nullptr;
-};
+    VGTexture mNoiseTexture;
+    std::vector<f32v3> mSsaoKernel;
 
+    const Material* mMaterial = nullptr;
+    const Material* mBlurMaterial = nullptr;
+};

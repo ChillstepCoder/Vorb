@@ -219,6 +219,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
     <ClCompile Include="src\rendering\QuadMesh.cpp" />
@@ -359,6 +360,7 @@
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
+    <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\QuadMesh.h" />

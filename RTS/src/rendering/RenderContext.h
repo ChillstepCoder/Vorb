@@ -7,6 +7,7 @@ class ChunkRenderer;
 class CityDebugRenderer;
 class CloudRenderer;
 class DebugTweakerPanel;
+class AmbientOcclusionPostProcess;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
 class GPUTextureManipulator;
@@ -70,6 +71,8 @@ public:
     const vg::GBuffer& getPrevFinalGBuffer() const { return mGBuffers[mPrevGBufferIndex]; }
     const vg::GBuffer& getZCutoutGBuffer() const { return mZCutoutGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
+    VGTexture getShadowTexture() const;
+    VGTexture getSSAOTexture() const;
 
 private:
     void renderDebug(const Camera3D& camera);
@@ -98,6 +101,7 @@ private:
     mutable std::unique_ptr<BuildingRenderer> mBuildingRenderer;
     mutable std::unique_ptr<CloudRenderer> mCloudRenderer;
     mutable std::unique_ptr<DepthOfFieldPostProcess> mDepthOfField;
+    mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
 
     // UI

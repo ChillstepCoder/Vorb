@@ -1,3 +1,0 @@
-shadow_final:
-  vert: pass_through.vert
-  frag: shadow_final.frag

@@ -62,7 +62,7 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 	
     float distance = length(occluderWorldSpacePos.rgb - worldCoords);
 	float shadow = 1.0 - min(max(p, pMax), 1.0);
-	distance = clamp(distance, 0.0, 20.0);
+	distance = clamp(distance, 0.0, 10.0);
 	return vec2(shadow, distance);
 }
 
@@ -88,7 +88,7 @@ vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
     float depthValue = abs(viewSpacePosition.z);
 	
 	float dist = 0.0;
-	int layer = cascadeCount - 1;
+	int layer = cascadeCount;
     for (int i = 0; i < cascadeCount; ++i) {
 	    // This branch is fine because local kernel will all follow same path usually
 		if (depthValue < ShadowCascadePlaneDistances[i]) {
@@ -102,12 +102,15 @@ vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
 		}
 	}
 	
-	vec2 shadowAndDist = getShadowAndDistAtLayer(layer, worldSpacePosition.xyz);
-	if (layer > 0) {
-	   shadowAndDist = mix(getShadowAndDistAtLayer(layer - 1, worldSpacePosition.xyz), shadowAndDist, dist);
+	if (layer == cascadeCount) {
+		return vec2(0.0);
+	} else {
+		vec2 shadowAndDist = getShadowAndDistAtLayer(layer, worldSpacePosition.xyz);
+		if (layer > 0) {
+		   shadowAndDist = mix(getShadowAndDistAtLayer(layer - 1, worldSpacePosition.xyz), shadowAndDist, dist);
+		}
+	    return shadowAndDist;
 	}
-	
-	return shadowAndDist;
 }
 
 void main() {

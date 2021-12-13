@@ -24,6 +24,8 @@ enum class MaterialUniform {
     ShadowMap,
     ShadowCascadePlaneDistances,
     ShadowColor,
+    ShadowTexture,
+    SSAOTexture,
     COUNT
 };
 
