@@ -84,6 +84,7 @@ void main() {
 	// =====================================================
 	float ssao = texture(SSAOTexture, fUV).r;
 	fColor.rgb = fColor.rgb * vec3(ssao);
+	//fColor.rgb = fColor.rgb * 0.00001 + vec3(ssao);
 	
 	fColor.a = 1.0;
 	

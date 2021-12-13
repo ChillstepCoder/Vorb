@@ -45,6 +45,7 @@ struct DebugOptions {
     f32 mLoadRange = CHUNK_LOAD_RANGE;
     // Camera settings
     f32 mFoV = 75.0f;
+    f32 mZFar = 200000.0f;
 
     // TODO: FILE CONFIG
     bool mUseCompressedAtlas = false;

@@ -35,6 +35,11 @@ float easeInOutCubic(float x) {
    return x < 0.5 ? (4.0 * x * x * x) : (1.0 - pow(-2.0 * x + 2.0, 3.0) / 2.0);
 }
 
+float linearizeDepth(float d) {
+    float zn = 2.0 * d - 1.0;
+    return 2.0 * CameraZRange.x * CameraZRange.y / (CameraZRange.y + CameraZRange.x - zn * (CameraZRange.y - CameraZRange.x));
+}
+
 void main() {
     float depth = texture(FboDepth, fUV).r;
     vec3 viewPos = viewPosFromDepth(depth, fUV, InverseP).xyz;
@@ -48,6 +53,9 @@ void main() {
     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
     vec3 bitangent = cross(normal, tangent);
     mat3 TBN = mat3(tangent, bitangent, normal);
+	
+	// Reduce AO far from the camera
+	float depthBias = unBias * (linearizeDepth(depth) + 30.0) * 0.03;
    
     float occlusion = 0.0;
 	for(int i = 0; i < KERNEL_SIZE; ++i)
@@ -63,7 +71,7 @@ void main() {
 		vec3 viewPosSample = viewPosFromDepth(sampleDepth, offset.xy, InverseP).xyz;
 		
 		float rangeCheck = smoothstep(0.0, 1.0, unRadius / abs(viewPos.z - viewPosSample.z));
-		occlusion += (viewPosSample.z > samplePos.z + (unBias * depth) ? 1.0 : 0.0) * rangeCheck;
+		occlusion += (viewPosSample.z > samplePos.z + depthBias ? 1.0 : 0.0) * rangeCheck;
 	}
 	occlusion = 1.0 - (occlusion / (float(KERNEL_SIZE) - unOcclusionAdjust));
 	//occlusion = pow(occlusion, 0.5); // Whiten the whites

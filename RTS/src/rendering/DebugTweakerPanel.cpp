@@ -33,6 +33,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
 
     if (ImGui::CollapsingHeader("Camera Settings")) {
         ImGui::SliderFloat("FoV", &sDebugOptions.mFoV, 1.0f, 179.0f, "%.1f");
+        ImGui::SliderFloat("Far Plane", &sDebugOptions.mZFar, 10000.0f, 300000.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
     }
     
     if (ImGui::CollapsingHeader("Clouds")) {

@@ -47,7 +47,7 @@
 constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;
 
-const f32v2 CAMERA_Z_RANGE = f32v2(1.0f, 1024.0f);
+const f32v2 CAMERA_ZOOM_RANGE = f32v2(1.0f, 1024.0f);
 
 #define WRITE_DEBUG_ATLAS 0
 
@@ -164,7 +164,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
-		mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + event.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_Z_RANGE.x, CAMERA_Z_RANGE.y);
+		mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + event.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_ZOOM_RANGE.x, CAMERA_ZOOM_RANGE.y);
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -403,7 +403,7 @@ void MainMenuScreen::updateCamera(const vui::GameTime& gameTime) {
 	// Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
 	const f32 zNearAlpha = glm::clamp(mCamera3D->getPosition().z * 0.001f, 0.0f, 1.0f);
 	const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
-	mCamera3D->setClippingPlane(zNear, mCamera3D->getFarClip());
+	mCamera3D->setClippingPlane(zNear, sDebugOptions.mZFar);
 
 	mCamera3D->update();
 
