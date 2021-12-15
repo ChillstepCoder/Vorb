@@ -19,7 +19,7 @@ public:
     TriangleMesh() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TriangleMesh);
 
-    void init() override;
+    //void init() override; // TODO: We cant override MeshBase::init because its called from constructor and that is illegal
 
     void reserveTriangleCount(size_t count);
     void addTriangle(TriangleVertex verts[3]);

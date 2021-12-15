@@ -8,20 +8,6 @@
 
 #include "rendering/RenderStats.h"
 
-void TriangleMesh::init() {
-    if (mVao == 0) { // Create VAO
-        glGenVertexArrays(1, &mVao);
-        glBindVertexArray(mVao);
-
-        glGenBuffers(1, &mVbo);
-
-        glBindBuffer(GL_ARRAY_BUFFER, mVbo);
-
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-}
-
 void TriangleMesh::reserveTriangleCount(size_t count) {
     mVertexData.reserve(count * 3u);
 }

@@ -64,15 +64,15 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
             MaterialAtlasTextureInput input;
             input.uvRect = sprite.uvs;
             input.page = sprite.atlasPage;
-            input.uvRectUniform = newMaterial->mProgram.getUniform(textureData.uniformRectName);
-            input.pageUniform = newMaterial->mProgram.getUniform(textureData.uniformPageName);
+            input.uvRectUniform = newMaterial->mProgram.getUniform(textureData.uniformRectName.c_str());
+            input.pageUniform = newMaterial->mProgram.getUniform(textureData.uniformPageName.c_str());
             newMaterial->mInputAtlasTextures.emplace_back(std::move(input));
         }
 
         for (int i = 0; i < materialData.textures.size(); ++i) {
             const MaterialTextureInputData& textureData = materialData.textures[i];
             MaterialTextureInput input;
-            input.textureUniform = newMaterial->mProgram.getUniform(textureData.uniformName);
+            input.textureUniform = newMaterial->mProgram.getUniform(textureData.uniformName.c_str());
             vg::Texture texture = mTextureCache.findTexture(textureData.textureName);
             input.texture = texture.id;
             assert(texture.id != 0);

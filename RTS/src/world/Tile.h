@@ -42,9 +42,9 @@ struct Tile {
 
 	union {
 		struct {
-			TileID groundLayer; // Dirt, foundation, earth    // ALWAYS BOX COLLISION
-			TileID midLayer; // Carpet, boards, flora         // NO COLLIDE ONLY
-			TileID topLayer; // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
+			TileID groundLayer; // Dirt, foundation, earth       // ALWAYS BOX COLLISION
+			TileID midLayer;    // Carpet, boards, flora         // NO COLLIDE ONLY
+			TileID topLayer;    // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
 		};
 		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};

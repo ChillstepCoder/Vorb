@@ -7,7 +7,8 @@ enum class MeshDrawMode {
     STATIC = GL_STATIC_DRAW
 };
 
-constexpr unsigned MAX_MESH_INDICES = CHUNK_SIZE * 12 * 6;
+// Enough for a full chunk of grass + padding
+constexpr unsigned MAX_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
 
 // TODO: Store material ID here?
 class MeshBase {
@@ -19,7 +20,7 @@ public:
 
     static void initStaticIBO();
 
-    virtual void init(); ///< Called automatically on construction, but can be safely called twice to no effect
+    void init(); ///< Called automatically on construction, but can be safely called twice to no effect
     virtual void destroy();
 
     virtual void draw(const vg::GLProgram& program) const;

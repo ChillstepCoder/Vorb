@@ -20,6 +20,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "rendering/ChunkMesher.h"
+#include "rendering/ChunkGrassLod.h"
 
 #include "services/Services.h"
 
@@ -574,8 +575,32 @@ bool World::updateChunk(Chunk& chunk) {
             chunk.mDirtyNavGraph = false;
             mNavGraph->buildNavNodesForChunkAsync(chunk);
 		}
+		else {
+			// Update grass
+            const f32v2 centerPos = chunk.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
+            const f32v2 offset = centerPos - mLoadCenter;
+			const f32 distSq = glm::length2(offset);
+
+			if (chunk.mChunkRenderData.mGrassLod) {
+                if (distSq > sDebugOptions.mGrassDistanceSq + 10.0f /*TODO: non const*/) {
+					if (chunk.mChunkRenderData.mGrassLod->getRefCount() == 0) {
+						chunk.mChunkRenderData.mGrassLod.reset();
+					}
+				}
+				else {
+					chunk.mChunkRenderData.mGrassLod->update(mLoadCenter);
+				}
+			}
+			else {
+                if (distSq < sDebugOptions.mGrassDistanceSq /*TODO: non const*/) {
+					chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassLod>(chunk);
+                }
+			}
+            
+		}
+		
 	}
-	else if (chunk.mRefCount.load() == 0){
+	else if (chunk.mRefCount.load() == 0) {
 		// If we are not in use, we are done generating
 		onChunkDataReady(chunk);
 	}

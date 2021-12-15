@@ -1,5 +1,7 @@
 #include "../GlobalUbo.glsl"
 
+uniform vec3 unOffset;
+
 in vec4 vPosition;
 in vec2 vXZOffset;
 in vec2 vUV;
@@ -25,7 +27,7 @@ void main() {
 	vertexPosition.z += xzOffsetUncompressed.y;
 	vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
 	
-	vec4 worldPos = vertexPosition - vec4(CameraPos, 0.0);
+	vec4 worldPos = vertexPosition + vec4(unOffset, 0.0);
     
     // Wind
     worldPos.xyz += CameraRight * getWindAtPosition(Time, vPosition) * vWindInfluence;

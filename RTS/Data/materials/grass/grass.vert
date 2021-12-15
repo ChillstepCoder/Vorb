@@ -1,32 +1,47 @@
 
 #include "../GlobalUbo.glsl"
-#include "../TboBillboardShared.glsl"
 
+uniform samplerBuffer UnTboPosition;
+uniform samplerBuffer UnTboColorSize;
 uniform vec3 unOffset;
+uniform float UnYOffset = 1.0;
 
 out vec2 fUV;
 flat out float fAtlasPage;
-out vec4 fTint;
+out vec3 fTint;
 out mat3 fTBN;
 out float fRoughness;
 
 #include "../util/wind.glsl"
 
-void main() {
+const vec2 VertexData[4] = {
+ {-1.0, -1.0 },
+ {1.0,  -1.0 },
+ {1.0,   1.0 },
+ {-1.0,  1.0 }
+};
 
-	vec4 vPosition = vec4(getPositionFromTbo(), 1.0);
-	vec3 typeSize = getTypeSizeFromTbo();
-	vec2 vDims = typeSize.yz;
-	int type = int(typeSize.x);
+vec2 getVertexOffsets() {
+    vec2 vertexOffsets = VertexData[gl_VertexID % 4];
+	vertexOffsets.y += UnYOffset;
+	vertexOffsets *= 0.5;
+	return vertexOffsets;
+}
+
+void main() {
+    int posIndex = (gl_VertexID / 4);
+    int colorSizeIndex = posIndex * 2;
+	vec4 vPosition = vec4(texelFetch(UnTboPosition, posIndex).rgb, 1.0);
+	fTint = texelFetch(UnTboColorSize, colorSizeIndex).rgb;
+	vec2 vDims = texelFetch(UnTboColorSize, colorSizeIndex + 1).rg;
 	
 	// Get uniform info
-	vec3 atlasPageRoughnessWind = UnAtlasPageRoughnessWind[type].rgb;
-	fRoughness = atlasPageRoughnessWind.g;
-	float vWindInfluence = atlasPageRoughnessWind.b;
+	fRoughness = 0.0;
+	float vWindInfluence = 1.0;
 	
 	// Compute uvs
-    fUV = getUvsFromType(type);
-    fAtlasPage = atlasPageRoughnessWind.r;
+    fUV = vec2(1.0);
+    fAtlasPage = 0.0;
 	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();
@@ -53,10 +68,6 @@ void main() {
 	worldPos.xyz += CameraFront * angle;
 	glPos = VP * worldPos;
 
-    fTint = vec4(1.0);
-	
-	// Hardcoded for facing the camera
-	//fTBN = mat3(-CameraUp, -CameraRight, -CameraFront);
 	// Hardcoded for facing up
 	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
 	

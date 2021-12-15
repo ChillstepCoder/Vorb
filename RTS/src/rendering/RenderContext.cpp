@@ -12,6 +12,7 @@
 #include "rendering/BuildingRenderer.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/ChunkRenderer.h"
+#include "rendering/ChunkGrassLod.h"
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/DebugTweakerPanel.h"
@@ -436,8 +437,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     //    activeGbuffer.useGeometry();
     //}
 
-    // Debug rendering
-    renderDebug(camera);
 
     // *** Post processes ***
     // Disable depth testing for post processing
@@ -510,6 +509,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         // TODO: Swap chain for this to work
         mMaterialRenderer->renderFullScreenQuad(*postMat);
     }
+
+    // Debug rendering
+    renderDebug(camera);
 
     // UI last
     renderUI(camera);
@@ -590,6 +592,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 for (int i = 0; i < refCount; ++i) {
                     DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(CHUNK_WIDTH / 2) + f32v2(i * 2, 0), f32v2(2.0f), color4(1.0f, 0.0f, 1.0f));
                 }
+
             }
             else {
                 DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 1.0f));
@@ -599,6 +602,18 @@ void RenderContext::renderDebug(const Camera3D& camera) {
         // Debug region boundaries
         mWorld.enumVisibleRegions(camera, [](const Region& region) {
             DebugRenderer::drawWireQuad(region.getWorldPos(), f32v2(WorldData::REGION_WIDTH_TILES), color4(1.0f, 0.0f, 0.0f));
+        });
+    }
+
+    // Grass LOD
+    if (sDebugOptions.mDebugGrassLod) {
+        mWorld.enumVisibleChunks([](const Chunk& chunk) {
+            if (chunk.isDataReady()) {
+
+                if (chunk.mChunkRenderData.mGrassLod) {
+                    chunk.mChunkRenderData.mGrassLod->renderDebug();
+                }
+            }
         });
     }
 

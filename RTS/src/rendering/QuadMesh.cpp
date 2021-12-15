@@ -372,6 +372,11 @@ void TBOBillboardMesh::reserveQuadCount(size_t count) {
     mTextureData.reserve(count);
 }
 
+void TBOBillboardMesh::reserveAdditionalQuadCount(size_t count)
+{
+    mTextureData.reserve(mTextureData.size() + count);
+}
+
 void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
     UNUSED(color, xyOffset);
     // Signal for a new batch
@@ -401,7 +406,7 @@ void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f3
     if (it == mTypes.end()) {
         size_t index = mTypes.size();
         if (index == MAX_UNIFORM_ARRAY_SIZE /*max types per batch*/) {
-            //assert(false); // Too many!
+            assert(false); // Too many!
             return;
         }
         type = (f32)index;
@@ -415,50 +420,6 @@ void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f3
 }
 
 void TBOBillboardMesh::draw(const vg::GLProgram& program) const {
-
-    // Check if we should sort
-    // TODO: Implement proper sorting. IBO sorting???
-    //f32v3 cameraPos = f32v3(16384, 16384, 0.0f);
-    //// lol get fucking rekt
-    //std::vector<TBOBillboardInstanceData>& textureData = const_cast<std::vector<TBOBillboardInstanceData>&>(mTextureData);
-    //if (mDepthSortMode != DepthSortMode::NONE && mTextureData.size()) {
-    //    PreciseTimer timer;
-    //    bool didSort = false;
-    //    if (mDepthSortMode == DepthSortMode::FRONT_TO_BACK) {
-    //        if (!std::is_sorted(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
-    //            const float dist1 = glm::distance2(left.position, cameraPos);
-    //            const float dist2 = glm::distance2(right.position, cameraPos);
-    //            return dist1 < dist2;
-    //        })) {
-    //            didSort = true;
-    //            std::sort(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
-    //                const float dist1 = glm::distance2(left.position, cameraPos);
-    //                const float dist2 = glm::distance2(right.position, cameraPos);
-    //                return dist1 < dist2;
-    //            });
-    //        }
-    //    }
-    //    else {
-    //        if (!std::is_sorted(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
-    //            const float dist1 = glm::distance2(left.position, cameraPos);
-    //            const float dist2 = glm::distance2(right.position, cameraPos);
-    //            return dist1 > dist2;
-    //        })) {
-    //            didSort = true;
-    //            std::sort(textureData.begin(), textureData.end(), [cameraPos](const TBOBillboardInstanceData& left, const TBOBillboardInstanceData& right) {
-    //                const float dist1 = glm::distance2(left.position, cameraPos);
-    //                const float dist2 = glm::distance2(right.position, cameraPos);
-    //                return dist1 > dist2;
-    //            });
-    //        }
-    //    }
-    //    // lol get fucking rekt
-    //    if (didSort) {
-    //        const_cast<TBOBillboardMesh*>(this)->finishMesh(MeshDrawMode::STREAM);
-    //        std::cout << " Sorted in " << timer.stop() << " MS\n";
-    //    }
-    //   
-    //}
 
 
     // Make sure we have been initialized
@@ -481,10 +442,14 @@ void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
 {
     if (mTextureData.size()) {
         mIndexCount = mTextureData.size() * 6;
+        int maxSize;
+        //glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
+        const size_t size = sizeof(TBOBillboardInstanceData) * mTextureData.size();
+       // assert(size < maxSize);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_TEXTURE_BUFFER, mVbo);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(TBOBillboardInstanceData) * mTextureData.size(), nullptr, (GLenum)drawMode);
-        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(TBOBillboardInstanceData) * mTextureData.size(), mTextureData.data());
+        glBufferData(GL_TEXTURE_BUFFER, size, nullptr, (GLenum)drawMode);
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, size, mTextureData.data());
 
         if (!mTboTexture) {
             glGenTextures(1, &mTboTexture);
@@ -547,10 +512,102 @@ void TBOBillboardMesh::clearForRecycleRetainMemory() {
 void TBOBillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     glActiveTexture(GL_TEXTURE10);
     glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
-    glBindBuffer(GL_TEXTURE_BUFFER, mVbo);
 
     // Bind uniforms
     // GLSL ensures binding point 1
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mUbo);
-    glUniform1i(glGetUniformLocation(program.getID(), "UnTboPositionTypeSize"), 10);
+    glUniform1i(program.getUniform("UnTboPositionTypeSize"), 10);
+}
+
+void GrassBillboardMesh::reserveQuadCount(size_t count)
+{
+    mInstanceData.reserve(count);
+    mPositionData.reserve(count);
+}
+
+void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, const ui8v3& color)
+{
+    assert(xyDims.x <= 1.0f && xyDims.y <= 1.0f);
+
+    mInstanceData.emplace_back(color, ui8v2(xyDims.x * 255.0f, xyDims.y * 255.0f));
+    mPositionData.emplace_back(position);
+}
+
+void GrassBillboardMesh::draw(const vg::GLProgram& program) const
+{
+    // Make sure we have been initialized
+    assert(mVao);
+    if (!mIndexCount) return;
+
+    glBindVertexArray(mVao);
+    bindVertexAttribs(program);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // Hack, no data at all, the shader generates vertex positions
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sQuadIbo);
+
+    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
+    RenderStats::recordDrawCall(mIndexCount / 3);
+
+    glBindVertexArray(0);
+}
+
+void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
+{
+    if (mInstanceData.size()) {
+
+        if (mVboPosition == 0) {
+            glGenBuffers(1, &mVboPosition);
+            glBindBuffer(GL_TEXTURE_BUFFER, mVboPosition);
+            glBindVertexArray(0);
+            glBindBuffer(GL_TEXTURE_BUFFER, 0);
+        }
+
+        mIndexCount = mInstanceData.size() * 6;
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glBindBuffer(GL_TEXTURE_BUFFER, mVboPosition);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(f32v3) * mPositionData.size(), nullptr, (GLenum)drawMode);
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(f32v3) * mPositionData.size(), mPositionData.data());
+
+        glBindBuffer(GL_TEXTURE_BUFFER, mVbo);
+        glBufferData(GL_TEXTURE_BUFFER, sizeof(GrassBillboardInstanceData) * mInstanceData.size(), nullptr, (GLenum)drawMode);
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(GrassBillboardInstanceData) * mInstanceData.size(), mInstanceData.data());
+
+
+        if (!mTboInstanceData) {
+            glGenTextures(1, &mTboInstanceData);
+            glBindTexture(GL_TEXTURE_BUFFER, mTboInstanceData);
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, mVbo);
+            glGenTextures(1, &mTboPositionData);
+            glBindTexture(GL_TEXTURE_BUFFER, mTboPositionData);
+            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mVboPosition);
+        }
+
+        glBindBuffer(GL_TEXTURE_BUFFER, 0);
+    }
+    else {
+        destroy();
+    }
+    std::vector<GrassBillboardInstanceData>().swap(mInstanceData);
+    std::vector<f32v3>().swap(mPositionData);
+}
+
+void GrassBillboardMesh::destroy()
+{
+    if (mVboPosition != 0) {
+        glDeleteBuffers(1, &mVboPosition);
+        mVboPosition = 0;
+    }
+    MeshBase::destroy();
+}
+
+void GrassBillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
+    glActiveTexture(GL_TEXTURE10);
+    glBindTexture(GL_TEXTURE_BUFFER, mTboInstanceData);
+    glActiveTexture(GL_TEXTURE11);
+    glBindTexture(GL_TEXTURE_BUFFER, mTboPositionData);
+
+    // Bind uniforms
+    glUniform1i(program.getUniform("UnTboColorSize"), 10);
+    glUniform1i(program.getUniform("UnTboPosition"), 11);
 }

@@ -48,10 +48,10 @@ private:
 
 // TODO: 16 bit
 struct TBOBillboardInstanceData {
-    f32v3 position;
+    f32v3 position; // TODO: Compress
     f32 type; // Lookup into uniform array
     f32 sizeX;
-    f32 sizeY;
+    f32 sizeY; // TODO: Compress
 
     //f32v3 rootPos;
     //i16v2 xzHalfDims;
@@ -91,6 +91,7 @@ public:
 
     void beginMesh();
     void reserveQuadCount(size_t count);
+    void reserveAdditionalQuadCount(size_t count);
     void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness);
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
@@ -112,6 +113,36 @@ private:
     DepthSortMode mDepthSortMode = DepthSortMode::NONE;
     bool mIsInProgress = false;
     
+};
+struct GrassBillboardInstanceData {
+    GrassBillboardInstanceData(const ui8v3& color, ui8v2&& dims) : color(color), dims(dims) {};
+    ui8v3 color;
+    ui8 pad1;
+    ui8v2 dims;
+    ui8v2 pad2;
+};
+static_assert(sizeof(GrassBillboardInstanceData) == 8);
+
+class GrassBillboardMesh : public IQuadMesh<GrassBillboardInstanceData> {
+public:
+    GrassBillboardMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(GrassBillboardMesh);
+
+    void reserveQuadCount(size_t count);
+    void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, const ui8v3& color);
+    void draw(const vg::GLProgram& program) const override;
+    void finishMesh(MeshDrawMode drawMode) override;
+    void destroy() override;
+
+private:
+
+    void bindVertexAttribs(const vg::GLProgram& program) const override;
+
+    std::vector<GrassBillboardInstanceData> mInstanceData; // TODO: Recycle?
+    std::vector<f32v3> mPositionData; // TODO: Recycle?
+    VGTexture mTboInstanceData = 0;
+    VGTexture mTboPositionData = 0;
+    VGBuffer mVboPosition = 0;
 };
 
 // Templated Mesh implementation

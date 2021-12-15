@@ -66,30 +66,46 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
         mLODedChunksToRender.clear();
 
         // NEW
-        // Billboards first to reduce overdraw
-        mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
-        world.enumVisibleChunks([&](const Chunk& chunk) {
-            if (chunk.isFinished()) {
+        {  // Billboards first to reduce overdraw
+            mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
+            VGUniform offsetUniform = mBillboardMaterial->mProgram.getUniform("unOffset");
+            world.enumVisibleChunks([&](const Chunk& chunk) {
+                if (chunk.isFinished()) {
 
-                mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
+                    mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
 
+                    ChunkRenderData& renderData = chunk.mChunkRenderData;
+                    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+                        f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+                        glUniform3fv(offsetUniform, 1, &offset.x);
+                        TryRenderBillboardMesh(chunk, mBillboardMaterial);
+                    }
+                    else {
+                        mLODedChunksToRender.emplace_back(&chunk);
+                    }
+                }
+            });
+        }
+        { // Grass
+            mMaterialRenderer.bindMaterialForRender(*mGrassMaterial);
+            VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
+            world.enumVisibleChunks([&](const Chunk& chunk) {
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
-                if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-                    TryRenderBillboardMesh(chunk, mBillboardMaterial);
-                }
-                else {
-                    mLODedChunksToRender.emplace_back(&chunk);
-                }
-            }
-        });
-        mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
-        world.enumVisibleChunks([&](const Chunk& chunk) {
-            ChunkRenderData& renderData = chunk.mChunkRenderData;
-            f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
-            glUniform3fv(glGetUniformLocation(mStandardMaterial->mProgram.getID(), "unOffset"), 1, &offset.x);
-            TryRenderFloraMesh(chunk, mStandardMaterial);
-            TryRenderBaseMesh(chunk, mStandardMaterial);
-        });
+                f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+                glUniform3fv(offsetUniform, 1, &offset.x);
+                TryRenderFloraMesh(chunk, mGrassMaterial);
+            });
+        }
+        { // Tiles
+            mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
+            VGUniform offsetUniform = mStandardMaterial->mProgram.getUniform("unOffset");
+            world.enumVisibleChunks([&](const Chunk& chunk) {
+                ChunkRenderData& renderData = chunk.mChunkRenderData;
+                f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+                glUniform3fv(offsetUniform, 1, &offset.x);
+                TryRenderBaseMesh(chunk, mStandardMaterial);
+            });
+        }
 
         // LODed chunks
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
@@ -167,7 +183,7 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camer
         if (chunk.isFinished()) {
             if (glm::length2(chunk.getWorldPosCenter3D() - camera.getPosition()) <= maxDistSQ) {
                 f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
-                glUniform3fv(glGetUniformLocation(mShadowMapperMaterial->mProgram.getID(), "unOffset"), 1, &offset.x);
+                glUniform3fv(mShadowMapperMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
                 TryRenderBaseMesh(chunk, mShadowMapperMaterial);
             }
         }
@@ -193,8 +209,8 @@ void ChunkRenderer::TryRenderBaseMesh(const Chunk& chunk, const Material* materi
 
 void ChunkRenderer::TryRenderFloraMesh(const Chunk& chunk, const Material* material) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mHighDetailFloraMesh && renderData.mHighDetailFloraMesh->isValid()) {
-        renderData.mHighDetailFloraMesh->draw(material->mProgram);
+    if (renderData.mGrassMesh && renderData.mGrassMesh->isValid()) {
+        renderData.mGrassMesh->draw(material->mProgram);
     }
 }
 
@@ -255,7 +271,8 @@ void ChunkRenderer::RenderLODTextureBindless(const f32v2& worldPos, VGTexture te
 
 void ChunkRenderer::InitPostLoad()
 {
-	mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+    mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
+    mGrassMaterial = mResourceManager.getMaterialManager().getMaterial("grass");
 #if USE_INSTANCED_BILLBOARDS == 1
     mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("tbo_billboard");
 #else

@@ -363,6 +363,9 @@
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\ChunkGrassLod.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -798,6 +801,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\ChunkGrassLod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

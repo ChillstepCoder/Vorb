@@ -207,6 +207,7 @@
     <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\ChunkGrassLod.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\DebugTweakerPanel.cpp" />
@@ -347,6 +348,7 @@
     <ClInclude Include="src\rendering\BuildingRenderer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\ChunkGrassLod.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\DebugTweakerPanel.h" />

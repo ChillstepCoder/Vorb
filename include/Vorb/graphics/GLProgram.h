@@ -144,24 +144,24 @@ namespace vorb {
             /// Gets an attribute index
             /// @param name: The attribute's name
             /// @return Attribute location
-            const VGAttribute& getAttribute(const nString& name) const {
+            const VGAttribute& getAttribute(const char* name) const {
                 return m_attributes.at(name);
             }
-            const VGAttribute* tryGetAttribute(const nString& name) const {
+            const VGAttribute* tryGetAttribute(const char* name) const {
                 auto&& it = m_attributes.find(name);
                 return it != m_attributes.end() ? &it->second : nullptr;
             }
             /// Gets a uniform index
             /// @param name: The uniform's name
             /// @return Uniform location
-            const VGUniform& getUniform(const nString& name) const {
+            const VGUniform& getUniform(const char* name) const {
                 return m_uniforms.at(name);
             }
 
             /// Gets a uniform index, if it exists
             /// @param name: The uniform's name
             /// @return Uniform location
-            const VGUniform* tryGetUniform(const nString& name) const {
+            const VGUniform* tryGetUniform(const char* name) const {
                 auto&& it = m_uniforms.find(name);
                 return it != m_uniforms.end() ? &it->second : nullptr;
             }

@@ -2,6 +2,7 @@
 #include "Chunk.h"
 
 #include "rendering/QuadMesh.h"
+#include "rendering/ChunkGrassLod.h"
 
 #include "pathfinding/NavGraph.h"
 #include "world/WorldGrid.h"
@@ -91,7 +92,8 @@ void Chunk::dispose() {
 
     mChunkRenderData.mBillboardMesh.reset();
     mChunkRenderData.mChunkMesh.reset();
-    mChunkRenderData.mHighDetailFloraMesh.reset();
+    mChunkRenderData.mGrassMesh.reset();
+    mChunkRenderData.mGrassLod.reset();
 
     freeTiles();
 }

@@ -31,6 +31,15 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         }
     }
 
+    if (ImGui::CollapsingHeader("Grass")) {
+        ImGui::PushID(++ID);
+        if (ImGui::SliderFloat("Render distance", &sDebugOptions.mGrassDistance, 24.0f, 500.0f, "%.1f")) {
+            sDebugOptions.mGrassDistanceSq = SQ(sDebugOptions.mGrassDistance);
+        }
+        ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
+        ImGui::PopID();
+    }
+
     if (ImGui::CollapsingHeader("Camera Settings")) {
         ImGui::SliderFloat("FoV", &sDebugOptions.mFoV, 1.0f, 179.0f, "%.1f");
         ImGui::SliderFloat("Far Plane", &sDebugOptions.mZFar, 10000.0f, 300000.0f, "%.1f", ImGuiSliderFlags_Logarithmic);

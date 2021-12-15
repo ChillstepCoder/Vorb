@@ -15,7 +15,11 @@ struct DebugOptions {
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 2.25f;
     float mCloudAmbient = 0.5f;
-    float mCloudSpeed = 0.0f;//0.05f;
+    float mCloudSpeed = 0.05f;
+    // Grass
+    float mGrassDistance = 180.0f;
+    float mGrassDistanceSq = SQ(180.0f);
+    bool mDebugGrassLod = true;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;

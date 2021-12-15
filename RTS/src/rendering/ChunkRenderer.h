@@ -51,6 +51,7 @@ private:
     const Material* mBillboardMaterial = nullptr;
     const Material* mLODMaterial = nullptr;
     const Material* mZCutoutMaterial = nullptr;
+    const Material* mGrassMaterial = nullptr;
 
     std::vector<const Chunk*> mLODedChunksToRender;
 

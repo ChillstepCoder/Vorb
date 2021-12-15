@@ -8,6 +8,7 @@
 #include "rendering/QuadMesh.h"
 #include "rendering/SpriteData.h"
 #include "Random.h"
+#include "options/DebugOptions.h"
 #include <Vorb/graphics/SamplerState.h>
 
 // For grass noise
@@ -226,16 +227,17 @@ void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
         createMeshAsync(chunk);
     }
 
-    /*if (!renderData.mIsBuildingHighDetailFloraMesh) {
-        const f32 distanceToCamera2 = glm::length2(camera.getPosition() - chunk.getWorldPosCenter3D());
-        if (distanceToCamera2 < FLORA_RENDER_DISTANCE_2 && renderData.mHighDetailFloraMeshDirty) {
+    if (!renderData.mIsBuildingHighDetailFloraMesh) {
+        const f32 distanceToCamera2 = glm::length2(cameraPos - chunk.getWorldPosCenter3D());
+        // TODO: better bias
+        if (distanceToCamera2 < sDebugOptions.mGrassDistanceSq && renderData.mHighDetailFloraMeshDirty) {
             createHighDetailFloraMeshAsync(chunk);
         }
-        else if (distanceToCamera2 > FLORA_UNLOAD_DISTANCE_2 && renderData.mHighDetailFloraMesh) {
-            renderData.mHighDetailFloraMesh.reset();
+        else if (distanceToCamera2 >= sDebugOptions.mGrassDistanceSq + 10 && renderData.mGrassMesh) {
+            renderData.mGrassMesh.reset();
             renderData.mHighDetailFloraMeshDirty = true;
         }
-    }*/
+    }
 }
 
 void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
@@ -305,6 +307,51 @@ inline int getTileHeight(const Tile& neighbor, int layerIndex) {
     return height;
 }
 
+constexpr int GRASS_DENSITY = 8;
+
+void addTileGrass(
+    GrassBillboardMesh& grassMesh,
+    const Chunk& chunk,
+    const TileIndex& tileIndex,
+    int layerIndex,
+    const TileData& tileData,
+    const SpriteData& spriteData,
+    const Tile& rightTile,
+    const Tile& topTile
+) {
+    const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
+    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
+    const TileID tileId = tile.layers[layerIndex];
+
+    const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
+
+    /*Tile neighbors[8];
+    chunk.getTileNeighbors(tileIndex, neighbors);
+
+    const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+    const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+    const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
+
+    const int tx = tileIndex.getX();
+    const int ty = tileIndex.getY();
+    // Allow overlap when adjacent tiles are the same
+    const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    for (int y = 0; y < GRASS_DENSITY; ++y) {
+        for (int x = 0; x < GRASS_DENSITY; ++x) {
+            f32 rnd = Random::getCachedRandomfSpecific(x + CHUNK_SIZE * y - tx - ty * CHUNK_SIZE) * 0.9f;
+            float xo = (x + rnd) / (float)GRASS_DENSITY;
+            float yo = (y - rnd) / (float)GRASS_DENSITY;
+            float rsize = lerp(0.4f, 0.6f, rnd);
+            grassMesh.addBladeQuad(
+                f32v3(tileWorldPos.x + xo, tileWorldPos.y + yo, tile.baseZPosition),
+                f32v2(0.1f, rsize),
+                ui8v3(255u)
+            );
+        }
+    }
+};
+
 void addTileFlora(
     QuadMesh& floraMesh,
     const Chunk& chunk,
@@ -362,6 +409,9 @@ void addTileFloraBillboard(
     const Tile& rightTile,
     const Tile& topTile
 ) {
+
+    assert(false); // TODO: real grass
+
     const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
     const TileID tileId = tile.layers[layerIndex];
@@ -805,10 +855,11 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         if (spriteData.method == TileTextureMethod::FLORA) {
-                            f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
+                            /*f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
                             Tile rightTile = chunk.getRightTileHandle(index).tile;
                             Tile topTile = chunk.getTopTileHandle(index).tile;
-                            addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
+                            addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);*/
+                            continue;
                         }
                         else {
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
@@ -924,15 +975,16 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
     chunk.incRef();
 
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mHighDetailFloraMesh) {
-        renderData.mHighDetailFloraMesh = std::make_unique<QuadMesh>();
+    if (!renderData.mGrassMesh) {
+        renderData.mGrassMesh = std::make_unique<GrassBillboardMesh>();
     }
 
     Services::Threadpool::ref().addTask([&chunk, &renderData](ThreadPoolWorkerData* workerData) {
-        QuadMesh& floraMesh = *renderData.mHighDetailFloraMesh;
+        PreciseTimer timer;
+        GrassBillboardMesh& grassMesh = *renderData.mGrassMesh;
         // This is usually not enough but might as well try
         // TODO: Reserve based on graphics settings
-        floraMesh.reserveQuadCount(CHUNK_SIZE * 3);
+        grassMesh.reserveQuadCount(CHUNK_SIZE * GRASS_DENSITY * GRASS_DENSITY);
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
@@ -950,20 +1002,21 @@ bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
                     // TODO: Baked AO using a gradient texture instead of vertex colors
                     // Flora mesh ONLY
                     // Thin becomes billboard
-                    if (spriteData.method == TileTextureMethod::FLORA && tileData.shape != TileShape::THIN) {
+                    if (spriteData.method == TileTextureMethod::FLORA && tileData.shape == TileShape::THIN) {
                         Tile rightTile = chunk.getRightTileHandle(index).tile;
                         Tile topTile = chunk.getTopTileHandle(index).tile;
                     
-                        addTileFlora(floraMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
+                        addTileGrass(grassMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
                     }
                 }
             }
         }
+        std::cout << "created flora in " << timer.stop() << " ms" << std::endl;
     }, [this, &chunk]() {
         PreciseTimer timer;
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
-        renderData.mHighDetailFloraMesh->finishMesh(MeshDrawMode::STATIC);
+        renderData.mGrassMesh->finishMesh(MeshDrawMode::STATIC);
 
         // Recycle and flag as free
         chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = false;
