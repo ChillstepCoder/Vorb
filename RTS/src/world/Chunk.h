@@ -37,15 +37,12 @@ struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
-	std::unique_ptr<GrassBillboardMesh> mGrassMesh = nullptr;
     std::unique_ptr<ChunkBillboardMesh> mBillboardMesh = nullptr;
 	std::unique_ptr<ChunkGrassLod> mGrassLod = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mMeshDirty = true;
-	bool mHighDetailFloraMeshDirty = true;
 	bool mLODDirty = true;
     bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
-    bool mIsBuildingHighDetailFloraMesh = false; // When true, we are waiting for our mesh to be completed
 	bool mIsVisible = false;
 };
 
@@ -136,9 +133,7 @@ public:
 	void dirtyNavGraph() { mDirtyNavGraph = true; }
 
 	void dirtyMesh() {
-		// TODO: Not both
         mChunkRenderData.mMeshDirty = true;
-        mChunkRenderData.mHighDetailFloraMeshDirty = true;
 	}
 
     void setTileAt(TileIndex i, Tile tile);

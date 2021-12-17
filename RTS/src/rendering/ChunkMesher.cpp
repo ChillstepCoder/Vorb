@@ -227,17 +227,17 @@ void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
         createMeshAsync(chunk);
     }
 
-    if (!renderData.mIsBuildingHighDetailFloraMesh) {
-        const f32 distanceToCamera2 = glm::length2(cameraPos - chunk.getWorldPosCenter3D());
-        // TODO: better bias
-        if (distanceToCamera2 < sDebugOptions.mGrassDistanceSq && renderData.mHighDetailFloraMeshDirty) {
-            createHighDetailFloraMeshAsync(chunk);
-        }
-        else if (distanceToCamera2 >= sDebugOptions.mGrassDistanceSq + 10 && renderData.mGrassMesh) {
-            renderData.mGrassMesh.reset();
-            renderData.mHighDetailFloraMeshDirty = true;
-        }
-    }
+    //if (!renderData.mIsBuildingHighDetailFloraMesh) {
+    //    const f32 distanceToCamera2 = glm::length2(cameraPos - chunk.getWorldPosCenter3D());
+    //    // TODO: better bias
+    //    if (distanceToCamera2 < sDebugOptions.mGrassDistanceSq && renderData.mHighDetailFloraMeshDirty) {
+    //        createHighDetailFloraMeshAsync(chunk);
+    //    }
+    //    else if (distanceToCamera2 >= sDebugOptions.mGrassDistanceSq + 10 && renderData.mGrassMesh) {
+    //        renderData.mGrassMesh.reset();
+    //        renderData.mHighDetailFloraMeshDirty = true;
+    //    }
+    //}
 }
 
 void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
@@ -956,70 +956,6 @@ bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
         // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
         chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
-
-        // Update refcount
-        --mNumMeshTasksRunning;
-        chunk.decRef();
-    });
-    return true;
-}
-
-bool ChunkMesher::createHighDetailFloraMeshAsync(const Chunk& chunk) {
-
-    ++mNumMeshTasksRunning;
-    assert(!chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh);
-    chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = true;
-
-    // TODO: Move somewhere else?
-    chunk.mChunkRenderData.mHighDetailFloraMeshDirty = false;
-    chunk.incRef();
-
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mGrassMesh) {
-        renderData.mGrassMesh = std::make_unique<GrassBillboardMesh>();
-    }
-
-    Services::Threadpool::ref().addTask([&chunk, &renderData](ThreadPoolWorkerData* workerData) {
-        PreciseTimer timer;
-        GrassBillboardMesh& grassMesh = *renderData.mGrassMesh;
-        // This is usually not enough but might as well try
-        // TODO: Reserve based on graphics settings
-        grassMesh.reserveQuadCount(CHUNK_SIZE * GRASS_DENSITY * GRASS_DENSITY);
-
-        for (int y = 0; y < CHUNK_WIDTH; ++y) {
-            for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                //  TODO: Multiple world layers
-                TileIndex index(x, y);
-                const Tile& tile = chunk.mTiles[index];
-                // Flora is never ground level
-                for (int layerIndex = TILE_LAYER_MID; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.layers[layerIndex];
-                    if (layerTile == TILE_ID_NONE) {
-                        continue;
-                    }
-                    const TileData& tileData = TileRepository::getTileData(layerTile);
-                    const SpriteData& spriteData = tileData.spriteData;
-                    // TODO: Baked AO using a gradient texture instead of vertex colors
-                    // Flora mesh ONLY
-                    // Thin becomes billboard
-                    if (spriteData.method == TileTextureMethod::FLORA && tileData.shape == TileShape::THIN) {
-                        Tile rightTile = chunk.getRightTileHandle(index).tile;
-                        Tile topTile = chunk.getTopTileHandle(index).tile;
-                    
-                        addTileGrass(grassMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);
-                    }
-                }
-            }
-        }
-        std::cout << "created flora in " << timer.stop() << " ms" << std::endl;
-    }, [this, &chunk]() {
-        PreciseTimer timer;
-        ChunkRenderData& renderData = chunk.mChunkRenderData;
-
-        renderData.mGrassMesh->finishMesh(MeshDrawMode::STATIC);
-
-        // Recycle and flag as free
-        chunk.mChunkRenderData.mIsBuildingHighDetailFloraMesh = false;
 
         // Update refcount
         --mNumMeshTasksRunning;

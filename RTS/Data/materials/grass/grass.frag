@@ -11,12 +11,16 @@ layout (location = 1) out vec4 oNormal;
 layout (location = 2) out vec4 oRoughness;
 
 void main() {
-    oColor.rgb = texture(Atlas, vec3(fUV, fAtlasPage)).rgb;
+    oColor.rgba = texture(Atlas, vec3(fUV, fAtlasPage)).rgba;
+	// TODO: Lower settings disable transparency?
+	if (oColor.a < 0.85) {
+        discard;
+    }
 	oColor.rgb *= fTint;
 	oColor.a = 1.0;
 	
 	// TMP
-	oColor.rgb = oColor.rgb * 0.000001 + vec3(1.0, 0.0, 0.0);
+	oColor.rgb = oColor.rgb * 0.000001 + vec3(167.0 / 255.0, 163.0 / 255.0, 112.0 / 255.0);
 	
 	
 	// Normal is always the next page

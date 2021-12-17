@@ -2,6 +2,8 @@
 
 class GrassBillboardMesh;
 class Chunk;
+class Camera3D;
+DECL_VG(class GLProgram);
 
 template <unsigned int p>
 int constexpr intpow(const int x)
@@ -23,13 +25,8 @@ static_assert(MAX_GRASS_LOD_DEPTH > 1);
 enum ChunkGrassPatchStatus : ui8 {
     GRASS_PATCH_STATUS_INVALID,
     GRASS_PATCH_STATUS_VALID,
-    GRASS_PATCH_WAITING_SIBLINGS, // Waiting for siblings to finish initializing
-    GRASS_PATCH_STATUS_MESHING,   // Currently on mesher thread
-    GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_0, // No child has finished meshing
-    GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_1, // One child has finished meshing
-    GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_2, // Two children have finished meshing
-    GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_3, // Three children have finished meshing
-    GRASS_PATCH_STATUS_SIGNALED_RECOMBINE,
+    GRASS_PATCH_STATUS_RECOMBINING,
+    GRASS_PATCH_STATUS_WAITING_PARENT_RECOMBINE,
     GRASS_PATCH_STATUS_SUBDIVIDED,
     GRASS_PATCH_STATUS_WAITING_FOR_CHILD_RECOMBINE_0, // One child has requested recombine
     GRASS_PATCH_STATUS_WAITING_FOR_CHILD_RECOMBINE_1, // Two children have requested recombine
@@ -37,17 +34,39 @@ enum ChunkGrassPatchStatus : ui8 {
     GRASS_PATCH_STATUS_READY_TO_RECOMBINE, // All children have finished recombine
 };
 
+enum ChunkGrassPatchFlags : ui8 {
+    GRASS_PATCH_FLAG_DIRTY_MESH                  = 1 << 0,
+    GRASS_PATCH_FLAG_MESHING                     = 1 << 1,
+    GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE         = 1 << 2,
+    GRASS_PATCH_FLAG_ACTIVE                      = 1 << 3,
+    GRASS_PATCH_FLAG_SHOULD_RENDER               = 1 << 4,
+};
+
 class ChunkGrassPatch {
 public:
     ChunkGrassPatch() = default;
     ~ChunkGrassPatch();
 
-    void init() {
-        mStatus = GRASS_PATCH_STATUS_INVALID;
+    void init(ChunkGrassPatchStatus status = GRASS_PATCH_STATUS_INVALID) {
+        mStatus = status;
+        mFlags = GRASS_PATCH_FLAG_DIRTY_MESH | GRASS_PATCH_FLAG_ACTIVE;
     }
-    void destroy();
+    void destroy(ChunkGrassPatchStatus status = GRASS_PATCH_STATUS_INVALID);
+
+    bool shouldRender() const { return mFlags & GRASS_PATCH_FLAG_SHOULD_RENDER; }
+    bool isActive() const { return mFlags & GRASS_PATCH_FLAG_ACTIVE; }
+    bool isMeshDirty() const { return mFlags & GRASS_PATCH_FLAG_DIRTY_MESH; }
+    bool isMeshing() const { return mFlags & GRASS_PATCH_FLAG_MESHING; }
+    bool didSignalRecombine() const { return mFlags & GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE; }
+
+    bool isParentActive(ui32 myIndex, ChunkGrassPatch nodes[]) const;
+    
+    bool areChildrenDoneMeshing(ui32 myIndex, ChunkGrassPatch nodes[]);
+    bool signalParentRecombine(ui32 myIndex, ChunkGrassPatch nodes[]);
+    void trySignalParentNoLongerDesireRecombine(ui32 myIndex, ChunkGrassPatch nodes[]);
 
     ui8 mStatus;
+    ui8 mFlags;
     std::unique_ptr<GrassBillboardMesh> mMesh;
 };
 
@@ -59,6 +78,7 @@ public:
     ChunkGrassLod(const Chunk& mChunk);
     ~ChunkGrassLod();
 
+    void render(const Camera3D& camera, const vg::GLProgram& program);
     void renderDebug();
 
     // TODOL lightupdate, heavyupdate, only heavy when transition to diff cell, heavy determines splitting
@@ -67,6 +87,8 @@ public:
     ui32 getRefCount() const { return mRefCount; }
 
 private:
+    void updateMeshForPatch(ChunkGrassPatch& patch, ui32 lod, ui32 patchIndex);
+
     // Flat for cache coherency, no allocations, and multithreading
     const Chunk& mChunk;
     ui16 mActiveNodes[QUADTREE_SIZE];

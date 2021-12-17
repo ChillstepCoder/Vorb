@@ -82,7 +82,6 @@ void Chunk::dispose() {
     // Reset render data
     mChunkRenderData.mLODDirty = true;
     mChunkRenderData.mMeshDirty = true;
-    mChunkRenderData.mHighDetailFloraMeshDirty = true;
     mChunkRenderData.mIsVisible = false;
 
     if (mChunkRenderData.mLODTexture) {
@@ -92,7 +91,8 @@ void Chunk::dispose() {
 
     mChunkRenderData.mBillboardMesh.reset();
     mChunkRenderData.mChunkMesh.reset();
-    mChunkRenderData.mGrassMesh.reset();
+    // Make sure no funny business
+    if (mChunkRenderData.mGrassLod) assert(!mChunkRenderData.mGrassLod->getRefCount());
     mChunkRenderData.mGrassLod.reset();
 
     freeTiles();

@@ -12,6 +12,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/RenderContext.h"
+#include "rendering/ChunkGrassLod.h"
 #include "services/Services.h"
 
 #include <Vorb/graphics/SpriteBatch.h>
@@ -93,7 +94,7 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
                 f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
                 glUniform3fv(offsetUniform, 1, &offset.x);
-                TryRenderFloraMesh(chunk, mGrassMaterial);
+                TryRenderGrassMeshes(chunk, mGrassMaterial, camera);
             });
         }
         { // Tiles
@@ -207,10 +208,10 @@ void ChunkRenderer::TryRenderBaseMesh(const Chunk& chunk, const Material* materi
     }
 }
 
-void ChunkRenderer::TryRenderFloraMesh(const Chunk& chunk, const Material* material) {
+void ChunkRenderer::TryRenderGrassMeshes(const Chunk& chunk, const Material* material, const Camera3D& camera) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mGrassMesh && renderData.mGrassMesh->isValid()) {
-        renderData.mGrassMesh->draw(material->mProgram);
+    if (renderData.mGrassLod) {
+        renderData.mGrassLod->render(camera, material->mProgram);
     }
 }
 

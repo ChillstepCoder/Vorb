@@ -3,7 +3,11 @@
 
 #include "rendering/QuadMesh.h"
 #include "world/Chunk.h"
+#include "camera/Camera3D.h"
 
+#include "services/Services.h"
+
+#include "Random.h"
 #include "DebugRenderer.h"
 
 const float LOG_MULT = 1.0f / (2 * log(2));
@@ -14,6 +18,14 @@ constexpr int GRASS_LOD_DETAIL[MAX_GRASS_LOD_DEPTH] = {
     2,
     4,
     8,
+};
+
+constexpr f32 GRASS_BLADE_WIDTHS[MAX_GRASS_LOD_DEPTH] = {
+    0.0f,
+    1.0f,
+    0.5f,
+    0.2f,
+    0.1f,
 };
 
 constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[MAX_GRASS_LOD_DEPTH] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths
@@ -97,6 +109,14 @@ const f32v2 LOD_HALF_DIMS[MAX_GRASS_LOD_DEPTH] = {
     f32v2((CHUNK_WIDTH >> 4) / 2.0f),
 };
 
+const f32 LOD_RADIUS_DIMS[MAX_GRASS_LOD_DEPTH] = {
+    f32(sqrt(pow(CHUNK_WIDTH / 2.0f, 2.0f) * 2.0f)),
+    f32(sqrt(pow((CHUNK_WIDTH >> 1) / 2.0f, 2.0f) * 2.0f)),
+    f32(sqrt(pow((CHUNK_WIDTH >> 2) / 2.0f, 2.0f) * 2.0f)),
+    f32(sqrt(pow((CHUNK_WIDTH >> 3) / 2.0f, 2.0f) * 2.0f)),
+    f32(sqrt(pow((CHUNK_WIDTH >> 4) / 2.0f, 2.0f) * 2.0f)),
+};
+
 const ui32v2 CHILD_OFFSETS[4] = {
     ui32v2(0, 0), // Bottom left
     ui32v2(1, 0), // Bottom Right
@@ -119,8 +139,19 @@ constexpr ui32 LEVEL_WIDTHS[MAX_GRASS_LOD_DEPTH] = {
     16,
 };
 
+inline ui32 getParentIndex(ui32 index) {
+    assert(index != 0);
+    return (index - 1u) / 4u;
+}
+
+inline ChunkGrassPatch& getParent(ui32 index, ChunkGrassPatch nodes[]) {
+    assert(index != 0);
+    return nodes[(index - 1u) / 4u];
+}
+
 ChunkGrassLod::ChunkGrassLod(const Chunk& chunk) : mChunk(chunk) {
-    mNodes[0].mStatus = GRASS_PATCH_STATUS_INVALID;
+    mNodes[0].init();
+    mNodes[0].mFlags &= (~GRASS_PATCH_FLAG_DIRTY_MESH);
     mActiveNodes[0] = 0;
     mNumActiveNodes = 1;
 
@@ -133,6 +164,23 @@ ChunkGrassLod::~ChunkGrassLod()
     mChunk.decRef();
 }
 
+
+void ChunkGrassLod::render(const Camera3D& camera, const vg::GLProgram& program) {
+    f32v3 pos = mChunk.getWorldPos3D();
+    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+        ui32 index = mActiveNodes[i];
+        ChunkGrassPatch& patch = mNodes[index];
+
+        if (patch.shouldRender()) {
+            ui32 lod = GRASS_LOD_FROM_INDEX[index];
+            f32v2 centerPos = f32v2(GRASS_PATCH_POSITIONS[index]) + LOD_HALF_DIMS[lod];
+            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
+            if (camera.sphereIsVisible(centerPos3d + pos, LOD_RADIUS_DIMS[lod])) {
+                patch.mMesh->draw(program);
+            }
+        }
+    }
+}
 
 void ChunkGrassLod::renderDebug() {
 
@@ -148,13 +196,8 @@ void ChunkGrassLod::renderDebug() {
             switch (patch.mStatus) {
                 case GRASS_PATCH_STATUS_INVALID: color = color4(0.0f, 1.0f, 0.0f); break;
                 case GRASS_PATCH_STATUS_VALID: color = color4(0.0f, 0.0f, 1.0f); break;
-                case GRASS_PATCH_WAITING_SIBLINGS: color = color4(0.0f, 1.0f, 1.0f); break;
-                case GRASS_PATCH_STATUS_MESHING: color = color4(1.0f, 1.0f, 0.0f); break;
-                case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_0: color = color4(0.3f, 0.3f, 0.3f); break;
-                case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_1: color = color4(0.5f, 0.5f, 0.5f); break;
-                case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_2: color = color4(0.7f, 0.7f, 0.7f); break;
-                case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_3: color = color4(0.9f, 0.9f, 0.9f); break;
-                case GRASS_PATCH_STATUS_SIGNALED_RECOMBINE: color = color4(1.0f, 0.0f, 0.0f); break;
+                case GRASS_PATCH_STATUS_RECOMBINING: color = color4(0.0f, 1.0f, 1.0f); break;
+                case GRASS_PATCH_STATUS_WAITING_PARENT_RECOMBINE: color = color4(1.0f, 1.0f, 0.0f); break;
                 case GRASS_PATCH_STATUS_SUBDIVIDED: color = color4(0.0f, 0.0f, 0.0f); break;
                 case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_RECOMBINE_0: color = color4(0.2f, 0.0f, 1.0f); break;
                 case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_RECOMBINE_1: color = color4(0.4f, 0.0f, 1.0f); break;
@@ -167,6 +210,54 @@ void ChunkGrassLod::renderDebug() {
     }
 }
 
+void createGrassMesh(
+    GrassBillboardMesh& grassMesh,
+    const Chunk& chunk,
+    const ui32v2& tilePosStart,
+    ui32 lod
+) {
+    const ui32v2& dims = LOD_DIMS[lod];
+    const ui32 density = GRASS_LOD_DETAIL[lod];
+    const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
+    grassMesh.reserveQuadCount((size_t)dims.x * dims.y * density * density);
+    for (ui32 y = 0; y < dims.y; ++y) {
+        for (ui32 x = 0; x < dims.x; ++x) {
+            TileIndex tileIndex(tilePosStart.x + x, tilePosStart.y + y);
+
+            const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
+            const TileID tileId = tile.layers[1]; // Always use layer 1 for grass
+
+            const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
+
+            /*Tile neighbors[8];
+            chunk.getTileNeighbors(tileIndex, neighbors);
+
+            const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+            const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
+            const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
+
+            const int tx = tileIndex.getX();
+            const int ty = tileIndex.getY();
+            // Allow overlap when adjacent tiles are the same
+            //const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
+            //const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
+            for (int y = 0; y < density; ++y) {
+                for (int x = 0; x < density; ++x) {
+                    f32 rnd = Random::getCachedRandomfSpecific(x + CHUNK_SIZE * y - tx - ty * CHUNK_SIZE) * 0.9f;
+                    float xo = (x + rnd) / (float)density;
+                    float yo = (y - rnd) / (float)density;
+                    float rsize = lerp(0.4f, 0.6f, rnd);
+                    grassMesh.addBladeQuad(
+                        f32v3(tileWorldPos.x + xo, tileWorldPos.y + yo, tile.baseZPosition),
+                        f32v2(bladeWidth, rsize),
+                        ui8v3(255u)
+                    );
+                }
+            }
+        }
+    }
+};
+
 void ChunkGrassLod::update(const f32v2& loadCenter)
 {
     f32v2 mRelativeCenter = loadCenter - mChunk.getWorldPos();
@@ -175,19 +266,87 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
         ui32 index = mActiveNodes[i];
         ChunkGrassPatch& patch = mNodes[index];
 
+        assert(patch.isActive());
+
+        // When patches are meshing, we wait for them to complete
+        if (patch.isMeshing()) {
+            ++i;
+            continue;
+        }
+
         // For node I, its children are 4 * i + 1 through 4 * i + 4
         // Therefore for node I, its parent is (i - 1) / 4;
         ui32 lod = GRASS_LOD_FROM_INDEX[index];
+
+        // If our parent is active, we will do nothing but mesh, since the parent is either waiting on us to mesh, or is recombining us
+        if (lod > 0 && getParent(index, mNodes).isActive()) {
+            assert(patch.mStatus != GRASS_PATCH_STATUS_SUBDIVIDED);
+            if (patch.isMeshDirty()) {
+                updateMeshForPatch(patch, lod, index);
+            }
+            ++i;
+            continue;
+        }
+        else if (patch.mStatus == GRASS_PATCH_STATUS_RECOMBINING) {
+            if (patch.isMeshDirty()) {
+                updateMeshForPatch(patch, lod, index);
+                ++i; // Move to next
+            }
+            else if (!patch.isMeshing()) {
+                // We can recombine
+                patch.mStatus = GRASS_PATCH_STATUS_VALID;
+                patch.mFlags |= GRASS_PATCH_FLAG_SHOULD_RENDER;
+                ui16 childIndexFirst = 4u * index + 1;
+                ui16 childIndexLast = 4u * index + 4;
+                needSort = true;
+                // Remove children from the active list via linear search
+                for (ui32 j = 0; j < mNumActiveNodes;) {
+                    ui16 activeNode = mActiveNodes[j];
+                    // Check if it is one of the children and remove it if so
+                    if (activeNode >= childIndexFirst && activeNode <= childIndexLast) {
+                        mNodes[activeNode].destroy();
+                        mActiveNodes[j] = mActiveNodes[--mNumActiveNodes];
+                    }
+                    else {
+                        ++j;
+                    }
+                }
+                // Don't move to next
+            }
+            continue; 
+        }
+
         f32v2 centerPos = f32v2(GRASS_PATCH_POSITIONS[index]) + LOD_HALF_DIMS[lod];
             
         f32 distance2 = glm::distance2(centerPos, mRelativeCenter);
         if (distance2 < GRASS_SUBDIVIDE_DISTANCES_SQ[lod]) {
-            if (patch.mStatus == GRASS_PATCH_STATUS_SIGNALED_RECOMBINE) {
-                // Signal parent that we no longer wish to recombine
-                ui32 parentIndex = (index - 1) / 4;
-                --mNodes[parentIndex].mStatus;
-                patch.mStatus = GRASS_PATCH_STATUS_INVALID; // TODO: This is wrong
+            // We want to subdivide
+            if (patch.mStatus == GRASS_PATCH_STATUS_SUBDIVIDED) {
+                // If we reach here we are still active and waiting on children, check if our
+                // children are finished meshing
+                if (patch.areChildrenDoneMeshing(index, mNodes)) {
+                    // Tell children they can draw
+                    ui16 childIndexFirst = 4u * index + 1;
+                    for (ui16 i = 0; i < 4; ++i) {
+                        mNodes[childIndexFirst + i].mFlags |= GRASS_PATCH_FLAG_SHOULD_RENDER;
+                    }
+                    // Deactivate us and mark as subdivided
+                    patch.destroy();
+                    mActiveNodes[i] = mActiveNodes[--mNumActiveNodes];
+                    needSort = true;
+                    std::cout << " SUCCESS\n";
+                    continue;
+                }
+                std::cout << " FAIL\n";
+                ++i;
+                continue;
             }
+
+            // If we previously signaled parent to recombine, unsignal it
+            if (patch.didSignalRecombine()) {
+                patch.trySignalParentNoLongerDesireRecombine(index, mNodes);
+            }
+
             // If we were invalid, then there is no waiting to be done, mark us as invalid
             if (patch.mStatus == GRASS_PATCH_STATUS_INVALID) {
                 // Pop and swap
@@ -199,11 +358,11 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
             }
             else if (patch.mStatus == GRASS_PATCH_STATUS_VALID) {
                 // Subdivide, we are still active, but we are waiting for our children to finish initializing
-                patch.mStatus = GRASS_PATCH_STATUS_WAITING_FOR_CHILD_MESH_0;
+                patch.mStatus = GRASS_PATCH_STATUS_SUBDIVIDED;
                 ++i; // Increment to next patch
             }
             else {
-                // Else we are waiting for threads
+                // Else we are currently waiting for children to recombine
                 ++i; // Increment to next patch
                 continue;
             }
@@ -218,54 +377,45 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
             mActiveNodes[mNumActiveNodes++] = childIndex;
             mNodes[childIndex++].init();
         }
-        else if (distance2 > GRASS_SUBDIVIDE_DISTANCES_SQ[lod - 1] * 1.1 /*TODO: Non const*/) { // Don't need to check lod 0 here since it will always pass the first check
+        else if (distance2 > GRASS_SUBDIVIDE_DISTANCES_SQ[lod - 1] * 1.1f /*TODO: Non const*/) { // Don't need to check lod 0 here since it will always pass the first check
             // We can be recombined
-            if (patch.mStatus <= GRASS_PATCH_STATUS_VALID) { // TODO: Valid only?
-                ui32 parentIndex = (index - 1) / 4;
-                ChunkGrassPatch& parent = mNodes[parentIndex];
-                // Make sure parent isn't in a wait state
-                if (parent.mStatus >= GRASS_PATCH_STATUS_SUBDIVIDED) {
-                    patch.mStatus = GRASS_PATCH_STATUS_SIGNALED_RECOMBINE;
-                    ++parent.mStatus;
-                    if (parent.mStatus == GRASS_PATCH_STATUS_READY_TO_RECOMBINE) {
-                        // Perform recombination
-                        ui16 childIndexFirst = 4u * parentIndex + 1;
-                        ui16 childIndexLast = 4u * parentIndex + 4;
-                        // Remove children from the active list via linear search
-                        for (ui32 j = 0; j < mNumActiveNodes;) {
-                            ui16 activeNode = mActiveNodes[j];
-                            // Check if it is one of the children
-                            if (activeNode >= childIndexFirst && activeNode <= childIndexLast) {
-                                mNodes[mActiveNodes[j]].destroy();
-                                mActiveNodes[j] = mActiveNodes[--mNumActiveNodes];
-                            }
-                            else {
-                                ++j;
-                            }
+            if (patch.mStatus == GRASS_PATCH_STATUS_VALID && !patch.didSignalRecombine()) {
+                if (patch.signalParentRecombine(index, mNodes)) {
+                    ui32 parentIndex = getParentIndex(index);
+                    ChunkGrassPatch& parent = mNodes[parentIndex];
+                    // Signal child recombination
+                    ui16 childIndexFirst = 4u * parentIndex + 1;
+                    ui16 childIndexLast = 4u * parentIndex + 4;
+                    for (ui32 j = 0; j < mNumActiveNodes; ++j) {
+                        ui16 activeNode = mActiveNodes[j];
+                        // Check if it is one of the children
+                        if (activeNode >= childIndexFirst && activeNode <= childIndexLast) {
+                            mNodes[mActiveNodes[j]].mStatus = GRASS_PATCH_STATUS_WAITING_PARENT_RECOMBINE;
                         }
-                        // Add parent to the active list
-                        mActiveNodes[mNumActiveNodes++] = parentIndex;
-                        parent.mStatus = GRASS_PATCH_STATUS_INVALID; // TODO: WRONG
-
-                        needSort = true;
-                        continue; // Do not increment to next patch
                     }
+                    // Add parent to the active list
+                    mActiveNodes[mNumActiveNodes++] = parentIndex;
+                    parent.init(GRASS_PATCH_STATUS_RECOMBINING);
+
+                    continue; // Do not increment to next patch
+                }
+            }
+            else {
+                // Even if we signaled for recombine, we can still mesh if our siblings aren't ready to recombine
+                if (patch.isMeshDirty()) {
+                    updateMeshForPatch(patch, lod, index);
                 }
             }
             ++i; // Increment to next patch
         }
-        else if (patch.mStatus == GRASS_PATCH_STATUS_SIGNALED_RECOMBINE) {
-            // Signal parent that we no longer wish to recombine
-            ui32 parentIndex = (index - 1) / 4;
-            ChunkGrassPatch& parent = mNodes[parentIndex];
-            // Make sure parent isnt in a wait state
-            if (parent.mStatus > GRASS_PATCH_STATUS_SUBDIVIDED) {
-                patch.mStatus = GRASS_PATCH_STATUS_INVALID; // TODO: THIS SHOULD BE VALID WHEN WE HAVE MESH
-                --parent.mStatus;
-            }
+        else if (patch.didSignalRecombine()) {
+            patch.trySignalParentNoLongerDesireRecombine(index, mNodes);
             ++i; // Increment to next patch
         }
         else {
+            if (patch.isMeshDirty()) {
+                updateMeshForPatch(patch, lod, index);
+            }
             ++i;  // Increment to next patch
         }
     }
@@ -276,11 +426,91 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
     }
 }
 
+void ChunkGrassLod::updateMeshForPatch(ChunkGrassPatch& patch, ui32 lod, ui32 patchIndex) {
+
+    patch.mFlags &= (~GRASS_PATCH_FLAG_DIRTY_MESH);
+    patch.mFlags |= GRASS_PATCH_FLAG_MESHING;
+    if (!patch.mMesh) {
+        patch.mMesh = std::make_unique<GrassBillboardMesh>();
+        assert(patch.mStatus == GRASS_PATCH_STATUS_INVALID || patch.mStatus == GRASS_PATCH_STATUS_RECOMBINING);
+    }
+    ++mRefCount;
+    mChunk.incRef();
+
+    Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex](ThreadPoolWorkerData*) {
+
+        PreciseTimer timer;
+
+        createGrassMesh(*patch.mMesh, mChunk, GRASS_PATCH_POSITIONS[patchIndex], lod);
+
+        std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
+    }, [this, &patch, patchIndex]() {
+
+        patch.mMesh->finishMesh(MeshDrawMode::STATIC);
+        patch.mFlags &= (~GRASS_PATCH_FLAG_MESHING);
+
+        // If recombining we wont update till next cycle
+        if (patch.mStatus != GRASS_PATCH_STATUS_RECOMBINING) {
+            patch.mStatus = GRASS_PATCH_STATUS_VALID;
+
+            if (!getParent(patchIndex, mNodes).isActive()) {
+                // If our parent isnt active or we arent recombining, then we can render, otherwise we will wait for parent to deactivate
+                patch.mFlags |= GRASS_PATCH_FLAG_SHOULD_RENDER;
+            }
+        }
+
+        // Update refcount
+        --mRefCount;
+        mChunk.decRef();
+    });
+}
+
 ChunkGrassPatch::~ChunkGrassPatch()
 {
 
 }
 
-void ChunkGrassPatch::destroy() {
-    mMesh.reset();
+void ChunkGrassPatch::destroy(ChunkGrassPatchStatus status /*= GRASS_PATCH_STATUS_INVALID*/) {
+    assert(!isMeshing());
+    mStatus = GRASS_PATCH_STATUS_SUBDIVIDED;
+    mFlags = 0;
+    mMesh.reset(); // TODO: Recycle data?
+}
+
+bool ChunkGrassPatch::isParentActive(ui32 myIndex, ChunkGrassPatch nodes[]) const {
+    return getParent(myIndex, nodes).isActive();
+}
+
+bool ChunkGrassPatch::areChildrenDoneMeshing(ui32 myIndex, ChunkGrassPatch nodes[]) {
+    int numDone = 0;
+    ui16 childIndexFirst = 4u * myIndex + 1;
+    for (ui16 i = 0; i < 4; ++i) {
+        ui16 childIndex = childIndexFirst + i;
+        if (nodes[childIndex].mStatus == GRASS_PATCH_STATUS_VALID) {
+            ++numDone;
+        }
+    }
+    return (numDone == 4);
+}
+
+bool ChunkGrassPatch::signalParentRecombine(ui32 myIndex, ChunkGrassPatch nodes[]) {
+    ChunkGrassPatch& parent = getParent(myIndex, nodes);
+    // Make sure parent isn't in a wait state
+    if (parent.mStatus >= GRASS_PATCH_STATUS_SUBDIVIDED) {
+        mFlags |= GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE;
+        ++parent.mStatus;
+        if (parent.mStatus == GRASS_PATCH_STATUS_READY_TO_RECOMBINE) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ChunkGrassPatch::trySignalParentNoLongerDesireRecombine(ui32 myIndex, ChunkGrassPatch nodes[]) {
+    // Signal parent that we no longer wish to recombine
+    ChunkGrassPatch& parent = getParent(myIndex, nodes);
+    assert(parent.mStatus > GRASS_PATCH_STATUS_SUBDIVIDED);
+    assert(didSignalRecombine());
+    --parent.mStatus;
+   mFlags &= (~GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE);
 }

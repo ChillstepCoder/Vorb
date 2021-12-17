@@ -35,7 +35,7 @@ public:
 private:
     // Different rendering methods
     void TryRenderBaseMesh(const Chunk& chunk, const Material* material);
-    void TryRenderFloraMesh(const Chunk& chunk, const Material* material);
+    void TryRenderGrassMeshes(const Chunk& chunk, const Material* material, const Camera3D& camera);
     void TryRenderBillboardMesh(const Chunk& chunk, const Material* material);
     //void RenderMeshOrLODTexture(const Chunk& chunk, const Camera3D& camera);
     void RenderLODTexture(const f32v2& worldPos, VGTexture texture, f32 width, const Camera3D& camera);
