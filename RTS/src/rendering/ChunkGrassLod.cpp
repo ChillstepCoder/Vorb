@@ -5,12 +5,14 @@
 #include "world/Chunk.h"
 #include "camera/Camera3D.h"
 
+#include "options/DebugOptions.h"
+
 #include "services/Services.h"
 
 #include "Random.h"
 #include "DebugRenderer.h"
 
-const float LOG_MULT = 1.0f / (2 * log(2));
+const f32 LOG_MULT = (f32)(1.0 / (2 * log(2)));
 
 constexpr int GRASS_LOD_DETAIL[MAX_GRASS_LOD_DEPTH] = {
     0,
@@ -164,8 +166,14 @@ ChunkGrassLod::~ChunkGrassLod()
     mChunk.decRef();
 }
 
+bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) {
+    return (length2(centerPos - cameraPos) - SQ(radius)) <= sDebugOptions.mGrassDistanceSq - SQ(CHUNK_WIDTH * 0.5f); // SQ chunkwidth half will make it fit more closely (for some reason?)
+}
+
 
 void ChunkGrassLod::render(const Camera3D& camera, const vg::GLProgram& program) {
+    const f32v3& cameraPos = camera.getPosition();
+    const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mChunk.getWorldPos();
     f32v3 pos = mChunk.getWorldPos3D();
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
         ui32 index = mActiveNodes[i];
@@ -175,14 +183,19 @@ void ChunkGrassLod::render(const Camera3D& camera, const vg::GLProgram& program)
             ui32 lod = GRASS_LOD_FROM_INDEX[index];
             f32v2 centerPos = f32v2(GRASS_PATCH_POSITIONS[index]) + LOD_HALF_DIMS[lod];
             f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
-            if (camera.sphereIsVisible(centerPos3d + pos, LOD_RADIUS_DIMS[lod])) {
+            const f32 radius = LOD_RADIUS_DIMS[lod];
+            if (camera.sphereIsVisible(centerPos3d + pos, radius) &&
+                isPatchInRange(centerPos, cameraPos2Drelative, radius)) {
                 patch.mMesh->draw(program);
             }
         }
     }
 }
 
-void ChunkGrassLod::renderDebug() {
+void ChunkGrassLod::renderDebug(const Camera3D& camera) {
+
+    const f32v3& cameraPos = camera.getPosition();
+    const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mChunk.getWorldPos();
 
     f32v3 pos = mChunk.getWorldPos3D();
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
@@ -190,9 +203,13 @@ void ChunkGrassLod::renderDebug() {
         ChunkGrassPatch& patch = mNodes[index];
         ui32 lod = GRASS_LOD_FROM_INDEX[index];
         // TODO: Dont check this since we will never have pure root
-        if (lod != 0) {
-            ui32v2 posOffset = GRASS_PATCH_POSITIONS[index];
-            color4 color = color4(1.0f, 1.0f, 1.0f);
+
+        color4 color = color4(1.0f, 1.0f, 1.0f);
+        f32v2 centerPos = f32v2(GRASS_PATCH_POSITIONS[index]) + LOD_HALF_DIMS[lod];
+        if (!isPatchInRange(centerPos, cameraPos2Drelative, LOD_RADIUS_DIMS[lod])) {
+            color = color4(1.0f, 0.0f, 0.0f);
+        }
+        else {
             switch (patch.mStatus) {
                 case GRASS_PATCH_STATUS_INVALID: color = color4(0.0f, 1.0f, 0.0f); break;
                 case GRASS_PATCH_STATUS_VALID: color = color4(0.0f, 0.0f, 1.0f); break;
@@ -204,7 +221,10 @@ void ChunkGrassLod::renderDebug() {
                 case GRASS_PATCH_STATUS_WAITING_FOR_CHILD_RECOMBINE_2: color = color4(0.6f, 0.0f, 1.0f); break;
                 case GRASS_PATCH_STATUS_READY_TO_RECOMBINE: color = color4(1.0f, 0.0f, 1.0f); break;
             }
+        }
 
+        if (lod != 0) {
+            ui32v2 posOffset = GRASS_PATCH_POSITIONS[index];
             DebugRenderer::drawWireQuad(pos + f32v3(posOffset.x, posOffset.y, 0.0f), f32v2(LOD_DIMS[lod]), color);
         }
     }
@@ -241,8 +261,8 @@ void createGrassMesh(
             // Allow overlap when adjacent tiles are the same
             //const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
             //const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
-            for (int y = 0; y < density; ++y) {
-                for (int x = 0; x < density; ++x) {
+            for (int y = 0; y < (int)density; ++y) {
+                for (int x = 0; x < (int)density; ++x) {
                     f32 rnd = Random::getCachedRandomfSpecific(x + CHUNK_SIZE * y - tx - ty * CHUNK_SIZE) * 0.9f;
                     float xo = (x + rnd) / (float)density;
                     float yo = (y - rnd) / (float)density;

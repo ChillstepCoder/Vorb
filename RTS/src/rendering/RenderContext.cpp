@@ -607,11 +607,11 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Grass LOD
     if (sDebugOptions.mDebugGrassLod) {
-        mWorld.enumVisibleChunks([](const Chunk& chunk) {
+        mWorld.enumVisibleChunks([&camera](const Chunk& chunk) {
             if (chunk.isDataReady()) {
 
                 if (chunk.mChunkRenderData.mGrassLod) {
-                    chunk.mChunkRenderData.mGrassLod->renderDebug();
+                    chunk.mChunkRenderData.mGrassLod->renderDebug(camera);
                 }
             }
         });

@@ -33,8 +33,9 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
 
     if (ImGui::CollapsingHeader("Grass")) {
         ImGui::PushID(++ID);
-        if (ImGui::SliderFloat("Render distance", &sDebugOptions.mGrassDistance, 24.0f, 500.0f, "%.1f")) {
+        if (ImGui::SliderFloat("Render distance", &sDebugOptions.mGrassDistance, 100.0f, 500.0f, "%.1f")) {
             sDebugOptions.mGrassDistanceSq = SQ(sDebugOptions.mGrassDistance);
+            sDebugOptions.mGrassFadeDistance = sDebugOptions.mGrassDistance * GRASS_FADE_MULT;
         }
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
         ImGui::PopID();

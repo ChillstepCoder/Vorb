@@ -79,7 +79,7 @@ public:
     ~ChunkGrassLod();
 
     void render(const Camera3D& camera, const vg::GLProgram& program);
-    void renderDebug();
+    void renderDebug(const Camera3D& camera);
 
     // TODOL lightupdate, heavyupdate, only heavy when transition to diff cell, heavy determines splitting
     void update(const f32v2& loadCenter);

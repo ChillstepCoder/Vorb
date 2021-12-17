@@ -15,6 +15,8 @@
 #include "rendering/ChunkGrassLod.h"
 #include "services/Services.h"
 
+#include "options/DebugOptions.h"
+
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -90,6 +92,8 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
         { // Grass
             mMaterialRenderer.bindMaterialForRender(*mGrassMaterial);
             VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
+            VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
+            glUniform1f(fadeUniform, sDebugOptions.mGrassFadeDistance);
             world.enumVisibleChunks([&](const Chunk& chunk) {
                 ChunkRenderData& renderData = chunk.mChunkRenderData;
                 f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();

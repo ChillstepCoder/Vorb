@@ -11,6 +11,7 @@ flat out float fAtlasPage;
 out vec3 fTint;
 out mat3 fTBN;
 out float fRoughness;
+out float fDistance;
 
 #include "../util/wind.glsl"
 
@@ -39,8 +40,6 @@ void main() {
 	fRoughness = 0.0;
 	float vWindInfluence = 1.0;
 	
-	// Compute uvs
-    fUV = vec2(1.0);
     fAtlasPage = 0.0;
 	
 	// Compute position
@@ -65,13 +64,15 @@ void main() {
 	
 	float distanceFromCamera = clamp((200.0 - glPos.z) * 0.01, 0.0, 1.0); // Make so far away doesnt lean
 	angle = min(pow(angle, 0.4) * xzOffsetUncompressed.y, 1.0) * distanceFromCamera;
+	fDistance = length(worldPos.xy);
 	
 	worldPos.xyz += CameraFront * angle;
-	glPos = VP * worldPos;
+	vec4 screenPos = VP * worldPos;
+	gl_Position = screenPos;
+	
+	// Compute uvs as screen coords
+    fUV = (screenPos.xy / vec2(screenPos.w));
 
 	// Hardcoded for facing up
 	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
-	
-	
-    gl_Position = glPos;
 }

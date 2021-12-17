@@ -1,3 +1,6 @@
 grass:
   vert: grass.vert
   frag: grass.frag
+  textures:
+    - name: grey_noise
+      uniform: GreyNoise

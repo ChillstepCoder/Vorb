@@ -8,6 +8,9 @@ constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT * 2.0f;
 constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 #endif
 
+constexpr f32 GRASS_FADE_MULT = 5.55555f;
+constexpr f32 DEFAULT_GRASS_DISTANCE = 180.0f;
+
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
@@ -17,8 +20,9 @@ struct DebugOptions {
     float mCloudAmbient = 0.5f;
     float mCloudSpeed = 0.05f;
     // Grass
-    float mGrassDistance = 180.0f;
-    float mGrassDistanceSq = SQ(180.0f);
+    float mGrassDistance = DEFAULT_GRASS_DISTANCE;
+    float mGrassDistanceSq = SQ(DEFAULT_GRASS_DISTANCE);
+    float mGrassFadeDistance = DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT;
     bool mDebugGrassLod = true;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
