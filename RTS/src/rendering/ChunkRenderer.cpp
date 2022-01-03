@@ -57,7 +57,7 @@ void ChunkRenderer::renderChunksZCutout(const World& world, const Camera3D& came
     //});
 }
 
-void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod)
+void ChunkRenderer::renderTilesAndLOD(const World& world, const Camera3D& camera, ChunkRenderLOD lod)
 {
 
     ChunkID chunkId;
@@ -68,39 +68,6 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
         ui32 nextTextureIndex;
         mLODedChunksToRender.clear();
 
-        // NEW
-        {  // Billboards first to reduce overdraw
-            mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
-            VGUniform offsetUniform = mBillboardMaterial->mProgram.getUniform("unOffset");
-            world.enumVisibleChunks([&](const Chunk& chunk) {
-                if (chunk.isFinished()) {
-
-                    mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
-
-                    ChunkRenderData& renderData = chunk.mChunkRenderData;
-                    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-                        f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
-                        glUniform3fv(offsetUniform, 1, &offset.x);
-                        TryRenderBillboardMesh(chunk, mBillboardMaterial);
-                    }
-                    else {
-                        mLODedChunksToRender.emplace_back(&chunk);
-                    }
-                }
-            });
-        }
-        //{ // Grass
-        //    mMaterialRenderer.bindMaterialForRender(*mGrassMaterial);
-        //    VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
-        //    VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
-        //    glUniform1f(fadeUniform, sDebugOptions.mGrassFadeDistance);
-        //    world.enumVisibleChunks([&](const Chunk& chunk) {
-        //        ChunkRenderData& renderData = chunk.mChunkRenderData;
-        //        f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
-        //        glUniform3fv(offsetUniform, 1, &offset.x);
-        //        TryRenderGrassMeshes(chunk, mGrassMaterial, camera);
-        //    });
-        //}
         { // Tiles
             mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
             VGUniform offsetUniform = mStandardMaterial->mProgram.getUniform("unOffset");
@@ -118,15 +85,6 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
             ChunkRenderData& renderData = chunk->mChunkRenderData;
             RenderLODTextureBindless(chunk->getWorldPos(), renderData.mLODTexture, CHUNK_WIDTH, camera, nextTextureIndex);
         }
-        // OLD
-        //world.enumVisibleChunks([&](const Chunk& chunk) {
-        //    if (chunk.isFinished()) {
-        //        // Check chunk mesh for update
-        //        UpdateMesh(chunk, camera);
-
-        //        RenderMeshOrLODTexture(chunk, camera);
-        //    }
-        //});
 
         mMaterialRenderer.bindMaterialForRender(*mLODMaterial, &nextTextureIndex);
         //vg::DepthState::NONE.set();
@@ -179,18 +137,38 @@ void ChunkRenderer::renderWorld(const World& world, const Camera3D& camera, Chun
 
 void ChunkRenderer::renderGrass(const World& world, const Camera3D& camera)
 {
-    { // Grass
-        mMaterialRenderer.bindMaterialForRender(*mGrassMaterial);
-        VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
-        VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
-        glUniform1f(fadeUniform, sDebugOptions.mGrassFadeDistance);
-        world.enumVisibleChunks([&](const Chunk& chunk) {
+    mMaterialRenderer.bindMaterialForRender(*mGrassMaterial);
+    VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
+    VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
+    glUniform1f(fadeUniform, sDebugOptions.mGrassFadeDistance);
+    world.enumVisibleChunks([&](const Chunk& chunk) {
+        ChunkRenderData& renderData = chunk.mChunkRenderData;
+        f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+        glUniform3fv(offsetUniform, 1, &offset.x);
+        TryRenderGrassMeshes(chunk, mGrassMaterial, camera);
+    });
+}
+
+void ChunkRenderer::renderBillboards(const World& world, const Camera3D& camera)
+{
+    mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
+    VGUniform offsetUniform = mBillboardMaterial->mProgram.getUniform("unOffset");
+    world.enumVisibleChunks([&](const Chunk& chunk) {
+        if (chunk.isFinished()) {
+
+            mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
+
             ChunkRenderData& renderData = chunk.mChunkRenderData;
-            f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
-            glUniform3fv(offsetUniform, 1, &offset.x);
-            TryRenderGrassMeshes(chunk, mGrassMaterial, camera);
-        });
-    }
+            if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+                f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
+                glUniform3fv(offsetUniform, 1, &offset.x);
+                TryRenderBillboardMesh(chunk, mBillboardMaterial);
+            }
+            else {
+                mLODedChunksToRender.emplace_back(&chunk);
+            }
+        }
+    });
 }
 
 void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camera, ChunkRenderLOD lod, f32 maxDistance) {

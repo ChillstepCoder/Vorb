@@ -5,6 +5,7 @@ uniform sampler2D FboNormals;
 uniform vec2 ScreenResolution;
 uniform sampler2D unTexNoise;
 uniform float unRadius;
+uniform float unRangeCheckMult;
 uniform float unBias;
 uniform float unOcclusionAdjust = 7.0;
 const int KERNEL_SIZE = 32; // Match C++
@@ -70,7 +71,7 @@ void main() {
 		float sampleDepth = texture(FboDepth, offset.xy).z;
 		vec3 viewPosSample = viewPosFromDepth(sampleDepth, offset.xy, InverseP).xyz;
 		
-		float rangeCheck = smoothstep(0.0, 1.0, unRadius / abs(viewPos.z - viewPosSample.z));
+		float rangeCheck = smoothstep(0.0, 1.0, (unRadius * unRangeCheckMult) / abs(viewPos.z - viewPosSample.z));
 		occlusion += (viewPosSample.z > samplePos.z + depthBias ? 1.0 : 0.0) * rangeCheck;
 	}
 	occlusion = 1.0 - (occlusion / (float(KERNEL_SIZE) - unOcclusionAdjust));

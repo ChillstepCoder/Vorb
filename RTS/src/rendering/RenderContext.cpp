@@ -330,7 +330,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    mChunkRenderer->renderWorld(mWorld, camera, lodState);
+    mChunkRenderer->renderTilesAndLOD(mWorld, camera, lodState);
     
     // COMMENT OUT TO DISABLE CHARACTER
     mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
@@ -361,8 +361,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Ambient occlusion
     mAmbientOcclusion->render(mActiveGBuffer);
 
-    // Post AO passes
-    // Grass
+    // === Post AO passes ===
+    // Grass + billboards
+    mChunkRenderer->renderBillboards(mWorld, camera);
     mChunkRenderer->renderGrass(mWorld, camera);
 
     // Clouds

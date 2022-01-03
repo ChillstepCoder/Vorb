@@ -79,7 +79,7 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(ResourceManager& resour
 
 void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 {
-    if (sDebugOptions.mAmbientOcclusionDisabled) {
+    if (sDebugOptions.mSSAODisabled) {
         mGBuffers[0].useGeometry();
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -99,9 +99,11 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     const VGUniform& samplesUniform = mMaterial->mProgram.getUniform("unSamples[0]");
     const VGUniform& biasUniform = mMaterial->mProgram.getUniform("unBias");
     const VGUniform& radiusUniform = mMaterial->mProgram.getUniform("unRadius");
+    const VGUniform& rangeUniform = mMaterial->mProgram.getUniform("unRangeCheckMult");
 
-    glUniform1f(biasUniform, sDebugOptions.mAmbientOcclusionBias);
-    glUniform1f(radiusUniform, sDebugOptions.mAmbientOcclusionRadius);
+    glUniform1f(biasUniform, sDebugOptions.mSSAOBias);
+    glUniform1f(radiusUniform, sDebugOptions.mSSAORadius);
+    glUniform1f(rangeUniform, sDebugOptions.mSSAORangeCheckMult);
 
     // Send noise texture
     glActiveTexture(GL_TEXTURE0 + nextTexture);
@@ -124,19 +126,19 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
     mGBuffers[0].bindGeometryTexture(nextTexture);
-    for (int i = 0; i < sDebugOptions.mAmbientOcclusionBlurPasses; ++i) {
+    for (int i = 0; i < sDebugOptions.mSSAOBlurPasses; ++i) {
 
         // Horizontal
         mGBuffers[1].useGeometry();
         glUniform1i(fboUniform, nextTexture);
-        glUniform2f(dirUniform, sDebugOptions.mAmbientOcclusionBlurRadius, 0.0f);
+        glUniform2f(dirUniform, sDebugOptions.mSSAOBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
         mGBuffers[1].bindGeometryTexture(nextTexture);
         mGBuffers[0].useGeometry();
         glUniform1i(fboUniform, nextTexture);
-        glUniform2f(dirUniform, 0.0f, sDebugOptions.mAmbientOcclusionBlurRadius);
+        glUniform2f(dirUniform, 0.0f, sDebugOptions.mSSAOBlurRadius);
         sGlobalFullQuadVBO.draw();
 
         mGBuffers[0].bindGeometryTexture(nextTexture);

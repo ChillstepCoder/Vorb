@@ -66,12 +66,13 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
 
     if (ImGui::CollapsingHeader("Ambient Occlusion")) {
         ImGui::PushID(++ID);
-        ImGui::Checkbox("Disable", &sDebugOptions.mAmbientOcclusionDisabled);
-        ImGui::SliderInt("Blur Passes", &sDebugOptions.mAmbientOcclusionBlurPasses, 0, 15);
-        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mAmbientOcclusionBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Bias", &sDebugOptions.mAmbientOcclusionBias, 0.0f, 0.2f);
-        ImGui::SliderFloat("Radius", &sDebugOptions.mAmbientOcclusionRadius, 0.001f, 4.0f);
-        ImGui::ColorPicker3("Color", &sDebugOptions.mAmbientOcclusionColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::Checkbox("Disable", &sDebugOptions.mSSAODisabled);
+        ImGui::SliderInt("Blur Passes", &sDebugOptions.mSSAOBlurPasses, 0, 15);
+        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mSSAOBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Bias", &sDebugOptions.mSSAOBias, 0.0f, 0.2f);
+        ImGui::SliderFloat("Radius", &sDebugOptions.mSSAORadius, 0.001f, 4.0f);
+        ImGui::SliderFloat("Range Check Mult", &sDebugOptions.mSSAORangeCheckMult, 0.01f, 1.5f);
+        ImGui::ColorPicker3("Color", &sDebugOptions.mSSAOColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
     }
 

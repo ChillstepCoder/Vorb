@@ -9,5 +9,6 @@ void main() {
     float ssao = texture(SSAOTexture, fUV).r;
 	fColor.rgb = SSAOColor;
     fColor.a = 1.0 - ssao;
-    //fColor.rgb *= ssao;
+    // Uncomment to debug render
+    //fColor.rgba = vec4(ssao, ssao, ssao, 1.0);
 }

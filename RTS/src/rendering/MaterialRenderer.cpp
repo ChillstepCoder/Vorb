@@ -176,7 +176,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getSSAOTexture());
                 break;
             case MaterialUniform::SSAOColor:
-                glUniform3fv(it.second, 1, &sDebugOptions.mAmbientOcclusionColor[0]);
+                glUniform3fv(it.second, 1, &sDebugOptions.mSSAOColor[0]);
                 break;
 
         }

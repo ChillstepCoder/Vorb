@@ -25,8 +25,9 @@ public:
 	~ChunkRenderer();
 
     void renderChunksZCutout(const World& world, const Camera3D& camera);
-    void renderWorld(const World& world, const Camera3D& camera, ChunkRenderLOD lod);
+    void renderTilesAndLOD(const World& world, const Camera3D& camera, ChunkRenderLOD lod);
     void renderGrass(const World& world, const Camera3D& camera);
+    void renderBillboards(const World& world, const Camera3D& camera);
     void renderWorldShadows(const World& world, const Camera3D& camera, ChunkRenderLOD lod, f32 maxDistance);
     //void renderWorldShadows(const World& world, const Camera2D& camera);
 

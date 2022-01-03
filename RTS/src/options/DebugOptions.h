@@ -29,12 +29,13 @@ struct DebugOptions {
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
     // Ambient occlusion
-    bool mAmbientOcclusionDisabled = false;
-    float mAmbientOcclusionRadius = 0.7f;
-    float mAmbientOcclusionBias = 0.008f;
-    float mAmbientOcclusionBlurRadius = 0.77f;
-    f32v3 mAmbientOcclusionColor = f32v3(14.0f / 255.0f, 0.0f / 255.0f, 25.0f / 255.0f);
-    int mAmbientOcclusionBlurPasses = 2;
+    bool mSSAODisabled = false;
+    float mSSAORadius = 1.0f;
+    float mSSAOBias = 0.008f;
+    float mSSAOBlurRadius = 0.77f;
+    int mSSAOBlurPasses = 2;
+    float mSSAORangeCheckMult = 0.5f;
+    f32v3 mSSAOColor = f32v3(14.0f / 255.0f, 0.0f / 255.0f, 25.0f / 255.0f);
     // Shadows
     float mShadowZMult = 6.0f;//2.50f;
     float mShadowNearSize = 17.0f;
