@@ -26,6 +26,7 @@ enum class MaterialUniform {
     ShadowColor,
     ShadowTexture,
     SSAOTexture,
+    SSAOColor,
     COUNT
 };
 

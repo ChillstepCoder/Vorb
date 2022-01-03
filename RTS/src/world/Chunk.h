@@ -90,6 +90,7 @@ public:
 	TileHandle getTopTileHandle(const TileIndex index) const;
 	TileHandle getBottomTileHandle(const TileIndex index) const;
 
+	ui8 getGrassAt(const TileIndex index) const { return mGrass[index]; }
     const TileCollision& getTileCollisionAt(const TileIndex index) const;
 	std::vector<TileCollision>& getAllTileCollision() { return mCollision; }
 	// Get neighbors starting from top left
@@ -144,7 +145,7 @@ public:
 
 	inline void incRef() const {
 		assert(IS_MAIN_THREAD()); // Only main thread is allowed to incref
-		assert(mRefCount.load() < 250);
+		assert(mRefCount.load() < 255u);
 		++mRefCount;
 	}
 
@@ -182,6 +183,7 @@ private:
 
     std::vector<Tile> mTiles; // TODO: Memory recycler
 	std::vector<TileCollision> mCollision; // TODO: Don't keep this in memory when its not needed?
+	std::vector<ui8> mGrass; // Grass densities
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	// For use by ChunkRenderer

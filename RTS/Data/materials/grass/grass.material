@@ -4,3 +4,5 @@ grass:
   textures:
     - name: grey_noise
       uniform: GreyNoise
+    - name: grass_blades
+      uniform: GrassTexture

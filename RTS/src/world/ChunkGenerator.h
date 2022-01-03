@@ -7,7 +7,7 @@ class Region;
 
 class ChunkGenerator {
 public:
-	Tile GenerateTileAtPos(const f32v2& worldPos);
+	Tile GenerateTileAtPos(const f32v2& worldPos, ui8* grass = nullptr);
 	void GenerateChunk(Chunk& chunk);
 	void GenerateRegionLODTextureAsync(Region& region, color3* recursivePixelBuffer = nullptr);
 };

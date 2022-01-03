@@ -8,6 +8,7 @@ uniform sampler2D SSAOTexture;
 uniform vec4 GradientRect;
 uniform float GradientAtlasPage;
 uniform vec3 ShadowColor;
+uniform vec3 SSAOColor;
 #include "../../GlobalUbo.glsl"
 
 
@@ -82,8 +83,8 @@ void main() {
 	// =====================================================
 	// ==                     SSAO                        ==
 	// =====================================================
-	float ssao = texture(SSAOTexture, fUV).r;
-	fColor.rgb = fColor.rgb * vec3(ssao);
+	//float ssao = texture(SSAOTexture, fUV).r;
+	//fColor.rgb = mix(SSAOColor, fColor.rgb, ssao);
 	//fColor.rgb = fColor.rgb * 0.00001 + vec3(ssao);
 	
 	fColor.a = 1.0;

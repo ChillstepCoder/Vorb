@@ -35,11 +35,14 @@ enum ChunkGrassPatchStatus : ui8 {
 };
 
 enum ChunkGrassPatchFlags : ui8 {
-    GRASS_PATCH_FLAG_DIRTY_MESH                  = 1 << 0,
-    GRASS_PATCH_FLAG_MESHING                     = 1 << 1,
-    GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE         = 1 << 2,
-    GRASS_PATCH_FLAG_ACTIVE                      = 1 << 3,
-    GRASS_PATCH_FLAG_SHOULD_RENDER               = 1 << 4,
+    GRASS_PATCH_FLAG_DIRTY_MESH = 1 << 0,
+    GRASS_PATCH_FLAG_MESHING = 1 << 1,
+    GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE = 1 << 2,
+    GRASS_PATCH_FLAG_ACTIVE = 1 << 3,
+    GRASS_PATCH_FLAG_SHOULD_RENDER = 1 << 5,
+    GRASS_PATCH_FLAG_CROSSFADING_OUT = 1 << 6,
+    GRASS_PATCH_FLAG_CROSSFADING_IN = 1 << 7,
+    GRASS_PATCH_IS_CROSSFADING = GRASS_PATCH_FLAG_CROSSFADING_OUT | GRASS_PATCH_FLAG_CROSSFADING_IN
 };
 
 class ChunkGrassPatch {
@@ -53,22 +56,26 @@ public:
     }
     void destroy(ChunkGrassPatchStatus status = GRASS_PATCH_STATUS_INVALID);
 
-    bool shouldRender() const { return mFlags & GRASS_PATCH_FLAG_SHOULD_RENDER; }
+    bool shouldRender() const;
     bool isActive() const { return mFlags & GRASS_PATCH_FLAG_ACTIVE; }
     bool isMeshDirty() const { return mFlags & GRASS_PATCH_FLAG_DIRTY_MESH; }
     bool isMeshing() const { return mFlags & GRASS_PATCH_FLAG_MESHING; }
+    bool isCrossfading() const { return mFlags & GRASS_PATCH_IS_CROSSFADING; }
     bool didSignalRecombine() const { return mFlags & GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE; }
-
     bool isParentActive(ui32 myIndex, ChunkGrassPatch nodes[]) const;
-    
     bool areChildrenDoneMeshing(ui32 myIndex, ChunkGrassPatch nodes[]);
+
+    void initiateCrossfadeOut();
+    void initiateCrossfadeIn();
     bool signalParentRecombine(ui32 myIndex, ChunkGrassPatch nodes[]);
     void trySignalParentNoLongerDesireRecombine(ui32 myIndex, ChunkGrassPatch nodes[]);
 
+    f32 mCurrentCrossfade;
     ui8 mStatus;
     ui8 mFlags;
     std::unique_ptr<GrassBillboardMesh> mMesh;
 };
+static_assert(sizeof(ChunkGrassPatch) == 16, "Keep small");
 
 // For node I, its children are 4 * i + 1 through 4 * i + 4
 // A complete quadtree of N levels has 4^N - 1)

@@ -11,7 +11,7 @@ public:
     AmbientOcclusionPostProcess(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
 
     // Returns target gbuffer
-    vg::GBuffer* render(vg::GBuffer* prevGBuffer);
+    void render(vg::GBuffer* activeGBuffer);
 
     VGTexture getSSAOTexture() const;
 
@@ -27,5 +27,6 @@ private:
     std::vector<f32v3> mSsaoKernel;
 
     const Material* mMaterial = nullptr;
+    const Material* mApplyMaterial = nullptr;
     const Material* mBlurMaterial = nullptr;
 };

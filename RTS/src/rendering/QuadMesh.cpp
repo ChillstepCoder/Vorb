@@ -525,11 +525,11 @@ void GrassBillboardMesh::reserveQuadCount(size_t count)
     mPositionData.reserve(count);
 }
 
-void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, const ui8v3& color)
+void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, ui8 grassType)
 {
     assert(xyDims.x <= 1.0f && xyDims.y <= 1.0f);
 
-    mInstanceData.emplace_back(color, ui8v2(xyDims.x * 255.0f, xyDims.y * 255.0f));
+    mInstanceData.emplace_back(ui8v2(xyDims.x * 255.0f, xyDims.y * 255.0f), grassType);
     mPositionData.emplace_back(position);
 }
 
@@ -608,6 +608,6 @@ void GrassBillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     glBindTexture(GL_TEXTURE_BUFFER, mTboPositionData);
 
     // Bind uniforms
-    glUniform1i(program.getUniform("UnTboColorSize"), 10);
+    glUniform1i(program.getUniform("UnTboSizeType"), 10);
     glUniform1i(program.getUniform("UnTboPosition"), 11);
 }

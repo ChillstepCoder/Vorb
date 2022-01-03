@@ -44,8 +44,9 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("ShadowColor", MaterialUniform::ShadowColor),
     std::make_pair("ShadowTexture", MaterialUniform::ShadowTexture),
     std::make_pair("SSAOTexture", MaterialUniform::SSAOTexture),
+    std::make_pair("SSAOColor", MaterialUniform::SSAOColor),
 };
-static_assert((int)MaterialUniform::COUNT == 21, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 22, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     // For arrays we remove the array syntax

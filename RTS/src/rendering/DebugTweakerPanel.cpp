@@ -37,6 +37,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             sDebugOptions.mGrassDistanceSq = SQ(sDebugOptions.mGrassDistance);
             sDebugOptions.mGrassFadeDistance = sDebugOptions.mGrassDistance * GRASS_FADE_MULT;
         }
+        ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mGrassLodDistanceOffset, -50.0f, 150.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
         ImGui::PopID();
     }
@@ -70,6 +71,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mAmbientOcclusionBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Bias", &sDebugOptions.mAmbientOcclusionBias, 0.0f, 0.2f);
         ImGui::SliderFloat("Radius", &sDebugOptions.mAmbientOcclusionRadius, 0.001f, 4.0f);
+        ImGui::ColorPicker3("Color", &sDebugOptions.mAmbientOcclusionColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
     }
 
@@ -79,9 +81,9 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Update Rate Seconds", &sDebugOptions.mShadowUpdateRateSeconds, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::SliderInt("Blur Passes", &sDebugOptions.mShadowBlurPasses, 0, 15);
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mShadowBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
     }
 

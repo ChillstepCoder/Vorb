@@ -29,12 +29,11 @@ constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH * 4;
 #endif
 constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUTION;
 
-Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
+Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
 
     // TODO: This seems wrong
     static TileID grass1 = TileRepository::getTile("grass1");
     static TileID grass2 = TileRepository::getTile("grass2");
-    static TileID tallGrass = TileRepository::getTile("tall_grass");
     static TileID rock1 = TileRepository::getTile("rock1");
     static TileID hugeTree = TileRepository::getTile("tree_huge");
     static TileID bigTree = TileRepository::getTile("tree_large");
@@ -100,8 +99,8 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos) {
             else if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.9995f) {
                 tile.topLayer = largeBush;
             }
-            if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
-                tile.midLayer = tallGrass;
+            if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
+                *grass = 1;
             }
         }
     }
@@ -129,11 +128,14 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     for (int y = 0; y < CHUNK_WIDTH; ++y) {
         for (int x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            Tile tile = GenerateTileAtPos(tilePosWorld);
+            ui8 grass = 0;
+            Tile tile = GenerateTileAtPos(tilePosWorld, &grass);
             if (tile.baseZPosition + 1.0f > maxHeight) {
                 maxHeight = tile.baseZPosition + 1.0f;
             }
-            chunk.setTileFromGeneration(TileIndex(x, y), std::move(tile));
+            TileIndex index(x, y);
+            chunk.setTileFromGeneration(index, std::move(tile));
+            chunk.mGrass[index] = grass;
         }
     }
     chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
@@ -160,7 +162,8 @@ void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region, color3* recur
         for (int y = 0; y < LOD_TEXTURE_RESOLUTION; ++y) {
             for (int x = 0; x < LOD_TEXTURE_RESOLUTION; ++x) {
                 const f32v2 tilePosWorld(x * LOD_STRIDE + regionPosWorld.x, y * LOD_STRIDE + regionPosWorld.y);
-                Tile tile = GenerateTileAtPos(tilePosWorld);
+                ui8 grass = 0;
+                Tile tile = GenerateTileAtPos(tilePosWorld, &grass);
                 for (int l = TILE_LAYER_COUNT - 1; l >= 0; --l) {
                     TileID layerTile = tile.layers[l];
                     if (layerTile == TILE_ID_NONE) {

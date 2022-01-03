@@ -358,6 +358,13 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         }
     }
 
+    // Ambient occlusion
+    mAmbientOcclusion->render(mActiveGBuffer);
+
+    // Post AO passes
+    // Grass
+    mChunkRenderer->renderGrass(mWorld, camera);
+
     // Clouds
     if (!sDebugOptions.mDisableClouds) {
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
@@ -439,10 +446,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
 
     // *** Post processes ***
-    // Disable depth testing for post processing
-    vg::DepthState::NONE.set();
 
-    mActiveGBuffer = mAmbientOcclusion->render(mActiveGBuffer);
+    // Depth of field
+    vg::DepthState::NONE.set();
     mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
 
     // Render characters that are behind geometry with some transparency
@@ -589,6 +595,9 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
                 // Count refs
                 int refCount = chunk.mRefCount.load();
+                if (refCount > 150) {
+                    std::cout << "DETECTED LOTS OF REF COUNTS ON " << (unsigned long long) & chunk << std::endl;
+                }
                 for (int i = 0; i < refCount; ++i) {
                     DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(CHUNK_WIDTH / 2) + f32v2(i * 2, 0), f32v2(2.0f), color4(1.0f, 0.0f, 1.0f));
                 }

@@ -9,7 +9,7 @@ constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 #endif
 
 constexpr f32 GRASS_FADE_MULT = 5.55555f;
-constexpr f32 DEFAULT_GRASS_DISTANCE = 180.0f;
+constexpr f32 DEFAULT_GRASS_DISTANCE = 220.0f;
 
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
@@ -23,6 +23,7 @@ struct DebugOptions {
     float mGrassDistance = DEFAULT_GRASS_DISTANCE;
     float mGrassDistanceSq = SQ(DEFAULT_GRASS_DISTANCE);
     float mGrassFadeDistance = DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT;
+    float mGrassLodDistanceOffset = 80.0f;
     bool mDebugGrassLod = true;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
@@ -32,6 +33,7 @@ struct DebugOptions {
     float mAmbientOcclusionRadius = 0.7f;
     float mAmbientOcclusionBias = 0.008f;
     float mAmbientOcclusionBlurRadius = 0.77f;
+    f32v3 mAmbientOcclusionColor = f32v3(14.0f / 255.0f, 0.0f / 255.0f, 25.0f / 255.0f);
     int mAmbientOcclusionBlurPasses = 2;
     // Shadows
     float mShadowZMult = 6.0f;//2.50f;

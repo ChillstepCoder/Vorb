@@ -307,51 +307,6 @@ inline int getTileHeight(const Tile& neighbor, int layerIndex) {
     return height;
 }
 
-constexpr int GRASS_DENSITY = 8;
-
-void addTileGrass(
-    GrassBillboardMesh& grassMesh,
-    const Chunk& chunk,
-    const TileIndex& tileIndex,
-    int layerIndex,
-    const TileData& tileData,
-    const SpriteData& spriteData,
-    const Tile& rightTile,
-    const Tile& topTile
-) {
-    const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
-    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.layers[layerIndex];
-
-    const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
-
-    /*Tile neighbors[8];
-    chunk.getTileNeighbors(tileIndex, neighbors);
-
-    const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
-    const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
-    const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
-
-    const int tx = tileIndex.getX();
-    const int ty = tileIndex.getY();
-    // Allow overlap when adjacent tiles are the same
-    const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
-    const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
-    for (int y = 0; y < GRASS_DENSITY; ++y) {
-        for (int x = 0; x < GRASS_DENSITY; ++x) {
-            f32 rnd = Random::getCachedRandomfSpecific(x + CHUNK_SIZE * y - tx - ty * CHUNK_SIZE) * 0.9f;
-            float xo = (x + rnd) / (float)GRASS_DENSITY;
-            float yo = (y - rnd) / (float)GRASS_DENSITY;
-            float rsize = lerp(0.4f, 0.6f, rnd);
-            grassMesh.addBladeQuad(
-                f32v3(tileWorldPos.x + xo, tileWorldPos.y + yo, tile.baseZPosition),
-                f32v2(0.1f, rsize),
-                ui8v3(255u)
-            );
-        }
-    }
-};
-
 void addTileFlora(
     QuadMesh& floraMesh,
     const Chunk& chunk,

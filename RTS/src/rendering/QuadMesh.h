@@ -115,13 +115,12 @@ private:
     
 };
 struct GrassBillboardInstanceData {
-    GrassBillboardInstanceData(const ui8v3& color, ui8v2&& dims) : color(color), dims(dims) {};
-    ui8v3 color;
-    ui8 pad1;
+    GrassBillboardInstanceData(ui8v2&& dims, ui8 grassType) : dims(dims), grassType(grassType) {};
     ui8v2 dims;
-    ui8v2 pad2;
+    ui8 grassType;
+    ui8 pad;
 };
-static_assert(sizeof(GrassBillboardInstanceData) == 8);
+static_assert(sizeof(GrassBillboardInstanceData) == 4);
 
 class GrassBillboardMesh : public IQuadMesh<GrassBillboardInstanceData> {
 public:
@@ -129,7 +128,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(GrassBillboardMesh);
 
     void reserveQuadCount(size_t count);
-    void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, const ui8v3& color);
+    void addBladeQuad(const f32v3& tilePosition, const f32v2& xyDims, ui8 grassType);
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
     void destroy() override;

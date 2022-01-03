@@ -1,3 +1,0 @@
-ambient_occlusion:
-  vert: pass_through.vert
-  frag: ambient_occlusion.frag

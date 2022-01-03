@@ -31,7 +31,8 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(ResourceManager& resour
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
-    mMaterial = mResourceManager.getMaterialManager().getMaterial("ambient_occlusion");
+    mMaterial = mResourceManager.getMaterialManager().getMaterial("ssao");
+    mApplyMaterial = mResourceManager.getMaterialManager().getMaterial("ssao_apply");
     mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_r");
 
     //https://learnopengl.com/Advanced-Lighting/SSAO
@@ -76,20 +77,21 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(ResourceManager& resour
     checkGlError("init DepthOfFieldPostProcess");
 }
 
-vg::GBuffer* AmbientOcclusionPostProcess::render(vg::GBuffer* prevGBuffer)
+void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 {
     if (sDebugOptions.mAmbientOcclusionDisabled) {
         mGBuffers[0].useGeometry();
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        return prevGBuffer;
+        activeGBuffer->useGeometry();
+        return;
     }
 
     mGBuffers[0].useGeometry();
 
     ui32 nextTexture;
     mMaterialRenderer.bindMaterialForRender(*mMaterial, &nextTexture);
-
+    vg::BlendState& PREV_BLEND = vg::BlendState::PREV;
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::REPLACE);
 
@@ -140,9 +142,17 @@ vg::GBuffer* AmbientOcclusionPostProcess::render(vg::GBuffer* prevGBuffer)
         mGBuffers[0].bindGeometryTexture(nextTexture);
     }
 
-    checkGlError("Ambient Occlusion");
+    vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
 
-    return prevGBuffer;
+    // Apply to gbuffer
+    activeGBuffer->useGeometry();
+    mMaterialRenderer.bindMaterialForRender(*mApplyMaterial, &nextTexture);
+    sGlobalFullQuadVBO.draw();
+
+    vg::DepthState::restorePrevious();
+    PREV_BLEND.set();
+
+    checkGlError("Ambient Occlusion");
 }
 
 VGTexture AmbientOcclusionPostProcess::getSSAOTexture() const {

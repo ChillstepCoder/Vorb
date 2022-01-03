@@ -99,13 +99,20 @@ void ResourceManager::loadFiles() {
         for (auto&& entry : mTextureFiles) {
             if (vio::containsSubpath(entry, "_noatlas")) {
                 // TODO: Allow custom sampler state
-                mTextureCache->addTexture(
+                vg::Texture texture = mTextureCache->addTexture(
                     entry,
                     vio::getLeafNameFromFilePathNoExtension(entry),
                     vg::TextureTarget::TEXTURE_2D,
                     &vg::SamplerState::LINEAR_WRAP,
                     vg::TextureInternalFormat::COMPRESSED_RGBA
                 );
+                // Anisotropic filtering
+                // TODO: Is this working?
+                GLint maxAnisotropy = 0;
+                glBindTexture(GL_TEXTURE_2D, texture.id);
+                glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+                glBindTexture(GL_TEXTURE_2D, 0);
             }
             else {
                 mSpriteRepository->loadSpriteTexture(entry);

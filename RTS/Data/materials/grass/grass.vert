@@ -2,13 +2,13 @@
 #include "../GlobalUbo.glsl"
 
 uniform samplerBuffer UnTboPosition;
-uniform samplerBuffer UnTboColorSize;
+uniform samplerBuffer UnTboSizeType;
 uniform vec3 unOffset;
 uniform float UnYOffset = 1.0;
 
+out vec2 fScreenUV;
 out vec2 fUV;
 flat out float fAtlasPage;
-out vec3 fTint;
 out mat3 fTBN;
 out float fRoughness;
 out float fDistance;
@@ -22,6 +22,22 @@ const vec2 VertexData[4] = {
  {-1.0,  1.0 }
 };
 
+// TODO: Match number of grass types
+const int GRASS_TYPES = 4;
+const float GRASS_UV_X = 0.25; // 1 / 4
+const vec2 UVS[8] = {
+ // NORMAL UVS
+ {0.0, 0.0 },
+ {GRASS_UV_X, 0.0 },
+ {GRASS_UV_X, 1.0 },
+ {0.0, 1.0 },
+ // INVERT UVS AFTER HERE
+ {GRASS_UV_X, 0.0 },
+ {0.0, 0.0 },
+ {0.0, 1.0 },
+ {GRASS_UV_X, 1.0 }
+};
+
 vec2 getVertexOffsets() {
     vec2 vertexOffsets = VertexData[gl_VertexID % 4];
 	vertexOffsets.y += UnYOffset;
@@ -30,11 +46,11 @@ vec2 getVertexOffsets() {
 }
 
 void main() {
-    int posIndex = (gl_VertexID / 4);
-    int colorSizeIndex = posIndex * 2;
-	vec4 vPosition = vec4(texelFetch(UnTboPosition, posIndex).rgb, 1.0);
-	fTint = texelFetch(UnTboColorSize, colorSizeIndex).rgb;
-	vec2 vDims = texelFetch(UnTboColorSize, colorSizeIndex + 1).rg;
+    int bladeIndex = (gl_VertexID / 4);
+	vec4 vPosition = vec4(texelFetch(UnTboPosition, bladeIndex).rgb, 1.0);
+	vec3 dimsType = texelFetch(UnTboSizeType, bladeIndex).rgb;
+	vec2 vDims = dimsType.xy;
+    float bladeType = round(dimsType.z * 255.0);
 	
 	// Get uniform info
 	fRoughness = 0.0;
@@ -71,7 +87,11 @@ void main() {
 	gl_Position = screenPos;
 	
 	// Compute uvs as screen coords
-    fUV = (screenPos.xy / vec2(screenPos.w));
+    fScreenUV = (screenPos.xy / vec2(screenPos.w));
+	
+	// Grass blade uvs
+	fUV = UVS[gl_VertexID % 4 + (4 * (bladeIndex % 2))];
+    fUV.x += bladeType * 0.25;
 
 	// Hardcoded for facing up
 	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));

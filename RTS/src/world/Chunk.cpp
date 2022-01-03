@@ -46,11 +46,13 @@ void Chunk::allocateTiles() {
     // TODO: Not always
     mTiles.resize(CHUNK_SIZE);
     mCollision.resize(CHUNK_SIZE);
+    mGrass.resize(CHUNK_SIZE);
 }
 
 void Chunk::freeTiles() {
     std::vector<Tile>().swap(mTiles);
     std::vector<TileCollision>().swap(mCollision);
+    std::vector<ui8>().swap(mGrass);
 }
 
 void Chunk::dispose() {

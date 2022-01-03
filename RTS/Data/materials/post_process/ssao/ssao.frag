@@ -76,6 +76,7 @@ void main() {
 	occlusion = 1.0 - (occlusion / (float(KERNEL_SIZE) - unOcclusionAdjust));
 	//occlusion = pow(occlusion, 0.5); // Whiten the whites
 	occlusion = easeInOutCubic(occlusion);
-	occlusion = pow(occlusion, 1.5);
+	occlusion = pow(occlusion, 2.5);
+    occlusion = clamp(occlusion, 0.45, 1.0);
     fColor = occlusion;  
 }

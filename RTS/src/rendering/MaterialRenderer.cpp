@@ -175,8 +175,11 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 glBindTexture(GL_TEXTURE_2D, mRenderContext.getSSAOTexture());
                 break;
+            case MaterialUniform::SSAOColor:
+                glUniform3fv(it.second, 1, &sDebugOptions.mAmbientOcclusionColor[0]);
+                break;
 
         }
-        static_assert((int)MaterialUniform::COUNT == 21, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 22, "Update for new uniform type");
     }
 }
