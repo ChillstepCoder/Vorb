@@ -184,16 +184,23 @@ void ChunkGrassLod::render(const Camera3D& camera, const vg::GLProgram& program)
         ui32 index = mActiveNodes[i];
         ChunkGrassPatch& patch = mNodes[index];
 
-        if (patch.shouldRender()) {
+        if (patch.canRender()) {
+            auto& mesh = mMeshes[index];
             ui32 lod = GRASS_LOD_FROM_INDEX[index];
             f32v2 centerPos = f32v2(GRASS_PATCH_POSITIONS[index]) + LOD_HALF_DIMS[lod];
             f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
-            glUniform1f(crossfadeAlphaUniform, patch.mCurrentCrossfade * 0.5f /* Constant that was selected via trial and error*/);
-            glUniform1f(crossfadeDirectionUniform, patch.mFlags & GRASS_PATCH_FLAG_CROSSFADING_IN ? 1.0f : 0.0f);
+            if (patch.isCrossfading()) {
+                glUniform1f(crossfadeAlphaUniform, mCrossfadeTable[patch.mCrossFadeTableIndex] * 0.5f /* Constant that was selected via trial and error*/);
+                glUniform1f(crossfadeDirectionUniform, patch.mFlags & GRASS_PATCH_FLAG_CROSSFADING_IN ? 1.0f : 0.0f);
+            }
+            else {
+                glUniform1f(crossfadeAlphaUniform, 0.0f);
+                glUniform1f(crossfadeDirectionUniform, 0.0f);
+            }
             const f32 radius = LOD_RADIUS_DIMS[lod];
             if (camera.sphereIsVisible(centerPos3d + pos, radius) &&
                 isPatchInRange(centerPos, cameraPos2Drelative, radius)) {
-                patch.mMesh->draw(program);
+                mesh->draw(program);
             }
         }
     }
@@ -229,7 +236,6 @@ void ChunkGrassLod::renderDebug(const Camera3D& camera) {
                 case GRASS_PATCH_STATUS_READY_TO_RECOMBINE: color = color4(1.0f, 0.0f, 1.0f); break;
             }
         }
-
         if (lod != 0) {
             ui32v2 posOffset = GRASS_PATCH_POSITIONS[index];
             DebugRenderer::drawWireQuad(pos + f32v3(posOffset.x, posOffset.y, 0.0f), f32v2(LOD_DIMS[lod]), color);
@@ -315,28 +321,27 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
         if (patch.isCrossfading()) {
             // when crossfading, we crossfade until we are complete
             assert(!patch.isMeshing());
-            constexpr f32 CROSSFADE_AMMOUNT = 0.05f; // TODO: Frame independent;
-            if (patch.mFlags & GRASS_PATCH_FLAG_CROSSFADING_OUT) {
-                patch.mCurrentCrossfade += CROSSFADE_AMMOUNT;
-                if (patch.mCurrentCrossfade >= 1.0f) {
-                    // Destroy and continue
-                    if (patch.didSignalRecombine()) {
-                        // We are combining into parent
-                        patch.destroy(GRASS_PATCH_STATUS_INVALID);
+            f32 currentCrossfade = mCrossfadeTable[patch.mCrossFadeTableIndex];
+            if (currentCrossfade >= 1.0f) {
+                if (patch.mFlags & GRASS_PATCH_FLAG_CROSSFADING_OUT) {
+                    if (currentCrossfade >= 1.0f) {
+                        // Free mesh
+                        mMeshes[index].reset();
+                        // Destroy and continue
+                        if (patch.didSignalRecombine()) {
+                            // We are combining into parent
+                            patch.destroy(GRASS_PATCH_STATUS_INVALID);
+                        }
+                        else {
+                            // We are subdividing into children
+                            patch.destroy(GRASS_PATCH_STATUS_SUBDIVIDED);
+                        }
+                        mActiveNodes[i] = mActiveNodes[--mNumActiveNodes];
+                        needSort = true;
+                        continue;
                     }
-                    else {
-                        // We are subdividing into children
-                        patch.destroy(GRASS_PATCH_STATUS_SUBDIVIDED);
-                    }
-                    mActiveNodes[i] = mActiveNodes[--mNumActiveNodes];
-                    needSort = true;
-                    continue;
                 }
-            }
-            else {
-                patch.mCurrentCrossfade += CROSSFADE_AMMOUNT;
-                if (patch.mCurrentCrossfade >= 1.0f) {
-                    patch.mCurrentCrossfade = 0.0f;
+                else {
                     patch.mFlags &= (~GRASS_PATCH_IS_CROSSFADING);
                 }
             }
@@ -345,6 +350,11 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
         }
         else if (patch.isMeshing()) {
             // When patches are meshing, we wait for them to complete
+            ++i;
+            continue;
+        }
+        else if (patch.mStatus == GRASS_PATCH_STATUS_WAITING_PARENT_RECOMBINE) {
+            // Waiting on parent to mesh and stuff, do nothing
             ++i;
             continue;
         }
@@ -370,16 +380,15 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
             else if (!patch.isMeshing()) {
                 // We can recombine
                 patch.mStatus = GRASS_PATCH_STATUS_VALID;
-                patch.initiateCrossfadeIn();
+                // Start crossfade
+                mCrossfadeTable[index] = 0.0f;
+                mCrossfadeActiveTable[mNumCrossfading++] = index;
+                patch.initiateCrossfadeIn(index);
                 ui16 childIndexFirst = 4u * index + 1;
                 ui16 childIndexLast = 4u * index + 4;
-                // Crossfade children from the active list via linear search
-                for (ui32 j = 0; j < mNumActiveNodes; ++j) {
-                    ui16 activeNode = mActiveNodes[j];
-                    // Check if it is one of the children and initiate crossfade out if so
-                    if (activeNode >= childIndexFirst && activeNode <= childIndexLast) {
-                        mNodes[activeNode].initiateCrossfadeOut();
-                    }
+                // Crossfade children
+                for (ui16 j = childIndexFirst; j <= childIndexLast; ++j) {
+                    mNodes[j].initiateCrossfadeOut(index);
                 }
                 // Don't move to next
             }
@@ -395,13 +404,16 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
                 // If we reach here we are still active and waiting on children, check if our
                 // children are finished meshing
                 if (patch.areChildrenDoneMeshing(index, mNodes)) {
+                    // Start crossfade
+                    mCrossfadeTable[index] = 0.0f;
+                    mCrossfadeActiveTable[mNumCrossfading++] = index;
                     // Tell children they can draw
                     ui16 childIndexFirst = 4u * index + 1;
                     for (ui16 i = 0; i < 4; ++i) {
                         ChunkGrassPatch& child = mNodes[childIndexFirst + i];
-                        child.initiateCrossfadeIn();
+                        child.initiateCrossfadeIn(index);
                     }
-                    patch.initiateCrossfadeOut();
+                    patch.initiateCrossfadeOut(index);
                     continue;
                 }
                 ++i;
@@ -452,14 +464,11 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
                     // Signal child recombination
                     ui16 childIndexFirst = 4u * parentIndex + 1;
                     ui16 childIndexLast = 4u * parentIndex + 4;
-                    for (ui32 j = 0; j < mNumActiveNodes; ++j) {
-                        ui16 activeNode = mActiveNodes[j];
-                        // Check if it is one of the children
-                        if (activeNode >= childIndexFirst && activeNode <= childIndexLast) {
-                            mNodes[mActiveNodes[j]].mStatus = GRASS_PATCH_STATUS_WAITING_PARENT_RECOMBINE;
-                        }
+                    for (ui16 j = childIndexFirst; j <= childIndexLast; ++j) {
+                        mNodes[j].mStatus = GRASS_PATCH_STATUS_WAITING_PARENT_RECOMBINE;
                     }
                     // Add parent to the active list
+                    assert(!parent.isActive());
                     mActiveNodes[mNumActiveNodes++] = parentIndex;
                     parent.init(GRASS_PATCH_STATUS_RECOMBINING);
 
@@ -485,6 +494,20 @@ void ChunkGrassLod::update(const f32v2& loadCenter)
             ++i;  // Increment to next patch
         }
     }
+
+    // Update all crossfade, in separate table so we can deterministically bind crossfade for 5 patches at once (parent and children)
+    constexpr f32 CROSSFADE_AMMOUNT = 0.05f; // TODO: Frame independent;
+    for (ui32 i = 0; i < mNumCrossfading;) {
+        ui16 index = mCrossfadeActiveTable[i];
+        mCrossfadeTable[index] += CROSSFADE_AMMOUNT;
+        if (mCrossfadeTable[index] >= 1.0f) {
+            mCrossfadeActiveTable[i] = mCrossfadeActiveTable[--mNumCrossfading];
+        }
+        else {
+            ++i;
+        }
+    }
+
     // Sort active nodes for cache efficiency
     if (needSort) {
         std::sort(mActiveNodes, mActiveNodes + mNumActiveNodes);
@@ -496,8 +519,8 @@ void ChunkGrassLod::updateMeshForPatch(ChunkGrassPatch& patch, ui32 lod, ui32 pa
 
     patch.mFlags &= (~GRASS_PATCH_FLAG_DIRTY_MESH);
     patch.mFlags |= GRASS_PATCH_FLAG_MESHING;
-    if (!patch.mMesh) {
-        patch.mMesh = std::make_unique<GrassBillboardMesh>();
+    if (!mMeshes[patchIndex]) {
+        mMeshes[patchIndex] = std::make_unique<GrassBillboardMesh>();
         assert(patch.mStatus == GRASS_PATCH_STATUS_INVALID || patch.mStatus == GRASS_PATCH_STATUS_RECOMBINING);
     }
     ++mRefCount;
@@ -509,13 +532,19 @@ void ChunkGrassLod::updateMeshForPatch(ChunkGrassPatch& patch, ui32 lod, ui32 pa
 
         PreciseTimer timer;
 
-        createGrassMesh(*patch.mMesh, mChunk, GRASS_PATCH_POSITIONS[patchIndex], lod);
+        createGrassMesh(*mMeshes[patchIndex], mChunk, GRASS_PATCH_POSITIONS[patchIndex], lod);
 
         std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
     }, [this, &patch, patchIndex]() {
 
-        patch.mMesh->finishMesh(MeshDrawMode::STATIC);
+        mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
         patch.mFlags &= (~GRASS_PATCH_FLAG_MESHING);
+        if (mMeshes[patchIndex]->isValid()) {
+            patch.mFlags |= GRASS_PATCH_FLAG_HAS_MESH;
+        }
+        else {
+            patch.mCrossFadeTableIndex &= (~GRASS_PATCH_FLAG_HAS_MESH);
+        }
 
         // If recombining we wont update till next cycle
         if (patch.mStatus != GRASS_PATCH_STATUS_RECOMBINING) {
@@ -542,12 +571,11 @@ void ChunkGrassPatch::destroy(ChunkGrassPatchStatus status /*= GRASS_PATCH_STATU
     assert(!isMeshing());
     mStatus = status;
     mFlags = 0;
-    mCurrentCrossfade = 0.0f;
-    mMesh.reset(); // TODO: Recycle data?
+    mCrossFadeTableIndex = UINT8_MAX;
 }
 
 bool ChunkGrassPatch::shouldRender() const {
-    return (mFlags & GRASS_PATCH_FLAG_SHOULD_RENDER) && mMesh->isValid();
+    return (mFlags & GRASS_PATCH_FLAG_SHOULD_RENDER);
 }
 
 bool ChunkGrassPatch::isParentActive(ui32 myIndex, ChunkGrassPatch nodes[]) const {
@@ -566,16 +594,16 @@ bool ChunkGrassPatch::areChildrenDoneMeshing(ui32 myIndex, ChunkGrassPatch nodes
     return (numDone == 4);
 }
 
-void ChunkGrassPatch::initiateCrossfadeOut() {
+void ChunkGrassPatch::initiateCrossfadeOut(ui8 crossfadeTableIndex) {
     assert(!isCrossfading());
     mFlags |= GRASS_PATCH_FLAG_CROSSFADING_OUT;
-    mCurrentCrossfade = 0.0f;
+    mCrossFadeTableIndex = crossfadeTableIndex;
 }
 
-void ChunkGrassPatch::initiateCrossfadeIn() {
-    assert(!isCrossfading() && mMesh);
+void ChunkGrassPatch::initiateCrossfadeIn(ui8 crossfadeTableIndex) {
+    assert(!isCrossfading());
     mFlags |= GRASS_PATCH_FLAG_CROSSFADING_IN | GRASS_PATCH_FLAG_SHOULD_RENDER;
-    mCurrentCrossfade = 0.0f;
+    mCrossFadeTableIndex = crossfadeTableIndex;
 }
 
 bool ChunkGrassPatch::signalParentRecombine(ui32 myIndex, ChunkGrassPatch nodes[]) {

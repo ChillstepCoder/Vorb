@@ -19,6 +19,8 @@ int constexpr intpow(const int x)
 // TODO: test dynamic
 constexpr int MAX_GRASS_LOD_DEPTH = 5;
 constexpr int QUADTREE_SIZE = (intpow<MAX_GRASS_LOD_DEPTH>(4) - 1) / (4 - 1);
+constexpr int QUADTREE_FADE_LIST_SIZE = (intpow<MAX_GRASS_LOD_DEPTH - 1>(4) - 1) / (4 - 1);
+static_assert(QUADTREE_FADE_LIST_SIZE < UINT8_MAX);
 static_assert(MAX_GRASS_LOD_DEPTH > 1);
 
 // ORDER MATTERS
@@ -39,10 +41,12 @@ enum ChunkGrassPatchFlags : ui8 {
     GRASS_PATCH_FLAG_MESHING = 1 << 1,
     GRASS_PATCH_FLAG_SIGNALLED_RECOMBINE = 1 << 2,
     GRASS_PATCH_FLAG_ACTIVE = 1 << 3,
-    GRASS_PATCH_FLAG_SHOULD_RENDER = 1 << 5,
+    GRASS_PATCH_FLAG_SHOULD_RENDER = 1 << 4,
+    GRASS_PATCH_FLAG_HAS_MESH      = 1 << 5,
     GRASS_PATCH_FLAG_CROSSFADING_OUT = 1 << 6,
     GRASS_PATCH_FLAG_CROSSFADING_IN = 1 << 7,
-    GRASS_PATCH_IS_CROSSFADING = GRASS_PATCH_FLAG_CROSSFADING_OUT | GRASS_PATCH_FLAG_CROSSFADING_IN
+    GRASS_PATCH_IS_CROSSFADING = GRASS_PATCH_FLAG_CROSSFADING_OUT | GRASS_PATCH_FLAG_CROSSFADING_IN,
+    GRASS_PATCH_CAN_RENDER = GRASS_PATCH_FLAG_SHOULD_RENDER | GRASS_PATCH_FLAG_HAS_MESH
 };
 
 class ChunkGrassPatch {
@@ -51,12 +55,14 @@ public:
     ~ChunkGrassPatch();
 
     void init(ChunkGrassPatchStatus status = GRASS_PATCH_STATUS_INVALID) {
+        assert(!isActive());
         mStatus = status;
         mFlags = GRASS_PATCH_FLAG_DIRTY_MESH | GRASS_PATCH_FLAG_ACTIVE;
     }
     void destroy(ChunkGrassPatchStatus status = GRASS_PATCH_STATUS_INVALID);
 
     bool shouldRender() const;
+    bool canRender() const { return (mFlags & GRASS_PATCH_CAN_RENDER) == GRASS_PATCH_CAN_RENDER; }
     bool isActive() const { return mFlags & GRASS_PATCH_FLAG_ACTIVE; }
     bool isMeshDirty() const { return mFlags & GRASS_PATCH_FLAG_DIRTY_MESH; }
     bool isMeshing() const { return mFlags & GRASS_PATCH_FLAG_MESHING; }
@@ -65,17 +71,16 @@ public:
     bool isParentActive(ui32 myIndex, ChunkGrassPatch nodes[]) const;
     bool areChildrenDoneMeshing(ui32 myIndex, ChunkGrassPatch nodes[]);
 
-    void initiateCrossfadeOut();
-    void initiateCrossfadeIn();
+    void initiateCrossfadeOut(ui8 crossfadeTableIndex);
+    void initiateCrossfadeIn(ui8 crossfadeTableIndex);
     bool signalParentRecombine(ui32 myIndex, ChunkGrassPatch nodes[]);
     void trySignalParentNoLongerDesireRecombine(ui32 myIndex, ChunkGrassPatch nodes[]);
 
-    f32 mCurrentCrossfade;
-    ui8 mStatus;
-    ui8 mFlags;
-    std::unique_ptr<GrassBillboardMesh> mMesh;
+    ui8 mCrossFadeTableIndex = UINT8_MAX;
+    ui8 mStatus = GRASS_PATCH_STATUS_INVALID;
+    ui8 mFlags = 0;
 };
-static_assert(sizeof(ChunkGrassPatch) == 16, "Keep small");
+static_assert(sizeof(ChunkGrassPatch) == 3, "Keep tiny");
 
 // For node I, its children are 4 * i + 1 through 4 * i + 4
 // A complete quadtree of N levels has 4^N - 1)
@@ -99,8 +104,11 @@ private:
     // Flat for cache coherency, no allocations, and multithreading
     const Chunk& mChunk;
     ui16 mActiveNodes[QUADTREE_SIZE];
-    ChunkGrassPatch mNodes[QUADTREE_SIZE];
     ui32 mNumActiveNodes = 0;
+    ChunkGrassPatch mNodes[QUADTREE_SIZE];
+    std::unique_ptr<GrassBillboardMesh> mMeshes[QUADTREE_SIZE];
+    f32 mCrossfadeTable[QUADTREE_FADE_LIST_SIZE]; // Shared crossfade values
+    ui8 mCrossfadeActiveTable[QUADTREE_FADE_LIST_SIZE];
+    ui32 mNumCrossfading = 0;
     ui32 mRefCount = 0;
 };
-
