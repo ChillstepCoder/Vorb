@@ -8,6 +8,8 @@ std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> ShaderLoa
 std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sGeometryShaderNameToPath;
+std::map<nString, vio::Path> ShaderLoader::sTessControlShaderNameToPath;
+std::map<nString, vio::Path> ShaderLoader::sTessEvalShaderNameToPath;
 
 namespace {
     void printShaderError(Sender s VORB_MAYBE_UNUSED, const nString& n) {
@@ -28,7 +30,7 @@ vg::GLProgram ShaderLoader::getProgram(const nString& name) {
     return vg::ShaderManager::getProgram(name);
 }
 
-vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName /*= ""*/) {
+vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName /*= ""*/, const nString tessControlShaderName /*= ""*/, const nString tessEvalShaderName /*= ""*/) {
     
     auto id = std::make_pair(vertexShaderName, fragmentShaderName + geometryShaderName);
     auto&& it = sProgramCache.find(id);
@@ -39,19 +41,26 @@ vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, 
     vio::Path vertPath;
     vio::Path fragPath;
     vio::Path geomPath;
-    if (geometryShaderName.size()) {
+    vio::Path tessControlPath;
+    vio::Path tessEvalPath;
+    if (tessControlShaderName.size()) {
+        assert(!geometryShaderName.size());
+        assert(tessEvalShaderName.size());
+        tryGetCachedPaths(vertexShaderName, fragmentShaderName, tessControlShaderName, tessEvalShaderName, vertPath, fragPath, tessControlPath, tessEvalPath);
+    }
+    else if (geometryShaderName.size()) {
         tryGetCachedPaths(vertexShaderName, fragmentShaderName, geometryShaderName, vertPath, fragPath, geomPath);
     }
     else {
         tryGetCachedPaths(vertexShaderName, fragmentShaderName, vertPath, fragPath);
     }
 
-    vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName + geometryShaderName, vertPath, fragPath, geomPath);
+    vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName + geometryShaderName, vertPath, fragPath, geomPath, tessControlPath, tessEvalPath);
     sProgramCache.insert(std::make_pair(id, newProgram));
     return newProgram;
 }
 
-CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/,
+CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/, const vio::Path tessControlPath /*= ""*/, const vio::Path tessEvalPath /*= ""*/,
     vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/) {
     vg::ShaderManager::onFileIOFailure += makeDelegate(printFileIOError);
     vg::ShaderManager::onShaderCompilationError += makeDelegate(printShaderError);
@@ -61,8 +70,13 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
 
     vg::GLProgram program;
     while (true) {
-        // Optional geometry stage
-        if (!geometryPath.isNull()) {
+        if (!tessControlPath.isNull()) {
+            assert(!tessEvalPath.isNull());
+            assert(geometryPath.isNull());
+            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, tessControlPath, tessEvalPath, iom, defines);
+        }
+        else if (!geometryPath.isNull()) {
+            // Optional geometry stage
             program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, geometryPath, iom, defines);
         }
         else {
@@ -171,7 +185,47 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
             resultGeomPath = it->second;
         }
         else {
-            resultGeomPath = fragmentShaderName;
+            resultGeomPath = geometryShaderName;
+        }
+    }
+}
+
+void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, const nString& tessControlShaderName, const nString& tessEvalShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath, OUT vio::Path& resultTessControlPath, OUT vio::Path& resultTessEvalPath)
+{
+    {
+        auto&& it = sVertexShaderNameToPath.find(vertexShaderName);
+        if (it != sVertexShaderNameToPath.end()) {
+            resultVertPath = it->second;
+        }
+        else {
+            resultVertPath = vertexShaderName;
+        }
+    }
+    {
+        auto&& it = sFragmentShaderNameToPath.find(fragmentShaderName);
+        if (it != sFragmentShaderNameToPath.end()) {
+            resultFragPath = it->second;
+        }
+        else {
+            resultFragPath = fragmentShaderName;
+        }
+    }
+    {
+        auto&& it = sTessControlShaderNameToPath.find(tessControlShaderName);
+        if (it != sTessControlShaderNameToPath.end()) {
+            resultTessControlPath = it->second;
+        }
+        else {
+            resultTessControlPath = tessControlShaderName;
+        }
+    }
+    {
+        auto&& it = sTessEvalShaderNameToPath.find(tessEvalShaderName);
+        if (it != sTessEvalShaderNameToPath.end()) {
+            resultTessEvalPath = it->second;
+        }
+        else {
+            resultTessEvalPath = tessEvalShaderName;
         }
     }
 }

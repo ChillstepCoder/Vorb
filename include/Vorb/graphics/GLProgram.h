@@ -196,6 +196,8 @@ namespace vorb {
             VGShader m_idVS = 0; ///< Vertex shader
             VGShader m_idFS = 0; ///< Fragment shader
             VGShader m_idGS = 0; ///< Geometry shader
+            VGShader m_idTCS = 0; ///< Tesselation control shader
+            VGShader m_idTES = 0; ///< Tesselation eval shader
 
             bool m_isLinked = false; ///< Keeps track of link status
 

@@ -544,8 +544,9 @@ void GrassBillboardMesh::draw(const vg::GLProgram& program) const
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Hack, no data at all, the shader generates vertex positions
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sQuadIbo);
-
-    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
+    // TODO: Only once
+    glPatchParameteri(GL_PATCH_VERTICES, 3);
+    glDrawElements(GL_PATCHES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mIndexCount / 3);
 
     glBindVertexArray(0);

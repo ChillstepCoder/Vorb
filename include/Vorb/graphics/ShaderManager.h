@@ -61,6 +61,14 @@ namespace vorb {
                 vio::IOManager* geomIOM = nullptr,
                 const cString defines = nullptr
             );
+            static GLProgram createProgram(
+                const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc,
+                vio::IOManager* vertIOM = nullptr,
+                vio::IOManager* fragIOM = nullptr,
+                vio::IOManager* tcsIOM = nullptr,
+                vio::IOManager* tesIOM = nullptr,
+                const cString defines = nullptr
+            );
             /// Creates a GLProgram from files.
             /// Does not register to global cache.
             /// @param vertPath: Path to vertex shader
@@ -71,6 +79,8 @@ namespace vorb {
              static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath,
                                                     vio::IOManager* iom = nullptr, const cString defines = nullptr);
             static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath,
+                                                    vio::IOManager* iom = nullptr, const cString defines = nullptr);
+            static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath,
                                                     vio::IOManager* iom = nullptr, const cString defines = nullptr);
 
             /// Disposes and deallocates all globally cached programs and clears the cache

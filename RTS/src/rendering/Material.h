@@ -51,6 +51,8 @@ struct MaterialData {
     nString vertexShaderName;
     nString fragmentShaderName;
     nString geometryShaderName;
+    nString tessControlShaderName;
+    nString tessEvalShaderName;
 };
 KEG_TYPE_DECL(MaterialData);
 

@@ -1,6 +1,8 @@
 grass:
   vert: grass.vert
   frag: grass.frag
+  tcs: grass.tcs
+  tes: grass.tes
   textures:
     - name: grey_noise
       uniform: GreyNoise

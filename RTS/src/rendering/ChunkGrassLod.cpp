@@ -20,16 +20,16 @@ const f32 LOG_MULT = (f32)(1.0 / (2 * log(2)));
 constexpr int GRASS_LOD_DETAIL[MAX_GRASS_LOD_DEPTH] = {
     0,
     1,
-    2,
-    4,
-    8,
+    3,
+    6,
+    12,
 };
 
 constexpr f32 GRASS_BLADE_WIDTHS[MAX_GRASS_LOD_DEPTH] = {
     0.0f,
+    1.00f,
     0.5f,
-    0.25f,
-    0.1f,
+    0.12f,
     0.05f,
 };
 

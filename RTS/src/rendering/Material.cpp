@@ -21,6 +21,8 @@ KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
     kt.addValue("vert", keg::Value::basic(offsetof(MaterialData, vertexShaderName), keg::BasicType::STRING));
     kt.addValue("frag", keg::Value::basic(offsetof(MaterialData, fragmentShaderName), keg::BasicType::STRING));
     kt.addValue("geom", keg::Value::basic(offsetof(MaterialData, geometryShaderName), keg::BasicType::STRING));
+    kt.addValue("tcs", keg::Value::basic(offsetof(MaterialData, tessControlShaderName), keg::BasicType::STRING));
+    kt.addValue("tes", keg::Value::basic(offsetof(MaterialData, tessEvalShaderName), keg::BasicType::STRING));
 }
 
 const std::map<nString, MaterialUniform> sUniformLookup = {

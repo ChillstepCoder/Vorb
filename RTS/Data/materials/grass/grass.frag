@@ -39,6 +39,7 @@ void main() {
 	if (oColor.a <= 0.5) {
         discard;
     }
+    oColor.a = 1.0;
 	
 	// Normal is always the next page
 	//vec3 normal = texture(Atlas, vec3(fScreenUV, fAtlasPage + 1.0)).rgb;

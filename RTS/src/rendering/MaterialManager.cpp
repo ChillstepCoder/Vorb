@@ -53,7 +53,7 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
         }
 
         // Get shader
-        newMaterial->mProgram = ShaderLoader::getOrCreateProgram(materialData.vertexShaderName, materialData.fragmentShaderName, materialData.geometryShaderName);
+        newMaterial->mProgram = ShaderLoader::getOrCreateProgram(materialData.vertexShaderName, materialData.fragmentShaderName, materialData.geometryShaderName, materialData.tessControlShaderName, materialData.tessEvalShaderName);
         assert(newMaterial->mProgram.isLinked());
 
         for (int i = 0; i < materialData.atlasTextures.size(); ++i) {

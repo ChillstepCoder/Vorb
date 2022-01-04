@@ -74,6 +74,18 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
                 return false;
             }
             break;
+        case ShaderType::TESS_CONTROL_SHADER:
+            if (m_idTCS != 0) {
+                onShaderCompilationError("Attempting to add another TCS shader");
+                return false;
+            }
+            break;
+        case ShaderType::TESS_EVALUATION_SHADER:
+            if (m_idTES != 0) {
+                onShaderCompilationError("Attempting to add another TES shader");
+                return false;
+            }
+            break;
         default:
             onShaderCompilationError("Shader stage is not supported");
             return false;
@@ -121,6 +133,12 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
             break;
         case ShaderType::GEOMETRY_SHADER:
             m_idGS = idS;
+            break;
+        case ShaderType::TESS_CONTROL_SHADER:
+            m_idTCS = idS;
+            break;
+        case ShaderType::TESS_EVALUATION_SHADER:
+            m_idTES = idS;
             break;
         default:
             break;
@@ -200,6 +218,11 @@ bool vg::GLProgram::link() {
     // Link The Program
     glAttachShader(m_id, m_idVS);
     if (m_idGS) glAttachShader(m_id, m_idGS);
+    if (m_idTCS) {
+        assert(m_idTES);
+        glAttachShader(m_id, m_idTCS);
+        glAttachShader(m_id, m_idTES);
+    }
     glAttachShader(m_id, m_idFS);
     glLinkProgram(m_id);
 
@@ -209,6 +232,15 @@ bool vg::GLProgram::link() {
         glDetachShader(m_id, m_idGS);
         glDeleteShader(m_idGS);
         m_idGS = 0;
+    }
+    if (m_idTCS) {
+        assert(m_idTES);
+        glDetachShader(m_id, m_idTCS);
+        glDeleteShader(m_idTCS);
+        m_idTCS = 0;
+        glDetachShader(m_id, m_idTES);
+        glDeleteShader(m_idTES);
+        m_idTES = 0;
     }
     glDetachShader(m_id, m_idFS);
     glDeleteShader(m_idVS);

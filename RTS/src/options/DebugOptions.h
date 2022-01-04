@@ -23,7 +23,7 @@ struct DebugOptions {
     float mGrassDistance = DEFAULT_GRASS_DISTANCE;
     float mGrassDistanceSq = SQ(DEFAULT_GRASS_DISTANCE);
     float mGrassFadeDistance = DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT;
-    float mGrassLodDistanceOffset = 80.0f;
+    float mGrassLodDistanceOffset = 40.0f;
     bool mDebugGrassLod = true;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;

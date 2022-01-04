@@ -28,11 +28,12 @@ public:
     static vg::GLProgram getProgram(const nString& name);
 
     /// Gets or creates a program from two shader paths
-    static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName = "");
+    // TODO: c_strings for less heap alloc
+    static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName = "", const nString tessControlShaderName = "", const nString tessEvalShaderName = "");
 
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath = "",
+    static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath = "", const vio::Path tessControlPath = "", const vio::Path tessEvalPath = "",
         vio::IOManager* iom = nullptr, const cString defines = nullptr);
 
     /// Creates a program using passed code, and does error checking
@@ -48,6 +49,12 @@ public:
     }
     static void registerGeometryShaderPath(const nString& name, const vio::Path& path) {
         sGeometryShaderNameToPath[name] = path;
+    }
+    static void registerTessControlShaderPath(const nString& name, const vio::Path& path) {
+        sTessControlShaderNameToPath[name] = path;
+    }
+    static void registerTessEvalShaderPath(const nString& name, const vio::Path& path) {
+        sTessEvalShaderNameToPath[name] = path;
     }
 
     static void clearAllCachedPrograms();
@@ -67,11 +74,23 @@ private:
         OUT vio::Path& resultFragPath,
         OUT vio::Path& resultGeomPath
     );
+    static void tryGetCachedPaths(
+        const nString& vertexShaderName,
+        const nString& fragmentShaderName,
+        const nString& tessControlShaderName,
+        const nString& tessEvalShaderName,
+        OUT vio::Path& resultVertPath,
+        OUT vio::Path& resultFragPath,
+        OUT vio::Path& resultTessControlPath,
+        OUT vio::Path& resultTessEvalPath
+    );
 
     static std::map<std::pair<nString /*vert*/, nString /*frag + geom*/>, vg::GLProgram> sProgramCache;
     static std::map<nString, vio::Path> sVertexShaderNameToPath;
     static std::map<nString, vio::Path> sFragmentShaderNameToPath;
     static std::map<nString, vio::Path> sGeometryShaderNameToPath;
+    static std::map<nString, vio::Path> sTessControlShaderNameToPath;
+    static std::map<nString, vio::Path> sTessEvalShaderNameToPath;
 };
 
 #endif // ShaderLoader_h__

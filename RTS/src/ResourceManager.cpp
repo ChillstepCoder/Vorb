@@ -300,6 +300,12 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         else if (fileHasExtension(entry, ".geom")) {
             ShaderLoader::registerGeometryShaderPath(entry.getLeaf(), entry);
         }
+        else if (fileHasExtension(entry, ".tcs")) {
+            ShaderLoader::registerTessControlShaderPath(entry.getLeaf(), entry);
+        }
+        else if (fileHasExtension(entry, ".tes")) {
+            ShaderLoader::registerTessEvalShaderPath(entry.getLeaf(), entry);
+        }
         else if (fileHasExtension(entry, ".part")) {
             mParticleSystemFiles.emplace_back(entry);
         }

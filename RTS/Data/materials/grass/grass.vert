@@ -6,14 +6,15 @@ uniform samplerBuffer UnTboSizeType;
 uniform vec3 unOffset;
 uniform float UnYOffset = 1.0;
 
+out vec3 fWorldPos;
+flat out vec3 fWorldRoot;
+out float fHeight;
 out vec2 fScreenUV;
 out vec2 fUV;
 flat out float fAtlasPage;
 out mat3 fTBN;
-out float fRoughness;
+out float fRoughness; // TODO: GLOBAL
 out float fDistance;
-
-#include "../util/wind.glsl"
 
 const vec2 VertexData[4] = {
  {-1.0, -1.0 },
@@ -54,7 +55,6 @@ void main() {
 	
 	// Get uniform info
 	fRoughness = 0.0;
-	float vWindInfluence = 1.0;
 	
     fAtlasPage = 0.0;
 	
@@ -69,7 +69,9 @@ void main() {
     
     // Wind
 	vec3 windPos = vPosition.xyz + unOffset + CameraPos;
-    worldPos.xyz += CameraRight * getWindAtPosition(-Time, vec4(windPos, 0.0)) * vWindInfluence * vertexOffsets.y;
+    fWorldRoot = windPos;
+    fHeight = vertexOffsets.y;
+    //worldPos.xyz += CameraRight * getWindAtPosition(-Time, vec4(windPos, 0.0)) * vertexOffsets.y;
 	
 	vec4 glPos = VP * worldPos;
 	vec4 screenCamera = VP * vec4(CameraFront, 0.0);
@@ -83,8 +85,9 @@ void main() {
 	fDistance = length(worldPos.xy);
 	
 	worldPos.xyz += CameraFront * angle;
+    fWorldPos = worldPos.xyz;
 	vec4 screenPos = VP * worldPos;
-	gl_Position = screenPos;
+	//gl_Position = screenPos; // NO DO FOR TESSELATION
 	
 	// Compute uvs as screen coords
     fScreenUV = (screenPos.xy / vec2(screenPos.w));

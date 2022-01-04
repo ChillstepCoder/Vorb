@@ -150,6 +150,95 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     return program;
 }
 
+
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc, vio::IOManager* vertIOM /*= nullptr*/, vio::IOManager* fragIOM /*= nullptr*/, vio::IOManager* tcsIOM /*= nullptr*/, vio::IOManager* tesIOM /*= nullptr*/, const cString defines /*= nullptr */) {
+    vio::IOManager ioManager;
+    // Use default ioManager
+    if (!vertIOM) vertIOM = &ioManager;
+    if (!fragIOM) fragIOM = &ioManager;
+    if (!tcsIOM) tcsIOM = &ioManager;
+    if (!tesIOM) tesIOM = &ioManager;
+
+    std::vector<nString> attributeNames;
+    std::vector<VGSemantic> semantics;
+    nString parsedVertSrc;
+    nString parsedFragSrc;
+    nString parsedTcsSrc;
+    nString parsedTesSrc;
+
+    // Allocate program object
+    GLProgram program(true);
+    program.onShaderCompilationError += makeDelegate(triggerShaderCompilationError);
+    program.onProgramLinkError += makeDelegate(triggerProgramLinkError);
+
+    // Parse vertex shader code
+    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc,
+        attributeNames, semantics, vertIOM);
+
+    // Create vertex shader
+    ShaderSource srcVert;
+    srcVert.stage = vg::ShaderType::VERTEX_SHADER;
+    if (defines) srcVert.sources.push_back(defines);
+    srcVert.sources.push_back(parsedVertSrc.c_str());
+    if (!program.addShader(srcVert)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Parse fragment shader code
+    ShaderParser::parseFragmentOrGeometryShader(fragSrc, parsedFragSrc, fragIOM);
+
+    // Create the fragment shader
+    ShaderSource srcFrag;
+    srcFrag.stage = vg::ShaderType::FRAGMENT_SHADER;
+    if (defines) srcFrag.sources.push_back(defines);
+    srcFrag.sources.push_back(parsedFragSrc.c_str());
+    if (!program.addShader(srcFrag)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Parse tcs shader code
+    ShaderParser::parseFragmentOrGeometryShader(tcsSrc, parsedTcsSrc, tcsIOM);
+
+    // Create the tcs shader
+    ShaderSource srcTcs;
+    srcTcs.stage = vg::ShaderType::TESS_CONTROL_SHADER;
+    if (defines) srcTcs.sources.push_back(defines);
+    srcTcs.sources.push_back(parsedTcsSrc.c_str());
+    if (!program.addShader(srcTcs)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Parse tes shader code
+    ShaderParser::parseFragmentOrGeometryShader(tesSrc, parsedTesSrc, tesIOM);
+
+    // Create the tes shader
+    ShaderSource srcTes;
+    srcTes.stage = vg::ShaderType::TESS_EVALUATION_SHADER;
+    if (defines) srcTes.sources.push_back(defines);
+    srcTes.sources.push_back(parsedTesSrc.c_str());
+    if (!program.addShader(srcTes)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Set the attributes
+    program.setAttributes(attributeNames, semantics);
+    // Link the program
+    if (!program.link()) {
+        program.dispose();
+        return m_nilProgram;
+    }
+    // Set uniforms
+    program.initUniforms();
+
+    program.onShaderCompilationError -= makeDelegate(triggerShaderCompilationError);
+    program.onProgramLinkError -= makeDelegate(triggerProgramLinkError);
+    return program;
+}
+
 vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath,
                                                        vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/) {
     vio::IOManager ioManager;
@@ -246,6 +335,71 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(
     return createProgram(vertSrc.c_str(), fragSrc.c_str(), geomSrc.c_str(), &vertIOM, &fragIOM, &geomIOM, defines);
 }
 
+
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath, vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/)
+{
+    vio::IOManager ioManager;
+    vio::Path vertSearchDir;
+    vio::Path fragSearchDir;
+    vio::Path tcsSearchDir;
+    vio::Path tesSearchDir;
+
+    vio::IOManager vertIOM;
+    vio::IOManager fragIOM;
+    vio::IOManager tcsIOM;
+    vio::IOManager tesIOM;
+    if (iom) {
+        vertIOM = *iom;
+        fragIOM = *iom;
+        tcsIOM = *iom;
+        tesIOM = *iom;
+    }
+    else {
+        vertIOM = ioManager;
+        fragIOM = ioManager;
+        tcsIOM = ioManager;
+        tesIOM = ioManager;
+    }
+
+    // Set search dir to same dir as the files
+    vertSearchDir = vertPath;
+    fragSearchDir = fragPath;
+    tcsSearchDir = tessControlPath;
+    tesSearchDir = tessEvalPath;
+    vertSearchDir--;
+    fragSearchDir--;
+    tcsSearchDir--;
+    tesSearchDir--;
+    vertIOM.setSearchDirectory(vertSearchDir);
+    fragIOM.setSearchDirectory(fragSearchDir);
+    tcsIOM.setSearchDirectory(tcsSearchDir);
+    tesIOM.setSearchDirectory(tesSearchDir);
+
+    nString vertSrc;
+    nString fragSrc;
+    nString tcsSrc;
+    nString tesSrc;
+
+    // Load in the files with error checking
+    if (!vertIOM.readFileToString(vertPath, vertSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + vertPath.getString());
+        return m_nilProgram;
+    }
+    if (!fragIOM.readFileToString(fragPath, fragSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + fragPath.getString());
+        return m_nilProgram;
+    }
+    if (!fragIOM.readFileToString(tessControlPath, tcsSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + tessControlPath.getString());
+        return m_nilProgram;
+    }
+    if (!fragIOM.readFileToString(tessEvalPath, tesSrc)) {
+        onFileIOFailure(nString(strerror(errno)) + " : " + tessEvalPath.getString());
+        return m_nilProgram;
+    }
+
+    return createProgram(vertSrc.c_str(), fragSrc.c_str(), tcsSrc.c_str(), tesSrc.c_str(), &vertIOM, &fragIOM, &tcsIOM, &tesIOM, defines);
+}
 
 void vg::ShaderManager::disposeAllPrograms() {
     for (auto& it : m_programMap) {
