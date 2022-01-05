@@ -4,6 +4,7 @@
 #include "ecs/EntityComponentSystem.h"
 #include "DebugRenderer.h"
 #include "world/ChunkGenerator.h"
+#include "world/HeightmapTerrainQuadtree.h"
 #include "world/TileRepository.h"
 #include "weather/CloudManager.h"
 #include "physics/ContactListener.h"
@@ -88,6 +89,13 @@ void World::initPostLoad(ChunkMesher& chunkMesher) {
     for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
         mChunkGenerator->GenerateRegionLODTextureAsync(mWorldGrid.getRegion(i));
     }
+
+	// Init terrain
+	mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
+	for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
+		f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
+		mTerrainTrees[i].init(pos);
+	}
 }
 
 void World::update(const f32v2& playerPos, const ICamera& camera) {
@@ -150,6 +158,11 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 
 	// Update weather
 	mCloudManager->update();
+
+	// Update terrain
+	for (auto&& terrainQuadtree : mTerrainTrees) {
+		terrainQuadtree.update(playerPos);
+	}
 
 	// Update ECS
     mEcs->update(mClientEcsData);

@@ -3,6 +3,7 @@
 #include "ResourceManager.h"
 #include "TextureAtlas.h"
 #include "World.h"
+#include "world/HeightmapTerrainQuadtree.h"
 #include "world/TileRepository.h"
 
 #include "services/Services.h"
@@ -615,7 +616,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
         });
     }
 
-    // Grass LOD
+    // Grass LOD debug
     if (sDebugOptions.mDebugGrassLod) {
         mWorld.enumVisibleChunks([&camera](const Chunk& chunk) {
             if (chunk.isDataReady()) {
@@ -625,6 +626,13 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
             }
         });
+    }
+
+    // Terrain LOD debug
+    if (sDebugOptions.mDebugTerrainLod) {
+        for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+            terrainQuadtree.renderDebug(camera);
+        }
     }
 
     // Debug

@@ -11,7 +11,6 @@
 
 #include "world/WorldGrid.h"
 #include "world/WorldData.h"
-#include "world/HeightmapTerrainQuadtree.h"
 
 #include "util/IntersectionHit.h"
 
@@ -37,6 +36,7 @@ class ResourceManager;
 class EntityFactory;
 class NavGraph;
 class ChunkMesher;
+class HeightmapTerrainQuadtree;
 struct CityGraph;
 
 class World
@@ -89,6 +89,7 @@ public:
 	const WorldGrid& getWorldGrid() const { return mWorldGrid; }
     const NavGraph& getNavGraph() const { return *mNavGraph; }
     const CloudManager& getCloudManager() const { return *mCloudManager; }
+	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
@@ -177,6 +178,6 @@ private:
 	WorldGrid mWorldGrid;
     std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mVisibleChunks;
-	HeightmapTerrainQuadtree mTerrainTrees[WORLD_SIZE_TERRAIN_QUADTREES];
+	std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
 };
 

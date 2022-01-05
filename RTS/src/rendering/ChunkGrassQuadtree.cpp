@@ -40,7 +40,7 @@ constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(p
 };
 
 
-ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings) {
+ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
     mWorldPos = mChunk.getWorldPos();
     mChunk.incRef();
 }
@@ -56,15 +56,15 @@ bool isPatchInRange(const f32v2& centerPos, const f32v2& cameraPos, f32 radius) 
 }
 
 
-void ChunkGrassQuadtree::render(const Camera3D& camera, const vg::GLProgram& program) {
+void ChunkGrassQuadtree::render(const Camera3D& camera, const vg::GLProgram& program) const {
     const f32v3& cameraPos = camera.getPosition();
-    const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mChunk.getWorldPos();
+    const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mWorldPos;
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha"); // TODO: Cache?
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
     f32v3 pos = mChunk.getWorldPos3D();
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
         ui32 index = mActiveNodes[i];
-        QuadtreePatch& patch = mNodes[index];
+        const QuadtreePatch& patch = mNodes[index];
 
         if (patch.canRender()) {
             auto& mesh = mMeshes[index];
@@ -148,10 +148,8 @@ void createGrassMesh(
     }
 };
 
-void ChunkGrassQuadtree::updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
+void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
 
-    patch.mFlags &= (~QUADTREE_PATCH_FLAG_DIRTY_MESH);
-    patch.mFlags |= QUADTREE_PATCH_FLAG_MESHING;
     if (!mMeshes[patchIndex]) {
         mMeshes[patchIndex] = std::make_unique<GrassBillboardMesh>();
         assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
@@ -171,24 +169,8 @@ void ChunkGrassQuadtree::updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32
     }, [this, &patch, patchIndex]() {
 
         mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
-        patch.mFlags &= (~QUADTREE_PATCH_FLAG_MESHING);
-        if (mMeshes[patchIndex]->isValid()) {
-            patch.mFlags |= QUADTREE_PATCH_FLAG_HAS_MESH;
-        }
-        else {
-            patch.mCrossFadeTableIndex &= (~QUADTREE_PATCH_FLAG_HAS_MESH);
-            mMeshes[patchIndex].reset(); // Free the memory
-        }
 
-        // If recombining we wont update till next cycle
-        if (patch.mStatus != QUADTREE_PATCH_STATUS_RECOMBINING) {
-            patch.mStatus = QUADTREE_PATCH_STATUS_VALID;
-
-            if (!getQuadtreeParent(patchIndex, mNodes).isActive()) {
-                // If our parent isnt active or we arent recombining, then we can render, otherwise we will wait for parent to deactivate
-                patch.mFlags |= QUADTREE_PATCH_FLAG_SHOULD_RENDER;
-            }
-        }
+        onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
 
         // Update refcount
         --mRefCount;

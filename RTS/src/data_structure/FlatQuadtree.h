@@ -82,10 +82,10 @@ class FlatQuadtree
 public:
     template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH, ui32 NODE_COUNT> friend struct QuadtreePositionTable;
 
-    FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistances[], QuadtreeSettings& settings);
+    FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistances[], f32& lodDistanceOffset);
 
     // === Public Methods ===
-    void renderDebug(const Camera3D& camera);
+    void renderDebug(const Camera3D& camera) const;
 
     // TODOL lightupdate, heavyupdate, only heavy when transition to diff cell, heavy determines splitting
     void update(const f32v2& loadCenter);
@@ -105,11 +105,15 @@ public:
         cui32v2(TOTAL_WIDTH >> 3),
         cui32v2(TOTAL_WIDTH >> 4),
     };
+private:
+
+    void updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex);
 
 protected:
 
     // === Protected Methods ===
-    virtual void updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) = 0;
+    void onMeshFinished(ui32 patchIndex, bool isMeshValid); // Called by derived class
+    virtual void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) = 0;
     virtual void freeMeshForPatch(ui32 patchIndex) = 0;
 
     // === Protected Constants ===
@@ -137,41 +141,8 @@ protected:
 
     static constexpr QuadtreePositionTable<MAX_DEPTH, TOTAL_WIDTH, NODE_COUNT> PATCH_POSITIONS = QuadtreePositionTable<MAX_DEPTH, TOTAL_WIDTH, NODE_COUNT>();
 
-    //const ui32v2 QUADTREEE_PATCH_POSITIONS[NODE_COUNT] = {
-    //    {0,0}, {0,0}, {64,0}, {0,64}, {64,64}, {0,0}, {32,0}, {0,32}, {32,32}, {64,0}, {96,0}, {64,32},
-    //    {96,32}, {0,64}, {32,64}, {0,96}, {32,96}, {64,64}, {96,64}, {64,96}, {96,96}, {0,0}, {16,0},
-    //    {0,16}, {16,16}, {32,0}, {48,0}, {32,16}, {48,16}, {0,32}, {16,32}, {0,48}, {16,48}, {32,32},
-    //    {48,32}, {32,48}, {48,48}, {64,0}, {80,0}, {64,16}, {80,16}, {96,0}, {112,0}, {96,16}, {112,16},
-    //    {64,32}, {80,32}, {64,48}, {80,48}, {96,32}, {112,32}, {96,48}, {112,48}, {0,64}, {16,64}, {0,80},
-    //    {16,80}, {32,64}, {48,64}, {32,80}, {48,80}, {0,96}, {16,96}, {0,112}, {16,112}, {32,96}, {48,96},
-    //    {32,112}, {48,112}, {64,64}, {80,64}, {64,80}, {80,80}, {96,64}, {112,64}, {96,80}, {112,80}, {64,96},
-    //    {80,96}, {64,112}, {80,112}, {96,96}, {112,96}, {96,112}, {112,112}, {0,0}, {8,0}, {0,8}, {8,8}, {16,0},
-    //    {24,0}, {16,8}, {24,8}, {0,16}, {8,16}, {0,24}, {8,24}, {16,16}, {24,16}, {16,24}, {24,24}, {32,0},
-    //    {40,0}, {32,8}, {40,8}, {48,0}, {56,0}, {48,8}, {56,8}, {32,16}, {40,16}, {32,24}, {40,24}, {48,16},
-    //    {56,16}, {48,24}, {56,24}, {0,32}, {8,32}, {0,40}, {8,40}, {16,32}, {24,32}, {16,40}, {24,40}, {0,48},
-    //    {8,48}, {0,56}, {8,56}, {16,48}, {24,48}, {16,56}, {24,56}, {32,32}, {40,32}, {32,40}, {40,40}, {48,32},
-    //    {56,32}, {48,40}, {56,40}, {32,48}, {40,48}, {32,56}, {40,56}, {48,48}, {56,48}, {48,56}, {56,56}, {64,0},
-    //    {72,0}, {64,8}, {72,8}, {80,0}, {88,0}, {80,8}, {88,8}, {64,16}, {72,16}, {64,24}, {72,24}, {80,16},
-    //    {88,16}, {80,24}, {88,24}, {96,0}, {104,0}, {96,8}, {104,8}, {112,0}, {120,0}, {112,8}, {120,8}, {96,16},
-    //    {104,16}, {96,24}, {104,24}, {112,16}, {120,16}, {112,24}, {120,24}, {64,32}, {72,32}, {64,40}, {72,40},
-    //    {80,32}, {88,32}, {80,40}, {88,40}, {64,48}, {72,48}, {64,56}, {72,56}, {80,48}, {88,48}, {80,56},
-    //    {88,56}, {96,32}, {104,32}, {96,40}, {104,40}, {112,32}, {120,32}, {112,40}, {120,40}, {96,48}, {104,48},
-    //    {96,56}, {104,56}, {112,48}, {120,48}, {112,56}, {120,56}, {0,64}, {8,64}, {0,72}, {8,72}, {16,64},
-    //    {24,64}, {16,72}, {24,72}, {0,80}, {8,80}, {0,88}, {8,88}, {16,80}, {24,80}, {16,88}, {24,88}, {32,64},
-    //    {40,64}, {32,72}, {40,72}, {48,64}, {56,64}, {48,72}, {56,72}, {32,80}, {40,80}, {32,88}, {40,88},
-    //    {48,80}, {56,80}, {48,88}, {56,88}, {0,96}, {8,96}, {0,104}, {8,104}, {16,96}, {24,96}, {16,104}, {24,104},
-    //    {0,112}, {8,112}, {0,120}, {8,120}, {16,112}, {24,112}, {16,120}, {24,120}, {32,96}, {40,96}, {32,104},
-    //    {40,104}, {48,96}, {56,96}, {48,104}, {56,104}, {32,112}, {40,112}, {32,120}, {40,120}, {48,112}, {56,112},
-    //    {48,120}, {56,120}, {64,64}, {72,64}, {64,72}, {72,72}, {80,64}, {88,64}, {80,72}, {88,72}, {64,80},
-    //    {72,80}, {64,88}, {72,88}, {80,80}, {88,80}, {80,88}, {88,88}, {96,64}, {104,64}, {96,72}, {104,72}, {112,64},
-    //    {120,64}, {112,72}, {120,72}, {96,80}, {104,80}, {96,88}, {104,88}, {112,80}, {120,80}, {112,88},
-    //    {120,88}, {64,96}, {72,96}, {64,104}, {72,104}, {80,96}, {88,96}, {80,104}, {88,104}, {64,112}, {72,112},
-    //    {64,120}, {72,120}, {80,112}, {88,112}, {80,120}, {88,120}, {96,96}, {104,96}, {96,104}, {104,104}, {112,96},
-    //    {120,96}, {112,104}, {120,104}, {96,112}, {104,112}, {96,120}, {104,120}, {112,112}, {120,112}, {112,120}, {120,120}
-    //};
-
     // === Protected members ===
-    QuadtreeSettings& mSettings;
+    f32& mLodDistanceOffset; // Reference to a setting
     ui32 mNumActiveNodes = 0;
     ui16 mActiveNodes[NODE_COUNT];
     QuadtreePatch mNodes[NODE_COUNT];
@@ -183,9 +154,40 @@ protected:
 };
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
-FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistancesSq[], QuadtreeSettings& settings) : mWorldPos(worldPos), mSubdivideDistancesSq(subdivideDistancesSq), mSettings(settings)
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
+    patch.mFlags &= (~QUADTREE_PATCH_FLAG_DIRTY_MESH);
+    patch.mFlags |= QUADTREE_PATCH_FLAG_MESHING;
+    buildMeshForPatch(patch, lod, patchIndex);
+}
+
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool isMeshValid) {
+
+    QuadtreePatch& patch = mNodes[patchIndex];
+    patch.mFlags &= (~QUADTREE_PATCH_FLAG_MESHING);
+    if (isMeshValid) {
+        patch.mFlags |= QUADTREE_PATCH_FLAG_HAS_MESH;
+    }
+    else {
+        patch.mCrossFadeTableIndex &= (~QUADTREE_PATCH_FLAG_HAS_MESH);
+        freeMeshForPatch(patchIndex);
+    }
+
+    // If recombining we wont update till next cycle
+    if (patch.mStatus != QUADTREE_PATCH_STATUS_RECOMBINING) {
+        patch.mStatus = QUADTREE_PATCH_STATUS_VALID;
+
+        if (!getQuadtreeParent(patchIndex, mNodes).isActive()) {
+            // If our parent isnt active or we arent recombining, then we can render, otherwise we will wait for parent to deactivate
+            patch.mFlags |= QUADTREE_PATCH_FLAG_SHOULD_RENDER;
+        }
+    }
+}
+
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistancesSq[], f32& lodDistanceOffset) : mWorldPos(worldPos), mSubdivideDistancesSq(subdivideDistancesSq), mLodDistanceOffset(lodDistanceOffset)
 {
-    assert(mSubdivideDistancesSq[0] == FLT_MAX && mSubdivideDistancesSq[MAX_DEPTH - 1] == -FLT_MAX);
+    assert(mSubdivideDistancesSq[MAX_DEPTH - 1] == -FLT_MAX); // We should never subdivide at final distance
 
     mNodes[0].init();
     mNodes[0].mFlags &= (~QUADTREE_PATCH_FLAG_DIRTY_MESH);

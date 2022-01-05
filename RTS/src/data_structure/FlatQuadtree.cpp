@@ -72,7 +72,7 @@ void QuadtreePatch::trySignalParentNoLongerDesireRecombine(ui32 myIndex, Quadtre
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
-void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::renderDebug(const Camera3D& camera) {
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::renderDebug(const Camera3D& camera) const {
 
     const f32v3& cameraPos = camera.getPosition();
     const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mWorldPos;
@@ -80,7 +80,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::renderDebug(const Camera3D& camera) {
     f32v3 mPos3D(mWorldPos.x, mWorldPos.y, 0.0f);
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
         ui32 index = mActiveNodes[i];
-        QuadtreePatch& patch = mNodes[index];
+        const QuadtreePatch& patch = mNodes[index];
         ui32 lod = QUADTREE_LOD_FROM_INDEX[index];
         // TODO: Dont check this since we will never have pure root
 
@@ -98,19 +98,17 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::renderDebug(const Camera3D& camera) {
             case QUADTREE_PATCH_STATUS_READY_TO_RECOMBINE: color = color4(1.0f, 0.0f, 1.0f); break;
         }
 
-        if (lod != 0) {
-            ui32v2 posOffset = PATCH_POSITIONS.data[index].xy;
-            DebugRenderer::drawWireQuad(mPos3D + f32v3(posOffset.x, posOffset.y, 0.0f), f32v2((ui32v2&)LOD_DIMS[lod]), color);
+        ui32v2 posOffset = PATCH_POSITIONS.data[index].xy;
+        DebugRenderer::drawWireQuad(mPos3D + f32v3(posOffset.x, posOffset.y, 0.0f), f32v2((ui32v2&)LOD_DIMS[lod]), color);
 
-            if (patch.isCrossfading()) {
-                const f32v2 halfDims = f32v2((ui32v2&)LOD_DIMS[lod]) * 0.5f;
-                DebugRenderer::drawWireQuad(mPos3D + f32v3(posOffset.x + halfDims.x, posOffset.y + halfDims.y, 0.0f), halfDims, color4(1.0f, 0.0f, 1.0f));
-            }
+        if (patch.isCrossfading()) {
+            const f32v2 halfDims = f32v2((ui32v2&)LOD_DIMS[lod]) * 0.5f;
+            DebugRenderer::drawWireQuad(mPos3D + f32v3(posOffset.x + halfDims.x, posOffset.y + halfDims.y, 0.0f), halfDims, color4(1.0f, 0.0f, 1.0f));
         }
     }
 }
-template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::renderDebug(const Camera3D&);
-template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::renderDebug(const Camera3D&);
+template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::renderDebug(const Camera3D&) const;
+template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::renderDebug(const Camera3D&) const;
 
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
@@ -204,7 +202,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
         f32v2 centerPos = f32v2(PATCH_POSITIONS.data[index].xy) + f32v2(LOD_HALF_DIMS[lod].xy);
 
         f32 distance2 = glm::distance2(centerPos, mRelativeCenter);
-        if (distance2 < mSubdivideDistancesSq[lod] + SQ(mSettings.lodDistanceOffset)) {
+        if (distance2 < mSubdivideDistancesSq[lod] + SQ(mLodDistanceOffset)) {
             // We want to subdivide
             if (patch.mStatus == QUADTREE_PATCH_STATUS_SUBDIVIDED) {
                 // If we reach here we are still active and waiting on children, check if our
@@ -261,7 +259,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
             mActiveNodes[mNumActiveNodes++] = childIndex;
             mNodes[childIndex++].init();
         }
-        else if (distance2 > mSubdivideDistancesSq[lod - 1] * 1.1f + SQ(mSettings.lodDistanceOffset) /*TODO: Non const*/) { // Don't need to check lod 0 here since it will always pass the first check
+        else if (lod > 0 && distance2 > mSubdivideDistancesSq[lod - 1] * 1.1f + SQ(mLodDistanceOffset) /*TODO: Non const*/) {
             // We can be recombined
             if (patch.mStatus == QUADTREE_PATCH_STATUS_VALID && !patch.didSignalRecombine()) {
                 if (patch.signalParentRecombine(index, mNodes)) {

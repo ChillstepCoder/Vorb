@@ -12,6 +12,7 @@ constexpr float CHUNK_LOAD_RANGE = CHUNK_WIDTH * CHUNKS_LOAD_RANGE_MULT;
 
 constexpr f32 GRASS_FADE_MULT = 5.55555f;
 constexpr f32 DEFAULT_GRASS_DISTANCE = 220.0f;
+constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
@@ -24,6 +25,9 @@ struct DebugOptions {
     // Grass
     QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
     bool mDebugGrassLod = false;
+    // Terrain
+    f32 mTerrainLodDistanceOffset = 300.0f;
+    bool mDebugTerrainLod = false;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;

@@ -22,8 +22,6 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     ImGui::Begin("Value Tweaker", &sDebugOptions.mShowTweaker, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ui32 ID = 10;
 
-    //PushOverrideID //POPID
-
     if (ImGui::CollapsingHeader("Game Settings")) {
         ImGui::Checkbox("VSYNC", &sDebugOptions.mVSYNC);
         if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.1f")) {
@@ -39,6 +37,13 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         }
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mGrassSettings.lodDistanceOffset, -50.0f, 150.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
+        ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Terrain")) {
+        ImGui::PushID(++ID);
+        ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mTerrainLodDistanceOffset, 0.0f, 2500.0f, "%.1f");
+        ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugTerrainLod);
         ImGui::PopID();
     }
 
