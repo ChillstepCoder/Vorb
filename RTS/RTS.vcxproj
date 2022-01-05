@@ -164,6 +164,7 @@
     <ClCompile Include="src\city\CityQuartermaster.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
+    <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
@@ -207,7 +208,7 @@
     <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
-    <ClCompile Include="src\rendering\ChunkGrassLod.cpp" />
+    <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\DebugTweakerPanel.cpp" />
@@ -247,6 +248,7 @@
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
+    <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\Tile.cpp" />
     <ClCompile Include="src\world\TileHandle.cpp" />
@@ -292,6 +294,8 @@
     <ClInclude Include="src\city\RoomNode.h" />
     <ClInclude Include="src\crafting\CraftingConst.h" />
     <ClInclude Include="src\crafting\CraftingRepository.h" />
+    <ClInclude Include="src\data_structure\FlatQuadtree.h" />
+    <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
@@ -348,7 +352,7 @@
     <ClInclude Include="src\rendering\BuildingRenderer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
-    <ClInclude Include="src\rendering\ChunkGrassLod.h" />
+    <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\DebugTweakerPanel.h" />
@@ -395,6 +399,7 @@
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\ChunkID.h" />
+    <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\TileCollision.h" />

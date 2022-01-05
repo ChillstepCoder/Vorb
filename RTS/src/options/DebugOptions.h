@@ -1,5 +1,7 @@
 #pragma once
 
+#include "data_structure/QuadtreeSettings.h"
+
 constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
 
 #ifdef USE_SMALL_CHUNK_WIDTH
@@ -20,11 +22,8 @@ struct DebugOptions {
     float mCloudAmbient = 0.5f;
     float mCloudSpeed = 0.05f;
     // Grass
-    float mGrassDistance = DEFAULT_GRASS_DISTANCE;
-    float mGrassDistanceSq = SQ(DEFAULT_GRASS_DISTANCE);
-    float mGrassFadeDistance = DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT;
-    float mGrassLodDistanceOffset = 40.0f;
-    bool mDebugGrassLod = true;
+    QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
+    bool mDebugGrassLod = false;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;

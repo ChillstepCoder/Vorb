@@ -13,7 +13,7 @@ class QuadMesh;
 class BillboardMesh;
 class TBOBillboardMesh;
 class GrassBillboardMesh;
-class ChunkGrassLod;
+class ChunkGrassQuadtree;
 class NavGraph;
 
 #define USE_INSTANCED_BILLBOARDS 1
@@ -38,7 +38,7 @@ struct ChunkRenderData {
 	~ChunkRenderData();
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
     std::unique_ptr<ChunkBillboardMesh> mBillboardMesh = nullptr;
-	std::unique_ptr<ChunkGrassLod> mGrassLod = nullptr;
+	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
 	VGTexture mLODTexture = 0;
 	bool mMeshDirty = true;
 	bool mLODDirty = true;

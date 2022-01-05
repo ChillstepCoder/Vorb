@@ -54,4 +54,38 @@ namespace MathUtil {
         }
         return false;
     }
+
+    template <unsigned int p>
+    int constexpr intpow(const int x)
+    {
+        if constexpr (p == 0) return 1;
+        if constexpr (p == 1) return x;
+
+        int tmp = intpow<p / 2>(x);
+        if constexpr ((p % 2) == 0) { return tmp * tmp; }
+        else { return x * tmp * tmp; }
+    }
+
+    namespace Detail
+    {
+        double constexpr sqrtNewtonRaphson(double x, double curr, double prev)
+        {
+            return curr == prev
+                ? curr
+                : sqrtNewtonRaphson(x, 0.5 * (curr + x / curr), curr);
+        }
+    }
+
+    /*
+    * Constexpr version of the square root
+    * Return value:
+    *   - For a finite and non-negative value of "x", returns an approximation for the square root of "x"
+    *   - Otherwise, returns NaN
+    */
+    double constexpr sqrtd(double x)
+    {
+        return x >= 0 && x < std::numeric_limits<double>::infinity()
+            ? Detail::sqrtNewtonRaphson(x, x, 0)
+            : std::numeric_limits<double>::quiet_NaN();
+    }
 }

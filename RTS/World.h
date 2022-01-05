@@ -11,6 +11,7 @@
 
 #include "world/WorldGrid.h"
 #include "world/WorldData.h"
+#include "world/HeightmapTerrainQuadtree.h"
 
 #include "util/IntersectionHit.h"
 
@@ -176,5 +177,6 @@ private:
 	WorldGrid mWorldGrid;
     std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mVisibleChunks;
+	HeightmapTerrainQuadtree mTerrainTrees[WORLD_SIZE_TERRAIN_QUADTREES];
 };
 

@@ -2,7 +2,7 @@
 #include "Chunk.h"
 
 #include "rendering/QuadMesh.h"
-#include "rendering/ChunkGrassLod.h"
+#include "rendering/ChunkGrassQuadtree.h"
 
 #include "pathfinding/NavGraph.h"
 #include "world/WorldGrid.h"

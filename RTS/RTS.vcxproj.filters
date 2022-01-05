@@ -363,7 +363,13 @@
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\ChunkGrassLod.cpp">
+    <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\data_structure\FlatQuadtree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -803,7 +809,16 @@
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\ChunkGrassLod.h">
+    <ClInclude Include="src\rendering\ChunkGrassQuadtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\HeightmapTerrainQuadtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\data_structure\FlatQuadtree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\data_structure\QuadtreeSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

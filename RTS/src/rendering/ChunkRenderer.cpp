@@ -12,7 +12,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/RenderContext.h"
-#include "rendering/ChunkGrassLod.h"
+#include "rendering/ChunkGrassQuadtree.h"
 #include "services/Services.h"
 
 #include "options/DebugOptions.h"
@@ -140,7 +140,7 @@ void ChunkRenderer::renderGrass(const World& world, const Camera3D& camera)
     mMaterialRenderer.bindMaterialForRender(*mGrassMaterial);
     VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
     VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
-    glUniform1f(fadeUniform, sDebugOptions.mGrassFadeDistance);
+    glUniform1f(fadeUniform, sDebugOptions.mGrassSettings.fadeDistance);
     world.enumVisibleChunks([&](const Chunk& chunk) {
         ChunkRenderData& renderData = chunk.mChunkRenderData;
         f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();

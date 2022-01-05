@@ -20,7 +20,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "rendering/ChunkMesher.h"
-#include "rendering/ChunkGrassLod.h"
+#include "rendering/ChunkGrassQuadtree.h"
 
 #include "services/Services.h"
 
@@ -582,7 +582,7 @@ bool World::updateChunk(Chunk& chunk) {
 			const f32 distSq = glm::length2(offset);
 
 			if (chunk.mChunkRenderData.mGrassLod) {
-                if (distSq > sDebugOptions.mGrassDistanceSq + 10.0f /*TODO: non const*/) {
+                if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f /*TODO: non const*/) {
 					if (chunk.mChunkRenderData.mGrassLod->getRefCount() == 0) {
 						chunk.mChunkRenderData.mGrassLod.reset();
 					}
@@ -592,8 +592,8 @@ bool World::updateChunk(Chunk& chunk) {
 				}
 			}
 			else {
-                if (distSq < sDebugOptions.mGrassDistanceSq /*TODO: non const*/) {
-					chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassLod>(chunk);
+                if (distSq < sDebugOptions.mGrassSettings.distanceSq /*TODO: non const*/) {
+					chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk);
                 }
 			}
             

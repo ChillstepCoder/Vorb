@@ -12,7 +12,7 @@
 #include "rendering/BuildingRenderer.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/ChunkRenderer.h"
-#include "rendering/ChunkGrassLod.h"
+#include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
 #include "rendering/DebugTweakerPanel.h"
