@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "DebugTweakerPanel.h"
 
+#include "generation/WorldGeneration.h"
+#include "editor/ImguiViews.hpp"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
@@ -44,6 +47,12 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::PushID(++ID);
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mTerrainLodDistanceOffset, 0.0f, 2500.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugTerrainLod);
+        ImGui::NewLine();
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise, ID);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsNoise, ID);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mContinentOutlineNoise, ID);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mHumidityNoise, ID);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise, ID);
         ImGui::PopID();
     }
 

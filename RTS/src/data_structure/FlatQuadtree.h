@@ -83,6 +83,7 @@ public:
     template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH, ui32 NODE_COUNT> friend struct QuadtreePositionTable;
 
     FlatQuadtree(const f32v2& worldPos, const f32 subdivideDistances[], f32& lodDistanceOffset);
+    virtual ~FlatQuadtree() { };
 
     // === Public Methods ===
     void renderDebug(const Camera3D& camera) const;

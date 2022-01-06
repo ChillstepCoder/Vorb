@@ -129,6 +129,7 @@ private:
 
 	// Editor functions
 	void editorInvalidateWorldGen();
+	void debugRefreshWorldGeneration();
 
     // ECS
     ClientECSData mClientEcsData;

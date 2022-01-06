@@ -26,7 +26,7 @@ struct DebugOptions {
     QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
     bool mDebugGrassLod = false;
     // Terrain
-    f32 mTerrainLodDistanceOffset = 300.0f;
+    f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;

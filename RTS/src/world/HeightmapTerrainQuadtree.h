@@ -3,21 +3,28 @@
 #include "world/WorldData.h"
 #include "data_structure/FlatQuadtree.h"
 
-constexpr ui32 TERRAIN_TREE_NODE_WIDTH_VERTS = 32;
+constexpr ui32 TERRAIN_TREE_NODE_WIDTH_VERTS = 64;
 constexpr ui32 TERRAIN_TREE_NODE_SIZE_VERTS = SQ(TERRAIN_TREE_NODE_WIDTH_VERTS);
 
+// Why does excluding this cause an error
+#include "rendering/mesh/TerrainMesh.h"
+
 class Camera3D;
-class TerrainMesh;
 DECL_VG(class GLProgram);
 
 class HeightmapTerrainQuadtree : public FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>
 {
 public:
     HeightmapTerrainQuadtree();
+    ~HeightmapTerrainQuadtree();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(HeightmapTerrainQuadtree);
 
     void init(const f32v2& worldPosition);
 
     void render(const Camera3D& camera, const vg::GLProgram& program) const;
+    
+    void markDirty();
 
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;

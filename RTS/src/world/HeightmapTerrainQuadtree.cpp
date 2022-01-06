@@ -2,7 +2,6 @@
 #include "HeightmapTerrainQuadtree.h"
 
 #include "camera/Camera3D.h"
-#include "rendering/mesh/TerrainMesh.h"
 #include "options/DebugOptions.h"
 
 #include "services/Services.h"
@@ -10,15 +9,20 @@
 #include <Vorb/graphics/GLProgram.h>
 
 constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths
-    SQ(4096.0f),
-    SQ(2048.0f),
-    SQ(512.0f),
+    SQ(6000.0f),
+    SQ(3000.0f),
+    SQ(600.0f),
     SQ(64.0f),
     -FLT_MAX // Never subdivide last
 };
 
 
 HeightmapTerrainQuadtree::HeightmapTerrainQuadtree() : FlatQuadtree(f32v2(0.0f), TERRAIN_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mTerrainLodDistanceOffset) {
+
+}
+
+HeightmapTerrainQuadtree::~HeightmapTerrainQuadtree()
+{
 
 }
 
@@ -55,10 +59,18 @@ void HeightmapTerrainQuadtree::render(const Camera3D& camera, const vg::GLProgra
                 glUniform1f(crossfadeDirectionUniform, 0.0f);
             }
             const f32 radius = LOD_RADIUS_DIMS[lod];
-          //  if (camera.sphereIsVisible(centerPos3d + pos3D, radius)) {
+            if (camera.sphereIsVisible(centerPos3d + pos3D, radius)) {
                 mesh->draw(program);
-          //  }
+            }
         }
+    }
+}
+
+void HeightmapTerrainQuadtree::markDirty() {
+    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+        ui32 index = mActiveNodes[i];
+        QuadtreePatch& patch = mNodes[index];
+        patch.mFlags |= QUADTREE_PATCH_FLAG_DIRTY_MESH;
     }
 }
 
@@ -77,7 +89,7 @@ void createTerrainMesh(
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
             f32 height = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-            paddedHeightfield[y][x] = (height + 0.4f) * 5.0f;
+            paddedHeightfield[y][x] = height;
         }
     }
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);

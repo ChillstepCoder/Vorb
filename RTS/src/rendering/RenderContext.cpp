@@ -344,10 +344,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Tiles
     mChunkRenderer->renderTiles(mWorld, camera);
 
-    // COMMENT OUT TO DISABLE CHARACTER
-    mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
-    mEcsRenderer->renderPhysicsDebug(camera);
-
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
 
@@ -378,6 +374,10 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Grass + billboards
     mChunkRenderer->renderBillboards(mWorld, camera);
     mChunkRenderer->renderGrass(mWorld, camera);
+
+    // COMMENT OUT TO DISABLE CHARACTER
+    mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
+    mEcsRenderer->renderPhysicsDebug(camera);
 
     // Clouds
     if (!sDebugOptions.mDisableClouds) {

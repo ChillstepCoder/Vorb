@@ -7,7 +7,8 @@ WorldGeneration sWorldGen;
 
 f32 WorldGeneration::getHeightAtPos(const f32v2& worldPos)
 {
-    f64 height = -mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+    // Base height
+    f64 height = mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
 
     f32v2 offsetToCenter(
         worldPos.x - WorldData::WORLD_CENTER.x,
@@ -22,7 +23,16 @@ f32 WorldGeneration::getHeightAtPos(const f32v2& worldPos)
 
     // Outline
     if (distanceFromCenter2 > CONTINENT_RADIUS_SQ) {
+        // Ocean
         height -= (distanceFromCenter2 - CONTINENT_RADIUS_SQ) * 0.0000001;
+    }
+    else {
+        // Continent internals
+        f64 lerp = (CONTINENT_RADIUS_SQ - distanceFromCenter2) * 0.00000001;
+
+        f64 mountain = mMountainsNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+        return mountain;
+        height += lerp * mountain;
     }
     return (f32)height;
 }

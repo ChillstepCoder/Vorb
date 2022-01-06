@@ -7,10 +7,11 @@ VGBuffer TerrainMesh::sTerrainIbo;
 
 #include <Vorb/graphics/GLProgram.h>
 
-constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
+constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
 
 void TerrainMesh::beginMesh(const f32v2& cornerPos, f32 totalWidth) {
     // TODO: recycle?
+    // TODO: Do we need this pass?
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
     mVertexData.resize(TERRAIN_MESH_SIZE_VERTS);
     for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
@@ -23,20 +24,68 @@ void TerrainMesh::beginMesh(const f32v2& cornerPos, f32 totalWidth) {
 }
 
 void TerrainMesh::setVertsFromPaddedHeightfield(const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+    constexpr f32 NORMAL_STRENGTH = 1.0f / 4.0f;
+    const f32 quadWidth = mVertexData[1].pos.x - mVertexData[0].pos.x;
     for (int y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
         for (int x = 0; x < TERRAIN_MESH_WIDTH_VERTS; ++x) {
             TerrainVertex& v = mVertexData[y * TERRAIN_MESH_WIDTH_VERTS + x];
             f32 height = paddedHeightfield[y + 1][x + 1];
             v.pos.z = height;
-            // Normal calc
-            f32 front = paddedHeightfield[y][x + 1];
-            f32 back = paddedHeightfield[y + 2][x + 1];
-            f32 left = paddedHeightfield[y + 1][x];
-            f32 right = paddedHeightfield[y + 1][x + 2];
 
-            f32v3 normal = glm::normalize(f32v3(2.0f * (right - left), 2.0f * (back - front), 4.0f));
-            v.normal = normal;
+            // Normal calc
+            f32 fl = paddedHeightfield[y][x]; // front left
+            f32  l = paddedHeightfield[y + 1][x];   // left
+            f32 bl = paddedHeightfield[y + 2][x]; // back left
+            f32  f = paddedHeightfield[y][x + 1];   // front
+            f32  b = paddedHeightfield[y + 2][x + 1];   // back
+            f32 fr = paddedHeightfield[y][x + 2]; // front right
+            f32  r = paddedHeightfield[y + 1][x + 2];   // right
+            f32 br = paddedHeightfield[y + 2][x + 2]; // back right
+
+            //https://gamedev.stackexchange.com/questions/165575/calculating-normal-map-from-height-map-using-sobel-operator
+            // Sobel filter
+            const f32 dX = (fr + 2.0f * r + br) - (fl + 2.0f * l + bl);
+            const f32 dY = (bl + 2.0f * b + br) - (fl + 2.0f * f + fr);
+            const f32 dZ = quadWidth;
+
+            f32v3 n(dX, dY, dZ);
+            v.normal = glm::normalize(n);
         }
+    }
+
+    ui32 index = SQ(TERRAIN_MESH_WIDTH_VERTS);
+    const float SKIRT_DEPTH = quadWidth * 2.0f;
+    // Build skirts
+    for (int i = 0; i < TERRAIN_MESH_WIDTH_VERTS; i++) {
+        TerrainVertex& v = mVertexData[index++];
+        // Copy the vertices from the top edge
+        v = mVertexData[i];
+        // Extrude downward
+        v.pos.z -= SKIRT_DEPTH;
+    }
+    // Left Skirt
+    for (int i = 0; i < TERRAIN_MESH_WIDTH_VERTS; i++) {
+        TerrainVertex& v = mVertexData[index++];
+        // Copy the vertices from the left edge
+        v = mVertexData[i * TERRAIN_MESH_WIDTH_VERTS];
+        // Extrude downward
+        v.pos.z -= SKIRT_DEPTH;
+    }
+    // Right Skirt
+    for (int i = 0; i < TERRAIN_MESH_WIDTH_VERTS; i++) {
+        TerrainVertex& v = mVertexData[index++];
+        // Copy the vertices from the right edge
+        v = mVertexData[i * TERRAIN_MESH_WIDTH_VERTS + TERRAIN_MESH_WIDTH_VERTS - 1];
+        // Extrude downward
+        v.pos.z -= SKIRT_DEPTH;
+    }
+    // Bottom Skirt
+    for (int i = 0; i < TERRAIN_MESH_WIDTH_VERTS; i++) {
+        TerrainVertex& v = mVertexData[index++];
+        // Copy the vertices from the bottom edge
+        v = mVertexData[TERRAIN_MESH_WIDTH_VERTS_SQ - TERRAIN_MESH_WIDTH_VERTS + i];
+        // Extrude downward
+        v.pos.z -= SKIRT_DEPTH;
     }
 }
 
@@ -129,6 +178,58 @@ void TerrainMesh::initGlobalIBO() {
             }
         }
     }
+
+    // Skirt vertices
+    ui32 skirtIndex = TERRAIN_MESH_WIDTH_VERTS_SQ;
+    ui32 vertIndex;
+    // Top Skirt
+    for (ui32 i = 0; i < TERRAIN_MESH_WIDTH_QUADS; i++) {
+        vertIndex = i;
+        indices[index++] = skirtIndex;
+        indices[index++] = skirtIndex + 1;
+        indices[index++] = vertIndex + 1;
+        indices[index++] = vertIndex + 1;
+        indices[index++] = vertIndex;
+        indices[index++] = skirtIndex;
+        skirtIndex++;
+    }
+    skirtIndex++; // Skip last vertex
+    // Left Skirt
+    for (ui32 i = 0; i < TERRAIN_MESH_WIDTH_QUADS; i++) {
+        vertIndex = i * TERRAIN_MESH_WIDTH_VERTS;
+        indices[index++] = skirtIndex;
+        indices[index++] = vertIndex;
+        indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
+        indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
+        indices[index++] = skirtIndex + 1;
+        indices[index++] = skirtIndex;
+        skirtIndex++;
+    }
+    skirtIndex++; // Skip last vertex
+    // Right Skirt
+    for (ui32 i = 0; i < TERRAIN_MESH_WIDTH_QUADS; i++) {
+        vertIndex = i * TERRAIN_MESH_WIDTH_VERTS + TERRAIN_MESH_WIDTH_VERTS - 1;
+        indices[index++] = vertIndex;
+        indices[index++] = skirtIndex;
+        indices[index++] = skirtIndex + 1;
+        indices[index++] = skirtIndex + 1;
+        indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
+        indices[index++] = vertIndex;
+        skirtIndex++;
+    }
+    skirtIndex++;
+    // Bottom Skirt
+    for (ui32 i = 0; i < TERRAIN_MESH_WIDTH_QUADS; i++) {
+        vertIndex = TERRAIN_MESH_WIDTH_VERTS_SQ - TERRAIN_MESH_WIDTH_VERTS + i;
+        indices[index++] = vertIndex;
+        indices[index++] = vertIndex + 1;
+        indices[index++] = skirtIndex + 1;
+        indices[index++] = skirtIndex + 1;
+        indices[index++] = skirtIndex;
+        indices[index++] = vertIndex;
+        skirtIndex++;
+    }
+
     assert(index == TERRAIN_MESH_INDICES);
 
     glGenBuffers(1, &sTerrainIbo);

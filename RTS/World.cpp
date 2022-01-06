@@ -34,6 +34,8 @@
 #include "city/City.h"
 #include "camera/ICamera.h"
 
+#include "generation/WorldGeneration.h"
+
 // TODO: remove?
 #include "ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
@@ -102,6 +104,11 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 	assert(mEcs);
 
 	Services::Threadpool::ref().mainThreadUpdate();
+
+	if (sWorldGen.mIsDirty) {
+		sWorldGen.mIsDirty = false;
+		debugRefreshWorldGeneration();
+	}
 
 	updateSun(camera);
 
@@ -711,6 +718,13 @@ void World::generateChunkAsync(Chunk& chunk) {
 
 void World::editorInvalidateWorldGen() {
 	initPostLoad(*mChunkMesher);
+}
+
+void World::debugRefreshWorldGeneration() {
+	// Tell terain to regenerate
+    for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
+		mTerrainTrees[i].markDirty();
+    }
 }
 
 std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {

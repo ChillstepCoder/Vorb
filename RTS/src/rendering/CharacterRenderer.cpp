@@ -64,7 +64,10 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
 
     // TODO: Store in component
     mesh.finishMesh(MeshDrawMode::STREAM);
-    materialRenderer.renderMesh(mesh, *mMaterial);
+    materialRenderer.bindMaterialForRender(*mMaterial);
+    f32v3 offset = -camera.getPosition();
+    glUniform3fv(mMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
+    mesh.draw(mMaterial->mProgram);
     // Render shadow part
     // TODO: move over to decal system
     /*constexpr float MIN_SHADOW_ALPHA = 0.2f;

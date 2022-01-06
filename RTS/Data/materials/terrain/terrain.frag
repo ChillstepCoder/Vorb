@@ -4,6 +4,7 @@ uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 0.0 / 255.0, 205.0 / 255.0);
 uniform vec3 GrassColor = vec3(255.0 / 255.0, 219.0 / 255.0, 105.0 / 255.0);
+uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
 in float fHeight;
 in vec3 fPosition;
@@ -42,8 +43,10 @@ void main() {
     
     // === Terrain texturing ===
     
-    if (fHeight < -2.25) {
+    if (fHeight < 0.0) {
         oColor.rgb = WaterColor;
+    } else if (fHeight > 10.0) {
+        oColor.rgb = StoneColor;
     } else {
         oColor.rgb = (texture(GrassTexture, fUV).rgb + texture(GrassTexture, -(fUV * 0.1)).rgb) * 0.5;
         oColor.rgb = oColor.rgb * GrassColor;
