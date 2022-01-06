@@ -46,50 +46,55 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    f64 height = sWorldGen.getHeightAtPos(worldPos);
+    f32 height = sWorldGen.getHeightAtPos(worldPos);
+    tile.baseZPosition = glm::clamp(height, 0.0f, 255.0f);
 
-    if (height > 0.3) {
-        //tile.groundLayer = rock1;
-        // Mountains
-        tile.baseZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
+    if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
+        *grass = 1;
     }
-    else if (height < -0.45) {
-        //tile.groundLayer = water;
-    }
-    else if (height < -0.1 || height > 0.1) {
-        // Standard grass layer
-        if (abs(height) < 0.3) {
-            // Fields
-            const float fNoise = sWorldGen.mFlowerNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-            if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.999f) {
-                tile.topLayer = bush;
-            }
-            else if (Random::getThreadSafef(worldPos.y, worldPos.x) > 0.999f) {
-                tile.topLayer = smallBush;
-            }
-            else if (Random::getThreadSafef(worldPos.x, offsetToCenter.y) > 0.99f) {
-                tile.topLayer = shrub;
-            }
-            else if (fNoise > 0.35f && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.7f) {
-                tile.topLayer = flowers;
-            }
-            else if (fNoise < 0.1f && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.5f) {
-                tile.topLayer = flower;
-            }
-            else if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.9995f) {
-                tile.topLayer = largeBush;
-            }
-            if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
-                *grass = 1;
-            }
-        }
-    }
-    else {
-        float r = Random::getThreadSafef(offsetToCenter.x, worldPos.y);
-        if (r > 0.6f) {
-            tile.topLayer = hugeTree;
-        }
-    }
+
+    //if (height > 0.3) {
+    //    //tile.groundLayer = rock1;
+    //    // Mountains
+    //    tile.baseZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
+    //}
+    //else if (height < -0.45) {
+    //    //tile.groundLayer = water;
+    //}
+    //else if (height < -0.1 || height > 0.1) {
+    //    // Standard grass layer
+    //    if (abs(height) < 0.3) {
+    //        // Fields
+    //        const float fNoise = sWorldGen.mFlowerNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+    //        if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.999f) {
+    //            tile.topLayer = bush;
+    //        }
+    //        else if (Random::getThreadSafef(worldPos.y, worldPos.x) > 0.999f) {
+    //            tile.topLayer = smallBush;
+    //        }
+    //        else if (Random::getThreadSafef(worldPos.x, offsetToCenter.y) > 0.99f) {
+    //            tile.topLayer = shrub;
+    //        }
+    //        else if (fNoise > 0.35f && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.7f) {
+    //            tile.topLayer = flowers;
+    //        }
+    //        else if (fNoise < 0.1f && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.5f) {
+    //            tile.topLayer = flower;
+    //        }
+    //        else if (Random::getThreadSafef(offsetToCenter.x, offsetToCenter.y) > 0.9995f) {
+    //            tile.topLayer = largeBush;
+    //        }
+    //        if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
+    //            *grass = 1;
+    //        }
+    //    }
+    //}
+    //else {
+    //    float r = Random::getThreadSafef(offsetToCenter.x, worldPos.y);
+    //    if (r > 0.6f) {
+    //        tile.topLayer = hugeTree;
+    //    }
+    //}
     return tile;
 }
 

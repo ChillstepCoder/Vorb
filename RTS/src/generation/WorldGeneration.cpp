@@ -18,10 +18,10 @@ f32 WorldGeneration::getHeightAtPos(const f32v2& worldPos)
     //  TODO: Precompute and interpolate, can cubic interpolate and others
     f64 distanceFromCenter2 = glm::length2(offsetToCenter);
 
-    // Draw the outline via noise
+    // Preturb the outline via noise
     distanceFromCenter2 += CONTINENT_OUTLINE_SCALE * mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
 
-    // Outline
+    // Outline check
     if (distanceFromCenter2 > CONTINENT_RADIUS_SQ) {
         // Ocean
         height -= (distanceFromCenter2 - CONTINENT_RADIUS_SQ) * 0.0000001;
@@ -29,10 +29,12 @@ f32 WorldGeneration::getHeightAtPos(const f32v2& worldPos)
     else {
         // Continent internals
         f64 lerp = (CONTINENT_RADIUS_SQ - distanceFromCenter2) * 0.00000001;
-
-        f64 mountain = mMountainsNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-        return mountain;
-        height += lerp * mountain;
+        // Mountains
+        f64 mountainDist = mMountainsDistNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+        if (mountainDist > 0.0) {
+            f64 mountain = mMountainsNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+            height += lerp * mountain * glm::min(mountainDist, 1.0);
+        }
     }
     return (f32)height;
 }

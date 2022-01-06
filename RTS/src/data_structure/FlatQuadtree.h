@@ -156,6 +156,8 @@ protected:
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
+    // If already meshing, wait
+    if (patch.isMeshing()) return;
     patch.mFlags &= (~QUADTREE_PATCH_FLAG_DIRTY_MESH);
     patch.mFlags |= QUADTREE_PATCH_FLAG_MESHING;
     buildMeshForPatch(patch, lod, patchIndex);

@@ -11,7 +11,6 @@ out float fHeight;
 out vec3 fPosition;
 out vec2 fUV;
 out mat3 fTBN;
-out float fRoughness;
 
 const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
 
@@ -25,7 +24,6 @@ void main() {
     vec3 tangent = cross(binormal, normal);
 	fTBN = mat3(TANGENT, binormal, normal);
 	
-	fRoughness = 0.85;
     fUV = vertexPos.xy * 0.05;
     fHeight = vertexPos.z;
     fPosition = worldPos.xyz;

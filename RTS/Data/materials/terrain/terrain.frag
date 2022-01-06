@@ -10,7 +10,6 @@ in float fHeight;
 in vec3 fPosition;
 in vec2 fUV;
 in mat3 fTBN;
-in float fRoughness;
 
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
@@ -45,11 +44,10 @@ void main() {
     
     if (fHeight < 0.0) {
         oColor.rgb = WaterColor;
-    } else if (fHeight > 10.0) {
-        oColor.rgb = StoneColor;
     } else {
-        oColor.rgb = (texture(GrassTexture, fUV).rgb + texture(GrassTexture, -(fUV * 0.1)).rgb) * 0.5;
-        oColor.rgb = oColor.rgb * GrassColor;
+        oColor.rgb = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, -(fUV * 0.1)).rgb, 0.4); // TODO: Dynamic mix
+        float stoneLerp = clamp((fHeight - 6.0) * 0.5, 0.0, 1.0);
+        oColor.rgb = oColor.rgb * mix(GrassColor, StoneColor, stoneLerp);
     }
     
     // === Normals ===
@@ -62,6 +60,6 @@ void main() {
     
     // === Roughness ===
     
-	oRoughness.r = fRoughness;
+	oRoughness.r = 1.0 - texture(GreyNoise, fUV * 4.0).r * 0.4;
 	oRoughness.a = 1.0;
 }

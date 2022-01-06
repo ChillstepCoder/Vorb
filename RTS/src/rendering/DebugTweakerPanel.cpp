@@ -48,11 +48,15 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mTerrainLodDistanceOffset, 0.0f, 2500.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugTerrainLod);
         ImGui::NewLine();
+        ImGui::BeginChild("Terrain Funcs", ImVec2(WINDOW_WIDTH, 350.0f));
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsNoise, ID);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsDistNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mContinentOutlineNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mHumidityNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise, ID);
+        ImGui::EndChild();
+        ImGui::NewLine();
         ImGui::PopID();
     }
 

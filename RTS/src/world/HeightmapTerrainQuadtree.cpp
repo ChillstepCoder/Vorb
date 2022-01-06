@@ -81,7 +81,7 @@ void createTerrainMesh(
     const f32v2& worldPos
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
-    f32v2 quadDims = f32v2(dims) / f32v2(32.0f);
+    f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     mesh.beginMesh(posStart, dims.x);
     // Generate heightfield
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
@@ -97,7 +97,6 @@ void createTerrainMesh(
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
 {
- 
     if (!mMeshes[patchIndex]) {
         mMeshes[patchIndex] = std::make_unique<TerrainMesh>();
         assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
