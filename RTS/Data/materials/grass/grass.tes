@@ -11,14 +11,13 @@ const float WIND_INTENSITY = 0.75;
 in vec3 tWorldPos[];
 in float tHeight[];
 flat in vec3 tWorldRoot[];
-in vec2 tScreenUV[];
 in vec2 tUV[];
 flat in float tAtlasPage[];
 in mat3 tTBN[];
 in float tRoughness[];
 in float tDistance[];
 
-out vec2 fScreenUV;
+out vec3 fPosition;
 out vec2 fUV;
 flat out float fAtlasPage;
 out mat3 fTBN;
@@ -45,7 +44,6 @@ void main()
     // Interpolate the attributes of the output vertex using the barycentric coordinates
     vec3 worldPos = interpolate3D(tWorldPos[0], tWorldPos[1], tWorldPos[2]);
     float height = interpolate1D(tHeight[0], tHeight[1], tHeight[2]);
-    fScreenUV = interpolate2D(tScreenUV[0], tScreenUV[1], tScreenUV[2]);
     fUV = interpolate2D(tUV[0], tUV[1], tUV[2]);
     fAtlasPage = tAtlasPage[0];
     fTBN = tTBN[0];
@@ -56,5 +54,6 @@ void main()
     //float Displacement = texture(gDisplacementMap, TexCoord_FS_in.xy).x;
     //worldPos += Normal_FS_in * Displacement * gDispFactor;
     worldPos.xyz += CameraRight * getWindAtPosition(-Time + height, vec4(tWorldRoot[0], 0.0)) * height * WIND_INTENSITY;
+    fPosition = worldPos;
     gl_Position = VP * vec4(worldPos, 1.0);
 }

@@ -12,7 +12,7 @@
 #include <Vorb/graphics/SamplerState.h>
 
 // For grass noise
-#include "generation/WorldGenerationData.h"
+#include "generation/WorldGeneration.h"
 
 constexpr int MAX_CONCURRENT_MESH_TASKS = 1000; // TODO: Delete this bullshit
 constexpr float LAYER_DEPTH_ADD = 0.001f;
@@ -240,25 +240,6 @@ void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
     //}
 }
 
-void uploadLODTexture(ChunkRenderData& renderData, color3* pixelData) {
-    if (!renderData.mLODTexture) {
-        glGenTextures(1, &renderData.mLODTexture);
-    }
-
-    glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
-    // Compressed
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB, CHUNK_WIDTH, CHUNK_WIDTH, 0, GL_RGB, GL_UNSIGNED_BYTE, pixelData);
-
-    // Set up tex parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
-
 const ExposedNeighborBits EXPOSED_NEIGHBOR_CARDINAL[4] = {
     EN_BOTTOM,
     EN_LEFT,
@@ -404,7 +385,7 @@ void addTileFloraBillboard(
         const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
 
         if (variantCount) {
-            f32 grassNoise = -sWorldGenData.mGrassNoise.compute((f64)tileWorldPos.x + i * 0.2, (f64)tileWorldPos.y + i * 0.2);
+            f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + i * 0.2, (f64)tileWorldPos.y + i * 0.2);
 
             // Handle variant UVs
             ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
@@ -766,7 +747,6 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mMeshDirty = false;
-    chunk.mChunkRenderData.mLODDirty = false;
     chunk.incRef();
 
     ChunkRenderData& renderData = chunk.mChunkRenderData;
@@ -783,8 +763,6 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         ChunkBillboardMesh& billboardMesh = *renderData.mBillboardMesh;
         billboardMesh.reserveQuadCount(CHUNK_SIZE); // Most chunks will have less than 1 quad per tile
 
-        color3* lodData = meshData->mLODTexturePixelBuffer;
-
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
                 //  TODO: Multiple world layers
@@ -798,11 +776,11 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     const TileData& tileData = TileRepository::getTileData(layerTile);
                     const SpriteData& spriteData = tileData.spriteData;
 
-                    if (spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
-                        // Set LOD pixel
-                        // TODO: expand trees
-                        lodData[index] = tileData.spriteData.lodColor;
-                    }
+                    //if (spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
+                    //    // Set LOD pixel
+                    //    // TODO: expand trees
+                    //    lodData[index] = tileData.spriteData.lodColor;
+                    //}
 
                     // Tile mesh
                     // TODO: Baked AO using a gradient texture instead of vertex colors
@@ -823,7 +801,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
 
                             if (variantCount) {
-                                f32 grassNoise = sWorldGenData.mGrassNoise.compute((f64)tilePosition.x, (f64)tilePosition.y);
+                                f32 grassNoise = sWorldGen.mGrassNoise.compute((f64)tilePosition.x, (f64)tilePosition.y);
 
                                 // Handle variant UVs
                                 ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
@@ -851,64 +829,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         renderData.mChunkMesh->finishMesh(MeshDrawMode::STATIC);
         renderData.mBillboardMesh->finishMesh(MeshDrawMode::STATIC);
 
-        // LOD
-        uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
-
         // Recycle and flag as free
         PreciseTimer timer4;
-        mFreeTileMeshData.push_back(meshData);
-        chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
-
-        // Update refcount
-        --mNumMeshTasksRunning;
-        chunk.decRef();
-    });
-    return true;
-}
-
-bool ChunkMesher::createLODTextureAsync(const Chunk& chunk) {
-
-    TileMeshData* meshData = tryGetFreeTileMeshData();
-    if (!meshData) {
-        return false;
-    }
-
-    ++mNumMeshTasksRunning;
-    assert(!chunk.mChunkRenderData.mIsBuildingBaseMesh);
-    chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
-    chunk.mChunkRenderData.mLODDirty = false;
-    chunk.incRef();
-
-    // TODO: We have a race condition if the chunk goes out of memory
-    Services::Threadpool::ref().addTask([&chunk, meshData](ThreadPoolWorkerData* workerData) {
-
-        color3* currentPixel = meshData->mLODTexturePixelBuffer;
-        for (int index = 0; index < CHUNK_SIZE; ++index) {
-            //  TODO: More than just ground
-            const Tile& tile = chunk.mTiles[index];
-            for (int l = TILE_LAYER_COUNT - 1; l >= 0; --l) {
-                TileID layerTile = tile.layers[l];
-                if (layerTile == TILE_ID_NONE) {
-                    continue;
-                }
-                // First opaque tile
-                const TileData& tileData = TileRepository::getTileData(layerTile);
-                if (tileData.spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
-                    *currentPixel++ = tileData.spriteData.lodColor;
-                    break;
-                }
-            }
-        }
-
-
-    }, [this, &chunk, meshData]() {
-        PreciseTimer timer;
-        ChunkRenderData& renderData = chunk.mChunkRenderData;
-
-        // LOD
-        uploadLODTexture(renderData, meshData->mLODTexturePixelBuffer);
-
-        // Recycle and flag as free
         mFreeTileMeshData.push_back(meshData);
         chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
 

@@ -9,7 +9,7 @@
 
 #include "services/Services.h"
 
-#include "generation/WorldGenerationData.h"
+#include "generation/WorldGeneration.h"
 #include <Vorb/graphics/GLProgram.h>
 
 #include "Random.h"
@@ -135,7 +135,7 @@ void createGrassMesh(
                     const float xo = (x2 + rnd) / (float)density;
                     const float yo = (y2 - rnd) / (float)density;
                     const float rsize = lerp(0.4f, 0.6f, rnd);
-                    const f32 grassNoise = -sWorldGenData.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
+                    const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
                     grassMesh.addBladeQuad(
                         f32v3(tileWorldPos.x + xo, tileWorldPos.y + yo, 0.0f), // TODO: new height

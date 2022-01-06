@@ -9,7 +9,7 @@
 
 #include "editor/ImguiViews.hpp"
 
-#include "generation/WorldGenerationData.h"
+#include "generation/WorldGeneration.h"
 
 #include <Vorb/ui/InputDispatcher.h>
 
@@ -88,16 +88,16 @@ void WorldEditor::updateAndRender() {
     // World noise
     {
         ImGui::Begin("Terrain Generation");
-        sWorldGenData.mIsDirty |= ImguiView::Noise::view(sWorldGenData.mBaseNoise);
-        sWorldGenData.mIsDirty |= ImguiView::Noise::view(sWorldGenData.mContinentOutlineNoise);
-        sWorldGenData.mIsDirty |= ImguiView::Noise::view(sWorldGenData.mHumidityNoise);
-        sWorldGenData.mIsDirty |= ImguiView::Noise::view(sWorldGenData.mTemperatureNoise);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mContinentOutlineNoise);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mHumidityNoise);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise);
         ImGui::End();
     }
 
     // Invalidate world if needed
-    if (sWorldGenData.mIsDirty) {
-        sWorldGenData.mIsDirty = false;
+    if (sWorldGen.mIsDirty) {
+        sWorldGen.mIsDirty = false;
         mWorld.editorInvalidateWorldGen();
     }
 

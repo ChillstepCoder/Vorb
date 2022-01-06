@@ -36,6 +36,7 @@ private:
 template <typename VERTEX>
 void ITriangleMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount, MeshDrawMode drawMode) {
 
+    lazyInitBuffers();
     mIndexCount = vertexCount;
     const unsigned bufferSizeBytes = vertexCount * sizeof(VERTEX);
 

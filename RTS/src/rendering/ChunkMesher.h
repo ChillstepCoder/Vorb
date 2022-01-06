@@ -12,7 +12,7 @@ struct SpriteData;
 
 
 struct TileMeshData {
-    color3 mLODTexturePixelBuffer[CHUNK_SIZE];
+    // TODO: Delete? no longer need
 };
 
 // TODO: Move to Light.h?
@@ -32,7 +32,6 @@ public:
 
 private:
     bool createMeshAsync(const Chunk& chunk);
-    bool createLODTextureAsync(const Chunk& chunk);
     bool createHighDetailFloraMeshAsync(const Chunk& chunk);
 
     TileMeshData* tryGetFreeTileMeshData();

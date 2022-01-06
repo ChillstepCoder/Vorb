@@ -60,6 +60,11 @@ struct DebugOptions {
     // Camera settings
     f32 mFoV = 75.0f;
     f32 mZFar = 200000.0f;
+    // Shader debug
+    f32v3 mDebugColor01 = f32v3(0.0f, 0.0f, 1.0f);
+    f32v3 mDebugColor02 = f32v3(0.0f, 1.0f, 0.0f);
+    f32 mDebugFloat01 = 0.0f;
+    f32 mDebugFloat02 = 0.0f;
 
     // TODO: FILE CONFIG
     bool mUseCompressedAtlas = false;

@@ -177,7 +177,7 @@
     <ClCompile Include="src\editor\WorldEditor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\generation\WorldGenerationData.cpp">
+    <ClCompile Include="src\generation\WorldGeneration.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\city\City.cpp">
@@ -372,6 +372,9 @@
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\mesh\TerrainMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -560,7 +563,7 @@
     <ClInclude Include="src\editor\WorldEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\generation\WorldGenerationData.h">
+    <ClInclude Include="src\generation\WorldGeneration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\editor\ImguiViews.hpp">
@@ -819,6 +822,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\data_structure\QuadtreeSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\TerrainMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

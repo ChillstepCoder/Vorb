@@ -6,7 +6,6 @@
 VGBuffer MeshBase::sQuadIbo = 0;
 
 MeshBase::MeshBase() {
-    init();
 }
 
 MeshBase::~MeshBase() {
@@ -35,7 +34,7 @@ void MeshBase::initStaticIBO() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void MeshBase::init() {
+void MeshBase::lazyInitBuffers() {
     if (mVao == 0) { // Create VAO
         glGenVertexArrays(1, &mVao);
         glBindVertexArray(mVao);

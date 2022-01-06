@@ -27,6 +27,10 @@ enum class MaterialUniform {
     ShadowTexture,
     SSAOTexture,
     SSAOColor,
+    DebugColor1,
+    DebugColor2,
+    DebugFloat1,
+    DebugFloat2,
     COUNT
 };
 

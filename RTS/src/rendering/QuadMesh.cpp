@@ -338,7 +338,6 @@ void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     // TODO: can we not do this every time?
     if (mLastUsedProgram != &program) {
         mLastUsedProgram = &program;
-
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
         program.enableVertexAttribArrays();
@@ -421,7 +420,6 @@ void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f3
 
 void TBOBillboardMesh::draw(const vg::GLProgram& program) const {
 
-
     // Make sure we have been initialized
     assert(mVao);
     if (!mIndexCount) return;
@@ -441,6 +439,7 @@ void TBOBillboardMesh::draw(const vg::GLProgram& program) const {
 void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
 {
     if (mTextureData.size()) {
+        lazyInitBuffers();
         mIndexCount = mTextureData.size() * 6;
         int maxSize;
         //glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &maxSize);
@@ -555,6 +554,7 @@ void GrassBillboardMesh::draw(const vg::GLProgram& program) const
 void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
 {
     if (mInstanceData.size()) {
+        lazyInitBuffers();
 
         if (mVboPosition == 0) {
             glGenBuffers(1, &mVboPosition);

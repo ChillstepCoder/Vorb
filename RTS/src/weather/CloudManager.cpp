@@ -14,7 +14,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "generation/WorldGenerationData.h"
+#include "generation/WorldGeneration.h"
 
 constexpr ui32 MAX_MESH_RECYCLES = 32;
 constexpr int CLOUD_DIR_LEFT  = -1;
@@ -196,7 +196,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
         for (int y = -CHUNK_WIDTH / 2; y <= CHUNK_WIDTH / 2; y += 8) {
             for (int x = -CHUNK_WIDTH / 2; x <= CHUNK_WIDTH / 2; x += 8) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
-                const f32 n = sWorldGenData.mCloudsNoise.compute(trueGenPos.x, trueGenPos.y);
+                const f32 n = sWorldGen.mCloudsNoise.compute(trueGenPos.x, trueGenPos.y);
                 if (n > 0.3f) {
                     constexpr f32 RAND_OFFSET_FACTOR = 8.0f;
                     constexpr f32 HEIGHT_OFFSET_FACTOR = 8.0f;
@@ -211,7 +211,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
                     if (Random::getThreadSafe(trueGenPos.x, trueGenPos.y) % 80 == 0) {
                         newSize += 80.0f;
                     }
-                    const f32 heightOffset = sWorldGenData.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
+                    const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     mesh->addQuad(quadPos, f32v2(newSize, (newSize) * (1.0 - stretchr)), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
                 }

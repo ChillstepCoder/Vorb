@@ -8,7 +8,6 @@ layout (vertices = 3) out;
 in vec3 fWorldPos[];
 in float fHeight[];
 flat in vec3 fWorldRoot[];
-in vec2 fScreenUV[];
 in vec2 fUV[];
 flat in float fAtlasPage[];
 in mat3 fTBN[];
@@ -19,7 +18,6 @@ in float fDistance[];
 out vec3 tWorldPos[];
 out float tHeight[];
 flat out vec3 tWorldRoot[];
-out vec2 tScreenUV[];
 out vec2 tUV[];
 flat out float tAtlasPage[];
 out mat3 tTBN[];
@@ -28,14 +26,13 @@ out float tDistance[];
 
 float GetTessLevel(float Distance0, float Distance1) {
     float AvgDistance = (Distance0 + Distance1) / 2.0;
-
     if (AvgDistance <= 3.0) {
-        return 5.0;
+        return 4.0;
     }
-    else if (AvgDistance <= 5.0) {
+    else if (AvgDistance <= 6.0) {
         return 3.0;
     }
-    else if (AvgDistance <= 10.0) {
+    else if (AvgDistance <= 12.0) {
         return 2.0;
     }
     else {
@@ -49,7 +46,6 @@ void main()
     tWorldPos[gl_InvocationID] = fWorldPos[gl_InvocationID];
     tHeight[gl_InvocationID] = fHeight[gl_InvocationID];
     tWorldRoot[gl_InvocationID] = fWorldRoot[gl_InvocationID];
-    tScreenUV[gl_InvocationID] = fScreenUV[gl_InvocationID];
     tUV[gl_InvocationID] = fUV[gl_InvocationID];
     tAtlasPage[gl_InvocationID] = fAtlasPage[gl_InvocationID];
     tTBN[gl_InvocationID] = fTBN[gl_InvocationID];

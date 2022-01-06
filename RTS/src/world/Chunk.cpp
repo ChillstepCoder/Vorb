@@ -16,10 +16,6 @@ bool IS_SHUTTING_DOWN = false;
 
 ChunkRenderData::~ChunkRenderData() {
     // Empty
-    // TODO: RAII Wrapper for safety
-    if (mLODTexture) {
-        glDeleteTextures(1, &mLODTexture);
-    }
 }
 
 Chunk::Chunk() {
@@ -82,14 +78,8 @@ void Chunk::dispose() {
 	mState = ChunkState::INVALID;
     
     // Reset render data
-    mChunkRenderData.mLODDirty = true;
     mChunkRenderData.mMeshDirty = true;
     mChunkRenderData.mIsVisible = false;
-
-    if (mChunkRenderData.mLODTexture) {
-        glDeleteTextures(1, &mChunkRenderData.mLODTexture);
-        mChunkRenderData.mLODTexture = 0;
-    }
 
     mChunkRenderData.mBillboardMesh.reset();
     mChunkRenderData.mChunkMesh.reset();

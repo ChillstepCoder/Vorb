@@ -12,14 +12,7 @@
 #include "services/Services.h"
 
 #include "generation/NoiseFunction.hpp"
-#include "generation/WorldGenerationData.h"
-
-// === Continent noise modifiers ===
-// Configurable
-constexpr f64 CONTINENT_RADIUS = 10000.0;
-constexpr f64 CONTINENT_OUTLINE_SCALE = SQ(20000.0);
-// Constant
-constexpr f64 CONTINENT_RADIUS_SQ = SQ(CONTINENT_RADIUS);
+#include "generation/WorldGeneration.h"
 
 // Region LOD data
 #ifdef DEBUG
@@ -47,40 +40,27 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
     static TileID bush = TileRepository::getTile("bush");
     static TileID largeBush = TileRepository::getTile("large_bush");
 
-    Tile tile(grass1, TILE_ID_NONE, TILE_ID_NONE);
-
-    //  TODO: Precompute and interpolate, can cubic interpolate and others
-    f64 height = -sWorldGenData.mBaseNoise.compute((f64)worldPos.x, (f64)worldPos.y);
-
+    Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     f32v2 offsetToCenter(
         worldPos.x - WorldData::WORLD_CENTER.x,
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    //  TODO: Precompute and interpolate, can cubic interpolate and others
-    f64 distanceFromCenter2 = glm::length2(offsetToCenter);
-
-    // Draw the outline via noise
-    distanceFromCenter2 += CONTINENT_OUTLINE_SCALE * sWorldGenData.mContinentOutlineNoise.compute(offsetToCenter.x, offsetToCenter.y);
-
-    // Outline
-    if (distanceFromCenter2 > CONTINENT_RADIUS_SQ) {
-        height -= (distanceFromCenter2 - CONTINENT_RADIUS_SQ) * 0.0000001;
-    }
+    f64 height = sWorldGen.getHeightAtPos(worldPos);
 
     if (height > 0.3) {
-        tile.groundLayer = rock1;
+        //tile.groundLayer = rock1;
         // Mountains
         tile.baseZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
     }
     else if (height < -0.45) {
-        tile.groundLayer = water;
+        //tile.groundLayer = water;
     }
     else if (height < -0.1 || height > 0.1) {
         // Standard grass layer
         if (abs(height) < 0.3) {
             // Fields
-            const float fNoise = sWorldGenData.mFlowerNoise.compute((f64)worldPos.x, (f64)worldPos.y);
+            const float fNoise = sWorldGen.mFlowerNoise.compute((f64)worldPos.x, (f64)worldPos.y);
             if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.999f) {
                 tile.topLayer = bush;
             }
@@ -105,7 +85,6 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
         }
     }
     else {
-        tile.groundLayer = grass2;
         float r = Random::getThreadSafef(offsetToCenter.x, worldPos.y);
         if (r > 0.6f) {
             tile.topLayer = hugeTree;

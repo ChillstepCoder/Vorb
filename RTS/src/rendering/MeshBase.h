@@ -20,7 +20,7 @@ public:
 
     static void initStaticIBO();
 
-    void init(); ///< Called automatically on construction, but can be safely called twice to no effect
+    void lazyInitBuffers(); ///< Called automatically on construction, but can be safely called twice to no effect
     virtual void destroy();
 
     virtual void draw(const vg::GLProgram& program) const;
@@ -36,8 +36,10 @@ protected:
 
     VGVertexArray mVao = 0; ///< Vertex Array Object
     VGBuffer mVbo = 0; ///< Vertex Buffer Object
-    static VGBuffer sQuadIbo; ///< Index Buffer Object
     ui32 mIndexCount = 0; ///< Current capacity of the m_ibo
     mutable const vg::GLProgram* mLastUsedProgram = nullptr;
     ui32AABB2 mAABB = ui32AABB2(0, 0, UINT32_MAX, UINT32_MAX);  ///< Optional AABB to describe the bounds
+
+    // Static
+    static VGBuffer sQuadIbo; ///< Index Buffer Object
 };

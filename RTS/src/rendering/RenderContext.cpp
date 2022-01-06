@@ -25,6 +25,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/QuadMesh.h"
+#include "rendering/mesh/TerrainMesh.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/RenderStats.h"
@@ -76,6 +77,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
 {
     // Mesh init
     MeshBase::initStaticIBO();
+    TerrainMesh::initGlobalIBO();
     checkGlError("Meshbase init");
 
     // int UI resources
@@ -221,6 +223,7 @@ void RenderContext::initPostLoad() {
 
     mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
+    mTerrainMaterial = mResourceManager.getMaterialManager().getMaterial("terrain");
 
     {
         
@@ -290,7 +293,6 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
 void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha) {
 
-    ChunkRenderLOD lodState = ChunkRenderLOD::FULL_DETAIL;
     // TODO: Map texels to pixels?
     if (camera.getScale() < 1.5f) {
         // TODO: Remove for 2D
@@ -299,6 +301,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // TODO: Should this happen here? Maybe assert instead?
     beginFrame(&camera, playerPos);
+    checkGlError("RenderContext::Begin Frame");
     
     mActiveGBuffer = &mGBuffers[mActiveGBufferIndex];
 
@@ -331,12 +334,20 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    mChunkRenderer->renderTilesAndLOD(mWorld, camera, lodState);
-    
+    // Terrain
+    // TODO: Frustum cull the AABB for each patch
+    mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
+    for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+        terrainQuadtree.render(camera, mTerrainMaterial->mProgram);
+    }
+
+    // Tiles
+    mChunkRenderer->renderTiles(mWorld, camera);
+
     // COMMENT OUT TO DISABLE CHARACTER
     mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
     mEcsRenderer->renderPhysicsDebug(camera);
-    
+
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
 
@@ -351,6 +362,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render building roofs
     // TODO: Frustum cull
+
     const CityGraph& cities = mWorld.getCities();
     for (auto&& city : cities.mNodes) {
         const std::vector<Building>& buildings = city->getBuildings();
@@ -380,7 +392,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glDisable(GL_DEPTH_CLAMP);
 
     // Horizon
-    mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
+    //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
     // Shadows
     if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
@@ -391,7 +403,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            mChunkRenderer->renderWorldShadows(mWorld, camera, lodState, mShadowRenderer->getMaxDistance());
+            mChunkRenderer->renderWorldShadows(mWorld, camera, mShadowRenderer->getMaxDistance());
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull

@@ -178,8 +178,20 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::SSAOColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mSSAOColor[0]);
                 break;
+            case MaterialUniform::DebugColor1:
+                glUniform3fv(it.second, 1, &sDebugOptions.mDebugColor01[0]);
+                break;
+            case MaterialUniform::DebugColor2:
+                glUniform3fv(it.second, 1, &sDebugOptions.mDebugColor02[0]);
+                break;
+            case MaterialUniform::DebugFloat1:
+                glUniform1f(it.second, sDebugOptions.mDebugFloat01);
+                break;
+            case MaterialUniform::DebugFloat2:
+                glUniform1f(it.second, sDebugOptions.mDebugFloat02);
+                break;
 
         }
-        static_assert((int)MaterialUniform::COUNT == 22, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 26, "Update for new uniform type");
     }
 }

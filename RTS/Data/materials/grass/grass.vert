@@ -9,7 +9,6 @@ uniform float UnYOffset = 1.0;
 out vec3 fWorldPos;
 flat out vec3 fWorldRoot;
 out float fHeight;
-out vec2 fScreenUV;
 out vec2 fUV;
 flat out float fAtlasPage;
 out mat3 fTBN;
@@ -86,11 +85,6 @@ void main() {
 	
 	worldPos.xyz += CameraFront * angle;
     fWorldPos = worldPos.xyz;
-	vec4 screenPos = VP * worldPos;
-	//gl_Position = screenPos; // NO DO FOR TESSELATION
-	
-	// Compute uvs as screen coords
-    fScreenUV = (screenPos.xy / vec2(screenPos.w));
 	
 	// Grass blade uvs
 	fUV = UVS[gl_VertexID % 4 + (4 * (bladeIndex % 2))];

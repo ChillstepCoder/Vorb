@@ -39,9 +39,7 @@ struct ChunkRenderData {
     std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
     std::unique_ptr<ChunkBillboardMesh> mBillboardMesh = nullptr;
 	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
-	VGTexture mLODTexture = 0;
 	bool mMeshDirty = true;
-	bool mLODDirty = true;
     bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
 	bool mIsVisible = false;
 };

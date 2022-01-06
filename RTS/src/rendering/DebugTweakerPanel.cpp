@@ -116,6 +116,15 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         }
     }
 
+    if (ImGui::CollapsingHeader("Shader Tweaker")) {
+        ImGui::PushID(++ID);
+        ImGui::ColorPicker3("Debug Color 1", &sDebugOptions.mDebugColor01.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker3("Debug Color 2", &sDebugOptions.mDebugColor02.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::SliderFloat("Debug Float 1", &sDebugOptions.mDebugFloat01, 0.0f, 1.0f);
+        ImGui::SliderFloat("Debug Float 2", &sDebugOptions.mDebugFloat02, 0.0f, 1.0f);
+        ImGui::PopID();
+    }
+
     glGetString(GL_VENDOR);
     if (ImGui::CollapsingHeader("GPU Stats")) {
         const char* vendor = (const char*)glGetString(GL_VENDOR);

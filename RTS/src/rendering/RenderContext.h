@@ -122,6 +122,7 @@ private:
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
     const Material* mSceneLightingMaterial = nullptr;
+    const Material* mTerrainMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };
 

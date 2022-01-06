@@ -177,7 +177,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool 
     if (patch.mStatus != QUADTREE_PATCH_STATUS_RECOMBINING) {
         patch.mStatus = QUADTREE_PATCH_STATUS_VALID;
 
-        if (!getQuadtreeParent(patchIndex, mNodes).isActive()) {
+        if (patchIndex == 0 || !getQuadtreeParent(patchIndex, mNodes).isActive()) { // LOD 0 has no parent
             // If our parent isnt active or we arent recombining, then we can render, otherwise we will wait for parent to deactivate
             patch.mFlags |= QUADTREE_PATCH_FLAG_SHOULD_RENDER;
         }
@@ -190,7 +190,6 @@ FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::FlatQuadtree(const f32v2& worldPos, const 
     assert(mSubdivideDistancesSq[MAX_DEPTH - 1] == -FLT_MAX); // We should never subdivide at final distance
 
     mNodes[0].init();
-    mNodes[0].mFlags &= (~QUADTREE_PATCH_FLAG_DIRTY_MESH);
     mActiveNodes[0] = 0;
     mNumActiveNodes = 1;
 }
