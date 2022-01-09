@@ -40,6 +40,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         }
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mGrassSettings.lodDistanceOffset, -50.0f, 150.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
+        ImGui::Checkbox("Disable", &sDebugOptions.mHideGrass);
         ImGui::PopID();
     }
 
@@ -112,6 +113,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Chunk Boundaries", &sDebugOptions.mChunkBoundaries);
         ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
         ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mNavGraph);
+        ImGui::Checkbox("Show Physics Debug", &sDebugOptions.mShowPhysicsDebug);
+        ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
     }
     if (activeGBuffer) {
         if (ImGui::CollapsingHeader("GBuffer")) {

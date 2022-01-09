@@ -2,6 +2,8 @@
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
+uniform sampler2D StoneTexture;
+uniform sampler2D StoneNormal;
 uniform vec3 WaterColor = vec3(0.0 / 255.0, 0.0 / 255.0, 205.0 / 255.0);
 uniform vec3 GrassColor = vec3(255.0 / 255.0, 219.0 / 255.0, 105.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
@@ -42,17 +44,24 @@ void main() {
     
     // === Terrain texturing ===
     
+    vec2 farStoneUVs = -(fUV * 0.01);
+    vec3 normal;
+    
     if (fHeight < 0.0) {
         oColor.rgb = WaterColor;
+        normal = vec3(0.0, 0.0, 1.0);
     } else {
-        oColor.rgb = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, -(fUV * 0.1)).rgb, 0.4); // TODO: Dynamic mix
+        vec3 grassColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, -(fUV * 0.1)).rgb, 0.4) * GrassColor;
+        vec3 stoneColor = mix(texture(StoneTexture, fUV).rgb, texture(StoneTexture, farStoneUVs).rgb, 0.9) * StoneColor;
+        
+        //stoneColor = stoneColor * 0.00001 + StoneColor;
         float stoneLerp = clamp((fHeight - 6.0) * 0.5, 0.0, 1.0);
-        oColor.rgb = oColor.rgb * mix(GrassColor, StoneColor, stoneLerp);
+        oColor.rgb = mix(grassColor, stoneColor, stoneLerp);
+	    normal = mix(vec3(0.0, 0.0, 1.0), texture(StoneNormal, farStoneUVs).xyz * 2.0 - 1.0, stoneLerp);
     }
     
     // === Normals ===
     
-	vec3 normal = vec3(0.0, 0.0, 1.0);
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
 	oNormal.a = oColor.a;

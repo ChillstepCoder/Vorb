@@ -3,6 +3,7 @@
 
 #include "rendering/QuadMesh.h"
 #include "world/Chunk.h"
+#include "world/WorldGrid.h"
 #include "camera/Camera3D.h"
 
 #include "options/DebugOptions.h"
@@ -40,7 +41,7 @@ constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(p
 };
 
 
-ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
+ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk, WorldGrid& worldGrid) : mChunk(chunk), mWorldGrid(worldGrid), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
     mWorldPos = mChunk.getWorldPos();
     mChunk.incRef();
 }
@@ -92,7 +93,9 @@ void createGrassMesh(
     GrassBillboardMesh& grassMesh,
     const Chunk& chunk,
     const ui32v2& tilePosStart,
-    ui32 lod
+    ui32 lod,
+    WorldGrid& worldGrid,
+    const f32* heightData
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::LOD_DIMS[lod];
     const ui32 density = GRASS_LOD_DETAIL[lod];
@@ -100,6 +103,7 @@ void createGrassMesh(
     grassMesh.reserveQuadCount((size_t)dims.x * dims.y * density * density);
     for (ui32 y = 0; y < dims.y; ++y) {
         for (ui32 x = 0; x < dims.x; ++x) {
+            assert(tilePosStart.x + x < CHUNK_WIDTH&& tilePosStart.y + y < CHUNK_WIDTH);
             TileIndex tileIndex(tilePosStart.x + x, tilePosStart.y + y);
 
             ui8 grassVal = chunk.getGrassAt(tileIndex);
@@ -137,8 +141,10 @@ void createGrassMesh(
                     const float rsize = lerp(0.4f, 0.6f, rnd);
                     const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
+                    f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
+                    const f32 height = worldGrid.computeHeightAtChunkOffset(heightData, truePos);
                     grassMesh.addBladeQuad(
-                        f32v3(tileWorldPos.x + xo, tileWorldPos.y + yo, 0.0f), // TODO: new height
+                        f32v3(truePos.x, truePos.y, height), // TODO: new height
                         f32v2(bladeWidth, rsize),
                         variantIndex
                     );
@@ -159,25 +165,50 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
     assert(!patch.isCrossfading() && /*!patch.isMeshing() &&*/ !patch.isMeshDirty() && patch.isActive());
 
-    Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex](ThreadPoolWorkerData*) {
+    const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+    if (const f32* heightData = mWorldGrid.tryGetHeightDataAt(id)) {
+        mWorldGrid.aquireHeightData(id);
+        // Instantly generate
+        Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
-        PreciseTimer timer;
+            PreciseTimer timer;
+            createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
+            std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
+        }, [this, &patch, patchIndex]() {
 
-        createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod);
+            mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+            onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
+            // Update refcount
+            --mRefCount;
+            mChunk.decRef();
+        });
+    }
+    else {
+        // Wait for the terrain generator to generate our chunk
+        mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
+            const f32* heightData = mWorldGrid.getHeightDataAt(id);
+            Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
-        std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
-    }, [this, &patch, patchIndex]() {
+                //PreciseTimer timer;
+                createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
+                //std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
+            }, [this, &patch, patchIndex]() {
 
-        mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+                mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+                onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
+                // Update refcount
+                --mRefCount;
+                mChunk.decRef();
+            });
 
-        onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
+        });
+    }
 
-        // Update refcount
-        --mRefCount;
-        mChunk.decRef();
-    });
+   
 }
 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
+    const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+    mWorldGrid.releaseHeightDataAt(id);
     mMeshes[patchIndex].reset();
 }

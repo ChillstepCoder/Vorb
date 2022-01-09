@@ -92,7 +92,6 @@ public:
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
-    void enumVisibleRegions(const ICamera& camera, std::function<void(const Region&)> func) const;
 	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func);
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?

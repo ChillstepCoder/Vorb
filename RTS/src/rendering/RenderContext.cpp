@@ -373,11 +373,16 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // === Post AO passes ===
     // Grass + billboards
     mChunkRenderer->renderBillboards(mWorld, camera);
-    mChunkRenderer->renderGrass(mWorld, camera);
+    if (!sDebugOptions.mHideGrass) {
+        mChunkRenderer->renderGrass(mWorld, camera);
+    }
 
-    // COMMENT OUT TO DISABLE CHARACTER
-    mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
-    mEcsRenderer->renderPhysicsDebug(camera);
+    if (!sDebugOptions.mHideCharacters) {
+        mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
+    }
+    if (sDebugOptions.mShowPhysicsDebug) {
+        mEcsRenderer->renderPhysicsDebug(camera);
+    }
 
     // Clouds
     if (!sDebugOptions.mDisableClouds) {
@@ -589,8 +594,26 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
         mWorld.enumVisibleChunks([](const Chunk& chunk) {
+            color4 color = COLOR_WHITE;
+            switch (chunk.getState()) {
+                case ChunkState::INVALID:
+                    color = color4(1.0f, 0.0f, 0.0f);
+                    break;
+                case ChunkState::WAITING_HEIGHT:
+                    color = color4(0.0f, 0.0f, 0.0f);
+                    break;
+                case ChunkState::LOADING_TILES:
+                    color = color4(0.0f, 1.0f, 1.0f);
+                    break;
+                case ChunkState::FINISHED:
+                    color = color4(0.0f, 1.0f, 0.0f);
+                    break;
+                default:
+                    break;
+            }
+
+            DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color);
             if (chunk.isDataReady()) {
-                DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f));
                 color4 neighborColor(1.0f, 0.0f, 0.0f);
                 if (chunk.mDataReadyNeighborCount == 1) {
                     neighborColor = color4(0.0f, 1.0f, 0.0f);
@@ -607,24 +630,16 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 if (chunk.getRightNeighbor().isDataReady()) {
                     DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH, CHUNK_WIDTH * 0.5f), f32v2(-6.0f, 0.0f), neighborColor);
                 }
-                // Count refs
-                int refCount = chunk.mRefCount.load();
-                if (refCount > 150) {
-                    std::cout << "DETECTED LOTS OF REF COUNTS ON " << (unsigned long long) & chunk << std::endl;
-                }
-                for (int i = 0; i < refCount; ++i) {
-                    DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(CHUNK_WIDTH / 2) + f32v2(i * 2, 0), f32v2(2.0f), color4(1.0f, 0.0f, 1.0f));
-                }
-
             }
-            else {
-                DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 1.0f));
+            // Count refs
+            int refCount = chunk.mRefCount.load();
+            if (refCount > 150) {
+                std::cout << "DETECTED LOTS OF REF COUNTS ON " << (unsigned long long) & chunk << std::endl;
+                assert(false);
             }
-        });
-
-        // Debug region boundaries
-        mWorld.enumVisibleRegions(camera, [](const Region& region) {
-            DebugRenderer::drawWireQuad(region.getWorldPos(), f32v2(WorldData::REGION_WIDTH_TILES), color4(1.0f, 0.0f, 0.0f));
+            for (int i = 0; i < refCount; ++i) {
+                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(CHUNK_WIDTH / 2) + f32v2(i * 2, 0), f32v2(2.0f), color4(1.0f, 0.0f, 1.0f));
+            }
         });
     }
 

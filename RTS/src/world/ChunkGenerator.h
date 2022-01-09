@@ -4,11 +4,11 @@
 
 class Chunk;
 class Region;
+class WorldGrid;
 
 class ChunkGenerator {
 public:
-	Tile GenerateTileAtPos(const f32v2& worldPos, ui8* grass = nullptr);
-	void GenerateChunk(Chunk& chunk);
-	void GenerateRegionLODTextureAsync(Region& region, color3* recursivePixelBuffer = nullptr);
+	Tile GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass = nullptr);
+	void GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const f32* heightData);
 };
 

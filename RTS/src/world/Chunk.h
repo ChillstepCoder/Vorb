@@ -29,6 +29,7 @@ class WorldGrid;
 
 enum class ChunkState {
 	INVALID,
+	WAITING_HEIGHT,
 	LOADING_TILES,
 	FINISHED,
 };
@@ -181,6 +182,7 @@ private:
 
     std::vector<Tile> mTiles; // TODO: Memory recycler
 	std::vector<TileCollision> mCollision; // TODO: Don't keep this in memory when its not needed?
+	std::vector<TileColliderID> mTileColliders; // TODO: Multilayer?
 	std::vector<ui8> mGrass; // Grass densities
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 

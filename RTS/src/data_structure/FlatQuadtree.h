@@ -4,6 +4,7 @@ class Camera3D;
 DECL_VG(class GLProgram);
 
 #include "data_structure/QuadtreeSettings.h"
+#include "world/ChunkID.h"
 
 // Lookup tables are generated via this
 constexpr ui32 ABSOLUTE_MAX_QUADTREE_DEPTH = 5u;
@@ -94,6 +95,7 @@ public:
     // === Public Constants ===
     static constexpr ui32 NODE_COUNT = (MathUtil::intpow<MAX_DEPTH>(4) - 1) / (4 - 1);
     static constexpr ui32 QUADTREE_FADE_LIST_SIZE = (MathUtil::intpow<MAX_DEPTH - 1>(4) - 1) / (4 - 1);
+    static constexpr ui32 HIGHEST_LOD = MAX_DEPTH - 1;
     static_assert(QUADTREE_FADE_LIST_SIZE < UINT8_MAX);
     static_assert(MAX_DEPTH > 1 && MAX_DEPTH <= ABSOLUTE_MAX_QUADTREE_DEPTH, "Below tables are generated with max of 5");
     static_assert(NODE_COUNT <= ABSOLUTE_MAX_QUADTREE_NODE_COUNT);
@@ -114,6 +116,7 @@ protected:
 
     // === Protected Methods ===
     void onMeshFinished(ui32 patchIndex, bool isMeshValid); // Called by derived class
+    ChunkID getChunkIDForPatchIndex(ui32 patchIndex) const;
     virtual void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) = 0;
     virtual void freeMeshForPatch(ui32 patchIndex) = 0;
 
@@ -153,6 +156,12 @@ protected:
     f32v2 mWorldPos;
     const f32* mSubdivideDistancesSq;
 };
+
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+ChunkID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getChunkIDForPatchIndex(ui32 patchIndex) const {
+    f32v2 pos = f32v2(PATCH_POSITIONS.data[patchIndex].xy);
+    return ChunkID(mWorldPos + pos);
+}
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {

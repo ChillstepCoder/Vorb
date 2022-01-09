@@ -403,6 +403,7 @@
     <ClInclude Include="src\world\ChunkID.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\Region.h" />
+    <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\TileCollision.h" />
     <ClInclude Include="src\world\TileHandle.h" />

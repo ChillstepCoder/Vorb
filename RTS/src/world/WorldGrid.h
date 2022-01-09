@@ -1,7 +1,34 @@
 #pragma once
 
 #include "world/Region.h"
+#include <Vorb/concurrentqueue.h>
 
+#include "world/TerrainConstants.h"
+
+constexpr ui32 HEIGHTMAP_QUAD_WIDTH_PER_CHUNK = CHUNK_WIDTH / HEIGHTMAP_QUAD_SIZE;
+constexpr ui32 HEIGHTMAP_VERT_WIDTH_PER_CHUNK = HEIGHTMAP_QUAD_WIDTH_PER_CHUNK + 1;
+constexpr ui32 HEIGHTMAP_VERT_SIZE_PER_CHUNK = SQ(HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+
+enum HeightmapPatchFlags : ui32 {
+    HEIGHTMAP_PATCH_FLAG_GENERATING = 1 << 0,
+    HEIGHTMAP_PATCH_FLAG_DONE = 1 << 1
+};
+
+class HeightmapPatch {
+public:
+    HeightmapPatch() = default;
+    ~HeightmapPatch();
+
+    bool isDone() const { return mFlags & HEIGHTMAP_PATCH_FLAG_DONE; }
+    bool isGenerating() const { return mFlags & HEIGHTMAP_PATCH_FLAG_GENERATING; }
+
+    ui32 mFlags = 0u;
+    ui32 mRefCount = 0u;
+    f32* mHeightData = nullptr;
+};
+static_assert(sizeof(HeightmapPatch) == 16, "Keep small");
+
+// Contains chunks and height data
 class WorldGrid {
 public:
     WorldGrid();
@@ -11,13 +38,29 @@ public:
     Chunk& getChunk(ChunkID id) { return mChunks[id.id]; }
     const Chunk& getChunk(ChunkID id) const { return mChunks[id.id]; }
     
-    Region& getRegion(ui32 i) { return mRegions[i]; }
-    const Region& getRegion(ui32 i) const { return mRegions[i]; }
-
     static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
-    static ui32 numRegions() { return WorldData::WORLD_SIZE_REGIONS; }
+
+    void requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()> callback);
+    const f32* getHeightDataAt(ChunkID id) const;
+    const f32* tryGetHeightDataAt(ChunkID id) const;
+    const f32* aquireHeightData(ChunkID id);
+    void releaseHeightDataAt(ChunkID id);
+
+    bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
+
+    static f32 computeHeightAtPoint(ChunkID id, const f32* heightData, const f32v2& worldPos);
+    static f32 computeHeightAtChunkOffset(const f32* heightData, const f32v2& chunkOffset);
+    static f32 computeCenterHeightAtTile(const f32* heightData, TileIndex tileIndex);
+
+    static f32 computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex);
 
 private:
+
+    static f32 interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY);
+
+    HeightmapPatch mHeightData[WorldData::WORLD_SIZE_CHUNKS];
     Chunk mChunks[WorldData::WORLD_SIZE_CHUNKS];
-    Region mRegions[WorldData::WORLD_SIZE_REGIONS];
+
+    std::map<ChunkID, std::list<std::function<void()>>> mFinishCallbacks; // Runs when generation is finished
+    
 };

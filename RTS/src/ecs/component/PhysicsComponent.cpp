@@ -208,11 +208,25 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     };
 
     // TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
-    for (int i = 0; i < 4; ++i) {
-        TileCollision collision = world.getTileCollisionAtWorldPos(cornerPositions[i]);
-        // TODO: This can reduntantly collide
-        const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-        resolveCircleTileCollision(tileCenter, collision, cmp);
+    // TODO: Re-enable
+    //for (int i = 0; i < 4; ++i) {
+    //    TileCollision collision = world.getTileCollisionAtWorldPos(cornerPositions[i]);
+    //    // TODO: This can reduntantly collide
+    //    const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
+    //    resolveCircleTileCollision(tileCenter, collision, cmp);
+    //}
+
+    // Resolve terrain collision
+    const WorldGrid& grid = world.getWorldGrid();
+    f32 terrainHeight;
+    if (grid.tryComputeHeightAtPoint(xyPosition, &terrainHeight)) {
+        if (terrainHeight >= cmp.mZPosition) {
+            cmp.mZPosition = terrainHeight;
+            cmp.setZVelocity(0.0f);
+        }
+    }
+    else {
+        cmp.setZVelocity(0.0f);
     }
 
     // Refilters for pseudo3d collision

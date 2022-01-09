@@ -2,6 +2,7 @@
 
 // Global static world-specific data
 namespace WorldData {
+
     constexpr ui32 REGION_WIDTH_CHUNKS = 16;
     constexpr ui32 REGION_SIZE_CHUNKS = SQ(REGION_WIDTH_CHUNKS);
 

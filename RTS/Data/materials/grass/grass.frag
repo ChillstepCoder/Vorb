@@ -11,7 +11,6 @@ in vec3 fPosition;
 in vec2 fUV;
 flat in float fAtlasPage;
 in mat3 fTBN;
-in float fRoughness;
 in float fDistance;
 
 layout (location = 0) out vec4 oColor;
@@ -52,6 +51,6 @@ void main() {
 	vec3 normal = normalize(fTBN * vec3(0.0, 0.0, 1.0));
 	oNormal.rgb = (normal + 1.0) * 0.5;
 	oNormal.a = oColor.a;
-	oRoughness.r = fRoughness;
+	oRoughness.r = 0.75;
 	oRoughness.a = 1.0;
 }

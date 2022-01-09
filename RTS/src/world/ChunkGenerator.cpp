@@ -6,6 +6,7 @@
 #include "Random.h"
 
 #include "world/WorldData.h"
+#include "world/WorldGrid.h"
 #include "world/Region.h"
 #include "world/TileRepository.h"
 
@@ -22,7 +23,7 @@ constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH * 4;
 #endif
 constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUTION;
 
-Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
+Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
 
     // TODO: This seems wrong
     static TileID grass1 = TileRepository::getTile("grass1");
@@ -46,8 +47,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    f32 height = sWorldGen.getHeightAtPos(worldPos);
-    tile.baseZPosition = glm::clamp(height, 0.0f, 255.0f);
+    tile.baseZPosition = height;
 
     if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
         *grass = 1;
@@ -98,7 +98,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, ui8* grass) {
     return tile;
 }
 
-void ChunkGenerator::GenerateChunk(Chunk& chunk) {
+void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const f32* heightData) {
 
     PreciseTimer timer;
 
@@ -106,14 +106,16 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
     if (!chunk.mTiles.size()) {
         chunk.allocateTiles();
     }
+    const ChunkID& id = chunk.getChunkID();
 
     const f32v2& chunkPosWorld = chunk.getWorldPos();
     f32 maxHeight = 1.0f;
-    for (int y = 0; y < CHUNK_WIDTH; ++y) {
-        for (int x = 0; x < CHUNK_WIDTH; ++x) {
+    for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
+        for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
+            f32 height = worldGrid.computeCenterHeightAtTile(heightData, TileIndex(x, y));
             ui8 grass = 0;
-            Tile tile = GenerateTileAtPos(tilePosWorld, &grass);
+            Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
             if (tile.baseZPosition + 1.0f > maxHeight) {
                 maxHeight = tile.baseZPosition + 1.0f;
             }
@@ -122,77 +124,8 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk) {
             chunk.mGrass[index] = grass;
         }
     }
+    // TODO: uhhhh?
     chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
 
     //std::cout << "Chunk generated in " << timer.stop() << " ms\n";
-}
-
-void ChunkGenerator::GenerateRegionLODTextureAsync(Region& region, color3* recursivePixelBuffer /*= nullptr*/)
-{
-    // If were currently building, flag as dirty for later rebuild
-    if (region.mRenderData.mIsBuildingLOD) {
-        region.mRenderData.mLODDirty = true;
-        return;
-    }
-
-    color3* pixelData = recursivePixelBuffer ? recursivePixelBuffer : new color3[LOD_TEXTURE_RESOLUTION * LOD_TEXTURE_RESOLUTION];
-
-    region.mRenderData.mIsBuildingLOD = true;
-    region.mRenderData.mLODDirty = false;
-
-    Services::Threadpool::ref().addTask([&, pixelData](ThreadPoolWorkerData* workerData) {
-        const f32v2& regionPosWorld = region.getWorldPos();
-        color3* currentPixel = pixelData;
-        for (int y = 0; y < LOD_TEXTURE_RESOLUTION; ++y) {
-            for (int x = 0; x < LOD_TEXTURE_RESOLUTION; ++x) {
-                const f32v2 tilePosWorld(x * LOD_STRIDE + regionPosWorld.x, y * LOD_STRIDE + regionPosWorld.y);
-                ui8 grass = 0;
-                Tile tile = GenerateTileAtPos(tilePosWorld, &grass);
-                for (int l = TILE_LAYER_COUNT - 1; l >= 0; --l) {
-                    TileID layerTile = tile.layers[l];
-                    if (layerTile == TILE_ID_NONE) {
-                        continue;
-                    }
-                    // First opaque tile
-                    const TileData& tileData = TileRepository::getTileData(layerTile);
-                    if (tileData.spriteData.flags & SPRITEDATA_FLAG_RENDER_LOD) {
-                        *currentPixel++ = tileData.spriteData.lodColor;
-                        break;
-                    }
-                }
-                //float temperature = sTemperatureNoise.compute(tilePosWorld.x, tilePosWorld.y) * 0.5 + 0.5;
-                //float humidity = sHumidityNoise.compute(tilePosWorld.y, tilePosWorld.x) * 0.5 + 0.5;
-                //currentPixel[-1] = color3((ui8)(currentPixel[-1].r * temperature), currentPixel[-1].g, (ui8)(currentPixel[-1].b * humidity));
-                //currentPixel[-1].r = (ui8)(humidity * 255.0);
-            }
-        }
-    }, [&, pixelData]() {
-        PreciseTimer timer;
-        RegionRenderData& renderData = region.mRenderData;
-        if (!renderData.mLODTexture) {
-            glGenTextures(1, &renderData.mLODTexture);
-        }
-
-        glBindTexture(GL_TEXTURE_2D, renderData.mLODTexture);
-        // Compressed
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB, LOD_TEXTURE_RESOLUTION, LOD_TEXTURE_RESOLUTION, 0, GL_RGB, GL_UNSIGNED_BYTE, pixelData);
-
-        // Set up tex parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        region.mRenderData.mIsBuildingLOD = false;
-        if (region.mRenderData.mLODDirty) {
-            // Recurse again if we made it dirty again, sharing memory
-            GenerateRegionLODTextureAsync(region, pixelData);
-        }
-        else {
-            delete[] pixelData;
-        }
-    });
 }

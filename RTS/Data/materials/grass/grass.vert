@@ -12,7 +12,6 @@ out float fHeight;
 out vec2 fUV;
 flat out float fAtlasPage;
 out mat3 fTBN;
-out float fRoughness; // TODO: GLOBAL
 out float fDistance;
 
 const vec2 VertexData[4] = {
@@ -51,9 +50,6 @@ void main() {
 	vec3 dimsType = texelFetch(UnTboSizeType, bladeIndex).rgb;
 	vec2 vDims = dimsType.xy;
     float bladeType = round(dimsType.z * 255.0);
-	
-	// Get uniform info
-	fRoughness = 0.0;
 	
     fAtlasPage = 0.0;
 	

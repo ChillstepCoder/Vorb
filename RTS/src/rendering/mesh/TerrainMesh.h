@@ -1,8 +1,9 @@
 #pragma once
 
+#include "world/TerrainConstants.h"
 #include "rendering/MeshBase.h"
 
-constexpr ui32 TERRAIN_MESH_WIDTH_QUADS = 64;
+constexpr ui32 TERRAIN_MESH_WIDTH_QUADS = CHUNK_WIDTH / HEIGHTMAP_QUAD_SIZE;
 constexpr ui32 TERRAIN_MESH_WIDTH_VERTS = TERRAIN_MESH_WIDTH_QUADS + 1;
 constexpr ui32 TERRAIN_MESH_WIDTH_VERTS_SQ = SQ(TERRAIN_MESH_WIDTH_VERTS);
 constexpr ui32 TERRAIN_MESH_SKIRT_VERTEX_COUNT = TERRAIN_MESH_WIDTH_VERTS * 4;

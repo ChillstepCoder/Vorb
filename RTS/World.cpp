@@ -87,16 +87,12 @@ World::~World() {
 
 void World::initPostLoad(ChunkMesher& chunkMesher) {
 	mChunkMesher = &chunkMesher;
-    // Init regions
-    for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
-        mChunkGenerator->GenerateRegionLODTextureAsync(mWorldGrid.getRegion(i));
-    }
 
 	// Init terrain
 	mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
 	for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
 		f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
-		mTerrainTrees[i].init(pos);
+		mTerrainTrees[i].init(pos, mWorldGrid);
 	}
 }
 
@@ -129,6 +125,7 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
         if (updateChunk(chunk)) {
+			mWorldGrid.releaseHeightDataAt(chunk.getChunkID());
             chunk.dispose();
 			mActiveChunks[i] = mActiveChunks.back();
 			mActiveChunks.pop_back();
@@ -403,16 +400,6 @@ void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) cons
 	}
 }
 
-void World::enumVisibleRegions(const ICamera& camera, std::function<void(const Region& chunk)> func) const {
-    for (ui32 i = 0; i < mWorldGrid.numRegions(); ++i) {
-        const Region& region = mWorldGrid.getRegion(i);
-        const f32v2& worldPos = region.getWorldPos();
-        if (camera.sphereIsVisible(f32v3(worldPos.x + WorldData::REGION_WIDTH_TILES, worldPos.y + WorldData::REGION_WIDTH_TILES, 0.0f), WorldData::REGION_DIAGONAL_RADIUS + 100.0f)) { // TODO: Broken
-            func(region);
-        }
-    }
-}
-
 void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func) {
 	// TODO: implement locking (write/read)
 	// TODO: handle this without asserts
@@ -602,7 +589,7 @@ bool World::updateChunk(Chunk& chunk) {
 			const f32 distSq = glm::length2(offset);
 
 			if (chunk.mChunkRenderData.mGrassLod) {
-                if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f /*TODO: non const*/) {
+                if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
 					if (chunk.mChunkRenderData.mGrassLod->getRefCount() == 0) {
 						chunk.mChunkRenderData.mGrassLod.reset();
 					}
@@ -612,8 +599,8 @@ bool World::updateChunk(Chunk& chunk) {
 				}
 			}
 			else {
-                if (distSq < sDebugOptions.mGrassSettings.distanceSq /*TODO: non const*/) {
-					chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk);
+                if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
+					chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk, mWorldGrid);
                 }
 			}
             
@@ -707,13 +694,31 @@ void World::initChunk(Chunk& chunk)
 }
 
 void World::generateChunkAsync(Chunk& chunk) {
-	chunk.mState = ChunkState::LOADING_TILES;
     chunk.incRef();
+	// TODO: should we be inactive?
     mActiveChunks.push_back(&chunk);
-	Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
-        mChunkGenerator->GenerateChunk(chunk);
-        chunk.decRef();
-    }, nullptr);
+	const ChunkID& id = chunk.getChunkID();
+
+	if (mWorldGrid.tryGetHeightDataAt(id)) {
+        chunk.mState = ChunkState::LOADING_TILES;
+		const f32* heightData = mWorldGrid.aquireHeightData(id);
+        Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
+            mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
+            chunk.decRef();
+        }, nullptr);
+	}
+	else {
+        chunk.mState = ChunkState::WAITING_HEIGHT;
+		mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
+            chunk.mState = ChunkState::LOADING_TILES;
+			const f32* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
+            Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
+                mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
+                chunk.decRef();
+            }, nullptr);
+		});
+	}
+
 }
 
 void World::editorInvalidateWorldGen() {

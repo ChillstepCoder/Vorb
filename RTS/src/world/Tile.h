@@ -37,20 +37,21 @@ struct Tile {
     void clearTileFlag(TileFlags flag) { tileFlags &= (~flag); }
     void clearTileFlags() { tileFlags = 0; }
 	bool hasFlag(TileFlags flag) const { return tileFlags & flag; }
-
+	// TODO: This should be a pointer
 	TileCollision buildTileCollision() const;
 
 	union {
 		struct {
-			TileID groundLayer; // Dirt, foundation, earth       // ALWAYS BOX COLLISION
+			TileID groundLayer; // Walls, floors, foundation     // ALWAYS BOX COLLISION
 			TileID midLayer;    // Carpet, boards, flora         // NO COLLIDE ONLY
 			TileID topLayer;    // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
 		};
 		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
-	ui8 baseZPosition = 0;
-	ui8 tileFlags = 0;
+    ui8 tileFlags = 0;
+    f32 baseZPosition = 0;
 };
+static_assert(sizeof(Tile) == 12, "Keep small");
 
 enum class TileShape {
 	THIN,  // Trees and flora

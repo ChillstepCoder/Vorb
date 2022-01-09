@@ -827,5 +827,8 @@
     <ClInclude Include="src\rendering\mesh\TerrainMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\TerrainConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

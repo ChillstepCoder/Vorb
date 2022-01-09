@@ -5,6 +5,7 @@
 class GrassBillboardMesh;
 class Chunk;
 class Camera3D;
+class WorldGrid;
 DECL_VG(class GLProgram);
 
 // For node I, its children are 4 * i + 1 through 4 * i + 4
@@ -12,7 +13,7 @@ DECL_VG(class GLProgram);
 class ChunkGrassQuadtree : public FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>
 {
 public:
-    ChunkGrassQuadtree(const Chunk& mChunk);
+    ChunkGrassQuadtree(const Chunk& mChunk, WorldGrid& worldGrid);
     ~ChunkGrassQuadtree();
 
     void render(const Camera3D& camera, const vg::GLProgram& program) const;
@@ -25,6 +26,7 @@ private:
 
     // Flat for cache coherency, no allocations, and multithreading
     const Chunk& mChunk;
+    WorldGrid& mWorldGrid;
     std::unique_ptr<GrassBillboardMesh> mMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     ui32 mRefCount = 0;
 };
