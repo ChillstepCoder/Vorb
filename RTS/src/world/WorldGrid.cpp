@@ -32,22 +32,25 @@ void Barycentric2D(f32v2 p, f32v2 a, f32v2 b, f32v2 c, f32v3& uvw)
 }
 
 // Optimized for normalized p and hard coded a,b,c, derived from Barycentric2D
+// Done by simply substituting the hardcoded constants and simplifying algebraically 
 // f32v2(0.0f, 0.0f) /*bl*/, f32v2(1.0f, 0.0f) /*br*/, f32v2(1.0f, 1.0f) /*tr*/
-f32v3 BarycentricBlBrTr(f32v2 p) {
-    f32v3 uvw;
-    uvw.y = p.x - p.y;
-    uvw.z = p.y;
-    uvw.x = 1.0f - p.x;
-    return uvw;
+inline f32v3 BarycentricBlBrTr(f32v2 p) {
+    return f32v3(1.0f - p.x, p.x - p.y, p.y);
 }
 
 // f32v2(0.0f, 0.0f) /*bl*/, f32v2(0.0f, 1.0f) /*tl*/, f32v2(1.0f, 1.0f) /*tr*/
-f32v3 BarycentricBlTlTr(f32v2 p) {
-    f32v3 uvw;
-    uvw.y = p.y - p.x;
-    uvw.z = p.x;
-    uvw.x = 1.0f - p.y;
-    return uvw;
+inline f32v3 BarycentricBlTlTr(f32v2 p) {
+    return f32v3(1.0f - p.y, p.y - p.x, p.x);
+}
+
+// f32v2(1.0f, 0.0f) /*br*/, f32v2(0.0f, 1.0f) /*tl*/, f32v2(1.0f, 1.0f) /*tr*/
+inline f32v3 BarycentricBrTlTr(f32v2 p) {
+    return f32v3(1.0f - p.y, 1.0f - p.x, p.y + p.x - 1.0f);
+}
+
+// f32v2(0.0f, 0.0f) /*bl*/, f32v2(1.0f, 0.0f) /*br*/, f32v2(0.0f, 1.0f) /*tl*/
+inline f32v3 BarycentricBlBrTl(f32v2 p) {
+    return f32v3(1.0f - p.x - p.y, p.x, p.y);
 }
 
 WorldGrid::WorldGrid() {
@@ -198,10 +201,10 @@ f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex
     assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
 
     // Get the 4 
-    f32 bl = interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-    f32 br = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap, 0.0f), heightData, heightmapXY);
-    f32 tl = interpolateHeightAtOffset(dxy + f32v2(0.0f, tileWidthHeightmap), heightData, heightmapXY);
-    f32 tr = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap), heightData, heightmapXY);
+    const f32 bl = interpolateHeightAtOffset(dxy, heightData, heightmapXY);
+    const f32 br = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap, 0.0f), heightData, heightmapXY);
+    const f32 tl = interpolateHeightAtOffset(dxy + f32v2(0.0f, tileWidthHeightmap), heightData, heightmapXY);
+    const f32 tr = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap), heightData, heightmapXY);
 
     return glm::min(glm::min(glm::min(bl, br), tl), tr);
 }
@@ -223,7 +226,7 @@ f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const
             const f32 br = heightData[heightmapXY.y  * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x + 1];
             const f32 tr = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x + 1];
 
-            f32v3 uvw = BarycentricBlBrTr(dxy);
+            const f32v3 uvw = BarycentricBlBrTr(dxy);
             return bl * uvw.x + br * uvw.y + tr * uvw.z;
         }
         else {
@@ -233,7 +236,7 @@ f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const
             const f32 tl = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x];
             const f32 tr = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x + 1];
 
-            f32v3 uvw = BarycentricBlTlTr(dxy);
+            const f32v3 uvw = BarycentricBlTlTr(dxy);
             return bl * uvw.x + tl * uvw.y + tr * uvw.z;
         }
     }
@@ -251,9 +254,7 @@ f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const
             const f32 tl = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x];
             const f32 tr = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x + 1];
 
-            f32v3 uvw;
-            // TODO: Optimize
-            Barycentric2D(dxy, f32v2(1.0f, 0.0f) /*br*/, f32v2(0.0f, 1.0f) /*tl*/, f32v2(1.0f, 1.0f) /*tr*/, uvw);
+            const f32v3 uvw = BarycentricBrTlTr(dxy);
             return br * uvw.x + tl * uvw.y + tr * uvw.z;
         }
         else {
@@ -263,9 +264,7 @@ f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const
             const f32 br = heightData[heightmapXY.y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x + 1];
             const f32 tl = heightData[(heightmapXY.y + 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + heightmapXY.x];
 
-            f32v3 uvw;
-            // TODO: Optimize
-            Barycentric2D(dxy, f32v2(0.0f, 0.0f) /*bl*/, f32v2(1.0f, 0.0f) /*br*/, f32v2(0.0f, 1.0f) /*tl*/, uvw);
+            const f32v3 uvw = BarycentricBlBrTl(dxy);
             return bl * uvw.x + br * uvw.y + tl * uvw.z;
         }
     }

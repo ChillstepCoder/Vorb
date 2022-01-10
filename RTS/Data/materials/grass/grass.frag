@@ -26,9 +26,7 @@ void main() {
     // TODO: Lower settings disable transparency?
 	
 	// Distance fade
-    vec4 screenPos = (VP * vec4(fPosition, 1.0));
-    vec2 screenUV = (screenPos.xy / vec2(screenPos.w));
-	float noiseVal = texture(GreyNoise, screenUV * 3.0).r;
+	float noiseVal = texture(GreyNoise, (fPosition.xy + CameraPos.xy) * 0.05).r;
 	float fadeDist = unFadeDistance * 0.35;
 	float lerpVal = clamp(fDistance, 0.0, fadeDist) / fadeDist;
 	oColor.a *= clamp(mix(0.0, 1.0, 1.0 - ((noiseVal  + 1.0) * lerpVal)), 0.0, 1.0);
@@ -44,10 +42,6 @@ void main() {
     }
     oColor.a = 1.0;
 	
-	// Normal is always the next page
-	//vec3 normal = texture(Atlas, vec3(screenUV, fAtlasPage + 1.0)).rgb;
-	//normal = normal * 2.0 - 1.0;
-	//normal = normalize(fTBN * normal);
 	vec3 normal = normalize(fTBN * vec3(0.0, 0.0, 1.0));
 	oNormal.rgb = (normal + 1.0) * 0.5;
 	oNormal.a = oColor.a;

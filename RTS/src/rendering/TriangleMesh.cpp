@@ -42,8 +42,8 @@ void TriangleMesh::draw(const vg::GLProgram& program) const {
 
 void TriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     // TODO: can we not do this every time?
-    if (mLastUsedProgram != &program) {
-        mLastUsedProgram = &program;
+    if (mLastUsedProgram != program.getID()) {
+        mLastUsedProgram = program.getID();
 
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 

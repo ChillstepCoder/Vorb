@@ -62,7 +62,7 @@ void ChunkGrassQuadtree::render(const Camera3D& camera, const vg::GLProgram& pro
     const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mWorldPos;
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha"); // TODO: Cache?
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
-    f32v3 pos = mChunk.getWorldPos3D();
+    f32v3 pos3D(mWorldPos.x, mWorldPos.y, 0.0f);
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
         ui32 index = mActiveNodes[i];
         const QuadtreePatch& patch = mNodes[index];
@@ -81,7 +81,8 @@ void ChunkGrassQuadtree::render(const Camera3D& camera, const vg::GLProgram& pro
                 glUniform1f(crossfadeDirectionUniform, 0.0f);
             }
             const f32 radius = LOD_RADIUS_DIMS[lod];
-            if (camera.sphereIsVisible(centerPos3d + pos, radius) &&
+            const BoundingSphere& bounds = mesh->getBoundingSphere();
+            if (camera.sphereIsVisible(bounds.center + pos3D, bounds.radius) &&
                 isPatchInRange(centerPos, cameraPos2Drelative, radius)) {
                 mesh->draw(program);
             }
@@ -97,10 +98,19 @@ void createGrassMesh(
     WorldGrid& worldGrid,
     const f32* heightData
 ) {
-    const ui32v2& dims = (ui32v2&)FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::LOD_DIMS[lod];
+    const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
     const ui32 density = GRASS_LOD_DETAIL[lod];
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     grassMesh.reserveQuadCount((size_t)dims.x * dims.y * density * density);
+    // AABB calculation
+    f32AABB3 aabb;
+    aabb.dims.x = dims.x;
+    aabb.dims.y = dims.y;
+    aabb.pos.x = tilePosStart.x;
+    aabb.pos.y = tilePosStart.y;
+    f32 minZ = FLT_MAX;
+    f32 maxZ = FLT_MIN;
+
     for (ui32 y = 0; y < dims.y; ++y) {
         for (ui32 x = 0; x < dims.x; ++x) {
             assert(tilePosStart.x + x < CHUNK_WIDTH&& tilePosStart.y + y < CHUNK_WIDTH);
@@ -142,9 +152,12 @@ void createGrassMesh(
                     const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
                     f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
-                    const f32 height = worldGrid.computeHeightAtChunkOffset(heightData, truePos);
+                    const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData, truePos);
+                    // For AABB
+                    if (zPos < minZ) minZ = zPos;
+                    if (zPos > maxZ) maxZ = zPos;
                     grassMesh.addBladeQuad(
-                        f32v3(truePos.x, truePos.y, height), // TODO: new height
+                        f32v3(truePos.x, truePos.y, zPos), // TODO: new height
                         f32v2(bladeWidth, rsize),
                         variantIndex
                     );
@@ -152,6 +165,10 @@ void createGrassMesh(
             }
         }
     }
+    // Bounding sphere
+    aabb.pos.z = minZ;
+    aabb.dims.z = maxZ - minZ;
+    grassMesh.setBoundingSphere(boundingSphereFromAABB(aabb));
 };
 
 void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {

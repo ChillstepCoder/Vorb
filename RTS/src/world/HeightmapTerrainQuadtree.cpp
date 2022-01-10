@@ -60,8 +60,8 @@ void HeightmapTerrainQuadtree::render(const Camera3D& camera, const vg::GLProgra
                 glUniform1f(crossfadeAlphaUniform, 0.0f);
                 glUniform1f(crossfadeDirectionUniform, 0.0f);
             }
-            const f32 radius = LOD_RADIUS_DIMS[lod];
-            if (camera.sphereIsVisible(centerPos3d + pos3D, radius)) {
+            const BoundingSphere& bounds = mesh->getBoundingSphere();
+            if (camera.sphereIsVisible(bounds.center + pos3D, bounds.radius)) {
                 mesh->draw(program);
             }
         }
@@ -85,16 +85,32 @@ void createTerrainMesh(
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     mesh.beginMesh(posStart, dims.x);
+
+    // AABB calculation
+    f32AABB3 aabb;
+    aabb.dims.x = dims.x;
+    aabb.dims.y = dims.y;
+    aabb.pos.x = posStart.x;
+    aabb.pos.y = posStart.y;
+    f32 minZ = FLT_MAX;
+    f32 maxZ = FLT_MIN;
+
     // Generate heightfield
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (ui32 y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            f32 height = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-            paddedHeightfield[y][x] = height;
+            f32 zPos = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            if (zPos < minZ) minZ = zPos;
+            if (zPos > maxZ) maxZ = zPos;
+            paddedHeightfield[y][x] = zPos;
         }
     }
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
+    // Bounding sphere
+    aabb.pos.z = minZ;
+    aabb.dims.z = maxZ - minZ;
+    mesh.setBoundingSphere(boundingSphereFromAABB(aabb));
 };
 
 void createTerrainMesh(
@@ -110,11 +126,30 @@ void createTerrainMesh(
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
 
-    // Center memcopy row by row
-    for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
-        memcpy(&paddedHeightfield[y + 1][1], &heightData[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+    // AABB calculation
+    f32AABB3 aabb;
+    aabb.dims.x = dims.x;
+    aabb.dims.y = dims.y;
+    aabb.pos.x = posStart.x;
+    aabb.pos.y = posStart.y;
+    f32 minZ = FLT_MAX;
+    f32 maxZ = FLT_MIN;
+
+    // Center copy and AABB calc
+    for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++y) {
+        for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++x) {
+            const f32 zPos = heightData[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x];
+            if (zPos < minZ) minZ = zPos;
+            if (zPos > maxZ) maxZ = zPos;
+            paddedHeightfield[y + 1][x + 1] = zPos;
+        }
     }
     static_assert(TERRAIN_MESH_WIDTH_VERTS == HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+
+    // Bounding sphere
+    aabb.pos.z = minZ;
+    aabb.dims.z = maxZ - minZ;
+    mesh.setBoundingSphere(boundingSphereFromAABB(aabb));
 
     // === Generate edges ===
     // Left and right edge

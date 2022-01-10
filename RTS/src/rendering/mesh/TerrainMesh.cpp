@@ -133,8 +133,8 @@ void TerrainMesh::finishMesh(MeshDrawMode drawMode) {
 
 void TerrainMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     // TODO: can we not do this every time?
-    if (mLastUsedProgram != &program) {
-        mLastUsedProgram = &program;
+    if (mLastUsedProgram != program.getID()) {
+        mLastUsedProgram = program.getID();
 
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 

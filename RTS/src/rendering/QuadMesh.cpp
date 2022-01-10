@@ -211,8 +211,8 @@ void QuadMesh::finishMesh(MeshDrawMode drawMode) {
 
 void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     // TODO: can we not do this every time?
-    if (mLastUsedProgram != &program) {
-        mLastUsedProgram = &program;
+    if (mLastUsedProgram != program.getID()) {
+        mLastUsedProgram = program.getID();
 
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
@@ -336,8 +336,8 @@ void BillboardMesh::finishMesh(MeshDrawMode drawMode) {
 
 void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     // TODO: can we not do this every time?
-    if (mLastUsedProgram != &program) {
-        mLastUsedProgram = &program;
+    if (mLastUsedProgram != program.getID()) {
+        mLastUsedProgram = program.getID();
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
         program.enableVertexAttribArrays();
