@@ -5,6 +5,10 @@
 
 #include "services/Services.h"
 
+#include "util/IntersectionUtil.h"
+
+#include "camera/ICamera.h"
+#include "DebugRenderer.h"
 
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
@@ -65,7 +69,7 @@ void WorldGrid::requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()
     assert(!patch.isDone());
     if (!patch.mHeightData) {
         // TODO: Recycle
-        patch.mHeightData = new f32[HEIGHTMAP_VERT_SIZE_PER_CHUNK];
+        patch.mHeightData = new HeightmapPatchData();
     }
     if (!patch.isGenerating()) {
         // Always extra ref while generating
@@ -74,15 +78,33 @@ void WorldGrid::requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()
         f32v2 position = id.getWorldPos();
 
         Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
+
+            // AABB calculation
+            f32AABB3 aabb;
+            aabb.dims.x = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
+            aabb.dims.y = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
+            aabb.pos.x = position.x;
+            aabb.pos.y = position.y;
+            f32 minZ = FLT_MAX;
+            f32 maxZ = FLT_MIN;
+
             for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++y) {
                 for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++x) {
                     const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);
                     f32 height = sWorldGen.getHeightAtPos(vertPos);
-                    patch.mHeightData[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x] = height;
+                    if (height > maxZ) maxZ = height;
+                    if (height < minZ) minZ = height;
+                    patch.mHeightData->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x] = height;
                 }
             }
+
+            aabb.pos.z = minZ;
+            aabb.dims.z = maxZ - minZ;
+            patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
+
         }, [this, id]() {
             HeightmapPatch& patch = mHeightData[id.id];
+            mActiveHeightmapPatches.push_back(id.id);
             patch.mFlags = HEIGHTMAP_PATCH_FLAG_DONE;
             --patch.mRefCount;
             auto&& it = mFinishCallbacks.find(id);
@@ -101,13 +123,13 @@ void WorldGrid::requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()
     ++patch.mRefCount;
 }
 
-const f32* WorldGrid::getHeightDataAt(ChunkID id) const {
+const HeightmapPatchData* WorldGrid::getHeightDataAt(ChunkID id) const {
     assert(IS_MAIN_THREAD());
     assert(mHeightData[id.id].isDone());
     return mHeightData[id.id].mHeightData;
 }
 
-const f32* WorldGrid::tryGetHeightDataAt(ChunkID id) const {
+const HeightmapPatchData* WorldGrid::tryGetHeightDataAt(ChunkID id) const {
     assert(IS_MAIN_THREAD());
     const HeightmapPatch& patch = mHeightData[id.id];
     if (patch.isDone()) {
@@ -116,7 +138,7 @@ const f32* WorldGrid::tryGetHeightDataAt(ChunkID id) const {
     return nullptr;
 }
 
-const f32* WorldGrid::aquireHeightData(ChunkID id)
+const HeightmapPatchData* WorldGrid::aquireHeightData(ChunkID id)
 {
     HeightmapPatch& patch = mHeightData[id.id];
     assert(patch.isDone());
@@ -130,8 +152,16 @@ void WorldGrid::releaseHeightDataAt(ChunkID id) {
     --patch.mRefCount;
     if (patch.mRefCount == 0) {
         patch.mFlags = 0u;
-        delete[] patch.mHeightData; // TODO: Recycle
-        patch.mHeightData = 0;
+        delete patch.mHeightData; // TODO: Recycle
+        patch.mHeightData = nullptr;
+        // Remove from active list
+        for (size_t i = 0; i < mActiveHeightmapPatches.size(); ++i) {
+            if (mActiveHeightmapPatches[i] == id.id) {
+                mActiveHeightmapPatches[i] = mActiveHeightmapPatches.back();
+                mActiveHeightmapPatches.pop_back();
+                break;
+            }
+        }
     }
 }
 
@@ -143,10 +173,37 @@ bool WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
         return false;
     }
 
-    *h = computeHeightAtPoint(id, patch.mHeightData, worldPos);
+    *h = computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
     return true;
 }
 
+
+TerrainPickData WorldGrid::pickTerrainFromCameraVector(const ICamera& camera, const f32v3& rayDir) const {
+    PreciseTimer timer;
+    const f32v3 rayStart = camera.getPosition();
+
+    constexpr f32 RAY_CHECK_LENGTH = 10000.0f;
+    constexpr f32 DEBUG_DURATION = 10.0f;
+    f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
+    DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), DEBUG_DURATION);
+
+    std::vector<std::pair<IntersectionHit3D, ui32> > sortedHits;
+    sortedHits.reserve(30); // TODO: Prevent realloc
+
+    for (ui32 i : mActiveHeightmapPatches) {
+        const HeightmapPatch& patch = mHeightData[i];
+        assert(patch.isDone());
+        IntersectionHit3D hit = IntersectionUtil::LineSphereIntersection(patch.mHeightData->boundingSphere, rayStart, rayEnd);
+
+        if (hit.didHit()) {
+            sortedHits.push_back(std::make_pair(hit, i));
+        }
+    }
+
+    std::cout << "RAY PICK " << timer.stop() << "ms\n";
+
+    return TerrainPickData();
+}
 
 f32 WorldGrid::computeHeightAtPoint(ChunkID id, const f32* heightData, const f32v2& worldPos)
 {

@@ -61,7 +61,7 @@ void HeightmapTerrainQuadtree::render(const Camera3D& camera, const vg::GLProgra
                 glUniform1f(crossfadeDirectionUniform, 0.0f);
             }
             const BoundingSphere& bounds = mesh->getBoundingSphere();
-            if (camera.sphereIsVisible(bounds.center + pos3D, bounds.radius)) {
+            if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
                 mesh->draw(program);
             }
         }
@@ -90,8 +90,8 @@ void createTerrainMesh(
     f32AABB3 aabb;
     aabb.dims.x = dims.x;
     aabb.dims.y = dims.y;
-    aabb.pos.x = posStart.x;
-    aabb.pos.y = posStart.y;
+    aabb.pos.x = posStart.x + worldPos.x;
+    aabb.pos.y = posStart.y + worldPos.y;
     f32 minZ = FLT_MAX;
     f32 maxZ = FLT_MIN;
 
@@ -118,7 +118,7 @@ void createTerrainMesh(
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
-    const f32* heightData
+    const HeightmapPatchData* heightData
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
@@ -126,30 +126,14 @@ void createTerrainMesh(
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
 
-    // AABB calculation
-    f32AABB3 aabb;
-    aabb.dims.x = dims.x;
-    aabb.dims.y = dims.y;
-    aabb.pos.x = posStart.x;
-    aabb.pos.y = posStart.y;
-    f32 minZ = FLT_MAX;
-    f32 maxZ = FLT_MIN;
+    // Copy bounding sphere
+    mesh.setBoundingSphere(heightData->boundingSphere);
 
-    // Center copy and AABB calc
-    for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++y) {
-        for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++x) {
-            const f32 zPos = heightData[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x];
-            if (zPos < minZ) minZ = zPos;
-            if (zPos > maxZ) maxZ = zPos;
-            paddedHeightfield[y + 1][x + 1] = zPos;
-        }
+    // Center memcopy row by row
+    for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
+        memcpy(&paddedHeightfield[y + 1][1], &heightData->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
     }
     static_assert(TERRAIN_MESH_WIDTH_VERTS == HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
-
-    // Bounding sphere
-    aabb.pos.z = minZ;
-    aabb.dims.z = maxZ - minZ;
-    mesh.setBoundingSphere(boundingSphereFromAABB(aabb));
 
     // === Generate edges ===
     // Left and right edge
@@ -194,7 +178,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     if (lod == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         // At highest LOD we ask the heightmap generator to handle it
         const ChunkID id = getChunkIDForPatchIndex(patchIndex);
-        if (const f32* heightData = mWorldGrid->tryGetHeightDataAt(id)) {
+        if (const HeightmapPatchData* heightData = mWorldGrid->tryGetHeightDataAt(id)) {
             mWorldGrid->aquireHeightData(id);
             // Instantly generate
             Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, heightData](ThreadPoolWorkerData*) {
@@ -212,7 +196,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         else {
             // Wait for the terrain generator to generate our chunk
             mWorldGrid->requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
-                const f32* heightData = mWorldGrid->getHeightDataAt(id);
+                const HeightmapPatchData* heightData = mWorldGrid->getHeightDataAt(id);
                 Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, heightData](ThreadPoolWorkerData*) {
                    // PreciseTimer timer;
                     createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, heightData);

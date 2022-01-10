@@ -82,7 +82,7 @@ void ChunkGrassQuadtree::render(const Camera3D& camera, const vg::GLProgram& pro
             }
             const f32 radius = LOD_RADIUS_DIMS[lod];
             const BoundingSphere& bounds = mesh->getBoundingSphere();
-            if (camera.sphereIsVisible(bounds.center + pos3D, bounds.radius) &&
+            if (camera.sphereIsVisible(bounds.center, bounds.radius) &&
                 isPatchInRange(centerPos, cameraPos2Drelative, radius)) {
                 mesh->draw(program);
             }
@@ -96,20 +96,12 @@ void createGrassMesh(
     const ui32v2& tilePosStart,
     ui32 lod,
     WorldGrid& worldGrid,
-    const f32* heightData
+    const HeightmapPatchData* heightData
 ) {
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
     const ui32 density = GRASS_LOD_DETAIL[lod];
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     grassMesh.reserveQuadCount((size_t)dims.x * dims.y * density * density);
-    // AABB calculation
-    f32AABB3 aabb;
-    aabb.dims.x = dims.x;
-    aabb.dims.y = dims.y;
-    aabb.pos.x = tilePosStart.x;
-    aabb.pos.y = tilePosStart.y;
-    f32 minZ = FLT_MAX;
-    f32 maxZ = FLT_MIN;
 
     for (ui32 y = 0; y < dims.y; ++y) {
         for (ui32 x = 0; x < dims.x; ++x) {
@@ -152,10 +144,7 @@ void createGrassMesh(
                     const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
                     f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
-                    const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData, truePos);
-                    // For AABB
-                    if (zPos < minZ) minZ = zPos;
-                    if (zPos > maxZ) maxZ = zPos;
+                    const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData->data, truePos);
                     grassMesh.addBladeQuad(
                         f32v3(truePos.x, truePos.y, zPos), // TODO: new height
                         f32v2(bladeWidth, rsize),
@@ -166,9 +155,7 @@ void createGrassMesh(
         }
     }
     // Bounding sphere
-    aabb.pos.z = minZ;
-    aabb.dims.z = maxZ - minZ;
-    grassMesh.setBoundingSphere(boundingSphereFromAABB(aabb));
+    grassMesh.setBoundingSphere(heightData->boundingSphere);
 };
 
 void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
@@ -183,7 +170,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     assert(!patch.isCrossfading() && /*!patch.isMeshing() &&*/ !patch.isMeshDirty() && patch.isActive());
 
     const ChunkID id = getChunkIDForPatchIndex(patchIndex);
-    if (const f32* heightData = mWorldGrid.tryGetHeightDataAt(id)) {
+    if (const HeightmapPatchData* heightData = mWorldGrid.tryGetHeightDataAt(id)) {
         mWorldGrid.aquireHeightData(id);
         // Instantly generate
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
@@ -203,7 +190,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     else {
         // Wait for the terrain generator to generate our chunk
         mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
-            const f32* heightData = mWorldGrid.getHeightDataAt(id);
+            const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(id);
             Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
                 //PreciseTimer timer;

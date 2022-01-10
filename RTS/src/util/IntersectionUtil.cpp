@@ -284,3 +284,30 @@ IntersectionHit3D IntersectionUtil::LineAABBIntersection(const f32AABB3& aabbBox
 
     return hit;
 }
+
+// https://gamedev.stackexchange.com/questions/96459/fast-ray-sphere-collision-code
+IntersectionHit3D IntersectionUtil::LineSphereIntersection(const BoundingSphere& sphere, const f32v3& v0, const f32v3& v1) {
+    IntersectionHit3D hit;
+    // TODO: Optimize?
+    f32v3 m = v0 - sphere.center;
+    f32v3 d = v1 - v0;
+    float b = glm::dot(m, d);
+    float c = glm::dot(m, m) - SQ(sphere.radius);
+
+    // Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0) 
+    if (c > 0.0f && b > 0.0f) return hit;
+    float discr = b * b - c;
+
+    // A negative discriminant corresponds to ray missing sphere 
+    if (discr < 0.0f) return hit;
+
+    // Ray now found to intersect sphere, compute smallest t value of intersection
+    hit.closeTime = -b - sqrt(discr);
+
+    // If t is negative, ray started inside sphere so clamp t to zero 
+    if (hit.closeTime < 0.0f) hit.closeTime = 0.0f;
+    hit.position = v0 + hit.closeTime * d;
+    hit.shape = IntersectionHitShape::RAY; // TODO: Sphere?
+
+    return hit;
+}

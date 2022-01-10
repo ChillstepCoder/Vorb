@@ -10,18 +10,6 @@ enum class MeshDrawMode {
 // Enough for a full chunk of grass + padding
 constexpr unsigned MAX_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
 
-struct BoundingSphere {
-    f32v3 center = f32v3(0.0f);
-    f32 radius = 0.0f;
-};
-
-inline BoundingSphere boundingSphereFromAABB(const f32AABB3& aabb) {
-    BoundingSphere rv;
-    rv.center = aabb.getCenter();
-    rv.radius = sqrt(SQ(aabb.dims.x * 0.5f) + SQ(aabb.dims.y * 0.5f) + SQ(aabb.dims.z * 0.5f));
-    return rv;
-}
-
 // TODO: Store material ID here?
 class MeshBase {
 public:

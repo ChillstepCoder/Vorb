@@ -98,7 +98,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     return tile;
 }
 
-void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const f32* heightData) {
+void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const HeightmapPatchData* heightData) {
 
     PreciseTimer timer;
 
@@ -113,7 +113,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const f32
     for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
         for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            f32 height = worldGrid.computeCenterHeightAtTile(heightData, TileIndex(x, y));
+            f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TileIndex(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
             if (tile.baseZPosition + 1.0f > maxHeight) {
@@ -125,6 +125,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const f32
         }
     }
     // TODO: uhhhh?
+    // TODO: use heightData.bounding sphere?
     chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
 
     //std::cout << "Chunk generated in " << timer.stop() << " ms\n";

@@ -203,7 +203,7 @@ inline f32 fastCeilf(f32 x) {
 }
 
 TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const {
-	constexpr bool ENABLE_DEBUG_PICK_RENDER = false;
+	constexpr bool ENABLE_DEBUG_PICK_RENDER = true;
 
 	const f32v3 rayStart = camera.getPosition();
 	PreciseTimer timer;
@@ -213,7 +213,7 @@ TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3
 	constexpr f32 RAY_CHECK_LENGTH = 10000.0f;
 	f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
 
-	const ui32 duration = 300;
+	const ui32 duration = 50;
 	bool didHit = false;
 	std::vector<std::pair<IntersectionHit3D, Chunk*> > sortedHits;
 	for (auto&& chunk : mVisibleChunks) {
@@ -701,7 +701,7 @@ void World::generateChunkAsync(Chunk& chunk) {
 
 	if (mWorldGrid.tryGetHeightDataAt(id)) {
         chunk.mState = ChunkState::LOADING_TILES;
-		const f32* heightData = mWorldGrid.aquireHeightData(id);
+		const HeightmapPatchData* heightData = mWorldGrid.aquireHeightData(id);
         Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
             mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
             chunk.decRef();
@@ -711,7 +711,7 @@ void World::generateChunkAsync(Chunk& chunk) {
         chunk.mState = ChunkState::WAITING_HEIGHT;
 		mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
             chunk.mState = ChunkState::LOADING_TILES;
-			const f32* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
+			const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
             Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
                 mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
                 chunk.decRef();

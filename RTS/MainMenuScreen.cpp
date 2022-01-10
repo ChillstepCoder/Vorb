@@ -178,7 +178,7 @@ void MainMenuScreen::build() {
 		}
 		else if (event.button == vui::MouseButton::LEFT) {
 			// Ray pick
-			TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
+			//TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
 		}
 
 	});
@@ -420,6 +420,8 @@ void MainMenuScreen::updateTilePicking() {
 	f32v4 pickRayWorldSpace = glm::inverse(mCamera3D->getViewMatrix()) * pickRayEyeSpace;
 	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
 	mMousePickRay = glm::normalize(pickRayXYZ);
+
+    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, mMousePickRay);
 }
 
 
