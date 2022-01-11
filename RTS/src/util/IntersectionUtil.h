@@ -11,6 +11,7 @@ namespace IntersectionUtil
     IntersectionHit2D rayRayIntersect(const f32v2& p1, const f32v2& r1, const f32v2& p2, const f32v2& r2);
     bool segmentAABBIntersectBoolean(const f32v2& aabbMin, const f32v2& aabbMax, const f32v2& p1, const f32v2& p2);
     IntersectionHit3D LineAABBIntersection(const f32AABB3& aabbBox, const f32v3& v0, const f32v3& v1);
-    IntersectionHit3D LineSphereIntersection(const BoundingSphere& sphere, const f32v3& v0, const f32v3& v1);
+    IntersectionHit3D RaySphereIntersection(const BoundingSphere& sphere, const f32v3& v0, const f32v3& v1);
+    IntersectionHit3D RayTriangleIntersection(const f32v3& v0, const f32v3& v1, const f32v3& t0, const f32v3& t1, const f32v3& t2);
 };
 

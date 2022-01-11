@@ -80,7 +80,7 @@ void WorldGrid::requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()
         Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
 
             // AABB calculation
-            f32AABB3 aabb;
+            f32AABB3& aabb = patch.mHeightData->aabb;
             aabb.dims.x = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
             aabb.dims.y = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
             aabb.pos.x = position.x;
@@ -179,29 +179,92 @@ bool WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
 
 
 TerrainPickData WorldGrid::pickTerrainFromCameraVector(const ICamera& camera, const f32v3& rayDir) const {
-    PreciseTimer timer;
     const f32v3 rayStart = camera.getPosition();
 
     constexpr f32 RAY_CHECK_LENGTH = 10000.0f;
-    constexpr f32 DEBUG_DURATION = 10.0f;
-    f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
-    DebugRenderer::drawVector(rayStart, rayEnd - rayStart, color4(1.0f, 0.0f, 0.0f), DEBUG_DURATION);
+    constexpr f32 DEBUG_DURATION = 0.0f;
+    const f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
 
-    std::vector<std::pair<IntersectionHit3D, ui32> > sortedHits;
+    std::vector<std::pair<f32 /*closeTime*/, ui32> > sortedHits;
     sortedHits.reserve(30); // TODO: Prevent realloc
 
     for (ui32 i : mActiveHeightmapPatches) {
         const HeightmapPatch& patch = mHeightData[i];
         assert(patch.isDone());
-        IntersectionHit3D hit = IntersectionUtil::LineSphereIntersection(patch.mHeightData->boundingSphere, rayStart, rayEnd);
+        IntersectionHit3D sphereHit = IntersectionUtil::RaySphereIntersection(patch.mHeightData->boundingSphere, rayStart, rayDir);
 
-        if (hit.didHit()) {
-            sortedHits.push_back(std::make_pair(hit, i));
+        if (sphereHit.didHit()) {
+            // Next do more expensive AABB hit
+            IntersectionHit3D aabbHit = IntersectionUtil::LineAABBIntersection(patch.mHeightData->aabb, rayStart, rayEnd);
+            if (aabbHit.didHit()) {
+                sortedHits.push_back(std::make_pair(aabbHit.closeTime, i));
+                // Uncomment to see size of sortedHits
+                //DebugRenderer::drawWireQuad(ChunkID(i).getWorldPos(), f32v2(CHUNK_WIDTH), color4(1.0f, 1.0f, 0.0f, 1.0f), DEBUG_DURATION);
+            }
         }
     }
 
-    std::cout << "RAY PICK " << timer.stop() << "ms\n";
+    // Sort for nearest
+    std::sort(sortedHits.begin(), sortedHits.end(), [](const std::pair<f32, ui32>& a, const std::pair<f32, ui32>& b) -> bool {
+        return a.first < b.first;
+    });
 
+    for (auto&& hitPair : sortedHits) {
+        const HeightmapPatch& patch = mHeightData[hitPair.second];
+        f32v2 worldPos2D = ChunkID(hitPair.second).getWorldPos();
+        for (ui32 y = 0; y < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK; ++y) {
+            for (ui32 x = 0; x < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK; ++x) {
+                const ui32 blIndex = y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x;
+                // TODO: Optimize
+                const f32v3 v0 = f32v3(worldPos2D.x + x * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + y * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex]);
+                const f32v3 v1 = f32v3(worldPos2D.x + (x + 1) * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + y * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex + 1]);
+                const f32v3 v2 = f32v3(worldPos2D.x + x * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + (y + 1) * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK]);
+                const f32v3 v3 = f32v3(worldPos2D.x + (x + 1) * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + (y + 1) * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1]);
+                if ((x + y) % 2) {
+                    // 2********3
+                    // *     ** *
+                    // *   **   *
+                    // * **     *
+                    // 0********1
+                    {
+                        IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v0, v2, v3);
+                        if (hit.didHit()) {
+                            DebugRenderer::drawWireTriangle(v0, v2, v3, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
+                            return TerrainPickData{patch.mHeightData->data, hit.position.z, blIndex, hit};
+                        }
+                    }
+                    {
+                        IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v0, v1, v3);
+                        if (hit.didHit()) {
+                            DebugRenderer::drawWireTriangle(v0, v1, v3, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
+                            return TerrainPickData{ patch.mHeightData->data, hit.position.z, blIndex, hit };
+                        }
+                    }
+                }
+                else {
+                    // 2********3
+                    // * **     *
+                    // *   **   *
+                    // *     ** *
+                    // 0********1
+                    {
+                        IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v0, v1, v2);
+                        if (hit.didHit()) {
+                            DebugRenderer::drawWireTriangle(v0, v1, v2, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
+                            return TerrainPickData{ patch.mHeightData->data, hit.position.z, blIndex, hit };
+                        }
+                    }
+                    {
+                        IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v1, v2, v3);
+                        if (hit.didHit()) {
+                            DebugRenderer::drawWireTriangle(v1, v2, v3, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
+                            return TerrainPickData{ patch.mHeightData->data, hit.position.z, blIndex, hit };
+                        }
+                    }
+                }
+            }
+        }
+    }
     return TerrainPickData();
 }
 

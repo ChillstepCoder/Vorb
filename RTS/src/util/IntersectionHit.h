@@ -4,6 +4,8 @@ enum class IntersectionHitShape {
     NO_HIT,
     CIRCLE,
     AABB,
+    TRIANGLE,
+    SPHERE,
     RAY
 };
 

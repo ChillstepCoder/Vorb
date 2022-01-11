@@ -217,6 +217,13 @@ void DebugRenderer::drawFilledQuad(const f32v2& origin, const f32v2& dims, color
     quads.emplace_back(origin, dims, color);
 }
 
+void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32v3& v2, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.emplace_back(v0, v1, color);
+    lines.emplace_back(v1, v2, color);
+    lines.emplace_back(v2, v0, color);
+}
+
 void DebugRenderer::reserveFilledQuads(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.reserve(quads.size() + count);

@@ -73,6 +73,11 @@ public:
 		}
     }
 
+    void teleportToPoint(const f32v3& worldPos) {
+        mBody->SetTransform(reinterpret_cast<const b2Vec2&>(worldPos), mBody->GetAngle());
+		mZPosition = worldPos.z;
+    }
+
 	f32v2 mPrevXYPosition = f32v2(0.0f);
 	f32 mPrevZPosition = 0.0f;
 	f32v2 mDir = f32v2(0.0f, -1.0f);

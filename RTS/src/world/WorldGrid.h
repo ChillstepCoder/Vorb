@@ -4,6 +4,7 @@
 #include <Vorb/concurrentqueue.h>
 
 #include "world/TerrainConstants.h"
+#include "util/IntersectionHit.h"
 
 class ICamera;
 
@@ -19,6 +20,7 @@ enum HeightmapPatchFlags : ui32 {
 struct HeightmapPatchData {
     f32 data[HEIGHTMAP_VERT_SIZE_PER_CHUNK];
     BoundingSphere boundingSphere;
+    f32AABB3 aabb;
 };
 
 class HeightmapPatch {
@@ -39,6 +41,7 @@ struct TerrainPickData {
     const f32* heightData;
     f32 height;
     ui32 cornerIndex;
+    IntersectionHit3D hit;
 };
 
 // Contains chunks and height data

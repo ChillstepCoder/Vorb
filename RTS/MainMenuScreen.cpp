@@ -210,9 +210,9 @@ void MainMenuScreen::build() {
                 // Teleport
                 auto&& ecs = mWorld->getECS();
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(mPlayerEntity)) {
-					TileHandle tile = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
-					if (tile.isValid()) {
-						phys->teleportToPoint(tile.getWorldPos());
+                    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, mMousePickRay);
+					if (pickData.hit.didHit()) {
+						phys->teleportToPoint(pickData.hit.position);
 					}
 				}
 			}
@@ -421,7 +421,9 @@ void MainMenuScreen::updateTilePicking() {
 	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
 	mMousePickRay = glm::normalize(pickRayXYZ);
 
+    PreciseTimer timer;
     TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, mMousePickRay);
+    std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
 }
 
 
