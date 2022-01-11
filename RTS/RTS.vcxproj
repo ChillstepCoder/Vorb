@@ -184,7 +184,6 @@
     <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
-    <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
@@ -239,7 +238,6 @@
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
-    <ClCompile Include="src\screens\WorldEditorScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
@@ -324,7 +322,6 @@
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
-    <ClInclude Include="src\editor\WorldEditor.h" />
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGeneration.h" />
@@ -387,7 +384,6 @@
     <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
-    <ClInclude Include="src\screens\WorldEditorScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
     <ClInclude Include="src\util\AABB.hpp" />

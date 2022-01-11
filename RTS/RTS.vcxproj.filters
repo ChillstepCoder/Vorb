@@ -171,12 +171,6 @@
     <ClCompile Include="src\world\WorldGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\screens\WorldEditorScreen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\editor\WorldEditor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\generation\WorldGeneration.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -555,12 +549,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\NoiseFunction.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\screens\WorldEditorScreen.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\editor\WorldEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\WorldGeneration.h">

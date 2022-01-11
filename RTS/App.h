@@ -20,11 +20,6 @@ public:
     virtual void refreshElapsedTime() override;
 
     std::unique_ptr<MainMenuScreen> mMainMenuScreen;
-#if IS_ENABLED(FEATURE_TEST_3D)
-    std::unique_ptr<Test3DScreen> mTest3DScreen;
-#elif IS_ENABLED(FEATURE_WORLD_EDITOR)
-    std::unique_ptr<WorldEditorScreen> mWorldEditorScreen;
-#endif
 protected:
     void onUpdateFrame() override;
 
