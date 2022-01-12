@@ -34,20 +34,22 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
 
         if (!sDebugOptions.mShowEditor) return;
 
-        // View toggle
-        if (event.keyCode == VKEY_RIGHT) {
-            mBrushSize = glm::min(mBrushSize + 0.2f, MAX_BRUSH_SIZE);
+        if (mCurrentBrushSettings) {
+            if (event.keyCode == VKEY_RIGHT) {
+                mCurrentBrushSettings->brushSize = glm::min(mCurrentBrushSettings->brushSize + 0.2f, MAX_BRUSH_SIZE);
+            }
+            else if (event.keyCode == VKEY_LEFT) {
+                mCurrentBrushSettings->brushSize = glm::max(mCurrentBrushSettings->brushSize - 0.2f, MIN_BRUSH_SIZE);
+            }
         }
-        else if (event.keyCode == VKEY_LEFT) {
-            mBrushSize = glm::max(mBrushSize - 0.2f, MIN_BRUSH_SIZE);
-        }
+       
     });
 }
 
 void WorldEditor::update(const Camera3D& camera) {
     const f32v3& pickRay = sDebugOptions.mMousePickRay;
 
-    if (!mActiveBrush) {
+    if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
         return;
     }
 
@@ -66,8 +68,8 @@ void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
         return;
     }
 
-    f32v3 origin = mPickData.hit.position - f32v3(mBrushSize, mBrushSize, 0.0f);
-    f32v2 dims(mBrushSize * 2.0f);
+    f32v3 origin = mPickData.hit.position - f32v3(mCurrentBrushSettings->brushSize, mCurrentBrushSettings->brushSize, 0.0f);
+    f32v2 dims(mCurrentBrushSettings->brushSize * 2.0f);
     DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
 }
 // Use the manual it rocks
@@ -94,6 +96,7 @@ void WorldEditor::renderUI() const {
     else {
         if (ImGui::Button("Terrain")) {
             mEditMode = WorldEditorEditMode::TERRAIN;
+            mCurrentBrushSettings = &mTerrainBrushSettings;
         }
         ImGui::SameLine();
     }
@@ -107,6 +110,7 @@ void WorldEditor::renderUI() const {
     }
     else if (ImGui::Button("Grass")) {
         mEditMode = WorldEditorEditMode::GRASS;
+        mCurrentBrushSettings = &mGrassBrushSettings;
     }
 
     ImGui::Text("Edit mode");
@@ -120,8 +124,8 @@ void WorldEditor::renderUI() const {
         if (ImGui::RadioButton("Flatten", mTerrainEditState == TerrainEditState::FLATTEN_TERRAIN)) {
             mTerrainEditState = TerrainEditState::FLATTEN_TERRAIN;
         }
-        ImGui::SliderFloat("Brush Size", &mBrushSizeTerrain, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Brush Strength", &mBrushStrengthTerrain, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Brush Size", &mTerrainBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Brush Strength", &mTerrainBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
     }
     else if (mEditMode == WorldEditorEditMode::GRASS) {
         if (ImGui::RadioButton("Add", mGrassEditState == GrassEditState::ADD)) {
@@ -130,8 +134,8 @@ void WorldEditor::renderUI() const {
         if (ImGui::RadioButton("Remove", mGrassEditState == GrassEditState::REMOVE)) {
             mGrassEditState = GrassEditState::REMOVE;
         }
-        ImGui::SliderFloat("Brush Size", &mBrushSizeGrass, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Brush Strength", &mBrushStrengthGrass, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Brush Size", &mGrassBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Brush Strength", &mGrassBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
     }
 
 
@@ -146,7 +150,7 @@ void WorldEditor::renderUI() const {
             ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
             if (ImGui::RadioButton(brush.name.c_str(), mActiveBrushID == i)) {
                 mActiveBrushID = i;
-                mActiveBrush = &brush;
+                mCurrentBrushSettings->activeBrush = &brush;
             }
             ImGui::TableNextColumn();
             ImGui::Image((ImTextureID)brush.texture, ImVec2(50.0f, 50.0f));
@@ -167,9 +171,9 @@ void WorldEditor::updateTerrainEdit() {
             PreciseTimer timer;
             // Edit the terrain with iteration
             const f32v2 hitPosition2D(mPickData.hit.position.x, mPickData.hit.position.y);
-            const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mBrushSizeTerrain);
-            const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mBrushSizeTerrain);
-            const f32 brushSizeSq = SQ(mBrushSizeTerrain);
+            const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mCurrentBrushSettings->brushSize);
+            const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mCurrentBrushSettings->brushSize);
+            const f32 brushSizeSq = SQ(mCurrentBrushSettings->brushSize);
             f32v2 worldPos;
             for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
                 for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
@@ -187,11 +191,11 @@ void WorldEditor::updateTerrainEdit() {
 
             // Notify all terrain stuff to update
             for (auto&& quadtree : mWorld.mTerrainTrees) {
-                quadtree.onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mBrushSizeTerrain);
+                quadtree.onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
             }
             for (Chunk* chunk : mWorld.mActiveChunks) {
                 if (chunk->mChunkRenderData.mGrassLod) {
-                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mBrushSizeTerrain);
+                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
                 }
             }
 
@@ -207,9 +211,9 @@ void WorldEditor::updateGrassEdit() {
             PreciseTimer timer;
             // Edit the terrain with iteration
             const f32v2 hitPosition2D(mPickData.hit.position.x, mPickData.hit.position.y);
-            const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mBrushSizeGrass);
-            const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mBrushSizeGrass);
-            const f32 brushSizeSq = SQ(mBrushSizeGrass);
+            const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mCurrentBrushSettings->brushSize);
+            const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mCurrentBrushSettings->brushSize);
+            const f32 brushSizeSq = SQ(mCurrentBrushSettings->brushSize);
             f32v2 worldPos;
             for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                 for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
@@ -227,7 +231,7 @@ void WorldEditor::updateGrassEdit() {
             // Notify grass to update
             for (Chunk* chunk : mWorld.mActiveChunks) {
                 if (chunk->mChunkRenderData.mGrassLod) {
-                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mBrushSizeGrass);
+                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
                 }
             }
         }
@@ -237,7 +241,7 @@ void WorldEditor::updateGrassEdit() {
 void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
     
     // Read brush data
-    f32 strength = getBrushStrengthAtPoint(mBrushSizeTerrain, offsetToVertex);
+    f32 strength = getBrushStrengthAtPoint(offsetToVertex);
 
     if (strength > 0.001f) {
         switch (mTerrainEditState) {
@@ -253,7 +257,7 @@ void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& off
                 break;
         }
         static_assert((int)TerrainEditState::COUNT == 3, "Update for new edit type");
-        const f32 adjust = strength * mBrushStrengthTerrain;
+        const f32 adjust = strength * mCurrentBrushSettings->brushStrength;
         mWorld.mWorldGrid.adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + vertPos.x, adjust);
 
         // Debug render
@@ -266,7 +270,7 @@ void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& off
 
 void WorldEditor::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile) {
 
-    f32 strength = getBrushStrengthAtPoint(mBrushSizeGrass, offsetToTile) * mBrushStrengthGrass;
+    f32 strength = getBrushStrengthAtPoint(offsetToTile) * mCurrentBrushSettings->brushStrength;
     const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex.index);
     if (random < strength) {
         if (mGrassEditState == GrassEditState::ADD) {
@@ -278,17 +282,17 @@ void WorldEditor::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offset
     }
 }
 
-f32 WorldEditor::getBrushStrengthAtPoint(f32 brushSize, const f32v2& brushOffsetToPoint)
+f32 WorldEditor::getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint)
 {
-    f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(brushSize)) / f32v2(brushSize * 2.0f);
+    f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(mCurrentBrushSettings->brushSize)) / f32v2(mCurrentBrushSettings->brushSize * 2.0f);
     if (offsetToCornerNormalized.x < 0.0f || offsetToCornerNormalized.y < 0.0f) {
         return 0.0f;
     }
-    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(mActiveBrush->dims.x, mActiveBrush->dims.y);
-    if (pixelPos.x >= mActiveBrush->dims.x || pixelPos.y >= mActiveBrush->dims.y) {
+    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(mCurrentBrushSettings->activeBrush->dims.x, mCurrentBrushSettings->activeBrush->dims.y);
+    if (pixelPos.x >= mCurrentBrushSettings->activeBrush->dims.x || pixelPos.y >= mCurrentBrushSettings->activeBrush->dims.y) {
         return 0.0f;
     }
-    ui8 brushIntensity = mActiveBrush->data[pixelPos.y * mActiveBrush->dims.x + pixelPos.x];
+    ui8 brushIntensity = mCurrentBrushSettings->activeBrush->data[pixelPos.y * mCurrentBrushSettings->activeBrush->dims.x + pixelPos.x];
     return (f32)brushIntensity / 255.0f;
 }
 
