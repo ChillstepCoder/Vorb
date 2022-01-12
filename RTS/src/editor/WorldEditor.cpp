@@ -41,6 +41,12 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
             else if (event.keyCode == VKEY_LEFT) {
                 mCurrentBrushSettings->brushSize = glm::max(mCurrentBrushSettings->brushSize - 0.2f, MIN_BRUSH_SIZE);
             }
+            else if (event.keyCode == VKEY_1) {
+                setEditMode(WorldEditorEditMode::TERRAIN);
+            }
+            else if (event.keyCode == VKEY_2) {
+                setEditMode(WorldEditorEditMode::GRASS);
+            }
         }
        
     });
@@ -95,8 +101,7 @@ void WorldEditor::renderUI() const {
     }
     else {
         if (ImGui::Button("Terrain")) {
-            mEditMode = WorldEditorEditMode::TERRAIN;
-            mCurrentBrushSettings = &mTerrainBrushSettings;
+            setEditMode(WorldEditorEditMode::TERRAIN);
         }
         ImGui::SameLine();
     }
@@ -109,8 +114,7 @@ void WorldEditor::renderUI() const {
         ImGui::PopStyleColor(3);
     }
     else if (ImGui::Button("Grass")) {
-        mEditMode = WorldEditorEditMode::GRASS;
-        mCurrentBrushSettings = &mGrassBrushSettings;
+        setEditMode(WorldEditorEditMode::GRASS);
     }
 
     ImGui::Text("Edit mode");
@@ -140,7 +144,7 @@ void WorldEditor::renderUI() const {
 
 
     ImGui::NewLine();
-    if (ImGui::CollapsingHeader("Brushes")) {
+    if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
         const std::vector<Brush>& brushes = brushRepo.getBrushes();
         ImGui::Indent();
         ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
@@ -148,8 +152,8 @@ void WorldEditor::renderUI() const {
             const Brush& brush = brushes[i];
             ImGui::TableNextColumn();
             ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-            if (ImGui::RadioButton(brush.name.c_str(), mActiveBrushID == i)) {
-                mActiveBrushID = i;
+            if (ImGui::RadioButton(brush.name.c_str(), mCurrentBrushSettings->brushId == i)) {
+                mCurrentBrushSettings->brushId = i;
                 mCurrentBrushSettings->activeBrush = &brush;
             }
             ImGui::TableNextColumn();
@@ -294,5 +298,20 @@ f32 WorldEditor::getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint)
     }
     ui8 brushIntensity = mCurrentBrushSettings->activeBrush->data[pixelPos.y * mCurrentBrushSettings->activeBrush->dims.x + pixelPos.x];
     return (f32)brushIntensity / 255.0f;
+}
+
+void WorldEditor::setEditMode(WorldEditorEditMode mode) const {
+    mEditMode = mode;
+    switch (mEditMode) {
+        case WorldEditorEditMode::TERRAIN:
+            mCurrentBrushSettings = &mTerrainBrushSettings;
+            break;
+        case WorldEditorEditMode::GRASS:
+            mCurrentBrushSettings = &mGrassBrushSettings;
+            break;
+        default:
+            assert(false);
+    }
+    static_assert((int)WorldEditorEditMode::COUNT == 2, "Update");
 }
 

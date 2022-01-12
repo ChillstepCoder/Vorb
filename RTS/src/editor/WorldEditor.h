@@ -10,6 +10,7 @@ class Brush;
 enum class WorldEditorEditMode {
     TERRAIN,
     GRASS,
+    COUNT
 };
 
 enum class TerrainEditState {
@@ -27,6 +28,7 @@ enum class GrassEditState {
 
 struct BrushSettings {
     const Brush* activeBrush;
+    ui32 brushId;
     f32 brushSize;
     f32 brushStrength;
 };
@@ -37,7 +39,6 @@ public:
 
     void update(const Camera3D& camera);
 
-
 	void renderBrushDecals(const Camera3D& camera) const;
     void renderUI() const;
 
@@ -47,7 +48,7 @@ private:
     void editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
     void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile);
     f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
-
+    void setEditMode(WorldEditorEditMode mode) const;
 
     World& mWorld;
     f32v2 mScreenDims;
@@ -55,10 +56,9 @@ private:
     mutable WorldEditorEditMode mEditMode = WorldEditorEditMode::TERRAIN;
     mutable TerrainEditState mTerrainEditState = TerrainEditState::RAISE_TERRAIN;
     mutable GrassEditState mGrassEditState = GrassEditState::ADD;
-    mutable ui32 mActiveBrushID = UINT32_MAX;
-    mutable BrushSettings* mCurrentBrushSettings = nullptr;
-    mutable BrushSettings mTerrainBrushSettings = { nullptr, 5.0f, 0.1f };
-    mutable BrushSettings mGrassBrushSettings = { nullptr, 5.0f, 1.0f };
+    mutable BrushSettings mTerrainBrushSettings = { nullptr, UINT32_MAX, 5.0f, 0.1f };
+    mutable BrushSettings mGrassBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
+    mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;
     TerrainPickData mPickData;
 };
 
