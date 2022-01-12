@@ -6,7 +6,7 @@
 #include "world/TerrainConstants.h"
 #include "util/IntersectionHit.h"
 
-class ICamera;
+class Camera3D;
 
 constexpr ui32 HEIGHTMAP_QUAD_WIDTH_PER_CHUNK = CHUNK_WIDTH / HEIGHTMAP_QUAD_SIZE;
 constexpr ui32 HEIGHTMAP_VERT_WIDTH_PER_CHUNK = HEIGHTMAP_QUAD_WIDTH_PER_CHUNK + 1;
@@ -37,13 +37,6 @@ public:
 };
 static_assert(sizeof(HeightmapPatch) == 16, "Keep small");
 
-struct TerrainPickData {
-    const f32* heightData;
-    f32 height;
-    ui32 cornerIndex;
-    IntersectionHit3D hit;
-};
-
 // Contains chunks and height data
 class WorldGrid {
 public:
@@ -61,10 +54,13 @@ public:
     const HeightmapPatchData* tryGetHeightDataAt(ChunkID id) const;
     const HeightmapPatchData* aquireHeightData(ChunkID id);
     void releaseHeightDataAt(ChunkID id);
+    void setHeightAt(ChunkID id, ui32 vertIndex, f32 height);
+    void adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust);
+    f32 getHeightAtVert(ChunkID id, const ui32v2& vertPos) const;
 
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
 
-    TerrainPickData pickTerrainFromCameraVector(const ICamera& camera, const f32v3& rayDir) const;
+    TerrainPickData pickTerrainFromCameraVector(const Camera3D& camera, const f32v3& rayDir) const;
 
     static f32 computeHeightAtPoint(ChunkID id, const f32* heightData, const f32v2& worldPos);
     static f32 computeHeightAtChunkOffset(const f32* heightData, const f32v2& chunkOffset);

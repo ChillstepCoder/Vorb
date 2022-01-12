@@ -184,6 +184,7 @@
     <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
+    <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
@@ -210,7 +211,6 @@
     <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
-    <ClCompile Include="src\rendering\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
@@ -240,6 +240,8 @@
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
+    <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
+    <ClCompile Include="src\ui\UIContext.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
@@ -322,6 +324,7 @@
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
+    <ClInclude Include="src\editor\WorldEditor.h" />
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGeneration.h" />
@@ -353,7 +356,6 @@
     <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
-    <ClInclude Include="src\rendering\DebugTweakerPanel.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
     <ClInclude Include="src\rendering\GlobalUboData.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
@@ -385,6 +387,8 @@
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\ui\DebugTweakerPanel.h" />
+    <ClInclude Include="src\ui\UIContext.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\BitArray.h" />

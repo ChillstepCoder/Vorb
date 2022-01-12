@@ -27,5 +27,13 @@ struct IntersectionHit3D {
     f32 farTime = FLT_MAX;
     IntersectionHitShape shape = IntersectionHitShape::NO_HIT;
 
-    bool didHit() { return shape != IntersectionHitShape::NO_HIT; }
+    bool didHit() const { return shape != IntersectionHitShape::NO_HIT; }
+};
+
+struct TerrainPickData {
+    ui32 id;
+    const f32* heightData;
+    f32 height;
+    ui32 cornerIndex;
+    IntersectionHit3D hit;
 };

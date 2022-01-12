@@ -37,6 +37,7 @@
 #include "rendering/ChunkRenderer.h"
 
 #include "ui/UIInteractMenuPopup.h"
+#include "ui/UIContext.h"
 
 #include <SDL.h>
 
@@ -57,6 +58,8 @@ MainMenuScreen::MainMenuScreen(const App* app)
     mWorld(std::make_unique<World>(*mResourceManager)),
     mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
 {
+
+    UIContext::initInstance(*mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
     // TODO: Config
     sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
@@ -147,9 +150,6 @@ void MainMenuScreen::build() {
 				ecs.mRegistry.emplace<DynamicLightComponent>(mPlayerEntity);
 			}
 		}
-		else if (event.keyCode == VKEY_Y) {
-			mIs3DMode = !mIs3DMode;
-        }
         else if (event.keyCode == VKEY_Q) {
             mCameraCartesianDirection = CARTESIAN_NEIGHBORS[enum_cast(mCameraCartesianDirection)][1];
             mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[enum_cast(mCameraCartesianDirection)];
@@ -161,6 +161,9 @@ void MainMenuScreen::build() {
         else if (event.keyCode == VKEY_T) {
 			sDebugOptions.mShowTweaker = !sDebugOptions.mShowTweaker;
         }
+        else if (event.keyCode == VKEY_Y) {
+            sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
+        }
 	});
 
 	vui::InputDispatcher::mouse.onWheel.addFunctor([this](Sender sender, const vui::MouseWheelEvent& event) {
@@ -168,18 +171,6 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
-		const f32v2 screenPos(event.x, event.y);
-
-		if (event.button == vui::MouseButton::RIGHT) {
-			// If we are making a villager with G, dont freeze screen
-			if (!vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
-				mIsRightButtonDown = true;
-			}
-		}
-		else if (event.button == vui::MouseButton::LEFT) {
-			// Ray pick
-			//TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
-		}
 
 	});
 
@@ -192,7 +183,7 @@ void MainMenuScreen::build() {
 		constexpr float VEL_MULT = 0.0001f;
 		constexpr float VEL_EXP = 0.4f;
 		const f32v2 screenPos(event.x, event.y);
-        TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, mMousePickRay);
+        TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, sDebugOptions.mMousePickRay);
 		if (!pickHandle.isValid()) {
 			return;
 		}
@@ -210,7 +201,7 @@ void MainMenuScreen::build() {
                 // Teleport
                 auto&& ecs = mWorld->getECS();
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(mPlayerEntity)) {
-                    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, mMousePickRay);
+                    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
 					if (pickData.hit.didHit()) {
 						phys->teleportToPoint(pickData.hit.position);
 					}
@@ -243,7 +234,6 @@ void MainMenuScreen::build() {
 			}
         }
         else if (event.button == vui::MouseButton::RIGHT) {
-            mIsRightButtonDown = false;
 			if (vui::InputDispatcher::key.isKeyPressed(VKEY_P)) {
                 const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
                 mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
@@ -419,11 +409,7 @@ void MainMenuScreen::updateTilePicking() {
 	pickRayEyeSpace.w = 0.0f;
 	f32v4 pickRayWorldSpace = glm::inverse(mCamera3D->getViewMatrix()) * pickRayEyeSpace;
 	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
-	mMousePickRay = glm::normalize(pickRayXYZ);
-
-    PreciseTimer timer;
-    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, mMousePickRay);
-    std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
+	sDebugOptions.mMousePickRay = glm::normalize(pickRayXYZ);
 }
 
 

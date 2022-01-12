@@ -23,8 +23,7 @@ DECL_VG(class SpriteBatch);
 struct b2BodyDef;
 class b2Body;
 class b2World;
-class ICamera;
-class Camera2D;
+class Camera3D;
 class City;
 class ContactListener;
 class ContactFilter;
@@ -35,6 +34,7 @@ class EntityComponentSystem;
 class ResourceManager;
 class EntityFactory;
 class NavGraph;
+class WorldEditor;
 class ChunkMesher;
 class HeightmapTerrainQuadtree;
 struct CityGraph;
@@ -48,7 +48,7 @@ public:
 	~World();
 
 	void initPostLoad(ChunkMesher& chunkMesher);
-	void update(const f32v2& playerPos, const ICamera& camera);
+	void update(const f32v2& playerPos, const Camera3D& camera);
 
 	void lazyInit();
 
@@ -73,7 +73,7 @@ public:
     Chunk& getChunkAtPosition(ChunkID chunkId);
     const Chunk& getChunkAtPosition(ChunkID chunkId) const;
 
-    TileHandle getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const;
+    TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
     TileCollision getTileCollisionAtWorldPos(const f32v2& worldPos) const;
@@ -113,7 +113,7 @@ public:
 private:
 
 	// TODO: Composition? WorldClock? idk
-    void updateSun(const ICamera& camera);
+    void updateSun(const Camera3D& camera);
     /// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
 	void onChunkDataReady(Chunk& chunk);
@@ -174,7 +174,7 @@ private:
 
 	bool mNeedsLazyInit = true;
 	bool mDirty = true;
-	// TODO: Chunk paging for tile data?
+
 	WorldGrid mWorldGrid;
     std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mVisibleChunks;

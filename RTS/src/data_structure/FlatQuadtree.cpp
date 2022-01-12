@@ -123,8 +123,13 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
         assert(patch.isActive());
 
         if (patch.isCrossfading()) {
+            // This should only happen while editing terrain and moving at the same time, prevent us from destroying while meshing
+            // TODO: this can cause a race condition if we re-enter a different crossfade or are meshing when parent clears crossfade
+            if (patch.isMeshing()) {
+                ++i;
+                continue;
+            }
             // when crossfading, we crossfade until we are complete
-            assert(!patch.isMeshing());
             f32 currentCrossfade = mCrossfadeTable[patch.mCrossFadeTableIndex];
             if (currentCrossfade >= 1.0f) {
                 if (patch.mFlags & QUADTREE_PATCH_FLAG_CROSSFADING_OUT) {

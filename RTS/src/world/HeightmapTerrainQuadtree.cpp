@@ -3,6 +3,7 @@
 
 #include "camera/Camera3D.h"
 #include "options/DebugOptions.h"
+#include "DebugRenderer.h"
 #include "world/WorldGrid.h"
 
 #include "services/Services.h"

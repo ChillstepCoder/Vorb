@@ -92,6 +92,9 @@ public:
     // TODOL lightupdate, heavyupdate, only heavy when transition to diff cell, heavy determines splitting
     void update(const f32v2& loadCenter);
 
+    // Mark terrain as dirty at the brush position
+    void onDataChanged(const f32v2& editPosition, f32 editRadius);
+
     // === Public Constants ===
     static constexpr ui32 NODE_COUNT = (MathUtil::intpow<MAX_DEPTH>(4) - 1) / (4 - 1);
     static constexpr ui32 QUADTREE_FADE_LIST_SIZE = (MathUtil::intpow<MAX_DEPTH - 1>(4) - 1) / (4 - 1);
@@ -227,6 +230,30 @@ constexpr ui32 QUADTREE_LOD_FROM_INDEX[ABSOLUTE_MAX_QUADTREE_NODE_COUNT] = {
     4u, 4u, 4u, 4u, 4u,
 };
 static_assert(ABSOLUTE_MAX_QUADTREE_DEPTH == 5);
+
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onDataChanged(const f32v2& editPosition, f32 editRadius) {
+    constexpr ui32 DEBUG_DURATION = 100;
+    const f32v2 dims = f32v2(LOD_DIMS[0].xy);
+    const f32v2 halfDims = dims * 0.5f;
+    const f32v2 offsetFromCenter = editPosition - (mWorldPos + halfDims);
+    if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
+        // This quadtree is touched, mark each intersecting child as dirty
+        for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+            ui32 nodeIndex = mActiveNodes[i];
+            QuadtreePatch& patch = mNodes[nodeIndex];
+            ui32 lod = QUADTREE_LOD_FROM_INDEX[nodeIndex];
+            const f32v2 patchDims = f32v2(LOD_DIMS[lod].xy);
+            const f32v2 halfPatchDims = patchDims * 0.5f;
+            const f32v2 patchOffsetFromCenter = editPosition - (mWorldPos + halfPatchDims + f32v2(PATCH_POSITIONS.data[nodeIndex].xy));
+            if (abs(patchOffsetFromCenter.x) < halfPatchDims.x + editRadius && abs(patchOffsetFromCenter.y) < halfPatchDims.y + editRadius) {
+                patch.mFlags |= QUADTREE_PATCH_FLAG_DIRTY_MESH;
+                //DebugRenderer::drawWireQuad(mWorldPos + f32v2( PATCH_POSITIONS.data[nodeIndex].xy), patchDims, color4(0.2f, 1.0f, 0.2f, 1.0f), DEBUG_DURATION);
+            }
+        }
+       // DebugRenderer::drawWireQuad(mWorldPos, dims, color4(0.0f, 1.0f, 0.0f, 1.0f), DEBUG_DURATION);
+    }
+}
 
 
 // === Utilities ===

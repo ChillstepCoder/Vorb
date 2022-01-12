@@ -23,6 +23,8 @@
 #include "rendering/ChunkMesher.h"
 #include "rendering/ChunkGrassQuadtree.h"
 
+#include "ui/UIContext.h"
+
 #include "services/Services.h"
 
 #include <box2d/b2_world.h>
@@ -32,7 +34,7 @@
 #include "Utils.h"
 
 #include "city/City.h"
-#include "camera/ICamera.h"
+#include "camera/Camera3D.h"
 
 #include "generation/WorldGeneration.h"
 
@@ -96,7 +98,7 @@ void World::initPostLoad(ChunkMesher& chunkMesher) {
 	}
 }
 
-void World::update(const f32v2& playerPos, const ICamera& camera) {
+void World::update(const f32v2& playerPos, const Camera3D& camera) {
 	assert(mEcs);
 
 	Services::Threadpool::ref().mainThreadUpdate();
@@ -170,6 +172,9 @@ void World::update(const f32v2& playerPos, const ICamera& camera) {
 
 	// Update ECS
     mEcs->update(mClientEcsData);
+	
+	// Update editor
+	UIContext::getInstance().updateEditors(camera);
 }
 
 void World::lazyInit() {
@@ -202,7 +207,7 @@ inline f32 fastCeilf(f32 x) {
     return FastConversion<f32, f32>::ceiling(x);
 }
 
-TileHandle World::getTileFromCameraPickVector(const ICamera& camera, const f32v3& rayDir) const {
+TileHandle World::getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const {
 	constexpr bool ENABLE_DEBUG_PICK_RENDER = true;
 
 	const f32v3 rayStart = camera.getPosition();
@@ -534,7 +539,7 @@ IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v
 	return IntersectionHit2D();
 }
 
-void World::updateSun(const ICamera& camera) {
+void World::updateSun(const Camera3D& camera) {
     const float SUNRISE_TIME = 6.0f; // 6am
 	const float SUN_HEIGHT_OFFSET = 0.3f; // Smaller exponent means brighter days
 	// TODO: Better time manager

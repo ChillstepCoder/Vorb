@@ -55,6 +55,8 @@ void setPriorityToNormal() {
 void App::onInit() {
     setPriorityToMax();
 
+    sDebugOptions.mScreenResolution = f32v2(m_window.getWidth(), m_window.getHeight());
+
 	Services::init();
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);

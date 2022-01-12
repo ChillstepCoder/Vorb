@@ -86,10 +86,6 @@ private:
 	f32v2 mSelectedTilePosition = f32v2(0.0f);
 	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
-	f32v3 mMousePickRay = f32v3(0.0f);
-
-	bool mIsRightButtonDown = false;
-	bool mIs3DMode = true;
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 

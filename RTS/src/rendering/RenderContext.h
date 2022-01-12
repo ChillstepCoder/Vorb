@@ -6,7 +6,6 @@ class CharacterRenderer;
 class ChunkRenderer;
 class CityDebugRenderer;
 class CloudRenderer;
-class DebugTweakerPanel;
 class AmbientOcclusionPostProcess;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
@@ -21,6 +20,7 @@ class QuadMesh;
 class ResourceManager;
 class Skybox;
 class ShadowRenderer;
+class UIContext;
 class World;
 
 struct SDL_Window;
@@ -88,7 +88,6 @@ private:
     ResourceManager& mResourceManager;
 
     // Renderers
-    mutable std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
     mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
     mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;

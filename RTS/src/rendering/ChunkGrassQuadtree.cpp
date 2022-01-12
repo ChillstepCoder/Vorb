@@ -133,7 +133,6 @@ void createGrassMesh(
 
             // TODO: Determine edge
 
-
             // Generate blades
             for (int y2 = 0; y2 < (int)density; ++y2) {
                 for (int x2 = 0; x2 < (int)density; ++x2) {
@@ -175,9 +174,9 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
         // Instantly generate
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
-            PreciseTimer timer;
+            //PreciseTimer timer;
             createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
-            std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
+            //std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
         }, [this, &patch, patchIndex]() {
 
             mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);

@@ -7,7 +7,7 @@
 
 #include "util/IntersectionUtil.h"
 
-#include "camera/ICamera.h"
+#include "camera/Camera3D.h"
 #include "DebugRenderer.h"
 
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
@@ -165,6 +165,49 @@ void WorldGrid::releaseHeightDataAt(ChunkID id) {
     }
 }
 
+void WorldGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height) {
+    HeightmapPatch& patch = mHeightData[id.id];
+    if (patch.isDone() && patch.mRefCount) {
+        HeightmapPatchData& data = *patch.mHeightData;
+        data.data[vertIndex] = height;
+        // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
+        if (height > data.aabb.pos.z + data.aabb.height) {
+            data.aabb.height = height - data.aabb.pos.z;
+            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        }
+        else if (height < data.aabb.pos.z) {
+            data.aabb.height += data.aabb.pos.z - height;
+            data.aabb.pos.z = height;
+            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        }
+    }
+}
+
+void WorldGrid::adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust) {
+    HeightmapPatch& patch = mHeightData[id.id];
+    setHeightAt(id, vertIndex, patch.mHeightData->data[vertIndex] + adjust);
+    if (vertIndex % HEIGHTMAP_VERT_WIDTH_PER_CHUNK == 0) {
+        // update left duplicate verts
+        const ChunkID leftId = id.getLeftID();
+        const HeightmapPatch& leftPatch = mHeightData[leftId.id];
+        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 1;
+        setHeightAt(leftId, newIndex, leftPatch.mHeightData->data[newIndex] + adjust);
+    }
+    if (vertIndex / HEIGHTMAP_VERT_WIDTH_PER_CHUNK == 0) {
+        // update bottom duplicate verts
+        const ChunkID bottomId = id.getBottomID();
+        const HeightmapPatch& bottomPatch = mHeightData[bottomId.id];
+        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+        setHeightAt(bottomId, newIndex, bottomPatch.mHeightData->data[newIndex] + adjust);
+    }
+}
+
+f32 WorldGrid::getHeightAtVert(ChunkID id, const ui32v2& vertPos) const {
+    const HeightmapPatch& patch = mHeightData[id.id];
+    if (!patch.isDone()) return 0.0f;
+    return patch.mHeightData->data[vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + vertPos.x];
+}
+
 bool WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
     ChunkID id(worldPos);
     const HeightmapPatch& patch = mHeightData[id.id];
@@ -178,7 +221,7 @@ bool WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
 }
 
 
-TerrainPickData WorldGrid::pickTerrainFromCameraVector(const ICamera& camera, const f32v3& rayDir) const {
+TerrainPickData WorldGrid::pickTerrainFromCameraVector(const Camera3D& camera, const f32v3& rayDir) const {
     const f32v3 rayStart = camera.getPosition();
 
     constexpr f32 RAY_CHECK_LENGTH = 10000.0f;
@@ -230,14 +273,14 @@ TerrainPickData WorldGrid::pickTerrainFromCameraVector(const ICamera& camera, co
                         IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v0, v2, v3);
                         if (hit.didHit()) {
                             DebugRenderer::drawWireTriangle(v0, v2, v3, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
-                            return TerrainPickData{patch.mHeightData->data, hit.position.z, blIndex, hit};
+                            return TerrainPickData{ hitPair.second, patch.mHeightData->data, hit.position.z, blIndex, hit};
                         }
                     }
                     {
                         IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v0, v1, v3);
                         if (hit.didHit()) {
                             DebugRenderer::drawWireTriangle(v0, v1, v3, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
-                            return TerrainPickData{ patch.mHeightData->data, hit.position.z, blIndex, hit };
+                            return TerrainPickData{ hitPair.second, patch.mHeightData->data, hit.position.z, blIndex, hit };
                         }
                     }
                 }
@@ -251,14 +294,14 @@ TerrainPickData WorldGrid::pickTerrainFromCameraVector(const ICamera& camera, co
                         IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v0, v1, v2);
                         if (hit.didHit()) {
                             DebugRenderer::drawWireTriangle(v0, v1, v2, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
-                            return TerrainPickData{ patch.mHeightData->data, hit.position.z, blIndex, hit };
+                            return TerrainPickData{ hitPair.second, patch.mHeightData->data, hit.position.z, blIndex, hit };
                         }
                     }
                     {
                         IntersectionHit3D hit = IntersectionUtil::RayTriangleIntersection(rayStart, rayDir, v1, v2, v3);
                         if (hit.didHit()) {
                             DebugRenderer::drawWireTriangle(v1, v2, v3, color4(1.0f, 0.0f, 0.0f, 1.0f), DEBUG_DURATION);
-                            return TerrainPickData{ patch.mHeightData->data, hit.position.z, blIndex, hit };
+                            return TerrainPickData{ hitPair.second, patch.mHeightData->data, hit.position.z, blIndex, hit };
                         }
                     }
                 }

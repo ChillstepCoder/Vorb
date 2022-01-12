@@ -57,6 +57,7 @@ struct DebugOptions {
     bool mHideCharacters = false;
     bool mShowPhysicsDebug = false;
     bool mShowTweaker = false;
+    bool mShowEditor = false;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;
@@ -72,6 +73,9 @@ struct DebugOptions {
     // TODO: FILE CONFIG
     bool mUseCompressedAtlas = false;
     bool mVSYNC = false;
+    // TODO: somewhere else?
+    f32v2 mScreenResolution = f32v2(1600.0f, 900.0f); // Currently set in  App::onInit
+    f32v3 mMousePickRay = f32v3(0.0f);
 };
 
 extern DebugOptions sDebugOptions;

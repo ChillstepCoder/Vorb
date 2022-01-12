@@ -16,7 +16,6 @@
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
-#include "rendering/DebugTweakerPanel.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/ItemRenderer.h"
@@ -30,6 +29,10 @@
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/RenderStats.h"
 #include "TextureManip.h"
+
+#include "ui/UIContext.h"
+
+#include "editor/WorldEditor.h"
 
 // TODO: Move to renderer?
 #include "city/CityQuartermaster.h"
@@ -141,9 +144,6 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
         pError("GFX card does not support 4k textures :(");
         assert(false);
     }
-
-    // Debugging
-    mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>(screenResolution);
 
     // UBO
     glGenBuffers(1, &mGlobalUbo);
@@ -389,6 +389,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
     }
 
+    // Editor brushes
+    UIContext::getInstance().renderEditorBrushDecals(camera);
+
     // Sky
     glEnable(GL_DEPTH_CLAMP);
     glDisable(GL_CULL_FACE); // TODO: Fix geometry so we dont have to disable cull face
@@ -542,9 +545,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     renderUI(camera);
 
     // Debugging
-    if (sDebugOptions.mShowTweaker) {
-        mDebugTweakerPanel->updateAndRender(mActiveGBuffer, camera.getAspectRatio());
-    }
+    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer, camera.getAspectRatio());
 
     // Swap
     mPrevGBufferIndex = mActiveGBufferIndex;
