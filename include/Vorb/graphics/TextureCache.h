@@ -119,15 +119,16 @@ namespace vorb {
              *
              * \return The stored texture.
              */
-            Texture addTexture(         const vio::Path& filePath,
-                                 OUT vg::BitmapResource& rvBitmap,
-                                       vg::ImageIOFormat rvFormat,
-                                       vg::TextureTarget textureTarget      = vg::TextureTarget::TEXTURE_2D,
-                                           SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
-                               vg::TextureInternalFormat internalFormat     = vg::TextureInternalFormat::RGBA,
-                                       vg::TextureFormat textureFormat      = vg::TextureFormat::RGBA,
-                                                     i32 mipmapLevels       = INT_MAX,
-                                                    bool flipV              = false);
+            Texture addTexture(const vio::Path& filePath,
+                               const nString& textureName,
+                               OUT vg::BitmapResource& rvBitmap,
+                               vg::ImageIOFormat rvFormat,
+                               vg::TextureTarget textureTarget          = vg::TextureTarget::TEXTURE_2D,
+                               SamplerState* samplingParameters         = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                               vg::TextureInternalFormat internalFormat = vg::TextureInternalFormat::RGBA,
+                               vg::TextureFormat textureFormat          = vg::TextureFormat::RGBA,
+                               i32 mipmapLevels                         = INT_MAX,
+                               bool flipV                               = false);
             /*!
              * \brief Uploads a PNG texture and adds it to the cache if it is not already present.
              *

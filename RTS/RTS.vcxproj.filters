@@ -375,6 +375,9 @@
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\editor\BrushRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -828,6 +831,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\DebugTweakerPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\editor\BrushRepository.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

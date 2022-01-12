@@ -5,14 +5,7 @@ class Camera3D;
 
 #include "world/ChunkID.h"
 #include "util/IntersectionHit.h"
-
-enum class WorldEditorBrushType {
-    SMOOTH_BOX,
-    HARD_BOX,
-    SMOOTH_CIRCLE,
-    HARD_CIRCLE,
-    COUNT
-};
+class Brush;
 
 enum class WorldEditorEditState {
     NONE,
@@ -31,15 +24,16 @@ public:
     void renderUI() const;
 
 private:
-    void editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToBrush);
+    void editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
 
     World& mWorld;
     f32v2 mScreenDims;
 
     mutable WorldEditorEditState mEditState = WorldEditorEditState::NONE;
-    mutable WorldEditorBrushType mBrushType = WorldEditorBrushType::SMOOTH_CIRCLE;
-    f32 mBrushSize = 1.0f;
-    f32 mBrushStrength = 0.1f;
+    mutable ui32 mActiveBrushID = UINT32_MAX;
+    mutable const Brush* mActiveBrush = nullptr;
+    mutable f32 mBrushSize = 5.0f;
+    mutable f32 mBrushStrength = 0.1f;
     TerrainPickData mPickData;
 };
 

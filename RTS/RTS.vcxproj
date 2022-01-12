@@ -184,6 +184,7 @@
     <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
+    <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
@@ -323,6 +324,7 @@
     <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
+    <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditor.h" />
     <ClInclude Include="src\FeatureConst.h" />

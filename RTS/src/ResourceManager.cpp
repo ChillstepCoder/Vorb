@@ -14,6 +14,7 @@
 #include "ecs/business/BusinessRepository.h"
 #include "character/CharacterModelRepository.h"
 #include "world/TileRepository.h"
+#include "editor/BrushRepository.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/IO.h>
@@ -49,6 +50,7 @@ ResourceManager::ResourceManager() {
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mSpriteRepository);
+    mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -114,7 +116,9 @@ void ResourceManager::loadFiles() {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
-            else {
+            else if (vio::containsSubpath(entry, "_brushes")) {
+                mBrushRepository->loadBrush(entry, *mTextureCache);
+            } else {
                 mSpriteRepository->loadSpriteTexture(entry);
             }
         }

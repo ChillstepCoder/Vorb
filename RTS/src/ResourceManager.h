@@ -5,6 +5,7 @@ DECL_VG(class TextureCache);
 
 #include "world/Tile.h"
 
+class BrushRepository;
 class SpriteRepository;
 class TextureAtlas;
 class MaterialManager;
@@ -41,6 +42,7 @@ public:
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     CharacterModelRepository& getCharacterModelRepository() const { return *mCharacterModelRepository; }
+    BrushRepository& getBrushRepository() const { return *mBrushRepository; }
 
     // Hot reload
     void reloadMaterials();
@@ -76,6 +78,7 @@ private:
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<CharacterModelRepository> mCharacterModelRepository;
+    std::unique_ptr<BrushRepository> mBrushRepository;
     std::unique_ptr<vg::TextureCache> mTextureCache;
 
     std::unique_ptr<vio::IOManager> mIoManager;

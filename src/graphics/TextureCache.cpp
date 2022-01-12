@@ -86,7 +86,8 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
     return texture;
 }
 
-vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
+vg::Texture vg::TextureCache::addTexture(    const vio::Path& filePath,
+                                           const nString& textureName,
                                            OUT vg::BitmapResource& rvBitmap,
                                                  vg::ImageIOFormat rvFormat,
                                                  vg::TextureTarget textureTarget      /* = vg::TextureTarget::TEXTURE_2D*/,
@@ -100,7 +101,7 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
     resolvePath(filePath, texPath);
 
     // Check if the texture is already cached.
-    Texture texture = findTexture(texPath);
+    Texture texture = findTexture(textureName);
     if (texture.id) return texture;
 
     // Load the pixel data.
@@ -136,7 +137,7 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
                                           mipmapLevels);
 
     // Store the texture in the cache.
-    insertTexture(texPath, texture);
+    insertTexture(textureName, texture);
     return texture;
 }
 

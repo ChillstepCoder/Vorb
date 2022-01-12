@@ -9,13 +9,16 @@
 #include "options/DebugOptions.h"
 #include "DebugRenderer.h"
 
+#include "ResourceManager.h"
+#include "editor/BrushRepository.h"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/ui/InputDispatcher.h>
 
-constexpr f32 MIN_BRUSH_SIZE = 0.1f;
+constexpr f32 MIN_BRUSH_SIZE = 1.0f;
 constexpr f32 MAX_BRUSH_SIZE = 50.0f;
 constexpr f32 MIN_BRUSH_STRENGTH = 0.01f;
 constexpr f32 MAX_BRUSH_STRENGTH = 2.0f;
@@ -40,11 +43,15 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
 void WorldEditor::update(const Camera3D& camera) {
     const f32v3& pickRay = sDebugOptions.mMousePickRay;
 
+    if (!mActiveBrush || mEditState == WorldEditorEditState::NONE) {
+        return;
+    }
+
     //PreciseTimer timer;
     // Pick terrain
     mPickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(camera, sDebugOptions.mMousePickRay);
     //std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
-    if (mEditState != WorldEditorEditState::NONE && mPickData.hit.didHit()) {
+    if (mPickData.hit.didHit()) {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
             PreciseTimer timer;
             // Edit the terrain with iteration
@@ -60,9 +67,9 @@ void WorldEditor::update(const Camera3D& camera) {
                     const f32v2 offset = worldPos - chunkWorldPos;
                     const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
                     const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + chunkWorldPos;
-                    const f32v2 offsetToHit = vertexPosWorld - hitPosition2D;
-                    if (glm::length2(offsetToHit) < brushSizeSq) {
-                        editVertex(id, vertexPos, offsetToHit);
+                    const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
+                    if (glm::length2(offsetToVertex) < brushSizeSq) {
+                        editVertex(id, vertexPos, offsetToVertex);
                     }
                 }
             }
@@ -91,8 +98,11 @@ void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
     f32v2 dims(mBrushSize * 2.0f);
     DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
 }
-
+// Use the manual it rocks
+// https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void WorldEditor::renderUI() const {
+    const BrushRepository& brushRepo = mWorld.getResourceManager().getBrushRepository();
+
     constexpr float WINDOW_WIDTH = 400.0f;
     const float WINDOW_HEIGHT = mScreenDims.y;
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
@@ -117,61 +127,47 @@ void WorldEditor::renderUI() const {
         mEditState = WorldEditorEditState::FLATTEN_TERRAIN;
     }
     ImGui::EndGroup();
-    ImGui::NewLine();
-    ImGui::Text("Brush");
-    ImGui::BeginGroup();
-    if (ImGui::RadioButton("Smooth Box", mBrushType == WorldEditorBrushType::SMOOTH_BOX)) {
-        mBrushType = WorldEditorBrushType::SMOOTH_BOX;
-    }
-    if (ImGui::RadioButton("Hard Box", mBrushType == WorldEditorBrushType::HARD_BOX)) {
-        mBrushType = WorldEditorBrushType::HARD_BOX;
-    }
 
-    if (ImGui::RadioButton("Smooth Circle", mBrushType == WorldEditorBrushType::SMOOTH_CIRCLE)) {
-        mBrushType = WorldEditorBrushType::SMOOTH_CIRCLE;
+    ImGui::SliderFloat("Brush Size", &mBrushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Brush Strength", &mBrushStrength, MIN_BRUSH_STRENGTH, MAX_BRUSH_STRENGTH, "%.3f", ImGuiSliderFlags_Logarithmic);
+
+    ImGui::NewLine();
+    if (ImGui::CollapsingHeader("Brushes")) {
+        const std::vector<Brush>& brushes = brushRepo.getBrushes();
+        ImGui::Indent();
+        ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+        for (size_t i = 0; i < brushes.size(); ++i) {
+            const Brush& brush = brushes[i];
+            ImGui::TableNextColumn();
+            ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+            if (ImGui::RadioButton(brush.name.c_str(), mActiveBrushID == i)) {
+                mActiveBrushID = i;
+                mActiveBrush = &brush;
+            }
+            ImGui::TableNextColumn();
+            ImGui::Image((ImTextureID)brush.texture, ImVec2(50.0f, 50.0f));
+        }
+        ImGui::EndTable();
+        ImGui::Unindent();
     }
-    if (ImGui::RadioButton("Hard Circle", mBrushType == WorldEditorBrushType::HARD_CIRCLE)) {
-        mBrushType = WorldEditorBrushType::HARD_CIRCLE;
-    }
-    ImGui::EndGroup();
-    ImGui::SliderFloat("Brush Size", (float*)&mBrushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
-    ImGui::SliderFloat("Brush Strength", (float*)&mBrushStrength, MIN_BRUSH_STRENGTH, MAX_BRUSH_STRENGTH, "%.3f", ImGuiSliderFlags_Logarithmic);
 
     ImGui::End();
 }
 
-void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToBrush)
+void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex)
 {
     
-    f32 strength = 1.0f;
-
-    switch (mBrushType) {
-        case WorldEditorBrushType::SMOOTH_BOX: {
-            f32 distance = glm::min(abs(offsetToBrush.x), abs(offsetToBrush.y));
-            strength *= (1.0f - distance / mBrushSize);
-            break;
-        }
-        case WorldEditorBrushType::HARD_BOX: {
-            break;
-        }
-        case WorldEditorBrushType::SMOOTH_CIRCLE: {
-            f32 distance = glm::length(offsetToBrush);
-            strength *= 1.0f - distance / mBrushSize;
-            break;
-        }
-        case WorldEditorBrushType::HARD_CIRCLE: {
-            f32 distance = glm::length(offsetToBrush);
-            if (distance > mBrushSize) {
-                strength = 0;
-            }
-            break;
-        }
-        default:
-            assert(false);
-            break;
-        
+    // Read brush data
+    f32v2 offsetToCornerNormalized = (offsetToVertex + f32v2(mBrushSize)) / f32v2(mBrushSize * 2.0f);
+    if (offsetToCornerNormalized.x < 0.0f || offsetToCornerNormalized.y < 0.0f) {
+        return;
     }
-    static_assert((int)WorldEditorBrushType::COUNT == 4, "Update for new brush");
+    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(mActiveBrush->dims.x, mActiveBrush->dims.y);
+    if (pixelPos.x >= mActiveBrush->dims.x || pixelPos.y >= mActiveBrush->dims.y) {
+        return;
+    }
+    ui8 brushIntensity = mActiveBrush->data[pixelPos.y * mActiveBrush->dims.x + pixelPos.x];
+    f32 strength = (f32)brushIntensity / 255.0f;
 
     if (strength > 0.001f) {
         switch (mEditState) {
