@@ -24,7 +24,7 @@ void main() {
     vec3 tangent = cross(binormal, normal);
 	fTBN = mat3(TANGENT, binormal, normal);
 	
-    fUV = vertexPos.xy * 0.05;
+    fUV = (worldPos.xy + CameraPos.xy) * 0.05;
     fHeight = vertexPos.z;
     fPosition = worldPos.xyz;
 

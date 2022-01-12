@@ -161,7 +161,6 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
     if (!mMeshes[patchIndex]) {
         mMeshes[patchIndex] = std::make_unique<GrassBillboardMesh>();
-        assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
     }
     ++mRefCount;
     mChunk.incRef();

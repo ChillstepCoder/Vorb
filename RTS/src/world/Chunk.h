@@ -114,6 +114,7 @@ public:
 	bool isVisible() const { return mChunkRenderData.mIsVisible; }
 
 	void setState(ChunkState state) { mState = state; }
+	void setGrassAt(const TileIndex index, ui8 grass);
 
     Tile& getMutableTileAt(TileIndex i) {
         assert(i < CHUNK_SIZE);

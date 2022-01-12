@@ -184,7 +184,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::onMeshFinished(ui32 patchIndex, bool 
         patch.mFlags |= QUADTREE_PATCH_FLAG_HAS_MESH;
     }
     else {
-        patch.mCrossFadeTableIndex &= (~QUADTREE_PATCH_FLAG_HAS_MESH);
+        patch.mFlags &= (~QUADTREE_PATCH_FLAG_HAS_MESH);
         freeMeshForPatch(patchIndex);
     }
 

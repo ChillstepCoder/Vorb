@@ -199,6 +199,14 @@ Chunk& Chunk::getBottomNeighbor() const {
     return mWorldGrid->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
+void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
+    mGrass[index] = grass;
+    // TODO: mark dirty
+    /* if (mChunkRenderData.mGrassLod) {
+         mChunkRenderData.mGrassLod
+     }*/
+}
+
 void Chunk::setTileAt(TileIndex i, Tile tile) {
     assert(i < CHUNK_SIZE);
     Tile& oldTile = mTiles[i];
