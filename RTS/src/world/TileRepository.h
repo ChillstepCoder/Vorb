@@ -42,6 +42,8 @@ public:
         return sTileIdMapping[name];
     }
 
+    static const std::vector<TileData>& getAllTileData() { return sTileData;  }
+
 private:
     static std::unordered_map<std::string, TileID> sTileIdMapping;
     static std::vector<TileData> sTileData;

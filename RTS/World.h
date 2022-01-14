@@ -59,6 +59,7 @@ public:
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 	void createCityAt(const ui32v2& worldPos);
 
+    void setTileAt(ChunkID id, TileIndex tileIndex, Tile tile);
 	void setTileAt(const ui32v2& worldPos, Tile tile);
     void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
     void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);

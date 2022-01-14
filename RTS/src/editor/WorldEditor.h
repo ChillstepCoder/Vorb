@@ -5,11 +5,15 @@ class Camera3D;
 
 #include "world/ChunkID.h"
 #include "util/IntersectionHit.h"
+
 class Brush;
+class BrushRepository;
 
 enum class WorldEditorEditMode {
     TERRAIN,
     GRASS,
+    TILE,
+    ENTITY,
     COUNT
 };
 
@@ -43,8 +47,17 @@ public:
     void renderUI() const;
 
 private:
+    void renderModeButtons() const;
+    void tryRenderBrushSelect(const BrushRepository& brushRepo) const;
+    void renderTerrainEditUI() const;
+    void renderGrassEditUI() const;
+    void renderTileEditUI() const;
+    void renderEntityEditUI() const;
+
     void updateTerrainEdit();
     void updateGrassEdit();
+    void updateTileEdit();
+    void updateEntityEdit();
     void editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
     void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile);
     f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
@@ -59,6 +72,8 @@ private:
     mutable BrushSettings mTerrainBrushSettings = { nullptr, UINT32_MAX, 5.0f, 0.1f };
     mutable BrushSettings mGrassBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;
+    mutable ui32 mSelectedTile = 0;
+    mutable nString mSelectedEntity = "";
     TerrainPickData mPickData;
 };
 

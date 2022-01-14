@@ -50,6 +50,8 @@ void main() {
     vec3 normal;
     float distance = length(fPosition.xy);
     float distUvLerp = min(distance * 0.001, 1.0);
+    float lerpNoise = -texture(GreyNoise, fUV * 0.05).r * 10.0;
+    float stoneLerpHeight = fHeight - fTBN[2].z * 20.0 + lerpNoise; // Include surface normal val
     
     if (fHeight < 0.0) {
         oColor.rgb = WaterColor;
@@ -59,7 +61,7 @@ void main() {
         vec3 stoneColor = mix(texture(StoneTexture, fUV).rgb, texture(StoneTexture, farStoneUVs).rgb, distUvLerp) * StoneColor;
         
         //stoneColor = stoneColor * 0.00001 + StoneColor;
-        float stoneLerp = clamp((fHeight - 6.0) * 0.5, 0.0, 1.0);
+        float stoneLerp = clamp((stoneLerpHeight - 6.0) * 0.5, 0.0, 1.0);
         oColor.rgb = mix(grassColor, stoneColor, stoneLerp);
 	    normal = mix(vec3(0.0, 0.0, 1.0), texture(StoneNormal, farStoneUVs).xyz * 2.0 - 1.0, stoneLerp);
     }
@@ -72,7 +74,6 @@ void main() {
     
     // Debug distance lerp
     //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
-    
     
     // === Roughness ===
     

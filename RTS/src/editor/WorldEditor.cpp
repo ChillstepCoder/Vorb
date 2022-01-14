@@ -10,7 +10,9 @@
 #include "DebugRenderer.h"
 
 #include "ResourceManager.h"
+#include "ecs/EntityDefinitionRepository.h"
 #include "editor/BrushRepository.h"
+#include "world/TileRepository.h"
 
 #include "Random.h"
 
@@ -34,30 +36,31 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
 
         if (!sDebugOptions.mShowEditor) return;
 
-        if (mCurrentBrushSettings) {
-            if (event.keyCode == VKEY_RIGHT) {
-                mCurrentBrushSettings->brushSize = glm::min(mCurrentBrushSettings->brushSize + 0.2f, MAX_BRUSH_SIZE);
-            }
-            else if (event.keyCode == VKEY_LEFT) {
-                mCurrentBrushSettings->brushSize = glm::max(mCurrentBrushSettings->brushSize - 0.2f, MIN_BRUSH_SIZE);
-            }
-            else if (event.keyCode == VKEY_1) {
-                setEditMode(WorldEditorEditMode::TERRAIN);
-            }
-            else if (event.keyCode == VKEY_2) {
-                setEditMode(WorldEditorEditMode::GRASS);
-            }
+        if (event.keyCode == VKEY_RIGHT) {
+            if (mCurrentBrushSettings) mCurrentBrushSettings->brushSize = glm::min(mCurrentBrushSettings->brushSize + 0.2f, MAX_BRUSH_SIZE);
         }
+        else if (event.keyCode == VKEY_LEFT) {
+            if (mCurrentBrushSettings) mCurrentBrushSettings->brushSize = glm::max(mCurrentBrushSettings->brushSize - 0.2f, MIN_BRUSH_SIZE);
+        }
+        else if (event.keyCode == VKEY_1) {
+            setEditMode(WorldEditorEditMode::TERRAIN);
+        }
+        else if (event.keyCode == VKEY_2) {
+            setEditMode(WorldEditorEditMode::GRASS);
+        }
+        else if (event.keyCode == VKEY_3) {
+            setEditMode(WorldEditorEditMode::TILE);
+        }
+        else if (event.keyCode == VKEY_4) {
+            setEditMode(WorldEditorEditMode::ENTITY);
+        }
+        static_assert((int)WorldEditorEditMode::COUNT == 4);
        
     });
 }
 
 void WorldEditor::update(const Camera3D& camera) {
     const f32v3& pickRay = sDebugOptions.mMousePickRay;
-
-    if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
-        return;
-    }
 
     mPickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(camera, sDebugOptions.mMousePickRay);
 
@@ -67,6 +70,12 @@ void WorldEditor::update(const Camera3D& camera) {
     else if (mEditMode == WorldEditorEditMode::GRASS) {
         updateGrassEdit();
     }
+    else if (mEditMode == WorldEditorEditMode::TILE) {
+        updateTileEdit();
+    }
+    else if (mEditMode == WorldEditorEditMode::ENTITY) {
+        updateEntityEdit();
+    }
 }
 
 void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
@@ -74,9 +83,16 @@ void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
         return;
     }
 
-    f32v3 origin = mPickData.hit.position - f32v3(mCurrentBrushSettings->brushSize, mCurrentBrushSettings->brushSize, 0.0f);
-    f32v2 dims(mCurrentBrushSettings->brushSize * 2.0f);
-    DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
+    if (mCurrentBrushSettings) {
+        f32v3 origin = mPickData.hit.position - f32v3(mCurrentBrushSettings->brushSize, mCurrentBrushSettings->brushSize, 0.0f);
+        f32v2 dims(mCurrentBrushSettings->brushSize * 2.0f);
+        DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
+    }
+    else {
+        f32v3 origin = f32v3((int)mPickData.hit.position.x, (int)mPickData.hit.position.y, mPickData.hit.position.z);
+        f32v2 dims(1.0f);
+        DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
+    }
 }
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
@@ -92,19 +108,47 @@ void WorldEditor::renderUI() const {
     ImGui::Begin("World Editor", &sDebugOptions.mShowEditor, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ui32 ID = 10;
 
+    renderModeButtons();
+
+    switch (mEditMode) {
+        case WorldEditorEditMode::TERRAIN:
+            renderTerrainEditUI();
+            break;
+        case WorldEditorEditMode::GRASS:
+            renderGrassEditUI();
+            break;
+        case WorldEditorEditMode::TILE:
+            renderTileEditUI();
+            break;
+        case WorldEditorEditMode::ENTITY:
+            renderEntityEditUI();
+            break;
+        default:
+            assert(false);
+    }
+
+    ImGui::NewLine();
+    tryRenderBrushSelect(brushRepo);
+
+    ImGui::End();
+    checkGlError("WorldEditor::renderUI()");
+}
+
+
+void WorldEditor::renderModeButtons() const {
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
         ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-        ImGui::Button("Terrain"); ImGui::SameLine();
+        ImGui::Button("Terrain");
         ImGui::PopStyleColor(3);
     }
     else {
         if (ImGui::Button("Terrain")) {
             setEditMode(WorldEditorEditMode::TERRAIN);
         }
-        ImGui::SameLine();
     }
+    ImGui::SameLine();
 
     if (mEditMode == WorldEditorEditMode::GRASS) {
         ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
@@ -116,57 +160,121 @@ void WorldEditor::renderUI() const {
     else if (ImGui::Button("Grass")) {
         setEditMode(WorldEditorEditMode::GRASS);
     }
+    ImGui::SameLine();
 
-    ImGui::Text("Edit mode");
-    if (mEditMode == WorldEditorEditMode::TERRAIN) {
-        if (ImGui::RadioButton("Lower", mTerrainEditState == TerrainEditState::LOWER_TERRAIN)) {
-            mTerrainEditState = TerrainEditState::LOWER_TERRAIN;
-        }
-        if (ImGui::RadioButton("Raise", mTerrainEditState == TerrainEditState::RAISE_TERRAIN)) {
-            mTerrainEditState = TerrainEditState::RAISE_TERRAIN;
-        }
-        if (ImGui::RadioButton("Flatten", mTerrainEditState == TerrainEditState::FLATTEN_TERRAIN)) {
-            mTerrainEditState = TerrainEditState::FLATTEN_TERRAIN;
-        }
-        ImGui::SliderFloat("Brush Size", &mTerrainBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Brush Strength", &mTerrainBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
+    if (mEditMode == WorldEditorEditMode::TILE) {
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
+        ImGui::Button("Tile");
+        ImGui::PopStyleColor(3);
     }
-    else if (mEditMode == WorldEditorEditMode::GRASS) {
-        if (ImGui::RadioButton("Add", mGrassEditState == GrassEditState::ADD)) {
-            mGrassEditState = GrassEditState::ADD;
-        }
-        if (ImGui::RadioButton("Remove", mGrassEditState == GrassEditState::REMOVE)) {
-            mGrassEditState = GrassEditState::REMOVE;
-        }
-        ImGui::SliderFloat("Brush Size", &mGrassBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Brush Strength", &mGrassBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
+    else if (ImGui::Button("Tile")) {
+        setEditMode(WorldEditorEditMode::TILE);
     }
+    ImGui::SameLine();
 
+    if (mEditMode == WorldEditorEditMode::ENTITY) {
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
+        ImGui::Button("Entity");
+        ImGui::PopStyleColor(3);
+    }
+    else if (ImGui::Button("Entity")) {
+        setEditMode(WorldEditorEditMode::ENTITY);
+    }
+}
 
-    ImGui::NewLine();
-    if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
-        const std::vector<Brush>& brushes = brushRepo.getBrushes();
-        ImGui::Indent();
-        ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
-        for (size_t i = 0; i < brushes.size(); ++i) {
-            const Brush& brush = brushes[i];
-            ImGui::TableNextColumn();
-            ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-            if (ImGui::RadioButton(brush.name.c_str(), mCurrentBrushSettings->brushId == i)) {
-                mCurrentBrushSettings->brushId = i;
-                mCurrentBrushSettings->activeBrush = &brush;
+void WorldEditor::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
+    if (mCurrentBrushSettings) {
+        if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
+            const std::vector<Brush>& brushes = brushRepo.getBrushes();
+            ImGui::Indent();
+            ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+            for (size_t i = 0; i < brushes.size(); ++i) {
+                const Brush& brush = brushes[i];
+                ImGui::TableNextColumn();
+                ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+                if (ImGui::RadioButton(brush.name.c_str(), mCurrentBrushSettings->brushId == i)) {
+                    mCurrentBrushSettings->brushId = i;
+                    mCurrentBrushSettings->activeBrush = &brush;
+                }
+                ImGui::TableNextColumn();
+                ImGui::Image((ImTextureID)brush.texture, ImVec2(50.0f, 50.0f));
             }
-            ImGui::TableNextColumn();
-            ImGui::Image((ImTextureID)brush.texture, ImVec2(50.0f, 50.0f));
+            ImGui::EndTable();
+            ImGui::Unindent();
         }
-        ImGui::EndTable();
-        ImGui::Unindent();
     }
+}
 
-    ImGui::End();
+void WorldEditor::renderTerrainEditUI() const {
+    ImGui::Text("Edit mode");
+    if (ImGui::RadioButton("Lower", mTerrainEditState == TerrainEditState::LOWER_TERRAIN)) {
+        mTerrainEditState = TerrainEditState::LOWER_TERRAIN;
+    }
+    if (ImGui::RadioButton("Raise", mTerrainEditState == TerrainEditState::RAISE_TERRAIN)) {
+        mTerrainEditState = TerrainEditState::RAISE_TERRAIN;
+    }
+    if (ImGui::RadioButton("Flatten", mTerrainEditState == TerrainEditState::FLATTEN_TERRAIN)) {
+        mTerrainEditState = TerrainEditState::FLATTEN_TERRAIN;
+    }
+    ImGui::SliderFloat("Brush Size", &mTerrainBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Brush Strength", &mTerrainBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_TERRAIN, MAX_BRUSH_STRENGTH_TERRAIN, "%.3f", ImGuiSliderFlags_Logarithmic);
+}
+
+
+void WorldEditor::renderGrassEditUI() const {
+    ImGui::Text("Edit mode");
+    if (ImGui::RadioButton("Add", mGrassEditState == GrassEditState::ADD)) {
+        mGrassEditState = GrassEditState::ADD;
+    }
+    if (ImGui::RadioButton("Remove", mGrassEditState == GrassEditState::REMOVE)) {
+        mGrassEditState = GrassEditState::REMOVE;
+    }
+    ImGui::SliderFloat("Brush Size", &mGrassBrushSettings.brushSize, MIN_BRUSH_SIZE, MAX_BRUSH_SIZE, "%.3f", ImGuiSliderFlags_Logarithmic);
+    ImGui::SliderFloat("Brush Strength", &mGrassBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
+}
+
+void WorldEditor::renderTileEditUI() const {
+    ImGui::Text("Tile select");
+    const std::vector<TileData>& allData = TileRepository::getAllTileData();
+    ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+    for (size_t i = 0; i < allData.size(); ++i) {
+        const TileData& tileData = allData[i];
+        ImGui::TableNextColumn();
+        if (ImGui::RadioButton(tileData.name.c_str(), mSelectedTile == i)) {
+            mSelectedTile = i;
+        }
+        ImGui::TableNextColumn();
+        //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
+    }
+    ImGui::EndTable();
+}
+
+void WorldEditor::renderEntityEditUI() const {
+    ImGui::Text("Select entity");
+    const EntityDefinitionMap& entityDefs = mWorld.getResourceManager().getEntityDefinitionRepository().getAllEntityDefinitions();
+    const std::vector<TileData>& allData = TileRepository::getAllTileData();
+    ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+    for (auto&& it : entityDefs) {
+        ImGui::TableNextColumn();
+        if (ImGui::RadioButton(it.first.c_str(), mSelectedEntity == it.first)) {
+            mSelectedEntity = it.first;
+        }
+        ImGui::TableNextColumn();
+        //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
+    }
+    ImGui::EndTable();
 }
 
 void WorldEditor::updateTerrainEdit() {
+
+    if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
+        return;
+    }
+
     //PreciseTimer timer;
     // Pick terrain
     //std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
@@ -210,6 +318,10 @@ void WorldEditor::updateTerrainEdit() {
 
 void WorldEditor::updateGrassEdit() {
 
+    if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
+        return;
+    }
+
     if (mPickData.hit.didHit()) {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
             PreciseTimer timer;
@@ -239,6 +351,24 @@ void WorldEditor::updateGrassEdit() {
                 }
             }
         }
+    }
+}
+
+void WorldEditor::updateTileEdit() {
+
+    if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
+        ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
+        TileIndex tileIndex((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH);
+        Tile tile;
+        tile.baseZPosition = mPickData.hit.position.z;
+        tile.topLayer = mSelectedTile;
+        mWorld.setTileAt(chunkID, tileIndex, tile);
+    }
+}
+
+void WorldEditor::updateEntityEdit() {
+    if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
+        mWorld.createEntity(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mSelectedEntity);
     }
 }
 
@@ -309,9 +439,13 @@ void WorldEditor::setEditMode(WorldEditorEditMode mode) const {
         case WorldEditorEditMode::GRASS:
             mCurrentBrushSettings = &mGrassBrushSettings;
             break;
+        case WorldEditorEditMode::TILE:
+        case WorldEditorEditMode::ENTITY:
+            mCurrentBrushSettings = nullptr;
+            break;
         default:
             assert(false);
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 2, "Update");
+    static_assert((int)WorldEditorEditMode::COUNT == 4, "Update");
 }
 

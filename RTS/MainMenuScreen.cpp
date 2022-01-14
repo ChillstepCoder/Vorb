@@ -183,11 +183,6 @@ void MainMenuScreen::build() {
 		constexpr float VEL_MULT = 0.0001f;
 		constexpr float VEL_EXP = 0.4f;
 		const f32v2 screenPos(event.x, event.y);
-        TileHandle pickHandle = mWorld->getTileFromCameraPickVector(*mCamera3D, sDebugOptions.mMousePickRay);
-		if (!pickHandle.isValid()) {
-			return;
-		}
-		f32v2 worldPos = pickHandle.getWorldPos();
 
 		entt::entity newActor = INVALID_ENTITY;
 		if (event.button == vui::MouseButton::LEFT) {
@@ -208,24 +203,24 @@ void MainMenuScreen::build() {
 				}
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
-                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-                if (handle.isValid()) {
-					Chunk* chunk = handle.getMutableChunk();
-					ui8 height = chunk->getTileAt(handle.index).baseZPosition + 5;
-					chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
-                }
-			}
-            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_E)) {
-                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+            /*    TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
                 if (handle.isValid()) {
                     Chunk* chunk = handle.getMutableChunk();
-					ui8 height = chunk->getTileAt(handle.index).baseZPosition;
+                    ui8 height = chunk->getTileAt(handle.index).baseZPosition + 5;
                     chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
-                }
+                }*/
+			}
+            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_E)) {
+                /*TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                if (handle.isValid()) {
+                    Chunk* chunk = handle.getMutableChunk();
+                    ui8 height = chunk->getTileAt(handle.index).baseZPosition;
+                    chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
+                }*/
             }
             else if (vui::InputDispatcher::key.isKeyPressed(VKEY_C)) {
-                TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-				mWorld->createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
+                /*TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                mWorld->createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));*/
             }
 			else {
 				if (mRightClickInteractPopup) {
@@ -235,22 +230,22 @@ void MainMenuScreen::build() {
         }
         else if (event.button == vui::MouseButton::RIGHT) {
 			if (vui::InputDispatcher::key.isKeyPressed(VKEY_P)) {
-                const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
-                mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");
+                /*const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
+                mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");*/
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
-                mWorld->createEntity(worldPos, "villager");
+                /*mWorld->createEntity(worldPos, "villager");*/
 			}
             else {
                 if (mRightClickInteractPopup) {
                     mRightClickInteractPopup.reset();
 				}
 				else {
-					WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
-					// Right click picking
-					mSelectedTilePosition = worldPos;
-					// Enable context menu
-					mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+					//WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
+					//// Right click picking
+					//mSelectedTilePosition = worldPos;
+					//// Enable context menu
+					//mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
 				}
 			}
 		}

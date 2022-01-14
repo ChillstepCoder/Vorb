@@ -10,6 +10,7 @@ DECL_VIO(class IOManager);
 struct EntityDefinition;
 class EntityComponentSystem;
 class ResourceManager;
+typedef std::unordered_map<nString, std::unique_ptr<EntityDefinition>> EntityDefinitionMap;
 
 class EntityDefinitionRepository
 {
@@ -20,8 +21,10 @@ public:
     void loadEntityDefinitionFile(const vio::Path& filePath);
     const EntityDefinition& getDefinition(const nString& typeName);
 
+    const EntityDefinitionMap& getAllEntityDefinitions() const { return mEntityDefinitions; }
+
 private:
-    std::unordered_map<nString, std::unique_ptr<EntityDefinition>> mEntityDefinitions;
+    EntityDefinitionMap mEntityDefinitions;
 
     vio::IOManager& mIoManager;
 };
