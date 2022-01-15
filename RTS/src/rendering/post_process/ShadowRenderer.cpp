@@ -260,6 +260,13 @@ void ShadowRenderer::useShadowBuffer() {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 }
 
+void ShadowRenderer::clearShadowTexture(vg::GBuffer* activeGBuffer) {
+    mShadowBlurGBuffers[0].useGeometry();
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    activeGBuffer->useGeometry();
+}
+
 vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos) {
 
     // Mip it

@@ -334,13 +334,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Terrain
-    // TODO: Frustum cull the AABB for each patch
-    mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
-    for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
-        terrainQuadtree.render(camera, mTerrainMaterial->mProgram);
-    }
-
     // Tiles
     mChunkRenderer->renderTiles(mWorld, camera);
 
@@ -375,6 +368,12 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     mChunkRenderer->renderBillboards(mWorld, camera);
     if (!sDebugOptions.mHideGrass) {
         mChunkRenderer->renderGrass(mWorld, camera);
+    }
+
+    // Terrain
+    mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
+    for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+        terrainQuadtree.render(camera, mTerrainMaterial->mProgram);
     }
 
     if (!sDebugOptions.mHideCharacters) {
@@ -435,6 +434,10 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer, camera.getPosition());
 
         mActiveGBuffer->useGeometry();
+    }
+    else {
+        // No shadow bleed from previous frames
+        mShadowRenderer->clearShadowTexture(mActiveGBuffer);
     }
 
     // Particles

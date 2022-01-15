@@ -14,6 +14,7 @@ enum class WorldEditorEditMode {
     GRASS,
     TILE,
     ENTITY,
+    CITY,
     COUNT
 };
 
@@ -27,6 +28,12 @@ enum class TerrainEditState {
 enum class GrassEditState {
     ADD,
     REMOVE,
+    COUNT
+};
+
+enum class CityEditState {
+    NONE,
+    CREATE,
     COUNT
 };
 
@@ -53,11 +60,14 @@ private:
     void renderGrassEditUI() const;
     void renderTileEditUI() const;
     void renderEntityEditUI() const;
+    void renderCityEditUI() const;
 
     void updateTerrainEdit();
     void updateGrassEdit();
     void updateTileEdit();
     void updateEntityEdit();
+    void updateCityEdit();
+
     void editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
     void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile);
     f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
@@ -69,6 +79,7 @@ private:
     mutable WorldEditorEditMode mEditMode = WorldEditorEditMode::TERRAIN;
     mutable TerrainEditState mTerrainEditState = TerrainEditState::RAISE_TERRAIN;
     mutable GrassEditState mGrassEditState = GrassEditState::ADD;
+    mutable CityEditState mCityEditState = CityEditState::CREATE;
     mutable BrushSettings mTerrainBrushSettings = { nullptr, UINT32_MAX, 5.0f, 0.1f };
     mutable BrushSettings mGrassBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;

@@ -47,6 +47,8 @@ public:
 
     // Building bounds are a series of corner segments
     ui32AABB2 mAABB;
+    f32 mZPosFloor;
+    f32 mZPosRoof;
     std::vector<RoomNode> mGraph;
     BitArray mOwnedTilesInAABB;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;

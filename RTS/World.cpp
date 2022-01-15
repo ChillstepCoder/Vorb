@@ -52,6 +52,7 @@ const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add whe
 
 
 World::World(ResourceManager& resourceManager) :
+	mWorldGrid(*this),
 	mResourceManager(resourceManager)
 {
     // Init generation
@@ -285,6 +286,17 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
 		}
 		worldPos.y += spanY;
 	}
+}
+
+void World::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+    for (auto&& quadtree : mTerrainTrees) {
+        quadtree.onDataChanged(pos, brushRadius);
+    }
+    for (Chunk* chunk : mActiveChunks) {
+        if (chunk->mChunkRenderData.mGrassLod) {
+            chunk->mChunkRenderData.mGrassLod->onDataChanged(pos, brushRadius);
+        }
+    }
 }
 
 void World::updateClientEcsData(Cartesian worldLookCardinalDirection) {

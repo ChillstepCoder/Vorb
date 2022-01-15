@@ -10,6 +10,12 @@
 #include "camera/Camera3D.h"
 #include "DebugRenderer.h"
 
+// TODO: move
+#include "rendering/ChunkGrassQuadtree.h"
+#include "world/HeightmapTerrainQuadtree.h"
+
+#include "World.h"
+
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
 // point p with respect to triangle (a, b, c)
@@ -57,7 +63,7 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
     return f32v3(1.0f - p.x - p.y, p.x, p.y);
 }
 
-WorldGrid::WorldGrid() {
+WorldGrid::WorldGrid(World& world) : mWorld(world) {
     for (ui32 i = 0; i < numChunks(); ++i) {
         mChunks[i].init(ChunkID(i), *this);
     }
@@ -165,41 +171,113 @@ void WorldGrid::releaseHeightDataAt(ChunkID id) {
     }
 }
 
-void WorldGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height) {
-    HeightmapPatch& patch = mHeightData[id.id];
-    if (patch.isDone() && patch.mRefCount) {
-        HeightmapPatchData& data = *patch.mHeightData;
-        data.data[vertIndex] = height;
-        // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
-        if (height > data.aabb.pos.z + data.aabb.height) {
-            data.aabb.height = height - data.aabb.pos.z;
-            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+void WorldGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
+
+    setHeightAtInternal(id, vertIndex, height, dir);
+
+    // Update duplicate verts (TODO: should we do this?)
+    const ui32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+    const ui32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+    if (x == 0) {
+        // update left duplicate verts
+        const ChunkID leftId = id.getLeftID();
+        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 1;
+        setHeightAtInternal(leftId, newIndex, height, dir);
+    }
+    else if (x == HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+        // update right duplicate verts
+        const ChunkID rightId = id.getRightID();
+        const ui32 newIndex = vertIndex - HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1;
+        setHeightAtInternal(rightId, newIndex, height, dir);
+    }
+    if (y == 0) {
+        // update bottom duplicate verts
+        const ChunkID bottomId = id.getBottomID();
+        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+        setHeightAtInternal(bottomId, newIndex, height, dir);
+    }
+    else if (y == HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+        const ChunkID topId = id.getTopID();
+        const ui32 newIndex = vertIndex - HEIGHTMAP_VERT_SIZE_PER_CHUNK + HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+        setHeightAtInternal(topId, newIndex, height, dir);
+    }
+    
+}
+
+void WorldGrid::setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
+
+    const ChunkID id(worldPos);
+    const f32v2 offset = worldPos - id.getWorldPos();
+    const ui32 vertX = (ui32)offset.x / HEIGHTMAP_QUAD_SIZE;
+    const ui32 vertY = (ui32)offset.y / HEIGHTMAP_QUAD_SIZE;
+    const ui32 vertIndex = vertX + vertY * HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+
+    // TODO: Handle triangle rotation instead of always flattening the entire quad
+
+    // Bottom left
+    setHeightAt(id, vertIndex, height, dir);
+    // Bottom right
+    if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+        setHeightAt(id, vertIndex + 1, height, dir);
+    }
+    else {
+        setHeightAt(id.getLeftID(), vertIndex - HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1, height, dir);
+    }
+
+    // Top Left
+    if (vertY < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+        setHeightAt(id, vertIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK, height, dir);
+    }
+    else {
+        setHeightAt(id.getTopID(), vertIndex - HEIGHTMAP_VERT_SIZE_PER_CHUNK + HEIGHTMAP_VERT_WIDTH_PER_CHUNK, height, dir);
+    }
+
+    // Top Right
+    if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK && vertY < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+        setHeightAt(id, vertIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1, height, dir);
+    }
+    else {
+        ChunkID nextChunk = id;
+        ui32 nextIndex = vertIndex;
+        if (vertX < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+            ++nextIndex;
         }
-        else if (height < data.aabb.pos.z) {
-            data.aabb.height += data.aabb.pos.z - height;
-            data.aabb.pos.z = height;
-            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        else {
+            nextIndex = nextIndex + 1 - HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+            nextChunk = nextChunk.getRightID();
         }
+        if (vertY < HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+            nextIndex += HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+        }
+        else {
+            nextIndex = nextIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - HEIGHTMAP_VERT_SIZE_PER_CHUNK;
+            nextChunk = nextChunk.getTopID();
+        }
+        setHeightAt(nextChunk, nextIndex, height, dir);
     }
 }
 
 void WorldGrid::adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust) {
     HeightmapPatch& patch = mHeightData[id.id];
     setHeightAt(id, vertIndex, patch.mHeightData->data[vertIndex] + adjust);
-    if (vertIndex % HEIGHTMAP_VERT_WIDTH_PER_CHUNK == 0) {
-        // update left duplicate verts
-        const ChunkID leftId = id.getLeftID();
-        const HeightmapPatch& leftPatch = mHeightData[leftId.id];
-        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 1;
-        setHeightAt(leftId, newIndex, leftPatch.mHeightData->data[newIndex] + adjust);
+}
+
+void WorldGrid::flattenAABB(const ui32AABB2& aabb, f32 flattenHeight) {
+    std::set<ui32> dirtyChunks;
+    for (ui32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
+        for (ui32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
+            ChunkID id(f32v2(x, y));
+            dirtyChunks.insert(id.id);
+            f32v2 worldPosChunk = id.getWorldPos();
+            f32v2 offset = f32v2(x, y) - worldPosChunk;
+            ui32 vertIndex = (ui32)offset.x / HEIGHTMAP_QUAD_SIZE + ((ui32)offset.y / HEIGHTMAP_QUAD_SIZE) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+            setHeightAt(id, vertIndex, flattenHeight);
+        }
     }
-    if (vertIndex / HEIGHTMAP_VERT_WIDTH_PER_CHUNK == 0) {
-        // update bottom duplicate verts
-        const ChunkID bottomId = id.getBottomID();
-        const HeightmapPatch& bottomPatch = mHeightData[bottomId.id];
-        const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
-        setHeightAt(bottomId, newIndex, bottomPatch.mHeightData->data[newIndex] + adjust);
-    }
+
+    const f32v2 aabbCenter(aabb.getCenter());
+    const f32 aabbDiagonalRadius = sqrt(SQ(aabb.dims.x * 0.5f) + SQ(aabb.dims.y * 0.5f));
+    mWorld.dirtyTerrainFromBrush(aabbCenter, aabbDiagonalRadius);
 }
 
 f32 WorldGrid::getHeightAtVert(ChunkID id, const ui32v2& vertPos) const {
@@ -372,6 +450,38 @@ f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex
     return glm::min(glm::min(glm::min(bl, br), tl), tr);
 }
 
+
+void WorldGrid::setHeightAtInternal(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
+    HeightmapPatch& patch = mHeightData[id.id];
+    if (patch.isDone() && patch.mRefCount) {
+        HeightmapPatchData& data = *patch.mHeightData;
+        switch (dir) {
+            case TerrainHeightSetDirection::ANY:
+                data.data[vertIndex] = height;
+                break;
+            case TerrainHeightSetDirection::RAISE:
+                if (height > data.data[vertIndex]) data.data[vertIndex] = height;
+                break;
+            case TerrainHeightSetDirection::LOWER:
+                if (height < data.data[vertIndex]) data.data[vertIndex] = height;
+                break;
+            default:
+                assert(false);
+                break;
+
+        }
+        // TODO: Update AABB/Sphere for dependencies such as terrain meshes?
+        if (height > data.aabb.pos.z + data.aabb.height) {
+            data.aabb.height = height - data.aabb.pos.z;
+            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        }
+        else if (height < data.aabb.pos.z) {
+            data.aabb.height += data.aabb.pos.z - height;
+            data.aabb.pos.z = height;
+            data.boundingSphere = boundingSphereFromAABB(data.aabb);
+        }
+    }
+}
 
 f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY) {
     // Select which triangle we are looking at, taking into account orientation

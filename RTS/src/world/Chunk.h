@@ -59,6 +59,7 @@ enum class NeighborIndex {
 
 class Chunk {
 	friend class World;
+	friend class WorldGrid;
 	friend class WorldEditor;
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;

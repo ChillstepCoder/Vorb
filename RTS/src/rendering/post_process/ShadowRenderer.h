@@ -20,6 +20,7 @@ public:
     void beginFrame(const Camera3D& camera, const f32v3& sunPositionWorld);
 
     void useShadowBuffer();
+    void clearShadowTexture(vg::GBuffer* activeGBuffer);
 
     vg::GBuffer* renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos);
 

@@ -11,14 +11,14 @@
 #include "rendering/QuadMesh.h"
 #include "rendering/TriangleMesh.h"
 
+#include "options/DebugOptions.h"
+
 //CGal
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polygon_2.h>
 #include <CGAL/create_straight_skeleton_2.h>
 #include <boost/shared_ptr.hpp>
 #include <CGAL/Triangulation_2.h>
-
-#define DEBUG_BUILDING_RENDER 0
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2                   CgalPoint;
@@ -126,7 +126,6 @@ void BuildingMesher::buildRoofMesh(const Building& building)
 {
     const ui32AABB2& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mOwnedTilesInAABB;
-    constexpr f32 BASE_ROOF_HEIGHT = 3.0005f;
     constexpr f32 ROOF_HEIGHT_MULT = 0.3f;
     BuildingRenderData& renderData = building.mRenderData;
     renderData.mRoofMeshDirty = false;
@@ -223,9 +222,9 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             y = he->opposite()->vertex()->point().y();
             const f32 h2 = he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT;
             sHeightMap[f32v2(x, y)] = h2;
-            if (IsEnabled<DEBUG_BUILDING_RENDER>()) {
-                f32v3 p1(start.x + x, start.y + y, BASE_ROOF_HEIGHT + h1);
-                f32v3 p2(start.x + x, start.y + y, BASE_ROOF_HEIGHT + h2);
+            if (sDebugOptions.mRoofDebug) {
+                f32v3 p1(start.x + x, start.y + y, building.mZPosRoof + h1);
+                f32v3 p2(start.x + x, start.y + y, building.mZPosRoof + h2);
                 DebugRenderer::drawLineBetweenPoints(p1, p2, color4(1.0f, 1.0f, 1.0f, 1.0f), 5000);
             }
             he = he->next();
@@ -249,7 +248,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                 }
                 f32 deg1 = sHeightMap[f32v2(x,y)];
 
-                verts[i].pos = f32v3(start.x + x, start.y + y, BASE_ROOF_HEIGHT + deg1);
+                verts[i].pos = f32v3(start.x + x, start.y + y, building.mZPosRoof + deg1);
 
                 // Extrude bottom verts
                 if (deg1 == 0.0f) {
@@ -258,7 +257,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                     verts[i].pos.y += normal.y;
                 }
 
-                if (IsEnabled<DEBUG_BUILDING_RENDER>()) {
+                if (sDebugOptions.mRoofDebug) {
                     DebugRenderer::drawWireQuad(verts[i].pos = - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color4(1.0f, 0.0f, 1.0f, 1.0f), 5000);
                 }
 

@@ -54,8 +54,21 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
         else if (event.keyCode == VKEY_4) {
             setEditMode(WorldEditorEditMode::ENTITY);
         }
-        static_assert((int)WorldEditorEditMode::COUNT == 4);
+        else if (event.keyCode == VKEY_5) {
+            setEditMode(WorldEditorEditMode::CITY);
+        }
+        static_assert((int)WorldEditorEditMode::COUNT == 5);
        
+    });
+
+    vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
+        if (!sDebugOptions.mShowEditor) return;
+
+        if (event.button == vorb::ui::MouseButton::LEFT) {
+            if (mEditMode == WorldEditorEditMode::CITY) {
+                updateCityEdit();
+            }
+        }
     });
 }
 
@@ -76,6 +89,7 @@ void WorldEditor::update(const Camera3D& camera) {
     else if (mEditMode == WorldEditorEditMode::ENTITY) {
         updateEntityEdit();
     }
+    // City edit runs on mouse up
 }
 
 void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
@@ -123,9 +137,13 @@ void WorldEditor::renderUI() const {
         case WorldEditorEditMode::ENTITY:
             renderEntityEditUI();
             break;
+        case WorldEditorEditMode::CITY:
+            renderCityEditUI();
+            break;
         default:
             assert(false);
     }
+    static_assert((int)WorldEditorEditMode::COUNT == 5);
 
     ImGui::NewLine();
     tryRenderBrushSelect(brushRepo);
@@ -136,12 +154,17 @@ void WorldEditor::renderUI() const {
 
 
 void WorldEditor::renderModeButtons() const {
+    
+    // Helper for selected button styling
+#define PUSH_SELECTED_STYLE() \
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f)); \
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f)); \
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
+#define POP_SELECTED_STYLE() ImGui::PopStyleColor(3);
+#define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_SELECTED_STYLE();
+
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-        ImGui::Button("Terrain");
-        ImGui::PopStyleColor(3);
+        SELECTED_BUTTON(ImGui::Button("Terrain"));
     }
     else {
         if (ImGui::Button("Terrain")) {
@@ -151,11 +174,7 @@ void WorldEditor::renderModeButtons() const {
     ImGui::SameLine();
 
     if (mEditMode == WorldEditorEditMode::GRASS) {
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-        ImGui::Button("Grass");
-        ImGui::PopStyleColor(3);
+        SELECTED_BUTTON(ImGui::Button("Grass"));
     }
     else if (ImGui::Button("Grass")) {
         setEditMode(WorldEditorEditMode::GRASS);
@@ -163,11 +182,7 @@ void WorldEditor::renderModeButtons() const {
     ImGui::SameLine();
 
     if (mEditMode == WorldEditorEditMode::TILE) {
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-        ImGui::Button("Tile");
-        ImGui::PopStyleColor(3);
+        SELECTED_BUTTON(ImGui::Button("Tile"));
     }
     else if (ImGui::Button("Tile")) {
         setEditMode(WorldEditorEditMode::TILE);
@@ -175,15 +190,21 @@ void WorldEditor::renderModeButtons() const {
     ImGui::SameLine();
 
     if (mEditMode == WorldEditorEditMode::ENTITY) {
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-        ImGui::Button("Entity");
-        ImGui::PopStyleColor(3);
+        SELECTED_BUTTON(ImGui::Button("Entity"));
     }
     else if (ImGui::Button("Entity")) {
         setEditMode(WorldEditorEditMode::ENTITY);
     }
+    ImGui::SameLine();
+
+    if (mEditMode == WorldEditorEditMode::CITY) {
+        SELECTED_BUTTON(ImGui::Button("City"));
+    }
+    else if (ImGui::Button("City")) {
+        setEditMode(WorldEditorEditMode::CITY);
+    }
+
+    static_assert((int)WorldEditorEditMode::COUNT == 5);
 }
 
 void WorldEditor::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
@@ -269,6 +290,20 @@ void WorldEditor::renderEntityEditUI() const {
     ImGui::EndTable();
 }
 
+void WorldEditor::renderCityEditUI() const {
+    ImGui::Text("Edit mode");
+    if (ImGui::RadioButton("None", mCityEditState == CityEditState::NONE)) {
+        mCityEditState = CityEditState::NONE;
+    }
+    if (ImGui::RadioButton("Create", mCityEditState == CityEditState::CREATE)) {
+        mCityEditState = CityEditState::CREATE;
+    }
+    ImGui::Separator();
+    ImGui::Text("Toggles");
+    ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
+    ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
+}
+
 void WorldEditor::updateTerrainEdit() {
 
     if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
@@ -302,15 +337,7 @@ void WorldEditor::updateTerrainEdit() {
             }
 
             // Notify all terrain stuff to update
-            for (auto&& quadtree : mWorld.mTerrainTrees) {
-                quadtree.onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
-            }
-            for (Chunk* chunk : mWorld.mActiveChunks) {
-                if (chunk->mChunkRenderData.mGrassLod) {
-                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
-                }
-            }
-
+            mWorld.dirtyTerrainFromBrush(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
             std::cout << "TERRAIN FLOOD MS " << timer.stop() << std::endl;
         }
     }
@@ -355,12 +382,11 @@ void WorldEditor::updateGrassEdit() {
 }
 
 void WorldEditor::updateTileEdit() {
-
     if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
         ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
         TileIndex tileIndex((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH);
         Tile tile;
-        tile.baseZPosition = mPickData.hit.position.z;
+        tile.baseZPosition = mPickData.hit.position.z + 3.0f;
         tile.topLayer = mSelectedTile;
         mWorld.setTileAt(chunkID, tileIndex, tile);
     }
@@ -369,6 +395,15 @@ void WorldEditor::updateTileEdit() {
 void WorldEditor::updateEntityEdit() {
     if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
         mWorld.createEntity(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mSelectedEntity);
+    }
+}
+
+void WorldEditor::updateCityEdit() {
+    // Happens on mouse up
+    if (mPickData.hit.didHit() && mCityEditState == CityEditState::CREATE) {
+        f32v2 worldPos(mPickData.hit.position.x, mPickData.hit.position.y);
+        TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
+        mWorld.createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
     }
 }
 
@@ -441,11 +476,12 @@ void WorldEditor::setEditMode(WorldEditorEditMode mode) const {
             break;
         case WorldEditorEditMode::TILE:
         case WorldEditorEditMode::ENTITY:
+        case WorldEditorEditMode::CITY:
             mCurrentBrushSettings = nullptr;
             break;
         default:
             assert(false);
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 4, "Update");
+    static_assert((int)WorldEditorEditMode::COUNT == 5, "Update");
 }
 

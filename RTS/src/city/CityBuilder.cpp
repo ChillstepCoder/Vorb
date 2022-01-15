@@ -8,6 +8,8 @@
 #include "World.h"
 #include "world/TileRepository.h"
 
+#include "DebugRenderer.h"
+
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"
 
@@ -62,12 +64,11 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     ui32v2 worldPos = bp.bottomLeftWorldPos;
 
-   
-    static int BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
-        0, // NONE
-        0, // FLOOR
-        0, // DOOR
-        3, // WALL
+    static f32 BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
+        0.0f, // NONE
+        0.0f, // FLOOR
+        0.0f, // DOOR
+        3.0f, // WALL
     };
     static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
 
@@ -77,23 +78,59 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     newBuilding.mAABB.dims = bp.dims;
     newBuilding.mOwnedTilesInAABB.resizeAndZero(bp.dims.x * bp.dims.y);
 
-    // Set world tiles and track occupied bits
+    // === Flatten terrain ===
+    // Compute mean height of height grid
+    f32 meanHeight = 0.0f;
+    ui32 total = 0;
+    WorldGrid& grid = mWorld.getWorldGrid();
     for (ui32 y = 0; y < bp.dims.y; ++y) {
         for (ui32 x = 0; x < bp.dims.x; ++x) {
             const ui32 index = y * bp.dims.x + x;
             const BlueprintTileType type = bp.tiles[index].type;
             if (type != BlueprintTileType::NONE) {
-                const TileID tile = bp.tileIDs[enum_cast(type)];
-                if (tile != TILE_ID_NONE) {
-                    const int height = BUILD_HEIGHTS[enum_cast(type)];
-                    // TODO: Always ground??
-                    newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
-                    mWorld.setTileAt(worldPos + ui32v2(x, y), Tile(tile, TILE_ID_NONE, TILE_ID_NONE, height, TILE_FLAG_IS_BUILDING));
+                f32v2 pos(worldPos.x + x + 0.5f, worldPos.y + y + 0.5f);
+                f32 h;
+                if (grid.tryComputeHeightAtPoint(pos, &h)) {
+                    meanHeight += h;
+                    ++total;
+                }
+                else {
+                    assert(false); // Failed to compute height for city builder debug build instant
                 }
             }
         }
     }
+    meanHeight /= (f32)total;
+
+    // Flatten heightmap
+    //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
+
+    // === Set world tiles, flatten heightmap, and track occupied bits ===
+    for (ui32 y = 0; y < bp.dims.y; ++y) {
+        for (ui32 x = 0; x < bp.dims.x; ++x) {
+            const ui32 index = y * bp.dims.x + x;
+            const BlueprintTileType type = bp.tiles[index].type;
+            if (type != BlueprintTileType::NONE) {
+                // Flatten heightmap
+                f32v2 tileWorldPos = worldPos + ui32v2(x, y);
+                grid.setHeightAt(tileWorldPos, meanHeight);
+
+                const TileID tile = bp.tileIDs[enum_cast(type)];
+                if (tile != TILE_ID_NONE) {
+                    const f32 height = BUILD_HEIGHTS[enum_cast(type)] + meanHeight;
+                    // TODO: Always ground??
+                    newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
+                    mWorld.setTileAt(tileWorldPos, Tile(TILE_ID_NONE, TILE_ID_NONE, tile, height, TILE_FLAG_IS_BUILDING));
+                }
+            }
+        }
+    }
+
+    // Notify terrain data change (TODO: More precise, automatic)
+    mWorld.dirtyTerrainFromBrush(f32v2(newBuilding.mAABB.getCenter()), glm::length(f32v2(newBuilding.mAABB.dims)) * 0.5f);
     
+    newBuilding.mZPosFloor = meanHeight;
+    newBuilding.mZPosRoof = meanHeight + 3.0005f;
     newBuilding.mGraph = std::move(bp.nodes);
     newBuilding.mFunction = bp.desc.function;
     newBuilding.mPlotIndex = bp.plotIndex;
@@ -108,9 +145,14 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     CityRoad& road = *mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
+    WorldGrid& grid = mWorld.getWorldGrid();
     for (ui32 y = road.aabb.y; y < road.aabb.y + road.aabb.height; ++y) {
         for (ui32 x = road.aabb.x; x < road.aabb.x + road.aabb.width; ++x) {
-            mWorld.setTileAt(ui32v2(x, y), Tile(tileId, TILE_ID_NONE, TILE_ID_NONE, 0));
+            f32v2 pos(x + 0.5f, y + 0.5f);
+            f32 h;
+            if (grid.tryComputeHeightAtPoint(pos, &h)) {
+                mWorld.setTileAt(ui32v2(x, y), Tile(tileId, TILE_ID_NONE, TILE_ID_NONE, h));
+            }
         }
     }
 }

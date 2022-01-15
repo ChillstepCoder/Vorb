@@ -25,7 +25,7 @@ struct DebugOptions {
     // Grass
     QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
     bool mDebugGrassLod = false;
-    bool mHideGrass = false;
+    bool mHideGrass = true;
     // Terrain
     f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
@@ -53,11 +53,12 @@ struct DebugOptions {
     bool mWireframe = false;
     bool mChunkBoundaries = false;
     bool mCities = false;
+    bool mRoofDebug = false;
     bool mNavGraph = false;
     bool mHideCharacters = false;
     bool mShowPhysicsDebug = false;
-    bool mShowTweaker = false;
-    bool mShowEditor = false;
+    bool mShowTweaker = true;
+    bool mShowEditor = true;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;

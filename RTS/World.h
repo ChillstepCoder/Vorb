@@ -87,13 +87,16 @@ public:
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
-	const WorldGrid& getWorldGrid() const { return mWorldGrid; }
+    WorldGrid& getWorldGrid() { return mWorldGrid; }
+    const WorldGrid& getWorldGrid() const { return mWorldGrid; }
     const NavGraph& getNavGraph() const { return *mNavGraph; }
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
 
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
 	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func);
+
+	void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
 	void updateClientEcsData(Cartesian worldLookCardinalDirection);
