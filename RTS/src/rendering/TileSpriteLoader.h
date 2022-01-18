@@ -13,7 +13,6 @@ struct SpriteData;
 
 struct SpriteMetaData {
     ui8v4 cellRect = ui16v4(0, 0, 1, 1);
-    color3 lodColor = NO_LOD_COLOR;
     ui16v4 pixelRect = ui16v4(0);
     f32v2 dimsMeters = f32v2(1.0f); // World size
     TileTextureMethod method = TileTextureMethod::SIMPLE;
@@ -23,7 +22,7 @@ struct SpriteMetaData {
     ui32v2 bunchCount = ui32v2(1);
     f32v2 sizeRange = f32v2(1.0f);
     bool randFlip = false;
-    bool opaque   = false;
+    bool transparent = false;
 };
 KEG_TYPE_DECL(SpriteMetaData);
 

@@ -45,7 +45,14 @@ struct ChunkRenderData {
 	bool mIsVisible = false;
 };
 
-enum class NeighborIndex {
+enum class NeighborIndex4 {
+	BOTTOM = 0,
+	LEFT   = 1,
+	RIGHT  = 2,
+	TOP    = 3
+};
+
+enum class NeighborIndex8 {
 	BOTTOM_LEFT  = 0,
 	BOTTOM       = 1,
 	BOTTOM_RIGHT = 2,
@@ -95,7 +102,8 @@ public:
     const TileCollision& getTileCollisionAt(const TileIndex index) const;
 	std::vector<TileCollision>& getAllTileCollision() { return mCollision; }
 	// Get neighbors starting from top left
-	void getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const;
+    void getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const;
+    void getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]) const;
 
 	Chunk& getLeftNeighbor() const;
 	Chunk& getTopNeighbor() const;

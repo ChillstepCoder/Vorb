@@ -45,3 +45,18 @@ TileCollision Tile::buildTileCollision() const {
 
     return collision;
 }
+
+bool Tile::canAddTile(const TileData& tile) const {
+    return layers[tile.layer] == TILE_ID_NONE;
+}
+
+void Tile::addTile(const TileData& tile) {
+    layers[tile.layer] = tile.id;
+}
+
+bool Tile::tryAddTile(const TileData& tile) {
+    if (!canAddTile(tile)) {
+        return false;
+    }
+    addTile(tile);
+}

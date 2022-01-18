@@ -20,9 +20,8 @@ KEG_TYPE_DEF(SpriteMetaData, SpriteMetaData, kt) {
     kt.addValue("cell_rect", keg::Value::basic(offsetof(SpriteMetaData, cellRect), keg::BasicType::UI8_V4));
     kt.addValue("dims_meters", keg::Value::basic(offsetof(SpriteMetaData, dimsMeters), keg::BasicType::F32_V2));
     kt.addValue("name", keg::Value::basic(offsetof(SpriteMetaData, name), keg::BasicType::STRING));
-    kt.addValue("lod_color", keg::Value::basic(offsetof(SpriteMetaData, lodColor), keg::BasicType::UI8_V3));
     kt.addValue("rand_flip", keg::Value::basic(offsetof(SpriteMetaData, randFlip), keg::BasicType::BOOL));
-    kt.addValue("opaque", keg::Value::basic(offsetof(SpriteMetaData, opaque), keg::BasicType::BOOL));
+    kt.addValue("transparent", keg::Value::basic(offsetof(SpriteMetaData, transparent), keg::BasicType::BOOL));
     kt.addValue("offset", keg::Value::basic(offsetof(SpriteMetaData, offset), keg::BasicType::F32_V2));
     kt.addValue("variant_count", keg::Value::basic(offsetof(SpriteMetaData, variantCount), keg::BasicType::UI32_V2));
     kt.addValue("bunch_count", keg::Value::basic(offsetof(SpriteMetaData, bunchCount), keg::BasicType::UI32_V2));
@@ -70,17 +69,13 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
         SpriteData sprite;
         sprite.texture = mTextureAtlas.getAtlasTexture();
         sprite.dimsMeters = metaData.dimsMeters;
-        sprite.lodColor = metaData.lodColor;
         sprite.method = metaData.method;
         sprite.offset = metaData.offset;
         if (metaData.randFlip) {
             sprite.flags |= SPRITEDATA_FLAG_RAND_FLIP;
         }
-        if (metaData.opaque) {
-            sprite.flags |= SPRITEDATA_FLAG_OPAQUE;
-        }
-        if (sprite.lodColor != NO_LOD_COLOR) {
-            sprite.flags |= SPRITEDATA_FLAG_RENDER_LOD;
+        if (metaData.transparent) {
+            sprite.flags |= SPRITEDATA_FLAG_TRANSPARENT;
         }
 
         // Determine how many tiles we need to map to the atlas, by finding the AABB in tile units

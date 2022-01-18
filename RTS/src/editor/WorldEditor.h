@@ -84,6 +84,7 @@ private:
     mutable BrushSettings mGrassBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };
     mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;
     mutable ui32 mSelectedTile = 0;
+    mutable f32 mGroundTileOffset = 1.0f;
     mutable nString mSelectedEntity = "";
     TerrainPickData mPickData;
 };

@@ -159,17 +159,21 @@ void createGrassMesh(
 
 void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) {
 
+    bool hasAquired = true;
     if (!mMeshes[patchIndex]) {
+        hasAquired = false;
         mMeshes[patchIndex] = std::make_unique<GrassBillboardMesh>();
     }
     ++mRefCount;
     mChunk.incRef();
 
-    assert(!patch.isCrossfading() && /*!patch.isMeshing() &&*/ !patch.isMeshDirty() && patch.isActive());
+    assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
     const ChunkID id = getChunkIDForPatchIndex(patchIndex);
     if (const HeightmapPatchData* heightData = mWorldGrid.tryGetHeightDataAt(id)) {
-        mWorldGrid.aquireHeightData(id);
+        if (!hasAquired) {
+            mWorldGrid.aquireHeightData(id);
+        }
         // Instantly generate
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
@@ -186,6 +190,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
         });
     }
     else {
+        assert(!hasAquired);
         // Wait for the terrain generator to generate our chunk
         mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
             const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(id);

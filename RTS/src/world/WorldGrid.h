@@ -19,9 +19,12 @@ enum HeightmapPatchFlags : ui32 {
 };
 
 struct HeightmapPatchData {
+    HeightmapPatchData(ChunkID id) : id(id) {};
+
     f32 data[HEIGHTMAP_VERT_SIZE_PER_CHUNK];
     BoundingSphere boundingSphere;
     f32AABB3 aabb;
+    ChunkID id;
 };
 
 enum class TerrainHeightSetDirection {
@@ -57,10 +60,16 @@ public:
     static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
 
     void requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()> callback);
+
+    void requestPaddedHeightDataGenAndAquireAt(ChunkID id, std::function<void()> callback);
+
     const HeightmapPatchData* getHeightDataAt(ChunkID id) const;
     const HeightmapPatchData* tryGetHeightDataAt(ChunkID id) const;
     const HeightmapPatchData* aquireHeightData(ChunkID id);
+    bool tryAquirePaddedHeightDataAt(ChunkID id);
+    void getPaddedHeightDataAt(ChunkID id, OUT const HeightmapPatchData* paddedHeightData[9]);
     void releaseHeightDataAt(ChunkID id);
+    void releasePaddedHeightDataAt(ChunkID id);
     void setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
     void setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
     void adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust);
@@ -74,11 +83,16 @@ public:
     static f32 computeHeightAtPoint(ChunkID id, const f32* heightData, const f32v2& worldPos);
     static f32 computeHeightAtChunkOffset(const f32* heightData, const f32v2& chunkOffset);
     static f32 computeCenterHeightAtTile(const f32* heightData, TileIndex tileIndex);
+    f32 computeCenterHeightAtTile(ChunkID id, TileIndex tileIndex) const;
 
     static f32 computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex);
+    f32 computeMinHeightAtTile(ChunkID id, TileIndex tileIndex) const;
 
 private:
+    void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
+    void onPatchFinishedGenerating(ChunkID id);
     void setHeightAtInternal(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir);
+    void computeRequiredPaddedIDs(ChunkID id, OUT ChunkID requiredIds[9]) const;
 
     static f32 interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY);
 
@@ -87,6 +101,9 @@ private:
     std::vector<ui32> mActiveHeightmapPatches;
     World& mWorld;
 
-    std::map<ChunkID, std::list<std::function<void()>>> mFinishCallbacks; // Runs when generation is finished
+    std::map<ui32, std::list<std::function<void()>>> mFinishCallbacks; // Runs when generation is finished
+    std::map<ui32, std::list<std::function<void()>>> mPaddedFinishCallbacks; // Runs when generation is finished
+    std::map<ui32, ui32> mPaddedGenWaitCount;
+    std::map<ui32, std::vector<ChunkID>> mPaddedGenListeners; // A list of listeners waiting for generation of a chunk id
     
 };

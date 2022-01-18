@@ -39,6 +39,10 @@ struct ChunkID {
         return pos.x == 0 || pos.y == 0 || pos.x == WorldData::WORLD_WIDTH_CHUNKS - 1 || pos.y == WorldData::WORLD_WIDTH_CHUNKS - 1;
     }
 
+    bool isInvalid() const {
+        return pos.x >= WorldData::WORLD_WIDTH_CHUNKS || pos.y >= WorldData::WORLD_WIDTH_CHUNKS;
+    }
+
     ui32v2 pos;
     ui32 id;
 

@@ -348,7 +348,8 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         tile.colliderDimsXY = glm::clamp(tile.colliderDimsXY, -0.5f, 0.5f);
 
         TileID nextId = (TileID)TileRepository::sTileData.size();
-        assert(nextId < 0xffff); // Make sure we dont roll over
+        tile.id = nextId;
+        assert(nextId < UINT16_MAX); // Make sure we dont roll over
         assert(TileRepository::sTileIdMapping.find(key) == TileRepository::sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
         tile.spriteData = getSprite(tile.textureName);

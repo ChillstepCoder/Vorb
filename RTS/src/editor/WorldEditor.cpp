@@ -259,6 +259,7 @@ void WorldEditor::renderGrassEditUI() const {
 }
 
 void WorldEditor::renderTileEditUI() const {
+    ImGui::SliderFloat("Ground tile Z offset", &mGroundTileOffset, 0.0f, 10.0f, "%.2f");
     ImGui::Text("Tile select");
     const std::vector<TileData>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
@@ -337,7 +338,7 @@ void WorldEditor::updateTerrainEdit() {
             }
 
             // Notify all terrain stuff to update
-            mWorld.dirtyTerrainFromBrush(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
+            mWorld.dirtyTerrainFromBrush(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
             std::cout << "TERRAIN FLOOD MS " << timer.stop() << std::endl;
         }
     }
@@ -386,8 +387,17 @@ void WorldEditor::updateTileEdit() {
         ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
         TileIndex tileIndex((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH);
         Tile tile;
-        tile.baseZPosition = mPickData.hit.position.z + 3.0f;
-        tile.topLayer = mSelectedTile;
+        const TileData& data = TileRepository::getTileData(mSelectedTile);
+        tile.addTile(data);
+
+        if (data.layer == TILE_LAYER_GROUND) {
+            const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(chunkID, tileIndex);
+            tile.baseZPosition = height + mGroundTileOffset;
+        }
+        else {
+            const f32 height = mWorld.mWorldGrid.computeCenterHeightAtTile(chunkID, tileIndex);
+            tile.baseZPosition = height;
+        }
         mWorld.setTileAt(chunkID, tileIndex, tile);
     }
 }

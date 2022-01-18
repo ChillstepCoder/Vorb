@@ -149,37 +149,46 @@ const TileCollision& Chunk::getTileCollisionAt(const TileIndex index) const {
     return mCollision[index];
 }
 
-void Chunk::getTileNeighbors(const TileIndex index, OUT Tile neighbors[8]) const {
+void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const {
 
     // TODO: Branchless interior nodes? :thinkies:
 
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-			neighbors[(int)NeighborIndex::BOTTOM] = bottom.tile;
+			neighbors[(int)NeighborIndex8::BOTTOM] = bottom.tile;
 			TileHandle bottomLeft = bottom.chunk->getLeftTileHandle(bottom.index);
-            neighbors[(int)NeighborIndex::BOTTOM_LEFT] = bottomLeft.tile;
+            neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = bottomLeft.tile;
             TileHandle bottomRight = bottom.chunk->getRightTileHandle(bottom.index);
-            neighbors[(int)NeighborIndex::BOTTOM_RIGHT] = bottomRight.tile;
+            neighbors[(int)NeighborIndex8::BOTTOM_RIGHT] = bottomRight.tile;
 		}
 	}
 
 	// Left
-    neighbors[(int)NeighborIndex::LEFT] = getLeftTileHandle(index).tile;
+    neighbors[(int)NeighborIndex8::LEFT] = getLeftTileHandle(index).tile;
 
     // Right
-    neighbors[(int)NeighborIndex::RIGHT] = getRightTileHandle(index).tile;
+    neighbors[(int)NeighborIndex8::RIGHT] = getRightTileHandle(index).tile;
 
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            neighbors[(int)NeighborIndex::TOP] = top.tile;
+            neighbors[(int)NeighborIndex8::TOP] = top.tile;
             TileHandle topLeft = top.chunk->getLeftTileHandle(top.index);
-            neighbors[(int)NeighborIndex::TOP_LEFT] = topLeft.tile;
+            neighbors[(int)NeighborIndex8::TOP_LEFT] = topLeft.tile;
             TileHandle topRight = top.chunk->getRightTileHandle(top.index);
-            neighbors[(int)NeighborIndex::TOP_RIGHT] = topRight.tile;
+            neighbors[(int)NeighborIndex8::TOP_RIGHT] = topRight.tile;
         }
     }
+
+}
+
+void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]) const {
+
+    neighbors[(int)NeighborIndex4::BOTTOM] = getBottomTileHandle(index);
+    neighbors[(int)NeighborIndex4::LEFT] = getLeftTileHandle(index);
+    neighbors[(int)NeighborIndex4::RIGHT] = getRightTileHandle(index);
+    neighbors[(int)NeighborIndex4::TOP] = getTopTileHandle(index);
 
 }
 

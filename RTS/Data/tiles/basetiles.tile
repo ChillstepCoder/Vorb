@@ -1,20 +1,12 @@
-grass1:
-  tex: grass_4k
-grass2:
-  tex: grass2
-rock1:
-  tex: con_squash
-  col: box
-  recipe:
-    - item: wood_raw
-      count: 5
 wood_wall_gothic:
+  layer: 0
   tex: wood_wall_gothic
   col: box
   recipe:
     - item: wood_raw
       count: 5
 bricks1:
+  layer: 1
   tex: bricks1
   recipe:
     - item: wood_raw
@@ -27,5 +19,6 @@ door:
     - item: wood_raw
       count: 3
 tall_grass:
+  layer: 1
   tex: grass_variants
   shape: Thin

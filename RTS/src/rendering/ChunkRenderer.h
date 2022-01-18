@@ -11,12 +11,13 @@ class TextureAtlas;
 class MaterialRenderer;
 class World;
 class Material;
+class WorldGrid;
 
 
 // TODO: IRendererBase?
 class ChunkRenderer {
 public:
-	ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
+	ChunkRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
     void renderTiles(const World& world, const Camera3D& camera);

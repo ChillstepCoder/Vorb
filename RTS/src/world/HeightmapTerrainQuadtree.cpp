@@ -119,7 +119,7 @@ void createTerrainMesh(
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
-    const HeightmapPatchData* heightData
+    const HeightmapPatchData* paddedHeightData[9]
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
@@ -128,114 +128,122 @@ void createTerrainMesh(
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
 
     // Copy bounding sphere
-    mesh.setBoundingSphere(heightData->boundingSphere);
+    const HeightmapPatchData* bl = paddedHeightData[0];
+    const HeightmapPatchData* b = paddedHeightData[1];
+    const HeightmapPatchData* br = paddedHeightData[2];
+    const HeightmapPatchData* l = paddedHeightData[3];
+    const HeightmapPatchData* c = paddedHeightData[4];
+    const HeightmapPatchData* r = paddedHeightData[5];
+    const HeightmapPatchData* tl = paddedHeightData[6];
+    const HeightmapPatchData* t = paddedHeightData[7];
+    const HeightmapPatchData* tr = paddedHeightData[8];
+    mesh.setBoundingSphere(c->boundingSphere);
 
     // Center memcopy row by row
     for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
-        memcpy(&paddedHeightfield[y + 1][1], &heightData->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+        memcpy(&paddedHeightfield[y + 1][1], &c->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
     }
     static_assert(TERRAIN_MESH_WIDTH_VERTS == HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
 
     // === Generate edges ===
     // Left and right edge
-    for (int y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
+    for (int y = 1; y < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++y) {
         { // Left
             constexpr ui32 x = 0;
-            const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            paddedHeightfield[y][x] = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            paddedHeightfield[y][x] = l->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 2];
         }
         { // Right
             constexpr ui32 x = TERRAIN_MESH_PADDED_WIDTH_VERTS - 1;
-            const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            paddedHeightfield[y][x] = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
+            paddedHeightfield[y][x] = r->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1];
         }
     }
-    // Bottom and top 
-    // -1 cause corners were got by left and right
-    for (int x = 1; x < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++x) {
-        { // Bottom
-            constexpr ui32 y = 0;
-            const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            paddedHeightfield[y][x] = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-        }
-        { // Top
-            constexpr ui32 y = TERRAIN_MESH_PADDED_WIDTH_VERTS - 1;
-            const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
-            paddedHeightfield[y][x] = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-        }
-    }
+    // Bottom
+    memcpy(&paddedHeightfield[0][1], &b->data[HEIGHTMAP_VERT_SIZE_PER_CHUNK - 2 * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+    // Top
+    memcpy(&paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][1], &t->data[HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+    // 4 Corners
+    // Bottom left
+    paddedHeightfield[0][0] = bl->data[HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 2];
+    // Bottom right
+    paddedHeightfield[0][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = br->data[HEIGHTMAP_VERT_SIZE_PER_CHUNK - 2 * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1];
+    // Top Left
+    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][0] = tl->data[HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 2];
+    // Top Right
+    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = tr->data[HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1];
+
+    // Build
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
 {
+    bool hasAquired = true;
     if (!mMeshes[patchIndex]) {
+        hasAquired = false; // If we dont have a mesh, we haven't aquired yet
         mMeshes[patchIndex] = std::make_unique<TerrainMesh>();
         assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
     }
     ++mRefCount;
-    assert(!patch.isCrossfading() && /*!patch.isMeshing() &&*/ !patch.isMeshDirty() && patch.isActive());
+    assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
     if (lod == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         // At highest LOD we ask the heightmap generator to handle it
         const ChunkID id = getChunkIDForPatchIndex(patchIndex);
-        if (const HeightmapPatchData* heightData = mWorldGrid->tryGetHeightDataAt(id)) {
-            mWorldGrid->aquireHeightData(id);
+        // Sentinal IDs never mesh
+        if (id.isSentinelID()) {
+            finishMesh(patchIndex);
+            return;
+        }
+        //const HeightmapPatchData* paddedHeightData[9]; NO! INVALID STACK MEMORY!
+        if (hasAquired || mWorldGrid->tryAquirePaddedHeightDataAt(id)) {
             // Instantly generate
-            Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, heightData](ThreadPoolWorkerData*) {
-                // PreciseTimer timer;
-                createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, heightData);
-                // std::cout << "TERRAIN 2: " << timer.stop() << std::endl;
+            Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {
+                createMesh(id, patchIndex, lod);
             }, [this, &patch, patchIndex]() {
-
-                mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
-                onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
-                // Update refcount
-                --mRefCount;
+                finishMesh(patchIndex);
             });
         }
         else {
             // Wait for the terrain generator to generate our chunk
-            mWorldGrid->requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
-                const HeightmapPatchData* heightData = mWorldGrid->getHeightDataAt(id);
-                Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, heightData](ThreadPoolWorkerData*) {
-                   // PreciseTimer timer;
-                    createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, heightData);
-                   // std::cout << "TERRAIN 2: " << timer.stop() << std::endl;
+            mWorldGrid->requestPaddedHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
+                Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {
+                    createMesh(id, patchIndex, lod);
                 }, [this, &patch, patchIndex]() {
-
-                    mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
-                    onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
-                    // Update refcount
-                    --mRefCount;
+                    finishMesh(patchIndex);
                 });
             });
         }
     }
     else {
         // At lower LODs we have to regenerate every time
+        // TODO: we actually shouldnt do this.. it ignores diffs
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex](ThreadPoolWorkerData*) {
-
-
-           // PreciseTimer timer;
             createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos);
-            //std::cout << "TERRAIN 1: " << timer.stop() << std::endl;
         }, [this, &patch, patchIndex]() {
-
-            mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
-            onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
-            // Update refcount
-            --mRefCount;
+            finishMesh(patchIndex);
         });
     }
 }
 
+void HeightmapTerrainQuadtree::createMesh(const ChunkID id, ui32 patchIndex, ui32 lod) {
+    const HeightmapPatchData* paddedHeightData[9];
+    mWorldGrid->getPaddedHeightDataAt(id, paddedHeightData);
+    createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, paddedHeightData);
+}
+
+void HeightmapTerrainQuadtree::finishMesh(ui32 patchIndex) {
+    mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+    onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
+    // Update refcount
+    --mRefCount;
+}
+
 void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
 {
-    // Lowest level has reference to heightmap
+    // Only highest LOD has reference to heightmap
     if (QUADTREE_LOD_FROM_INDEX[patchIndex] == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         const ChunkID id = getChunkIDForPatchIndex(patchIndex);
-        mWorldGrid->releaseHeightDataAt(id);
+        mWorldGrid->releasePaddedHeightDataAt(id);
     }
     mMeshes[patchIndex].reset();
 }

@@ -30,10 +30,10 @@ constexpr float FLORA_RENDER_DISTANCE_2 = SQ(320.0f);
 constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
 static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
-ChunkRenderer::ChunkRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
+ChunkRenderer::ChunkRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
     mResourceManager(resourceManager),
     mMaterialRenderer(materialRenderer),
-    mMesher(std::make_unique<ChunkMesher>(resourceManager.getTextureAtlas()))
+    mMesher(std::make_unique<ChunkMesher>(worldGrid, resourceManager.getTextureAtlas()))
 {
 }
 

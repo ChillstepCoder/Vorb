@@ -26,6 +26,10 @@ public:
 
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
+
+    void createMesh(const ChunkID id, ui32 patchIndex, ui32 lod);
+    void finishMesh(ui32 patchIndex);
+
     void freeMeshForPatch(ui32 patchIndex) override;
 
     std::unique_ptr<TerrainMesh> mMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];

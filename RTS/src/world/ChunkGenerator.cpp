@@ -26,9 +26,6 @@ constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUT
 Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
 
     // TODO: This seems wrong
-    static TileID grass1 = TileRepository::getTile("grass1");
-    static TileID grass2 = TileRepository::getTile("grass2");
-    static TileID rock1 = TileRepository::getTile("rock1");
     static TileID hugeTree = TileRepository::getTile("tree_huge");
     static TileID bigTree = TileRepository::getTile("tree_large");
     static TileID smallTree = TileRepository::getTile("tree_small");
@@ -47,7 +44,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    tile.baseZPosition = height;
+    tile.baseZPosition = 0.0f;
 
     if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
         *grass = 1;

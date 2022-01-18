@@ -6,18 +6,19 @@
 #include "item/ItemStack.h"
 
 struct TileData {
-    SpriteData spriteData;
+    TileID id;
     TileCollisionShape collisionShape = TileCollisionShape::NONE;
     f32 colliderHeight = 1.0f;
     f32v2 colliderDimsXY = f32v2(0.5f, -1.0f);
+    ui8 layer = 2;
     ui8 pathWeight = 255;
     ui8v2 dims = ui8v2(1); // 4x4 is max size
-    ui8 rootPos = 0;
+    TileShape shape = TileShape::BLOCK;
+    TileResource resource = TileResource::NONE;
+    SpriteData spriteData;
     std::string name;
     std::string textureName;
     std::string resourceName;
-    TileShape shape = TileShape::BLOCK;
-    TileResource resource = TileResource::NONE;
     std::vector<ItemDrop> itemDrops;
     std::vector<ItemStack> recipe;
     Array<ItemDropDef> itemDropsFileData;

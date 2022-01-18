@@ -8,6 +8,8 @@ constexpr int TILE_LAYER_MID = 1;
 constexpr int TILE_LAYER_TOP = 2;
 constexpr int TILE_LAYER_COUNT = 3;
 
+struct TileData;
+
 enum class TileLayer {
 	Ground = 0,
 	Mid = 1,
@@ -17,12 +19,13 @@ enum class TileLayer {
 static_assert(TILE_LAYER_COUNT == enum_cast(TileLayer::COUNT));
 
 enum TileFlags : ui8 {
-	TILE_FLAG_IS_INTERACTING = 1 << 0,
-	TILE_FLAG_IS_STOCKPILE   = 1 << 1, // True if owned by a stockpile
-	TILE_FLAG_IN_CITY        = 1 << 2, // True if inside city limits
-	TILE_FLAG_HAS_ITEM_STACK = 1 << 3,
-	TILE_FLAG_IS_BUILDING    = 1 << 4,
-	TILE_FLAG_TERM           = 1 << 7,
+	TILE_FLAG_IS_INTERACTING       = 1 << 0,
+	TILE_FLAG_IS_STOCKPILE         = 1 << 1, // True if owned by a stockpile
+	TILE_FLAG_IN_CITY              = 1 << 2, // True if inside city limits
+	TILE_FLAG_HAS_ITEM_STACK       = 1 << 3,
+	TILE_FLAG_IS_BUILDING          = 1 << 4,
+	TILE_FLAG_IS_LARGE_OBJECT_ROOT = 1 << 5, // Render root for large objects
+	TILE_FLAG_TERM                 = 1 << 7,
 };
 static_assert(TILE_FLAG_TERM <= 0x80); // Must fit into a byte
 
@@ -40,13 +43,17 @@ struct Tile {
 	// TODO: This should be a pointer
 	TileCollision buildTileCollision() const;
 
+	bool canAddTile(const TileData& tile) const;
+	void addTile(const TileData& tile);
+	bool tryAddTile(const TileData& tile);
+
 	union {
 		struct {
 			TileID groundLayer; // Walls, floors, foundation     // ALWAYS BOX COLLISION
-			TileID midLayer;    // Carpet, boards, flora         // NO COLLIDE ONLY
+			TileID midLayer;    // Rugs, things on top of furniture, flora  // NO COLLIDE ONLY
 			TileID topLayer;    // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
-		};
-		TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
+        };
+        TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
 	};
     ui8 tileFlags = 0;
     f32 baseZPosition = 0;

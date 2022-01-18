@@ -73,9 +73,13 @@ void WorldGrid::requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()
     assert(IS_MAIN_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     assert(!patch.isDone());
+
+    // Requesting generating locks the height data
+    ++patch.mRefCount;
+
     if (!patch.mHeightData) {
         // TODO: Recycle
-        patch.mHeightData = new HeightmapPatchData();
+        patch.mHeightData = new HeightmapPatchData(id);
     }
     if (!patch.isGenerating()) {
         // Always extra ref while generating
@@ -84,49 +88,72 @@ void WorldGrid::requestHeightDataGenAndAquireAt(ChunkID id, std::function<void()
         f32v2 position = id.getWorldPos();
 
         Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
-
-            // AABB calculation
-            f32AABB3& aabb = patch.mHeightData->aabb;
-            aabb.dims.x = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
-            aabb.dims.y = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
-            aabb.pos.x = position.x;
-            aabb.pos.y = position.y;
-            f32 minZ = FLT_MAX;
-            f32 maxZ = FLT_MIN;
-
-            for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++y) {
-                for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++x) {
-                    const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);
-                    f32 height = sWorldGen.getHeightAtPos(vertPos);
-                    if (height > maxZ) maxZ = height;
-                    if (height < minZ) minZ = height;
-                    patch.mHeightData->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x] = height;
-                }
-            }
-
-            aabb.pos.z = minZ;
-            aabb.dims.z = maxZ - minZ;
-            patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
-
+            generateHeightDataPatch(patch, position);
         }, [this, id]() {
-            HeightmapPatch& patch = mHeightData[id.id];
-            mActiveHeightmapPatches.push_back(id.id);
-            patch.mFlags = HEIGHTMAP_PATCH_FLAG_DONE;
-            --patch.mRefCount;
-            auto&& it = mFinishCallbacks.find(id);
-            if (it != mFinishCallbacks.end()) {
-                for (auto&& func : it->second) {
-                    func();
-                }
-                mFinishCallbacks.erase(it);
-            }
+            onPatchFinishedGenerating(id);
         });
     }
     if (callback) {
-        mFinishCallbacks[id].push_back(callback);
+        mFinishCallbacks[id.id].push_back(callback);
     }
-    // Requesting generating locks the height data
-    ++patch.mRefCount;
+}
+
+void WorldGrid::requestPaddedHeightDataGenAndAquireAt(ChunkID id, std::function<void()> callback) {
+    assert(IS_MAIN_THREAD());
+    ChunkID requiredIds[9];
+    computeRequiredPaddedIDs(id, requiredIds);
+
+    int totalRequired = 0;
+    for (int i = 0; i < 9; ++i) {
+        ChunkID requiredId = requiredIds[i];
+        if (requiredId.isInvalid()) {
+            continue;
+        }
+        HeightmapPatch& patch = mHeightData[requiredId.id];
+
+        // Requesting generating locks the height data
+        ++patch.mRefCount;
+
+        if (patch.isDone()) {
+            continue;
+        }
+
+        ++totalRequired;
+
+        mPaddedGenListeners[requiredId.id].push_back(id);
+
+        if (!patch.mHeightData) {
+            // TODO: Recycle
+            patch.mHeightData = new HeightmapPatchData(requiredId);
+        }
+        if (!patch.isGenerating()) {
+            // Always extra ref while generating
+            ++patch.mRefCount;
+            patch.mFlags |= HEIGHTMAP_PATCH_FLAG_GENERATING;
+            f32v2 position = requiredId.getWorldPos();
+
+            Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
+                generateHeightDataPatch(patch, position);
+            }, [this, requiredId]() {
+                onPatchFinishedGenerating(requiredId);
+            });
+        }
+    }
+
+    if (callback) {
+        if (totalRequired == 0) {
+            callback();
+        }
+        else {
+            // Keep track of how many neighbors we are waiting on to generate before callback runs
+            assert(mPaddedGenWaitCount.find(id.id) == mPaddedGenWaitCount.end());
+            mPaddedGenWaitCount[id.id] = totalRequired;
+            mPaddedFinishCallbacks[id.id].push_back(callback);
+        }
+    }
+    else if (totalRequired) {
+        mPaddedGenWaitCount[id.id] = totalRequired;
+    }
 }
 
 const HeightmapPatchData* WorldGrid::getHeightDataAt(ChunkID id) const {
@@ -144,15 +171,63 @@ const HeightmapPatchData* WorldGrid::tryGetHeightDataAt(ChunkID id) const {
     return nullptr;
 }
 
-const HeightmapPatchData* WorldGrid::aquireHeightData(ChunkID id)
-{
+const HeightmapPatchData* WorldGrid::aquireHeightData(ChunkID id) {
     HeightmapPatch& patch = mHeightData[id.id];
     assert(patch.isDone());
     ++patch.mRefCount;
     return patch.mHeightData;
 }
 
+bool WorldGrid::tryAquirePaddedHeightDataAt(ChunkID id) {
+    ChunkID requiredIds[9];
+    computeRequiredPaddedIDs(id, requiredIds);
+    bool failed = false;
+    for (int i = 0; i < 9; ++i) {
+        const ChunkID& required = requiredIds[i];
+        if (!required.isInvalid()) {
+            if (!mHeightData[required.id].isDone()) {
+                failed = true;
+                break;
+            }
+        }
+    }
+    if (failed) {
+        return false;
+    }
+    else {
+        // Return all data and aquire
+        for (int i = 0; i < 9; ++i) {
+            const ChunkID& required = requiredIds[i];
+            if (!required.isInvalid()) {
+                const HeightmapPatch& patch = mHeightData[required.id];
+                ++mHeightData[required.id].mRefCount;
+            }
+        }
+        return true;
+    }
+}
+
+void WorldGrid::getPaddedHeightDataAt(ChunkID id, OUT const HeightmapPatchData* paddedHeightData[9]) {
+    ChunkID requiredIds[9];
+    computeRequiredPaddedIDs(id, requiredIds);
+    bool failed = false;
+    for (int i = 0; i < 9; ++i) {
+        if (!id.isInvalid()) {
+            const HeightmapPatch& patch = mHeightData[requiredIds[i].id];
+            assert(patch.isDone());
+            paddedHeightData[i] = patch.mHeightData;
+        }
+        else {
+            paddedHeightData[i] = nullptr;
+        }
+    }
+}
+
 void WorldGrid::releaseHeightDataAt(ChunkID id) {
+    // Padded may result in this
+    if (id.isInvalid()) {
+        return;
+    }
     HeightmapPatch& patch = mHeightData[id.id];
     assert(patch.isDone() && patch.mRefCount);
     --patch.mRefCount;
@@ -171,6 +246,17 @@ void WorldGrid::releaseHeightDataAt(ChunkID id) {
     }
 }
 
+void WorldGrid::releasePaddedHeightDataAt(ChunkID id) {
+    // Release the 9 chunks
+    ChunkID bottomId = id.getBottomID();
+    ChunkID topId = id.getTopID();
+    ChunkID requiredIDs[9];
+    computeRequiredPaddedIDs(id, requiredIDs);
+    for (int i = 0; i < 9; ++i) {
+        releaseHeightDataAt(requiredIDs[i]);
+    }
+}
+
 void WorldGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
 
     setHeightAtInternal(id, vertIndex, height, dir);
@@ -183,12 +269,32 @@ void WorldGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeigh
         const ChunkID leftId = id.getLeftID();
         const ui32 newIndex = vertIndex + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 1;
         setHeightAtInternal(leftId, newIndex, height, dir);
+        if (y == 0) {
+            // update bottom left duplicate verts
+            const ui32 cornerIndex = newIndex + HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+            setHeightAtInternal(leftId.getBottomID(), cornerIndex, height, dir);
+        }
+        else if (y == HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+            // update top left duplicate verts
+            const ui32 cornerIndex = newIndex - HEIGHTMAP_VERT_SIZE_PER_CHUNK + HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+            setHeightAtInternal(leftId.getTopID(), cornerIndex, height, dir);
+        }
     }
     else if (x == HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
         // update right duplicate verts
         const ChunkID rightId = id.getRightID();
         const ui32 newIndex = vertIndex - HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1;
         setHeightAtInternal(rightId, newIndex, height, dir);
+        if (y == 0) {
+            // update bottom right duplicate verts
+            const ui32 cornerIndex = newIndex + HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+            setHeightAtInternal(rightId.getBottomID(), cornerIndex, height, dir);
+        }
+        else if (y == HEIGHTMAP_QUAD_WIDTH_PER_CHUNK) {
+            // update top right duplicate verts
+            const ui32 cornerIndex = newIndex - HEIGHTMAP_VERT_SIZE_PER_CHUNK + HEIGHTMAP_VERT_WIDTH_PER_CHUNK;
+            setHeightAtInternal(rightId.getTopID(), cornerIndex, height, dir);
+        }
     }
     if (y == 0) {
         // update bottom duplicate verts
@@ -430,6 +536,16 @@ f32 WorldGrid::computeCenterHeightAtTile(const f32* heightData, TileIndex tileIn
 
 }
 
+f32 WorldGrid::computeCenterHeightAtTile(ChunkID id, TileIndex tileIndex) const {
+    const HeightmapPatch& patch = mHeightData[id.id];
+
+    if (!patch.isDone()) {
+        return 0.0f;
+    }
+
+    return computeCenterHeightAtTile(patch.mHeightData->data, tileIndex);
+}
+
 f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex) {
     f32v2 offset(tileIndex.getX(), tileIndex.getY());
 
@@ -448,6 +564,88 @@ f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex
     const f32 tr = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap), heightData, heightmapXY);
 
     return glm::min(glm::min(glm::min(bl, br), tl), tr);
+}
+
+f32 WorldGrid::computeMinHeightAtTile(ChunkID id, TileIndex tileIndex) const {
+
+    const HeightmapPatch& patch = mHeightData[id.id];
+
+    if (!patch.isDone()) {
+        return 0.0f;
+    }
+
+    return computeMinHeightAtTile(patch.mHeightData->data, tileIndex);
+}
+
+
+void WorldGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {
+    // AABB calculation
+    f32AABB3& aabb = patch.mHeightData->aabb;
+    aabb.dims.x = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
+    aabb.dims.y = HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_WIDTH_PER_CHUNK;
+    aabb.pos.x = position.x;
+    aabb.pos.y = position.y;
+    f32 minZ = FLT_MAX;
+    f32 maxZ = FLT_MIN;
+
+    for (ui32 y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++y) {
+        for (ui32 x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_CHUNK; ++x) {
+            const f32v2 vertPos = f32v2(position.x + x * HEIGHTMAP_QUAD_SIZE, position.y + y * HEIGHTMAP_QUAD_SIZE);
+            f32 height = sWorldGen.getHeightAtPos(vertPos);
+            if (height > maxZ) maxZ = height;
+            if (height < minZ) minZ = height;
+            patch.mHeightData->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + x] = height;
+        }
+    }
+
+    aabb.pos.z = minZ;
+    aabb.dims.z = maxZ - minZ;
+    patch.mHeightData->boundingSphere = boundingSphereFromAABB(aabb);
+}
+
+
+void WorldGrid::onPatchFinishedGenerating(ChunkID id) {
+    HeightmapPatch& patch = mHeightData[id.id];
+    mActiveHeightmapPatches.push_back(id.id);
+    patch.mFlags = HEIGHTMAP_PATCH_FLAG_DONE;
+    --patch.mRefCount;
+    {
+        auto&& it = mFinishCallbacks.find(id.id);
+        if (it != mFinishCallbacks.end()) {
+            for (auto&& func : it->second) {
+                func();
+            }
+            mFinishCallbacks.erase(it);
+        }
+    }
+
+    // See if any other patches were waiting on us for padded data access
+    {
+        auto&& it = mPaddedGenListeners.find(id.id);
+        if (it != mPaddedGenListeners.end()) {
+            //std::cout << "START " << it->second.size() << std::endl;
+            for (auto&& idListener : it->second) {
+                auto&& it2 = mPaddedGenWaitCount.find(idListener.id);
+                assert(it2 != mPaddedGenWaitCount.end());
+                //std::cout << it2->second << " " << idListener.id << std::endl;
+                if (it2->second == 1) {
+                    // Child is done, run any waiting callbacks
+                    mPaddedGenWaitCount.erase(it2);
+                    auto&& it3 = mPaddedFinishCallbacks.find(idListener.id);
+                    if (it3 != mPaddedFinishCallbacks.end()) {
+                        for (auto&& func : it3->second) {
+                            func();
+                        }
+                        mPaddedFinishCallbacks.erase(it3);
+                    }
+                }
+                else {
+                    --it2->second;
+                }
+            }
+            mPaddedGenListeners.erase(it);
+        }
+    }
 }
 
 
@@ -481,6 +679,20 @@ void WorldGrid::setHeightAtInternal(ChunkID id, ui32 vertIndex, f32 height, Terr
             data.boundingSphere = boundingSphereFromAABB(data.aabb);
         }
     }
+}
+
+void WorldGrid::computeRequiredPaddedIDs(ChunkID id, OUT ChunkID requiredIds[9]) const {
+    ChunkID bottomId = id.getBottomID();
+    ChunkID topId = id.getTopID();
+    requiredIds[0] = bottomId.getLeftID();
+    requiredIds[1] = bottomId;
+    requiredIds[2] = bottomId.getRightID();
+    requiredIds[3] = id.getLeftID();
+    requiredIds[4] = id;
+    requiredIds[5] = id.getRightID();
+    requiredIds[6] = topId.getLeftID();
+    requiredIds[7] = topId;
+    requiredIds[8] = topId.getRightID();
 }
 
 f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY) {

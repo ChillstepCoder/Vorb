@@ -187,7 +187,7 @@ void RenderContext::initPostLoad() {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
         mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager());
-        mChunkRenderer = std::make_unique<ChunkRenderer>(mResourceManager, *mMaterialRenderer);
+        mChunkRenderer = std::make_unique<ChunkRenderer>(mWorld.getWorldGrid(), mResourceManager, *mMaterialRenderer);
         mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
@@ -727,8 +727,7 @@ void RenderContext::buildHorizonMesh()
     TileVertex verts[4];
     constexpr float QUAD_WIDTH = 140000.0f;
     constexpr float Z_POS = -6.0f;
-    const color3 waterColor3 = TileRepository::getTileData("water").spriteData.lodColor;
-    const color4 waterColor(waterColor3.r, waterColor3.g, waterColor3.b, 255u);
+    const color4 waterColor(0, 0, 255, 255);
 
     { // Bottom Left
         TileVertex& vbl = verts[0];
