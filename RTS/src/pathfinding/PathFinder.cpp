@@ -4,8 +4,9 @@
 #include "World.h"
 #include "world/TileRepository.h"
 
+#include "options/DebugOptions.h"
+
 #include "DebugRenderer.h"
-#define PATH_DEBUG 1
 
 constexpr ui32 MAX_PATH_LENGTH = 128; //255;
 constexpr ui8 INVALID_PARENT = 0;
@@ -15,6 +16,11 @@ constexpr ui32 MAX_OPEN_LIST_SIZE = MAX_PATH_LENGTH * 8;
 constexpr ui32 HALF_LOOKUP_LIST_WIDTH = MAX_PATH_LENGTH;
 constexpr ui32 LOOKUP_LIST_WIDTH = HALF_LOOKUP_LIST_WIDTH * 2;
 constexpr ui32 LOOKUP_LIST_SIZE = SQ(LOOKUP_LIST_WIDTH);
+
+constexpr ui32 DEBUG_DURATION = 400;
+inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
+    return f32v3(pos2d.x, pos2d.y, worldGrid.tryComputeHeightAtPoint(pos2d));
+}
 
 // Position and index can be inferred
 struct AStarNode {
@@ -231,6 +237,7 @@ const i32v2 NODE_CORNER_NEIGHBORS[9] = {
 std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal) {
     // TODO: Profiling
     PreciseTimer timer;
+    const WorldGrid& worldGrid = world.getWorldGrid();
 
     ui32 debugCount = 0;
 
@@ -279,10 +286,11 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
         const ui32v2 nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
         const TileCollision startCollision = world.getTileCollisionAtWorldPos(nodePoint);
         
-#if PATH_DEBUG == 1
-        if (debugCount > 255) debugCount = 0;
-        DebugRenderer::drawFilledQuad(nodePoint, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), 200, 0);
-#endif
+        if (sDebugOptions.mShowPaths) {
+            if (debugCount > 255) debugCount = 0;
+            f32v3 point3d = helperGet3DPoint(worldGrid, f32v2(nodePoint));
+            DebugRenderer::drawFilledQuad(point3d, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), DEBUG_DURATION, 0);
+        }
 
         // Precompute collision weights and points for neighbors
         ui32v2 nextPoints[8];
@@ -406,6 +414,7 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
 
 
 void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const ui32v2& goal, std::set<std::pair<f32, CoarseAstarNodeID>>& openList, CoarseAstarNodeID parentId, f32 prevG, ui32v2 parentPos) {
+    const WorldGrid& worldGrid = world.getWorldGrid();
     ui32v2 chunkWorldPos = ui32v2(navNode->chunk.getWorldPos());
     for (auto& edge : navNode->edges) {
         ui32v2 position = ui32v2(chunkWorldPos.x + edge.start.getX(), chunkWorldPos.y + edge.start.getY());
@@ -426,7 +435,11 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
         node.position = position;
         node.g = prevG + glm::length(f32v2(node.position) - f32v2(parentPos));
         node.h = getEuclideanHeuristicAtPosition(node.position, goal);
-        DebugRenderer::drawLineBetweenPoints(f32v2(node.position), f32v2(parentPos), color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.2f), 400);
+        if (sDebugOptions.mShowPaths) {
+            f32v3 pos1 = helperGet3DPoint(worldGrid, f32v2(node.position));
+            f32v3 pos2 = helperGet3DPoint(worldGrid, f32v2(parentPos));
+            DebugRenderer::drawLineBetweenPoints(pos1, pos2, color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
+        }
         node.parentIndex = parentId;
         openList.insert(std::make_pair(node.getScore(), newId));
     } 
@@ -437,6 +450,7 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
     PreciseTimer timer;
     std::set<std::pair<f32, CoarseAstarNodeID>> openList;
     std::unique_ptr<CoarsePath> rvPath;
+    const WorldGrid& worldGrid = world.getWorldGrid();
 
     // We pathfind backwards
     const NavNode* startNode = world.tryGetNavNodeAtWorldPos(goal);
@@ -489,10 +503,13 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
         coarseAstarEdgePropagate(world, navNode, totalAstarNodes, sCoarseAstarNodes, start, openList, id, astarNode.g, astarNode.position);
     }
 
-#if PATH_DEBUG == 1
-    DebugRenderer::drawFilledQuad(start, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.2f), 200, 0);
-    DebugRenderer::drawFilledQuad(goal, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 0.2f), 200, 0);
-#endif
+
+    if (sDebugOptions.mShowPaths) {
+        f32v3 start3d = helperGet3DPoint(worldGrid, f32v2(start));
+        DebugRenderer::drawFilledQuad(start3d, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION, 0);
+        f32v3 goal3d = helperGet3DPoint(worldGrid, f32v2(goal));
+        DebugRenderer::drawFilledQuad(goal3d, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 0.6f), DEBUG_DURATION, 0);
+    }
 
     if (!foundGoal) {
         return nullptr;
@@ -522,8 +539,15 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
     // Copy the path
     memcpy(rvPath->points.get(), sPathPointBuffer, pathSize * sizeof(PathPoint));
 
-    for (ui32 i = 1; i < rvPath->numPoints; ++i) {
-        DebugRenderer::drawLineBetweenPoints(f32v2(rvPath->points[i - 1]), f32v2(rvPath->points[i]), color4(1.0f, 1.0f, 0.0f, 0.5f), 400);
+
+    if (sDebugOptions.mShowPaths) {
+        for (ui32 i = 1; i < rvPath->numPoints; ++i) {
+            const ui32v2& a = rvPath->points[i - 1];
+            const ui32v2& b = rvPath->points[i];
+            f32v3 pointA3d = helperGet3DPoint(worldGrid, f32v2(a));
+            f32v3 pointB3d = helperGet3DPoint(worldGrid, f32v2(b));
+            DebugRenderer::drawLineBetweenPoints(pointA3d, pointB3d, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
+        }
     }
 
         // Back propagation

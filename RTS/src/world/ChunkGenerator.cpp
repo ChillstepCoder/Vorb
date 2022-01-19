@@ -26,17 +26,10 @@ constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUT
 Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
 
     // TODO: This seems wrong
-    static TileID hugeTree = TileRepository::getTile("tree_huge");
-    static TileID bigTree = TileRepository::getTile("tree_large");
-    static TileID smallTree = TileRepository::getTile("tree_small");
-    static TileID water = TileRepository::getTile("water");
+    static TileID pineTree = TileRepository::getTile("tree_pine");
 
-    static TileID flowers = TileRepository::getTile("flowers");
-    static TileID flower = TileRepository::getTile("flower");
-    static TileID shrub = TileRepository::getTile("shrub");
-    static TileID smallBush = TileRepository::getTile("small_bush");
-    static TileID bush = TileRepository::getTile("bush");
-    static TileID largeBush = TileRepository::getTile("large_bush");
+    constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
+    constexpr f32 MAX_TREE_HEIGHT = 30.0f;
 
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     f32v2 offsetToCenter(
@@ -45,9 +38,21 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     );
 
     tile.baseZPosition = 0.0f;
-
-    if (grass && Random::getThreadSafef(offsetToCenter.x, worldPos.y) > 0.02f) {
-        *grass = 1;
+    if (height > 0.0f) {
+        // Surface
+        if (grass && height < MAX_GRASS_HEIGHT) {
+            f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
+            if (Random::getThreadSafef(offsetToCenter.x, worldPos.y) * fadeMult > 0.04f) {
+                *grass = 1;
+            }
+        }
+        if (height < MAX_TREE_HEIGHT) {
+            f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
+            f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
+            if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * fadeMult) {
+                tile.topLayer = pineTree;
+            }
+        }
     }
 
     //if (height > 0.3) {

@@ -56,6 +56,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mContinentOutlineNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mHumidityNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise, ID);
+        sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);
         ImGui::EndChild();
         ImGui::NewLine();
         ImGui::PopID();
@@ -113,8 +114,9 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Chunk Boundaries", &sDebugOptions.mChunkBoundaries);
         ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
         ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
-        ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mNavGraph);
+        ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mNavGraphUpdates);
         ImGui::Checkbox("Show Physics Debug", &sDebugOptions.mShowPhysicsDebug);
+        ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
     }
     if (activeGBuffer) {

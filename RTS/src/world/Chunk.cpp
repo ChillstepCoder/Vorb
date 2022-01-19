@@ -216,6 +216,20 @@ void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
      }*/
 }
 
+void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
+    constexpr ui32 DEBUG_DURATION = 100;
+    const f32v2 dims = f32v2(CHUNK_WIDTH);
+    const f32v2 halfDims = dims * 0.5f;
+    const f32v2 offsetFromCenter = editPosition - (mWorldPos + halfDims);
+    if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
+        // This chunk is touched, mark meshes as dirty and pass on
+        if (mChunkRenderData.mGrassLod) {
+            mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
+        }
+        mChunkRenderData.mMeshDirty = true;
+    }
+}
+
 void Chunk::setTileAt(TileIndex i, Tile tile) {
     assert(i < CHUNK_SIZE);
     Tile& oldTile = mTiles[i];

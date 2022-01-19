@@ -776,7 +776,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
+                            f32 zPosition = glm::max(tile.baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getChunkID(), index));
+                            f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
 
                             f32v4 uvs = spriteData.uvs;
                             const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;

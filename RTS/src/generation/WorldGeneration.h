@@ -13,6 +13,7 @@ struct WorldGeneration {
     NoiseFunction mFlowerNoise           = NoiseFunction("Flowers", 5, 0.7, 0.01, {0.0, 0.0}, 1.0, 0.0);
     NoiseFunction mCloudsNoise           = NoiseFunction("Clouds", 5, 0.7, 0.001, {0.0, 0.0}, 1.0, 0.0);
     NoiseFunction mCloudHeightNoise      = NoiseFunction("CloudsHeight", 2, 0.8, 0.001, {4000.0, -5000.0}, 1.0, 0.0);
+    NoiseFunction mForestNoise           = NoiseFunction("Forest Dist", 7, 0.6, 0.002, { 2000, 0 }, 1.0, 0.0);
 
     // === Continent noise modifiers ===
     // Configurable

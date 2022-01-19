@@ -54,11 +54,12 @@ struct DebugOptions {
     bool mChunkBoundaries = false;
     bool mCities = false;
     bool mRoofDebug = false;
-    bool mNavGraph = false;
+    bool mNavGraphUpdates = false;
     bool mHideCharacters = false;
     bool mShowPhysicsDebug = false;
     bool mShowTweaker = true;
     bool mShowEditor = true;
+    bool mShowPaths = true;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;

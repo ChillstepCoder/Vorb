@@ -132,7 +132,7 @@ void MainMenuScreen::build() {
             sDebugOptions.mCities = !sDebugOptions.mCities;
         }
         else if (event.keyCode == VKEY_J) {
-            sDebugOptions.mNavGraph = !sDebugOptions.mNavGraph;
+            sDebugOptions.mNavGraphUpdates = !sDebugOptions.mNavGraphUpdates;
         }
         else if (event.keyCode == VKEY_R && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)) {
 			mResourceManager->reloadMaterials();
@@ -240,12 +240,16 @@ void MainMenuScreen::build() {
                 if (mRightClickInteractPopup) {
                     mRightClickInteractPopup.reset();
 				}
-				else {
-					//WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
-					//// Right click picking
-					//mSelectedTilePosition = worldPos;
-					//// Enable context menu
-					//mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                else {
+                    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
+                    if (pickData.hit.didHit()) {
+                        f32v2 worldPos = f32v2(pickData.hit.position.x, pickData.hit.position.y);
+                        WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
+                        // Right click picking
+                        mSelectedTilePosition = worldPos;
+                        // Enable context menu
+                        mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                    }
 				}
 			}
 		}

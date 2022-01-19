@@ -81,7 +81,7 @@ void ChunkRenderer::renderBillboards(const World& world, const Camera3D& camera)
             mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
 
             ChunkRenderData& renderData = chunk.mChunkRenderData;
-            if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
+            if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
                 f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
                 glUniform3fv(offsetUniform, 1, &offset.x);
                 TryRenderBillboardMesh(chunk, mBillboardMaterial);

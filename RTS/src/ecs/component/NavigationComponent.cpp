@@ -7,6 +7,8 @@
 
 #include "DebugRenderer.h"
 
+#include "options/DebugOptions.h"
+
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "World.h"
@@ -196,7 +198,9 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
             navCmp.mCurrentPoint = 0;
             navCmp.mFinePath = Services::PathFinder::ref().generatePathSynchronous(world, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos));
             if (navCmp.mFinePath) {
-                DebugRenderer::drawPath(*navCmp.mFinePath, color4(1.0f, 0.0f, 1.0f), 200);
+				if (sDebugOptions.mShowPaths) {
+					DebugRenderer::drawPath(*navCmp.mFinePath, color4(1.0f, 0.0f, 1.0f), 200);
+				}
 			}
 			else {
 				navCmp.mCoarsePath = nullptr;

@@ -11,6 +11,10 @@
 // 0 or 1 for rendering debug
 #define DEBUG_RENDER_NAV_NODES 1
 
+inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
+    return f32v3(pos2d.x, pos2d.y, worldGrid.tryComputeHeightAtPoint(pos2d));
+}
+
 struct DisjointSetNode {
     ui32 id;
 };
@@ -111,7 +115,7 @@ void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
     // TODO: Race conditions
     chunk.incRef();
     chunk.mIsNavmeshing.store(true);
-    if (sDebugOptions.mNavGraph) {
+    if (sDebugOptions.mNavGraphUpdates) {
         Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
             // Update nav graph on worker thread
             buildNavNodesForChunkSynchronous(chunk);
@@ -119,7 +123,7 @@ void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
             chunk.decRef();
         }, [&]() {
 
-            if (sDebugOptions.mNavGraph) {
+            if (sDebugOptions.mNavGraphUpdates) {
                 debugDrawNavGraphForChunk(chunk, 250);
             }
         });
@@ -136,6 +140,7 @@ void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
 
 void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
 {
+    const WorldGrid& worldGrid = mWorld.getWorldGrid();
     std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
     for (auto&& node : navNodes) {
         for (auto&& edge : node.edges) {
@@ -143,8 +148,9 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
             if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
             else if (edge.dir == Cartesian::UP) cornerPos.y += 1.0f;
             f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)(edge.length);
-            DebugRenderer::drawLine(cornerPos, offset, color4(0.0f, 1.0f, 1.0f), lifetime);
-            DebugRenderer::drawLine(cornerPos + offset * 0.5f, f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)]), color4(0.0f, 1.0f, 1.0f), lifetime);
+            DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, cornerPos), helperGet3DPoint(worldGrid, cornerPos + offset), color4(0.0f, 1.0f, 1.0f), lifetime);
+            f32v2 second = cornerPos + offset * 0.5f;
+            DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, second), helperGet3DPoint(worldGrid, second + f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)])), color4(0.0f, 1.0f, 1.0f), lifetime);
         }
     }
     for (int k = 0; k < navNodes.size(); ++k) {
@@ -165,7 +171,7 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
                 if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
                 else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
                 f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
-                DebugRenderer::drawLineBetweenPoints(pos1, pos2, color, lifetime);
+                DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, pos1), helperGet3DPoint(worldGrid, pos2), color, lifetime);
             }
         }
     }

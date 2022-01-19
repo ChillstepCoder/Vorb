@@ -77,6 +77,7 @@ public:
 
     f32 getHeightAtVert(ChunkID id, const ui32v2& vertPos) const;
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
+    f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
 
     TerrainPickData pickTerrainFromCameraVector(const Camera3D& camera, const f32v3& rayDir) const;
 

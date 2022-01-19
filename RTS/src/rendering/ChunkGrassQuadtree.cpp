@@ -215,7 +215,9 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 }
 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
-    const ChunkID id = getChunkIDForPatchIndex(patchIndex);
-    mWorldGrid.releaseHeightDataAt(id);
-    mMeshes[patchIndex].reset();
+    if (mMeshes[patchIndex]) {
+        const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+        mWorldGrid.releaseHeightDataAt(id);
+        mMeshes[patchIndex].reset();
+    }
 }

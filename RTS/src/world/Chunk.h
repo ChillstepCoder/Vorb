@@ -125,6 +125,8 @@ public:
 	void setState(ChunkState state) { mState = state; }
 	void setGrassAt(const TileIndex index, ui8 grass);
 
+	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
+
     Tile& getMutableTileAt(TileIndex i) {
         assert(i < CHUNK_SIZE);
         assert(mState == ChunkState::FINISHED);

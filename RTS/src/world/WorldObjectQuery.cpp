@@ -10,7 +10,7 @@
 #include "ecs/component/CharacterDetailsComponent.h"
 
 
-WorldObjectQuery::WorldObjectQuery(World& world, f32v2& tilePos) :
+WorldObjectQuery::WorldObjectQuery(World& world, const f32v2& tilePos) :
     mWorld(world),
     mTilePos(tilePos)
 {

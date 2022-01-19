@@ -405,6 +405,17 @@ bool WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
 }
 
 
+f32 WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
+    ChunkID id(worldPos);
+    const HeightmapPatch& patch = mHeightData[id.id];
+
+    if (!patch.isDone()) {
+        return -100.0f;
+    }
+
+    return computeHeightAtPoint(id, patch.mHeightData->data, worldPos);
+}
+
 TerrainPickData WorldGrid::pickTerrainFromCameraVector(const Camera3D& camera, const f32v3& rayDir) const {
     const f32v3 rayStart = camera.getPosition();
 

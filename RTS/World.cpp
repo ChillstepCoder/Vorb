@@ -250,6 +250,7 @@ const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
 	const TileCollision& collision = chunk.getTileCollisionAt(TileIndex(x, y));
+	if (collision.navNodeIndex == UINT16_MAX) return nullptr;
 	return mNavGraph->getNode({ chunk.getChunkID().id, collision.navNodeIndex });
 }
 
@@ -293,9 +294,7 @@ void World::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
         quadtree.onDataChanged(pos, brushRadius);
     }
     for (Chunk* chunk : mActiveChunks) {
-        if (chunk->mChunkRenderData.mGrassLod) {
-            chunk->mChunkRenderData.mGrassLod->onDataChanged(pos, brushRadius);
-        }
+		chunk->onTerrainDataChanged(pos, brushRadius);
     }
 }
 
