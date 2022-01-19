@@ -126,6 +126,122 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
     
 }
 
+void QuadMesh::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool flipTriangleDir, bool shouldRandFlipHorizontal) {
+    mVertexData.resize(mVertexData.size() + 4);
+    assert(!mVertexData.empty());
+    TileVertex* verts = &mVertexData.back() - 3;
+
+    // TODO: This is a bad approximation
+    const f32 dX = ((terrainCorners[0] - terrainCorners[1]) + (terrainCorners[2] - terrainCorners[3])) * 0.5f;
+    const f32 dY = ((terrainCorners[0] - terrainCorners[2]) + (terrainCorners[1] - terrainCorners[3])) * 0.5f;
+    const f32 dZ = 1.0f;
+
+    f32v3 n(dX, dY, dZ);
+    i8v3 normal(glm::normalize(n) * 127.0f);
+
+    const i8v2 tangent(0, 1);
+
+    f32v4 adjustedUvs;
+    if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+    else {
+        adjustedUvs.x = uvs.x + UV_EPSILON;
+        adjustedUvs.y = uvs.y + UV_EPSILON;
+        adjustedUvs.z = uvs.z - UV_EPSILON_2;
+        adjustedUvs.w = uvs.w - UV_EPSILON_2;
+    }
+
+    if (flipTriangleDir) {
+        { // Bottom Right
+            TileVertex& vbr = verts[0];
+            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1] + EPSILON);
+            vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbr.color = color;
+            vbr.atlasPage = spriteAtlasPage;
+            vbr.normal = normal;
+            vbr.tangent = tangent;
+        }
+        { // Top Right
+            TileVertex& vtr = verts[1];
+            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3] + EPSILON);
+            vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vtr.uvs.y = adjustedUvs.y;
+            vtr.color = color;
+            vtr.atlasPage = spriteAtlasPage;
+            vtr.normal = normal;
+            vtr.tangent = tangent;
+        }
+        { // Top Left
+            TileVertex& vtl = verts[2];
+            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2] + EPSILON);
+            vtl.uvs.x = adjustedUvs.x;
+            vtl.uvs.y = adjustedUvs.y;
+            vtl.color = color;
+            vtl.atlasPage = spriteAtlasPage;
+            vtl.normal = normal;
+            vtl.tangent = tangent;
+        }
+        { // Bottom Left
+            TileVertex& vbl = verts[3];
+            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0] + EPSILON);
+            vbl.uvs.x = adjustedUvs.x;
+            vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbl.color = color;
+            vbl.atlasPage = spriteAtlasPage;
+            vbl.normal = normal;
+            vbl.tangent = tangent;
+        }
+    } else {
+
+        { // Bottom Left
+            TileVertex& vbl = verts[0];
+            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0] + EPSILON);
+            vbl.uvs.x = adjustedUvs.x;
+            vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbl.color = color;
+            vbl.atlasPage = spriteAtlasPage;
+            vbl.normal = normal;
+            vbl.tangent = tangent;
+        }
+        { // Bottom Right
+            TileVertex& vbr = verts[1];
+            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1] + EPSILON);
+            vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+            vbr.color = color;
+            vbr.atlasPage = spriteAtlasPage;
+            vbr.normal = normal;
+            vbr.tangent = tangent;
+        }
+        { // Top Right
+            TileVertex& vtr = verts[2];
+            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3] + EPSILON);
+            vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+            vtr.uvs.y = adjustedUvs.y;
+            vtr.color = color;
+            vtr.atlasPage = spriteAtlasPage;
+            vtr.normal = normal;
+            vtr.tangent = tangent;
+        }
+        { // Top Left
+            TileVertex& vtl = verts[3];
+            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2] + EPSILON);
+            vtl.uvs.x = adjustedUvs.x;
+            vtl.uvs.y = adjustedUvs.y;
+            vtl.color = color;
+            vtl.atlasPage = spriteAtlasPage;
+            vtl.normal = normal;
+            vtl.tangent = tangent;
+        }
+    }
+}
+
 void QuadMesh::addCross(f32v3 cornerPosition, ui16 spriteAtlasPage, const f32v4& uvs, float width, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence) {
     mVertexData.resize(mVertexData.size() + 8);
     TileVertex* verts = &mVertexData.back() - 7;

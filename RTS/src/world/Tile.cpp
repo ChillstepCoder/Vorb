@@ -6,7 +6,8 @@
 
 KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Thin", TileShape::THIN);
-    kt.addValue("Thick", TileShape::BLOCK);
+    kt.addValue("Block", TileShape::BLOCK);
+    kt.addValue("Floor", TileShape::FLOOR);
 }
 
 KEG_ENUM_DEF(TileResource, TileResource, kt) {

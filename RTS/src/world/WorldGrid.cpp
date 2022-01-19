@@ -546,7 +546,7 @@ f32 WorldGrid::computeCenterHeightAtTile(ChunkID id, TileIndex tileIndex) const 
     return computeCenterHeightAtTile(patch.mHeightData->data, tileIndex);
 }
 
-f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex) {
+void WorldGrid::computeTileCorners(const f32* heightData, TileIndex tileIndex, f32 corners[4]) {
     f32v2 offset(tileIndex.getX(), tileIndex.getY());
 
     ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
@@ -557,13 +557,21 @@ f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex
     f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
     assert(dxy.x >= 0.0f && dxy.x <= 1.0f && dxy.x >= 0.0f && dxy.x <= 1.0f);
 
-    // Get the 4 
-    const f32 bl = interpolateHeightAtOffset(dxy, heightData, heightmapXY);
-    const f32 br = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap, 0.0f), heightData, heightmapXY);
-    const f32 tl = interpolateHeightAtOffset(dxy + f32v2(0.0f, tileWidthHeightmap), heightData, heightmapXY);
-    const f32 tr = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap), heightData, heightmapXY);
+    corners[0] = interpolateHeightAtOffset(dxy, heightData, heightmapXY);
+    corners[1] = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap, 0.0f), heightData, heightmapXY);
+    corners[2] = interpolateHeightAtOffset(dxy + f32v2(0.0f, tileWidthHeightmap), heightData, heightmapXY);
+    corners[3] = interpolateHeightAtOffset(dxy + f32v2(tileWidthHeightmap), heightData, heightmapXY);
+}
 
-    return glm::min(glm::min(glm::min(bl, br), tl), tr);
+bool WorldGrid::areTrianglesFlippedAtTile(TileIndex tileIndex) {
+    ui32v2 heightmapXY = ui32v2(ui32(tileIndex.getX() / HEIGHTMAP_QUAD_SIZE), ui32(tileIndex.getY() / HEIGHTMAP_QUAD_SIZE));
+    return (heightmapXY.x + heightmapXY.y) % 2 == 0;
+}
+
+f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex) {
+    f32 corners[4];
+    computeTileCorners(heightData, tileIndex, corners);
+    return glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
 f32 WorldGrid::computeMinHeightAtTile(ChunkID id, TileIndex tileIndex) const {

@@ -83,6 +83,8 @@ public:
     static f32 computeHeightAtPoint(ChunkID id, const f32* heightData, const f32v2& worldPos);
     static f32 computeHeightAtChunkOffset(const f32* heightData, const f32v2& chunkOffset);
     static f32 computeCenterHeightAtTile(const f32* heightData, TileIndex tileIndex);
+    static void computeTileCorners(const f32* heightData, TileIndex tileIndex, OUT f32 corners[4]);
+    static bool areTrianglesFlippedAtTile(TileIndex tileIndex);
     f32 computeCenterHeightAtTile(ChunkID id, TileIndex tileIndex) const;
 
     static f32 computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex);

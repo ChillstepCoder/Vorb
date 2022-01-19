@@ -63,6 +63,7 @@ static_assert(sizeof(Tile) == 12, "Keep small");
 enum class TileShape {
 	THIN,  // Trees and flora
     BLOCK, // Most blocks
+	FLOOR,
 	// Custom TODO
 	COUNT
 };

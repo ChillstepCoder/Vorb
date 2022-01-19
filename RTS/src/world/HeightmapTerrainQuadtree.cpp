@@ -194,7 +194,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
             finishMesh(patchIndex);
             return;
         }
-        //const HeightmapPatchData* paddedHeightData[9]; NO! INVALID STACK MEMORY!
+
         if (hasAquired || mWorldGrid->tryAquirePaddedHeightDataAt(id)) {
             // Instantly generate
             Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {

@@ -44,8 +44,8 @@ void TerrainMesh::setVertsFromPaddedHeightfield(const f32 paddedHeightfield[TERR
 
             //https://gamedev.stackexchange.com/questions/165575/calculating-normal-map-from-height-map-using-sobel-operator
             // Sobel filter
-            const f32 dX = (fr + 2.0f * r + br) - (fl + 2.0f * l + bl);
-            const f32 dY = (bl + 2.0f * b + br) - (fl + 2.0f * f + fr);
+            const f32 dX = (fl + 2.0f * l + bl) - (fr + 2.0f * r + br);
+            const f32 dY = (fl + 2.0f * f + fr) - (bl + 2.0f * b + br);
             const f32 dZ = quadWidth;
 
             f32v3 n(dX, dY, dZ);

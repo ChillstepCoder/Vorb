@@ -8,6 +8,7 @@ wood_wall_gothic:
 bricks1:
   layer: 1
   tex: bricks1
+  shape: Floor
   recipe:
     - item: wood_raw
       count: 3

@@ -22,6 +22,7 @@ public:
 
     void reserveQuadCount(size_t count);
     void addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, CubeFacing axis, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal);
+    void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool flipTriangleDir, bool shouldRandFlipHorizontal);
     void addCross(f32v3 cornerPosition, ui16 spriteAtlasPage, const f32v4& uvs, float width, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence);
     void finishMesh(MeshDrawMode drawMode) override;
 

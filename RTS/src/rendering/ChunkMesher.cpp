@@ -652,25 +652,44 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
     }
 }
 
-void ChunkMesher::addBlock(QuadMesh& quadMesh, TileShape shape, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
+void ChunkMesher::addFloor(QuadMesh& quadMesh, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
+    const SpriteData& spriteData = tileData.spriteData;
+
+    f32 corners[4];
+    mWorldGrid.computeTileCorners(heightData->data, tileIndex, corners);
+
+    switch (spriteData.method) {
+        case TileTextureMethod::SIMPLE: {
+            quadMesh.addTerrainAlignedQuad(
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
+                corners,
+                spriteData.atlasPage,
+                spriteData.uvs,
+                COLOR_WHITE,
+                mWorldGrid.areTrianglesFlippedAtTile(tileIndex),
+                spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP
+            );
+            break;
+        default:
+            assert(false); // Unsupported
+        }
+    }
+}
+
+void ChunkMesher::addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
     const SpriteData& spriteData = tileData.spriteData;
     switch (spriteData.method) {
         case TileTextureMethod::SIMPLE: {
-            // TODO: This shouldn't have to be hard coded to floor
-            // We do not mesh TileShape::THIN here, it is a billboard
-            if (shape == TileShape::BLOCK) {
-                quadMesh.addAxisAlignedQuad(
-                    tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
-                    spriteData.dimsMeters,
-                    spriteData.offset,
-                    CubeFacing::TOP,
-                    spriteData.atlasPage,
-                    spriteData.uvs,
-                    COLOR_WHITE,
-                    spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP
-                );
-            }
-            static_assert(enum_cast(TileShape::COUNT) == 2);
+            quadMesh.addAxisAlignedQuad(
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
+                spriteData.dimsMeters,
+                spriteData.offset,
+                CubeFacing::TOP,
+                spriteData.atlasPage,
+                spriteData.uvs,
+                COLOR_WHITE,
+                spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP
+            );
             break;
         }
         case TileTextureMethod::CONNECTED_WALL: {
@@ -777,9 +796,13 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u, 0u);
                         }
                     }
-                    else if (spriteData.method != TileTextureMethod::FLORA) { // CROSS FLORA IS DONE IN SEPARATE PASS
+                    else if (tileData.shape == TileShape::BLOCK) {
                         // Standard blocks
-                        addBlock(quadMesh, tileData.shape, f32v3(x, y, tile.baseZPosition), heightData, tileData, index, chunk, layerIndex);
+                        addBlock(quadMesh, f32v3(x, y, tile.baseZPosition), heightData, tileData, index, chunk, layerIndex);
+                    }
+                    else if (tileData.shape == TileShape::FLOOR) {
+                       // Standard blocks
+                        addFloor(quadMesh, f32v3(x, y, tile.baseZPosition), heightData, tileData, index, chunk, layerIndex);
                     }
                 }
             }
