@@ -752,7 +752,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     Services::Threadpool::ref().addTask([this, &chunk, &renderData, heightData](ThreadPoolWorkerData*) {
 
         QuadMesh& quadMesh = *renderData.mChunkMesh;
-        quadMesh.reserveQuadCount(CHUNK_SIZE * 2); // Most chunks will have less than 2 quads per tile
+        quadMesh.reserveQuadCount(CHUNK_SIZE); // Most chunks will have less than 1 quad per tile
         ChunkBillboardMesh& billboardMesh = *renderData.mBillboardMesh;
         billboardMesh.reserveQuadCount(CHUNK_SIZE); // Most chunks will have less than 1 quad per tile
 

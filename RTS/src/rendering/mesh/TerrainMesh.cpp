@@ -119,7 +119,6 @@ void TerrainMesh::finishMesh(MeshDrawMode drawMode) {
         // Set data
         glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, mVertexData.data());
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        std::vector<TerrainVertex>().swap(mVertexData);
 
         glBindVertexArray(mVao);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sTerrainIbo);
@@ -128,6 +127,7 @@ void TerrainMesh::finishMesh(MeshDrawMode drawMode) {
     else {
         destroy(); // Mesh is now empty, destroy if it was valid
     }
+    std::vector<TerrainVertex>().swap(mVertexData);
 }
 
 

@@ -20,11 +20,11 @@ void TriangleMesh::addTriangle(TriangleVertex verts[3]) {
 void TriangleMesh::finishMesh(MeshDrawMode drawMode) {
     if (mVertexData.size()) {
         setData(mVertexData.data(), mVertexData.size(), drawMode);
-        std::vector<TriangleVertex>().swap(mVertexData);
     }
     else {
         destroy(); // Mesh is now empty, destroy if it was valid
     }
+    std::vector<TriangleVertex>().swap(mVertexData);
 }
 
 void TriangleMesh::draw(const vg::GLProgram& program) const {

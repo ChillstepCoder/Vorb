@@ -318,11 +318,11 @@ void QuadMesh::addCross(f32v3 cornerPosition, ui16 spriteAtlasPage, const f32v4&
 void QuadMesh::finishMesh(MeshDrawMode drawMode) {
     if (mVertexData.size()) {
         setData(mVertexData.data(), mVertexData.size(), drawMode);
-        std::vector<TileVertex>().swap(mVertexData);
     }
     else {
         destroy(); // Mesh is now empty, destroy if it was valid
     }
+    std::vector<TileVertex>().swap(mVertexData);
 }
 
 void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
@@ -443,11 +443,11 @@ void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2
 void BillboardMesh::finishMesh(MeshDrawMode drawMode) {
     if (mVertexData.size()) {
         setData(mVertexData.data(), mVertexData.size(), drawMode);
-        std::vector<BillboardVertex>().swap(mVertexData);
     }
     else {
         destroy(); // Mesh is now empty, destroy if it was valid
     }
+    std::vector<BillboardVertex>().swap(mVertexData);
 }
 
 void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
@@ -600,6 +600,7 @@ void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
     }
     else {
         destroy();
+        std::vector<TBOBillboardInstanceData>().swap(mTextureData);
     }
     mIsInProgress = false;
 }

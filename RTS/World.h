@@ -184,4 +184,3 @@ private:
     std::vector<Chunk*> mVisibleChunks;
 	std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
 };
-
