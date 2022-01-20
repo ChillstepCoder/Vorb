@@ -33,7 +33,7 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
 
     // TODO: Separate internal with border chunks for faster lookups??
     // Iterate through sub chunks
-    std::vector<TileCollision>& tileCollision = chunk.getAllTileCollision();
+    std::vector<Tile>& tiles = chunk.mTiles;
     for (int sy = 0; sy < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sy) {
         const int cornerY = sy * SUBCHUNK_WIDTH;
         for (int sx = 0; sx < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sx) {
@@ -47,22 +47,23 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     TileIndex index(cornerX + x, cornerY + y);
-                    TileCollision& collision = tileCollision[index];
+                    Tile& tile = tiles[index];
+                    const f32 baseZPosition = tile.getBaseZPositionUncompressed();
                     const int djArryIndex = y * SUBCHUNK_WIDTH + x;
                     bool assigned = false;
                     
                     if (x != 0) {
-                        TileCollision& left = tileCollision[index - 1];
+                        Tile& left = tiles[index - 1];
                         // Check if we can cross between
-                        if (abs((int)left.baseZPosition - (int)collision.baseZPosition) < 2) {
+                        if (abs(left.getBaseZPositionUncompressed() - baseZPosition) < 2.0f) {
                             djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
                             assigned = true;
                         }
                     }
                     if (y != 0) {
-                        TileCollision& bottom = tileCollision[index - CHUNK_WIDTH];
+                        Tile& bottom = tiles[index - CHUNK_WIDTH];
                         // Check if we can cross between
-                        if (abs((int)bottom.baseZPosition - (int)collision.baseZPosition) < 2) {
+                        if (abs(bottom.getBaseZPositionUncompressed() - baseZPosition) < 2.0f) {
                             if (assigned) {
                                 // If we already assigned to left, merge the sets
                                 ui32 prevID = djNodeIDs[djArryIndex];
@@ -98,11 +99,11 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     const int cornerX = sx * SUBCHUNK_WIDTH;
                     TileIndex index(cornerX + x, cornerY + y);
-                    TileCollision& collision = tileCollision[index];
+                    Tile& tile = tiles[index];
                     const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
                     const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
                     const NavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
-                    collision.navNodeIndex = navNodeIndex;
+                    tile.navNodeIndex = navNodeIndex;
                 }
             }
         }
@@ -179,7 +180,7 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
 
 void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
 {
-    std::vector<TileCollision>& tileCollision = chunk.getAllTileCollision();
+    std::vector<Tile>& tiles = chunk.mTiles;
     ui32 currNodeId;
     i32v2 start(0);
     int length = 0;
@@ -189,8 +190,9 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
     i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[enum_cast(dir)].x, cornerY + CARTESIAN_NORMALS[enum_cast(dir)].y);
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
         TileIndex index(chunkRelativePos.x, chunkRelativePos.y);
-        TileCollision& collision = tileCollision[index];
-        const TileCollision& bottom = mWorld.getTileCollisionAtWorldPos(ui32v2(adjWorldPos));
+        Tile& tile = tiles[index];
+        const Tile* bottom = mWorld.getTileAtWorldPos(ui32v2(adjWorldPos));
+        assert(bottom);
         const ui32 djIndex = subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x;
         currNodeId = djNodes[djNodeIDs[djIndex]].id;
         // Check if we have an edge break
@@ -203,7 +205,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
             prevNodeId = currNodeId;
         }
 
-        if (abs((int)bottom.baseZPosition - (int)collision.baseZPosition) < 2) {
+        if (abs(bottom->getBaseZPositionUncompressed() - tile.getBaseZPositionUncompressed()) < 2.0f) {
             // Start new edge
             if (length == 0) {
                 start = chunkRelativePos;

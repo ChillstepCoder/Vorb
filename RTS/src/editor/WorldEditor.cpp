@@ -392,11 +392,7 @@ void WorldEditor::updateTileEdit() {
 
         if (data.layer == TILE_LAYER_GROUND) {
             const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(chunkID, tileIndex);
-            tile.baseZPosition = height + mGroundTileOffset;
-        }
-        else {
-            const f32 height = mWorld.mWorldGrid.computeCenterHeightAtTile(chunkID, tileIndex);
-            tile.baseZPosition = height;
+            tile.setBaseZPosition(height + mGroundTileOffset);
         }
         mWorld.setTileAt(chunkID, tileIndex, tile);
     }

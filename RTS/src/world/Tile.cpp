@@ -32,21 +32,6 @@ KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
     kt.addValue("count", keg::Value::basic(offsetof(ItemDropDef, countRange), keg::BasicType::UI32_V2));
 }
 
-
-TileCollision Tile::buildTileCollision() const {
-    TileCollision collision;
-    collision.baseZPosition = baseZPosition;
-
-    // Custom tile collision only occurs on TILE_LAYER_TOP
-    const TileData& tileData = TileRepository::getTileData(topLayer);
-    collision.shape = tileData.collisionShape;
-    collision.colliderHeightUnscaled = (ui16)(tileData.colliderHeight * UINT8_MAX);
-    collision.colliderDimsUnscaledXY = i8v2(glm::round(tileData.colliderDimsXY * (f32)TILE_COLLIDER_DIMS_SCALE));
-    collision.pathWeight = tileData.pathWeight;
-
-    return collision;
-}
-
 bool Tile::canAddTile(const TileData& tile) const {
     return layers[tile.layer] == TILE_ID_NONE;
 }
@@ -60,4 +45,12 @@ bool Tile::tryAddTile(const TileData& tile) {
         return false;
     }
     addTile(tile);
+}
+
+const TileCollider* Tile::tryGetCollider() const {
+    if (tileFlags & TILE_FLAG_HAS_COLLIDER) {
+        assert(topLayer != TILE_ID_NONE);
+        return &TileRepository::getTileData(topLayer).collider;
+    }
+    return nullptr;
 }

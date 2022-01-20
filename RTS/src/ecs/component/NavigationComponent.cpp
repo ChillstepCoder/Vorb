@@ -102,36 +102,40 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 			// Something in the way!
 
 			// Check if we need to climb
-			TileCollision nextCollision = world.getTileCollisionAtWorldPos(hit.tilePos);
-			if (hit.tilePos == nextTilePos && nextCollision.baseZPosition > physCmp.getZPosition() && nextCollision.baseZPosition < physCmp.getZPosition() + 1.1f) {
-				// Climb
-                physCmp.setZVelocity(JUMP_VELOCITY);
-			}
-			else {
-				// Steer
-
-				f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
-				// Large negative is positive
-				if (angle < -M_PIF) {
-					angle = M_2_PIF - angle;
-				}
-
-				constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
-				if (angle > 0.0f) {
-					targetVelocity = glm::rotate(targetVelocity, -STEERING_ADJUST);
-					steerVector = targetVelocity * STEER_MULT;
-					targetDir = glm::normalize(targetVelocity);
+			const Tile* tile = world.getTileAtWorldPos(hit.tilePos);
+			if (tile) {
+				const TileCollider* collider = tile->tryGetCollider();
+				f32 baseZ = tile->getBaseZPositionUncompressed();
+				if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
+					// Climb
+					physCmp.setZVelocity(JUMP_VELOCITY);
 				}
 				else {
-					targetVelocity = glm::rotate(targetVelocity, STEERING_ADJUST);
-					steerVector = targetVelocity * STEER_MULT;
-					targetDir = glm::normalize(targetVelocity);
-				}
+					// Steer
 
-				// Debug render
-				DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
-				DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
-				DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+					f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
+					// Large negative is positive
+					if (angle < -M_PIF) {
+						angle = M_2_PIF - angle;
+					}
+
+					constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
+					if (angle > 0.0f) {
+						targetVelocity = glm::rotate(targetVelocity, -STEERING_ADJUST);
+						steerVector = targetVelocity * STEER_MULT;
+						targetDir = glm::normalize(targetVelocity);
+					}
+					else {
+						targetVelocity = glm::rotate(targetVelocity, STEERING_ADJUST);
+						steerVector = targetVelocity * STEER_MULT;
+						targetDir = glm::normalize(targetVelocity);
+					}
+
+					// Debug render
+					DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
+					DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
+					DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+				}
 			}
 		}
 		else {

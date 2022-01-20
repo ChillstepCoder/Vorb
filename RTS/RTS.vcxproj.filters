@@ -656,7 +656,7 @@
     <ClInclude Include="src\util\IntersectionHit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\TileCollision.h">
+    <ClInclude Include="src\world\TileCollider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\TileScanner.h">

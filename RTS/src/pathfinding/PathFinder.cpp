@@ -4,6 +4,8 @@
 #include "World.h"
 #include "world/TileRepository.h"
 
+#include "pathfinding/NavGraph.h"
+
 #include "options/DebugOptions.h"
 
 #include "DebugRenderer.h"
@@ -284,7 +286,9 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
         node.isInClosedList = true;
 
         const ui32v2 nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
-        const TileCollision startCollision = world.getTileCollisionAtWorldPos(nodePoint);
+        const Tile* startTile = world.getTileAtWorldPos(nodePoint);
+        assert(startTile);
+        const f32 startBaseZPosition = startTile->getBaseZPositionUncompressed();
         
         if (sDebugOptions.mShowPaths) {
             if (debugCount > 255) debugCount = 0;
@@ -309,23 +313,24 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
                 pathWeights[i] = 0.0f;
                 continue;
             }
-            TileCollision collision = world.getTileCollisionAtWorldPos(nextPoint);
-            f32 weight = (collision.pathWeight / 255.0f);
-            if (collision.baseZPosition == startCollision.baseZPosition + 1) {
-                // Upward
-                pathWeights[i] = (collision.pathWeight / 255.0f) * 0.5f;
-            }
-            else if (collision.baseZPosition >= startCollision.baseZPosition + 2) {
+            const Tile* tile = world.getTileAtWorldPos(nextPoint);
+            assert(tile);
+            f32 weight = (tile->pathWeight / 255.0f);
+            const f32 baseZPosition = tile->getBaseZPositionUncompressed();
+            if (baseZPosition >= startBaseZPosition + 2) {
                 // Too tall!
                 pathWeights[i] = 0.0f;
+            } else if (baseZPosition >= startBaseZPosition + 1) {
+                // Upward
+                pathWeights[i] = (tile->pathWeight / 255.0f) * 0.5f;
             }
             else {
                 // Standard or downward
-                pathWeights[i] = (collision.pathWeight / 255.0f);
+                pathWeights[i] = (tile->pathWeight / 255.0f);
             }
 
             // ROADS ARE WORTH MORE
-            if (collision.flags & COLLISION_NAV_FLAG_ROAD) {
+            if (tile->tileFlags & TILE_FLAG_ROAD) {
                 pathWeights[i] *= 2.0f;
             }
         }

@@ -64,14 +64,20 @@ constexpr float GRAVITY_FORCE = 0.03f;
 	//}
 //}
 
-void resolveCircleTileCollision(const f32v2& tileCenter, const TileCollision& collision, PhysicsComponent& cmp) {
+void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, PhysicsComponent& cmp) {
+    const TileCollider* collider = tile->tryGetCollider();
+    if (!collider) {
+        return;
+    }
+
     float colliderRadius = cmp.mCollisionRadius;
     const f32v2& colliderCenter = cmp.getXYPosition();
     f32v2 offsetToCollider = colliderCenter - tileCenter;
-	const float tileCollisionRadius = collision.getColliderDimsScaledXY().x;
+	const float tileCollisionRadius = collider->dims.x;
+    const f32 baseZPosition = tile->getBaseZPositionUncompressed();
 
 	bool isCollidingWithTop = false;
-	float zOffset = cmp.getZPosition() - collision.baseZPosition;
+	float zOffset = cmp.getZPosition() - baseZPosition;
 	if (zOffset > 0.0f) {
 		// We are above, do nothing
 		return;
@@ -85,7 +91,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const TileCollision& co
 		colliderRadius *= 0.3f;
 	}
 
-	switch (collision.shape)
+	switch (collider->shape)
     {
 		// Circle falls through to check ground
 		case TileCollisionShape::CIRCLE: {
@@ -121,7 +127,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const TileCollision& co
                 // Just pop up
                 // TODO: Move up smoother, always counter gravity
                 if (isCollidingWithTop) {
-                    cmp.setZPosition(collision.baseZPosition);
+                    cmp.setZPosition(baseZPosition);
                     cmp.setZVelocity(0.0f);
                     return;
                 }
@@ -209,12 +215,14 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
 
     // TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
     // TODO: Re-enable
-    //for (int i = 0; i < 4; ++i) {
-    //    TileCollision collision = world.getTileCollisionAtWorldPos(cornerPositions[i]);
-    //    // TODO: This can reduntantly collide
-    //    const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-    //    resolveCircleTileCollision(tileCenter, collision, cmp);
-    //}
+    for (int i = 0; i < 4; ++i) {
+        const Tile* tile = world.getTileAtWorldPos(cornerPositions[i]);
+        if (tile) {
+            // TODO: This can reduntantly collide
+            const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
+            resolveCircleTileCollision(tileCenter, tile, cmp);
+        }
+    }
 
     // Resolve terrain collision
     const WorldGrid& grid = world.getWorldGrid();

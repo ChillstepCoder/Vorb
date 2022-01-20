@@ -132,7 +132,15 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Load Tiles
+    // Load recipe definitions
+    {
+        ScopedTimer timer("Recipe load");
+        for (auto&& entry : mRecipeFiles) {
+            mCraftingRepository->loadRecipeFile(*mItemRepository, entry);
+        }
+    }
+
+    // Load Tiles (Must be done after item and recipes)
     // Assuming single tile per file, definitely less than actual but, good enough. 10 is arbitrary
     {
         ScopedTimer timer("Tile load");
@@ -140,14 +148,6 @@ void ResourceManager::loadFiles() {
         for (auto&& entry : mTileFiles) {
             // TODO: Tilemanager?
             loadTiles(entry);
-        }
-    }
-
-    // Load recipe definitions
-    {
-        ScopedTimer timer("Recipe load");
-        for (auto&& entry : mRecipeFiles) {
-            mCraftingRepository->loadRecipeFile(*mItemRepository, entry);
         }
     }
 
@@ -196,29 +196,6 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Entity load");
         for (auto&& entry : mEntityFiles) {
             mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
-        }
-    }
-    
-    // Hookup tile references
-    {
-        ScopedTimer timer("Tile referencing");
-        for (auto&& tile : TileRepository::sTileData) {
-            // Item Drops
-            assert(tile.itemDrops.size() == 0); // No double load
-            tile.itemDrops.resize(tile.itemDropsFileData.size());
-            for (size_t i = 0; i < tile.itemDrops.size(); ++i) {
-                tile.itemDrops[i].countRange = tile.itemDropsFileData[i].countRange;
-                tile.itemDrops[i].id = mItemRepository->getItem(tile.itemDropsFileData[i].itemName).getID();
-            }
-            tile.itemDropsFileData.setData();
-
-            // Recipes
-            tile.recipe.resize(tile.recipeFileData.size());
-            for (size_t i = 0; i < tile.recipe.size(); ++i) {
-                tile.recipe[i].quantity = tile.recipeFileData[i].count;
-                tile.recipe[i].id = mItemRepository->getItem(tile.recipeFileData[i].itemName).getID();
-            }
-            tile.recipeFileData.setData();
         }
     }
 
@@ -335,27 +312,43 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
     return mIoManager->parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
-        TileData tile;
+        TileData tileData;
+        TileFileData fileData;
 
         // Load data
-        keg::parse((ui8*)&tile, value, readContext, &KEG_GLOBAL_TYPE(TileData));
-        tile.name = key;
+        keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(TileFileData));
+        tileData.name = key;
 
-        // If depth is uninitialized, set it to width
-        if (tile.colliderDimsXY.y == -1.0f) {
-            tile.colliderDimsXY.y = tile.colliderDimsXY.x;
+        // Copy all data
+        tileData.layer = fileData.layer;
+        tileData.pathWeight = fileData.pathWeight;
+        //tileData.recipe = fileData.recipes;
+        tileData.resource = fileData.resource;
+        tileData.shape = fileData.tileShape;
+
+        // Item drops
+        tileData.itemDrops.resize(fileData.itemDrops.size());
+        for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
+            tileData.itemDrops[i].countRange = fileData.itemDrops[i].countRange;
+            tileData.itemDrops[i].id = mItemRepository->getItem(fileData.itemDrops[i].itemName).getID();
         }
-        tile.colliderDimsXY = glm::clamp(tile.colliderDimsXY, -0.5f, 0.5f);
+
+        // Recipes
+        tileData.recipe.resize(fileData.recipes.size());
+        for (size_t i = 0; i < tileData.recipe.size(); ++i) {
+            tileData.recipe[i].quantity = fileData.recipes[i].count;
+            tileData.recipe[i].id = mItemRepository->getItem(fileData.recipes[i].itemName).getID();
+        }
 
         TileID nextId = (TileID)TileRepository::sTileData.size();
-        tile.id = nextId;
+        tileData.id = nextId;
         assert(nextId < UINT16_MAX); // Make sure we dont roll over
         assert(TileRepository::sTileIdMapping.find(key) == TileRepository::sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
-        tile.spriteData = getSprite(tile.textureName);
-        assert(tile.spriteData.isValid()); // TODO: Error msg
+        tileData.spriteData = getSprite(fileData.textureName);
+        assert(tileData.spriteData.isValid()); // TODO: Error msg
         TileRepository::sTileIdMapping[key] = nextId;
         // TODO: Serialize the string > ID mapping
-        TileRepository::sTileData.emplace_back(std::move(tile));
+        TileRepository::sTileData.emplace_back(std::move(tileData));
     }));
 }

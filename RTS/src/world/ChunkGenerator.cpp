@@ -37,7 +37,6 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    tile.baseZPosition = 0.0f;
     if (height > 0.0f) {
         // Surface
         if (grass && height < MAX_GRASS_HEIGHT) {
@@ -54,6 +53,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             }
         }
     }
+    tile.setBaseZPosition(height);
 
     //if (height > 0.3) {
     //    //tile.groundLayer = rock1;
@@ -118,8 +118,9 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
             f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TileIndex(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
-            if (tile.baseZPosition + 1.0f > maxHeight) {
-                maxHeight = tile.baseZPosition + 1.0f;
+            const f32 baseZPos = tile.getBaseZPositionUncompressed();
+            if (baseZPos + 1.0f > maxHeight) {
+                maxHeight = baseZPos + 1.0f;
             }
             TileIndex index(x, y);
             chunk.setTileFromGeneration(index, std::move(tile));

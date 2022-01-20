@@ -37,6 +37,7 @@ class NavGraph;
 class WorldEditor;
 class ChunkMesher;
 class HeightmapTerrainQuadtree;
+struct NavNode;
 struct CityGraph;
 
 class World
@@ -64,7 +65,6 @@ public:
     void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
     void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);
     void setTileFlagAt(const ui32v2& worldPos, TileFlags flag);
-    void setTileCollisionNavFlagAt(const ui32v2& worldPos, TileCollisionNavFlags flag);
 
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 
@@ -77,8 +77,8 @@ public:
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
-    TileCollision getTileCollisionAtWorldPos(const f32v2& worldPos) const;
-    TileCollision getTileCollisionAtWorldPos(const ui32v2& worldPos) const;
+    const Tile* getTileAtWorldPos(const f32v2& worldPos) const;
+    const Tile* getTileAtWorldPos(const ui32v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;

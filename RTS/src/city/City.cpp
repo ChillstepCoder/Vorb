@@ -188,7 +188,7 @@ RoadID City::addRoad(CityRoad& road)
     ui32v2 worldPos;
     for (worldPos.y = newRoad.aabb.pos.y; worldPos.y < newRoad.aabb.pos.y + newRoad.aabb.dims.y; ++worldPos.y) {
         for (worldPos.x = newRoad.aabb.pos.x; worldPos.x < newRoad.aabb.pos.x + newRoad.aabb.dims.x; ++worldPos.x) {
-            mWorld.setTileCollisionNavFlagAt(worldPos, COLLISION_NAV_FLAG_ROAD);
+            mWorld.setTileFlagAt(worldPos, TILE_FLAG_ROAD);
         }
     }
 

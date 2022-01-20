@@ -1,12 +1,22 @@
 #pragma once
 
-#include "TileCollision.h"
+#include "TileCollider.h"
 
 constexpr ui16 TILE_ID_NONE = UINT16_MAX;
 constexpr int TILE_LAYER_GROUND = 0;
 constexpr int TILE_LAYER_MID = 1;
 constexpr int TILE_LAYER_TOP = 2;
 constexpr int TILE_LAYER_COUNT = 3;
+
+constexpr i32 MIN_WORLD_HEIGHT = -300;
+constexpr i32 MAX_WORLD_HEIGHT = 1000;
+constexpr ui32 WORLD_HEIGHT_SPAN = (ui32)(MAX_WORLD_HEIGHT - MIN_WORLD_HEIGHT);
+constexpr ui32 SCALED_Z_UNITS_PER_TILE = UINT16_MAX / WORLD_HEIGHT_SPAN;
+constexpr f32 UNCOMPRESS_Z_UNITS_PER_TILE_MULT = 1.0f / SCALED_Z_UNITS_PER_TILE;
+
+constexpr inline ui16 compressTileZPosition(f32 zPosition) {
+	return (ui32)((zPosition - MIN_WORLD_HEIGHT) * SCALED_Z_UNITS_PER_TILE);
+}
 
 struct TileData;
 
@@ -18,34 +28,29 @@ enum class TileLayer {
 };
 static_assert(TILE_LAYER_COUNT == enum_cast(TileLayer::COUNT));
 
-enum TileFlags : ui8 {
-	TILE_FLAG_IS_INTERACTING       = 1 << 0,
-	TILE_FLAG_IS_STOCKPILE         = 1 << 1, // True if owned by a stockpile
-	TILE_FLAG_IN_CITY              = 1 << 2, // True if inside city limits
-	TILE_FLAG_HAS_ITEM_STACK       = 1 << 3,
-	TILE_FLAG_IS_BUILDING          = 1 << 4,
-	TILE_FLAG_IS_LARGE_OBJECT_ROOT = 1 << 5, // Render root for large objects
-	TILE_FLAG_TERM                 = 1 << 7,
-};
-static_assert(TILE_FLAG_TERM <= 0x80); // Must fit into a byte
-
 struct Tile {
 	Tile() {};
     Tile(TileID ground, TileID mid, TileID top) : groundLayer(ground), midLayer(mid), topLayer(top) { }
-    Tile(TileID ground, TileID mid, TileID top, f32 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos) { }
-    Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPosition(zPos), tileFlags(flags) { }
+    Tile(TileID ground, TileID mid, TileID top, f32 zPos) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPositionCompressed(compressTileZPosition(zPos)) { }
+    Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : groundLayer(ground), midLayer(mid), topLayer(top), baseZPositionCompressed(compressTileZPosition(zPos)), tileFlags(flags) { }
 
     void setTileFlag(TileFlags flag) { tileFlags |= flag; }
     void setTileFlags(TileFlags flags) { tileFlags = flags; }
     void clearTileFlag(TileFlags flag) { tileFlags &= (~flag); }
     void clearTileFlags() { tileFlags = 0; }
+    void clearTileCollisionFlags() { tileFlags &= (~TILE_COLLISION_FLAGS_MASK); }
 	bool hasFlag(TileFlags flag) const { return tileFlags & flag; }
 	// TODO: This should be a pointer
-	TileCollision buildTileCollision() const;
+	//TileCollision buildTileCollision() const;
 
 	bool canAddTile(const TileData& tile) const;
 	void addTile(const TileData& tile);
 	bool tryAddTile(const TileData& tile);
+
+    void setBaseZPosition(f32 baseZPosition) { baseZPositionCompressed = compressTileZPosition(baseZPosition); }
+	f32 getBaseZPositionUncompressed() const { return (f32)baseZPositionCompressed * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
+
+	const TileCollider* tryGetCollider() const;
 
 	union {
 		struct {
@@ -54,11 +59,17 @@ struct Tile {
 			TileID topLayer;    // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
         };
         TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
-	};
-    ui8 tileFlags = 0;
-    f32 baseZPosition = 0;
+    };
+    ui16 tileFlags = (TileFlags)0u;
+	// Collision stuff
+    ui16 baseZPositionCompressed = 0; // Compressed height
+    ui16 navNodeIndex = UINT16_MAX;
+    ui8 pathWeight = 255u;
+
+	ui8 PADDING; // What could this be used for? Grass?
 };
-static_assert(sizeof(Tile) == 12, "Keep small");
+// TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
+static_assert(sizeof(Tile) == 14, "Keep small");
 
 enum class TileShape {
 	THIN,  // Trees and flora

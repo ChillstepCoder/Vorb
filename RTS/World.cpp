@@ -37,6 +37,7 @@
 #include "camera/Camera3D.h"
 
 #include "generation/WorldGeneration.h"
+#include "pathfinding/NavGraph.h"
 
 // TODO: remove?
 #include "ResourceManager.h"
@@ -228,19 +229,18 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
 	return getTileHandleAtWorldPos(f32v2(worldPos));
 }
 
-TileCollision World::getTileCollisionAtWorldPos(const f32v2& worldPos) const
-{
+const Tile* World::getTileAtWorldPos(const f32v2& worldPos) const {
     const Chunk* chunk = &getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getTileCollisionAt(TileIndex(x, y));
+        return &chunk->getTileAt(TileIndex(x, y));
     }
-    return TileCollision();
+    return nullptr;
 }
 
-TileCollision World::getTileCollisionAtWorldPos(const ui32v2& worldPos) const {
-    return getTileCollisionAtWorldPos(f32v2(worldPos));
+const Tile* World::getTileAtWorldPos(const ui32v2& worldPos) const {
+    return getTileAtWorldPos(f32v2(worldPos));
 }
 
 const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const
@@ -249,9 +249,9 @@ const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-	const TileCollision& collision = chunk.getTileCollisionAt(TileIndex(x, y));
-	if (collision.navNodeIndex == UINT16_MAX) return nullptr;
-	return mNavGraph->getNode({ chunk.getChunkID().id, collision.navNodeIndex });
+	const TileHandle handle = chunk.getTileHandleAt(TileIndex(x, y));
+	if (handle.tile.navNodeIndex == UINT16_MAX) return nullptr;
+	return mNavGraph->getNode({ chunk.getChunkID().id, handle.tile.navNodeIndex });
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
@@ -387,13 +387,15 @@ IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v
 			else if (direction.y < 0) --currentCellPos.y;
 		}
 
-		TileCollision collision = getTileCollisionAtWorldPos(currentCellPos);
+		const Tile* tile = getTileAtWorldPos(currentCellPos);
 
 		// Check collision
 		// TODO: Pass in collision radius
-		IntersectionHit2D hit = TileUtil::tryRayTileIntersect(collision, currentCellPos, start, end, zPos, 0.3f);
-		if (hit.didHit()) {
-			return hit;
+		if (tile) {
+			IntersectionHit2D hit = TileUtil::tryRayTileIntersect(*tile, currentCellPos, start, end, zPos, 0.3f);
+			if (hit.didHit()) {
+				return hit;
+			}
 		}
 
 		// Add The Distance The Ray Has Traversed
@@ -766,12 +768,6 @@ void World::setTileFlagAt(const ui32v2& worldPos, TileFlags flag) {
     TileHandle handle = getTileHandleAtWorldPos(worldPos);
     Chunk* chunk = handle.getMutableChunk();
     chunk->setTileFlagAt(handle.index, flag);
-}
-
-void World::setTileCollisionNavFlagAt(const ui32v2& worldPos, TileCollisionNavFlags flag) {
-    TileHandle handle = getTileHandleAtWorldPos(worldPos);
-    Chunk* chunk = handle.getMutableChunk();
-    chunk->setTileCollisionNavFlagAt(handle.index, flag);
 }
 
 bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {

@@ -7,6 +7,8 @@
 #include "pathfinding/NavGraph.h"
 #include "world/WorldGrid.h"
 
+#include "world/TileRepository.h"
+
 #include "services/Services.h"
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
@@ -41,13 +43,11 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
 void Chunk::allocateTiles() {
     // TODO: Not always
     mTiles.resize(CHUNK_SIZE);
-    mCollision.resize(CHUNK_SIZE);
     mGrass.resize(CHUNK_SIZE);
 }
 
 void Chunk::freeTiles() {
     std::vector<Tile>().swap(mTiles);
-    std::vector<TileCollision>().swap(mCollision);
     std::vector<ui8>().swap(mGrass);
 }
 
@@ -145,10 +145,6 @@ TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
 	return TileHandle();
 }
 
-const TileCollision& Chunk::getTileCollisionAt(const TileIndex index) const {
-    return mCollision[index];
-}
-
 void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const {
 
     // TODO: Branchless interior nodes? :thinkies:
@@ -227,7 +223,38 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
             mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
         }
         mChunkRenderData.mMeshDirty = true;
+
+        // Update baseZ position
+        const f32v2 startPos = editRadius - f32v2(editRadius);
+        f32v2 offsetFromChunk = startPos - mWorldPos;
+        f32 rangeX = editRadius * 2.0f;
+        f32 rangeY = editRadius * 2.0f;
+        if (offsetFromChunk.x < 0.0f) {
+            rangeX += offsetFromChunk.x;
+            offsetFromChunk.x = 0.0f;
+        }
+        if (offsetFromChunk.y < 0.0f) {
+            rangeY += offsetFromChunk.y;
+            offsetFromChunk.y = 0.0f;
+        }
+        for (f32 y = 0.0f; y <= rangeY; ++y) {
+            for (f32 x = 0.0f; x <= rangeX; ++x) {
+                const ui32v2 chunkRelPos(offsetFromChunk.x + x, offsetFromChunk.y + y);
+                if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
+                    TileIndex tileIndex(TileIndex(chunkRelPos.x, chunkRelPos.y));
+                    Tile& tile = getMutableTileAt(tileIndex);
+                    if (tile.groundLayer == TILE_ID_NONE) {
+                        // If we have no ground layer, then we just set base Z to ground height
+                        tile.setBaseZPosition(mWorldGrid->computeCenterHeightAtTile(mChunkId, tileIndex));
+                    }
+                    else {
+                        // What happens here? What happens when we cover up the tile?
+                    }
+                }
+            }
+        }
     }
+
 }
 
 void Chunk::setTileAt(TileIndex i, Tile tile) {
@@ -237,7 +264,7 @@ void Chunk::setTileAt(TileIndex i, Tile tile) {
     oldTile = tile;
     oldTile.setTileFlags(newFlags); // Union tile flags
     // Update collision
-    updateTileCollisionAt(i);
+    updateTileCollisionAt(i, tile.topLayer);
 
     dirtyMesh();
 }
@@ -246,45 +273,34 @@ void Chunk::setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
     mTiles[i].layers[(int)layer] = tileId;
     // Update collision
     if (layer == TileLayer::Top) {
-        updateTileCollisionAt(i);
+        // Onlu top tiles have colliders
+        updateTileCollisionAt(i, tileId);
     }
     dirtyMesh();
-}
-
-void Chunk::setTileCollisionAt(TileIndex i, TileCollision collision) {
-    TileCollisionNavFlags oldFlags = mCollision[i].flags;
-    mCollision[i] = collision;
-    mCollision[i].flags = TileCollisionNavFlags((ui8)collision.flags | (ui8)oldFlags);
 }
 
 void Chunk::setTileFlagAt(TileIndex i, TileFlags flag) {
     mTiles[i].setTileFlag(flag);
 }
 
-void Chunk::setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag) {
-    mCollision[i].flags = TileCollisionNavFlags((ui8)mCollision[i].flags | (ui8)flag);
-}
-
-void Chunk::updateTileCollisionAt(TileIndex i) {
-
-    // TODO: Multithreaded read, queued write
-    //assert(!mIsNavmeshing);
-
-    const Tile& tile = mTiles[i];
-    TileCollision& collision = mCollision[i];
-    TileCollisionNavFlags oldFlags = collision.flags;
-
-    // Dirty navgraph when collision changes
-    if (collision.baseZPosition != tile.baseZPosition) {
-        dirtyNavGraph();
-    }
-
-    if (tile.topLayer != TILE_ID_NONE) {
-        collision = tile.buildTileCollision();
+void Chunk::updateTileCollisionAt(TileIndex i, TileID tileId) {
+    Tile& tile = mTiles[i];
+    tile.clearTileCollisionFlags();
+    if (tileId == TILE_ID_NONE) {
+        if (tile.tileFlags & TILE_FLAG_HAS_COLLIDER) {
+            tile.tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
+            dirtyNavGraph();
+        }
     }
     else {
-        collision = TileCollision();
-        collision.baseZPosition = tile.baseZPosition;
+        const TileCollider& collider = TileRepository::getTileData(tileId).collider;
+        if (collider.isValid()) {
+            tile.tileFlags |= collider.defaultFlags;
+            dirtyNavGraph();
+        }
+        else if (tile.tileFlags & TILE_FLAG_HAS_COLLIDER) {
+            tile.tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
+            dirtyNavGraph();
+        }
     }
-    collision.flags = TileCollisionNavFlags((ui8)collision.flags | (ui8)oldFlags);
 }

@@ -99,8 +99,6 @@ public:
 	TileHandle getBottomTileHandle(const TileIndex index) const;
 
 	ui8 getGrassAt(const TileIndex index) const { return mGrass[index]; }
-    const TileCollision& getTileCollisionAt(const TileIndex index) const;
-	std::vector<TileCollision>& getAllTileCollision() { return mCollision; }
 	// Get neighbors starting from top left
     void getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const;
     void getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]) const;
@@ -133,13 +131,13 @@ public:
 		return mTiles[i];
 	}
 
-    Tile getTileAt(TileIndex i) const {
+    const Tile& getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
         assert(mState == ChunkState::FINISHED);
         return mTiles[i];
     }
 
-    Tile getTileAtNoAssert(TileIndex i) const {
+	const Tile& getTileAtNoAssert(TileIndex i) const {
         return mTiles[i];
 	}
 
@@ -151,9 +149,7 @@ public:
 
     void setTileAt(TileIndex i, Tile tile);
 	void setTileAt(TileIndex i, TileID tileId, TileLayer layer);
-	void setTileCollisionAt(TileIndex i, TileCollision collision);
     void setTileFlagAt(TileIndex i, TileFlags flag);
-    void setTileCollisionNavFlagAt(TileIndex i, TileCollisionNavFlags flag);
 
 	inline void incRef() const {
 		assert(IS_MAIN_THREAD()); // Only main thread is allowed to incref
@@ -173,14 +169,14 @@ private:
 
 	void setTileFromGeneration(TileIndex i, Tile&& tile) {
 		mTiles[i] = tile;
-		updateTileCollisionAt(i);
+		updateTileCollisionAt(i, tile.topLayer);
 	}
 
-	void updateTileCollisionAt(TileIndex i);
+	void updateTileCollisionAt(TileIndex i, TileID tileId);
 
 	ChunkID mChunkId;
 	f32v2 mWorldPos = f32v2(0.0f);
-	f32AABB3 mAABB = f32AABB3(0.0f);
+	f32AABB3 mAABB = f32AABB3(0.0f); // TODO: Combine with worldpos?
 	ChunkState mState = ChunkState::INVALID;
 	bool mDirtyNavGraph = false;
 
@@ -194,15 +190,15 @@ private:
 	WorldGrid* mWorldGrid = nullptr;
 
     std::vector<Tile> mTiles; // TODO: Memory recycler
-	std::vector<TileCollision> mCollision; // TODO: Don't keep this in memory when its not needed?
-	std::vector<TileColliderID> mTileColliders; // TODO: Multilayer?
 	std::vector<ui8> mGrass; // Grass densities
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	// For use by ChunkRenderer
-	mutable ChunkRenderData mChunkRenderData;
+	mutable ChunkRenderData mChunkRenderData; // TODO: Make this a unique_ptr? Most chunks will keep these pointers invalid
 
 	// Thread safety
 	// TODO: Reader/writer lock
-	std::mutex mMutex;
+	// std::mutex mMutex;
 };
+static_assert(sizeof(Chunk) == 264, "These are permanently allocated, so keep small");
+//SIZER(Chunk);

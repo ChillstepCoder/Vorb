@@ -36,5 +36,5 @@ f32 WorldGeneration::getHeightAtPos(const f32v2& worldPos)
             height += lerp * mountain * glm::min(mountainDist, 1.0);
         }
     }
-    return (f32)height;
+    return glm::clamp((f32)height, MIN_WORLD_GEN_HEIGHT, MAX_WORLD_GEN_HEIGHT);
 }
