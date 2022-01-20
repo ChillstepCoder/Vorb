@@ -229,7 +229,15 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
 	return getTileHandleAtWorldPos(f32v2(worldPos));
 }
 
-const Tile* World::getTileAtWorldPos(const f32v2& worldPos) const {
+const Tile& World::getTileAtWorldPos(const f32v2& worldPos) const {
+    const Chunk* chunk = &getChunkAtPosition(worldPos);
+	assert(chunk->isDataReady());
+    ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+    ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+    return chunk->getTileAt(TileIndex(x, y));
+}
+
+const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
     const Chunk* chunk = &getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
@@ -239,8 +247,8 @@ const Tile* World::getTileAtWorldPos(const f32v2& worldPos) const {
     return nullptr;
 }
 
-const Tile* World::getTileAtWorldPos(const ui32v2& worldPos) const {
-    return getTileAtWorldPos(f32v2(worldPos));
+const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
+    return tryGetTileAtWorldPos(f32v2(worldPos));
 }
 
 const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const
@@ -258,6 +266,12 @@ void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) cons
 	for (auto&& chunk : mVisibleChunks) {
 		func(*chunk);
 	}
+}
+
+void World::enumActiveChunks(std::function<void(const Chunk&)> func) const {
+    for (auto&& chunk : mActiveChunks) {
+        func(*chunk);
+    }
 }
 
 void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func) {
@@ -387,7 +401,7 @@ IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v
 			else if (direction.y < 0) --currentCellPos.y;
 		}
 
-		const Tile* tile = getTileAtWorldPos(currentCellPos);
+		const Tile* tile = tryGetTileAtWorldPos(currentCellPos);
 
 		// Check collision
 		// TODO: Pass in collision radius

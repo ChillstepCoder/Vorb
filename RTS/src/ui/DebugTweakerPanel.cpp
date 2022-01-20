@@ -114,7 +114,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Chunk Boundaries", &sDebugOptions.mChunkBoundaries);
         ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
         ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
-        ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mNavGraphUpdates);
+        ImGui::Checkbox("Show Navgraph", &sDebugOptions.mShowNavGraph);
+        ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mShowNavGraphUpdates);
         ImGui::Checkbox("Show Physics Debug", &sDebugOptions.mShowPhysicsDebug);
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);

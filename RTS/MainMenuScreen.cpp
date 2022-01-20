@@ -132,7 +132,7 @@ void MainMenuScreen::build() {
             sDebugOptions.mCities = !sDebugOptions.mCities;
         }
         else if (event.keyCode == VKEY_J) {
-            sDebugOptions.mNavGraphUpdates = !sDebugOptions.mNavGraphUpdates;
+            sDebugOptions.mShowNavGraphUpdates = !sDebugOptions.mShowNavGraphUpdates;
         }
         else if (event.keyCode == VKEY_R && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)) {
 			mResourceManager->reloadMaterials();

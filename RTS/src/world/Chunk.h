@@ -162,6 +162,9 @@ public:
 		--mRefCount;
 	}
 
+	void incRefNeighbors4();
+	void decRefNeighbors4();
+
 	// Events
 	Event<Chunk*> onDispose;
 
@@ -200,5 +203,6 @@ private:
 	// TODO: Reader/writer lock
 	// std::mutex mMutex;
 };
+#ifdef DEBUG // Release has different size
 static_assert(sizeof(Chunk) == 264, "These are permanently allocated, so keep small");
-//SIZER(Chunk);
+#endif

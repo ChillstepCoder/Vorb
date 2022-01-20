@@ -286,7 +286,7 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
         node.isInClosedList = true;
 
         const ui32v2 nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
-        const Tile* startTile = world.getTileAtWorldPos(nodePoint);
+        const Tile* startTile = world.tryGetTileAtWorldPos(nodePoint);
         assert(startTile);
         const f32 startBaseZPosition = startTile->getBaseZPositionUncompressed();
         
@@ -313,7 +313,7 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
                 pathWeights[i] = 0.0f;
                 continue;
             }
-            const Tile* tile = world.getTileAtWorldPos(nextPoint);
+            const Tile* tile = world.tryGetTileAtWorldPos(nextPoint);
             assert(tile);
             f32 weight = (tile->pathWeight / 255.0f);
             const f32 baseZPosition = tile->getBaseZPositionUncompressed();

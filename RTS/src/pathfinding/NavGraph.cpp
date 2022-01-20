@@ -15,6 +15,10 @@ inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
     return f32v3(pos2d.x, pos2d.y, worldGrid.tryComputeHeightAtPoint(pos2d));
 }
 
+inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const ChunkID& chunkId, const f32* heightData, const f32v2& pos2d) {
+    return f32v3(pos2d.x, pos2d.y, worldGrid.computeHeightAtPoint(chunkId, heightData, pos2d));
+}
+
 struct DisjointSetNode {
     ui32 id;
 };
@@ -115,16 +119,18 @@ void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
 
     // TODO: Race conditions
     chunk.incRef();
+    chunk.incRefNeighbors4();
     chunk.mIsNavmeshing.store(true);
-    if (sDebugOptions.mNavGraphUpdates) {
+    if (sDebugOptions.mShowNavGraphUpdates) {
         Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
             // Update nav graph on worker thread
             buildNavNodesForChunkSynchronous(chunk);
             chunk.mIsNavmeshing.store(false);
             chunk.decRef();
+            chunk.decRefNeighbors4();
         }, [&]() {
 
-            if (sDebugOptions.mNavGraphUpdates) {
+            if (sDebugOptions.mShowNavGraphUpdates) {
                 debugDrawNavGraphForChunk(chunk, 250);
             }
         });
@@ -135,23 +141,31 @@ void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
             buildNavNodesForChunkSynchronous(chunk);
             chunk.mIsNavmeshing.store(false);
             chunk.decRef();
+            chunk.decRefNeighbors4();
         }, nullptr);
     }
 }
 
-void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
+void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int debugId /*= 0*/) const
 {
+    const color4 color1(0.0f, 1.0f, 1.0f, 0.5f);
+    const color4 color2(1.0f, 0.0f, 0.0f, 0.5f);
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
-    std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
+    const ChunkID& chunkId = chunk.getChunkID();
+    const f32* heightData = worldGrid.getHeightDataAt(chunkId)->data;
+    const std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
     for (auto&& node : navNodes) {
         for (auto&& edge : node.edges) {
             f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
             if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
             else if (edge.dir == Cartesian::UP) cornerPos.y += 1.0f;
-            f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)(edge.length);
-            DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, cornerPos), helperGet3DPoint(worldGrid, cornerPos + offset), color4(0.0f, 1.0f, 1.0f), lifetime);
-            f32v2 second = cornerPos + offset * 0.5f;
-            DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, second), helperGet3DPoint(worldGrid, second + f32v2(CARTESIAN_NORMALS[enum_cast(edge.dir)])), color4(0.0f, 1.0f, 1.0f), lifetime);
+            const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)(edge.length);
+            const f32v3 pointA = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos);
+            const f32v3 pointB = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos + offset);
+            DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
+            const f32v3 second(cornerPos.x + offset.x * 0.5f, cornerPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
+            const f32v3 third(second.x + CARTESIAN_NORMALS[enum_cast(edge.dir)].x, second.y + CARTESIAN_NORMALS[enum_cast(edge.dir)].y, second.z);
+            DebugRenderer::drawLineBetweenPoints(second, third, color1, lifetime, debugId);
         }
     }
     for (int k = 0; k < navNodes.size(); ++k) {
@@ -159,9 +173,8 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
         for (int i = 0; i < node.edges.size() - 1; ++i) {
             for (int j = i + 1; j < node.edges.size(); ++j) {
                 ui32 id = k;
-                color4 color = color4(255, 0, 0);
-                NavNodeEdge& edge1 = node.edges[i];
-                NavNodeEdge& edge2 = node.edges[j];
+                const NavNodeEdge& edge1 = node.edges[i];
+                const NavNodeEdge& edge2 = node.edges[j];
                 f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
                 f32v2 cornerPos1 = chunk.getWorldPos() + f32v2(edge1.start.getX(), edge1.start.getY());
                 if (edge1.dir == Cartesian::RIGHT) cornerPos1.x += 1.0f;
@@ -172,7 +185,7 @@ void NavGraph::debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime)
                 if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
                 else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
                 f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
-                DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, pos1), helperGet3DPoint(worldGrid, pos2), color, lifetime);
+                DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, chunkId, heightData, pos1), helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
             }
         }
     }
@@ -191,8 +204,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
         TileIndex index(chunkRelativePos.x, chunkRelativePos.y);
         Tile& tile = tiles[index];
-        const Tile* bottom = mWorld.getTileAtWorldPos(ui32v2(adjWorldPos));
-        assert(bottom);
+        const Tile& bottom = mWorld.getTileAtWorldPos(f32v2(adjWorldPos));
         const ui32 djIndex = subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x;
         currNodeId = djNodes[djNodeIDs[djIndex]].id;
         // Check if we have an edge break
@@ -205,7 +217,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
             prevNodeId = currNodeId;
         }
 
-        if (abs(bottom->getBaseZPositionUncompressed() - tile.getBaseZPositionUncompressed()) < 2.0f) {
+        if (abs(bottom.getBaseZPositionUncompressed() - tile.getBaseZPositionUncompressed()) < 2.0f) {
             // Start new edge
             if (length == 0) {
                 start = chunkRelativePos;

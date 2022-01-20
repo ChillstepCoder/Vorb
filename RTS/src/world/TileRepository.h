@@ -31,7 +31,9 @@ struct TileData {
     std::vector<ItemDrop> itemDrops;
     std::vector<ItemStack> recipe;
 };
+#ifdef DEBUG // Release has different size
 static_assert(sizeof(TileData) == 200, "Keep it small as possible");
+#endif
 
 // TODO: non static
 class TileRepository {

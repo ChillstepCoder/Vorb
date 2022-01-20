@@ -5,6 +5,7 @@
 #include "World.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/TileRepository.h"
+#include "pathfinding/NavGraph.h"
 
 #include "services/Services.h"
 
@@ -657,6 +658,25 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
             }
         });
+    }
+    // Nav graph (Render is slow so we only build the line meshes when toggle changes)
+    constexpr int NAVGRAPH_ID = 44432;
+    static bool wasRenderingNavGraph = false;
+    if (sDebugOptions.mShowNavGraph) {
+        if (!wasRenderingNavGraph) {
+            ScopedTimer timer("Debug Draw Navgraph");
+            DebugRenderer::reserveLines(mWorld.getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+            mWorld.enumActiveChunks([&camera, this, NAVGRAPH_ID](const Chunk& chunk) {
+                if (chunk.isDataReady() && !chunk.mIsNavmeshing) {
+                    mWorld.getNavGraph().debugDrawNavGraphForChunk(chunk, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                }
+            });
+            wasRenderingNavGraph = true;
+        }
+    }
+    else if (wasRenderingNavGraph) {
+        wasRenderingNavGraph = 0;
+        DebugRenderer::clearAllMeshesWithId(NAVGRAPH_ID);
     }
 
     // Terrain LOD debug

@@ -216,7 +216,7 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     // TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
     // TODO: Re-enable
     for (int i = 0; i < 4; ++i) {
-        const Tile* tile = world.getTileAtWorldPos(cornerPositions[i]);
+        const Tile* tile = world.tryGetTileAtWorldPos(cornerPositions[i]);
         if (tile) {
             // TODO: This can reduntantly collide
             const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);

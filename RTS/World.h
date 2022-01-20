@@ -77,8 +77,9 @@ public:
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
-    const Tile* getTileAtWorldPos(const f32v2& worldPos) const;
-    const Tile* getTileAtWorldPos(const ui32v2& worldPos) const;
+    const Tile& getTileAtWorldPos(const f32v2& worldPos) const;
+    const Tile* tryGetTileAtWorldPos(const f32v2& worldPos) const;
+    const Tile* tryGetTileAtWorldPos(const ui32v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
@@ -93,7 +94,10 @@ public:
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
 
+    size_t getNumVisibleChunks() const { return mVisibleChunks.size(); }
+    size_t getNumActiveChunks() const { return mActiveChunks.size(); }
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
+    void enumActiveChunks(std::function<void(const Chunk&)> func) const;
 	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func);
 
 	void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);

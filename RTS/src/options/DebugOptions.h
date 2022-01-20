@@ -54,7 +54,8 @@ struct DebugOptions {
     bool mChunkBoundaries = false;
     bool mCities = false;
     bool mRoofDebug = false;
-    bool mNavGraphUpdates = false;
+    bool mShowNavGraph = false;
+    bool mShowNavGraphUpdates = false;
     bool mHideCharacters = false;
     bool mShowPhysicsDebug = false;
     bool mShowTweaker = true;

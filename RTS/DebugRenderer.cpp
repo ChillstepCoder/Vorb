@@ -142,11 +142,18 @@ struct SimpleMesh {
 vg::GLProgram sProgram;
 vg::GLProgram sCircleProgram;
 
+struct IntPairHasher
+{
+    std::size_t operator()(const std::pair<i32, i32>& k) const {
+        return std::hash<i32>()(k.first) ^ std::hash<i32>()(k.second);
+    }
+};
+
 std::vector<SimpleMesh> sDebugMeshes;
 std::vector<SimpleMesh> sDebugCircleMeshes;
-std::map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>> sNewLines;
-std::map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad>> sNewQuads;
-std::map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugCircle>> sNewCircles;
+std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher> sNewLines;
+std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad>, IntPairHasher> sNewQuads;
+std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugCircle>, IntPairHasher> sNewCircles;
 
 
 const float rotVal = glm::radians(30.0f);
@@ -186,7 +193,7 @@ void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end,
     lines.emplace_back(origin, end, color);
 }
 
-void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
@@ -232,6 +239,11 @@ void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32
 void DebugRenderer::reserveFilledQuads(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.reserve(quads.size() + count);
+}
+
+void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.reserve(lines.size() + count);
 }
 
 void DebugRenderer::drawAABB(const b2AABB& aabb, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {

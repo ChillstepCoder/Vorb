@@ -41,7 +41,7 @@ public:
     // TODO: async
     void buildNavNodesForChunkSynchronous(Chunk& chunk);
     void buildNavNodesForChunkAsync(Chunk& chunk);
-    void debugDrawNavGraphForChunk(Chunk& chunk, ui32 lifetime);
+    void debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int debugId = 0) const;
 
     const NavNode* getNode(NavNodeIndexPair index) const {
         return &mNodes[index.chunkId][index.index];

@@ -283,6 +283,22 @@ void Chunk::setTileFlagAt(TileIndex i, TileFlags flag) {
     mTiles[i].setTileFlag(flag);
 }
 
+void Chunk::incRefNeighbors4() {
+    assert(mDataReadyNeighborCount == 4);
+    getBottomNeighbor().incRef();
+    getLeftNeighbor().incRef();
+    getRightNeighbor().incRef();
+    getTopNeighbor().incRef();
+}
+
+void Chunk::decRefNeighbors4() {
+    assert(mDataReadyNeighborCount == 4);
+    getBottomNeighbor().decRef();
+    getLeftNeighbor().decRef();
+    getRightNeighbor().decRef();
+    getTopNeighbor().decRef();
+}
+
 void Chunk::updateTileCollisionAt(TileIndex i, TileID tileId) {
     Tile& tile = mTiles[i];
     tile.clearTileCollisionFlags();

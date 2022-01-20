@@ -102,7 +102,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 			// Something in the way!
 
 			// Check if we need to climb
-			const Tile* tile = world.getTileAtWorldPos(hit.tilePos);
+			const Tile* tile = world.tryGetTileAtWorldPos(hit.tilePos);
 			if (tile) {
 				const TileCollider* collider = tile->tryGetCollider();
 				f32 baseZ = tile->getBaseZPositionUncompressed();
