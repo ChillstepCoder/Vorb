@@ -11,41 +11,42 @@ constexpr int INVALID_NAV_NODE_INDEX = UINT16_MAX;
 typedef ui16 NavNodeIndex;
 struct DisjointSetNode;
 
-struct NavNodeEdge {
-    NavNodeEdge(TileIndex start, ui8 length, Cartesian dir) : start(start), length(length), dir(dir) {};
-    TileIndex start;
-    ui8 length;
-    Cartesian dir;
-    // ui8 isDoor/flags/dir
+constexpr cui32v2 NAV_NODE_EDGE_OFFSETS[4] = {
+    {0, 0}, // DOWN
+    {0, 0}, // LEFT
+    {15, 0}, // RIGHT
+    {0, 15}  // UP
 };
-static_assert(sizeof(NavNodeEdge) == 4, "Keep small");
-
-struct NavNode {
-    // TODO: Experiment with static array, max size is 152 edges in worst case? prob not cache efficient...
-    // TODO: Memory pool?
-    ui32 chunkId;
-    std::vector<NavNodeEdge> edges;
-};
-static_assert(sizeof(NavNode) == 40, "Keep small");
 
 struct LiteNavNodeEdge {
-    ui8 length : 4;
+    ui8 lengthMinusOne : 4;
     ui8 start : 4;
 };
 static_assert(sizeof(LiteNavNodeEdge) == sizeof(ui8), "Must be single byte");
 
-struct NavNode2 {
+struct NavNode {
     ui32 chunkId;
-    ui8 numBottom;
-    LiteNavNodeEdge bottomEdges[8];
-    ui8 numLeft;
-    LiteNavNodeEdge leftEdges[8];
-    ui8 numRight;
-    LiteNavNodeEdge rightEdges[8];
-    ui8 numTop;
-    LiteNavNodeEdge topEdges[8];
+    TileIndex cornerPos;
+    union {
+        ui8 counts[4];
+        struct {
+            ui8 numBottom;
+            ui8 numLeft;
+            ui8 numRight;
+            ui8 numTop;
+        };
+    };
+    union {
+        LiteNavNodeEdge edges[4][8];
+        struct {
+            LiteNavNodeEdge bottomEdges[8];
+            LiteNavNodeEdge leftEdges[8];
+            LiteNavNodeEdge rightEdges[8];
+            LiteNavNodeEdge topEdges[8];
+        };
+    };
 };
-static_assert(sizeof(NavNode2) == 40, "Keep small");
+static_assert(sizeof(NavNode) == 44, "Keep small");
 
 struct NavNodeIndexPair {
     ui32 chunkId;
@@ -73,8 +74,8 @@ public:
     }
 
 private:
-    void buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir);
-    void addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex start, int length, Cartesian dir);
+    void buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir);
+    void addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
 
     NavPatch mPatches[WorldData::WORLD_SIZE_CHUNKS];
     World& mWorld;

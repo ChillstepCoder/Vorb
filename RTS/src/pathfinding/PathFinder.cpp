@@ -422,33 +422,41 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
     const WorldGrid& worldGrid = world.getWorldGrid();
     const Chunk& chunk = worldGrid.getChunk(navNode->chunkId);
     ui32v2 chunkWorldPos = ui32v2(chunk.getWorldPos());
-    for (auto& edge : navNode->edges) {
-        ui32v2 position = ui32v2(chunkWorldPos.x + edge.start.getX(), chunkWorldPos.y + edge.start.getY());
-        // Offset into next cell
-        position = ui32v2(i32v2(position) + CARTESIAN_NORMALS[enum_cast(edge.dir)]);
-        // Offset to center of edge
-        position += ui32v2(f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)edge.length * 0.5f);
-        const NavNode* nextNode = world.tryGetNavNodeAtWorldPos(position);
-        auto&& closedIt = sCoarseClosedList.find(nextNode);
-        if (closedIt != sCoarseClosedList.end()) {
-            // TODO: Update G if better?
-            continue;
-        }
-        sCoarseClosedList.insert(nextNode);
+    // Iterate all edges
+    const ui32v2 cornerWorldPos = chunkWorldPos + ui32v2(navNode->cornerPos.getX(), navNode->cornerPos.getY());
+    for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
+        ui32 count = navNode->counts[cartesian];
+        for (ui32 edgeIndex = 0; edgeIndex < count; ++edgeIndex) {
+            const LiteNavNodeEdge& edge = navNode->edges[cartesian][edgeIndex];
+            const ui32v2 edgeOffset = ui32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (ui32)edge.start;
 
-        CoarseAstarNodeID newId = totalAstarNodes++;
-        CoarseAStarNode& node = astarNodes[newId];
-        node.position = position;
-        node.g = prevG + glm::length(f32v2(node.position) - f32v2(parentPos));
-        node.h = getEuclideanHeuristicAtPosition(node.position, goal);
-        if (sDebugOptions.mShowPaths) {
-            f32v3 pos1 = helperGet3DPoint(worldGrid, f32v2(node.position));
-            f32v3 pos2 = helperGet3DPoint(worldGrid, f32v2(parentPos));
-            DebugRenderer::drawLineBetweenPoints(pos1, pos2, color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
+            ui32v2 position = cornerWorldPos + edgeOffset;
+            // Offset into next cell
+            position = ui32v2(i32v2(position) + CARTESIAN_NORMALS[cartesian]);
+            // Offset to center of edge
+            position += ui32v2(f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f) * 0.5f) + NAV_NODE_EDGE_OFFSETS[cartesian].xy;
+            const NavNode* nextNode = world.tryGetNavNodeAtWorldPos(position);
+            auto&& closedIt = sCoarseClosedList.find(nextNode);
+            if (closedIt != sCoarseClosedList.end()) {
+                // TODO: Update G if better?
+                continue;
+            }
+            sCoarseClosedList.insert(nextNode);
+
+            CoarseAstarNodeID newId = totalAstarNodes++;
+            CoarseAStarNode& node = astarNodes[newId];
+            node.position = position;
+            node.g = prevG + glm::length(f32v2(node.position) - f32v2(parentPos));
+            node.h = getEuclideanHeuristicAtPosition(node.position, goal);
+            if (sDebugOptions.mShowPaths) {
+                f32v3 pos1 = helperGet3DPoint(worldGrid, f32v2(node.position));
+                f32v3 pos2 = helperGet3DPoint(worldGrid, f32v2(parentPos));
+                DebugRenderer::drawLineBetweenPoints(pos1, pos2, color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
+            }
+            node.parentIndex = parentId;
+            openList.insert(std::make_pair(node.getScore(), newId));
         }
-        node.parentIndex = parentId;
-        openList.insert(std::make_pair(node.getScore(), newId));
-    } 
+    }
 }
 
 std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal)

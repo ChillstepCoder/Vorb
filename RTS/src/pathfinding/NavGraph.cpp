@@ -91,10 +91,11 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
             NavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
             memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
-            buildEdges(chunk, cornerX, cornerY, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::DOWN);
-            buildEdges(chunk, cornerX, cornerY, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::LEFT);
-            buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::RIGHT);
-            buildEdges(chunk, cornerX, cornerY + SUBCHUNK_WIDTH - 1, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::UP);
+            const TileIndex cornerIndex(cornerX, cornerY);
+            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::DOWN);
+            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::LEFT);
+            buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::RIGHT);
+            buildEdges(chunk, cornerX, cornerY + SUBCHUNK_WIDTH - 1, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::UP);
 
             // Update all nav indices
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
@@ -116,15 +117,16 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
 
     // Build nav list as static array
     NavPatch& patch = mPatches[chunk.getChunkID().id];
+
+    // If we have old nav data, delete it
+    if (patch.nodes) {
+        delete[] patch.nodes;
+    }
+
     if (navNodes.size()) {
         patch.size = (ui32)navNodes.size();
         patch.nodes = new NavNode[patch.size];
-        // TODO: Use memcpy once there is no longer double layer indirection
-        //memcpy(patch.nodes, navNodes.data(), sizeof(NavNode) * patch.size);
-        for (ui32 i = 0; i < patch.size; ++i) {
-            patch.nodes[i].chunkId = navNodes[i].chunkId;
-            patch.nodes[i].edges = std::move(navNodes[i].edges);
-        }
+        memcpy(patch.nodes, navNodes.data(), sizeof(NavNode) * patch.size);
     }
     else {
         patch.nodes = nullptr;
@@ -133,8 +135,10 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
 }
 
 void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
+    // TODO: Race conditions, we are writing to the nav graph on separate thread.
+    // Fix1... move the memcpy to the main thread?
+    // Fix2 is more involved as we can be reading chunk data that is in flux, we need to read lock the chunk
 
-    // TODO: Race conditions
     chunk.incRef();
     chunk.incRefNeighbors4();
     chunk.mIsNavmeshing.store(true);
@@ -174,21 +178,27 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     // Draw edges
     for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
         const NavNode& node = patch.nodes[nodeIndex];
-        for (auto&& edge : node.edges) {
-            f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
-            if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
-            else if (edge.dir == Cartesian::UP) cornerPos.y += 1.0f;
-            const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge.dir)]) * (f32)(edge.length);
-            const f32v3 pointA = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos);
-            const f32v3 pointB = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos + offset);
-            DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
-            const f32v3 second(cornerPos.x + offset.x * 0.5f, cornerPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
-            const f32v3 third(second.x + CARTESIAN_NORMALS[enum_cast(edge.dir)].x, second.y + CARTESIAN_NORMALS[enum_cast(edge.dir)].y, second.z);
-            DebugRenderer::drawLineBetweenPoints(second, third, color1, lifetime, debugId);
+        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(node.cornerPos.getX(), node.cornerPos.getY());
+        for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
+            const ui32 edgeCount = node.counts[cartesian];
+            for (ui32 i = 0; i < edgeCount; ++i) {
+                const LiteNavNodeEdge& edge = node.edges[cartesian][i];
+                const f32v2 edgeOffset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian].xy);
+                f32v2 cornerPos = cornerWorldPos + edgeOffset;
+                if (cartesian == (ui32)Cartesian::RIGHT) cornerPos.x += 1.0f;
+                else if (cartesian == (ui32)Cartesian::UP) cornerPos.y += 1.0f;
+                const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f);
+                const f32v3 pointA = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos);
+                const f32v3 pointB = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos + offset);
+                DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
+                const f32v3 second(cornerPos.x + offset.x * 0.5f, cornerPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
+                const f32v3 third(second.x + CARTESIAN_NORMALS[cartesian].x, second.y + CARTESIAN_NORMALS[cartesian].y, second.z);
+                DebugRenderer::drawLineBetweenPoints(second, third, color1, lifetime, debugId);
+            }
         }
     }
     // Draw connections between edges
-    for (int k = 0; k < patch.size; ++k) {
+    /*for (int k = 0; k < patch.size; ++k) {
         const NavNode& node = patch.nodes[k];
         for (int i = 0; i < node.edges.size() - 1; ++i) {
             for (int j = i + 1; j < node.edges.size(); ++j) {
@@ -208,10 +218,10 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, chunkId, heightData, pos1), helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
             }
         }
-    }
+    }*/
 }
 
-void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
+void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
 {
     std::vector<Tile>& tiles = chunk.mTiles;
     ui32 currNodeId;
@@ -231,7 +241,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
         if (currNodeId != prevNodeId) {
             // Finish edge
             if (length != 0) {
-                addNodeEdge(chunk, navNodeIdTable, prevNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+                addNodeEdge(chunk, navNodeIdTable, prevNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
                 length = 0;
             }
             prevNodeId = currNodeId;
@@ -246,7 +256,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
             ++length;
         }
         else if (length != 0) {
-            addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+            addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
             length = 0;
         }
         const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[enum_cast(dir)];
@@ -256,22 +266,47 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Di
     }
     // Add final edge if we reached end
     if (length != 0) {
-        addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, TileIndex(start.x, start.y), length, dir);
+        addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
     }
 }
 
-void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex start, int length, Cartesian dir) {
+void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir) {
     NavNode* currNavNode;
     // Add nav node if it doesnt exist yet
     ui16& navNodeId = navNodeIdTable[djIndex];
-    if (navNodeId == UINT16_MAX) {
+    if (navNodeId == INVALID_NAV_NODE_INDEX) {
         navNodeId = (ui16)navNodes.size();
         currNavNode = &navNodes.emplace_back();
         currNavNode->chunkId = chunk.getChunkID().id;
+        currNavNode->cornerPos = corner;
     }
     else {
         currNavNode = &navNodes[navNodeId];
+        assert(corner == currNavNode->cornerPos);
     }
+    ui8& currCount = currNavNode->counts[enum_cast(dir)];
+    assert(currCount < 8);
+    assert(length > 0 && length <= 16);
+
     // Add edge
-    currNavNode->edges.emplace_back(start, length, dir);
+    LiteNavNodeEdge& edge = currNavNode->edges[enum_cast(dir)][currCount++];
+    edge.lengthMinusOne = length - 1;
+
+    // Because dir is separated into separate arrays, and is always along the subchunk boundary, we can encode where the start is along a 0-15 integer (4 byte)
+    switch (dir) {
+        case Cartesian::LEFT:
+        case Cartesian::RIGHT: {
+            int offsety = start.getY() - corner.getY();
+            assert(offsety < 16 && offsety >= 0);
+            edge.start = offsety;
+        }
+        break;
+        case Cartesian::DOWN:
+        case Cartesian::UP: {
+            int offsetX = start.getX() - corner.getX();
+            assert(offsetX < 16 && offsetX >= 0);
+            edge.start = offsetX;
+        }
+        break;
+    }
 }
