@@ -11,6 +11,8 @@
 #include <box2d/b2_collision.h>
 #include "pathfinding/PathFinder.h"
 
+#include "world/WorldGrid.h" // For terrain height data
+
 #include "rendering/RenderStats.h"
 
 namespace {
@@ -277,14 +279,16 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 col
     lines.emplace_back(botRight, botLeft, color);
 }
 
-void DebugRenderer::drawPath(const Path& path, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawPath(const Path& path, color4 color, const WorldGrid& worldGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
     if (path.numPoints < 2) {
         return;
     }
     for (ui32 i = 0; i < path.numPoints - 1; ++i) {
+        const f32v2 pointA(path.points[i].x + 0.5f, path.points[i].y + 0.5f);
+        const f32v2 pointB(path.points[i + 1].x + 0.5f, path.points[i + 1].y + 0.5f);
         drawLineBetweenPoints(
-            f32v2(path.points[i])     + f32v2(0.5f, 0.5f),
-            f32v2(path.points[i + 1]) + f32v2(0.5f, 0.5f),
+            f32v3(pointA.x, pointA.y, worldGrid.tryComputeHeightAtPoint(pointA)),
+            f32v3(pointB.x, pointB.y, worldGrid.tryComputeHeightAtPoint(pointB)),
             color,
             lifeTime,
             id

@@ -203,7 +203,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
             navCmp.mFinePath = Services::PathFinder::ref().generatePathSynchronous(world, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos));
             if (navCmp.mFinePath) {
 				if (sDebugOptions.mShowPaths) {
-					DebugRenderer::drawPath(*navCmp.mFinePath, color4(1.0f, 0.0f, 1.0f), 200);
+					DebugRenderer::drawPath(*navCmp.mFinePath, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
 				}
 			}
 			else {

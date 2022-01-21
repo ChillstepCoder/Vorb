@@ -322,9 +322,15 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         // Copy all data
         tileData.layer = fileData.layer;
         tileData.pathWeight = fileData.pathWeight;
-        //tileData.recipe = fileData.recipes;
         tileData.resource = fileData.resource;
         tileData.shape = fileData.tileShape;
+        // Collider
+        tileData.collider.shape = fileData.colliderShape;
+        if (fileData.colliderShape != TileCollisionShape::NONE) {
+            // TODO: Doors and shit? Move?
+            tileData.collider.defaultFlags = TILE_FLAG_HAS_COLLIDER;
+            tileData.collider.dims = fileData.colliderDims;
+        }
 
         // Item drops
         tileData.itemDrops.resize(fileData.itemDrops.size());

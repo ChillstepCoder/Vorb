@@ -2,6 +2,8 @@
 struct b2AABB;
 struct Path;
 
+class WorldGrid;
+
 constexpr int MAX_DEBUG_RENDER_LIFETIME = INT32_MAX;
 
 class DebugRenderer
@@ -23,7 +25,7 @@ public:
 	static void drawAABB(const b2AABB& aabb, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, color4 color, int lifeTime = 0, int id = 0);
     static void drawAABB(const f32v2& botLeft, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
-    static void drawPath(const Path& path, color4 color, int lifeTime = 0, int id = 0);
+    static void drawPath(const Path& path, color4 color, const WorldGrid& worldGrid, int lifeTime = 0, int id = 0);
     static void drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime = 0, int id = 0);
 
 	// TODO: static void drawText()

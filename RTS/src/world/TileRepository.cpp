@@ -12,7 +12,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("height", keg::Value::basic(offsetof(TileFileData, colliderDims.z), keg::BasicType::F32));
     kt.addValue("path_weight", keg::Value::basic(offsetof(TileFileData, pathWeight), keg::BasicType::UI8));
     kt.addValue("layer", keg::Value::basic(offsetof(TileFileData, layer), keg::BasicType::UI8));
-    kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, colliderDims.x), keg::BasicType::UI8_V3));
+    kt.addValue("col_dims", keg::Value::basic(offsetof(TileFileData, colliderDims.x), keg::BasicType::F32_V3));
     kt.addValue("shape", keg::Value::custom(offsetof(TileFileData, tileShape), "TileShape", true));
     kt.addValue("resource", keg::Value::custom(offsetof(TileFileData, resource), "TileResource", true));
     kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));

@@ -148,12 +148,13 @@ void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
 
 void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int debugId /*= 0*/) const
 {
-    const color4 color1(0.0f, 1.0f, 1.0f, 0.5f);
-    const color4 color2(1.0f, 0.0f, 0.0f, 0.5f);
+    const color4 color1(0.0f, 1.0f, 1.0f, 0.75f);
+    const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
     const ChunkID& chunkId = chunk.getChunkID();
     const f32* heightData = worldGrid.getHeightDataAt(chunkId)->data;
     const std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
+    // Draw edges
     for (auto&& node : navNodes) {
         for (auto&& edge : node.edges) {
             f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
@@ -168,6 +169,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
             DebugRenderer::drawLineBetweenPoints(second, third, color1, lifetime, debugId);
         }
     }
+    // Draw connections between edges
     for (int k = 0; k < navNodes.size(); ++k) {
         auto&& node = navNodes[k];
         for (int i = 0; i < node.edges.size() - 1; ++i) {

@@ -265,6 +265,7 @@ void Chunk::setTileAt(TileIndex i, Tile tile) {
     oldTile.setTileFlags(newFlags); // Union tile flags
     // Update collision
     updateTileCollisionAt(i, tile.topLayer);
+    dirtyNavGraph(); // TODO: Smarter?
 
     dirtyMesh();
 }
@@ -275,6 +276,9 @@ void Chunk::setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
     if (layer == TileLayer::Top) {
         // Onlu top tiles have colliders
         updateTileCollisionAt(i, tileId);
+    }
+    else if (layer == TileLayer::Ground) {
+        dirtyNavGraph();
     }
     dirtyMesh();
 }
