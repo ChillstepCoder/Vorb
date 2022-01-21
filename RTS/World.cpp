@@ -251,15 +251,14 @@ const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
     return tryGetTileAtWorldPos(f32v2(worldPos));
 }
 
-const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const
-{
-	const Chunk& chunk = getChunkAtPosition(f32v2(worldPos)); // TODO: Stop casting??
+const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
+	const Chunk& chunk = getChunkAtPosition(ChunkID(f32v2(worldPos))); // TODO: Stop casting??
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-	const TileHandle handle = chunk.getTileHandleAt(TileIndex(x, y));
-	if (handle.tile.navNodeIndex == UINT16_MAX) return nullptr;
-	return mNavGraph->getNode({ chunk.getChunkID().id, handle.tile.navNodeIndex });
+	const Tile& tile = chunk.getTileAt(TileIndex(x, y));
+	if (tile.navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
+	return mNavGraph->getNode({ chunk.getChunkID().id, tile.navNodeIndex });
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {

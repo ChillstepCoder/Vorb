@@ -420,7 +420,8 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
 
 void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const ui32v2& goal, std::set<std::pair<f32, CoarseAstarNodeID>>& openList, CoarseAstarNodeID parentId, f32 prevG, ui32v2 parentPos) {
     const WorldGrid& worldGrid = world.getWorldGrid();
-    ui32v2 chunkWorldPos = ui32v2(navNode->chunk.getWorldPos());
+    const Chunk& chunk = worldGrid.getChunk(navNode->chunkId);
+    ui32v2 chunkWorldPos = ui32v2(chunk.getWorldPos());
     for (auto& edge : navNode->edges) {
         ui32v2 position = ui32v2(chunkWorldPos.x + edge.start.getX(), chunkWorldPos.y + edge.start.getY());
         // Offset into next cell

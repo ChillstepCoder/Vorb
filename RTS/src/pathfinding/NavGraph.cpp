@@ -31,8 +31,7 @@ NavGraph::NavGraph(World& world) : mWorld(world)
 void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
     PreciseTimer timer;
 
-    std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
-    navNodes.clear();
+    std::vector<NavNode> navNodes;
     navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK);
 
     // TODO: Separate internal with border chunks for faster lookups??
@@ -113,6 +112,24 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
         }
     }
     // Iterate through outer sub chunks (has chunk neighbors)
+    // TODO: what? did I forget to do this
+
+    // Build nav list as static array
+    NavPatch& patch = mPatches[chunk.getChunkID().id];
+    if (navNodes.size()) {
+        patch.size = (ui32)navNodes.size();
+        patch.nodes = new NavNode[patch.size];
+        // TODO: Use memcpy once there is no longer double layer indirection
+        //memcpy(patch.nodes, navNodes.data(), sizeof(NavNode) * patch.size);
+        for (ui32 i = 0; i < patch.size; ++i) {
+            patch.nodes[i].chunkId = navNodes[i].chunkId;
+            patch.nodes[i].edges = std::move(navNodes[i].edges);
+        }
+    }
+    else {
+        patch.nodes = nullptr;
+        patch.size = 0;
+    }
 }
 
 void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
@@ -153,9 +170,10 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
     const ChunkID& chunkId = chunk.getChunkID();
     const f32* heightData = worldGrid.getHeightDataAt(chunkId)->data;
-    const std::vector<NavNode>& navNodes = mNodes[chunk.getChunkID().id];
+    const NavPatch& patch = mPatches[chunk.getChunkID().id];
     // Draw edges
-    for (auto&& node : navNodes) {
+    for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
+        const NavNode& node = patch.nodes[nodeIndex];
         for (auto&& edge : node.edges) {
             f32v2 cornerPos = chunk.getWorldPos() + f32v2(edge.start.getX(), edge.start.getY());
             if (edge.dir == Cartesian::RIGHT) cornerPos.x += 1.0f;
@@ -170,8 +188,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
         }
     }
     // Draw connections between edges
-    for (int k = 0; k < navNodes.size(); ++k) {
-        auto&& node = navNodes[k];
+    for (int k = 0; k < patch.size; ++k) {
+        const NavNode& node = patch.nodes[k];
         for (int i = 0; i < node.edges.size() - 1; ++i) {
             for (int j = i + 1; j < node.edges.size(); ++j) {
                 ui32 id = k;
@@ -248,7 +266,8 @@ void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui3
     ui16& navNodeId = navNodeIdTable[djIndex];
     if (navNodeId == UINT16_MAX) {
         navNodeId = (ui16)navNodes.size();
-        currNavNode = &navNodes.emplace_back(chunk);
+        currNavNode = &navNodes.emplace_back();
+        currNavNode->chunkId = chunk.getChunkID().id;
     }
     else {
         currNavNode = &navNodes[navNodeId];

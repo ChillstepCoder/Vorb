@@ -21,10 +21,9 @@ struct NavNodeEdge {
 static_assert(sizeof(NavNodeEdge) == 4, "Keep small");
 
 struct NavNode {
-    NavNode(Chunk& chunk) : chunk(chunk) {}
     // TODO: Experiment with static array, max size is 152 edges in worst case? prob not cache efficient...
     // TODO: Memory pool?
-    Chunk& chunk;
+    ui32 chunkId;
     std::vector<NavNodeEdge> edges;
 };
 static_assert(sizeof(NavNode) == 40, "Keep small");
@@ -55,8 +54,9 @@ struct NavNodeIndexPair {
 static_assert(sizeof(NavNodeIndexPair) == 8, "Keep small");
 
 struct NavPatch {
-    ui32 size;
-    NavNode* nodes;
+    // Could fit another ui32 here
+    ui32 size = 0;
+    NavNode* nodes = nullptr;
 };
 
 class NavGraph
