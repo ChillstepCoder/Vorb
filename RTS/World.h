@@ -74,6 +74,8 @@ public:
     const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
     Chunk& getChunkAtPosition(const ui32v2& worldPos);
     const Chunk& getChunkAtPosition(const ui32v2& worldPos) const;
+    Chunk& getChunkAtPosition(const ui16v2& worldPos);
+    const Chunk& getChunkAtPosition(const ui16v2& worldPos) const;
     Chunk& getChunk(ChunkID chunkId);
     const Chunk& getChunk(ChunkID chunkId) const;
 
@@ -83,6 +85,7 @@ public:
     const Tile& getTileAtWorldPos(const f32v2& worldPos) const;
     const Tile* tryGetTileAtWorldPos(const f32v2& worldPos) const;
     const Tile* tryGetTileAtWorldPos(const ui32v2& worldPos) const;
+    const Tile* tryGetTileAtWorldPos(const ui16v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;

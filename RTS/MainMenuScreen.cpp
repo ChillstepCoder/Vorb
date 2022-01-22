@@ -9,6 +9,8 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include "pathfinding/NavThread.h"
+
 #include "DebugRenderer.h"
 
 #include <box2d/b2_body.h>
@@ -177,6 +179,17 @@ void MainMenuScreen::build() {
 	vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
 		mMousePosition.x = (f32)event.x;
 		mMousePosition.y = (f32)event.y;
+
+        // Uncomment for pathfind stress test
+       /* TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
+        if (pickData.hit.didHit()) {
+
+            NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
+            const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+            const f32v2& playerXYPos = physCmp.getXYPosition();
+            cmp.requestCoarsePath(ui16v2(pickData.hit.position.x, pickData.hit.position.y), playerXYPos);
+
+        }*/
 	});
 
 	vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
@@ -428,7 +441,7 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-            cmp.setCoarsePathWithCallback(Services::PathFinder::ref().generateCoarsePathSynchronous(*mWorld, xyPos, worldPosInt), nullptr);
+            cmp.requestCoarsePath(xyPos, worldPosInt);
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
             // grass

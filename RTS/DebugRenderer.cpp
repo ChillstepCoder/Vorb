@@ -9,7 +9,7 @@
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
 #include <box2d/b2_collision.h>
-#include "pathfinding/PathFinder.h"
+#include "pathfinding/NavPath.h"
 
 #include "world/WorldGrid.h" // For terrain height data
 
@@ -157,10 +157,14 @@ std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, 
 std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad>, IntPairHasher> sNewQuads;
 std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugCircle>, IntPairHasher> sNewCircles;
 
+std::mutex sNewLinesThreadSafeMutex;
+std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher> sNewLinesThreadSafe;
+
 
 const float rotVal = glm::radians(30.0f);
 void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
+    assert(IS_MAIN_THREAD());
     const f32v2 end = origin + vec;
     const f32v2 tipRay = -vec * 0.2f;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
@@ -171,6 +175,7 @@ void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 col
 
 void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
+    assert(IS_MAIN_THREAD());
     const f32v3 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
@@ -178,6 +183,7 @@ void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 col
 
 void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
+    assert(IS_MAIN_THREAD());
 	const f32v2 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
@@ -185,22 +191,33 @@ void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color
 
 void DebugRenderer::drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
+    assert(IS_MAIN_THREAD());
     const f32v3 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
 void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
 void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
+void DebugRenderer::drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(!IS_MAIN_THREAD());
+    std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
+    auto&& lines = sNewLinesThreadSafe[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, end, color);
+}
+
 void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     const f32v2 topRight = origin + dims;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, origin + f32v2(dims.x, 0.0f), color);
@@ -212,6 +229,7 @@ void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 
 
 void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
+    assert(IS_MAIN_THREAD());
     const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, origin + f32v3(dims.x, 0.0f, 0.0f), color);
@@ -222,16 +240,19 @@ void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 
 
 void DebugRenderer::drawFilledQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
+    assert(IS_MAIN_THREAD());
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
 }
 
 void DebugRenderer::drawFilledQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
 }
 
 void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32v3& v2, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(v0, v1, color);
     lines.emplace_back(v1, v2, color);
@@ -239,17 +260,19 @@ void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32
 }
 
 void DebugRenderer::reserveFilledQuads(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.reserve(quads.size() + count);
 }
 
 void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.reserve(lines.size() + count);
 }
 
 void DebugRenderer::drawAABB(const b2AABB& aabb, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-
+    assert(IS_MAIN_THREAD());
 	const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
 	const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
 	const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
@@ -259,7 +282,7 @@ void DebugRenderer::drawAABB(const b2AABB& aabb, color4 color, int lifeTime /*= 
 }
 
 void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-
+    assert(IS_MAIN_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(botLeft, topLeft, color);
     lines.emplace_back(topLeft, topRight, color);
@@ -267,8 +290,8 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const 
     lines.emplace_back(botRight, botLeft, color);
 }
 
-void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
-{
+void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     const f32v2 topLeft = botLeft + f32v2(0.0f, dims.y);
     const f32v2 topRight = botLeft + f32v2(dims.x, dims.y);
     const f32v2 botRight = botLeft + f32v2(dims.x, 0.0f);
@@ -279,30 +302,36 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 col
     lines.emplace_back(botRight, botLeft, color);
 }
 
-void DebugRenderer::drawPath(const Path& path, color4 color, const WorldGrid& worldGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawPath(const NavPath& path, color4 color, const WorldGrid& worldGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     if (path.numPoints < 2) {
         return;
     }
+
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.reserve(lines.size() + path.numPoints);
+
     for (ui32 i = 0; i < path.numPoints - 1; ++i) {
         const f32v2 pointA(path.points[i].x + 0.5f, path.points[i].y + 0.5f);
         const f32v2 pointB(path.points[i + 1].x + 0.5f, path.points[i + 1].y + 0.5f);
-        drawLineBetweenPoints(
+
+        lines.emplace_back(
             f32v3(pointA.x, pointA.y, worldGrid.tryComputeHeightAtPoint(pointA)),
             f32v3(pointB.x, pointB.y, worldGrid.tryComputeHeightAtPoint(pointB)),
-            color,
-            lifeTime,
-            id
+            color
         );
     }
 }
 
 void DebugRenderer::drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
     auto&& circles = sNewCircles[std::make_pair(lifeTime, id)];
     circles.emplace_back(origin, radius, color);
 }
 
 void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 {
+    assert(IS_MAIN_THREAD());
 
     // Quad meshes
     if (!sProgram.isCreated()) {
@@ -341,6 +370,40 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         sDebugMeshes.emplace_back(std::move(newMesh));
     }
     sNewLines.clear();
+
+    // Thread safe
+    {
+        std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
+        // context in
+        for (auto&& lineIt : sNewLinesThreadSafe) {
+            SimpleMesh newMesh;
+            auto&& lines = lineIt.second;
+
+            newMesh.lifetime = lineIt.first.first;
+            newMesh.id = lineIt.first.second;
+            glGenBuffers(1, &newMesh.vbo);
+            newMesh.numVerts = (GLsizei)(lines.size() * 2);
+            newMesh.type = DebugMeshType::LINES;
+
+            std::vector<SimpleMeshVertex> lineVertices(newMesh.numVerts);
+
+            int index = 0;
+            for (size_t i = 0; i < lines.size(); ++i) {
+                auto&& l = lines[i];
+                lineVertices[index].position = l.position1;
+                lineVertices[index].color = l.color;
+                lineVertices[index + 1].position = l.position2;
+                lineVertices[index + 1].color = l.color;
+                index += 2;
+            }
+            glBindBuffer(GL_ARRAY_BUFFER, newMesh.vbo);
+            glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(SimpleMeshVertex), nullptr, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data());
+
+            sDebugMeshes.emplace_back(std::move(newMesh));
+        }
+        sNewLinesThreadSafe.clear();
+    }
 
     for (auto&& quadIt : sNewQuads) {
         SimpleMesh newMesh;

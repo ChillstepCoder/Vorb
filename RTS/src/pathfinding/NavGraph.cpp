@@ -183,7 +183,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
                 const LiteNavNodeEdge& edge = node.edges[cartesian][i];
-                const f32v2 edgeOffset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian].xy);
+                const f32v2 edgeOffset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                 f32v2 cornerPos = cornerWorldPos + edgeOffset;
                 if (cartesian == (ui32)Cartesian::RIGHT) cornerPos.x += 1.0f;
                 else if (cartesian == (ui32)Cartesian::UP) cornerPos.y += 1.0f;
@@ -205,7 +205,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
                 const LiteNavNodeEdge& edge1 = node.edges[cartesian][i];
-                const f32v2 edgeOffset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge1.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian].xy);
+                const f32v2 edgeOffset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge1.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                 f32v2 cornerPos1 = cornerWorldPos + edgeOffset1;
                 const f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge1.lengthMinusOne + 1.0f);
                 if (cartesian == (ui32)Cartesian::RIGHT) cornerPos1.x += 1.0f;
@@ -215,7 +215,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 // Connect to our side
                 for (ui32 j = i + 1; j < edgeCount; ++j) {
                     const LiteNavNodeEdge& edge2 = node.edges[cartesian][j];
-                    const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian].xy);
+                    const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                     f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
                     const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge2.lengthMinusOne + 1.0f);
                     if (cartesian == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
@@ -229,7 +229,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                     const ui32 edgeCount2 = node.counts[cartesian2];
                     for (ui32 j = 0; j < edgeCount2; ++j) {
                         const LiteNavNodeEdge& edge2 = node.edges[cartesian2][j];
-                        const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian2].xy);
+                        const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian2]);
                         f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
                         const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)(edge2.lengthMinusOne + 1.0f);
                         if (cartesian2 == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;

@@ -10,8 +10,6 @@
 
 #include "DebugRenderer.h"
 
-#include <boost/heap/priority_queue.hpp>
-
 constexpr ui32 MAX_PATH_LENGTH = 128; //255;
 constexpr ui8 INVALID_PARENT = 0;
 
@@ -21,7 +19,7 @@ constexpr ui32 HALF_LOOKUP_LIST_WIDTH = MAX_PATH_LENGTH;
 constexpr ui32 LOOKUP_LIST_WIDTH = HALF_LOOKUP_LIST_WIDTH * 2;
 constexpr ui32 LOOKUP_LIST_SIZE = SQ(LOOKUP_LIST_WIDTH);
 
-constexpr ui32 DEBUG_DURATION = 400;
+constexpr ui32 DEBUG_DURATION = 200;
 inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
     return f32v3(pos2d.x, pos2d.y, worldGrid.tryComputeHeightAtPoint(pos2d));
 }
@@ -40,36 +38,17 @@ struct AStarNode {
 };
 static_assert(sizeof(AStarNode) == 8);
 
-typedef ui16 CoarseAstarNodeID;
-constexpr ui16 INVALID_COARSE_NODE_PARENT = UINT16_MAX;
-static_assert(sizeof(CoarseAstarNodeID) == sizeof(ui16), "Update invalid parent");
-
-struct compareCoarseNode {
-    bool operator()(const std::pair<f32, CoarseAstarNodeID>& n1, const std::pair<f32, CoarseAstarNodeID>& n2) const {
-        if (n1.first > n2.first) {
-            return true;
-        }
-        else if (n1.first < n2.first) {
-            return false;
-        }
-        return n1.second > n2.second;
-    }
-};
-// TODO: Is there a better choice?
-typedef boost::heap::priority_queue<std::pair<f32, CoarseAstarNodeID>, boost::heap::compare<compareCoarseNode>> CoarseOpenList;
-
 struct CoarseAStarNode {
     f32 h; // Heuristic distance to target
     f32 g; // Movement cost to the node
     ui16 parentIndex;
-    ui32v2 position;
+    PathPoint position;
 
     f32 getScore() const { return g + h; }
 };
 
 constexpr CoarseAstarNodeID MAXIMUM_COARSE_NODES = 8196;
 thread_local CoarseAStarNode sCoarseAstarNodes[MAXIMUM_COARSE_NODES];
-thread_local std::vector<const NavNode*> sCoarseClosed;
 
 // No allocations baby
 thread_local AStarNode sNodes[LOOKUP_LIST_SIZE] = {};
@@ -152,7 +131,7 @@ private:
 
 
 // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
-f32 getDiagonalHeuristicAtPosition(const ui32v2& node, const ui32v2& goal) {
+f32 getDiagonalHeuristicAtPosition(const PathPoint& node, const PathPoint& goal) {
 
     //constexpr f32 D = 1;
     constexpr f32 D2 = 1.4f;
@@ -165,25 +144,25 @@ f32 getDiagonalHeuristicAtPosition(const ui32v2& node, const ui32v2& goal) {
     return /*D * */(dx + dy) + (D2 - 2.0f/* * D*/) * vmath::min(dx, dy);
 }
 
-f32 getEuclideanHeuristicAtPosition(const ui32v2& node, const ui32v2& goal) {
+f32 getEuclideanHeuristicAtPosition(const PathPoint& node, const PathPoint& goal) {
     return glm::length(f32v2(node) - f32v2(goal));
 }
 
-AStarNodeID getNodeIndex(const i32v2 node, const i32v2 bottomLeft) {
+AStarNodeID getNodeIndex(const PathPoint node, const PathPoint bottomLeft) {
     assert(node.x >= bottomLeft.x && node.y >= bottomLeft.y);
-    const i32v2 offset = node - bottomLeft;
+    const PathPoint offset = node - bottomLeft;
     return (AStarNodeID)(offset.y * LOOKUP_LIST_WIDTH + offset.x);
 }
 
-ui32v2 nodeIndexToWorldPos(ui32 nodeIndex, const ui32v2& bottomLeft) {
-    return ui32v2(bottomLeft.x + nodeIndex % LOOKUP_LIST_WIDTH, bottomLeft.y + nodeIndex / LOOKUP_LIST_WIDTH);
+PathPoint nodeIndexToWorldPos(ui32 nodeIndex, const PathPoint& bottomLeft) {
+    return PathPoint(bottomLeft.x + nodeIndex % LOOKUP_LIST_WIDTH, bottomLeft.y + nodeIndex / LOOKUP_LIST_WIDTH);
 }
 
 AStarNode& getNodeLookup(const ui32 nodeIndex) {
     return sNodes[nodeIndex];
 }
 
-AStarNode& getNodeLookup(const ui32v2& node, const ui32v2& bottomLeft) {
+AStarNode& getNodeLookup(const PathPoint& node, const PathPoint& bottomLeft) {
     return sNodes[getNodeIndex(node, bottomLeft)];
 }
 
@@ -251,7 +230,7 @@ const i32v2 NODE_CORNER_NEIGHBORS[9] = {
 // TODO: https://gamedev.stackexchange.com/questions/94148/pathfinding-tile-based-navigation-mesh
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal) {
+bool PathFinder::generatePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path) {
     // TODO: Profiling
     PreciseTimer timer;
     const WorldGrid& worldGrid = world.getWorldGrid();
@@ -263,7 +242,8 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
     ui32 dx = (ui32)abs((i32)goal.x - (i32)start.x);
     ui32 dy = (ui32)abs((i32)goal.y - (i32)start.y);
     if (dx >= HALF_LOOKUP_LIST_WIDTH || dy >= HALF_LOOKUP_LIST_WIDTH) {
-        return nullptr;
+        path.finishedGenerating.store(true);
+        return false;
     }
     // Clear out the nodes
     // TODO: Is this faster or slower than using a closed list?
@@ -272,7 +252,7 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
     // This must remain sorted
     NodeList openList;
 
-    const ui32v2 bottomLeftPoint = goal - ui32v2(HALF_LOOKUP_LIST_WIDTH, HALF_LOOKUP_LIST_WIDTH);
+    const PathPoint bottomLeftPoint = goal - PathPoint(HALF_LOOKUP_LIST_WIDTH, HALF_LOOKUP_LIST_WIDTH);
 
     // Add start node to the open list
     const AStarNodeID startNodeIndex = getNodeIndex(goal, bottomLeftPoint);
@@ -300,25 +280,25 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
         node.isInOpenList = false;
         node.isInClosedList = true;
 
-        const ui32v2 nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
+        const PathPoint nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
         const Tile* startTile = world.tryGetTileAtWorldPos(nodePoint);
         assert(startTile);
         const f32 startBaseZPosition = startTile->getBaseZPositionUncompressed();
         
-        if (sDebugOptions.mShowPaths) {
+        /*if (sDebugOptions.mShowPaths) {
             if (debugCount > 255) debugCount = 0;
             f32v3 point3d = helperGet3DPoint(worldGrid, f32v2(nodePoint));
             DebugRenderer::drawFilledQuad(point3d, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), DEBUG_DURATION, 0);
-        }
+        }*/
 
         // Precompute collision weights and points for neighbors
-        ui32v2 nextPoints[8];
+        PathPoint nextPoints[8];
         f32 pathWeights[8];
         for (int dir = NODE_DIR_DOWN_LEFT; dir <= NODE_DIR_UP_RIGHT; ++dir) {
             const i32v2& offset = NODE_OFFSETS[dir];
             const int i = dir - 1;
             // TODO: This will result in a math error when casting the ui32 to i32 truncates large integers
-            const ui32v2& nextPoint = nextPoints[i] = ui32v2((i32)nodePoint.x + offset.x, (i32)nodePoint.y + offset.y);
+            const PathPoint& nextPoint = nextPoints[i] = PathPoint((i32)nodePoint.x + offset.x, (i32)nodePoint.y + offset.y);
 
             // Bounds check
             if (nextPoint.x < bottomLeftPoint.x ||
@@ -353,7 +333,7 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
         // Check neighbors
         for (int dir = NODE_DIR_DOWN_LEFT; dir <= NODE_DIR_UP_RIGHT; ++dir) {
             const int i = dir - 1;
-            const ui32v2& nextPoint = nextPoints[i];
+            const PathPoint& nextPoint = nextPoints[i];
             // Check if we can move here
             if (pathWeights[i] > 0.0001f) {
 
@@ -400,56 +380,56 @@ std::unique_ptr<Path> PathFinder::generatePathSynchronous(const World& world, co
 
     if (!foundGoal) {
         std::cout << "Failed to find path in " << timer.stop() << " ms\n";
-        return nullptr;
+        path.finishedGenerating.store(true);
+        return false;
     }
 
     // Generate the path by reverse iterating from the goal
     AStarNode& goalNode = getNodeLookup(goalNodeIndex);
 
-    std::unique_ptr<Path> path = std::make_unique<Path>();
     ui32 pathSize = 0;
     {
         AStarNode* node = &goalNode;
-        ui32v2 worldPoint = nodeIndexToWorldPos(goalNodeIndex, bottomLeftPoint);
+        PathPoint worldPoint = nodeIndexToWorldPos(goalNodeIndex, bottomLeftPoint);
 
         // Find out the path size and cache the points
         while (node != &startNode) {
             sPathPointBuffer[pathSize++] = worldPoint;
             const i32v2& offsetToParent = NODE_OFFSETS[node->parentDir];
-            worldPoint = ui32v2((i32)worldPoint.x + offsetToParent.x, (i32)worldPoint.y + offsetToParent.y);
+            worldPoint = PathPoint((i32)worldPoint.x + offsetToParent.x, (i32)worldPoint.y + offsetToParent.y);
             node = &getNodeLookup(worldPoint, bottomLeftPoint);
         }
     }
 
     // TODO: Path memory pool
-    path->points = std::make_unique<PathPoint[]>(pathSize);
-    path->numPoints = pathSize;
+    path.points = std::make_unique<PathPoint[]>(pathSize);
+    path.numPoints = pathSize;
     // Copy the path
-    memcpy(path->points.get(), sPathPointBuffer, pathSize * sizeof(PathPoint));
+    memcpy(path.points.get(), sPathPointBuffer, pathSize * sizeof(PathPoint));
 
     std::cout << "Generated path in " << timer.stop() << " ms with " << TOTAL << " nodes checked\n";
-    path->finishedGenerating = true;
-    return path;
+    path.finishedGenerating.store(true);
+    return true;
 }
 
 
-void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const ui32v2& goal, CoarseOpenList& openList, CoarseAstarNodeID parentId, f32 prevG, ui32v2 parentPos) {
+void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, CoarseClosedList& closedList, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const PathPoint& goal, CoarseOpenList& openList, CoarseAstarNodeID parentId, f32 prevG, const PathPoint& parentPos) {
     const WorldGrid& worldGrid = world.getWorldGrid();
     const Chunk& chunk = worldGrid.getChunk(navNode->chunkId);
-    ui32v2 chunkWorldPos = ui32v2(chunk.getWorldPos());
+    PathPoint chunkWorldPos = PathPoint(chunk.getWorldPos());
     // Iterate all edges
-    const ui32v2 cornerWorldPos = chunkWorldPos + ui32v2(navNode->cornerPos.getX(), navNode->cornerPos.getY());
+    const PathPoint cornerWorldPos = chunkWorldPos + PathPoint(navNode->cornerPos.getX(), navNode->cornerPos.getY());
     for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
         ui32 count = navNode->counts[cartesian];
         for (ui32 edgeIndex = 0; edgeIndex < count; ++edgeIndex) {
             const LiteNavNodeEdge& edge = navNode->edges[cartesian][edgeIndex];
-            const ui32v2 edgeOffset = ui32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (ui32)edge.start;
+            const PathPoint edgeOffset = PathPoint(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (ui16)edge.start;
 
-            ui32v2 position = cornerWorldPos + edgeOffset;
+            PathPoint position = cornerWorldPos + edgeOffset;
             // Offset into next cell
-            position = ui32v2(i32v2(position) + CARTESIAN_NORMALS[cartesian]);
+            position = PathPoint(i32v2(position) + CARTESIAN_NORMALS[cartesian]);
             // Offset to center of edge
-            position += ui32v2(f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f) * 0.5f) + NAV_NODE_EDGE_OFFSETS[cartesian].xy;
+            position += PathPoint(f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f) * 0.5f) + NAV_NODE_EDGE_OFFSETS[cartesian];
             const NavNode* nextNode = world.tryGetNavNodeAtWorldPos(position);
             if (!nextNode || nextNode->isClosed) {
                 // TODO: Update G if better?
@@ -457,7 +437,7 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
             }
             // Right now we are deliberately not allowing path to be re-updated
             nextNode->isClosed = true;
-            sCoarseClosed.push_back(nextNode);
+            closedList.push_back(nextNode);
 
             CoarseAstarNodeID newId = totalAstarNodes++;
             CoarseAStarNode& node = astarNodes[newId];
@@ -467,7 +447,7 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
             if (sDebugOptions.mShowPaths) {
                 f32v3 pos1 = helperGet3DPoint(worldGrid, f32v2(node.position));
                 f32v3 pos2 = helperGet3DPoint(worldGrid, f32v2(parentPos));
-                DebugRenderer::drawLineBetweenPoints(pos1, pos2, color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
+                DebugRenderer::drawLineBetweenPointsThreadSafe(pos1, pos2, color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
             }
             node.parentIndex = parentId;
             openList.push(std::make_pair(node.getScore(), newId));
@@ -475,35 +455,36 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
     }
 }
 
-std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal)
+bool PathFinder::generateCoarsePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path)
 {
     PreciseTimer timer;
-    //std::set<std::pair<f32, CoarseAstarNodeID>> openList;
     
-    CoarseOpenList openList;
-    openList.reserve(MAXIMUM_COARSE_NODES);
+    mOpenList.clear();
+    mOpenList.reserve(MAXIMUM_COARSE_NODES);
     
-    std::unique_ptr<CoarsePath> rvPath;
     const WorldGrid& worldGrid = world.getWorldGrid();
 
     // We pathfind backwards
     const NavNode* startNode = world.tryGetNavNodeAtWorldPos(goal);
     if (!startNode) {
-        pError("Error: Failed to find coarse path due to invalid start\n");
+        //pError("Error: Failed to find coarse path due to invalid start\n");
+        path.finishedGenerating.store(true);
+        return false;
     }
     const NavNode* endNode = world.tryGetNavNodeAtWorldPos(start);
     if (!endNode) {
-        pError("Error: Failed to find coarse path due to invalid end\n");
+        //pError("Error: Failed to find coarse path due to invalid end\n");
+        path.finishedGenerating.store(true);
+        return false;
     }
 
     // Case where we are in the same node, just return the goal
     if (startNode == endNode) {
-        rvPath = std::make_unique<CoarsePath>();
-        rvPath->points = std::make_unique<PathPoint[]>(1);
-        rvPath->points[0] = goal;
-        rvPath->numPoints = 1;
-        rvPath->finishedGenerating = true;
-        return rvPath;
+        path.points = std::make_unique<PathPoint[]>(1);
+        path.points[0] = goal;
+        path.numPoints = 1;
+        path.finishedGenerating.store(true);
+        return true;
     }
 
     // A* pathfind through the coarse graph
@@ -511,7 +492,7 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
     //sCoarseClosedList.clear();
     //sCoarseClosedList.reserve(MAXIMUM_COARSE_NODES); // TODO: Move this to an init?
     //sCoarseClosedList.insert(nullptr); // So we dont need explicit null check later
-    sCoarseClosed.reserve(MAXIMUM_COARSE_NODES);
+    mCoarseClosedList.reserve(MAXIMUM_COARSE_NODES);
 
     CoarseAstarNodeID totalAstarNodes = 0;
     CoarseAstarNodeID id;
@@ -521,41 +502,40 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
     // Add all first edges to the open and closed lists
     //sCoarseClosedList.insert(startNode);
     startNode->isClosed = true;
-    sCoarseClosed.push_back(startNode);
-    coarseAstarEdgePropagate(world, startNode, totalAstarNodes, sCoarseAstarNodes, start, openList, INVALID_COARSE_NODE_PARENT, 0.0f, goal);
+    mCoarseClosedList.push_back(startNode);
+    coarseAstarEdgePropagate(world, startNode, mCoarseClosedList, totalAstarNodes, sCoarseAstarNodes, start, mOpenList, INVALID_COARSE_NODE_PARENT, 0.0f, goal);
     // Do the A*
-    while (openList.size() && totalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
-        const auto& topNode = openList.top();
+    while (mOpenList.size() && totalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
+        const auto& topNode = mOpenList.top();
         id = topNode.second;
         CoarseAStarNode& astarNode = sCoarseAstarNodes[id];
-        openList.pop();
-        const NavNode* navNode = world.getNavNodeAtWorldPos(astarNode.position);
+        mOpenList.pop();
+        const NavNode* navNode = world.tryGetNavNodeAtWorldPos(astarNode.position);
         if (navNode == endNode) {
             foundGoal = true;
             break;
         }
 
-        //DebugRenderer::drawFilledQuad(astarNode.position, f32v2(1.1f), color4(1.0f, 1.0f, 1.0f, 0.5f), i, 0);
-        
-        coarseAstarEdgePropagate(world, navNode, totalAstarNodes, sCoarseAstarNodes, start, openList, id, astarNode.g, astarNode.position);
+        coarseAstarEdgePropagate(world, navNode, mCoarseClosedList, totalAstarNodes, sCoarseAstarNodes, start, mOpenList, id, astarNode.g, astarNode.position);
     }
 
-    for (auto&& node : sCoarseClosed) {
+    for (auto&& node : mCoarseClosedList) {
         node->isClosed = false;
     }
 
-    if (sDebugOptions.mShowPaths) {
+    // TODO: Threadsafety
+    /*if (sDebugOptions.mShowPaths) {
         f32v3 start3d = helperGet3DPoint(worldGrid, f32v2(start));
         DebugRenderer::drawFilledQuad(start3d, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION, 0);
         f32v3 goal3d = helperGet3DPoint(worldGrid, f32v2(goal));
         DebugRenderer::drawFilledQuad(goal3d, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 0.6f), DEBUG_DURATION, 0);
-    }
+    }*/
 
     if (!foundGoal) {
-        return nullptr;
+        path.finishedGenerating.store(true);
+        return false;
     }
 
-    rvPath = std::make_unique<CoarsePath>();
     ui32 pathSize = 0;
     {
         sPathPointBuffer[pathSize++] = start;
@@ -574,23 +554,24 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
     }
 
     // TODO: Path memory pool
-    rvPath->points = std::make_unique<PathPoint[]>(pathSize);
-    rvPath->numPoints = pathSize;
+    path.points = std::make_unique<PathPoint[]>(pathSize);
+    path.numPoints = pathSize;
     // Copy the path
-    memcpy(rvPath->points.get(), sPathPointBuffer, pathSize * sizeof(PathPoint));
+    memcpy(path.points.get(), sPathPointBuffer, pathSize * sizeof(PathPoint));
 
 
     if (sDebugOptions.mShowPaths) {
-        for (ui32 i = 1; i < rvPath->numPoints; ++i) {
-            const ui32v2& a = rvPath->points[i - 1];
-            const ui32v2& b = rvPath->points[i];
+        for (ui32 i = 1; i < path.numPoints; ++i) {
+            const PathPoint& a = path.points[i - 1];
+            const PathPoint& b = path.points[i];
             f32v3 pointA3d = helperGet3DPoint(worldGrid, f32v2(a));
             f32v3 pointB3d = helperGet3DPoint(worldGrid, f32v2(b));
-            DebugRenderer::drawLineBetweenPoints(pointA3d, pointB3d, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
+            DebugRenderer::drawLineBetweenPointsThreadSafe(pointA3d, pointB3d, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
         }
     }
 
         // Back propagation
     std::cout << "Coarse path found in " << timer.stop() << "ms with " << totalAstarNodes << " total nodes checked\n";
-    return rvPath;
+    path.finishedGenerating.store(true);
+    return true;
 }

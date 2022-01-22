@@ -20,10 +20,10 @@ void ContactListener::BeginContact(b2Contact* contact) {
 	entt::entity idB = extractEntity(contact->GetFixtureB());
 
     if (auto* navA = mEcs.mRegistry.try_get<NavigationComponent>(idA)) {
-        navA->mColliding = true;
+        navA->mFlags |= (~NAVIGATION_COMPONENT_FLAG_COLLIDING_WITH_AGENT);
     }
     if (auto* navB = mEcs.mRegistry.try_get<NavigationComponent>(idB)) {
-        navB->mColliding = true;
+        navB->mFlags |= (~NAVIGATION_COMPONENT_FLAG_COLLIDING_WITH_AGENT);
     }
 }
 
@@ -32,9 +32,9 @@ void ContactListener::EndContact(b2Contact* contact) {
     entt::entity idB = extractEntity(contact->GetFixtureB());
 
 	if (auto* navA = mEcs.mRegistry.try_get<NavigationComponent>(idA)) {
-		navA->mColliding = false;
+		navA->mFlags &= (~NAVIGATION_COMPONENT_FLAG_COLLIDING_WITH_AGENT);
 	}
     if (auto* navB = mEcs.mRegistry.try_get<NavigationComponent>(idB)) {
-        navB->mColliding = false;
+        navB->mFlags &= (~NAVIGATION_COMPONENT_FLAG_COLLIDING_WITH_AGENT);
     }
 }

@@ -6,6 +6,7 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/TileRepository.h"
 #include "pathfinding/NavGraph.h"
+#include "pathfinding/NavThread.h"
 
 #include "services/Services.h"
 
@@ -703,15 +704,15 @@ void RenderContext::renderUI(const Camera3D& camera) {
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
-    sprintf_s(buffer, sizeof(buffer), "ZoomScale: %.2f", camera.getScale());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
     sprintf_s(buffer, sizeof(buffer), "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
     sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "NavQueue: %d", (int)Services::NavThread::ref().getTasksSizeApprox());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 

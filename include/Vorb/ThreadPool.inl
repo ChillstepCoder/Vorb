@@ -64,9 +64,7 @@ template<typename T>
 void vcore::ThreadPool<T>::workerThreadFunc(T* data) {
     ThreadPoolTaskProcs<T> task;
 
-    while (true) {
-        // Check for exit
-        if (mStop.load()) return;
+    while (!mStop.load()) {
         // Note that threads will be stuck waiting here until the process ends
         mTasks.wait_dequeue(task);
         task.first(data);

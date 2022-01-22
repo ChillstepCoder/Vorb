@@ -1,27 +1,35 @@
 #pragma once
 
+#include "NavPath.h"
+
 class World;
+struct NavNode;
 
-typedef ui32v2 PathPoint;
+#include <boost/heap/priority_queue.hpp>
 
-// TODO: Can this be contiguous?
-struct Path {
-    std::unique_ptr<PathPoint[]> points; // TODO: Can we wrap this into the path allocation???
-    ui32 numPoints = 0;
-    bool finishedGenerating = false;
+typedef ui16 CoarseAstarNodeID;
+constexpr ui16 INVALID_COARSE_NODE_PARENT = UINT16_MAX;
+static_assert(sizeof(CoarseAstarNodeID) == sizeof(ui16), "Update invalid parent");
+struct compareCoarseNode {
+    bool operator()(const std::pair<f32, CoarseAstarNodeID>& n1, const std::pair<f32, CoarseAstarNodeID>& n2) const {
+        if (n1.first > n2.first) {
+            return true;
+        }
+        else if (n1.first < n2.first) {
+            return false;
+        }
+        return n1.second > n2.second;
+    }
 };
 
-struct CoarsePath {
-    std::unique_ptr<PathPoint[]> points;
-    ui32 numPoints = 0;
-    bool finishedGenerating = false;
-};
-
+// TODO: Is there a better choice?
+typedef boost::heap::priority_queue<std::pair<f32, CoarseAstarNodeID>, boost::heap::compare<compareCoarseNode>> CoarseOpenList;
+typedef std::vector<const NavNode*> CoarseClosedList;
 
 // TODO: Memory recycler for path memory
-class PathCache {
+//class PathCache {
     
-};
+//};
 
 // TODO: Also support flow path finding for large group movements, such as for moving in formation
 class PathFinder {
@@ -29,10 +37,13 @@ public:
     PathFinder() {};
 
     // Fine grid paths
-    std::unique_ptr<Path> generatePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal);
-    void generatePathAsynchronous(); // TODO: DO
+    bool generatePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
 
     // Coarse grid paths
-    std::unique_ptr<CoarsePath> generateCoarsePathSynchronous(const World& world, const ui32v2& start, const ui32v2& goal);
+    bool generateCoarsePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
+
+private:
+    CoarseOpenList mOpenList;
+    CoarseClosedList mCoarseClosedList;
 };
 

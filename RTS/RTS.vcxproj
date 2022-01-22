@@ -200,6 +200,7 @@
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
     <ClCompile Include="src\pathfinding\NavGraph.cpp" />
+    <ClCompile Include="src\pathfinding\NavThread.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\physics\ContactFilter.cpp" />
     <ClCompile Include="src\physics\ContactListener.cpp" />
@@ -346,6 +347,8 @@
     <ClInclude Include="src\particles\ParticleSystemData.h" />
     <ClInclude Include="src\particles\ParticleSystemManager.h" />
     <ClInclude Include="src\pathfinding\NavGraph.h" />
+    <ClInclude Include="src\pathfinding\NavThread.h" />
+    <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
     <ClInclude Include="src\physics\ContactFilter.h" />
     <ClInclude Include="src\physics\ContactListener.h" />

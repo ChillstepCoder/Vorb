@@ -82,18 +82,15 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
         return;
     }
 
-    navCmp.setCoarsePathWithCallback(
-        Services::PathFinder::ref().generateCoarsePathSynchronous(world, physCmp.getXYPosition(), mTileTarget.getWorldPos()),
-        [this](bool success) {
-            if (success == true) {
-                mState = GatherTaskState::BEGIN_HARVEST;
-            }
-            else {
-                // Failed to path, fail he task
-                mState = GatherTaskState::FAIL;
-            }
+    navCmp.requestCoarsePathWithCallback(physCmp.getXYPosition(), mTileTarget.getWorldPos(), [this](bool success) {
+        if (success == true) {
+            mState = GatherTaskState::BEGIN_HARVEST;
         }
-    );
+        else {
+            // Failed to path, fail he task
+            mState = GatherTaskState::FAIL;
+        }
+    });
     mState = GatherTaskState::PATH_TO_RESOURCE;
 }
 
@@ -161,19 +158,15 @@ void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::e
     ui32v2 stockpileCenter = closestStockpile->getAABB().getCenter();
 
     // Path to the stockpile
-    navCmp.setCoarsePathWithCallback(
-        Services::PathFinder::ref().generateCoarsePathSynchronous(world, myPos, stockpileCenter),
-        [this, &registry, agent, &world, stockpileCenter](bool success) {
-            if (success) {
-                mState = GatherTaskState::PICK_STOCKPILE_SLOT;
-            }
-            else {
-                // Failed to path, fail he task
-                mState = GatherTaskState::FAIL;
-            }
+    navCmp.requestCoarsePathWithCallback(myPos, stockpileCenter, [this, &registry, agent, &world, stockpileCenter](bool success) {
+        if (success) {
+            mState = GatherTaskState::PICK_STOCKPILE_SLOT;
         }
-    );
-
+        else {
+            // Failed to path, fail he task
+            mState = GatherTaskState::FAIL;
+        }
+    });
     mState = GatherTaskState::PATH_TO_STOCKPILE;
 }
 

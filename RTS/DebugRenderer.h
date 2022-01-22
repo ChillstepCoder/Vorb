@@ -1,6 +1,6 @@
 #pragma once
 struct b2AABB;
-struct Path;
+struct NavPath;
 
 class WorldGrid;
 
@@ -15,6 +15,7 @@ public:
     static void drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime = 0, int id = 0);
     static void drawLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime = 0, int id = 0);
+    static void drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime = 0, int id = 0);
     static void drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
     static void drawWireQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
     static void drawFilledQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
@@ -25,7 +26,7 @@ public:
 	static void drawAABB(const b2AABB& aabb, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, color4 color, int lifeTime = 0, int id = 0);
     static void drawAABB(const f32v2& botLeft, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
-    static void drawPath(const Path& path, color4 color, const WorldGrid& worldGrid, int lifeTime = 0, int id = 0);
+    static void drawPath(const NavPath& path, color4 color, const WorldGrid& worldGrid, int lifeTime = 0, int id = 0);
     static void drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime = 0, int id = 0);
 
 	// TODO: static void drawText()

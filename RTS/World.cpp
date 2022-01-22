@@ -38,6 +38,7 @@
 
 #include "generation/WorldGeneration.h"
 #include "pathfinding/NavGraph.h"
+#include "pathfinding/NavThread.h"
 
 // TODO: remove?
 #include "ResourceManager.h"
@@ -83,6 +84,9 @@ World::World(ResourceManager& resourceManager) :
 
     // Weather (Init post load because it contains rendering and requires render context to be initialized, TODO: Fix this)
     mCloudManager = std::make_unique<CloudManager>(*this);
+
+	// Activate the nav thread
+	Services::NavThread::ref().init(*this);
 }
 
 World::~World() {
@@ -200,6 +204,14 @@ const Chunk& World::getChunkAtPosition(const ui32v2& worldPos) const {
     return getChunk(ChunkID::fromWorldUI32v2(worldPos));
 }
 
+Chunk& World::getChunkAtPosition(const ui16v2& worldPos) {
+    return getChunk(ChunkID::fromWorldUI16v2(worldPos));
+}
+
+const Chunk& World::getChunkAtPosition(const ui16v2& worldPos) const {
+    return getChunk(ChunkID::fromWorldUI16v2(worldPos));
+}
+
 Chunk& World::getChunk(ChunkID chunkId) {
 	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
 	return mWorldGrid.getChunk(chunkId.id);
@@ -274,6 +286,16 @@ const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
 		return &chunk->getTileAt(TileIndex(x, y));
 	}
 	return nullptr;
+}
+
+const Tile* World::tryGetTileAtWorldPos(const ui16v2& worldPos) const {
+    const Chunk* chunk = &getChunkAtPosition(worldPos);
+    if (chunk->isDataReady()) {
+        ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        return &chunk->getTileAt(TileIndex(x, y));
+    }
+    return nullptr;
 }
 
 const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {

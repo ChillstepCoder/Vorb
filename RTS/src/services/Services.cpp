@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Services.h"
 
-#include "pathfinding/PathFinder.h"
+#include "pathfinding/NavThread.h"
 #include "ResourceManager.h"
 
 static bool sIsInit = false;
@@ -17,7 +17,7 @@ void Services::init()
     const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 2, 1);
     std::cout << "  Initializing threadpool with " << threadCount << " threads.\n";
     Threadpool::set(threadCount);
-    PathFinder::set();
+    NavThread::set();
     ResourceManager::set();
 }
 
@@ -27,6 +27,6 @@ void Services::destroy()
     sIsInit = false;
 
     Threadpool::reset();
-    PathFinder::reset();
+    NavThread::reset();
     ResourceManager::reset();
 }

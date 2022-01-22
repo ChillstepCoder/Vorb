@@ -23,6 +23,12 @@ struct ChunkID {
         id.id = id.pos.y * WorldData::WORLD_WIDTH_CHUNKS + id.pos.x;
         return id;
     }
+    static ChunkID fromWorldUI16v2(const ui16v2& worldPos) {
+        ChunkID id;
+        id.pos = ui32v2(worldPos.x / CHUNK_WIDTH, worldPos.y / CHUNK_WIDTH);
+        id.id = id.pos.y * WorldData::WORLD_WIDTH_CHUNKS + id.pos.x;
+        return id;
+    }
 
     ChunkID(ui32 id) :
         id(id) {
@@ -50,7 +56,7 @@ struct ChunkID {
         return pos.x >= WorldData::WORLD_WIDTH_CHUNKS || pos.y >= WorldData::WORLD_WIDTH_CHUNKS;
     }
 
-    ui32v2 pos;
+    ui32v2 pos; // TODO: Compress pos to ui16v2 and union with ID. Take note of WorldData::WORLD_WIDTH_CHUNKS and make the X fit into as many bits exactly
     ui32 id;
 
 private:

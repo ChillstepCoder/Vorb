@@ -4,6 +4,7 @@
 
 class World;
 class Chunk;
+struct NavNode;
 
 constexpr int MAX_NAV_NODE_COUNT = UINT8_MAX;
 constexpr int INVALID_NAV_NODE_INDEX = UINT16_MAX;
@@ -11,7 +12,7 @@ constexpr int INVALID_NAV_NODE_INDEX = UINT16_MAX;
 typedef ui16 NavNodeIndex;
 struct DisjointSetNode;
 
-constexpr cui32v2 NAV_NODE_EDGE_OFFSETS[4] = {
+const ui16v2 NAV_NODE_EDGE_OFFSETS[4] = {
     {0, 0}, // DOWN
     {0, 0}, // LEFT
     {15, 0}, // RIGHT
