@@ -37,7 +37,7 @@ public:
     PathFinder() {};
 
     // Fine grid paths
-    bool generatePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
+    bool generateFinePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
 
     // Coarse grid paths
     bool generateCoarsePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);

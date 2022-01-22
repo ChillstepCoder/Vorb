@@ -287,7 +287,7 @@ void Chunk::setTileFlagAt(TileIndex i, TileFlags flag) {
     mTiles[i].setTileFlag(flag);
 }
 
-void Chunk::incRefNeighbors4() {
+void Chunk::incRefNeighbors4() const {
     assert(mDataReadyNeighborCount == 4);
     getBottomNeighbor().incRef();
     getLeftNeighbor().incRef();
@@ -295,12 +295,46 @@ void Chunk::incRefNeighbors4() {
     getTopNeighbor().incRef();
 }
 
-void Chunk::decRefNeighbors4() {
+void Chunk::decRefNeighbors4() const {
     assert(mDataReadyNeighborCount == 4);
     getBottomNeighbor().decRef();
     getLeftNeighbor().decRef();
     getRightNeighbor().decRef();
     getTopNeighbor().decRef();
+}
+
+void Chunk::incReadLockNeighbors4() const {
+    assert(mDataReadyNeighborCount == 4);
+    getBottomNeighbor().incReadLock();
+    getLeftNeighbor().incReadLock();
+    getRightNeighbor().incReadLock();
+    getTopNeighbor().incReadLock();
+}
+
+void Chunk::decReadLockNeighbors4() const {
+    assert(mDataReadyNeighborCount == 4);
+    getBottomNeighbor().decReadLock();
+    getLeftNeighbor().decReadLock();
+    getRightNeighbor().decReadLock();
+    getTopNeighbor().decReadLock();
+}
+
+void Chunk::incReadLockAndRefCountNeighbors4AndSelf() const {
+    assert(mDataReadyNeighborCount == 4);
+    incReadLockAndRefCount();
+    getBottomNeighbor().incReadLockAndRefCount();
+    getLeftNeighbor().incReadLockAndRefCount();
+    getRightNeighbor().incReadLockAndRefCount();
+    getTopNeighbor().incReadLockAndRefCount();
+}
+
+void Chunk::decReadLockAndRefCountNeighbors4AndSelf() const {
+    assert(mDataReadyNeighborCount == 4);
+    getBottomNeighbor().decReadLockAndRefCount();
+    getLeftNeighbor().decReadLockAndRefCount();
+    getRightNeighbor().decReadLockAndRefCount();
+    getTopNeighbor().decReadLockAndRefCount();
+    decReadLockAndRefCount();
 }
 
 void Chunk::updateTileCollisionAt(TileIndex i, TileID tileId) {

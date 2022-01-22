@@ -104,11 +104,13 @@ void World::initPostLoad(ChunkMesher& chunkMesher) {
 	}
 }
 
-void World::update(const f32v2& playerPos, const Camera3D& camera) {
-	assert(mEcs);
-
+void World::updateTaskQueues() {
     Services::Threadpool::ref().mainThreadUpdate();
     Services::NavThread::ref().mainThreadUpdate();
+}
+
+void World::update(const f32v2& playerPos, const Camera3D& camera) {
+	assert(mEcs);
 
 	if (sWorldGen.mIsDirty) {
 		sWorldGen.mIsDirty = false;

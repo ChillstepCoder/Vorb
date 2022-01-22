@@ -49,6 +49,7 @@ public:
 	~World();
 
 	void initPostLoad(ChunkMesher& chunkMesher);
+	void updateTaskQueues();
 	void update(const f32v2& playerPos, const Camera3D& camera);
 
 	void lazyInit();

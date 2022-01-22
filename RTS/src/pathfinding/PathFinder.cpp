@@ -230,7 +230,7 @@ const i32v2 NODE_CORNER_NEIGHBORS[9] = {
 // TODO: https://gamedev.stackexchange.com/questions/94148/pathfinding-tile-based-navigation-mesh
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-bool PathFinder::generatePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path) {
+bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path) {
     // TODO: Profiling
     PreciseTimer timer;
     const WorldGrid& worldGrid = world.getWorldGrid();

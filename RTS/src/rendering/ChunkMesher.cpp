@@ -738,7 +738,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
     // TODO: Move somewhere else?
     chunk.mChunkRenderData.mMeshDirty = false;
-    chunk.incRef();
+    chunk.incReadLockAndRefCountNeighbors4AndSelf();
 
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (!renderData.mChunkMesh) {
@@ -815,6 +815,10 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                 }
             }
         }
+
+        // No longer need read access
+        chunk.decReadLockNeighbors4();
+        chunk.decReadLock();
     }, [this, &chunk]() {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
@@ -825,6 +829,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         // Recycle and flag as free
         chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
 
+        // No longer need to exist
+        chunk.decRefNeighbors4();
         chunk.decRef();
     });
     return true;

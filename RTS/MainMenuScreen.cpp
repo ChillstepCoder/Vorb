@@ -334,6 +334,10 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
         mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
     }
 
+    // Update main thread update queues
+    mWorld->updateTaskQueues();
+
+    // Update game ticks
     int ticks = 0;
 	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 

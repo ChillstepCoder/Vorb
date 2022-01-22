@@ -52,8 +52,7 @@ void NavThread::clearTasks() {
 void NavThread::addNavgraphBuildTask(Chunk& chunk) {
     assert(!chunk.mIsNavmeshing.load());
 
-    chunk.incRef();
-    chunk.incRefNeighbors4();
+    chunk.incReadLockAndRefCountNeighbors4AndSelf();
     chunk.mIsNavmeshing.store(true);
     if (sDebugOptions.mShowNavGraphUpdates) {
 
@@ -84,8 +83,7 @@ void NavThread::navThreadFunc() {
             Chunk& chunk = mWorld->getChunk(graphArgs.first);
             navGraph.buildNavNodesForChunkSynchronous(chunk);
             chunk.mIsNavmeshing.store(false);
-            chunk.decRefNeighbors4();
-            chunk.decRef();
+            chunk.decReadLockAndRefCountNeighbors4AndSelf();
             if (graphArgs.second) {
                 mMainThreadProcs.enqueue(std::move(graphArgs.second));
             }
@@ -96,7 +94,7 @@ void NavThread::navThreadFunc() {
                 mPathFinder.generateCoarsePathSynchronous(*mWorld, pathArgs.first.start, pathArgs.first.goal, *pathArgs.first.pathToBuild);
             }
             else {
-                mPathFinder.generatePathSynchronous(*mWorld, pathArgs.first.start, pathArgs.first.goal, *pathArgs.first.pathToBuild);
+                mPathFinder.generateFinePathSynchronous(*mWorld, pathArgs.first.start, pathArgs.first.goal, *pathArgs.first.pathToBuild);
             }
             if (pathArgs.second) {
                 mMainThreadProcs.enqueue(std::move(pathArgs.second));

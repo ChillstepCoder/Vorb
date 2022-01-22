@@ -163,8 +163,16 @@ public:
 		--mRefCount;
 	}
 
-	void incRefNeighbors4();
-	void decRefNeighbors4();
+	void incRefNeighbors4() const;
+	void decRefNeighbors4() const;
+	void incReadLockNeighbors4() const;
+	void decReadLockNeighbors4() const;
+    void incReadLockAndRefCountNeighbors4AndSelf() const;
+    void decReadLockAndRefCountNeighbors4AndSelf() const;
+    void incReadLock() const { ++mReadLockCount; }
+	void decReadLock() const { assert(mReadLockCount.load() > 0);  --mReadLockCount; }
+    void incReadLockAndRefCount() const { incRef(); incReadLock();  }
+    void decReadLockAndRefCount() const { decReadLock(); decRef(); }
 
 	// Events
 	Event<Chunk*> onDispose;
@@ -185,7 +193,8 @@ private:
 	bool mDirtyNavGraph = false;
 
 	// Refcount for threading
-	mutable std::atomic_uchar mRefCount = 0;
+    mutable std::atomic_uchar mRefCount = 0;
+    mutable std::atomic_uint32_t mReadLockCount = 0;
 
 	// Atomic tasking checks
 	std::atomic_bool mIsNavmeshing = false;
@@ -205,5 +214,5 @@ private:
 	// std::mutex mMutex;
 };
 #ifdef DEBUG // Release has different size
-static_assert(sizeof(Chunk) == 264, "These are permanently allocated, so keep small");
+static_assert(sizeof(Chunk) == 272, "These are permanently allocated, so keep small");
 #endif
