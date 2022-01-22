@@ -54,7 +54,7 @@ struct CoarseAStarNode {
 
 constexpr CoarseAstarNodeID MAXIMUM_COARSE_NODES = 8196;
 thread_local CoarseAStarNode sCoarseAstarNodes[MAXIMUM_COARSE_NODES];
-thread_local std::unordered_set<const NavNode*> sCoarseClosedList;
+thread_local std::vector<const NavNode*> sCoarseClosed;
 
 // No allocations baby
 thread_local AStarNode sNodes[LOOKUP_LIST_SIZE] = {};
@@ -436,12 +436,12 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
             // Offset to center of edge
             position += ui32v2(f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f) * 0.5f) + NAV_NODE_EDGE_OFFSETS[cartesian].xy;
             const NavNode* nextNode = world.tryGetNavNodeAtWorldPos(position);
-            auto&& closedIt = sCoarseClosedList.find(nextNode);
-            if (closedIt != sCoarseClosedList.end()) {
+            if (!nextNode || nextNode->isClosed) {
                 // TODO: Update G if better?
                 continue;
             }
-            sCoarseClosedList.insert(nextNode);
+            nextNode->isClosed = true;
+            sCoarseClosed.push_back(nextNode);
 
             CoarseAstarNodeID newId = totalAstarNodes++;
             CoarseAStarNode& node = astarNodes[newId];
@@ -488,9 +488,10 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
 
     // A* pathfind through the coarse graph
     // TODO: non arbitrary reserve
-    sCoarseClosedList.clear();
-    sCoarseClosedList.reserve(MAXIMUM_COARSE_NODES); // TODO: Move this to an init?
-    sCoarseClosedList.insert(nullptr); // So we dont need explicit null check later
+    //sCoarseClosedList.clear();
+    //sCoarseClosedList.reserve(MAXIMUM_COARSE_NODES); // TODO: Move this to an init?
+    //sCoarseClosedList.insert(nullptr); // So we dont need explicit null check later
+    sCoarseClosed.reserve(MAXIMUM_COARSE_NODES);
 
     CoarseAstarNodeID totalAstarNodes = 0;
     CoarseAstarNodeID id;
@@ -498,7 +499,9 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
 
     // TODO: Race conditions with the navgraph generator thread?
     // Add all first edges to the open and closed lists
-    sCoarseClosedList.insert(startNode);
+    //sCoarseClosedList.insert(startNode);
+    startNode->isClosed = true;
+    sCoarseClosed.push_back(startNode);
     coarseAstarEdgePropagate(world, startNode, totalAstarNodes, sCoarseAstarNodes, start, openList, INVALID_COARSE_NODE_PARENT, 0.0f, goal);
     // Do the A*
     while (openList.size() && totalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
@@ -515,6 +518,10 @@ std::unique_ptr<CoarsePath> PathFinder::generateCoarsePathSynchronous(const Worl
         //DebugRenderer::drawFilledQuad(astarNode.position, f32v2(1.1f), color4(1.0f, 1.0f, 1.0f, 0.5f), i, 0);
         
         coarseAstarEdgePropagate(world, navNode, totalAstarNodes, sCoarseAstarNodes, start, openList, id, astarNode.g, astarNode.position);
+    }
+
+    for (auto&& node : sCoarseClosed) {
+        node->isClosed = false;
     }
 
 

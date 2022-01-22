@@ -45,6 +45,7 @@ struct NavNode {
             LiteNavNodeEdge topEdges[8];
         };
     };
+    mutable bool isClosed; // For use in single threaded pathfinding
 };
 static_assert(sizeof(NavNode) == 44, "Keep small");
 

@@ -198,27 +198,49 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
         }
     }
     // Draw connections between edges
-    /*for (int k = 0; k < patch.size; ++k) {
-        const NavNode& node = patch.nodes[k];
-        for (int i = 0; i < node.edges.size() - 1; ++i) {
-            for (int j = i + 1; j < node.edges.size(); ++j) {
-                ui32 id = k;
-                const NavNodeEdge& edge1 = node.edges[i];
-                const NavNodeEdge& edge2 = node.edges[j];
-                f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge1.dir)]) * (f32)(edge1.length);
-                f32v2 cornerPos1 = chunk.getWorldPos() + f32v2(edge1.start.getX(), edge1.start.getY());
-                if (edge1.dir == Cartesian::RIGHT) cornerPos1.x += 1.0f;
-                else if (edge1.dir == Cartesian::UP) cornerPos1.y += 1.0f;
-                f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
-                f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[enum_cast(edge2.dir)]) * (f32)(edge2.length);
-                f32v2 cornerPos2 = chunk.getWorldPos() + f32v2(edge2.start.getX(), edge2.start.getY());
-                if (edge2.dir == Cartesian::RIGHT) cornerPos2.x += 1.0f;
-                else if (edge2.dir == Cartesian::UP) cornerPos2.y += 1.0f;
-                f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
-                DebugRenderer::drawLineBetweenPoints(helperGet3DPoint(worldGrid, chunkId, heightData, pos1), helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
+    for (int nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
+        const NavNode& node = patch.nodes[nodeIndex];
+        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(node.cornerPos.getX(), node.cornerPos.getY());
+        for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
+            const ui32 edgeCount = node.counts[cartesian];
+            for (ui32 i = 0; i < edgeCount; ++i) {
+                const LiteNavNodeEdge& edge1 = node.edges[cartesian][i];
+                const f32v2 edgeOffset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge1.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian].xy);
+                f32v2 cornerPos1 = cornerWorldPos + edgeOffset1;
+                const f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge1.lengthMinusOne + 1.0f);
+                if (cartesian == (ui32)Cartesian::RIGHT) cornerPos1.x += 1.0f;
+                else if (cartesian == (ui32)Cartesian::UP) cornerPos1.y += 1.0f;
+                const f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
+                const f32v3 pointA = helperGet3DPoint(worldGrid, chunkId, heightData, pos1);
+                // Connect to our side
+                for (ui32 j = i + 1; j < edgeCount; ++j) {
+                    const LiteNavNodeEdge& edge2 = node.edges[cartesian][j];
+                    const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian].xy);
+                    f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
+                    const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge2.lengthMinusOne + 1.0f);
+                    if (cartesian == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
+                    else if (cartesian == (ui32)Cartesian::UP) cornerPos2.y += 1.0f;
+                    const f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
+                    DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
+                }
+
+                // Connect to all other sides
+                for (ui32 cartesian2 = cartesian + 1; cartesian2 < 4; ++cartesian2) {
+                    const ui32 edgeCount2 = node.counts[cartesian2];
+                    for (ui32 j = 0; j < edgeCount2; ++j) {
+                        const LiteNavNodeEdge& edge2 = node.edges[cartesian2][j];
+                        const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian2].xy);
+                        f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
+                        const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)(edge2.lengthMinusOne + 1.0f);
+                        if (cartesian2 == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
+                        else if (cartesian2 == (ui32)Cartesian::UP) cornerPos2.y += 1.0f;
+                        const f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
+                        DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
+                    }
+                }
             }
         }
-    }*/
+    }
 }
 
 void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
@@ -279,6 +301,11 @@ void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui3
         currNavNode = &navNodes.emplace_back();
         currNavNode->chunkId = chunk.getChunkID().id;
         currNavNode->cornerPos = corner;
+        currNavNode->numBottom = 0;
+        currNavNode->numLeft = 0;
+        currNavNode->numRight = 0;
+        currNavNode->numTop = 0;
+        currNavNode->isClosed = false;
     }
     else {
         currNavNode = &navNodes[navNodeId];
