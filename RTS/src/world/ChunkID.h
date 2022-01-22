@@ -13,8 +13,15 @@ struct ChunkID {
     ChunkID(ui32 xPos, ui32 yPos) : pos(xPos, yPos) { initIdFromPos(); };
     ChunkID(const f32v2 worldPos) {
         assert(worldPos.x >= 0.0f && worldPos.y >= 0.0f);
-        pos = i32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
+        pos = ui32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
         id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
+    }
+
+    static ChunkID fromWorldUI32v2(const ui32v2& worldPos) {
+        ChunkID id;
+        id.pos = ui32v2(worldPos.x / CHUNK_WIDTH, worldPos.y / CHUNK_WIDTH);
+        id.id = id.pos.y * WorldData::WORLD_WIDTH_CHUNKS + id.pos.x;
+        return id;
     }
 
     ChunkID(ui32 id) :

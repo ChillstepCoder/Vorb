@@ -68,11 +68,14 @@ public:
 
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 
-	// Internal public interface
+    // Internal public interface
+    Chunk& getChunkAtChunkCoords(const ui32v2& worldPos);
     Chunk& getChunkAtPosition(const f32v2& worldPos);
+    const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
     Chunk& getChunkAtPosition(const ui32v2& worldPos);
-    Chunk& getChunkAtPosition(ChunkID chunkId);
-    const Chunk& getChunkAtPosition(ChunkID chunkId) const;
+    const Chunk& getChunkAtPosition(const ui32v2& worldPos) const;
+    Chunk& getChunk(ChunkID chunkId);
+    const Chunk& getChunk(ChunkID chunkId) const;
 
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;

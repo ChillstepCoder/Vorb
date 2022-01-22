@@ -185,21 +185,33 @@ void World::lazyInit() {
 }
 
 Chunk& World::getChunkAtPosition(const f32v2& worldPos) {
-	return getChunkAtPosition(ChunkID(worldPos));
+	return getChunk(ChunkID(worldPos));
 }
 
-Chunk& World::getChunkAtPosition(ChunkID chunkId) {
+const Chunk& World::getChunkAtPosition(const f32v2& worldPos) const {
+    return getChunk(ChunkID(worldPos));
+}
+
+Chunk& World::getChunkAtPosition(const ui32v2& worldPos) {
+    return getChunk(ChunkID::fromWorldUI32v2(worldPos));
+}
+
+const Chunk& World::getChunkAtPosition(const ui32v2& worldPos) const {
+    return getChunk(ChunkID::fromWorldUI32v2(worldPos));
+}
+
+Chunk& World::getChunk(ChunkID chunkId) {
 	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
 	return mWorldGrid.getChunk(chunkId.id);
 }
 
-const Chunk& World::getChunkAtPosition(ChunkID chunkId) const {
+const Chunk& World::getChunk(ChunkID chunkId) const {
 	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
     return mWorldGrid.getChunk(chunkId.id);
 }
 
-Chunk& World::getChunkAtPosition(const ui32v2& worldPos) {
-    return getChunkAtPosition(ChunkID(worldPos));
+Chunk& World::getChunkAtChunkCoords(const ui32v2& worldPos) {
+    return getChunk(ChunkID(worldPos));
 }
 
 inline f32 fastFloorf(f32 x) {
@@ -226,7 +238,14 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 }
 
 TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
-	return getTileHandleAtWorldPos(f32v2(worldPos));
+    TileHandle handle;
+    const Chunk* chunk = &getChunkAtPosition(worldPos);
+    if (chunk->isDataReady()) {
+        ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        return chunk->getTileHandleAt(TileIndex(x, y));
+    }
+    return TileHandle();
 }
 
 const Tile& World::getTileAtWorldPos(const f32v2& worldPos) const {
@@ -248,11 +267,17 @@ const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
 }
 
 const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
-    return tryGetTileAtWorldPos(f32v2(worldPos));
+	const Chunk* chunk = &getChunkAtPosition(worldPos);
+	if (chunk->isDataReady()) {
+		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+		return &chunk->getTileAt(TileIndex(x, y));
+	}
+	return nullptr;
 }
 
 const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
-	const Chunk& chunk = getChunkAtPosition(ChunkID(f32v2(worldPos))); // TODO: Stop casting??
+	const Chunk& chunk = getChunkAtPosition(worldPos); // TODO: Stop casting??
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
