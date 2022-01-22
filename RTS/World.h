@@ -78,6 +78,8 @@ public:
     const Chunk& getChunkAtPosition(const ui16v2& worldPos) const;
     Chunk& getChunk(ChunkID chunkId);
     const Chunk& getChunk(ChunkID chunkId) const;
+    Chunk& getChunk(ui32 chunkId);
+    const Chunk& getChunk(ui32 chunkId) const;
 
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
@@ -96,6 +98,7 @@ public:
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     WorldGrid& getWorldGrid() { return mWorldGrid; }
     const WorldGrid& getWorldGrid() const { return mWorldGrid; }
+    NavGraph& getNavGraph() { return *mNavGraph; }
     const NavGraph& getNavGraph() const { return *mNavGraph; }
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }

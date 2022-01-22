@@ -43,20 +43,16 @@ void vorb::core::ThreadPool<T>::mainThreadUpdate() {
     // TODO: bulk dequeue?
     constexpr unsigned MAX_MS = 6;
     PreciseTimer timer;
-    ui32 i = 0;
     // TODO: Use optik for profiling
     while (mMainThreadProcs.try_dequeue(proc)) {
         proc();
-        ++i;
         if (timer.stop() > MAX_MS) {
             break;
         }
     }
-    if (i) {
-        //std::cout << "Main thread processed " << i << " tasks in " << timer.stop() << " ms\n";
-        if (timer.stop() > 20.0f) {
-            std::cout << timer.stop() << " ms **********************THREADPOOL SPIKE WARNING******************************\n";
-        }
+    //std::cout << "Main thread processed " << i << " tasks in " << timer.stop() << " ms\n";
+    if (timer.stop() > 20.0f) {
+        std::cout << timer.stop() << " ms ***THREADPOOL SPIKE WARNING***\n";
     }
 }
 

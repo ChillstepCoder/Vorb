@@ -29,10 +29,10 @@ NavGraph::NavGraph(World& world) : mWorld(world)
 }
 
 void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
-    PreciseTimer timer;
+    ScopedTimer timer("Built nav graph");
 
     std::vector<NavNode> navNodes;
-    navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK);
+    navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK * 2);
 
     // TODO: Separate internal with border chunks for faster lookups??
     // Iterate through sub chunks
@@ -131,39 +131,6 @@ void NavGraph::buildNavNodesForChunkSynchronous(Chunk& chunk) {
     else {
         patch.nodes = nullptr;
         patch.size = 0;
-    }
-}
-
-void NavGraph::buildNavNodesForChunkAsync(Chunk& chunk) {
-    // TODO: Race conditions, we are writing to the nav graph on separate thread.
-    // Fix1... move the memcpy to the main thread?
-    // Fix2 is more involved as we can be reading chunk data that is in flux, we need to read lock the chunk
-
-    chunk.incRef();
-    chunk.incRefNeighbors4();
-    chunk.mIsNavmeshing.store(true);
-    if (sDebugOptions.mShowNavGraphUpdates) {
-        Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
-            // Update nav graph on worker thread
-            buildNavNodesForChunkSynchronous(chunk);
-            chunk.mIsNavmeshing.store(false);
-            chunk.decRef();
-            chunk.decRefNeighbors4();
-        }, [&]() {
-
-            if (sDebugOptions.mShowNavGraphUpdates) {
-                debugDrawNavGraphForChunk(chunk, 250);
-            }
-        });
-    }
-    else {
-        Services::Threadpool::ref().addTask([&](ThreadPoolWorkerData* workerData) {
-            // Update nav graph on worker thread
-            buildNavNodesForChunkSynchronous(chunk);
-            chunk.mIsNavmeshing.store(false);
-            chunk.decRef();
-            chunk.decRefNeighbors4();
-        }, nullptr);
     }
 }
 

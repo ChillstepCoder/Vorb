@@ -107,7 +107,8 @@ void World::initPostLoad(ChunkMesher& chunkMesher) {
 void World::update(const f32v2& playerPos, const Camera3D& camera) {
 	assert(mEcs);
 
-	Services::Threadpool::ref().mainThreadUpdate();
+    Services::Threadpool::ref().mainThreadUpdate();
+    Services::NavThread::ref().mainThreadUpdate();
 
 	if (sWorldGen.mIsDirty) {
 		sWorldGen.mIsDirty = false;
@@ -220,6 +221,17 @@ Chunk& World::getChunk(ChunkID chunkId) {
 const Chunk& World::getChunk(ChunkID chunkId) const {
 	assert(chunkId.id < WorldData::WORLD_SIZE_CHUNKS);
     return mWorldGrid.getChunk(chunkId.id);
+}
+
+Chunk& World::getChunk(ui32 chunkId) {
+    assert(chunkId < WorldData::WORLD_SIZE_CHUNKS);
+    return mWorldGrid.getChunk(chunkId);
+}
+
+const Chunk& World::getChunk(ui32 chunkId) const {
+
+    assert(chunkId < WorldData::WORLD_SIZE_CHUNKS);
+    return mWorldGrid.getChunk(chunkId);
 }
 
 Chunk& World::getChunkAtChunkCoords(const ui32v2& worldPos) {
@@ -511,7 +523,7 @@ bool World::updateChunk(Chunk& chunk) {
             // Update nav graph when all neighbors are loaded
 			// TODO: Async?
             chunk.mDirtyNavGraph = false;
-            mNavGraph->buildNavNodesForChunkAsync(chunk);
+			Services::NavThread::ref().addNavgraphBuildTask(chunk);
 		}
 		else {
 			// Update grass

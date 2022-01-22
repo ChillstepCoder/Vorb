@@ -218,7 +218,7 @@ void WorldEditor::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
                 ImGui::TableNextColumn();
                 ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
                 if (ImGui::RadioButton(brush.name.c_str(), mCurrentBrushSettings->brushId == i)) {
-                    mCurrentBrushSettings->brushId = i;
+                    mCurrentBrushSettings->brushId = (ui32)i;
                     mCurrentBrushSettings->activeBrush = &brush;
                 }
                 ImGui::TableNextColumn();
@@ -266,8 +266,8 @@ void WorldEditor::renderTileEditUI() const {
     for (size_t i = 0; i < allData.size(); ++i) {
         const TileData& tileData = allData[i];
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(tileData.name.c_str(), mSelectedTile == i)) {
-            mSelectedTile = i;
+        if (ImGui::RadioButton(tileData.name.c_str(), mSelectedTile == (ui32)i)) {
+            mSelectedTile = (ui32)i;
         }
         ImGui::TableNextColumn();
         //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));

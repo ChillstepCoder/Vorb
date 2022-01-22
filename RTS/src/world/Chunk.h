@@ -73,6 +73,7 @@ class Chunk {
 	friend class ChunkMesher;
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavGraph;
+	friend class NavThread;
 	friend struct TileHandle;
 	friend struct TileRef;
 public:
