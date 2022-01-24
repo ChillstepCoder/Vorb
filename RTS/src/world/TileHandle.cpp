@@ -51,7 +51,7 @@ void TileRef::release()
 TileHandle::TileHandle(const Chunk* chunk, TileIndex index) :
     chunk(chunk),
     index(index),
-    tile(chunk->mTiles[index]) {
+    tile(&chunk->mTiles[index]) {
 
 }
 

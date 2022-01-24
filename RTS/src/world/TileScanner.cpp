@@ -48,7 +48,7 @@ std::vector<LiteTileHandle> TileScanner::scanForResource(World& world, TileResou
         // Store this if it contains a tile we want
         // Skip the ground layer, it is never a resource
         for (int i = TILE_LAYER_MID; i < TILE_LAYER_COUNT; ++i) {
-            const TileID id = tileHandle.tile.getLayersMainThread()[i];
+            const TileID id = tileHandle.tile->getLayersMainThread()[i];
             if (id != TILE_ID_NONE) {
                 if (TileRepository::getTileData(id).resource == resource) {
                     tilesToReturn.emplace_back(tileHandle.chunk->getChunkID(), tileHandle.index);

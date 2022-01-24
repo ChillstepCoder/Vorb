@@ -26,20 +26,21 @@ struct TileHandle {
     TileHandle(const Chunk* chunk, TileIndex index);
 
     bool isValid() const { return chunk != nullptr; }
-    Chunk* getMutableChunk() { return const_cast<Chunk*>(chunk); }
+    Chunk* getMutableChunk() { assert(IS_MAIN_THREAD());  return const_cast<Chunk*>(chunk); }
     f32v2 getWorldPos();
 
     TileHandle& operator=(const TileHandle& other) {
         chunk = other.chunk;
         const_cast<TileIndex&>(index) = other.index;
-        const_cast<Tile&>(tile) = other.tile;
+        tile = other.tile;
         return *this;
     }
 
     const Chunk* chunk = nullptr;
+    const Tile* tile = nullptr;
     const TileIndex index;
-    const Tile tile;
 };
+static_assert(sizeof(TileHandle) == 24, "Keep small as possible");
 
 // DOES NOT PROVIDE THREAD SAFE READ/WRITE
 struct TileRef {
@@ -64,6 +65,6 @@ struct TileRef {
     bool isValid() const { return chunk != nullptr; }
 
     Chunk* chunk = nullptr;
-    TileIndex index;
     Tile* tile = nullptr;
+    TileIndex index;
 };

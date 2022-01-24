@@ -115,12 +115,16 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                 f32v2 tileWorldPos = worldPos + ui32v2(x, y);
                 grid.setHeightAt(tileWorldPos, meanHeight);
 
-                const TileID tile = bp.tileIDs[enum_cast(type)];
-                if (tile != TILE_ID_NONE) {
+                const TileID tileId = bp.tileIDs[enum_cast(type)];
+                if (tileId != TILE_ID_NONE) {
                     const f32 height = BUILD_HEIGHTS[enum_cast(type)] + meanHeight;
                     // TODO: Always ground??
                     newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
-                    mWorld.setTileAt(tileWorldPos, Tile(TILE_ID_NONE, TILE_ID_NONE, tile, height, TILE_FLAG_IS_BUILDING));
+                    TileHandle handle = mWorld.getTileHandleAtWorldPos(tileWorldPos);
+                    Chunk* chunk = handle.getMutableChunk();
+                    chunk->addTile(handle.index, TileRepository::getTileData(tileId));
+                    chunk->setTileFlag(handle.index, TILE_FLAG_IS_BUILDING);
+                    chunk->setTileBaseZPosition(handle.index, height);
                 }
             }
         }
@@ -146,13 +150,10 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
     WorldGrid& grid = mWorld.getWorldGrid();
-    for (ui32 y = road.aabb.y; y < road.aabb.y + road.aabb.height; ++y) {
-        for (ui32 x = road.aabb.x; x < road.aabb.x + road.aabb.width; ++x) {
-            f32v2 pos(x + 0.5f, y + 0.5f);
-            f32 h;
-            if (grid.tryComputeHeightAtPoint(pos, &h)) {
-                mWorld.setTileAt(ui32v2(x, y), Tile(tileId, TILE_ID_NONE, TILE_ID_NONE, h));
-            }
+    ui32v2 xy;
+    for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.height; ++xy.y) {
+        for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
+            mWorld.addTile(xy, TileRepository::getTileData(tileId));
         }
     }
 }

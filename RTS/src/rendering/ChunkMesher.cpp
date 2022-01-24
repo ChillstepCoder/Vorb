@@ -851,7 +851,7 @@ f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, Tile
 }
 
 f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
-    const Tile& tile = neighbor.tile;
+    const Tile& tile = *neighbor.tile;
     f32 height = 0.0f;
     const TileID tileId = tile.getLayersThreadSafe()[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {

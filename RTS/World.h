@@ -66,6 +66,7 @@ public:
     void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
     void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);
     void setTileFlagAt(const ui32v2& worldPos, TileFlags flag);
+    void addTile(const ui32v2& worldPos, const TileData& tileData);
 
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 

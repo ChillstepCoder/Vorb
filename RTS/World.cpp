@@ -113,10 +113,11 @@ void World::updateTaskQueues() {
 		for (auto&& chunk : mActiveChunks) {
 			if (chunk->mTilesNeedingThreadSafeCopy.size() && chunk->mReadLockCount == 0) {
 				for (TileIndex& id : chunk->mTilesNeedingThreadSafeCopy) {
-					std::cout << "DID THE THING ON " << id << std::endl;
 					chunk->mTiles[id].updateThreadSafeLayers();
 				}
 				chunk->mTilesNeedingThreadSafeCopy.clear();
+				chunk->dirtyMesh();
+				chunk->dirtyNavGraph(); // TODO: Make this smarter
 			}
 		}
 	}
@@ -866,11 +867,20 @@ void World::setTileFlagAt(const ui32v2& worldPos, TileFlags flag) {
     chunk->setTileFlag(handle.index, flag);
 }
 
+void World::addTile(const ui32v2& worldPos, const TileData& tileData) {
+    TileHandle handle = getTileHandleAtWorldPos(worldPos);
+    assert(handle.isValid());
+    if (handle.isValid()) {
+        Chunk* chunk = handle.getMutableChunk();
+        chunk->addTile(handle.index, tileData);
+    }
+}
+
 bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
 	TileHandle handle = getTileHandleAtWorldPos(worldPos);
 	if (handle.isValid()) {
 		for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
-			TileID tileId = handle.tile.getLayersMainThread()[i];
+			TileID tileId = handle.tile->getLayersMainThread()[i];
 			if (tileId != INVALID_TILE_INDEX) {
 				if (TileRepository::getTileData(tileId).resource == resource) {
 					if (outLayer) {

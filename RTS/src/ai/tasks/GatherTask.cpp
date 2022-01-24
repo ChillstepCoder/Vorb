@@ -105,7 +105,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 
     // Interact
     TileHandle tileHandle = world.getTileHandleAtWorldPos(mTileTarget.getWorldPos());
-    if (tileHandle.tile.hasFlagMainThread(TILE_FLAG_IS_INTERACTING)) {
+    if (tileHandle.tile->hasFlagMainThread(TILE_FLAG_IS_INTERACTING)) {
         // Someone else is using this tile, try again next tick.
         return false;
     }

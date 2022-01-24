@@ -154,28 +154,28 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-			neighbors[(int)NeighborIndex8::BOTTOM] = bottom.tile;
+			neighbors[(int)NeighborIndex8::BOTTOM] = *bottom.tile;
 			TileHandle bottomLeft = bottom.chunk->getLeftTileHandle(bottom.index);
-            neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = bottomLeft.tile;
+            neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = *bottomLeft.tile;
             TileHandle bottomRight = bottom.chunk->getRightTileHandle(bottom.index);
-            neighbors[(int)NeighborIndex8::BOTTOM_RIGHT] = bottomRight.tile;
+            neighbors[(int)NeighborIndex8::BOTTOM_RIGHT] = *bottomRight.tile;
 		}
 	}
 
 	// Left
-    neighbors[(int)NeighborIndex8::LEFT] = getLeftTileHandle(index).tile;
+    neighbors[(int)NeighborIndex8::LEFT] = *getLeftTileHandle(index).tile;
 
     // Right
-    neighbors[(int)NeighborIndex8::RIGHT] = getRightTileHandle(index).tile;
+    neighbors[(int)NeighborIndex8::RIGHT] = *getRightTileHandle(index).tile;
 
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            neighbors[(int)NeighborIndex8::TOP] = top.tile;
+            neighbors[(int)NeighborIndex8::TOP] = *top.tile;
             TileHandle topLeft = top.chunk->getLeftTileHandle(top.index);
-            neighbors[(int)NeighborIndex8::TOP_LEFT] = topLeft.tile;
+            neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;
             TileHandle topRight = top.chunk->getRightTileHandle(top.index);
-            neighbors[(int)NeighborIndex8::TOP_RIGHT] = topRight.tile;
+            neighbors[(int)NeighborIndex8::TOP_RIGHT] = *topRight.tile;
         }
     }
 
@@ -456,9 +456,9 @@ void Chunk::decReadLockAndRefCountNeighbors4AndSelf() const {
 
 bool Chunk::isReadLocked() const {
     assert(IS_MAIN_THREAD());
-    const bool readLocked = mReadLockCount.load() > 0 || Services::NavThread::ref().isRunningPathfind();
-    if (readLocked) std::cout << "READ LOCK DETECTED\n";
-    return readLocked;
+    //const bool readLocked = mReadLockCount.load() > 0 || Services::NavThread::ref().isRunningPathfind();
+    //if (readLocked) std::cout << "READ LOCK DETECTED\n";
+    return mReadLockCount.load() > 0 || Services::NavThread::ref().isRunningPathfind();
 }
 
 void Chunk::updateTileCollisionAt(TileIndex i, TileID tileId, bool readLocked) {
