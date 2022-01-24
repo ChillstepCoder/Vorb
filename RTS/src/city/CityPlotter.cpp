@@ -385,15 +385,14 @@ void CityPlotter::generateAlleysForUnroadedPlots(CityDistrict &district) {
 
 bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
     bool wasConflict = false;
-    mCity.mWorld.efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk&, Tile& tile) {
+    mCity.mWorld.efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
         // TODO: Look into forcing branch prediction, we should rarely conflict
-        if (tile.hasFlag(TILE_FLAG_IN_CITY)) {
+        const Tile& tile = chunk.getTileAt(tileIndex);
+        if (tile.hasFlagMainThread(TILE_FLAG_IN_CITY)) {
             wasConflict = true;
         }
         else {
-            tile.setTileFlag(TILE_FLAG_IN_CITY);
-            // TODO: REMOVE DEBUG
-            tile.groundLayer = TILE_ID_NONE;
+            chunk.setTileFlag(tileIndex, TILE_FLAG_IN_CITY);
         }
     });
 

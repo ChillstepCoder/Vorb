@@ -638,13 +638,15 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
             }
             // Count refs
-            int refCount = chunk.mRefCount.load();
-            if (refCount > 150) {
-                std::cout << "DETECTED LOTS OF REF COUNTS ON " << (unsigned long long) & chunk << std::endl;
-                assert(false);
-            }
+            const int refCount = chunk.mRefCount.load();
+            const int readCount = chunk.mReadLockCount.load();
+            constexpr f32 REF_BOX_WIDTH = 1.0f;
+            constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
             for (int i = 0; i < refCount; ++i) {
-                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(CHUNK_WIDTH / 2) + f32v2(i * 2, 0), f32v2(2.0f), color4(1.0f, 0.0f, 1.0f));
+                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
+            }
+            for (int i = 0; i < readCount; ++i) {
+                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH, REF_BOX_WIDTH * 2.0f) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(0.0f, 1.0f, 1.0f));
             }
         });
     }

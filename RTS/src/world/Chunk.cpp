@@ -5,6 +5,7 @@
 #include "rendering/ChunkGrassQuadtree.h"
 
 #include "pathfinding/NavGraph.h"
+#include "pathfinding/NavThread.h"
 #include "world/WorldGrid.h"
 
 #include "world/TileRepository.h"
@@ -29,7 +30,7 @@ Chunk::~Chunk() {
 
 void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
     mWorldGrid = &worldGrid;
-	assert(mState == ChunkState::INVALID);
+	assert(mState == enum_cast(ChunkState::INVALID));
 	mChunkId = chunkId;
     mWorldPos = chunkId.getWorldPos();
     mAABB.x = mWorldPos.x;
@@ -55,8 +56,11 @@ void Chunk::dispose() {
     assert(IS_SHUTTING_DOWN || mRefCount.load() == 0);
 
     onDispose(this);
-
     if (isDataReady()) {
+        Chunk& bottomNeighbor = getBottomNeighbor();
+        if (bottomNeighbor.isDataReady()) {
+            --bottomNeighbor.mDataReadyNeighborCount;
+        }
         Chunk& leftNeighbor = getLeftNeighbor();
         if (leftNeighbor.isDataReady()) {
             --leftNeighbor.mDataReadyNeighborCount;
@@ -69,13 +73,11 @@ void Chunk::dispose() {
         if (topNeighbor.isDataReady()) {
             --topNeighbor.mDataReadyNeighborCount;
         }
-        Chunk& bottomNeighbor = getBottomNeighbor();
-        if (bottomNeighbor.isDataReady()) {
-            --bottomNeighbor.mDataReadyNeighborCount;
-        }
     }
+
+    mState = enum_cast(ChunkState::INVALID);
+
     mDataReadyNeighborCount = 0;
-	mState = ChunkState::INVALID;
     
     // Reset render data
     mChunkRenderData.mMeshDirty = true;
@@ -243,9 +245,9 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
                     TileIndex tileIndex(TileIndex(chunkRelPos.x, chunkRelPos.y));
                     Tile& tile = getMutableTileAt(tileIndex);
-                    if (tile.groundLayer == TILE_ID_NONE) {
+                    if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        tile.setBaseZPosition(mWorldGrid->computeCenterHeightAtTile(mChunkId, tileIndex));
+                        setTileBaseZPosition(tileIndex, mWorldGrid->computeCenterHeightAtTile(mChunkId, tileIndex));
                     }
                     else {
                         // What happens here? What happens when we cover up the tile?
@@ -259,32 +261,147 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
 
 void Chunk::setTileAt(TileIndex i, Tile tile) {
     assert(i < CHUNK_SIZE);
+    const bool readLocked = isReadLocked();
     Tile& oldTile = mTiles[i];
+    if (readLocked && !oldTile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
     TileFlags newFlags = TileFlags(oldTile.tileFlags | tile.tileFlags);
     oldTile = tile;
-    oldTile.setTileFlags(newFlags); // Union tile flags
+    oldTile.setTileFlags(newFlags, readLocked); // Union tile flags
     // Update collision
-    updateTileCollisionAt(i, tile.topLayer);
-    dirtyNavGraph(); // TODO: Smarter?
-
-    dirtyMesh();
-}
-
-void Chunk::setTileAt(TileIndex i, TileID tileId, TileLayer layer) {
-    mTiles[i].layers[(int)layer] = tileId;
-    // Update collision
-    if (layer == TileLayer::Top) {
-        // Onlu top tiles have colliders
-        updateTileCollisionAt(i, tileId);
-    }
-    else if (layer == TileLayer::Ground) {
+    updateTileCollisionAt(i, tile.topLayer, readLocked);
+    // Only dirty nav graph and mesh if we actually updated data
+    if (!readLocked) {
         dirtyNavGraph();
+        dirtyMesh();
     }
-    dirtyMesh();
+
 }
 
-void Chunk::setTileFlagAt(TileIndex i, TileFlags flag) {
-    mTiles[i].setTileFlag(flag);
+bool Chunk::canAddTile(TileIndex i, const TileData& tileData) const {
+    return mTiles[i].canAddTile(tileData);
+}
+
+void Chunk::addTile(TileIndex i, const TileData& tileData) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.addTile(tileData, readLocked);
+    if (!readLocked) {
+        dirtyMesh();
+        if (tileData.layer != TILE_LAYER_MID) {
+            dirtyNavGraph();
+        }
+    }
+}
+
+bool Chunk::tryAddTile(TileIndex i, const TileData& tileData) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        bool success = tile.tryAddTile(tileData, readLocked);
+        if (success) {
+            mTilesNeedingThreadSafeCopy.push_back(i);
+        }
+        return success;
+    }
+    else {
+        return tile.tryAddTile(tileData, readLocked);
+    }
+}
+
+void Chunk::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.setTileLayer(layer, id, readLocked);
+    // Only top has collision
+    if (layer == TileLayer::Top) {
+        updateTileCollisionAt(i, tile.topLayer, readLocked);
+    }
+    if (layer != TileLayer::Mid) {
+        // Top and bottom can change nav graph
+        // TODO: Make this smarter
+        if (!readLocked) {
+            dirtyNavGraph();
+        }
+    }
+    if (!readLocked) {
+        dirtyMesh();
+    }
+}
+
+void Chunk::setTileFlag(TileIndex i, TileFlags flag) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.setTileFlag(flag, readLocked);
+}
+
+void Chunk::setTileFlags(TileIndex i, TileFlags flags) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.setTileFlags(flags, readLocked);
+}
+
+void Chunk::clearTileFlag(TileIndex i, TileFlags flag) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.clearTileFlag(flag, readLocked);
+}
+
+void Chunk::clearTileFlags(TileIndex i) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.clearTileFlags(readLocked);
+}
+
+void Chunk::clearTileCollisionFlags(TileIndex i) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.clearTileCollisionFlags(readLocked);
+
+}
+
+void Chunk::setTilePathWeight(TileIndex i, ui8 weight) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.setPathWeight(weight, readLocked);
+
+}
+
+void Chunk::setTileBaseZPosition(TileIndex i, f32 baseZPosition) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
+    }
+    tile.setBaseZPosition(baseZPosition, readLocked);
+    if (!readLocked) {
+        dirtyMesh();
+    }
 }
 
 void Chunk::incRefNeighbors4() const {
@@ -337,24 +454,17 @@ void Chunk::decReadLockAndRefCountNeighbors4AndSelf() const {
     decReadLockAndRefCount();
 }
 
-void Chunk::updateTileCollisionAt(TileIndex i, TileID tileId) {
+bool Chunk::isReadLocked() const {
+    assert(IS_MAIN_THREAD());
+    const bool readLocked = mReadLockCount.load() > 0 || Services::NavThread::ref().isRunningPathfind();
+    if (readLocked) std::cout << "READ LOCK DETECTED\n";
+    return readLocked;
+}
+
+void Chunk::updateTileCollisionAt(TileIndex i, TileID tileId, bool readLocked) {
     Tile& tile = mTiles[i];
-    tile.clearTileCollisionFlags();
-    if (tileId == TILE_ID_NONE) {
-        if (tile.tileFlags & TILE_FLAG_HAS_COLLIDER) {
-            tile.tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
-            dirtyNavGraph();
-        }
+    if (readLocked && !tile.isUpdateQueued()) {
+        mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    else {
-        const TileCollider& collider = TileRepository::getTileData(tileId).collider;
-        if (collider.isValid()) {
-            tile.tileFlags |= collider.defaultFlags;
-            dirtyNavGraph();
-        }
-        else if (tile.tileFlags & TILE_FLAG_HAS_COLLIDER) {
-            tile.tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
-            dirtyNavGraph();
-        }
-    }
+    tile.updateCollision(readLocked);
 }

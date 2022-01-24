@@ -105,7 +105,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 
     // Interact
     TileHandle tileHandle = world.getTileHandleAtWorldPos(mTileTarget.getWorldPos());
-    if (tileHandle.tile.hasFlag(TILE_FLAG_IS_INTERACTING)) {
+    if (tileHandle.tile.hasFlagMainThread(TILE_FLAG_IS_INTERACTING)) {
         // Someone else is using this tile, try again next tick.
         return false;
     }
@@ -121,9 +121,10 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             // TODO: Interact lock???
             auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
-            const TileData& tileData = TileRepository::getTileData(tileRef->tile->layers[cmp.mTileLayer]);
-            tileRef->tile->layers[cmp.mTileLayer] = TILE_ID_NONE;
-            tileRef->chunk->dirtyMesh();
+            TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
+            const TileData& tileData = TileRepository::getTileData(tileId);
+            tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
             for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {

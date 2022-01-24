@@ -32,25 +32,175 @@ KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
     kt.addValue("count", keg::Value::basic(offsetof(ItemDropDef, countRange), keg::BasicType::UI32_V2));
 }
 
+void Tile::setTileFlag(TileFlags flag, bool isReadLocked) {
+
+    assert(IS_MAIN_THREAD());
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        tileFlagsThreadSafe |= flag;
+    }
+    tileFlags |= flag;
+}
+
+void Tile::setTileFlags(TileFlags flags, bool isReadLocked) {
+
+    assert(IS_MAIN_THREAD()); 
+    if (isReadLocked) {
+        tileFlags = flags | TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        tileFlagsThreadSafe = flags;
+        tileFlags = flags;
+    }
+}
+
+void Tile::clearTileFlag(TileFlags flag, bool isReadLocked) {
+
+    assert(IS_MAIN_THREAD());
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        tileFlagsThreadSafe &= (~flag);
+    }
+    tileFlags &= (~flag);
+}
+
+void Tile::clearTileFlags(bool isReadLocked) {
+
+    assert(IS_MAIN_THREAD());
+    if (isReadLocked) {
+        tileFlags = TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        tileFlagsThreadSafe = 0;
+        tileFlags = 0;
+    }
+}
+
+void Tile::clearTileCollisionFlags(bool isReadLocked) {
+
+    assert(IS_MAIN_THREAD());
+
+    tileFlags &= (~TILE_COLLISION_FLAGS_MASK);
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        tileFlagsThreadSafe = tileFlags;
+    }
+}
+
+void Tile::updateThreadSafeLayers() {
+    assert(tileFlags & TILE_FLAG_QUEUED_UPDATE);
+    tileFlags &= (~TILE_FLAG_QUEUED_UPDATE);
+
+    tileFlagsThreadSafe = tileFlags;
+    groundLayerThreadSafe = groundLayer;
+    midLayerThreadSafe = midLayer;
+    topLayerThreadSafe = topLayer;
+    baseZPositionCompressedThreadSafe = baseZPositionCompressed;
+    pathWeightThreadSafe = pathWeight;
+}
+
 bool Tile::canAddTile(const TileData& tile) const {
+    assert(IS_MAIN_THREAD());
     return layers[tile.layer] == TILE_ID_NONE;
 }
 
-void Tile::addTile(const TileData& tile) {
+void Tile::addTile(const TileData& tile, bool isReadLocked) {
+    assert(IS_MAIN_THREAD());
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    } else {
+        layersThreadSafe[tile.layer] = tile.id;
+    }
     layers[tile.layer] = tile.id;
 }
 
-bool Tile::tryAddTile(const TileData& tile) {
+bool Tile::tryAddTile(const TileData& tile, bool isReadLocked) {
     if (!canAddTile(tile)) {
         return false;
     }
-    addTile(tile);
+    addTile(tile, isReadLocked);
+    return true;
 }
 
-const TileCollider* Tile::tryGetCollider() const {
+void Tile::setTileLayer(TileLayer layer, TileID id, bool isReadLocked) {
+    assert(IS_MAIN_THREAD());
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        layersThreadSafe[enum_cast(layer)] = id;
+    }
+    layers[enum_cast(layer)] = id;
+}
+
+void Tile::setPathWeight(ui8 weight, bool isReadLocked) {
+    assert(IS_MAIN_THREAD());
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        pathWeightThreadSafe = weight;
+    }
+    pathWeight = weight;
+}
+
+void Tile::setBaseZPosition(f32 baseZPosition, bool isReadLocked) {
+    baseZPositionCompressed = compressTileZPosition(baseZPosition);
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        baseZPositionCompressedThreadSafe = baseZPositionCompressed;
+    }
+}
+
+void Tile::updateCollision(bool isReadLocked) {
+    // Clear collision flags
+    tileFlags &= (~TILE_COLLISION_FLAGS_MASK);
+
+    if (topLayer == TILE_ID_NONE) {
+        if (tileFlags & TILE_FLAG_HAS_COLLIDER) {
+            tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
+        }
+    }
+    else {
+        const TileCollider& collider = TileRepository::getTileData(topLayer).collider;
+        if (collider.isValid()) {
+            tileFlags |= collider.defaultFlags;
+        }
+        else if (tileFlags & TILE_FLAG_HAS_COLLIDER) {
+            tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
+        }
+    }
+
+    if (isReadLocked) {
+        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+    }
+    else {
+        tileFlagsThreadSafe = tileFlags;
+    }
+}
+
+const TileCollider* Tile::tryGetColliderMainThread() const {
+    assert(IS_MAIN_THREAD());
     if (tileFlags & TILE_FLAG_HAS_COLLIDER) {
         assert(topLayer != TILE_ID_NONE);
         return &TileRepository::getTileData(topLayer).collider;
+    }
+    return nullptr;
+}
+
+const TileCollider* Tile::tryGetColliderThreadSafe() const {
+    assert(!IS_MAIN_THREAD());
+    if (tileFlagsThreadSafe & TILE_FLAG_HAS_COLLIDER) {
+        assert(topLayerThreadSafe != TILE_ID_NONE);
+        return &TileRepository::getTileData(topLayerThreadSafe).collider;
     }
     return nullptr;
 }

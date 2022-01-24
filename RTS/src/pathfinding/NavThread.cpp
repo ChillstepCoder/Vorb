@@ -71,17 +71,21 @@ void NavThread::addNavgraphBuildTask(Chunk& chunk) {
 constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 3000;
 
 void NavThread::navThreadFunc() {
+    NAV_THREAD_ID = std::this_thread::get_id();
 
     NavThreadPathArgs pathArgs;
     NavThreadGraphBuildArgs graphArgs;
     NavGraph& navGraph = mWorld->getNavGraph();
     while (!mStop.load()) {
-        bool hasTask = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
+        // TODO: Super tiny chance of race condition here in isRunning(). We could dequeue a single task and be considered not running very briefly even tho we are
+        mRunningPathfind = false;
+        mRunningPathfind = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
+        bool hasTask = mRunningPathfind;
 
         // lazily generate ALL nav graphs
         while (mNavGraphBuildTasks.try_dequeue(graphArgs)) {
             Chunk& chunk = mWorld->getChunk(graphArgs.first);
-            navGraph.buildNavNodesForChunkSynchronous(chunk);
+            navGraph.buildNavNodesForChunk(chunk);
             chunk.mIsNavmeshing.store(false);
             chunk.decReadLockAndRefCountNeighbors4AndSelf();
             if (graphArgs.second) {
@@ -101,4 +105,5 @@ void NavThread::navThreadFunc() {
             }
         }
     }
+    mRunningPathfind = false;
 }

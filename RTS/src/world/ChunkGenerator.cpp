@@ -53,7 +53,6 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             }
         }
     }
-    tile.setBaseZPosition(height);
 
     //if (height > 0.3) {
     //    //tile.groundLayer = rock1;
@@ -97,6 +96,19 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     //        tile.topLayer = hugeTree;
     //    }
     //}
+
+
+    tile.baseZPositionCompressed = compressTileZPosition(height);
+    
+    // Set all thread safe data to be copies of base
+
+    tile.baseZPositionCompressedThreadSafe = tile.baseZPositionCompressed;
+    tile.groundLayerThreadSafe = tile.groundLayer;
+    tile.midLayerThreadSafe = tile.midLayer;
+    tile.topLayerThreadSafe = tile.topLayer;
+    tile.tileFlagsThreadSafe = tile.tileFlags;
+    tile.pathWeightThreadSafe = tile.pathWeight;
+
     return tile;
 }
 
@@ -118,7 +130,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
             f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TileIndex(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
-            const f32 baseZPos = tile.getBaseZPositionUncompressed();
+            const f32 baseZPos = tile.getBaseZPositionUncompressedThreadSafe();
             if (baseZPos + 1.0f > maxHeight) {
                 maxHeight = baseZPos + 1.0f;
             }

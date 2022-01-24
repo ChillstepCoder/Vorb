@@ -383,18 +383,30 @@ void WorldEditor::updateGrassEdit() {
 }
 
 void WorldEditor::updateTileEdit() {
+
+    static ChunkID prevChunkID;
+    static TileIndex prevTileIndex;
     if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
         ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
+        Chunk& chunk = mWorld.mWorldGrid.getChunk(chunkID);
         TileIndex tileIndex((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH);
         Tile tile;
         const TileData& data = TileRepository::getTileData(mSelectedTile);
-        tile.addTile(data);
 
-        if (data.layer == TILE_LAYER_GROUND) {
-            const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(chunkID, tileIndex);
-            tile.setBaseZPosition(height + mGroundTileOffset);
+        // Make sure while mouse is held we arent spamming tiles in the same spot
+        if (chunkID != prevChunkID || tileIndex != prevTileIndex) {
+            prevChunkID = chunkID;
+            prevTileIndex = tileIndex;
+            chunk.addTile(tileIndex, data);
+
+            if (data.layer == TILE_LAYER_GROUND) {
+                const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(chunkID, tileIndex);
+                chunk.setTileBaseZPosition(tileIndex, height + mGroundTileOffset);
+            }
         }
-        mWorld.setTileAt(chunkID, tileIndex, tile);
+    }
+    else {
+        prevChunkID = 0;
     }
 }
 

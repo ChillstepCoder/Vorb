@@ -23,6 +23,7 @@ TileRef::TileRef() {
 }
 
 void TileRef::acquire(TileHandle handle) {
+    assert(IS_MAIN_THREAD());
     assert(!chunk);
     chunk = const_cast<Chunk*>(handle.chunk); // FUCK YOU I DO WHAT I WANT;
     index = handle.index;
@@ -31,6 +32,7 @@ void TileRef::acquire(TileHandle handle) {
 }
 
 void TileRef::acquire(Chunk* newChunk, TileIndex newIndex) {
+    assert(IS_MAIN_THREAD());
     assert(!chunk);
     chunk = newChunk;
     index = newIndex;

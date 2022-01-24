@@ -111,8 +111,8 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 			// Check if we need to climb
 			const Tile* tile = world.tryGetTileAtWorldPos(hit.tilePos);
 			if (tile) {
-				const TileCollider* collider = tile->tryGetCollider();
-				f32 baseZ = tile->getBaseZPositionUncompressed();
+				const TileCollider* collider = tile->tryGetColliderMainThread();
+				f32 baseZ = tile->getBaseZPositionUncompressedMainThread();
 				if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
 					// Climb
 					physCmp.setZVelocity(JUMP_VELOCITY);

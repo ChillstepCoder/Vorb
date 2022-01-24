@@ -65,16 +65,24 @@ constexpr float GRAVITY_FORCE = 0.03f;
 //}
 
 void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, PhysicsComponent& cmp) {
-    const TileCollider* collider = tile->tryGetCollider();
-    if (!collider) {
-        return;
+    const TileCollider* collider = tile->tryGetColliderMainThread();
+    TileCollisionShape shape = TileCollisionShape::BOX;
+    float tileCollisionRadius = 0.5f; // Defualt for box
+    if (collider) {
+        shape = collider->shape;
+        tileCollisionRadius = collider->dims.x; // TODO: better?
+    }
+    else {
+        TileID groundId = tile->getLayersMainThread()[TILE_LAYER_GROUND];
+        if (groundId == TILE_ID_NONE) {
+            return;
+        }
     }
 
     float colliderRadius = cmp.mCollisionRadius;
     const f32v2& colliderCenter = cmp.getXYPosition();
     f32v2 offsetToCollider = colliderCenter - tileCenter;
-	const float tileCollisionRadius = collider->dims.x;
-    const f32 baseZPosition = tile->getBaseZPositionUncompressed();
+    const f32 baseZPosition = tile->getBaseZPositionUncompressedMainThread();
 
 	bool isCollidingWithTop = false;
 	float zOffset = cmp.getZPosition() - baseZPosition;
@@ -91,7 +99,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
 		colliderRadius *= 0.3f;
 	}
 
-	switch (collider->shape)
+	switch (shape)
     {
 		// Circle falls through to check ground
 		case TileCollisionShape::CIRCLE: {

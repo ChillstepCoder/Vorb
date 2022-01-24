@@ -8,10 +8,10 @@
 
 IntersectionHit2D TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& tilePos, const f32v2& start, const f32v2& end, f32 zOffsetFromTerrain, f32 rayThickness /*= 0.0f*/) {
 
-    const TileCollider* collider = tile.tryGetCollider();
+    const TileCollider* collider = tile.tryGetColliderMainThread();
     if (!collider) return IntersectionHit2D();
 
-    f32 baseZPosition = tile.getBaseZPositionUncompressed();
+    f32 baseZPosition = tile.getBaseZPositionUncompressedMainThread();
     
     // Ground check
     float zOffset = zOffsetFromTerrain - baseZPosition;

@@ -11,7 +11,7 @@ class Camera3D;
 class WorldGrid;
 class QuadMesh;
 struct TileData;
-struct Tile;
+class Tile;
 struct SpriteData;
 struct HeightmapPatchData;
 struct TileHandle;

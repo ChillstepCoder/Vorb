@@ -2,6 +2,8 @@
 
 #include <SDL.h>
 
+std::thread::id NAV_THREAD_ID;
+
 UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 

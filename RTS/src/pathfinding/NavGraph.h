@@ -67,7 +67,7 @@ class NavGraph
 public:
     NavGraph(World& world);
     // TODO: async
-    void buildNavNodesForChunkSynchronous(Chunk& chunk);
+    void buildNavNodesForChunk(Chunk& chunk);
     void debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int debugId = 0) const;
 
     const NavNode* getNode(NavNodeIndexPair index) const {

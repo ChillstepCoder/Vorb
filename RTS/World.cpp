@@ -107,6 +107,19 @@ void World::initPostLoad(ChunkMesher& chunkMesher) {
 void World::updateTaskQueues() {
     Services::Threadpool::ref().mainThreadUpdate();
     Services::NavThread::ref().mainThreadUpdate();
+
+	// Update any pending updates if pathfinding is idle
+	if (!Services::NavThread::ref().isRunningPathfind()) {
+		for (auto&& chunk : mActiveChunks) {
+			if (chunk->mTilesNeedingThreadSafeCopy.size() && chunk->mReadLockCount == 0) {
+				for (TileIndex& id : chunk->mTilesNeedingThreadSafeCopy) {
+					std::cout << "DID THE THING ON " << id << std::endl;
+					chunk->mTiles[id].updateThreadSafeLayers();
+				}
+				chunk->mTilesNeedingThreadSafeCopy.clear();
+			}
+		}
+	}
 }
 
 void World::update(const f32v2& playerPos, const Camera3D& camera) {
@@ -318,8 +331,9 @@ const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
 	const Tile& tile = chunk.getTileAt(TileIndex(x, y));
-	if (tile.navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
-	return mNavGraph->getNode({ chunk.getChunkID().id, tile.navNodeIndex });
+	ui16 navNodeIndex = tile.getNavNodeIndex();
+	if (navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
+	return mNavGraph->getNode({ chunk.getChunkID().id, navNodeIndex });
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
@@ -334,8 +348,8 @@ void World::enumActiveChunks(std::function<void(const Chunk&)> func) const {
     }
 }
 
-void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func) {
-	// TODO: implement locking (write/read)
+void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func) {
+	assert(IS_MAIN_THREAD());
 	// TODO: handle this without asserts
 	// Start at bottom left
 	ui32v2 worldPos;
@@ -354,7 +368,7 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
             const ui32 y = cornerHandle.index.getY();
 			for (ui32 dy = 0; dy < spanY; ++dy) {
 				for (ui32 dx = 0; dx < spanX; ++dx) {
-					func(chunk, chunk.mTiles[TileIndex(x + dx, y + dy)]);
+					func(chunk, TileIndex(x + dx, y + dy));
 				}
 			}
 			worldPos.x += spanX;
@@ -561,21 +575,27 @@ bool World::updateChunk(Chunk& chunk) {
 }
 
 void World::onChunkDataReady(Chunk& chunk) {
+    assert(!chunk.isDataReady());
 
     chunk.setState(ChunkState::FINISHED);
 	// Don't update neighbors until we are data ready
 	assert(chunk.isDataReady());
 	// Neighbors
-	const ChunkID& myId = chunk.getChunkID();
-    dataReadyTryNotifyNeighbor(chunk, myId.getLeftID());
-    dataReadyTryNotifyNeighbor(chunk, myId.getTopID());
-    dataReadyTryNotifyNeighbor(chunk, myId.getRightID());
+    const ChunkID& myId = chunk.getChunkID();
     dataReadyTryNotifyNeighbor(chunk, myId.getBottomID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getLeftID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getRightID());
+    dataReadyTryNotifyNeighbor(chunk, myId.getTopID());
 	
 	assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
 }
 
 void World::onChunkAllNeighborsDataReady(Chunk& chunk) {
+    assert(chunk.getBottomNeighbor().isDataReady());
+    assert(chunk.getLeftNeighbor().isDataReady());
+    assert(chunk.getRightNeighbor().isDataReady());
+    assert(chunk.getTopNeighbor().isDataReady());
+
 	// Dirty our nav graph
     chunk.mDirtyNavGraph = true;
 	// Update our mesh
@@ -588,7 +608,9 @@ void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
     if (neighbor.isDataReady()) {
 		// Set up data ready ref counts
 		++neighbor.mDataReadyNeighborCount;
-		++chunk.mDataReadyNeighborCount;
+		assert(neighbor.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
+        ++chunk.mDataReadyNeighborCount;
+        assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
 		if (neighbor.mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT) {
 			onChunkAllNeighborsDataReady(neighbor);
 		}
@@ -645,7 +667,7 @@ void World::generateChunkAsync(Chunk& chunk) {
 	const ChunkID& id = chunk.getChunkID();
 
 	if (mWorldGrid.tryGetHeightDataAt(id)) {
-        chunk.mState = ChunkState::LOADING_TILES;
+        chunk.mState.store(enum_cast(ChunkState::LOADING_TILES));
 		const HeightmapPatchData* heightData = mWorldGrid.aquireHeightData(id);
         Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
             mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
@@ -653,9 +675,9 @@ void World::generateChunkAsync(Chunk& chunk) {
         }, nullptr);
 	}
 	else {
-        chunk.mState = ChunkState::WAITING_HEIGHT;
+        chunk.mState.store(enum_cast(ChunkState::WAITING_HEIGHT));
 		mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
-            chunk.mState = ChunkState::LOADING_TILES;
+            chunk.mState.store(enum_cast(ChunkState::LOADING_TILES));
 			const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
             Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
                 mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
@@ -834,21 +856,21 @@ void World::setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer) {
     assert(handle.isValid());
     if (handle.isValid()) {
         Chunk* chunk = handle.getMutableChunk();
-        chunk->setTileAt(handle.index, id, layer);
+        chunk->setTileLayer(handle.index, layer, id);
     }
 }
 
 void World::setTileFlagAt(const ui32v2& worldPos, TileFlags flag) {
     TileHandle handle = getTileHandleAtWorldPos(worldPos);
     Chunk* chunk = handle.getMutableChunk();
-    chunk->setTileFlagAt(handle.index, flag);
+    chunk->setTileFlag(handle.index, flag);
 }
 
 bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
 	TileHandle handle = getTileHandleAtWorldPos(worldPos);
 	if (handle.isValid()) {
 		for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
-			TileID tileId = handle.tile.layers[i];
+			TileID tileId = handle.tile.getLayersMainThread()[i];
 			if (tileId != INVALID_TILE_INDEX) {
 				if (TileRepository::getTileData(tileId).resource == resource) {
 					if (outLayer) {

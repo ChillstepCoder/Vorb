@@ -355,7 +355,7 @@ void addTileFloraBillboard(
 
     const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.layers[layerIndex];
+    const TileID tileId = tile.getLayersThreadSafe()[layerIndex];
 
     const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
 
@@ -370,9 +370,9 @@ void addTileFloraBillboard(
     const int y = tileIndex.getY();
     // Allow overlap when adjacent tiles are the same
 
-    const f32 tileBaseZPosition = tile.getBaseZPositionUncompressed();
-    const float rightXMult = (rightTile.getBaseZPositionUncompressed() != tileBaseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
-    const float topXMult = (topTile.getBaseZPositionUncompressed() != tileBaseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
+    const f32 tileBaseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
+    const float rightXMult = (rightTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != rightTile.getLayersThreadSafe()[layerIndex]) ? 1.0f : 0.0f;
+    const float topXMult = (topTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != topTile.getLayersThreadSafe()[layerIndex]) ? 1.0f : 0.0f;
     ui32 rnd = Random::getThreadSafe(x, y);
     ui32 batchCount;
     if (spriteData.bunchCount.x == spriteData.bunchCount.y) {
@@ -577,10 +577,10 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
     const SpriteData& spriteData = tileData.spriteData;
     const bool shouldRandFlip = spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.layers[layerIndex];
+    const TileID tileId = tile.getLayersThreadSafe()[layerIndex];
 
     const ui32v2 xyTilePos(tileIndex.getX(), tileIndex.getY());
-    const f32 baseZPosition = tile.getBaseZPositionUncompressed();
+    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
     const f32v3 tilePos(xyTilePos.x, xyTilePos.y, baseZPosition);
 
     TileHandle neighbors[4];
@@ -761,9 +761,9 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                 //  TODO: Multiple world layers
                 TileIndex index(x, y);
                 const Tile& tile = chunk.mTiles[index];
-                const f32 baseZPosition = tile.getBaseZPositionUncompressed();
+                const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.layers[layerIndex];
+                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
                     if (layerTile == TILE_ID_NONE) {
                         continue;
                     }
@@ -819,6 +819,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         // No longer need read access
         chunk.decReadLockNeighbors4();
         chunk.decReadLock();
+        chunk.decRefNeighbors4();
     }, [this, &chunk]() {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
@@ -830,7 +831,6 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
 
         // No longer need to exist
-        chunk.decRefNeighbors4();
         chunk.decRef();
     });
     return true;
@@ -838,13 +838,13 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
 f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, TileIndex tileIndex) {
     f32 height = 0.0f;
-    const TileID tileId = neighbor.groundLayer;
+    const TileID tileId = neighbor.getLayersThreadSafe()[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
         const TileData& tileData = TileRepository::getTileData(tileId);
         const SpriteData& spriteData = tileData.spriteData;
         // Transparent tiles do not count
         if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
-            height = neighbor.getBaseZPositionUncompressed();
+            height = neighbor.getBaseZPositionUncompressedThreadSafe();
         }
     }
     return glm::max(height, mWorldGrid.computeMinHeightAtTile(heightData, tileIndex));
@@ -853,13 +853,13 @@ f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, Tile
 f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
     const Tile& tile = neighbor.tile;
     f32 height = 0.0f;
-    const TileID tileId = tile.groundLayer;
+    const TileID tileId = tile.getLayersThreadSafe()[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
         const TileData& tileData = TileRepository::getTileData(tileId);
         const SpriteData& spriteData = tileData.spriteData;
         // Transparent tiles appear to be 1 tile lower
         if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
-            height = tile.getBaseZPositionUncompressed();
+            height = tile.getBaseZPositionUncompressedThreadSafe();
         }
     }
     return glm::max(height, mWorldGrid.computeMinHeightAtTile(neighbor.chunk->getChunkID(), neighbor.index));

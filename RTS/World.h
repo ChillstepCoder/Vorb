@@ -108,7 +108,7 @@ public:
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumActiveChunks(std::function<void(const Chunk&)> func) const;
-	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, Tile&)> func);
+	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
 
 	void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 

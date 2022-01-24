@@ -231,6 +231,8 @@ const i32v2 NODE_CORNER_NEIGHBORS[9] = {
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
 bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path) {
+    // Only runs on nav thread
+    assert(IS_NAV_THREAD());
     // TODO: Profiling
     PreciseTimer timer;
     const WorldGrid& worldGrid = world.getWorldGrid();
@@ -283,7 +285,7 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
         const PathPoint nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
         const Tile* startTile = world.tryGetTileAtWorldPos(nodePoint);
         assert(startTile);
-        const f32 startBaseZPosition = startTile->getBaseZPositionUncompressed();
+        const f32 startBaseZPosition = startTile->getBaseZPositionUncompressedThreadSafe();
         
         /*if (sDebugOptions.mShowPaths) {
             if (debugCount > 255) debugCount = 0;
@@ -310,22 +312,22 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
             }
             const Tile* tile = world.tryGetTileAtWorldPos(nextPoint);
             assert(tile);
-            f32 weight = (tile->pathWeight / 255.0f);
-            const f32 baseZPosition = tile->getBaseZPositionUncompressed();
+            f32 weight = (tile->getPathWeightNavThread() / 255.0f);
+            const f32 baseZPosition = tile->getBaseZPositionUncompressedThreadSafe();
             if (baseZPosition >= startBaseZPosition + 2) {
                 // Too tall!
                 pathWeights[i] = 0.0f;
             } else if (baseZPosition >= startBaseZPosition + 1) {
                 // Upward
-                pathWeights[i] = (tile->pathWeight / 255.0f) * 0.5f;
+                pathWeights[i] = weight * 0.5f;
             }
             else {
                 // Standard or downward
-                pathWeights[i] = (tile->pathWeight / 255.0f);
+                pathWeights[i] = weight;
             }
 
             // ROADS ARE WORTH MORE
-            if (tile->tileFlags & TILE_FLAG_ROAD) {
+            if (tile->hasFlagThreadSafe(TILE_FLAG_ROAD)) {
                 pathWeights[i] *= 2.0f;
             }
         }

@@ -179,6 +179,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
             //PreciseTimer timer;
             createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
+            mChunk.decRef();
             //std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
         }, [this, &patch, patchIndex]() {
 
@@ -186,7 +187,6 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
             onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
             // Update refcount
             --mRefCount;
-            mChunk.decRef();
         });
     }
     else {
@@ -198,6 +198,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
                 //PreciseTimer timer;
                 createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
+                mChunk.decRef();
                 //std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
             }, [this, &patch, patchIndex]() {
 
@@ -205,7 +206,6 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
                 onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
                 // Update refcount
                 --mRefCount;
-                mChunk.decRef();
             });
 
         });
