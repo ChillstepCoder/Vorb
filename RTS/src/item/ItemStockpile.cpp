@@ -3,6 +3,7 @@
 
 #include "DebugRenderer.h"
 #include "World.h"
+#include "world/WorldGrid.h"
 #include "services/Services.h"
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
@@ -43,14 +44,18 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
 
     mStorage.resize(mAABB.width * mAABB.height);
 
+    f32 maxZPos = FLT_MIN;
+    const WorldGrid& worldGrid = world.getWorldGrid();
     // Set stockpile flags
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             TileRef ref(world.getTileHandleAtWorldPos(ui32v2(x, y)));
             ref.chunk->setTileFlag(ref.index, TILE_FLAG_IS_STOCKPILE);
+            f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getChunkID(), ref.index);
+            if (height > maxZPos) maxZPos = height;
         }
     }
-
+    mZPos = maxZPos;
 }
 
 ItemStockpile::~ItemStockpile() {
@@ -73,7 +78,9 @@ bool ItemStockpile::isVisible() const {
 }
 
 void ItemStockpile::renderDebug() const {
-    DebugRenderer::drawFilledQuad(f32v2(mAABB.pos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
+    f32v2 cornerPos = f32v2(mAABB.pos);
+    f32 height = mWorld.getWorldGrid().tryComputeHeightAtPoint(cornerPos + f32v2(mAABB.dims) * 0.5f);
+    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x, cornerPos.y, height), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
 }
 
 ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui32 maxQuantityToAdd) {
@@ -82,7 +89,6 @@ ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui3
     const ui32 index = (pos.y - mAABB.y) * mAABB.width + pos.x - mAABB.x;
     assert(index < mStorage.size());
     ItemStack& existingStack = mStorage[index];
-
 
 
     ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();

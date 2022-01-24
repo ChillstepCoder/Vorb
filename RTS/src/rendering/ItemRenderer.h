@@ -10,6 +10,8 @@ struct ItemStack;
 class Material;
 class ItemStockpile;
 class Item;
+class WorldGrid;
+class Camera3D;
 struct ItemStockpileRecord;
 
 #define INVALID_BATCH_ID UINT32_MAX
@@ -18,18 +20,19 @@ struct ItemStockpileRecord;
 class ItemRenderer
 {
 public:
-    ItemRenderer(ResourceManager& resourceManager, MaterialRenderer& materialRenderer);
+    ItemRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, MaterialRenderer& materialRenderer);
 
     void updateStockpileBillboardMesh(const ItemStockpile& stockpile) const;
     void updateStockpileQuadMesh(const ItemStockpile& stockpile) const;
     void addItemStackToMesh(BillboardMesh& mesh, const f32v3& pos, const ItemStack& itemStack) const;
-    void renderStockpile(const ItemStockpile& stockpile) const;
-    void renderMesh(const BillboardMesh& itemMesh) const;
-    void renderMesh(const QuadMesh& itemMesh) const;
+    void renderStockpile(const ItemStockpile& stockpile, const Camera3D& camera) const;
 
 private:
+    void renderMesh(const ItemStockpile& stockpile, const BillboardMesh& itemMesh, const Camera3D& camera) const;
+    void renderMesh(const ItemStockpile& stockpile, const QuadMesh& itemMesh, const Camera3D& camera) const;
     void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const;
 
+    const WorldGrid& mWorldGrid;
     ResourceManager& mResourceManager;
     MaterialRenderer& mMaterialRenderer;
     ItemRepository& mItemRepository;

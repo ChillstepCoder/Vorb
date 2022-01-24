@@ -194,7 +194,7 @@ void RenderContext::initPostLoad() {
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-        mItemRenderer = std::make_unique<ItemRenderer>(mResourceManager, *mMaterialRenderer);
+        mItemRenderer = std::make_unique<ItemRenderer>(mWorld.getWorldGrid(), mResourceManager, *mMaterialRenderer);
         mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
         mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
@@ -345,7 +345,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Render stockpiles
     for (auto&& stockPilePtr : mWorld.getItemStockpileRegistry().getAllStockpiles()) {
         if (stockPilePtr->isVisible()) {
-            mItemRenderer->renderStockpile(*stockPilePtr);
+            mItemRenderer->renderStockpile(*stockPilePtr, camera);
         }
     }
 

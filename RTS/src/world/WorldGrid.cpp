@@ -596,6 +596,18 @@ f32 WorldGrid::computeMinHeightAtTile(ChunkID id, TileIndex tileIndex) const {
     return computeMinHeightAtTile(patch.mHeightData->data, tileIndex);
 }
 
+f32 WorldGrid::computeMaxHeightAtTile(ChunkID id, TileIndex tileIndex) const
+{
+    const HeightmapPatch& patch = mHeightData[id.id];
+
+    if (!patch.isDone()) {
+        return 0.0f;
+    }
+
+    f32 corners[4];
+    computeTileCorners(patch.mHeightData->data, tileIndex, corners);
+    return glm::max(glm::max(glm::max(corners[0], corners[1]), corners[2]), corners[3]);
+}
 
 void WorldGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {
     // AABB calculation

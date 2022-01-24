@@ -90,6 +90,7 @@ public:
 
     static f32 computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex);
     f32 computeMinHeightAtTile(ChunkID id, TileIndex tileIndex) const;
+    f32 computeMaxHeightAtTile(ChunkID id, TileIndex tileIndex) const;
 
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
