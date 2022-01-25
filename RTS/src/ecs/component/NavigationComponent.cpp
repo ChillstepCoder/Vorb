@@ -139,9 +139,11 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 					}
 
 					// Debug render
-					DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
-					DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
-					DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+					if (sDebugOptions.mShowPaths) {
+						DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
+						DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
+						DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+					}
 				}
 			}
 		}
@@ -231,17 +233,18 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
         if (!navCmp.mFinePath) {
             navCmp.mCurrentFinePoint = 0;
 			navCmp.mFinePath = std::make_shared<NavPath>();
-			Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos), false /*isCoarse*/);
-            if (navCmp.mFinePath) {
-                if (sDebugOptions.mShowPaths) {
-                    DebugRenderer::drawPath(*navCmp.mFinePath, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
-                }
+			NavPath* pathHandle = navCmp.mFinePath.get();
+			if (sDebugOptions.mShowPaths) {
+                Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
+                    DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
+                });
 			}
 			else {
-				navCmp.mCoarsePath.reset();
-				navCmp.mFlags |= NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH;
-				return true;
+				Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos), false /*isCoarse*/);
 			}
+        }
+        else {
+			// TODO: WHAT IF PATH FAILS
         }
     }
 	// First time this runs, fine path will likely be null which will request a new fine path
@@ -309,7 +312,9 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
     mCoarsePath.reset();
 	mFinePath.reset();
 
-    DebugRenderer::drawWireQuad(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
+	if (sDebugOptions.mShowPaths) {
+		DebugRenderer::drawWireQuad(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
+	}
 }
 
 void NavigationComponent::requestFinePath(const PathPoint& start, const PathPoint& goal) {

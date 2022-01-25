@@ -550,6 +550,8 @@ void TBOBillboardMesh::draw(const vg::GLProgram& program) const {
     RenderStats::recordDrawCall(mIndexCount / 3); 
 
     glBindVertexArray(0);
+    glBindBuffer(GL_TEXTURE_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
@@ -566,11 +568,13 @@ void TBOBillboardMesh::finishMesh(MeshDrawMode drawMode)
         glBufferData(GL_TEXTURE_BUFFER, size, nullptr, (GLenum)drawMode);
         glBufferSubData(GL_TEXTURE_BUFFER, 0, size, mTextureData.data());
 
-        if (!mTboTexture) {
-            glGenTextures(1, &mTboTexture);
-            glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
-            glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mVbo);
-        }
+        // Delete and remake texture to orphan
+        if (mTboTexture) {
+            glDeleteTextures(1, &mTboTexture);
+        } 
+        glGenTextures(1, &mTboTexture);
+        glBindTexture(GL_TEXTURE_BUFFER, mTboTexture);
+        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mVbo);
 
         glBindBuffer(GL_TEXTURE_BUFFER, 0);
 

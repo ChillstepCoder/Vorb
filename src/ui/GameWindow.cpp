@@ -81,7 +81,7 @@ VORB_MOVABLE_DEF(vui::GameWindow, o) {
     return *this;
 }
 
-bool vui::GameWindow::init(bool isResizable /*= true*/) {
+bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/) {
     if (isInitialized()) return false;
     m_displayMode.isResizable = isResizable;
 
@@ -127,6 +127,9 @@ bool vui::GameWindow::init(bool isResizable /*= true*/) {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, (int)m_displayMode.major);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, (int)m_displayMode.minor);
+    if (isDebug) {
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+    }
     if (m_displayMode.core) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     } else {
@@ -226,6 +229,9 @@ bool vui::GameWindow::init(bool isResizable /*= true*/) {
         #else
             printf("Could Not Create OpenGL Context");
         #endif
+        std::cout << "Enter any key to exit...\n";
+        int c;
+        std::cin >> c;
         return false;
     }
 

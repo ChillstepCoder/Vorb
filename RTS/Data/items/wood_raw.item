@@ -3,6 +3,6 @@ wood_raw:
   type: material
   value: 0.2
   weight: 0.4
-  stack_size: 25
+  stack_size: 2500
   stack_dims: [1,5,5]
   shape: plank

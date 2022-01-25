@@ -48,26 +48,33 @@ void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& r
     resultCode = "";
     resultCode.reserve(input.size());
 
+    bool wasNewLine = true;
     for (size_t i = 0; i < input.size(); i++) {
         char c = input[i];
         checkForComment(input.c_str(), i);
         if (!isComment()) {
-            if (c == '#') {
-                if (tryParseInclude(input, i)) {
-                    i--;
-                    continue;
+            if (wasNewLine) {
+                if (c == '#') {
+                    if (tryParseInclude(input, i)) {
+                        i--;
+                        continue;
+                    }
                 }
-            } else if (c == 'i') {
-                // Attempt to parse as an attribute
-                VGSemantic semantic;
-                nString attribute = tryParseAttribute(input.c_str(), i, semantic);
-                if (attribute.size()) {
-                    attributeNames.push_back(attribute);
-                    semantics.push_back(semantic);
+                else if (c == 'i') {
+                    // Attempt to parse as an attribute
+                    VGSemantic semantic;
+                    nString attribute = tryParseAttribute(input.c_str(), i, semantic);
+                    if (attribute.size()) {
+                        attributeNames.push_back(attribute);
+                        if (semantic != vg::Semantic::SEM_INVALID) {
+                            semantics.push_back(semantic);
+                        }
+                    }
                 }
             }
         }
         resultCode += c;
+        wasNewLine = (c == '\n');
     }
 }
 

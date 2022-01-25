@@ -71,7 +71,9 @@ public:
     void debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int debugId = 0) const;
 
     const NavNode* getNode(NavNodeIndexPair index) const {
-        return &mPatches[index.chunkId].nodes[index.index];
+        const NavPatch& patch = mPatches[index.chunkId];
+        assert(index.index < patch.size);
+        return &patch.nodes[index.index];
     }
 
 private:

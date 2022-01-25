@@ -86,6 +86,7 @@ public:
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
+    TileHandle getTileHandle(ui32 chunkId, TileIndex tileIndex) const;
     const Tile& getTileAtWorldPos(const f32v2& worldPos) const;
     const Tile* tryGetTileAtWorldPos(const f32v2& worldPos) const;
     const Tile* tryGetTileAtWorldPos(const ui32v2& worldPos) const;

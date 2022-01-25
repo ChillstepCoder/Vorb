@@ -17,7 +17,10 @@ TimedTileInteractComponent::TimedTileInteractComponent(
     mInteractFinishedCallback(callback)
 {
     assert(!mInteractTile->tile->hasFlagMainThread(TILE_FLAG_IS_INTERACTING));
-    mInteractTile->tile->hasFlagMainThread(TILE_FLAG_IS_INTERACTING);
+    mInteractTile->chunk->setTileFlag(mInteractTile->index, TILE_FLAG_IS_INTERACTING);
+}
+
+TimedTileInteractComponent::~TimedTileInteractComponent() {
 }
 
 TimedTileInteractSystem::TimedTileInteractSystem(World& world) : mWorld(world) {
@@ -35,9 +38,10 @@ void TimedTileInteractSystem::update(entt::registry& registry) {
                 cmp.mInteractFinishedCallback(true, cmp);
             }
             if (cmp.mCurrRepeat >= cmp.mRepeatCount) {
-                // Remove the component and clear the interact flag
+                // Remove the component and reset flag.
+                // This crashes in the destructor because it frees the unique_ptr first sadly
+                assert(cmp.mInteractTile);
                 cmp.mInteractTile->chunk->clearTileFlag(cmp.mInteractTile->index, TILE_FLAG_IS_INTERACTING);
-                cmp.mInteractTile.reset();
                 registry.remove<TimedTileInteractComponent>(entity);
             }
             else {

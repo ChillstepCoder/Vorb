@@ -26,6 +26,7 @@ enum TileFlags : ui16 {
     TILE_FLAG_HAS_ROOF             = 1 << 9,
     TILE_FLAG_HAS_COLLIDER         = 1 << 10,
     TILE_FLAG_QUEUED_UPDATE        = 1 << 11,
+    TILE_FLAG_IS_RESOURCE_RESERVED = 1 << 12,
 
     TILE_FLAG_TERM                 = 1 << 15,
 };

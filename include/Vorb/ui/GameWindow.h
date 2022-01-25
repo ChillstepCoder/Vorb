@@ -104,7 +104,7 @@ namespace vorb {
              * 
              * @return True if no error occurred.
              */
-            bool init(bool isResizable = true);
+            bool init(bool isResizable = true, bool isDebug = false);
             /*! @brief Destroys the window and associated graphics context.
              * 
              * @pre: This disposal method should be called on the thread where the window was created and the

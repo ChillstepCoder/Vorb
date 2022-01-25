@@ -8,6 +8,7 @@
 #include "world/TileScanner.h"
 
 #include "DebugRenderer.h"
+#include "options/DebugOptions.h"
 
 #include "ai/tasks/GatherTask.h"
 
@@ -57,14 +58,19 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
     
     // Scans
     if (gatherCmp.mScannedTiles.empty()) {
-        if (--gatherCmp.mFramesUntilNextScan <= 0) {
-            PreciseTimer timer;
-            gatherCmp.mFramesUntilNextScan = SCAN_FRAMES_DELAY;
-            gatherCmp.mScannedTiles = TileScanner::scanForResource(world, gatherCmp.mResourceToGather, businessCmp.mCity->getCityCenterWorldPos(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
-            std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
+        PreciseTimer timer;
+        gatherCmp.mFramesUntilNextScan = SCAN_FRAMES_DELAY;
+        gatherCmp.mScannedTiles = TileScanner::scanForResource(world, gatherCmp.mResourceToGather, businessCmp.mCity->getCityCenterWorldPos(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
+        std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
+        if (sDebugOptions.mShowPaths) {
             for (auto&& it : gatherCmp.mScannedTiles) {
                 DebugRenderer::drawWireQuad(it.getWorldPos(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
             }
+        }
+
+        // Mark all tiles as reserved
+        for (auto&& it : gatherCmp.mScannedTiles) {
+            it.getMutableChunk()->setTileFlag(it.index, TILE_FLAG_IS_RESOURCE_RESERVED);
         }
     }
     else if (gatherCmp.mFramesUntilNextScan > 0) {
@@ -77,7 +83,7 @@ void updateGatherComponent(World& world, BusinessGatherComponent& gatherCmp, Bus
     while (gatherList.size() < businessCmp.mEmployees.size()) {
         if (gatherCmp.mScannedTiles.empty()) break;
 
-        LiteTileHandle handle = gatherCmp.mScannedTiles.back();
+        TileHandle handle = gatherCmp.mScannedTiles.back();
         gatherCmp.mScannedTiles.pop_back();
 
         IAgentTaskPtr newTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather, businessCmp.mCity);

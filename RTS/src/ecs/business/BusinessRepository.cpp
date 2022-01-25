@@ -109,6 +109,8 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
 
     auto&& businessCmp = registry.emplace<BusinessComponent>(newEntity);
     businessCmp.mCity = parentCity;
+    businessCmp.mMaxEmployeeCount = def.mMaxEmployeeCount;
+    businessCmp.mDesiredEmployeeCount = def.mDesiredEmployeeCount;
 
     // Init components
     // TODO: Do something with priority

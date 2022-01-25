@@ -481,12 +481,12 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
 				std::cout << "\nINSPECTING TILE AT " << xyPos.x << " " << xyPos.y << std::endl;
-				if (handle.tile.groundLayer != INVALID_TILE_INDEX)
-                    std::cout << "  Base: " << TileRepository::getTileData(handle.tile.groundLayer).name << "\n";
-                if (handle.tile.midLayer != INVALID_TILE_INDEX)
-                    std::cout << "   Mid: " << TileRepository::getTileData(handle.tile.midLayer).name << "\n";
-                if (handle.tile.topLayer != INVALID_TILE_INDEX)
-                    std::cout << "   Top: " << TileRepository::getTileData(handle.tile.topLayer).name << "\n\n";
+				if (handle.tile->getLayersMainThread()[TILE_LAYER_GROUND] != INVALID_TILE_INDEX)
+                    std::cout << "  Base: " << TileRepository::getTileData(handle.tile->getLayersMainThread()[TILE_LAYER_GROUND]).name << "\n";
+                if (handle.tile->getLayersMainThread()[TILE_LAYER_MID] != INVALID_TILE_INDEX)
+                    std::cout << "   Mid: " << TileRepository::getTileData(handle.tile->getLayersMainThread()[TILE_LAYER_MID]).name << "\n";
+                if (handle.tile->getLayersMainThread()[TILE_LAYER_TOP] != INVALID_TILE_INDEX)
+                    std::cout << "   Top: " << TileRepository::getTileData(handle.tile->getLayersMainThread()[TILE_LAYER_TOP]).name << "\n\n";
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {

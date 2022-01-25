@@ -43,7 +43,7 @@ struct BusinessGatherComponent {
     TileResource mResourceToGather = TileResource::NONE;
     // TODO: Shared search?
     int mFramesUntilNextScan = 0;
-    std::vector<LiteTileHandle> mScannedTiles;
+    std::vector<TileHandle> mScannedTiles;
 };
 
 // Construct

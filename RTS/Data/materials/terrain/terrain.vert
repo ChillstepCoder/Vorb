@@ -5,7 +5,6 @@ uniform float DebugFloat1;
 
 in vec4 vPosition;
 in vec3 vNormal;
-in vec2 vTangent;
 
 out float fHeight;
 out vec3 fPosition;

@@ -6,7 +6,7 @@
 
 class City;
 
-enum class GatherTaskState {
+enum class GatherTaskState : ui8 {
 	INIT,
 	PATH_TO_RESOURCE,
 	BEGIN_HARVEST,
@@ -21,7 +21,8 @@ enum class GatherTaskState {
 class GatherTask : public IAgentTask
 {
 public:
-	GatherTask(LiteTileHandle tileTarget, TileResource resource, City* city);
+	GatherTask(TileHandle tileTarget, TileResource resource, City* city);
+	~GatherTask();
 
 	// Returns True when done
 	bool tick(World& world, entt::registry& registry, entt::entity agent) override;
@@ -32,9 +33,8 @@ protected:
 	void pathToStockpile(World& world, entt::registry& registry, entt::entity agent);
 	void addItemToStockpile(World& world, entt::registry& registry, entt::entity agent);
 
-	LiteTileHandle mTileTarget;
+    TileHandle mTileTarget;
     TileResource mResource;
+    GatherTaskState mState = GatherTaskState::INIT;
 	City* mCity;
-	GatherTaskState mState = GatherTaskState::INIT;
 };
-

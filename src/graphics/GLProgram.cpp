@@ -182,6 +182,7 @@ void vg::GLProgram::setAttributes(const std::vector<AttributeBinding>& attr) {
     }
 }
 void vg::GLProgram::setAttributes(const std::vector<nString>& attr) {
+
     // Adding attributes to a linked program does nothing
     if (isLinked() || !isCreated()) return;
 

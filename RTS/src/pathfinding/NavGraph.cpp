@@ -32,7 +32,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
     // Nav thread only
     assert(IS_NAV_THREAD());
 
-    ScopedTimer timer("Built nav graph");
+    //ScopedTimer timer("Built nav graph");
 
     std::vector<NavNode> navNodes;
     navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK * 2);

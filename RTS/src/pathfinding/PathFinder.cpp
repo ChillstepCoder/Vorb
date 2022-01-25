@@ -51,6 +51,7 @@ constexpr CoarseAstarNodeID MAXIMUM_COARSE_NODES = 8196;
 thread_local CoarseAStarNode sCoarseAstarNodes[MAXIMUM_COARSE_NODES];
 
 // No allocations baby
+constexpr ui32 MAX_PATH_BUFFER_SIZE = MAX_PATH_LENGTH * 16;
 thread_local AStarNode sNodes[LOOKUP_LIST_SIZE] = {};
 thread_local PathPoint sPathPointBuffer[MAX_PATH_LENGTH * 16];
 
@@ -403,7 +404,8 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
         }
     }
 
-    // TODO: Path memory pool
+    // TODO: Path memory pool);
+    assert(pathSize < MAX_PATH_BUFFER_SIZE);
     path.points = std::make_unique<PathPoint[]>(pathSize);
     path.numPoints = pathSize;
     // Copy the path
@@ -494,6 +496,7 @@ bool PathFinder::generateCoarsePathSynchronous(const World& world, const PathPoi
     //sCoarseClosedList.clear();
     //sCoarseClosedList.reserve(MAXIMUM_COARSE_NODES); // TODO: Move this to an init?
     //sCoarseClosedList.insert(nullptr); // So we dont need explicit null check later
+    mCoarseClosedList.clear();
     mCoarseClosedList.reserve(MAXIMUM_COARSE_NODES);
 
     CoarseAstarNodeID totalAstarNodes = 0;

@@ -288,6 +288,15 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
     return TileHandle();
 }
 
+TileHandle World::getTileHandle(ui32 chunkId, TileIndex tileIndex) const {
+    TileHandle handle;
+    const Chunk* chunk = &getChunk(chunkId);
+    if (chunk->isDataReady()) {
+        return chunk->getTileHandleAt(tileIndex);
+    }
+    return TileHandle();
+}
+
 const Tile& World::getTileAtWorldPos(const f32v2& worldPos) const {
     const Chunk* chunk = &getChunkAtPosition(worldPos);
 	assert(chunk->isDataReady());

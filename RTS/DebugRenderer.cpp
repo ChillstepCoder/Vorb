@@ -438,6 +438,12 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
     }
     sNewQuads.clear();
 
+    std::set<VGBuffer> buffer;
+    for (auto&& i : sDebugMeshes) {
+        assert(buffer.find(i.vbo) == buffer.end());
+        buffer.insert(i.vbo);
+    }
+
     glDepthFunc((VGEnum)vg::DepthFunction::ALWAYS);
     
     for (size_t i = 0; i < sDebugMeshes.size();) {
@@ -539,6 +545,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 
         if (mesh.lifetime <= 0) {
             glDeleteBuffers(1, &mesh.vbo);
+            mesh.vbo = 0;
             sDebugCircleMeshes[i] = sDebugCircleMeshes.back();
             sDebugCircleMeshes.pop_back();
         }

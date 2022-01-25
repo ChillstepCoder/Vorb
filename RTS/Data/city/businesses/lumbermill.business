@@ -2,7 +2,7 @@ lumbermill:
   building: lumbermill
   requires_building: false
   desired_employees: 2
-  max_employees: 6
+  max_employees: 1000
   build:
     priority: 2
   gather:

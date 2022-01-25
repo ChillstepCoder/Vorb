@@ -5,6 +5,14 @@
 
 #include <thread>
 
+// Opengl debugging
+#ifdef DEBUG
+#define IS_DEBUG_OPENGL_CONTEXT 1
+#else
+#define IS_DEBUG_OPENGL_CONTEXT 0
+#endif
+
+
 #if defined(VORB_IMPL_UI_SDL)
 //#if defined(VORB_OS_WINDOWS)
 //#include <SDL/SDL.h>
@@ -73,7 +81,7 @@ bool vui::MainGame::init() {
 }
 bool vui::MainGame::initSystems() {
     // Create The Window
-    if (!m_window.init()) return false;
+    if (!m_window.init(true, IS_DEBUG_OPENGL_CONTEXT)) return false;
 
 #if defined(VORB_IMPL_GRAPHICS_OPENGL)
     // TODO: Replace With BlendState

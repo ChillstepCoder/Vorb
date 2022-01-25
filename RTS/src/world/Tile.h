@@ -111,7 +111,7 @@ enum class TileShape {
 };
 KEG_ENUM_DECL(TileShape);
 
-enum class TileResource {
+enum class TileResource : ui8 {
 	NONE,
 	WOOD,
 	STONE,

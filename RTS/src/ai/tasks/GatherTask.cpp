@@ -17,11 +17,19 @@
 #include "world/TileRepository.h"
 #include "Random.h"
 
-GatherTask::GatherTask(LiteTileHandle tileTarget, TileResource resource, City* city) :
+GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, City* city) :
     mTileTarget(tileTarget),
     mResource(resource),
     mCity(city) {
+    // Gather task requires target tile to be reserved already
+    assert(tileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
+}
 
+GatherTask::~GatherTask() {
+    // Clear tile flag on abort
+    if (!IS_SHUTTING_DOWN && mState <= GatherTaskState::HARVESTING) {
+        mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+    }
 }
 
 bool GatherTask::tick(World& world, entt::registry& registry, entt::entity agent) {
@@ -104,8 +112,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
     }
 
     // Interact
-    TileHandle tileHandle = world.getTileHandleAtWorldPos(mTileTarget.getWorldPos());
-    if (tileHandle.tile->hasFlagMainThread(TILE_FLAG_IS_INTERACTING)) {
+    if (mTileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_INTERACTING)) {
         // Someone else is using this tile, try again next tick.
         return false;
     }
@@ -113,7 +120,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
     constexpr int INTERACT_TICKS = 60;
     TimedTileInteractComponent& interact = registry.emplace<TimedTileInteractComponent>(
         agent,
-        tileHandle,
+        mTileTarget,
         enum_cast(layer),
         INTERACT_TICKS,
         0,
@@ -124,6 +131,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
             tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+            tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
 
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);

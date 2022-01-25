@@ -7,6 +7,9 @@ class World;
 struct TimedTileInteractComponent {
 
     TimedTileInteractComponent(TileHandle interactTile, ui8 tileLayer, ui32 ticksUntilFinished, ui16 repeatCount, std::function<void(bool, TimedTileInteractComponent&)> callback = nullptr);
+    ~TimedTileInteractComponent();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(TimedTileInteractComponent);
 
     std::unique_ptr<TileRef> mInteractTile;
     TickCounter mTimer;
