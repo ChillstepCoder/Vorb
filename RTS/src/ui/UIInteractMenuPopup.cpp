@@ -8,6 +8,8 @@
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+
+#include <Vorb/ui/GameWindow.h>
 //
 //static bool view(NoiseFunction& n) {
 //    bool changed = false;
@@ -36,9 +38,11 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 {
     ui32 resultFlags = 0;
     const ImVec2 buttonSize(150, 25);
+    const f32v2 panelDims(buttonSize.x + 16, INTERACT_MENU_RESULT_COUNT * buttonSize.y + 45);
+    const f32v2 clampedScreenPos = sMainGameWindowHandle->clampBoxPosToWindow(mScreenPos, panelDims);
     
-    ImGui::SetNextWindowPos(ImVec2(mScreenPos.x, mScreenPos.y));
-    ImGui::SetNextWindowSize(ImVec2(buttonSize.x + 16, INTERACT_MENU_RESULT_COUNT * buttonSize.y + 45));
+    ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
+    ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
     World& world = mWorldObjectQuery.getWorld();
 

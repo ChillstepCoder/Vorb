@@ -131,6 +131,8 @@ namespace vorb {
                 return m_quitSignal;
             }
 
+            f32v2 clampBoxPosToWindow(const f32v2& boxPosTopLeft, const f32v2& boxDims) const;
+
             // Access Display Settings
             i32 getX() const;
             i32 getY() const;
@@ -227,6 +229,8 @@ namespace vorb {
     }
 }
 namespace vui = vorb::ui;
+
+extern vui::GameWindow* sMainGameWindowHandle;
 
 KEG_ENUM_DECL(GameSwapInterval);
 KEG_TYPE_DECL(GameDisplayMode);

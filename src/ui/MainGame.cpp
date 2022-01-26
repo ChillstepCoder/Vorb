@@ -82,6 +82,7 @@ bool vui::MainGame::init() {
 bool vui::MainGame::initSystems() {
     // Create The Window
     if (!m_window.init(true, IS_DEBUG_OPENGL_CONTEXT)) return false;
+    sMainGameWindowHandle = &m_window;
 
 #if defined(VORB_IMPL_GRAPHICS_OPENGL)
     // TODO: Replace With BlendState

@@ -61,6 +61,7 @@ struct DebugOptions {
     bool mShowTweaker = true;
     bool mShowEditor = true;
     bool mShowPaths = true;
+    bool mShowEntityQueries = false;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;

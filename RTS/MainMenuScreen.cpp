@@ -173,7 +173,7 @@ void MainMenuScreen::build() {
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
-
+        UIContext::getInstance().closeTileInspectionPanel();
 	});
 
 	vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
@@ -261,6 +261,7 @@ void MainMenuScreen::build() {
                         // Right click picking
                         mSelectedTilePosition = worldPos;
                         // Enable context menu
+                        mSelectedScreenPos = screenPos;
                         mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
                     }
 				}
@@ -433,13 +434,9 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
     // Handle interact menu TODO: Notify to get this out of here
     if (mRightClickInteractPopup) {
         // Render selected
-        ui32v2 worldPosInt = mSelectedTilePosition;
-        DebugRenderer::drawFilledQuad(worldPosInt, f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
-
-        // Draw vectors to corners
-        f32v2 interactPopupPositionWorld = mSelectedTilePosition;
-        const color4 lineColor = color4(1.0f, 1.0f, 0.0f, 1.0f);
-        DebugRenderer::drawLineBetweenPoints(mSelectedTilePosition, interactPopupPositionWorld, lineColor);
+        const ui32v2 worldPosInt = mSelectedTilePosition;
+        const f32 height = mWorld->getWorldGrid().tryComputeHeightAtPoint(f32v2(worldPosInt) + f32v2(0.5f));
+        DebugRenderer::drawFilledQuad(f32v3(worldPosInt.x, worldPosInt.y, height), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
 
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
@@ -479,15 +476,8 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         else if (result & INTERACT_MENU_RESULT_INSPECT) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-				std::cout << "\nINSPECTING TILE AT " << xyPos.x << " " << xyPos.y << std::endl;
-				if (handle.tile->getLayersMainThread()[TILE_LAYER_GROUND] != INVALID_TILE_INDEX)
-                    std::cout << "  Base: " << TileRepository::getTileData(handle.tile->getLayersMainThread()[TILE_LAYER_GROUND]).name << "\n";
-                if (handle.tile->getLayersMainThread()[TILE_LAYER_MID] != INVALID_TILE_INDEX)
-                    std::cout << "   Mid: " << TileRepository::getTileData(handle.tile->getLayersMainThread()[TILE_LAYER_MID]).name << "\n";
-                if (handle.tile->getLayersMainThread()[TILE_LAYER_TOP] != INVALID_TILE_INDEX)
-                    std::cout << "   Top: " << TileRepository::getTileData(handle.tile->getLayersMainThread()[TILE_LAYER_TOP]).name << "\n\n";
-            }
+
+            UIContext::getInstance().activateTileInspectionPanel(mSelectedScreenPos, handle);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {
             // grass

@@ -48,8 +48,6 @@
 
 #include "options/DebugOptions.h"
 
-#define ENABLE_DEBUG_RENDER 1
-
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 
@@ -726,9 +724,10 @@ std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, floa
 	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
 	mPhysWorld->QueryAABB(&queryCallBack, aabb);
 
-#if ENABLE_DEBUG_RENDER == 1
-        DebugRenderer::drawAABB(aabb, color4(0.0f, 1.0f, 0.0f), 100);
-#endif
+	if (sDebugOptions.mShowEntityQueries) {
+		f32 height = mWorldGrid.tryComputeHeightAtPoint(pos);
+		DebugRenderer::drawAABB(aabb, height, color4(0.0f, 1.0f, 0.0f), 100);
+	}
 
 	if (sorted) {
 		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
@@ -797,9 +796,12 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 	for (float angle = -M_PIf; i < 5; angle += M_PI_2f, ++i) {
 		if (angle > startAngle && angle < endAngle) {
 			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
-#if ENABLE_DEBUG_RENDER == 1
-			DebugRenderer::drawLine(pos, (pos + axisExtrema[i] * radius) - pos, color4(0.0f, 1.0f, 0.0f), 1);
-#endif
+			if (sDebugOptions.mShowEntityQueries) {
+				const f32 height = mWorldGrid.tryComputeHeightAtPoint(pos);
+				const f32v3 pos3d(pos.x, pos.y, height);
+				const f32v2 extrema = (pos + axisExtrema[i] * radius);
+				DebugRenderer::drawLine(pos3d, f32v3(extrema.x, extrema.y, height) - pos3d, color4(0.0f, 1.0f, 0.0f), 1);
+			}
 		}
 	}
 
@@ -812,19 +814,21 @@ std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float r
 		});
 	}
 
-#if ENABLE_DEBUG_RENDER == 1
-	static const int lifetime = 1;
+	if (sDebugOptions.mShowEntityQueries) {
+		static const int lifetime = 1;
 
-	const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
-	const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
-	const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
-	const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
+		const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
+		const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
+		const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
+		const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
 
-	DebugRenderer::drawAABB(bottomLeft, bottomRight, topLeft, topRight, color4(1.0f, 0.0f, 1.0f), lifetime);
-	DebugRenderer::drawLine(pos, point1 - pos, color4(0.0f, 0.0f, 1.0f), lifetime);
-	DebugRenderer::drawLine(pos, point2 - pos, color4(0.0f, 0.0f, 1.0f), lifetime);
-	DebugRenderer::drawLine(pos, scaledNormal, color4(0.0f, 0.0f, 1.0f), lifetime);
-#endif
+        const f32 height = mWorldGrid.tryComputeHeightAtPoint(pos);
+		const f32v3 pos3d(pos.x, pos.y, height);
+		DebugRenderer::drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color4(1.0f, 0.0f, 1.0f), lifetime);
+		DebugRenderer::drawLine(pos3d, f32v3(point1.x, point1.y, height) - pos3d, color4(0.0f, 0.0f, 1.0f), lifetime);
+		DebugRenderer::drawLine(pos3d, f32v3(point2.x, point2.y, height) - pos3d, color4(0.0f, 0.0f, 1.0f), lifetime);
+		DebugRenderer::drawLine(pos3d, f32v3(scaledNormal.x, scaledNormal.y, height), color4(0.0f, 0.0f, 1.0f), lifetime);
+	}
 
 	return entities;
 }

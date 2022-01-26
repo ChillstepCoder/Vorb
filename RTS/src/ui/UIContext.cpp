@@ -2,6 +2,7 @@
 #include "UIContext.h"
 
 #include "ui/DebugTweakerPanel.h"
+#include "ui/TileInspectionPanel.h"
 
 #include "options/DebugOptions.h"
 
@@ -32,12 +33,25 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, float aspect
     if (sDebugOptions.mShowEditor) {
         mEditor->renderUI();
     }
+    if (mTileInspectionPanel) {
+        mTileInspectionPanel->updateAndRender();
+    }
 }
 
 void UIContext::renderEditorBrushDecals(const Camera3D& camera) {
     if (sDebugOptions.mShowEditor) {
         mEditor->renderBrushDecals(camera);
     }
+}
+
+void UIContext::activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle) {
+    if (tileHandle.isValid()) {
+        mTileInspectionPanel = std::make_unique<TileInspectionPanel>(screenPos, tileHandle);
+    }
+}
+
+void UIContext::closeTileInspectionPanel() {
+    mTileInspectionPanel.reset();
 }
 
 UIContext& UIContext::initInstance(World& world, const f32v2& screenResolution, SDL_Window* window) {

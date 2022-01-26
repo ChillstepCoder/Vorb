@@ -28,7 +28,7 @@ enum TileFlags : ui16 {
     TILE_FLAG_QUEUED_UPDATE        = 1 << 11,
     TILE_FLAG_IS_RESOURCE_RESERVED = 1 << 12,
 
-    TILE_FLAG_TERM                 = 1 << 15,
+    TILE_FLAG_TERM                 = 1 << 13,
 };
 static_assert(TILE_FLAG_TERM <= 0x8000); // Must fit into a short
 

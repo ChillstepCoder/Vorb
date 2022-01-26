@@ -43,6 +43,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 #endif
 
+vui::GameWindow* sMainGameWindowHandle = nullptr;
+
 KEG_ENUM_DEF(GameSwapInterval, vui::GameSwapInterval, ke) {
     using namespace keg;
     ke.addValue("Unlimited", vui::GameSwapInterval::UNLIMITED_FPS);
@@ -580,6 +582,10 @@ void vui::GameWindow::pollInput() {
         vorb::ui::impl::InputDispatcherEventCatcher::onSFMLEvent(VUI_WINDOW_HANDLE(m_window), e);
     }
 #endif
+}
+
+f32v2 vorb::ui::GameWindow::clampBoxPosToWindow(const f32v2& boxPosTopLeft, const f32v2& boxDims) const {
+    return f32v2(glm::min(boxPosTopLeft.x, (f32)(m_displayMode.screenWidth - boxDims.x)), glm::min(boxPosTopLeft.y, (f32)(m_displayMode.screenHeight - boxDims.y)));
 }
 
 void vorb::ui::GameWindow::onResize(Sender s VORB_UNUSED, const WindowResizeEvent& e) {

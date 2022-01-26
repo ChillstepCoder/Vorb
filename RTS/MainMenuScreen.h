@@ -84,7 +84,8 @@ private:
 
     // UI
 	f32v2 mSelectedTilePosition = f32v2(0.0f);
-	std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
+	f32v2 mSelectedScreenPos = f32v2(0.0f);
+    std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);

@@ -271,30 +271,34 @@ void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*
     lines.reserve(lines.size() + count);
 }
 
-void DebugRenderer::drawAABB(const b2AABB& aabb, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawAABB(const b2AABB& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
 	const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
 	const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
 	const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
 	const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
 
-    drawAABB(bottomLeft, bottomRight, topLeft, topRight, color, lifeTime);
+    drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);
 }
 
-void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
-    lines.emplace_back(botLeft, topLeft, color);
-    lines.emplace_back(topLeft, topRight, color);
-    lines.emplace_back(topRight, botRight, color);
-    lines.emplace_back(botRight, botLeft, color);
+    const f32v3 botLeft3D(botLeft.x, botLeft.y, height);
+    const f32v3 botRight3D(botRight.x, botRight.y, height);
+    const f32v3 topLeft3D(topLeft.x, topLeft.y, height);
+    const f32v3 topRight3D(topRight.x, topRight.y, height);
+    lines.emplace_back(botLeft3D, topLeft3D, color);
+    lines.emplace_back(topLeft3D, topRight3D, color);
+    lines.emplace_back(topRight3D, botRight3D, color);
+    lines.emplace_back(botRight3D, botLeft3D, color);
 }
 
-void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
-    const f32v2 topLeft = botLeft + f32v2(0.0f, dims.y);
-    const f32v2 topRight = botLeft + f32v2(dims.x, dims.y);
-    const f32v2 botRight = botLeft + f32v2(dims.x, 0.0f);
+    const f32v3 topLeft = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(0.0f, dims.y, height);
+    const f32v3 topRight = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(dims.x, dims.y, height);
+    const f32v3 botRight = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(dims.x, 0.0f, height);
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(botLeft, topLeft, color);
     lines.emplace_back(topLeft, topRight, color);

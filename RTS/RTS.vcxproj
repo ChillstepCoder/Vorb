@@ -244,6 +244,7 @@
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
+    <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
     <ClCompile Include="src\ui\UIContext.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
@@ -394,6 +395,7 @@
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
+    <ClInclude Include="src\ui\TileInspectionPanel.h" />
     <ClInclude Include="src\ui\UIContext.h" />
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
     <ClInclude Include="src\util\AABB.hpp" />

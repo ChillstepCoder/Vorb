@@ -38,7 +38,7 @@ void renderBlueprint(BuildingBlueprint& bp) {
     
     aabb.upperBound.x = aabb.lowerBound.x + bp.dims.x;
     aabb.upperBound.y = aabb.lowerBound.y + bp.dims.y;
-    DebugRenderer::drawAABB(aabb, color4(0.7f, 0.4f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
+    DebugRenderer::drawAABB(aabb, 0.0f, color4(0.7f, 0.4f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
     // Render the room graph in world space
     int i = 0;
     for (auto&& node : bp.nodes) {
@@ -49,7 +49,7 @@ void renderBlueprint(BuildingBlueprint& bp) {
         nodeAabb.upperBound.y = nodeAabb.lowerBound.y + 1;
 
         const color4& color = ROOM_COLORS[i % MAX_ROOM_COLORS];
-        DebugRenderer::drawAABB(nodeAabb, color4(color.r, color.g, color.b, 255u), PERIOD_FRAMES, DEBUG_ID_CITY);
+        DebugRenderer::drawAABB(nodeAabb, 0.0f, color4(color.r, color.g, color.b, 255u), PERIOD_FRAMES, DEBUG_ID_CITY);
         // Draw parent line
         if (node.parentRoom != INVALID_ROOM_ID) {
             RoomNode& parent = bp.nodes[node.parentRoom];
@@ -146,7 +146,7 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) c
         const auto& plot = *cityPlotter.mPlots[i];
         color4 color;
         color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
-        DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), color, PERIOD_FRAMES, DEBUG_ID_CITY);
+        DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), 0.0f, color, PERIOD_FRAMES, DEBUG_ID_CITY);
         // Plot edges
         if (plot.neighborRoads[enum_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
             DebugRenderer::drawLine(f32v2(plot.aabb.pos), f32v2(0.0f, plot.aabb.dims.y), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);

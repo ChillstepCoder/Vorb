@@ -118,6 +118,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mShowNavGraphUpdates);
         ImGui::Checkbox("Show Physics Debug", &sDebugOptions.mShowPhysicsDebug);
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
+        ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
     }
     if (activeGBuffer) {
