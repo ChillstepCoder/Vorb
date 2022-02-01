@@ -11,9 +11,9 @@ public:
     void loadRoomDescriptionFile(const vio::Path& filePath);
     void loadBuildingDescriptionFile(const vio::Path& filePath);
 
-    BuildingDescription& getBuildingDescription(const nString& name);
-    RoomDescription& getRoomDescriptionFromID(RoomTypeID id);
-    const nString* getNameFromRoomTypeID(RoomTypeID id);
+    const BuildingDescription& getBuildingDescription(const nString& name) const;
+    const RoomDescription& getRoomDescriptionFromID(RoomTypeID id) const;
+    const nString* getNameFromRoomTypeID(RoomTypeID id) const;
 
 private:
     // TODO: HashedString?

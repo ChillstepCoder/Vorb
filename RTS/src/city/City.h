@@ -128,7 +128,6 @@ public:
     CityPlanner& getCityPlanner() { return *mCityPlanner; }
     CityPlotter& getCityPlotter() { return *mCityPlotter; }
     CityBusinessManager& getBusinessManager() { return *mCityBusinessManager; }
-    BuildingDescriptionRepository& getBuildingRepository() { return mBuildingRepository; }
     CityQuartermaster& getCityQuartermaster() { return *mCityQuartermaster; }
 
     // Accessors
@@ -146,7 +145,6 @@ private:
     BuildingID addCompletedBuilding(Building&& building);
 
     World& mWorld;
-    BuildingDescriptionRepository& mBuildingRepository;
 
     // TODO: CityGuardManager
     float mCurrentThreatLevel = 0.0f; //[0,100] 0-5 peaceful, 6-15 wary, 16-30 dangerous, 31-50 very dangerous, 51-70 extremely dangerous, 71+ critical danger

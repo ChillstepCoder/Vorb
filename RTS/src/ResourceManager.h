@@ -3,8 +3,6 @@
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 
-#include "world/Tile.h"
-
 class BrushRepository;
 class SpriteRepository;
 class TextureAtlas;

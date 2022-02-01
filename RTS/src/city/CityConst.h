@@ -17,3 +17,20 @@ typedef ui32 BuildingID;
 // Types
 typedef ui16 RoomTypeID;
 typedef ui16 BuildingTypeID;
+
+// TODO: Data driven
+// TODO: District Conversion
+// Higher numbers are higher priority. For example, Industrial can replace Rural
+enum class DistrictType {
+    Rural,
+    Farming,
+    Outpost,
+    Residential,
+    Industrial,
+    Commercial,
+    Military,
+    Government,
+    Harbor,
+    Types,
+    NONE = Types
+};

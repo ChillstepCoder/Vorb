@@ -2,7 +2,10 @@
 #include "BuildingBlueprintGenerator.h"
 #include "BuildingDescriptionRepository.h"
 
+#include "city/CityBuilder.h"
+
 #include "services/Services.h"
+#include "world/TileRepository.h"
 
 #include <Vorb/Timing.h>
 #include "Random.h"
@@ -13,13 +16,14 @@ bool boundsCheckRoom(i16 pos, i16 dim) {
 }
 
 
-BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo) :
-    mBuildingRepo(buildingRepo)
+BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder) :
+    mBuildingRepo(buildingRepo),
+    mCityBuilder(cityBuilder)
 {
 
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBuildingAsync(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos)
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
     ++mCurrentId;
@@ -58,10 +62,14 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBuildingA
         // Furniture
 
         // Flooring
+
+        // Tally final item requirements
+        tallyRequiredItems(*bPtr);
     }, [&, bPtr]() {
         // Main thread
-        mGeneratingBuildings.erase(mGeneratingBuildings.find(bPtr));
+        mGeneratingBuildings.erase(bPtr);
         bPtr->isGenerating = false;
+        mCityBuilder.addBlueprintToBuild(bPtr);
     });
     return bp;
 }
@@ -245,7 +253,7 @@ void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp) const {
         RoomNode& room = bp.nodes[i];
         room.id = (RoomNodeID)i;
 
-        RoomDescription& desc = mBuildingRepo.getRoomDescriptionFromID(room.nodeType);
+        const RoomDescription& desc = mBuildingRepo.getRoomDescriptionFromID(room.nodeType);
         room.desiredWidth = (ui16)round(lerp(desc.minWidth, desc.maxWidth, bp.sizeAlpha));
         room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
@@ -1080,5 +1088,45 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) const {
             }
             ++bfsFrontIndex;
         }
+    }
+}
+
+void BuildingBlueprintGenerator::tallyRequiredItems(BuildingBlueprint& bp) const {
+    std::map<ItemID, ui32> requiredItems;
+
+    const std::vector<ItemStack>* recipes[enum_cast(BlueprintTileType::TYPES)];
+    recipes[enum_cast(BlueprintTileType::NONE)] = nullptr;
+    recipes[enum_cast(BlueprintTileType::FLOOR_1)] = &TileRepository::getTileData(bp.tileIDs[enum_cast(BlueprintTileType::FLOOR_1)]).recipe;
+    recipes[enum_cast(BlueprintTileType::DOOR)] = &TileRepository::getTileData(bp.tileIDs[enum_cast(BlueprintTileType::DOOR)]).recipe;
+    recipes[enum_cast(BlueprintTileType::WALL)] = &TileRepository::getTileData(bp.tileIDs[enum_cast(BlueprintTileType::WALL)]).recipe;
+    static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
+
+    for (size_t i = 0; i < bp.tiles.size(); ++i) {
+        switch (bp.tiles[i].type) {
+            case BlueprintTileType::NONE:
+                break;
+            case BlueprintTileType::WALL:
+            case BlueprintTileType::FLOOR_1:
+            case BlueprintTileType::DOOR:
+                for (auto&& itemStack : *recipes[enum_cast(bp.tiles[i].type)]) {
+                    auto&& it = requiredItems.find(itemStack.id);
+                    if (it == requiredItems.end()) {
+                        requiredItems[itemStack.id] = itemStack.quantity;
+                    }
+                    else {
+                        it->second += itemStack.quantity;
+                    }
+                }
+                break;
+            case BlueprintTileType::TYPES:
+            default:
+                assert(false);
+                break;
+        }
+    }
+    static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
+
+    for (auto&& it : requiredItems) {
+        bp.requiredItemsToBuild.push_back(ItemStack{ it.first, it.second });
     }
 }

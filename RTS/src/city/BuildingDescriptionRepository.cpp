@@ -71,8 +71,8 @@ BuildingDescriptionRepository::BuildingDescriptionRepository(vio::IOManager& ioM
 
 }
 
-void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& filePath)
-{
+void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& filePath) {
+
     if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
@@ -95,8 +95,8 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
     }
 }
 
-void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path& filePath)
-{
+void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path& filePath) {
+     
     if (!mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
@@ -163,22 +163,22 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
     }
 }
 
-BuildingDescription& BuildingDescriptionRepository::getBuildingDescription(const nString& name)
-{
+const BuildingDescription& BuildingDescriptionRepository::getBuildingDescription(const nString& name) const {
+
     auto&& it = mBuildingTypes.find(name);
     assert(it != mBuildingTypes.end());
     BuildingTypeID id = it->second;
     return mBuildingDescriptions[id];
 }
 
-RoomDescription& BuildingDescriptionRepository::getRoomDescriptionFromID(RoomTypeID id)
-{
+const RoomDescription& BuildingDescriptionRepository::getRoomDescriptionFromID(RoomTypeID id) const {
+
     assert(id < mRoomDescriptions.size());
     return mRoomDescriptions[id];
 }
 
-const nString* BuildingDescriptionRepository::getNameFromRoomTypeID(RoomTypeID id)
-{
+const nString* BuildingDescriptionRepository::getNameFromRoomTypeID(RoomTypeID id) const {
+
     for (auto&& it : mRoomTypes) {
         if (it.second == id) {
             return &it.first;

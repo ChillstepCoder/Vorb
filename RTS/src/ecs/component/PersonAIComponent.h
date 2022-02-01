@@ -36,7 +36,6 @@ struct PersonAIComponent {
     // Perception
     // Needs
     City* mCity = nullptr;
-    IAgentTaskPtr mCurrentTask;
 
     //bool inCombat = false;
     //float inCombatTime = 0.0f;

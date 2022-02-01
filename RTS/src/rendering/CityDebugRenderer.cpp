@@ -98,7 +98,7 @@ void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) c
         return;
     }
 
-    for (auto&& bp : cityBuilder.mWaitingBlueprints) {
+    for (auto&& bp : cityBuilder.mBlueprintsToBuild) {
         renderBlueprint(*bp);
     }
 }
@@ -114,25 +114,25 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) c
         const CityDistrict& district = *cityPlotter.mDistricts[i];
         color4 color;
         switch (district.type) {
-            case DistrictTypes::Rural:
+            case DistrictType::Rural:
                 color = color4(0.0f, 1.0f, 0.0f, ROOM_COLOR_ALPHA);
                 break;
-            case DistrictTypes::Farming:
+            case DistrictType::Farming:
                 color = color4(0.0f, 0.6f, 0.2f, ROOM_COLOR_ALPHA);
                 break;
-            case DistrictTypes::Residential:
+            case DistrictType::Residential:
                 color = color4(1.0f, 0.5f, 0.0f, ROOM_COLOR_ALPHA);
                 break;
-            case DistrictTypes::Commercial:
+            case DistrictType::Commercial:
                 color = color4(1.0f, 1.0f, 0.0f, ROOM_COLOR_ALPHA);
                 break;
-            case DistrictTypes::Government:
+            case DistrictType::Government:
                 color = color4(0.7f, 0.0f, 0.7f, ROOM_COLOR_ALPHA);
                 break;
-            case DistrictTypes::Military:
+            case DistrictType::Military:
                 color = color4(1.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA);
                 break;
-            case DistrictTypes::Industrial:
+            case DistrictType::Industrial:
                 color = color4(0.8f, 0.8f, 0.8f, ROOM_COLOR_ALPHA);
                 break;
             default:

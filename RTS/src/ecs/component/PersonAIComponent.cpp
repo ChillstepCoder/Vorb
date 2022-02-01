@@ -37,21 +37,31 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
     if (!employeeCmp) {
         ai.mCity->getBusinessManager().tryEmploy(entity);
         employeeCmp = registry.try_get<EmployeeComponent>(entity); // Could still be null
+        // TODO: Don't repeatedly try every update
+        if (employeeCmp) {
+            employeeCmp->flags = 0;
+            employeeCmp->mCurrentTask = nullptr;
+        }
     }
 
     // Select which task to do
     // TODO: OnInterrupt for each task, to evaluate if we should interrupt based on external changes
-
-    if (ai.mCurrentTask) {
-        if (ai.mCurrentTask->tick(world, registry, entity)) {
-            IAgentTaskPtr nextTask = ai.mCurrentTask->getNextTask();
-            // This can set it to nullptr
-            ai.mCurrentTask = nextTask;
+    if (employeeCmp) {
+        if (employeeCmp->mCurrentTask) {
+            if (employeeCmp->mCurrentTask->tick(world, registry, entity)) {
+                IAgentTaskPtr nextTask = employeeCmp->mCurrentTask->getNextTask();
+                // This will free old task shared_ptr
+                employeeCmp->mCurrentTask = nextTask;
+            }
         }
-    } else if (employeeCmp) {
-        // If we don't have a task, grab one
-        BusinessComponent& businessCmp = registry.get<BusinessComponent>(employeeCmp->mBusiness);
-        ai.mCurrentTask = businessCmp.aquireTask();
+        else {
+            // If we don't have a task, grab one
+            if ((employeeCmp->flags & EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE) == 0) {
+                BusinessComponent& businessCmp = registry.get<BusinessComponent>(employeeCmp->mBusiness);
+                businessCmp.addIdleWorker(entity);
+                employeeCmp->flags |= EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE;
+            }
+        }
     }
 
     // Handle sleep schedule

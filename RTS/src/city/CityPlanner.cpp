@@ -7,7 +7,9 @@
 
 #include "Random.h"
 
-#define DEGUG_BLUEPRINT 1
+#include "World.h"
+#include "ResourceManager.h"
+
 
 // TODO: T1 City requires
 // Lumberjacks, wooden buildings, fishing, multi-agent jobs (woodcutting, ect)
@@ -18,66 +20,30 @@
 CityPlanner::CityPlanner(City& city)
     : mCity(city)
 {
-    mBuildingGenerator = std::make_unique<BuildingBlueprintGenerator>(city.getBuildingRepository());
+    mBuildingGenerator = std::make_unique<BuildingBlueprintGenerator>(mCity.mWorld.getResourceManager().getBuildingRepository(), mCity.getCityBuilder());
 }
 
-void CityPlanner::update()
-{
+void CityPlanner::update() {
 
-    // Update blueprints that are finished generating
-    for (size_t i = 0; i < mGeneratingBlueprints.size();) {
-        if (!mGeneratingBlueprints[i]->isGenerating) {
-            // Swap to end so we can remove from list
-            mGeneratingBlueprints[i].swap(mGeneratingBlueprints.back());
-            // Emplace null unique ptr
-            mFinishedBluePrints.emplace_back();
-            // Move from the generating to the finished list
-            mGeneratingBlueprints.back().swap(mFinishedBluePrints.back());
-            // Release the null unique_ptr
-            mGeneratingBlueprints.pop_back();
-        }
-        else {
-            ++i;
-        }
-    }
-
-    if (!mHasFreePlots) {
-        return;
-    }
-
-    // TODO: THIS IS TEMPORARILY DISABLED
-    //return;
-
-    CityPlot* plotForBuilding = mCity.getCityPlotter().reservePlotForBuilding(ui32v2(3, 3), ui32v2(100, 100));
-    if (plotForBuilding) {
-        generatePlan(*plotForBuilding);
-    }
-    else {
-        // Don't try anymore
-        mHasFreePlots = false;
-    }
 }
 
 
-std::unique_ptr<BuildingBlueprint> CityPlanner::recieveNextBlueprint()
-{
-    if (mFinishedBluePrints.empty()) {
-        return nullptr;
-    }
-    std::unique_ptr<BuildingBlueprint> bp = std::move(mFinishedBluePrints.front());
-    mFinishedBluePrints.pop_front();
-    return bp;
+CityPlot* CityPlanner::tryPurchasePlot(const PlotRequestProps& props) {
+    // TODO use all the other props stuff
+    return mCity.getCityPlotter().tryReservePlotForBuilding(props.minBuildingDims, props.maxBuildingDim);
 }
 
-void CityPlanner::generatePlan(CityPlot& plot) {
+void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, const nString& buildingDescriptionName) {
+    assert(!plot.mPendingBlueprint);
+
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
-    BuildingDescriptionRepository& buildingRepo = mCity.getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
 
     const float sizeAlpha = Random::xorshf96f();
 
     // Generate floorplan size
     // TODO: Dont just spam lumbermill
-    const BuildingDescription& desc = buildingRepo.getBuildingDescription("small_house");
+    const BuildingDescription& desc = buildingRepo.getBuildingDescription(buildingDescriptionName);
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.dims);
     // TODO:  aspect ratio
@@ -94,28 +60,20 @@ void CityPlanner::generatePlan(CityPlot& plot) {
     else if (plot.neighborRoads[enum_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
         dir = Cartesian::DOWN;
     }
-    auto bp = mBuildingGenerator->generateBuildingAsync(desc, sizeAlpha, dir, plotDims, bottomLeftPos);
-    bp->plotIndex = plot.plotIndex;
-    mGeneratingBlueprints.emplace_back(std::move(bp));
-    return;
+    plot.mPendingBlueprint = mBuildingGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos);
+    plot.mPendingBlueprint->plotIndex = plot.plotIndex;
 }
 
-void CityPlanner::finishBlueprint(std::unique_ptr<BuildingBlueprint>&& bp)
-{
-    if (IS_ENABLED(DEGUG_BLUEPRINT)) {
-        BuildingDescriptionRepository& buildingRepo = mCity.getBuildingRepository();
-        std::cout << "\nGenerated house:" << bp->nodes.size() << " " << bp->dims.x << "\n";
-        for (auto&& node : bp->nodes) {
-            std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " <<
-                node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
-            for (int i = 0; i < node.numChildren; ++i) {
-                const int childIndex = (int)node.childRooms[i];
-                std::cout << "    child - " << childIndex << " type - " <<
-                    *buildingRepo.getNameFromRoomTypeID(bp->nodes[childIndex].nodeType) << "\n";
-            }
+void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
+    const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
+    std::cout << "\nGenerated house:" << bp->nodes.size() << " " << bp->dims.x << "\n";
+    for (auto&& node : bp->nodes) {
+        std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " <<
+            node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
+        for (int i = 0; i < node.numChildren; ++i) {
+            const int childIndex = (int)node.childRooms[i];
+            std::cout << "    child - " << childIndex << " type - " <<
+                *buildingRepo.getNameFromRoomTypeID(bp->nodes[childIndex].nodeType) << "\n";
         }
     }
-
-    mFinishedBluePrints.emplace_back(std::move(bp));
-
 }

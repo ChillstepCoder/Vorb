@@ -156,11 +156,13 @@
     <ClCompile Include="src\city\BuildingBlueprint.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
     <ClCompile Include="src\city\BuildingDescriptionRepository.cpp" />
+    <ClCompile Include="src\city\business_jobs\ConstructBuildingJob.cpp" />
     <ClCompile Include="src\city\City.cpp" />
     <ClCompile Include="src\city\CityBuilder.cpp" />
     <ClCompile Include="src\city\BuildingGrammar.cpp" />
     <ClCompile Include="src\city\CityBusinessManager.cpp" />
     <ClCompile Include="src\city\CityPlanner.cpp" />
+    <ClCompile Include="src\city\CityPlot.cpp" />
     <ClCompile Include="src\city\CityPlotter.cpp" />
     <ClCompile Include="src\city\CityQuartermaster.cpp" />
     <ClCompile Include="src\city\CityResidentManager.cpp" />
@@ -285,6 +287,8 @@
     <ClInclude Include="src\city\BuildingBlueprint.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
     <ClInclude Include="src\city\BuildingDescriptionRepository.h" />
+    <ClInclude Include="src\city\business_jobs\ConstructBuildingJob.h" />
+    <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
     <ClInclude Include="src\city\City.h" />
     <ClInclude Include="src\city\CityBuilder.h" />
     <ClInclude Include="src\city\BuildingGrammar.h" />
@@ -414,6 +418,7 @@
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\Tile.h" />
     <ClInclude Include="src\world\TileCollider.h" />
+    <ClInclude Include="src\world\TileConst.h" />
     <ClInclude Include="src\world\TileHandle.h" />
     <ClInclude Include="src\world\TileRepository.h" />
     <ClInclude Include="src\world\TileScanner.h" />

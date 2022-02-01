@@ -3,11 +3,11 @@
 #include "Building.h"
 
 enum class BlueprintTileType : ui8 {
-    NONE = 0, // THIS SHOULD ALWAYS BE 0
+    NONE    = 0, // THIS SHOULD ALWAYS BE 0
     FLOOR_1 = 1, // THIS SHOULD ALWAYS BE 1
-    DOOR,
-    WALL,
-    TYPES
+    DOOR    = 2,
+    WALL    = 3,
+    TYPES   = 4
 };
 
 struct BlueprintTile {
@@ -32,10 +32,12 @@ struct BuildingBlueprint {
     std::vector<RoomNode> nodes;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
+    std::vector<ItemStack> requiredItemsToBuild;
 
     TileID tileIDs[enum_cast(BlueprintTileType::TYPES)];
 
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
     bool isGenerating = true;
+    bool isBuilding = false;
     // TODO: This is for debug only
 };

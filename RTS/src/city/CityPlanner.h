@@ -3,6 +3,8 @@
 #include "Building.h"
 #include "BuildingBlueprintGenerator.h"
 
+#include "world/TileConst.h"
+
 class City;
 class CityBuilder;
 struct CityPlot;
@@ -15,6 +17,15 @@ struct CityPlot;
 // It will need to be dynamic, for example a town in a peaceful area will not allocate much into military structures,
 // while if the threat in an area is large, it may decide to add walls sooner
 
+struct PlotRequestProps {
+    std::vector<TileResource> proximityResources; // Nearby resources that we want
+    DistrictType desiredDistrict = DistrictType::NONE;
+    bool isDistrictMandatory = false;
+    ui32v2 minBuildingDims = ui32v2(5);
+    ui32v2 maxBuildingDim = ui32v2(40);
+    // f32 budget; // How much we are willing to pay (Can go into debt)
+};
+
 class CityPlanner
 {
     friend class CityDebugRenderer;
@@ -23,21 +34,15 @@ public:
 
     void update();
 
-    std::unique_ptr<BuildingBlueprint> recieveNextBlueprint();
+    CityPlot* tryPurchasePlot(const PlotRequestProps& props);
+    void generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, const nString& buildingDescriptionName);
 
+    void debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const;
 private:
-    
-    void generatePlan(CityPlot& plot);
-    void finishBlueprint(std::unique_ptr<BuildingBlueprint>&& bp);
 
-    // CityBuilder will grab these as needed
-    std::deque<std::unique_ptr<BuildingBlueprint>> mFinishedBluePrints;
-    std::vector<std::unique_ptr<BuildingBlueprint>> mGeneratingBlueprints;
 
     std::unique_ptr<BuildingBlueprintGenerator> mBuildingGenerator;
 
     City& mCity;
-    // Temporary af
-    bool mHasFreePlots = true;
 };
 

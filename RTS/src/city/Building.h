@@ -54,9 +54,8 @@ public:
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;
-
-    // Entity defining the function of our building, may also own other buildings
-    entt::entity mBusinessEntity = INVALID_ENTITY;
+    // Entity owning this plot, can be a person or a business
+    entt::entity mOwnerEntity = INVALID_ENTITY;
 
 private:
     mutable BuildingRenderData mRenderData;

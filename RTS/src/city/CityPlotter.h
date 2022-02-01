@@ -25,10 +25,10 @@ public:
     // If no valid plot exists, will automatically grow.
     //std::vector<CityPlot*> getValidPlots(ui32v2 dims);
 
-    CityPlot* reservePlotForBuilding(const ui32v2& minBuildingDims, const ui32v2& maxBuildingDims);
+    CityPlot* tryReservePlotForBuilding(const ui32v2& minBuildingDims, const ui32v2& maxBuildingDims);
 
 private:
-    CityDistrict* addDistrict(DistrictTypes type, CityDistrict* parent, ui32 size);
+    CityDistrict* addDistrict(DistrictType type, CityDistrict* parent, ui32 size);
 
     void generateAlleysForUnroadedPlots(CityDistrict& newDistrict);
 

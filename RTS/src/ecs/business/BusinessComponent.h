@@ -5,32 +5,44 @@
 #include "crafting/CraftingConst.h"
 
 #include "ai/tasks/IAgentTask.h"
+#include "city/business_jobs/IBusinessJob.h"
+
+#include <boost/circular_buffer.hpp>
 
 // TODO: This is getting heavyweight, we only include for LiteTileHandle
 #include "world/Chunk.h"
 
 class City;
 class World;
+class ItemStockpile;
+class ConstructBuildingJob;
 struct BuildingBlueprint;
 
-typedef std::vector<IAgentTaskPtr> TaskList;
+typedef std::unique_ptr<IBusinessJob> IBusinessJobPtr;
+typedef boost::circular_buffer<entt::entity> IdleWorkerList;
+typedef boost::circular_buffer<IBusinessJobPtr> JobList;
 
 // TODO: We are probably leaking IAgentTask here if the agent is destroyed with active
 // tasks, but using the destructor will probably result in us freeing from copies.
 // Shared_ptr would work but is heavyweight
 struct BusinessComponent {
+    BusinessComponent();
+
+    // CALLER_DELETE IAgentTaskPtr aquireTask();
+    void addIdleWorker(entt::entity worker);
 
     // TODO: Trade empires? Multi city?
     City* mCity = nullptr;
-    std::vector<BuildingID> mBuildings;
+    std::vector<CityPlot*> mOwnedPlots;
     std::vector<entt::entity> mEmployees; // TODO: Death notify
     ui32 mDesiredEmployeeCount = 1; // TODO: Tiers?
     ui32 mMaxEmployeeCount = 10;
 
-    // TODO: Allow smart task selection based on current agent distance and such
-    std::map<ui32, TaskList> mTasksToDo; // Ordered by priority
+    std::vector<ItemStockpile*> mOwnedStockpiles;
 
-    CALLER_DELETE IAgentTaskPtr aquireTask();
+    IdleWorkerList mIdleWorkers;
+    JobList mQueuedJobs;
+    std::vector<IBusinessJobPtr> mActiveJobs;
 };
 
 // Gather
@@ -41,15 +53,14 @@ struct GatherItemDesc {
 struct BusinessGatherComponent {
     ui32 mPriority;
     TileResource mResourceToGather = TileResource::NONE;
-    // TODO: Shared search?
-    int mFramesUntilNextScan = 0;
     std::vector<TileHandle> mScannedTiles;
 };
 
 // Construct
 struct BusinessBuildComponent {
     ui32 mPriority;
-    BuildingBlueprint* mCurrentBlueprint;
+    BuildingBlueprint* mCurrentBlueprint = nullptr;
+    ConstructBuildingJob* mCurrentJob = nullptr;
 };
 
 // Produce

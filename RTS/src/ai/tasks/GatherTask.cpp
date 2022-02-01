@@ -27,8 +27,8 @@ GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, City* city)
 
 GatherTask::~GatherTask() {
     // Clear tile flag on abort
-    if (!IS_SHUTTING_DOWN && mState <= GatherTaskState::HARVESTING) {
-        mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+    if (!IS_SHUTTING_DOWN) {
+        failTask();
     }
 }
 
@@ -86,7 +86,7 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
 
     // Make sure tile still has the resource
     if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos(), mResource, nullptr)) {
-        mState = GatherTaskState::FAIL;
+        failTask();
         return;
     }
 
@@ -96,7 +96,7 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
         }
         else {
             // Failed to path, fail he task
-            mState = GatherTaskState::FAIL;
+            failTask();
         }
     });
     mState = GatherTaskState::PATH_TO_RESOURCE;
@@ -107,7 +107,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
     if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos(), mResource, &layer)) {
-        mState = GatherTaskState::FAIL;
+        failTask();
         return false;
     }
 
@@ -131,7 +131,8 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
             tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
-            tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+            tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could double clear this in failTask()
+            // TODO: Play animation of tree falling
 
             // Award loot
             InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
@@ -164,6 +165,11 @@ void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::e
     assert(mCity);
     const f32v2& myPos = physCmp.getXYPosition();
     ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
+    // There is no stockpile :(
+    if (!closestStockpile) {
+        failTask();
+        return;
+    }
     ui32v2 stockpileCenter = closestStockpile->getAABB().getCenter();
 
     // Path to the stockpile
@@ -173,7 +179,7 @@ void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::e
         }
         else {
             // Failed to path, fail he task
-            mState = GatherTaskState::FAIL;
+            failTask();
         }
     });
     mState = GatherTaskState::PATH_TO_STOCKPILE;
@@ -224,5 +230,12 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
             mState = GatherTaskState::PICK_STOCKPILE_SLOT;
         });
         mState = GatherTaskState::PATH_TO_STOCKPILE_SLOT;
+    }
+}
+
+void GatherTask::failTask() {
+    if (mState <= GatherTaskState::HARVESTING) {
+        mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+        mState = GatherTaskState::FAIL;
     }
 }

@@ -17,7 +17,6 @@
 City::City(const ui32v2& cityCenterWorldPos, World& world)
     : mCityCenterWorldPos(cityCenterWorldPos)
     , mWorld(world)
-    , mBuildingRepository(mWorld.getResourceManager().getBuildingRepository())
     , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)
 {
 
@@ -27,15 +26,15 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     // TODO: Need to release later
     mChunks.back()->incRef();
 
+    mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
     mCityPlotter = std::make_unique<CityPlotter>(*this);
     mCityPlanner = std::make_unique<CityPlanner>(*this);
-    mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
     mCityResidentManager = std::make_unique<CityResidentManager>(*this);
     mCityBusinessManager = std::make_unique<CityBusinessManager>(*this);
     mCityQuartermaster = std::make_unique<CityQuartermaster>(*this);
 
     mCityPlotter->initAsTier(0);
-    mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
+    //mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
 
     // Add test business
     mWorld.getResourceManager().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");

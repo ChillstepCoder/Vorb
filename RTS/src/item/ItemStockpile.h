@@ -83,7 +83,7 @@ private:
     // TODO: MultiAABB
     World& mWorld;
     ui32AABB2 mAABB = ui32AABB2(0);
-    ui32 mZPos = 0; // TODO: Use this
+    f32 mZPos = 0; // TODO: Use this
     entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
 
     std::vector<ChunkID> mResidingChunks;

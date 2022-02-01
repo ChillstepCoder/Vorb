@@ -41,7 +41,7 @@ void CityPlotter::upgradeTier()
     // First tier
     if (mCurrentTier == UINT_MAX) {
         mCurrentTier = 0;
-        addDistrict(DistrictTypes::Rural, nullptr, DISTRICT_SIZE);
+        addDistrict(DistrictType::Rural, nullptr, DISTRICT_SIZE);
     }
     else {
         ++mCurrentTier;
@@ -49,27 +49,27 @@ void CityPlotter::upgradeTier()
         switch (mCurrentTier) {
             case 1: {
                 CityDistrict* ruralParent = mDistricts.back().get();
-                addDistrict(DistrictTypes::Farming, ruralParent, DISTRICT_SIZE);
-                addDistrict(DistrictTypes::Residential, ruralParent, DISTRICT_SIZE);
+                addDistrict(DistrictType::Farming, ruralParent, DISTRICT_SIZE);
+                addDistrict(DistrictType::Residential, ruralParent, DISTRICT_SIZE);
                 break;
             }
             case 2: {
                 CityDistrict* residentialParent = mDistricts.back().get();
-                addDistrict(DistrictTypes::Commercial, residentialParent, DISTRICT_SIZE);
+                addDistrict(DistrictType::Commercial, residentialParent, DISTRICT_SIZE);
                 //addDistrict(DistrictTypes::Harbor, residentialParent);
                 break;
             }
             case 3: {
                 CityDistrict* commercialParent = mDistricts.back().get();
-                addDistrict(DistrictTypes::Government, commercialParent, DISTRICT_SIZE);
-                addDistrict(DistrictTypes::Military, mDistricts.back().get(), DISTRICT_SIZE); // Parent to government
-                addDistrict(DistrictTypes::Industrial, commercialParent, DISTRICT_SIZE);
+                addDistrict(DistrictType::Government, commercialParent, DISTRICT_SIZE);
+                addDistrict(DistrictType::Military, mDistricts.back().get(), DISTRICT_SIZE); // Parent to government
+                addDistrict(DistrictType::Industrial, commercialParent, DISTRICT_SIZE);
                 break;
             }
             case 4: {
                 CityDistrict* industrialParent = mDistricts.back().get();
-                addDistrict(DistrictTypes::Residential, industrialParent, DISTRICT_SIZE);
-                addDistrict(DistrictTypes::Commercial, mDistricts.back().get(), DISTRICT_SIZE); // Parent to Residential
+                addDistrict(DistrictType::Residential, industrialParent, DISTRICT_SIZE);
+                addDistrict(DistrictType::Commercial, mDistricts.back().get(), DISTRICT_SIZE); // Parent to Residential
                 break;
             }
             case 5: {
@@ -80,7 +80,7 @@ void CityPlotter::upgradeTier()
     }
 }
 
-CityPlot* CityPlotter::reservePlotForBuilding(const ui32v2& minPlotDims, const ui32v2& maxPlotDims)
+CityPlot* CityPlotter::tryReservePlotForBuilding(const ui32v2& minPlotDims, const ui32v2& maxPlotDims)
 {
     // TODO: Not heap
     //std::vector<CityPlotIndex> oversizedPlots;
@@ -118,7 +118,7 @@ i32v2 getDistrictXY(int districtIndex) {
     return i32v2(districtIndex % DISTRICT_GRID_WIDTH, districtIndex / DISTRICT_GRID_WIDTH);
 }
 
-CityDistrict* CityPlotter::addDistrict(DistrictTypes type, CityDistrict* parent, ui32 size)
+CityDistrict* CityPlotter::addDistrict(DistrictType type, CityDistrict* parent, ui32 size)
 {
     std::unique_ptr<CityDistrict> newDistrict = std::make_unique<CityDistrict>();
     newDistrict->type = type;

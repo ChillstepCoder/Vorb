@@ -8,6 +8,8 @@
 #include "World.h"
 #include "world/TileRepository.h"
 
+#include "ecs/EntityComponentSystem.h"
+
 #include "DebugRenderer.h"
 
 // TODO: replace?
@@ -20,16 +22,19 @@ CityBuilder::CityBuilder(City& city, World& world)
 
 }
 
-void CityBuilder::update()
-{
-    // Grab new plans
-    if (mWaitingBlueprints.empty()) {
-        if (std::unique_ptr<BuildingBlueprint> bp = mCity.getCityPlanner().recieveNextBlueprint()) {
-            //mWaitingBlueprints.push_front(std::move(bp));
-            debugBuildInstant(*bp);
+void CityBuilder::update() {
+
+    while (mBlueprintsToBuild.size()) {
+        BuildingBlueprint* nextBp = mBlueprintsToBuild.front();
+        // Try send this off to a contractor
+        if (trySendBuildingJob(nextBp)) {
+            mBlueprintsToBuild.pop_front();
+        }
+        else {
+            break;
         }
     }
-
+   
     // FILO queue right now
     while (mRoadsToBuild.size()) {
         debugBuildInstant(mRoadsToBuild.back());
@@ -37,30 +42,14 @@ void CityBuilder::update()
     }
 }
 
-BuildingBlueprint* CityBuilder::aquireBlueprintToBuild(entt::entity businessId) {
-    // TODO: Priority?
-    if (mWaitingBlueprints.empty()) {
-        return nullptr;
-    }
-    mInProgressBlueprints.emplace_back(std::make_pair(std::move(mWaitingBlueprints.front()), businessId));
-    mWaitingBlueprints.pop_front();
-    return mInProgressBlueprints.back().first.get();
-}
 
-void CityBuilder::onBlueprintComplete(BuildingBlueprint* bp)
-{
-    for (size_t i = 0; i < mInProgressBlueprints.size(); ++i) {
-        if (mInProgressBlueprints[i].first.get() == bp) {
-            mInProgressBlueprints[i] = std::move(mInProgressBlueprints.back());
-            mInProgressBlueprints.pop_back();
-            return;
-        }
-    }
-    assert(false); // Failed to find blueprint
+void CityBuilder::addBlueprintToBuild(BuildingBlueprint* blueprint) {
+    assert(!blueprint->isBuilding);
+    blueprint->isBuilding = true;
+    mBlueprintsToBuild.push_back(blueprint);
 }
 
 void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
-
 
     ui32v2 worldPos = bp.bottomLeftWorldPos;
 
@@ -156,4 +145,21 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
             mWorld.addTile(xy, TileRepository::getTileData(tileId));
         }
     }
+}
+
+bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
+
+    auto view = mWorld.getECS().mRegistry.view<BusinessBuildComponent>();
+    bool success = false;
+    // Update businesses
+    for (auto entity : view) {
+        auto& cmp = view.get<BusinessBuildComponent>(entity);
+        // TODO: Bidding
+        if (cmp.mCurrentBlueprint == nullptr) {
+            cmp.mCurrentBlueprint = blueprint;
+            success = true;
+            break;
+        }
+    }
+    return success;
 }

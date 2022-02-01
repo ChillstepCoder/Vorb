@@ -6,13 +6,14 @@
 
 #include "BuildingBlueprint.h"
 
+class CityBuilder;
 class BuildingDescriptionRepository;
 
 class BuildingBlueprintGenerator
 {
 public:
-    BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo);
-    std::unique_ptr<BuildingBlueprint> generateBuildingAsync(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos);
+    BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
+    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos);
 
 private:
     // Graph Generation
@@ -29,7 +30,10 @@ private:
     void placeInteriorWalls(BuildingBlueprint& bp) const;
     void placeDoors(BuildingBlueprint& bp) const;
 
+    void tallyRequiredItems(BuildingBlueprint& bp) const;
+
     BuildingDescriptionRepository& mBuildingRepo;
+    CityBuilder& mCityBuilder;
     std::set<BuildingBlueprint*> mGeneratingBuildings;
     BuildingBlueprintId mCurrentId = 0;
 };

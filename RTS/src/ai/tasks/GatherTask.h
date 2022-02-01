@@ -32,6 +32,7 @@ protected:
 	bool beginHarvest(World& world, entt::registry& registry, entt::entity agent);
 	void pathToStockpile(World& world, entt::registry& registry, entt::entity agent);
 	void addItemToStockpile(World& world, entt::registry& registry, entt::entity agent);
+	void failTask();
 
     TileHandle mTileTarget;
     TileResource mResource;

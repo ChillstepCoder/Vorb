@@ -11,14 +11,14 @@ enum class CityBlockSize {
 };
 
 struct CityDistrict;
+struct BuildingBlueprint;
 typedef ui32 CityPlotIndex;
 #define INVALID_PLOT_INDEX UINT32_MAX;
 
 struct CityPlot {
-    CityPlot() {};
-    CityPlot(const ui32AABB2& aabb, CityPlotIndex plotIndex, CityDistrict* parentDistrict) :
-        aabb(aabb), plotIndex(plotIndex), parentDistrict(parentDistrict) {
-    };
+    CityPlot();
+    CityPlot(const ui32AABB2& aabb, CityPlotIndex plotIndex, CityDistrict* parentDistrict);
+    ~CityPlot();
 
     void setNeighborRoad(Cartesian dir, RoadID id) {
         neighborRoads[enum_cast(dir)] = id;
@@ -38,8 +38,12 @@ struct CityPlot {
 
     ui32AABB2 aabb;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
+    BuildingID buildingId = INVALID_BUILDING_ID;
     CityDistrict* parentDistrict = nullptr;
+    // Entity owning this plot, can be a person or a business
+    entt::entity mOwnerEntity = INVALID_ENTITY;
     bool isFree = true;
+    std::unique_ptr<BuildingBlueprint> mPendingBlueprint = nullptr;
 
     // TODO: More?
     RoadID neighborRoads[CARTESIAN_COUNT] = { INVALID_ROAD_ID, INVALID_ROAD_ID, INVALID_ROAD_ID, INVALID_ROAD_ID };

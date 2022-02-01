@@ -16,5 +16,5 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("shape", keg::Value::custom(offsetof(TileFileData, tileShape), "TileShape", true));
     kt.addValue("resource", keg::Value::custom(offsetof(TileFileData, resource), "TileResource", true));
     kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
-    kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipes), keg::Value::custom(0, "ItemInputDef", false)));
+    kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
 }

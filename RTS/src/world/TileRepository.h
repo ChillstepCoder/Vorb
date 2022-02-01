@@ -14,7 +14,7 @@ struct TileFileData {
     ui8 layer = 2;
     std::string textureName;
     Array<ItemDropDef> itemDrops;
-    Array<ItemInputDef> recipes;
+    Array<ItemInputDef> recipe;
 };
 KEG_TYPE_DECL(TileFileData);
 

@@ -340,10 +340,10 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         }
 
         // Recipes
-        tileData.recipe.resize(fileData.recipes.size());
+        tileData.recipe.resize(fileData.recipe.size());
         for (size_t i = 0; i < tileData.recipe.size(); ++i) {
-            tileData.recipe[i].quantity = fileData.recipes[i].count;
-            tileData.recipe[i].id = mItemRepository->getItem(fileData.recipes[i].itemName).getID();
+            tileData.recipe[i].quantity = fileData.recipe[i].count;
+            tileData.recipe[i].id = mItemRepository->getItem(fileData.recipe[i].itemName).getID();
         }
 
         TileID nextId = (TileID)TileRepository::sTileData.size();

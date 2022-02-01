@@ -53,6 +53,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
             ref.chunk->setTileFlag(ref.index, TILE_FLAG_IS_STOCKPILE);
             f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getChunkID(), ref.index);
             if (height > maxZPos) maxZPos = height;
+            std::cout << "HEIGHT " << height << std::endl;
         }
     }
     mZPos = maxZPos;
@@ -79,8 +80,7 @@ bool ItemStockpile::isVisible() const {
 
 void ItemStockpile::renderDebug() const {
     f32v2 cornerPos = f32v2(mAABB.pos);
-    f32 height = mWorld.getWorldGrid().tryComputeHeightAtPoint(cornerPos + f32v2(mAABB.dims) * 0.5f);
-    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x, cornerPos.y, height), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
+    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x, cornerPos.y, mZPos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
 }
 
 ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui32 maxQuantityToAdd) {
