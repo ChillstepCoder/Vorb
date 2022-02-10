@@ -27,8 +27,9 @@ enum TileFlags : ui16 {
     TILE_FLAG_HAS_COLLIDER         = 1 << 10,
     TILE_FLAG_QUEUED_UPDATE        = 1 << 11,
     TILE_FLAG_IS_RESOURCE_RESERVED = 1 << 12,
+    //TILE_FLAG_IS_WORK_RESERVED     = 1 << 13,
 
-    TILE_FLAG_TERM                 = 1 << 13,
+    TILE_FLAG_TERM                 = 1 << 13, // Keep this at +1
 };
 static_assert(TILE_FLAG_TERM <= 0x8000); // Must fit into a short
 

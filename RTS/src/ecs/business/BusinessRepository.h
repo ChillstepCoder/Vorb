@@ -2,19 +2,11 @@
 
 #include "ecs/business/BusinessComponentTypes.h"
 #include "ecs/business/BusinessComponent.h"
+#include "definitions/BusinessDef.h"
 
 DECL_VIO(class IOManager);
 class ItemRepository;
 
-typedef ui32 BusinessTypeID;
-#define INVALID_BUSINESS_TYPE_ID UINT32_MAX
-
-struct BusinessDef;
-
-struct BusinessComponentDefinition {
-    BusinessComponentDefinition() {};
-    virtual ~BusinessComponentDefinition() {};
-};
 
 class BusinessRepository
 {

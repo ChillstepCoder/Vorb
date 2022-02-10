@@ -4,6 +4,7 @@ class CityPlanner;
 class CityBuilder;
 class CityPlotter;
 class CityQuartermaster;
+struct BuildingBlueprint;
 
 class Camera2D;
 
@@ -17,6 +18,8 @@ public:
 
     void finishRenderFrame();
     void clearMeshes();
+
+    static void renderBlueprintDebug(BuildingBlueprint& bp, color4* inputColor = nullptr);
 
     bool mNeedsMeshes = true;
 };

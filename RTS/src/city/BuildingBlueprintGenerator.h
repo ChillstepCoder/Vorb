@@ -30,7 +30,7 @@ private:
     void placeInteriorWalls(BuildingBlueprint& bp) const;
     void placeDoors(BuildingBlueprint& bp) const;
 
-    void tallyRequiredItems(BuildingBlueprint& bp) const;
+    void tallyRequiredItemsAndMarkTiles(BuildingBlueprint& bp) const;
 
     BuildingDescriptionRepository& mBuildingRepo;
     CityBuilder& mCityBuilder;

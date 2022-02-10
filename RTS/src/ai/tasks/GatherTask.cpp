@@ -124,7 +124,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
         enum_cast(layer),
         INTERACT_TICKS,
         0,
-        [&world, &registry, agent, this](bool, TimedTileInteractComponent& cmp) {
+        [&registry, agent, this](bool, TimedTileInteractComponent& cmp) {
             // TODO: Interact lock???
             auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])

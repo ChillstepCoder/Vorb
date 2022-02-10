@@ -168,6 +168,7 @@
     <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
+    <ClCompile Include="src\definitions\BusinessDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
@@ -193,6 +194,7 @@
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
+    <ClCompile Include="src\item\ItemReservation.cpp" />
     <ClCompile Include="src\item\ItemStockpile.cpp" />
     <ClCompile Include="src\item\ItemStockpileRegistry.cpp" />
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
@@ -305,6 +307,7 @@
     <ClInclude Include="src\crafting\CraftingRepository.h" />
     <ClInclude Include="src\data_structure\FlatQuadtree.h" />
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
+    <ClInclude Include="src\definitions\BusinessDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
@@ -341,6 +344,7 @@
     <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
+    <ClInclude Include="src\item\ItemReservation.h" />
     <ClInclude Include="src\item\ItemStack.h" />
     <ClInclude Include="src\item\ItemStockpile.h" />
     <ClInclude Include="src\item\ItemStockpileRegistry.h" />
@@ -430,6 +434,9 @@
     <ClInclude Include="World.h" />
     <ClInclude Include="TileSet.h" />
     <ClInclude Include="Utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\item\ItemReservation" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

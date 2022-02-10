@@ -1,13 +1,16 @@
 #include "stdafx.h"
 #include "EntityComponentSystemRenderer.h"
 #include "ecs/EntityComponentSystem.h"
+#include "ecs/business/BusinessComponent.h"
 #include "camera/Camera3D.h"
+#include "city/CityPlot.h"
 #include "World.h"
 
 #include "ResourceManager.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "DebugRenderer.h"
+#include "rendering/CityDebugRenderer.h"
 
 #include <Vorb/utils.h>
 #include <Vorb/graphics/SpriteBatch.h>
@@ -32,6 +35,22 @@ void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera3D& camera) c
         DebugRenderer::drawCircle(cmp.getPosition(), cmp.mCollisionRadius, color4(1.0f, 0.0f, 0.0f));
         //DebugRenderer::drawCircle(cmp.getPosition() + f32v3(0.0f, 0.0f, cmp.mCollisionHeight), cmp.mCollisionRadius, color4(0.5f, 0.0f, 0.0f));
 	});
+}
+
+void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) const {
+
+    int i = 0;
+
+    auto& ecs = mWorld.getECS();
+    ecs.mRegistry.view<BusinessComponent>().each([ &i](auto& cmp) {
+		color4 color((i * 120) % 255, 255 - (i * 60) % 255, (i * 72) % 255, 255);
+		for (CityPlot* plot : cmp.mOwnedPlots) {
+			if (plot->mPendingBlueprint) {
+				CityDebugRenderer::renderBlueprintDebug(*plot->mPendingBlueprint, &color);
+			}
+		}
+		++i;
+    });
 }
 
 void EntityComponentSystemRenderer::renderSimpleSprites(const Camera3D& camera) const {

@@ -446,6 +446,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     if (sDebugOptions.mShowPhysicsDebug) {
         mEcsRenderer->renderPhysicsDebug(camera);
     }
+    if (sDebugOptions.mShowBusinessDebug) {
+        mEcsRenderer->renderBusinessDebug(camera);
+    }
 
     // Clouds
     if (!sDebugOptions.mDisableClouds) {

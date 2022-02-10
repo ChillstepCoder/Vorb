@@ -345,6 +345,8 @@ const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
+	// TODO: Might be smart to make a variant that doesnt need an std::function for faster iteration/calls since
+	// we call this many times
 	for (auto&& chunk : mVisibleChunks) {
 		func(*chunk);
 	}

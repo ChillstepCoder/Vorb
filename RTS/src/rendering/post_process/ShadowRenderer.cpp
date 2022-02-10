@@ -18,6 +18,112 @@
 constexpr int DEPTH_MAP_RESOLUTION = 4096;
 
 
+////===========================================================================
+//static bool ShadowBoundsCalc(
+//    const Coord2u& renderDims,
+//    const CIGrFrustum& frustum,
+//    float               density,
+//    const Coord3f& dir,
+//    const Coord3f& right,
+//    const Coord3f& up,
+//    Range2f* s,
+//    Range2f* t,
+//    Range2f* u,
+//    float* clipDist
+//) {
+//    Coord3f shadowBasis[3] = { right, up, dir };
+//
+//    // Get frustum info
+//    Coord4f viewZ;
+//    float frustumLength;
+//    IGrTransformGetFrustumInfo(frustum, &viewZ, &frustumLength);
+//
+//    // Compute view frustum bounds in light space
+//    const Plane* planes;
+//    const Coord3f* points;
+//    IGrTransformGetFrustumGeometry(frustum, &planes, &points);
+//    const Coord3f farPoint = 0.25f * (points[1] + points[2] + points[3] + points[4]);
+//    const Coord3f nearPoint = points[GR_FRUSTUM_POINT_EYE];
+//    const Coord3f viewDir = MathNormalizeHq(farPoint - nearPoint);
+//
+//    // Compute "clipDist" (0->1 range for how much of the view frustum the
+//    // shadows cover) and shadow space view frustum AABB.  If we're given
+//    // a shexel density then binary search for the best fitting clip distance.
+//    if (density) {
+//        float low = 0.0f, high = 1.0f;
+//        while (high - low > 1.0f / 4096.0f) {
+//            float mid = (high + low) * 0.5f;
+//
+//            *s = Range2f((float)HUGE_VAL, -(float)HUGE_VAL);
+//            *t = Range2f((float)HUGE_VAL, -(float)HUGE_VAL);
+//            *u = Range2f((float)HUGE_VAL, -(float)HUGE_VAL);
+//            for (unsigned index = 0; index < GR_FRUSTUM_POINTS; ++index) {
+//                Coord3f worldPos = points[index];
+//                if (index)
+//                    worldPos = points[0] + (worldPos - points[0]) * mid;
+//
+//                const float ds = MathDotProduct(worldPos, shadowBasis[0]);
+//                const float dt = MathDotProduct(worldPos, shadowBasis[1]);
+//                const float du = MathDotProduct(worldPos, shadowBasis[2]);
+//                s->min = min(s->min, ds);
+//                s->max = max(s->max, ds);
+//                t->min = min(t->min, dt);
+//                t->max = max(t->max, dt);
+//                u->min = min(u->min, du);
+//                u->max = max(u->max, du);
+//            }
+//
+//            bool fits = (s->max - s->min <= renderDims.x * density) &&
+//                (t->max - t->min <= renderDims.y * density);
+//            if (fits)       // Continue between mid and high to tighten bounds
+//                low = mid;
+//            else            // Continue between low and mid
+//                high = mid;
+//        }
+//        *clipDist = high;
+//    }
+//    else {
+//        *clipDist = 1.0f;
+//        *s = Range2f((float)HUGE_VAL, -(float)HUGE_VAL);
+//        *t = Range2f((float)HUGE_VAL, -(float)HUGE_VAL);
+//        *u = Range2f((float)HUGE_VAL, -(float)HUGE_VAL);
+//        for (unsigned index = 0; index < GR_FRUSTUM_POINTS; ++index) {
+//            const float ds = MathDotProduct(points[index], shadowBasis[0]);
+//            const float dt = MathDotProduct(points[index], shadowBasis[1]);
+//            const float du = MathDotProduct(points[index], shadowBasis[2]);
+//            s->min = min(s->min, ds);
+//            s->max = max(s->max, ds);
+//            t->min = min(t->min, dt);
+//            t->max = max(t->max, dt);
+//            u->min = min(u->min, du);
+//            u->max = max(u->max, du);
+//        }
+//    }
+//
+//    // Check for degenerate bounds
+//    if (s->min >= s->max || t->min >= t->max || u->min >= u->max)
+//        return false;
+//
+//    // Snap to shadow map texels to keep shadows stable
+//    if (density) {
+//        Coord3f center = Coord3f(s->min + s->max, t->min + t->max, u->min + u->max) * .5f;
+//        center.x = floorf(center.x / density + .5f) * density;
+//        center.y = floorf(center.y / density + .5f) * density;
+//        center.z = floorf(center.z / density + .5f) * density;
+//
+//        s->min = center.x - density * renderDims.x / 2;
+//        s->max = center.x + density * renderDims.x / 2;
+//        t->min = center.y - density * renderDims.y / 2;
+//        t->max = center.y + density * renderDims.y / 2;
+//        u->min = center.z - density * renderDims.x / 2;
+//        u->max = center.z + density * renderDims.x / 2;
+//    }
+//
+//    return true;
+//}
+
+
+
 constexpr int MAX_MIP_LEVELS = 9; // TODO: Make this dynamic?
 
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps

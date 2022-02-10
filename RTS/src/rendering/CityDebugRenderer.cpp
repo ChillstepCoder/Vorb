@@ -30,7 +30,7 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(0.0f, 0.0f, 0.0f, ROOM_COLOR_ALPHA),
 };
 
-void renderBlueprint(BuildingBlueprint& bp) {
+void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, color4* inputColor/* = nullptr*/) {
     // Render the AABB of the floor plan
     b2AABB aabb;
     aabb.lowerBound.x = bp.bottomLeftWorldPos.x;
@@ -38,7 +38,25 @@ void renderBlueprint(BuildingBlueprint& bp) {
     
     aabb.upperBound.x = aabb.lowerBound.x + bp.dims.x;
     aabb.upperBound.y = aabb.lowerBound.y + bp.dims.y;
-    DebugRenderer::drawAABB(aabb, 0.0f, color4(0.7f, 0.4f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
+
+    constexpr f32 EPSILON = 0.001f;
+    const f32 height = 1.0f;
+    const f32 heightPlusE = height + EPSILON;
+
+    // Render all the metadata on bottomw
+    for (int y = 0; y < bp.dims.y; ++y) {
+        for (int x = 0; x < bp.dims.x; ++x) {
+            const int index = y * bp.dims.x + x;
+            RoomNodeID id = bp.ownerArray[index];
+            if (id != INVALID_ROOM_ID) {
+                const ui32v2 worldPos = bp.bottomLeftWorldPos + ui32v2(x, y);
+                const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
+                DebugRenderer::drawFilledQuad(f32v3((f32)worldPos.x, (f32)worldPos.y, height), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
+            }
+        }
+    }
+
+    DebugRenderer::drawAABB(aabb, heightPlusE, inputColor ? *inputColor : color4(0.7f, 0.4f, 0.0f));
     // Render the room graph in world space
     int i = 0;
     for (auto&& node : bp.nodes) {
@@ -49,34 +67,22 @@ void renderBlueprint(BuildingBlueprint& bp) {
         nodeAabb.upperBound.y = nodeAabb.lowerBound.y + 1;
 
         const color4& color = ROOM_COLORS[i % MAX_ROOM_COLORS];
-        DebugRenderer::drawAABB(nodeAabb, 0.0f, color4(color.r, color.g, color.b, 255u), PERIOD_FRAMES, DEBUG_ID_CITY);
+        DebugRenderer::drawAABB(nodeAabb, heightPlusE, color4(color.r, color.g, color.b, 255u));
         // Draw parent line
         if (node.parentRoom != INVALID_ROOM_ID) {
             RoomNode& parent = bp.nodes[node.parentRoom];
-            const f32v2 startPos(nodeAabb.lowerBound.x + 0.5f, nodeAabb.lowerBound.y + 0.5f);
-            const f32v2 endPos(bp.bottomLeftWorldPos.x + parent.offsetFromZero.x + 0.5f, bp.bottomLeftWorldPos.y + parent.offsetFromZero.y + 0.5f);
+            const f32v3 startPos(nodeAabb.lowerBound.x + 0.5f, nodeAabb.lowerBound.y + 0.5f, heightPlusE);
+            const f32v3 endPos(bp.bottomLeftWorldPos.x + parent.offsetFromZero.x + 0.5f, bp.bottomLeftWorldPos.y + parent.offsetFromZero.y + 0.5f, heightPlusE);
             if (node.isPrivate) {
-                DebugRenderer::drawLine(startPos, endPos - startPos, color4(1.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
+                DebugRenderer::drawLine(startPos, endPos - startPos, color4(1.0f, 1.0f, 0.0f));
             }
             else {
-                DebugRenderer::drawLine(startPos, endPos - startPos, color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
+                DebugRenderer::drawLine(startPos, endPos - startPos, color4(0.0f, 1.0f, 0.0f));
             }
         }
         ++i;
     }
 
-    // Render all the metadata
-    for (int y = 0; y < bp.dims.y; ++y) {
-        for (int x = 0; x < bp.dims.x; ++x) {
-            const int index = y * bp.dims.x + x;
-            RoomNodeID id = bp.ownerArray[index];
-            if (id != INVALID_ROOM_ID) {
-                const ui32v2 worldPos = bp.bottomLeftWorldPos + ui32v2(x, y);
-                const color4& color = ROOM_COLORS[(int)id % MAX_ROOM_COLORS];
-                DebugRenderer::drawFilledQuad(f32v2(worldPos), f32v2(1.0f), color, PERIOD_FRAMES, DEBUG_ID_CITY);
-            }
-        }
-    }
 }
 
 void CityDebugRenderer::renderCityPlannerDebug(const CityPlanner& cityPlanner) const {
@@ -99,7 +105,7 @@ void CityDebugRenderer::renderCityBuilderDebug(const CityBuilder& cityBuilder) c
     }
 
     for (auto&& bp : cityBuilder.mBlueprintsToBuild) {
-        renderBlueprint(*bp);
+        renderBlueprintDebug(*bp);
     }
 }
 

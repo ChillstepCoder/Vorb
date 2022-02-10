@@ -6,35 +6,52 @@
 
 #include "item/ItemStockpile.h"
 
-ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint* blueprint) : mBlueprint(blueprint) {
-    assert(!mBlueprint->isGenerating);
-    const std::vector<BlueprintTile>& tiles = mBlueprint->tiles;
+#include "ai/tasks/BuildTask.h"
+
+
+JobRequiredItems::JobRequiredItems()
+{
+
+}
+
+JobRequiredItems::~JobRequiredItems()
+{
+
+}
+
+
+ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint) : mBlueprint(blueprint) {
+    assert(!mBlueprint.isGenerating);
+    const std::vector<BlueprintTile>& tiles = mBlueprint.tiles;
     // Track required items internally
-    mRequiredItems.resize(mBlueprint->requiredItemsToBuild.size());
+    mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
     for (size_t i = 0; i < mRequiredItems.size(); ++i) {
         JobRequiredItems& required = mRequiredItems[i];
-        ItemStack& stack = mBlueprint->requiredItemsToBuild[i];
+        ItemStack& stack = mBlueprint.requiredItemsToBuild[i];
         required.id = stack.id;
         required.quantityRequired = stack.quantity;
     }
+    mFirstUnfinishedTileIndex = UINT32_MAX;
 
-    mTileStates.resize(tiles.size());
-    for (size_t i = 0; i < mTileStates.size(); ++i) {
+    mTilesToConstruct.resize(tiles.size(), TilesToConstruct{ ConstructTileState::DONE, false });
+    for (size_t i = 0; i < mTilesToConstruct.size(); ++i) {
         switch (tiles[i].type) {
             case BlueprintTileType::NONE:
-                mTileStates[i] = ConstructTileState::DONE;
                 break;
             case BlueprintTileType::WALL:
-                mTileStates[i] = ConstructTileState::WAITING_CONSTRUCT_GROUND;
+                mTilesToConstruct[i].state = ConstructTileState::WAITING_CONSTRUCT_GROUND;
                 ++mNumGroundTilesToConstruct;
+                if (mFirstUnfinishedTileIndex == UINT32_MAX) mFirstUnfinishedTileIndex = i;
                 break;
             case BlueprintTileType::FLOOR_1:
-                mTileStates[i] = ConstructTileState::WAITING_CONSTRUCT_GROUND;
+                mTilesToConstruct[i].state = ConstructTileState::WAITING_CONSTRUCT_GROUND;
                 ++mNumGroundTilesToConstruct;
+                if (mFirstUnfinishedTileIndex == UINT32_MAX) mFirstUnfinishedTileIndex = i;
                 break;
             case BlueprintTileType::DOOR:
-                mTileStates[i] = ConstructTileState::WAITING_CONSTRUCT_TOP;
+                mTilesToConstruct[i].state = ConstructTileState::WAITING_CONSTRUCT_TOP;
                 ++mNumTopTilesToConstruct;
+                if (mFirstUnfinishedTileIndex == UINT32_MAX) mFirstUnfinishedTileIndex = i;
                 break;
             case BlueprintTileType::TYPES:
             default:
@@ -43,7 +60,11 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint* blueprint) : mBlue
         }
     }
 
-    mTotalTilesToConstruct = mNumGroundTilesToConstruct + mNumMidTilesToConstruct + mNumTopTilesToConstruct;
+    assert(mFirstUnfinishedTileIndex != UINT32_MAX);
+
+    // Just for error checking
+    ui32 totalTilesToBuild = mNumGroundTilesToConstruct + mNumMidTilesToConstruct + mNumTopTilesToConstruct;
+    assert(totalTilesToBuild == mBlueprint.totalTilesToBuild);
 }
 static_assert(enum_cast(BlueprintTileType::TYPES) == 4, "Update build logic");
 
@@ -58,47 +79,36 @@ bool ConstructBuildingJob::tick(World& world, entt::registry& registry, entt::en
     }
 
     // Without idle workers we cant do anything
-    if (mIdleWorkers.size()) {
-        BusinessComponent& businessCmp = registry.get<BusinessComponent>(business);
+    BusinessComponent& businessCmp = registry.get<BusinessComponent>(business);
 
-        // Search for items if we need them
-        for (auto&& item : mRequiredItems) {
-            if (item.quantityReserved < item.quantityRequired) {
-                tryReserveItems(item, businessCmp);
-            }
+    // Search for items if we need them
+    for (auto&& item : mRequiredItems) {
+        if (item.quantityReserved < item.quantityRequired) {
+            tryReserveItems(item, businessCmp);
         }
-
-        // Assign tasks to idle workers
-        do {
-            if (tryAssignTaskToWorker(mIdleWorkers.back())) {
-                mIdleWorkers.pop_back();
-            }
-            else {
-                // No task can be assigned so stop trying
-                break;
-            }
-        } while (mIdleWorkers.size());
     }
 
     // Return true when we are done
     return false;
 }
 
-void ConstructBuildingJob::assignWorker(entt::entity worker) {
-    mWorkers.push_back(worker);
-    assert(mWorkers.size() <= mMaxWorkers);
-}
-
 float ConstructBuildingJob::getProgress() const {
-    ui32 totalTilesConstructedThusFar = mTotalTilesToConstruct - (mNumGroundTilesToConstruct + mNumMidTilesToConstruct + mNumTopTilesToConstruct);
+    ui32 totalTilesConstructedThusFar = mBlueprint.totalTilesToBuild - (mNumGroundTilesToConstruct + mNumMidTilesToConstruct + mNumTopTilesToConstruct);
     if (totalTilesConstructedThusFar == 0) return 0.0f;
-    return (f32)mTotalTilesToConstruct / (f32)totalTilesConstructedThusFar;
+    return (f32)mBlueprint.totalTilesToBuild / (f32)totalTilesConstructedThusFar;
 }
 
-bool ConstructBuildingJob::tryAssignTaskToWorker(entt::entity worker) {
+IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
+    if (mTotalResourcesReserved && mNumTilesReservedInTasks < (mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt)) {
+        constexpr ui32 TILES_TO_BUILD_PER_JOB = 5;
+        const ui32 tilesForJob = glm::min((mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt) - mNumTilesReservedInTasks, TILES_TO_BUILD_PER_JOB);
+        mNumTilesReservedInTasks += tilesForJob;
 
-
-    return false;
+        std::vector<std::unique_ptr<ItemReservation>> sourceItems;
+        std::vector<TileIndex> targetTiles;
+        return std::make_shared<BuildTask>(mBlueprint, std::move(sourceItems), std::move(targetTiles));
+    }
+    return nullptr;
 }
 
 void ConstructBuildingJob::tryReserveItems(JobRequiredItems& item, BusinessComponent& businessCmp) {
@@ -108,9 +118,10 @@ void ConstructBuildingJob::tryReserveItems(JobRequiredItems& item, BusinessCompo
     for (auto&& stockpile : businessCmp.mOwnedStockpiles) {
         std::unique_ptr<ItemReservation> reservation = stockpile->tryReserveItemStack(itemsRequired, 1);
         if (reservation) {
+            mTotalResourcesReserved += reservation->getRemainingQuantity();
             item.quantityReserved += reservation->getRemainingQuantity();
             itemsRequired.quantity -= reservation->getRemainingQuantity();
-            mItemReservations.push_back(std::move(reservation));
+            item.mReservations.push_back(std::move(reservation));
 
             if (itemsRequired.quantity == 0) {
                 break;

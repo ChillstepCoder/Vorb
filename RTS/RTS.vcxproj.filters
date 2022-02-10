@@ -390,6 +390,12 @@
     <ClCompile Include="src\city\CityPlot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\item\ItemReservation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\definitions\BusinessDef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -866,5 +872,14 @@
     <ClInclude Include="src\world\TileConst.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\item\ItemReservation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\BusinessDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\item\ItemReservation" />
   </ItemGroup>
 </Project>

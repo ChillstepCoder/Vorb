@@ -17,7 +17,8 @@ class LightRenderer;
 class EntityComponentSystemRenderer {
 public:
 	EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world);
-	void renderPhysicsDebug(const Camera3D& camera) const;
+    void renderPhysicsDebug(const Camera3D& camera) const;
+    void renderBusinessDebug(const Camera3D& camera) const;
 	void renderSimpleSprites(const Camera3D& camera) const;
 	void renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 alpha, f32 frameAlpha);
 	void renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer);

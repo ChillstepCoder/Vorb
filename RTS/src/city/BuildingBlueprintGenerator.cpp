@@ -64,7 +64,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
         // Flooring
 
         // Tally final item requirements
-        tallyRequiredItems(*bPtr);
+        tallyRequiredItemsAndMarkTiles(*bPtr);
     }, [&, bPtr]() {
         // Main thread
         mGeneratingBuildings.erase(bPtr);
@@ -717,7 +717,8 @@ void BuildingBlueprintGenerator::placeInteriorWalls(BuildingBlueprint& bp) const
 }
 
 void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) const {
-    bp.tiles.resize((size_t)bp.dims.x * (size_t)bp.dims.y, { BlueprintTileType::NONE });
+    bp.tiles.resize((size_t)bp.dims.x * (size_t)bp.dims.y, BlueprintTile{ BlueprintTileType::NONE, false });
+    
     bp.ownerArray.resize(bp.tiles.size(), INVALID_ROOM_ID);
 
     // Init rooms
@@ -1091,7 +1092,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) const {
     }
 }
 
-void BuildingBlueprintGenerator::tallyRequiredItems(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::tallyRequiredItemsAndMarkTiles(BuildingBlueprint& bp) const {
     std::map<ItemID, ui32> requiredItems;
 
     const std::vector<ItemStack>* recipes[enum_cast(BlueprintTileType::TYPES)];
@@ -1104,10 +1105,12 @@ void BuildingBlueprintGenerator::tallyRequiredItems(BuildingBlueprint& bp) const
     for (size_t i = 0; i < bp.tiles.size(); ++i) {
         switch (bp.tiles[i].type) {
             case BlueprintTileType::NONE:
+                bp.tiles[i].isBuilt = true;
                 break;
             case BlueprintTileType::WALL:
             case BlueprintTileType::FLOOR_1:
             case BlueprintTileType::DOOR:
+                ++bp.totalTilesToBuild;
                 for (auto&& itemStack : *recipes[enum_cast(bp.tiles[i].type)]) {
                     auto&& it = requiredItems.find(itemStack.id);
                     if (it == requiredItems.end()) {

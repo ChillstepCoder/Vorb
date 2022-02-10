@@ -287,6 +287,7 @@ typedef ui16 TileID;
 // Items
 typedef ui32 ItemID;
 constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
+constexpr ui32 INVALID_STOCKPILE_INDEX = UINT32_MAX - 1;
 
 // **************** Constexpr vectors *****************
 struct cui32v2 {

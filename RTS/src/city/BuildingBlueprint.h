@@ -9,9 +9,11 @@ enum class BlueprintTileType : ui8 {
     WALL    = 3,
     TYPES   = 4
 };
+static_assert(int(BlueprintTileType::TYPES) < UINT8_MAX);
 
 struct BlueprintTile {
-    BlueprintTileType type;
+    BlueprintTileType type : 7;
+    bool isBuilt : 1;
 };
 static_assert(sizeof(BlueprintTile) == 1, "Keep it small");
 
@@ -37,6 +39,8 @@ struct BuildingBlueprint {
     TileID tileIDs[enum_cast(BlueprintTileType::TYPES)];
 
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
+    ui32 tilesBuilt = 0;
+    ui32 totalTilesToBuild = 0;
     bool isGenerating = true;
     bool isBuilding = false;
     // TODO: This is for debug only

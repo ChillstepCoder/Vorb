@@ -16,6 +16,8 @@
 
 #include "city/CityPlanner.h"
 
+#include "definitions/BusinessDef.h"
+
 #include "ai/tasks/GatherTask.h"
 #include "ecs/component/EmployeeComponent.h"
 
@@ -114,7 +116,7 @@ void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, Busine
 
     // Initialize the job if needed
     if (buildCmp.mCurrentBlueprint && !buildCmp.mCurrentJob) {
-        IBusinessJobPtr newJob = std::make_unique<ConstructBuildingJob>(buildCmp.mCurrentBlueprint);
+        IBusinessJobPtr newJob = std::make_unique<ConstructBuildingJob>(*buildCmp.mCurrentBlueprint);
         buildCmp.mCurrentJob = static_cast<ConstructBuildingJob*>(newJob.get());
         businessCmp.mActiveJobs.push_back(std::move(newJob));
     }
@@ -131,7 +133,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
         CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props);
         if (plot) {
             const BuildingDescriptionRepository& buildingRepo = world.getResourceManager().getBuildingRepository();
-            city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, "lumbermill");
+            city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName);
             cmp.mOwnedPlots.push_back(plot);
         }
         else {
@@ -144,14 +146,21 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
         entt::entity worker = cmp.mIdleWorkers.front();
         bool didAssign = false;
         for (auto&& it : cmp.mActiveJobs) {
-            if (it->canAssignWorker()) {
-                it->assignWorker(worker);
+            if (IAgentTaskPtr task = it->tryMakeTaskForWorker(worker)) {
+                
+                EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
+                employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+
+                // TODO: Why shared and not unique?
+                employeeCmp.mCurrentTask = task;
+
                 cmp.mIdleWorkers.pop_front();
                 didAssign = true;
                 break;
             }
         }
         // Could not assign any more jobs, break
+        // TODO: This might be bad when the task only works for some workers and not others
         if (!didAssign) {
             break;
         }

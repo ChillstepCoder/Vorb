@@ -8,33 +8,6 @@
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 
-ItemReservation::ItemReservation(ItemStockpile* stockpile, ItemStack stack) :
-    mStockpile(stockpile), mReservedItemStack(stack) {
-
-}
-
-ItemReservation::~ItemReservation() {
-    if (mStockpile) {
-        release();
-    }
-}
-
-void ItemReservation::release() {
-    assert(mStockpile);
-    mStockpile->releaseReservation(this);
-    mStockpile = nullptr;
-}
-
-bool ItemReservation::fulfillQuantity(ui32 quantity) {
-    assert(quantity <= mReservedItemStack.quantity);
-    mReservedItemStack.quantity -= quantity;
-    if (mReservedItemStack.quantity == 0) {
-        release();
-        return true;
-    }
-    return false;
-}
-
 ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity /*= INVALID_ENTITY*/)
     : mWorld(world)
     , mAABB(aabb)
@@ -89,6 +62,7 @@ ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui3
     const ui32 index = (pos.y - mAABB.y) * mAABB.width + pos.x - mAABB.x;
     assert(index < mStorage.size());
     ItemStack& existingStack = mStorage[index];
+    assert(existingStack.id != INVALID_STOCKPILE_INDEX);
 
 
     ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
@@ -154,10 +128,12 @@ bool ItemStockpile::tryGetBestPositionToInsertItemStack(ItemStack stack, OUT ui3
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             ItemStack& existingStack = mStorage[index];
-            if (existingStack.isNull() || (existingStack.id == stack.id && existingStack.quantity < stackSize)) {
-                outPos->x = x;
-                outPos->y = y;
-                return true;
+            if (existingStack.id != INVALID_STOCKPILE_INDEX) {
+                if (existingStack.isNull() || (existingStack.id == stack.id && existingStack.quantity < stackSize)) {
+                    outPos->x = x;
+                    outPos->y = y;
+                    return true;
+                }
             }
             ++index;
         }
@@ -201,10 +177,15 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryReserveItemStac
         return nullptr;
     }
     ItemStockpileRecord& record = it->second;
-    if (record.totalQuantity - record.reservedQuantity >= minimumQuantity) {
-        ItemStack stack;
-        std::unique_ptr<ItemReservation> reservation
-            = std::make_unique<ItemReservation>(this, stack);
+    const ui32 availableQuantity = record.totalQuantity - record.reservedQuantity;
+    if (availableQuantity >= minimumQuantity) {
+        // Reserve the stack
+        ItemStack reserveStack;
+        reserveStack.id = itemStack.id;
+        reserveStack.quantity = std::min(availableQuantity, itemStack.quantity);
+        record.reservedQuantity += reserveStack.quantity;
+        std::unique_ptr<ItemReservation> reservation = std::make_unique<ItemReservation>(this, std::move(reserveStack));
+        mReservations.insert(reservation.get());
         return reservation;
     }
     return nullptr;
@@ -231,4 +212,28 @@ void ItemStockpile::dirtyMeshForItem(const Item& item) {
     else {
         mRenderData.mBillboardMeshDirty = true;
     }
+}
+
+bool ItemStockpile::itemReservationFulfullQuantity(ItemReservation* reservation, ui32 quantity) {
+    reservation->mReservedItemStack.quantity -= quantity;
+    auto&& mit = mItemContents.find(reservation->getItemID());
+    assert(mit != mItemContents.end());
+    assert(mit->second.reservedQuantity >= quantity);
+    mit->second.reservedQuantity -= quantity;
+    if (reservation->mReservedItemStack.quantity == 0) {
+        mReservations.erase(reservation);
+        return true;
+    }
+    return false;
+}
+
+std::unique_ptr<ItemReservation> ItemStockpile::splitReservation(ItemReservation* reservation, ui32 splitQuantity) {
+    assert(splitQuantity < reservation->mReservedItemStack.quantity);
+    ItemStack reserveStack;
+    reserveStack.id = reservation->mReservedItemStack.id;
+    reserveStack.quantity = splitQuantity;
+    reservation->mReservedItemStack.quantity -= splitQuantity;
+    std::unique_ptr<ItemReservation> newReservation = std::make_unique<ItemReservation>(this, std::move(reserveStack));
+    mReservations.insert(newReservation.get());
+    return newReservation;
 }

@@ -4,6 +4,8 @@
 
 #include "rendering/QuadMesh.h"
 #include "world/ChunkID.h"
+#include "util/BitArray.h"
+#include "ItemReservation.h"
 
 constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;
 
@@ -15,30 +17,6 @@ struct ItemStockpileRenderData {
     std::unique_ptr<QuadMesh> mQuadMesh;
     bool mBillboardMeshDirty = false;
     bool mQuadMeshDirty = false;
-};
-
-// TODO: notify destruction
-// Record of reservation of items at a particular stockpile
-class ItemReservation {
-public:
-    friend class ItemStockpile;
-
-    ItemReservation(ItemStockpile* stockpile, ItemStack stack);
-    ~ItemReservation();
-
-    // Accessors
-    ItemID getItemID() { return mReservedItemStack.id; }
-    ui32 getRemainingQuantity() { return mReservedItemStack.quantity; }
-
-    // Mutators
-    void release();
-    bool isValid() { return mStockpile != nullptr; }
-    // Return true when fully fullfilled
-    bool fulfillQuantity(ui32 quantity);
-
-private:
-    ItemStockpile* mStockpile = nullptr;
-    ItemStack mReservedItemStack;
 };
 
 struct ItemStockpileRecord {
@@ -79,10 +57,14 @@ public:
 private:
     void releaseReservation(ItemReservation* reservation);
     void dirtyMeshForItem(const Item& item);
+    // Return true if fully fulfilled
+    bool itemReservationFulfullQuantity(ItemReservation* reservation, ui32 quantity);
+    std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui32 splitQuantity);
 
     // TODO: MultiAABB
     World& mWorld;
     ui32AABB2 mAABB = ui32AABB2(0);
+
     f32 mZPos = 0; // TODO: Use this
     entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
 

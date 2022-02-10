@@ -58,6 +58,7 @@ struct DebugOptions {
     bool mShowNavGraphUpdates = false;
     bool mHideCharacters = false;
     bool mShowPhysicsDebug = false;
+    bool mShowBusinessDebug = true;
     bool mShowTweaker = true;
     bool mShowEditor = true;
     bool mShowPaths = true;

@@ -17,6 +17,8 @@ class World;
 class ItemStockpile;
 class ConstructBuildingJob;
 struct BuildingBlueprint;
+struct CityPlot;
+struct BusinessDef;
 
 typedef std::unique_ptr<IBusinessJob> IBusinessJobPtr;
 typedef boost::circular_buffer<entt::entity> IdleWorkerList;
@@ -43,6 +45,8 @@ struct BusinessComponent {
     IdleWorkerList mIdleWorkers;
     JobList mQueuedJobs;
     std::vector<IBusinessJobPtr> mActiveJobs;
+
+    BusinessDef* mBusinessDef = nullptr;
 };
 
 // Gather
@@ -87,6 +91,7 @@ public:
     BusinessSystem(World& world);
 
     void update(entt::registry& registry);
+    void debugRender(entt::registry& registry);
 
     World& mWorld;
     int mFramesUntilUpdate = 0;
