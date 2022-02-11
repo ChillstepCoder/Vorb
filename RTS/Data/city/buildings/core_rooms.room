@@ -1,51 +1,54 @@
 foyer:
-  min_width: 3.0
-  max_width: 6.0
+  min_width: 3
+  max_width: 6
 hall:
-  min_width: 3.0
-  max_width: 6.0
+  min_width: 3
+  max_width: 6
 kitchen:
-  min_width: 4.0
-  max_width: 8.0
+  min_width: 4
+  max_width: 8
 bedroom:
-  min_width: 4.0
-  max_width: 6.0
+  min_width: 4
+  max_width: 6
 living_room:
-  min_width: 4.0
-  max_width: 8.0
+  min_width: 4
+  max_width: 8
 dining_room:
-  min_width: 4.0
-  max_width: 8.0
+  min_width: 4
+  max_width: 8
 bathroom:
-  min_width: 3.0
-  max_width: 5.0
+  min_width: 3
+  max_width: 5
 closet:
-  min_width: 2.0
-  max_width: 4.0
+  min_width: 2
+  max_width: 4
 storage:
-  min_width: 2.0
-  max_width: 4.0
+  min_width: 2
+  max_width: 4
 pantry:
-  min_width: 4.0
-  max_width: 5.0
+  min_width: 4
+  max_width: 5
 buttery:
-  min_width: 3.0
-  max_width: 5.0
+  min_width: 3
+  max_width: 5
 garden:
-  min_width: 3.0
-  max_width: 5.0
+  min_width: 3
+  max_width: 5
 library:
-  min_width: 6.0
-  max_width: 9.0
+  min_width: 6
+  max_width: 9
 workshop:
-  min_width: 4.0
-  max_width: 6.0
+  min_width: 6
+  max_width: 8
 small_stockpile:
-  min_width: 2.0
-  max_width: 4.0
+  min_width: 2
+  max_width: 4
+  type: stockpile
 medium_stockpile:
-  min_width: 5.0
-  max_width: 8.0
+  min_width: 5
+  max_width: 8
+  type: stockpile
 large_stockpile:
-  min_width: 9.0
-  max_width: 12.0
+  min_width: 9
+  max_width: 12
+  type: stockpile

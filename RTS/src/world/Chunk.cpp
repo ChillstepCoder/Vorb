@@ -86,6 +86,7 @@ void Chunk::dispose() {
     mChunkRenderData.mBillboardMesh.reset();
     mChunkRenderData.mChunkMesh.reset();
     // Make sure no funny business
+    // TOCO: Crashes on shutdown
     if (mChunkRenderData.mGrassLod) assert(!mChunkRenderData.mGrassLod->getRefCount());
     mChunkRenderData.mGrassLod.reset();
 

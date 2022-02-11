@@ -4,13 +4,15 @@
 #include "world/TileRepository.h"
 
 BuildingBlueprint::BuildingBlueprint(
-    const BuildingDescription& desc,
+    const BuildingDef& desc,
     float sizeAlpha,
     Cartesian entrySide,
-    ui16v2 dims,
-    ui32v2 bottomLeftWorldPos
+    ui32v2 dims,
+    ui32v2 bottomLeftWorldPos,
+    entt::entity ownerEntity,
+    BuildingBlueprintFlags flags
 ) :
-    desc(desc), sizeAlpha(sizeAlpha), entrySide(entrySide), dims(dims), bottomLeftWorldPos(bottomLeftWorldPos) {
+    desc(desc), sizeAlpha(sizeAlpha), entrySide(entrySide), aabb(bottomLeftWorldPos.x, bottomLeftWorldPos.y, dims.x, dims.y), mOwnerEntity(ownerEntity), flags(flags) {
 
     // TODO: Different per building
     tileIDs[enum_cast(BlueprintTileType::NONE)] = 0;

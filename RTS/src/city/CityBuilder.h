@@ -18,12 +18,13 @@ public:
 
     void update();
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
-    void addBlueprintToBuild(BuildingBlueprint* blueprint);
+    void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
 
     void debugBuildInstant(BuildingBlueprint& bp);
     void debugBuildInstant(RoadID roadId);
 
 private:
+    void preprocessBlueprint(BuildingBlueprint* blueprint);
     bool trySendBuildingJob(BuildingBlueprint* blueprint);
 
     City& mCity;

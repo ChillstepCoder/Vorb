@@ -3,19 +3,6 @@
 
 #include <Vorb/io/IOManager.h>
 
-// Used to parse into a RoomDescription
-struct RoomDescriptionFileData {
-    f32 minWidth;
-    f32 maxWidth;
-    f32 desiredAspectRatio = 1.0f; // Width / Height
-};
-// TODO: Furniture and shit? Purpose?
-KEG_TYPE_DEF_SAME_NAME(RoomDescriptionFileData, kt) {
-    kt.addValue("min_width", keg::Value::basic(offsetof(RoomDescriptionFileData, minWidth), keg::BasicType::F32));
-    kt.addValue("max_width", keg::Value::basic(offsetof(RoomDescriptionFileData, maxWidth), keg::BasicType::F32));
-    kt.addValue("aspect_ratio", keg::Value::basic(offsetof(RoomDescriptionFileData, desiredAspectRatio), keg::BasicType::F32));
-}
-
 struct PossibleRoomFileData {
     nString name;
     ui32v2 countRange = ui32v2(1, 100);
@@ -76,20 +63,15 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
     if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
-        RoomDescriptionFileData fileData;
+        RoomDef description;
         // Load data
-        keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(RoomDescriptionFileData));
-
-        RoomDescription description;
-        description.minWidth = fileData.minWidth;
-        description.maxWidth = fileData.maxWidth;
-        description.desiredAspectRatio = fileData.desiredAspectRatio;
+        keg::parse((ui8*)&description, value, readContext, &KEG_GLOBAL_TYPE(RoomDef));
 
         assert(mRoomTypes.find(key) == mRoomTypes.end());
-        RoomTypeID newID = static_cast<RoomTypeID>(mRoomDescriptions.size());
-        description.typeID = newID;
+        RoomDefID newID = static_cast<RoomDefID>(mRoomDefs.size());
+        description.id = newID;
         mRoomTypes[key] = newID;
-        mRoomDescriptions.emplace_back(std::move(description));
+        mRoomDefs.emplace_back(std::move(description));
     }))) {
         // Do nothing on success
     }
@@ -104,7 +86,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         // Load data
         keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(BuildingDescriptionFileData));
 
-        BuildingDescription description;
+        BuildingDef description;
         description.widthRange = fileData.widthRange;
         description.publicRoomCountRange = fileData.publicRoomCountRange;
         description.privateRoomCountRange = fileData.privateRoomCountRange;
@@ -153,7 +135,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
 
         description.publicGrammar.buildFromStrings(fileData.publicRoomGrammars);
 
-        BuildingTypeID newID = static_cast<RoomTypeID>(mBuildingDescriptions.size());
+        BuildingTypeID newID = static_cast<RoomDefID>(mBuildingDescriptions.size());
 
         mBuildingTypes[key] = newID;
         mBuildingDescriptions.emplace_back(std::move(description));
@@ -163,7 +145,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
     }
 }
 
-const BuildingDescription& BuildingDescriptionRepository::getBuildingDescription(const nString& name) const {
+const BuildingDef& BuildingDescriptionRepository::getBuildingDef(const nString& name) const {
 
     auto&& it = mBuildingTypes.find(name);
     assert(it != mBuildingTypes.end());
@@ -171,13 +153,13 @@ const BuildingDescription& BuildingDescriptionRepository::getBuildingDescription
     return mBuildingDescriptions[id];
 }
 
-const RoomDescription& BuildingDescriptionRepository::getRoomDescriptionFromID(RoomTypeID id) const {
+const RoomDef& BuildingDescriptionRepository::getRoomDefFromID(RoomDefID id) const {
 
-    assert(id < mRoomDescriptions.size());
-    return mRoomDescriptions[id];
+    assert(id < mRoomDefs.size());
+    return mRoomDefs[id];
 }
 
-const nString* BuildingDescriptionRepository::getNameFromRoomTypeID(RoomTypeID id) const {
+const nString* BuildingDescriptionRepository::getNameFromRoomDefID(RoomDefID id) const {
 
     for (auto&& it : mRoomTypes) {
         if (it.second == id) {

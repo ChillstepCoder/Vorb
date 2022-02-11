@@ -22,14 +22,59 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
     // Set stockpile flags
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
+
             TileRef ref(world.getTileHandleAtWorldPos(ui32v2(x, y)));
-            ref.chunk->setTileFlag(ref.index, TILE_FLAG_IS_STOCKPILE);
-            f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getChunkID(), ref.index);
-            if (height > maxZPos) maxZPos = height;
-            std::cout << "HEIGHT " << height << std::endl;
+            if (ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)) {
+                // If there is already a stockpile here, we are invalid
+                mStorage[y * mAABB.dims.x + x].id = INVALID_STOCKPILE_INDEX;
+            }
+            else {
+                // Valid slot
+                ++mTotalSlots;
+                ref.chunk->setTileFlag(ref.index, TILE_FLAG_IS_STOCKPILE);
+                f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getChunkID(), ref.index);
+                if (height > maxZPos) maxZPos = height;
+            }
         }
     }
     mZPos = maxZPos;
+    // We must have at least one slot
+    assert(mTotalSlots);
+}
+
+ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+    : mWorld(world)
+    , mAABB(aabb)
+    , mOwnerEntity(ownerEntity) {
+
+    assert(mAABB.width <= MAX_STOCKPILE_WIDTH && mAABB.height <= MAX_STOCKPILE_WIDTH);
+
+    mStorage.resize(mAABB.width * mAABB.height);
+
+    f32 maxZPos = FLT_MIN;
+    const WorldGrid& worldGrid = world.getWorldGrid();
+    // Set stockpile flags
+    ui32 index = 0;
+    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
+        for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
+            TileRef ref(world.getTileHandleAtWorldPos(ui32v2(x, y)));
+            if (ownershipMask[index] == false || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)) {
+                // If there is already a stockpile here, we are invalid
+                mStorage[index].id = INVALID_STOCKPILE_INDEX;
+            }
+            else {
+                // Valid slot
+                ++mTotalSlots;
+                ref.chunk->setTileFlag(ref.index, TILE_FLAG_IS_STOCKPILE);
+                f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getChunkID(), ref.index);
+                if (height > maxZPos) maxZPos = height;
+            }
+            ++index;
+        }
+    }
+    mZPos = maxZPos;
+    // We must have at least one slot
+    assert(mTotalSlots);
 }
 
 ItemStockpile::~ItemStockpile() {
@@ -52,8 +97,22 @@ bool ItemStockpile::isVisible() const {
 }
 
 void ItemStockpile::renderDebug() const {
+    ui32 index = 0;
     f32v2 cornerPos = f32v2(mAABB.pos);
-    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x, cornerPos.y, mZPos), f32v2(mAABB.dims), color4(1.0f, 1.0f, 0.0f, 0.3f));
+    DebugRenderer::reserveFilledQuads(mAABB.dims.x * mAABB.dims.y);
+    for (ui32 y = 0; y < mAABB.dims.y; ++y) {
+        for (ui32 x = 0; x < mAABB.dims.x; ++x) {
+            if (mStorage[index].id != INVALID_STOCKPILE_INDEX) {
+                if (mStorage[index].isNull()) {
+                    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(0.5f, 0.5f, 0.0f, 0.4f));
+                }
+                else {
+                    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.4f));
+                }
+            }
+            ++index;
+        }
+    }
 }
 
 ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui32 maxQuantityToAdd) {

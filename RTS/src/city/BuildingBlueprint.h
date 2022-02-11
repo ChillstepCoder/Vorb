@@ -21,17 +21,20 @@ static_assert(sizeof(BlueprintTile) == 1, "Keep it small");
 typedef ui32 BuildingBlueprintId;
 #define INVALID_BLUEPRINT_ID UINT32_MAX
 
-struct BuildingBlueprint {
-    BuildingBlueprint(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 dims, ui32v2 bottomLeftWorldPos);
+enum BuildingBlueprintFlags : ui8 {
+    BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE = 1 << 0
+};
 
-    const BuildingDescription& desc;
+struct BuildingBlueprint {
+    BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+
+    const BuildingDef& desc;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::LEFT;
-    ui16v2 dims;
-    ui32v2 bottomLeftWorldPos;
+    ui32AABB2 aabb;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
-    std::vector<RoomNode> nodes;
+    std::vector<RoomNode> rooms;
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
     std::vector<ItemStack> requiredItemsToBuild;
@@ -41,7 +44,9 @@ struct BuildingBlueprint {
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
     ui32 tilesBuilt = 0;
     ui32 totalTilesToBuild = 0;
+    entt::entity mOwnerEntity = INVALID_ENTITY;
     bool isGenerating = true;
     bool isBuilding = false;
+    BuildingBlueprintFlags flags = {};
     // TODO: This is for debug only
 };

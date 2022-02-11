@@ -2,6 +2,7 @@
 
 #include "CityBuilder.h"
 #include "City.h"
+#include "city/CityQuartermaster.h"
 #include "CityPlanner.h"
 #include "BuildingBlueprint.h"
 
@@ -43,15 +44,16 @@ void CityBuilder::update() {
 }
 
 
-void CityBuilder::addBlueprintToBuild(BuildingBlueprint* blueprint) {
+void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint) {
     assert(!blueprint->isBuilding);
     blueprint->isBuilding = true;
+    preprocessBlueprint(blueprint);
     mBlueprintsToBuild.push_back(blueprint);
 }
 
 void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
-    ui32v2 worldPos = bp.bottomLeftWorldPos;
+    const ui32v2& worldPos = bp.aabb.pos;
 
     static f32 BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
         0.0f, // NONE
@@ -63,18 +65,18 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     // Register with the city
     Building newBuilding;
-    newBuilding.mAABB.pos = bp.bottomLeftWorldPos;
-    newBuilding.mAABB.dims = bp.dims;
-    newBuilding.mOwnedTilesInAABB.resizeAndZero(bp.dims.x * bp.dims.y);
+    newBuilding.mAABB.pos = bp.aabb.pos;
+    newBuilding.mAABB.dims = bp.aabb.dims;
+    newBuilding.mOwnedTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y);
 
     // === Flatten terrain ===
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
     WorldGrid& grid = mWorld.getWorldGrid();
-    for (ui32 y = 0; y < bp.dims.y; ++y) {
-        for (ui32 x = 0; x < bp.dims.x; ++x) {
-            const ui32 index = y * bp.dims.x + x;
+    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+            const ui32 index = y * bp.aabb.dims.x + x;
             const BlueprintTileType type = bp.tiles[index].type;
             if (type != BlueprintTileType::NONE) {
                 f32v2 pos(worldPos.x + x + 0.5f, worldPos.y + y + 0.5f);
@@ -95,9 +97,9 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
-    for (ui32 y = 0; y < bp.dims.y; ++y) {
-        for (ui32 x = 0; x < bp.dims.x; ++x) {
-            const ui32 index = y * bp.dims.x + x;
+    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+            const ui32 index = y * bp.aabb.dims.x + x;
             const BlueprintTileType type = bp.tiles[index].type;
             if (type != BlueprintTileType::NONE) {
                 // Flatten heightmap
@@ -124,7 +126,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     
     newBuilding.mZPosFloor = meanHeight;
     newBuilding.mZPosRoof = meanHeight + 3.0005f;
-    newBuilding.mGraph = std::move(bp.nodes);
+    newBuilding.mGraph = std::move(bp.rooms);
     newBuilding.mFunction = bp.desc.function;
     newBuilding.mPlotIndex = bp.plotIndex;
     mCity.addCompletedBuilding(std::move(newBuilding));
@@ -144,6 +146,12 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             mWorld.addTile(xy, TileRepository::getTileData(tileId));
         }
+    }
+}
+
+void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
+    if (blueprint->flags & BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE) {
+        mCity.getCityQuartermaster().createStockpilesForBlueprint(*blueprint);
     }
 }
 

@@ -23,6 +23,7 @@ public:
     static void drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32v3& v2, color4 color, int lifeTime = 0, int id = 0);
     static void reserveFilledQuads(ui32 count, int lifeTime = 0, int id = 0);
     static void reserveLines(ui32 count, int lifeTime = 0, int id = 0);
+    static void drawAABB(const ui32AABB2& aabb, f32 height, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const b2AABB& aabb, f32 height, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime = 0, int id = 0);
     static void drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime = 0, int id = 0);

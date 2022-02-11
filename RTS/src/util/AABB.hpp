@@ -40,6 +40,46 @@ struct ui32AABB2 {
     };
 };
 
+struct ui16AABB2 {
+    ui16AABB2() = default;
+    ui16AABB2(ui16 v) : x(v), y(v), width(v), height(v) {};
+    ui16AABB2(ui16 x, ui16 y, ui16 width, ui16 height) : x(x), y(y), width(width), height(height) {};
+
+    ui16& operator[](int i) { return data[i]; }
+
+    const ui16v2& getBottomLeft() const { return pos; }
+    ui16v2 getCenter() const { return pos + dims / 2ui16; }
+    ui16v2 getTopLeft() const { return pos + ui16v2(0, dims.y); };
+    ui16v2 getTopRight() const { return pos + dims; };
+    ui16v2 getBottomRight() const { return pos + ui16v2(dims.x, 0); };
+    void getCorners(ui16v2 aabbCorners[4]) const {
+        aabbCorners[0] = { x, y };
+        aabbCorners[1] = { x + width, y };
+        aabbCorners[2] = { x, y + height };
+        aabbCorners[3] = { x + width, y + height };
+    }
+
+    union {
+        ui16v4 data;
+        struct {
+            union {
+                struct {
+                    ui16 x;
+                    ui16 y;
+                };
+                ui16v2 pos;
+            };
+            union {
+                struct {
+                    ui16 width;
+                    ui16 height;
+                };
+                ui16v2 dims;
+            };
+        };
+    };
+};
+
 struct f32AABB3 {
     f32AABB3() = default;
     f32AABB3(f32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};

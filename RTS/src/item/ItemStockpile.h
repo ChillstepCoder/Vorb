@@ -35,6 +35,7 @@ class ItemStockpile
     friend class RenderContext;
 public:
     ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(World& world, const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
@@ -73,6 +74,7 @@ private:
     std::map<ItemID, ItemStockpileRecord> mItemContents;
     std::set<ItemReservation*> mReservations;
     ui32 mTotalItems = 0;
+    ui32 mTotalSlots = 0;
 
     mutable ItemStockpileRenderData mRenderData;
 

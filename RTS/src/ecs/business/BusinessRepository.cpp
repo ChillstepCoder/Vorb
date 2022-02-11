@@ -54,6 +54,7 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
     businessCmp.mCity = parentCity;
     businessCmp.mMaxEmployeeCount = def.mMaxEmployeeCount;
     businessCmp.mDesiredEmployeeCount = def.mDesiredEmployeeCount;
+    businessCmp.mBusinessDef = &def;
 
     // Init components
     // TODO: Do something with priority

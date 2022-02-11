@@ -12,21 +12,8 @@
 #include "rendering/QuadMesh.h"
 #include "rendering/TriangleMesh.h"
 
-// TODO: Move to data?
-enum class BuildingFunction : ui16 {
-    NONE,
-    RESIDENCE,
-    LUMBERMILL,
-    TYPES
-};
-KEG_ENUM_DECL(BuildingFunction);
+#include "definitions/BuildingDef.h"
 
-struct RoomDescription {
-    RoomTypeID typeID;
-    f32 minWidth;
-    f32 maxWidth;
-    f32 desiredAspectRatio; // Width / Height
-};
 
 struct BuildingRenderData {
     std::unique_ptr<QuadMesh> mRoofMesh;
@@ -81,29 +68,5 @@ struct CityRoad {
 
     std::vector<std::pair<ui32, CityRoad*>> neighborRoads;
     bool mIsBuilt = false;
-};
-
-struct PossibleSubRoom {
-    RoomTypeID id;
-    ui32v2 countRange = ui32v2(0, 1);
-    std::vector<RoomTypeID> parentRoomIDs;
-};
-struct PossibleRoom {
-    RoomTypeID id;
-    ui32v2 countRange;
-    f32 weight;
-};
-struct BuildingDescription {
-    ui32v2 widthRange = f32v2(10, 30);
-    ui32v2 publicRoomCountRange = ui32v2(1, 3);
-    ui32v2 privateRoomCountRange = ui32v2(1, 3);
-    ui32v2 employeeCountRange = ui32v2(0);
-    f32 minAspectRatio = 0.5f;
-    BuildingGrammar publicGrammar;
-    BuildingFunction function = BuildingFunction::NONE;
-    // TODO: More cache friendly combination?
-    std::vector<PossibleRoom> publicRooms;
-    std::vector<PossibleRoom> privateRooms;
-    std::vector<PossibleSubRoom> subRooms;
 };
 

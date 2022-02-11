@@ -13,7 +13,7 @@ class BuildingBlueprintGenerator
 {
 public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
-    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDescription& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos);
+    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
 private:
     // Graph Generation
@@ -30,7 +30,7 @@ private:
     void placeInteriorWalls(BuildingBlueprint& bp) const;
     void placeDoors(BuildingBlueprint& bp) const;
 
-    void tallyRequiredItemsAndMarkTiles(BuildingBlueprint& bp) const;
+    void postProcessBlueprint(BuildingBlueprint& bp) const;
 
     BuildingDescriptionRepository& mBuildingRepo;
     CityBuilder& mCityBuilder;

@@ -33,7 +33,7 @@ CityPlot* CityPlanner::tryPurchasePlot(const PlotRequestProps& props) {
     return mCity.getCityPlotter().tryReservePlotForBuilding(props.minBuildingDims, props.maxBuildingDim);
 }
 
-void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, const nString& buildingDescriptionName) {
+void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, const nString& buildingDescriptionName, BuildingBlueprintFlags flags) {
     assert(!plot.mPendingBlueprint);
 
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
@@ -43,7 +43,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
 
     // Generate floorplan size
     // TODO: Dont just spam lumbermill
-    const BuildingDescription& desc = buildingRepo.getBuildingDescription(buildingDescriptionName);
+    const BuildingDef& desc = buildingRepo.getBuildingDef(buildingDescriptionName);
     // TODO: rotation to road
     const ui16v2 plotDims(plot.aabb.dims);
     // TODO:  aspect ratio
@@ -60,20 +60,20 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     else if (plot.neighborRoads[enum_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
         dir = Cartesian::DOWN;
     }
-    plot.mPendingBlueprint = mBuildingGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos);
+    plot.mPendingBlueprint = mBuildingGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos, plot.mOwnerEntity, flags);
     plot.mPendingBlueprint->plotIndex = plot.plotIndex;
 }
 
 void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
     const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
-    std::cout << "\nGenerated house:" << bp->nodes.size() << " " << bp->dims.x << "\n";
-    for (auto&& node : bp->nodes) {
-        std::cout << "  node - " << *buildingRepo.getNameFromRoomTypeID(node.nodeType) << " " <<
+    std::cout << "\nGenerated house:" << bp->rooms.size() << " " << bp->aabb.dims.x << "\n";
+    for (auto&& node : bp->rooms) {
+        std::cout << "  node - " << *buildingRepo.getNameFromRoomDefID(node.roomDefId) << " " <<
             node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
         for (int i = 0; i < node.numChildren; ++i) {
             const int childIndex = (int)node.childRooms[i];
             std::cout << "    child - " << childIndex << " type - " <<
-                *buildingRepo.getNameFromRoomTypeID(bp->nodes[childIndex].nodeType) << "\n";
+                *buildingRepo.getNameFromRoomDefID(bp->rooms[childIndex].roomDefId) << "\n";
         }
     }
 }

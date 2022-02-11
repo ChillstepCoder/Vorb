@@ -6,6 +6,11 @@
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 
+#include "city/BuildingBlueprint.h"
+
+#include "ResourceManager.h"
+#include "BuildingDescriptionRepository.h"
+
 CityQuartermaster::CityQuartermaster(City& city) : mCity(city) {
 
 }
@@ -14,10 +19,47 @@ CityQuartermaster::~CityQuartermaster() {
 
 }
 
-bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb) {
+void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
-    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb);
+    bool ownershipMask[CHUNK_SIZE];
+    bool* iter = ownershipMask;
+
+    const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
+    for (auto&& room : bp.rooms) {
+        const RoomDef& def = buildingRepo.getRoomDefFromID(room.roomDefId);
+        if (def.roomType == RoomType::STOCKPILE) {
+            assert(room.aabb.dims.x < CHUNK_WIDTH && room.aabb.dims.y < CHUNK_WIDTH);
+            // Create the ownership mask
+            for (ui32 y = 0; y < room.aabb.dims.y; ++y) {
+                const ui32 ty = room.aabb.pos.y + y - bp.aabb.pos.y;
+                for (ui32 x = 0; x < room.aabb.dims.x; ++x) {
+                    const ui32 tx = room.aabb.pos.x + x - bp.aabb.pos.x;
+                    *iter = (bp.ownerArray[ty * bp.aabb.dims.x + tx] == room.id);
+                    ++iter;
+                }
+            }
+            tryCreateCityStockpileAt(room.aabb, ownershipMask, bp.mOwnerEntity);
+        }
+    }
+}
+
+bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity) {
+
+    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownerEntity);
     
+    // Create new stockpile and leave unassigned (city ownership)
+    if (newStockpile) {
+        mAllStockpiles.emplace_back(newStockpile);
+        newStockpile->onDestroy.add(makeDelegate(this, &CityQuartermaster::onStockpileDestroy));
+        return true;
+    }
+    return false;
+}
+
+bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
+
+    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
+
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
         mAllStockpiles.emplace_back(newStockpile);

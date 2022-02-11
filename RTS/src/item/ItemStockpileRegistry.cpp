@@ -15,14 +15,17 @@ ItemStockpileRegistry::~ItemStockpileRegistry()
 
 }
 
-ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb) {
-    // TODO: Better spatial partition test?
-    if (checkStockpileOverlap(aabb)) {
-        return nullptr;
-    }
+ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity) {
 
     // Create new stockpile and leave unassigned (city ownership)
-    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mWorld, aabb)).get();
+    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mWorld, aabb, ownerEntity)).get();
+    addStockpileToAreaLookup(*newStockpile);
+    return newStockpile;
+}
+
+ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
+    // Create new stockpile and leave unassigned (city ownership)
+    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mWorld, aabb, ownershipMask, ownerEntity)).get();
     addStockpileToAreaLookup(*newStockpile);
     return newStockpile;
 }
@@ -44,15 +47,6 @@ const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtChun
         return nullptr;
     }
     return &it->second;
-}
-
-bool ItemStockpileRegistry::checkStockpileOverlap(const ui32AABB2& aabb) const {
-    for (auto& stockpile : mAllStockpiles) {
-        if (testAABBAABB_SIMD(stockpile->getAABB(), aabb)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 void ItemStockpileRegistry::addStockpileToAreaLookup(ItemStockpile& stockpile) {

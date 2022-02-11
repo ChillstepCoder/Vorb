@@ -306,6 +306,17 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height
     lines.emplace_back(botRight, botLeft, color);
 }
 
+void DebugRenderer::drawAABB(const ui32AABB2& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_MAIN_THREAD());
+    f32v2 fPos(aabb.pos);
+    f32v2 fDims(aabb.dims);
+    const f32v2& bottomLeft = fPos;
+    const f32v2& topRight = fPos + fDims;
+    const f32v2 topLeft = fPos + f32v2(0.0f, fDims.y);
+    const f32v2 bottomRight = fPos + f32v2(fDims.x, 0.0f);
+    drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);
+}
+
 void DebugRenderer::drawPath(const NavPath& path, color4 color, const WorldGrid& worldGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
     if (path.numPoints < 2) {

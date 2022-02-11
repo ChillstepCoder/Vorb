@@ -396,6 +396,9 @@
     <ClCompile Include="src\definitions\BusinessDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\definitions\BuildingDef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -876,6 +879,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\BusinessDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\BuildingDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
