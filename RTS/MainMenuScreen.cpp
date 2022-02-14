@@ -153,12 +153,12 @@ void MainMenuScreen::build() {
 			}
 		}
         else if (event.keyCode == VKEY_Q) {
-            mCameraCartesianDirection = CARTESIAN_NEIGHBORS[enum_cast(mCameraCartesianDirection)][1];
-            mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[enum_cast(mCameraCartesianDirection)];
+            mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][1];
+            mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
         }
         else if (event.keyCode == VKEY_E) {
-            mCameraCartesianDirection = CARTESIAN_NEIGHBORS[enum_cast(mCameraCartesianDirection)][0];
-            mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[enum_cast(mCameraCartesianDirection)];
+            mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][0];
+            mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
         }
         else if (event.keyCode == VKEY_T) {
 			sDebugOptions.mShowTweaker = !sDebugOptions.mShowTweaker;

@@ -1,5 +1,6 @@
 #pragma once
 
+// TODO: ui16?
 struct ItemStack {
     ItemID id = INVALID_ITEM_ID;
     ui32 quantity = 0;

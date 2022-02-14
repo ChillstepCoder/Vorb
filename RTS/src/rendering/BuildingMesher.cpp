@@ -189,7 +189,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             sRoofVertices[numRoofVertices] = cornerPos;
             ++numRoofVertices;
         }
-        cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[enum_cast(edge)];
+        cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge)];
 
     } while (cornerPos.x != startX || cornerPos.y != startY);
     
@@ -286,7 +286,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                 }
 
                 // Determine how we get UVs
-                const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[enum_cast(dir)];
+                const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
 
                 for (int i = 0; i < 3; ++i) {
                     verts[i].normal = normal;

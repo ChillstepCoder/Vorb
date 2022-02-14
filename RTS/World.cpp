@@ -677,7 +677,7 @@ void World::generateChunkAsync(Chunk& chunk) {
 	const ChunkID& id = chunk.getChunkID();
 
 	if (mWorldGrid.tryGetHeightDataAt(id)) {
-        chunk.mState.store(enum_cast(ChunkState::LOADING_TILES));
+        chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
 		const HeightmapPatchData* heightData = mWorldGrid.aquireHeightData(id);
         Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
             mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
@@ -685,9 +685,9 @@ void World::generateChunkAsync(Chunk& chunk) {
         }, nullptr);
 	}
 	else {
-        chunk.mState.store(enum_cast(ChunkState::WAITING_HEIGHT));
+        chunk.mState.store(e_cast(ChunkState::WAITING_HEIGHT));
 		mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
-            chunk.mState.store(enum_cast(ChunkState::LOADING_TILES));
+            chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
 			const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
             Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
                 mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);

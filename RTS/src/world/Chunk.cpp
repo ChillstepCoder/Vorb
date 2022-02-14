@@ -30,7 +30,7 @@ Chunk::~Chunk() {
 
 void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
     mWorldGrid = &worldGrid;
-	assert(mState == enum_cast(ChunkState::INVALID));
+	assert(mState == e_cast(ChunkState::INVALID));
 	mChunkId = chunkId;
     mWorldPos = chunkId.getWorldPos();
     mAABB.x = mWorldPos.x;
@@ -75,7 +75,7 @@ void Chunk::dispose() {
         }
     }
 
-    mState = enum_cast(ChunkState::INVALID);
+    mState = e_cast(ChunkState::INVALID);
 
     mDataReadyNeighborCount = 0;
     

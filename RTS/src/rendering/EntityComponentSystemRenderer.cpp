@@ -2,6 +2,7 @@
 #include "EntityComponentSystemRenderer.h"
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/business/BusinessComponent.h"
+#include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"
 #include "city/CityPlot.h"
 #include "World.h"
@@ -42,7 +43,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
     int i = 0;
 
     auto& ecs = mWorld.getECS();
-    ecs.mRegistry.view<BusinessComponent>().each([ &i](auto& cmp) {
+    ecs.mRegistry.view<OwnershipComponent>().each([ &i](auto& cmp) {
 		color4 color((i * 120) % 255, 255 - (i * 60) % 255, (i * 72) % 255, 255);
 		for (CityPlot* plot : cmp.mOwnedPlots) {
 			if (plot->mPendingBlueprint) {

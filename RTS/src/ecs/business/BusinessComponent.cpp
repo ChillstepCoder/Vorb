@@ -5,6 +5,8 @@
 #include "city/CityBuilder.h"
 #include "city/BuildingBlueprint.h"
 
+#include "ecs/component/OwnershipComponent.h"
+
 #include "World.h"
 #include "ResourceManager.h"
 #include "city/BuildingDescriptionRepository.h"
@@ -73,40 +75,50 @@ enum TaskPriorities {
     TASK_PRIORITY_GATHER,
 };
 
-void updateGatherComponent(entt::registry& registry, World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp) {
+void updateGatherComponent(entt::registry& registry, World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp, OwnershipComponent& ownershipCmp) {
     // Gathering currently requires a city
     assert(businessCmp.mCity);
     
     // Scans
+    // TODO: Better support for multiple plots
     if (gatherCmp.mScannedTiles.empty()) {
-        PreciseTimer timer;
-        gatherCmp.mScannedTiles = TileScanner::scanForResource(world, gatherCmp.mResourceToGather, businessCmp.mCity->getCityCenterWorldPos(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
-        std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
-        if (sDebugOptions.mShowPaths) {
-            for (auto&& it : gatherCmp.mScannedTiles) {
-                DebugRenderer::drawWireQuad(it.getWorldPos(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+        for (auto&& ownedPlot : ownershipCmp.mOwnedPlots) {
+            PreciseTimer timer;
+            gatherCmp.mScannedTiles = TileScanner::scanForResource(world, gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
+            std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
+            if (sDebugOptions.mShowPaths) {
+                for (auto&& it : gatherCmp.mScannedTiles) {
+                    DebugRenderer::drawWireQuad(it.getWorldPos(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+                }
             }
-        }
 
-        // Mark all tiles as reserved
-        for (auto&& it : gatherCmp.mScannedTiles) {
-            it.getMutableChunk()->setTileFlag(it.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+            // Mark all tiles as reserved
+            for (auto&& it : gatherCmp.mScannedTiles) {
+                assert(!it.getMutableChunk()->getTileAt(it.index).hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
+                it.getMutableChunk()->setTileFlag(it.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+            }
+            break;
         }
     }
 
     // Assign gather tasks to workers
-    while (businessCmp.mIdleWorkers.size() && gatherCmp.mScannedTiles.size()) {
-        TileHandle handle = gatherCmp.mScannedTiles.back();
-        gatherCmp.mScannedTiles.pop_back();
+    if (ownershipCmp.mOwnedStockpiles.size()) {
+        while (businessCmp.mIdleWorkers.size() && gatherCmp.mScannedTiles.size()) {
+            TileHandle handle = gatherCmp.mScannedTiles.back();
 
-        entt::entity worker = businessCmp.mIdleWorkers.front();
-        businessCmp.mIdleWorkers.pop_front();
+            assert(handle.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
 
-        EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
-        employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+            gatherCmp.mScannedTiles.pop_back();
 
-        // TODO: Why shared and not unique?
-        employeeCmp.mCurrentTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather, businessCmp.mCity);
+            entt::entity worker = businessCmp.mIdleWorkers.front();
+            businessCmp.mIdleWorkers.pop_front();
+
+            EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
+            employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+
+            // TODO: Why shared and not unique?
+            employeeCmp.mCurrentTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather, businessCmp.mCity, ownershipCmp.mOwnedStockpiles[0]);
+        }
     }
 }
 
@@ -125,16 +137,18 @@ void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, Busine
 
 void updateBusiness(World& world, entt::registry& registry, entt::entity entity, BusinessComponent& cmp) {
 
+    OwnershipComponent& ownershipCmp = registry.get<OwnershipComponent>(entity);
+
     // Check if we need to request a building. If so, we request one, and do nothing else
-    if (cmp.mOwnedPlots.size() == 0) {
+    if (ownershipCmp.mOwnedPlots.size() == 0) {
         // TODO: Fill out
         PlotRequestProps props;
         City& city = *cmp.mCity;
-        CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props);
+        CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props, entity);
         if (plot) {
             const BuildingDescriptionRepository& buildingRepo = world.getResourceManager().getBuildingRepository();
             city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName, BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE);
-            cmp.mOwnedPlots.push_back(plot);
+            ownershipCmp.mOwnedPlots.push_back(plot);
         }
         else {
             return;
@@ -174,7 +188,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
     // TODO: More performant to iterate each of these as a list?
     BusinessGatherComponent* gatherCmp = registry.try_get<BusinessGatherComponent>(entity);
     if (gatherCmp) {
-        updateGatherComponent(registry, world, *gatherCmp, cmp);
+        updateGatherComponent(registry, world, *gatherCmp, cmp, ownershipCmp);
     }
 
     BusinessBuildComponent* buildCmp = registry.try_get<BusinessBuildComponent>(entity);

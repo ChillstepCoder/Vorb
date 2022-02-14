@@ -21,7 +21,7 @@ KEG_ENUM_DEF(ColliderShapes, ColliderShapes, kt) {
     kt.addValue("none", ColliderShapes::NONE);
     kt.addValue("circle", ColliderShapes::CIRCLE);
 }
-static_assert(enum_cast(ColliderShapes::COUNT) == 2, "Update def");
+static_assert(e_cast(ColliderShapes::COUNT) == 2, "Update def");
 
 KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
     kt.addValue("collider_shape", keg::Value::custom(offsetof(PhysicsComponentDef, colliderShape), "ColliderShapes", true));
@@ -199,7 +199,7 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     const f32v2& xyVel = cmp.getLinearVelocity();
 
     // TODO: TestBit
-    if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
+    if ((cmp.mFlags & e_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
         cmp.mDir = glm::normalize(xyVel);
     }
 

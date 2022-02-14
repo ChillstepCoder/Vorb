@@ -14,6 +14,7 @@ public:
     ~ItemReservation();
 
     std::unique_ptr<ItemReservation> splitReservation(ui32 splitQuantity);
+    ItemStockpile& getStockpile() { return *mStockpile; }
 
     // Accessors
     ItemID getItemID() { return mReservedItemStack.id; }

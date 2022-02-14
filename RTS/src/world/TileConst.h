@@ -18,7 +18,7 @@ enum class TileLayer {
     Top = 2,
     COUNT = 3
 };
-static_assert(TILE_LAYER_COUNT == enum_cast(TileLayer::COUNT));
+static_assert(TILE_LAYER_COUNT == e_cast(TileLayer::COUNT));
 
 enum class TileShape {
     THIN,  // Trees and flora

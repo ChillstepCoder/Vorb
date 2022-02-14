@@ -8,6 +8,9 @@
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 
+#include "ecs/EntityComponentSystem.h"
+#include "ecs/component/OwnershipComponent.h"
+
 ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity /*= INVALID_ENTITY*/)
     : mWorld(world)
     , mAABB(aabb)
@@ -26,7 +29,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
             TileRef ref(world.getTileHandleAtWorldPos(ui32v2(x, y)));
             if (ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)) {
                 // If there is already a stockpile here, we are invalid
-                mStorage[y * mAABB.dims.x + x].id = INVALID_STOCKPILE_INDEX;
+                mStorage[y * mAABB.dims.x + x].stack.id = INVALID_STOCKPILE_INDEX;
             }
             else {
                 // Valid slot
@@ -40,6 +43,12 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity o
     mZPos = maxZPos;
     // We must have at least one slot
     assert(mTotalSlots);
+
+    // Ownership
+    if (mOwnerEntity != INVALID_ENTITY) {
+        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        ownershipCmp.mOwnedStockpiles.push_back(this);
+    }
 }
 
 ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
@@ -60,7 +69,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, bool* ownershi
             TileRef ref(world.getTileHandleAtWorldPos(ui32v2(x, y)));
             if (ownershipMask[index] == false || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)) {
                 // If there is already a stockpile here, we are invalid
-                mStorage[index].id = INVALID_STOCKPILE_INDEX;
+                mStorage[index].stack.id = INVALID_STOCKPILE_INDEX;
             }
             else {
                 // Valid slot
@@ -75,6 +84,12 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, bool* ownershi
     mZPos = maxZPos;
     // We must have at least one slot
     assert(mTotalSlots);
+
+    // Ownership
+    if (mOwnerEntity != INVALID_ENTITY) {
+        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        ownershipCmp.mOwnedStockpiles.push_back(this);
+    }
 }
 
 ItemStockpile::~ItemStockpile() {
@@ -84,6 +99,18 @@ ItemStockpile::~ItemStockpile() {
     // TODO: Run a function on the reservation?
     for (auto&& it : mReservations) {
         it->mStockpile = nullptr;
+    }
+
+    // Clean up ownership
+    if (mOwnerEntity != INVALID_ENTITY) {
+        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        for (size_t i = 0; i < ownershipCmp.mOwnedStockpiles.size(); ++i) {
+            if (ownershipCmp.mOwnedStockpiles[i] == this) {
+                ownershipCmp.mOwnedStockpiles[i] = ownershipCmp.mOwnedStockpiles.back();
+                ownershipCmp.mOwnedStockpiles.pop_back();
+                break;
+            }
+        }
     }
 }
 
@@ -102,8 +129,8 @@ void ItemStockpile::renderDebug() const {
     DebugRenderer::reserveFilledQuads(mAABB.dims.x * mAABB.dims.y);
     for (ui32 y = 0; y < mAABB.dims.y; ++y) {
         for (ui32 x = 0; x < mAABB.dims.x; ++x) {
-            if (mStorage[index].id != INVALID_STOCKPILE_INDEX) {
-                if (mStorage[index].isNull()) {
+            if (mStorage[index].stack.id != INVALID_STOCKPILE_INDEX) {
+                if (mStorage[index].stack.isNull()) {
                     DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(0.5f, 0.5f, 0.0f, 0.4f));
                 }
                 else {
@@ -120,9 +147,8 @@ ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui3
     const ui32 stackQuantity = glm::min(maxQuantityToAdd, itemStack.quantity);
     const ui32 index = (pos.y - mAABB.y) * mAABB.width + pos.x - mAABB.x;
     assert(index < mStorage.size());
-    ItemStack& existingStack = mStorage[index];
+    ItemStack& existingStack = mStorage[index].stack;
     assert(existingStack.id != INVALID_STOCKPILE_INDEX);
-
 
     ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
     const Item& item = itemRepo.getItem(itemStack.id);
@@ -168,7 +194,7 @@ ItemStack ItemStockpile::tryAddItemStackAt (ItemStack itemStack, ui32v2 pos, ui3
 
         // Update the record
         ItemStockpileRecord& record = mItemContents[itemStack.id];
-        record.totalQuantity += existingStack.quantity;
+        record.totalQuantity += quantityToAdd;
     }
     return itemStack;
 }
@@ -186,7 +212,7 @@ bool ItemStockpile::tryGetBestPositionToInsertItemStack(ItemStack stack, OUT ui3
     ui32 index = 0;
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
-            ItemStack& existingStack = mStorage[index];
+            ItemStack& existingStack = mStorage[index].stack;
             if (existingStack.id != INVALID_STOCKPILE_INDEX) {
                 if (existingStack.isNull() || (existingStack.id == stack.id && existingStack.quantity < stackSize)) {
                     outPos->x = x;
@@ -212,7 +238,7 @@ bool ItemStockpile::tryGetClosestPositionOfItem(const f32v2& pos, ItemID itemId,
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             f32v2 tilePos(x, y);
-            const ItemStack& existingStack = mStorage[index];
+            const ItemStack& existingStack = mStorage[index].stack;
             if (!existingStack.isNull() && existingStack.id == itemId) {
                 const f32v2 offset = tilePos - pos;
                 const f32 dist2 = glm::length2(offset);
@@ -229,6 +255,7 @@ bool ItemStockpile::tryGetClosestPositionOfItem(const f32v2& pos, ItemID itemId,
     return found;
 }
 
+// TODO: Try vector heap allocate?
 CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryReserveItemStack(ItemStack itemStack, ui32 minimumQuantity) {
     assert(itemStack.quantity > minimumQuantity);
     auto&& it = mItemContents.find(itemStack.id);

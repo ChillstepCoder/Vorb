@@ -21,11 +21,11 @@ struct CityPlot {
     ~CityPlot();
 
     void setNeighborRoad(Cartesian dir, RoadID id) {
-        neighborRoads[enum_cast(dir)] = id;
+        neighborRoads[e_cast(dir)] = id;
     }
 
     RoadID getNeighborRoad(Cartesian dir) {
-        return neighborRoads[enum_cast(dir)];
+        return neighborRoads[e_cast(dir)];
     }
 
     int getAdjacentRoadCount() const {

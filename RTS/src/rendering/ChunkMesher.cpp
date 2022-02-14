@@ -596,7 +596,7 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
 
     // Render top
     quadMesh.addAxisAlignedQuad(
-        tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
+        tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
         spriteData.dimsMeters,
         spriteData.offset,
         CubeFacing::TOP,
@@ -611,7 +611,7 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
         // Render exposed cardinal wall if needed
         if (heightDiffs[c] > 0.0f) {
             CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
-            const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(quadFacing)];
+            const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
             const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(2);
             f32v4 uvs = spriteData.uvs;
             uvs.x += offsets.x * uvs.z;
@@ -665,7 +665,7 @@ void ChunkMesher::addFloor(QuadMesh& quadMesh, f32v3 tilePosition, const Heightm
     switch (spriteData.method) {
         case TileTextureMethod::SIMPLE: {
             quadMesh.addTerrainAlignedQuad(
-                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
                 corners,
                 spriteData.atlasPage,
                 spriteData.uvs,
@@ -686,7 +686,7 @@ void ChunkMesher::addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const Heightm
     switch (spriteData.method) {
         case TileTextureMethod::SIMPLE: {
             quadMesh.addAxisAlignedQuad(
-                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
                 spriteData.dimsMeters,
                 spriteData.offset,
                 CubeFacing::TOP,
@@ -711,7 +711,7 @@ void ChunkMesher::addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const Heightm
             int xOff = (ui32)tilePosition.x % 8;
             int yOff = 7 - (ui32)tilePosition.y % 8;
             quadMesh.addAxisAlignedQuad(
-                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::TOP)],
+                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
                 spriteData.dimsMeters,
                 spriteData.offset,
                 CubeFacing::TOP,

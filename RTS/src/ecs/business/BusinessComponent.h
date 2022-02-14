@@ -35,12 +35,9 @@ struct BusinessComponent {
 
     // TODO: Trade empires? Multi city?
     City* mCity = nullptr;
-    std::vector<CityPlot*> mOwnedPlots;
     std::vector<entt::entity> mEmployees; // TODO: Death notify
     ui32 mDesiredEmployeeCount = 1; // TODO: Tiers?
     ui32 mMaxEmployeeCount = 10;
-
-    std::vector<ItemStockpile*> mOwnedStockpiles;
 
     IdleWorkerList mIdleWorkers;
     JobList mQueuedJobs;

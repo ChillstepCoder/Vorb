@@ -10,25 +10,25 @@ enum class WeaponTypes : ui8 {
 	COUNT
 };
 
-const float WEAPON_REACHES[enum_cast(WeaponTypes::COUNT)] = {
+const float WEAPON_REACHES[e_cast(WeaponTypes::COUNT)] = {
 	0.1f,
 	0.2f,
 	0.3f
 };
 
-const float WEAPON_WEIGHTS[enum_cast(WeaponTypes::COUNT)] = {
+const float WEAPON_WEIGHTS[e_cast(WeaponTypes::COUNT)] = {
 	0.0f,
 	0.2f,
 	0.3f
 };
 
-const float WEAPON_BASE_DAMAGES[enum_cast(WeaponTypes::COUNT)] = {
+const float WEAPON_BASE_DAMAGES[e_cast(WeaponTypes::COUNT)] = {
 	5.0f,
 	25.0f,
 	20.0f
 };
 
-const float WEAPON_ARMOR_PIERCE[enum_cast(WeaponTypes::COUNT)] = {
+const float WEAPON_ARMOR_PIERCE[e_cast(WeaponTypes::COUNT)] = {
 	0.0f,
 	3.0f,
 	12.0f
@@ -47,7 +47,7 @@ enum class BuiltinWeapons : WeaponItemID {
 class WeaponRegistry {
 public:
 	static const WeaponItem& getWeapon(BuiltinWeapons id) {
-		return s_allWeaponItems[enum_cast(id)];
+		return s_allWeaponItems[e_cast(id)];
 	}
 
 	static const WeaponItem& getWeapon(WeaponItemID id) {

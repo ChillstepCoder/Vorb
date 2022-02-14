@@ -9,7 +9,7 @@ enum class ItemMaterial : ui8 {
 	COUNT
 };
 
-const float MATERIAL_QUALITY_MULT[enum_cast(ItemMaterial::COUNT)] = {
+const float MATERIAL_QUALITY_MULT[e_cast(ItemMaterial::COUNT)] = {
 	1.0f,
 	1.0f,
 	1.5f,
@@ -17,7 +17,7 @@ const float MATERIAL_QUALITY_MULT[enum_cast(ItemMaterial::COUNT)] = {
 	2.2f
 };
 
-const float ITEM_MATERIAL_WEIGHT_MULT[enum_cast(ItemMaterial::COUNT)] = {
+const float ITEM_MATERIAL_WEIGHT_MULT[e_cast(ItemMaterial::COUNT)] = {
 	0.7f,
 	0.7f,
 	1.0f,

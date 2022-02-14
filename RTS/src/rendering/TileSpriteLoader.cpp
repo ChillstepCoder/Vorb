@@ -126,7 +126,7 @@ bool TileSpriteLoader::loadSpriteTexture(const vio::Path& filePath) {
             default:
                 assert(false);
         }
-        static_assert(enum_cast(TileTextureMethod::COUNT) == 6, "Update above for UVs");
+        static_assert(e_cast(TileTextureMethod::COUNT) == 6, "Update above for UVs");
 
         // Handle variants
         sprite.variantCount = metaData.variantCount;

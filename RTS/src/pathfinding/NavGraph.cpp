@@ -219,10 +219,10 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
     ui32 currNodeId;
     i32v2 start(0);
     int length = 0;
-    i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[enum_cast(dir)] * (SUBCHUNK_WIDTH - 1);
+    i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[e_cast(dir)] * (SUBCHUNK_WIDTH - 1);
     ui32 prevNodeId = djNodes[subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x].id;
     i32v2 chunkRelativePos(cornerX, cornerY);
-    i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[enum_cast(dir)].x, cornerY + CARTESIAN_NORMALS[enum_cast(dir)].y);
+    i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
         TileIndex index(chunkRelativePos.x, chunkRelativePos.y);
         Tile& tile = tiles[index];
@@ -251,7 +251,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
             addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
             length = 0;
         }
-        const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[enum_cast(dir)];
+        const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[e_cast(dir)];
         adjWorldPos += edgeDir;
         chunkRelativePos += edgeDir;
         subChunkRelativePos += edgeDir;
@@ -281,12 +281,12 @@ void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui3
         currNavNode = &navNodes[navNodeId];
         assert(corner == currNavNode->cornerPos);
     }
-    ui8& currCount = currNavNode->counts[enum_cast(dir)];
+    ui8& currCount = currNavNode->counts[e_cast(dir)];
     assert(currCount < 8);
     assert(length > 0 && length <= 16);
 
     // Add edge
-    LiteNavNodeEdge& edge = currNavNode->edges[enum_cast(dir)][currCount++];
+    LiteNavNodeEdge& edge = currNavNode->edges[e_cast(dir)][currCount++];
     edge.lengthMinusOne = length - 1;
 
     // Because dir is separated into separate arrays, and is always along the subchunk boundary, we can encode where the start is along a 0-15 integer (4 byte)

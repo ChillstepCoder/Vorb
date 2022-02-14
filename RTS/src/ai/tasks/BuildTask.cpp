@@ -3,8 +3,8 @@
 #include "BuildTask.h"
 
 
-BuildTask::BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<TileIndex>&& targetTiles) : mSourceItems(std::move(sourceItems)), mTargetTiles(std::move(targetTiles)) {
-
+BuildTask::BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<ui16>&& targetTiles) : mSourceItems(std::move(sourceItems)), mTargetTiles(std::move(targetTiles)), mBlueprint(blueprint) {
+    assert(mSourceItems.size());
 }
 
 BuildTask::~BuildTask()
@@ -13,5 +13,25 @@ BuildTask::~BuildTask()
 }
 
 bool BuildTask::tick(World& world, entt::registry& registry, entt::entity agent) {
-    throw std::logic_error("The method or operation is not implemented.");
+    switch (mState) {
+        case BuildTaskState::FULFILL_RESERVATIONS: {
+            //ItemStockpile* targetStockpile = mSourceItems[0]->mStockpile
+        }break;
+        case BuildTaskState::PATH_TO_STOCKPILE:
+            break;
+        case BuildTaskState::GRAB_RESOURCES:
+            break;
+        case BuildTaskState::PATH_TO_BLUEPRINT:
+            break;
+        case BuildTaskState::BUILD:
+            break;
+        case BuildTaskState::SUCCESS:
+            break;
+        case BuildTaskState::FAIL:
+            break;
+        default:
+            break;
+
+    }
+    return false;
 }

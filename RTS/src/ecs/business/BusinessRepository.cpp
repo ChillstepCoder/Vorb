@@ -6,6 +6,8 @@
 
 #include "item/ItemRepository.h"
 
+#include "ecs/component/OwnershipComponent.h"
+
 #include <Vorb/io/IOManager.h>
 
 BusinessRepository::BusinessRepository(vio::IOManager& ioManager, ItemRepository& itemRepository) :
@@ -70,8 +72,10 @@ entt::entity BusinessRepository::createBusinessEntity(City* parentCity, entt::re
         registry.emplace<BusinessProduceComponent>(newEntity);
     }
     if (def.mRetail.mPriority != PRIORITY_NO_COMPONENT) {
-        registry.emplace<BusinessRetailComponentDef>(newEntity);
+        registry.emplace<BusinessRetailComponent>(newEntity);
     }
+
+    registry.emplace<OwnershipComponent>(newEntity);
 
     parentCity->getBusinessManager().registerBusiness(newEntity);
 

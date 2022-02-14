@@ -10,4 +10,4 @@ KEG_ENUM_DEF(TileTextureMethod, TileTextureMethod, kt) {
     kt.addValue("flora", TileTextureMethod::FLORA);
     kt.addValue("world_tiling", TileTextureMethod::WORLD_TILING);
 }
-static_assert(enum_cast(TileTextureMethod::COUNT) == 6);
+static_assert(e_cast(TileTextureMethod::COUNT) == 6);

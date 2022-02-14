@@ -9,11 +9,12 @@ enum class BlueprintTileType : ui8 {
     WALL    = 3,
     TYPES   = 4
 };
-static_assert(int(BlueprintTileType::TYPES) < UINT8_MAX);
+static_assert(int(BlueprintTileType::TYPES) < 1 << 6);
 
 struct BlueprintTile {
-    BlueprintTileType type : 7;
+    BlueprintTileType type : 6;
     bool isBuilt : 1;
+    bool isReserved : 1;
 };
 static_assert(sizeof(BlueprintTile) == 1, "Keep it small");
 
@@ -38,8 +39,9 @@ struct BuildingBlueprint {
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
     std::vector<ItemStack> requiredItemsToBuild;
+    const std::vector<ItemStack>* tileRecipes[e_cast(BlueprintTileType::TYPES)];
 
-    TileID tileIDs[enum_cast(BlueprintTileType::TYPES)];
+    TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
     ui32 tilesBuilt = 0;

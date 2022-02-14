@@ -7,6 +7,7 @@
 
 struct BuildingBlueprint;
 struct BusinessComponent;
+struct OwnershipComponent;
 class ItemReservation;
 class BuildTask;
 
@@ -60,7 +61,7 @@ public:
 	IAgentTaskPtr tryMakeTaskForWorker(entt::entity worker) override;
 
 private:
-	void tryReserveItems(JobRequiredItems& item, BusinessComponent& businessCmp);
+	void tryReserveItems(JobRequiredItems& item, OwnershipComponent& ownerCmp);
 
 	BuildingBlueprint& mBlueprint;
 	std::vector<TilesToConstruct> mTilesToConstruct;
@@ -73,6 +74,6 @@ private:
 	ui32 mNumMidTilesToConstruct = 0;
 	ui32 mNumTopTilesToConstruct = 0;
 	ui32 mNumTilesReservedInTasks = 0;
-	ui32 mFirstUnfinishedTileIndex = 0;
+	ui32 mFirstUnfinishedBpIndex = 0;
 };
 

@@ -38,7 +38,7 @@ const f32v2 MOVEMENT_SIGNS[4]{
 
 f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
 	f32v2 moveDir(0.0f);
-	int cartesianIndex = enum_cast(clientData.worldLookCardinalDirection);
+	int cartesianIndex = e_cast(clientData.worldLookCardinalDirection);
 	const i32v2& axis = MOVEMENT_AXIS[cartesianIndex];
 	// Movement
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
@@ -69,7 +69,7 @@ f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
 
 void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
-	bool isSprinting = controlCmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
+	bool isSprinting = controlCmp.mPlayerControlFlags & e_cast(PlayerControlFlags::SPRINTING);
 	const f32v2 moveDir = getMovementDir(world, clientData);
 
 	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
@@ -113,10 +113,10 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-		controlCmp.mPlayerControlFlags |= enum_cast(PlayerControlFlags::SPRINTING);
+		controlCmp.mPlayerControlFlags |= e_cast(PlayerControlFlags::SPRINTING);
 	}
 	else {
-		controlCmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
+		controlCmp.mPlayerControlFlags &= ~e_cast(PlayerControlFlags::SPRINTING);
 	}
 
 	updateMovement(controlCmp, physCmp, world, clientData, registry);

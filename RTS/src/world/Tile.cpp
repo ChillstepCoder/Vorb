@@ -134,9 +134,9 @@ void Tile::setTileLayer(TileLayer layer, TileID id, bool isReadLocked) {
         tileFlags |= TILE_FLAG_QUEUED_UPDATE;
     }
     else {
-        layersThreadSafe[enum_cast(layer)] = id;
+        layersThreadSafe[e_cast(layer)] = id;
     }
-    layers[enum_cast(layer)] = id;
+    layers[e_cast(layer)] = id;
 }
 
 void Tile::setPathWeight(ui8 weight, bool isReadLocked) {

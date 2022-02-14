@@ -81,7 +81,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
         ++navCmp.mCurrentFinePoint;
         if (navCmp.mCurrentFinePoint >= navCmp.mFinePath->numPoints) {
 			// Target reached
-            physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+            physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
 			navCmp.mFinePath = nullptr;
 			if (navCmp.mNavigationType == NavigationType::FINE_PATH && navCmp.mFinishedCallback) {
 				navCmp.mFinishedCallback(true /* success */);
@@ -202,7 +202,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
 void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp) {
 	// Target reached
-	physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+	physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
 	navCmp.mFinePath = nullptr;
 	navCmp.mCoarsePath = nullptr;
 	if (navCmp.mFinishedCallback) {
@@ -288,7 +288,7 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
                 break;
             case NavigationType::SIMPLE_LINEAR:
 				if (updateComponentSimpleLinear(entity, navCmp, physCmp, world)) {
-                    physCmp.mFlags |= enum_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+                    physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
 					if (navCmp.mFinishedCallback) {
 						navCmp.mFinishedCallback(true /* success */);
 						navCmp.mFinishedCallback = nullptr;

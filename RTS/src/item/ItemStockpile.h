@@ -19,11 +19,26 @@ struct ItemStockpileRenderData {
     bool mQuadMeshDirty = false;
 };
 
+// TODO: ui16?
 struct ItemStockpileRecord {
     ui32 totalQuantity;
     ui32 reservedQuantity;
+    ui32 promisedQuantity;
+    ui32 freeStackSpace;
     std::vector<ui32> stackLocations;
 };
+
+enum class ItemStockpileTileStorageFlags : ui32 {
+    IS_RESERVATION = 1 << 0,
+    TEST_1 = 1 << 1,
+    TEST_2 = 1 << 2
+};
+
+struct ItemStockpileTileStorage {
+    ItemStack stack;
+    BitFlags<ItemStockpileTileStorageFlags> flags;
+};
+static_assert(sizeof(ItemStockpileTileStorage) == 12);
 
 // Tracks the location, dimensions, and contents of a stockpile
 // of items. Can be owned.
@@ -70,11 +85,12 @@ private:
     entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
 
     std::vector<ChunkID> mResidingChunks;
-    std::vector<ItemStack> mStorage;
+    std::vector<ItemStockpileTileStorage> mStorage;
     std::map<ItemID, ItemStockpileRecord> mItemContents;
     std::set<ItemReservation*> mReservations;
     ui32 mTotalItems = 0;
     ui32 mTotalSlots = 0;
+    ui32 mFreeSlots = 0;
 
     mutable ItemStockpileRenderData mRenderData;
 

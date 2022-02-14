@@ -49,7 +49,7 @@ enum class BuiltinShields : ShieldItemID {
 class ShieldRegistry {
 public:
 	static const ShieldItem& getShield(BuiltinShields id) {
-		return s_allShieldItems[enum_cast(id)];
+		return s_allShieldItems[e_cast(id)];
 	}
 
 	static const ShieldItem& getShield(ShieldItemID id) {

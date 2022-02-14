@@ -61,7 +61,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
         0.0f, // DOOR
         3.0f, // WALL
     };
-    static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 4);
 
     // Register with the city
     Building newBuilding;
@@ -106,9 +106,9 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                 f32v2 tileWorldPos = worldPos + ui32v2(x, y);
                 grid.setHeightAt(tileWorldPos, meanHeight);
 
-                const TileID tileId = bp.tileIDs[enum_cast(type)];
+                const TileID tileId = bp.tileIDs[e_cast(type)];
                 if (tileId != TILE_ID_NONE) {
-                    const f32 height = BUILD_HEIGHTS[enum_cast(type)] + meanHeight;
+                    const f32 height = BUILD_HEIGHTS[e_cast(type)] + meanHeight;
                     // TODO: Always ground??
                     newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
                     TileHandle handle = mWorld.getTileHandleAtWorldPos(tileWorldPos);

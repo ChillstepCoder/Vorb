@@ -21,7 +21,7 @@ enum class GearSlotType {
     NECK,
     COUNT,
 };
-constexpr ui32 GEAR_SLOT_COUNT = enum_cast(GearSlotType::COUNT);
+constexpr ui32 GEAR_SLOT_COUNT = e_cast(GearSlotType::COUNT);
 constexpr f32 DEFAULT_CARRY_WEIGHT = 100.0f;
 
 class InventoryComponent {

@@ -13,7 +13,7 @@
 // Must match glsl
 constexpr ui32 MAX_UNIFORM_ARRAY_SIZE = 256; // TODO: Query hardware + defines? Need to assert if uniform buffer size < 16kb
 
-const f32v2 CUBE_FACING_AXIS_DIRECTIONS[enum_cast(CubeFacing::COUNT)] = {
+const f32v2 CUBE_FACING_AXIS_DIRECTIONS[e_cast(CubeFacing::COUNT)] = {
     f32v2(-1, 1), // LEFT
     f32v2(1,  1),  // FRONT
     f32v2(1,  1),  // RIGHT
@@ -21,7 +21,7 @@ const f32v2 CUBE_FACING_AXIS_DIRECTIONS[enum_cast(CubeFacing::COUNT)] = {
     f32v2(1,  1),  // TOP
     f32v2(-1, -1)   // BOTTOM
 };
-const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
+const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v2(1, 0), // LEFT
     f32v2(0, 0),  // FRONT
     f32v2(0, 0),  // RIGHT
@@ -48,11 +48,11 @@ void QuadMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, const
     assert(!mVertexData.empty());
     TileVertex* verts = &mVertexData.back() - 3;
 
-    const i32v2& xyAxis = CUBE_FACING_AXIS[enum_cast(axis)];
-    const i8v3 normal(CUBE_FACING_NORMALS[enum_cast(axis)]);
-    const i8v2 tangent(CUBE_FACING_TANGENTS[enum_cast(axis)]);
-    const f32v2& xyAxisDirection = CUBE_FACING_AXIS_DIRECTIONS[enum_cast(axis)];
-    const f32v2& initialOffsetMult = CUBE_FACING_AXIS_INITIAL_OFFSETS[enum_cast(axis)];
+    const i32v2& xyAxis = CUBE_FACING_AXIS[e_cast(axis)];
+    const i8v3 normal(CUBE_FACING_NORMALS[e_cast(axis)]);
+    const i8v2 tangent(CUBE_FACING_TANGENTS[e_cast(axis)]);
+    const f32v2& xyAxisDirection = CUBE_FACING_AXIS_DIRECTIONS[e_cast(axis)];
+    const f32v2& initialOffsetMult = CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(axis)];
 
     // Center the sprite
     // TODO: This shouldnt be hard coded to xy

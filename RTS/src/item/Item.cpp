@@ -12,7 +12,7 @@ KEG_ENUM_DEF(ItemType, ItemType, kt) {
     kt.addValue("potion", ItemType::POTION);
     kt.addValue("quest", ItemType::QUEST);
 }
-static_assert(enum_cast(ItemType::TYPES) == 9, "Update def");
+static_assert(e_cast(ItemType::TYPES) == 9, "Update def");
 
 KEG_ENUM_DEF(ItemStorageShape, ItemStorageShape, kt) {
     kt.addValue("point", ItemStorageShape::POINT);
@@ -20,4 +20,4 @@ KEG_ENUM_DEF(ItemStorageShape, ItemStorageShape, kt) {
     kt.addValue("log", ItemStorageShape::LOG);
     kt.addValue("ingot", ItemStorageShape::INGOT);
 }
-static_assert(enum_cast(ItemStorageShape::COUNT) == 4, "Update def");
+static_assert(e_cast(ItemStorageShape::COUNT) == 4, "Update def");

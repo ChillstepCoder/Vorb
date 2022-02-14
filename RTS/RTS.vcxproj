@@ -317,6 +317,7 @@
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
+    <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
     <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />
     <ClInclude Include="src\ecs\component\ComponentDefinition.h" />
@@ -410,6 +411,7 @@
     <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\BitArray.h" />
+    <ClInclude Include="src\util\BitFlags.h" />
     <ClInclude Include="src\util\IntersectionHit.h" />
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />

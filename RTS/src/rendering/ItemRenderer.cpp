@@ -46,7 +46,7 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
         const SpriteData& spriteData = item.mSpriteData;
 
         for (ui32 index : record.stackLocations) {
-            const ItemStack& stack = stockpile.mStorage[index];
+            const ItemStack& stack = stockpile.mStorage[index].stack;
             // TODO: Z
             ui32v2 pos2d = ui32v2(index / stockpile.mAABB.width, index % stockpile.mAABB.width);
             f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
@@ -99,7 +99,7 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
             default:
                 break;
         }
-        static_assert(enum_cast(ItemStorageShape::COUNT) == 4, "Update for new mesh type");
+        static_assert(e_cast(ItemStorageShape::COUNT) == 4, "Update for new mesh type");
     }
 
     mesh.finishMesh(MeshDrawMode::DYNAMIC);
@@ -167,7 +167,7 @@ void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const I
     f32v3 spacingRatio = f32v3(1.0f / stackDims.x, 1.0f / stackDims.y, 1.0f / stackDims.z);
 
     for (ui32 index : record.stackLocations) {
-        const ItemStack& stack = stockpile.mStorage[index];
+        const ItemStack& stack = stockpile.mStorage[index].stack;
         // TODO: Z
         ui32v2 pos2d = ui32v2(index % stockpile.mAABB.width, index / stockpile.mAABB.width);
         f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
@@ -180,7 +180,7 @@ void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const I
             boxPos.z += (i / stackLayer) * spacingRatio.z;
             // TODO: Bottom
             // TODO: Cull edges, merging
-            for (int j = enum_cast(CubeFacing::LEFT); j <= enum_cast(CubeFacing::TOP); ++j) {
+            for (int j = e_cast(CubeFacing::LEFT); j <= e_cast(CubeFacing::TOP); ++j) {
                 const f32v2& axis = CUBE_FACING_AXIS[j];
                 const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
                 mesh.addAxisAlignedQuad(boxPos + OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);

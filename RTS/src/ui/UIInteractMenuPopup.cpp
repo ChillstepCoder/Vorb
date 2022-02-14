@@ -142,7 +142,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 
     }
     static_assert(INTERACT_MENU_RESULT_COUNT == 10, "update");
-    static_assert(enum_cast(UIInteractMenuState::COUNT) == 4, "update");
+    static_assert(e_cast(UIInteractMenuState::COUNT) == 4, "update");
 
     ImGui::End();
 

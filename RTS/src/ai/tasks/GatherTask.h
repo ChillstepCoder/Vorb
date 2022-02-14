@@ -6,6 +6,8 @@
 
 class City;
 
+class ItemStockpile;
+
 enum class GatherTaskState : ui8 {
 	INIT,
 	PATH_TO_RESOURCE,
@@ -21,7 +23,7 @@ enum class GatherTaskState : ui8 {
 class GatherTask : public IAgentTask
 {
 public:
-	GatherTask(TileHandle tileTarget, TileResource resource, City* city);
+	GatherTask(TileHandle tileTarget, TileResource resource, City* city, ItemStockpile* dstStockpile);
 	~GatherTask();
 
 	// Returns True when done
@@ -37,5 +39,6 @@ protected:
     TileHandle mTileTarget;
     TileResource mResource;
     GatherTaskState mState = GatherTaskState::INIT;
+	ItemStockpile* mDestinationStockpile;
 	City* mCity;
 };

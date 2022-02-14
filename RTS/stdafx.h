@@ -52,6 +52,13 @@
 
 #include <entt/entt.hpp>
 
+// Enum cast
+template<typename E>
+constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
+
 constexpr entt::entity INVALID_ENTITY = (entt::entity)(UINT32_MAX);
 
 #define UNUSED(x) (void)(x)
@@ -87,6 +94,7 @@ struct b2Vec2;
 
 #include "util/MathUtil.hpp"
 #include "util/AABB.hpp"
+#include "util/BitFlags.h"
 
 // Comment out for larger chunks
 // #define USE_SMALL_CHUNK_WIDTH
@@ -113,12 +121,6 @@ constexpr int MIN_SUBCHUNKS_PER_CHUNK = SQ(MIN_SUBCHUNKS_PER_CHUNK_ROW);
 constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 constexpr ui16 INVALID_TILE_INDEX = 0xffff;
-
-// Enum cast
-template<typename E>
-constexpr auto enum_cast(E e) -> typename std::underlying_type<E>::type {
-    return static_cast<typename std::underlying_type<E>::type>(e);
-}
 
 // Cartesian
 enum class Cartesian : ui8 {
@@ -212,7 +214,7 @@ enum class CubeFacing {
     COUNT
 };
 
-const i32v2 CUBE_FACING_AXIS[enum_cast(CubeFacing::COUNT)] = {
+const i32v2 CUBE_FACING_AXIS[e_cast(CubeFacing::COUNT)] = {
     i32v2(AXIS_Y, AXIS_Z), // LEFT
     i32v2(AXIS_X, AXIS_Z),  // FRONT
     i32v2(AXIS_Y, AXIS_Z),  // RIGHT
@@ -221,7 +223,7 @@ const i32v2 CUBE_FACING_AXIS[enum_cast(CubeFacing::COUNT)] = {
     i32v2(AXIS_X, AXIS_Y)   // BOTTOM
 };
 
-const i32v3 CUBE_FACING_NORMALS[enum_cast(CubeFacing::COUNT)] = {
+const i32v3 CUBE_FACING_NORMALS[e_cast(CubeFacing::COUNT)] = {
     i32v3(-1, 0, 0), // LEFT
     i32v3(0, -1, 0), // FRONT
     i32v3(1, 0, 0), // RIGHT
@@ -230,7 +232,7 @@ const i32v3 CUBE_FACING_NORMALS[enum_cast(CubeFacing::COUNT)] = {
     i32v3(0, 0, -1)  // BOTTOM
 };
 
-const i32v2 CUBE_FACING_TANGENTS[enum_cast(CubeFacing::COUNT)] = {
+const i32v2 CUBE_FACING_TANGENTS[e_cast(CubeFacing::COUNT)] = {
     i32v2(1, 0),   // LEFT
     i32v2(-1,  0), // FRONT
     i32v2(-1, 0),  // RIGHT
@@ -239,7 +241,7 @@ const i32v2 CUBE_FACING_TANGENTS[enum_cast(CubeFacing::COUNT)] = {
     i32v2(0, -1)   // BOTTOM
 };
 
-const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
+const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, -1.0), // LEFT
     f32v3(0, 0, -1.0), // FRONT
     f32v3(1.0f, 0, -1.0), // RIGHT
@@ -248,7 +250,7 @@ const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, -1.0) // BOTTOM
 };
 
-const f32v3 OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[enum_cast(CubeFacing::COUNT)] = {
+const f32v3 OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, 0.0), // LEFT
     f32v3(0, 0, 0.0), // FRONT
     f32v3(1.0f, 0, 0.0), // RIGHT

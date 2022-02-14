@@ -17,10 +17,11 @@
 #include "world/TileRepository.h"
 #include "Random.h"
 
-GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, City* city) :
+GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, City* city, ItemStockpile* dstStockpile) :
     mTileTarget(tileTarget),
     mResource(resource),
-    mCity(city) {
+    mCity(city),
+    mDestinationStockpile(dstStockpile) {
     // Gather task requires target tile to be reserved already
     assert(tileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
 }
@@ -121,7 +122,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
     TimedTileInteractComponent& interact = registry.emplace<TimedTileInteractComponent>(
         agent,
         mTileTarget,
-        enum_cast(layer),
+        e_cast(layer),
         INTERACT_TICKS,
         0,
         [&registry, agent, this](bool, TimedTileInteractComponent& cmp) {
@@ -146,7 +147,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
                     stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
                 }
                 stack.id = drop.id;
-                invCmp.addOrDropItemStackToWorkingStorage(stack, enum_cast(WorkStorageID::HAULING));
+                invCmp.addOrDropItemStackToWorkingStorage(stack, e_cast(WorkStorageID::HAULING));
             }
         }
     );
@@ -164,13 +165,12 @@ void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::e
 
     assert(mCity);
     const f32v2& myPos = physCmp.getXYPosition();
-    ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
     // There is no stockpile :(
-    if (!closestStockpile) {
+    if (!mDestinationStockpile) {
         failTask();
         return;
     }
-    ui32v2 stockpileCenter = closestStockpile->getAABB().getCenter();
+    ui32v2 stockpileCenter = mDestinationStockpile->getAABB().getCenter();
 
     // Path to the stockpile
     navCmp.requestCoarsePathWithCallback(myPos, stockpileCenter, [this, &registry, agent, &world, stockpileCenter](bool success) {
@@ -189,21 +189,20 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
     // Drop resources into the stockpile
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-    std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
+    std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(e_cast(WorkStorageID::HAULING));
     if (items.empty()) {
         mState = GatherTaskState::SUCCESS;
         return;
     }
 
     const f32v2& myPos = physCmp.getXYPosition();
-    // TODO: Just get at point? This is another lookup
-    ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
+   
     // TODO: Path to target pos
     // Insert each item into stockpile storage
     // Get stockpile at position
     ItemStack& stack = items[0];
     ui32v2 posToInsert;
-    if (closestStockpile->tryGetBestPositionToInsertItemStack(stack, &posToInsert)) {
+    if (mDestinationStockpile->tryGetBestPositionToInsertItemStack(stack, &posToInsert)) {
         // Walk to the point and drop the item, no pathing
         NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
         navCmp.setSimpleLinearTargetPoint(posToInsert, [this, agent, &registry, posToInsert](bool success) {
@@ -213,7 +212,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
                 const f32v2& myPos = physCmp.getXYPosition();
                 ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
                 InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-                std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(enum_cast(WorkStorageID::HAULING));
+                std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(e_cast(WorkStorageID::HAULING));
                 ItemStack& stackToAdd = items[0];
                 stackToAdd = closestStockpile->tryAddItemStackAt(stackToAdd, posToInsert, 1);
                 if (stackToAdd.isNull()) {
@@ -222,7 +221,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
                 }
                 // TODO: Check if stockpile has no more room
                 if (items.empty()) {
-                    invCmp.eraseWorkingStorage(enum_cast(WorkStorageID::HAULING));
+                    invCmp.eraseWorkingStorage(e_cast(WorkStorageID::HAULING));
                     mState = GatherTaskState::SUCCESS;
                     return;
                 }

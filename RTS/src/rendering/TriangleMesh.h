@@ -42,7 +42,7 @@ void ITriangleMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount
 
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     // Orphan the buffer for speed
-    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, enum_cast(drawMode));
+    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
     // Set data
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, meshData);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

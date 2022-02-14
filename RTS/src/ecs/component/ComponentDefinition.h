@@ -21,7 +21,7 @@
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
-static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Update component includes");
+static_assert(e_cast(ComponentTypes::COUNT) == 14, "Update component includes");
 
 struct ComponentDefinition {
     ComponentDefinition(ComponentTypes type) : type(type) {};
@@ -35,4 +35,4 @@ struct ComponentDefinition {
         CharacterDetailsComponentDef characterDetails;
     };
 };
-static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Set any needed component def");
+static_assert(e_cast(ComponentTypes::COUNT) == 14, "Set any needed component def");

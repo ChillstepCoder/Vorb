@@ -101,7 +101,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 assert(false); // Missing type
                 break;
         }
-        static_assert(enum_cast(ComponentTypes::COUNT) == 14, "Update component construction");
+        static_assert(e_cast(ComponentTypes::COUNT) == 14, "Update component construction");
     }
 
     return newEntity;

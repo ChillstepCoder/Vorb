@@ -14,7 +14,7 @@ struct BfsNode {
 
 struct closedListNode {
     closedListNode() {}
-    closedListNode(ui32v2& xy) : xy(xy) {};
+    closedListNode(const ui32v2& xy) : xy(xy) {};
 
     bool operator<(const closedListNode& l) const {
         return l.cmpValue < cmpValue;
@@ -38,6 +38,7 @@ std::vector<TileHandle> TileScanner::scanForResource(World& world, TileResource 
     std::queue<BfsNode> openList;
     const f32 maxDistSq = SQ(maxDistance);
     openList.emplace(startWorldPos, 0);
+    closedList.emplace(startWorldPos);
 
     while (openList.size()) {
         BfsNode node = openList.front();

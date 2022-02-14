@@ -122,12 +122,12 @@ public:
 	ItemStack getItemStackOnGround(TileIndex pos);
 
     // =========== State  ===========
-	bool isInvalid() const { return mState == enum_cast(ChunkState::INVALID); }
-	bool isDataReady() const { return mState == enum_cast(ChunkState::FINISHED); }
-	bool isFinished() const { return mState == enum_cast(ChunkState::FINISHED) && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
+	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
+	bool isDataReady() const { return mState == e_cast(ChunkState::FINISHED); }
+	bool isFinished() const { return mState == e_cast(ChunkState::FINISHED) && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
 	bool isVisible() const { return mChunkRenderData.mIsVisible; }
 
-	void setState(ChunkState state) { mState = enum_cast(state); }
+	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
 
     // =========== Terrain update  ===========
@@ -138,13 +138,13 @@ public:
     Tile& getMutableTileAt(TileIndex i) {
 		assert(IS_MAIN_THREAD());
         assert(i < CHUNK_SIZE);
-        assert(mState == enum_cast(ChunkState::FINISHED));
+        assert(mState == e_cast(ChunkState::FINISHED));
 		return mTiles[i];
 	}
 
     const Tile& getTileAt(TileIndex i) const {
         assert(i < CHUNK_SIZE);
-        assert(mState == enum_cast(ChunkState::FINISHED));
+        assert(mState == e_cast(ChunkState::FINISHED));
         return mTiles[i];
     }
 

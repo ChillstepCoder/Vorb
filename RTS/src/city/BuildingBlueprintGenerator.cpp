@@ -444,8 +444,8 @@ void extendWallEnd(RoomWall& wall, const i16v2& offset) {
 
 
 void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
-    const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
-    const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
+    const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(wall.outerDir)];
+    const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(wall.outerDir)];
 
     wall.startPos += expandOffset;
     assert(wall.startPos.x >= 0 && wall.startPos.y >= 0);
@@ -475,8 +475,8 @@ void expandWall(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
 
 // Only fills gaps and will not overwrite any existing walls
 void expandWallGapsOnly(RoomWall& wall, BuildingBlueprint& bp, RoomNode& room) {
-    const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
-    const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
+    const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(wall.outerDir)];
+    const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(wall.outerDir)];
 
     wall.startPos += expandOffset;
     assert(wall.startPos.x >= 0 && wall.startPos.y >= 0);
@@ -521,8 +521,8 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room) {
 
         RoomWall& wall = room.walls[i];
         // Expand
-        const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
-        const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
+        const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(wall.outerDir)];
+        const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(wall.outerDir)];
         const int xOrY = (int)wall.outerDir % 2;
         const i16v2 nextStart = wall.startPos + expandOffset;
         // Bounds check
@@ -569,8 +569,8 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room) {
 
             RoomWall& wall = room.walls[i];
             // Expand
-            const i16v2& expandOffset = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
-            const i16v2& iterateOffset = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
+            const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(wall.outerDir)];
+            const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(wall.outerDir)];
             const int xOrY = (int)wall.outerDir % 2;
             const i16v2 nextStart = wall.startPos + expandOffset;
             // Bounds check
@@ -616,8 +616,8 @@ void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) const {
             const int xOrY = ((int)wall.outerDir + 1) % 2;
             // Deliberately is 1 less than the length
             int wallLength = abs(wall.endPos[xOrY] - wall.startPos[xOrY]);
-            const i16v2& iterDir = ITERATE_OFFSETS[enum_cast(wall.outerDir)];
-            const i16v2& outerDir = EXPAND_OFFSETS[enum_cast(wall.outerDir)];
+            const i16v2& iterDir = ITERATE_OFFSETS[e_cast(wall.outerDir)];
+            const i16v2& outerDir = EXPAND_OFFSETS[e_cast(wall.outerDir)];
             i16v2 pos = wall.startPos;
             assert(pos.x >= 0 && pos.y >= 0);
             bool finalWasSuccess = false;
@@ -971,7 +971,7 @@ struct DoorBFSNode {
 };
 
 void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, RoomWallOuterDir dir, ui32 nodeIndex, RoomNode& room, const i16v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside) {
-    const i16v2& directionOffset = EXPAND_OFFSETS[enum_cast(dir)];
+    const i16v2& directionOffset = EXPAND_OFFSETS[e_cast(dir)];
     const i16v2 nextPos = currentPos + directionOffset;
     i16 nextIndex = getIndexAtPos(nextPos, bp.aabb.dims.x);
     if (!visited[nextIndex]) {
@@ -1096,12 +1096,11 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) con
     // Tally required items
     std::map<ItemID, ui32> requiredItems;
 
-    const std::vector<ItemStack>* recipes[enum_cast(BlueprintTileType::TYPES)];
-    recipes[enum_cast(BlueprintTileType::NONE)] = nullptr;
-    recipes[enum_cast(BlueprintTileType::FLOOR_1)] = &TileRepository::getTileData(bp.tileIDs[enum_cast(BlueprintTileType::FLOOR_1)]).recipe;
-    recipes[enum_cast(BlueprintTileType::DOOR)] = &TileRepository::getTileData(bp.tileIDs[enum_cast(BlueprintTileType::DOOR)]).recipe;
-    recipes[enum_cast(BlueprintTileType::WALL)] = &TileRepository::getTileData(bp.tileIDs[enum_cast(BlueprintTileType::WALL)]).recipe;
-    static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
+    bp.tileRecipes[e_cast(BlueprintTileType::NONE)] = nullptr;
+    bp.tileRecipes[e_cast(BlueprintTileType::FLOOR_1)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::FLOOR_1)]).recipe;
+    bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]).recipe;
+    bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::WALL)]).recipe;
+    static_assert(e_cast(BlueprintTileType::TYPES) == 4);
 
     std::unordered_map<RoomNodeID, ui32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
@@ -1138,7 +1137,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) con
             case BlueprintTileType::FLOOR_1:
             case BlueprintTileType::DOOR:
                 ++bp.totalTilesToBuild;
-                for (auto&& itemStack : *recipes[enum_cast(bp.tiles[i].type)]) {
+                for (auto&& itemStack : *bp.tileRecipes[e_cast(bp.tiles[i].type)]) {
                     auto&& it = requiredItems.find(itemStack.id);
                     if (it == requiredItems.end()) {
                         requiredItems[itemStack.id] = itemStack.quantity;
@@ -1154,7 +1153,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) con
                 break;
         }
     }
-    static_assert(enum_cast(BlueprintTileType::TYPES) == 4);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 4);
 
     // Set up AABBs
     for (auto&& it : roomBoundsLookup) {

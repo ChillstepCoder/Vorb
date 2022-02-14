@@ -27,10 +27,11 @@ void CityPlanner::update() {
 
 }
 
-
-CityPlot* CityPlanner::tryPurchasePlot(const PlotRequestProps& props) {
+CityPlot* CityPlanner::tryPurchasePlot(const PlotRequestProps& props, entt::entity newOwner) {
     // TODO use all the other props stuff
-    return mCity.getCityPlotter().tryReservePlotForBuilding(props.minBuildingDims, props.maxBuildingDim);
+    CityPlot* plot = mCity.getCityPlotter().tryReservePlotForBuilding(props.minBuildingDims, props.maxBuildingDim);
+    plot->mOwnerEntity = newOwner;
+    return plot;
 }
 
 void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, const nString& buildingDescriptionName, BuildingBlueprintFlags flags) {
@@ -51,13 +52,13 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
 
     const ui32v2 bottomLeftPos(plot.aabb.pos); // TODO: Actual position
     Cartesian dir = Cartesian::UP;
-    if (plot.neighborRoads[enum_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
+    if (plot.neighborRoads[e_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
         dir = Cartesian::LEFT;
     }
-    else if (plot.neighborRoads[enum_cast(Cartesian::RIGHT)] != INVALID_ROAD_ID) {
+    else if (plot.neighborRoads[e_cast(Cartesian::RIGHT)] != INVALID_ROAD_ID) {
         dir = Cartesian::RIGHT;
     }
-    else if (plot.neighborRoads[enum_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
+    else if (plot.neighborRoads[e_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
         dir = Cartesian::DOWN;
     }
     plot.mPendingBlueprint = mBuildingGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos, plot.mOwnerEntity, flags);
