@@ -60,6 +60,8 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
 }
 
 ItemStockpile::~ItemStockpile() {
+    // TODO: can we make this more elegant
+    if (IS_SHUTTING_DOWN) return;
 
     onDestroy(this);
 
@@ -214,6 +216,7 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryPromiseItemStac
                 tileStorage.stack.id = itemStack.id;
                 assert(tileStorage.stack.quantity == 0);
                 remainingQuantity -= promiseQuantityThisTile;
+                --mFreeSlots;
                 targets.emplace_back(ItemReservationTarget{ (ui16)mFirstFreeSlot, (ui16)promiseQuantityThisTile });
                 if (remainingQuantity == 0) {
                     ++mFirstFreeSlot;
@@ -383,6 +386,7 @@ std::unique_ptr<ItemReservation> ItemStockpile::splitReservation(ItemReservation
     assert(splitQuantity);
     assert(reservation->isValid());
     assert(reservation->mTargets.size());
+    assert(splitQuantity < reservation->getRemainingQuantity());
 
     std::vector<ItemReservationTarget> targets;
     targets.reserve((ui32)(reservation->mTargets.size() / 2)); // Arbitrary
@@ -407,6 +411,9 @@ std::unique_ptr<ItemReservation> ItemStockpile::splitReservation(ItemReservation
             break;
         }
     }
+
+    reservation->mRemainingQuantity -= splitQuantity;
+
     assert(remainingQuantity == 0);
     assert(targets.size());
     std::unique_ptr<ItemReservation> newReservation = std::make_unique<ItemReservation>(this, reservation->mItemID, std::move(targets), reservation->mIsPromise);

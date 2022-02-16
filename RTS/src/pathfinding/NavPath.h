@@ -4,6 +4,9 @@ typedef ui16v2 PathPoint;
 
 struct NavPath {
 
+    NavPath() = default;
+    ~NavPath() { assert(finishedGenerating == true); }
+
     bool isInvalid() const { return points == nullptr; }
 
     std::unique_ptr<PathPoint[]> points;

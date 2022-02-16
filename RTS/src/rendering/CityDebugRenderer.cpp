@@ -54,7 +54,7 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, color4* inpu
             RoomNodeID id = bp.ownerArray[index];
             if (id != INVALID_ROOM_ID) {
                 const ui32v2 worldPos = bp.aabb.pos + ui32v2(x, y);
-                const color4& color = /*inputColor ? *inputColor : */ROOM_COLORS[id % MAX_ROOM_COLORS];
+                const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
                 DebugRenderer::drawFilledQuad(f32v3((f32)worldPos.x, (f32)worldPos.y, height), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
             }
         }

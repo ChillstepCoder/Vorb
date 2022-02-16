@@ -2,7 +2,7 @@
 
 #include "ai/tasks/IAgentTask.h"
 
-enum EmployeeComponentFlags {
+enum EmployeeComponentFlags : ui8 {
     FLAG_EMPLOYEE_IS_IDLE = 1 << 0
 };
 

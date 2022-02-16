@@ -2,6 +2,9 @@
 
 #include <SDL.h>
 
+
+bool IS_SHUTTING_DOWN = false;
+
 std::thread::id NAV_THREAD_ID;
 
 UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.

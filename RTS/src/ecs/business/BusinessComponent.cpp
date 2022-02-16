@@ -62,6 +62,7 @@ void BusinessComponent::addIdleWorker(entt::entity worker) {
     if (mIdleWorkers.size() == mIdleWorkers.capacity()) {
         mIdleWorkers.set_capacity(mIdleWorkers.capacity() + IDLE_CAPACITY_INC);
     }
+    std::cout << "ADD IDLE " << mIdleWorkers.size() << " " << mIdleWorkers.capacity() << std::endl;
     mIdleWorkers.push_back(worker);
 }
 
@@ -110,13 +111,10 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
 
             assert(handle.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
 
-            gatherCmp.mScannedTiles.pop_back();
-
             entt::entity worker = businessCmp.mIdleWorkers.front();
-            businessCmp.mIdleWorkers.pop_front();
 
             EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
-            employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+            assert(!employeeCmp.mCurrentTask);
 
             ItemStack maximumYieldStack;
             TileLayer gatherLayer;
@@ -139,6 +137,17 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
             }
             else {
                 std::cout << "Failed to find resource to gather in business cmp";
+            }
+
+            // If employee has a task, we succeeded. Otherwise, break cause we cant give any tasks right now
+            if (employeeCmp.mCurrentTask) {
+                gatherCmp.mScannedTiles.pop_back();
+                businessCmp.mIdleWorkers.pop_front();
+                employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+                std::cout << "  REMOVE IDLE 2 " << businessCmp.mIdleWorkers.size() << " " << businessCmp.mIdleWorkers.capacity() << std::endl;
+            }
+            else {
+                break;
             }
         }
     }
@@ -191,6 +200,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
                 employeeCmp.mCurrentTask = std::move(task);
 
                 cmp.mIdleWorkers.pop_front();
+                std::cout << "  REMOVE IDLE 1 " << cmp.mIdleWorkers.size() << " " << cmp.mIdleWorkers.capacity() << std::endl;
                 didAssign = true;
                 break;
             }

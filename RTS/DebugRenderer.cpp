@@ -322,6 +322,7 @@ void DebugRenderer::drawPath(const NavPath& path, color4 color, const WorldGrid&
     if (path.numPoints < 2) {
         return;
     }
+    OVERFLOW_ASSERT_UI32(path.numPoints);
 
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.reserve(lines.size() + path.numPoints);

@@ -48,12 +48,17 @@ bool ItemReservation::cancelQuantity(ui16 quantity)
     return false;
 }
 
+int totalAllocated = 0;
+int max = 0;
 void* ItemReservation::operator new(size_t count) {
     UNUSED(count);
+    std::cout << "ALLOCATING " << ++totalAllocated << std::endl;
+    if (totalAllocated > max) max = totalAllocated;
     return singleton_task_pool::malloc();
 }
 
 void ItemReservation::operator delete(void* pointer, size_t size) {
     UNUSED(size);
+    std::cout << "FREEING " << --totalAllocated << std::endl;
     return singleton_task_pool::free(pointer);
 }

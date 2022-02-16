@@ -6,8 +6,6 @@
 #include "item/ItemStack.h"
 #include "util/AABB.hpp"
 
-extern bool IS_SHUTTING_DOWN;
-
 class Chunk;
 class QuadMesh;
 class BillboardMesh;

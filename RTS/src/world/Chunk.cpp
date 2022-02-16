@@ -15,8 +15,6 @@
 #include "item/ItemRepository.h"
 #include "item/Item.h"
 
-bool IS_SHUTTING_DOWN = false;
-
 ChunkRenderData::~ChunkRenderData() {
     // Empty
 }

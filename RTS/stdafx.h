@@ -52,6 +52,9 @@
 
 #include <entt/entt.hpp>
 
+
+extern bool IS_SHUTTING_DOWN;
+
 // Enum cast
 template<typename E>
 constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {

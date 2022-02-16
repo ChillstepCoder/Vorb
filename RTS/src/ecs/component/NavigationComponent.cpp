@@ -233,8 +233,9 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
         if (!navCmp.mFinePath) {
             navCmp.mCurrentFinePoint = 0;
 			navCmp.mFinePath = std::make_shared<NavPath>();
-			NavPath* pathHandle = navCmp.mFinePath.get();
 			if (sDebugOptions.mShowPaths) {
+				// Make sure we dont free this path before it is rendered
+				std::shared_ptr<NavPath> pathHandle = navCmp.mFinePath;
                 Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
                     DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
                 });

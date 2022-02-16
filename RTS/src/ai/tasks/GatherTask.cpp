@@ -28,13 +28,15 @@ GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique
     mItemPromise(std::move(itemPromise)) {
     // Gather task requires target tile to be reserved already
     assert(tileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
-    assert(itemPromise->isPromise());
+    assert(mItemPromise->isPromise());
 }
 
 GatherTask::~GatherTask() {
     // Clear tile flag on abort
     if (!IS_SHUTTING_DOWN) {
-        failTask();
+        if (mState <= GatherTaskState::HARVESTING) {
+            mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+        }
     }
 }
 

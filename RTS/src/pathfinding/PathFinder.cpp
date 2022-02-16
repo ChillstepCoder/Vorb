@@ -232,6 +232,7 @@ const i32v2 NODE_CORNER_NEIGHBORS[9] = {
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
 bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path) {
+    assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
     assert(IS_NAV_THREAD());
     // TODO: Profiling
@@ -461,6 +462,7 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
 
 bool PathFinder::generateCoarsePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path)
 {
+    assert(path.numPoints == 0); // Should be uninitialized
     PreciseTimer timer;
     
     mOpenList.clear();
