@@ -27,6 +27,10 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildTask);
 
+    // Override allocation to use boost::singleton_pool
+    static void* operator new(size_t count);
+    static void operator delete(void* pointer, size_t size);
+
 private:
     BuildTaskState mState = BuildTaskState::FULFILL_RESERVATIONS;
     std::vector<std::unique_ptr<ItemReservation>> mSourceItems;

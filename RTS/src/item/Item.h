@@ -39,7 +39,7 @@ public:
     ItemID getID() const { return mId; }
     f32 getValue() const { return mValue; }
     f32 getWeight() const { return mWeight; }
-    ui32 getStackSize() const { return mStackSize; }
+    ui32 getMaxStackSize() const { return mStackSize; }
 
 protected:
     nString mName;

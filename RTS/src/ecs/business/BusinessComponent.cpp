@@ -12,6 +12,8 @@
 #include "city/BuildingDescriptionRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
 #include "world/TileScanner.h"
+#include "item/ItemStockpile.h"
+#include "world/TileRepository.h"
 
 #include "DebugRenderer.h"
 #include "options/DebugOptions.h"
@@ -116,8 +118,28 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
             EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
             employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
 
-            // TODO: Why shared and not unique?
-            employeeCmp.mCurrentTask = std::make_shared<GatherTask>(handle, gatherCmp.mResourceToGather, businessCmp.mCity, ownershipCmp.mOwnedStockpiles[0]);
+            ItemStack maximumYieldStack;
+            TileLayer gatherLayer;
+            if (handle.tile->hasHarvestableResource(gatherCmp.mResourceToGather, &gatherLayer)) {
+
+                const TileData& tileData = TileRepository::getTileData(handle.tile->getLayersMainThread()[e_cast(gatherLayer)]);
+                // TODO: Play animation of tree falling
+
+                // TODO: HANDLE MULTIPLE DROPS
+                for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
+                    const ItemDrop& drop = tileData.itemDrops[i];
+                    maximumYieldStack.id = drop.id;
+                    maximumYieldStack.quantity = drop.countRange.y;
+
+                    if (std::unique_ptr<ItemReservation> reservation = ownershipCmp.mOwnedStockpiles[0]->tryPromiseItemStack(maximumYieldStack, maximumYieldStack.quantity)) {
+                        employeeCmp.mCurrentTask = std::make_unique<GatherTask>(handle, gatherCmp.mResourceToGather, std::move(reservation));
+                        break;
+                    }
+                }
+            }
+            else {
+                std::cout << "Failed to find resource to gather in business cmp";
+            }
         }
     }
 }
@@ -166,7 +188,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
                 employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
 
                 // TODO: Why shared and not unique?
-                employeeCmp.mCurrentTask = task;
+                employeeCmp.mCurrentTask = std::move(task);
 
                 cmp.mIdleWorkers.pop_front();
                 didAssign = true;

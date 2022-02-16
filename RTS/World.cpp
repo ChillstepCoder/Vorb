@@ -894,17 +894,7 @@ void World::addTile(const ui32v2& worldPos, const TileData& tileData) {
 bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
 	TileHandle handle = getTileHandleAtWorldPos(worldPos);
 	if (handle.isValid()) {
-		for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
-			TileID tileId = handle.tile->getLayersMainThread()[i];
-			if (tileId != INVALID_TILE_INDEX) {
-				if (TileRepository::getTileData(tileId).resource == resource) {
-					if (outLayer) {
-						*outLayer = (TileLayer)i;
-					}
-					return true;
-				}
-			}
-		}
+		return handle.tile->hasHarvestableResource(resource, outLayer);
 	}
 	return false;
 }

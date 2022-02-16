@@ -22,6 +22,8 @@ public:
     bool hasFlagMainThread(TileFlags flag) const { return tileFlags & flag; }
     bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe & flag; }
 
+    bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
+
     void updateThreadSafeLayers();
 
     // Only nav thread can access this data

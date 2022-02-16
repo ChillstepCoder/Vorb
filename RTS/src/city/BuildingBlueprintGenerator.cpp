@@ -1121,8 +1121,8 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) con
                 } else if (pos.x > it->second.y) {
                     it->second.y = pos.x;
                 }
-                if (pos.x < it->second.z) {
-                    it->second.z = pos.x;
+                if (pos.y < it->second.z) {
+                    it->second.z = pos.y;
                 } else if (pos.y > it->second.w) {
                     it->second.w = pos.y;
                 }
@@ -1165,6 +1165,6 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) con
     }
 
     for (auto&& it : requiredItems) {
-        bp.requiredItemsToBuild.push_back(ItemStack{ it.first, it.second });
+        bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, it.second });
     }
 }

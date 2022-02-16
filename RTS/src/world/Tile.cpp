@@ -93,6 +93,22 @@ void Tile::clearTileCollisionFlags(bool isReadLocked) {
     }
 }
 
+bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) const {
+    assert(IS_MAIN_THREAD());
+    for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
+        TileID tileId = layers[i];
+        if (tileId != INVALID_TILE_INDEX) {
+            if (TileRepository::getTileData(tileId).resource == resource) {
+                if (outLayer) {
+                    *outLayer = (TileLayer)i;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void Tile::updateThreadSafeLayers() {
     assert(tileFlags & TILE_FLAG_QUEUED_UPDATE);
     tileFlags &= (~TILE_FLAG_QUEUED_UPDATE);

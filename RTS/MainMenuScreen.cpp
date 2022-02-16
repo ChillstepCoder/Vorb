@@ -487,10 +487,11 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
 			ItemStack woodPile;
 			woodPile.id = mResourceManager->getItemRepository().getItem("wood_raw").getID();
 			woodPile.quantity = 25;
-			ui32v2 bestPos;
-			if (stockPile->tryGetBestPositionToInsertItemStack(woodPile, &bestPos)) {
-				stockPile->tryAddItemStackAt(woodPile, bestPos, woodPile.quantity);
-			}
+            if (std::unique_ptr<ItemReservation> itemPromise = stockPile->tryPromiseItemStack(woodPile, 1)) {
+                while (!itemPromise->isFinished()) {
+                    itemPromise->fulfillCurrentTarget(woodPile);
+                }
+            }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK) {
             // grass

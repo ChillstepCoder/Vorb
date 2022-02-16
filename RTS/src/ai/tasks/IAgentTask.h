@@ -10,10 +10,10 @@ public:
     // Return true when task is done
     virtual bool tick(World& world, entt::registry& registry, entt::entity agent) = 0;
 
-    std::shared_ptr<IAgentTask> getNextTask() { return mNextTask; }
+    std::unique_ptr<IAgentTask>& getNextTask() { return mNextTask; }
 
 private:
-    std::shared_ptr<IAgentTask> mNextTask = nullptr;
+    std::unique_ptr<IAgentTask> mNextTask = nullptr;
 };
 
-typedef std::shared_ptr<IAgentTask> IAgentTaskPtr; // RAW POINTER
+typedef std::unique_ptr<IAgentTask> IAgentTaskPtr;

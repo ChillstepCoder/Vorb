@@ -75,5 +75,6 @@ private:
 	ui32 mNumTopTilesToConstruct = 0;
 	ui32 mNumTilesReservedInTasks = 0;
 	ui32 mFirstUnfinishedBpIndex = 0;
+	ui32 tickCounter = 0;
 };
 

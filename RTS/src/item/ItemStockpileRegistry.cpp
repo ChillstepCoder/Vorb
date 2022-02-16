@@ -15,15 +15,7 @@ ItemStockpileRegistry::~ItemStockpileRegistry()
 
 }
 
-ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity) {
-
-    // Create new stockpile and leave unassigned (city ownership)
-    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mWorld, aabb, ownerEntity)).get();
-    addStockpileToAreaLookup(*newStockpile);
-    return newStockpile;
-}
-
-ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
+ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity) {
     // Create new stockpile and leave unassigned (city ownership)
     ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mWorld, aabb, ownershipMask, ownerEntity)).get();
     addStockpileToAreaLookup(*newStockpile);

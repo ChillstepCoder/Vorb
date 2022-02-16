@@ -25,46 +25,44 @@ struct ItemStockpileRecord {
     ui32 reservedQuantity;
     ui32 promisedQuantity;
     ui32 freeStackSpace;
-    std::vector<ui32> stackLocations;
-};
+    std::vector<ui16> stackLocations;
 
-enum class ItemStockpileTileStorageFlags : ui32 {
-    IS_RESERVATION = 1 << 0,
-    TEST_1 = 1 << 1,
-    TEST_2 = 1 << 2
+    bool isNull() const { return totalQuantity == 0 && promisedQuantity == 0; }
 };
 
 struct ItemStockpileTileStorage {
     ItemStack stack;
-    BitFlags<ItemStockpileTileStorageFlags> flags;
+    ui16 promiseCount = 0u;
+    ui16 reserveCount = 0u;
+
+    bool isNull() const { return promiseCount == 0 && stack.quantity == 0; }
+    bool isInvalidStorage() const { return stack.id == INVALID_STOCKPILE_INDEX; }
 };
-static_assert(sizeof(ItemStockpileTileStorage) == 12);
+static_assert(sizeof(ItemStockpileTileStorage) == 8, "Keep small");
 
 // Tracks the location, dimensions, and contents of a stockpile
 // of items. Can be owned.
 class ItemStockpile
 {
     friend class ItemReservation;
+    friend class ItemPromise;
     friend class ItemRenderer;
     friend class ItemStockpileRegistry;
     friend class RenderContext;
 public:
-    ItemStockpile(World& world, const ui32AABB2& aabb, entt::entity ownerEntity = INVALID_ENTITY);
-    ItemStockpile(World& world, const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
     bool isVisible() const;
 
     void renderDebug() const;
-    // Returns the leftover stack, if quantity is 0, itemStack was consumed
-    ItemStack tryAddItemStackAt(ItemStack stack, ui32v2 pos, ui32 maxQuantityToAdd);
-    // Returns true if item stack can be partially placed, stores world position
-    // in outPos
-    bool tryGetBestPositionToInsertItemStack(ItemStack stack, OUT ui32v2* outPos);
-    bool tryGetClosestPositionOfItem(const f32v2& pos, ItemID itemId, OUT ui32v2* outPos) const;
-    CALLER_DELETE std::unique_ptr<ItemReservation> tryReserveItemStack(ItemStack itemStack, ui32 minimumQuantity);
 
+    // Returns true if item stack can be partially placed, stores world position in outPos
+    CALLER_DELETE std::unique_ptr<ItemReservation> tryReserveItemStack(ItemStack itemStack, ui32 minimumQuantity);
+    CALLER_DELETE std::unique_ptr<ItemReservation> tryPromiseItemStack(ItemStack itemStack, ui32 minimumQuantity);
+
+    ui32v2 getWorldPositionAtIndex(ui32 index) const;
     const ui32AABB2& getAABB() const { return mAABB; }
 
     // Events
@@ -72,29 +70,36 @@ public:
 
 private:
     void releaseReservation(ItemReservation* reservation);
-    void dirtyMeshForItem(const Item& item);
+
+    void dirtyMeshForItem(ItemID itemId);
     // Return true if fully fulfilled
-    bool itemReservationFulfullQuantity(ItemReservation* reservation, ui32 quantity);
-    std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui32 splitQuantity);
+    bool itemReservationFulfullCurrentTarget(ItemReservation* reservation, OUT ItemStack& sourceStack);
+
+    // Returns true if the record is invalidated due to all stacks now being free
+    bool freeSlot(ItemStockpileTileStorage& tileStorage, ItemStockpileRecord& record, std::unordered_map<ItemID, ItemStockpileRecord>::const_iterator& iterator, ItemID itemId, ui16 stackIndex);
+
+    std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui16 splitQuantity);
 
     // TODO: MultiAABB
     World& mWorld;
-    ui32AABB2 mAABB = ui32AABB2(0);
-
-    f32 mZPos = 0; // TODO: Use this
-    entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
 
     std::vector<ChunkID> mResidingChunks;
     std::vector<ItemStockpileTileStorage> mStorage;
-    std::map<ItemID, ItemStockpileRecord> mItemContents;
-    std::set<ItemReservation*> mReservations;
+    std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;
+    std::unordered_set<ItemReservation*> mReservations;
+
+    ui32AABB2 mAABB = ui32AABB2(0);
+    f32 mZPos = 0; // TODO: Use this better
+    entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
+
     ui32 mTotalItems = 0;
     ui32 mTotalSlots = 0;
     ui32 mFreeSlots = 0;
+    ui32 mFirstFreeSlot = 0;
 
+    // TODO: This should be in a separate component list for fast, cache friendly iteration?
     mutable ItemStockpileRenderData mRenderData;
 
     // TODO: Allowed item tags
     // TODO: Priorities? May not need...
 };
-

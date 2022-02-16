@@ -10,6 +10,9 @@
 
 #include "ai/tasks/BuildTask.h"
 
+// Look for items every 8 ticks
+constexpr ui32 TICK_RATE_RESERVE_ITEMS = 8;
+
 
 JobRequiredItems::JobRequiredItems()
 {
@@ -29,7 +32,7 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint) : mBlue
     mRequiredItems.resize(mBlueprint.requiredItemsToBuild.size());
     for (size_t i = 0; i < mRequiredItems.size(); ++i) {
         JobRequiredItems& required = mRequiredItems[i];
-        ItemStack& stack = mBlueprint.requiredItemsToBuild[i];
+        ItemStackUnbounded& stack = mBlueprint.requiredItemsToBuild[i];
         required.id = stack.id;
         required.quantityRequired = stack.quantity;
     }
@@ -84,13 +87,15 @@ bool ConstructBuildingJob::tick(World& world, entt::registry& registry, entt::en
     OwnershipComponent& ownershipCmp = registry.get<OwnershipComponent>(business);
 
     // Search for items if we need them
-    for (auto&& item : mRequiredItems) {
-        if (item.quantityReserved < item.quantityRequired) {
-            tryReserveItems(item, ownershipCmp);
+    if (tickCounter % TICK_RATE_RESERVE_ITEMS == 0) {
+        for (auto&& item : mRequiredItems) {
+            if (item.quantityReserved < item.quantityRequired) {
+                tryReserveItems(item, ownershipCmp);
+            }
         }
     }
 
-    // Return true when we are done
+    ++tickCounter;
     return false;
 }
 
@@ -170,7 +175,7 @@ IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
             }
         }
         if (targetTiles.size()) {
-            return std::make_shared<BuildTask>(mBlueprint, std::move(sourceItems), std::move(targetTiles));
+            return std::make_unique<BuildTask>(mBlueprint, std::move(sourceItems), std::move(targetTiles));
         }
     }
     return nullptr;

@@ -17,13 +17,18 @@
 #include "world/TileRepository.h"
 #include "Random.h"
 
-GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, City* city, ItemStockpile* dstStockpile) :
+#include <boost/pool/singleton_pool.hpp>
+
+struct gather_pool {};
+using singleton_task_pool = boost::singleton_pool<gather_pool, sizeof(GatherTask)>;
+
+GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique_ptr<ItemReservation> itemPromise) :
     mTileTarget(tileTarget),
     mResource(resource),
-    mCity(city),
-    mDestinationStockpile(dstStockpile) {
+    mItemPromise(std::move(itemPromise)) {
     // Gather task requires target tile to be reserved already
     assert(tileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
+    assert(itemPromise->isPromise());
 }
 
 GatherTask::~GatherTask() {
@@ -53,18 +58,15 @@ bool GatherTask::tick(World& world, entt::registry& registry, entt::entity agent
         case GatherTaskState::HARVESTING: {
             // Once the component is destroyed, we are done
             if (!registry.try_get<TimedTileInteractComponent>(agent)) {
-                pathToStockpile(world, registry, agent);
+                pathToStockpileSlot(world, registry, agent);
             }
             break;
         }
-        case GatherTaskState::PATH_TO_STOCKPILE:
-            // Awaiting callback
-            break;
-        case GatherTaskState::PICK_STOCKPILE_SLOT:
-            addItemToStockpile(world, registry, agent);
-            break;
         case GatherTaskState::PATH_TO_STOCKPILE_SLOT:
             // Awaiting callback
+            break;
+        case GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT:
+            addItemToStockpile(world, registry, agent);
             break;
         case GatherTaskState::SUCCESS:
         case GatherTaskState::FAIL:
@@ -74,6 +76,16 @@ bool GatherTask::tick(World& world, entt::registry& registry, entt::entity agent
             break;
     }
     return false;
+}
+
+void* GatherTask::operator new(size_t count) {
+    UNUSED(count);
+    return singleton_task_pool::malloc();
+}
+
+void GatherTask::operator delete(void* pointer, size_t size) {
+    UNUSED(size);
+    return singleton_task_pool::free(pointer);
 }
 
 void GatherTask::init(World& world, entt::registry& registry, entt::entity agent) {
@@ -132,7 +144,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
             tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
-            tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could double clear this in failTask()
+            tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
             // TODO: Play animation of tree falling
 
             // Award loot
@@ -158,31 +170,28 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 }
 
 // TODO: HaulTask
-void GatherTask::pathToStockpile(World& world, entt::registry& registry, entt::entity agent) {
+void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
 
-    assert(mCity);
     const f32v2& myPos = physCmp.getXYPosition();
-    // There is no stockpile :(
-    if (!mDestinationStockpile) {
-        failTask();
-        return;
-    }
-    ui32v2 stockpileCenter = mDestinationStockpile->getAABB().getCenter();
+
+    // TODO: Make sure the stockpile didnt die
+    assert(mItemPromise->isValid());
+    ui32v2 targetPos = mItemPromise->getCurrentTargetWorldPosition();
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(myPos, stockpileCenter, [this, &registry, agent, &world, stockpileCenter](bool success) {
+    navCmp.requestCoarsePathWithCallback(myPos, targetPos, [this](bool success) {
         if (success) {
-            mState = GatherTaskState::PICK_STOCKPILE_SLOT;
+            mState = GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT;
         }
         else {
             // Failed to path, fail he task
             failTask();
         }
     });
-    mState = GatherTaskState::PATH_TO_STOCKPILE;
+    mState = GatherTaskState::PATH_TO_STOCKPILE_SLOT;
 }
 
 void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt::entity agent) {
@@ -191,44 +200,38 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
     InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
     std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(e_cast(WorkStorageID::HAULING));
     if (items.empty()) {
-        mState = GatherTaskState::SUCCESS;
+        failTask();
         return;
     }
 
-    const f32v2& myPos = physCmp.getXYPosition();
-   
-    // TODO: Path to target pos
-    // Insert each item into stockpile storage
-    // Get stockpile at position
-    ItemStack& stack = items[0];
-    ui32v2 posToInsert;
-    if (mDestinationStockpile->tryGetBestPositionToInsertItemStack(stack, &posToInsert)) {
-        // Walk to the point and drop the item, no pathing
-        NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
-        navCmp.setSimpleLinearTargetPoint(posToInsert, [this, agent, &registry, posToInsert](bool success) {
-
-            if (success) {
-                PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
-                const f32v2& myPos = physCmp.getXYPosition();
-                ItemStockpile* closestStockpile = mCity->getCityQuartermaster().tryGetClosestStockpileToPoint(myPos);
-                InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
-                std::vector<ItemStack>& items = invCmp.getMutableWorkingStorage(e_cast(WorkStorageID::HAULING));
-                ItemStack& stackToAdd = items[0];
-                stackToAdd = closestStockpile->tryAddItemStackAt(stackToAdd, posToInsert, 1);
-                if (stackToAdd.isNull()) {
-                    items[0] = items.back();
-                    items.pop_back();
-                }
-                // TODO: Check if stockpile has no more room
-                if (items.empty()) {
-                    invCmp.eraseWorkingStorage(e_cast(WorkStorageID::HAULING));
-                    mState = GatherTaskState::SUCCESS;
-                    return;
-                }
+    bool didFulfill = false;
+    bool finished = false;
+    bool isOutOfItems = false;
+    for (auto&& itemStack : items) {
+        if (itemStack.id == mItemPromise->getItemID()) {
+            finished = mItemPromise->fulfillCurrentTarget(itemStack);
+            didFulfill = true;
+            if (itemStack.quantity == 0) {
+                isOutOfItems = true;
             }
-            mState = GatherTaskState::PICK_STOCKPILE_SLOT;
-        });
-        mState = GatherTaskState::PATH_TO_STOCKPILE_SLOT;
+            break;
+        }
+    }
+    assert(didFulfill);
+
+    if (finished) {
+        mState = GatherTaskState::SUCCESS;
+        mItemPromise = nullptr;
+    }
+    else {
+        if (isOutOfItems) {
+            // We are finished dumping, consider it success and cancel remaining promise
+            mState = GatherTaskState::SUCCESS;
+            mItemPromise = nullptr;
+        }
+        else {
+            pathToStockpileSlot(world, registry, agent);
+        }
     }
 }
 
@@ -237,4 +240,5 @@ void GatherTask::failTask() {
         mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
         mState = GatherTaskState::FAIL;
     }
+    mItemPromise = nullptr;
 }

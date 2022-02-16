@@ -49,9 +49,10 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
     if (employeeCmp) {
         if (employeeCmp->mCurrentTask) {
             if (employeeCmp->mCurrentTask->tick(world, registry, entity)) {
-                IAgentTaskPtr nextTask = employeeCmp->mCurrentTask->getNextTask();
+                IAgentTaskPtr& nextTask = employeeCmp->mCurrentTask->getNextTask();
                 // This will free old task shared_ptr
-                employeeCmp->mCurrentTask = nextTask;
+                employeeCmp->mCurrentTask = std::move(nextTask);
+                nextTask.reset();
             }
         }
         else {

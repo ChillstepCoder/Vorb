@@ -58,6 +58,7 @@ constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+#define OVERFLOW_ASSERT_UI32(x) (assert(x < 100000000u))
 
 constexpr entt::entity INVALID_ENTITY = (entt::entity)(UINT32_MAX);
 
@@ -287,9 +288,9 @@ struct TileIndex {
 typedef ui16 TileID;
 
 // Items
-typedef ui32 ItemID;
-constexpr ui32 INVALID_ITEM_ID = UINT32_MAX;
-constexpr ui32 INVALID_STOCKPILE_INDEX = UINT32_MAX - 1;
+typedef ui16 ItemID;
+constexpr ui16 INVALID_ITEM_ID = UINT16_MAX;
+constexpr ui16 INVALID_STOCKPILE_INDEX = UINT16_MAX - 1;
 
 // **************** Constexpr vectors *****************
 struct cui32v2 {

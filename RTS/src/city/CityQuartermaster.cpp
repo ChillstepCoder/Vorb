@@ -22,22 +22,22 @@ CityQuartermaster::~CityQuartermaster() {
 void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
     bool ownershipMask[CHUNK_SIZE];
-    bool* iter = ownershipMask;
 
     const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
     for (auto&& room : bp.rooms) {
         const RoomDef& def = buildingRepo.getRoomDefFromID(room.roomDefId);
         if (def.roomType == RoomType::STOCKPILE) {
+            int index = 0;
             assert(room.aabb.dims.x < CHUNK_WIDTH && room.aabb.dims.y < CHUNK_WIDTH);
             // Create the ownership mask
             for (ui32 y = 0; y < room.aabb.dims.y; ++y) {
                 const ui32 ty = room.aabb.pos.y + y - bp.aabb.pos.y;
                 for (ui32 x = 0; x < room.aabb.dims.x; ++x) {
                     const ui32 tx = room.aabb.pos.x + x - bp.aabb.pos.x;
-                    *iter = (bp.ownerArray[ty * bp.aabb.dims.x + tx] == room.id);
-                    ++iter;
+                    ownershipMask[index++] = (bp.ownerArray[ty * bp.aabb.dims.x + tx] == room.id);
                 }
             }
+          
             tryCreateCityStockpileAt(room.aabb, ownershipMask, bp.mOwnerEntity);
         }
     }
@@ -45,7 +45,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity) {
 
-    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownerEntity);
+    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
     
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
