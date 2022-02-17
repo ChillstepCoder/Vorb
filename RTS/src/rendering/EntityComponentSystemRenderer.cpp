@@ -79,9 +79,9 @@ void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& ren
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
 		f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
 		f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
-		renderer.render(camera, materialRenderer, modelCmp.mModel, f32v3(interpolatedXY.x, interpolatedXY.y, interpolatedZ), rotation, alpha);
+		renderer.addModel(camera, modelCmp.mModel, f32v3(interpolatedXY.x, interpolatedXY.y, interpolatedZ), rotation, alpha);
 	});
-
+	renderer.renderBatch(camera, materialRenderer);
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {

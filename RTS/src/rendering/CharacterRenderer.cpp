@@ -23,10 +23,15 @@
 CharacterRenderer::CharacterRenderer(const MaterialManager& materialManager) :
     mMaterial(materialManager.getMaterial("billboard"))
 {
+    mMesh = std::make_unique<BillboardMesh>();
+}
+
+CharacterRenderer::~CharacterRenderer()
+{
 
 }
 
-void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& materialRenderer, const CharacterModel& model, const f32v3& position, float angle, float alpha) {
+void CharacterRenderer::addModel(const Camera3D& camera, const CharacterModel& model, const f32v3& position, float angle, float alpha) {
 
     int index = CHARACTER_MODEL_TEXTURE_FRONT;
     angle = RAD_TO_DEG(angle);
@@ -49,7 +54,6 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
 
     //std::cout << angle << " " << index << std::endl;
 
-    BillboardMesh mesh;
     const f32v3 cameraOffset2D(-camera.getDirection().x * 0.09f, -camera.getDirection().y * 0.09f, 0.0f);
     
     static const float SIZE = 1.4f;
@@ -58,22 +62,26 @@ void CharacterRenderer::render(const Camera3D& camera, const MaterialRenderer& m
     const f32v2 globalOffset = f32v2(0.0f, -0.18f);
     const f32v2 headOffset = f32v2(SIZE * HEAD_OFFSET_MULT_X * headOffsetX, SIZE * HEAD_OFFSET_MULT_Y) + globalOffset;
     const f32v2 bodyOffset = f32v2(0.0f, 0.0f * SIZE * 0.25f) + globalOffset; // TODO: THIS IS DISABLED
-    buildPart(mesh, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, alpha);
-    buildPart(mesh, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, alpha);
-    buildPart(mesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
+    buildPart(*mMesh, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, alpha);
+    buildPart(*mMesh, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, alpha);
+    buildPart(*mMesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
 
     // TODO: Store in component
-    mesh.finishMesh(MeshDrawMode::STREAM);
-    materialRenderer.bindMaterialForRender(*mMaterial);
-    f32v3 offset = -camera.getPosition();
-    glUniform3fv(mMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
-    mesh.draw(mMaterial->mProgram);
+ 
     // Render shadow part
     // TODO: move over to decal system
     /*constexpr float MIN_SHADOW_ALPHA = 0.2f;
     constexpr float MAX_SHADOW_ALPHA = 0.6f;
     float shadowAlpha = vmath::clamp(MAX_SHADOW_ALPHA - zPos * 0.25f, MIN_SHADOW_ALPHA, MAX_SHADOW_ALPHA);
     renderPart(position, sShadowTexture, xyPos, 0.0f, f32v2(0.0f), f32v2(0.0f), uvRect, BODY_SIZE * 0.5f, 0.01f, alpha < 0.99f ? 0.0f : shadowAlpha);*/
+}
+
+void CharacterRenderer::renderBatch(const Camera3D& camera, const MaterialRenderer& materialRenderer) {
+    mMesh->finishMesh(MeshDrawMode::STREAM);
+    materialRenderer.bindMaterialForRender(*mMaterial);
+    f32v3 offset = -camera.getPosition();
+    glUniform3fv(mMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
+    mMesh->draw(mMaterial->mProgram);
 }
 
 // Prevent rounding errors, 0.0001 is half a pixel

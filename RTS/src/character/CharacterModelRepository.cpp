@@ -26,7 +26,7 @@ void CharacterModelRepository::gatherCharacterModelParts() {
 }
 
 void CharacterModelRepository::initRandomCharacterModelAsRandomGender(CharacterModelComponent& cmp) {
-    if (Random::getCachedRandom() % 2 == 0) {
+    if (Random::getCachedRandom() % 2 == 1) {
         initRandomCharacterModelAsFemale(cmp);
     }
     else {
