@@ -16,6 +16,9 @@ ItemReservation::ItemReservation(ItemStockpile* stockpile, ItemID id, std::vecto
 }
 
 ItemReservation::~ItemReservation() {
+    if (IS_SHUTTING_DOWN) {
+        return;
+    }
     if (mStockpile) {
         release();
     }

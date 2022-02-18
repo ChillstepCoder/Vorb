@@ -137,6 +137,7 @@ CALLER_DELETE std::unique_ptr<ItemReservation> ItemStockpile::tryReserveItemStac
             const ui16 quantityToReserveThisTile = std::min(freeQuantity, remainingQuantityToReserve);
             remainingQuantityToReserve -= quantityToReserveThisTile;
             record.reservedQuantity += quantityToReserveThisTile;
+            tileStorage.reserveCount += quantityToReserveThisTile;
             targets.emplace_back(ItemReservationTarget{ stackIndex, quantityToReserveThisTile });
         }
         assert(remainingQuantityToReserve == 0);
@@ -292,12 +293,9 @@ void ItemStockpile::dirtyMeshForItem(ItemID itemId) {
 }
 
 bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reservation, OUT ItemStack& sourceStack) {
-    assert(sourceStack.quantity);
     assert(sourceStack.id == reservation->mItemID);
     ItemReservationTarget& target = reservation->mTargets.back();
     ItemStockpileTileStorage& tileStorage = mStorage[target.index];
-    const ui32 transferQuantity = std::min(target.quantity, sourceStack.quantity);
-    target.quantity -= transferQuantity;
 
     auto&& mit = mItemContents.find(reservation->getItemID());
     assert(mit != mItemContents.end());
@@ -307,6 +305,10 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
     dirtyMeshForItem(sourceStack.id);
 
     if (reservation->mIsPromise) {
+        const ui32 transferQuantity = std::min(target.quantity, sourceStack.quantity);
+        target.quantity -= transferQuantity;
+        reservation->mRemainingQuantity -= transferQuantity;
+        assert(sourceStack.quantity);
         assert(tileStorage.promiseCount >= transferQuantity);
         assert(record.promisedQuantity >= transferQuantity);
         sourceStack.quantity -= transferQuantity;
@@ -316,6 +318,9 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
         record.totalQuantity += transferQuantity;
     }
     else {
+        const ui32 transferQuantity = target.quantity;
+        target.quantity -= transferQuantity;
+        reservation->mRemainingQuantity -= transferQuantity;
         assert(tileStorage.stack.quantity >= transferQuantity);
         assert(tileStorage.reserveCount >= transferQuantity);
         assert(record.reservedQuantity >= transferQuantity);
@@ -332,7 +337,6 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
         }
     }
 
-    reservation->mRemainingQuantity -= transferQuantity;
 
     if (target.quantity == 0) {
         assert(&target == &reservation->mTargets.back());
@@ -370,6 +374,7 @@ bool ItemStockpile::freeSlot(ItemStockpileTileStorage& tileStorage, ItemStockpil
             if (record.stackLocations[i] == stackIndex) {
                 record.stackLocations[i] = record.stackLocations.back();
                 record.stackLocations.pop_back();
+                didRemove = true;
             }
         }
         assert(didRemove);

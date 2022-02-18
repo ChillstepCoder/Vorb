@@ -22,4 +22,3 @@ BuildingBlueprint::BuildingBlueprint(
     static_assert(e_cast(BlueprintTileType::TYPES) == 4);
 
 }
-

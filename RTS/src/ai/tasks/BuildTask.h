@@ -10,10 +10,10 @@ struct BuildingBlueprint;
 
 enum class BuildTaskState {
     FULFILL_RESERVATIONS,
-    PATH_TO_STOCKPILE,
-    GRAB_RESOURCES,
-    PATH_TO_BLUEPRINT,
-    BUILD,
+    PATH_TO_STOCKPILE_SLOT,
+    PULL_ITEM_FROM_STOCKPILE_SLOT,
+    PATH_TO_BLUEPRINT_TILE,
+    BUILD_TILE,
     SUCCESS,
     FAIL
 };
@@ -32,6 +32,13 @@ public:
     static void operator delete(void* pointer, size_t size);
 
 private:
+
+    void pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent);
+    void pullItemFromStockpile(World& world, entt::registry& registry, entt::entity agent);
+    void pathToBlueprint(World& world, entt::registry& registry, entt::entity agent);
+    void buildTile(World& world, entt::registry& registry, entt::entity agent);
+    void failTask();
+
     BuildTaskState mState = BuildTaskState::FULFILL_RESERVATIONS;
     std::vector<std::unique_ptr<ItemReservation>> mSourceItems;
     std::vector<ui16> mTargetTiles; // BP relative

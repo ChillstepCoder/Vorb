@@ -36,40 +36,8 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint) : mBlue
         required.id = stack.id;
         required.quantityRequired = stack.quantity;
     }
-    mFirstUnfinishedBpIndex = UINT32_MAX;
-
-    mTilesToConstruct.resize(tiles.size(), TilesToConstruct{ ConstructTileState::DONE, false });
-    for (size_t i = 0; i < mTilesToConstruct.size(); ++i) {
-        switch (tiles[i].type) {
-            case BlueprintTileType::NONE:
-                break;
-            case BlueprintTileType::WALL:
-                mTilesToConstruct[i].state = ConstructTileState::WAITING_CONSTRUCT_GROUND;
-                ++mNumGroundTilesToConstruct;
-                if (mFirstUnfinishedBpIndex == UINT32_MAX) mFirstUnfinishedBpIndex = i;
-                break;
-            case BlueprintTileType::FLOOR_1:
-                mTilesToConstruct[i].state = ConstructTileState::WAITING_CONSTRUCT_GROUND;
-                ++mNumGroundTilesToConstruct;
-                if (mFirstUnfinishedBpIndex == UINT32_MAX) mFirstUnfinishedBpIndex = i;
-                break;
-            case BlueprintTileType::DOOR:
-                mTilesToConstruct[i].state = ConstructTileState::WAITING_CONSTRUCT_TOP;
-                ++mNumTopTilesToConstruct;
-                if (mFirstUnfinishedBpIndex == UINT32_MAX) mFirstUnfinishedBpIndex = i;
-                break;
-            case BlueprintTileType::TYPES:
-            default:
-                assert(false);
-                break;
-        }
-    }
-
-    assert(mFirstUnfinishedBpIndex != UINT32_MAX);
-
-    // Just for error checking
-    ui32 totalTilesToBuild = mNumGroundTilesToConstruct + mNumMidTilesToConstruct + mNumTopTilesToConstruct;
-    assert(totalTilesToBuild == mBlueprint.totalTilesToBuild);
+    mFirstUnfinishedBpIndex = 0;
+    assert(mBlueprint.totalTilesToBuild);
 }
 static_assert(e_cast(BlueprintTileType::TYPES) == 4, "Update build logic");
 
@@ -100,9 +68,7 @@ bool ConstructBuildingJob::tick(World& world, entt::registry& registry, entt::en
 }
 
 float ConstructBuildingJob::getProgress() const {
-    ui32 totalTilesConstructedThusFar = mBlueprint.totalTilesToBuild - (mNumGroundTilesToConstruct + mNumMidTilesToConstruct + mNumTopTilesToConstruct);
-    if (totalTilesConstructedThusFar == 0) return 0.0f;
-    return (f32)mBlueprint.totalTilesToBuild / (f32)totalTilesConstructedThusFar;
+    return (f32)mBlueprint.tilesBuilt / (f32)mBlueprint.totalTilesToBuild;
 }
 
 IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {

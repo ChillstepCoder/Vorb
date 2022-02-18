@@ -11,20 +11,8 @@ struct OwnershipComponent;
 class ItemReservation;
 class BuildTask;
 
-enum class ConstructTileState : ui8 {
-	WAITING_RESOURCE_GROUND,
-	WAITING_CONSTRUCT_GROUND,
-	WAITING_RESOURCE_MID,
-	WAITING_CONSTRUCT_MID,
-	WAITING_RESOURCE_TOP,
-	WAITING_CONSTRUCT_TOP,
-    WAITING_CONSTRUCT_ROOF,
-    DONE,
-};
-
 struct TilesToConstruct {
-	ConstructTileState state : 7;
-	bool isReserved : 1;
+	bool isReserved = false;
 };
 static_assert(sizeof(TilesToConstruct) == 1);
 
@@ -64,15 +52,11 @@ private:
 	void tryReserveItems(JobRequiredItems& item, OwnershipComponent& ownerCmp);
 
 	BuildingBlueprint& mBlueprint;
-	std::vector<TilesToConstruct> mTilesToConstruct;
     std::vector<JobRequiredItems> mRequiredItems;
 	ui32 mTotalResourcesReserved = 0;
 	
 	ConstructBuildingState mState = ConstructBuildingState::NONE;
 
-	ui32 mNumGroundTilesToConstruct = 0;
-	ui32 mNumMidTilesToConstruct = 0;
-	ui32 mNumTopTilesToConstruct = 0;
 	ui32 mNumTilesReservedInTasks = 0;
 	ui32 mFirstUnfinishedBpIndex = 0;
 	ui32 tickCounter = 0;

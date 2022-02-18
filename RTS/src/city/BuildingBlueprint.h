@@ -29,6 +29,10 @@ enum BuildingBlueprintFlags : ui8 {
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
+    ui32v2 getWorldPositionOfTile(ui16 tileIndex) const {
+        return aabb.pos + ui32v2(tileIndex % aabb.dims.x, tileIndex / aabb.dims.x);
+    }
+
     const BuildingDef& desc;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::LEFT;
@@ -40,7 +44,6 @@ struct BuildingBlueprint {
     std::vector<BlueprintTile> tiles;
     std::vector<ItemStackUnbounded> requiredItemsToBuild;
     const std::vector<ItemStack>* tileRecipes[e_cast(BlueprintTileType::TYPES)];
-
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 
     BuildingBlueprintId id = INVALID_BLUEPRINT_ID;
