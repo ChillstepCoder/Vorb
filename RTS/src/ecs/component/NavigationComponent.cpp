@@ -57,14 +57,17 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	}
 	else {
 		return false;
-	}
+    }
 
-	if (navCmp.mCurrentFinePoint >= navCmp.mFinePath->numPoints) {
+    ui32 numPoints = navCmp.mFinePath->getNumPoints();
+
+	if (navCmp.mCurrentFinePoint >= numPoints) {
 		return true;
 	}
 
 	// TODO: do this conversion in the generator?
-	const ui32v2 nextTilePos = navCmp.mFinePath->points[navCmp.mCurrentFinePoint];
+	const PathPoint* points = navCmp.mFinePath->getPoints();
+	const ui32v2& nextTilePos = points[navCmp.mCurrentFinePoint].xy;
 	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
@@ -79,7 +82,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	const float distance2 = glm::length2(offset);
 	if (distance2 <= SQ(MIN_DISTANCE)) {
         ++navCmp.mCurrentFinePoint;
-        if (navCmp.mCurrentFinePoint >= navCmp.mFinePath->numPoints) {
+        if (navCmp.mCurrentFinePoint >= numPoints) {
 			// Target reached
             physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
 			navCmp.mFinePath = nullptr;
@@ -92,7 +95,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 		else {
 			// Immediately raycheck each time we get to a new point
 			navCmp.mFramesUntilNextRayCheck = 0;
-			nextPoint = f32v2(navCmp.mFinePath->points[navCmp.mCurrentFinePoint]) + f32v2(0.5f);
+			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].xy) + f32v2(0.5f);
 		}
 	}
 
@@ -221,31 +224,36 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
         return false;
     }
 
-    if (navCmp.mCurrentCoarsePoint >= navCmp.mCoarsePath->numPoints) {
+	ui32 numPoints = navCmp.mCoarsePath->getNumPoints();
+
+    if (navCmp.mCurrentCoarsePoint >= numPoints) {
         return true;
     }
 
-	f32v2 nextCoarseTilePos= f32v2(navCmp.mCoarsePath->points[navCmp.mCurrentCoarsePoint]) + f32v2(0.5f);
+	const PathPoint* points = navCmp.mCoarsePath->getPoints();
+
+	f32v2 nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
 
 	const f32v2& offset = nextCoarseTilePos - physCmp.getXYPosition();
 	const float distance2 = glm::length2(offset);
 	if (distance2 > SQ(MIN_DISTANCE)) {
+		// If we are still pathing normally
         if (!navCmp.mFinePath) {
             navCmp.mCurrentFinePoint = 0;
 			navCmp.mFinePath = std::make_shared<NavPath>();
 			if (sDebugOptions.mShowPaths) {
 				// Make sure we dont free this path before it is rendered
 				std::shared_ptr<NavPath> pathHandle = navCmp.mFinePath;
-                Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
+                Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
                     DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
                 });
 			}
 			else {
-				Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, ui32v2(physCmp.getXYPosition()), ui32v2(nextCoarseTilePos), false /*isCoarse*/);
+				Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/);
 			}
         }
         else {
-			// TODO: WHAT IF PATH FAILS
+			// Check
         }
     }
 	// First time this runs, fine path will likely be null which will request a new fine path
@@ -253,7 +261,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 		navCmp.mFinePath = nullptr;
 
 		++navCmp.mCurrentCoarsePoint;
-		if (navCmp.mCurrentCoarsePoint >= navCmp.mCoarsePath->numPoints) {
+		if (navCmp.mCurrentCoarsePoint >= numPoints) {
 			onPathingFinished(physCmp, navCmp);
 
 			return true;
@@ -261,7 +269,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 		else {
 			// Immediately raycheck each time we get to a new point
 			navCmp.mFramesUntilNextRayCheck = 0;
-			nextCoarseTilePos = f32v2(navCmp.mCoarsePath->points[navCmp.mCurrentCoarsePoint]) + f32v2(0.5f);
+			nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
 		}
 	}
 
@@ -329,7 +337,7 @@ void NavigationComponent::requestCoarsePath(const PathPoint& start, const PathPo
 void NavigationComponent::requestFinePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::FINE_PATH;
     mCoarsePath.reset();
-    mFinePath = std::make_shared<NavPath>();
+    mFinePath = std::shared_ptr<NavPath>(new NavPath());
     Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, false /*isCoarse*/);
     mCurrentFinePoint = 0;
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
@@ -342,7 +350,7 @@ void NavigationComponent::requestFinePathWithCallback(const PathPoint& start, co
 void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
-    mCoarsePath = std::make_shared<NavPath>();
+    mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
 	Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/);
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
     mCurrentFinePoint = 0;

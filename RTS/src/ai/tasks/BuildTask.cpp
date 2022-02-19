@@ -14,7 +14,7 @@
 #include <boost/pool/singleton_pool.hpp>
 
 struct build_pool {};
-using singleton_task_pool = boost::singleton_pool<build_pool, sizeof(BuildTask)>;
+using singleton_task_pool = boost::singleton_pool<build_pool, sizeof(BuildTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
 BuildTask::BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<ui16>&& targetTiles) : mSourceItems(std::move(sourceItems)), mTargetTiles(std::move(targetTiles)), mBlueprint(blueprint) {
     assert(mSourceItems.size());
@@ -53,11 +53,13 @@ bool BuildTask::tick(World& world, entt::registry& registry, entt::entity agent)
 }
 
 void* BuildTask::operator new(size_t count) {
+    assert(IS_MAIN_THREAD());
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void BuildTask::operator delete(void* pointer, size_t size) {
+    assert(IS_MAIN_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
@@ -71,10 +73,10 @@ void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt
 
     // TODO: Make sure the stockpile didnt die
     assert(mSourceItems.size());
-    ui32v2 targetPos = mSourceItems.back()->getCurrentTargetWorldPosition();
+    PathPoint targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(myPos, targetPos, [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(PathPoint(myPos), targetPos, [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }
@@ -126,9 +128,9 @@ void BuildTask::pathToBlueprint(World& world, entt::registry& registry, entt::en
 
     const f32v2& myPos = physCmp.getXYPosition();
 
-    ui32v2 targetPos = mBlueprint.getWorldPositionOfTile(mTargetTiles.back());
+    PathPoint targetPos(mBlueprint.getWorldPositionOfTile(mTargetTiles.back()));
 
-    navCmp.requestCoarsePathWithCallback(myPos, targetPos, [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(PathPoint(myPos), targetPos, [this](bool success) {
         if (success) {
             mState = BuildTaskState::BUILD_TILE;
         }

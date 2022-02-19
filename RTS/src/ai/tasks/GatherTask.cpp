@@ -20,7 +20,7 @@
 #include <boost/pool/singleton_pool.hpp>
 
 struct gather_pool {};
-using singleton_task_pool = boost::singleton_pool<gather_pool, sizeof(GatherTask)>;
+using singleton_task_pool = boost::singleton_pool<gather_pool, sizeof(GatherTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
 GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique_ptr<ItemReservation> itemPromise) :
     mTileTarget(tileTarget),
@@ -81,11 +81,13 @@ bool GatherTask::tick(World& world, entt::registry& registry, entt::entity agent
 }
 
 void* GatherTask::operator new(size_t count) {
+    assert(IS_MAIN_THREAD());
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void GatherTask::operator delete(void* pointer, size_t size) {
+    assert(IS_MAIN_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
@@ -181,10 +183,10 @@ void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, ent
 
     // TODO: Make sure the stockpile didnt die
     assert(mItemPromise->isValid());
-    ui32v2 targetPos = mItemPromise->getCurrentTargetWorldPosition();
+    PathPoint targetPos(mItemPromise->getCurrentTargetWorldPosition());
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(myPos, targetPos, [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(PathPoint(myPos), targetPos, [this](bool success) {
         if (success) {
             mState = GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT;
         }

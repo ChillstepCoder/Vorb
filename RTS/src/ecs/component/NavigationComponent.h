@@ -37,6 +37,11 @@ struct NavigationComponent {
 
 	void abort();
 
+    // ============== Data ==============
+    std::function<void(bool)> mFinishedCallback = nullptr;
+    std::shared_ptr<NavPath> mFinePath;
+    std::shared_ptr<NavPath> mPendingFinePath;
+    std::shared_ptr<NavPath> mCoarsePath;
     float mSpeed = 1.0f;
 	union {
 		struct {
@@ -45,14 +50,11 @@ struct NavigationComponent {
 		};
 		ui32v2 mSimpleTargetPoint = ui32v2(0);
     };
-    std::shared_ptr<NavPath> mFinePath;
-    std::shared_ptr<NavPath> mCoarsePath;
-    std::function<void(bool)> mFinishedCallback = nullptr;
     NavigationType mNavigationType = NavigationType::INVALID;
 	ui8 mFlags = 0u;
 	ui8 mFramesUntilNextRayCheck = 0;
 };
-static_assert(sizeof(NavigationComponent) == 120, "Keep components small");
+static_assert(sizeof(NavigationComponent) == 128, "Keep components small");
 
 class NavigationComponentSystem {
 public:

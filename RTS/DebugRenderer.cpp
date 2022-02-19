@@ -319,17 +319,19 @@ void DebugRenderer::drawAABB(const ui32AABB2& aabb, f32 height, color4 color, in
 
 void DebugRenderer::drawPath(const NavPath& path, color4 color, const WorldGrid& worldGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
-    if (path.numPoints < 2) {
+    ui32 numPoints = path.getNumPoints();
+    const PathPoint* points = path.getPoints();
+    if (numPoints < 2) {
         return;
     }
-    OVERFLOW_ASSERT_UI32(path.numPoints);
+    OVERFLOW_ASSERT_UI32(numPoints);
 
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
-    lines.reserve(lines.size() + path.numPoints);
+    lines.reserve(lines.size() + numPoints);
 
-    for (ui32 i = 0; i < path.numPoints - 1; ++i) {
-        const f32v2 pointA(path.points[i].x + 0.5f, path.points[i].y + 0.5f);
-        const f32v2 pointB(path.points[i + 1].x + 0.5f, path.points[i + 1].y + 0.5f);
+    for (ui32 i = 0; i < numPoints - 1; ++i) {
+        const f32v2 pointA(points[i].x + 0.5f, points[i].y + 0.5f);
+        const f32v2 pointB(points[i + 1].x + 0.5f, points[i + 1].y + 0.5f);
 
         lines.emplace_back(
             f32v3(pointA.x, pointA.y, worldGrid.tryComputeHeightAtPoint(pointA)),

@@ -442,7 +442,7 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-            cmp.requestCoarsePath(xyPos, worldPosInt);
+            cmp.requestCoarsePath(PathPoint(xyPos), PathPoint(worldPosInt));
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
             // grass

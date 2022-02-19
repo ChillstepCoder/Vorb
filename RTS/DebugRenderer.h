@@ -1,6 +1,6 @@
 #pragma once
 struct b2AABB;
-struct NavPath;
+class NavPath;
 
 class WorldGrid;
 

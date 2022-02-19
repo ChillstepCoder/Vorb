@@ -10,8 +10,8 @@ class Chunk;
 
 struct PathArgs {
     std::shared_ptr<NavPath> pathToBuild;
-    ui32v2 start;
-    ui32v2 goal;
+    PathPoint start;
+    PathPoint goal;
     bool isCoarse;
 };
 
@@ -30,10 +30,10 @@ public:
     /// Clears all unprocessed tasks from the task queue
     void clearTasks();
 
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const ui32v2& start, const ui32v2& goal, bool isCoarse, std::function<void()>&& mainProc) {
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const PathPoint& start, const PathPoint& goal, bool isCoarse, std::function<void()>&& mainProc) {
         mPathTasks.enqueue(std::make_pair(PathArgs{ path, start, goal, isCoarse }, std::move(mainProc)));
     }
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const ui32v2& start, const ui32v2& goal, bool isCoarse) {
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const PathPoint& start, const PathPoint& goal, bool isCoarse) {
         mPathTasks.enqueue(std::make_pair(PathArgs{ path, start, goal, isCoarse }, nullptr));
     }
 

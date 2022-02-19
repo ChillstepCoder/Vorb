@@ -206,6 +206,7 @@
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
     <ClCompile Include="src\pathfinding\NavGraph.cpp" />
+    <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\physics\ContactFilter.cpp" />
