@@ -13,8 +13,8 @@ class ItemStockpile;
 class World;
 
 struct ItemStockpileRenderData {
-    std::unique_ptr<BillboardMesh> mBillboardMesh;
-    std::unique_ptr<QuadMesh> mQuadMesh;
+    std::unique_ptr<BillboardMesh> mBillboardMesh; // TODO: Custom allocator
+    std::unique_ptr<QuadMesh> mQuadMesh; // TODO: Custom allocator
     bool mBillboardMeshDirty = false;
     bool mQuadMeshDirty = false;
 };
@@ -25,7 +25,7 @@ struct ItemStockpileRecord {
     ui32 reservedQuantity;
     ui32 promisedQuantity;
     ui32 freeStackSpace;
-    std::vector<ui16> stackLocations;
+    std::vector<ui16> stackLocations; // TODO: Custom allocator
 
     bool isNull() const { return totalQuantity == 0 && promisedQuantity == 0; }
 };

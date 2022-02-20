@@ -19,7 +19,7 @@ constexpr float JUMP_VELOCITY = 0.15f; // Matches player control component
 
 constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
 
-constexpr float MIN_DISTANCE = 0.9f; // This is extra large to account for steering to steer around obstacles
+constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles
 constexpr float ACCELERATION = 0.013f;
 //constexpr int QUADRANTS = 5; //bad name
 
@@ -52,10 +52,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 
 bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
 
-	if (navCmp.mFinePath->finishedGenerating.load()) {
-		navCmp.mFlags &= (~NAVIGATION_COMPONENT_MASK_WAITING_PATH_GEN); // We are not waiting
-	}
-	else {
+	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return false;
     }
 
@@ -77,6 +74,22 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
         constexpr f32 TARGET_EASE = 0.05f;
         nextPoint += glm::normalize(nextNextPoint - nextPoint) + TARGET_EASE;
     }*/
+
+	// Check for stuck on new tile
+	const Tile* targetTile = world.tryGetTileAtWorldPos(nextTilePos);
+	if (targetTile) {
+        const TileCollider* collider = targetTile->tryGetColliderMainThread();
+        f32 baseZ = targetTile->getBaseZPositionUncompressedMainThread();
+		// TODO: Remove
+		if (sDebugOptions.mShowPaths) {
+			DebugRenderer::drawWireQuad(f32v3(nextTilePos.x, nextTilePos.y, baseZ), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+		}
+        if (baseZ >= physCmp.getZPosition() + 0.1f /*1.1*/) {
+            // Climb
+			std::cout << "DETECTED ISSUE!\n";
+            physCmp.setZVelocity(JUMP_VELOCITY);
+        }
+	}
 
 	const f32v2& offset = nextPoint - physCmp.getXYPosition();
 	const float distance2 = glm::length2(offset);
@@ -215,16 +228,37 @@ void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp) {
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
+void requestPathToCoarsePoint(NavigationComponent& navCmp, PhysicsComponent& physCmp, f32v2 nextCoarseTilePos, World& world) {
+    navCmp.mPendingFinePath = std::make_shared<NavPath>();
+	if (sDebugOptions.mShowPaths) {
+		// Make sure we dont free this path before it is rendered
+		std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
+			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
+		});
+	}
+	else {
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/);
+	}
+}
+
 bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
 
-    if (navCmp.mCoarsePath->finishedGenerating.load()) {
-        navCmp.mFlags &= (~NAVIGATION_COMPONENT_MASK_WAITING_PATH_GEN); // We are not waiting
-    }
-    else {
+    if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return false;
-    }
+	}
 
 	ui32 numPoints = navCmp.mCoarsePath->getNumPoints();
+
+    // Lazy initialize the coarse point to a look-ahead position for better pathing
+    if (navCmp.mCurrentCoarsePoint == 0) {
+		if (numPoints > 2) {
+			navCmp.mCurrentCoarsePoint = 2;
+		}
+        else if (numPoints > 0) {
+            navCmp.mCurrentCoarsePoint = numPoints - 1;
+		}
+    }
 
     if (navCmp.mCurrentCoarsePoint >= numPoints) {
         return true;
@@ -234,44 +268,52 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 
 	f32v2 nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
 
+	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
+
 	const f32v2& offset = nextCoarseTilePos - physCmp.getXYPosition();
-	const float distance2 = glm::length2(offset);
-	if (distance2 > SQ(MIN_DISTANCE)) {
-		// If we are still pathing normally
-        if (!navCmp.mFinePath) {
-            navCmp.mCurrentFinePoint = 0;
-			navCmp.mFinePath = std::make_shared<NavPath>();
-			if (sDebugOptions.mShowPaths) {
-				// Make sure we dont free this path before it is rendered
-				std::shared_ptr<NavPath> pathHandle = navCmp.mFinePath;
-                Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
-                    DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
-                });
-			}
-			else {
-				Services::NavThread::ref().addPathfindTask(navCmp.mFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/);
-			}
-        }
-        else {
-			// Check
-        }
+    if (!hasFinePath) {
+        // We need a path
+        navCmp.mCurrentFinePoint = 0;
+		requestPathToCoarsePoint(navCmp, physCmp, nextCoarseTilePos, world);
+
     }
-	// First time this runs, fine path will likely be null which will request a new fine path
-	if (!navCmp.mFinePath || updateComponentFinePath(entity, navCmp, physCmp, world)) {
-		navCmp.mFinePath = nullptr;
-
-		++navCmp.mCurrentCoarsePoint;
-		if (navCmp.mCurrentCoarsePoint >= numPoints) {
-			onPathingFinished(physCmp, navCmp);
-
-			return true;
+    else {
+		// Our fine path finished generating
+		if (navCmp.mPendingFinePath && navCmp.mPendingFinePath->finishedGenerating) {
+			navCmp.mCurrentFinePoint = 0;
+			navCmp.mFinePath = std::move(navCmp.mPendingFinePath);
+			navCmp.mPendingFinePath.reset();
 		}
-		else {
-			// Immediately raycheck each time we get to a new point
-			navCmp.mFramesUntilNextRayCheck = 0;
-			nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
+
+		if (navCmp.mFinePath) {
+			bool requestNextPath = false;
+			assert(navCmp.mFinePath->finishedGenerating.load());
+			if (updateComponentFinePath(entity, navCmp, physCmp, world)) {
+                navCmp.mFinePath = nullptr;
+				requestNextPath = true;
+			}
+			else if ((navCmp.mCurrentCoarsePoint < numPoints - 1) && (navCmp.mCurrentFinePoint > navCmp.mFinePath->getNumPoints() / 2u)) {
+				// Halfway through path we start generating next path
+				requestNextPath = true;
+			}
+
+			if (requestNextPath) {
+                ++navCmp.mCurrentCoarsePoint;
+                if (navCmp.mCurrentCoarsePoint >= numPoints) {
+                    onPathingFinished(physCmp, navCmp);
+                    return true;
+                }
+                else {
+                    // Immediately raycheck each time we get to a new point
+                    navCmp.mFramesUntilNextRayCheck = 0;
+					// Path forward
+                    nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
+                    requestPathToCoarsePoint(navCmp, physCmp, nextCoarseTilePos, world);
+                }
+			}
 		}
-	}
+		// TODO: Check LOS issues
+    }
 
 	return false;
 }
@@ -342,9 +384,6 @@ void NavigationComponent::requestFinePathWithCallback(const PathPoint& start, co
     mCurrentFinePoint = 0;
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
     mFinishedCallback = finishedCallback;
-
-    // Waiting fine path
-    mFlags = (mFlags & (~NAVIGATION_COMPONENT_MASK_WAITING_PATH_GEN)) | NAVIGATION_COMPONENT_FLAG_WAITING_FINE_PATH_GEN;
 }
 
 void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback) {
@@ -354,11 +393,8 @@ void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, 
 	Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/);
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
     mCurrentFinePoint = 0;
-    mCurrentCoarsePoint = 0;
+    mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
     mFinishedCallback = finishedCallback;
-
-    // Waiting coarse path
-    mFlags = (mFlags & (~NAVIGATION_COMPONENT_MASK_WAITING_PATH_GEN)) | NAVIGATION_COMPONENT_FLAG_WAITING_COARSE_PATH_GEN;
 }
 
 void NavigationComponent::abort() {
