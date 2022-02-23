@@ -1,0 +1,3 @@
+roughness_debug:
+  vert: pass_through.vert
+  frag: roughness_debug.frag
