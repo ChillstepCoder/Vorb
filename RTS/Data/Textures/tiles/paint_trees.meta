@@ -1,0 +1,12 @@
+dims_cells: [6,4]
+tiles:
+  - name: tree_small
+    cell_rect: [0,0,3,4]
+    dims_meters: [3.0, 4.0]
+    offset: [0.0,0.37]
+    rand_flip: true
+  - name: tree_pine
+    cell_rect: [3,0,3,4]
+    dims_meters: [3.0, 4.0]
+    offset: [0.0,0.37]
+    rand_flip: true
