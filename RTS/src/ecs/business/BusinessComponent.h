@@ -22,13 +22,14 @@ struct BusinessDef;
 
 typedef std::unique_ptr<IBusinessJob> IBusinessJobPtr;
 typedef boost::circular_buffer<entt::entity> IdleWorkerList;
-typedef boost::circular_buffer<IBusinessJobPtr> JobList;
 
 // TODO: We are probably leaking IAgentTask here if the agent is destroyed with active
 // tasks, but using the destructor will probably result in us freeing from copies.
 // Shared_ptr would work but is heavyweight
 struct BusinessComponent {
     BusinessComponent();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(BusinessComponent);
 
     // CALLER_DELETE IAgentTaskPtr aquireTask();
     void addIdleWorker(entt::entity worker);
@@ -40,7 +41,6 @@ struct BusinessComponent {
     ui32 mMaxEmployeeCount = 10;
 
     IdleWorkerList mIdleWorkers;
-    JobList mQueuedJobs;
     std::vector<IBusinessJobPtr> mActiveJobs;
 
     BusinessDef* mBusinessDef = nullptr;
@@ -51,6 +51,7 @@ struct GatherItemDesc {
     ItemID item;
     f32 weight;
 };
+
 struct BusinessGatherComponent {
     ui32 mPriority;
     TileResource mResourceToGather = TileResource::NONE;
