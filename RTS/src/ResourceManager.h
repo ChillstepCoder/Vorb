@@ -14,6 +14,7 @@ class ItemRepository;
 class CraftingRepository;
 class BusinessRepository;
 class CharacterModelRepository;
+class ModelRepository;
 struct SpriteData;
 
 // Loads and manages textures, tiles, and other resources
@@ -66,6 +67,7 @@ private:
     std::vector<vio::Path> mItemFiles;
     std::vector<vio::Path> mRecipeFiles;
     std::vector<vio::Path> mBusinessFiles;
+    std::vector<vio::Path> mModelFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
@@ -76,6 +78,7 @@ private:
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<CharacterModelRepository> mCharacterModelRepository;
+    std::unique_ptr<ModelRepository> mModelRepository;
     std::unique_ptr<BrushRepository> mBrushRepository;
     std::unique_ptr<vg::TextureCache> mTextureCache;
 

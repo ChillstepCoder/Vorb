@@ -4,3 +4,9 @@
 [submodule "include/Vorb/ui/imgui"]
 	path = include/Vorb/ui/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "RTS/dependencies/assimp"]
+	path = RTS/dependencies/assimp
+	url = https://github.com/assimp/assimp.git
+[submodule "RTS/dependencies/ozz-animation"]
+	path = RTS/dependencies/ozz-animation
+	url = https://github.com/guillaumeblanc/ozz-animation.git

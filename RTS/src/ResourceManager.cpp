@@ -13,6 +13,7 @@
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
 #include "character/CharacterModelRepository.h"
+#include "resources/ModelRepository.h"
 #include "world/TileRepository.h"
 #include "editor/BrushRepository.h"
 
@@ -50,6 +51,7 @@ ResourceManager::ResourceManager() {
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mSpriteRepository);
+    mModelRepository = std::make_unique<ModelRepository>(*mIoManager);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
 }
 
@@ -59,7 +61,7 @@ ResourceManager::~ResourceManager() {
 
 bool fileHasExtension(const vio::Path& filePath, const std::string& extension) {
     size_t length = filePath.getString().size();
-    if (filePath.getString().size() < extension.size()) {
+    if (filePath.getString().size() <= extension.size()) {
         return false;
     }
     return strcmp(filePath.getString().c_str() + (length - extension.size()), extension.c_str()) == 0;
@@ -80,6 +82,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mItemFiles.clear();
     mRecipeFiles.clear();
     mBusinessFiles.clear();
+    mModelFiles.clear();
 
     gatherRecursive(folderPath);
 
@@ -157,6 +160,11 @@ void ResourceManager::loadFiles() {
         for (auto&& entry : mMaterialFiles) {
             mMaterialManager->loadMaterial(entry);
         };
+    }
+
+    // Load Models
+    for (auto&& entry : mModelFiles) {
+        mModelRepository->loadModelFile(entry);
     }
 
     // Load particle Systems
@@ -301,6 +309,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".business")) {
             mBusinessFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".model")) {
+            mModelFiles.emplace_back(entry);
         }
         // TODO: .ttf?
     }

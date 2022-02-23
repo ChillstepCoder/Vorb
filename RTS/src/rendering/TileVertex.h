@@ -65,3 +65,18 @@ public:
 };
 // Need power of 2 alignment
 static_assert(sizeof(TriangleVertex) == 64, "Power of 2 byte alignment needed");
+
+struct ModelVertex {
+public:
+    ModelVertex() {};
+
+    f32v3 pos;
+    f32v3 normal;
+    f32v3 tangent;
+    f32v3 uvs;
+    color4 color;
+    ui8 roughness;
+    ui8 padding[11];
+};
+// Need power of 2 alignment
+static_assert(sizeof(ModelVertex) == 64, "Power of 2 byte alignment needed");

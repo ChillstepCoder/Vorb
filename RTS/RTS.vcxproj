@@ -97,13 +97,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\SoA\Vorb\RTS\dependencies\assimp\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;..\RTS\dependencies\box2d\build\bin\Debug\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;..\RTS\dependencies\box2d\build\bin\Debug\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\assimp\lib\Debug\assimp-vc142-mtd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -131,14 +131,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\SoA\Vorb\RTS\dependencies\assimp\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;..\RTS\dependencies\box2d\build\bin\RelWithDebInfo\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttf.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2main.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_lib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\png.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetype.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glew.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;..\RTS\dependencies\box2d\build\bin\RelWithDebInfo\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttf.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2main.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_lib.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\png.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetype.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glew.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enet.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\offline\Release\*_r.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\runtime\Release\*_r.lib;C:\SoA\Vorb\RTS\dependencies\assimp\contrib\zlib\Debug\zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -170,6 +170,7 @@
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\definitions\BuildingDef.cpp" />
     <ClCompile Include="src\definitions\BusinessDef.cpp" />
+    <ClCompile Include="src\definitions\ModelDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
@@ -229,6 +230,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMesh.cpp" />
+    <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
@@ -246,6 +248,7 @@
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
@@ -311,6 +314,7 @@
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
     <ClInclude Include="src\definitions\BusinessDef.h" />
+    <ClInclude Include="src\definitions\ModelDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
@@ -385,6 +389,7 @@
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMesh.h" />
+    <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
@@ -404,6 +409,7 @@
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />

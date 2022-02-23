@@ -5,6 +5,8 @@
 
 #include "rendering/TileVertex.h"
 
+struct aiFace;
+
 template <typename VERTEX>
 class ITriangleMesh : public MeshBase {
 public:
@@ -32,6 +34,21 @@ private:
     std::vector<TriangleVertex> mVertexData; // TODO: Recycle?
 };
 
+class IndexedTriangleMesh : public ITriangleMesh<ModelVertex> {
+public:
+    IndexedTriangleMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(IndexedTriangleMesh);
+
+    void setFaces(const aiFace* faces, ui32 numFaces);
+    void draw(const vg::GLProgram& program) const override;
+    void finishMesh(MeshDrawMode drawMode) override;
+
+private:
+    void bindVertexAttribs(const vg::GLProgram& program) const override;
+
+    VGIndexBuffer mIbo = 0;
+};
+
 // Templated Mesh implementation
 template <typename VERTEX>
 void ITriangleMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount, MeshDrawMode drawMode) {
@@ -47,3 +64,4 @@ void ITriangleMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, meshData);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
+
