@@ -79,7 +79,7 @@ void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& ren
 		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
 		f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
 		f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
-		renderer.addModel(camera, modelCmp.mModel, f32v3(interpolatedXY.x, interpolatedXY.y, interpolatedZ), rotation, alpha);
+		renderer.addModel(camera, modelCmp.mModel, f32v3(interpolatedXY.x, interpolatedXY.y, interpolatedZ), rotation, alpha, materialRenderer);
 	});
 	renderer.renderBatch(camera, materialRenderer);
 }

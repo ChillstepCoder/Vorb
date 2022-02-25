@@ -250,7 +250,7 @@ void RenderContext::initPostLoad() {
     {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
-        mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager());
+        mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager(), mResourceManager.getModelRepository());
         mChunkRenderer = std::make_unique<ChunkRenderer>(mWorld.getWorldGrid(), mResourceManager, *mMaterialRenderer);
         mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);

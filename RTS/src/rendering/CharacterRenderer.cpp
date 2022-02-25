@@ -7,6 +7,8 @@
 #include "rendering/TileVertex.h"
 #include "rendering/SpriteData.h"
 
+#include "resources/ModelRepository.h"
+
 #include "Random.h"
 
 #include "QuadMesh.h"
@@ -20,68 +22,101 @@
 //    BillboardVertex verts[4];
 //}
 
-CharacterRenderer::CharacterRenderer(const MaterialManager& materialManager) :
-    mMaterial(materialManager.getMaterial("billboard"))
-{
+CharacterRenderer::CharacterRenderer(const MaterialManager& materialManager, const ModelRepository& modelRepo) :
+    mMaterial(materialManager.getMaterial("character")), mModelRepo(modelRepo) {
     mMesh = std::make_unique<BillboardMesh>();
 }
 
-CharacterRenderer::~CharacterRenderer()
-{
+CharacterRenderer::~CharacterRenderer() {
 
 }
 
-void CharacterRenderer::addModel(const Camera3D& camera, const CharacterModel& model, const f32v3& position, float angle, float alpha) {
+void CharacterRenderer::addModel(const Camera3D& camera, const CharacterModel& model, const f32v3& position, float angle, float alpha, const MaterialRenderer& materialRenderer) {
 
-    int index = CHARACTER_MODEL_TEXTURE_FRONT;
-    angle = RAD_TO_DEG(angle);
-    float headOffsetX = 0.0f;
-    bool shouldFlip = false;
-    if (angle > 45.0f && angle < 135.0f) {
-        index = CHARACTER_MODEL_TEXTURE_BACK;
-    }
-    else if (angle <= 45.0f && angle >= -45) {
-        // Right
-        headOffsetX = 1.0f;
-        index = CHARACTER_MODEL_TEXTURE_SIDE;
-    }
-    else if (angle <= -135.0f || angle >= 135) {
-        // Left
-        headOffsetX = -1.0f;
-        index = CHARACTER_MODEL_TEXTURE_SIDE;
-        shouldFlip = true;
-    }
+    //int index = CHARACTER_MODEL_TEXTURE_FRONT;
+    //angle = RAD_TO_DEG(angle);
+    //float headOffsetX = 0.0f;
+    //bool shouldFlip = false;
+    //if (angle > 45.0f && angle < 135.0f) {
+    //    index = CHARACTER_MODEL_TEXTURE_BACK;
+    //}
+    //else if (angle <= 45.0f && angle >= -45) {
+    //    // Right
+    //    headOffsetX = 1.0f;
+    //    index = CHARACTER_MODEL_TEXTURE_SIDE;
+    //}
+    //else if (angle <= -135.0f || angle >= 135) {
+    //    // Left
+    //    headOffsetX = -1.0f;
+    //    index = CHARACTER_MODEL_TEXTURE_SIDE;
+    //    shouldFlip = true;
+    //}
 
-    //std::cout << angle << " " << index << std::endl;
+    ////std::cout << angle << " " << index << std::endl;
 
-    const f32v3 cameraOffset2D(-camera.getDirection().x * 0.09f, -camera.getDirection().y * 0.09f, 0.0f);
-    
-    static const float SIZE = 1.4f;
-    static const float HEAD_OFFSET_MULT_Y = 0.28f;
-    static const float HEAD_OFFSET_MULT_X = 0.04f;
-    const f32v2 globalOffset = f32v2(0.0f, -0.18f);
-    const f32v2 headOffset = f32v2(SIZE * HEAD_OFFSET_MULT_X * headOffsetX, SIZE * HEAD_OFFSET_MULT_Y) + globalOffset;
-    const f32v2 bodyOffset = f32v2(0.0f, 0.0f * SIZE * 0.25f) + globalOffset; // TODO: THIS IS DISABLED
-    buildPart(*mMesh, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, alpha);
-    buildPart(*mMesh, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, alpha);
-    buildPart(*mMesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
+    //const f32v3 cameraOffset2D(-camera.getDirection().x * 0.09f, -camera.getDirection().y * 0.09f, 0.0f);
+    //
+    //static const float SIZE = 1.4f;
+    //static const float HEAD_OFFSET_MULT_Y = 0.28f;
+    //static const float HEAD_OFFSET_MULT_X = 0.04f;
+    //const f32v2 globalOffset = f32v2(0.0f, -0.18f);
+    //const f32v2 headOffset = f32v2(SIZE * HEAD_OFFSET_MULT_X * headOffsetX, SIZE * HEAD_OFFSET_MULT_Y) + globalOffset;
+    //const f32v2 bodyOffset = f32v2(0.0f, 0.0f * SIZE * 0.25f) + globalOffset; // TODO: THIS IS DISABLED
+    //buildPart(*mMesh, position, bodyOffset, *model.mBodySprites[index], shouldFlip, SIZE, alpha);
+    //buildPart(*mMesh, position + cameraOffset2D, headOffset, *model.mFaceSprites[index], shouldFlip, SIZE, alpha);
+    //buildPart(*mMesh, position + cameraOffset2D * 2.0f, headOffset, *model.mHairSprites[index], shouldFlip, SIZE, alpha);
 
-    // TODO: Store in component
+    //// TODO: Store in component
  
-    // Render shadow part
-    // TODO: move over to decal system
-    /*constexpr float MIN_SHADOW_ALPHA = 0.2f;
-    constexpr float MAX_SHADOW_ALPHA = 0.6f;
-    float shadowAlpha = vmath::clamp(MAX_SHADOW_ALPHA - zPos * 0.25f, MIN_SHADOW_ALPHA, MAX_SHADOW_ALPHA);
-    renderPart(position, sShadowTexture, xyPos, 0.0f, f32v2(0.0f), f32v2(0.0f), uvRect, BODY_SIZE * 0.5f, 0.01f, alpha < 0.99f ? 0.0f : shadowAlpha);*/
+    //// Render shadow part
+    //// TODO: move over to decal system
+    ///*constexpr float MIN_SHADOW_ALPHA = 0.2f;
+    //constexpr float MAX_SHADOW_ALPHA = 0.6f;
+    //float shadowAlpha = vmath::clamp(MAX_SHADOW_ALPHA - zPos * 0.25f, MIN_SHADOW_ALPHA, MAX_SHADOW_ALPHA);
+    //renderPart(position, sShadowTexture, xyPos, 0.0f, f32v2(0.0f), f32v2(0.0f), uvRect, BODY_SIZE * 0.5f, 0.01f, alpha < 0.99f ? 0.0f : shadowAlpha);*/
+
+
+    VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
+    VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
+    VGUniform diffuseTextureUniform = mMaterial->mProgram.getUniform("unDiffuse");
+    VGUniform normalTextureUniform = mMaterial->mProgram.getUniform("unNormal");
+    VGUniform specularTextureUniform = mMaterial->mProgram.getUniform("unSpecular");
+    VGUniform scaleUniform = mMaterial->mProgram.getUniform("unScale");
+
+    const ModelDef& modelDef = mModelRepo.getModelDef(0);
+    ui32 nextTextureIndex = 0;
+    materialRenderer.bindMaterialForRender(*mMaterial, &nextTextureIndex);
+    glUniform1i(diffuseTextureUniform, nextTextureIndex);
+    glUniform1i(normalTextureUniform, nextTextureIndex + 1);
+    glUniform1i(specularTextureUniform, nextTextureIndex + 2);
+    glUniform1f(scaleUniform, 0.006f);
+
+    for (ui32 i = 0; i < modelDef.mModel.mNumMeshes; ++i) {
+        const auto& mesh = modelDef.mModel.mMeshes[i];
+        glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
+        glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
+        glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
+        glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
+        glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
+        glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
+
+        // TODO: Optimize
+        f32m4 transform(1.0f);
+        transform = glm::rotate(transform, angle + DEG_TO_RAD(90.0f), f32v3(0.0f, 0.0f, 1.0f));
+        transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+        f32v3 offset = position - camera.getPosition();
+        glUniform3fv(offsetUniform, 1, &offset.x);
+        glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
+        mesh.draw(mMaterial->mProgram);
+    }
 }
 
 void CharacterRenderer::renderBatch(const Camera3D& camera, const MaterialRenderer& materialRenderer) {
-    mMesh->finishMesh(MeshDrawMode::STREAM);
-    materialRenderer.bindMaterialForRender(*mMaterial);
-    f32v3 offset = -camera.getPosition();
-    glUniform3fv(mMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
-    mMesh->draw(mMaterial->mProgram);
+    /* mMesh->finishMesh(MeshDrawMode::STREAM);
+     materialRenderer.bindMaterialForRender(*mMaterial);
+     f32v3 offset = -camera.getPosition();
+     glUniform3fv(mMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
+     mMesh->draw(mMaterial->mProgram);*/
 }
 
 // Prevent rounding errors, 0.0001 is half a pixel

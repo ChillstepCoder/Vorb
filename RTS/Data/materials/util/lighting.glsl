@@ -20,9 +20,9 @@ float computeDiffuse(vec3 normal, vec3 lightDir) {
 
 float computeSpecular(vec3 normal, vec3 lightDir, vec3 position) {
 
-  float shininess = 32.0;
+  float shininess = 16.0;
   vec3 viewDir = normalize(position); // Camera is at origin
-  vec3 reflectDir = reflect(lightDir, normal);  
+  vec3 reflectDir = normalize(reflect(lightDir, normal));  
   float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
   return spec;
 }

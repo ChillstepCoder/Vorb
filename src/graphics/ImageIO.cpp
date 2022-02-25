@@ -6,25 +6,6 @@
 #include <png.h>
 #include "Vorb/graphics/ImageIOConv.inl"
 
-namespace vorb {
-    namespace graphics {
-        namespace impl {
-//            FIBITMAP* makeRGB(FIBITMAP* bmp) {
-//                FIBITMAP* tmp = bmp;
-//                bmp = FreeImage_ConvertTo24Bits(bmp);
-//                FreeImage_Unload(tmp);
-//                return bmp;
-//            }
-//            FIBITMAP* makeRGBA(FIBITMAP* bmp) {
-//                FIBITMAP* tmp = bmp;
-//                bmp = FreeImage_ConvertTo32Bits(bmp);
-//                FreeImage_Unload(tmp);
-//                return bmp;
-//            }
-        }
-    }
-}
-
 vg::BitmapResource vg::ImageIO::alloc(const ui32& w, const ui32& h, const ImageIOFormat& format) {
     BitmapResource res = {};
     res.data = nullptr;
@@ -405,8 +386,155 @@ vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
 //        free(res);
 //        res.data = nullptr;
 //    }
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+
     return res;
 }
+
+
+static int buffer_read_loc = 0;
+void readImageDataFromMemory(png_structp png_ptr, png_bytep outBytes, png_size_t byteCountToRead) {
+    png_voidp io_ptr = png_get_io_ptr(png_ptr);
+    if (io_ptr == NULL) {
+        assert(false);
+        return;   // add custom error handling here
+    }
+
+    // using pulsar::InputStream
+    // -> replace with your own data source interface
+    memcpy(outBytes, (ui8*)io_ptr + buffer_read_loc, byteCountToRead);
+    buffer_read_loc += byteCountToRead;
+
+}
+
+//http://pulsarengine.com/2009/01/reading-png-images-from-memory/
+//https://cpp.hotexamples.com/examples/-/-/png_set_sig_bytes/cpp-png_set_sig_bytes-function-examples.html
+vg::BitmapResource vg::ImageIO::load(const ui8* data, const ImageIOFormat& requestedformat /*= ImageIOFormat::RGBA_UI8*/, bool flipV /*= false*/)
+{
+    buffer_read_loc = 0;
+    BitmapResource res = {};
+    res.data = nullptr;
+
+   // FILE* file = fopen(path.getCString(), "rb");
+
+    if (!data) {
+        onError("Null PNG data in memory");
+        return res;
+    }
+
+
+    /* initialize stuff */
+    png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+
+    if (!png_ptr)
+    {
+        onError("Format not recognized");
+        return res;
+    }
+
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+
+    if (!info_ptr)
+    {
+        onError("Unable to retrieve image information");
+        return res;
+    }
+
+    if (setjmp(png_jmpbuf(png_ptr)))
+    {
+        onError("File corrupt");
+        return res;
+    }
+
+    ui32 width = 0, height = 0;
+    int color_type = -1;
+    int bitDepth = 0;
+
+    png_set_read_fn(png_ptr, (png_voidp)data, readImageDataFromMemory);
+    png_set_sig_bytes(png_ptr, 0);
+    png_read_info(png_ptr, info_ptr);
+
+    png_get_IHDR(
+        png_ptr, info_ptr,
+        &width,
+        &height,
+        &bitDepth,
+        &color_type,
+        NULL, NULL, NULL);
+
+    png_set_strip_16(png_ptr);
+
+    if (color_type == PNG_COLOR_TYPE_PALETTE)
+    {
+        png_set_palette_to_rgb(png_ptr);
+        color_type = PNG_COLOR_TYPE_RGB;
+    }
+
+    if ((color_type == PNG_COLOR_TYPE_RGB) && (requestedformat == ImageIOFormat::RGBA_UI8))
+        png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
+    else if ((color_type == PNG_COLOR_TYPE_RGBA) && (requestedformat == ImageIOFormat::RGB_UI8))
+        png_set_strip_alpha(png_ptr);
+
+    if (setjmp(png_jmpbuf(png_ptr)))
+    {
+        onError("File corrupt");
+        return res;
+    }
+
+    int channels = 0;
+    int depth = 0;
+
+    if (requestedformat == ImageIOFormat::RGB_UI8)
+    {
+        channels = 3;
+        depth = 1;
+    }
+    else if (requestedformat == ImageIOFormat::RGBA_UI8)
+    {
+        channels = 4;
+        depth = 1;
+    }
+    else if (requestedformat == ImageIOFormat::RGB_UI16)
+    {
+        channels = 4;
+        depth = 2;
+    }
+    else if (requestedformat == ImageIOFormat::RGBA_UI16)
+    {
+        channels = 4;
+        depth = 2;
+    }
+
+    std::vector<png_bytep> row_pointers(height);
+    //ImageIOFormat imageIoFormat=pngToImageIoFormat(color_type, bit_depth);
+
+    res = alloc(width, height, requestedformat);
+    png_byte* imageData = (png_byte*)res.data;
+
+    size_t stride = width * channels * depth;
+
+    size_t pos = 0;
+    if (flipV) {
+        for (int y = height - 1; y >= 0; y--) {
+            row_pointers[y] = &imageData[pos];
+            pos += stride;
+        }
+    }
+    else {
+        for (int y = 0; y < height; y++) {
+            row_pointers[y] = &imageData[pos];
+            pos += stride;
+        }
+    }
+
+    png_read_image(png_ptr, row_pointers.data());
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+
+    return res;
+}
+
 bool vg::ImageIO::save(const vio::Path& path, const void* inData, const ui32& w, const ui32& h, const ImageIOFormat& format) {
 
     FILE *file=fopen(path.getCString(), "wb");

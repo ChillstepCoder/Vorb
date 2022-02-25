@@ -115,8 +115,15 @@ void IndexedTriangleMesh::finishMesh(MeshDrawMode drawMode) {
     assert(mIbo);
 }
 
-void IndexedTriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const
-{
+void IndexedTriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const {
+    f32v3 pos;
+    f32v3 normal;
+    f32v3 tangent;
+    f32v3 uvs;
+    color4 color;
+    ui8 roughness;
+    ui8 padding[11];
+
     // TODO: can we not do this every time?
     if (mLastUsedProgram != program.getID()) {
         mLastUsedProgram = program.getID();
@@ -124,21 +131,24 @@ void IndexedTriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
         program.enableVertexAttribArrays();
-        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(TriangleVertex), (void*)offsetof(TriangleVertex, pos));
+        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(ModelVertex), (void*)offsetof(ModelVertex, pos));
         if (const VGAttribute* uvAttribute = program.tryGetAttribute("vUV")) {
-            glVertexAttribPointer(*uvAttribute, 2, GL_FLOAT, false, sizeof(TriangleVertex), (void*)offsetof(TriangleVertex, uvs));
-        }
-        if (const VGAttribute* uvTileAttribute = program.tryGetAttribute("vUVTiling")) {
-            glVertexAttribPointer(*uvTileAttribute, 4, GL_FLOAT, false, sizeof(TriangleVertex), (void*)offsetof(TriangleVertex, uvTiling));
-        }
-        if (const VGAttribute* atlasAttribute = program.tryGetAttribute("vAtlasPage")) {
-            glVertexAttribPointer(*atlasAttribute, 1, GL_UNSIGNED_SHORT, false, sizeof(TriangleVertex), (void*)offsetof(TriangleVertex, atlasPage));
+            glVertexAttribPointer(*uvAttribute, 3, GL_FLOAT, false, sizeof(ModelVertex), (void*)offsetof(ModelVertex, uvs));
         }
         if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
-            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(TriangleVertex), (void*)offsetof(TriangleVertex, color));
+            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, color));
         }
         if (const VGAttribute* normalAttribute = program.tryGetAttribute("vNormal")) {
-            glVertexAttribPointer(*normalAttribute, 3, GL_FLOAT, true, sizeof(TriangleVertex), (void*)offsetof(TriangleVertex, normal));
+            glVertexAttribPointer(*normalAttribute, 3, GL_FLOAT, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, normal));
+        }
+        if (const VGAttribute* tangentAttribute = program.tryGetAttribute("vTangent")) {
+            glVertexAttribPointer(*tangentAttribute, 3, GL_FLOAT, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, tangent));
+        }
+        if (const VGAttribute* bitangentAttribute = program.tryGetAttribute("vBitangent")) {
+            glVertexAttribPointer(*bitangentAttribute, 3, GL_FLOAT, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, bitangent));
+        }
+        if (const VGAttribute* roughnessAttribute = program.tryGetAttribute("vRoughness")) {
+            glVertexAttribPointer(*roughnessAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, roughness));
         }
     }
 }

@@ -4,6 +4,7 @@
 
 class Model3D {
     friend class ModelRepository;
+    friend class CharacterRenderer;
 public:
 
 private:

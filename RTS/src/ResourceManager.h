@@ -41,6 +41,7 @@ public:
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     CharacterModelRepository& getCharacterModelRepository() const { return *mCharacterModelRepository; }
+    ModelRepository& getModelRepository() const { return *mModelRepository; }
     BrushRepository& getBrushRepository() const { return *mBrushRepository; }
 
     // Hot reload

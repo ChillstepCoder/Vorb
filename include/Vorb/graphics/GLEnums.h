@@ -232,7 +232,8 @@ namespace vorb {
             UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
             UNSIGNED_SHORT_4_4_4_4 = GL_UNSIGNED_SHORT_4_4_4_4,
             UNSIGNED_SHORT_5_5_5_1 = GL_UNSIGNED_SHORT_5_5_5_1,
-            UNSIGNED_SHORT_5_6_5 = GL_UNSIGNED_SHORT_5_6_5
+            UNSIGNED_SHORT_5_6_5 = GL_UNSIGNED_SHORT_5_6_5,
+            UNSIGNED_INT_8_8_8_8_REV = GL_UNSIGNED_INT_8_8_8_8_REV
         };
         enum class TextureTarget : VGEnum {
             NONE = 0,

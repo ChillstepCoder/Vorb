@@ -51,7 +51,7 @@ ResourceManager::ResourceManager() {
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mSpriteRepository);
-    mModelRepository = std::make_unique<ModelRepository>(*mIoManager);
+    mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
 }
 

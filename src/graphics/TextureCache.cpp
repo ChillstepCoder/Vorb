@@ -149,12 +149,9 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
                                          vg::TextureInternalFormat internalFormat     /* = vg::TextureInternalFormat::RGBA */,
                                                  vg::TextureFormat textureFormat      /* = vg::TextureFormat::RGBA */,
                                                                i32 mipmapLevels       /* = INT_MAX */) {
-    // Get absolute path of texture.
-    vio::Path texPath;
-    resolvePath(filePath, texPath);
-
+  
     // Check if the texture is already cached.
-    Texture texture = findTexture(texPath);
+    Texture texture = findTexture(filePath);
     if (texture.id) return texture;
 
     // Upload the texture through GpuMemory.
@@ -170,7 +167,7 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
     texture.textureTarget = textureTarget;
 
     // Store the texture in the cache.
-    insertTexture(texPath, texture);
+    insertTexture(filePath, texture);
     return texture;
 }
 

@@ -21,7 +21,7 @@ void main() {
 	// Blur far away
 	float blurValue = smoothstep(0.996, 1.00, depth) * isSky;
 	// Blur near the camera
-	blurValue = max(blurValue, (1.0 - smoothstep(0.0, 1.0, depth)) * 32.0);
+	blurValue = max(blurValue, (1.0 - smoothstep(0.0, 1.0, depth)) * 8.0);
 	
     fColor.rgb = blur13noalpha(unInputFbo, fUV, ScreenResolution, unDirection * blurValue);
 	fColor.a = 1.0;

@@ -1,0 +1,3 @@
+character:
+  vert: character.vert
+  frag: character.frag

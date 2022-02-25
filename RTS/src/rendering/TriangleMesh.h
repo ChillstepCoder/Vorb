@@ -43,10 +43,20 @@ public:
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
 
+    void setDiffuseTexture(VGTexture texture) { mDiffuseTexture = texture; }
+    void setNormalTexture(VGTexture texture) { mNormalTexture = texture; }
+    void setSpecularTexture(VGTexture texture) { mSpecularTexture = texture; }
+    VGTexture getDiffuseTexture() const { return mDiffuseTexture; }
+    VGTexture getNormalTexture() const { return mNormalTexture; }
+    VGTexture getSpecularTexture() const { return mSpecularTexture; }
+
 private:
     void bindVertexAttribs(const vg::GLProgram& program) const override;
 
     VGIndexBuffer mIbo = 0;
+    VGTexture mDiffuseTexture = 0;
+    VGTexture mNormalTexture = 0;
+    VGTexture mSpecularTexture = 0;
 };
 
 // Templated Mesh implementation
