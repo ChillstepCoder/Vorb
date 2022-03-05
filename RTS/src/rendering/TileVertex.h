@@ -66,18 +66,25 @@ public:
 // Need power of 2 alignment
 static_assert(sizeof(TriangleVertex) == 64, "Power of 2 byte alignment needed");
 
-struct ModelVertex {
+constexpr int MAX_BONES_PER_VERTEX = 4;
+
+// TODO: Reduce https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
+struct SkinnedModelVertex {
 public:
-    ModelVertex() {};
+    SkinnedModelVertex() {};
 
     f32v3 pos;
     f32v3 normal;
     f32v3 tangent;
-    f32v3 bitangent;
-    f32v3 uvs;
+    f32v2 uvs;
     color4 color;
-    ui8 roughness;
-    ui8 padding[61];
+    // TODO: ui16 weights
+    f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
+    ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
+    //ui8 numBones = 0;
+    ui8 padding[9]; // TODO: remove make 64?
 };
 // Need power of 2 alignment
-static_assert(sizeof(ModelVertex) == 128, "Power of 2 byte alignment needed");
+//static_assert(sizeof(SkinnedModelVertex) == 64, "Power of 2 byte alignment needed");
+static_assert(sizeof(SkinnedModelVertex) == 80, "16 byte alignment needed");
+//SIZER(SkinnedModelVertex);

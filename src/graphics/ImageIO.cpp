@@ -113,7 +113,7 @@ std::pair<png_byte,png_byte> ImageIoFormatToPng(const vg::ImageIOFormat &format)
 // TODO: Get this in working order. Reevaluate parameter attribute once done.
 vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
                                      const ImageIOFormat& requestedformat /* = ImageIOFormat::RGBA_UI8 */,
-                                     bool flipV /*= false*/ VORB_UNUSED) {
+                                     bool flipV /*= false*/) {
     BitmapResource res = {};
     res.data = nullptr;
 
@@ -245,10 +245,17 @@ vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
     size_t pos=0;
     size_t stride=width*channels*depth;
 
-    for(int y=0; y<height; y++)
-    {
-        row_pointers[y]=&imageData[pos];
-        pos+=stride;
+    if (flipV) {
+        for (int y = height - 1; y >= 0; y--) {
+            row_pointers[y] = &imageData[pos];
+            pos += stride;
+        }
+    }
+    else {
+        for (int y = 0; y < height; y++) {
+            row_pointers[y] = &imageData[pos];
+            pos += stride;
+        }
     }
 
     png_read_image(png_ptr, row_pointers.data());

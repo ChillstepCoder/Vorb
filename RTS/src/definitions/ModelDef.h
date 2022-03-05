@@ -2,9 +2,14 @@
 
 #include "rendering/model/Model3D.h"
 
+#include <ozz/animation/runtime/skeleton.h>
+
+struct RigDef;
+
 struct ModelDef {
+    const RigDef* mRig;
     nString mModelName;
-    nString mSkeletonName;
+    nString mRigName;
     Model3D mModel;
     ui32 mModelId;
 };

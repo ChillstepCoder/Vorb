@@ -5,7 +5,7 @@
 
 #include "rendering/TileVertex.h"
 
-struct aiFace;
+#include <ozz/base/maths/simd_math.h>
 
 template <typename VERTEX>
 class ITriangleMesh : public MeshBase {
@@ -34,12 +34,13 @@ private:
     std::vector<TriangleVertex> mVertexData; // TODO: Recycle?
 };
 
-class IndexedTriangleMesh : public ITriangleMesh<ModelVertex> {
+class SkinnedMesh : public ITriangleMesh<SkinnedModelVertex> {
+    friend class ModelRepository; // For loading
 public:
-    IndexedTriangleMesh() = default;
-    VORB_NON_COPYABLE_BUT_MOVABLE(IndexedTriangleMesh);
+    SkinnedMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(SkinnedMesh);
 
-    void setFaces(const aiFace* faces, ui32 numFaces);
+    void setIndices(const uint16_t* indices, int indexCount);
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
 
@@ -50,6 +51,10 @@ public:
     VGTexture getNormalTexture() const { return mNormalTexture; }
     VGTexture getSpecularTexture() const { return mSpecularTexture; }
 
+    const ui8 getNumJoints() const { return mNumJoints; }
+    const ui8* getJointRemaps() const { return mJointRemaps.get(); }
+    const ozz::math::Float4x4* getInverseBindPoses() const { return mInverseBindPoses.get(); }
+
 private:
     void bindVertexAttribs(const vg::GLProgram& program) const override;
 
@@ -57,6 +62,10 @@ private:
     VGTexture mDiffuseTexture = 0;
     VGTexture mNormalTexture = 0;
     VGTexture mSpecularTexture = 0;
+    // TODO: memory pool?
+    std::unique_ptr<ui8[]> mJointRemaps; // Maps specific joint(bone) indices to inverse bind poses
+    std::unique_ptr<ozz::math::Float4x4[]> mInverseBindPoses;
+    ui8 mNumJoints = 0;
 };
 
 // Templated Mesh implementation

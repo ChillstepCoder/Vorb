@@ -14,6 +14,7 @@
 #include "ecs/business/BusinessRepository.h"
 #include "character/CharacterModelRepository.h"
 #include "resources/ModelRepository.h"
+#include "resources/RigRepository.h"
 #include "world/TileRepository.h"
 #include "editor/BrushRepository.h"
 
@@ -51,7 +52,8 @@ ResourceManager::ResourceManager() {
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
     mCharacterModelRepository = std::make_unique<CharacterModelRepository>(*mSpriteRepository);
-    mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache);
+    mRigRepository = std::make_unique<RigRepository>(*mIoManager);
+    mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache, *mRigRepository);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
 }
 
@@ -83,6 +85,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mRecipeFiles.clear();
     mBusinessFiles.clear();
     mModelFiles.clear();
+    mRigFiles.clear();
 
     gatherRecursive(folderPath);
 
@@ -121,7 +124,8 @@ void ResourceManager::loadFiles() {
             }
             else if (vio::containsSubpath(entry, "_brushes")) {
                 mBrushRepository->loadBrush(entry, *mTextureCache);
-            } else {
+            }
+            else if (!vio::containsSubpath(entry, ".fbm")) { // Don't load .fbm as these are used by models
                 mSpriteRepository->loadSpriteTexture(entry);
             }
         }
@@ -162,9 +166,20 @@ void ResourceManager::loadFiles() {
         };
     }
 
+    // Load Rigs
+    {
+        ScopedTimer timer("Rig load");
+        for (auto&& entry : mRigFiles) {
+            mRigRepository->loadRigFile(entry);
+        }
+    }
+
     // Load Models
-    for (auto&& entry : mModelFiles) {
-        mModelRepository->loadModelFile(entry);
+    {
+        ScopedTimer timer("Model load");
+        for (auto&& entry : mModelFiles) {
+            mModelRepository->loadModelFile(entry);
+        }
     }
 
     // Load particle Systems
@@ -312,6 +327,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".model")) {
             mModelFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".rig")) {
+            mRigFiles.emplace_back(entry);
         }
         // TODO: .ttf?
     }

@@ -8,25 +8,22 @@ DECL_VG(class Texture);
 
 typedef ui32 ModelID;
 
-struct aiScene;
-struct aiMaterial;
-struct aiString;
-enum aiTextureType;
+class RigRepository;
 
 class ModelRepository
 {
 public:
-    ModelRepository(vio::IOManager& ioManager, vg::TextureCache& textureCache);
+    ModelRepository(vio::IOManager& ioManager, vg::TextureCache& textureCache, const RigRepository& rigRepository);
     ~ModelRepository();
 
     bool loadModelFile(const vio::Path& filePath);
 
     const ModelDef& getModelDef(ui32 modelId) const { return mModelDefs[modelId]; }
-    const ModelDef& getModelDef(const nString& name);
+    const ModelDef& getModelDef(const nString& name) const;
 
 private:
-    vg::Texture createGlTextureFromAiTexture(aiMaterial* material, const aiTextureType& textureType, aiString& texPath, const aiScene* aiScene);
 
+    const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;
     vg::TextureCache& mTextureCache;
     std::unordered_map<nString, ui32> mModelIdLookup;

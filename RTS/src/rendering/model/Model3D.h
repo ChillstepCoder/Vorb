@@ -8,7 +8,7 @@ class Model3D {
 public:
 
 private:
-    std::unique_ptr<IndexedTriangleMesh[]> mMeshes;
+    std::unique_ptr<SkinnedMesh[]> mMeshes;
     ui32 mNumMeshes = 0;
 };
 

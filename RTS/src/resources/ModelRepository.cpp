@@ -4,36 +4,32 @@
 #include <Vorb/io/IOManager.h>
 #include <Vorb/graphics/TextureCache.h>
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
+#include "resources/RigRepository.h"
 #include "rendering/model/Model3D.h"
 
-// TODO: REMOVE for debug dump
-#include <SDL2/SDL.h>
+#include <ozz/base/io/archive.h>
+#include <ozz/base/io/stream.h>
+#include <ozz/animation/runtime/skeleton.h>
+#include <ozz/animation/offline/fbx/fbx.h>
 
-ModelRepository::ModelRepository(vio::IOManager& ioManager, vg::TextureCache& textureCache) : mIoManager(ioManager), mTextureCache(textureCache)
-{
+#include "fbx/ozzFbxToMesh.hpp"
 
-}
-
-ModelRepository::~ModelRepository()
-{
+ModelRepository::ModelRepository(vio::IOManager& ioManager, vg::TextureCache& textureCache, const RigRepository& rigRepository) : mIoManager(ioManager), mTextureCache(textureCache), mRigRepository(rigRepository) {
 
 }
 
+ModelRepository::~ModelRepository() {
+
+}
+
+// TODO: Cache model files in binary
 bool ModelRepository::loadModelFile(const vio::Path& filePath) {
     ModelDef& def = mModelDefs.emplace_back();
     def.mModelId = mModelDefs.size() - 1u;
+    PreciseTimer timer;
 
     if (!mIoManager.parseFileAsKegObject((ui8*)&def, filePath, &KEG_GLOBAL_TYPE(ModelDef))) {
         pError("Failed to load model file " + filePath.getString());
-        return false;
-    }
-
-    if (def.mSkeletonName.empty()) {
-        pError("Model file missing skeleton name " + filePath.getString());
         return false;
     }
 
@@ -47,126 +43,196 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath) {
     rootDir.trimEnd();
     assert(rootDir.isDirectory());
 
-    Assimp::Importer importer;
     vio::Path modelPath = rootDir + nString("\\") + def.mModelName;
-    const aiScene* aiScene = importer.ReadFile(
-        modelPath.getString(),
-        aiProcess_GenSmoothNormals |
-        aiProcess_CalcTangentSpace |
-        aiProcess_Triangulate |
-        aiProcess_JoinIdenticalVertices |
-        aiProcess_SortByPType
-    );
+    std::cout << "PARSE " << timer.stop() << " ms" << std::endl; timer.start();
 
-    if (aiScene == nullptr) {
-        pError("Asset import failure - " + modelPath.getString() + " - " + importer.GetErrorString());
+    // Load ozz Skeleton
+    assert(def.mRigName.size());
+    def.mRig = &mRigRepository.getRigDef(def.mRigName);
+
+    // Import Fbx content.
+    ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
+    ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
+    ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)modelPath.getCString(), "", fbxManager, settings);
+    if (!sceneLoader.scene()) {
+        pError("Failed to import fbx scene: " + filePath.getString());
         return false;
     }
 
-    assert(aiScene->HasMaterials());
-    assert(aiScene->HasMeshes());
+    std::cout << "IMPORT " << timer.stop() << " ms" << std::endl; timer.start();
 
-    // TODO: Materials
-    /*for (unsigned i = 0; i < aiScene->mNumMaterials; ++i) {
-        aiMaterial* material = aiScene->mMaterials[i];
-        ui32 result = 0;
-        aiColor3D out;
-        material->Get(AI_MATKEY_COLOR_DIFFUSE, out);
-        std::cout << out.r << " " << out.g << " " << out.b << std::endl;
-    }*/
-    Model3D& model = def.mModel;
-    model.mMeshes = std::unique_ptr<IndexedTriangleMesh[]>(new IndexedTriangleMesh[aiScene->mNumMeshes]);
-    model.mNumMeshes = aiScene->mNumMeshes;
-    std::vector<ModelVertex> verts;
-    for (unsigned i = 0; i < aiScene->mNumMeshes; ++i) {
-        aiMesh* aiMesh = aiScene->mMeshes[i];
-        assert(aiMesh->HasFaces());
-        IndexedTriangleMesh& mesh = model.mMeshes[i];
-        verts.resize(aiMesh->mNumVertices);
-        // Copy vertex data
-        for (ui32 i = 0; i < verts.size(); ++i) {
-            memcpy(&verts[i].pos, &aiMesh->mVertices[i], sizeof(f32v3));
-            memcpy(&verts[i].normal, &aiMesh->mNormals[i], sizeof(f32v3));
-            memcpy(&verts[i].tangent, &aiMesh->mTangents[i], sizeof(f32v3));
-            memcpy(&verts[i].bitangent, &aiMesh->mBitangents[i], sizeof(f32v3));
-            if (aiMesh->HasVertexColors(0)) {
-                verts[i].color.r = (ui8)(aiMesh->mColors[0][i].r * 255.0f);
-                verts[i].color.g = (ui8)(aiMesh->mColors[0][i].g * 255.0f);
-                verts[i].color.b = (ui8)(aiMesh->mColors[0][i].b * 255.0f);
-                verts[i].color.a = (ui8)(aiMesh->mColors[0][i].a * 255.0f);
-            }
-            else {
-                verts[i].color = COLOR_WHITE;
-            }
-            verts[i].uvs.x = aiMesh->mTextureCoords[0][i].x;
-            verts[i].uvs.y = aiMesh->mTextureCoords[0][i].y;
-            verts[i].uvs.z = aiMesh->mTextureCoords[0][i].z;
-            verts[i].roughness = 255;
-        }
-        static_assert(sizeof(f32v3) == sizeof(aiVector3D));
-
-        // Material data
-        // Get textures
-        aiMaterial* material = aiScene->mMaterials[aiMesh->mMaterialIndex];
-        assert(material);
-        aiString texPath;
-        if (material->GetTextureCount(aiTextureType_DIFFUSE)) {
-            vg::Texture texture = createGlTextureFromAiTexture(material, aiTextureType_DIFFUSE, texPath, aiScene);
-            mesh.setDiffuseTexture(texture.id);
-            //TODO: REMOVE
-            //int bytesPerPage = texture.width * texture.height * sizeof(color4);
-            //ui8* pixels = new ui8[texture.width * texture.height * sizeof(color4)];
-
-            //glBindTexture(GL_TEXTURE_2D, texture.id);
-            //glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-            //checkGlError("Load test");
-            //SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(pixels, texture.width, texture.height, 32 /*depthbytes*/, 4 * (texture.width), 0xFF, 0xFF00, 0xFF0000, 0x0);
-            //SDL_SaveBMP(surface, ("KNIGHT.bmp"));
-            //glBindTexture(GL_TEXTURE_2D, 0);
-
-            //delete[] pixels;
-            
-        }
-        if (material->GetTextureCount(aiTextureType_NORMALS)) {
-            vg::Texture texture = createGlTextureFromAiTexture(material, aiTextureType_NORMALS, texPath, aiScene);
-            mesh.setNormalTexture(texture.id);
-            
-        }
-        if (material->GetTextureCount(aiTextureType_SPECULAR)) {
-            vg::Texture texture = createGlTextureFromAiTexture(material, aiTextureType_SPECULAR, texPath, aiScene);
-            mesh.setSpecularTexture(texture.id);
-        }
-
-        mesh.setData(verts.data(), verts.size(), MeshDrawMode::STATIC);
-        mesh.setFaces(aiMesh->mFaces, aiMesh->mNumFaces);
-        mesh.finishMesh(MeshDrawMode::STATIC);
+    const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
+    if (numMeshes == 0) {
+        pError("No mesh to process in this file: " + filePath.getString());
+        return false;
     }
+    //else if (numMeshes > 1) {
+    //    pError("There's more than one mesh in the file: " + filePath.getString());
+    //}
+
+    //{  // Clean and triangulates the scene.
+    //    FbxGeometryConverter converter(fbxManager);
+    //    converter.RemoveBadPolygonsFromMeshes(sceneLoader.scene());
+    //    std::cout << "CLEAN " << timer.stop() << " ms" << std::endl; timer.start();
+    //    if (!converter.Triangulate(sceneLoader.scene(), true)) {
+    //        pError("Failed to triangulate meshes: " + filePath.getString());
+    //        return false;
+    //    }
+    //    std::cout << "TRIANGULATE " << timer.stop() << " ms" << std::endl; timer.start();
+    //}
+
+    // Copy all meshes
+    Model3D& model = def.mModel;
+    model.mMeshes = std::unique_ptr<SkinnedMesh[]>(new SkinnedMesh[numMeshes]);
+    model.mNumMeshes = numMeshes;
+    /* ozz::vector<ozz::sample::Mesh> meshes;
+     meshes.resize(numMeshes);*/
+    std::vector<SkinnedModelVertex> verts;
+    for (int m = 0; m < numMeshes; ++m) {
+        FbxMesh* mesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
+
+        // Allocates output mesh.
+        ozzfbx::Mesh outputMesh;
+        outputMesh.parts.resize(1);
+
+        ControlPointsRemap remap;
+        if (!BuildVertices(mesh, sceneLoader.converter(), &remap, &outputMesh)) {
+            pError("Failed to read vertices: " + filePath.getString());
+            return false;
+        }
+
+        // Finds skinning informations
+        if (mesh->GetDeformerCount(FbxDeformer::eSkin) > 0) {
+            if (!BuildSkin(mesh, sceneLoader.converter(), remap, def.mRig->mSkeleton, &outputMesh)) {
+                pError("Failed to read skinning data: " + filePath.getString());
+                return false;
+            }
+
+            std::cout << "BUILD SKIN " << timer.stop() << " ms" << std::endl; timer.start();
+            // Limiting number of joint influences per vertex.
+            if (!LimitInfluences(outputMesh, MAX_BONES_PER_VERTEX)) {
+                pError("Failed to limit number of joint influences: " + filePath.getString());
+                return false;
+            }
+
+            std::cout << "LIMIT INFLUENCES " << timer.stop() << " ms" << std::endl; timer.start();
+            // Remap joint indices. The mesh might not use all skeleton joints, so
+            // this function remaps joint indices to the subset of used joints. It
+            // also reoders inverse bin pose matrices.
+            if (!RemapIndices(&outputMesh)) {
+                pError("Failed to remap joint indices: " + filePath.getString());
+                return false;
+            }
+
+            std::cout << "REMAP INDICES " << timer.stop() << " ms" << std::endl; timer.start();
+            // Split the mesh if option is true (default)
+            //if (OPTIONS_split) {
+            //    ozz::sample::Mesh partitioned_meshes;
+            //    if (!SplitParts(output_mesh, &partitioned_meshes)) {
+            //        ozz::log::Err() << "Failed to partitioned meshes." << std::endl;
+            //        return EXIT_FAILURE;
+            //    }
+
+            //    // Copy partitioned mesh back to the output.
+            //    output_mesh = partitioned_meshes;
+            //}
+
+            if (!StripWeights(&outputMesh)) {
+                pError("Failed to strip weights: " + filePath.getString());
+                return false;
+            }
+            std::cout << "STRIP WEIGHTS " << timer.stop() << " ms" << std::endl; timer.start();
+
+            assert(outputMesh.max_influences_count() <= MAX_BONES_PER_VERTEX);
+
+
+            SkinnedMesh& myMesh = model.mMeshes[m];
+            verts.resize(outputMesh.vertex_count());
+            assert(outputMesh.parts.size() == 1);
+            for (ui32 i = 0; i < outputMesh.vertex_count(); ++i) {
+                const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
+                SkinnedModelVertex& myVert = verts[i];
+                memcpy(&myVert.pos, &part.positions[i * 3], sizeof(f32) * 3);
+                memcpy(&myVert.normal, &part.normals[i * 3], sizeof(f32) * 3);
+                memcpy(&myVert.tangent, &part.tangents[i * 3], sizeof(f32) * 3);
+                memcpy(&myVert.uvs, &part.uvs[i * 2], sizeof(f32) * 2);
+                if (part.colors.size()) {
+                    memcpy(&myVert.color, &part.colors[i * 4], sizeof(uint8_t) * 4);
+                }
+                else {
+                    myVert.color = COLOR_WHITE;
+                }
+                // TODO: Shrink to ui8?
+                ui32 influencesCount = part.influences_count();
+                ui32 j = 0;
+                for (ui32 j = 0; j < influencesCount; ++j) {
+                    myVert.boneIDs[j] = part.joint_indices[i * influencesCount + j];
+                }
+
+                // Zero the weight first since we are re-using vertex buffers
+                memset(myVert.boneWeights, 0, sizeof(f32)* MAX_BONES_PER_VERTEX);
+                if (influencesCount == 1) {
+                    myVert.boneWeights[0] = 1.0f;
+                }
+                else {
+                    memcpy(myVert.boneWeights, &part.joint_weights[i * (influencesCount - 1)], sizeof(f32) * (influencesCount - 1));
+                }
+            }
+            const ui32 numJoints = outputMesh.num_joints();
+            assert(numJoints < 100);
+            myMesh.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[numJoints]);
+            myMesh.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[numJoints]);
+            for (ui32 i = 0; i < numJoints; ++i) {
+                myMesh.mJointRemaps[i] = outputMesh.joint_remaps[i];
+                myMesh.mInverseBindPoses[i] = outputMesh.inverse_bind_poses[i];
+            }
+            myMesh.mNumJoints = numJoints;
+            myMesh.setData(verts.data(), verts.size(), MeshDrawMode::STATIC);
+            myMesh.setIndices(outputMesh.triangle_indices.data(), outputMesh.triangle_index_count());
+            std::cout << "COPY " << timer.stop() << " ms" << std::endl; timer.start();
+        }
+    }
+
+    // Find and load textures
+    // Right now, textures are shared with every mesh in the scene
+    vio::Path textureDir = rootDir + vio::Path("\\") + vio::Path(modelFileNameNoExtension) + vio::Path(".fbm");
+    if (textureDir.isDirectory()) {
+        vio::Path textureNameRoot = textureDir + vio::Path("\\") + vio::Path(modelFileNameNoExtension) + vio::Path("_");
+
+        vio::Path diffusePath = textureNameRoot + vio::Path("diffuse.png");
+        if (diffusePath.isValid()) {
+            vg::Texture tex = mTextureCache.addTexture(diffusePath, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
+            for (int i = 0; i < numMeshes; ++i) {
+                model.mMeshes[i].setDiffuseTexture(tex.id);
+            }
+        }
+
+        vio::Path normalPath = textureNameRoot + vio::Path("normal.png");
+        if (normalPath.isValid()) {
+            vg::Texture tex = mTextureCache.addTexture(normalPath, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
+            for (int i = 0; i < numMeshes; ++i) {
+                model.mMeshes[i].setNormalTexture(tex.id);
+            }
+        }
+
+        vio::Path specularPath = textureNameRoot + vio::Path("specular.png");
+        if (specularPath.isValid()) {
+            vg::Texture tex = mTextureCache.addTexture(specularPath, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
+            for (int i = 0; i < numMeshes; ++i) {
+                model.mMeshes[i].setSpecularTexture(tex.id);
+            }
+        }
+    }
+    
+    // Store lookup
     assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
     mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
+
 }
 
-const ModelDef& ModelRepository::getModelDef(const nString& name)
+const ModelDef& ModelRepository::getModelDef(const nString& name) const
 {
     auto&& it = mModelIdLookup.find(name);
     assert(it != mModelIdLookup.end());
     return mModelDefs[it->second];
-}
-
-vg::Texture ModelRepository::createGlTextureFromAiTexture(aiMaterial* material, const aiTextureType& textureType, aiString& texPath, const aiScene* aiScene) {
-    material->GetTexture(textureType, 0u, &texPath);
-    const aiTexture* tex = aiScene->GetEmbeddedTexture(texPath.C_Str());
-    assert(tex);
-    vg::BitmapResource rs;
-    if (strcmp(tex->achFormatHint, "png") == 0) {
-        rs = vg::ImageIO().load((ui8*)tex->pcData, vg::ImageIOFormat::RGBA_UI8, true);
-    }
-    else {
-        rs.width = tex->mWidth;
-        rs.height = tex->mHeight;
-        rs.data = tex->pcData;
-    }
-    assert(rs.width);
-    assert(rs.height);
-    assert(rs.data);
-    return mTextureCache.addTexture(vio::Path(texPath.C_Str()), &rs, vg::TexturePixelType::UNSIGNED_INT_8_8_8_8_REV, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA);
 }

@@ -3,7 +3,7 @@ uniform sampler2D unNormal;
 uniform sampler2D unSpecular;
 
 in vec4 fTint;
-in vec3 fUV;
+in vec2 fUV;
 in mat3 fTBN;
 
 layout (location = 0) out vec4 oColor;
@@ -22,6 +22,6 @@ void main() {
     oNormal.a = 1.0;
     
     // Specular
-    oRoughness.rgb = texture(unSpecular, fUV.xy).rgb * 0.0001 + vec3(0.0);
+    oRoughness.rgb = 1.0 - texture(unSpecular, fUV.xy).rgb;
     oRoughness.a = 1.0;
 }

@@ -8,8 +8,6 @@
 
 #include "rendering/RenderStats.h"
 
-#include <assimp/scene.h>
-
 void TriangleMesh::reserveTriangleCount(size_t count) {
     mVertexData.reserve(count * 3u);
 }
@@ -69,29 +67,21 @@ void TriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     }
 }
 
-void IndexedTriangleMesh::setFaces(const aiFace* faces, ui32 numFaces) {
-    assert(faces && numFaces);
-    assert(faces[0].mNumIndices == 3); // triangle only
+void SkinnedMesh::setIndices(const uint16_t* indices, int indexCount) {
+    assert(indices && indexCount);
 
     // TODO: no reallocate? Optimize?
-    std::vector<ui32> indices;
-    indices.resize(numFaces * 3u);
-    ui32 index = 0;
-    for (ui32 i = 0; i < numFaces; ++i) {
-        indices[index++] = faces[i].mIndices[0];
-        indices[index++] = faces[i].mIndices[1];
-        indices[index++] = faces[i].mIndices[2];
-    }
+   
     if (mIbo == 0) {
         glGenBuffers(1, &mIbo);
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(ui32), indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(uint16_t), indices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    mIndexCount = indices.size();
+    mIndexCount = indexCount;
 }
 
-void IndexedTriangleMesh::draw(const vg::GLProgram& program) const { // Make sure we have been initialized
+void SkinnedMesh::draw(const vg::GLProgram& program) const { // Make sure we have been initialized
     assert(mVao);
     assert(mIbo);
 
@@ -99,7 +89,7 @@ void IndexedTriangleMesh::draw(const vg::GLProgram& program) const { // Make sur
     bindVertexAttribs(program);
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
-    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_SHORT, nullptr);
     RenderStats::recordDrawCall(mIndexCount / 3);
 
     glBindVertexArray(0);
@@ -108,14 +98,14 @@ void IndexedTriangleMesh::draw(const vg::GLProgram& program) const { // Make sur
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void IndexedTriangleMesh::finishMesh(MeshDrawMode drawMode) {
+void SkinnedMesh::finishMesh(MeshDrawMode drawMode) {
     // Does nothing
     UNUSED(drawMode);
     assert(mVao);
     assert(mIbo);
 }
 
-void IndexedTriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const {
+void SkinnedMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     f32v3 pos;
     f32v3 normal;
     f32v3 tangent;
@@ -131,24 +121,24 @@ void IndexedTriangleMesh::bindVertexAttribs(const vg::GLProgram& program) const 
         glBindBuffer(GL_ARRAY_BUFFER, mVbo);
 
         program.enableVertexAttribArrays();
-        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(ModelVertex), (void*)offsetof(ModelVertex, pos));
+        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, pos));
         if (const VGAttribute* uvAttribute = program.tryGetAttribute("vUV")) {
-            glVertexAttribPointer(*uvAttribute, 3, GL_FLOAT, false, sizeof(ModelVertex), (void*)offsetof(ModelVertex, uvs));
+            glVertexAttribPointer(*uvAttribute, 2, GL_FLOAT, false, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, uvs));
         }
         if (const VGAttribute* tintAttribute = program.tryGetAttribute("vTint")) {
-            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, color));
+            glVertexAttribPointer(*tintAttribute, 4, GL_UNSIGNED_BYTE, true, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, color));
         }
         if (const VGAttribute* normalAttribute = program.tryGetAttribute("vNormal")) {
-            glVertexAttribPointer(*normalAttribute, 3, GL_FLOAT, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, normal));
+            glVertexAttribPointer(*normalAttribute, 3, GL_FLOAT, true, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, normal));
         }
         if (const VGAttribute* tangentAttribute = program.tryGetAttribute("vTangent")) {
-            glVertexAttribPointer(*tangentAttribute, 3, GL_FLOAT, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, tangent));
+            glVertexAttribPointer(*tangentAttribute, 3, GL_FLOAT, true, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, tangent));
         }
-        if (const VGAttribute* bitangentAttribute = program.tryGetAttribute("vBitangent")) {
-            glVertexAttribPointer(*bitangentAttribute, 3, GL_FLOAT, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, bitangent));
+        if (const VGAttribute* boneIdsAttribute = program.tryGetAttribute("vBoneIds")) {
+            glVertexAttribIPointer(*boneIdsAttribute, MAX_BONES_PER_VERTEX, GL_UNSIGNED_BYTE, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, boneIDs));
         }
-        if (const VGAttribute* roughnessAttribute = program.tryGetAttribute("vRoughness")) {
-            glVertexAttribPointer(*roughnessAttribute, 1, GL_UNSIGNED_BYTE, true, sizeof(ModelVertex), (void*)offsetof(ModelVertex, roughness));
+        if (const VGAttribute* boneWeightsAttribute = program.tryGetAttribute("vBoneWeights")) {
+            glVertexAttribPointer(*boneWeightsAttribute, MAX_BONES_PER_VERTEX, GL_FLOAT, false, sizeof(SkinnedModelVertex), (void*)offsetof(SkinnedModelVertex, boneWeights));
         }
     }
 }

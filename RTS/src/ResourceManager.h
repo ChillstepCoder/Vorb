@@ -15,6 +15,7 @@ class CraftingRepository;
 class BusinessRepository;
 class CharacterModelRepository;
 class ModelRepository;
+class RigRepository;
 struct SpriteData;
 
 // Loads and manages textures, tiles, and other resources
@@ -41,6 +42,7 @@ public:
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
     CharacterModelRepository& getCharacterModelRepository() const { return *mCharacterModelRepository; }
+    RigRepository& getRigRepository() const { return *mRigRepository; }
     ModelRepository& getModelRepository() const { return *mModelRepository; }
     BrushRepository& getBrushRepository() const { return *mBrushRepository; }
 
@@ -68,6 +70,7 @@ private:
     std::vector<vio::Path> mItemFiles;
     std::vector<vio::Path> mRecipeFiles;
     std::vector<vio::Path> mBusinessFiles;
+    std::vector<vio::Path> mRigFiles;
     std::vector<vio::Path> mModelFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
@@ -79,6 +82,7 @@ private:
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
     std::unique_ptr<CharacterModelRepository> mCharacterModelRepository;
+    std::unique_ptr<RigRepository> mRigRepository;
     std::unique_ptr<ModelRepository> mModelRepository;
     std::unique_ptr<BrushRepository> mBrushRepository;
     std::unique_ptr<vg::TextureCache> mTextureCache;

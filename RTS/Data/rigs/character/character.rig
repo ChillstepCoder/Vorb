@@ -1,0 +1,6 @@
+skeleton: paladin_skeleton.ozz
+anims: [
+  melee_standard.ozz,
+  paladin_idle.ozz,
+  paladin_001.ozz
+]
