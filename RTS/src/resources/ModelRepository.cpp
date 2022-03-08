@@ -4,7 +4,9 @@
 #include <Vorb/io/IOManager.h>
 #include <Vorb/graphics/TextureCache.h>
 
+#include "definitions/AnimMachineDef.h"
 #include "resources/RigRepository.h"
+#include "resources/AnimMachineRepository.h"
 #include "rendering/model/Model3D.h"
 
 #include <ozz/base/io/archive.h>
@@ -23,17 +25,18 @@ ModelRepository::~ModelRepository() {
 }
 
 // TODO: Cache model files in binary
-bool ModelRepository::loadModelFile(const vio::Path& filePath) {
+bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository) {
     ModelDef& def = mModelDefs.emplace_back();
     def.mModelId = mModelDefs.size() - 1u;
     PreciseTimer timer;
 
-    if (!mIoManager.parseFileAsKegObject((ui8*)&def, filePath, &KEG_GLOBAL_TYPE(ModelDef))) {
+    ModelDefFileData fileData;
+    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(ModelDefFileData))) {
         pError("Failed to load model file " + filePath.getString());
         return false;
     }
 
-    if (def.mModelName.empty()) {
+    if (fileData.mModelName.empty()) {
         pError("Model file missing model name " + filePath.getString());
         return false;
     }
@@ -43,12 +46,22 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath) {
     rootDir.trimEnd();
     assert(rootDir.isDirectory());
 
-    vio::Path modelPath = rootDir + nString("\\") + def.mModelName;
+    vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName;
     std::cout << "PARSE " << timer.stop() << " ms" << std::endl; timer.start();
 
     // Load ozz Skeleton
-    assert(def.mRigName.size());
-    def.mRig = &mRigRepository.getRigDef(def.mRigName);
+    assert(fileData.mRigName.size());
+    def.mRig = &mRigRepository.getRigDef(fileData.mRigName);
+    
+    // Hookup animation machine
+    if (fileData.mMachineName.size()) {
+        const AnimMachineDef* animMachineDef = animMachineRepository.tryGetAnimMachineDef(fileData.mMachineName);
+        if (!animMachineDef) {
+            pError("Failed to find anim machine " + fileData.mMachineName + " for: " + filePath.getString());
+            return false;
+        }
+        def.mAnimMachine = animMachineDef;
+    }
 
     // Import Fbx content.
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
@@ -66,9 +79,6 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath) {
         pError("No mesh to process in this file: " + filePath.getString());
         return false;
     }
-    //else if (numMeshes > 1) {
-    //    pError("There's more than one mesh in the file: " + filePath.getString());
-    //}
 
     //{  // Clean and triangulates the scene.
     //    FbxGeometryConverter converter(fbxManager);

@@ -79,11 +79,6 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	entt::entity entityId = static_cast<entt::entity>(physCmp.mBody->GetUserData().pointer);
 	registry.remove<NavigationComponent>(entityId);
 
-	// Facing
-	if (isSprinting) {
-		physCmp.mDir = moveDir;
-	}
-
 	float speed = BASE_SPEED;
 	float dotp = glm::dot(moveDir, glm::normalize(physCmp.mDir));
 	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos

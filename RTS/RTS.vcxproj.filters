@@ -261,9 +261,6 @@
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\character\CharacterModelRepository.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -415,6 +412,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\definitions\RigDef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\AnimMachineRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\definitions\AnimMachineDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -728,9 +731,6 @@
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\character\CharacterModelRepository.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ai\tasks\IAgentTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -924,6 +924,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\AnimMachineRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\AnimMachineDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

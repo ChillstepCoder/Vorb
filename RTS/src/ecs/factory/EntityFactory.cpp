@@ -5,10 +5,12 @@
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/EntityDefinition.h"
 
-#include "character/CharacterModelRepository.h"
+#include "resources/ModelRepository.h"
 
 #include "ResourceManager.h"
 #include <Vorb/graphics/TextureCache.h>
+
+#include <ozz/animation/runtime/animation.h>
 
 EntityFactory::EntityFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager) :
     mEcs(ecs),
@@ -32,7 +34,11 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {
                 auto& modelCmp = registry.emplace<CharacterModelComponent>(newEntity);
-                mResourceManager.getCharacterModelRepository().initRandomCharacterModelAsRandomGender(modelCmp);
+                // TODO: Better
+                modelCmp.mModel = &mResourceManager.getModelRepository().getModelDef(0);
+                modelCmp.mAnimState.mCurrentTrack.mDuration = modelCmp.mModel->mAnimMachine->mIdleAnim->duration();
+                modelCmp.mAnimState.mNextTrack.mState = AnimMachineState::RUN_FRONT;
+                modelCmp.mAnimState.mNextTrack.mDuration = modelCmp.mModel->mAnimMachine->mRunFrontAnim->duration();
                 break;
             }
             case ComponentTypes::Combat: {

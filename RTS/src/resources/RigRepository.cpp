@@ -18,12 +18,13 @@ bool RigRepository::loadRigFile(const vio::Path& filePath) {
     RigDef& def = mRigDefs.emplace_back();
     def.mRigId = mRigDefs.size() - 1u;
 
-    if (!mIoManager.parseFileAsKegObject((ui8*)&def, filePath, &KEG_GLOBAL_TYPE(RigDef))) {
-        pError("Failed to load model file " + filePath.getString());
+    RigDefFileData fileData;
+    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(RigDefFileData))) {
+        pError("Failed to load rig file " + filePath.getString());
         return false;
     }
 
-    if (def.mSkeletonFileName.empty()) {
+    if (fileData.mSkeletonFileName.empty()) {
         pError("Rig file missing skeleton path " + filePath.getString());
         return false;
     }
@@ -35,7 +36,7 @@ bool RigRepository::loadRigFile(const vio::Path& filePath) {
 
     // Load skeleton
     {
-        vio::Path skeletonPath = rootDir + nString("\\") + def.mSkeletonFileName;
+        vio::Path skeletonPath = rootDir + nString("\\") + fileData.mSkeletonFileName;
         ozz::io::File file(skeletonPath.getCString(), "rb");
 
         if (!file.opened()) {
@@ -53,11 +54,11 @@ bool RigRepository::loadRigFile(const vio::Path& filePath) {
     }
 
     // Load animations
-    def.mNumAnimations = def.mAnimationFileNames.size();
+    def.mNumAnimations = fileData.mAnimationFileNames.size();
     if (def.mNumAnimations) {
         def.mAnimations = std::unique_ptr<ozz::animation::Animation[]>(new ozz::animation::Animation[def.mNumAnimations]);
         for (ui32 i = 0; i < def.mNumAnimations; ++i) {
-            vio::Path animPath = rootDir + nString("\\") + def.mAnimationFileNames[i];
+            vio::Path animPath = rootDir + nString("\\") + fileData.mAnimationFileNames[i];
             ozz::io::File file(animPath.getCString(), "rb");
 
             if (!file.opened()) {
@@ -72,14 +73,27 @@ bool RigRepository::loadRigFile(const vio::Path& filePath) {
             }
 
             archive >> def.mAnimations[i];
+            
+            // Remove extension
+            vio::Path fileNameTrim = fileData.mAnimationFileNames[i];
+            def.mNameToAnimationIndex[fileNameTrim.getFileNameNoExtension()] = i;
         }
     }
 
     mRigIdLookup[rigFileNameNoExtension] = def.mRigId;
+    return true;
 }
 
 const RigDef& RigRepository::getRigDef(const nString& name) const {
     auto&& it = mRigIdLookup.find(name);
     assert(it != mRigIdLookup.end());
     return mRigDefs[it->second];
+}
+
+const RigDef* RigRepository::tryGetRigDef(const nString& name) const {
+    auto&& it = mRigIdLookup.find(name);
+    if (it == mRigIdLookup.end()) {
+        return nullptr;
+    }
+    return &mRigDefs[it->second];
 }

@@ -199,8 +199,8 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     const f32v2& xyVel = cmp.getLinearVelocity();
 
     // TODO: TestBit
-    if ((cmp.mFlags & e_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
-        cmp.mDir = glm::normalize(xyVel);
+    if (/*(cmp.mFlags & e_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && */(glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
+        cmp.mDir = glm::normalize(lerp(cmp.mDir, glm::normalize(xyVel), 0.7f));
     }
 
     // Handle gravity and Z velocity

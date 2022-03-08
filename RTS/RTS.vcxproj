@@ -151,7 +151,6 @@
     <ClCompile Include="src\ai\tasks\BuildTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
-    <ClCompile Include="src\character\CharacterModelRepository.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprint.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
@@ -168,6 +167,7 @@
     <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
+    <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
     <ClCompile Include="src\definitions\BuildingDef.cpp" />
     <ClCompile Include="src\definitions\BusinessDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
@@ -249,6 +249,7 @@
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
@@ -291,7 +292,6 @@
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
     <ClInclude Include="src\camera\Camera3D.h" />
     <ClInclude Include="src\camera\ICamera.h" />
-    <ClInclude Include="src\character\CharacterModelRepository.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprint.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
@@ -314,6 +314,7 @@
     <ClInclude Include="src\crafting\CraftingRepository.h" />
     <ClInclude Include="src\data_structure\FlatQuadtree.h" />
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
+    <ClInclude Include="src\definitions\AnimMachineDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
     <ClInclude Include="src\definitions\BusinessDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
@@ -413,6 +414,7 @@
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />

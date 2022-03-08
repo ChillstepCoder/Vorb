@@ -1,0 +1,11 @@
+rig: human
+walk_left: ""
+walk_right: ""
+walk_front: sword_shield_walk
+walk_back: ""
+run_left: ""
+run_right: ""
+run_front: sword_shield_run_1
+run_back: sword_shield_run_2
+idle: sword_shield_idle
+idle_combat: sword_shield_idle

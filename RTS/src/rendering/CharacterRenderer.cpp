@@ -23,6 +23,7 @@
 #include "ozz/base/maths/soa_transform.h"
 #include "ozz/animation/runtime/local_to_model_job.h"
 #include "ozz/animation/runtime/sampling_job.h"
+#include "ozz/animation/runtime/blending_job.h"
 
 //void renderPart(vg::SpriteBatch& sb, const vg::Texture& body, const f32v2& pos, f32 zPos, const f32v2& offset, const f32v2& additionalOffset, f32v4& uvRect, float size, float depth, float alpha) {
 //	//f32v2 sizeVec(size);
@@ -40,9 +41,124 @@ CharacterRenderer::~CharacterRenderer() {
 
 }
 
-ozz::animation::SamplingJob::Context sContext;
+void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4x4>& models, ozz::vector<ozz::math::Float4x4>& skinningMatrices, f32 elapsedSec) {
+    // Buffer of local transforms as sampled from animation_.
+    ozz::vector<ozz::math::SoaTransform> locals;
+    ozz::vector<ozz::math::SoaTransform> locals2;
+    ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
-void CharacterRenderer::addModel(const Camera3D& camera, const CharacterModel& model, const f32v3& position, float angle, float alpha, const MaterialRenderer& materialRenderer) {
+    assert(cmp.mModel);
+    assert(cmp.mModel->mAnimMachine);
+    assert(cmp.mModel->mRig);
+
+    const ModelDef& modelDef = *cmp.mModel;
+    const AnimMachineDef& machine = *modelDef.mAnimMachine;
+    const RigDef& rig = *modelDef.mRig;
+
+    // Animation and skinning
+
+    // Allocates runtime buffers.
+    // TODO: Cache
+    const int num_soa_joints = rig.mSkeleton.num_soa_joints();
+    locals.resize(num_soa_joints);
+    locals2.resize(num_soa_joints);
+    blendedLocals.resize(num_soa_joints);
+    const int num_joints = rig.mSkeleton.num_joints();
+    models.resize(num_joints);
+
+    // Allocates a context that matches animation requirements.
+    ozz::animation::SamplingJob::Context sContext;
+    sContext.Resize(num_joints);
+
+    // TODO: cache
+    ui8 num_skinning_matrices = 0;
+    for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+        num_skinning_matrices =
+            std::max(num_skinning_matrices, modelDef.mModel.getMeshes()[i].getNumJoints());
+    }
+
+    // Allocates skinning matrices.
+    skinningMatrices.resize(num_skinning_matrices);
+
+
+    AnimTrack& currentTrack = cmp.mAnimState.mCurrentTrack;
+
+    ozz::animation::SamplingJob sampling_job;
+    sampling_job.animation = machine.mAnimsArray[e_cast(currentTrack.mState)];
+    sampling_job.context = &sContext;
+    sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
+    sampling_job.output = make_span(locals);
+    if (!sampling_job.Run()) {
+        pError("Sampling job error");
+        return;
+    }
+
+    // Update animation counters
+    currentTrack.mTime += elapsedSec;
+    if (currentTrack.isDone()) {
+        currentTrack.mTime -= currentTrack.mDuration;
+    }
+
+    // Blending
+    if (cmp.mAnimState.isBlending()) {
+
+        AnimTrack& nextTrack = cmp.mAnimState.mNextTrack;
+
+        ozz::animation::SamplingJob sampling_job2;
+        sampling_job2.animation = machine.mAnimsArray[e_cast(nextTrack.mState)];
+        sampling_job2.context = &sContext;
+        sampling_job2.ratio = nextTrack.mTime / nextTrack.mDuration;
+        sampling_job2.output = make_span(locals2);
+        if (!sampling_job2.Run()) {
+            pError("Sampling job error");
+            return;
+        }
+
+        // Update animation counters
+        nextTrack.mTime += elapsedSec;
+        if (nextTrack.isDone()) {
+            nextTrack.mTime -= nextTrack.mDuration;
+        }
+
+        // Prepares blending layers.
+        ozz::animation::BlendingJob::Layer layers[2];
+        layers[0].transform = make_span(locals);
+        layers[0].weight = 1.0 - sDebugOptions.mDebugFloat02;
+        layers[1].transform = make_span(locals2);
+        layers[1].weight = sDebugOptions.mDebugFloat02;
+
+        // Setups blending job.
+        ozz::animation::BlendingJob blend_job;
+        blend_job.threshold = 0.1f;
+        blend_job.layers = layers;
+        blend_job.rest_pose = rig.mSkeleton.joint_rest_poses();
+        blend_job.output = make_span(blendedLocals);
+
+        // Blends.
+        if (!blend_job.Run()) {
+            pError("Blending job error");
+            return;
+        }
+    }
+
+    // Converts from local space to model space matrices.
+    ozz::animation::LocalToModelJob ltm_job;
+    ltm_job.skeleton = &rig.mSkeleton;
+    if (cmp.mAnimState.isBlending()) {
+        ltm_job.input = make_span(blendedLocals);
+    }
+    else {
+        ltm_job.input = make_span(locals);
+    }
+    ltm_job.output = make_span(models);
+    if (!ltm_job.Run()) {
+        pError("Local to model job error");
+        return;
+    }
+
+}
+
+void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const f32v3& position, float angle, float elapsedSec, const MaterialRenderer& materialRenderer) {
 
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
@@ -52,7 +168,7 @@ void CharacterRenderer::addModel(const Camera3D& camera, const CharacterModel& m
     VGUniform scaleUniform = mMaterial->mProgram.getUniform("unScale");
     VGUniform boneUniform = mMaterial->mProgram.getUniform("unBoneTransforms[0]");
 
-    const ModelDef& modelDef = mModelRepo.getModelDef(0);
+    const ModelDef& modelDef = *cmp.mModel;
     ui32 nextTextureIndex = 0;
     materialRenderer.bindMaterialForRender(*mMaterial, &nextTextureIndex);
     glUniform1i(diffuseTextureUniform, nextTextureIndex);
@@ -69,65 +185,15 @@ void CharacterRenderer::addModel(const Camera3D& camera, const CharacterModel& m
     glUniform3fv(offsetUniform, 1, &offset.x);
     glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
-    // Buffer of local transforms as sampled from animation_.
-    ozz::vector<ozz::math::SoaTransform> locals;
     // Buffer of model space matrices.
     ozz::vector<ozz::math::Float4x4> models;
     // Buffer of skinning matrices, result of the joint multiplication of the
     // inverse bind pose with the model space matrix.
     ozz::vector<ozz::math::Float4x4> skinningMatrices;
+    updateAnimation(cmp, models, skinningMatrices, elapsedSec);
 
-   
-    // Animation and skinning
-    {
-        const RigDef* rig = modelDef.mRig;
-        if (rig) {
-            // Allocates runtime buffers.
-            // TODO: Cache
-            const int num_soa_joints = rig->mSkeleton.num_soa_joints();
-            locals.resize(num_soa_joints);
-            const int num_joints = rig->mSkeleton.num_joints();
-            models.resize(num_joints);
-
-            // Allocates a context that matches animation requirements.
-            sContext.Resize(num_joints);
-
-            // TODO: cache
-            ui8 num_skinning_matrices = 0;
-            for (ui32 i = 0; i < modelDef.mModel.mNumMeshes; ++i) {
-                num_skinning_matrices =
-                    std::max(num_skinning_matrices, modelDef.mModel.mMeshes[i].getNumJoints());
-            }
-
-            // Allocates skinning matrices.
-            skinningMatrices.resize(num_skinning_matrices);
-
-
-            ozz::animation::SamplingJob sampling_job;
-            sampling_job.animation = &rig->mAnimations[0];
-            sampling_job.context = &sContext;
-            sampling_job.ratio = sDebugOptions.mDebugFloat02;
-            sampling_job.output = make_span(locals);
-            if (!sampling_job.Run()) {
-                pError("Sampling job error");
-                return;
-            }
-
-            // Converts from local space to model space matrices.
-            ozz::animation::LocalToModelJob ltm_job;
-            ltm_job.skeleton = &rig->mSkeleton;
-            ltm_job.input = make_span(locals);
-            ltm_job.output = make_span(models);
-            if (!ltm_job.Run()) {
-                pError("Local to model job error");
-                return;
-            }
-
-        }
-    }
-
-    for (ui32 i = 0; i < modelDef.mModel.mNumMeshes; ++i) {
-        const auto& mesh = modelDef.mModel.mMeshes[i];
+    for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+        const auto& mesh = modelDef.mModel.getMeshes()[i];
         const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
         for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
             skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];

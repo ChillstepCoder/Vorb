@@ -59,7 +59,7 @@ public:
     void initPostLoad();
 
     void beginFrame(const Camera3D* camera, f32v3 playerPos); // Called automatically by beginFrame
-    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha);
+    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
     void selectNextDebugShader();

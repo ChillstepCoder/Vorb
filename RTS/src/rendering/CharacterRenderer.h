@@ -11,14 +11,17 @@ class Camera3D;
 struct BillboardVertex;
 class BillboardMesh;
 class ModelRepository;
+struct CharacterModelComponent;
+
 
 // TODO: Cutout rendering - see pathfinder wrath of the righteous
 class CharacterRenderer {
 public:
 	CharacterRenderer(const MaterialManager& materialManager, const ModelRepository& modelRepo);
 	~CharacterRenderer();
-	void addModel(const Camera3D& camera, const CharacterModel& model, const f32v3& position, float angle, float alpha, const MaterialRenderer& materialRenderer);
-	void renderBatch(const Camera3D& camera, const MaterialRenderer& materialRenderer);
+
+	void addModel(const Camera3D& camera, CharacterModelComponent& cmp, const f32v3& position, float angle, float elapsedSec, const MaterialRenderer& materialRenderer);
+    void renderBatch(const Camera3D& camera, const MaterialRenderer& materialRenderer);
 
 private:
 

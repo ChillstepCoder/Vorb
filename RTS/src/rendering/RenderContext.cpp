@@ -355,7 +355,7 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     glCullFace(GL_BACK);
 }
 
-void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha) {
+void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec) {
 
     // TODO: Map texels to pixels?
     if (camera.getScale() < 1.5f) {
@@ -441,7 +441,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     if (!sDebugOptions.mHideCharacters) {
-        mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 1.0f, frameAlpha);
+        mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, frameAlpha, elapsedSec);
     }
     if (sDebugOptions.mShowPhysicsDebug) {
         mEcsRenderer->renderPhysicsDebug(camera);

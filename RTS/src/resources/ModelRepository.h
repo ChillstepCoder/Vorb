@@ -9,6 +9,7 @@ DECL_VG(class Texture);
 typedef ui32 ModelID;
 
 class RigRepository;
+class AnimMachineRepository;
 
 class ModelRepository
 {
@@ -16,7 +17,7 @@ public:
     ModelRepository(vio::IOManager& ioManager, vg::TextureCache& textureCache, const RigRepository& rigRepository);
     ~ModelRepository();
 
-    bool loadModelFile(const vio::Path& filePath);
+    bool loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository);
 
     const ModelDef& getModelDef(ui32 modelId) const { return mModelDefs[modelId]; }
     const ModelDef& getModelDef(const nString& name) const;

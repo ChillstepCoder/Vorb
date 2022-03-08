@@ -357,8 +357,7 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
 }
 
-void MainMenuScreen::draw(const vui::GameTime& gameTime)
-{
+void MainMenuScreen::draw(const vui::GameTime& gameTime) {
 
 	const f32 frameAlpha = mGameTimer.getFrameAlpha();
 
@@ -369,7 +368,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha);
+	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha, gameTime.elapsedSec);
 
 	tryUpdateAndRenderInteractPopup(xyPos);
 
