@@ -286,7 +286,7 @@ PhysicsComponent::PhysicsComponent(World& world, const f32v2& centerPosition, bo
         bodyDef.type = b2_dynamicBody;
         bodyDef.position.Set(centerPosition.x, centerPosition.y);
         mBody = world.createPhysBody(&bodyDef);
-        mBody->SetLinearDamping(0.1f);
+        mBody->SetLinearDamping(0.3f);
     }
 	mPrevXYPosition = centerPosition;
 	mPrevZPosition = mZPosition;

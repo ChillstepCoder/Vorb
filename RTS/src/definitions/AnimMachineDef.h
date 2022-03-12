@@ -24,23 +24,6 @@ enum class AnimMachineState : ui16 {
     COUNT
 };
 
-struct AnimTrack {
-    AnimMachineState mState = AnimMachineState::IDLE;
-    bool mIsLooping = true;
-    bool mIsUpperBody = false;
-    f32 mDuration = 1.0f;
-    f32 mTime = 0.0f;
-
-    bool isDone() const { return mTime >= mDuration; }
-};
-
-struct AnimState {
-    AnimTrack mCurrentTrack;
-    AnimTrack mNextTrack;
-
-    bool isBlending() const { return mCurrentTrack.mState != mNextTrack.mState; };
-};
-
 // Make sure order and contents of the animation machine name and animation arrays are the same
 struct AnimMachineDef {
     ui32 mAnimMachineId;

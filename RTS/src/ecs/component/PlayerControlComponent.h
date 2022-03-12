@@ -3,10 +3,6 @@
 struct ClientECSData;
 class World;
 
-enum class PlayerControlFlags : ui16 {
-	SPRINTING = 1 << 0
-};
-
 struct PlayerControlComponent {
 	ui16 mPlayerControlFlags = 0;
 };

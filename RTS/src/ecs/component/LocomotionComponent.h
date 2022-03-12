@@ -1,0 +1,35 @@
+#pragma once
+
+enum class LocomotionMode : ui8 {
+    IDLE,
+    WALK,
+    RUN,
+    SPRINT,
+    DODGE,
+    JUMP,
+    COUNT
+};
+
+struct LocomotionComponentDef {
+    float mSpeed;
+};
+KEG_TYPE_DECL(LocomotionComponentDef);
+
+constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(LocomotionMode::COUNT)] = {
+    0.0f, // IDLE
+    0.5f, // WALK
+    1.0f, // RUN
+    1.4f, // SPRINT
+    1.0f, // DODGE
+    1.0f  // JUMP
+};
+
+struct LocomotionComponent {
+    f32 mSpeedRun = 0.3f;
+    f32v2 mDesiredDirection = f32v2(0.0f);
+    LocomotionMode mMode;
+
+    f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
+};
+static_assert(sizeof(LocomotionComponent) == 16, "Keep small");
+SIZER(LocomotionComponent); // Use mDesiredDirection

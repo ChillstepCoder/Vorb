@@ -4,6 +4,7 @@
 
 // All component includes
 #include "ecs/component/PlayerControlComponent.h"
+#include "ecs/component/LocomotionComponent.h"
 #include "ecs/component/CombatComponent.h"
 #include "ecs/component/CorpseComponent.h"
 #include "ecs/component/CharacterDetailsComponent.h"
@@ -21,7 +22,7 @@
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
-static_assert(e_cast(ComponentTypes::COUNT) == 14, "Update component includes");
+static_assert(e_cast(ComponentTypes::COUNT) == 15, "Update component includes");
 
 struct ComponentDefinition {
     ComponentDefinition(ComponentTypes type) : type(type) {};
@@ -33,6 +34,7 @@ struct ComponentDefinition {
         PhysicsComponentDef          physics;
         SimpleSpriteComponentDef     simpleSprite;
         CharacterDetailsComponentDef characterDetails;
+        LocomotionComponentDef       locomotion;
     };
 };
-static_assert(e_cast(ComponentTypes::COUNT) == 14, "Set any needed component def");
+static_assert(e_cast(ComponentTypes::COUNT) == 15, "Set any needed component def");

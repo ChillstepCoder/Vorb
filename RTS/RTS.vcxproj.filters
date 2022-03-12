@@ -420,6 +420,9 @@
     <ClCompile Include="src\definitions\AnimMachineDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ecs\component\LocomotionComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -930,6 +933,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\AnimMachineDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\LocomotionComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

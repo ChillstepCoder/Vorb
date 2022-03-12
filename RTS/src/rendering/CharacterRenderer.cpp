@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "CharacterRenderer.h"
 
+#include "ecs/component/PhysicsComponent.h"
+
 #include "rendering/MaterialManager.h"
 
 #include "rendering/MaterialRenderer.h"
@@ -43,8 +45,7 @@ CharacterRenderer::~CharacterRenderer() {
 
 void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4x4>& models, ozz::vector<ozz::math::Float4x4>& skinningMatrices, f32 elapsedSec) {
     // Buffer of local transforms as sampled from animation_.
-    ozz::vector<ozz::math::SoaTransform> locals;
-    ozz::vector<ozz::math::SoaTransform> locals2;
+    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
     assert(cmp.mModel);
@@ -59,16 +60,10 @@ void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4
 
     // Allocates runtime buffers.
     // TODO: Cache
-    const int num_soa_joints = rig.mSkeleton.num_soa_joints();
-    locals.resize(num_soa_joints);
-    locals2.resize(num_soa_joints);
-    blendedLocals.resize(num_soa_joints);
-    const int num_joints = rig.mSkeleton.num_joints();
-    models.resize(num_joints);
-
-    // Allocates a context that matches animation requirements.
-    ozz::animation::SamplingJob::Context sContext;
-    sContext.Resize(num_joints);
+    const int numSoaJoints = rig.mSkeleton.num_soa_joints();
+    blendedLocals.resize(numSoaJoints);
+    const int numJoints = rig.mSkeleton.num_joints();
+    models.resize(numJoints);
 
     // TODO: cache
     ui8 num_skinning_matrices = 0;
@@ -78,58 +73,59 @@ void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4
     }
 
     // Allocates skinning matrices.
-    skinningMatrices.resize(num_skinning_matrices);
+    skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
 
+    ui32 numValidTracks = 0;
+    ui32 mValidTrackIndexForNonBlend = 0;
+    for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
+        AnimTrack& currentTrack = cmp.mAnimState.mTracks[i];
+        if (currentTrack.mWeight <= 0.0f) {
+            continue;
+        }
+        ++numValidTracks;
+        mValidTrackIndexForNonBlend = i;
 
-    AnimTrack& currentTrack = cmp.mAnimState.mCurrentTrack;
-
-    ozz::animation::SamplingJob sampling_job;
-    sampling_job.animation = machine.mAnimsArray[e_cast(currentTrack.mState)];
-    sampling_job.context = &sContext;
-    sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
-    sampling_job.output = make_span(locals);
-    if (!sampling_job.Run()) {
-        pError("Sampling job error");
-        return;
-    }
-
-    // Update animation counters
-    currentTrack.mTime += elapsedSec;
-    if (currentTrack.isDone()) {
-        currentTrack.mTime -= currentTrack.mDuration;
-    }
-
-    // Blending
-    if (cmp.mAnimState.isBlending()) {
-
-        AnimTrack& nextTrack = cmp.mAnimState.mNextTrack;
-
-        ozz::animation::SamplingJob sampling_job2;
-        sampling_job2.animation = machine.mAnimsArray[e_cast(nextTrack.mState)];
-        sampling_job2.context = &sContext;
-        sampling_job2.ratio = nextTrack.mTime / nextTrack.mDuration;
-        sampling_job2.output = make_span(locals2);
-        if (!sampling_job2.Run()) {
+        // Allocate buffers
+        locals[i].resize(numSoaJoints);
+        // Sample animation
+        ozz::animation::SamplingJob sampling_job;
+        sampling_job.animation = machine.mAnimsArray[e_cast(currentTrack.mState)];
+        sampling_job.context = currentTrack.mContext.get();
+        sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
+        sampling_job.output = make_span(locals[i]);
+        if (!sampling_job.Run()) {
             pError("Sampling job error");
             return;
         }
 
-        // Update animation counters
-        nextTrack.mTime += elapsedSec;
-        if (nextTrack.isDone()) {
-            nextTrack.mTime -= nextTrack.mDuration;
+        // Increment timers
+        currentTrack.mTime += elapsedSec;
+        if (currentTrack.isDone()) {
+            if (currentTrack.mIsLooping) {
+                currentTrack.mTime -= currentTrack.mDuration;
+            }
+            else {
+                currentTrack.mTime = currentTrack.mDuration;
+            }
         }
+    }
+
+    // Converts from local space to model space matrices.
+    ozz::animation::LocalToModelJob ltm_job;
+    ltm_job.skeleton = &rig.mSkeleton;
+    // Blending
+    if (numValidTracks > 1) {
 
         // Prepares blending layers.
-        ozz::animation::BlendingJob::Layer layers[2];
-        layers[0].transform = make_span(locals);
-        layers[0].weight = 1.0 - sDebugOptions.mDebugFloat02;
-        layers[1].transform = make_span(locals2);
-        layers[1].weight = sDebugOptions.mDebugFloat02;
+        ozz::animation::BlendingJob::Layer layers[NUM_ANIM_TRACKS];
+        for (int i = 0; i < NUM_ANIM_TRACKS; ++i) {
+            layers[i].transform = make_span(locals[i]);
+            layers[i].weight = cmp.mAnimState.mTracks[i].mWeight;
+        }
 
         // Setups blending job.
         ozz::animation::BlendingJob blend_job;
-        blend_job.threshold = 0.1f;
+        blend_job.threshold = 0.015f;
         blend_job.layers = layers;
         blend_job.rest_pose = rig.mSkeleton.joint_rest_poses();
         blend_job.output = make_span(blendedLocals);
@@ -139,17 +135,12 @@ void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4
             pError("Blending job error");
             return;
         }
-    }
-
-    // Converts from local space to model space matrices.
-    ozz::animation::LocalToModelJob ltm_job;
-    ltm_job.skeleton = &rig.mSkeleton;
-    if (cmp.mAnimState.isBlending()) {
         ltm_job.input = make_span(blendedLocals);
     }
     else {
-        ltm_job.input = make_span(locals);
+        ltm_job.input = make_span(locals[mValidTrackIndexForNonBlend]);
     }
+
     ltm_job.output = make_span(models);
     if (!ltm_job.Run()) {
         pError("Local to model job error");
@@ -158,7 +149,20 @@ void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4
 
 }
 
-void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const f32v3& position, float angle, float elapsedSec, const MaterialRenderer& materialRenderer) {
+void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
+
+    // Get physics info
+    const f32 angle = atan2(physCmp.mDir.y, physCmp.mDir.x);
+    f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
+    f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
+    const f32v3 position(interpolatedXY.x, interpolatedXY.y, interpolatedZ);
+
+    {// SPEED BLEND DO SOMEWHERE ELSE
+        const f32 speed = glm::length(physCmp.getLinearVelocity());
+        const f32 runWeight = glm::min(speed / 0.15f, 1.0f);
+        cmp.mAnimState.mTracks[0].mWeight = 1.0f - runWeight;
+        cmp.mAnimState.mTracks[1].mWeight = runWeight;
+    }
 
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");

@@ -36,9 +36,13 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 auto& modelCmp = registry.emplace<CharacterModelComponent>(newEntity);
                 // TODO: Better
                 modelCmp.mModel = &mResourceManager.getModelRepository().getModelDef(0);
-                modelCmp.mAnimState.mCurrentTrack.mDuration = modelCmp.mModel->mAnimMachine->mIdleAnim->duration();
-                modelCmp.mAnimState.mNextTrack.mState = AnimMachineState::RUN_FRONT;
-                modelCmp.mAnimState.mNextTrack.mDuration = modelCmp.mModel->mAnimMachine->mRunFrontAnim->duration();
+                modelCmp.setAnimTrack(0, AnimMachineState::IDLE, 1.0f);
+                modelCmp.setAnimTrack(1, AnimMachineState::RUN_FRONT, 1.0f);
+                break;
+            }
+            case ComponentTypes::Locomotion: {
+                auto& cmp = registry.emplace<LocomotionComponent>(newEntity);
+                cmp.mSpeedRun = cdef.locomotion.mSpeed;
                 break;
             }
             case ComponentTypes::Combat: {

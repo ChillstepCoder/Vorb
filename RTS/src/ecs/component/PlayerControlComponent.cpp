@@ -10,7 +10,6 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-constexpr float BASE_SPEED = 0.3f;
 constexpr float ACCELERATION = 0.05f;
 
 constexpr float ATTACK_RADIUS = 5.0f;
@@ -67,9 +66,8 @@ f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
+void updateMovement(PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
-	bool isSprinting = controlCmp.mPlayerControlFlags & e_cast(PlayerControlFlags::SPRINTING);
 	const f32v2 moveDir = getMovementDir(world, clientData);
 
 	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
@@ -79,7 +77,7 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	entt::entity entityId = static_cast<entt::entity>(physCmp.mBody->GetUserData().pointer);
 	registry.remove<NavigationComponent>(entityId);
 
-	float speed = BASE_SPEED;
+	float speed = motionCmp.getCurrentSpeed();
 	float dotp = glm::dot(moveDir, glm::normalize(physCmp.mDir));
 	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
 	const float angleOffset = acos(dotp);
@@ -89,11 +87,11 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
 	speed *= 1.0f - (speedLerp * 0.5f);
 
-	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
+	const f32v2 targetVelocity = moveDir * speed;
 	f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
 	float velocityDist = glm::length(velocityOffset);
 
-	const float acceleration = ACCELERATION * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 5.0f : 1.0f);
+	const float acceleration = ACCELERATION;
 
 	if (velocityDist <= acceleration) {
 		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
@@ -105,16 +103,19 @@ void updateMovement(PlayerControlComponent& controlCmp, PhysicsComponent& physCm
 	}
 }
 
-inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
+inline void updateComponent(PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-		controlCmp.mPlayerControlFlags |= e_cast(PlayerControlFlags::SPRINTING);
+		motionCmp.mMode = LocomotionMode::SPRINT;
 	}
-	else {
-		controlCmp.mPlayerControlFlags &= ~e_cast(PlayerControlFlags::SPRINTING);
+    else if(vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
+        motionCmp.mMode = LocomotionMode::WALK;
+    }
+    else {
+        motionCmp.mMode = LocomotionMode::RUN;
 	}
 
-	updateMovement(controlCmp, physCmp, world, clientData, registry);
+	updateMovement(controlCmp, motionCmp, physCmp, world, clientData, registry);
 
 	// Jump
 	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
@@ -124,7 +125,7 @@ inline void updateComponent(PlayerControlComponent& controlCmp, PhysicsComponent
 
 void PlayerControlSystem::update(entt::registry& registry, World& world, const ClientECSData& clientData) {
 	// Update components
-	registry.view<PlayerControlComponent, PhysicsComponent>().each([&](auto& controlCmp, auto& physCmp) {
-		updateComponent(controlCmp, physCmp, world, clientData, registry);
+	registry.view<PlayerControlComponent, LocomotionComponent, PhysicsComponent>().each([&](auto& controlCmp, auto& motionCmp, auto& physCmp) {
+		updateComponent(controlCmp, motionCmp, physCmp, world, clientData, registry);
 	});
 }

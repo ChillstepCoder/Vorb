@@ -177,6 +177,7 @@
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
+    <ClCompile Include="src\ecs\component\LocomotionComponent.cpp" />
     <ClCompile Include="src\ecs\component\PersonAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
@@ -326,6 +327,7 @@
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
+    <ClInclude Include="src\ecs\component\LocomotionComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
     <ClInclude Include="src\ecs\component\PersonAIComponent.h" />
     <ClInclude Include="src\ecs\component\CombatComponent.h" />

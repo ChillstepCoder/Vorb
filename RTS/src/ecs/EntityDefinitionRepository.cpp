@@ -29,6 +29,11 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterModel)]) {
             entityDef->components.emplace_back(ComponentTypes::CharacterModel);
         }
+        if (key == ComponentTypeStrings[e_cast(ComponentTypes::Locomotion)]) {
+            ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::Locomotion);
+            fileData.locomotion.mSpeed = 0.3f;
+            keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(LocomotionComponentDef));
+        }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Combat)]) {
             entityDef->components.emplace_back(ComponentTypes::Combat);
         }
@@ -77,7 +82,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else {
             pError("Tried to load invalid .entt component type \"" + key + "\"");
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 14, "Parse new component type");
+        static_assert(e_cast(ComponentTypes::COUNT) == 15, "Parse new component type");
         // Load data
         //BuildingDescription description
     }))) {

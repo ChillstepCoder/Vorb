@@ -17,7 +17,7 @@ KEG_TYPE_DECL(ModelDefFileData);
 struct ModelDef {
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    Model3D mModel;
+    SkinnedModel3D mModel;
     ui32 mModelId;
 };
 

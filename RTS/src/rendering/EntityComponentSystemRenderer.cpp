@@ -76,10 +76,7 @@ void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& ren
     auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([&](auto& physCmp, auto& modelCmp) {
 		// TODO: Common?
-		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
-		f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
-		renderer.addModel(camera, modelCmp, f32v3(interpolatedXY.x, interpolatedXY.y, interpolatedZ), rotation, elapsedSec, materialRenderer);
+		renderer.addModel(camera, modelCmp, physCmp, elapsedSec, frameAlpha, materialRenderer);
 	});
 	renderer.renderBatch(camera, materialRenderer);
 }

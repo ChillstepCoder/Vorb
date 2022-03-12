@@ -92,7 +92,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
     //}
 
     // Copy all meshes
-    Model3D& model = def.mModel;
+    SkinnedModel3D& model = def.mModel;
     model.mMeshes = std::unique_ptr<SkinnedMesh[]>(new SkinnedMesh[numMeshes]);
     model.mNumMeshes = numMeshes;
     /* ozz::vector<ozz::sample::Mesh> meshes;
@@ -233,6 +233,12 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
             }
         }
     }
+
+    ui8 numSkinningMatrices = 0;
+    for (ui32 i = 0; i < model.getNumMeshes(); ++i) {
+        numSkinningMatrices = std::max(numSkinningMatrices, model.getMeshes()[i].getNumJoints());
+    }
+    model.mNumSkinningMatrices = numSkinningMatrices;
     
     // Store lookup
     assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
