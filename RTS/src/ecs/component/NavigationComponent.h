@@ -4,6 +4,7 @@
 #include "pathfinding/PathFinder.h"
 
 class World;
+struct LocomotionComponent;
 
 enum class NavigationType : ui8 {
 	FINE_PATH,
@@ -29,7 +30,7 @@ struct NavigationComponent {
     void requestFinePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback);
     void requestCoarsePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback);
 
-	void abort();
+	void abort(LocomotionComponent& motionCmp);
 
     // ============== Data ==============
     std::function<void(bool)> mFinishedCallback = nullptr;
@@ -37,7 +38,6 @@ struct NavigationComponent {
     std::shared_ptr<NavPath> mFinePath;
     std::shared_ptr<NavPath> mPendingFinePath;
     std::shared_ptr<NavPath> mCoarsePath;
-    float mSpeed = 1.0f;
 	union {
 		struct {
             ui32 mCurrentFinePoint;

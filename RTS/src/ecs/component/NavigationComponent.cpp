@@ -14,43 +14,27 @@
 
 #include "World.h"
 
-
-constexpr float JUMP_VELOCITY = 0.15f; // Matches player control component
-
 constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
-
 constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles
-constexpr float ACCELERATION = 0.013f;
 //constexpr int QUADRANTS = 5; //bad name
 
-inline void updateVelocity(const f32v2& targetVelocity, PhysicsComponent& physCmp) {
-    f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
-    float velocityDist = glm::length(velocityOffset);
-    // TODO: DELTATIME
-    //myPhysCmp.mBody->ApplyForce(reinterpret_cast<const b2Vec2&>(targetVelocity * 0.025f), myPhysCmp.mBody->GetWorldCenter(), true);
-    if (velocityDist <= ACCELERATION) {
-        physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
-    }
-    else {
-        const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
-        velocityOffset = (velocityOffset / velocityDist) * ACCELERATION + currentLinearVelocity;
-        physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
-    }
-}
-
-bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
-    const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - physCmp.getXYPosition();
+bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, LocomotionComponent& motionCmp, World& world) {
+  
+	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - physCmp.getXYPosition();
     const float distance2 = glm::length2(offset);
     if (distance2 <= SQ(MIN_DISTANCE)) {
+		motionCmp.mMode = LocomotionMode::IDLE;
         return true;
     }
 
-    const f32v2 targetVelocity = (offset / std::sqrt(distance2)) * navCmp.mSpeed/* * (cmp.mColliding ? 0.2f : 1.0f)*/;
-    updateVelocity(targetVelocity, physCmp);
+	// TODO: Allow variable pathing urgency
+    motionCmp.mMode = LocomotionMode::WALK;
+
+	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 	return false;
 }
 
-bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, LocomotionComponent& motionCmp, World& world) {
 
 	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return false;
@@ -58,7 +42,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
     ui32 numPoints = navCmp.mFinePath->getNumPoints();
 
-	if (navCmp.mCurrentFinePoint >= numPoints) {
+    if (navCmp.mCurrentFinePoint >= numPoints) {
 		return true;
 	}
 
@@ -86,8 +70,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 		}
         if (baseZ >= physCmp.getZPosition() + 0.1f /*1.1*/) {
             // Climb
-			std::cout << "DETECTED ISSUE!\n";
-            physCmp.setZVelocity(JUMP_VELOCITY);
+			motionCmp.mMode = LocomotionMode::JUMP;
         }
 	}
 
@@ -97,7 +80,6 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
         ++navCmp.mCurrentFinePoint;
         if (navCmp.mCurrentFinePoint >= numPoints) {
 			// Target reached
-            physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
 			navCmp.mFinePath = nullptr;
 			if (navCmp.mNavigationType == NavigationType::FINE_PATH && navCmp.mFinishedCallback) {
 				navCmp.mFinishedCallback(true /* success */);
@@ -112,14 +94,15 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 		}
 	}
 
-	f32v2 targetVelocity = (offset / std::sqrt(distance2)) * navCmp.mSpeed/* * (cmp.mColliding ? 0.2f : 1.0f)*/;
-    f32v2 targetDir = glm::normalize(targetVelocity); // TODO: Get rid of normalize
+	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
+    // TODO: Allow variable pathing urgency
+    motionCmp.mMode = LocomotionMode::WALK;
 	    
 	// Steer around obstacles and corners
 	// Raycast forward to find a collision intersect
 	if (navCmp.mFramesUntilNextRayCheck == 0) {
 		constexpr f32 STEER_MULT = 1.5f;
-		f32v2 steerVector = targetVelocity * STEER_MULT; //Look ahead
+		f32v2 steerVector = motionCmp.mDesiredDirection * STEER_MULT; //Look ahead
 		IntersectionHit2D hit = world.tryGetRaycastIntersect2D(physCmp.getXYPosition(), physCmp.getXYPosition() + steerVector, physCmp.getZPosition());
 		if (hit.didHit()) {
 			// Something in the way!
@@ -131,7 +114,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 				f32 baseZ = tile->getBaseZPositionUncompressedMainThread();
 				if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
 					// Climb
-					physCmp.setZVelocity(JUMP_VELOCITY);
+					motionCmp.mMode = LocomotionMode::JUMP;
 				}
 				else {
 					// Steer
@@ -144,14 +127,12 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
 					constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
 					if (angle > 0.0f) {
-						targetVelocity = glm::rotate(targetVelocity, -STEERING_ADJUST);
-						steerVector = targetVelocity * STEER_MULT;
-						targetDir = glm::normalize(targetVelocity);
+						motionCmp.mDesiredDirection = glm::rotate(motionCmp.mDesiredDirection, -STEERING_ADJUST);
+						steerVector = motionCmp.mDesiredDirection * STEER_MULT;
 					}
 					else {
-						targetVelocity = glm::rotate(targetVelocity, STEERING_ADJUST);
-						steerVector = targetVelocity * STEER_MULT;
-						targetDir = glm::normalize(targetVelocity);
+						motionCmp.mDesiredDirection = glm::rotate(motionCmp.mDesiredDirection, STEERING_ADJUST);
+						steerVector = motionCmp.mDesiredDirection * STEER_MULT;
 					}
 
 					// Debug render
@@ -174,10 +155,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	}
 		
 	// TODO: Do we need this?
-	physCmp.mDir = targetDir;
-
-    updateVelocity(targetVelocity, physCmp);
-
+	physCmp.mDir = motionCmp.mDesiredDirection;
 	return false;
 
     //const float ARC_LENGTH = DEG_TO_RAD(175.0f);
@@ -216,9 +194,9 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	
 }
 
-void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp) {
+void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp, LocomotionComponent& motionCmp) {
 	// Target reached
-	physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
+	motionCmp.mMode = LocomotionMode::IDLE;
 	navCmp.mFinePath = nullptr;
 	navCmp.mCoarsePath = nullptr;
 	if (navCmp.mFinishedCallback) {
@@ -242,7 +220,7 @@ void requestPathToCoarsePoint(NavigationComponent& navCmp, PhysicsComponent& phy
 	}
 }
 
-bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, World& world) {
+bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, LocomotionComponent& motionCmp, World& world) {
 
     if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return false;
@@ -288,7 +266,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 		if (navCmp.mFinePath) {
 			bool requestNextPath = false;
 			assert(navCmp.mFinePath->finishedGenerating.load());
-			if (updateComponentFinePath(entity, navCmp, physCmp, world)) {
+			if (updateComponentFinePath(entity, navCmp, physCmp, motionCmp, world)) {
                 navCmp.mFinePath = nullptr;
 				requestNextPath = true;
 			}
@@ -300,7 +278,6 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 			if (requestNextPath) {
                 ++navCmp.mCurrentCoarsePoint;
                 if (navCmp.mCurrentCoarsePoint >= numPoints) {
-                    onPathingFinished(physCmp, navCmp);
                     return true;
                 }
                 else {
@@ -320,31 +297,27 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 
 void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 	// Update components
-    auto view = registry.view<NavigationComponent, PhysicsComponent>();
+    auto view = registry.view<NavigationComponent, PhysicsComponent, LocomotionComponent>();
 
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
         auto& physCmp = view.get<PhysicsComponent>(entity);
+        auto& motionCmp = view.get<LocomotionComponent>(entity);
         switch (navCmp.mNavigationType) {
             case NavigationType::FINE_PATH:
-				if (updateComponentFinePath(entity, navCmp, physCmp, world)) {
-					onPathingFinished(physCmp, navCmp);
+				if (updateComponentFinePath(entity, navCmp, physCmp, motionCmp, world)) {
+					onPathingFinished(physCmp, navCmp, motionCmp);
 				}
                 break;
             case NavigationType::COARSE_PATH:
 				// TODO: Are these checks pointless?
-				if (updateComponentCoarsePath(entity, navCmp, physCmp, world)) {
-					onPathingFinished(physCmp, navCmp);
+				if (updateComponentCoarsePath(entity, navCmp, physCmp, motionCmp, world)) {
+					onPathingFinished(physCmp, navCmp, motionCmp);
 				}
                 break;
             case NavigationType::SIMPLE_LINEAR:
-				if (updateComponentSimpleLinear(entity, navCmp, physCmp, world)) {
-                    physCmp.mFlags |= e_cast(PhysicsComponentFlag::FRICTION_ENABLED);
-					if (navCmp.mFinishedCallback) {
-						navCmp.mFinishedCallback(true /* success */);
-						navCmp.mFinishedCallback = nullptr;
-					}
-					navCmp.mNavigationType = NavigationType::INVALID;
+                if (updateComponentSimpleLinear(entity, navCmp, physCmp, motionCmp, world)) {
+                    onPathingFinished(physCmp, navCmp, motionCmp);
 				}
                 break;
             default:
@@ -397,7 +370,8 @@ void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, 
     mFinishedCallback = finishedCallback;
 }
 
-void NavigationComponent::abort() {
+void NavigationComponent::abort(LocomotionComponent& motionCmp) {
+    motionCmp.mMode = LocomotionMode::IDLE;
     mFlags |= NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH;
 	mFinePath.reset();
 	if (mFinishedCallback) {

@@ -9,8 +9,7 @@ class EntityComponentSystem;
 
 enum class PhysicsComponentFlag : ui8 {
 	AIRBORNE             = 1 << 0,
-	LOCK_DIR_TO_VELOCITY = 1 << 1,
-	FRICTION_ENABLED     = 1 << 2,
+	LOCK_DIR_TO_VELOCITY = 1 << 1
 };
 
 enum class ColliderShapes {

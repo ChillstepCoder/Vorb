@@ -9,7 +9,7 @@ class SpriteRepository;
 
 #include <ozz/animation/runtime/sampling_job.h>
 
-class ModelDef;
+struct ModelDef;
 struct RigDef;
 
 enum CharacterModelTextureIndex {

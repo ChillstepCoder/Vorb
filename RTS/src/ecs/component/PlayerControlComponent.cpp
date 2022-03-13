@@ -10,12 +10,8 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-constexpr float ACCELERATION = 0.05f;
-
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
-
-constexpr float JUMP_VELOCITY = 0.15f;
 
 //void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
 //	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
@@ -35,24 +31,26 @@ const f32v2 MOVEMENT_SIGNS[4]{
 	f32v2(1.0f, 1.0f),   // Cartesian::UP
 };
 
-f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
+f32v2 getMovementDir(const ClientECSData& clientData) {
 	f32v2 moveDir(0.0f);
+	// TODO: Remove this
 	int cartesianIndex = e_cast(clientData.worldLookCardinalDirection);
 	const i32v2& axis = MOVEMENT_AXIS[cartesianIndex];
-	// Movement
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
-		moveDir[axis.y] = MOVEMENT_SIGNS[cartesianIndex][0];
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
-		moveDir[axis.y] = -MOVEMENT_SIGNS[cartesianIndex][0];
-	}
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
-		moveDir[axis.x] = -MOVEMENT_SIGNS[cartesianIndex][1];
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
-		moveDir[axis.x] = MOVEMENT_SIGNS[cartesianIndex][1];
-	}
+	// WSAD inputs
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
+        moveDir[axis.y] = MOVEMENT_SIGNS[cartesianIndex][0];
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
+        moveDir[axis.y] = -MOVEMENT_SIGNS[cartesianIndex][0];
+    }
+
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
+        moveDir[axis.x] = -MOVEMENT_SIGNS[cartesianIndex][1];
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
+        moveDir[axis.x] = MOVEMENT_SIGNS[cartesianIndex][1];
+    }
 
 	// Normalize or return 0
 	float length = glm::length(moveDir);
@@ -66,46 +64,13 @@ f32v2 getMovementDir(World& world, const ClientECSData& clientData) {
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
 
-	const f32v2 moveDir = getMovementDir(world, clientData);
+inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, const ClientECSData& clientData, entt::registry& registry) {
 
-	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
-		return;
-	}
-	// Remove any navigation component if we are applying movement input
-	entt::entity entityId = static_cast<entt::entity>(physCmp.mBody->GetUserData().pointer);
-	registry.remove<NavigationComponent>(entityId);
-
-	float speed = motionCmp.getCurrentSpeed();
-	float dotp = glm::dot(moveDir, glm::normalize(physCmp.mDir));
-	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
-	const float angleOffset = acos(dotp);
-    assert(angleOffset == angleOffset); // nan check
-
-	// Reduce speed for backstep
-	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
-	speed *= 1.0f - (speedLerp * 0.5f);
-
-	const f32v2 targetVelocity = moveDir * speed;
-	f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
-	float velocityDist = glm::length(velocityOffset);
-
-	const float acceleration = ACCELERATION;
-
-	if (velocityDist <= acceleration) {
-		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
-	}
-	else {
-		const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
-		velocityOffset = (velocityOffset / velocityDist) * acceleration + currentLinearVelocity;
-		physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
-	}
-}
-
-inline void updateComponent(PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, PhysicsComponent& physCmp, World& world, const ClientECSData& clientData, entt::registry& registry) {
-
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+	// Inputs for states
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
+		motionCmp.mMode = LocomotionMode::JUMP;
+    }else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
 		motionCmp.mMode = LocomotionMode::SPRINT;
 	}
     else if(vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
@@ -115,17 +80,25 @@ inline void updateComponent(PlayerControlComponent& controlCmp, LocomotionCompon
         motionCmp.mMode = LocomotionMode::RUN;
 	}
 
-	updateMovement(controlCmp, motionCmp, physCmp, world, clientData, registry);
+	//  Update movement
+    motionCmp.mDesiredDirection = getMovementDir(clientData);
 
-	// Jump
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-		physCmp.setZVelocity(JUMP_VELOCITY);
+    if (motionCmp.mDesiredDirection.x != 0.0f || motionCmp.mDesiredDirection.y != 0.0f) {
+        // Remove any navigation component if we are applying movement input
+        registry.remove<NavigationComponent>(entity);
 	}
+	else {
+        motionCmp.mMode = LocomotionMode::IDLE;
+	}
+
 }
 
-void PlayerControlSystem::update(entt::registry& registry, World& world, const ClientECSData& clientData) {
+void PlayerControlSystem::update(entt::registry& registry, const ClientECSData& clientData) {
 	// Update components
-	registry.view<PlayerControlComponent, LocomotionComponent, PhysicsComponent>().each([&](auto& controlCmp, auto& motionCmp, auto& physCmp) {
-		updateComponent(controlCmp, motionCmp, physCmp, world, clientData, registry);
-	});
+    auto view = registry.view<PlayerControlComponent, LocomotionComponent>();
+    for (auto entity : view) {
+		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
+		LocomotionComponent& motionCmp = view.get<LocomotionComponent>(entity);
+		updateComponent(entity, controlCmp, motionCmp, clientData, registry);
+	};
 }

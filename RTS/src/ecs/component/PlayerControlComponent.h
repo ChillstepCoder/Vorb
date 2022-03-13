@@ -9,5 +9,5 @@ struct PlayerControlComponent {
 
 class PlayerControlSystem {
 public:
-	void update(entt::registry& registry, World& world, const ClientECSData& clientData);
+	void update(entt::registry& registry, const ClientECSData& clientData);
 };

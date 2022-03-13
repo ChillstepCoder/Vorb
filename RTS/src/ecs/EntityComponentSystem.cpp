@@ -28,11 +28,12 @@ void EntityComponentSystem::update(const ClientECSData& clientData) {
     }
     mSpriteTable.update();*/
     mBusinessSystem.update(mRegistry);
-	mPhysicsSystem.update(mRegistry); // Phys cmp sets dir to velocity
 	//mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
-	mPlayerControlSystem.update(mRegistry, mWorld, clientData);
+	mPlayerControlSystem.update(mRegistry, clientData);
 	mPersonAISystem.update(mRegistry);
     mNavigationSystem.update(mRegistry, mWorld);
+	mLocomotionSystem.update(mRegistry);
+    mPhysicsSystem.update(mRegistry); // Phys cmp sets dir to velocity
 	mTimedTileInteractSystem.update(mRegistry);
 	//mCorpseTable.update();
 }
