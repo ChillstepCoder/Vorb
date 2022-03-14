@@ -401,7 +401,9 @@ void MainMenuScreen::updateCamera(const vui::GameTime& gameTime) {
     const f32v3 lookAtOffset(mCameraDirectionTweener.mCurr.x, mCameraDirectionTweener.mCurr.y, mCameraDirectionZOffset);
     mCamera3D->lookAt(mCamera3D->getPosition() + lookAtOffset);
 
-	mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z + f32v3(0.0f, 0.0f, playerZPos));
+    // Position tweener causes juttering
+    //mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z + f32v3(0.0f, 0.0f, playerZPos));
+    mCamera3D->setPosition(targetPos - lookAtOffset * mCameraPositionTweener.mTarget.z + f32v3(0.0f, 0.0f, playerZPos));
 
 	if (mCamera3D->getFieldOfView() != sDebugOptions.mFoV) {
 		mCamera3D->setFieldOfView(sDebugOptions.mFoV);

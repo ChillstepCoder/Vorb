@@ -17,10 +17,19 @@ KEG_TYPE_DECL(LocomotionComponentDef);
 
 constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(LocomotionMode::COUNT)] = {
     0.0f, // IDLE
-    0.25f, // WALK
-    1.0f, // RUN
-    1.4f, // SPRINT
+    0.3f, // WALK
+    0.6f, // RUN
+    1.0f, // SPRINT
     1.0f, // DODGE
+    0.6f  // JUMP
+};
+
+constexpr f32 LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(LocomotionMode::COUNT)] = {
+    0.0f, // IDLE
+    0.6f, // WALK
+    1.0f, // RUN
+    1.5f, // SPRINT
+    1.5f, // DODGE
     1.0f  // JUMP
 };
 
@@ -30,6 +39,7 @@ struct LocomotionComponent {
     LocomotionMode mMode;
 
     f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
+    f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mMode)]; }
 };
 static_assert(sizeof(LocomotionComponent) == 16, "Keep small");
 

@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "LocomotionComponent.h"
 
+#include "options/DebugOptions.h"
+
 #include "ecs/component/PhysicsComponent.h"
 
-constexpr float ACCELERATION = 0.05f;
+constexpr float ACCELERATION = 0.01f;
 constexpr float JUMP_VELOCITY = 0.15f;
 
 KEG_TYPE_DEF_SAME_NAME(LocomotionComponentDef, kt) {
@@ -19,9 +21,7 @@ inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& ph
 
     assert(motionCmp.mDesiredDirection.x != 0.0f || motionCmp.mDesiredDirection.y != 0.0f);
 
-    const float acceleration = ACCELERATION;
-
-    float speed = motionCmp.getCurrentSpeed();
+    float desiredSpeed = motionCmp.getCurrentSpeed();
     // TODO: assert normalized?
     // Determine angle to our desired direction
     float dotp = glm::dot(motionCmp.mDesiredDirection, physCmp.mDir);
@@ -31,25 +31,32 @@ inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& ph
 
     // Reduce speed for backstep
     const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
-    speed *= 1.0f - (speedLerp * 0.5f);
+    desiredSpeed *= 1.0f - (speedLerp * 0.5f);
 
     // Figure out how far off we are from desired velocity
-    const f32v2 targetVelocity = motionCmp.mDesiredDirection * speed;
-    f32v2 velocityOffset = targetVelocity - physCmp.getLinearVelocity();
-    float velocityDist = glm::length(velocityOffset);
+    const f32 currentSpeed = glm::length(physCmp.getLinearVelocity());
 
-    if (velocityDist <= acceleration) {
-        // Set to exact velocity
-        physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
-    }
-    else {
-        // Accelerate to the velocity
-        //const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(physCmp.mBody->GetLinearVelocity());
-        //velocityOffset = (velocityOffset / velocityDist) * acceleration + currentLinearVelocity;
-        //physCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
-        f32v2 force = motionCmp.mDesiredDirection * acceleration * 0.1f;
+    // F = M * A
+    // A = dv/dt
+    // Linear damping useful info: https://gamedev.stackexchange.com/questions/160047/what-does-lineardamping-mean-in-box2d
+    const f32 mass = physCmp.mBody->GetMass();
+    const f32 currentSpeedInDirection = currentSpeed * dotp;
+    const f32 damping = 1.0f - physCmp.mBody->GetLinearDamping();
+    desiredSpeed /= damping;
+    if (currentSpeedInDirection < desiredSpeed) {
+
+        const f32 additionalSpeedNeeded = desiredSpeed - currentSpeedInDirection;
+        const f32 forceToDesiredSpeed = (additionalSpeedNeeded * mass);
+        const f32 forceToApply = glm::min(forceToDesiredSpeed, motionCmp.getCurrentAcceleration() * ACCELERATION);
+
+        const f32v2 force = motionCmp.mDesiredDirection * forceToApply;
         physCmp.mBody->ApplyForceToCenter(reinterpret_cast<const b2Vec2&>(force), true);
+        /* std::cout << "APPLYING FORCE " << force.x << " " << force.y << " " << glm::length(force) << "\n";
+         std::cout << "  CURRENT SPEED " << currentSpeed << " vs desired " << desiredSpeed * damping << "\n";
+         std::cout << "  FORCE NEEDED " << forceToDesiredSpeed << " " << forceToApply << std::endl;*/
     }
+
+    //}
 
     // Jumping
     if (motionCmp.mMode == LocomotionMode::JUMP) {
