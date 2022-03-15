@@ -74,9 +74,9 @@ void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& ren
 	// renderer so that it can add screen depth like the world shaders do
 	
     auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent>().each([&](auto& physCmp, auto& modelCmp) {
+	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent, LocomotionComponent>().each([&](auto& physCmp, auto& modelCmp, auto& motionCmp) {
 		// TODO: Common?
-		renderer.addModel(camera, modelCmp, physCmp, elapsedSec, frameAlpha, materialRenderer);
+		renderer.addModel(camera, modelCmp, physCmp, motionCmp, elapsedSec, frameAlpha, materialRenderer);
 	});
 	renderer.renderBatch(camera, materialRenderer);
 }

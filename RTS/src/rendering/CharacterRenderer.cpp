@@ -2,6 +2,7 @@
 #include "CharacterRenderer.h"
 
 #include "ecs/component/PhysicsComponent.h"
+#include "ecs/component/LocomotionComponent.h"
 
 #include "rendering/MaterialManager.h"
 
@@ -43,7 +44,7 @@ CharacterRenderer::~CharacterRenderer() {
 
 }
 
-void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4x4>& models, ozz::vector<ozz::math::Float4x4>& skinningMatrices, f32 elapsedSec) {
+void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, ozz::vector<ozz::math::Float4x4>& skinningMatrices, f32 elapsedSec) {
     // Buffer of local transforms as sampled from animation_.
     ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
@@ -149,7 +150,7 @@ void updateAnimation(CharacterModelComponent& cmp, ozz::vector<ozz::math::Float4
 
 }
 
-void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
+void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const LocomotionComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
 
     // Get physics info
     const f32 angle = atan2(physCmp.mDir.y, physCmp.mDir.x);
@@ -194,7 +195,7 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
     // Buffer of skinning matrices, result of the joint multiplication of the
     // inverse bind pose with the model space matrix.
     ozz::vector<ozz::math::Float4x4> skinningMatrices;
-    updateAnimation(cmp, models, skinningMatrices, elapsedSec);
+    updateAnimation(cmp, motionCmp, models, skinningMatrices, elapsedSec);
 
     for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
         const auto& mesh = modelDef.mModel.getMeshes()[i];
