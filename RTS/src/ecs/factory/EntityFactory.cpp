@@ -34,10 +34,8 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {
                 auto& modelCmp = registry.emplace<CharacterModelComponent>(newEntity);
-                // TODO: Better
-                modelCmp.mModel = &mResourceManager.getModelRepository().getModelDef(0);
-                modelCmp.setAnimTrack(0, AnimMachineState::IDLE, 1.0f);
-                modelCmp.setAnimTrack(1, AnimMachineState::RUN_FRONT, 1.0f);
+                // TODO: Select correct model
+                modelCmp.init(&mResourceManager.getModelRepository().getModelDef(0));
                 break;
             }
             case ComponentTypes::Locomotion: {

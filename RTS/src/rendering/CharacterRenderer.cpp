@@ -46,6 +46,7 @@ CharacterRenderer::~CharacterRenderer() {
 
 void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, ozz::vector<ozz::math::Float4x4>& skinningMatrices, f32 elapsedSec) {
     // Buffer of local transforms as sampled from animation_.
+    // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
     ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
@@ -80,7 +81,7 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
     ui32 mValidTrackIndexForNonBlend = 0;
     for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
         AnimTrack& currentTrack = cmp.mAnimState.mTracks[i];
-        if (currentTrack.mWeight <= 0.0f) {
+        if (currentTrack.mWeight <= 0.0001f) {
             continue;
         }
         ++numValidTracks;
@@ -90,7 +91,7 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
         locals[i].resize(numSoaJoints);
         // Sample animation
         ozz::animation::SamplingJob sampling_job;
-        sampling_job.animation = machine.mAnimsArray[e_cast(currentTrack.mState)];
+        sampling_job.animation = machine.mAnimsArray[i];
         sampling_job.context = currentTrack.mContext.get();
         sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
         sampling_job.output = make_span(locals[i]);
@@ -119,7 +120,7 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
 
         // Prepares blending layers.
         ozz::animation::BlendingJob::Layer layers[NUM_ANIM_TRACKS];
-        for (int i = 0; i < NUM_ANIM_TRACKS; ++i) {
+        for (int i = 0; i < numValidTracks; ++i) {
             layers[i].transform = make_span(locals[i]);
             layers[i].weight = cmp.mAnimState.mTracks[i].mWeight;
         }
@@ -127,7 +128,7 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
         // Setups blending job.
         ozz::animation::BlendingJob blend_job;
         blend_job.threshold = 0.015f;
-        blend_job.layers = layers;
+        blend_job.layers = ozz::span{layers, size_t(numValidTracks)};
         blend_job.rest_pose = rig.mSkeleton.joint_rest_poses();
         blend_job.output = make_span(blendedLocals);
 

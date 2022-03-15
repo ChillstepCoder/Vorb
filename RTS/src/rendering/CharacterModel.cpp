@@ -12,22 +12,33 @@
 #include "CharacterRenderer.h"
 #include <ozz/animation/runtime/animation.h>
 
-void CharacterModelComponent::setAnimTrack(ui32 trackIndex, AnimMachineState currentState, f32 weight) {
+void CharacterModelComponent::init(const ModelDef* model) {
+    mModel = model;
+    for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
+        AnimTrack& track = mAnimState.mTracks[i];
+        const ozz::animation::Animation* anim = mModel->mAnimMachine->mAnimsArray[i];
+        if (anim) {
+            track.mDuration = mModel->mAnimMachine->mAnimsArray[i]->duration();
+        }
+    }
+    // Init to idle state engaged
+    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = 1.0f;
+}
 
-    assert(trackIndex < NUM_ANIM_TRACKS);
-    AnimTrack& track = mAnimState.mTracks[trackIndex];
-    track.mState = currentState;
+void CharacterModelComponent::setAnimTrack(AnimMachineState currentState, f32 weight) {
+
+    AnimTrack& track = mAnimState.mTracks[e_cast(currentState)];
     track.mTime = 0.0f;
     track.mDuration = mModel->mAnimMachine->mAnimsArray[e_cast(currentState)]->duration();
     track.mWeight = weight;
-    if (!track.mContext) {
-        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-    }
-    if (track.mContext->max_soa_tracks() != mModel->mRig->mSkeleton.num_joints()) {
-        track.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
-    }
-    else {
-        track.mContext->Invalidate();
+    if (track.mWeight) {
+        // TODO: Is this lazy init really ok?
+        if (!track.mContext) {
+            track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+        }
+        if (track.mContext->max_soa_tracks() != mModel->mRig->mSkeleton.num_joints()) {
+            track.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
+        }
     }
 }
 

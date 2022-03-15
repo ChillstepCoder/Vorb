@@ -19,22 +19,20 @@ enum CharacterModelTextureIndex {
 };
 
 struct AnimTrack {
-    std::unique_ptr<ozz::animation::SamplingJob::Context> mContext;
-    AnimMachineState mState = AnimMachineState::IDLE;
-    bool mIsLooping = true;
-    bool mIsUpperBody = false;
+    std::unique_ptr<ozz::animation::SamplingJob::Context> mContext; // TODO: Pool allocator
     f32 mDuration = 1.0f;
     f32 mTime = 0.0f;
     f32 mWeight = 0.0f;
+    bool mIsLooping = true;
+    bool mIsUpperBody = false; // TODO: Flags
 
     bool isDone() const { return mTime >= mDuration; }
 };
+static_assert(sizeof(AnimTrack) == 24, "Keep small");
 
-constexpr ui32 NUM_ANIM_TRACKS = 2;
+constexpr ui32 NUM_ANIM_TRACKS = e_cast(AnimMachineState::COUNT);
 struct AnimState {
     AnimTrack mTracks[NUM_ANIM_TRACKS];
-
-    bool isBlending() const { return mTracks[0].mState != mTracks[1].mState && mTracks[0].mWeight != 0.0f && mTracks[1].mWeight != 0.0f; };
 };
 
 // TODO: File name
@@ -42,5 +40,6 @@ struct CharacterModelComponent {
     const ModelDef* mModel = nullptr;
     AnimState mAnimState;
 
-    void setAnimTrack(ui32 trackIndex, AnimMachineState currentState, f32 weight);
+    void init(const ModelDef* model);
+    void setAnimTrack(AnimMachineState currentState, f32 weight);
 };
