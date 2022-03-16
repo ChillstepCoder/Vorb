@@ -10,11 +10,14 @@
 
 #include "options/DebugOptions.h"
 
+#include "definitions/ModelDef.h"
+#include "ecs/EntityComponentSystem.h"
+
 DebugTweakerPanel::DebugTweakerPanel(const f32v2& screenDims) : mScreenDims(screenDims)
 {
 }
 
-void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float aspectRatio)
+void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio)
 {
     constexpr float WINDOW_WIDTH = 400.0f;
     const float WINDOW_HEIGHT = mScreenDims.y;
@@ -144,6 +147,40 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::ColorPicker3("Debug Color 2", &sDebugOptions.mDebugColor02.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::SliderFloat("Debug Float 1", &sDebugOptions.mDebugFloat01, 0.0f, 1.0f);
         ImGui::SliderFloat("Debug Float 2", &sDebugOptions.mDebugFloat02, 0.0f, 1.0f);
+        ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Animation Debugger")) {
+        ImGui::PushID(++ID);
+        
+        CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(ecs.mPlayerEntity);
+        ui32 numActive = 0;
+        for (int i = 0; i < NUM_ANIM_TRACKS; ++i) {
+            AnimTrack& track = playerModel.mAnimState.mTracks[i]; // I'm basically God
+            const ozz::animation::Animation* anim = playerModel.mModel->mAnimMachine->mAnimsArray[i];
+            if (anim) {
+                bool isActive = track.mFlags.isBitSet(AnimTrackFlags::IS_ACTIVE);
+                if (ImGui::Checkbox((nString("Is Active ") + std::to_string(i)).c_str(), &isActive)) {
+                    if (isActive) {
+                        track.mFlags.setBit(AnimTrackFlags::IS_ACTIVE);
+                    }
+                    else {
+                        track.mFlags.clearBit(AnimTrackFlags::IS_ACTIVE);
+                    }
+                }
+                if (track.isActive()) {
+                    ++numActive;
+                }
+                if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeight, 0.0f, 1.0f)) {
+                    // Debug update the context
+                    playerModel.setAnimTrackWeight(AnimMachineState(i), track.mWeight);
+                }
+                ImGui::SliderFloat((nString("Time ") + std::to_string(i)).c_str(), &track.mTime, 0.0f, track.mDuration);
+                ImGui::Separator();
+            }
+        }
+        ImGui::Separator();
+        ImGui::Text((nString("Total Active Anims: ") + std::to_string(numActive)).c_str());
         ImGui::PopID();
     }
 

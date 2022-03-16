@@ -23,13 +23,12 @@ void CharacterModelComponent::init(const ModelDef* model) {
     }
     // Init to idle state engaged
     mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = 1.0f;
+    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mFlags.setBit(AnimTrackFlags::IS_ACTIVE);
 }
 
-void CharacterModelComponent::setAnimTrack(AnimMachineState currentState, f32 weight) {
+void CharacterModelComponent::setAnimTrackWeight(AnimMachineState currentState, f32 weight) {
 
     AnimTrack& track = mAnimState.mTracks[e_cast(currentState)];
-    track.mTime = 0.0f;
-    track.mDuration = mModel->mAnimMachine->mAnimsArray[e_cast(currentState)]->duration();
     track.mWeight = weight;
     if (track.mWeight) {
         // TODO: Is this lazy init really ok?
@@ -42,3 +41,42 @@ void CharacterModelComponent::setAnimTrack(AnimMachineState currentState, f32 we
     }
 }
 
+constexpr f32 FADE_SPEED_SCALE = 0.5f;
+
+void AnimTrack::update(f32 elapsedSec) {
+    // Update fade
+    if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_IN)) {
+        const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
+        f32 currentFade = (f32)mFadeWeight / UINT16_MAX;
+        currentFade += fadeAmount;
+        if (currentFade >= 1.0f) {
+            mFadeWeight = UINT16_MAX;
+            mFlags.clearBit(AnimTrackFlags::IS_FADING_IN);
+        }
+        else {
+            mFadeWeight = currentFade * UINT16_MAX;
+        }
+    }
+    else if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT)) {
+        const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
+        f32 currentFade = (f32)mFadeWeight / UINT16_MAX;
+        currentFade -= fadeAmount;
+        if (currentFade <= 0.0f) {
+            mFadeWeight = 0;
+            mFlags.clearMaskBits(e_cast(AnimTrackFlags::IS_FADING_OUT) | e_cast(AnimTrackFlags::IS_ACTIVE));
+        }
+        else {
+            mFadeWeight = currentFade * UINT16_MAX;
+        }
+    }
+    // Update anim time
+    mTime += elapsedSec;
+    if (isDone()) {
+        if (mFlags.isBitSet(AnimTrackFlags::IS_LOOPING)) {
+            mTime -= mDuration;
+        }
+        else {
+            mTime = mDuration;
+        }
+    }
+}

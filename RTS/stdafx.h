@@ -63,7 +63,7 @@ constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
 
 #define OVERFLOW_ASSERT_UI32(x) (assert(x < 100000000u))
 
-constexpr entt::entity INVALID_ENTITY = (entt::entity)(UINT32_MAX);
+constexpr entt::entity INVALID_ENTITY = (entt::null);
 
 #define UNUSED(x) (void)(x)
 #define ENTITY_ID_NONE (ui32)(~0u)

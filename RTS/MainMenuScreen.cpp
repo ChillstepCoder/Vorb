@@ -144,12 +144,12 @@ void MainMenuScreen::build() {
         }
         else if (event.keyCode == VKEY_L) {
 			auto&& ecs = mWorld->getECS();
-			if (ecs.mRegistry.try_get<DynamicLightComponent>(mPlayerEntity)) {
+			if (ecs.mRegistry.try_get<DynamicLightComponent>(ecs.mPlayerEntity)) {
 				// Remove existing
-				ecs.mRegistry.remove<DynamicLightComponent>(mPlayerEntity);
+				ecs.mRegistry.remove<DynamicLightComponent>(ecs.mPlayerEntity);
 			} else {
 				// Add new
-				ecs.mRegistry.emplace<DynamicLightComponent>(mPlayerEntity);
+				ecs.mRegistry.emplace<DynamicLightComponent>(ecs.mPlayerEntity);
 			}
 		}
         else if (event.keyCode == VKEY_Q) {
@@ -184,8 +184,8 @@ void MainMenuScreen::build() {
        /* TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
         if (pickData.hit.didHit()) {
 
-            NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
-            const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+            NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
+            const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
             const f32v2& playerXYPos = physCmp.getXYPosition();
             cmp.requestCoarsePath(ui16v2(pickData.hit.position.x, pickData.hit.position.y), playerXYPos);
 
@@ -208,7 +208,7 @@ void MainMenuScreen::build() {
 			if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
                 auto&& ecs = mWorld->getECS();
-				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(mPlayerEntity)) {
+				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
                     TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
 					if (pickData.hit.didHit()) {
 						phys->teleportToPoint(pickData.hit.position);
@@ -276,9 +276,10 @@ void MainMenuScreen::build() {
 		}
 	});
 
-	// Add player
-	mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
-	assert((ui32)mPlayerEntity != (ui32)INVALID_ENTITY);
+    // Add player
+    auto&& ecs = mWorld->getECS();
+    ecs.mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
+	assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
     mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
 	mCameraPositionTweener = f32v3(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 5.0f);
 
@@ -340,11 +341,12 @@ void MainMenuScreen::update(const vui::GameTime& gameTime) {
 
     // Update game ticks
     int ticks = 0;
+    auto&& ecs = mWorld->getECS();
 	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         // Update camera
         // TODO: Copy paste bad
-        const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+        const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
         const f32v2& playerXYPos = physCmp.getXYPosition();
 
 		// World update after camera
@@ -366,7 +368,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime) {
     mFps = sFps;
 
     auto&& ecs = mWorld->getECS();
-	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(mPlayerEntity);
+	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
 	const f32v2& xyPos = cmp.getXYPosition();
 	mRenderContext.renderFrame(*mCamera3D, f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha, gameTime.elapsedSec);
 
@@ -380,13 +382,14 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime) {
 void MainMenuScreen::updateCamera(const vui::GameTime& gameTime) {
 	// Target player
     const f32 frameAlpha = mGameTimer.getFrameAlpha();
-    const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(mPlayerEntity);
+    auto&& ecs = mWorld->getECS();
+    const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
     const f32v2& playerXYPos = physCmp.getXYInterpolated(frameAlpha);
     const f32 playerZPos = physCmp.getZInterpolated(frameAlpha);
 
     // TODO: Delta time dependent?
     // Zoom
-	const PlayerControlComponent& playerControlCmp = mWorld->getECS().mRegistry.get<PlayerControlComponent>(mPlayerEntity);
+	const PlayerControlComponent& playerControlCmp = ecs.mRegistry.get<PlayerControlComponent>(ecs.mPlayerEntity);
 
     // Camera follow
     constexpr float MAX_SPEED_MPS = 0.3f;
@@ -442,7 +445,8 @@ void MainMenuScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
-            NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(mPlayerEntity);
+            auto&& ecs = mWorld->getECS();
+            NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
             cmp.requestCoarsePath(PathPoint(xyPos), PathPoint(worldPosInt));
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {

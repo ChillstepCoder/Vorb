@@ -68,9 +68,6 @@ private:
     RenderContext& mRenderContext;
 
     float mFps = 0.0f;
-
-	entt::entity mPlayerEntity = (entt::entity)0;
-
 	// Camera
     // TODO: 3D
     Cartesian mCameraCartesianDirection = Cartesian::UP;

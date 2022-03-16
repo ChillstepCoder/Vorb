@@ -40,6 +40,7 @@ public:
 	// Classes with World access
 	friend class PhysicsComponent;
 
+    entt::entity mPlayerEntity = entt::null;
     entt::registry mRegistry;
 	World& mWorld;
 };

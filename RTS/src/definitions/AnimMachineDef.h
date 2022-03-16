@@ -24,6 +24,21 @@ enum class AnimMachineState : ui16 {
     COUNT
 };
 
+constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
+    "WALK_LEFT",
+    "WALK_RIGHT",
+    "WALK_FRONT",
+    "WALK_BACK",
+    "RUN_LEFT",
+    "RUN_RIGHT",
+    "RUN_FRONT",
+    "RUN_BACK",
+    "IDLE",
+    "IDLE_COMBAT"
+};
+
+static_assert(e_cast(AnimMachineState::COUNT) == 10, "Update debug strings");
+
 // Make sure order and contents of the animation machine name and animation arrays are the same
 struct AnimMachineDef {
     ui32 mAnimMachineId;

@@ -44,10 +44,11 @@ CharacterRenderer::~CharacterRenderer() {
 
 }
 
-void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, ozz::vector<ozz::math::Float4x4>& skinningMatrices, f32 elapsedSec) {
+bool updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
     // Buffer of local transforms as sampled from animation_.
     // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
     ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS];
+    f32 blendWeights[NUM_ANIM_TRACKS];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
     assert(cmp.mModel);
@@ -74,42 +75,29 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
             std::max(num_skinning_matrices, modelDef.mModel.getMeshes()[i].getNumJoints());
     }
 
-    // Allocates skinning matrices.
-    skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
-
     ui32 numValidTracks = 0;
-    ui32 mValidTrackIndexForNonBlend = 0;
     for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
         AnimTrack& currentTrack = cmp.mAnimState.mTracks[i];
-        if (currentTrack.mWeight <= 0.0001f) {
+        if (!currentTrack.isActive()) {
             continue;
         }
-        ++numValidTracks;
-        mValidTrackIndexForNonBlend = i;
-
         // Allocate buffers
-        locals[i].resize(numSoaJoints);
+        locals[numValidTracks].resize(numSoaJoints);
         // Sample animation
         ozz::animation::SamplingJob sampling_job;
         sampling_job.animation = machine.mAnimsArray[i];
         sampling_job.context = currentTrack.mContext.get();
         sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
-        sampling_job.output = make_span(locals[i]);
+        sampling_job.output = make_span(locals[numValidTracks]);
+        blendWeights[numValidTracks] = currentTrack.mWeight;
+        ++numValidTracks;
         if (!sampling_job.Run()) {
             pError("Sampling job error");
-            return;
+            return false;
         }
 
         // Increment timers
-        currentTrack.mTime += elapsedSec;
-        if (currentTrack.isDone()) {
-            if (currentTrack.mIsLooping) {
-                currentTrack.mTime -= currentTrack.mDuration;
-            }
-            else {
-                currentTrack.mTime = currentTrack.mDuration;
-            }
-        }
+        currentTrack.update(elapsedSec);
     }
 
     // Converts from local space to model space matrices.
@@ -122,7 +110,7 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
         ozz::animation::BlendingJob::Layer layers[NUM_ANIM_TRACKS];
         for (int i = 0; i < numValidTracks; ++i) {
             layers[i].transform = make_span(locals[i]);
-            layers[i].weight = cmp.mAnimState.mTracks[i].mWeight;
+            layers[i].weight = blendWeights[i];
         }
 
         // Setups blending job.
@@ -135,19 +123,24 @@ void updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
         // Blends.
         if (!blend_job.Run()) {
             pError("Blending job error");
-            return;
+            return false;
         }
         ltm_job.input = make_span(blendedLocals);
     }
     else {
-        ltm_job.input = make_span(locals[mValidTrackIndexForNonBlend]);
+        ltm_job.input = make_span(locals[0]);
     }
 
-    ltm_job.output = make_span(models);
-    if (!ltm_job.Run()) {
-        pError("Local to model job error");
-        return;
+    // Run the final job
+    if (numValidTracks) {
+        ltm_job.output = make_span(models);
+        if (!ltm_job.Run()) {
+            pError("Local to model job error");
+            return false;
+        }
+        return true;
     }
+    return false;
 
 }
 
@@ -159,11 +152,11 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
     f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
     const f32v3 position(interpolatedXY.x, interpolatedXY.y, interpolatedZ);
 
-    {// SPEED BLEND DO SOMEWHERE ELSE
+    {// TODO: SPEED BLEND DO SOMEWHERE ELSE
         const f32 speed = glm::length(physCmp.getLinearVelocity());
         const f32 runWeight = glm::min(speed / 0.15f, 1.0f);
-        cmp.mAnimState.mTracks[0].mWeight = 1.0f - runWeight;
-        cmp.mAnimState.mTracks[1].mWeight = runWeight;
+        cmp.setAnimTrackWeight(AnimMachineState::IDLE, 1.0f - runWeight);
+        cmp.setAnimTrackWeight(AnimMachineState::RUN_FRONT, runWeight);
     }
 
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
@@ -196,23 +189,46 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
     // Buffer of skinning matrices, result of the joint multiplication of the
     // inverse bind pose with the model space matrix.
     ozz::vector<ozz::math::Float4x4> skinningMatrices;
-    updateAnimation(cmp, motionCmp, models, skinningMatrices, elapsedSec);
+    // Allocates skinning matrices.
+    skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
 
-    for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
-        const auto& mesh = modelDef.mModel.getMeshes()[i];
-        const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
-        for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
-            skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];
+    if (updateAnimation(cmp, motionCmp, models, elapsedSec)) {
+        // Draw animated
+        for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+            const auto& mesh = modelDef.mModel.getMeshes()[i];
+            const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
+            for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
+                skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];
+            }
+            glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
+            glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
+            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
+            glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
+            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
+            glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
+            glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
+
+            mesh.draw(mMaterial->mProgram);
         }
-        glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
-        glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
-        glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
-        glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
-        glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
-        glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
-        glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
+    }
+    else {
+        // INVALID ANIMATION
+        // Draw T pose
+        for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+            const auto& mesh = modelDef.mModel.getMeshes()[i];
+            for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
+                skinningMatrices[i] = ozz::math::Float4x4::identity();
+            }
+            glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
+            glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
+            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
+            glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
+            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
+            glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
+            glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
 
-        mesh.draw(mMaterial->mProgram);
+            mesh.draw(mMaterial->mProgram);
+        }
     }
 }
 

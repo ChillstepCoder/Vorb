@@ -615,7 +615,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     renderUI(camera);
 
     // Debugging
-    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer, camera.getAspectRatio());
+    UIContext::getInstance().updateAndRenderUI(mWorld.getECS(), mActiveGBuffer, camera.getAspectRatio());
 
     // Swap
     mPrevGBufferIndex = mActiveGBufferIndex;
