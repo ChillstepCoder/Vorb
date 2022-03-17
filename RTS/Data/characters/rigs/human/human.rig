@@ -16,5 +16,6 @@ anims: [
   sword_shield_strafe_2.ozz,
   sword_shield_turn_1.ozz,
   sword_shield_turn_2.ozz,
-  sword_shield_walk.ozz
+  sword_shield_walk.ozz,
+  sprint.ozz
 ]

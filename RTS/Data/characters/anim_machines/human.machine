@@ -7,5 +7,6 @@ run_left: ""
 run_right: ""
 run_front: sword_shield_run_1
 run_back: sword_shield_run_2
+sprint_front: sprint
 idle: sword_shield_idle
 idle_combat: sword_shield_idle
