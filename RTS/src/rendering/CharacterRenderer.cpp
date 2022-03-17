@@ -44,7 +44,68 @@ CharacterRenderer::~CharacterRenderer() {
 
 }
 
-bool updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
+void updateAnimationStates(const PhysicsComponent& physCmp, const LocomotionComponent& motionCmp, CharacterModelComponent& cmp, f32 elapsedSec) {
+
+    // Update feel
+    cmp.updateFootstepAlpha(elapsedSec, motionCmp.mMode);
+
+    constexpr f32 fadeTime = 0.3f;
+    const bool isTransitioning = (motionCmp.mMode != cmp.mPrevLocomotionMode);
+    // TODO: There must be a better way
+    if (isTransitioning) {
+        switch (motionCmp.mMode) {
+            case LocomotionMode::IDLE: {
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeIn(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeOut(fadeTime);
+                break;
+            }
+            case LocomotionMode::WALK: {
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeIn(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeOut(fadeTime);
+                break;
+            }
+            case LocomotionMode::RUN: {
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeIn(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeOut(fadeTime);
+                break;
+            }
+            case LocomotionMode::SPRINT: {
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeIn(fadeTime);
+                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeOut(fadeTime);
+                break;
+            }
+            case LocomotionMode::DODGE: {
+
+                break;
+            }
+            case LocomotionMode::JUMP: {
+
+                break;
+            }
+            default:
+                assert(false && "Invalid LocomotionMode");
+                break;
+
+        }
+    }
+
+    // Any transitions are now over
+    cmp.mPrevLocomotionMode = motionCmp.mMode;
+}
+
+bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
+
+    // Speed blend, run/walk/sprint
+    updateAnimationStates(physCmp, motionCmp, cmp, elapsedSec);
+
     // Buffer of local transforms as sampled from animation_.
     // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
     ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS];
@@ -78,7 +139,13 @@ bool updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
     ui32 numValidTracks = 0;
     for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
         AnimTrack& currentTrack = cmp.mAnimState.mTracks[i];
+        // If our weightScale made us inactive, make sure to fully disable
         if (!currentTrack.isActive()) {
+            // Always force fadeout
+            if (currentTrack.mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT)) {
+                currentTrack.mWeight = 0;
+                currentTrack.mFlags.clearBit(AnimTrackFlags::IS_FADING_OUT);
+            }
             continue;
         }
         // Allocate buffers
@@ -89,7 +156,7 @@ bool updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
         sampling_job.context = currentTrack.mContext.get();
         sampling_job.ratio = currentTrack.mTime / currentTrack.mDuration;
         sampling_job.output = make_span(locals[numValidTracks]);
-        blendWeights[numValidTracks] = currentTrack.mWeight;
+        blendWeights[numValidTracks] = currentTrack.getTotalWeight();
         ++numValidTracks;
         if (!sampling_job.Run()) {
             pError("Sampling job error");
@@ -97,7 +164,7 @@ bool updateAnimation(CharacterModelComponent& cmp, const LocomotionComponent& mo
         }
 
         // Increment timers
-        currentTrack.update(elapsedSec);
+        currentTrack.update(elapsedSec, cmp.mFootstepAlpha);
     }
 
     // Converts from local space to model space matrices.
@@ -152,13 +219,6 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
     f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
     const f32v3 position(interpolatedXY.x, interpolatedXY.y, interpolatedZ);
 
-    {// TODO: SPEED BLEND DO SOMEWHERE ELSE
-        const f32 speed = glm::length(physCmp.getLinearVelocity());
-        const f32 runWeight = glm::min(speed / 0.15f, 1.0f);
-        cmp.setAnimTrackWeight(AnimMachineState::IDLE, 1.0f - runWeight);
-        cmp.setAnimTrackWeight(AnimMachineState::RUN_FRONT, runWeight);
-    }
-
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
     VGUniform diffuseTextureUniform = mMaterial->mProgram.getUniform("unDiffuse");
@@ -192,7 +252,7 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
     // Allocates skinning matrices.
     skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
 
-    if (updateAnimation(cmp, motionCmp, models, elapsedSec)) {
+    if (updateAnimation(physCmp, cmp, motionCmp, models, elapsedSec)) {
         // Draw animated
         for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
             const auto& mesh = modelDef.mModel.getMeshes()[i];

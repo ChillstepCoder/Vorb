@@ -171,16 +171,19 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
                 if (track.isActive()) {
                     ++numActive;
                 }
-                if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeight, 0.0f, 1.0f)) {
+                if (ImGui::SliderFloat(AnimMachineStateNames[i], &track.mWeightScale, 0.0f, 1.0f)) {
                     // Debug update the context
                     playerModel.setAnimTrackWeight(AnimMachineState(i), track.mWeight);
                 }
                 ImGui::SliderFloat((nString("Time ") + std::to_string(i)).c_str(), &track.mTime, 0.0f, track.mDuration);
+                f32 fadeWeight = (f32)track.mWeight / MAX_ANIM_FADE_WEIGHT;
+                ImGui::SliderFloat((nString("Weight ") + std::to_string(i)).c_str(), &fadeWeight, 0.0f, 1.0f);
                 ImGui::Separator();
             }
         }
         ImGui::Separator();
         ImGui::Text((nString("Total Active Anims: ") + std::to_string(numActive)).c_str());
+        ImGui::SliderFloat((nString("Footstep alpha ")).c_str(), &playerModel.mFootstepAlpha, 0.0f, 1.0f);
         ImGui::PopID();
     }
 

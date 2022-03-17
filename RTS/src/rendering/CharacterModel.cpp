@@ -12,6 +12,21 @@
 #include "CharacterRenderer.h"
 #include <ozz/animation/runtime/animation.h>
 
+constexpr ui16 DEFAULT_ANIM_TRACK_FLAGS[NUM_ANIM_TRACKS] = {
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_LEFT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_RIGHT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_FRONT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_BACK
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_LEFT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_RIGHT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_FRONT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_BACK
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// SPRINT_FRONT
+    e_cast(AnimTrackFlags::IS_ACTIVE) | e_cast(AnimTrackFlags::IS_LOOPING),// IDLE
+    e_cast(AnimTrackFlags::IS_LOOPING),// IDLE_COMBAT
+};
+static_assert(NUM_ANIM_TRACKS == 11u, "Update any defaults");
+
 void CharacterModelComponent::init(const ModelDef* model) {
     mModel = model;
     for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
@@ -20,63 +35,105 @@ void CharacterModelComponent::init(const ModelDef* model) {
         if (anim) {
             track.mDuration = mModel->mAnimMachine->mAnimsArray[i]->duration();
         }
+        mAnimState.mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
+        // TODO: Better context allocation
+        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+        track.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
     }
     // Init to idle state engaged
-    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = 1.0f;
-    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mFlags.setBit(AnimTrackFlags::IS_ACTIVE);
+    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
+    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
 }
 
-void CharacterModelComponent::setAnimTrackWeight(AnimMachineState currentState, f32 weight) {
+void CharacterModelComponent::setAnimTrackWeight(AnimMachineState currentState, f32 weightScale) {
 
     AnimTrack& track = mAnimState.mTracks[e_cast(currentState)];
-    track.mWeight = weight;
-    if (track.mWeight) {
-        // TODO: Is this lazy init really ok?
-        if (!track.mContext) {
-            track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-        }
-        if (track.mContext->max_soa_tracks() != mModel->mRig->mSkeleton.num_joints()) {
-            track.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
-        }
+    track.mWeightScale = weightScale;
+}
+
+void CharacterModelComponent::updateFootstepAlpha(f32 elapsedSec, LocomotionMode currentLocomotionMode) {
+    // TODO: Allow per model specification
+    const f32 cycleDuration = FOOTSTEP_CYCLE_DURATION_SEC[e_cast(currentLocomotionMode)];
+    assert(cycleDuration);
+    mFootstepAlpha += elapsedSec / cycleDuration;
+    if (mFootstepAlpha > 1.0f) {
+        mFootstepAlpha -= (int)mFootstepAlpha;
     }
 }
 
 constexpr f32 FADE_SPEED_SCALE = 0.5f;
+constexpr f32 MAX_FADE_DURATION = 1.0f / FADE_SPEED_SCALE;
+constexpr f32 MIN_FADE_DURATION = 1.0f / (FADE_SPEED_SCALE * 255.0f);
 
-void AnimTrack::update(f32 elapsedSec) {
+void AnimTrack::fadeIn(f32 fadeTime) {
+    // TODO: Tmp
+    mWeight = 1.0f;
+    // Don't fade in if we already are
+    if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_IN) || mWeight == MAX_ANIM_FADE_WEIGHT) {
+        return;
+    }
+
+    f32 fadeSpeed = glm::min(1.0f / (fadeTime * FADE_SPEED_SCALE), 255.0f);
+    mFadeSpeed = ui8(fadeSpeed);
+    assert(mFadeSpeed != 0);
+    mFlags.setBits(AnimTrackFlags::IS_FADING_IN, AnimTrackFlags::IS_ACTIVE);
+    mFlags.clearBit(AnimTrackFlags::IS_FADING_OUT);
+}
+
+void AnimTrack::fadeOut(f32 fadeTime) {
+
+    // Don't fade out if we already are
+    if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT) || mWeight == 0) {
+        return;
+    }
+
+    f32 fadeSpeed = glm::min(1.0f / (fadeTime * FADE_SPEED_SCALE), 255.0f);
+    mFadeSpeed = ui8(fadeSpeed);
+    mFlags.setBit(AnimTrackFlags::IS_FADING_OUT);
+    mFlags.clearBit(AnimTrackFlags::IS_FADING_IN);
+}
+
+void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
     // Update fade
     if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_IN)) {
         const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
-        f32 currentFade = (f32)mFadeWeight / UINT16_MAX;
+        f32 currentFade = (f32)mWeight / MAX_ANIM_FADE_WEIGHT;
         currentFade += fadeAmount;
         if (currentFade >= 1.0f) {
-            mFadeWeight = UINT16_MAX;
+            mWeight = MAX_ANIM_FADE_WEIGHT;
             mFlags.clearBit(AnimTrackFlags::IS_FADING_IN);
         }
         else {
-            mFadeWeight = currentFade * UINT16_MAX;
+            mWeight = currentFade * MAX_ANIM_FADE_WEIGHT;
         }
     }
     else if (mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT)) {
         const f32 fadeAmount = mFadeSpeed * elapsedSec * FADE_SPEED_SCALE;
-        f32 currentFade = (f32)mFadeWeight / UINT16_MAX;
+        f32 currentFade = (f32)mWeight / MAX_ANIM_FADE_WEIGHT;
         currentFade -= fadeAmount;
         if (currentFade <= 0.0f) {
-            mFadeWeight = 0;
+            mWeight = 0;
             mFlags.clearMaskBits(e_cast(AnimTrackFlags::IS_FADING_OUT) | e_cast(AnimTrackFlags::IS_ACTIVE));
         }
         else {
-            mFadeWeight = currentFade * UINT16_MAX;
+            mWeight = currentFade * MAX_ANIM_FADE_WEIGHT;
         }
     }
-    // Update anim time
-    mTime += elapsedSec;
-    if (isDone()) {
-        if (mFlags.isBitSet(AnimTrackFlags::IS_LOOPING)) {
-            mTime -= mDuration;
-        }
-        else {
-            mTime = mDuration;
+    // Sync to feet
+    if (mFlags.isBitSet(AnimTrackFlags::IS_SYNCED_TO_FEET)) {
+        assert(footstepAlpha <= 1.0f);
+        mTime = footstepAlpha * mDuration;
+    }
+    else {
+        // Update anim time
+        mTime += elapsedSec;
+        if (isDone()) {
+            if (mFlags.isBitSet(AnimTrackFlags::IS_LOOPING)) {
+                mTime -= mDuration;
+            }
+            else {
+                mTime = mDuration;
+            }
         }
     }
 }

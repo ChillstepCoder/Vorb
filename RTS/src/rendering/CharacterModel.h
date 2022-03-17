@@ -7,6 +7,8 @@ class SpriteRepository;
 
 #include "definitions/AnimMachineDef.h"
 
+#include "ecs/component/LocomotionComponent.h"
+
 #include <ozz/animation/runtime/sampling_job.h>
 
 struct ModelDef;
@@ -19,26 +21,31 @@ enum CharacterModelTextureIndex {
 };
 
 enum class AnimTrackFlags : ui8 {
-    IS_LOOPING    = 1 << 0,
-    IS_UPPER_BODY = 1 << 1,
-    IS_FADING_OUT = 1 << 2,
-    IS_FADING_IN  = 1 << 3,
-    IS_ACTIVE     = 1 << 4
+    IS_LOOPING        = 1 << 0,
+    IS_UPPER_BODY     = 1 << 1,
+    IS_FADING_OUT     = 1 << 2,
+    IS_FADING_IN      = 1 << 3,
+    IS_ACTIVE         = 1 << 4,
+    IS_SYNCED_TO_FEET = 1 << 5,
 };
+
+constexpr ui16 MAX_ANIM_FADE_WEIGHT = UINT16_MAX;
 
 struct AnimTrack {
     std::unique_ptr<ozz::animation::SamplingJob::Context> mContext; // TODO: Pool allocator
     f32 mDuration = 1.0f;
     f32 mTime = 0.0f;
-    f32 mWeight = 0.0f;
-    ui16 mFadeWeight = UINT16_MAX; // Packed into ui16 to keep AnimTrack at 24 bytes
+    f32 mWeightScale = 1.0f;
+    ui16 mWeight = 0; // Packed into ui16 to keep AnimTrack at 24 bytes
     ui8 mFadeSpeed = UINT8_MAX; // Packed into ui8
-    BitFlags<AnimTrackFlags> mFlags = BitFlags<AnimTrackFlags>(AnimTrackFlags::IS_LOOPING);
+    BitFlags<AnimTrackFlags> mFlags;
 
-    bool isActive() const { return mWeight > 0.0001f && mFlags.isBitSet(AnimTrackFlags::IS_ACTIVE); }
+    void fadeIn(f32 fadeTime);
+    void fadeOut(f32 fadeTime);
+    bool isActive() const { return mWeightScale && mFlags.isBitSet(AnimTrackFlags::IS_ACTIVE); }
     bool isDone() const { return mTime >= mDuration; }
-    void update(f32 elapsedSec);
-    f32 getTotalWeight() const { return mWeight * ((f32)mFadeWeight / UINT16_MAX); }
+    void update(f32 elapsedSec, f32 footstepAlpha);
+    f32 getTotalWeight() const { return mWeightScale * ((f32)mWeight / MAX_ANIM_FADE_WEIGHT); }
 };
 static_assert(sizeof(AnimTrack) == 24, "Keep small");
 
@@ -51,7 +58,10 @@ struct AnimState {
 struct CharacterModelComponent {
     const ModelDef* mModel = nullptr;
     AnimState mAnimState;
+    f32 mFootstepAlpha;
+    LocomotionMode mPrevLocomotionMode = LocomotionMode::IDLE;
 
     void init(const ModelDef* model);
-    void setAnimTrackWeight(AnimMachineState currentState, f32 weight);
+    void setAnimTrackWeight(AnimMachineState currentState, f32 weightScale);
+    void updateFootstepAlpha(f32 elapsedSec, LocomotionMode currentLocomotionMode);
 };

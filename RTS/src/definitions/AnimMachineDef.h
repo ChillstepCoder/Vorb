@@ -6,8 +6,6 @@ namespace ozz {
     };
 };
 
-// Keep this up to date as new animations are added
-const ui32 ANIMATION_MACHINE_ANIMS_COUNT = 10u;
 
 // Make sure this matches AnimMachineDef
 enum class AnimMachineState : ui16 {
@@ -19,10 +17,13 @@ enum class AnimMachineState : ui16 {
     RUN_RIGHT,
     RUN_FRONT,
     RUN_BACK,
+    SPRINT_FRONT,
     IDLE,
     IDLE_COMBAT,
     COUNT
 };
+
+const ui32 ANIMATION_MACHINE_ANIMS_COUNT = e_cast(AnimMachineState::COUNT);
 
 constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
     "WALK_LEFT",
@@ -33,11 +34,12 @@ constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
     "RUN_RIGHT",
     "RUN_FRONT",
     "RUN_BACK",
+    "SPRINT_FRONT",
     "IDLE",
     "IDLE_COMBAT"
 };
 
-static_assert(e_cast(AnimMachineState::COUNT) == 10, "Update debug strings");
+static_assert(e_cast(AnimMachineState::COUNT) == 11, "Update debug strings");
 
 // Make sure order and contents of the animation machine name and animation arrays are the same
 struct AnimMachineDef {
@@ -58,7 +60,7 @@ struct AnimMachineDef {
         ozz::animation::Animation* mAnimsArray[ANIMATION_MACHINE_ANIMS_COUNT] = {};
     };
 };
-static_assert(e_cast(AnimMachineState::COUNT) == 10, "Update AnimMachineDef and FileData below");
+static_assert(e_cast(AnimMachineState::COUNT) == 11, "Update AnimMachineDef and FileData below");
 
 struct AnimMachineDefFileData {
     nString mRigName;
@@ -72,8 +74,9 @@ struct AnimMachineDefFileData {
     nString mRunRightName;
     nString mRunFrontName;
     nString mRunBackName;
+    nString mSprintFrontName;
     nString mIdleName;
     nString mIdleCombatName;
 };
 KEG_TYPE_DECL(AnimMachineDefFileData);
-static_assert(sizeof(AnimMachineDefFileData) == 440, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");
+static_assert(e_cast(AnimMachineState::COUNT) == 11, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");

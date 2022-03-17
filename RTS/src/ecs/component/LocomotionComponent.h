@@ -17,7 +17,7 @@ KEG_TYPE_DECL(LocomotionComponentDef);
 
 constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(LocomotionMode::COUNT)] = {
     0.0f, // IDLE
-    0.3f, // WALK
+    0.2f, // WALK
     0.6f, // RUN
     1.0f, // SPRINT
     1.0f, // DODGE
@@ -32,6 +32,17 @@ constexpr f32 LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(LocomotionMode::COUNT)] 
     1.5f, // DODGE
     1.0f  // JUMP
 };
+
+// TODO: Pull from the anim machine
+constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(LocomotionMode::COUNT)] = {
+    0.9f, // IDLE
+    0.9f, // WALK
+    0.6f, // RUN
+    0.5f, // SPRINT
+    0.6f, // DODGE
+    0.6f  // JUMP
+};
+
 
 struct LocomotionComponent {
     f32 mSpeedRun = 0.3f;
