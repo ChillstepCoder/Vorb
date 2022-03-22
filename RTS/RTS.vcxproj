@@ -172,6 +172,7 @@
     <ClCompile Include="src\definitions\BusinessDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
     <ClCompile Include="src\definitions\RigDef.cpp" />
+    <ClCompile Include="src\definitions\SkillDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
@@ -250,9 +251,11 @@
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
+    <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
+    <ClCompile Include="src\resources\SkillRepository.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
@@ -320,6 +323,7 @@
     <ClInclude Include="src\definitions\BusinessDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
     <ClInclude Include="src\definitions\RigDef.h" />
+    <ClInclude Include="src\definitions\SkillDef.h" />
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
@@ -416,9 +420,11 @@
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\ResourceManager.h" />
+    <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\RigRepository.h" />
+    <ClInclude Include="src\resources\SkillRepository.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />

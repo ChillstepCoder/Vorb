@@ -14,8 +14,10 @@ class ItemRepository;
 class CraftingRepository;
 class BusinessRepository;
 class ModelRepository;
+class AnimationRepository;
 class RigRepository;
 class AnimMachineRepository;
+class SkillRepository;
 struct SpriteData;
 
 // Loads and manages textures, tiles, and other resources
@@ -41,10 +43,12 @@ public:
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }
+    AnimationRepository& getAnimationRepository() const { return *mAnimationRepository; }
     RigRepository& getRigRepository() const { return *mRigRepository; }
     AnimMachineRepository& getAnimMachineRepository() const { return *mAnimMachineRepository; }
     ModelRepository& getModelRepository() const { return *mModelRepository; }
     BrushRepository& getBrushRepository() const { return *mBrushRepository; }
+    SkillRepository& getSkillRepository() const { return *mSkillRepository; }
 
     // Hot reload
     void reloadMaterials();
@@ -59,7 +63,7 @@ private:
     bool loadTiles(const vio::Path& filePath);
 
     // Tasks
-    // TODO: ResourceLoader
+    // TODO: ResourceLoader?
     std::vector<vio::Path> mTextureFiles;
     std::vector<vio::Path> mMaterialFiles;
     std::vector<vio::Path> mTileFiles;
@@ -70,9 +74,11 @@ private:
     std::vector<vio::Path> mItemFiles;
     std::vector<vio::Path> mRecipeFiles;
     std::vector<vio::Path> mBusinessFiles;
+    std::vector<vio::Path> mAnimFiles;
     std::vector<vio::Path> mRigFiles;
     std::vector<vio::Path> mAnimMachineFiles;
     std::vector<vio::Path> mModelFiles;
+    std::vector<vio::Path> mSkillFiles;
 
     std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
@@ -82,10 +88,12 @@ private:
     std::unique_ptr<ItemRepository> mItemRepository;
     std::unique_ptr<CraftingRepository> mCraftingRepository;
     std::unique_ptr<BusinessRepository> mBusinessRepository;
+    std::unique_ptr<AnimationRepository> mAnimationRepository;
     std::unique_ptr<RigRepository> mRigRepository;
     std::unique_ptr<AnimMachineRepository> mAnimMachineRepository;
     std::unique_ptr<ModelRepository> mModelRepository;
     std::unique_ptr<BrushRepository> mBrushRepository;
+    std::unique_ptr<SkillRepository> mSkillRepository;
     std::unique_ptr<vg::TextureCache> mTextureCache;
 
     std::unique_ptr<vio::IOManager> mIoManager;

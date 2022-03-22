@@ -41,7 +41,7 @@ bool AnimMachineRepository::loadMachineFile(const vio::Path& filePath) {
             // Search for corresponding animation in the rigdef
             auto&& it = rig->mNameToAnimationIndex.find(*animIter);
             if (it != rig->mNameToAnimationIndex.end()) {
-                def.mAnimsArray[i] = &rig->mAnimations[it->second];
+                def.mAnimsArray[i] = rig->mAnimations[it->second];
             } else {
                 pError("Anim machine animation " + *animIter + " does not exist in rig. Machine file: " + filePath.getString());
                 return false;

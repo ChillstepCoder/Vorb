@@ -13,8 +13,10 @@
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
 #include "resources/ModelRepository.h"
+#include "resources/AnimationRepository.h"
 #include "resources/RigRepository.h"
 #include "resources/AnimMachineRepository.h"
+#include "resources/SkillRepository.h"
 #include "world/TileRepository.h"
 #include "editor/BrushRepository.h"
 
@@ -51,10 +53,12 @@ ResourceManager::ResourceManager() {
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
+    mAnimationRepository = std::make_unique<AnimationRepository>(*mIoManager);
     mRigRepository = std::make_unique<RigRepository>(*mIoManager);
     mAnimMachineRepository = std::make_unique<AnimMachineRepository>(*mIoManager, *mRigRepository);
     mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache, *mRigRepository);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
+    mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -85,8 +89,10 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mRecipeFiles.clear();
     mBusinessFiles.clear();
     mModelFiles.clear();
+    mAnimFiles.clear();
     mRigFiles.clear();
     mAnimMachineFiles.clear();
+    mSkillFiles.clear();
 
     gatherRecursive(folderPath);
 
@@ -167,11 +173,19 @@ void ResourceManager::loadFiles() {
         };
     }
 
+    // Load Animations
+    {
+        ScopedTimer timer("Animation load");
+        for (auto&& entry : mAnimFiles) {
+            mAnimationRepository->loadAnimFile(entry);
+        }
+    }
+
     // Load Rigs
     {
         ScopedTimer timer("Rig load");
         for (auto&& entry : mRigFiles) {
-            mRigRepository->loadRigFile(entry);
+            mRigRepository->loadRigFile(entry, *mAnimationRepository);
         }
     }
 
@@ -188,6 +202,14 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Model load");
         for (auto&& entry : mModelFiles) {
             mModelRepository->loadModelFile(entry, *mAnimMachineRepository);
+        }
+    }
+
+    // Load skills
+    {
+        ScopedTimer timer("Skill load");
+        for (auto&& entry : mSkillFiles) {
+            mSkillRepository->loadSkillFile(entry);
         }
     }
 
@@ -230,6 +252,7 @@ void ResourceManager::loadFiles() {
             mEntityDefinitionRepository->loadEntityDefinitionFile(entry);
         }
     }
+
 
     mHasLoadedResources = true;
 
@@ -285,7 +308,7 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
 
     for (auto&& entry : entries) {
         // Recurse
-        // TODO: Map lookup for minor optimization, (im starting to hate this)
+        // TODO: Map lookup for minor optimization? Sort by extension? idk, (im starting to hate this)
         if (entry.isDirectory()) {
             gatherRecursive(entry);
         }
@@ -342,6 +365,12 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".machine")) {
             mAnimMachineFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".skill")) {
+            mSkillFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".anim")) {
+            mAnimFiles.emplace_back(entry);
         }
         // TODO: .ttf?
     }

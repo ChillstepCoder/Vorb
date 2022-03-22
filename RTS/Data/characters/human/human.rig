@@ -1,0 +1,21 @@
+skeleton: paladin_skeleton.ozz
+anims: [
+  sheath_sword,
+  sword_shield_attack_1,
+  sword_shield_attack_2,
+  sword_shield_attack_3,
+  sword_shield_attack_4,
+  sword_shield_block_1,
+  sword_shield_block_2,
+  sword_shield_block_idle,
+  sword_shield_death,
+  sword_shield_idle,
+  sword_shield_run_1,
+  sword_shield_run_2,
+  sword_shield_strafe_1,
+  sword_shield_strafe_2,
+  sword_shield_turn_1,
+  sword_shield_turn_2,
+  sword_shield_walk,
+  sprint
+]

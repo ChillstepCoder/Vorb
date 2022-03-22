@@ -1,0 +1,8 @@
+anim: sword_shield_attack_1
+duration: 2.0
+cost: 0.0
+attacks:
+  -  time: 1.0
+     shape: cone
+     angle: 90.0
+     radius: 1.0

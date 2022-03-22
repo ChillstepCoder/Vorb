@@ -2,6 +2,7 @@
 
 #include "definitions/RigDef.h"
 
+class AnimationRepository;
 DECL_VIO(class IOManager);
 
 class RigRepository
@@ -10,7 +11,7 @@ public:
     RigRepository(vio::IOManager& ioManager);
     ~RigRepository();
 
-    bool loadRigFile(const vio::Path& filePath);
+    bool loadRigFile(const vio::Path& filePath, const AnimationRepository& animRepo);
 
     const RigDef& getRigDef(ui32 rigId) const { return mRigDefs[rigId]; }
     const RigDef& getRigDef(const nString& name) const;

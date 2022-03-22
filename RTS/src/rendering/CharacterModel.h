@@ -52,6 +52,8 @@ static_assert(sizeof(AnimTrack) == 24, "Keep small");
 constexpr ui32 NUM_ANIM_TRACKS = e_cast(AnimMachineState::COUNT);
 struct AnimState {
     AnimTrack mTracks[NUM_ANIM_TRACKS];
+    AnimTrack mCurrentOneShotTrack;
+    ozz::animation::Animation* mCurrentOneShotAnimation = nullptr;
 };
 
 // TODO: File name
@@ -64,4 +66,5 @@ struct CharacterModelComponent {
     void init(const ModelDef* model);
     void setAnimTrackWeight(AnimMachineState currentState, f32 weightScale);
     void updateFootstepAlpha(f32 elapsedSec, LocomotionMode currentLocomotionMode);
+    void playOneShotAnimation(ozz::animation::Animation* animation);
 };

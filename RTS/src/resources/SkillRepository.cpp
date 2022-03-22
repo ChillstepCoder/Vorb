@@ -1,0 +1,58 @@
+#include "stdafx.h"
+#include "SkillRepository.h"
+
+#include <Vorb/io/IOManager.h>
+
+SkillRepository::SkillRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
+
+}
+
+SkillRepository::~SkillRepository() {
+
+}
+
+bool SkillRepository::loadSkillFile(const vio::Path& filePath) {
+
+    SkillDef& def = mSkillDefs.emplace_back();
+    def.mSkillId = mSkillDefs.size() - 1u;
+
+    SkillDefFileData fileData;
+    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(SkillDefFileData))) {
+        pError("Failed to load skill file " + filePath.getString());
+        return false;
+    }
+
+    if (fileData.mAnimName.empty()) {
+        def.mFlags.setBit(SkillDefFlags::INSTANT);
+    }
+    else {
+        // Get animation reference
+        // TODO: AnimationRepository
+    }
+
+    def.mDuration = fileData.mDuration;
+    def.mCost = fileData.mCost;
+
+    assert(fileData.mAttackTriggers.size() <= MAX_SKILL_ATTACK_TRIGGERS);
+    // Copy skill triggers
+    def.mNumAttackTriggers = fileData.mAttackTriggers.size();
+    for (ui32 i = 0; i < fileData.mAttackTriggers.size(); ++i) {
+        def.mAttackTriggers[i] = fileData.mAttackTriggers[i];
+    }
+   
+    return true;
+}
+
+const SkillDef& SkillRepository::getSkillDef(const nString& name) const {
+    auto&& it = mSkillIdLookup.find(name);
+    assert(it != mSkillIdLookup.end());
+    return mSkillDefs[it->second];
+}
+
+const SkillDef* SkillRepository::tryGetSkillDef(const nString& name) const {
+    auto&& it = mSkillIdLookup.find(name);
+    if (it == mSkillIdLookup.end()) {
+        return nullptr;
+    }
+    return &mSkillDefs[it->second];
+}

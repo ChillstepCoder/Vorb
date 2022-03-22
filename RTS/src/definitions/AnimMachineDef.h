@@ -46,18 +46,18 @@ struct AnimMachineDef {
     ui32 mAnimMachineId;
     union {
         struct {
-            ozz::animation::Animation* mWalkLeftAnim;
-            ozz::animation::Animation* mWalkRightAnim;
-            ozz::animation::Animation* mWalkFrontAnim;
-            ozz::animation::Animation* mWalkBackAnim;
-            ozz::animation::Animation* mRunLeftAnim;
-            ozz::animation::Animation* mRunRightAnim;
-            ozz::animation::Animation* mRunFrontAnim;
-            ozz::animation::Animation* mRunBackAnim;
-            ozz::animation::Animation* mIdleAnim;
-            ozz::animation::Animation* mIdleCombatAnim;
+            const ozz::animation::Animation* mWalkLeftAnim;
+            const ozz::animation::Animation* mWalkRightAnim;
+            const ozz::animation::Animation* mWalkFrontAnim;
+            const ozz::animation::Animation* mWalkBackAnim;
+            const ozz::animation::Animation* mRunLeftAnim;
+            const ozz::animation::Animation* mRunRightAnim;
+            const ozz::animation::Animation* mRunFrontAnim;
+            const ozz::animation::Animation* mRunBackAnim;
+            const ozz::animation::Animation* mIdleAnim;
+            const ozz::animation::Animation* mIdleCombatAnim;
         };
-        ozz::animation::Animation* mAnimsArray[ANIMATION_MACHINE_ANIMS_COUNT] = {};
+        const ozz::animation::Animation* mAnimsArray[ANIMATION_MACHINE_ANIMS_COUNT] = {};
     };
 };
 static_assert(e_cast(AnimMachineState::COUNT) == 11, "Update AnimMachineDef and FileData below");
