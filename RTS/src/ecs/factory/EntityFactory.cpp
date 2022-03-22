@@ -6,6 +6,7 @@
 #include "ecs/component/EntityDefinition.h"
 
 #include "resources/ModelRepository.h"
+#include "resources/SkillRepository.h"
 
 #include "ResourceManager.h"
 #include <Vorb/graphics/TextureCache.h>
@@ -105,11 +106,20 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 registry.emplace<UndeadAIComponent>(newEntity);
                 break;
             }
+            case ComponentTypes::Skills: {
+                // TODO: We shouldnt have to do this every single time we create a new entity!
+                auto& skillsCmp = registry.emplace<SkillsComponent>(newEntity);
+                const SkillRepository& skillRepo = mResourceManager.getSkillRepository();
+                for (size_t i = 0; i < cdef.skillsFileData.mSkillNames.size(); ++i) {
+                    skillsCmp.mSkills.emplace_back(&skillRepo.getSkillDef(cdef.skillsFileData.mSkillNames[i]));
+                }   
+                break;
+            }
             default:
                 assert(false); // Missing type
                 break;
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 15, "Update component construction");
+        static_assert(e_cast(ComponentTypes::COUNT) == 16, "Update component construction");
     }
 
     return newEntity;

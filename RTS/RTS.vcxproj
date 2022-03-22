@@ -188,6 +188,7 @@
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
+    <ClCompile Include="src\ecs\component\SkillsComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
     <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
@@ -345,6 +346,7 @@
     <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
     <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
+    <ClInclude Include="src\ecs\component\SkillsComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />

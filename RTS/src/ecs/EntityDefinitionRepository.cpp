@@ -78,10 +78,14 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::UndeadAI)]) {
             entityDef->components.emplace_back(ComponentTypes::UndeadAI);
         }
+        else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Skills)]) {
+            ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::Skills);
+            keg::parse((ui8*)&fileData.skillsFileData, value, readContext, &KEG_GLOBAL_TYPE(SkillsComponentFileData));
+        }
         else {
             pError("Tried to load invalid .entt component type \"" + key + "\"");
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 15, "Parse new component type");
+        static_assert(e_cast(ComponentTypes::COUNT) == 16, "Parse new component type");
         // Load data
         //BuildingDescription description
     }))) {

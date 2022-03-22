@@ -17,6 +17,7 @@ enum class ComponentTypes {
     SimpleSprite,
     SoldierAI,
     UndeadAI,
+    Skills,
     COUNT
     // TODO: Custom
 };
@@ -35,6 +36,7 @@ const nString ComponentTypeStrings[e_cast(ComponentTypes::COUNT)] = {
     "profession",
     "simple_sprite",
     "soldier_ai",
-    "undead_ai"
+    "undead_ai",
+    "skills"
 };
-static_assert(e_cast(ComponentTypes::COUNT) == 15, "Update .ent file type strings");
+static_assert(e_cast(ComponentTypes::COUNT) == 16, "Update .ent file type strings");

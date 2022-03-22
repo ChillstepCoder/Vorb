@@ -41,6 +41,10 @@ bool SkillRepository::loadSkillFile(const vio::Path& filePath, const AnimationRe
     for (ui32 i = 0; i < fileData.mAttackTriggers.size(); ++i) {
         def.mAttackTriggers[i] = fileData.mAttackTriggers[i];
     }
+
+    const nString skillName = filePath.getFileNameNoExtension();
+    assert(mSkillIdLookup.find(skillName) == mSkillIdLookup.end());
+    mSkillIdLookup[skillName] = def.mSkillId;
    
     return true;
 }

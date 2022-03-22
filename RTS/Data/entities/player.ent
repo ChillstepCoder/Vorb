@@ -9,3 +9,7 @@ physics:
 inventory:
 character_details:
   name: Player
+skills:
+  skill_names: [
+    sword_slash_1
+  ]
