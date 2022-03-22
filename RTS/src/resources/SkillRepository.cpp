@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "SkillRepository.h"
 
+#include "resources/AnimationRepository.h"
+
 #include <Vorb/io/IOManager.h>
 
 SkillRepository::SkillRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
@@ -11,7 +13,7 @@ SkillRepository::~SkillRepository() {
 
 }
 
-bool SkillRepository::loadSkillFile(const vio::Path& filePath) {
+bool SkillRepository::loadSkillFile(const vio::Path& filePath, const AnimationRepository& animRepo) {
 
     SkillDef& def = mSkillDefs.emplace_back();
     def.mSkillId = mSkillDefs.size() - 1u;
@@ -27,7 +29,7 @@ bool SkillRepository::loadSkillFile(const vio::Path& filePath) {
     }
     else {
         // Get animation reference
-        // TODO: AnimationRepository
+        def.mAnim = &animRepo.getAnimation(fileData.mAnimName);
     }
 
     def.mDuration = fileData.mDuration;

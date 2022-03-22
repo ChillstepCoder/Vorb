@@ -1,5 +1,11 @@
 #pragma once
 
+namespace ozz {
+    namespace animation {
+        class Animation;
+    };
+};
+
 enum class AttackShape {
     CONE,
     SPHERE,
@@ -39,5 +45,6 @@ struct SkillDef {
     SkillAttackTrigger mAttackTriggers[MAX_SKILL_ATTACK_TRIGGERS];
     ui32 mNumAttackTriggers;
     BitFlags<SkillDefFlags> mFlags;
+    const ozz::animation::Animation* mAnim = nullptr;
 };
 

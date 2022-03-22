@@ -32,7 +32,6 @@ bool RigRepository::loadRigFile(const vio::Path& filePath, const AnimationReposi
     }
 
     vio::Path rootDir = filePath;
-    const nString rigFileNameNoExtension = filePath.getFileNameNoExtension();
     rootDir.trimEnd();
     assert(rootDir.isDirectory());
 
@@ -65,6 +64,8 @@ bool RigRepository::loadRigFile(const vio::Path& filePath, const AnimationReposi
         }
     }
 
+    const nString rigFileNameNoExtension = filePath.getFileNameNoExtension();
+    assert(mRigIdLookup.find(rigFileNameNoExtension) == mRigIdLookup.end());
     mRigIdLookup[rigFileNameNoExtension] = def.mRigId;
     return true;
 }

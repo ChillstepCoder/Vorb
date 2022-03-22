@@ -53,7 +53,7 @@ ResourceManager::ResourceManager() {
     mItemRepository = std::make_unique<ItemRepository>(*mIoManager);
     mCraftingRepository = std::make_unique<CraftingRepository>(*mIoManager);
     mBusinessRepository = std::make_unique<BusinessRepository>(*mIoManager, *mItemRepository);
-    mAnimationRepository = std::make_unique<AnimationRepository>(*mIoManager);
+    mAnimationRepository = std::make_unique<AnimationRepository>();
     mRigRepository = std::make_unique<RigRepository>(*mIoManager);
     mAnimMachineRepository = std::make_unique<AnimMachineRepository>(*mIoManager, *mRigRepository);
     mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache, *mRigRepository);
@@ -209,7 +209,7 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("Skill load");
         for (auto&& entry : mSkillFiles) {
-            mSkillRepository->loadSkillFile(entry);
+            mSkillRepository->loadSkillFile(entry, *mAnimationRepository);
         }
     }
 
