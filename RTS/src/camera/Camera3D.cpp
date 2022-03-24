@@ -7,6 +7,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "Utils.h"
+
 #include "options/DebugOptions.h"
 
 #define UP_ABSOLUTE (f32v3(0.0f, 0.0f, 1.0f))
@@ -63,27 +65,32 @@ void Camera3D::updateProjection() {
 void Camera3D::applyRotation(const f32q& rot) {
     mDirection = rot * mDirection;
     mRight = rot * mRight;
+    mRight = glm::normalize(mRight);
+
     mUp = glm::normalize(glm::cross(mRight, mDirection));
 
     mViewChanged = true;
 }
 
-void Camera3D::rotateFromMouseAbsoluteUp(float dx, float dy, float speed, bool clampVerticalRotation /* = false*/) {
-    f32q upQuat = glm::angleAxis(dy * speed, mRight);
-    f32q rightQuat = glm::angleAxis(dx * speed, UP_ABSOLUTE);
+void Camera3D::applyRotation(const f32 pitch, const f32 yaw) {
+    mPitch += pitch;
+    mYaw += yaw;
 
-    f32v3 previousDirection = mDirection;
-    f32v3 previousUp = mUp;
-    f32v3 previousRight = mRight;
+    mPitch = glm::clamp(mPitch, -M_PI_4F, M_PI_4F);
 
-    applyRotation(upQuat * rightQuat);
+    mDirection.x = sin(mYaw) * cos(mPitch);
+    mDirection.y = cos(mYaw) * cos(mPitch);
+    mDirection.z = -sin(mPitch);
 
-    if (clampVerticalRotation && mUp.y < 0) {
-        mDirection = previousDirection;
-        mUp = previousUp;
-        mRight = previousRight;
-        rotateFromMouseAbsoluteUp(dx, 0.0f, speed);
-    }
+    mRight.x = cos(mYaw);
+    mRight.y = -sin(mYaw);
+    mRight.z = 0.0;
+
+    mDirection = glm::normalize(mDirection);
+    mRight = glm::normalize(mRight);
+    mUp = glm::cross(mRight, mDirection);
+
+    mViewChanged = true;
 }
 
 void Camera3D::rotateFromMouse(float dx, float dy, float speed) {
@@ -103,6 +110,11 @@ void Camera3D::lookAt(const f32v3& pos) {
     mDirection = glm::normalize(pos - mPosition);
     mRight = glm::normalize(glm::cross(mDirection, UP_ABSOLUTE));
     mUp = glm::normalize(glm::cross(mRight, mDirection));
+    assert(mRight.z == 0.0f);
+
+    mPitch = asin(-mDirection.z);
+    mYaw = atan2(mDirection.x, mDirection.y);
+
     mViewChanged = true;
 }
 
@@ -110,6 +122,10 @@ void Camera3D::setOrientation(const f32q& orientation) {
     mDirection = orientation * f32v3(0.0, 0.0, 1.0);
     mRight = orientation * f32v3(1.0, 0.0, 0.0);
     mUp = orientation * f32v3(0.0, 1.0, 0.0);
+
+    mPitch = asin(-mDirection.z);
+    mYaw = atan2(mDirection.x, mDirection.y);
+
     mViewChanged = true;
 }
 

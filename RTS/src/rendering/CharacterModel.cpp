@@ -43,6 +43,9 @@ void CharacterModelComponent::init(const ModelDef* model) {
     // Init to idle state engaged
     mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
     mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
+    // Init one shot anim track
+    mAnimState.mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+    mAnimState.mCurrentOneShotTrack.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
 }
 
 void CharacterModelComponent::setAnimTrackWeight(AnimMachineState currentState, f32 weightScale) {
@@ -59,6 +62,15 @@ void CharacterModelComponent::updateFootstepAlpha(f32 elapsedSec, LocomotionMode
     if (mFootstepAlpha > 1.0f) {
         mFootstepAlpha -= (int)mFootstepAlpha;
     }
+}
+
+void CharacterModelComponent::playOneShotAnimation(const ozz::animation::Animation* animation) {
+
+    mAnimState.mCurrentOneShotTrack.mTime = 0.0f;
+    mAnimState.mCurrentOneShotTrack.mDuration = animation->duration();
+    mAnimState.mCurrentOneShotTrack.fadeIn(0.2);
+    mAnimState.mCurrentOneShotAnimation = animation;
+
 }
 
 constexpr f32 FADE_SPEED_SCALE = 0.5f;
@@ -132,7 +144,15 @@ void AnimTrack::update(f32 elapsedSec, f32 footstepAlpha) {
                 mTime -= mDuration;
             }
             else {
-                mTime = mDuration;
+                mTime = 0.0f;
+                mFlags.clearBit(AnimTrackFlags::IS_ACTIVE);
+            }
+        }
+        else if (!mFlags.isBitSet(AnimTrackFlags::IS_LOOPING) && !mFlags.isBitSet(AnimTrackFlags::IS_FADING_OUT)) {
+            // One shot anims always have a built in 0.2s fade out
+            constexpr f32 ONE_SHOT_FADE_OUT_TIME = 0.3f;
+            if (mDuration - mTime <= ONE_SHOT_FADE_OUT_TIME) {
+                fadeOut(ONE_SHOT_FADE_OUT_TIME);
             }
         }
     }

@@ -1,0 +1,213 @@
+#include "stdafx.h"
+#include "CameraController.h"
+
+#include "options/DebugOptions.h"
+
+#include "World.h"
+
+#include "ecs/EntityComponentSystem.h"
+#include <Vorb/ui/GameWindow.h>
+#include <Vorb/ui/InputDispatcher.h>
+#include <Vorb/ui/GameTime.h>
+
+const f32v2 CAMERA_ZOOM_RANGE = f32v2(1.0f, 1024.0f);
+
+CameraController::CameraController(const vui::GameWindow& window, const World& world) : mWindow(window), mWorld(world) {
+
+    mCamera.init((f32)window.getWidth() / window.getHeight());
+    setCameraMode(sDebugOptions.mCameraMode);
+   
+}
+
+void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
+
+    if (mCameraMode != sDebugOptions.mCameraMode) {
+        setCameraMode(sDebugOptions.mCameraMode);
+    }
+
+    // Currently unsupported
+    if (mEntityFollow == entt::null) {
+        return;
+    }
+
+    switch (mCameraMode) {
+        case CameraMode::CARTESIAN:
+            updateCameraCartesianMode(frameAlpha);
+            break;
+        case CameraMode::MOUSELOCK_BASIC:
+            break;
+        case CameraMode::FREE_LOOK:
+            updateCameraFreeLookMode(frameAlpha, gameTime.deltaTime);
+            break;
+        default:
+            break;
+    }
+    static_assert(e_cast(CameraMode::COUNT) == 4, "Add new mode functionality");
+
+    // Update camera itself
+    mCamera.update();
+}
+
+void CameraController::setEntityFollow(entt::entity followEntity) {
+    if (mEntityFollow == entt::null) {
+        auto& ecs = mWorld.getECS();
+        const auto& physCmp = ecs.mRegistry.get<PhysicsComponent>(followEntity);
+        //mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
+        mCamera.setPosition(physCmp.getPosition());
+        mCameraPositionTweener = f32v3(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 5.0f);
+    }
+    mEntityFollow = followEntity;
+}
+
+void CameraController::setCameraMode(CameraMode cameraMode) {
+    if (mCameraMode == cameraMode) {
+        return;
+    }
+
+    // Update inputs
+    // Remove old inputs
+    switch (mCameraMode) {
+        case CameraMode::CARTESIAN:
+            vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
+            vui::InputDispatcher::key.onKeyDown -= makeDelegate(this, &CameraController::updateKeyInputCartesianMode);
+            break;
+        case CameraMode::MOUSELOCK_BASIC:
+            vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
+            break;
+        case CameraMode::FREE_LOOK:
+            vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputFreeLookMode);
+            break;
+        case CameraMode::NONE:
+        default:
+            break;
+    }
+    static_assert(e_cast(CameraMode::COUNT) == 4, "Update any input unregister");
+
+    mCameraMode = cameraMode;
+    // Add new inputs
+    switch (mCameraMode) {
+        case CameraMode::CARTESIAN:
+            vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInput);
+            vui::InputDispatcher::key.onKeyDown += makeDelegate(this, &CameraController::updateKeyInputCartesianMode);
+            break;
+        case CameraMode::MOUSELOCK_BASIC:
+            vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInput);
+            break;
+        case CameraMode::FREE_LOOK:
+            vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputFreeLookMode);
+            break;
+        case CameraMode::NONE:
+        default:
+            break;
+    }
+    static_assert(e_cast(CameraMode::COUNT) == 4, "Update any input register");
+
+}
+
+void CameraController::updateCameraCartesianMode(f32 frameAlpha) {
+
+    // Must have a follow
+    if (mEntityFollow == entt::null) {
+        return;
+    }
+
+    // TODO: Delta time dependent?
+
+    // Update options
+    if (mCamera.getFieldOfView() != sDebugOptions.mFoV) {
+        mCamera.setFieldOfView(sDebugOptions.mFoV);
+    }
+
+    f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
+
+    // Camera follow
+    constexpr float MAX_SPEED_MPS = 0.3f;
+    const f32 maxSpeed = MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z;
+    f32v3 targetPos(followTargetPos.x, followTargetPos.y, mCameraPositionTweener.mTarget.z);
+    mCameraPositionTweener.setTarget(targetPos);
+    mCameraPositionTweener.setMaxSpeed(MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z);
+
+    mCameraPositionTweener.update(1.0f);
+    mCameraDirectionTweener.update(1.0f);
+
+    const f32v3 lookAtOffset(mCameraDirectionTweener.mCurr.x * sDebugOptions.mCameraXYDistance, mCameraDirectionTweener.mCurr.y * sDebugOptions.mCameraXYDistance, mCameraDirectionZOffset * sDebugOptions.mCameraZHeight);
+    mCamera.lookAt(mCamera.getPosition() + lookAtOffset);
+
+    // Position tweener causes juttering
+    //mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z + f32v3(0.0f, 0.0f, playerZPos));
+    mCamera.setPosition(targetPos - lookAtOffset * mCameraPositionTweener.mTarget.z + f32v3(0.0f, 0.0f, followTargetPos.z));
+
+
+
+    // Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
+    const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
+    const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
+    mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);
+
+}
+
+void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
+
+    f32 cameraSpeed = 0.05f * deltaTime;
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+        cameraSpeed *= 2.0f;
+    }
+
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
+        mCamera.offsetPosition(mCamera.getFrontVector() * cameraSpeed);
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
+        mCamera.offsetPosition(-mCamera.getFrontVector() * cameraSpeed);
+    }
+
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
+        mCamera.offsetPosition(-mCamera.getRightVector() * cameraSpeed);
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
+        mCamera.offsetPosition(mCamera.getRightVector() * cameraSpeed);
+    }
+
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
+        mCamera.offsetPosition(mCamera.getUpVector() * cameraSpeed);
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
+        mCamera.offsetPosition(-mCamera.getUpVector() * cameraSpeed);
+    }
+}
+
+void CameraController::updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt) {
+    mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + evnt.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_ZOOM_RANGE.x, CAMERA_ZOOM_RANGE.y);
+}
+
+void CameraController::updateMouseMotionInputFreeLookMode(Sender s, const vui::MouseMotionEvent& evnt) {
+    if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
+        constexpr f32 ROTATE_SPEED = 0.001f;
+        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
+    }
+}
+
+void CameraController::updateKeyInputCartesianMode(Sender sender, const vui::KeyEvent& evnt) {
+    if (evnt.keyCode == VKEY_Q) {
+        mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][1];
+        mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
+    }
+    else if (evnt.keyCode == VKEY_E) {
+        mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][0];
+        mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
+    }
+}
+
+f32v3 CameraController::getFollowTargetPos(f32 frameAlpha) {
+    // If we have no follow target just return current position
+    // TODO: Pretty sure this is wrong
+    if (mEntityFollow == entt::null) {
+        return mCamera.getPosition();
+    }
+
+    const EntityComponentSystem& ecs = mWorld.getECS();
+    const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(mEntityFollow);
+    const f32v2& targetXYPos = physCmp.getXYInterpolated(frameAlpha);
+    const f32 targetZPos = physCmp.getZInterpolated(frameAlpha);
+
+    return f32v3(targetXYPos.x, targetXYPos.y, targetZPos);
+}

@@ -11,6 +11,10 @@ inline ui32 NextPowerOfTwo(ui32 v) {
 	return ++v;
 }
 
+inline void printf32v3(const char* title, const f32v3& v) {
+	printf("%s: %f %f %f\n", title, v.x, v.y, v.z);
+}
+
 inline void printMatrix(const char* title, const f32m4& mat) {
 	printf(
 		"%s:\n%f %f %f %f\n%f %f %f %f\n %f %f %f %f\n %f %f %f %f\n",

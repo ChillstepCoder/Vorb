@@ -4,7 +4,7 @@
 
 #include "FeatureConst.h"
 
-class MainMenuScreen;
+class GameplayScreen;
 class WorldEditorScreen;
 class Test3DScreen;
 
@@ -19,7 +19,7 @@ public:
     virtual void onExit() override;
     virtual void refreshElapsedTime() override;
 
-    std::unique_ptr<MainMenuScreen> mMainMenuScreen;
+    std::unique_ptr<GameplayScreen> mMainMenuScreen;
 protected:
     void onUpdateFrame() override;
 

@@ -108,8 +108,8 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
     // Buffer of local transforms as sampled from animation_.
     // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
-    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS];
-    f32 blendWeights[NUM_ANIM_TRACKS];
+    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS + 1];
+    f32 blendWeights[NUM_ANIM_TRACKS + 1];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
     assert(cmp.mModel);
@@ -167,23 +167,97 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
         currentTrack.update(elapsedSec, cmp.mFootstepAlpha);
     }
 
+    // One shot animation
+    f32 oneShotWeight = 0.0f;
+    AnimTrack& oneShotTrack = cmp.mAnimState.mCurrentOneShotTrack;
+    if (oneShotTrack.isActive()) {
+        oneShotWeight = oneShotTrack.getTotalWeight();
+        // Allocate buffers
+        locals[numValidTracks].resize(numSoaJoints);
+        // Sample animation
+        ozz::animation::SamplingJob sampling_job;
+        sampling_job.animation = cmp.mAnimState.mCurrentOneShotAnimation;
+        sampling_job.context = oneShotTrack.mContext.get();
+        sampling_job.ratio = oneShotTrack.mTime / oneShotTrack.mDuration;
+        sampling_job.output = make_span(locals[numValidTracks]);
+        blendWeights[numValidTracks] = oneShotWeight;
+        if (!sampling_job.Run()) {
+            pError("Sampling job error");
+            return false;
+        }
+
+        // Increment timers
+        oneShotTrack.update(elapsedSec, cmp.mFootstepAlpha);
+    }
+
     // Converts from local space to model space matrices.
     ozz::animation::LocalToModelJob ltm_job;
     ltm_job.skeleton = &rig.mSkeleton;
-    // Blending
-    if (numValidTracks > 1) {
 
+    // Blending
+    if (numValidTracks > 1 || oneShotWeight) {
+
+        const f32 inverseOneShotWeightMult = 1.0f - oneShotWeight;
+        int totalLayers = 0;
         // Prepares blending layers.
-        ozz::animation::BlendingJob::Layer layers[NUM_ANIM_TRACKS];
-        for (int i = 0; i < numValidTracks; ++i) {
-            layers[i].transform = make_span(locals[i]);
-            layers[i].weight = blendWeights[i];
+        ozz::animation::BlendingJob::Layer layers[(NUM_ANIM_TRACKS + 1) * 2]; // Account for splitting layers
+
+        // While one shots are active, blending is more complex as we must split lower and upper body blending
+        if (oneShotWeight) {
+            // Split all layers into upper and lower body portions based on the one shot weight
+            if (numValidTracks > 0) {
+                if (oneShotWeight == 1.0f) {
+                    // If we are at full weight, we have no upper body layers
+                    for (int i = 0; i < numValidTracks; ++i) {
+                        layers[totalLayers].transform = make_span(locals[i]);
+                        layers[totalLayers].weight = blendWeights[i];
+                        layers[totalLayers].joint_weights = make_span(rig.mLowerBodyJointWeights);
+                        ++totalLayers;
+                    }
+                }
+                else {
+                    // Split into two layers for upper and lower portion
+                    const f32 upperBodyWeight = 1.0f - oneShotWeight;
+                    for (int i = 0; i < numValidTracks; ++i) {
+                        // Lower body
+                        layers[totalLayers].transform = make_span(locals[i]);
+                        layers[totalLayers].weight = blendWeights[i];
+                        layers[totalLayers].joint_weights = make_span(rig.mLowerBodyJointWeights);
+                        ++totalLayers;
+
+                        // Upper body
+                        layers[totalLayers].transform = make_span(locals[i]);
+                        layers[totalLayers].weight = blendWeights[i] * upperBodyWeight;
+                        layers[totalLayers].joint_weights = make_span(rig.mUpperBodyJointWeights);
+                        ++totalLayers;
+                    }
+                }
+
+                // The final layer is the one shot layer, flag it upper body only if we are in motion
+                // TODO: Need to fade this in as well to prevent pop?
+                if (motionCmp.mMode != LocomotionMode::IDLE) {
+                    layers[totalLayers].joint_weights = make_span(rig.mUpperBodyJointWeights);
+                }
+            }
+
+            // Add one shot locals
+            layers[totalLayers].transform = make_span(locals[numValidTracks]);
+            layers[totalLayers].weight = blendWeights[numValidTracks];
+            ++totalLayers;
+        }
+        else {
+            // No one shot, standard, cheap full blending for each anim
+            for (int i = 0; i < numValidTracks; ++i) {
+                layers[totalLayers].transform = make_span(locals[i]);
+                layers[totalLayers].weight = blendWeights[i];
+                ++totalLayers;
+            }
         }
 
         // Setups blending job.
         ozz::animation::BlendingJob blend_job;
         blend_job.threshold = 0.015f;
-        blend_job.layers = ozz::span{layers, size_t(numValidTracks)};
+        blend_job.layers = ozz::span{layers, size_t(totalLayers)};
         blend_job.rest_pose = rig.mSkeleton.joint_rest_poses();
         blend_job.output = make_span(blendedLocals);
 

@@ -1,6 +1,7 @@
 #pragma once
-#include "ecs/ClientEcsData.h"
 #include "ecs/component/ComponentDefinition.h"
+
+class Camera3D;
 
 class World;
 
@@ -8,7 +9,7 @@ class EntityComponentSystem {
 public:
 	EntityComponentSystem(World& world);
 
-	void update(const ClientECSData& clientData);
+	void update(const Camera3D& playerCamera);
 	void convertEntityToCorpse(entt::entity entity);
 
     /*DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);

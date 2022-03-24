@@ -11,8 +11,8 @@ public:
     void offsetPosition(const f32v3& offset);
     void update();
     void updateProjection();
+    void applyRotation(const f32 pitch, const f32 yaw);
     virtual void applyRotation(const f32q& rot);
-    virtual void rotateFromMouseAbsoluteUp(float dx, float dy, float speed, bool clampVerticalRotation = false);
     virtual void rotateFromMouse(float dx, float dy, float speed);
     virtual void rollFromMouse(float dx, float speed);
     void lookAt(const f32v3& pos);
@@ -73,6 +73,8 @@ protected:
     bool mViewChanged = true;
     bool mProjectionChanged = true;
 
+    f32 mPitch = 0.0f;
+    f32 mYaw = 0.0f;
     f32v3 mPosition = f32v3(0.0);
     f32v3 mDirection = f32v3(1.0f, 0.0f, 0.0f);
     f32v3 mRight = f32v3(0.0f, 0.0f, 1.0f);

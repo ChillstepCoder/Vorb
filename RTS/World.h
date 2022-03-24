@@ -6,7 +6,6 @@
 #include "actor/ActorTypes.h"
 #include "TileSet.h"
 #include "world/Tile.h"
-#include "ecs/ClientEcsData.h"
 #include "ecs/factory/EntityType.h"
 
 #include "world/WorldGrid.h"
@@ -95,7 +94,6 @@ public:
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
 
-	const ClientECSData& getClientECSData() const { return mClientEcsData; }
 	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
@@ -115,7 +113,6 @@ public:
 	void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 
 	// TODO: Should camera exist in world? Is there a better way than "camera" to determine offset to mouse?
-	void updateClientEcsData(Cartesian worldLookCardinalDirection);
 
     void setTimeOfDay(float time);
 	// [-1.0, 1.0]
@@ -151,7 +148,6 @@ private:
 	void debugRefreshWorldGeneration();
 
     // ECS
-    ClientECSData mClientEcsData;
     std::unique_ptr<EntityComponentSystem> mEcs;
 
 	// Physics

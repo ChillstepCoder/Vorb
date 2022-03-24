@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "App.h"
-#include "MainMenuScreen.h"
+#include "GameplayScreen.h"
 
 #include "services/Services.h"
 #include "Random.h"
@@ -25,7 +25,7 @@ App::~App() {
 }
 
 void App::addScreens() {
-    mMainMenuScreen = std::make_unique<MainMenuScreen>(this);
+    mMainMenuScreen = std::make_unique<GameplayScreen>(this);
 	m_screenList.addScreen(mMainMenuScreen.get());
 	m_screenList.setScreen(mMainMenuScreen->getIndex());
 }

@@ -1,7 +1,7 @@
 #pragma once
 
-struct ClientECSData;
 class World;
+class Camera3D;
 
 struct PlayerControlComponent {
 	ui16 mPlayerControlFlags = 0;
@@ -9,5 +9,5 @@ struct PlayerControlComponent {
 
 class PlayerControlSystem {
 public:
-	void update(entt::registry& registry, const ClientECSData& clientData);
+	void update(entt::registry& registry, const Camera3D& camera);
 };

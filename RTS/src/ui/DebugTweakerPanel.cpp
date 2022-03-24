@@ -66,8 +66,23 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
     }
 
     if (ImGui::CollapsingHeader("Camera Settings")) {
+        ImGui::PushID(++ID);
         ImGui::SliderFloat("FoV", &sDebugOptions.mFoV, 1.0f, 179.0f, "%.1f");
         ImGui::SliderFloat("Far Plane", &sDebugOptions.mZFar, 10000.0f, 300000.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Z Height", &sDebugOptions.mCameraZHeight, 0.3f, 10.0f, "%.1f");
+        ImGui::SliderFloat("XY Distance", &sDebugOptions.mCameraXYDistance, 0.3f, 10.0f, "%.1f");
+        ImGui::Text("Camera mode");
+        if (ImGui::RadioButton("Free look", sDebugOptions.mCameraMode == CameraMode::FREE_LOOK)) {
+            sDebugOptions.mCameraMode = CameraMode::FREE_LOOK;
+        }
+        if (ImGui::RadioButton("Mouselock basic", sDebugOptions.mCameraMode == CameraMode::MOUSELOCK_BASIC)) {
+            sDebugOptions.mCameraMode = CameraMode::MOUSELOCK_BASIC;
+        }
+        if (ImGui::RadioButton("Cartesian", sDebugOptions.mCameraMode == CameraMode::CARTESIAN)) {
+            sDebugOptions.mCameraMode = CameraMode::CARTESIAN;
+        }
+        static_assert(e_cast(CameraMode::COUNT) == 4, "Update options");
+        ImGui::PopID();
     }
     
     if (ImGui::CollapsingHeader("Clouds")) {

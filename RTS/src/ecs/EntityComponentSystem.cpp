@@ -5,6 +5,8 @@
 
 #include <box2d/b2_fixture.h>
 
+#include "camera/Camera3D.h"
+
 const float DEAD_COLOR_MULT = 0.4f;
 
 EntityComponentSystem::EntityComponentSystem(World& world)
@@ -15,7 +17,7 @@ EntityComponentSystem::EntityComponentSystem(World& world)
     , mWorld(world) {
 }
 
-void EntityComponentSystem::update(const ClientECSData& clientData) {
+void EntityComponentSystem::update(const Camera3D& playerCamera) {
 	
 	// TODO: Not every frame
 	static int frameCount = 0;
@@ -29,7 +31,7 @@ void EntityComponentSystem::update(const ClientECSData& clientData) {
     mSpriteTable.update();*/
     mBusinessSystem.update(mRegistry);
 	//mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
-	mPlayerControlSystem.update(mRegistry, clientData);
+	mPlayerControlSystem.update(mRegistry, playerCamera);
 	mPersonAISystem.update(mRegistry);
     mNavigationSystem.update(mRegistry, mWorld);
 	mLocomotionSystem.update(mRegistry);

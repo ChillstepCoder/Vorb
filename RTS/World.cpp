@@ -192,7 +192,7 @@ void World::update(const f32v2& playerPos, const Camera3D& camera) {
 	}
 
 	// Update ECS
-    mEcs->update(mClientEcsData);
+    mEcs->update(camera);
 	
 	// Update editor
 	UIContext::getInstance().updateEditors(camera);
@@ -394,10 +394,6 @@ void World::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
     for (Chunk* chunk : mActiveChunks) {
 		chunk->onTerrainDataChanged(pos, brushRadius);
     }
-}
-
-void World::updateClientEcsData(Cartesian worldLookCardinalDirection) {
-	mClientEcsData.worldLookCardinalDirection = worldLookCardinalDirection;
 }
 
 void World::setTimeOfDay(float time) {

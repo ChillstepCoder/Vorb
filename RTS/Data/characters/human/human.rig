@@ -1,4 +1,5 @@
 skeleton: paladin_skeleton.ozz
+upper_root: Spine
 anims: [
   sheath_sword,
   sword_shield_attack_1,

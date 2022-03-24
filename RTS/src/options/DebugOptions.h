@@ -1,6 +1,7 @@
 #pragma once
 
 #include "data_structure/QuadtreeSettings.h"
+#include "camera/CameraMode.h"
 
 constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
 
@@ -59,8 +60,8 @@ struct DebugOptions {
     bool mHideCharacters = false;
     bool mShowPhysicsDebug = false;
     bool mShowBusinessDebug = true;
-    bool mShowTweaker = true;
-    bool mShowEditor = true;
+    bool mShowTweaker = false;
+    bool mShowEditor = false;
     bool mShowPaths = true;
     bool mShowEntityQueries = false;
     // Game settings
@@ -69,6 +70,9 @@ struct DebugOptions {
     // Camera settings
     f32 mFoV = 75.0f;
     f32 mZFar = 200000.0f;
+    f32 mCameraZHeight = 1.0f;
+    f32 mCameraXYDistance = 1.0f;
+    CameraMode mCameraMode = CameraMode::CARTESIAN;
     // Shader debug
     f32v3 mDebugColor01 = f32v3(0.0f, 0.0f, 1.0f);
     f32v3 mDebugColor02 = f32v3(0.0f, 1.0f, 0.0f);

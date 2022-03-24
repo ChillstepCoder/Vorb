@@ -146,11 +146,12 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="DebugRenderer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="MainMenuScreen.cpp" />
+    <ClCompile Include="GameplayScreen.cpp" />
     <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\ai\tasks\BuildTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
+    <ClCompile Include="src\camera\CameraController.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
     <ClCompile Include="src\city\BuildingBlueprint.cpp" />
     <ClCompile Include="src\city\BuildingBlueprintGenerator.cpp" />
@@ -290,12 +291,14 @@
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
     <ClInclude Include="App.h" />
     <ClInclude Include="DebugRenderer.h" />
-    <ClInclude Include="MainMenuScreen.h" />
+    <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\tasks\BuildTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
     <ClInclude Include="src\camera\Camera3D.h" />
+    <ClInclude Include="src\camera\CameraController.h" />
+    <ClInclude Include="src\camera\CameraMode.h" />
     <ClInclude Include="src\camera\ICamera.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprint.h" />
@@ -328,7 +331,6 @@
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
-    <ClInclude Include="src\ecs\ClientEcsData.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />

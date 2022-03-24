@@ -3,8 +3,6 @@
 
 #include "ecs/EntityComponentSystem.h"
 
-#include "ecs/ClientEcsData.h"
-
 #include "World.h"
 #include "DebugRenderer.h"
 
@@ -31,10 +29,10 @@ const f32v2 MOVEMENT_SIGNS[4]{
 	f32v2(1.0f, 1.0f),   // Cartesian::UP
 };
 
-f32v2 getMovementDir(const ClientECSData& clientData) {
+f32v2 getMovementDir() {
 	f32v2 moveDir(0.0f);
 	// TODO: Remove this
-	int cartesianIndex = e_cast(clientData.worldLookCardinalDirection);
+	int cartesianIndex = 0;//e_cast(clientData.worldLookCardinalDirection);
 	const i32v2& axis = MOVEMENT_AXIS[cartesianIndex];
 
 	// WSAD inputs
@@ -65,7 +63,7 @@ f32v2 getMovementDir(const ClientECSData& clientData) {
 }
 
 
-inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, const ClientECSData& clientData, entt::registry& registry) {
+inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, entt::registry& registry) {
 
 	// Inputs for states
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
@@ -79,9 +77,18 @@ inline void updateComponent(entt::entity entity, PlayerControlComponent& control
     else {
         motionCmp.mMode = LocomotionMode::RUN;
 	}
+	// Update skills
+    if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
+		// TODO: Move this to some kind of combat manager/context
+		CharacterModelComponent& modelCmp = registry.get<CharacterModelComponent>(entity);
+		if (!modelCmp.mAnimState.mCurrentOneShotTrack.isActive()) {
+			SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
+			modelCmp.playOneShotAnimation(skillsCmp.mSkills[0]->mAnim);
+		}
+    }
 
 	//  Update movement
-    motionCmp.mDesiredDirection = getMovementDir(clientData);
+    motionCmp.mDesiredDirection = getMovementDir();
 
     if (motionCmp.mDesiredDirection.x != 0.0f || motionCmp.mDesiredDirection.y != 0.0f) {
         // Remove any navigation component if we are applying movement input
@@ -93,12 +100,12 @@ inline void updateComponent(entt::entity entity, PlayerControlComponent& control
 
 }
 
-void PlayerControlSystem::update(entt::registry& registry, const ClientECSData& clientData) {
+void PlayerControlSystem::update(entt::registry& registry, const Camera3D& camera) {
 	// Update components
     auto view = registry.view<PlayerControlComponent, LocomotionComponent>();
     for (auto entity : view) {
 		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
 		LocomotionComponent& motionCmp = view.get<LocomotionComponent>(entity);
-		updateComponent(entity, controlCmp, motionCmp, clientData, registry);
+		updateComponent(entity, controlCmp, motionCmp, registry);
 	};
 }
