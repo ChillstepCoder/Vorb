@@ -38,20 +38,6 @@ void main() {
 	float lightTotal = sunIntensity + AMBIENT;
     fColor.rgb = (isGround * lightTotal * SunColor + isSky) * fboColor;
 	
-	// =====================================================
-	// ==                     HAZE                        ==
-	// =====================================================
-	float adjustedDepth = pow(depth, 500.0);
-	float depthHaze = min(adjustedDepth * (pow(hazeIntensity, 0.5) + 0.1 * isGround), 1.0);
-	vec2 adjustedUV = fUV;
-	adjustedUV.y = hazeIntensity;
-	vec3 sunTextureColor = texture(Atlas, vec3(GradientRect.xy + adjustedUV * GradientRect.zw, GradientAtlasPage)).rgb;
-	// Day Haze
-	fColor.rgb = fColor.rgb * (1.0 - depthHaze * isGround) + depthHaze * sunTextureColor;
-
-	// Night Haze
-	float nightHaze = 1.0 - adjustedDepth * isGround * (1.0 - pow(hazeIntensity, 0.2));
-	fColor.rgb *= nightHaze;
 	
 	// =====================================================
 	// ==                     SUN                         ==
@@ -86,6 +72,21 @@ void main() {
 	//float ssao = texture(SSAOTexture, fUV).r;
 	//fColor.rgb = mix(SSAOColor, fColor.rgb, ssao);
 	//fColor.rgb = fColor.rgb * 0.00001 + vec3(ssao);
+    
+    // =====================================================
+	// ==                     HAZE                        ==
+	// =====================================================
+	float adjustedDepth = pow(depth, 3500.0);
+	float depthHaze = min(adjustedDepth * (pow(hazeIntensity, 0.5)), 1.0);
+	vec2 adjustedUV = fUV;
+	adjustedUV.y = hazeIntensity;
+	vec3 sunTextureColor = texture(Atlas, vec3(GradientRect.xy + adjustedUV * GradientRect.zw, GradientAtlasPage)).rgb;
+	// Day Haze
+	fColor.rgb = fColor.rgb * (1.0 - depthHaze * isGround) + depthHaze * sunTextureColor;
+
+	// Night Haze
+	float nightHaze = 1.0 - adjustedDepth * isGround * (1.0 - pow(hazeIntensity, 0.2));
+	fColor.rgb *= nightHaze;
 	
 	fColor.a = 1.0;
 	

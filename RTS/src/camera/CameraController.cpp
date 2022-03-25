@@ -157,9 +157,9 @@ void CameraController::updateCameraCartesianMode(f32 frameAlpha) {
 
 
     // Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
-    const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
+    /*const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
     const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
-    mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);
+    mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);*/
 
 }
 
