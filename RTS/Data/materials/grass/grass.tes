@@ -4,7 +4,7 @@ layout(triangles, equal_spacing, ccw) in;
 
 #include "../util/wind.glsl"
 
-const float WIND_INTENSITY = 0.75;
+const float WIND_INTENSITY = 0.7;
 
 // uniform float gDispFactor;
 
@@ -50,7 +50,8 @@ void main()
        // Displace the vertex along the normal
     //float Displacement = texture(gDisplacementMap, TexCoord_FS_in.xy).x;
     //worldPos += Normal_FS_in * Displacement * gDispFactor;
-    worldPos.xyz += CameraRight * getWindAtPosition(-Time + height, vec4(tWorldRoot[0], 0.0)) * height * WIND_INTENSITY;
+    float wind = getWindAtPosition(-Time + height, vec4(tWorldRoot[0], 0.0)) * height * WIND_INTENSITY;
+    worldPos.xyz += vec3(wind, wind, 0.35 * wind);
     fPosition = worldPos;
     gl_Position = VP * vec4(worldPos, 1.0);
 }

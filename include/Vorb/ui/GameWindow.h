@@ -193,6 +193,9 @@ namespace vorb {
             void setFullscreen(bool useFullscreen, bool overrideCheck = false);
             void setBorderless(bool useBorderless, bool overrideCheck = false);
             void setSwapInterval(GameSwapInterval mode, bool overrideCheck = false);
+            void setHideMouse(bool hideMouse);
+            void setRelativeMouseMode(bool relativeMouse);
+            void warpMouse(int x, int y);
             /*! @brief Sets the position of the window
              * 
              * @param x: X position. 0 will center it.

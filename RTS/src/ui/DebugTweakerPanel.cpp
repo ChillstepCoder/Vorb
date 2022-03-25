@@ -75,13 +75,16 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         if (ImGui::RadioButton("Free look", sDebugOptions.mCameraMode == CameraMode::FREE_LOOK)) {
             sDebugOptions.mCameraMode = CameraMode::FREE_LOOK;
         }
-        if (ImGui::RadioButton("Mouselock basic", sDebugOptions.mCameraMode == CameraMode::MOUSELOCK_BASIC)) {
-            sDebugOptions.mCameraMode = CameraMode::MOUSELOCK_BASIC;
+        if (ImGui::RadioButton("Mouselock", sDebugOptions.mCameraMode == CameraMode::MOUSELOCK)) {
+            sDebugOptions.mCameraMode = CameraMode::MOUSELOCK;
         }
         if (ImGui::RadioButton("Cartesian", sDebugOptions.mCameraMode == CameraMode::CARTESIAN)) {
             sDebugOptions.mCameraMode = CameraMode::CARTESIAN;
         }
-        static_assert(e_cast(CameraMode::COUNT) == 4, "Update options");
+        if (ImGui::RadioButton("MMO", sDebugOptions.mCameraMode == CameraMode::MMO)) {
+            sDebugOptions.mCameraMode = CameraMode::MMO;
+        }
+        static_assert(e_cast(CameraMode::COUNT) == 5, "Update options");
         ImGui::PopID();
     }
     

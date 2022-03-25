@@ -105,7 +105,7 @@ void createGrassMesh(
 
     for (ui32 y = 0; y < dims.y; ++y) {
         for (ui32 x = 0; x < dims.x; ++x) {
-            assert(tilePosStart.x + x < CHUNK_WIDTH&& tilePosStart.y + y < CHUNK_WIDTH);
+            assert(tilePosStart.x + x < CHUNK_WIDTH && tilePosStart.y + y < CHUNK_WIDTH);
             TileIndex tileIndex(tilePosStart.x + x, tilePosStart.y + y);
 
             ui8 grassVal = chunk.getGrassAt(tileIndex);
@@ -139,8 +139,9 @@ void createGrassMesh(
                     const f32 rnd = Random::getCachedRandomfSpecific(x2 + CHUNK_SIZE * y2 - tx - ty * CHUNK_SIZE) * 0.9f;
                     const float xo = (x2 + rnd) / (float)density;
                     const float yo = (y2 - rnd) / (float)density;
-                    const float rsize = lerp(0.4f, 0.6f, rnd);
+                    float rsize = lerp(0.4f, 0.6f, rnd);
                     const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
+                    rsize += -grassNoise * 0.4f;
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
                     f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
                     const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData->data, truePos);

@@ -7,6 +7,9 @@
 #include "DebugRenderer.h"
 
 #include <Vorb/ui/InputDispatcher.h>
+#include <glm/gtx/rotate_vector.hpp>
+
+#include "camera/Camera3D.h"
 
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
@@ -16,54 +19,37 @@ constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
 //	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
 //}
 
-const i32v2 MOVEMENT_AXIS[4]{
-	i32v2(AXIS_X, AXIS_Y), // Cartesian::DOWN
-	i32v2(AXIS_Y, AXIS_X), // Cartesian::LEFT
-	i32v2(AXIS_Y, AXIS_X), // Cartesian::RIGHT
-	i32v2(AXIS_X, AXIS_Y), // Cartesian::UP
-};
-const f32v2 MOVEMENT_SIGNS[4]{
-	f32v2(-1.0f, -1.0f), // Cartesian::DOWN
-	f32v2(-1.0f, 1.0f),  // Cartesian::LEFT
-	f32v2(1.0f, -1.0f),  // Cartesian::RIGHT
-	f32v2(1.0f, 1.0f),   // Cartesian::UP
-};
 
-f32v2 getMovementDir() {
+f32v2 getMovementDir(const Camera3D& camera) {
 	f32v2 moveDir(0.0f);
-	// TODO: Remove this
-	int cartesianIndex = 0;//e_cast(clientData.worldLookCardinalDirection);
-	const i32v2& axis = MOVEMENT_AXIS[cartesianIndex];
 
 	// WSAD inputs
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
-        moveDir[axis.y] = MOVEMENT_SIGNS[cartesianIndex][0];
+        moveDir.y = 1.0f;
     }
     else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
-        moveDir[axis.y] = -MOVEMENT_SIGNS[cartesianIndex][0];
+        moveDir.y = -1.0f;
     }
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
-        moveDir[axis.x] = -MOVEMENT_SIGNS[cartesianIndex][1];
+        moveDir.x = -1.0f;
     }
     else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
-        moveDir[axis.x] = MOVEMENT_SIGNS[cartesianIndex][1];
+        moveDir.x = 1.0f;
     }
 
 	// Normalize or return 0
-	float length = glm::length(moveDir);
-	if (length > FLT_EPSILON) {
-		moveDir /= length;
+	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
+		return moveDir;
 	}
-	else {
-		return f32v2(0.0f);
-	}
+	
+	moveDir = glm::rotate(moveDir, -camera.getYaw());
 
 	return glm::normalize(moveDir);
 }
 
 
-inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, entt::registry& registry) {
+inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, entt::registry& registry, const Camera3D& camera) {
 
 	// Inputs for states
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
@@ -88,7 +74,7 @@ inline void updateComponent(entt::entity entity, PlayerControlComponent& control
     }
 
 	//  Update movement
-    motionCmp.mDesiredDirection = getMovementDir();
+    motionCmp.mDesiredDirection = getMovementDir(camera);
 
     if (motionCmp.mDesiredDirection.x != 0.0f || motionCmp.mDesiredDirection.y != 0.0f) {
         // Remove any navigation component if we are applying movement input
@@ -106,6 +92,6 @@ void PlayerControlSystem::update(entt::registry& registry, const Camera3D& camer
     for (auto entity : view) {
 		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
 		LocomotionComponent& motionCmp = view.get<LocomotionComponent>(entity);
-		updateComponent(entity, controlCmp, motionCmp, registry);
+		updateComponent(entity, controlCmp, motionCmp, registry, camera);
 	};
 }

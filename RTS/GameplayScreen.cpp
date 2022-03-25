@@ -52,7 +52,7 @@ constexpr f64 TICK_RATE_MS = 40.0;
 
 #define WRITE_DEBUG_ATLAS 0
 
-GameplayScreen::GameplayScreen(const App* app) 
+GameplayScreen::GameplayScreen(App* const app)
 	: IAppScreen<App>(app),
     mResourceManager(&Services::ResourceManager::ref()),
     mWorld(std::make_unique<World>(*mResourceManager)),
@@ -74,6 +74,7 @@ GameplayScreen::GameplayScreen(const App* app)
 	// Starting time of day to noon
 	mWorld->setTimeOfDay(12.0f);
 
+    // TODO: FIX EVIL THINGS
     mCameraController = std::make_unique<CameraController>(m_app->getWindow(), *mWorld);
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. Engaging units do not need to do any area
@@ -157,6 +158,16 @@ void GameplayScreen::build() {
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
         UIContext::getInstance().closeTileInspectionPanel();
+        if (event.button == vorb::ui::MouseButton::RIGHT) {
+            mRightClickTimer.start();
+            TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
+            if (pickData.hit.didHit()) {
+                mRightClickPickId = pickData.id;
+            }
+            else {
+                mRightClickPickId = UINT32_MAX;
+            }
+        }
 	});
 
 	vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
@@ -233,19 +244,22 @@ void GameplayScreen::build() {
                 /*mWorld->createEntity(worldPos, "villager");*/
 			}
             else {
+                constexpr f64 RIGHT_CLICK_INTERACT_MS_THRESHOLD = 160.0;
                 if (mRightClickInteractPopup) {
                     mRightClickInteractPopup.reset();
 				}
-                else {
+                else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                     TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
                     if (pickData.hit.didHit()) {
-                        f32v2 worldPos = f32v2(pickData.hit.position.x, pickData.hit.position.y);
-                        WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
-                        // Right click picking
-                        mSelectedTilePosition = worldPos;
-                        // Enable context menu
-                        mSelectedScreenPos = screenPos;
-                        mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                        if (pickData.id == mRightClickPickId) {
+                            f32v2 worldPos = f32v2(pickData.hit.position.x, pickData.hit.position.y);
+                            WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
+                            // Right click picking
+                            mSelectedTilePosition = worldPos;
+                            // Enable context menu
+                            mSelectedScreenPos = screenPos;
+                            mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                        }
                     }
 				}
 			}

@@ -14,6 +14,7 @@ public:
     void setMaxSpeed(f32 maxSpeed) { mMaxSpeed = maxSpeed; }
     void setTarget(T target) { mTarget = target; }
     virtual void update(f32 deltaTime) {
+        UNUSED(deltaTime); // TODO: USE
         const T offsetToTarget = mTarget - mCurr;
         const float distanceToTarget = glm::length(offsetToTarget);
         if (distanceToTarget < 0.0005f) {

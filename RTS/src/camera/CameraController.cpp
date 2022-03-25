@@ -12,7 +12,7 @@
 
 const f32v2 CAMERA_ZOOM_RANGE = f32v2(1.0f, 1024.0f);
 
-CameraController::CameraController(const vui::GameWindow& window, const World& world) : mWindow(window), mWorld(world) {
+CameraController::CameraController(vui::GameWindow& window, const World& world) : mWindow(window), mWorld(world) {
 
     mCamera.init((f32)window.getWidth() / window.getHeight());
     setCameraMode(sDebugOptions.mCameraMode);
@@ -30,11 +30,19 @@ void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
         return;
     }
 
+    // Update any changed options
+    if (mCamera.getFieldOfView() != sDebugOptions.mFoV) {
+        mCamera.setFieldOfView(sDebugOptions.mFoV);
+    }
+
     switch (mCameraMode) {
         case CameraMode::CARTESIAN:
             updateCameraCartesianMode(frameAlpha);
             break;
-        case CameraMode::MOUSELOCK_BASIC:
+        case CameraMode::MMO:
+            updateCameraMMOMode(frameAlpha);
+            break;
+        case CameraMode::MOUSELOCK:
             break;
         case CameraMode::FREE_LOOK:
             updateCameraFreeLookMode(frameAlpha, gameTime.deltaTime);
@@ -42,7 +50,7 @@ void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 4, "Add new mode functionality");
+    static_assert(e_cast(CameraMode::COUNT) == 5, "Add new mode functionality");
 
     // Update camera itself
     mCamera.update();
@@ -71,7 +79,14 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
             vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
             vui::InputDispatcher::key.onKeyDown -= makeDelegate(this, &CameraController::updateKeyInputCartesianMode);
             break;
-        case CameraMode::MOUSELOCK_BASIC:
+        case CameraMode::MMO:
+            vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInputMMOMode);
+            vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputMMOMode);
+            vui::InputDispatcher::mouse.onButtonDown -= makeDelegate(this, &CameraController::updateMouseButtonDownInputMMO);
+            vui::InputDispatcher::mouse.onButtonUp -= makeDelegate(this, &CameraController::updateMouseButtonUpInputMMO);
+            mWindow.setRelativeMouseMode(false);
+            break;
+        case CameraMode::MOUSELOCK:
             vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
             break;
         case CameraMode::FREE_LOOK:
@@ -81,8 +96,9 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 4, "Update any input unregister");
+    static_assert(e_cast(CameraMode::COUNT) == 5, "Update any input unregister");
 
+    // Switch our camera mode
     mCameraMode = cameraMode;
     // Add new inputs
     switch (mCameraMode) {
@@ -90,7 +106,13 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
             vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInput);
             vui::InputDispatcher::key.onKeyDown += makeDelegate(this, &CameraController::updateKeyInputCartesianMode);
             break;
-        case CameraMode::MOUSELOCK_BASIC:
+        case CameraMode::MMO:
+            vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInputMMOMode);
+            vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputMMOMode);
+            vui::InputDispatcher::mouse.onButtonDown += makeDelegate(this, &CameraController::updateMouseButtonDownInputMMO);
+            vui::InputDispatcher::mouse.onButtonUp += makeDelegate(this, &CameraController::updateMouseButtonUpInputMMO);
+            break;
+        case CameraMode::MOUSELOCK:
             vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInput);
             break;
         case CameraMode::FREE_LOOK:
@@ -100,7 +122,7 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 4, "Update any input register");
+    static_assert(e_cast(CameraMode::COUNT) == 5, "Update any input register");
 
 }
 
@@ -112,11 +134,6 @@ void CameraController::updateCameraCartesianMode(f32 frameAlpha) {
     }
 
     // TODO: Delta time dependent?
-
-    // Update options
-    if (mCamera.getFieldOfView() != sDebugOptions.mFoV) {
-        mCamera.setFieldOfView(sDebugOptions.mFoV);
-    }
 
     f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
 
@@ -175,13 +192,49 @@ void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
     }
 }
 
+void CameraController::updateCameraMMOMode(f32 frameAlpha)
+{
+    // Must have a follow
+    if (mEntityFollow == entt::null) {
+        return;
+    }
+
+    mCameraBoomLengthTweener.update(1.0f); // TODO: Use deltatime
+
+    // TODO: Delta time dependent?
+
+    f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
+    followTargetPos.z += sDebugOptions.mCameraZHeight + SQ(mCameraBoomLengthTweener.getCurr() * 0.5f);
+
+    const f32v3 lookAtOffset = mCamera.getDirection() * sDebugOptions.mCameraXYDistance * 2.0f * mCameraBoomLengthTweener.getCurr();
+    mCamera.setPosition(followTargetPos - lookAtOffset);
+    mCamera.lookAt(followTargetPos);
+
+
+    // Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
+  /*  const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
+    const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
+    mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);*/
+}
+
 void CameraController::updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt) {
     mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + evnt.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_ZOOM_RANGE.x, CAMERA_ZOOM_RANGE.y);
 }
 
+void CameraController::updateMouseWheelInputMMOMode(Sender s, const vui::MouseWheelEvent& evnt) {
+    mCameraBoomLengthTweener.mTarget = glm::clamp(mCameraBoomLengthTweener.mTarget + (f32)evnt.dy * mCameraBoomLengthTweener.mTarget * -0.2f, 0.5f, 3.0f);
+}
+
 void CameraController::updateMouseMotionInputFreeLookMode(Sender s, const vui::MouseMotionEvent& evnt) {
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
-        constexpr f32 ROTATE_SPEED = 0.001f;
+        constexpr f32 ROTATE_SPEED = 0.002f;
+        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
+    }
+}
+
+void CameraController::updateMouseMotionInputMMOMode(Sender s, const vui::MouseMotionEvent& evnt) {
+    if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
+        constexpr f32 ROTATE_SPEED = 0.002f;
         mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
     }
 }
@@ -194,6 +247,20 @@ void CameraController::updateKeyInputCartesianMode(Sender sender, const vui::Key
     else if (evnt.keyCode == VKEY_E) {
         mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][0];
         mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
+    }
+}
+
+void CameraController::updateMouseButtonDownInputMMO(Sender s, const vui::MouseButtonEvent& evnt) {
+    if (evnt.button == vorb::ui::MouseButton::RIGHT) {
+        mLastMousePositionBeforeRelative = i32v2(evnt.x, evnt.y);
+        mWindow.setRelativeMouseMode(true);
+    }
+}
+
+void CameraController::updateMouseButtonUpInputMMO(Sender s, const vui::MouseButtonEvent& evnt) {
+    if (evnt.button == vorb::ui::MouseButton::RIGHT) {
+        mWindow.setRelativeMouseMode(false);
+        mWindow.warpMouse(mLastMousePositionBeforeRelative.x, mLastMousePositionBeforeRelative.y);
     }
 }
 

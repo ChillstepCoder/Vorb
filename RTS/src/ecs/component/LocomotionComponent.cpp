@@ -27,7 +27,7 @@ inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& ph
     float dotp = glm::dot(motionCmp.mDesiredDirection, physCmp.mDir);
     dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
     const float angleOffset = acos(dotp);
-    assert(angleOffset == angleOffset); // nan check
+    assert(angleOffset == angleOffset && "Nan angle offset"); // nan check
 
     // Reduce speed for backstep
     const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);

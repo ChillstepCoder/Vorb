@@ -471,9 +471,26 @@ void vui::GameWindow::setSwapInterval(GameSwapInterval mode, bool overrideCheck 
 
     }
 }
+
+void vui::GameWindow::setHideMouse(bool mouseHide) {
+    static_assert(VORB_IMPL_UI_SDL == 1);
+    SDL_ShowCursor(!mouseHide);
+}
+
+void vui::GameWindow::setRelativeMouseMode(bool relativeMouse) {
+    static_assert(VORB_IMPL_UI_SDL == 1);
+    SDL_SetRelativeMouseMode(relativeMouse ? SDL_TRUE : SDL_FALSE);
+}
+
+void vui::GameWindow::warpMouse(int x, int y) {
+    SDL_WarpMouseInWindow((SDL_Window*)m_window, x, y);
+}
+
 void vui::GameWindow::setMaxFPS(f32 fpsLimit) {
     m_displayMode.maxFPS = fpsLimit;
 }
+
+
 void vui::GameWindow::setTitle(const cString title) const {
     if (!title) title = DEFAULT_TITLE;
 #if defined(VORB_IMPL_UI_SDL)

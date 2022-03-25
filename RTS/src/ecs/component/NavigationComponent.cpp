@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include <glm/gtx/rotate_vector.hpp>
 #include "NavigationComponent.h"
 
 #include "ecs/EntityComponentSystem.h"
@@ -28,7 +27,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
     }
 
 	// TODO: Allow variable pathing urgency
-    motionCmp.mMode = LocomotionMode::WALK;
+    motionCmp.mMode = LocomotionMode::SPRINT;
 
 	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 	return false;
@@ -96,7 +95,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
 	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
     // TODO: Allow variable pathing urgency
-    motionCmp.mMode = LocomotionMode::WALK;
+    motionCmp.mMode = LocomotionMode::SPRINT;
 	    
 	// Steer around obstacles and corners
 	// Raycast forward to find a collision intersect

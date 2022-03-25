@@ -95,11 +95,11 @@ namespace vorb {
         template<typename T>
         class IAppScreen : public IGameScreen {
         public:
-            IAppScreen(const T* app)
+            IAppScreen(T* const app)
                 : m_app(app) {
             }
         protected:
-            const T* const m_app;
+            T* const m_app;
         };
         
 // Shorten Super-Constructors

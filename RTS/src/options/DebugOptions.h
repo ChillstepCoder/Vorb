@@ -72,7 +72,7 @@ struct DebugOptions {
     f32 mZFar = 200000.0f;
     f32 mCameraZHeight = 1.0f;
     f32 mCameraXYDistance = 1.0f;
-    CameraMode mCameraMode = CameraMode::CARTESIAN;
+    CameraMode mCameraMode = CameraMode::MMO;
     // Shader debug
     f32v3 mDebugColor01 = f32v3(0.0f, 0.0f, 1.0f);
     f32v3 mDebugColor02 = f32v3(0.0f, 1.0f, 0.0f);

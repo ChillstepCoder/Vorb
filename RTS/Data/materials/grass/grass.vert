@@ -79,7 +79,7 @@ void main() {
 	angle = min(pow(angle, 0.4) * xzOffsetUncompressed.y, 1.0) * distanceFromCamera;
 	fDistance = length(worldPos.xy);
 	
-	worldPos.xyz += CameraFront * angle;
+	//worldPos.xyz += CameraFront * angle;
     fWorldPos = worldPos.xyz;
 	
 	// Grass blade uvs

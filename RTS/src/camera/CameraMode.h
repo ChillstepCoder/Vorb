@@ -3,7 +3,8 @@
 enum class CameraMode {
     NONE,
     CARTESIAN,
-    MOUSELOCK_BASIC,
+    MOUSELOCK,
+    MMO,
     FREE_LOOK,
     COUNT
 };

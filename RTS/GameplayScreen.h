@@ -23,7 +23,7 @@ class b2World;
 class GameplayScreen : public vui::IAppScreen<App>
 {
 public:
-	GameplayScreen(const App* app);
+	GameplayScreen(App* const app);
 	~GameplayScreen();
 
 	virtual i32 getNextScreen() const override;
@@ -61,6 +61,8 @@ private:
 	f32v2 mSelectedScreenPos = f32v2(0.0f);
     std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
+	PreciseTimer mRightClickTimer;
+	ui32 mRightClickPickId = UINT32_MAX;
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 
