@@ -81,6 +81,7 @@ protected:
 };
 
 class PreciseTimer {
+    friend class MultiplePreciseTimer;
 public:
     PreciseTimer() {
         start();
@@ -88,12 +89,7 @@ public:
     void start();
     /// Returns time in MS
     f64 stop();
-
-    const bool& isRunning() const {
-        return m_timerRunning;
-    }
 protected:
-    bool m_timerRunning = false;
     TimePoint m_start;
 };
 
@@ -104,6 +100,7 @@ public:
 private:
     const char* mLabel;
     int mIndentLevel = 0;
+    bool m_timerRunning = false;
 };
 
 class AccumulationTimer {

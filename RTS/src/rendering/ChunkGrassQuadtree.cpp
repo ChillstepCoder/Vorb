@@ -139,7 +139,7 @@ void createGrassMesh(
                     const f32 rnd = Random::getCachedRandomfSpecific(x2 + CHUNK_SIZE * y2 - tx - ty * CHUNK_SIZE) * 0.9f;
                     const float xo = (x2 + rnd) / (float)density;
                     const float yo = (y2 - rnd) / (float)density;
-                    float rsize = lerp(0.4f, 0.6f, rnd);
+                    float rsize = lerp(0.2f, 0.4f, rnd);
                     const f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + xo + chunk.getWorldPos().x, (f64)tileWorldPos.y + yo + chunk.getWorldPos().y);
                     rsize += -grassNoise * 0.4f;
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;

@@ -22,12 +22,12 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - physCmp.getXYPosition();
     const float distance2 = glm::length2(offset);
     if (distance2 <= SQ(MIN_DISTANCE)) {
-		motionCmp.mMode = LocomotionMode::IDLE;
+		motionCmp.mDesiredMode = LocomotionMode::IDLE;
         return true;
     }
 
 	// TODO: Allow variable pathing urgency
-    motionCmp.mMode = LocomotionMode::SPRINT;
+    motionCmp.mDesiredMode = LocomotionMode::SPRINT;
 
 	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 	return false;
@@ -69,7 +69,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 		}
         if (baseZ >= physCmp.getZPosition() + 0.1f /*1.1*/) {
             // Climb
-			motionCmp.mMode = LocomotionMode::JUMP;
+			motionCmp.mDesiredMode = LocomotionMode::JUMPING;
         }
 	}
 
@@ -95,7 +95,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
 	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
     // TODO: Allow variable pathing urgency
-    motionCmp.mMode = LocomotionMode::SPRINT;
+    motionCmp.mDesiredMode = LocomotionMode::SPRINT;
 	    
 	// Steer around obstacles and corners
 	// Raycast forward to find a collision intersect
@@ -113,7 +113,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 				f32 baseZ = tile->getBaseZPositionUncompressedMainThread();
 				if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
 					// Climb
-					motionCmp.mMode = LocomotionMode::JUMP;
+					motionCmp.mDesiredMode = LocomotionMode::BEGIN_JUMP;
 				}
 				else {
 					// Steer
@@ -195,7 +195,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 
 void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp, LocomotionComponent& motionCmp) {
 	// Target reached
-	motionCmp.mMode = LocomotionMode::IDLE;
+	motionCmp.mDesiredMode = LocomotionMode::IDLE;
 	navCmp.mFinePath = nullptr;
 	navCmp.mCoarsePath = nullptr;
 	if (navCmp.mFinishedCallback) {
@@ -370,7 +370,7 @@ void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, 
 }
 
 void NavigationComponent::abort(LocomotionComponent& motionCmp) {
-    motionCmp.mMode = LocomotionMode::IDLE;
+    motionCmp.mDesiredMode = LocomotionMode::IDLE;
     mFlags |= NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH;
 	mFinePath.reset();
 	if (mFinishedCallback) {

@@ -27,6 +27,7 @@ enum class AnimTrackFlags : ui8 {
     IS_FADING_IN      = 1 << 3,
     IS_ACTIVE         = 1 << 4,
     IS_SYNCED_TO_FEET = 1 << 5,
+    HOLD_END_POSE     = 1 << 6,
 };
 
 constexpr ui16 MAX_ANIM_FADE_WEIGHT = UINT16_MAX;
@@ -49,10 +50,14 @@ struct AnimTrack {
 };
 static_assert(sizeof(AnimTrack) == 24, "Keep small");
 
-constexpr ui32 NUM_ANIM_TRACKS = e_cast(AnimMachineState::COUNT);
+constexpr ui32 NUM_ANIM_STATE_TRACKS = e_cast(AnimMachineState::COUNT);
 struct AnimState {
-    AnimTrack mTracks[NUM_ANIM_TRACKS];
+
+    void fadeInStateTrack(AnimMachineState state, f32 fadeDuration);
+
+    AnimTrack mTracks[NUM_ANIM_STATE_TRACKS];
     AnimTrack mCurrentOneShotTrack;
+    ui8 mPrimaryStateTrack = UINT8_MAX;
     const ozz::animation::Animation* mCurrentOneShotAnimation = nullptr;
 };
 

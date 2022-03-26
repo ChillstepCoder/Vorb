@@ -64,7 +64,7 @@ constexpr float GRAVITY_FORCE = 0.03f;
 	//}
 //}
 
-void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, PhysicsComponent& cmp) {
+void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, PhysicsComponent& cmp, OUT bool& isOnTile) {
     const TileCollider* collider = tile->tryGetColliderMainThread();
     TileCollisionShape shape = TileCollisionShape::BOX;
     float tileCollisionRadius = 0.5f; // Defualt for box
@@ -137,6 +137,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
                 if (isCollidingWithTop) {
                     cmp.setZPosition(baseZPosition);
                     cmp.setZVelocity(0.0f);
+                    isOnTile = true;
                     return;
                 }
                 // Collision!
@@ -222,26 +223,37 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     };
 
     // TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
-    // TODO: Re-enable
+    bool isOnTile = false;
     for (int i = 0; i < 4; ++i) {
         const Tile* tile = world.tryGetTileAtWorldPos(cornerPositions[i]);
         if (tile) {
             // TODO: This can reduntantly collide
             const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-            resolveCircleTileCollision(tileCenter, tile, cmp);
+            resolveCircleTileCollision(tileCenter, tile, cmp, isOnTile);
         }
     }
 
     // Resolve terrain collision
     const WorldGrid& grid = world.getWorldGrid();
     f32 terrainHeight;
+    constexpr f32 SNAP_THRESHOLD = 0.01f;
     if (grid.tryComputeHeightAtPoint(xyPosition, &terrainHeight)) {
-        if (terrainHeight >= cmp.mZPosition) {
+        if (terrainHeight >= cmp.mZPosition - SNAP_THRESHOLD) {
             cmp.mZPosition = terrainHeight;
             cmp.setZVelocity(0.0f);
+            cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
+        }
+        else {
+            if (isOnTile) {
+                cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
+            }
+            else {
+                cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
+            }
         }
     }
     else {
+        cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
         cmp.setZVelocity(0.0f);
     }
 

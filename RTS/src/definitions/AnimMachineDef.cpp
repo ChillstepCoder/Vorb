@@ -14,4 +14,9 @@ KEG_TYPE_DEF_SAME_NAME(AnimMachineDefFileData, kt) {
     kt.addValue("sprint_front", keg::Value::basic(offsetof(AnimMachineDefFileData, mSprintFrontName), keg::BasicType::STRING));
     kt.addValue("idle", keg::Value::basic(offsetof(AnimMachineDefFileData, mIdleName), keg::BasicType::STRING));
     kt.addValue("idle_combat", keg::Value::basic(offsetof(AnimMachineDefFileData, mIdleCombatName), keg::BasicType::STRING));
+    kt.addValue("fall", keg::Value::basic(offsetof(AnimMachineDefFileData, mFallingName), keg::BasicType::STRING));
+    kt.addValue("jump", keg::Value::basic(offsetof(AnimMachineDefFileData, mJumpName), keg::BasicType::STRING));
+    kt.addValue("land", keg::Value::basic(offsetof(AnimMachineDefFileData, mLandingName), keg::BasicType::STRING));
 }
+
+static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update def");

@@ -20,13 +20,11 @@ const f64 SECONDS_PER_MS = 0.001;
 
 // TODO: Steady clock?
 void PreciseTimer::start() {
-    m_timerRunning = true;
     m_start = std::chrono::high_resolution_clock::now();
 }
 
 // Returns time in ms
 f64 PreciseTimer::stop() {
-    m_timerRunning = false;
     std::chrono::duration<f64> duration = std::chrono::high_resolution_clock::now() - m_start;
     return duration.count() * MS_PER_SECOND;
 }
@@ -67,7 +65,7 @@ void AccumulationTimer::printAll(bool averages) {
 }
 
 void MultiplePreciseTimer::start(const nString& tag) {
-    if (m_timer.isRunning()) stop();
+    //if (m_timer.m_timerRunning) stop();
     if (m_index >= m_intervals.size()) {
         m_intervals.push_back(Interval(tag));
     } else {
@@ -80,7 +78,7 @@ void MultiplePreciseTimer::stop() {
     m_intervals[m_index++].time += m_timer.stop();
 }
 void MultiplePreciseTimer::end(const bool& print) {
-    if (m_timer.isRunning()) m_timer.stop();
+    //if (m_timer.m_timerRunning) m_timer.stop();
     if (m_intervals.empty()) return;
     if (m_samples == m_desiredSamples) {
         if (print) {

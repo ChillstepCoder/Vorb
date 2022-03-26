@@ -51,18 +51,21 @@ f32v2 getMovementDir(const Camera3D& camera) {
 
 inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, entt::registry& registry, const Camera3D& camera) {
 
-	// Inputs for states
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-		motionCmp.mMode = LocomotionMode::JUMP;
-    }else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-		motionCmp.mMode = LocomotionMode::SPRINT;
-	}
-    else if(vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
-        motionCmp.mMode = LocomotionMode::WALK;
+    // Inputs for states, but only while we are on ground
+    if (!motionCmp.isInAirState()) {
+        if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
+            motionCmp.mDesiredMode = LocomotionMode::BEGIN_JUMP;
+        }
+        else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+            motionCmp.mDesiredMode = LocomotionMode::SPRINT;
+        }
+        else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
+            motionCmp.mDesiredMode = LocomotionMode::WALK;
+        }
+        else {
+            motionCmp.mDesiredMode = LocomotionMode::RUN;
+        }
     }
-    else {
-        motionCmp.mMode = LocomotionMode::RUN;
-	}
 	// Update skills
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
 		// TODO: Move this to some kind of combat manager/context
@@ -80,8 +83,8 @@ inline void updateComponent(entt::entity entity, PlayerControlComponent& control
         // Remove any navigation component if we are applying movement input
         registry.remove<NavigationComponent>(entity);
 	}
-	else {
-        motionCmp.mMode = LocomotionMode::IDLE;
+	else if (!motionCmp.isInAirState() && motionCmp.mDesiredMode != LocomotionMode::BEGIN_JUMP) {
+        motionCmp.mDesiredMode = LocomotionMode::IDLE;
 	}
 
 }

@@ -49,45 +49,54 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const LocomotionComp
     // Update feel
     cmp.updateFootstepAlpha(elapsedSec, motionCmp.mMode);
 
-    constexpr f32 fadeTime = 0.3f;
+    constexpr f32 FADE_IN_SLOW = 0.3f;
+    constexpr f32 FADE_IN_MEDIUM = 0.2f;
+    constexpr f32 FADE_IN_FAST = 0.1f;
     const bool isTransitioning = (motionCmp.mMode != cmp.mPrevLocomotionMode);
-    // TODO: There must be a better way
+
+    // Update transition
     if (isTransitioning) {
+
+        // Fade out previous state
+        if (cmp.mAnimState.mPrimaryStateTrack != UINT8_MAX) {
+            cmp.mAnimState.mTracks[cmp.mAnimState.mPrimaryStateTrack].fadeOut(FADE_IN_SLOW);
+        }
+
+        // TODO: Array lookup mapping instead of switch?
         switch (motionCmp.mMode) {
             case LocomotionMode::IDLE: {
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeIn(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::IDLE, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::WALK: {
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeIn(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::WALK_FRONT, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::RUN: {
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeIn(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::RUN_FRONT, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::SPRINT: {
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::RUN_FRONT)].fadeOut(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::SPRINT_FRONT)].fadeIn(fadeTime);
-                cmp.mAnimState.mTracks[e_cast(AnimMachineState::WALK_FRONT)].fadeOut(fadeTime);
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::SPRINT_FRONT, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::DODGE: {
 
                 break;
             }
-            case LocomotionMode::JUMP: {
-
+            case LocomotionMode::BEGIN_JUMP:
+                assert(false && "We should never try to play Begin Jump anim");
+                break;
+            case LocomotionMode::JUMPING: {
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::JUMPING, FADE_IN_FAST);
+                break;
+            }
+            case LocomotionMode::FALLING: {
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::FALLING, FADE_IN_MEDIUM);
+                break;
+            }
+            case LocomotionMode::LANDING: {
+                cmp.mAnimState.fadeInStateTrack(AnimMachineState::LANDING, FADE_IN_FAST);
                 break;
             }
             default:
@@ -96,6 +105,7 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const LocomotionComp
 
         }
     }
+    static_assert(e_cast(LocomotionMode::COUNT) == 9, "Update anim mapping");
 
     // Any transitions are now over
     cmp.mPrevLocomotionMode = motionCmp.mMode;
@@ -108,8 +118,8 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
     // Buffer of local transforms as sampled from animation_.
     // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
-    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_TRACKS + 1];
-    f32 blendWeights[NUM_ANIM_TRACKS + 1];
+    ozz::vector<ozz::math::SoaTransform> locals[NUM_ANIM_STATE_TRACKS + 1];
+    f32 blendWeights[NUM_ANIM_STATE_TRACKS + 1];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
     assert(cmp.mModel);
@@ -137,7 +147,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
     }
 
     ui32 numValidTracks = 0;
-    for (ui32 i = 0; i < NUM_ANIM_TRACKS; ++i) {
+    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
         AnimTrack& currentTrack = cmp.mAnimState.mTracks[i];
         // If our weightScale made us inactive, make sure to fully disable
         if (!currentTrack.isActive()) {
@@ -200,7 +210,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
         const f32 inverseOneShotWeightMult = 1.0f - oneShotWeight;
         int totalLayers = 0;
         // Prepares blending layers.
-        ozz::animation::BlendingJob::Layer layers[(NUM_ANIM_TRACKS + 1) * 2]; // Account for splitting layers
+        ozz::animation::BlendingJob::Layer layers[(NUM_ANIM_STATE_TRACKS + 1) * 2]; // Account for splitting layers
 
         // While one shots are active, blending is more complex as we must split lower and upper body blending
         if (oneShotWeight) {

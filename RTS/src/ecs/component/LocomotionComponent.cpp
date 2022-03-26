@@ -6,20 +6,49 @@
 #include "ecs/component/PhysicsComponent.h"
 
 constexpr float ACCELERATION = 0.01f;
-constexpr float JUMP_VELOCITY = 0.15f;
+constexpr float JUMP_VELOCITY = 0.20f;
 
 KEG_TYPE_DEF_SAME_NAME(LocomotionComponentDef, kt) {
     kt.addValue("speed", keg::Value::basic(offsetof(LocomotionComponentDef, mSpeed), keg::BasicType::F32));
 }
 
 inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& physCmp) {
-
-    // If we have no desired motion, do nothing and let physics system add friction
-    if (motionCmp.mMode == LocomotionMode::IDLE) {
-        return;
+ 
+    // Transitions
+    if (motionCmp.mDesiredMode == LocomotionMode::BEGIN_JUMP) {
+        motionCmp.mDesiredMode = LocomotionMode::JUMPING;
+        motionCmp.mMode = LocomotionMode::JUMPING;
+        physCmp.setZVelocity(JUMP_VELOCITY);
+    }
+    else if (motionCmp.isInAirState()) {
+        if (physCmp.isOnGround()) {
+            // Transition back to grounded
+            motionCmp.mMode = LocomotionMode::LANDING;
+            motionCmp.mLandingTimer.start();
+        }
+        else if (motionCmp.mMode == LocomotionMode::JUMPING) {
+            if (physCmp.mZVelocity <= 0.0f) {
+                motionCmp.mMode = LocomotionMode::FALLING;
+            }
+        }
     }
 
-    assert(motionCmp.mDesiredDirection.x != 0.0f || motionCmp.mDesiredDirection.y != 0.0f);
+    if (motionCmp.mMode != motionCmp.mDesiredMode) {
+        if (motionCmp.mMode == LocomotionMode::LANDING) {
+            constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
+            if (motionCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
+                motionCmp.mMode = motionCmp.mDesiredMode;
+            }
+        }
+        else {
+            motionCmp.mMode = motionCmp.mDesiredMode;
+        }
+    }
+
+    // If we have no desired motion, do nothing and let physics system add friction
+    if (motionCmp.mDesiredDirection.x == 0.0f && motionCmp.mDesiredDirection.y == 0.0f) {
+        return;
+    }
 
     float desiredSpeed = motionCmp.getCurrentSpeed();
     // TODO: assert normalized?
@@ -58,10 +87,6 @@ inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& ph
 
     //}
 
-    // Jumping
-    if (motionCmp.mMode == LocomotionMode::JUMP) {
-        physCmp.setZVelocity(JUMP_VELOCITY);
-    }
 }
 
 void LocomotionSystem::update(entt::registry& registry) {

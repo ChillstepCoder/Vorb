@@ -20,6 +20,9 @@ enum class AnimMachineState : ui16 {
     SPRINT_FRONT,
     IDLE,
     IDLE_COMBAT,
+    FALLING,
+    JUMPING,
+    LANDING,
     COUNT
 };
 
@@ -36,10 +39,13 @@ constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
     "RUN_BACK",
     "SPRINT_FRONT",
     "IDLE",
-    "IDLE_COMBAT"
+    "IDLE_COMBAT",
+    "FALLING",
+    "JUMPING",
+    "LANDING"
 };
 
-static_assert(e_cast(AnimMachineState::COUNT) == 11, "Update debug strings");
+static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update debug strings");
 
 // Make sure order and contents of the animation machine name and animation arrays are the same
 struct AnimMachineDef {
@@ -56,11 +62,14 @@ struct AnimMachineDef {
             const ozz::animation::Animation* mRunBackAnim;
             const ozz::animation::Animation* mIdleAnim;
             const ozz::animation::Animation* mIdleCombatAnim;
+            const ozz::animation::Animation* mFallingAnim;
+            const ozz::animation::Animation* mJumpAnim;
+            const ozz::animation::Animation* mLandingAnim;
         };
         const ozz::animation::Animation* mAnimsArray[ANIMATION_MACHINE_ANIMS_COUNT] = {};
     };
 };
-static_assert(e_cast(AnimMachineState::COUNT) == 11, "Update AnimMachineDef and FileData below");
+static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update AnimMachineDef and FileData below");
 
 struct AnimMachineDefFileData {
     nString mRigName;
@@ -77,6 +86,9 @@ struct AnimMachineDefFileData {
     nString mSprintFrontName;
     nString mIdleName;
     nString mIdleCombatName;
+    nString mFallingName;
+    nString mJumpName;
+    nString mLandingName;
 };
 KEG_TYPE_DECL(AnimMachineDefFileData);
-static_assert(e_cast(AnimMachineState::COUNT) == 11, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");
+static_assert(e_cast(AnimMachineState::COUNT) == 14, "Make sure to update ANIMATION_MACHINE_ANIMS_COUNT and make sure both def objects have the same order arrays");

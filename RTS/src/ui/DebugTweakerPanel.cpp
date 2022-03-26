@@ -173,7 +173,7 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         
         CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(ecs.mPlayerEntity);
         ui32 numActive = 0;
-        for (int i = 0; i < NUM_ANIM_TRACKS; ++i) {
+        for (int i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
             AnimTrack& track = playerModel.mAnimState.mTracks[i]; // I'm basically God
             const ozz::animation::Animation* anim = playerModel.mModel->mAnimMachine->mAnimsArray[i];
             if (anim) {

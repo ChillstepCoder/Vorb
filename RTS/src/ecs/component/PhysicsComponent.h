@@ -8,8 +8,8 @@ class b2Body;
 class EntityComponentSystem;
 
 enum class PhysicsComponentFlag : ui8 {
-	AIRBORNE             = 1 << 0,
-	LOCK_DIR_TO_VELOCITY = 1 << 1
+	IS_ON_GROUND         = 1 << 0,
+	LOCK_DIR_TO_VELOCITY = 1 << 1,
 };
 
 enum class ColliderShapes {
@@ -77,6 +77,8 @@ public:
 		mZPosition = worldPos.z;
     }
 
+	bool isOnGround() const { return mFlags.isBitSet(PhysicsComponentFlag::IS_ON_GROUND); }
+
 	f32v2 mPrevXYPosition = f32v2(0.0f);
 	f32 mPrevZPosition = 0.0f;
 	f32v2 mDir = f32v2(0.0f, -1.0f);
@@ -87,7 +89,7 @@ public:
 	f32 mLastZPositionAtRefilter = 0.0f;
     b2Body* mBody = nullptr;
 
-    ui8 mFlags = 0u;
+    BitFlags<PhysicsComponentFlag> mFlags;
     ui8 mQueryActorTypes = ACTORTYPE_NONE;
 
 };
