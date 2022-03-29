@@ -968,6 +968,9 @@
     <ClInclude Include="src\camera\CameraMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\network\Message.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

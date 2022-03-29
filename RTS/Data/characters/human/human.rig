@@ -18,5 +18,8 @@ anims: [
   sword_shield_turn_1,
   sword_shield_turn_2,
   sword_shield_walk,
-  sprint
+  sprint,
+  sword_shield_jump,
+  falling_idle_1,
+  land_1
 ]

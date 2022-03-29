@@ -7,3 +7,6 @@
 [submodule "RTS/dependencies/ozz-animation"]
 	path = RTS/dependencies/ozz-animation
 	url = https://github.com/guillaumeblanc/ozz-animation.git
+[submodule "RTS/dependencies/yojimbo"]
+	path = RTS/dependencies/yojimbo
+	url = https://github.com/networkprotocol/yojimbo.git

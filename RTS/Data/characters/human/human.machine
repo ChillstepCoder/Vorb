@@ -10,3 +10,6 @@ run_back: sword_shield_run_2
 sprint_front: sprint
 idle: sword_shield_idle
 idle_combat: sword_shield_idle
+jump: sword_shield_jump
+fall: falling_idle_1
+land: land_1
