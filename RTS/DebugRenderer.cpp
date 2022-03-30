@@ -474,7 +474,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         glUniformMatrix4fv(sProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         glUniform3fv(sProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         if (mesh.type == DebugMeshType::LINES) {
-            glLineWidth(2.0f);
+            glLineWidth(1.0f);
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);
             RenderStats::recordDrawCall(mesh.numVerts / 2);
         }

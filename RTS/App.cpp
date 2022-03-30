@@ -14,6 +14,12 @@
 // TODO: Config
 #include "options/DebugOptions.h"
 
+// Use dedicated GPUs
+extern "C"
+{
+    __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
 
 // size of global cached random table
 const unsigned CACHED_RANDOM_SIZE = 65536;

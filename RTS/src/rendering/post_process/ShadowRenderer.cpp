@@ -447,6 +447,8 @@ void ShadowRenderer::updateFrustumCorners(const f32m4& projection, const f32m4& 
 
 void ShadowRenderer::generateMipmaps() {
 
+    // assert(IsBound(mShadowMIpGBuffer)
+
     ui32 nextTextureIndex = 0;
 
     mMaterialRenderer.bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
@@ -454,7 +456,6 @@ void ShadowRenderer::generateMipmaps() {
     VGUniform levelUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unPreviousLevel");
     mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex);
     vg::SamplerState::LINEAR_CLAMP.set(GL_TEXTURE_2D);
-    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMipGBuffer.getFboGeometry());
     glUniform1i(inputUniform, nextTextureIndex);
 
     ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();

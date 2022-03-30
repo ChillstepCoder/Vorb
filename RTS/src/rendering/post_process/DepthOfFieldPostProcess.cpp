@@ -37,7 +37,6 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
         return prevGBuffer;
     }
     assert(prevGBuffer);
-    mGBuffers[0].useGeometry();
 
     ui32 nextTexture;
     mMaterialRenderer.bindMaterialForRender(*mMaterial, &nextTexture);
@@ -45,10 +44,10 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    mGBuffers[0].useGeometry();
-    glClear(GL_COLOR_BUFFER_BIT);
+    // Clearing in this order to suppress REDUNDANT_FBO_BIND warning
     mGBuffers[1].useGeometry();
+    glClear(GL_COLOR_BUFFER_BIT);
+    mGBuffers[0].useGeometry();
     glClear(GL_COLOR_BUFFER_BIT);
 
     const VGUniform& fboUniform = mMaterial->mProgram.getUniform("unInputFbo");
