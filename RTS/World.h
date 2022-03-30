@@ -1,5 +1,4 @@
 #pragma once
-#include <Vorb/graphics/Texture.h>
 #include <functional>
 #include <optional>
 
