@@ -306,6 +306,53 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
 
 	mGameTimer.startFrame();
 
+    updateTimeScaling(gameTime);
+
+    // Update main thread update queues
+    mWorld->updateTaskQueues();
+
+    // Update the world with fixed timestep
+    int ticks = 0;
+    auto&& ecs = mWorld->getECS();
+	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
+
+        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+        mWorld->tick(playerPhysCmp.getXYPosition());
+
+	}
+
+    // Update editors
+    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
+
+	// TODO: Actual usage of deltatime?
+    mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
+
+	updateTilePicking();
+
+    mWorld->frameUpdate(mCameraController->getOwnedCamera());
+
+}
+
+void GameplayScreen::draw(const vui::GameTime& gameTime) {
+
+	const f32 frameAlpha = mGameTimer.getFrameAlpha();
+
+    // Grab fps
+    sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
+    mFps = sFps;
+
+    auto&& ecs = mWorld->getECS();
+	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+	const f32v2& xyPos = cmp.getXYPosition();
+	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha, gameTime.elapsedSec);
+
+	tryUpdateAndRenderInteractPopup(xyPos);
+
+	mRenderContext.endFrame();
+
+}
+
+void GameplayScreen::updateTimeScaling(const vui::GameTime& gameTime) {
     // DEBUG Time advance
     static constexpr float TIME_ADVANCE_MULT = 4.0f;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
@@ -329,47 +376,6 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     else {
         mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
     }
-
-    // Update main thread update queues
-    mWorld->updateTaskQueues();
-
-    // Update game ticks
-    int ticks = 0;
-    auto&& ecs = mWorld->getECS();
-	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
-
-        // Update camera
-        // TODO: Copy paste bad
-        const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-        const f32v2& playerXYPos = physCmp.getXYPosition();
-
-		// World update after camera
-        mWorld->update(playerXYPos, mCameraController->getOwnedCamera());
-	}
-	// TODO: Actual usage of deltatime?
-    mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
-
-	updateTilePicking();
-
-}
-
-void GameplayScreen::draw(const vui::GameTime& gameTime) {
-
-	const f32 frameAlpha = mGameTimer.getFrameAlpha();
-
-    // Grab fps
-    sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
-    mFps = sFps;
-
-    auto&& ecs = mWorld->getECS();
-	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha, gameTime.elapsedSec);
-
-	tryUpdateAndRenderInteractPopup(xyPos);
-
-	mRenderContext.endFrame();
-
 }
 
 void GameplayScreen::updateTilePicking() {

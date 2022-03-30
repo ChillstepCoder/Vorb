@@ -121,7 +121,7 @@ void World::updateTaskQueues() {
 	}
 }
 
-void World::update(const f32v2& playerPos, const Camera3D& camera) {
+void World::tick(const f32v2& playerPos) {
 	assert(mEcs);
 
 	if (sWorldGen.mIsDirty) {
@@ -129,7 +129,7 @@ void World::update(const f32v2& playerPos, const Camera3D& camera) {
 		debugRefreshWorldGeneration();
 	}
 
-	updateSun(camera);
+	updateSun();
 
 	mLoadCenter = playerPos;
 
@@ -144,7 +144,6 @@ void World::update(const f32v2& playerPos, const Camera3D& camera) {
 		initChunk(playerChunk);
 	}
 
-	mVisibleChunks.clear();
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
         if (updateChunk(chunk)) {
@@ -155,17 +154,6 @@ void World::update(const f32v2& playerPos, const Camera3D& camera) {
 			continue;
         }
         ++i;
-		// Determine visibility
-		if (chunk.isDataReady()) {
-			const f32v2& worldPos = chunk.getWorldPos();
-			if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS + 30.0f /*padding for camera pan fix :C WHY*/)) { // TODO: Broken + AABB Test?
-				mVisibleChunks.push_back(&chunk);
-				chunk.mChunkRenderData.mIsVisible = true;
-			}
-			else {
-                chunk.mChunkRenderData.mIsVisible = false;
-			}
-		}
     }
 
 	// Update cities
@@ -192,10 +180,28 @@ void World::update(const f32v2& playerPos, const Camera3D& camera) {
 	}
 
 	// Update ECS
-    mEcs->update(camera);
-	
-	// Update editor
-	UIContext::getInstance().updateEditors(camera);
+	// TODO: Move out
+    mEcs->tick();
+}
+
+void World::frameUpdate(const Camera3D& camera) {
+	mEcs->frameUpdate(camera);
+
+	// Client only, rendering stuff
+    mVisibleChunks.clear();
+	for (Chunk* chunk : mActiveChunks) {
+        // Determine visibility
+        if (chunk->isDataReady()) {
+            const f32v2& worldPos = chunk->getWorldPos();
+            if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS + 30.0f /*padding for camera pan fix :C WHY*/)) { // TODO: Broken + AABB Test?
+                mVisibleChunks.push_back(chunk);
+                chunk->mChunkRenderData.mIsVisible = true;
+            }
+            else {
+                chunk->mChunkRenderData.mIsVisible = false;
+            }
+        }
+	}
 }
 
 void World::lazyInit() {
@@ -499,7 +505,7 @@ IntersectionHit2D World::tryGetRaycastIntersect2D(const f32v2& start, const f32v
 	return IntersectionHit2D();
 }
 
-void World::updateSun(const Camera3D& camera) {
+void World::updateSun() {
     const float SUNRISE_TIME = 6.0f; // 6am
 	const float SUN_HEIGHT_OFFSET = 0.3f; // Smaller exponent means brighter days
 	// TODO: Better time manager

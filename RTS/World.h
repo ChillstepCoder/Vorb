@@ -16,8 +16,6 @@ constexpr float SECONDS_PER_DAY = 1440.0f;
 constexpr float HOURS_PER_DAY = 24.0f;
 constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 
-DECL_VG(class SpriteBatch);
-
 struct b2BodyDef;
 class b2Body;
 class b2World;
@@ -48,7 +46,9 @@ public:
 
 	void initPostLoad(ChunkMesher& chunkMesher);
 	void updateTaskQueues();
-	void update(const f32v2& playerPos, const Camera3D& camera);
+
+	void tick(const f32v2& playerPos);
+	void frameUpdate(const Camera3D& camera);
 
 	void lazyInit();
 
@@ -129,7 +129,7 @@ public:
 private:
 
 	// TODO: Composition? WorldClock? idk
-    void updateSun(const Camera3D& camera);
+    void updateSun();
     /// Returns true if should be removed
 	bool updateChunk(Chunk& chunk);
 	void onChunkDataReady(Chunk& chunk);
@@ -192,6 +192,6 @@ private:
 
 	WorldGrid mWorldGrid;
     std::vector<Chunk*> mActiveChunks;
-    std::vector<Chunk*> mVisibleChunks;
+    std::vector<Chunk*> mVisibleChunks; // Client only
 	std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
 };

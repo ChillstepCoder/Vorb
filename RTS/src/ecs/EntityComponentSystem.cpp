@@ -17,27 +17,22 @@ EntityComponentSystem::EntityComponentSystem(World& world)
     , mWorld(world) {
 }
 
-void EntityComponentSystem::update(const Camera3D& playerCamera) {
+void EntityComponentSystem::tick() {
 	
-	// TODO: Not every frame
-	static int frameCount = 0;
-	int frameMod = ++frameCount % 4;
-    /*if (frameMod == 0) {
-        mUndeadAITable.update(*this, mWorld);
-    }
-    else if (frameMod == 2) {
-        mSoldierAITable.update(*this, mWorld);
-    }
-    mSpriteTable.update();*/
     mBusinessSystem.update(mRegistry);
-	//mNavigationTable.update(*this, mWorld); // Navigation sets dir to target
-	mPlayerControlSystem.update(mRegistry, playerCamera);
+    //mPlayerControlSystem.update(mRegistry, playerCamera);
 	mPersonAISystem.update(mRegistry);
     mNavigationSystem.update(mRegistry, mWorld);
 	mLocomotionSystem.update(mRegistry);
     mPhysicsSystem.update(mRegistry); // Phys cmp sets dir to velocity
 	mTimedTileInteractSystem.update(mRegistry);
 	//mCorpseTable.update();
+}
+
+void EntityComponentSystem::frameUpdate(const Camera3D& playerCamera)
+{
+	// Client ECS
+    mPlayerControlSystem.update(mRegistry, playerCamera);
 }
 
 void EntityComponentSystem::convertEntityToCorpse(entt::entity entity) {

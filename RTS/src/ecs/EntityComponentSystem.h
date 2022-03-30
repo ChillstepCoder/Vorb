@@ -9,7 +9,8 @@ class EntityComponentSystem {
 public:
 	EntityComponentSystem(World& world);
 
-	void update(const Camera3D& playerCamera);
+	void tick();
+    void frameUpdate(const Camera3D& playerCamera);
 	void convertEntityToCorpse(entt::entity entity);
 
     /*DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
