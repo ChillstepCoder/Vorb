@@ -178,6 +178,7 @@
     <ClCompile Include="src\definitions\SkillDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\component\AttributesComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
     <ClCompile Include="src\ecs\component\InventoryComponent.cpp" />
@@ -193,6 +194,7 @@
     <ClCompile Include="src\ecs\component\SimpleSpriteComponent.cpp" />
     <ClCompile Include="src\ecs\component\SkillsComponent.cpp" />
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
+    <ClCompile Include="src\ecs\component\StatsComponent.cpp" />
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
     <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
@@ -333,6 +335,7 @@
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
+    <ClInclude Include="src\ecs\component\AttributesComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
@@ -352,6 +355,7 @@
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h" />
     <ClInclude Include="src\ecs\component\SkillsComponent.h" />
     <ClInclude Include="src\ecs\component\SoldierAIComponent.h" />
+    <ClInclude Include="src\ecs\component\StatsComponent.h" />
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
     <ClInclude Include="src\ecs\EntityComponentSystem.h" />

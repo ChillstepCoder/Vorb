@@ -438,6 +438,12 @@
     <ClCompile Include="src\camera\CameraController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ecs\component\AttributesComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\component\StatsComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -969,6 +975,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\network\Message.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\AttributesComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\StatsComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

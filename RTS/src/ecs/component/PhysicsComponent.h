@@ -53,17 +53,18 @@ public:
 	f32v2 getXYInterpolated(f32 frameAlpha) const {
         const f32v2& nextXY = getXYPosition();
         f32v2 interpolatedXY;
-		// Fix floating point issues
-		if (nextXY == mPrevXYPosition) {
-			return nextXY;
-		}
-
-        interpolatedXY.x = vmath::lerp(mPrevXYPosition.x, nextXY.x, frameAlpha);
-        interpolatedXY.y = vmath::lerp(mPrevXYPosition.y, nextXY.y, frameAlpha);
+		// Comparisons are to fix floating point math lerp errors
+        interpolatedXY.x = (nextXY.x == mPrevXYPosition.x) ? nextXY.x : vmath::lerp(mPrevXYPosition.x, nextXY.x, frameAlpha);
+        interpolatedXY.y = (nextXY.y == mPrevXYPosition.y) ? nextXY.y : vmath::lerp(mPrevXYPosition.y, nextXY.y, frameAlpha);
 		return interpolatedXY;
 	}
 	float getZInterpolated(f32 frameAlpha) const {
-		return vmath::lerp(mPrevZPosition, mZPosition, frameAlpha);
+		return (mPrevZPosition == mZPosition) ? mZPosition : vmath::lerp(mPrevZPosition, mZPosition, frameAlpha);
+	}
+
+	f32v3 getPositionInterpolated(f32 frameAlpha) {
+		f32v2 xy = getXYInterpolated(frameAlpha);
+		return f32v3(xy.x, xy.y, getZInterpolated(frameAlpha));
 	}
 
 	const f32v2& getLinearVelocity() const {
