@@ -21,7 +21,7 @@ public:
 	~ChunkRenderer();
 
     void renderTiles(const World& world, const Camera3D& camera);
-    void renderGrass(const World& world, const Camera3D& camera);
+    void renderGrass(const World& world, const Camera3D& camera, const f32v3& playerPos);
     void renderBillboards(const World& world, const Camera3D& camera);
     void renderWorldShadows(const World& world, const Camera3D& camera, f32 maxDistance);
 

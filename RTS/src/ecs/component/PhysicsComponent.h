@@ -53,6 +53,11 @@ public:
 	f32v2 getXYInterpolated(f32 frameAlpha) const {
         const f32v2& nextXY = getXYPosition();
         f32v2 interpolatedXY;
+		// Fix floating point issues
+		if (nextXY == mPrevXYPosition) {
+			return nextXY;
+		}
+
         interpolatedXY.x = vmath::lerp(mPrevXYPosition.x, nextXY.x, frameAlpha);
         interpolatedXY.y = vmath::lerp(mPrevXYPosition.y, nextXY.y, frameAlpha);
 		return interpolatedXY;

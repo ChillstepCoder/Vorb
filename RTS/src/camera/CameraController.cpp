@@ -85,6 +85,7 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
             vui::InputDispatcher::mouse.onButtonDown -= makeDelegate(this, &CameraController::updateMouseButtonDownInputMMO);
             vui::InputDispatcher::mouse.onButtonUp -= makeDelegate(this, &CameraController::updateMouseButtonUpInputMMO);
             mWindow.setRelativeMouseMode(false);
+            mIsMouseHidden = false;
             break;
         case CameraMode::MOUSELOCK:
             vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
@@ -210,6 +211,15 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     mCamera.setPosition(followTargetPos - lookAtOffset);
     mCamera.lookAt(followTargetPos);
 
+    // Make extra sure we restore mouse whenever released (Sometimes the mouse up event gets gobbled by UI)
+    if (!vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
+        if (mIsMouseHidden) {
+            mIsMouseHidden = false;
+            mWindow.setRelativeMouseMode(false);
+            mWindow.warpMouse(mLastMousePositionBeforeRelative.x, mLastMousePositionBeforeRelative.y);
+        }
+    }
+
 
     // Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
   /*  const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
@@ -252,6 +262,7 @@ void CameraController::updateKeyInputCartesianMode(Sender sender, const vui::Key
 
 void CameraController::updateMouseButtonDownInputMMO(Sender s, const vui::MouseButtonEvent& evnt) {
     if (evnt.button == vorb::ui::MouseButton::RIGHT) {
+        mIsMouseHidden = true;
         mLastMousePositionBeforeRelative = i32v2(evnt.x, evnt.y);
         mWindow.setRelativeMouseMode(true);
     }
@@ -259,6 +270,7 @@ void CameraController::updateMouseButtonDownInputMMO(Sender s, const vui::MouseB
 
 void CameraController::updateMouseButtonUpInputMMO(Sender s, const vui::MouseButtonEvent& evnt) {
     if (evnt.button == vorb::ui::MouseButton::RIGHT) {
+        mIsMouseHidden = false;
         mWindow.setRelativeMouseMode(false);
         mWindow.warpMouse(mLastMousePositionBeforeRelative.x, mLastMousePositionBeforeRelative.y);
     }

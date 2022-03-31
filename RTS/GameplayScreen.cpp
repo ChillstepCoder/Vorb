@@ -343,8 +343,8 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-	const f32v2& xyPos = cmp.getXYPosition();
-	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), f32v3(xyPos.x, xyPos.y, cmp.getZPosition()), frameAlpha, gameTime.elapsedSec);
+	const f32v2& xyPos = cmp.getXYInterpolated(frameAlpha);
+	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), f32v3(xyPos.x, xyPos.y, cmp.getZInterpolated(frameAlpha)), frameAlpha, gameTime.elapsedSec);
 
 	tryUpdateAndRenderInteractPopup(xyPos);
 

@@ -431,7 +431,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Grass + billboards
     mChunkRenderer->renderBillboards(mWorld, camera);
     if (!sDebugOptions.mHideGrass) {
-        mChunkRenderer->renderGrass(mWorld, camera);
+        mChunkRenderer->renderGrass(mWorld, camera, playerPos);
     }
 
     // Terrain

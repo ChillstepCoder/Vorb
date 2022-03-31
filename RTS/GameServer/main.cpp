@@ -32,7 +32,7 @@ bool isDisplayConnected() {
 
 // https://stackoverflow.com/questions/5760302/when-i-do-getaddrinfo-for-localhost-i-dont-receive-127-0-0-1
 nString getLocalIP() {
-   WORD wVersionRequested = MAKEWORD(2, 2);   
+    WORD wVersionRequested = MAKEWORD(2, 2);   
 	WSADATA wsaData;   
 	if (WSAStartup(wVersionRequested, &wsaData) != 0)   
 		return 0;   
