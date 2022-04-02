@@ -168,7 +168,7 @@ void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
 
     f32 cameraSpeed = 0.05f * deltaTime;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-        cameraSpeed *= 2.0f;
+        cameraSpeed *= 15.0f;
     }
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {

@@ -27,7 +27,10 @@ void main() {
 	  discard;
 	}
 	
-	fNormal = vec4((norm + 1.0) * 0.5, 1.0);
+    // DISABLE NORMALS
+	//fNormal = vec4((norm + 1.0) * 0.5, 1.0);
+    fNormal = vec4(0.5, 0.5, 0.5, 1.0);
+    
 	// OLD
 	//vec2 tex = ((norm.xy + vec2(1.0)) * 0.5);
 	//tex.y = 1.0 - tex.y;
@@ -41,8 +44,24 @@ void main() {
 	// Fake scattering
 	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient, 1.0, depth, fUV, 0.0);
 	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient, 1.0, depth, fUV, 0.0);
-	fColor.rgb = frontRGB * 0.7 + backRGB * 0.3;
+    
+	fColor.rgb = (frontRGB * 0.7 + backRGB * 0.3);
+    // Make it brighter (TMP)
+    fColor.rgb = pow(fColor.rgb * 1.2, vec3(0.3));
+    
+    // =========START TESTING TOON SHADING==========
+    fColor.rgb *= 0.0001;
 	
+    vec3 whiteColor = vec3(1.0);
+    vec3 greyColor = vec3(0.6156);
+    norm = normalize(vec3(norm.x, norm.y, norm.z * 0.4));
+    float colorStep = step(1.0 - computeDiffuse(norm, SunPositionCameraRelative), 0.5);
+    vec3 color = colorStep * whiteColor + (1.0 - colorStep) * greyColor;
+    fColor.rgb = fColor.rgb + color;
+    
+    
+    // =========END TESTING TOON SHADING==========
+    
 	fRoughness.r = 0.9;
 	fRoughness.a = 1.0;
 }

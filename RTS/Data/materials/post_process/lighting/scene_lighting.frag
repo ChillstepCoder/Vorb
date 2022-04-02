@@ -36,7 +36,12 @@ void main() {
 	float hazeIntensity = max(SunHeight, 0.0);
 	float sunIntensity = hazeIntensity * (1.0 - AMBIENT);
 	float lightTotal = sunIntensity + AMBIENT;
-    fColor.rgb = (isGround * lightTotal * SunColor + isSky) * fboColor;
+    // Clamp sky light total
+    if (isSky > 0.0) {
+        fColor.rgb = (min(lightTotal, 0.3) * SunColor) * fboColor;
+    } else {
+        fColor.rgb = (lightTotal * SunColor) * fboColor;
+    }
 	
 	
 	// =====================================================
@@ -58,7 +63,7 @@ void main() {
 	normal = normal * 2.0 - 1.0;
 	float roughness = texture(FboRoughness, fUV).r;
 	roughness = max(roughness, isSky);
-	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(isSky, 0.5), roughness, depth, fUV, shadow);
+	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(0.0, 0.5), roughness, depth, fUV, shadow);
 	
 	// =====================================================
 	// ==                     SHADOW                      ==

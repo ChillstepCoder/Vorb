@@ -18,7 +18,6 @@ void main() {
 	
 	// Get uniform info
 	vec3 atlasPageRoughnessWind = UnAtlasPageRoughnessWind[type].rgb;
-	fRoughness = atlasPageRoughnessWind.g;
 	
 	// Compute uvs
     fUV = getUvsFromType(type);

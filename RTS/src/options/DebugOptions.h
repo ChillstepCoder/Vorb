@@ -18,9 +18,9 @@ constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
-    bool mDisableClouds = true;// false;
+    bool mDisableClouds = false;
     int mCloudBlurPasses = 3;
-    float mCloudBlurRadius = 2.25f;
+    float mCloudBlurRadius = 1.25f;
     float mCloudAmbient = 0.5f;
     float mCloudSpeed = 0.05f;
     // Grass
@@ -47,7 +47,7 @@ struct DebugOptions {
     f32v3 mShadowColor = f32v3(204.0f / 255.0f, 230.0f / 255.0f, 243.0f / 255.0f);
     f32 mShadowUpdateRateSeconds = 0.022f;
     int mShadowBlurPasses = 2;
-    float mShadowBlurRadius = 1.5f;
+    float mShadowBlurRadius = 0.45f; //1.5f;
     bool mDisableShadows = false;
     // Toggles
     bool mPauseFrustum = false;

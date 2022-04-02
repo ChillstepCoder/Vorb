@@ -206,10 +206,10 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
                     const float zr = Random::getThreadSafef((ui32)(genPos.x + y), (ui32)(genPos.y - x)) * HEIGHT_OFFSET_FACTOR;
                     const float sr = Random::getThreadSafef((ui32)(genPos.y - x), (ui32)(genPos.x + genPos.y + y)) * SCALE_OFFSET_FACTOR;
                     const float stretchr = Random::getThreadSafef((ui32)(-4152.0 + genPos.x - y), (ui32)(24152.0 -genPos.x - genPos.y + x)) * 0.6f;
-                    const f32 nSize = n * 10.0f;
+                    const f32 nSize = n * 12.0f;
                     f32 newSize = size + sr + nSize;
                     if (Random::getThreadSafe(trueGenPos.x, trueGenPos.y) % 80 == 0) {
-                        newSize += 80.0f;
+                        newSize += 30.0f;
                     }
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
