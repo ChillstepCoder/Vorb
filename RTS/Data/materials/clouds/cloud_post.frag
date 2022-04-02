@@ -19,7 +19,8 @@ void main() {
     // fColor = texture(CloudFbo, fUV);
 	float baseAlpha = texture2D(CloudFbo, fUV).a;
 	//vec3 norm = normalize(blur13noalpha(CloudFbo, fUV, ScreenResolution, vec2(baseAlpha * 3.0, 0.0)));
-	vec3 norm = normalize(texture2D(CloudFbo, fUV).rgb);
+	vec3 norm = normalize(texture2D(CloudFbo, fUV).rgb * 2.0 - 1.0);
+    vec3 TMPNORM = norm;
 	float depth = texture2D(FboDepth, fUV).r;
 	
 	float z = step(0.000001, norm.z);
@@ -58,6 +59,10 @@ void main() {
     float colorStep = step(1.0 - computeDiffuse(norm, SunPositionCameraRelative), 0.5);
     vec3 color = colorStep * whiteColor + (1.0 - colorStep) * greyColor;
     fColor.rgb = fColor.rgb + color;
+    
+    // TODO: REMOVE
+    fColor.rgb = fColor.rgb * 0.00001 + (TMPNORM + 1.0) * 0.5;
+    fColor.rg = vec2(1.0);
     
     
     // =========END TESTING TOON SHADING==========

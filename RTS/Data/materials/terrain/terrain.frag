@@ -8,6 +8,9 @@ uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 GrassColor = vec3(255.0 / 255.0, 219.0 / 255.0, 105.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
+uniform float DebugFloat1 = 1.0;
+uniform float DebugFloat2 = 0.7;
+
 in float fHeight;
 in vec3 fPosition;
 in vec2 fUV;
@@ -23,6 +26,23 @@ layout (location = 2) out vec4 oRoughness;
 float InvSmoothStep(float x) {
     return x + (x - (x * x * (3.0 - 2.0 * x)));
 }
+
+const int NUM_COLORS = 12;
+
+const vec3 COLORS[NUM_COLORS] = {
+    vec3(128.0 / 255.0, 95.0 / 255.0, 106.0 / 255.0),
+    vec3(113.0 / 255.0, 79.0 / 255.0, 96.0 / 255.0),
+    vec3(188.0 / 255.0, 165.0 / 255.0, 131.0 / 255.0),
+    vec3(74.0 / 255.0, 157.0 / 255.0, 139.0 / 255.0),
+    vec3(155.0 / 255.0, 141.0 / 255.0, 138.0 / 255.0),
+    vec3(151.0 / 255.0, 133.0 / 255.0, 121.0 / 255.0),
+    vec3(146.0 / 255.0, 167.0 / 255.0, 152.0 / 255.0),
+    vec3(130.0 / 255.0, 147.0 / 255.0, 155.0 / 255.0),
+    vec3(66.0 / 255.0, 63.0 / 255.0, 56.0 / 255.0),
+    vec3(130.0 / 255.0, 145.0 / 255.0, 126.0 / 255.0),
+    vec3(160.0 / 255.0, 169.0 / 255.0, 152.0 / 255.0),
+    vec3(86.0 / 255.0, 81.0 / 255.0, 75.0 / 255.0),
+};
 
 void main() {
 	
@@ -67,6 +87,8 @@ void main() {
     }
     
     // === Normals ===
+    // TODO: RESTORE NORMAL MAPPING
+    normal = normal * 0.00001 + vec3(0.0, 0.0, 1.0);
     
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
@@ -74,6 +96,25 @@ void main() {
     
     // Debug distance lerp
     //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
+    
+    // =========== BEGIN NEW ART STYLE ==========
+    oColor.rgb = oColor.rgb * 0.00001;
+    
+    vec3 colorNormal = oNormal.rgb;
+    
+    float GRANULARITY = 12.0 * DebugFloat2 * (1.0 - colorNormal.z * DebugFloat1);
+    colorNormal *= vec3(GRANULARITY);
+    
+    //int index = int(round(colorNormal.x - DebugFloat1)) + int(round(colorNormal.y - DebugFloat1)) + int(round(colorNormal.z));
+    int index = int(round(colorNormal.x)) + int(round(colorNormal.y));
+    index = (index + 2) % NUM_COLORS;
+    
+    
+    oColor.rgb = oColor.rgb + COLORS[index];
+    //oColor.rgb = oColor.rgb + COLORS[index] * texture(GrassTexture, fUV).rgb;
+    
+    
+    // =========== END NEW ART STYLE ==========
     
     // === Roughness ===
     

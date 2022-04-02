@@ -18,7 +18,7 @@ constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
-    bool mDisableClouds = false;
+    bool mDisableClouds = true;
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 1.25f;
     float mCloudAmbient = 0.5f;
@@ -26,7 +26,7 @@ struct DebugOptions {
     // Grass
     QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
     bool mDebugGrassLod = false;
-    bool mHideGrass = false;
+    bool mHideGrass = true;
     // Terrain
     f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
@@ -34,7 +34,7 @@ struct DebugOptions {
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
     // Ambient occlusion
-    bool mSSAODisabled = false;
+    bool mSSAODisabled = true;
     float mSSAORadius = 1.0f;
     float mSSAOBias = 0.008f;
     float mSSAOBlurRadius = 0.77f;
@@ -48,7 +48,7 @@ struct DebugOptions {
     f32 mShadowUpdateRateSeconds = 0.022f;
     int mShadowBlurPasses = 2;
     float mShadowBlurRadius = 0.45f; //1.5f;
-    bool mDisableShadows = false;
+    bool mDisableShadows = true;
     // Toggles
     bool mPauseFrustum = false;
     bool mWireframe = false;

@@ -132,7 +132,7 @@ void GameplayScreen::build() {
         else if (event.keyCode == VKEY_J) {
             sDebugOptions.mShowNavGraphUpdates = !sDebugOptions.mShowNavGraphUpdates;
         }
-        else if (event.keyCode == VKEY_R && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)) {
+        else if (event.keyCode == VKEY_R/* && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)*/) { // TODO: Broken on laptop (Nvidia alt + r overlay?)
 			mResourceManager->reloadMaterials();
         }
         else if (event.keyCode == VKEY_N) {

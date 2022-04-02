@@ -8,6 +8,31 @@ out vec2 fPosition;
 flat out float fAtlasPage;
 out vec4 fTint;
 out float fRoughness;
+out mat3 fTBN;
+
+vec3 rotateXY(vec3 inVec, float angle) {
+    vec3 rv;
+    float cosa = cos(angle);
+    float sina = sin(angle);
+    rv.x = cosa * inVec.x - sina * inVec.y;
+    rv.y = sina * inVec.x + cosa * inVec.y;
+    rv.z = inVec.z;
+    
+    return rv;
+}
+
+// https://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/
+mat4 rotationMatrix(vec3 axis, float angle) {
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
+}
 
 void main() {
 
@@ -28,8 +53,25 @@ void main() {
 	vec2 vertexOffsets = getVertexOffsets();
 	vec4 vertexPosition = vPosition;
 	vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
-	vertexPosition.xyz += CameraUp * xzOffsetUncompressed.y;
-	vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
+    
+    // Get Right and Up vectors in world space
+    vec3 cameraNormal = vPosition.xyz + UnRootPos - CameraPos;
+    cameraNormal = normalize(cameraNormal);
+    vec3 worldRight = vec3(rotateXY(cameraNormal, 90.0 * (3.141592653 / 180.0)).xy, 0.0);
+    vec3 worldUp = (rotationMatrix(worldRight, 90.0) * vec4(cameraNormal, 1.0)).xyz;
+    
+	vertexPosition.xyz += worldUp * xzOffsetUncompressed.y;
+	vertexPosition.xyz += worldRight * xzOffsetUncompressed.x;
+    
+    // OLD CAMERA SPACE
+	//vertexPosition.xyz += CameraUp * xzOffsetUncompressed.y;
+	//vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
+    
+    vec3 normal = cameraNormal; // Prenormalized on CPU
+	vec3 binormal = -worldRight;
+    vec3 tangent = -worldUp;
+	fTBN = mat3(tangent, binormal, normal);
+    
 	// Hacky way to make the x,z offsets all 1
 	fPosition = clamp(xzOffsetUncompressed * 10.0, -1.0, 1.0);
 	fPosition = (fPosition + 1.0) * 0.5; // 0 - 1 range

@@ -8,6 +8,7 @@ in vec2 fUV;
 in vec2 fPosition;
 flat in float fAtlasPage;
 in vec4 fTint;
+in mat3 fTBN;
 
 layout (location = 0) out vec4 fNormal;
 
@@ -27,9 +28,11 @@ void main() {
     ndcDepth = clipPos.z / clipPos.w;
     gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	
+    // Screen space
+    norm = fTBN * norm;
     
     // Adjust normals to be more severe
-	fNormal.rgb = normalize(vec3(norm.x, norm.y, norm.z * 0.3));
+	fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z * 0.3)) + 1.0) * 0.5;
     
     if (fNormal.a < 0.99) {
         discard;
