@@ -8,8 +8,11 @@ uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
 uniform vec3 GrassColor = vec3(255.0 / 255.0, 219.0 / 255.0, 105.0 / 255.0);
 uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
 
-uniform float DebugFloat1 = 1.0;
-uniform float DebugFloat2 = 0.7;
+uniform float unHeightMult = 0.191;
+uniform float unWavyMult = 0.167;
+uniform float unSquaresIntensity = 0.5;
+uniform float unSquaresPeriod = 0.187;
+uniform float unBlendMult = 0.037;
 
 in float fHeight;
 in vec3 fPosition;
@@ -22,6 +25,7 @@ uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 layout (location = 0) out vec4 oColor; // TODO: vec3
 layout (location = 1) out vec4 oNormal;
 layout (location = 2) out vec4 oRoughness;
+
 
 float InvSmoothStep(float x) {
     return x + (x - (x * x * (3.0 - 2.0 * x)));
@@ -43,6 +47,17 @@ const vec3 COLORS[NUM_COLORS] = {
     vec3(160.0 / 255.0, 169.0 / 255.0, 152.0 / 255.0),
     vec3(86.0 / 255.0, 81.0 / 255.0, 75.0 / 255.0),
 };
+
+float triangularWave(float val) {
+    val = mod(val, 4.0);
+    if (val <= 1.0) {
+        return val;
+    } else if (val <= 3.0) {
+        return 2.0 - val;
+    } else {
+        return val - 4.0;
+    }
+}
 
 void main() {
 	
@@ -98,20 +113,43 @@ void main() {
     //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
     
     // =========== BEGIN NEW ART STYLE ==========
+
     oColor.rgb = oColor.rgb * 0.00001;
     
-    vec3 colorNormal = oNormal.rgb;
+    vec3 colorNormal = normal.rgb; // normal
     
-    float GRANULARITY = 12.0 * DebugFloat2 * (1.0 - colorNormal.z * DebugFloat1);
-    colorNormal *= vec3(GRANULARITY);
+    float FLAT_REDUCE_MULT = 1.0;
+    float GRANULARITY_MULT = unWavyMult;
+    float GRANULARITY = 12.0 * GRANULARITY_MULT * (1.0 - colorNormal.z * FLAT_REDUCE_MULT);
+    float UV_MOD_MULT = unSquaresPeriod;
+    float uvMod = 0.5 + (triangularWave(fUV.x * UV_MOD_MULT) + triangularWave(fUV.y * UV_MOD_MULT)) * unSquaresIntensity * 2.0;
+    float HEIGHT_ADD = (fHeight * uvMod) * 0.024 * unHeightMult * 2.0;
+    colorNormal = vec3(abs(colorNormal.x) * GRANULARITY + HEIGHT_ADD, abs(colorNormal.y) * GRANULARITY + HEIGHT_ADD, colorNormal.z * GRANULARITY);
     
-    //int index = int(round(colorNormal.x - DebugFloat1)) + int(round(colorNormal.y - DebugFloat1)) + int(round(colorNormal.z));
-    int index = int(round(colorNormal.x)) + int(round(colorNormal.y));
-    index = (index + 2) % NUM_COLORS;
+    float totalNormal = colorNormal.x + colorNormal.y;
+    
+    float lowIndex = round(totalNormal);
+    //float lowIndex = floor(totalNormal);
+    float highIndex = ceil(totalNormal);
+    //int index = int(round(totalNormal));
+    int index = int(lowIndex + 8) % NUM_COLORS;
+    int index2 = int(highIndex + 8) % NUM_COLORS;
     
     
-    oColor.rgb = oColor.rgb + COLORS[index];
+    float lerpVal = mod(totalNormal, 1.0);
+    // Shorten the transition
+    lerpVal = (lerpVal - 0.3) * 12.0 * unBlendMult;
+    lerpVal = clamp(lerpVal, 0.0, 1.0);
+    oColor.rgb = oColor.rgb + mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
+    //oColor.rgb = oColor.rgb + COLORS[index];
     //oColor.rgb = oColor.rgb + COLORS[index] * texture(GrassTexture, fUV).rgb;
+    //oColor.rgb *= texture(GrassTexture, fUV).rgb;
+    
+    // TODO: Move up and use else
+    if (fHeight < 0.0) {
+        oColor.rgb = WaterColor;
+        normal = vec3(0.0, 0.0, 1.0);
+    }
     
     
     // =========== END NEW ART STYLE ==========

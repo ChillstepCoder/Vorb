@@ -12,7 +12,7 @@ Skybox::~Skybox() {
 
 void Skybox::init(const Material* material) {
     constexpr unsigned NUM_VERTS = 4 * 6;
-    constexpr float RADIUS = 140000.0f;
+    constexpr float RADIUS = 100000.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
     mMaterial = material;
     TileVertex verts[NUM_VERTS];

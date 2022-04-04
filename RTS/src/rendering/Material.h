@@ -31,6 +31,8 @@ enum class MaterialUniform {
     DebugColor2,
     DebugFloat1,
     DebugFloat2,
+    DebugFloat3,
+    DebugFloat4,
     COUNT
 };
 

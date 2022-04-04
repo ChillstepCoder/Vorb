@@ -19,32 +19,24 @@ void main() {
     // fColor = texture(CloudFbo, fUV);
 	float baseAlpha = texture2D(CloudFbo, fUV).a;
 	//vec3 norm = normalize(blur13noalpha(CloudFbo, fUV, ScreenResolution, vec2(baseAlpha * 3.0, 0.0)));
-	vec3 norm = normalize(texture2D(CloudFbo, fUV).rgb * 2.0 - 1.0);
-    vec3 TMPNORM = norm;
+	vec3 norm = texture2D(CloudFbo, fUV).rgb;
 	float depth = texture2D(FboDepth, fUV).r;
 	
 	float z = step(0.000001, norm.z);
 	if (z == 0.0) {
 	  discard;
 	}
+    norm = normalize(norm * 2.0 - 1.0);
 	
-    // DISABLE NORMALS
-	//fNormal = vec4((norm + 1.0) * 0.5, 1.0);
-    fNormal = vec4(0.5, 0.5, 0.5, 1.0);
     
-	// OLD
-	//vec2 tex = ((norm.xy + vec2(1.0)) * 0.5);
-	//tex.y = 1.0 - tex.y;
-	//fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
-	
 	// NEW
-	vec2 tex = vec2(0.0, max(computeDiffuse(norm, SunPositionCameraRelative), 0.001));
+	vec2 tex = vec2(0.0, max(computeDiffuse(norm, SunPosition), 0.001));
 	tex.y = 1.0 - tex.y;
 	fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
 	
 	// Fake scattering
-	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPositionCameraRelative, unAmbient, 1.0, depth, fUV, 0.0);
-	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPositionCameraRelative, unAmbient, 1.0, depth, fUV, 0.0);
+	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPosition, unAmbient, 1.0, depth, fUV, 0.0);
+	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPosition, unAmbient, 1.0, depth, fUV, 0.0);
     
 	fColor.rgb = (frontRGB * 0.7 + backRGB * 0.3);
     // Make it brighter (TMP)
@@ -53,17 +45,31 @@ void main() {
     // =========START TESTING TOON SHADING==========
     fColor.rgb *= 0.0001;
 	
-    vec3 whiteColor = vec3(1.0);
-    vec3 greyColor = vec3(0.6156);
-    norm = normalize(vec3(norm.x, norm.y, norm.z * 0.4));
-    float colorStep = step(1.0 - computeDiffuse(norm, SunPositionCameraRelative), 0.5);
-    vec3 color = colorStep * whiteColor + (1.0 - colorStep) * greyColor;
-    fColor.rgb = fColor.rgb + color;
+    vec3 highlightColor = vec3(1.0);
+    vec3 whiteColor = vec3(0.9);
+    vec3 greyColor = vec3(0.75);
+    vec3 darkGreyColor = vec3(0.6156);
+    vec3 blackColor = vec3(0.5);
+    norm = normalize(vec3(norm.x, norm.y, norm.z));
+    // Front
+    float frontDiffuse = computeDiffuse(norm, SunPosition);
+    float highlightStep = step(1.0 - frontDiffuse, 0.4);
+    float whiteStep = step(1.0 - frontDiffuse, 0.99);
+    vec3 color = mix(greyColor, whiteColor, whiteStep);
+    color = mix(color, highlightColor, highlightStep);
+    // Back
+    float backDiffuse = computeDiffuse(-norm, SunPosition);
+    float greyStep = step(1.0 - backDiffuse, 0.2);
+    color = mix(color, darkGreyColor, greyStep);
+    float blackStep = step(1.0 - backDiffuse, 0.02);
+    color = mix(color, blackColor, blackStep);
     
-    // TODO: REMOVE
-    fColor.rgb = fColor.rgb * 0.00001 + (TMPNORM + 1.0) * 0.5;
-    fColor.rg = vec2(1.0);
     
+    fColor.rgb += color;
+    
+    // Normals are up for main pass lighting
+    fNormal = vec4(0.5, 0.5, 1.0, 1.0);
+    fNormal.a = 1.0;
     
     // =========END TESTING TOON SHADING==========
     

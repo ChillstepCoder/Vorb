@@ -166,9 +166,9 @@ void CameraController::updateCameraCartesianMode(f32 frameAlpha) {
 
 void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
 
-    f32 cameraSpeed = 0.05f * deltaTime;
+    f32 cameraSpeed = 0.1f * deltaTime;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-        cameraSpeed *= 15.0f;
+        cameraSpeed *= 35.0f;
     }
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {

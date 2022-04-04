@@ -18,7 +18,7 @@ constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
-    bool mDisableClouds = true;
+    bool mDisableClouds = false;
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 1.25f;
     float mCloudAmbient = 0.5f;
@@ -30,6 +30,11 @@ struct DebugOptions {
     // Terrain
     f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
+    f32 mTerrainHeightColorMult = 0.22;
+    f32 mTerrainWavyColorMult = 0.167;
+    f32 mTerrainSquaresColorPeriod = 0.187;
+    f32 mTerrainSquaresIntensity = 0.0;
+    f32 mTerrainBlendMult = 0.037;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 3;
@@ -78,6 +83,8 @@ struct DebugOptions {
     f32v3 mDebugColor02 = f32v3(0.0f, 1.0f, 0.0f);
     f32 mDebugFloat01 = 0.0f;
     f32 mDebugFloat02 = 0.0f;
+    f32 mDebugFloat03 = 0.0f;
+    f32 mDebugFloat04 = 0.0f;
 
     // TODO: FILE CONFIG
     bool mUseCompressedAtlas = false;

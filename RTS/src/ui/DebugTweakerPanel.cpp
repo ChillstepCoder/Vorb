@@ -51,6 +51,14 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::PushID(++ID);
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mTerrainLodDistanceOffset, 0.0f, 2500.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugTerrainLod);
+        ImGui::Separator();
+        ImGui::Text("Color");
+        ImGui::SliderFloat("Height Mult", &sDebugOptions.mTerrainHeightColorMult, 0.0f, 1.0f);
+        ImGui::SliderFloat("Wavy Mult", &sDebugOptions.mTerrainWavyColorMult, 0.0f, 1.0f);
+        ImGui::SliderFloat("Squares Period", &sDebugOptions.mTerrainSquaresColorPeriod, 0.0f, 1.0f);
+        ImGui::SliderFloat("Squares Intensity", &sDebugOptions.mTerrainSquaresIntensity, 0.0f, 1.0f);
+        ImGui::SliderFloat("Blend Mult", &sDebugOptions.mTerrainBlendMult, 0.0f, 1.0f);
+        ImGui::Separator();
         ImGui::NewLine();
         ImGui::BeginChild("Terrain Funcs", ImVec2(WINDOW_WIDTH, 350.0f));
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise, ID);
@@ -163,8 +171,15 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::PushID(++ID);
         ImGui::ColorPicker3("Debug Color 1", &sDebugOptions.mDebugColor01.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::ColorPicker3("Debug Color 2", &sDebugOptions.mDebugColor02.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::SliderFloat("Debug Float 1", &sDebugOptions.mDebugFloat01, 0.0f, 1.0f);
-        ImGui::SliderFloat("Debug Float 2", &sDebugOptions.mDebugFloat02, 0.0f, 1.0f);
+        ImGui::SliderFloat("DebugFloat1", &sDebugOptions.mDebugFloat01, 0.0f, 1.0f);
+        ImGui::SliderFloat("DebugFloat2", &sDebugOptions.mDebugFloat02, 0.0f, 1.0f);
+        ImGui::SliderFloat("DebugFloat3", &sDebugOptions.mDebugFloat03, 0.0f, 1.0f);
+        ImGui::SliderFloat("DebugFloat4", &sDebugOptions.mDebugFloat04, 0.0f, 1.0f);
+        
+    f32 mTerrainHeightColorMult = 0.191;
+    f32 mTerrainWavyColorMult = 0.167;
+    f32 mTerrainSquaresColorPeriod = 0.187;
+    f32 mTerrainBlendMult = 0.037;
         ImGui::PopID();
     }
 

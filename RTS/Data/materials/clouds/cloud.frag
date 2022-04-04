@@ -14,8 +14,9 @@ layout (location = 0) out vec4 fNormal;
 
 void main() {
     fNormal.a = texture(Atlas, vec3(fUV, fAtlasPage)).a * fTint.a;
-	vec3 norm = texture(Atlas, vec3(unSphereNormalRect.xy + fPosition * unSphereNormalRect.zw, unSphereNormalPage)).rgb;
-	norm = norm * 2.0 - 1.0;
+    // TODO: Why??
+    vec4 adjustedRect = vec4(unSphereNormalRect.x, unSphereNormalRect.y + unSphereNormalRect.w, unSphereNormalRect.z, -unSphereNormalRect.w);
+	vec3 norm = texture(Atlas, vec3(adjustedRect.xy + fPosition * adjustedRect.zw, unSphereNormalPage)).rgb;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
 
@@ -29,16 +30,18 @@ void main() {
     gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	
     // Screen space
+	norm = norm * 2.0 - 1.0;
     norm = fTBN * norm;
     
     // Adjust normals to be more severe
-	fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z * 0.3)) + 1.0) * 0.5;
-    
+	//fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z * 0.3)) + 1.0) * 0.5;
+    fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z)) + 1.0) * 0.5;
     if (fNormal.a < 0.99) {
         discard;
     }
     
     float centerDistance = length(fPosition - vec2(0.5)) * 1.0;
+    
     
 	fNormal.a = 1.0;
 }

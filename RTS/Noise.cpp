@@ -122,169 +122,66 @@ KEG_TYPE_DEF_SAME_NAME(TerrainFuncProperties, kt) {
 //               https://github.com/ashima/webgl-noise
 // 
 // Converted to C++ by Ben Arnold
-
-// Permutation polynomial: (34x^2 + x) mod 289
-inline f64v3 permute(const f64v3& x) {
-	return glm::mod((34.0 * x + 1.0) * x, 289.0);
+// Modulo 289 without a division (only multiplications)
+f64v3 mod289(f64v3 x) {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
+f64v2 mod289(f64v2 x) {
+    return x - floor(x * (1.0 / 289.0)) * 289.0;
+}
 
-// TODO(Ben): Fastfloor?
-f64v2 Noise::cellular(const f64v3& P) {
+// Modulo 7 without a division
+f64v3 mod7(f64v3 x) {
+    return x - floor(x * (1.0 / 7.0)) * 7.0;
+}
+
+// Permutation polynomial: (34x^2 + 6x) mod 289
+f64v3 permute(f64v3 x) {
+    return mod289((34.0 * x + 10.0) * x);
+}
+
+// https://github.com/ashima/webgl-noise/blob/master/src/cellular2D.glsl
+f64v2 Noise::cellularEuclidean(const f64v2& P) {
 #define K 0.142857142857 // 1/7
-#define Ko 0.428571428571 // 1/2-K/2
-#define K2 0.020408163265306 // 1/(7*7)
-#define Kz 0.166666666667 // 1/6
-#define Kzo 0.416666666667 // 1/2-1/6*2
-#define jitter 1.0 // smaller jitter gives more regular pattern
-
-	f64v3 Pi = glm::mod(glm::floor(P), 289.0);
-	f64v3 Pf = glm::fract(P) - 0.5;
-
-	f64v3 Pfx = Pf.x + f64v3(1.0, 0.0, -1.0);
-	f64v3 Pfy = Pf.y + f64v3(1.0, 0.0, -1.0);
-	f64v3 Pfz = Pf.z + f64v3(1.0, 0.0, -1.0);
-
-	f64v3 p = permute(Pi.x + f64v3(-1.0, 0.0, 1.0));
-	f64v3 p1 = permute(p + Pi.y - 1.0);
-	f64v3 p2 = permute(p + Pi.y);
-	f64v3 p3 = permute(p + Pi.y + 1.0);
-
-	f64v3 p11 = permute(p1 + Pi.z - 1.0);
-	f64v3 p12 = permute(p1 + Pi.z);
-	f64v3 p13 = permute(p1 + Pi.z + 1.0);
-
-	f64v3 p21 = permute(p2 + Pi.z - 1.0);
-	f64v3 p22 = permute(p2 + Pi.z);
-	f64v3 p23 = permute(p2 + Pi.z + 1.0);
-
-	f64v3 p31 = permute(p3 + Pi.z - 1.0);
-	f64v3 p32 = permute(p3 + Pi.z);
-	f64v3 p33 = permute(p3 + Pi.z + 1.0);
-
-	f64v3 ox11 = glm::fract(p11 * K) - Ko;
-	f64v3 oy11 = glm::mod(glm::floor(p11 * K), 7.0) * K - Ko;
-	f64v3 oz11 = glm::floor(p11 * K2) * Kz - Kzo; // p11 < 289 guaranteed
-
-	f64v3 ox12 = glm::fract(p12 * K) - Ko;
-	f64v3 oy12 = glm::mod(glm::floor(p12 * K), 7.0) * K - Ko;
-	f64v3 oz12 = glm::floor(p12 * K2) * Kz - Kzo;
-
-	f64v3 ox13 = glm::fract(p13 * K) - Ko;
-	f64v3 oy13 = glm::mod(glm::floor(p13 * K), 7.0) * K - Ko;
-	f64v3 oz13 = glm::floor(p13 * K2) * Kz - Kzo;
-
-	f64v3 ox21 = glm::fract(p21 * K) - Ko;
-	f64v3 oy21 = glm::mod(glm::floor(p21 * K), 7.0) * K - Ko;
-	f64v3 oz21 = glm::floor(p21 * K2) * Kz - Kzo;
-
-	f64v3 ox22 = glm::fract(p22 * K) - Ko;
-	f64v3 oy22 = glm::mod(glm::floor(p22 * K), 7.0) * K - Ko;
-	f64v3 oz22 = glm::floor(p22 * K2) * Kz - Kzo;
-
-	f64v3 ox23 = glm::fract(p23 * K) - Ko;
-	f64v3 oy23 = glm::mod(glm::floor(p23 * K), 7.0) * K - Ko;
-	f64v3 oz23 = glm::floor(p23 * K2) * Kz - Kzo;
-
-	f64v3 ox31 = glm::fract(p31 * K) - Ko;
-	f64v3 oy31 = glm::mod(glm::floor(p31 * K), 7.0) * K - Ko;
-	f64v3 oz31 = glm::floor(p31 * K2) * Kz - Kzo;
-
-	f64v3 ox32 = glm::fract(p32 * K) - Ko;
-	f64v3 oy32 = glm::mod(glm::floor(p32 * K), 7.0) * K - Ko;
-	f64v3 oz32 = glm::floor(p32 * K2) * Kz - Kzo;
-
-	f64v3 ox33 = glm::fract(p33 * K) - Ko;
-	f64v3 oy33 = glm::mod(glm::floor(p33 * K), 7.0) * K - Ko;
-	f64v3 oz33 = glm::floor(p33 * K2) * Kz - Kzo;
-
-	f64v3 dx11 = Pfx + jitter * ox11;
-	f64v3 dy11 = Pfy.x + jitter * oy11;
-	f64v3 dz11 = Pfz.x + jitter * oz11;
-
-	f64v3 dx12 = Pfx + jitter * ox12;
-	f64v3 dy12 = Pfy.x + jitter * oy12;
-	f64v3 dz12 = Pfz.y + jitter * oz12;
-
-	f64v3 dx13 = Pfx + jitter * ox13;
-	f64v3 dy13 = Pfy.x + jitter * oy13;
-	f64v3 dz13 = Pfz.z + jitter * oz13;
-
-	f64v3 dx21 = Pfx + jitter * ox21;
-	f64v3 dy21 = Pfy.y + jitter * oy21;
-	f64v3 dz21 = Pfz.x + jitter * oz21;
-
-	f64v3 dx22 = Pfx + jitter * ox22;
-	f64v3 dy22 = Pfy.y + jitter * oy22;
-	f64v3 dz22 = Pfz.y + jitter * oz22;
-
-	f64v3 dx23 = Pfx + jitter * ox23;
-	f64v3 dy23 = Pfy.y + jitter * oy23;
-	f64v3 dz23 = Pfz.z + jitter * oz23;
-
-	f64v3 dx31 = Pfx + jitter * ox31;
-	f64v3 dy31 = Pfy.z + jitter * oy31;
-	f64v3 dz31 = Pfz.x + jitter * oz31;
-
-	f64v3 dx32 = Pfx + jitter * ox32;
-	f64v3 dy32 = Pfy.z + jitter * oy32;
-	f64v3 dz32 = Pfz.y + jitter * oz32;
-
-	f64v3 dx33 = Pfx + jitter * ox33;
-	f64v3 dy33 = Pfy.z + jitter * oy33;
-	f64v3 dz33 = Pfz.z + jitter * oz33;
-
-	f64v3 d11 = dx11 * dx11 + dy11 * dy11 + dz11 * dz11;
-	f64v3 d12 = dx12 * dx12 + dy12 * dy12 + dz12 * dz12;
-	f64v3 d13 = dx13 * dx13 + dy13 * dy13 + dz13 * dz13;
-	f64v3 d21 = dx21 * dx21 + dy21 * dy21 + dz21 * dz21;
-	f64v3 d22 = dx22 * dx22 + dy22 * dy22 + dz22 * dz22;
-	f64v3 d23 = dx23 * dx23 + dy23 * dy23 + dz23 * dz23;
-	f64v3 d31 = dx31 * dx31 + dy31 * dy31 + dz31 * dz31;
-	f64v3 d32 = dx32 * dx32 + dy32 * dy32 + dz32 * dz32;
-	f64v3 d33 = dx33 * dx33 + dy33 * dy33 + dz33 * dz33;
-
-	// Sort out the two smallest distances (F1, F2)
-#if 0
-	// Cheat and sort out only F1
-	f64v3 d1 = glm::min(glm::min(d11, d12), d13);
-	f64v3 d2 = glm::min(glm::min(d21, d22), d23);
-	f64v3 d3 = glm::min(glm::min(d31, d32), d33);
-	f64v3 d = glm::min(glm::min(d1, d2), d3);
-	d.x = glm::min(glm::min(d.x, d.y), d.z);
-	return glm::sqrt(d.xx); // F1 duplicated, no F2 computed
-#else
-	// Do it right and sort out both F1 and F2
-	f64v3 d1a = glm::min(d11, d12);
-	d12 = glm::max(d11, d12);
-	d11 = glm::min(d1a, d13); // Smallest now not in d12 or d13
-	d13 = glm::max(d1a, d13);
-	d12 = glm::min(d12, d13); // 2nd smallest now not in d13
-	f64v3 d2a = glm::min(d21, d22);
-	d22 = glm::max(d21, d22);
-	d21 = glm::min(d2a, d23); // Smallest now not in d22 or d23
-	d23 = glm::max(d2a, d23);
-	d22 = glm::min(d22, d23); // 2nd smallest now not in d23
-	f64v3 d3a = glm::min(d31, d32);
-	d32 = glm::max(d31, d32);
-	d31 = glm::min(d3a, d33); // Smallest now not in d32 or d33
-	d33 = glm::max(d3a, d33);
-	d32 = glm::min(d32, d33); // 2nd smallest now not in d33
-	f64v3 da = glm::min(d11, d21);
-	d21 = glm::max(d11, d21);
-	d11 = glm::min(da, d31); // Smallest now in d11
-	d31 = glm::max(da, d31); // 2nd smallest now not in d31
-	d11 = (d11.x < d11.y) ? d11 : f64v3(d11.y, d11.x, d11.z);
-	d11 = (d11.x < d11.z) ? d11 : f64v3(d11.z, d11.y, d11.x);
-	d12 = glm::min(d12, d21); // 2nd smallest now not in d21
-	d12 = glm::min(d12, d22); // nor in d22
-	d12 = glm::min(d12, d31); // nor in d31
-	d12 = glm::min(d12, d32); // nor in d32
-	d11 = f64v3(d11.x, glm::min(f64v2(d11.y, d11.z), f64v2(d12.x, d12.y))); // nor in d12.yz
-	d11.y = glm::min(d11.y, d12.z); // Only two more to go
-	d11.y = glm::min(d11.y, d11.z); // Done! (Phew!)
-	return glm::sqrt(f64v2(d11.x, d11.y)); // F1, F2
-#endif
+#define Ko 0.428571428571 // 3/7
+#define jitter 1.0 // Less gives more regular pattern
+    f64v2 Pi = mod289(floor(P));
+	f64v2 Pf = fract(P);
+    f64v3 oi = f64v3(-1.0, 0.0, 1.0);
+    f64v3 of = f64v3(-0.5, 0.5, 1.5);
+    f64v3 px = permute(Pi.x + oi);
+    f64v3 p = permute(px.x + Pi.y + oi); // p11, p12, p13
+	f64v3 ox = glm::fract(p * K) - Ko;
+    f64v3 oy = mod7(floor(p * K)) * K - Ko;
+    f64v3 dx = Pf.x + 0.5f + jitter * ox;
+    f64v3 dy = Pf.y - of + jitter * oy;
+    f64v3 d1 = dx * dx + dy * dy; // d11, d12 and d13, squared
+    p = permute(px.y + Pi.y + oi); // p21, p22, p23
+    ox = glm::fract(p * K) - Ko;
+    oy = mod7(floor(p * K)) * K - Ko;
+    dx = Pf.x - 0.5 + jitter * ox;
+    dy = Pf.y - of + jitter * oy;
+    f64v3 d2 = dx * dx + dy * dy; // d21, d22 and d23, squared
+    p = permute(px.z + Pi.y + oi); // p31, p32, p33
+    ox = glm::fract(p * K) - Ko;
+    oy = mod7(floor(p * K)) * K - Ko;
+    dx = Pf.x - 1.5 + jitter * ox;
+    dy = Pf.y - of + jitter * oy;
+    f64v3 d3 = dx * dx + dy * dy; // d31, d32 and d33, squared
+    // Sort out the two smallest distances (F1, F2)
+    f64v3 d1a = glm::min(d1, d2);
+    d2 = glm::max(d1, d2); // Swap to keep candidates for F2
+    d2 = glm::min(d2, d3); // neither F1 nor F2 are now in d3
+    d1 = glm::min(d1a, d2); // F1 is now in d1
+    d2 = glm::max(d1a, d2); // Swap to keep candidates for F2
+    if (d1.x > d1.y) d1 = f64v3(d1.y, d1.x, d1.z);
+    if (d1.x > d1.z) d1 = f64v3(d1.z, d1.y, d1.x);
+	d1.y = glm::min(d1.y, d2.y);
+	d1.z = glm::min(d1.z, d2.z);
+    d1.y = glm::min(d1.y, d1.z); // nor in  d1.z
+    d1.y = glm::min(d1.y, d2.x); // F2 is in d1.y, we're done.
+	return f64v2(sqrt(d1.x), sqrt(d1.y));
 }
 
 // Multi-octave Simplex noise

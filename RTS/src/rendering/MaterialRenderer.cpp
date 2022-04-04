@@ -190,8 +190,13 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::DebugFloat2:
                 glUniform1f(it.second, sDebugOptions.mDebugFloat02);
                 break;
-
+            case MaterialUniform::DebugFloat3:
+                glUniform1f(it.second, sDebugOptions.mDebugFloat03);
+                break;
+            case MaterialUniform::DebugFloat4:
+                glUniform1f(it.second, sDebugOptions.mDebugFloat04);
+                break;
         }
-        static_assert((int)MaterialUniform::COUNT == 26, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 28, "Update for new uniform type");
     }
 }

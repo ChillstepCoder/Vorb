@@ -54,11 +54,14 @@ void main() {
 	vec4 vertexPosition = vPosition;
 	vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio
     
+    // Movement offset
+	vertexPosition.xyz += cos((vPosition.x + UnRootPos.x) * 0.05 - sin((vPosition.y + UnRootPos.y) * 0.05)) * 10.0;
+    
     // Get Right and Up vectors in world space
-    vec3 cameraNormal = vPosition.xyz + UnRootPos - CameraPos;
+    vec3 cameraNormal = vertexPosition.xyz + UnRootPos - CameraPos;
     cameraNormal = normalize(cameraNormal);
-    vec3 worldRight = vec3(rotateXY(cameraNormal, 90.0 * (3.141592653 / 180.0)).xy, 0.0);
-    vec3 worldUp = (rotationMatrix(worldRight, 90.0) * vec4(cameraNormal, 1.0)).xyz;
+    vec3 worldRight = normalize(vec3(rotateXY(cameraNormal, -90.0 * (3.141592653 / 180.0)).xy, 0.0));
+    vec3 worldUp = normalize((rotationMatrix(worldRight, -90.0) * vec4(cameraNormal, 1.0)).xyz);
     
 	vertexPosition.xyz += worldUp * xzOffsetUncompressed.y;
 	vertexPosition.xyz += worldRight * xzOffsetUncompressed.x;
@@ -67,9 +70,9 @@ void main() {
 	//vertexPosition.xyz += CameraUp * xzOffsetUncompressed.y;
 	//vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
     
-    vec3 normal = cameraNormal; // Prenormalized on CPU
-	vec3 binormal = -worldRight;
-    vec3 tangent = -worldUp;
+    vec3 normal = -cameraNormal; // Prenormalized on CPU
+	vec3 binormal = -worldUp;
+    vec3 tangent = worldRight;
 	fTBN = mat3(tangent, binormal, normal);
     
 	// Hacky way to make the x,z offsets all 1
@@ -79,7 +82,6 @@ void main() {
     fTint = vec4(1.0);
 	
 	vec4 worldPos = vertexPosition + vec4(UnRootPos - CameraPos, 0.0);
-	worldPos.xyz += cos((vPosition.x + UnRootPos.x) * 0.05 - sin((vPosition.y + UnRootPos.y) * 0.05)) * 10.0;
 
 	//fTint.r = 1.0 - angle;
 	//fTint.g = 0.0;

@@ -392,7 +392,8 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     else {
-        glClear(GL_DEPTH_BUFFER_BIT);
+        // TODO: Can we not do GL_COLOR_BUFFER_BIT? (IT causes clouds issues rn)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
     // TODO: Replace With BlendState
@@ -436,6 +437,12 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Terrain
     mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
+    // Terrain uniforms
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
+    glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
     for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
         terrainQuadtree.render(camera, mTerrainMaterial->mProgram);
     }

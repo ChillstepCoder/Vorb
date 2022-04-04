@@ -58,7 +58,8 @@ struct NoiseBase {
 KEG_TYPE_DECL(NoiseBase);
 
 namespace Noise {
-	f64v2 cellular(const f64v3& P);
+    f64v2 cellularEuclidean(const f64v2& P);
+    f64v2 cellularManhattan(const f64v2& P);
 
 	// Mulit-octave simplex noise
 	f64 fractal(const int octaves,
