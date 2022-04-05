@@ -132,8 +132,8 @@ void main() {
     //float lowIndex = floor(totalNormal);
     float highIndex = ceil(totalNormal);
     //int index = int(round(totalNormal));
-    int index = int(lowIndex + 8) % NUM_COLORS;
-    int index2 = int(highIndex + 8) % NUM_COLORS;
+    int index = int(lowIndex + 5) % NUM_COLORS;
+    int index2 = int(highIndex + 5) % NUM_COLORS;
     
     
     float lerpVal = mod(totalNormal, 1.0);

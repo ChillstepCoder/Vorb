@@ -10,6 +10,9 @@ out vec4 fTint;
 out float fRoughness;
 out mat3 fTBN;
 
+uniform float DebugFloat1;
+uniform float DebugFloat2;
+
 vec3 rotateXY(vec3 inVec, float angle) {
     vec3 rv;
     float cosa = cos(angle);
@@ -65,10 +68,6 @@ void main() {
     
 	vertexPosition.xyz += worldUp * xzOffsetUncompressed.y;
 	vertexPosition.xyz += worldRight * xzOffsetUncompressed.x;
-    
-    // OLD CAMERA SPACE
-	//vertexPosition.xyz += CameraUp * xzOffsetUncompressed.y;
-	//vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
     
     vec3 normal = -cameraNormal; // Prenormalized on CPU
 	vec3 binormal = -worldUp;

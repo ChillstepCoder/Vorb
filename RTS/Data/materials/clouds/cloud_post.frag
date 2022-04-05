@@ -61,11 +61,14 @@ void main() {
     float backDiffuse = computeDiffuse(-norm, SunPosition);
     float greyStep = step(1.0 - backDiffuse, 0.2);
     color = mix(color, darkGreyColor, greyStep);
-    float blackStep = step(1.0 - backDiffuse, 0.02);
-    color = mix(color, blackColor, blackStep);
+    //float blackStep = step(1.0 - backDiffuse, 0.02);
+    //color = mix(color, blackColor, blackStep);
     
     
     fColor.rgb += color;
+    
+    // Uncomment to render normals
+    //fColor.rgb = fColor.rgb * 0.00001 + (norm + 1.0) * 0.5;
     
     // Normals are up for main pass lighting
     fNormal = vec4(0.5, 0.5, 1.0, 1.0);

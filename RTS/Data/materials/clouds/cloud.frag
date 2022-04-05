@@ -35,12 +35,10 @@ void main() {
     
     // Adjust normals to be more severe
 	//fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z * 0.3)) + 1.0) * 0.5;
-    fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z)) + 1.0) * 0.5;
+    fNormal.rgb = (norm + 1.0) * 0.5;
     if (fNormal.a < 0.99) {
         discard;
     }
-    
-    float centerDistance = length(fPosition - vec2(0.5)) * 1.0;
     
     
 	fNormal.a = 1.0;

@@ -213,7 +213,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
                     }
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
-                    mesh->addQuad(quadPos, f32v2(newSize, (newSize) * (1.0 - stretchr)), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+                    mesh->addQuad(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
                 }
             }
         }
