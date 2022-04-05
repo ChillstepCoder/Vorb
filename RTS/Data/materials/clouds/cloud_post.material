@@ -5,3 +5,6 @@ cloud_post:
     - name: cloud_color
       unrect: unCloudTextureRect
       unpage: unCloudTexturePage
+  textures:
+    - name: van_gogh_2
+      uniform: PreturbTexture

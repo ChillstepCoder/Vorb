@@ -33,8 +33,6 @@ void main() {
 	norm = norm * 2.0 - 1.0;
     norm = fTBN * norm;
     
-    // Adjust normals to be more severe
-	//fNormal.rgb = (normalize(vec3(norm.x, norm.y, norm.z * 0.3)) + 1.0) * 0.5;
     fNormal.rgb = (norm + 1.0) * 0.5;
     if (fNormal.a < 0.99) {
         discard;

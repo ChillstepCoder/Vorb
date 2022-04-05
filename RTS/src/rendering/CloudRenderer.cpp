@@ -131,8 +131,6 @@ void CloudRenderer::renderFboToScreen()
     ui32 nextTexture = 0;
     mMaterialRenderer.bindMaterialForRender(*mPostMaterial, &nextTexture);
 
-    glUniform1f(mPostMaterial->mProgram.getUniform("unAmbient"), sDebugOptions.mCloudAmbient);
-
     if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
         mGBuffers[0].bindGeometryTexture(nextTexture);
         glUniform1i(*inputUniform, nextTexture);

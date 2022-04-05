@@ -1,5 +1,6 @@
 TODO LIST:
 
+0. Brush stroke texture clouds!
 1. DE-UGGIFY WATER
 2. BIOMES
 3. FIX GRASS SQUARES

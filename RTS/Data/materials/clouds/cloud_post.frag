@@ -1,13 +1,16 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D CloudFbo;
 uniform sampler2D FboDepth;
-uniform float unAmbient;
+uniform sampler2D PreturbTexture;
 #include "../GlobalUbo.glsl"
 
 uniform vec4 unCloudTextureRect;
 uniform float unCloudTexturePage;
 
+uniform float DebugFloat2;
+
 #include "../util/lighting.glsl"
+#include "../util/hsv.glsl"
 
 in vec2 fUV;
 
@@ -16,7 +19,6 @@ layout (location = 1) out vec4 fNormal;
 layout (location = 2) out vec4 fRoughness;
 
 void main() {
-    // fColor = texture(CloudFbo, fUV);
 	float baseAlpha = texture2D(CloudFbo, fUV).a;
 	//vec3 norm = normalize(blur13noalpha(CloudFbo, fUV, ScreenResolution, vec2(baseAlpha * 3.0, 0.0)));
 	vec3 norm = texture2D(CloudFbo, fUV).rgb;
@@ -29,27 +31,27 @@ void main() {
     norm = normalize(norm * 2.0 - 1.0);
 	
     
-	// NEW
+    // Get alpha
 	vec2 tex = vec2(0.0, max(computeDiffuse(norm, SunPosition), 0.001));
 	tex.y = 1.0 - tex.y;
-	fColor.rgba = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).rgba;
+	fColor.a = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).a;
 	
-	// Fake scattering
-	vec3 frontRGB = computePhong(fColor.rgb, norm, SunPosition, unAmbient, 1.0, depth, fUV, 0.0);
-	vec3 backRGB = computePhong(fColor.rgb, vec3(norm.x, norm.y, -norm.z), SunPosition, unAmbient, 1.0, depth, fUV, 0.0);
-    
-	fColor.rgb = (frontRGB * 0.7 + backRGB * 0.3);
-    // Make it brighter (TMP)
-    fColor.rgb = pow(fColor.rgb * 1.2, vec3(0.3));
-    
-    // =========START TESTING TOON SHADING==========
-    fColor.rgb *= 0.0001;
+    // =========START TOON SHADING==========
 	
     vec3 highlightColor = vec3(1.0);
     vec3 whiteColor = vec3(0.9);
-    vec3 greyColor = vec3(0.75);
-    vec3 darkGreyColor = vec3(0.6156);
+    vec3 greyColor = vec3(0.83);
+    vec3 darkGreyColor = vec3(0.7356);
     vec3 blackColor = vec3(0.5);
+    
+    vec3 screenNorm = (V * vec4(norm, 1.0)).xyz;
+    // Tweak the normal by the position offset to make it more properly aligned
+    screenNorm.xy += (fUV * 2.0 - 1.0);
+    // Compute preturb texture UV
+    vec2 preturbUV = (screenNorm.xy * 2.0 + 1.0);
+    vec3 preturb = texture(PreturbTexture, preturbUV * 0.4).rgb;
+    
+    norm += vec3(preturb.r * 2.0 - 0.5) * 0.25;
     norm = normalize(vec3(norm.x, norm.y, norm.z));
     // Front
     float frontDiffuse = computeDiffuse(norm, SunPosition);
@@ -67,14 +69,28 @@ void main() {
     
     fColor.rgb += color;
     
+    // Color jitter
+    vec3 hsv = rgb2hsv(fColor.rgb);
+    hsv.g = 0.037; // Saturation
+    hsv.r = preturb.g + preturb.r; // Hue shift
+    fColor.rgb = hsv2rgb(hsv);
+    
+    
     // Uncomment to render normals
     //fColor.rgb = fColor.rgb * 0.00001 + (norm + 1.0) * 0.5;
+    
+    // Uncomment to render preturb
+    //fColor.rgb = fColor.rgb * 0.00001 + preturb;
+    
+    // Uncomment to render preturb uv
+    //fColor.rgb = fColor.rgb * 0.00001 + vec3(preturbUV.x, preturbUV.y, 0.0);
+    
+    
+    // =========END TOON SHADING==========
     
     // Normals are up for main pass lighting
     fNormal = vec4(0.5, 0.5, 1.0, 1.0);
     fNormal.a = 1.0;
-    
-    // =========END TESTING TOON SHADING==========
     
 	fRoughness.r = 0.9;
 	fRoughness.a = 1.0;
