@@ -6,7 +6,8 @@ constexpr f32 MIN_WORLD_GEN_HEIGHT = -200.0f;
 constexpr f32 MAX_WORLD_GEN_HEIGHT = 900.0f;
 
 struct WorldGeneration {
-    NoiseFunction mBaseNoise             = NoiseFunction("Base", 7, 0.7, 0.001, {0, 0}, 3.0, 0.4);
+    // NoiseFunction mBaseNoise = NoiseFunction("Base", 7, 0.7, 0.001, { 0, 0 }, 3.0, 0.4);
+    NoiseFunction mBaseNoise             = NoiseFunction("Base", 7, 0.7, 0.001, {0, 0}, 25.0, 0.0);
     NoiseFunction mContinentOutlineNoise = NoiseFunction("Continent Outline", 9, 0.65, 0.0001, {-2000.0, 0.0}, 1.0, 0.0);
     CellularNoiseFunction mMountainsNoise  = CellularNoiseFunction("Mountains", 2, 0.6, 0.00157, { 0, 0 }, 150.0, -0.3);
     //RidgedNoiseFunction mMountainsNoise  = RidgedNoiseFunction("Mountains", 1, 0.6, 0.00157, { 0, 0 }, 100.0, -0.3);

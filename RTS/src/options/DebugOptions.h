@@ -37,7 +37,7 @@ struct DebugOptions {
     f32 mTerrainBlendMult = 0.037;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
-    int mDepthOfFieldBlurPasses = 3;
+    int mDepthOfFieldBlurPasses = 1;
     // Ambient occlusion
     bool mSSAODisabled = true;
     float mSSAORadius = 1.0f;

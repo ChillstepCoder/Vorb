@@ -1,0 +1,9 @@
+TODO LIST:
+
+1. DE-UGGIFY WATER
+2. BIOMES
+3. FIX GRASS SQUARES
+4. Snow caps to mountains
+5. Boulders (need assets?)
+6. Buildings
+7. AI

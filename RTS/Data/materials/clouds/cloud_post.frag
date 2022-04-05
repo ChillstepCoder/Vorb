@@ -59,7 +59,7 @@ void main() {
     color = mix(color, highlightColor, highlightStep);
     // Back
     float backDiffuse = computeDiffuse(-norm, SunPosition);
-    float greyStep = step(1.0 - backDiffuse, 0.2);
+    float greyStep = step(1.0 - backDiffuse, 0.305);
     color = mix(color, darkGreyColor, greyStep);
     //float blackStep = step(1.0 - backDiffuse, 0.02);
     //color = mix(color, blackColor, blackStep);

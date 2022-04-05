@@ -34,7 +34,7 @@ float linearizeDepth(float d) {
     return 2.0 * CameraZRange.x * CameraZRange.y / (CameraZRange.y + CameraZRange.x - zn * (CameraZRange.y - CameraZRange.x));
 }
 
-const float DEPTH_BLEND_START = 200.0;
+const float DEPTH_BLEND_START = 50.0;
 const float DEPTH_BLEND_END = 300.0;
 
 // Only increment count when there is alpha
