@@ -17,10 +17,11 @@ void main() {
     vec4 worldPos = vertexPos + vec4(unOffset, 0.0);
 	
 	
-    fUV = (worldPos.xy + CameraPos.xy) * 0.05;
+    fUV = (worldPos.xy + CameraPos.xy) * 0.075;
     fDepth = vDepth;
-    fWaveHeight = cos(fUV.x - fUV.y + Time * 0.3) * 0.2;
-    worldPos.z += fWaveHeight;
+    fWaveHeight = (cos(fUV.x - fUV.y + Time * 0.3) * 0.2 + 1.0) * 0.5;
+    // Subtract so we always go below terrain, not above
+    worldPos.z -= fWaveHeight;
     fPosition = worldPos.xyz;
 
     gl_Position = VP * worldPos;

@@ -2,6 +2,16 @@
 
 uniform vec3 DebugColor1;
 uniform sampler2D FboDepth;
+uniform sampler2D FboNormals;
+uniform vec2 ScreenResolution;
+uniform sampler2D unSurfaceDistort;
+uniform sampler2D unSurfaceNoise;
+
+const float SURFACE_DISTORD_AMOUNT = 0.27;
+const vec2 SURFACE_MOVE_SPEED = vec2(0.03);
+const vec2 FOAM_DISTANCE_RANGE = vec2(0.4, 0.04);
+const float SURFACE_NOISE_CUTOFF = 0.777;
+const float SMOOTHSTEP_AA = 0.01;
 
 in vec3 fPosition;
 in vec2 fUV;
@@ -19,24 +29,41 @@ float linearizeDepth(float d) {
 
 void main() {
 	
-	float depth = texture2D(FboDepth, gl_FragCoord.xy).r;
-    depth = linearizeDepth(depth);
-    oColor.rg = vec2(depth);
+    vec2 fboUV = gl_FragCoord.xy / ScreenResolution;
+	float depth = texture2D(FboDepth, fboUV.xy).r;
     
-    oColor.rgb = DebugColor1;
-    oColor.r = fWaveHeight * 3.0;
-    oColor.a = min(fDepth * 0.1 + 0.4, 0.8);
-    oNormal.rgb = vec3(0.5, 0.5, 1.0);
+    vec4 shallowColor = vec4(0.325, 0.807, 0.971, 0.725);
+    vec4 deepColor = vec4(0.086, 0.407, 1, 0.749);
+    vec4 foamColor = vec4(1.0, 1.0, 1.0, 1.0);
+    
+    // get difference in depth
+    float maxDepthDiff = 0.8;
+    float depthDiff = linearizeDepth(depth) - linearizeDepth(gl_FragCoord.z);
+    depthDiff = clamp(depthDiff / maxDepthDiff, 0.0, 1.0);
+    vec4 waterColor = mix(shallowColor, deepColor, depthDiff);
+    
+    vec2 distortSample = texture(unSurfaceDistort, fUV.xy).rg * SURFACE_DISTORD_AMOUNT;
+    
+    vec2 noiseUV = vec2((fUV.x + Time * SURFACE_MOVE_SPEED.x) + distortSample.x, (fUV.y + Time * SURFACE_MOVE_SPEED.y) + distortSample.y);
+     
+    // TODO tex2dproj?
+    float surfaceNoiseSample = texture(unSurfaceNoise, noiseUV).r;
+
+// ERROR READING AND WRITING TO SAME NORMAL TEXTURE
+    vec3 existingNormal = normalize(texture(FboNormals, fboUV).rgb * 2.0 - 1.0);
+    float normalDot = clamp(dot(existingNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
+
+    float foamDistance = mix(FOAM_DISTANCE_RANGE.y, FOAM_DISTANCE_RANGE.x, normalDot);
+    float foamDepthDiff = clamp(depthDiff / foamDistance, 0.0, 1.0);
+    float surfaceNoiseCutoff = foamDepthDiff * SURFACE_NOISE_CUTOFF;
+
+    float surfaceNoise = smoothstep(surfaceNoiseCutoff - SMOOTHSTEP_AA, surfaceNoiseCutoff + SMOOTHSTEP_AA, surfaceNoiseSample);
+    vec4 surfaceNoiseColor = foamColor * surfaceNoise;
+
+    oColor = waterColor + surfaceNoiseColor;
+    
+    oNormal.rgb = (normalize(vec3(distortSample.xy, 1.0)) + 1.0) * 0.5;
     oNormal.a = 1.0;
-    
-    // Get depth value of current pixel
-    float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);
-	float clipDepth = ndcDepth / gl_FragCoord.w;
-    
-    float depthDiff = clipDepth - depth;
-    if (depthDiff > 0) oColor.rgb = vec3(1.0);
-    //oColor.rgb = oColor.rgb * 0.0001 + vec3(cos(Time + fPosition.x), sin(Time + fPosition.y), -cos(Time));
-    oColor.rg = gl_FragCoord.xy;
 	oRoughness.r = 0.0;
 	oRoughness.a = 1.0;
 }

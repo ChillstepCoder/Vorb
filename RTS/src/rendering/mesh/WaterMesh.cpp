@@ -44,6 +44,7 @@ void WaterMesh::draw(const vg::GLProgram& program) const
     glBindVertexArray(mVao);
     bindVertexAttribs(program);
 
+    // TODO: This material is currently broken as it both reads and writes to the normal buffer
     glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mIndexCount / 3);
 
