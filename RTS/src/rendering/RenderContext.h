@@ -122,6 +122,7 @@ private:
     std::vector<const Material*> mPassthroughMaterials;
     const Material* mSceneLightingMaterial = nullptr;
     const Material* mTerrainMaterial = nullptr;
+    const Material* mWaterMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };
 

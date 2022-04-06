@@ -239,6 +239,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\WaterMesh.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
@@ -411,6 +412,7 @@
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMesh.h" />
+    <ClInclude Include="src\rendering\mesh\WaterMesh.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />

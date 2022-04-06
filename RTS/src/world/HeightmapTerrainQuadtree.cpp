@@ -34,9 +34,7 @@ void HeightmapTerrainQuadtree::init(const f32v2& worldPosition, WorldGrid& world
     mWorldGrid = &worldGrid;
 }
 
-void HeightmapTerrainQuadtree::render(const Camera3D& camera, const vg::GLProgram& program) const {
-    const f32v3& cameraPos = camera.getPosition();
-    const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mWorldPos;
+void HeightmapTerrainQuadtree::renderTerrain(const Camera3D& camera, const vg::GLProgram& program) const {
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha"); // TODO: Cache?
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
     f32v3 pos3D(mWorldPos.x, mWorldPos.y, 0.0f);
@@ -49,7 +47,7 @@ void HeightmapTerrainQuadtree::render(const Camera3D& camera, const vg::GLProgra
         const QuadtreePatch& patch = mNodes[index];
 
         if (patch.canRender()) {
-            auto& mesh = mMeshes[index];
+            auto& mesh = mTerrainMeshes[index];
             ui32 lod = QUADTREE_LOD_FROM_INDEX[index];
             f32v2 centerPos = f32v2(PATCH_POSITIONS.data[index].xy) + f32v2(LOD_HALF_DIMS[lod].xy);
             f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
@@ -69,6 +67,33 @@ void HeightmapTerrainQuadtree::render(const Camera3D& camera, const vg::GLProgra
     }
 }
 
+void HeightmapTerrainQuadtree::renderWater(const Camera3D& camera, const vg::GLProgram& program) const {
+    f32v3 pos3D(mWorldPos.x, mWorldPos.y, 0.0f);
+    VGUniform offsetUniform = program.getUniform("unOffset");
+    f32v3 offset = pos3D - camera.getPosition();
+    glUniform3fv(offsetUniform, 1, &offset.x);
+
+    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
+        ui32 index = mActiveNodes[i];
+        const QuadtreePatch& patch = mNodes[index];
+
+        if (patch.canRender()) {
+            auto& mesh = mWaterMeshes[index];
+            ui32 lod = QUADTREE_LOD_FROM_INDEX[index];
+            f32v2 centerPos = f32v2(PATCH_POSITIONS.data[index].xy) + f32v2(LOD_HALF_DIMS[lod].xy);
+            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
+            if (patch.isCrossfading() && (patch.mFlags & QUADTREE_PATCH_FLAG_CROSSFADING_OUT)) {
+                // We simply dont crossfade water, always render the in crossfade only
+                continue;
+            }
+            const BoundingSphere& bounds = mesh->getBoundingSphere();
+            if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
+                mesh->draw(program);
+            }
+        }
+    }
+}
+
 void HeightmapTerrainQuadtree::markDirty() {
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
         ui32 index = mActiveNodes[i];
@@ -77,8 +102,9 @@ void HeightmapTerrainQuadtree::markDirty() {
     }
 }
 
-void createTerrainMesh(
+void createTerrainAndWaterMesh(
     TerrainMesh& mesh,
+    WaterMesh& waterMesh,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos
@@ -86,6 +112,7 @@ void createTerrainMesh(
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     mesh.beginMesh(posStart, dims.x);
+    waterMesh.beginMesh(posStart, dims.x);
 
     // AABB calculation
     f32AABB3 aabb;
@@ -108,14 +135,18 @@ void createTerrainMesh(
         }
     }
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
+    waterMesh.setVertsFromPaddedHeightfield(paddedHeightfield);
     // Bounding sphere
     aabb.pos.z = minZ;
     aabb.dims.z = maxZ - minZ;
-    mesh.setBoundingSphere(boundingSphereFromAABB(aabb));
+    const BoundingSphere sphere = boundingSphereFromAABB(aabb);
+    mesh.setBoundingSphere(sphere);
+    waterMesh.setBoundingSphere(sphere);
 };
 
-void createTerrainMesh(
+void createTerrainAndWaterMesh(
     TerrainMesh& mesh,
+    WaterMesh& waterMesh,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
@@ -124,6 +155,7 @@ void createTerrainMesh(
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
     mesh.beginMesh(posStart, dims.x);
+    waterMesh.beginMesh(posStart, dims.x);
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
 
@@ -138,6 +170,7 @@ void createTerrainMesh(
     const HeightmapPatchData* t = paddedHeightData[7];
     const HeightmapPatchData* tr = paddedHeightData[8];
     mesh.setBoundingSphere(c->boundingSphere);
+    waterMesh.setBoundingSphere(c->boundingSphere);
 
     // Center memcopy row by row
     for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
@@ -173,14 +206,16 @@ void createTerrainMesh(
 
     // Build
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
+    waterMesh.setVertsFromPaddedHeightfield(paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
 {
     bool hasAquired = true;
-    if (!mMeshes[patchIndex]) {
+    if (!mTerrainMeshes[patchIndex]) {
         hasAquired = false; // If we dont have a mesh, we haven't aquired yet
-        mMeshes[patchIndex] = std::make_unique<TerrainMesh>();
+        mTerrainMeshes[patchIndex] = std::make_unique<TerrainMesh>();
+        mWaterMeshes[patchIndex] = std::make_unique<WaterMesh>();
         assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
     }
     ++mRefCount;
@@ -191,25 +226,25 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         const ChunkID id = getChunkIDForPatchIndex(patchIndex);
         // Sentinal IDs never mesh
         if (id.isSentinelID()) {
-            finishMesh(patchIndex);
+            finishMeshes(patchIndex);
             return;
         }
 
         if (hasAquired || mWorldGrid->tryAquirePaddedHeightDataAt(id)) {
             // Instantly generate
             Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {
-                createMesh(id, patchIndex, lod);
+                createMeshes(id, patchIndex, lod);
             }, [this, &patch, patchIndex]() {
-                finishMesh(patchIndex);
+                finishMeshes(patchIndex);
             });
         }
         else {
             // Wait for the terrain generator to generate our chunk
             mWorldGrid->requestPaddedHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
                 Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {
-                    createMesh(id, patchIndex, lod);
+                    createMeshes(id, patchIndex, lod);
                 }, [this, &patch, patchIndex]() {
-                    finishMesh(patchIndex);
+                    finishMeshes(patchIndex);
                 });
             });
         }
@@ -218,25 +253,28 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         // At lower LODs we have to regenerate every time
         // TODO: we actually shouldnt do this.. it ignores diffs
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex](ThreadPoolWorkerData*) {
-            createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos);
+            createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos);
         }, [this, &patch, patchIndex]() {
-            finishMesh(patchIndex);
+            finishMeshes(patchIndex);
         });
     }
 }
 
-void HeightmapTerrainQuadtree::createMesh(const ChunkID id, ui32 patchIndex, ui32 lod) {
+void HeightmapTerrainQuadtree::createMeshes(const ChunkID id, ui32 patchIndex, ui32 lod) {
     const HeightmapPatchData* paddedHeightData[9];
     mWorldGrid->getPaddedHeightDataAt(id, paddedHeightData);
-    createTerrainMesh(*mMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, paddedHeightData);
+    createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, paddedHeightData);
 }
 
-void HeightmapTerrainQuadtree::finishMesh(ui32 patchIndex) {
-    mMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
-    onMeshFinished(patchIndex, mMeshes[patchIndex]->isValid());
+void HeightmapTerrainQuadtree::finishMeshes(ui32 patchIndex) {
+    mTerrainMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+    mWaterMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+    onMeshFinished(patchIndex, mTerrainMeshes[patchIndex]->isValid() || mWaterMeshes[patchIndex]->isValid());
     // Update refcount
     --mRefCount;
 }
+
+
 
 void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
 {
@@ -245,5 +283,6 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
         const ChunkID id = getChunkIDForPatchIndex(patchIndex);
         mWorldGrid->releasePaddedHeightDataAt(id);
     }
-    mMeshes[patchIndex].reset();
+    mTerrainMeshes[patchIndex].reset();
+    mWaterMeshes[patchIndex].reset();
 }

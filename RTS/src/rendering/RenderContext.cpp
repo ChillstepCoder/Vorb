@@ -145,6 +145,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     // Mesh init
     MeshBase::initStaticIBO();
     TerrainMesh::initGlobalIBO();
+    WaterMesh::initGlobalIBO();
     checkGlError("Meshbase init");
 
     // int UI resources
@@ -288,6 +289,7 @@ void RenderContext::initPostLoad() {
     mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
     mTerrainMaterial = mResourceManager.getMaterialManager().getMaterial("terrain");
+    mWaterMaterial = mResourceManager.getMaterialManager().getMaterial("water");
 
     {
         
@@ -443,8 +445,11 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
+
+    // TODO: Where is this getting unset?
+    glEnable(GL_CULL_FACE);
     for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
-        terrainQuadtree.render(camera, mTerrainMaterial->mProgram);
+        terrainQuadtree.renderTerrain(camera, mTerrainMaterial->mProgram);
     }
 
     if (!sDebugOptions.mHideCharacters) {
@@ -460,6 +465,15 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Clouds
     if (!sDebugOptions.mDisableClouds) {
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
+    }
+
+
+    // Water (No depth write)
+    glDisable(GL_CULL_FACE);
+    vg::DepthState::READ.set();
+    mMaterialRenderer->bindMaterialForRender(*mWaterMaterial);
+    for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+        terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
     }
 
     // Editor brushes

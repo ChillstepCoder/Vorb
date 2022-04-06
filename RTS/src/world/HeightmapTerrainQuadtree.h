@@ -5,6 +5,7 @@
 
 // Why does excluding this cause an error
 #include "rendering/mesh/TerrainMesh.h"
+#include "rendering/mesh/WaterMesh.h"
 
 class Camera3D;
 class WorldGrid;
@@ -20,19 +21,21 @@ public:
 
     void init(const f32v2& worldPosition, WorldGrid& worldGrid);
 
-    void render(const Camera3D& camera, const vg::GLProgram& program) const;
+    void renderTerrain(const Camera3D& camera, const vg::GLProgram& program) const;
+    void renderWater(const Camera3D& camera, const vg::GLProgram& program) const;
     
     void markDirty();
 
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
 
-    void createMesh(const ChunkID id, ui32 patchIndex, ui32 lod);
-    void finishMesh(ui32 patchIndex);
+    void createMeshes(const ChunkID id, ui32 patchIndex, ui32 lod);
+    void finishMeshes(ui32 patchIndex);
 
     void freeMeshForPatch(ui32 patchIndex) override;
 
-    std::unique_ptr<TerrainMesh> mMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
+    std::unique_ptr<TerrainMesh> mTerrainMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
+    std::unique_ptr<WaterMesh> mWaterMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     ui32 mRefCount = 0; // TODO: This is probably unneeded
     WorldGrid* mWorldGrid = nullptr;
 };

@@ -3,38 +3,39 @@
 #include "world/TerrainConstants.h"
 #include "rendering/MeshBase.h"
 
-struct TerrainVertex {
+
+struct WaterVertex {
 public:
-    TerrainVertex() {};
-    TerrainVertex(const f32v3& pos, const f32v3& normal) :
-        pos(pos), normal(normal) {
+    WaterVertex() {};
+    WaterVertex(const f32v3& pos, const f32 depth) :
+        pos(pos), depth(depth) {
     }
 
     f32v3 pos; // TODO: Can we compress X/Y into some integer representation
-    f32v3 normal;
-    ui8 padding[8];
+    f32 depth;
 };
 // Need power of 2 alignment
-static_assert(sizeof(TerrainVertex) == 32, "Power of 2 byte alignment needed");
+static_assert(sizeof(WaterVertex) == 16, "Power of 2 byte alignment needed");
 
-class TerrainMesh : public MeshBase
+class WaterMesh : public MeshBase
 {
 public:
-    TerrainMesh() = default;
-    VORB_NON_COPYABLE_BUT_MOVABLE(TerrainMesh);
+    WaterMesh() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(WaterMesh);
 
     //void init() override; // TODO: We cant override MeshBase::init because its called from constructor and that is illegal
 
     void beginMesh(const f32v2& cornerPos, f32 totalWidth);
     void setVertsFromPaddedHeightfield(const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
-    void draw(const vg::GLProgram & program) const override;
+    void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
 
     static void initGlobalIBO();
 
 private:
-    void bindVertexAttribs(const vg::GLProgram & program) const override;
+    void bindVertexAttribs(const vg::GLProgram& program) const override;
 
-    std::vector<TerrainVertex> mVertexData;
-    static VGBuffer sTerrainIbo; ///< Index Buffer Object
+    std::vector<WaterVertex> mVertexData;
+    static VGBuffer sWaterIbo; ///< Index Buffer Object
 };
+

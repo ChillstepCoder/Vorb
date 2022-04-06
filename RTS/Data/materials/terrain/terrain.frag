@@ -145,13 +145,6 @@ void main() {
     //oColor.rgb = oColor.rgb + COLORS[index] * texture(GrassTexture, fUV).rgb;
     //oColor.rgb *= texture(GrassTexture, fUV).rgb;
     
-    // TODO: Move up and use else
-    if (fHeight < 0.0) {
-        oColor.rgb = WaterColor;
-        normal = vec3(0.0, 0.0, 1.0);
-    }
-    
-    
     // =========== END NEW ART STYLE ==========
     
     // === Roughness ===
