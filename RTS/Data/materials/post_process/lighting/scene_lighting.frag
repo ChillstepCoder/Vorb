@@ -63,7 +63,7 @@ void main() {
 	normal = normal * 2.0 - 1.0;
 	float roughness = texture(FboRoughness, fUV).r;
 	roughness = max(roughness, isSky);
-	fColor.rgb = computePhong(fColor.rgb, normal, SunPosition, max(0.0, 0.5), roughness, depth, fUV, shadow);
+	fColor.rgb = computeBlinnPhong(fColor.rgb, normal, SunPosition, max(0.0, 0.5), roughness, depth, fUV, shadow);
 	
 	// =====================================================
 	// ==                     SHADOW                      ==

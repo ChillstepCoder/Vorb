@@ -17,6 +17,8 @@ DebugTweakerPanel::DebugTweakerPanel(const f32v2& screenDims) : mScreenDims(scre
 {
 }
 
+// Use the manual it rocks
+// https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio)
 {
     constexpr float WINDOW_WIDTH = 400.0f;
@@ -70,6 +72,22 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);
         ImGui::EndChild();
         ImGui::NewLine();
+        ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Water")) {
+        ImGui::PushID(++ID);
+        ImGui::ColorPicker4("Shallow Color", &sDebugOptions.mShallowWaterColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker4("Deep Color", &sDebugOptions.mDeepWaterColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker4("Foam Color", &sDebugOptions.mWaterFoamColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::SliderFloat("Distort Amount", &sDebugOptions.mWaterSurfaceDistortAmount, 0.0f, 1.0f);
+        ImGui::SliderFloat("Move Speed", &sDebugOptions.mWaterSurfaceMoveSpeed, 0.0f, 1.0f);
+        ImGui::SliderFloat("Noise Cutoff", &sDebugOptions.mWaterSurfaceNoiseCutoff, 0.0f, 1.0f);
+        ImGui::SliderFloat("Smoothstep AA", &sDebugOptions.mWaterSmoothstepAA, 0.0f, 1.0f);
+        ImGui::SliderFloat("Color Noise Intensity", &sDebugOptions.mWaterColorNoiseIntensity, 0.0f, 1.0f);
+        ImGui::SliderFloat("Distort Tiling", &sDebugOptions.mWaterDistortTiling, 0.0f, 16.0f);
+        ImGui::SliderFloat("Noise Tiling", &sDebugOptions.mWaterNoiseTiling, 0.0f, 16.0f);
+        ImGui::DragFloatRange2("Foam Dist Range", &sDebugOptions.mWaterFoamDistanceRange.x, &sDebugOptions.mWaterFoamDistanceRange.y, 0.01f, 0.0f, 1.0f);
         ImGui::PopID();
     }
 
@@ -175,11 +193,6 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::SliderFloat("DebugFloat2", &sDebugOptions.mDebugFloat02, 0.0f, 1.0f);
         ImGui::SliderFloat("DebugFloat3", &sDebugOptions.mDebugFloat03, 0.0f, 1.0f);
         ImGui::SliderFloat("DebugFloat4", &sDebugOptions.mDebugFloat04, 0.0f, 1.0f);
-        
-    f32 mTerrainHeightColorMult = 0.191;
-    f32 mTerrainWavyColorMult = 0.167;
-    f32 mTerrainSquaresColorPeriod = 0.187;
-    f32 mTerrainBlendMult = 0.037;
         ImGui::PopID();
     }
 

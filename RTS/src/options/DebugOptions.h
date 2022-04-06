@@ -69,6 +69,18 @@ struct DebugOptions {
     bool mShowEditor = false;
     bool mShowPaths = true;
     bool mShowEntityQueries = false;
+    // Water
+    f32v4 mShallowWaterColor = f32v4(159.0f / 255.0f, 194.0f / 255.0f, 206.0f / 255.0f, 185.0f / 255.0f);
+    f32v4 mDeepWaterColor = f32v4(57.0f / 255.0f, 83.0f / 255.0f, 122.0f / 255.0f, 191.0f / 255.0f);
+    f32v4 mWaterFoamColor = f32v4(111.0f / 255.0f, 148.0f / 255.0f, 205.0f / 255.0f, 255.0f / 255.0f);
+    f32 mWaterSurfaceDistortAmount = 0.27f;
+    f32 mWaterSurfaceMoveSpeed = 0.03f;
+    f32v2 mWaterFoamDistanceRange = f32v2(0.04f, 0.4f);
+    f32 mWaterSurfaceNoiseCutoff = 0.777;
+    f32 mWaterSmoothstepAA = 0.037f;
+    f32 mWaterColorNoiseIntensity = 0.085f;
+    f32 mWaterDistortTiling = 1.0f;
+    f32 mWaterNoiseTiling = 1.0f;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;

@@ -472,6 +472,18 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();
     mMaterialRenderer->bindMaterialForRender(*mWaterMaterial);
+    // Water uniforms
+    glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
+    glUniform4fv(mWaterMaterial->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
+    glUniform4fv(mWaterMaterial->mProgram.getUniform("unFoamColor"), 1, &sDebugOptions.mWaterFoamColor.x);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceDistortAmount"), sDebugOptions.mWaterSurfaceDistortAmount);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceMoveSpeed"), sDebugOptions.mWaterSurfaceMoveSpeed);
+    glUniform2fv(mWaterMaterial->mProgram.getUniform("unFoamDistanceRange"), 1, &sDebugOptions.mWaterFoamDistanceRange.x);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceNoiseCutoff"), sDebugOptions.mWaterSurfaceNoiseCutoff);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unSmoothstepAA"), sDebugOptions.mWaterSmoothstepAA);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
+    glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
     for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
         terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
     }

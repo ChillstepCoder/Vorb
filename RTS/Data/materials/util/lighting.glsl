@@ -28,10 +28,33 @@ float computeSpecular(vec3 normal, vec3 lightDir, vec3 position) {
 }
 
 vec3 computePhong(vec3 color, vec3 normal, vec3 lightDir, float ambient, float roughness, float depth, vec2 fboUV, float shadow) {
+
+   
    float lightAmount = 1.0 - shadow;
    // TODO: diffuseAmount
    vec3 position = worldPosFromDepth(depth, fboUV);
+   
    float diffuse = computeDiffuse(normal, lightDir) * lightAmount;
    float specular = computeSpecular(normal, lightDir, position) * (1.0 - roughness) * lightAmount;
+   return color * (((ambient + (1.0 - ambient) * diffuse) + specular));
+}
+
+
+vec3 computeBlinnPhong(vec3 color, vec3 normal, vec3 lightDir, float ambient, float roughness, float depth, vec2 fboUV, float shadow) {
+
+   float lightAmount = 1.0 - shadow;
+   // TODO: diffuseAmount
+   vec3 position = worldPosFromDepth(depth, fboUV);
+   
+   float diffuse = computeDiffuse(normal, lightDir) * lightAmount;
+   
+   // Specular
+   float SPECULAR_HARDNESS = 8.0;
+   vec3 H = normalize(lightDir - normalize(position));
+   float nDotH = dot(normal, H);
+   float intensity = pow(clamp(nDotH, 0.0, 1.0), SPECULAR_HARDNESS);
+   float specularPower = 0.6;
+   
+   float specular = intensity * specularPower * (1.0 - roughness) * lightAmount;
    return color * (((ambient + (1.0 - ambient) * diffuse) + specular));
 }

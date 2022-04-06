@@ -6,3 +6,7 @@ water:
       uniform: unSurfaceDistort
     - name: perlin_noise
       uniform: unSurfaceNoise
+    - name: oil_canvas
+      uniform: unOilCanvas
+    - name: hsv_jitter
+      uniform: unHsvJitter
