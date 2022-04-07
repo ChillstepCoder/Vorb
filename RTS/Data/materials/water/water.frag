@@ -2,7 +2,6 @@
 
 uniform float DebugFloat1;
 uniform sampler2D FboDepth;
-uniform sampler2D FboNormals;
 uniform vec2 ScreenResolution;
 uniform sampler2D unSurfaceDistort;
 uniform sampler2D unSurfaceNoise;
@@ -56,20 +55,20 @@ void main() {
     float surfaceNoiseSample = texture(unSurfaceNoise, noiseUV * unNoiseTiling).r;
 
 // ERROR READING AND WRITING TO SAME NORMAL TEXTURE
-    vec3 existingNormal = normalize(texture(FboNormals, fboUV).rgb * 2.0 - 1.0);
-    float normalDot = clamp(dot(existingNormal, vec3(0.0, 0.0, 1.0)), 0.0, 1.0);
+    
+    // For increasing foam at low camera angles
+    float cameraZDegree = clamp(CameraFront.z + 0.3, 0.0, 1.0);
 
-    float foamDistance = mix(unFoamDistanceRange.x, unFoamDistanceRange.y, normalDot);
+    float foamDistance = mix(unFoamDistanceRange.x, unFoamDistanceRange.y, cameraZDegree);
     float foamDepthDiff = clamp(depthDiff / foamDistance, 0.0, 1.0);
     float surfaceNoiseCutoff = foamDepthDiff * unSurfaceNoiseCutoff;
 
     float surfaceNoise = smoothstep(surfaceNoiseCutoff - unSmoothstepAA, surfaceNoiseCutoff + unSmoothstepAA, surfaceNoiseSample);
-    vec4 surfaceNoiseColor = unFoamColor * surfaceNoise;
+    vec3 surfaceNoiseColor = unFoamColor.xyz * surfaceNoise;
 
     // Reduce transparency at distance
-    oColor = waterColor + surfaceNoiseColor;
-    oColor.a = mix(oColor.a, 1.0, fCameraDist * 0.05);
-    oColor.a = min(oColor.a, 1.0);
+    oColor = waterColor + vec4(surfaceNoiseColor, 0.0);
+    oColor.a = clamp(mix(oColor.a, 1.0, fCameraDist * 0.05), 0.0, 1.0);
     
     // Oil paint
     float oilDistortVal = 0.3;

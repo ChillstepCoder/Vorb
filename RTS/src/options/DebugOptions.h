@@ -15,6 +15,12 @@ constexpr f32 GRASS_FADE_MULT = 5.55555f;
 constexpr f32 DEFAULT_GRASS_DISTANCE = 220.0f;
 constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 
+enum LIGHTING_MODEL {
+    PHONG = 0,
+    BLINN_PHONG = 1,
+    COUNT
+};
+
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
@@ -26,7 +32,7 @@ struct DebugOptions {
     // Grass
     QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
     bool mDebugGrassLod = false;
-    bool mHideGrass = true;
+    bool mHideGrass = false;
     // Terrain
     f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
@@ -35,6 +41,7 @@ struct DebugOptions {
     f32 mTerrainSquaresColorPeriod = 0.187;
     f32 mTerrainSquaresIntensity = 0.0;
     f32 mTerrainBlendMult = 0.037;
+    bool mDisableTerrain = false;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 1;
@@ -53,7 +60,7 @@ struct DebugOptions {
     f32 mShadowUpdateRateSeconds = 0.022f;
     int mShadowBlurPasses = 2;
     float mShadowBlurRadius = 0.45f; //1.5f;
-    bool mDisableShadows = true;
+    bool mDisableShadows = false;
     // Toggles
     bool mPauseFrustum = false;
     bool mWireframe = false;
@@ -75,12 +82,18 @@ struct DebugOptions {
     f32v4 mWaterFoamColor = f32v4(111.0f / 255.0f, 148.0f / 255.0f, 205.0f / 255.0f, 255.0f / 255.0f);
     f32 mWaterSurfaceDistortAmount = 0.27f;
     f32 mWaterSurfaceMoveSpeed = 0.03f;
-    f32v2 mWaterFoamDistanceRange = f32v2(0.04f, 0.4f);
+    f32v2 mWaterFoamDistanceRange = f32v2(0.4f, 1.0f);
     f32 mWaterSurfaceNoiseCutoff = 0.777;
     f32 mWaterSmoothstepAA = 0.037f;
     f32 mWaterColorNoiseIntensity = 0.085f;
     f32 mWaterDistortTiling = 1.0f;
     f32 mWaterNoiseTiling = 1.0f;
+    bool mDisableWater = false;
+    // Lighting
+    f32 mGamma = 1.0f;
+    f32 mExposure = 1.0f;
+    int mToneMapOperator = 0;
+    int mLightingModel = LIGHTING_MODEL::PHONG;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;

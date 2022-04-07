@@ -67,7 +67,6 @@ void ChunkRenderer::renderGrass(const World& world, const Camera3D& camera, cons
     VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
     glUniform3fv(mGrassMaterial->mProgram.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(fadeUniform, sDebugOptions.mGrassSettings.fadeDistance);
-    printf32v3("PLAYERPOS", playerPos);
     world.enumVisibleChunks([&](const Chunk& chunk) {
         ChunkRenderData& renderData = chunk.mChunkRenderData;
         f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();

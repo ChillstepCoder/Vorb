@@ -160,7 +160,7 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     // GBuffer
     vg::GBufferAttachment attachments[3];
     // Color
-    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGB8;
+    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGB16F;
     attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
     attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RGB;
     attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
@@ -180,17 +180,6 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
         mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
     }
     checkGlError("GBuffer init");
-
-    // Shadow GBuffer
-    //vg::GBufferAttachment shadowAttachments[1];
-    //// Shadow alpha and source height
-    //shadowAttachments[0].format = vg::TextureInternalFormat::R16;
-    //shadowAttachments[0].number = 0;
-    //shadowAttachments[0].pixelFormat = vg::TextureFormat::RED;
-    //shadowAttachments[0].pixelType = vg::TexturePixelType::FLOAT;
-    //mShadowGBuffer.setSize(ui32v2(mScreenResolution));
-    //mShadowGBuffer.init(Array<vg::GBufferAttachment>(shadowAttachments, 1), vg::TextureInternalFormat::NONE);
-    //checkGlError("Shadow GBuffer Init");
 
     // ZCutout GBuffer
     vg::GBufferAttachment zCutoutAttachment;
@@ -438,18 +427,20 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     // Terrain
-    mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
-    // Terrain uniforms
-    glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
-    glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
-    glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);
-    glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
-    glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
+    if (!sDebugOptions.mDisableTerrain) {
+        mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
+        // Terrain uniforms
+        glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
+        glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
+        glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);
+        glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
+        glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
 
-    // TODO: Where is this getting unset?
-    glEnable(GL_CULL_FACE);
-    for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
-        terrainQuadtree.renderTerrain(camera, mTerrainMaterial->mProgram);
+        // TODO: Where is this getting unset?
+        glEnable(GL_CULL_FACE);
+        for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+            terrainQuadtree.renderTerrain(camera, mTerrainMaterial->mProgram);
+        }
     }
 
     if (!sDebugOptions.mHideCharacters) {
@@ -469,23 +460,26 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
 
     // Water (No depth write)
-    glDisable(GL_CULL_FACE);
-    vg::DepthState::READ.set();
-    mMaterialRenderer->bindMaterialForRender(*mWaterMaterial);
-    // Water uniforms
-    glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
-    glUniform4fv(mWaterMaterial->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
-    glUniform4fv(mWaterMaterial->mProgram.getUniform("unFoamColor"), 1, &sDebugOptions.mWaterFoamColor.x);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceDistortAmount"), sDebugOptions.mWaterSurfaceDistortAmount);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceMoveSpeed"), sDebugOptions.mWaterSurfaceMoveSpeed);
-    glUniform2fv(mWaterMaterial->mProgram.getUniform("unFoamDistanceRange"), 1, &sDebugOptions.mWaterFoamDistanceRange.x);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceNoiseCutoff"), sDebugOptions.mWaterSurfaceNoiseCutoff);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSmoothstepAA"), sDebugOptions.mWaterSmoothstepAA);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
-    for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
-        terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
+    if (!sDebugOptions.mDisableWater) {
+        glDisable(GL_CULL_FACE);
+        vg::DepthState::READ.set();
+        mMaterialRenderer->bindMaterialForRender(*mWaterMaterial);
+        // Water uniforms
+        glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
+        glUniform4fv(mWaterMaterial->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
+        glUniform4fv(mWaterMaterial->mProgram.getUniform("unFoamColor"), 1, &sDebugOptions.mWaterFoamColor.x);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceDistortAmount"), sDebugOptions.mWaterSurfaceDistortAmount);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceMoveSpeed"), sDebugOptions.mWaterSurfaceMoveSpeed);
+        glUniform2fv(mWaterMaterial->mProgram.getUniform("unFoamDistanceRange"), 1, &sDebugOptions.mWaterFoamDistanceRange.x);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceNoiseCutoff"), sDebugOptions.mWaterSurfaceNoiseCutoff);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unSmoothstepAA"), sDebugOptions.mWaterSmoothstepAA);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
+        glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
+        for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+            terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
+        }
+        vg::DepthState::FULL.set();
     }
 
     // Editor brushes
@@ -614,7 +608,12 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     vg::DepthState::NONE.set();
 
     // Final Lighting
-    mMaterialRenderer->renderFullScreenQuad(*mSceneLightingMaterial);
+    mMaterialRenderer->bindMaterialForRender(*mSceneLightingMaterial);
+    glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unGamma"), sDebugOptions.mGamma);
+    glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unExposure"), sDebugOptions.mExposure);
+    glUniform1i(mSceneLightingMaterial->mProgram.getUniform("unTonemapOperator"), sDebugOptions.mToneMapOperator);
+    glUniform1i(mSceneLightingMaterial->mProgram.getUniform("unLightingModel"), sDebugOptions.mLightingModel);
+    sGlobalFullQuadVBO.draw();
 
     // Sky
    /* vg::DepthState::READ.set();

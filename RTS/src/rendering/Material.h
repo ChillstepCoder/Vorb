@@ -80,6 +80,10 @@ public:
     // Doesn't dispose program
     void dispose();
 
+    const VGUniform& getUniform(const char* name) const {
+        return mProgram.getUniform(name);
+    }
+
     std::vector<std::pair<MaterialUniform, VGUniform> > mUniforms;
     std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;
     std::vector<MaterialTextureInput> mInputTextures;

@@ -72,6 +72,7 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);
         ImGui::EndChild();
         ImGui::NewLine();
+        ImGui::Checkbox("Disable", &sDebugOptions.mDisableTerrain);
         ImGui::PopID();
     }
 
@@ -87,7 +88,49 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::SliderFloat("Color Noise Intensity", &sDebugOptions.mWaterColorNoiseIntensity, 0.0f, 1.0f);
         ImGui::SliderFloat("Distort Tiling", &sDebugOptions.mWaterDistortTiling, 0.0f, 16.0f);
         ImGui::SliderFloat("Noise Tiling", &sDebugOptions.mWaterNoiseTiling, 0.0f, 16.0f);
-        ImGui::DragFloatRange2("Foam Dist Range", &sDebugOptions.mWaterFoamDistanceRange.x, &sDebugOptions.mWaterFoamDistanceRange.y, 0.01f, 0.0f, 1.0f);
+        ImGui::DragFloatRange2("Foam Dist Range", &sDebugOptions.mWaterFoamDistanceRange.x, &sDebugOptions.mWaterFoamDistanceRange.y, 0.01f, 0.0f, 2.0f);
+        ImGui::Checkbox("Disable", &sDebugOptions.mDisableWater);
+        ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Lighting")) {
+        ImGui::PushID(++ID);
+        ImGui::SliderFloat("Gamma", &sDebugOptions.mGamma, 0.0f, 4.0f);
+        ImGui::SliderFloat("Exposure", &sDebugOptions.mExposure, 0.0f, 4.0f);
+        ImGui::SliderInt("Tonemap Operator", &sDebugOptions.mToneMapOperator, 0, 6);
+        switch (sDebugOptions.mToneMapOperator) {
+            case 0:
+                ImGui::Text("TONEMAP: NONE");
+                break;
+            case 1:
+                ImGui::Text("TONEMAP: REINARD");
+                break;
+            case 2:
+                ImGui::Text("TONEMAP: LOTTES");
+                break;
+            case 3:
+                ImGui::Text("TONEMAP: UCHIMURA");
+                break;
+            case 4:
+                ImGui::Text("TONEMAP: UNREAL");
+                break;
+            case 5:
+                ImGui::Text("TONEMAP: FILMIC");
+                break;
+            case 6:
+                ImGui::Text("TONEMAP: UNCHARTED 2");
+                break;
+        }
+
+        ImGui::SliderInt("Lighting model", &sDebugOptions.mLightingModel, 0, LIGHTING_MODEL::COUNT-1);
+        switch (sDebugOptions.mLightingModel) {
+            case 0:
+                ImGui::Text("LIGHTMODEL: PHONG");
+                break;
+            case 1:
+                ImGui::Text("LIGHTMODEL: BLINN_PHONG");
+                break;
+        }
         ImGui::PopID();
     }
 

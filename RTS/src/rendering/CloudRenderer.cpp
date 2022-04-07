@@ -60,10 +60,8 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     const GLuint rootPosUniform = glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnRootPos");
 
     for (auto&& batch : cloudManager.mCloudBatches) {
-        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius)) {
-            glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-            batch.mMesh->draw(mCloudMaterial->mProgram);
-        }
+        glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
+        batch.mMesh->draw(mCloudMaterial->mProgram);
     }
 
     blurNormals();
@@ -87,13 +85,10 @@ void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const C
     glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     const GLuint rootPosUniform = glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnRootPos");
 
+    // All clouds are rendered for shadows
     for (auto&& batch : cloudManager.mCloudBatches) {
-        // TODO: Profile the sphere check
-        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius) &&
-            glm::distance2(batch.mRootPos, camera.getPosition()) < maxDistSQ + SQ(batch.mBoundsRadius)) {
-            glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-            batch.mMesh->draw(mCloudShadowMaterial->mProgram);
-        }
+        glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
+        batch.mMesh->draw(mCloudShadowMaterial->mProgram);
     }
 }
 
