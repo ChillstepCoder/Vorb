@@ -2,68 +2,72 @@
 
 #include "world/WorldData.h"
 
-constexpr ui32 CHUNK_ID_INVALID = UINT32_MAX;
+constexpr ui32 GRID_ID_INVALID = UINT32_MAX;
+constexpr ui32 CHUNK_ID_INVALID = GRID_ID_INVALID;
 
-// TODO: Shrink?
-struct ChunkID {
-    ChunkID() : id(CHUNK_ID_INVALID), pos(CHUNK_ID_INVALID) {}
-    ChunkID(const ChunkID& other) { *this = other; }
-    ChunkID(const ui32v2& pos) : pos(pos) { initIdFromPos(); };
-    ChunkID(ui32v2&& pos) : pos(pos) { initIdFromPos(); };
-    ChunkID(ui32 xPos, ui32 yPos) : pos(xPos, yPos) { initIdFromPos(); };
-    ChunkID(const f32v2 worldPos) {
+template<ui32 GRIDWIDTH, i32 CELLWIDTH>
+struct GridID {
+    GridID() : id(GRID_ID_INVALID), pos(GRID_ID_INVALID) {}
+    GridID(const GridID& other) { *this = other; }
+    GridID(const ui32v2& pos) : pos(pos) { initIdFromPos(); };
+    GridID(ui32v2&& pos) : pos(pos) { initIdFromPos(); };
+    GridID(ui32 xPos, ui32 yPos) : pos(xPos, yPos) { initIdFromPos(); };
+    GridID(const f32v2 worldPos) {
         assert(worldPos.x >= 0.0f && worldPos.y >= 0.0f);
-        pos = ui32v2(floor(worldPos.x / CHUNK_WIDTH), floor(worldPos.y / CHUNK_WIDTH));
-        id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
+        pos = ui32v2(floor(worldPos.x / CELLWIDTH), floor(worldPos.y / CELLWIDTH));
+        id = pos.y * GRIDWIDTH + pos.x;
     }
 
-    static ChunkID fromWorldUI32v2(const ui32v2& worldPos) {
-        ChunkID id;
-        id.pos = ui32v2(worldPos.x / CHUNK_WIDTH, worldPos.y / CHUNK_WIDTH);
-        id.id = id.pos.y * WorldData::WORLD_WIDTH_CHUNKS + id.pos.x;
+    static GridID fromWorldUI32v2(const ui32v2& worldPos) {
+        GridID id;
+        id.pos = ui32v2(worldPos.x / CELLWIDTH, worldPos.y / CELLWIDTH);
+        id.id = id.pos.y * GRIDWIDTH + id.pos.x;
         return id;
     }
-    static ChunkID fromWorldUI16v2(const ui16v2& worldPos) {
-        ChunkID id;
-        id.pos = ui32v2(worldPos.x / CHUNK_WIDTH, worldPos.y / CHUNK_WIDTH);
-        id.id = id.pos.y * WorldData::WORLD_WIDTH_CHUNKS + id.pos.x;
+    static GridID fromWorldUI16v2(const ui16v2& worldPos) {
+        GridID id;
+        id.pos = ui32v2(worldPos.x / CELLWIDTH, worldPos.y / CELLWIDTH);
+        id.id = id.pos.y * GRIDWIDTH + id.pos.x;
         return id;
     }
 
-    ChunkID(ui32 id) :
+    GridID(ui32 id) :
         id(id) {
-        pos.x = id % WorldData::WORLD_WIDTH_CHUNKS;
-        pos.y = id / WorldData::WORLD_WIDTH_CHUNKS;
+        pos.x = id % GRIDWIDTH;
+        pos.y = id / GRIDWIDTH;
     };
 
     // For std::map
-    bool operator<(const ChunkID& other) const { return id < other.id; }
-    bool operator!=(const ChunkID& other) const { return id != other.id; }
-    bool operator==(const ChunkID& other) const { return id == other.id; }
+    bool operator<(const GridID& other) const { return id < other.id; }
+    bool operator!=(const GridID& other) const { return id != other.id; }
+    bool operator==(const GridID& other) const { return id == other.id; }
 
-    f32v2 getWorldPos() const { return f32v2(pos.x * CHUNK_WIDTH, pos.y * CHUNK_WIDTH); }
-    ChunkID getLeftID() const { return ChunkID(ui32v2(pos.x - 1, pos.y)); }
-    ChunkID getTopID() const { return ChunkID(ui32v2(pos.x, pos.y + 1)); }
-    ChunkID getRightID() const { return ChunkID(ui32v2(pos.x + 1, pos.y)); }
-    ChunkID getBottomID() const { return ChunkID(ui32v2(pos.x, pos.y - 1)); }
+    f32v2 getWorldPos() const { return f32v2(pos.x * CELLWIDTH, pos.y * CELLWIDTH); }
+    GridID getLeftID() const { return GridID(ui32v2(pos.x - 1, pos.y)); }
+    GridID getTopID() const { return GridID(ui32v2(pos.x, pos.y + 1)); }
+    GridID getRightID() const { return GridID(ui32v2(pos.x + 1, pos.y)); }
+    GridID getBottomID() const { return GridID(ui32v2(pos.x, pos.y - 1)); }
 
     // Return true if we should never load
     bool isSentinelID() const {
-        return pos.x == 0 || pos.y == 0 || pos.x == WorldData::WORLD_WIDTH_CHUNKS - 1 || pos.y == WorldData::WORLD_WIDTH_CHUNKS - 1;
+        return pos.x == 0 || pos.y == 0 || pos.x == GRIDWIDTH - 1 || pos.y == GRIDWIDTH - 1;
     }
 
     bool isInvalid() const {
-        return pos.x >= WorldData::WORLD_WIDTH_CHUNKS || pos.y >= WorldData::WORLD_WIDTH_CHUNKS;
+        return pos.x >= GRIDWIDTH || pos.y >= GRIDWIDTH;
     }
 
     ui32v2 pos; // TODO: Compress pos to ui16v2 and union with ID. Take note of WorldData::WORLD_WIDTH_CHUNKS and make the X fit into as many bits exactly
     ui32 id;
 
-private:
+protected:
     inline void initIdFromPos() {
-        id = pos.y * WorldData::WORLD_WIDTH_CHUNKS + pos.x;
+        id = pos.y * GRIDWIDTH + pos.x;
     }
 };
+
+typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
+
 // Hash function
 namespace std {
     template <>
