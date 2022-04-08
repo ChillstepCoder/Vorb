@@ -15,6 +15,21 @@
 #include "options/DebugOptions.h"
 
 #include "generation/WorldGeneration.h"
+ 
+constexpr ui32 CHUNK_STRIDE_PER_CLOUD_BATCH = 8; // POWER OF TWO ONLY
+constexpr i32 CLOUD_BATCH_WIDTH = CHUNK_WIDTH * CHUNK_STRIDE_PER_CLOUD_BATCH;
+constexpr ui32 WORLD_WIDTH_CLOUD_BATCHES = WorldData::WORLD_WIDTH_CHUNKS / CHUNK_STRIDE_PER_CLOUD_BATCH;
+constexpr ui32 WORLD_SIZE_CLOUD_BATCHES = SQ(WORLD_WIDTH_CLOUD_BATCHES);
+const float CLOUD_DIAGONAL_RADIUS = (float)(sqrt(SQ(CLOUD_BATCH_WIDTH) + SQ(CLOUD_BATCH_WIDTH)) / 2.0);
+const f32 CLOUD_LOAD_RANGE = CHUNK_LOAD_RANGE * 2.0;
+const f32 CLOUD_LOAD_RANGE_SQ = SQ(CLOUD_LOAD_RANGE);
+
+constexpr int CLOUD_GEN_STRIDE = 8;
+constexpr int MAX_CLOUDS_PER_BATCH = SQ(CLOUD_BATCH_WIDTH / CLOUD_GEN_STRIDE);
+static_assert(MAX_CLOUDS_PER_BATCH < UINT16_MAX);
+
+
+typedef GridID<WORLD_WIDTH_CLOUD_BATCHES, CLOUD_BATCH_WIDTH> CloudID;
 
 constexpr ui32 MAX_MESH_RECYCLES = 32;
 constexpr int CLOUD_DIR_LEFT  = -1;
@@ -22,7 +37,7 @@ constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
 
-#define DEBUG_CLOUD_RENDER 0
+#define DEBUG_CLOUD_RENDER 1
 
 CloudManager::CloudManager(const World& world) : mWorld(world)
 {
@@ -39,22 +54,21 @@ void CloudManager::init() {
     PreciseTimer timer;
 
     const f32v2& loadCenter = mWorld.getLoadCenter();
-    ChunkID centerChunkID = ChunkID(loadCenter);
-    f32v2 centerPos(centerChunkID.pos.x * CHUNK_WIDTH, centerChunkID.pos.y * CHUNK_WIDTH);
+    CloudID centerCloudID = CloudID(loadCenter);
+    f32v2 centerPos(centerCloudID.pos.x * CLOUD_BATCH_WIDTH, centerCloudID.pos.y * CLOUD_BATCH_WIDTH);
 
     // Initial variables
-    mLastCenterPosition = i32v2(centerChunkID.pos.x, centerChunkID.pos.y);
-    mLoadRangeSQ = sDebugOptions.mLoadRangeSq;
+    mLastCenterPosition = i32v2(centerCloudID.pos.x, centerCloudID.pos.y);
     mCloudSpriteData = &mWorld.getResourceManager().getSprite("cloud");
 
-    std::map<ui32 /*ycoord*/, ChunkID /*leftMost*/> spawnLookup;
+    std::map<ui32 /*ycoord*/, CloudID /*leftMost*/> spawnLookup;
 
     // TODO: Optimize iteration
     // TODO: This wont generate clouds off map if we spawn at edge of world
-    for (ui32 i = 0; i < WorldData::WORLD_SIZE_CHUNKS; ++i) {
-        ChunkID id(i);
+    for (ui32 i = 0; i < WORLD_SIZE_CLOUD_BATCHES; ++i) {
+        CloudID id(i);
         f32v2 pos(id.getWorldPos());
-        if (glm::length2(pos - centerPos) < mLoadRangeSQ) {
+        if (glm::length2(pos - centerPos) < CLOUD_LOAD_RANGE_SQ) {
             tryGenerateCloudBatchAt(i32v2(id.pos.x, id.pos.y));
             // See if this is a spawn position
             auto&& it = spawnLookup.find(id.pos.y);
@@ -73,7 +87,7 @@ void CloudManager::init() {
     // Build spawn positions
     mCloudSpawnOffsets.reserve(spawnLookup.size());
     for (auto&& id : spawnLookup) {
-        const i32v2 offset(id.second.pos.x - centerChunkID.pos.x, id.second.pos.y - centerChunkID.pos.y);
+        const i32v2 offset(id.second.pos.x - centerCloudID.pos.x, id.second.pos.y - centerCloudID.pos.y);
         mCloudSpawnOffsets.push_back(offset);
     }
     // Debug draw
@@ -96,7 +110,7 @@ void CloudManager::update() {
         for (ui32 i = 0; i < (ui32)mCloudBatches.size();) {
             CloudBatch& batch = mCloudBatches[i];
             batch.mRootPos.x += sDebugOptions.mCloudSpeed;
-            i32v2 offset = i32v2(floor(batch.mRootPos.x / CHUNK_WIDTH), floor(batch.mRootPos.y / CHUNK_WIDTH)) - mLastCenterPosition;
+            i32v2 offset = i32v2(floor(batch.mRootPos.x / CLOUD_BATCH_WIDTH), floor(batch.mRootPos.y / CLOUD_BATCH_WIDTH)) - mLastCenterPosition;
             auto&& it = mCloudBoundsCheckMap.find(offset.y);
             if (it == mCloudBoundsCheckMap.end()) {
                 // Out of range in the Y direction
@@ -128,13 +142,13 @@ void CloudManager::update() {
     // Spawn new waves
     mDx += sDebugOptions.mCloudSpeed;
     mDxTotal += sDebugOptions.mCloudSpeed;
-    if (mDx >= CHUNK_WIDTH) {
+    if (mDx >= CLOUD_BATCH_WIDTH) {
         spawnNewCloudWaveX(CLOUD_DIR_LEFT);
     }
     else if (mDx < 0.0f) {
         spawnNewCloudWaveX(CLOUD_DIR_RIGHT);
     }
-    if (mDy >= CHUNK_WIDTH) {
+    if (mDy >= CLOUD_BATCH_WIDTH) {
         spawnNewCloudWaveY(CLOUD_DIR_LEFT);
     }
     else if (mDy < 0.0f) {
@@ -144,43 +158,43 @@ void CloudManager::update() {
 
 void CloudManager::updateGridShift() {
     const f32v2& loadCenter = mWorld.getLoadCenter();
-    i32v2 centerChunkPos = i32v2(floor(loadCenter.x / CHUNK_WIDTH), floor(loadCenter.y / CHUNK_WIDTH));
-    i32v2 offsetSinceLastTick = centerChunkPos - mLastCenterPosition;
+    i32v2 centerCloudPos = i32v2(floor(loadCenter.x / CLOUD_BATCH_WIDTH), floor(loadCenter.y / CLOUD_BATCH_WIDTH));
+    i32v2 offsetSinceLastTick = centerCloudPos - mLastCenterPosition;
     if (offsetSinceLastTick.x != 0) {
         if (offsetSinceLastTick.x < 0) {
             // We went left
-            mDx += -offsetSinceLastTick.x * CHUNK_WIDTH;
-            mDxTotal += -offsetSinceLastTick.x * CHUNK_WIDTH;
+            mDx += -offsetSinceLastTick.x * CLOUD_BATCH_WIDTH;
+            mDxTotal += -offsetSinceLastTick.x * CLOUD_BATCH_WIDTH;
         }
         else {
             // We went right
-            mDx -= offsetSinceLastTick.x * CHUNK_WIDTH;
-            mDxTotal -= offsetSinceLastTick.x * CHUNK_WIDTH;
+            mDx -= offsetSinceLastTick.x * CLOUD_BATCH_WIDTH;
+            mDxTotal -= offsetSinceLastTick.x * CLOUD_BATCH_WIDTH;
         }
     }
     if (offsetSinceLastTick.y != 0) {
         if (offsetSinceLastTick.y < 0) {
             // We went back
-            mDy += -offsetSinceLastTick.y * CHUNK_WIDTH;
-            mDyTotal += -offsetSinceLastTick.y * CHUNK_WIDTH;
+            mDy += -offsetSinceLastTick.y * CLOUD_BATCH_WIDTH;
+            mDyTotal += -offsetSinceLastTick.y * CLOUD_BATCH_WIDTH;
         }
         else {
             // We went forward
-            mDy -= offsetSinceLastTick.y * CHUNK_WIDTH;
-            mDyTotal += -offsetSinceLastTick.y * CHUNK_WIDTH;
+            mDy -= offsetSinceLastTick.y * CLOUD_BATCH_WIDTH;
+            mDyTotal += -offsetSinceLastTick.y * CLOUD_BATCH_WIDTH;
         }
     }
-    mLastCenterPosition = centerChunkPos;
+    mLastCenterPosition = centerCloudPos;
 }
 
-void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
-    f32v2 pos(chunkPos.x * CHUNK_WIDTH, chunkPos.y * CHUNK_WIDTH);
+void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
+    f32v2 pos(cloudPos.x * CLOUD_BATCH_WIDTH, cloudPos.y * CLOUD_BATCH_WIDTH);
     const f32 size = 10.0f;
     
     ui32 index = ++mGeneratingIndexLast;
     CloudBatch& newBatch = mGeneratingBatches[index];
     newBatch.mRootPos = f32v3(pos.x + mDx, pos.y + mDy, 110.0f);
-    newBatch.mBoundsRadius = CHUNK_DIAGONAL_RADIUS + 10.0f;
+    newBatch.mBoundsRadius = CLOUD_DIAGONAL_RADIUS + 10.0f;
     if (mRecycledMeshes.size()) {
         newBatch.mMesh = std::move(mRecycledMeshes.back());
         mRecycledMeshes.pop_back();
@@ -193,8 +207,8 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 chunkPos) {
 
     TBOBillboardMesh* mesh = newBatch.mMesh.get();
     Services::Threadpool::ref().addTask([mesh, size, genPos, this](ThreadPoolWorkerData*) {
-        for (int y = -CHUNK_WIDTH / 2; y <= CHUNK_WIDTH / 2; y += 8) {
-            for (int x = -CHUNK_WIDTH / 2; x <= CHUNK_WIDTH / 2; x += 8) {
+        for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += 8) {
+            for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += 8) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
                 const f32 n = sWorldGen.mCloudsNoise.compute(trueGenPos.x, trueGenPos.y);
                 if (n > 0.3f) {
@@ -241,24 +255,24 @@ void CloudManager::destroyCloudBatch(CloudBatch& batch)
 
 void CloudManager::spawnNewCloudWaveX(i32 dir) {
     assert(dir == -1 || dir == 1);
-    mDx += CHUNK_WIDTH * dir;
+    mDx += CLOUD_BATCH_WIDTH * dir;
     for (auto&& it : mCloudSpawnOffsets) {
         i32v2 pos(mLastCenterPosition.x + -dir * it.x, mLastCenterPosition.y + it.y);
         tryGenerateCloudBatchAt(pos);
         if (IsEnabled<DEBUG_CLOUD_RENDER>()) {
-            DebugRenderer::drawFilledQuad(f32v3(pos.x * CHUNK_WIDTH + mDx, pos.y * CHUNK_WIDTH + mDy, 1.0f), f32v2(CHUNK_WIDTH), color4(0.0f, 1.0f, 0.0f, 0.5f), 1000);
+            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(0.0f, 1.0f, 0.0f, 0.5f), 1000);
         }
     }
 }
 
 void CloudManager::spawnNewCloudWaveY(i32 dir) {
     assert(dir == -1 || dir == 1);
-    mDy += CHUNK_WIDTH * dir;
+    mDy += CLOUD_BATCH_WIDTH * dir;
     for (auto&& it : mCloudSpawnOffsets) {
         i32v2 pos(mLastCenterPosition.x + it.y, mLastCenterPosition.y + -dir * it.x);
         tryGenerateCloudBatchAt(pos);
         if (IsEnabled<DEBUG_CLOUD_RENDER>()) {
-            DebugRenderer::drawFilledQuad(f32v3(pos.x * CHUNK_WIDTH + mDx, pos.y * CHUNK_WIDTH + mDy, 1.0f), f32v2(CHUNK_WIDTH), color4(1.0f, 0.0f, 0.0f, 0.5f), 1000);
+            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(1.0f, 0.0f, 0.0f, 0.5f), 1000);
         }
     }
 }

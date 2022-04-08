@@ -7,7 +7,6 @@ struct SpriteData;
 
 #include "world/ChunkID.h"
 
-
 struct CloudBatch {
     CloudBatch() = default;
     ~CloudBatch();
@@ -16,6 +15,7 @@ struct CloudBatch {
 
     f32v3 mRootPos;
     f32 mBoundsRadius; // TODO: AABB
+    f32 mFadeAlpha;
     std::unique_ptr<TBOBillboardMesh> mMesh;
 };
 
@@ -31,7 +31,7 @@ public:
 
 private:
     void updateGridShift();
-    void tryGenerateCloudBatchAt(i32v2 chunkPos);
+    void tryGenerateCloudBatchAt(i32v2 cloudPos);
     void destroyCloudBatch(CloudBatch& batch);
     void spawnNewCloudWaveX(i32 dir);
     void spawnNewCloudWaveY(i32 dir);
@@ -50,7 +50,6 @@ private:
     f32 mDxTotal = 0.0f;
     f32 mDy = 0.0f;
     f32 mDyTotal = 0.0f;
-    f32 mLoadRangeSQ;
     ui32 mTickCount = 0;
     ui32 mGeneratingIndexLast = 0;
     //void addCloudAt(const f32v3& pos, f32 size);

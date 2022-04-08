@@ -60,8 +60,10 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     const GLuint rootPosUniform = glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnRootPos");
 
     for (auto&& batch : cloudManager.mCloudBatches) {
-        glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-        batch.mMesh->draw(mCloudMaterial->mProgram);
+        if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius)) {
+            glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
+            batch.mMesh->draw(mCloudMaterial->mProgram);
+        }
     }
 
     blurNormals();
