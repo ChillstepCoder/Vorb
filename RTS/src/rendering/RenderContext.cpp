@@ -30,6 +30,7 @@
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/RenderStats.h"
+#include "rendering/TerrainRenderer.h"
 #include "TextureManip.h"
 
 #include "ui/UIContext.h"
@@ -252,6 +253,7 @@ void RenderContext::initPostLoad() {
         mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mTerrainRenderer = std::make_unique<TerrainRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         checkGlError("Renderer init");
     }
 
@@ -277,8 +279,6 @@ void RenderContext::initPostLoad() {
 
     mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
-    mTerrainMaterial = mResourceManager.getMaterialManager().getMaterial("terrain");
-    mWaterMaterial = mResourceManager.getMaterialManager().getMaterial("water");
 
     {
         
@@ -428,19 +428,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Terrain
     if (!sDebugOptions.mDisableTerrain) {
-        mMaterialRenderer->bindMaterialForRender(*mTerrainMaterial);
-        // Terrain uniforms
-        glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
-        glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
-        glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);
-        glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
-        glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
-
-        // TODO: Where is this getting unset?
-        glEnable(GL_CULL_FACE);
-        for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
-            terrainQuadtree.renderTerrain(camera, mTerrainMaterial->mProgram);
-        }
+        mTerrainRenderer->renderTerrain(camera, mWorld.getTerrainQuadtrees());
     }
 
     if (!sDebugOptions.mHideCharacters) {
@@ -461,25 +449,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater) {
-        glDisable(GL_CULL_FACE);
-        vg::DepthState::READ.set();
-        mMaterialRenderer->bindMaterialForRender(*mWaterMaterial);
-        // Water uniforms
-        glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
-        glUniform4fv(mWaterMaterial->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
-        glUniform4fv(mWaterMaterial->mProgram.getUniform("unFoamColor"), 1, &sDebugOptions.mWaterFoamColor.x);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceDistortAmount"), sDebugOptions.mWaterSurfaceDistortAmount);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceMoveSpeed"), sDebugOptions.mWaterSurfaceMoveSpeed);
-        glUniform2fv(mWaterMaterial->mProgram.getUniform("unFoamDistanceRange"), 1, &sDebugOptions.mWaterFoamDistanceRange.x);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceNoiseCutoff"), sDebugOptions.mWaterSurfaceNoiseCutoff);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unSmoothstepAA"), sDebugOptions.mWaterSmoothstepAA);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
-        glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
-        for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
-            terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
-        }
-        vg::DepthState::FULL.set();
+        mTerrainRenderer->renderWater(camera, mWorld.getTerrainQuadtrees());
     }
 
     // Editor brushes

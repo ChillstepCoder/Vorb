@@ -20,6 +20,7 @@ class QuadMesh;
 class ResourceManager;
 class Skybox;
 class ShadowRenderer;
+class TerrainRenderer;
 class UIContext;
 class World;
 
@@ -102,6 +103,7 @@ private:
     mutable std::unique_ptr<DepthOfFieldPostProcess> mDepthOfField;
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
+    mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;
@@ -121,8 +123,6 @@ private:
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
     const Material* mSceneLightingMaterial = nullptr;
-    const Material* mTerrainMaterial = nullptr;
-    const Material* mWaterMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };
 

@@ -257,6 +257,7 @@
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
+    <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
     <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
@@ -432,6 +433,7 @@
     <ClInclude Include="src\rendering\TextureAtlas.h" />
     <ClInclude Include="src\rendering\TileSpriteLoader.h" />
     <ClInclude Include="src\rendering\TriangleMesh.h" />
+    <ClInclude Include="src\rendering\TerrainRenderer.h" />
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
