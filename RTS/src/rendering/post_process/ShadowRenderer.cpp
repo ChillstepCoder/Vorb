@@ -142,7 +142,7 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
         attachment.pixelType = vg::TexturePixelType::FLOAT;
 
         mShadowMapGBuffer.setSize(ui32v2(DEPTH_MAP_RESOLUTION));
-        mShadowMapGBuffer.init(attachment, nullptr, nullptr, vg::TextureInternalFormat::NONE, MAX_SHADOW_CASCADE_LEVELS + 1);
+        mShadowMapGBuffer.init(attachment, nullptr, nullptr, MAX_SHADOW_CASCADE_LEVELS + 1);
         mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
         constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
         glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);

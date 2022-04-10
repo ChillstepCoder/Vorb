@@ -28,7 +28,6 @@ KEG_TYPE_DEF_SAME_NAME(MaterialData, kt) {
 const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("Atlas", MaterialUniform::Atlas),
     std::make_pair("Fbo0", MaterialUniform::Fbo0),
-    std::make_pair("FboLight", MaterialUniform::FboLight),
     std::make_pair("FboDepth", MaterialUniform::FboDepth),
     std::make_pair("FboNormals", MaterialUniform::FboNormals),
     std::make_pair("FboRoughness", MaterialUniform::FboRoughness),
@@ -53,7 +52,7 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("DebugFloat3", MaterialUniform::DebugFloat3),
     std::make_pair("DebugFloat4", MaterialUniform::DebugFloat4),
 };
-static_assert((int)MaterialUniform::COUNT == 27, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 26, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     // For arrays we remove the array syntax

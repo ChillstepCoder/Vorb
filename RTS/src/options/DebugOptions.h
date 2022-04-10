@@ -45,6 +45,10 @@ struct DebugOptions {
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
     int mDepthOfFieldBlurPasses = 1;
+    f32v2 mDepthOfFieldRangeNear = f32v2(0.0f, 2.0f);
+    f32v2 mDepthOfFieldRangeFar = f32v2(10.0f, 1000.0f);
+    float mDepthOfFieldExponent = 1.0f;
+    bool mDepthOfFieldDebugRender = false;
     // Ambient occlusion
     bool mSSAODisabled = true;
     float mSSAORadius = 1.0f;

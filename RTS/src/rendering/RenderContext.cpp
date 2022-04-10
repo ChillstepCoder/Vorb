@@ -179,13 +179,13 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     // TODO: Third doesnt need a unique depth texture
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS], vg::TextureInternalFormat::NONE);
+        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS]);
         if (i != 2) {
             mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
         }
     }
     mTransparencyGBuffer.setSize(ui32v2(mScreenResolution));
-    mTransparencyGBuffer.init(attachments[FBO_GEOMETRY_COLOR], nullptr, nullptr, vg::TextureInternalFormat::NONE);
+    mTransparencyGBuffer.init(attachments[FBO_GEOMETRY_COLOR], nullptr, nullptr);
 
     checkGlError("GBuffer init");
 
@@ -529,7 +529,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Depth of field
     vg::DepthState::NONE.set();
-    mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
 
     // Render characters that are behind geometry with some transparency
     //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
@@ -595,10 +594,12 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // Update active
     mActiveGBuffer = &mTransparencyGBuffer;
 
-
-    //// Mark as active so we use as Fbo0
-    mActiveGBuffer->unuse();
+    // Depth of field
     vg::DepthState::NONE.set();
+    mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
+
+    // Final render to screen
+    mActiveGBuffer->unuse();
     mMaterialRenderer->renderFullScreenQuad(*mPassthroughMaterial);
 
    

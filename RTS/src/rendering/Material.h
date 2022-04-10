@@ -8,7 +8,6 @@ enum class MaterialUniform {
     INVALID,
     Atlas,
     Fbo0,
-    FboLight,
     FboDepth,
     FboNormals,
     FboRoughness,

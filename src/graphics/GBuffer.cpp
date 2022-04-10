@@ -33,7 +33,7 @@ void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::G
     checkError();
 }
 
-vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, vg::TextureInternalFormat lightFormat, int layerCount) {
+vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, int layerCount) {
 
     // Make the framebuffer
     glGenFramebuffers(1, &m_fboGeom);
@@ -62,14 +62,6 @@ vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, cons
     }
     // Set the output location for pixels
     glDrawBuffers((GLsizei)numAttachments, bufs);
-
-    // Make the framebuffer for lighting
-    if (lightFormat != vg::TextureInternalFormat::NONE) {
-        glGenFramebuffers(1, &m_fboLight);
-        glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-        glGenTextures((GLsizei)1, &m_texLight);
-        initTarget(m_size, m_texLight, { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 }, layerCount);
-    }
 
     // Unbind used resources
     if (layerCount > 1) {
@@ -128,11 +120,6 @@ vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*=
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, m_texDepth, 0);
 
-    if (m_fboLight) {
-        glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, m_texDepth, 0);
-    }
-
     // Unbind used resources
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -148,10 +135,6 @@ void vg::GBuffer::dispose() {
         glDeleteFramebuffers(1, &m_fboGeom);
         m_fboGeom = 0;
     }
-    if (m_fboLight) {
-        glDeleteFramebuffers(1, &m_fboLight);
-        m_fboLight = 0;
-    }
     if (m_texGeom) {
         glDeleteTextures(1, &m_texGeom);
         m_texGeom = 0;
@@ -159,10 +142,6 @@ void vg::GBuffer::dispose() {
     if (m_texNormal) {
         glDeleteTextures(1, &m_texNormal);
         m_texNormal = 0;
-    }
-    if (m_texLight) {
-        glDeleteTextures(1, &m_texLight);
-        m_texLight = 0;
     }
     if (m_texDepth) {
         glDeleteTextures(1, &m_texDepth);
@@ -173,12 +152,6 @@ void vg::GBuffer::dispose() {
 void vg::GBuffer::useGeometry() {
     assert(m_fboGeom);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-    glViewport(0, 0, m_size.x, m_size.y);
-}
-
-void vg::GBuffer::useLight() {
-    assert(m_fboLight);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
     glViewport(0, 0, m_size.x, m_size.y);
 }
 
@@ -305,9 +278,4 @@ void vg::GBuffer::bindDepthTexture(ui32 textureUnit, GLenum target /*= GL_TEXTUR
     assert(m_texDepth);
     glActiveTexture(GL_TEXTURE0 + textureUnit);
     glBindTexture(target, m_texDepth);
-}
-void vg::GBuffer::bindLightTexture(ui32 textureUnit, GLenum target /*= GL_TEXTURE_2D*/) {
-    assert(m_texLight);
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(target, m_texLight);
 }

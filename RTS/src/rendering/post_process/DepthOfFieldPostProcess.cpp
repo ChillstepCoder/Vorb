@@ -40,6 +40,15 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
 
     ui32 nextTexture;
     mMaterialRenderer.bindMaterialForRender(*mMaterial, &nextTexture);
+    glUniform2fv(mMaterial->getUniform("unBlurRangeNear"), 1, &sDebugOptions.mDepthOfFieldRangeNear.x);
+    glUniform2fv(mMaterial->getUniform("unBlurRangeFar"), 1, &sDebugOptions.mDepthOfFieldRangeFar.x);
+    glUniform1f(mMaterial->getUniform("unBlurExponent"), sDebugOptions.mDepthOfFieldExponent);
+    if (sDebugOptions.mDepthOfFieldDebugRender) {
+        glUniform1f(mMaterial->getUniform("unDebugRender"), 1.0f);
+    }
+    else {
+        glUniform1f(mMaterial->getUniform("unDebugRender"), 0.0f);
+    }
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
@@ -73,10 +82,8 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
 
     // Share textures with previous gbuffer since this will become new active gbuffer
     mGBuffers[0].setDepthTexture(prevGBuffer->getDepthTexture());
-    mGBuffers[0].setLightTexture(prevGBuffer->getLightTexture());
     mGBuffers[0].setNormalTexture(prevGBuffer->getNormalTexture());
     mGBuffers[0].setRoughnessTexture(prevGBuffer->getRoughnessTexture());
-    mGBuffers[0].setFboLight(prevGBuffer->getFboLight());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, prevGBuffer->getDepthTexture(), 0);
 
     return &mGBuffers[0];

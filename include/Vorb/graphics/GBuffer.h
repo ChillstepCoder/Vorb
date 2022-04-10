@@ -40,7 +40,6 @@
 #define GBUFFER_INTERNAL_FORMAT_COLOR vg::TextureInternalFormat::RGBA16F
 #define GBUFFER_INTERNAL_FORMAT_NORMAL vg::TextureInternalFormat::RGBA16F
 #define GBUFFER_INTERNAL_FORMAT_DEPTH vg::TextureInternalFormat::RG32F
-#define GBUFFER_INTERNAL_FORMAT_LIGHT vg::TextureInternalFormat::RGB16F
 
 
 enum FboGeometryLayers {
@@ -78,7 +77,7 @@ namespace vorb {
 
             /// Create the value-based render targets
             /// @return Self
-            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, vg::TextureInternalFormat lightFormat = vg::TextureInternalFormat::NONE, int layerCount = 1);
+            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, int layerCount = 1);
             /// Attach a depth buffer to this GBuffer
             /// @param depthFormat: Precision used for depth buffer
             /// @return Self
@@ -96,8 +95,6 @@ namespace vorb {
 
             /// Set up the geometry targets to be active
             void useGeometry();
-            /// Set up the light target to be active
-            void useLight();
 
             static void unuse();
 
@@ -111,14 +108,9 @@ namespace vorb {
             /// Bind Depth Texture
             /// @param textureUnit Position to bind texture
             void bindDepthTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
-            
-            /// Bind Light Texture
-            /// @param textureUnit Position to bind texture
-            void bindLightTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
 
             /// @return Light texture
             const VGTexture& getGeometryTexture() const {  return m_texGeom;  }
-            const VGTexture& getLightTexture() const { return m_texLight; }
             const VGTexture& getNormalTexture() const { return m_texNormal; }
             const VGTexture& getRoughnessTexture() const { return m_texRoughness;  }
 
@@ -140,22 +132,16 @@ namespace vorb {
             const VGTexture& getDepthTexture() const { return m_texDepth; }
 
             void setDepthTexture(VGTexture tex) { m_texDepth = tex; }
-            void setLightTexture(VGTexture tex) { m_texLight = tex; }
             void setNormalTexture(VGTexture tex) { m_texNormal = tex; }
             void setRoughnessTexture(VGTexture tex) { m_texRoughness = tex; }
-
-            VGFramebuffer getFboLight() { return m_fboLight; }
-            void setFboLight(VGFramebuffer fboLight) { m_fboLight = fboLight; }
 
             bool checkError();
         private:
             ui32v2 m_size; ///< The width and height of the GBuffer
 
             VGFramebuffer m_fboGeom = 0; ///< The rendering target for geometry
-            VGFramebuffer m_fboLight = 0; ///< The rendering target for light
             VGTexture m_texGeom = 0; ///< Normal texture of GBuffer
             VGTexture m_texNormal = 0; ///< Normal texture of GBuffer
-            VGTexture m_texLight = 0; ///< Light texture of GBuffer
             VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
             VGTexture m_texRoughness = 0; ///< Roughness texture of GBuffer
             int mLayerCount = 1;

@@ -172,6 +172,10 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::PushID(++ID);
         ImGui::SliderInt("Blur Passes", &sDebugOptions.mDepthOfFieldBlurPasses, 0, 15);
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mDepthOfFieldBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Exponent", &sDebugOptions.mDepthOfFieldExponent, 0.0f, 2.0f, "%.3f");
+        ImGui::DragFloatRange2("Blur Range Near", &sDebugOptions.mDepthOfFieldRangeNear.x, &sDebugOptions.mDepthOfFieldRangeNear.y, 0.01f, 0.0f, 3.0f);
+        ImGui::DragFloatRange2("Blur Range Far", &sDebugOptions.mDepthOfFieldRangeFar.x, &sDebugOptions.mDepthOfFieldRangeFar.y, 1.0f, 0.0f, 8000.0f, "%.3f", (const char*)0, ImGuiSliderFlags_Logarithmic);
+        ImGui::Checkbox("DebugRender", &sDebugOptions.mDepthOfFieldDebugRender);
         ImGui::PopID();
     }
 
