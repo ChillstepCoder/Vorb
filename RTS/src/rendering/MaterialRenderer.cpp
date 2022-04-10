@@ -133,11 +133,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::ZoomScale:
                 glUniform1f(it.second, renderData.mainCamera->getScale());
                 break;
-            case MaterialUniform::FboZCutout:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
-                glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getZCutoutGBuffer().getGeometryTexture());
-                break;
             case MaterialUniform::CameraZAngle: {
                 const f32 zAngle = atan2f(renderData.mainCamera->getFrontVector().y, renderData.mainCamera->getFrontVector().x) + M_PIF;
                 glUniform1f(it.second, zAngle);
@@ -197,6 +192,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1f(it.second, sDebugOptions.mDebugFloat04);
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 28, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 27, "Update for new uniform type");
     }
 }

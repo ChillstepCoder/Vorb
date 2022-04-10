@@ -24,7 +24,7 @@ const float CLOUD_DIAGONAL_RADIUS = (float)(sqrt(SQ(CLOUD_BATCH_WIDTH) + SQ(CLOU
 const f32 CLOUD_LOAD_RANGE = CHUNK_LOAD_RANGE * 2.0;
 const f32 CLOUD_LOAD_RANGE_SQ = SQ(CLOUD_LOAD_RANGE);
 
-constexpr int CLOUD_GEN_STRIDE = 8;
+constexpr int CLOUD_GEN_STRIDE = 16;
 constexpr int MAX_CLOUDS_PER_BATCH = SQ(CLOUD_BATCH_WIDTH / CLOUD_GEN_STRIDE);
 static_assert(MAX_CLOUDS_PER_BATCH < UINT16_MAX);
 
@@ -37,7 +37,7 @@ constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
 
-#define DEBUG_CLOUD_RENDER 1
+#define DEBUG_CLOUD_RENDER 0
 
 CloudManager::CloudManager(const World& world) : mWorld(world)
 {
@@ -207,8 +207,8 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
 
     TBOBillboardMesh* mesh = newBatch.mMesh.get();
     Services::Threadpool::ref().addTask([mesh, size, genPos, this](ThreadPoolWorkerData*) {
-        for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += 8) {
-            for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += 8) {
+        for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {
+            for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += CLOUD_GEN_STRIDE) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
                 const f32 n = sWorldGen.mCloudsNoise.compute(trueGenPos.x, trueGenPos.y);
                 if (n > 0.3f) {
@@ -225,6 +225,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                     if (Random::getThreadSafe(trueGenPos.x, trueGenPos.y) % 80 == 0) {
                         newSize += 30.0f;
                     }
+                    newSize *= 1.3f;// TALIA SIZE TESTING
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     mesh->addQuad(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);

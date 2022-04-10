@@ -92,6 +92,7 @@ struct DebugOptions {
     // Lighting
     f32 mGamma = 1.0f;
     f32 mExposure = 1.0f;
+    f32 mHazeExponent = 0.45f;
     int mToneMapOperator = 0;
     int mLightingModel = LIGHTING_MODEL::PHONG;
     // Game settings

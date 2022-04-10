@@ -175,23 +175,18 @@ RenderContext::RenderContext(ResourceManager& resourceManager, const World& worl
     attachments[FBO_GEOMETRY_ROUGHNESS].number = FBO_GEOMETRY_ROUGHNESS;
     attachments[FBO_GEOMETRY_ROUGHNESS].pixelFormat = vg::TextureFormat::RED;
     attachments[FBO_GEOMETRY_ROUGHNESS].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    // TODO: Third doesnt need a unique depth texture
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS], vg::TextureInternalFormat::RGBA16F);
-        mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
+        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS], vg::TextureInternalFormat::NONE);
+        if (i != 2) {
+            mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
+        }
     }
-    checkGlError("GBuffer init");
+    mTransparencyGBuffer.setSize(ui32v2(mScreenResolution));
+    mTransparencyGBuffer.init(attachments[FBO_GEOMETRY_COLOR], nullptr, nullptr, vg::TextureInternalFormat::NONE);
 
-    // ZCutout GBuffer
-    vg::GBufferAttachment zCutoutAttachment;
-    // ZCutout alpha and source height
-    zCutoutAttachment.format = vg::TextureInternalFormat::R8;
-    zCutoutAttachment.number = 0;
-    zCutoutAttachment.pixelFormat = vg::TextureFormat::RED;
-    zCutoutAttachment.pixelType = vg::TexturePixelType::FLOAT;
-    mZCutoutGBuffer.setSize(ui32v2(mScreenResolution));
-    mZCutoutGBuffer.init(zCutoutAttachment, nullptr, nullptr);
-    checkGlError("Z Cutout GBuffer Init");
+    checkGlError("GBuffer init");
 
     int maxTextureSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
@@ -253,7 +248,7 @@ void RenderContext::initPostLoad() {
         mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
         mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-        mTerrainRenderer = std::make_unique<TerrainRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mTerrainRenderer = std::make_unique<TerrainRenderer>(mResourceManager, *mMaterialRenderer);
         checkGlError("Renderer init");
     }
 
@@ -279,6 +274,7 @@ void RenderContext::initPostLoad() {
 
     mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
     mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
+    mPassthroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through");
 
     {
         
@@ -446,12 +442,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
     }
 
-
-    // Water (No depth write)
-    if (!sDebugOptions.mDisableWater) {
-        mTerrainRenderer->renderWater(camera, mWorld.getTerrainQuadtrees());
-    }
-
     // Editor brushes
     UIContext::getInstance().renderEditorBrushDecals(camera);
 
@@ -577,29 +567,40 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     vg::DepthState::NONE.set();
 
+    // Final render for pre-transparency
+    mTransparencyGBuffer.useGeometry();
+    // Share values
+    mTransparencyGBuffer.setRoughnessTexture(mActiveGBuffer->getRoughnessTexture());
+    mTransparencyGBuffer.setNormalTexture(mActiveGBuffer->getNormalTexture());
+    mTransparencyGBuffer.setDepthTexture(mActiveGBuffer->getDepthTexture());
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mActiveGBuffer->getDepthTexture(), 0);
+
     // Final Lighting
     mMaterialRenderer->bindMaterialForRender(*mSceneLightingMaterial);
     glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unGamma"), sDebugOptions.mGamma);
     glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unExposure"), sDebugOptions.mExposure);
     glUniform1i(mSceneLightingMaterial->mProgram.getUniform("unTonemapOperator"), sDebugOptions.mToneMapOperator);
     glUniform1i(mSceneLightingMaterial->mProgram.getUniform("unLightingModel"), sDebugOptions.mLightingModel);
+    glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unHazeExponent"), sDebugOptions.mHazeExponent);
     sGlobalFullQuadVBO.draw();
 
-    // Sky
-   /* vg::DepthState::READ.set();
-    renderSky(camera);
-    vg::DepthState::FULL.set();*/
 
-    // Copy depth for emissive rendering, so we can still depth test
-    //vg::DepthState::WRITE.set();
-    //mMaterialRenderer->renderFullScreenQuad(*mCopyDepthMaterial);
-   // vg::DepthState::READ.set();
+    // === Transparency ===
+    // Water (No depth write)
+    if (!sDebugOptions.mDisableWater) {
+        mTerrainRenderer->renderWater(camera, mWorld.getTerrainQuadtrees());
+    }
 
-    // Unlit Particles
-    //mParticleSystemRenderer->renderParticleSystems(camera, &activeGbuffer, false);
+    // Update active
+    mActiveGBuffer = &mTransparencyGBuffer;
+
+
+    //// Mark as active so we use as Fbo0
+    mActiveGBuffer->unuse();
     vg::DepthState::NONE.set();
+    mMaterialRenderer->renderFullScreenQuad(*mPassthroughMaterial);
 
-
+   
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
     if (mPassthroughRenderMode > 1) {

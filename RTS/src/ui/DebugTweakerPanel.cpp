@@ -97,6 +97,7 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::PushID(++ID);
         ImGui::SliderFloat("Gamma", &sDebugOptions.mGamma, 0.0f, 4.0f);
         ImGui::SliderFloat("Exposure", &sDebugOptions.mExposure, 0.0f, 4.0f);
+        ImGui::SliderFloat("Haze Exponent", &sDebugOptions.mHazeExponent, 0.0f, 2.0f);
         ImGui::SliderInt("Tonemap Operator", &sDebugOptions.mToneMapOperator, 0, 6);
         switch (sDebugOptions.mToneMapOperator) {
             case 0:

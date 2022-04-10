@@ -8,3 +8,5 @@ cloud_post:
   textures:
     - name: van_gogh_2
       uniform: PreturbTexture
+    - name: gradient_smoothed
+      uniform: unGradientTexture

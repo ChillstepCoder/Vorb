@@ -3,6 +3,7 @@
 
 uniform vec3 UnRootPos;
 
+// TODO: Don't use the altas, shrink the coordinates
 out vec2 fUV;
 out vec2 fPosition;
 flat out float fAtlasPage;

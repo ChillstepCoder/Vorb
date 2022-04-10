@@ -5,3 +5,8 @@ cloud:
     - name: sphere_normal
       unrect: unSphereNormalRect
       unpage: unSphereNormalPage
+  textures:
+    - name: cloud_sil
+      uniform: unCloudSil
+    - name: cloud_normals4k
+      uniform: unCloudNormals

@@ -16,7 +16,6 @@ enum class MaterialUniform {
     PrevFboDepth,
     PixelDims,
     ZoomScale,
-    FboZCutout,
     CameraZAngle,
     SkyRotMatrix,
     ScreenResolution,

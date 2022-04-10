@@ -70,7 +70,6 @@ public:
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
     const vg::GBuffer& getPrevFinalGBuffer() const { return mGBuffers[mPrevGBufferIndex]; }
-    const vg::GBuffer& getZCutoutGBuffer() const { return mZCutoutGBuffer; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
     VGTexture getShadowTexture() const;
     VGTexture getSSAOTexture() const;
@@ -114,7 +113,7 @@ private:
     int mActiveGBufferIndex = 0;
     vg::GBuffer* mActiveGBuffer = nullptr;
     vg::GBuffer mGBuffers[2];
-    vg::GBuffer mZCutoutGBuffer;
+    vg::GBuffer mTransparencyGBuffer;
     const World& mWorld;
     std::unique_ptr<QuadMesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
@@ -122,6 +121,7 @@ private:
 
     int mPassthroughRenderMode = 0;
     std::vector<const Material*> mPassthroughMaterials;
+    const Material* mPassthroughMaterial = nullptr;
     const Material* mSceneLightingMaterial = nullptr;
     const Material* mCopyDepthMaterial = nullptr;
 };

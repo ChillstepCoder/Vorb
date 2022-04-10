@@ -36,7 +36,6 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("PrevFboDepth", MaterialUniform::PrevFboDepth),
     std::make_pair("PixelDims", MaterialUniform::PixelDims),
     std::make_pair("ZoomScale", MaterialUniform::ZoomScale),
-    std::make_pair("FboZCutout", MaterialUniform::FboZCutout),
     std::make_pair("CameraZAngle", MaterialUniform::CameraZAngle),
     std::make_pair("SkyRotMatrix", MaterialUniform::SkyRotMatrix),
     std::make_pair("ScreenResolution", MaterialUniform::ScreenResolution),
@@ -54,7 +53,7 @@ const std::map<nString, MaterialUniform> sUniformLookup = {
     std::make_pair("DebugFloat3", MaterialUniform::DebugFloat3),
     std::make_pair("DebugFloat4", MaterialUniform::DebugFloat4),
 };
-static_assert((int)MaterialUniform::COUNT == 28, "Update for new material uniform");
+static_assert((int)MaterialUniform::COUNT == 27, "Update for new material uniform");
 
 extern MaterialUniform lookupMaterialUniform(const nString& str) {
     // For arrays we remove the array syntax

@@ -4,13 +4,15 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 
+#include <Vorb/graphics/GBuffer.h>
+
 #include "world/HeightmapTerrainQuadtree.h"
 
 #include "ResourceManager.h"
 
 #include "options/DebugOptions.h"
 
-TerrainRenderer::TerrainRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) : mMaterialRenderer(materialRenderer)
+TerrainRenderer::TerrainRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) : mMaterialRenderer(materialRenderer)
 {
     mTerrainMaterial = resourceManager.getMaterialManager().getMaterial("terrain");
     mWaterMaterial = resourceManager.getMaterialManager().getMaterial("water");
@@ -53,5 +55,4 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::vector<Heig
     for (auto&& terrainQuadtree : terrainQuadtrees) {
         terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
     }
-    vg::DepthState::FULL.set();
 }

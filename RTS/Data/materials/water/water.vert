@@ -16,7 +16,6 @@ void main() {
     vec4 vertexPos = vPosition;
     vec4 worldPos = vertexPos + vec4(unOffset, 0.0);
 	
-	
     fUV = (worldPos.xy + CameraPos.xy) * 0.075;
     fDepth = vDepth;
     float waveHeight = (cos(fUV.x - fUV.y + Time * 0.3) + 1.0) * 0.1;

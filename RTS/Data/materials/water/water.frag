@@ -1,6 +1,5 @@
 #include "../GlobalUbo.glsl"
 
-uniform float DebugFloat1;
 uniform sampler2D FboDepth;
 uniform vec2 ScreenResolution;
 uniform sampler2D unSurfaceDistort;
@@ -25,9 +24,9 @@ in vec2 fUV;
 in float fDepth;
 in float fCameraDist;
 
+//#include "../post_process/lighting/scene_lighting.glsl"
+
 layout (location = 0) out vec4 oColor; // TODO: vec3
-layout (location = 1) out vec4 oNormal;
-layout (location = 2) out vec4 oRoughness;
 
 float linearizeDepth(float d) {
     float zn = 2.0 * d - 1.0;
@@ -82,8 +81,7 @@ void main() {
     vec3 colorJitter = texture(unHsvJitter, colorNoiseUV * 0.2).rgb;
     oColor.rgb += cos(colorJitter * 15.0) * unColorNoiseIntensity;
     
-    oNormal.rgb = (normalize(vec3((distortSample.xy - 0.5) * 2.0, 2.0)) + 1.0) * 0.5;
-    oNormal.a = 1.0;
-	oRoughness.r = 0.0;
-	oRoughness.a = 1.0;
+    vec3 normal = normalize(vec3((distortSample.xy - 0.5) * 2.0, 2.0));
+    oColor.rgb += normal * 0.00001;
+   
 }
