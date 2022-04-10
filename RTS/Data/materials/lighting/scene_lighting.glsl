@@ -1,6 +1,6 @@
 
-#include "../../util/lighting.glsl"
-#include "../../util/tonemapping.glsl"
+#include "util/lighting.glsl"
+#include "util/tonemapping.glsl"
 
 const float AMBIENT = 0.1;
 

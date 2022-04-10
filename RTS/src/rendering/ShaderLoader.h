@@ -34,12 +34,11 @@ public:
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
     static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath = "", const vio::Path tessControlPath = "", const vio::Path tessEvalPath = "",
-        vio::IOManager* iom = nullptr, const cString defines = nullptr);
+        const cString defines = nullptr);
 
     /// Creates a program using passed code, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgram(const nString& name, const cString vertSrc, const cString fragSrc,
-        vio::IOManager* iom = nullptr, const cString defines = nullptr);
+    static CALLER_DELETE vg::GLProgram createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines = nullptr);
 
     static void registerVertexShaderPath(const nString& name, const vio::Path& path) {
         sVertexShaderNameToPath[name] = path;

@@ -19,7 +19,7 @@ uniform int unLightingModel;
 in vec2 fUV;
 out vec4 fColor;
 
-#include "../../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
 #include "scene_lighting.glsl"
 
 

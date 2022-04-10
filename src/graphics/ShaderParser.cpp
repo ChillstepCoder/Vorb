@@ -29,7 +29,7 @@ inline bool isNumeric(char c) {
 void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& resultCode,
                                          OUT std::vector<nString>& attributeNames,
                                          OUT std::vector<VGSemantic>& semantics,
-                                         vio::IOManager* iom /*= nullptr*/) {
+                                         vio::IOManager& iom) {
     if (m_semantics.empty()) initSemantics();
     isNormalComment = false;
     isBlockComment = false;
@@ -37,10 +37,7 @@ void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& r
 
     // Convert to nString for easy include replacements
     nString input(inputCode);
-
-    vio::IOManager tmpIoManager;
-    if (!iom) iom = &tmpIoManager;
-    ioManager = iom;
+    ioManager = &iom;
 
     nString data;
 
@@ -78,7 +75,7 @@ void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& r
     }
 }
 
-void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager* iom /*= nullptr*/) {
+void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom) {
     if (m_semantics.empty()) initSemantics();
     isNormalComment = false;
     isBlockComment = false;
@@ -87,9 +84,7 @@ void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OU
     // Convert to nString for easy include replacements
     nString input(inputCode);
 
-    vio::IOManager tmpIoManager;
-    if (!iom) iom = &tmpIoManager;
-    ioManager = iom;
+    ioManager = &iom;
 
     nString data;
 

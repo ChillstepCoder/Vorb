@@ -353,7 +353,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 
     // Quad meshes
     if (!sProgram.isCreated()) {
-        sProgram = vg::ShaderManager::createProgram(VERT_SRC, FRAG_SRC);
+        sProgram = vg::ShaderManager::createProgram(VERT_SRC, FRAG_SRC, nullptr);
     }
 
     sProgram.use();
@@ -500,7 +500,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 
     // Circle meshes
     if (!sCircleProgram.isCreated()) {
-        sCircleProgram = vg::ShaderManager::createProgram(VERT_CIRCLE_SRC, FRAG_CIRCLE_SRC);
+        sCircleProgram = vg::ShaderManager::createProgram(VERT_CIRCLE_SRC, FRAG_CIRCLE_SRC, nullptr);
     }
 
     sCircleProgram.use();

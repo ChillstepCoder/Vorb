@@ -66,7 +66,7 @@ vg::SpriteBatch::~SpriteBatch() {
 
 void vg::SpriteBatch::init() {
     // Create program if it's not cached
-    if (!s_program.isCreated()) s_program = vg::ShaderManager::createProgram(impl::SPRITEBATCH_VS_SRC, impl::SPRITEBATCH_FS_SRC);
+    if (!s_program.isCreated()) s_program = vg::ShaderManager::createProgram(impl::SPRITEBATCH_VS_SRC, impl::SPRITEBATCH_FS_SRC, nullptr);
 
     { // Create VAO
         glGenVertexArrays(1, &m_vao);

@@ -61,7 +61,7 @@ vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, 
 }
 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/, const vio::Path tessControlPath /*= ""*/, const vio::Path tessEvalPath /*= ""*/,
-    vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/) {
+    const cString defines /*= nullptr*/) {
     vg::ShaderManager::onFileIOFailure += makeDelegate(printFileIOError);
     vg::ShaderManager::onShaderCompilationError += makeDelegate(printShaderError);
     vg::ShaderManager::onProgramLinkError += makeDelegate(printLinkError);
@@ -73,14 +73,14 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
         if (!tessControlPath.isNull()) {
             assert(!tessEvalPath.isNull());
             assert(geometryPath.isNull());
-            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, tessControlPath, tessEvalPath, iom, defines);
+            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, tessControlPath, tessEvalPath, defines);
         }
         else if (!geometryPath.isNull()) {
             // Optional geometry stage
-            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, geometryPath, iom, defines);
+            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, geometryPath, defines);
         }
         else {
-            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, iom, defines);
+            program = vg::ShaderManager::createProgramFromFile(vertPath, fragPath, defines);
         }
         if (program.isLinked()) break;
         program.dispose();
@@ -105,7 +105,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
     return program;
 }
 
-CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, const cString vertSrc, const cString fragSrc, vio::IOManager* iom /*= nullptr*/, const cString defines /*= nullptr*/) {
+CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
     vg::ShaderManager::onFileIOFailure += makeDelegate(printFileIOError);
     vg::ShaderManager::onShaderCompilationError += makeDelegate(printShaderError);
     vg::ShaderManager::onProgramLinkError += makeDelegate(printLinkError);
@@ -114,7 +114,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
 
     vg::GLProgram program;
     while (true) {
-        program = vg::ShaderManager::createProgram(vertSrc, fragSrc, iom, iom, defines);
+        program = vg::ShaderManager::createProgram(vertSrc, fragSrc, defines);
         if (program.isLinked()) break;
         program.dispose();
         printf("Enter any key to try recompiling with %s shader.\nEnter Z to abort.\n", name.c_str());

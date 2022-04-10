@@ -1,4 +1,4 @@
-#include "../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
 
 uniform vec3 unOffset;
 

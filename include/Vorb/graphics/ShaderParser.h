@@ -48,13 +48,13 @@ namespace vorb {
             static void parseVertexShader(const cString inputCode, OUT nString& resultCode,
                                           OUT std::vector<nString>& attributeNames, 
                                           OUT std::vector<VGSemantic>& semantics,
-                                          vio::IOManager* iom = nullptr);
+                                          vio::IOManager& iom);
             // Parses includes for a fragment shader
             /// @param inputCode: The input code to use for parsing
             /// @param resultCode: The stored resulting code after parse
             /// @param iom: Optional iomanager to use for include lookups
             static void parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode,
-                                            vio::IOManager* iom = nullptr);
+                                            vio::IOManager& iom);
             
             static Event<nString> onParseError; ///< Event that fires on a parsing error
         private:

@@ -9,19 +9,20 @@
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
 
-vio::IOManager::IOManager() :
-    m_pathSearch("") {
-    // Search Directory Defaults To CWD
-    setSearchDirectory(m_pathCWD);
+vio::IOManager::IOManager() {
 }
-vio::IOManager::IOManager(const Path& path) :
-m_pathSearch(path) {
+vio::IOManager::IOManager(const Path& localPath) :
+    m_pathLocal(localPath) {
     // Empty
 }
 
 void vio::IOManager::setSearchDirectory(const Path& s) {
     m_pathSearch = s;
 }
+void vorb::io::IOManager::setLocalDirectory(const Path& s) {
+    m_pathLocal = s;
+}
+
 void vio::IOManager::setCurrentWorkingDirectory(const Path& s) {
     m_pathCWD = s;
 }
@@ -94,6 +95,14 @@ bool vio::IOManager::resolvePath(const Path& path, Path& resultAbsolutePath) con
     // Search in order
     Path pSearch;
 
+    if (m_pathLocal.isValid()) {
+        pSearch = m_pathLocal / path;
+        if (pSearch.isValid()) {
+            resultAbsolutePath = pSearch;
+            return true;
+        }
+    }
+
     if (m_pathSearch.isValid()) {
         pSearch = m_pathSearch / path;
         if (pSearch.isValid()) {
@@ -147,6 +156,15 @@ bool vio::IOManager::assurePath(const Path& path, OUT Path& resultAbsolutePath, 
 
     // Search in order
     Path pSearch;
+
+    if (m_pathLocal.isValid()) {
+        pSearch = m_pathExec / path;
+        if (pSearch.isValid()) {
+            resultAbsolutePath = pSearch;
+            if (wasExisting) *wasExisting = true;
+            return true;
+        }
+    }
 
     if (m_pathSearch.isValid()) {
         pSearch = m_pathSearch / path;

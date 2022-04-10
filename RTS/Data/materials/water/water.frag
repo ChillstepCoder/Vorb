@@ -1,4 +1,4 @@
-#include "../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
 
 uniform sampler2D FboDepth;
 uniform vec2 ScreenResolution;
@@ -24,7 +24,7 @@ in vec2 fUV;
 in float fDepth;
 in float fCameraDist;
 
-//#include "../post_process/lighting/scene_lighting.glsl"
+//#include "lighting/scene_lighting.glsl"
 
 layout (location = 0) out vec4 oColor; // TODO: vec3
 

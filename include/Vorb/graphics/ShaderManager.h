@@ -28,7 +28,7 @@
 #include "../VorbPreDecl.inl"
 #include "../io/Path.h"
 
-DECL_VIO(class IOManager)
+#include "../io/IOManager.h"
 
 namespace vorb {
     namespace graphics {
@@ -39,6 +39,8 @@ namespace vorb {
         /// Static class that handles caching, creation, and destruction of GLPrograms
         class ShaderManager {
         public:
+            static void setMaterialRootDirectory(const vio::Path& rootDir);
+
             /// TODO(Ben): Add overloads for tesselation, geometry, ect.
             /// Creates a GLProgram from source code.
             /// Does not register to global cache.
@@ -49,25 +51,13 @@ namespace vorb {
             /// @param defines: #defines for the program
             /// @return the created program.
             static GLProgram createProgram(
-                const cString vertSrc, const cString fragSrc,
-                vio::IOManager* vertIOM = nullptr,
-                vio::IOManager* fragIOM = nullptr,
-                const cString defines = nullptr
+                const cString vertSrc, const cString fragSrc, const cString defines
             );
             static GLProgram createProgram(
-                const cString vertSrc, const cString fragSrc, const cString geomSrc,
-                vio::IOManager* vertIOM = nullptr,
-                vio::IOManager* fragIOM = nullptr,
-                vio::IOManager* geomIOM = nullptr,
-                const cString defines = nullptr
+                const cString vertSrc, const cString fragSrc, const cString geomSrc, const cString defines
             );
             static GLProgram createProgram(
-                const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc,
-                vio::IOManager* vertIOM = nullptr,
-                vio::IOManager* fragIOM = nullptr,
-                vio::IOManager* tcsIOM = nullptr,
-                vio::IOManager* tesIOM = nullptr,
-                const cString defines = nullptr
+                const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc, const cString defines
             );
             /// Creates a GLProgram from files.
             /// Does not register to global cache.
@@ -76,12 +66,9 @@ namespace vorb {
             /// @param iom: Optional IOManager for loading
             /// @param defines: #defines for the program
             /// @return the created program.
-             static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath,
-                                                    vio::IOManager* iom = nullptr, const cString defines = nullptr);
-            static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath,
-                                                    vio::IOManager* iom = nullptr, const cString defines = nullptr);
-            static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath,
-                                                    vio::IOManager* iom = nullptr, const cString defines = nullptr);
+            static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const cString defines = nullptr);
+            static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath, const cString defines = nullptr);
+            static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath, const cString defines = nullptr);
 
             /// Disposes and deallocates all globally cached programs and clears the cache
             static void disposeAllPrograms();
@@ -122,6 +109,7 @@ namespace vorb {
             static void triggerProgramLinkError(Sender s, const nString& n); ///< Fires the onProgramLinkError event
             static GLProgramMap m_programMap; ///< For globally caching programs
             static GLProgram m_nilProgram;
+            static vio::IOManager mIoManager;
         };
     }
 }

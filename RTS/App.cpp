@@ -10,6 +10,7 @@
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/ScreenList.h>
 #include <Vorb/sound/SoundEngine.h>
+#include <Vorb/graphics/ShaderManager.h>
 
 // TODO: Config
 #include "options/DebugOptions.h"
@@ -66,6 +67,8 @@ void App::onInit() {
 	Services::init();
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);
+
+    vg::ShaderManager::setMaterialRootDirectory(vio::IOManager::getCurrentWorkingDirectory() / vio::Path("data\\materials"));
 
     // Init events
     vui::InputDispatcher::key.onFocusGained.addFunctor([](Sender) {
