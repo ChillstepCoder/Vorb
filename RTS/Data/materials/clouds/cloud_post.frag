@@ -1,22 +1,21 @@
 uniform sampler2DArray Atlas;
 uniform sampler2D CloudFbo;
+uniform sampler2D FboDepth;
 uniform sampler2D PreturbTexture;
 uniform sampler2D unGradientTexture;
-#include "../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
 
 uniform vec4 unCloudTextureRect;
 uniform float unCloudTexturePage;
 
 uniform float DebugFloat2;
 
-#include "../util/lighting.glsl"
-#include "../util/hsv.glsl"
+#include "lighting/scene_lighting.glsl"
+#include "util/hsv.glsl"
 
 in vec2 fUV;
 
 layout (location = 0) out vec4 fColor;
-layout (location = 1) out vec4 fNormal;
-layout (location = 2) out vec4 fRoughness;
 
 void main() {
     vec4 cloudTextureSample = texture2D(CloudFbo, fUV);
@@ -96,10 +95,8 @@ void main() {
     //fColor.rgb = 0.00001 * fColor.rgb + gradientAlpha;
     // =========END TOON SHADING==========
     
-    // Normals are up for main pass lighting
-    fNormal = vec4(0.5, 0.5, 1.0, 1.0);
-    fNormal.a = 1.0;
-    
-	fRoughness.r = 0.9;
-	fRoughness.a = 1.0;
+    // Lightings
+	float depth = texture2D(FboDepth, fUV).r;
+    vec3 worldPos = worldPosFromDepth(depth, fUV);
+    fColor.rgb = lightPixel(fColor.rgb, vec3(0.0, 0.0, 1.0), worldPos, fUV, 0.9, 0.0, 0.0);
 }

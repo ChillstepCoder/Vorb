@@ -1,6 +1,9 @@
 #include "GlobalUbo.glsl"
 
+uniform sampler2DArray Atlas; // THIS IS FOR COLOR GRADIENT, TODO: Non atlas? hmm
+
 uniform sampler2D FboDepth;
+uniform sampler2D ShadowTexture;
 uniform vec2 ScreenResolution;
 uniform sampler2D unSurfaceDistort;
 uniform sampler2D unSurfaceNoise;
@@ -21,12 +24,13 @@ uniform float unNoiseTiling;
 
 in vec3 fPosition;
 in vec2 fUV;
+in vec2 fScreenUV;
 in float fDepth;
 in float fCameraDist;
 
-//#include "lighting/scene_lighting.glsl"
+#include "lighting/scene_lighting.glsl"
 
-layout (location = 0) out vec4 oColor; // TODO: vec3
+layout (location = 0) out vec4 oColor;
 
 float linearizeDepth(float d) {
     float zn = 2.0 * d - 1.0;
@@ -67,7 +71,7 @@ void main() {
 
     // Reduce transparency at distance
     oColor = waterColor + vec4(surfaceNoiseColor, 0.0);
-    oColor.a = clamp(mix(oColor.a, 1.0, fCameraDist * 0.05), 0.0, 1.0);
+    oColor.a = clamp(mix(oColor.a, 1.0, fCameraDist * 0.02), 0.0, 1.0);
     
     // Oil paint
     float oilDistortVal = 0.3;
@@ -81,7 +85,10 @@ void main() {
     vec3 colorJitter = texture(unHsvJitter, colorNoiseUV * 0.2).rgb;
     oColor.rgb += cos(colorJitter * 15.0) * unColorNoiseIntensity;
     
-    vec3 normal = normalize(vec3((distortSample.xy - 0.5) * 2.0, 2.0));
-    oColor.rgb += normal * 0.00001;
+    vec3 normal = normalize(vec3((distortSample.xy - 0.1) * 2.0, 0.5));
+    
+    // Lighting and shadow
+	float shadow = texture(ShadowTexture, fScreenUV).r;
+    oColor.rgb = lightPixel(oColor.rgb, normal, fPosition, fScreenUV, 0.0, 0.0, shadow);
    
 }

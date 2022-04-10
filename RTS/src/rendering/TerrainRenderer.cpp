@@ -3,6 +3,7 @@
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
+#include "rendering/MaterialUtils.h"
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -40,6 +41,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::vector<Heig
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();
     mMaterialRenderer.bindMaterialForRender(*mWaterMaterial);
+    // TODO: UBO?
     // Water uniforms
     glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
     glUniform4fv(mWaterMaterial->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
@@ -52,6 +54,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::vector<Heig
     glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
     glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
     glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
+    MaterialUtils::uploadLightingUniforms(*mWaterMaterial);
     for (auto&& terrainQuadtree : terrainQuadtrees) {
         terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
     }

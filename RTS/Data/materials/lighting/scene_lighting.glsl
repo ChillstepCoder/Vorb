@@ -1,4 +1,15 @@
 
+
+uniform vec4 GradientRect;
+uniform float GradientAtlasPage;
+uniform vec3 ShadowColor;
+
+uniform float unGamma;
+uniform float unExposure;
+uniform float unHazeExponent;
+uniform int unTonemapOperator;
+uniform int unLightingModel;
+
 #include "util/lighting.glsl"
 #include "util/tonemapping.glsl"
 

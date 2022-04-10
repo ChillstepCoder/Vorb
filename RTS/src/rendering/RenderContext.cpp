@@ -31,6 +31,7 @@
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
+#include "rendering/MaterialUtils.h"
 #include "TextureManip.h"
 
 #include "ui/UIContext.h"
@@ -438,9 +439,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     // Clouds
-    if (!sDebugOptions.mDisableClouds) {
+   /* if (!sDebugOptions.mDisableClouds) {
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
-    }
+    }*/
 
     // Editor brushes
     UIContext::getInstance().renderEditorBrushDecals(camera);
@@ -577,13 +578,13 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Final Lighting
     mMaterialRenderer->bindMaterialForRender(*mSceneLightingMaterial);
-    glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unGamma"), sDebugOptions.mGamma);
-    glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unExposure"), sDebugOptions.mExposure);
-    glUniform1i(mSceneLightingMaterial->mProgram.getUniform("unTonemapOperator"), sDebugOptions.mToneMapOperator);
-    glUniform1i(mSceneLightingMaterial->mProgram.getUniform("unLightingModel"), sDebugOptions.mLightingModel);
-    glUniform1f(mSceneLightingMaterial->mProgram.getUniform("unHazeExponent"), sDebugOptions.mHazeExponent);
+    MaterialUtils::uploadLightingUniforms(*mSceneLightingMaterial);
     sGlobalFullQuadVBO.draw();
 
+    // Render clouds without shadows
+    if (!sDebugOptions.mDisableClouds) {
+        mCloudRenderer->renderClouds(mWorld.getCloudManager(), &mTransparencyGBuffer, camera);
+    }
 
     // === Transparency ===
     // Water (No depth write)

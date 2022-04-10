@@ -5,16 +5,7 @@ uniform sampler2D FboDepth;
 uniform sampler2D FboRoughness;
 uniform sampler2D ShadowTexture;
 uniform sampler2D SSAOTexture;
-uniform vec4 GradientRect;
-uniform float GradientAtlasPage;
-uniform vec3 ShadowColor;
 uniform vec3 SSAOColor;
-uniform float unGamma;
-uniform float unExposure;
-uniform float unHazeExponent;
-uniform int unTonemapOperator;
-uniform int unLightingModel;
-
 
 in vec2 fUV;
 out vec4 fColor;

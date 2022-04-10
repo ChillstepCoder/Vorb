@@ -7,6 +7,7 @@ in float vDepth;
 
 out vec3 fPosition;
 out vec2 fUV;
+out vec2 fScreenUV;
 out float fDepth;
 out float fCameraDist;
 
@@ -24,5 +25,7 @@ void main() {
     fPosition = worldPos.xyz;
     fCameraDist = length(worldPos.rgb);
 
-    gl_Position = VP * worldPos;
+    vec4 clipPos = VP * worldPos;
+    fScreenUV.xy = ((clipPos.xy / vec2(clipPos.w) + 1.0) * 0.5);
+    gl_Position = clipPos;
 }

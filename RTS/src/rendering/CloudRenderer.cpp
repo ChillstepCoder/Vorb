@@ -9,6 +9,7 @@
 #include "rendering/MaterialManager.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/SpriteData.h"
+#include "rendering/MaterialUtils.h"
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
@@ -127,7 +128,7 @@ void CloudRenderer::renderFboToScreen()
 
     ui32 nextTexture = 0;
     mMaterialRenderer.bindMaterialForRender(*mPostMaterial, &nextTexture);
-
+    MaterialUtils::uploadLightingUniforms(*mPostMaterial);
     if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
         mGBuffers[0].bindGeometryTexture(nextTexture);
         glUniform1i(*inputUniform, nextTexture);

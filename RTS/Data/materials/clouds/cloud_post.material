@@ -5,6 +5,9 @@ cloud_post:
     - name: cloud_color
       unrect: unCloudTextureRect
       unpage: unCloudTexturePage
+    - name: sky_gradient
+      unrect: GradientRect
+      unpage: GradientAtlasPage
   textures:
     - name: van_gogh_2
       uniform: PreturbTexture
