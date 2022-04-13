@@ -29,13 +29,21 @@ vec3 uchimura(vec3 x, float P, float a, float m, float l, float c, float b) {
   return T * w0 + L * w1 + S * w2;
 }
 
+
+uniform float unUchMaxDisplayBrightness = 1.0;
+uniform float unUchContrast = 1.0;
+uniform float unUchLinearSectionStart = 0.22;
+uniform float unUchLinearSectionLength = 0.4;
+uniform float unUchBlack = 1.33;
+uniform float unUchPedestal = 0.0;
+
 vec3 tonemapUchimura(vec3 x) {
-  const float P = 1.0;  // max display brightness
-  const float a = 1.0;  // contrast
-  const float m = 0.22; // linear section start
-  const float l = 0.4;  // linear section length
-  const float c = 1.33; // black
-  const float b = 0.0;  // pedestal
+  const float P = unUchMaxDisplayBrightness;  // max display brightness
+  const float a = unUchContrast;  // contrast
+  const float m = unUchLinearSectionStart; // linear section start
+  const float l = unUchLinearSectionLength;  // linear section length
+  const float c = unUchBlack; // black
+  const float b = unUchPedestal;  // pedestal
 
   return uchimura(x, P, a, m, l, c, b);
 }
@@ -68,27 +76,27 @@ vec3 uncharted2Tonemap(vec3 x) {
   return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-vec3 tonemapUncharted2(vec3 color) {
+vec3 tonemapUncharted2(vec3 color, float exposure) {
   const float W = 11.2;
-  float exposureBias = unExposure * 2.0;
+  float exposureBias = exposure * 2.0;
   vec3 curr = uncharted2Tonemap(exposureBias * color);
   vec3 whiteScale = 1.0 / uncharted2Tonemap(vec3(W));
   return curr * whiteScale;
 }
 
-vec3 tonemapReinhard2(vec3 x) {
-  const float L_white = unExposure * 4.0;
+vec3 tonemapReinhard2(vec3 x, float exposure) {
+  const float L_white = exposure * 4.0;
 
   return (x * (1.0 + x / (L_white * L_white))) / (1.0 + x);
 }
 
 
-vec3 computeTonemapping(vec3 inColor) {
+vec3 computeTonemapping(vec3 inColor, float exposure, int tonemapOperator) {
 
-    switch (unTonemapOperator) {
+    switch (tonemapOperator) {
         case 1:
             // reinhard tone mapping
-            return tonemapReinhard2(inColor);
+            return tonemapReinhard2(inColor, exposure);
         case 2:
             return tonemapLottes(inColor);
         case 3:
@@ -98,7 +106,7 @@ vec3 computeTonemapping(vec3 inColor) {
         case 5:
             return tonemapFilmic(inColor);
         case 6:
-            return tonemapUncharted2(inColor);
+            return tonemapUncharted2(inColor, exposure);
     }
     return inColor;
 }

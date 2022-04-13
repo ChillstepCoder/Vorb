@@ -17,6 +17,54 @@ DebugTweakerPanel::DebugTweakerPanel(const f32v2& screenDims) : mScreenDims(scre
 {
 }
 
+void renderLightingUI(ui32& ID, LightingOptions* options, int presetIndex) {
+    ImGui::PushID(++ID);
+    ImGui::SliderFloat("Gamma", &options->mGamma, 0.0f, 4.0f);
+    ImGui::SliderFloat("Exposure", &options->mExposure, 0.0f, 4.0f);
+    ImGui::SliderFloat("Haze Exponent", &options->mHazeExponent, 0.0f, 2.0f);
+    ImGui::SliderFloat("Haze Divisor", &options->mHazeDivisor, 1000.0f, 15000.0f);
+    ImGui::SliderFloat("Ambient Light", &options->mAmbient, 0.0f, 1.0f);
+    ImGui::SliderFloat("Sun Intensity", &options->mSunIntensity, 0.0f, 3.0f);
+    switch (options->mToneMapOperator) {
+        case 0:
+            ImGui::Text("TONEMAP: NONE");
+            break;
+        case 1:
+            ImGui::Text("TONEMAP: REINARD");
+            break;
+        case 2:
+            ImGui::Text("TONEMAP: LOTTES");
+            break;
+        case 3:
+            ImGui::Text("TONEMAP: UCHIMURA");
+            break;
+        case 4:
+            ImGui::Text("TONEMAP: UNREAL");
+            break;
+        case 5:
+            ImGui::Text("TONEMAP: FILMIC");
+            break;
+        case 6:
+            ImGui::Text("TONEMAP: UNCHARTED 2");
+            break;
+    }
+    ImGui::SliderInt("Tonemap Operator", &options->mToneMapOperator, 0, 6);
+
+    switch (options->mLightingModel) {
+        case 0:
+            ImGui::Text("LIGHTMODEL: PHONG");
+            break;
+        case 1:
+            ImGui::Text("LIGHTMODEL: BLINN_PHONG");
+            break;
+    }
+    ImGui::SliderInt("Lighting model", &options->mLightingModel, 0, e_cast(LIGHTING_MODEL::COUNT) - 1);
+    if (ImGui::Button("Reset to Default")) {
+        *options = sLightingPresetDefaults[presetIndex];
+    }
+    ImGui::PopID();
+}
+
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio)
@@ -95,44 +143,53 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
 
     if (ImGui::CollapsingHeader("Lighting")) {
         ImGui::PushID(++ID);
-        ImGui::SliderFloat("Gamma", &sDebugOptions.mGamma, 0.0f, 4.0f);
-        ImGui::SliderFloat("Exposure", &sDebugOptions.mExposure, 0.0f, 4.0f);
-        ImGui::SliderFloat("Haze Exponent", &sDebugOptions.mHazeExponent, 0.0f, 2.0f);
-        ImGui::SliderInt("Tonemap Operator", &sDebugOptions.mToneMapOperator, 0, 6);
-        switch (sDebugOptions.mToneMapOperator) {
-            case 0:
-                ImGui::Text("TONEMAP: NONE");
-                break;
-            case 1:
-                ImGui::Text("TONEMAP: REINARD");
-                break;
-            case 2:
-                ImGui::Text("TONEMAP: LOTTES");
-                break;
-            case 3:
-                ImGui::Text("TONEMAP: UCHIMURA");
-                break;
-            case 4:
-                ImGui::Text("TONEMAP: UNREAL");
-                break;
-            case 5:
-                ImGui::Text("TONEMAP: FILMIC");
-                break;
-            case 6:
-                ImGui::Text("TONEMAP: UNCHARTED 2");
-                break;
+        ImGui::Checkbox("Split View", &sDebugOptions.mLightPresetSplitView);
+        if (sDebugOptions.mLightPresetSplitView) {
+            ImGui::SliderFloat("Split Line", &sDebugOptions.mLightPresetSplitAmount, 0.0f, 1.0f);
+            ImGui::Separator();
+            ImGui::Text("LEFT: "); ImGui::SameLine();
+            ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPreset]);
+            if (ImGui::SliderInt("Light Preset Left", &sDebugOptions.mLightingPreset, 0, LIGHT_PRESET_COUNT - 1)) {
+                sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mLightingPreset];
+            }
+            renderLightingUI(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
+            ImGui::Separator();
+            ImGui::Text("RIGHT: "); ImGui::SameLine();
+            ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPresetSplit]);
+            if (ImGui::SliderInt("Light Preset Right", &sDebugOptions.mLightingPresetSplit, 0, LIGHT_PRESET_COUNT - 1)) {
+                sDebugOptions.mLightingOptionsSplit = &sLightingPresets[sDebugOptions.mLightingPresetSplit];
+            }
+            renderLightingUI(ID, sDebugOptions.mLightingOptionsSplit, sDebugOptions.mLightingPresetSplit);
+            if (sDebugOptions.mLightingPresetSplit != LIGHT_PRESET_CUSTOM) {
+                if (ImGui::Button("Copy to CUSTOM")) {
+                    sLightingPresets[LIGHT_PRESET_CUSTOM] = sLightingPresets[sDebugOptions.mLightingPresetSplit];
+                }
+            }
+            if (ImGui::Button("Swap left/right")) {
+                std::swap(sDebugOptions.mLightingPreset, sDebugOptions.mLightingPresetSplit);
+                std::swap(sDebugOptions.mLightingOptions, sDebugOptions.mLightingOptionsSplit);
+            }
+            ImGui::Separator();
         }
-
-        ImGui::SliderInt("Lighting model", &sDebugOptions.mLightingModel, 0, LIGHTING_MODEL::COUNT-1);
-        switch (sDebugOptions.mLightingModel) {
-            case 0:
-                ImGui::Text("LIGHTMODEL: PHONG");
-                break;
-            case 1:
-                ImGui::Text("LIGHTMODEL: BLINN_PHONG");
-                break;
+        else {
+            ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPreset]);
+            if (ImGui::SliderInt("Light Preset", &sDebugOptions.mLightingPreset, 0, LIGHT_PRESET_COUNT - 1)) {
+                sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mLightingPreset];
+            }
+            renderLightingUI(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
+            ImGui::Separator();
         }
+        
         ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Tonemap Uchimura")) {
+        ImGui::SliderFloat("Max Display Brightness", &sDebugOptions.unUchMaxDisplayBrightness, 0.0f, 2.0f);
+        ImGui::SliderFloat("Contrast", &sDebugOptions.unUchContrast, 0.0f, 2.0f);
+        ImGui::SliderFloat("Linear Section Start", &sDebugOptions.unUchLinearSectionStart, 0.0f, 1.0f);
+        ImGui::SliderFloat("Linear Section Length", &sDebugOptions.unUchLinearSectionLength, 0.0f, 1.0f);
+        ImGui::SliderFloat("Black", &sDebugOptions.unUchBlack, 0.0f, 2.0f);
+        ImGui::SliderFloat("Pedestal", &sDebugOptions.unUchPedestal, 0.0f, 1.0f);
     }
 
     if (ImGui::CollapsingHeader("Camera Settings")) {

@@ -232,7 +232,7 @@ void CameraController::updateMouseWheelInput(Sender s, const vui::MouseWheelEven
 }
 
 void CameraController::updateMouseWheelInputMMOMode(Sender s, const vui::MouseWheelEvent& evnt) {
-    mCameraBoomLengthTweener.mTarget = glm::clamp(mCameraBoomLengthTweener.mTarget + (f32)evnt.dy * mCameraBoomLengthTweener.mTarget * -0.2f, 0.5f, 3.0f);
+    mCameraBoomLengthTweener.mTarget = glm::clamp(mCameraBoomLengthTweener.mTarget + (f32)evnt.dy * mCameraBoomLengthTweener.mTarget * -0.2f, 0.5f, 20.0f /*3.0f*/);
 }
 
 void CameraController::updateMouseMotionInputFreeLookMode(Sender s, const vui::MouseMotionEvent& evnt) {

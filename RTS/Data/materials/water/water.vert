@@ -25,7 +25,5 @@ void main() {
     fPosition = worldPos.xyz;
     fCameraDist = length(worldPos.rgb);
 
-    vec4 clipPos = VP * worldPos;
-    fScreenUV.xy = ((clipPos.xy / vec2(clipPos.w) + 1.0) * 0.5);
-    gl_Position = clipPos;
+    gl_Position = VP * worldPos;
 }

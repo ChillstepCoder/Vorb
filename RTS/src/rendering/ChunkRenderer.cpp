@@ -46,8 +46,6 @@ ChunkRenderer::~ChunkRenderer() {
 
 void ChunkRenderer::renderTiles(const World& world, const Camera3D& camera)
 {
-    // Render region LODs first due to depth sort
-    ui32 nextTextureIndex;
 
     // Tiles
     mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);

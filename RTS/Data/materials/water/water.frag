@@ -24,7 +24,6 @@ uniform float unNoiseTiling;
 
 in vec3 fPosition;
 in vec2 fUV;
-in vec2 fScreenUV;
 in float fDepth;
 in float fCameraDist;
 
@@ -88,7 +87,7 @@ void main() {
     vec3 normal = normalize(vec3((distortSample.xy - 0.1) * 2.0, 0.5));
     
     // Lighting and shadow
-	float shadow = texture(ShadowTexture, fScreenUV).r;
-    oColor.rgb = lightPixel(oColor.rgb, normal, fPosition, fScreenUV, 0.0, 0.0, shadow);
+	float shadow = texture(ShadowTexture, fboUV).r;
+    oColor.rgb = lightPixel(oColor.rgb, normal, fPosition, fboUV, 0.0, 0.0, shadow);
    
 }

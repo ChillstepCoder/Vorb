@@ -218,7 +218,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
             if (numValidTracks > 0) {
                 if (oneShotWeight == 1.0f) {
                     // If we are at full weight, we have no upper body layers
-                    for (int i = 0; i < numValidTracks; ++i) {
+                    for (ui32 i = 0; i < numValidTracks; ++i) {
                         layers[totalLayers].transform = make_span(locals[i]);
                         layers[totalLayers].weight = blendWeights[i];
                         layers[totalLayers].joint_weights = make_span(rig.mLowerBodyJointWeights);
@@ -228,7 +228,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
                 else {
                     // Split into two layers for upper and lower portion
                     const f32 upperBodyWeight = 1.0f - oneShotWeight;
-                    for (int i = 0; i < numValidTracks; ++i) {
+                    for (ui32 i = 0; i < numValidTracks; ++i) {
                         // Lower body
                         layers[totalLayers].transform = make_span(locals[i]);
                         layers[totalLayers].weight = blendWeights[i];
@@ -257,7 +257,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
         }
         else {
             // No one shot, standard, cheap full blending for each anim
-            for (int i = 0; i < numValidTracks; ++i) {
+            for (ui32 i = 0; i < numValidTracks; ++i) {
                 layers[totalLayers].transform = make_span(locals[i]);
                 layers[totalLayers].weight = blendWeights[i];
                 ++totalLayers;

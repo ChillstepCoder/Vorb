@@ -23,12 +23,17 @@ void main() {
     norm = norm * 0.00001 + texture(unCloudNormals, uvTest).rgb;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
+    
+    // Replace alpha
+    fNormal.a = texture(unCloudSil, uvTest).a;
 
     // https://gamedev.stackexchange.com/questions/16588/computing-gl-fragdepth
     float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);
 	float clipDepth = ndcDepth / gl_FragCoord.w;
 	vec4 cameraSpacePosition = InverseP * vec4(0.0, 0.0, clipDepth, 1.0 / gl_FragCoord.w);
-	cameraSpacePosition.z += norm.z * 10.0;
+    
+    // SUUPER HACKY DEPTH BULLSHIT LOL
+	cameraSpacePosition.z += norm.z * 10.0 - step(0.01, (1.0 - fNormal.a)) * 1000.0;
     vec4 clipPos = P * vec4(cameraSpacePosition.xyz, 1.0);
     ndcDepth = clipPos.z / clipPos.w;
     gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
@@ -43,11 +48,9 @@ void main() {
     
     fNormal.rgb = (norm + 1.0) * 0.5;
     
-    
     // TODO: Combine to single texture
-	fNormal.a = texture(unCloudSil, uvTest).a;
-    if (fNormal.a < 0.5) {
+    if (fNormal.a < 0.1) {
         discard;
     }
-    fNormal.a = 1.0;
+    //fNormal.a = 1.0;
 }

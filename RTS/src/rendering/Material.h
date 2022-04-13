@@ -81,6 +81,9 @@ public:
     const VGUniform& getUniform(const char* name) const {
         return mProgram.getUniform(name);
     }
+    const VGUniform* tryGetUniform(const char* name) const {
+        return mProgram.tryGetUniform(name);
+    }
 
     std::vector<std::pair<MaterialUniform, VGUniform> > mUniforms;
     std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;

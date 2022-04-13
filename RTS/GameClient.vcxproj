@@ -212,6 +212,7 @@
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
+    <ClCompile Include="src\options\LightingOptions.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
@@ -386,6 +387,7 @@
     <ClInclude Include="src\network\Message.h" />
     <ClInclude Include="src\Noise.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
+    <ClInclude Include="src\options\LightingOptions.h" />
     <ClInclude Include="src\particles\ParticleSystem.h" />
     <ClInclude Include="src\particles\ParticleSystemData.h" />
     <ClInclude Include="src\particles\ParticleSystemManager.h" />

@@ -77,7 +77,8 @@ void main() {
     
        // New talia stuff
     float gradientAlpha = (dot(norm, SunPosition) + 1.0) * 0.5;
-    vec2 newUV = vec2(0.5, 1.0 - gradientAlpha);
+    float gradientX = max((1.0 - SunHeight) * 0.8 + 0.1, 0.0);
+    vec2 newUV = vec2(gradientX, 1.0 - gradientAlpha);
     // Uncomment for standard lighting
     fColor.rgb = fColor.rgb * 0.0001 + texture(unGradientTexture, newUV).rgb;
     
@@ -99,4 +100,6 @@ void main() {
 	float depth = texture2D(FboDepth, fUV).r;
     vec3 worldPos = worldPosFromDepth(depth, fUV);
     fColor.rgb = lightPixel(fColor.rgb, vec3(0.0, 0.0, 1.0), worldPos, fUV, 0.9, 0.0, 0.0);
+    //fColor.rgb = 0.0001 * fColor.rgb + vec3(gradientX, 0.0, 0.0);
+    
 }

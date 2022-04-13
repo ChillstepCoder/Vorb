@@ -118,7 +118,7 @@ void ResourceManager::loadFiles() {
                     entry,
                     vio::getLeafNameFromFilePathNoExtension(entry),
                     vg::TextureTarget::TEXTURE_2D,
-                    &vg::SamplerState::LINEAR_WRAP,
+                    &vg::SamplerState::LINEAR_WRAP_MIPMAP, // TODO: Not always mipmaps?
                     vg::TextureInternalFormat::COMPRESSED_RGBA
                 );
                 // Anisotropic filtering

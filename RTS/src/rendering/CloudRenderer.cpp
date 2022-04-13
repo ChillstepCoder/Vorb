@@ -27,15 +27,15 @@ CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRen
     mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_rgb");
     mCloudShadowMaterial = mResourceManager.getMaterialManager().getMaterial("cloud_shadow_mapper");
 
-    vg::GBufferAttachment attachment;
+    vg::GBufferAttachment mainAttachment;
     // Color
-    attachment.format = vg::TextureInternalFormat::RGBA8;
-    attachment.number = FBO_GEOMETRY_COLOR;
-    attachment.pixelFormat = vg::TextureFormat::RGBA;
-    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    mainAttachment.format = vg::TextureInternalFormat::RGBA8;
+    mainAttachment.number = FBO_GEOMETRY_COLOR;
+    mainAttachment.pixelFormat = vg::TextureFormat::RGBA;
+    mainAttachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i].setSize(ui32v2(mGbufferDims));
-        mGBuffers[i].init(attachment, nullptr, nullptr);
+        mGBuffers[i].init(mainAttachment, nullptr, nullptr);
     }
     checkGlError("CloudRenderer GBuffer init");
 }
@@ -131,7 +131,7 @@ void CloudRenderer::renderFboToScreen()
     MaterialUtils::uploadLightingUniforms(*mPostMaterial);
     if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
         mGBuffers[0].bindGeometryTexture(nextTexture);
-        glUniform1i(*inputUniform, nextTexture);
+        glUniform1i(*inputUniform, nextTexture++);
     }
 
     vg::DepthState::NONE.set();

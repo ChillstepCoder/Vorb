@@ -3,6 +3,8 @@
 #include "data_structure/QuadtreeSettings.h"
 #include "camera/CameraMode.h"
 
+#include "LightingOptions.h"
+
 constexpr float CHUNKS_LOAD_RANGE_MULT = 15.0f;
 
 #ifdef USE_SMALL_CHUNK_WIDTH
@@ -15,11 +17,6 @@ constexpr f32 GRASS_FADE_MULT = 5.55555f;
 constexpr f32 DEFAULT_GRASS_DISTANCE = 220.0f;
 constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 
-enum LIGHTING_MODEL {
-    PHONG = 0,
-    BLINN_PHONG = 1,
-    COUNT
-};
 
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
@@ -36,11 +33,11 @@ struct DebugOptions {
     // Terrain
     f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
-    f32 mTerrainHeightColorMult = 0.22;
-    f32 mTerrainWavyColorMult = 0.167;
-    f32 mTerrainSquaresColorPeriod = 0.187;
-    f32 mTerrainSquaresIntensity = 0.0;
-    f32 mTerrainBlendMult = 0.037;
+    f32 mTerrainHeightColorMult = 0.22f;
+    f32 mTerrainWavyColorMult = 0.167f;
+    f32 mTerrainSquaresColorPeriod = 0.187f;
+    f32 mTerrainSquaresIntensity = 0.0f;
+    f32 mTerrainBlendMult = 0.037f;
     bool mDisableTerrain = false;
     // DOF
     float mDepthOfFieldBlurRadius = 0.6f;
@@ -94,11 +91,18 @@ struct DebugOptions {
     f32 mWaterNoiseTiling = 1.0f;
     bool mDisableWater = false;
     // Lighting
-    f32 mGamma = 1.0f;
-    f32 mExposure = 1.0f;
-    f32 mHazeExponent = 0.45f;
-    int mToneMapOperator = 0;
-    int mLightingModel = LIGHTING_MODEL::PHONG;
+    LightingOptions* mLightingOptions = &sLightingPresets[LIGHT_PRESET_UCHIMURA];
+    LightingOptions* mLightingOptionsSplit = &sLightingPresets[LIGHT_PRESET_CUSTOM];
+    int mLightingPreset = LIGHT_PRESET_UCHIMURA;
+    int mLightingPresetSplit = LIGHT_PRESET_CUSTOM;
+    bool mLightPresetSplitView = false;
+    float mLightPresetSplitAmount = 0.43f;
+    f32 unUchMaxDisplayBrightness = 1.1;
+    f32 unUchContrast = 0.7;
+    f32 unUchLinearSectionStart = 0.06;
+    f32 unUchLinearSectionLength = 0.6;
+    f32 unUchBlack = 1.33;
+    f32 unUchPedestal = 0.0;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;
