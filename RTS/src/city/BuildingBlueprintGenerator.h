@@ -15,7 +15,10 @@ public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
     std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
+    std::unique_ptr<BuildingBlueprint> generateBlueprintSync(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+
 private:
+    void generateBlueprintInternal(BuildingBlueprint* bPtr);
     // Graph Generation
     void addPublicRoomsToGraph(BuildingBlueprint& bp) const;
     void assignPublicRooms(BuildingBlueprint& bp) const;
@@ -32,9 +35,11 @@ private:
 
     void postProcessBlueprint(BuildingBlueprint& bp) const;
 
+    static ui32 getNextBuildingID();
+
     BuildingDescriptionRepository& mBuildingRepo;
     CityBuilder& mCityBuilder;
     std::set<BuildingBlueprint*> mGeneratingBuildings;
-    BuildingBlueprintId mCurrentId = 0;
+    static BuildingBlueprintId sCurrentId;
 };
 

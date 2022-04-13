@@ -14,6 +14,11 @@
 #include "editor/BrushRepository.h"
 #include "world/TileRepository.h"
 
+#include "city/City.h"
+#include "city/BuildingBlueprintGenerator.h"
+#include "city/CityBuilder.h"
+#include "city/BuildingDescriptionRepository.h"
+
 #include "Random.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -57,7 +62,10 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
         else if (event.keyCode == VKEY_5) {
             setEditMode(WorldEditorEditMode::CITY);
         }
-        static_assert((int)WorldEditorEditMode::COUNT == 5);
+        else if (event.keyCode == VKEY_6) {
+            setEditMode(WorldEditorEditMode::BUILDING);
+        }
+        static_assert((int)WorldEditorEditMode::COUNT == 6);
        
     });
 
@@ -67,6 +75,9 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
         if (event.button == vorb::ui::MouseButton::LEFT) {
             if (mEditMode == WorldEditorEditMode::CITY) {
                 updateCityEdit();
+            }
+            else if (mEditMode == WorldEditorEditMode::BUILDING) {
+                updateBuildingEdit();
             }
         }
     });
@@ -89,7 +100,8 @@ void WorldEditor::update(const Camera3D& camera) {
     else if (mEditMode == WorldEditorEditMode::ENTITY) {
         updateEntityEdit();
     }
-    // City edit runs on mouse up
+    // City edit and edit building runs on mouse up
+    static_assert((int)WorldEditorEditMode::COUNT == 6);
 }
 
 void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
@@ -140,10 +152,13 @@ void WorldEditor::renderUI() const {
         case WorldEditorEditMode::CITY:
             renderCityEditUI();
             break;
+        case WorldEditorEditMode::BUILDING:
+            renderBuildingEditUI();
+            break;
         default:
             assert(false);
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 5);
+    static_assert((int)WorldEditorEditMode::COUNT == 6);
 
     ImGui::NewLine();
     tryRenderBrushSelect(brushRepo);
@@ -203,8 +218,16 @@ void WorldEditor::renderModeButtons() const {
     else if (ImGui::Button("City")) {
         setEditMode(WorldEditorEditMode::CITY);
     }
+    ImGui::SameLine();
 
-    static_assert((int)WorldEditorEditMode::COUNT == 5);
+    if (mEditMode == WorldEditorEditMode::BUILDING) {
+        SELECTED_BUTTON(ImGui::Button("Building"));
+    }
+    else if (ImGui::Button("Building")) {
+        setEditMode(WorldEditorEditMode::BUILDING);
+    }
+
+    static_assert((int)WorldEditorEditMode::COUNT == 6);
 }
 
 void WorldEditor::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
@@ -296,13 +319,50 @@ void WorldEditor::renderCityEditUI() const {
     if (ImGui::RadioButton("None", mCityEditState == CityEditState::NONE)) {
         mCityEditState = CityEditState::NONE;
     }
-    if (ImGui::RadioButton("Create", mCityEditState == CityEditState::CREATE)) {
+    if (ImGui::RadioButton("Create City", mCityEditState == CityEditState::CREATE)) {
         mCityEditState = CityEditState::CREATE;
     }
     ImGui::Separator();
     ImGui::Text("Toggles");
     ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
     ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
+}
+
+void WorldEditor::renderBuildingEditUI() const {
+    ImGui::Text("Edit mode");
+    if (ImGui::RadioButton("None", mBuildingEditState == BuildingEditState::NONE)) {
+        mBuildingEditState = BuildingEditState::NONE;
+    }
+    if (ImGui::RadioButton("Create Building", mBuildingEditState == BuildingEditState::CREATE)) {
+        mBuildingEditState = BuildingEditState::CREATE;
+    }
+    if (ImGui::RadioButton("Destroy Building", mBuildingEditState == BuildingEditState::DESTROY)) {
+        mBuildingEditState = BuildingEditState::DESTROY;
+    }
+    ImGui::Separator();
+    ImGui::Text("Toggles");
+    ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
+    ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
+
+    ImGui::Separator();
+    ImGui::Text("Building select");
+    const std::vector<BuildingDef> buildings = mWorld.getResourceManager().getBuildingRepository().getBuildingDefs();
+    ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+    for (size_t i = 0; i < buildings.size(); ++i) {
+        const BuildingDef& buildingDef = buildings[i];
+        ImGui::TableNextColumn();
+        if (ImGui::RadioButton(buildingDef.name.c_str(), mSelectedBuilding == (ui32)i)) {
+            mSelectedBuilding = (ui32)i;
+        }
+        ImGui::TableNextColumn();
+        ImGui::Text("Size Range <%u,%u>", buildingDef.widthRange.x, buildingDef.widthRange.y);
+        //ImGui::Image((ImTextureID)tileData.spriteData.texture, ImVec2(50.0f, 50.0f));
+    }
+    ImGui::EndTable();
+    const BuildingDef& selectedDef = buildings[mSelectedBuilding];
+    mPlotDims.x = glm::clamp(mPlotDims.x, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
+    mPlotDims.y = glm::clamp(mPlotDims.y, (i32)selectedDef.widthRange.x, (i32)selectedDef.widthRange.y);
+    ImGui::DragInt2("Plot Dims (x,y)", &mPlotDims.x, 0.5f, selectedDef.widthRange.x, selectedDef.widthRange.y);
 }
 
 void WorldEditor::updateTerrainEdit() {
@@ -425,6 +485,22 @@ void WorldEditor::updateCityEdit() {
     }
 }
 
+void WorldEditor::updateBuildingEdit() {
+    // Happens on mouse up
+    if (mPickData.hit.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
+        f32v2 worldPos(mPickData.hit.position.x, mPickData.hit.position.y);
+        TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
+        ui32v2 createPos(floor(worldPos.x), floor(worldPos.y));
+
+        // TODO: Unowned buildings?
+        CityPlot plot;
+        plot.aabb.pos = createPos;
+        plot.aabb.dims = mPlotDims;
+        plot.isFree = false;
+        BuildingBlueprintGenerator generator;
+    }
+}
+
 void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
     
     // Read brush data
@@ -495,11 +571,12 @@ void WorldEditor::setEditMode(WorldEditorEditMode mode) const {
         case WorldEditorEditMode::TILE:
         case WorldEditorEditMode::ENTITY:
         case WorldEditorEditMode::CITY:
+        case WorldEditorEditMode::BUILDING:
             mCurrentBrushSettings = nullptr;
             break;
         default:
             assert(false);
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 5, "Update");
+    static_assert((int)WorldEditorEditMode::COUNT == 6, "Update");
 }
 

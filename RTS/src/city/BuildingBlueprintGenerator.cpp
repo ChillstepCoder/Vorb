@@ -10,6 +10,8 @@
 #include <Vorb/Timing.h>
 #include "Random.h"
 
+BuildingBlueprintId BuildingBlueprintGenerator::sCurrentId = 0;
+
 // Dont place on outer border, thats where facade goes
 bool boundsCheckRoom(i16 pos, i16 dim) {
     return pos >= 1 && pos < dim - 1;
@@ -26,45 +28,18 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
 std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
-    ++mCurrentId;
-    // Will this ever happen? maybe...
-    if (mCurrentId == INVALID_BLUEPRINT_ID) {
-        mCurrentId = 0;
-    }
+    BuildingBlueprintId id = getNextBuildingID();
+
 
     std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
-    bp->id = mCurrentId;
+    bp->id = id;
     BuildingBlueprint* bPtr = bp.get();
     mGeneratingBuildings.insert(bPtr);
     
     Services::Threadpool::ref().addTask([&, bPtr](ThreadPoolWorkerData* workerData) {
+        generateBlueprintInternal(bPtr);
 
-        // Room Graph
-        addPublicRoomsToGraph(*bPtr);
-        assignPublicRooms(*bPtr);
-        addPrivateRoomsToGraph(*bPtr);
-
-        // Rooms
-        initRooms(*bPtr);
-        placeRooms(*bPtr);
-        expandRooms(*bPtr);
-        roomCleanup(*bPtr);
-
-        // Walls
-        placeFacadeWalls(*bPtr);
-        placeInteriorWalls(*bPtr);
-
-        // Doors
-        // placeHallwayDoors
-        placeDoors(*bPtr);
-
-        // Furniture
-
-        // Flooring
-
-        // Tally final item requirements
-        postProcessBlueprint(*bPtr);
     }, [&, bPtr]() {
         // Main thread
         mGeneratingBuildings.erase(bPtr);
@@ -72,6 +47,45 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
         mCityBuilder.addBlueprintToBuildAndPreprocess(bPtr);
     });
     return bp;
+}
+
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintSync(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
+    BuildingBlueprintId id = getNextBuildingID();
+
+
+    std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
+    assert(plotSize.x > 2 && plotSize.y > 2);
+    bp->id = id;
+    generateBlueprintInternal(bp.get());
+    return bp;
+}
+
+void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bPtr) {
+    // Room Graph
+    addPublicRoomsToGraph(*bPtr);
+    assignPublicRooms(*bPtr);
+    addPrivateRoomsToGraph(*bPtr);
+
+    // Rooms
+    initRooms(*bPtr);
+    placeRooms(*bPtr);
+    expandRooms(*bPtr);
+    roomCleanup(*bPtr);
+
+    // Walls
+    placeFacadeWalls(*bPtr);
+    placeInteriorWalls(*bPtr);
+
+    // Doors
+    // placeHallwayDoors
+    placeDoors(*bPtr);
+
+    // Furniture
+
+    // Flooring
+
+    // Tally final item requirements
+    postProcessBlueprint(*bPtr);
 }
 
 void BuildingBlueprintGenerator::addPublicRoomsToGraph(BuildingBlueprint& bp) const {
@@ -1167,4 +1181,13 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) con
     for (auto&& it : requiredItems) {
         bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, it.second });
     }
+}
+
+BuildingBlueprintId BuildingBlueprintGenerator::getNextBuildingID() {
+    ++sCurrentId;
+    // Will this ever happen? maybe...
+    if (sCurrentId == INVALID_BLUEPRINT_ID) {
+        sCurrentId = 0;
+    }
+    return sCurrentId;
 }

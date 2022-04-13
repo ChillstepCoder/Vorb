@@ -29,7 +29,7 @@ struct DebugOptions {
     // Grass
     QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
     bool mDebugGrassLod = false;
-    bool mHideGrass = false;
+    bool mHideGrass = true;
     // Terrain
     f32 mTerrainLodDistanceOffset = 1500.0f;
     bool mDebugTerrainLod = false;
@@ -61,7 +61,7 @@ struct DebugOptions {
     f32 mShadowUpdateRateSeconds = 0.022f;
     int mShadowBlurPasses = 2;
     float mShadowBlurRadius = 0.45f; //1.5f;
-    bool mDisableShadows = false;
+    bool mDisableShadows = true;
     // Toggles
     bool mPauseFrustum = false;
     bool mWireframe = false;

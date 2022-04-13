@@ -63,6 +63,7 @@ private:
 
     vui::GameWindow& mWindow;
     const World& mWorld;
+    bool mWasMouseHidden = false;
     bool mIsMouseHidden = false;
 
     entt::entity mEntityFollow = entt::null; // TODO: Need an event for entity destroy

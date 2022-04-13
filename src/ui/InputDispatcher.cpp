@@ -188,7 +188,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         ie.mouseButton.clicks = e->button.clicks;
         vui::InputDispatcher::mouse.onButtonDown(ie.mouseButton);
 		vui::InputDispatcher::mouse.onEvent(ie.mouseMotion);
-		vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = true;
+        vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = true;
         break;
     case SDL_MOUSEBUTTONUP:
         if (suppressMouse) return 0;

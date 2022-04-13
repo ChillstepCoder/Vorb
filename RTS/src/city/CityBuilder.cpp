@@ -51,7 +51,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
     mBlueprintsToBuild.push_back(blueprint);
 }
 
-void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
+Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
 
     const ui32v2& worldPos = bp.aabb.pos;
 
@@ -73,7 +73,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
-    WorldGrid& grid = mWorld.getWorldGrid();
+    WorldGrid& grid = world.getWorldGrid();
     for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
         for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
             const ui32 index = y * bp.aabb.dims.x + x;
@@ -111,7 +111,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     const f32 height = BUILD_HEIGHTS[e_cast(type)] + meanHeight;
                     // TODO: Always ground??
                     newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
-                    TileHandle handle = mWorld.getTileHandleAtWorldPos(tileWorldPos);
+                    TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
                     Chunk* chunk = handle.getMutableChunk();
                     chunk->addTile(handle.index, TileRepository::getTileData(tileId));
                     chunk->setTileFlag(handle.index, TILE_FLAG_IS_BUILDING);
@@ -122,14 +122,15 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     }
 
     // Notify terrain data change (TODO: More precise, automatic)
-    mWorld.dirtyTerrainFromBrush(f32v2(newBuilding.mAABB.getCenter()), glm::length(f32v2(newBuilding.mAABB.dims)) * 0.5f);
+    world.dirtyTerrainFromBrush(f32v2(newBuilding.mAABB.getCenter()), glm::length(f32v2(newBuilding.mAABB.dims)) * 0.5f);
     
     newBuilding.mZPosFloor = meanHeight;
     newBuilding.mZPosRoof = meanHeight + 3.0005f;
     newBuilding.mGraph = std::move(bp.rooms);
     newBuilding.mFunction = bp.desc.function;
     newBuilding.mPlotIndex = bp.plotIndex;
-    mCity.addCompletedBuilding(std::move(newBuilding));
+    //mCity.addCompletedBuilding(std::move(newBuilding));
+    return newBuilding;
 }
 
 void CityBuilder::debugBuildInstant(RoadID roadId)
@@ -159,7 +160,7 @@ bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
 
     auto view = mWorld.getECS().mRegistry.view<BusinessBuildComponent>();
     bool success = false;
-    // Update businesses
+    // Find a business who can take on this build job
     for (auto entity : view) {
         auto& cmp = view.get<BusinessBuildComponent>(entity);
         // TODO: Bidding

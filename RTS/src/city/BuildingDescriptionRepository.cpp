@@ -94,6 +94,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         description.publicRooms.reserve(fileData.publicRooms.size());
         description.employeeCountRange = fileData.employeeCountRange;
         description.function = fileData.function;
+        description.name = key;
         // TODO: We should get the keys from this somehow
         for (size_t i = 0; i < fileData.publicRooms.size(); ++i) {
             PossibleRoomFileData& roomFileData = fileData.publicRooms[i];
@@ -137,6 +138,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
 
         BuildingTypeID newID = static_cast<RoomDefID>(mBuildingDescriptions.size());
 
+        description.id = newID;
         mBuildingTypes[key] = newID;
         mBuildingDescriptions.emplace_back(std::move(description));
     }))) {

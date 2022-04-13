@@ -16,6 +16,8 @@ public:
     const RoomDef& getRoomDefFromID(RoomDefID id) const;
     const nString* getNameFromRoomDefID(RoomDefID id) const;
 
+    const std::vector<BuildingDef>& getBuildingDefs() const { return mBuildingDescriptions; }
+
 private:
     // TODO: HashedString?
     std::map<nString, RoomDefID> mRoomTypes;

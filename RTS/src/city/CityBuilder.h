@@ -20,7 +20,7 @@ public:
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
     void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
 
-    void debugBuildInstant(BuildingBlueprint& bp);
+    static Building debugBuildInstant(BuildingBlueprint& bp, World& world);
     void debugBuildInstant(RoadID roadId);
 
 private:

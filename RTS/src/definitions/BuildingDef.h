@@ -44,6 +44,7 @@ struct PossibleRoom {
     f32 weight;
 };
 struct BuildingDef {
+    BuildingTypeID id = UINT16_MAX;
     ui32v2 widthRange = f32v2(10, 30);
     ui32v2 publicRoomCountRange = ui32v2(1, 3);
     ui32v2 privateRoomCountRange = ui32v2(1, 3);
@@ -55,4 +56,5 @@ struct BuildingDef {
     std::vector<PossibleRoom> publicRooms;
     std::vector<PossibleRoom> privateRooms;
     std::vector<PossibleSubRoom> subRooms;
+    nString name;
 };
