@@ -1,10 +1,23 @@
 TODO LIST:
 
-0. Brush stroke texture clouds!
-1. DE-UGGIFY WATER
-2. BIOMES
-3. FIX GRASS SQUARES
-4. Snow caps to mountains
-5. Boulders (need assets?)
-6. Buildings
-7. AI
+- 0. Brush stroke texture clouds!
+- 1. DE-UGGIFY WATER
+2. Fix roofs
+- Make roof thick
+- Smaller houses (Thin walls?)
+- Two story buildings
+- Windows?
+- Doors?
+- Chimney?
+- Elevated struts?
+- Building art variation
+3. BIOMES
+4. FIX GRASS SQUARES
+5. Snow caps to mountains
+6. Boulders (need assets?)
+7. Buildings
+8. AI
+
+TALIA WORK
+1. Clouds
+2. Water in its various forms?
