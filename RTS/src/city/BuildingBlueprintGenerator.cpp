@@ -38,7 +38,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     mGeneratingBuildings.insert(bPtr);
     
     Services::Threadpool::ref().addTask([&, bPtr](ThreadPoolWorkerData* workerData) {
-        generateBlueprintInternal(bPtr);
+        generateBlueprintInternal(bPtr, mBuildingRepo);
 
     }, [&, bPtr]() {
         // Main thread
@@ -49,25 +49,23 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     return bp;
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintSync(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags) {
     BuildingBlueprintId id = getNextBuildingID();
-
-
     std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
     bp->id = id;
-    generateBlueprintInternal(bp.get());
+    generateBlueprintInternal(bp.get(), buildingRepo);
     return bp;
 }
 
-void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bPtr) {
+void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo) {
     // Room Graph
     addPublicRoomsToGraph(*bPtr);
     assignPublicRooms(*bPtr);
     addPrivateRoomsToGraph(*bPtr);
 
     // Rooms
-    initRooms(*bPtr);
+    initRooms(*bPtr, buildingRepo);
     placeRooms(*bPtr);
     expandRooms(*bPtr);
     roomCleanup(*bPtr);
@@ -88,7 +86,7 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
     postProcessBlueprint(*bPtr);
 }
 
-void BuildingBlueprintGenerator::addPublicRoomsToGraph(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::addPublicRoomsToGraph(BuildingBlueprint& bp) {
     // Generate public room structure using grammar
     ui32 publicRoomCount = bp.desc.publicRoomCountRange.y <= bp.desc.publicRoomCountRange.x ?
         bp.desc.publicRoomCountRange.x : Random::xorshf96() % (bp.desc.publicRoomCountRange.y - bp.desc.publicRoomCountRange.x) + bp.desc.publicRoomCountRange.x;
@@ -97,7 +95,7 @@ void BuildingBlueprintGenerator::addPublicRoomsToGraph(BuildingBlueprint& bp) co
     bp.desc.publicGrammar.buildRoomGraph(bp.rooms);
 }
 
-void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp) const
+void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp)
 {
     assert(bp.desc.publicRooms.size());
     ui8v2 countLookup[255]; // (current, max)
@@ -142,7 +140,7 @@ void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp) const
     }
 }
 
-void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) {
     const size_t numPublicRooms = bp.rooms.size();
     ui8v2 countLookup[255]; // (current, max)
     assert(numPublicRooms);
@@ -208,7 +206,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) c
     }
 }
 
-void BuildingBlueprintGenerator::addStickOnRoomsToGraph() const
+void BuildingBlueprintGenerator::addStickOnRoomsToGraph()
 {
 
 }
@@ -262,12 +260,12 @@ void placeChildrenRecursive(std::vector<RoomNode>& nodes, RoomNode* node, f32 av
     }
 }
 
-void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo) {
     for (size_t i = 0; i < bp.rooms.size(); ++i) {
         RoomNode& room = bp.rooms[i];
         room.id = (RoomNodeID)i;
 
-        const RoomDef& desc = mBuildingRepo.getRoomDefFromID(room.roomDefId);
+        const RoomDef& desc = buildingRepo.getRoomDefFromID(room.roomDefId);
         room.desiredWidth = (ui16)round(lerp((f32)desc.minWidth, (f32)desc.maxWidth, bp.sizeAlpha));
         room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
@@ -281,7 +279,7 @@ void applyForceOffset(ui16v2& offset, const f32v2& force, const ui16v2& dims) {
     assert(offset.x < 10000 && offset.y < 10000);
 }
 
-void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp) {
 
     // Breadth first search room placement
     RoomNode* root = &bp.rooms[0];
@@ -620,7 +618,7 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room) {
     return didExpand;
 }
 
-void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) {
     for (RoomNodeID roomId = 0; roomId < bp.rooms.size(); ++roomId) {
         RoomNode& room = bp.rooms[roomId];
         // Iteratively expand walls
@@ -669,7 +667,7 @@ void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) const {
     }
 }
 
-void BuildingBlueprintGenerator::placeInteriorWalls(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::placeInteriorWalls(BuildingBlueprint& bp) {
     // First place main segments
     for (ui16 y = 1; y < bp.aabb.dims.y - 1; ++y) {
         for (ui16 x = 1; x < bp.aabb.dims.x - 1; ++x) {
@@ -730,7 +728,7 @@ void BuildingBlueprintGenerator::placeInteriorWalls(BuildingBlueprint& bp) const
     }
 }
 
-void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp) {
     bp.tiles.resize((size_t)bp.aabb.dims.x * (size_t)bp.aabb.dims.y, BlueprintTile{ BlueprintTileType::NONE, false });
     
     bp.ownerArray.resize(bp.tiles.size(), INVALID_ROOM_ID);
@@ -934,7 +932,7 @@ void CellularAutomataSubStepThickenPassages(BuildingBlueprint& bp, ui16 x, ui16 
     // Left
 }
 
-void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp) const
+void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp)
 {
     constexpr int CELLULAR_AUTOMATA_ITERATIONS = 1;
 
@@ -948,7 +946,7 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp) const
     }
 }
 
-void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room) const
+void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room)
 {
     ui16 index = getIndexAtPos(room.offsetFromZero, bp.aabb.dims.x);
     // Init root node
@@ -1050,7 +1048,7 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
     }
 }
 
-void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) {
     // TODO: Re-use memory
     std::vector<bool> visited((ui32)bp.aabb.dims.x * (ui32)bp.aabb.dims.y);
     std::vector<bool> isConnected(bp.rooms.size());
@@ -1106,7 +1104,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp) const {
     }
 }
 
-void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) const {
+void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     // Tally required items
     std::map<ItemID, ui32> requiredItems;
 

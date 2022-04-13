@@ -15,25 +15,25 @@ public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
     std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
-    std::unique_ptr<BuildingBlueprint> generateBlueprintSync(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    static std::unique_ptr<BuildingBlueprint> generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
 private:
-    void generateBlueprintInternal(BuildingBlueprint* bPtr);
+    static void generateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo);
     // Graph Generation
-    void addPublicRoomsToGraph(BuildingBlueprint& bp) const;
-    void assignPublicRooms(BuildingBlueprint& bp) const;
-    void addPrivateRoomsToGraph(BuildingBlueprint& bp) const;
-    void addStickOnRoomsToGraph() const;
-    void initRooms(BuildingBlueprint& bp) const;
-    void placeRooms(BuildingBlueprint& bp) const;
-    void expandRooms(BuildingBlueprint& bp) const;
-    void roomCleanup(BuildingBlueprint& bp) const;
-    void initRoomWalls(BuildingBlueprint& bp, RoomNode& room) const;
-    void placeFacadeWalls(BuildingBlueprint& bp) const;
-    void placeInteriorWalls(BuildingBlueprint& bp) const;
-    void placeDoors(BuildingBlueprint& bp) const;
+    static void addPublicRoomsToGraph(BuildingBlueprint& bp);
+    static void assignPublicRooms(BuildingBlueprint& bp);
+    static void addPrivateRoomsToGraph(BuildingBlueprint& bp);
+    static void addStickOnRoomsToGraph();
+    static void initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo);
+    static void placeRooms(BuildingBlueprint& bp);
+    static void expandRooms(BuildingBlueprint& bp);
+    static void roomCleanup(BuildingBlueprint& bp);
+    static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
+    static void placeFacadeWalls(BuildingBlueprint& bp);
+    static void placeInteriorWalls(BuildingBlueprint& bp);
+    static void placeDoors(BuildingBlueprint& bp);
 
-    void postProcessBlueprint(BuildingBlueprint& bp) const;
+    static void postProcessBlueprint(BuildingBlueprint& bp);
 
     static ui32 getNextBuildingID();
 

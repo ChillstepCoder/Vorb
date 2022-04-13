@@ -497,7 +497,10 @@ void WorldEditor::updateBuildingEdit() {
         plot.aabb.pos = createPos;
         plot.aabb.dims = mPlotDims;
         plot.isFree = false;
-        BuildingBlueprintGenerator generator;
+
+        BuildingDescriptionRepository& buildingRepo = mWorld.getResourceManager().getBuildingRepository();
+        std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::LEFT, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
+        CityBuilder::debugBuildInstant(*bp, mWorld);
     }
 }
 

@@ -13,6 +13,7 @@ public:
     void loadBuildingDescriptionFile(const vio::Path& filePath);
 
     const BuildingDef& getBuildingDef(const nString& name) const;
+    const BuildingDef& getBuildingDef(BuildingTypeID id) const { return mBuildingDescriptions[id]; }
     const RoomDef& getRoomDefFromID(RoomDefID id) const;
     const nString* getNameFromRoomDefID(RoomDefID id) const;
 
