@@ -23,7 +23,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
     bool ownershipMask[CHUNK_SIZE];
 
-    const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
     for (auto&& room : bp.rooms) {
         const RoomDef& def = buildingRepo.getRoomDefFromID(room.roomDefId);
         if (def.roomType == RoomType::STOCKPILE) {

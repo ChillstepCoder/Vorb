@@ -8,8 +8,6 @@
 
 #include "options/DebugOptions.h"
 
-#include "services/Services.h"
-
 #include "generation/WorldGeneration.h"
 #include <Vorb/graphics/GLProgram.h>
 

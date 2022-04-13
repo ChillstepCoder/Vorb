@@ -51,9 +51,7 @@ enum Corners {
     CORNER_BOTTOM_RIGHT = 3
 };
 
-BuildingMesher::BuildingMesher(ResourceManager& resourceManager) :
-    mResourceManager(resourceManager)
-{
+BuildingMesher::BuildingMesher() {
     // Zero table
     for (ui32 i = 0; i < ROOF_VERTEX_CORNER_TABLE_SIZE; ++i) {
         mCornerNextEdgeLookupTable[i] = Cartesian::INVALID;
@@ -203,7 +201,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     SsPtr iss = CGAL::create_interior_straight_skeleton_2(sCgalPoly.vertices_begin(), sCgalPoly.vertices_end());
     f32v2 start = building.mAABB.pos;
 
-    const SpriteData& spriteData = mResourceManager.getSprite("roof");
+    const SpriteData& spriteData = Services::ResourceManager::ref().getSprite("roof");
     TriangleMesh& triangleMesh = *renderData.mRoofTriangleMesh;
 
 

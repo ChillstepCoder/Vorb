@@ -16,8 +16,8 @@
 // Match shader
 const int KERNEL_SIZE = 32;
 
-AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mResourceManager(resourceManager), mMaterialRenderer(materialRenderer), mGbufferDims(gbufferDims)
+AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
+    mMaterialRenderer(materialRenderer), mGbufferDims(gbufferDims)
 {
     vg::GBufferAttachment attachment;
     // Color
@@ -31,9 +31,10 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(ResourceManager& resour
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
-    mMaterial = mResourceManager.getMaterialManager().getMaterial("ssao");
-    mApplyMaterial = mResourceManager.getMaterialManager().getMaterial("ssao_apply");
-    mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_r");
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mMaterial = materialManager.getMaterial("ssao");
+    mApplyMaterial = materialManager.getMaterial("ssao_apply");
+    mBlurMaterial = materialManager.getMaterial("gaussian_blur_r");
 
     //https://learnopengl.com/Advanced-Lighting/SSAO
     // Build kernel

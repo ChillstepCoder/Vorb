@@ -1,7 +1,6 @@
 #pragma once
 #include "LightData.h"
 
-class ResourceManager;
 class MaterialRenderer;
 class Material;
 class Camera3D;
@@ -12,7 +11,7 @@ class Camera3D;
 class LightRenderer
 {
 public:
-    LightRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
+    LightRenderer(const MaterialRenderer& materialRenderer);
     ~LightRenderer();
 
     void RenderLight(const f32v2& position, const LightData& lightData, const Camera3D& camera) const;
@@ -22,7 +21,6 @@ public:
 private:
     void InitSharedMesh();
 
-    ResourceManager& mResourceManager;
     const MaterialRenderer& mMaterialRenderer;
     const Material* mPointLightMaterial = nullptr;
 

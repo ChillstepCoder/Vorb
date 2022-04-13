@@ -4,7 +4,6 @@
 #include "DebugRenderer.h"
 #include "World.h"
 #include "world/WorldGrid.h"
-#include "services/Services.h"
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 

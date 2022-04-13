@@ -27,7 +27,6 @@ class ChunkGenerator;
 class CloudManager;
 class ItemStockpileRegistry;
 class EntityComponentSystem;
-class ResourceManager;
 class EntityFactory;
 class NavGraph;
 class WorldEditor;
@@ -41,7 +40,7 @@ class World
 	friend class EntityComponentSystem;
 	friend class WorldEditor;
 public:
-	World(ResourceManager& resourceManager);
+	World();
 	~World();
 
 	void initPostLoad(ChunkMesher& chunkMesher);
@@ -93,7 +92,6 @@ public:
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
 
-	const ResourceManager& getResourceManager() const { return mResourceManager; }
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     WorldGrid& getWorldGrid() { return mWorldGrid; }
@@ -159,9 +157,6 @@ private:
 
 	// Factories
 	std::unique_ptr<EntityFactory> mEntityFactory;
-
-	// Resource handle
-	ResourceManager& mResourceManager;
 
 	// Cities
 	std::unique_ptr<CityGraph> mCities;

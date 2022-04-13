@@ -11,8 +11,7 @@
 static_assert((int)LightShape::Count == 1, "Update this file to handle new light shape");
 static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle new attenuation type");
 
-LightRenderer::LightRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
-    mResourceManager(resourceManager),
+LightRenderer::LightRenderer(const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer)
 {
 }
@@ -45,7 +44,7 @@ void LightRenderer::RenderLight(const f32v2& position, const LightData& lightDat
 
 void LightRenderer::InitPostLoad()
 {
-    mPointLightMaterial = mResourceManager.getMaterialManager().getMaterial("point_light");
+    mPointLightMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterial("point_light");
     assert(mPointLightMaterial);
 
     InitSharedMesh();

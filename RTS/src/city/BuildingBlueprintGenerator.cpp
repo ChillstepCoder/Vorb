@@ -4,7 +4,6 @@
 
 #include "city/CityBuilder.h"
 
-#include "services/Services.h"
 #include "world/TileRepository.h"
 
 #include <Vorb/Timing.h>

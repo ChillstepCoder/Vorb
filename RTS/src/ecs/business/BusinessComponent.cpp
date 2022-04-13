@@ -177,7 +177,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
         City& city = *cmp.mCity;
         CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props, entity);
         if (plot) {
-            const BuildingDescriptionRepository& buildingRepo = world.getResourceManager().getBuildingRepository();
+            const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
             city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName, BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE);
             ownershipCmp.mOwnedPlots.push_back(plot);
         }

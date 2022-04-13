@@ -1,6 +1,5 @@
 #pragma once
 
-class ResourceManager;
 class MaterialRenderer;
 class Material;
 
@@ -8,7 +7,7 @@ class Material;
 
 class AmbientOcclusionPostProcess {
 public:
-    AmbientOcclusionPostProcess(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
+    AmbientOcclusionPostProcess(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
 
     // Returns target gbuffer
     void render(vg::GBuffer* activeGBuffer);
@@ -16,7 +15,6 @@ public:
     VGTexture getSSAOTexture() const;
 
 private:
-    ResourceManager& mResourceManager;
     const MaterialRenderer& mMaterialRenderer;
 
     // TODO: Maybe shared g buffer? :thinkies:

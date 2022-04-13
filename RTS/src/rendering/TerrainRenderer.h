@@ -2,14 +2,13 @@
 
 class MaterialRenderer;
 class Material;
-class ResourceManager;
 class HeightmapTerrainQuadtree;
 class Camera3D;
 
 class TerrainRenderer
 {
 public:
-    TerrainRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
+    TerrainRenderer(const MaterialRenderer& materialRenderer);
 
     void renderTerrain(const Camera3D& camera, const std::vector<HeightmapTerrainQuadtree>& terrainQuadtrees);
     void renderWater(const Camera3D& camera, const std::vector<HeightmapTerrainQuadtree>& terrainQuadtrees);

@@ -25,8 +25,6 @@
 
 #include "ui/UIContext.h"
 
-#include "services/Services.h"
-
 #include <box2d/b2_world.h>
 #include <box2d/b2_fixture.h>
 
@@ -51,9 +49,8 @@
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
 
-World::World(ResourceManager& resourceManager) :
-	mWorldGrid(*this),
-	mResourceManager(resourceManager)
+World::World() :
+	mWorldGrid(*this)
 {
     // Init generation
     mChunkGenerator = std::make_unique<ChunkGenerator>();
@@ -62,7 +59,7 @@ World::World(ResourceManager& resourceManager) :
     mEcs = std::make_unique<EntityComponentSystem>(*this);
 
     // Init factories
-	mEntityFactory = std::make_unique<EntityFactory>(*mEcs, mResourceManager);
+	mEntityFactory = std::make_unique<EntityFactory>(*mEcs);
 
     // Init physics
     mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
@@ -169,7 +166,8 @@ void World::tick(const f32v2& playerPos) {
 	mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
 
 	// Update particles (TODO: Ecs?)
-	mResourceManager.getParticleSystemManager().update(playerPos);
+	// TODO: eww why is a resource updating?
+	Services::ResourceManager::ref().getParticleSystemManager().update(playerPos);
 
 	// Update weather
 	mCloudManager->update();

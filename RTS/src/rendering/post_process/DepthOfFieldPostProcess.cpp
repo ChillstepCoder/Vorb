@@ -11,8 +11,8 @@
 
 #include "options/DebugOptions.h"
 
-DepthOfFieldPostProcess::DepthOfFieldPostProcess(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mResourceManager(resourceManager), mMaterialRenderer(materialRenderer), mGbufferDims(gbufferDims)
+DepthOfFieldPostProcess::DepthOfFieldPostProcess(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
+    mMaterialRenderer(materialRenderer), mGbufferDims(gbufferDims)
 {
     vg::GBufferAttachment attachment;
     // Color
@@ -26,7 +26,7 @@ DepthOfFieldPostProcess::DepthOfFieldPostProcess(ResourceManager& resourceManage
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
-    mMaterial = mResourceManager.getMaterialManager().getMaterial("depth_of_field");
+    mMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterial("depth_of_field");
 
     checkGlError("init DepthOfFieldPostProcess");
 }

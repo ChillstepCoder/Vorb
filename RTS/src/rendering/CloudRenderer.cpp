@@ -16,16 +16,15 @@
 
 #include "options/DebugOptions.h"
 
-CloudRenderer::CloudRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mResourceManager(resourceManager),
+CloudRenderer::CloudRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
     mMaterialRenderer(materialRenderer),
     mGbufferDims(gbufferDims)
 {
-
-    mCloudMaterial = mResourceManager.getMaterialManager().getMaterial("cloud");
-    mPostMaterial = mResourceManager.getMaterialManager().getMaterial("cloud_post");
-    mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_rgb");
-    mCloudShadowMaterial = mResourceManager.getMaterialManager().getMaterial("cloud_shadow_mapper");
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mCloudMaterial = materialManager.getMaterial("cloud");
+    mPostMaterial = materialManager.getMaterial("cloud_post");
+    mBlurMaterial = materialManager.getMaterial("gaussian_blur_rgb");
+    mCloudShadowMaterial = materialManager.getMaterial("cloud_shadow_mapper");
 
     vg::GBufferAttachment mainAttachment;
     // Color

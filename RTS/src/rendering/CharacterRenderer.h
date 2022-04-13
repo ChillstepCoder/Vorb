@@ -19,7 +19,7 @@ class PhysicsComponent;
 // TODO: Cutout rendering - see pathfinder wrath of the righteous
 class CharacterRenderer {
 public:
-	CharacterRenderer(const MaterialManager& materialManager, const ModelRepository& modelRepo);
+	CharacterRenderer();
 	~CharacterRenderer();
 
 	void addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const LocomotionComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer);
@@ -28,7 +28,6 @@ public:
 private:
 
     const Material* mMaterial;
-	const ModelRepository& mModelRepo;
 };
 
 //  TODO: This is temp af

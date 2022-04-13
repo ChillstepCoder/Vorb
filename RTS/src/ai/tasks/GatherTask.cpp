@@ -10,7 +10,6 @@
 #include "city/CityQuartermaster.h"
 
 #include "ecs/component/InventoryComponent.h"
-#include "services/Services.h"
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"

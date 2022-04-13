@@ -54,7 +54,7 @@ enum class GPUTextureProcess {
 // Maniuplate textures on the GPU
 class GPUTextureManipulator {
 public:
-    GPUTextureManipulator(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
+    GPUTextureManipulator(const MaterialRenderer& materialRenderer);
     void GenerateNormalMapsForTextureAtlas();
 
     void InitPostLoad();
@@ -77,7 +77,6 @@ public:
     //vg::GLRenderTarget mFBOPool;
     //std::vector<Task> mTasks;
 private:
-    ResourceManager& mResourceManager;
     const MaterialRenderer& mMaterialRenderer;
     const Material* mNormalsMaterial = nullptr;
 };

@@ -27,7 +27,6 @@
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
 
-
 struct ShaderData {
     nString vert;
     nString frag;
@@ -37,7 +36,6 @@ KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
     kt.addValue("vert", keg::Value::basic(offsetof(ShaderData, vert), keg::BasicType::STRING));
     kt.addValue("frag", keg::Value::basic(offsetof(ShaderData, frag), keg::BasicType::STRING));
 }
-
 
 ResourceManager::ResourceManager() {
     

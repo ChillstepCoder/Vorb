@@ -6,7 +6,6 @@
 #include "DebugRenderer.h"
 #include "world/WorldGrid.h"
 
-#include "services/Services.h"
 #include "generation/WorldGeneration.h"
 #include <Vorb/graphics/GLProgram.h>
 

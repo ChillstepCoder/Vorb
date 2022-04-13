@@ -52,6 +52,8 @@
 
 #include <entt/entt.hpp>
 
+// Services
+#include "services/Services.h"
 
 extern bool IS_SHUTTING_DOWN;
 

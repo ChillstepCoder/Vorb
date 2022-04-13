@@ -20,7 +20,7 @@
 CityPlanner::CityPlanner(City& city)
     : mCity(city)
 {
-    mBuildingGenerator = std::make_unique<BuildingBlueprintGenerator>(mCity.mWorld.getResourceManager().getBuildingRepository(), mCity.getCityBuilder());
+    mBuildingGenerator = std::make_unique<BuildingBlueprintGenerator>(Services::ResourceManager::ref().getBuildingRepository(), mCity.getCityBuilder());
 }
 
 void CityPlanner::update() {
@@ -38,7 +38,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     assert(!plot.mPendingBlueprint);
 
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
-    const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
 
     const float sizeAlpha = Random::xorshf96f();
 
@@ -66,7 +66,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
 }
 
 void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
-    const BuildingDescriptionRepository& buildingRepo = mCity.mWorld.getResourceManager().getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
     std::cout << "\nGenerated house:" << bp->rooms.size() << " " << bp->aabb.dims.x << "\n";
     for (auto&& node : bp->rooms) {
         std::cout << "  node - " << *buildingRepo.getNameFromRoomDefID(node.roomDefId) << " " <<

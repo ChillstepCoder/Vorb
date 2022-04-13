@@ -46,11 +46,11 @@ private:
     void updateTilePicking();
     void tryUpdateAndRenderInteractPopup(const f32v2& xyPos);
 
-    ResourceManager* mResourceManager = nullptr;
 	std::unique_ptr<World> mWorld;
 
     // Rendering
     std::unique_ptr<CameraController> mCameraController;
+	ResourceManager& mResourceManager;
     RenderContext& mRenderContext;
     float mFps = 0.0f;
 	

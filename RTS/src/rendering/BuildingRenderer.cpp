@@ -14,14 +14,14 @@
 
 #include "DebugRenderer.h"
 
-BuildingRenderer::BuildingRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
-    mResourceManager(resourceManager),
+BuildingRenderer::BuildingRenderer(const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer)
 {
-    mRoofMaterial = mResourceManager.getMaterialManager().getMaterial("standard_roof");
-    mRoofBaseMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-    mRoofShadowMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
-    mMesher = std::make_unique<BuildingMesher>(resourceManager);
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mRoofMaterial = materialManager.getMaterial("standard_roof");
+    mRoofBaseMaterial = materialManager.getMaterial("standard_tile");
+    mRoofShadowMaterial = materialManager.getMaterial("shadow_mapper");
+    mMesher = std::make_unique<BuildingMesher>();
 }
 
 BuildingRenderer::~BuildingRenderer()

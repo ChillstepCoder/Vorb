@@ -13,7 +13,6 @@
 #include "rendering/MaterialManager.h"
 #include "rendering/RenderContext.h"
 #include "rendering/ChunkGrassQuadtree.h"
-#include "services/Services.h"
 
 // TODO: Remove
 #include "Utils.h"
@@ -33,10 +32,9 @@ constexpr float FLORA_RENDER_DISTANCE_2 = SQ(320.0f);
 constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
 static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
-ChunkRenderer::ChunkRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
-    mResourceManager(resourceManager),
+ChunkRenderer::ChunkRenderer(const WorldGrid& worldGrid, const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer),
-    mMesher(std::make_unique<ChunkMesher>(worldGrid, resourceManager.getTextureAtlas()))
+    mMesher(std::make_unique<ChunkMesher>(worldGrid, Services::ResourceManager::ref().getTextureAtlas()))
 {
 }
 
@@ -132,13 +130,14 @@ void ChunkRenderer::TryRenderBillboardMesh(const Chunk& chunk, const Material* m
 
 void ChunkRenderer::InitPostLoad()
 {
-    mStandardMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-    mGrassMaterial = mResourceManager.getMaterialManager().getMaterial("grass");
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mStandardMaterial = materialManager.getMaterial("standard_tile");
+    mGrassMaterial = materialManager.getMaterial("grass");
 #if USE_INSTANCED_BILLBOARDS == 1
-    mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("tbo_billboard");
+    mBillboardMaterial = materialManager.getMaterial("tbo_billboard");
 #else
-    mBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
+    mBillboardMaterial = materialManager.getMaterial("billboard");
 #endif
-    mShadowMapperMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
-    mShadowMapperMaterialBillboard = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
+    mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper");
+    mShadowMapperMaterialBillboard = materialManager.getMaterial("shadow_mapper");
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-class ResourceManager;
 class Building;
 class Camera3D;
 class BuildingMesher;
@@ -11,7 +10,7 @@ class Material;
 class BuildingRenderer
 {
 public:
-    BuildingRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
+    BuildingRenderer(const MaterialRenderer& materialRenderer);
     ~BuildingRenderer();
 
     void renderBuildingRoof(const Building& building);
@@ -20,7 +19,6 @@ public:
 private:
 
     std::unique_ptr<BuildingMesher> mMesher;
-    ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
     const Material* mRoofMaterial = nullptr;

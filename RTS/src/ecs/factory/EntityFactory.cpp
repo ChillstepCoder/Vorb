@@ -13,9 +13,8 @@
 
 #include <ozz/animation/runtime/animation.h>
 
-EntityFactory::EntityFactory(EntityComponentSystem& ecs, ResourceManager& resourceManager) :
-    mEcs(ecs),
-    mResourceManager(resourceManager)
+EntityFactory::EntityFactory(EntityComponentSystem& ecs) :
+    mEcs(ecs)
 {
 }
 
@@ -29,14 +28,15 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
     entt::registry& registry = mEcs.mRegistry;
     const entt::entity newEntity = registry.create();
     // Copy components over to new entity
-    const EntityDefinition& edef = mResourceManager.getEntityDefinitionRepository().getDefinition(typeName);
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeName);
     // Initialize components
     for (auto&& cdef : edef.components) {
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {
                 auto& modelCmp = registry.emplace<CharacterModelComponent>(newEntity);
                 // TODO: Select correct model
-                modelCmp.init(&mResourceManager.getModelRepository().getModelDef(0));
+                modelCmp.init(&resourceManager.getModelRepository().getModelDef(0));
                 break;
             }
             case ComponentTypes::Locomotion: {
@@ -93,7 +93,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 break;
             }
             case ComponentTypes::SimpleSprite: {
-                VGTexture texture = mResourceManager.getTextureCache().addTexture(cdef.simpleSprite.texture).id;
+                VGTexture texture = resourceManager.getTextureCache().addTexture(cdef.simpleSprite.texture).id;
                 auto& spriteComp = registry.emplace<SimpleSpriteComponent>(newEntity, texture, cdef.simpleSprite.dims);
                 spriteComp.mColor = cdef.simpleSprite.color;
                 break;
@@ -109,7 +109,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
             case ComponentTypes::Skills: {
                 // TODO: We shouldnt have to do this every single time we create a new entity!
                 auto& skillsCmp = registry.emplace<SkillsComponent>(newEntity);
-                const SkillRepository& skillRepo = mResourceManager.getSkillRepository();
+                const SkillRepository& skillRepo = resourceManager.getSkillRepository();
                 for (size_t i = 0; i < cdef.skillsFileData.mSkillNames.size(); ++i) {
                     skillsCmp.mSkills.emplace_back(&skillRepo.getSkillDef(cdef.skillsFileData.mSkillNames[i]));
                 }   

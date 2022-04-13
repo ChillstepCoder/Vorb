@@ -10,8 +10,7 @@
 
 #include <Vorb/graphics/FullQuadVBO.h>
 
-ParticleSystemRenderer::ParticleSystemRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2 & gbufferDims) :
-    mResourceManager(resourceManager),
+ParticleSystemRenderer::ParticleSystemRenderer(const MaterialRenderer& materialRenderer, const f32v2 & gbufferDims) :
     mMaterialRenderer(materialRenderer),
     mGbufferDims(gbufferDims) {
 }
@@ -25,7 +24,7 @@ void ParticleSystemRenderer::renderParticleSystems(const Camera3D& camera, vg::G
     glEnable(GL_PROGRAM_POINT_SIZE);
     glEnable(GL_POINT_SPRITE);
 
-    const ParticleSystemManager& manager = mResourceManager.getParticleSystemManager();
+    const ParticleSystemManager& manager = Services::ResourceManager::ref().getParticleSystemManager();
     for (auto&& layerName : manager.mSystemLayerSortOrder) {
 
         auto&& it = manager.mParticleSystems.find(layerName.second);
@@ -77,7 +76,7 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera3D& camera, const 
     if (!particleSystem.mParticles.size()) {
         return;
     }
-    const Material* material = mResourceManager.getMaterialManager().getMaterial(particleSystem.mSystemData.materialName);
+    const Material* material = Services::ResourceManager::ref().getMaterialManager().getMaterial(particleSystem.mSystemData.materialName);
 
     // Lazy mesh init
     if (!particleSystem.mVbo) {
@@ -147,7 +146,7 @@ vg::GBuffer ParticleSystemRenderer::getOrCreateFramebufferForParticleSystem(cons
 
 void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particleSystemData, vg::GBuffer& gBuffer)
 {
-    const Material* material = mResourceManager.getMaterialManager().getMaterial(particleSystemData.postMaterialName);
+    const Material* material = Services::ResourceManager::ref().getMaterialManager().getMaterial(particleSystemData.postMaterialName);
     assert(material);
 
     mMaterialRenderer.bindMaterialForRender(*material);

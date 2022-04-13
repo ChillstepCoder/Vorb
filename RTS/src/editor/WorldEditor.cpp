@@ -123,7 +123,7 @@ void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
 void WorldEditor::renderUI() const {
-    const BrushRepository& brushRepo = mWorld.getResourceManager().getBrushRepository();
+    const BrushRepository& brushRepo = Services::ResourceManager::ref().getBrushRepository();
 
     constexpr float WINDOW_WIDTH = 400.0f;
     const float WINDOW_HEIGHT = mScreenDims.y;
@@ -300,7 +300,7 @@ void WorldEditor::renderTileEditUI() const {
 
 void WorldEditor::renderEntityEditUI() const {
     ImGui::Text("Select entity");
-    const EntityDefinitionMap& entityDefs = mWorld.getResourceManager().getEntityDefinitionRepository().getAllEntityDefinitions();
+    const EntityDefinitionMap& entityDefs = Services::ResourceManager::ref().getEntityDefinitionRepository().getAllEntityDefinitions();
     const std::vector<TileData>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     for (auto&& it : entityDefs) {
@@ -346,7 +346,7 @@ void WorldEditor::renderBuildingEditUI() const {
 
     ImGui::Separator();
     ImGui::Text("Building select");
-    const std::vector<BuildingDef> buildings = mWorld.getResourceManager().getBuildingRepository().getBuildingDefs();
+    const std::vector<BuildingDef> buildings = Services::ResourceManager::ref().getBuildingRepository().getBuildingDefs();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     for (size_t i = 0; i < buildings.size(); ++i) {
         const BuildingDef& buildingDef = buildings[i];
@@ -498,7 +498,7 @@ void WorldEditor::updateBuildingEdit() {
         plot.aabb.dims = mPlotDims;
         plot.isFree = false;
 
-        BuildingDescriptionRepository& buildingRepo = mWorld.getResourceManager().getBuildingRepository();
+        BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
         std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::LEFT, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
         CityBuilder::debugBuildInstant(*bp, mWorld);
     }

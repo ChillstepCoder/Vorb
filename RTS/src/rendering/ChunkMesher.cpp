@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
 #include "rendering/TextureAtlas.h"
-#include "services/Services.h"
 
 #include "world/Chunk.h"
 #include "world/TileRepository.h"

@@ -37,7 +37,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     //mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
 
     // Add test business
-    mWorld.getResourceManager().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");
+    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");
 }
 
 City::~City() {

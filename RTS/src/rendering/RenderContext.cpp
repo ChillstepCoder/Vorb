@@ -8,8 +8,6 @@
 #include "pathfinding/NavGraph.h"
 #include "pathfinding/NavThread.h"
 
-#include "services/Services.h"
-
 #include "DebugRenderer.h"
 #include "EntityComponentSystemRenderer.h"
 #include "rendering/BuildingRenderer.h"
@@ -124,8 +122,7 @@ const std::string sPassthroughMaterialNames[] = {
 
 RenderContext* RenderContext::sInstance = nullptr;
 
-RenderContext::RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window) :
-    mResourceManager(resourceManager),
+RenderContext::RenderContext(const World& world, const f32v2& screenResolution, SDL_Window* window) :
     mWorld(world),
     mScreenResolution(screenResolution),
     mWindow(window)
@@ -209,9 +206,9 @@ RenderContext::~RenderContext() {
     glDeleteBuffers(1, &mGlobalUbo);
 }
 
-RenderContext& RenderContext::initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window) {
+RenderContext& RenderContext::initInstance(const World& world, const f32v2& screenResolution, SDL_Window* window) {
     if (!sInstance) {
-        sInstance = new RenderContext(resourceManager, world, screenResolution, window);
+        sInstance = new RenderContext(world, screenResolution, window);
     }
     return *sInstance;
 }
@@ -223,12 +220,13 @@ RenderContext& RenderContext::getInstance() {
 
 void RenderContext::initPostLoad() {
 
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
 
     // TODO: These can be eliminated and put into constructor???
     {
         ScopedTimer timer("Finish atlas normals and mips", 2);
-        mTextureManipulator = std::make_unique<GPUTextureManipulator>(mResourceManager, *mMaterialRenderer);
+        mTextureManipulator = std::make_unique<GPUTextureManipulator>(*mMaterialRenderer);
         mTextureManipulator->InitPostLoad();
         checkGlError("Init texture manipulator");
     }
@@ -237,19 +235,19 @@ void RenderContext::initPostLoad() {
     {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
-        mCharacterRenderer = std::make_unique<CharacterRenderer>(mResourceManager.getMaterialManager(), mResourceManager.getModelRepository());
-        mChunkRenderer = std::make_unique<ChunkRenderer>(mWorld.getWorldGrid(), mResourceManager, *mMaterialRenderer);
-        mLightRenderer = std::make_unique<LightRenderer>(mResourceManager, *mMaterialRenderer);
-        mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mResourceManager, mWorld);
-        mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
+        mCharacterRenderer = std::make_unique<CharacterRenderer>();
+        mChunkRenderer = std::make_unique<ChunkRenderer>(mWorld.getWorldGrid(), *mMaterialRenderer);
+        mLightRenderer = std::make_unique<LightRenderer>(*mMaterialRenderer);
+        mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mWorld);
+        mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(*mMaterialRenderer, mScreenResolution);
         mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-        mItemRenderer = std::make_unique<ItemRenderer>(mWorld.getWorldGrid(), mResourceManager, *mMaterialRenderer);
-        mBuildingRenderer = std::make_unique<BuildingRenderer>(mResourceManager, *mMaterialRenderer);
-        mCloudRenderer = std::make_unique<CloudRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-        mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-        mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-        mShadowRenderer = std::make_unique<ShadowRenderer>(mResourceManager, *mMaterialRenderer, mScreenResolution);
-        mTerrainRenderer = std::make_unique<TerrainRenderer>(mResourceManager, *mMaterialRenderer);
+        mItemRenderer = std::make_unique<ItemRenderer>(mWorld.getWorldGrid(), *mMaterialRenderer);
+        mBuildingRenderer = std::make_unique<BuildingRenderer>(*mMaterialRenderer);
+        mCloudRenderer = std::make_unique<CloudRenderer>(*mMaterialRenderer, mScreenResolution);
+        mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(*mMaterialRenderer, mScreenResolution);
+        mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(*mMaterialRenderer, mScreenResolution);
+        mShadowRenderer = std::make_unique<ShadowRenderer>(*mMaterialRenderer, mScreenResolution);
+        mTerrainRenderer = std::make_unique<TerrainRenderer>(*mMaterialRenderer);
         checkGlError("Renderer init");
     }
 
@@ -257,7 +255,7 @@ void RenderContext::initPostLoad() {
     {
         ScopedTimer timer("Passthrough init", 2);
         for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-            const Material* material = mResourceManager.getMaterialManager().getMaterial(sPassthroughMaterialNames[i]);
+            const Material* material = materialManager.getMaterial(sPassthroughMaterialNames[i]);
             if (material) {
                 mPassthroughMaterials.emplace_back(material);
             }
@@ -273,16 +271,16 @@ void RenderContext::initPostLoad() {
         mLightRenderer->InitPostLoad();
     }
 
-    mSceneLightingMaterial = mResourceManager.getMaterialManager().getMaterial("scene_lighting");
-    mCopyDepthMaterial = mResourceManager.getMaterialManager().getMaterial("copy_depth");
-    mPassthroughMaterial = mResourceManager.getMaterialManager().getMaterial("pass_through");
+    mSceneLightingMaterial = materialManager.getMaterial("scene_lighting");
+    mCopyDepthMaterial = materialManager.getMaterial("copy_depth");
+    mPassthroughMaterial = materialManager.getMaterial("pass_through");
 
     {
         
         ScopedTimer timer("Skybox init", 2);
         buildHorizonMesh();
         mSkyBox = std::make_unique<Skybox>();
-        mSkyBox->init(mResourceManager.getMaterialManager().getMaterial("sky"));
+        mSkyBox->init(materialManager.getMaterial("sky"));
     }
 
 }
@@ -292,7 +290,7 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     RenderStats::clear();
     // Misc renderData
     mRenderData.mainCamera = camera;
-    mRenderData.atlas = mResourceManager.getTextureAtlas().getAtlasTexture();
+    mRenderData.atlas = Services::ResourceManager::ref().getTextureAtlas().getAtlasTexture();
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
     // Ubo data

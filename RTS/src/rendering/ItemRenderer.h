@@ -3,7 +3,6 @@
 #include "QuadMesh.h"
 #include "rendering/TileVertex.h"
 
-class ResourceManager;
 class MaterialRenderer;
 class ItemRepository;
 struct ItemStack;
@@ -20,7 +19,7 @@ struct ItemStockpileRecord;
 class ItemRenderer
 {
 public:
-    ItemRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, MaterialRenderer& materialRenderer);
+    ItemRenderer(const WorldGrid& worldGrid, MaterialRenderer& materialRenderer);
 
     void updateStockpileBillboardMesh(const ItemStockpile& stockpile) const;
     void updateStockpileQuadMesh(const ItemStockpile& stockpile) const;
@@ -33,9 +32,7 @@ private:
     void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const;
 
     const WorldGrid& mWorldGrid;
-    ResourceManager& mResourceManager;
     MaterialRenderer& mMaterialRenderer;
-    ItemRepository& mItemRepository;
 
     const Material* mItemBillboardMaterial;
     const Material* mItemMeshMaterial;

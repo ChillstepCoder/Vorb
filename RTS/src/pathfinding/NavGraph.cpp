@@ -6,8 +6,6 @@
 #include "DebugRenderer.h"
 #include "options/DebugOptions.h"
 
-#include "services/Services.h"
-
 // 0 or 1 for rendering debug
 #define DEBUG_RENDER_NAV_NODES 1
 

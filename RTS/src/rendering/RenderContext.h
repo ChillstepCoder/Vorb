@@ -47,14 +47,14 @@ struct GlobalRenderData {
 // Singleton
 class RenderContext {
 protected:
-    RenderContext(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window);
+    RenderContext(const World& world, const f32v2& screenResolution, SDL_Window* window);
     ~RenderContext();
 
 public:
     RenderContext(RenderContext& other) = delete;
     void operator=(const RenderContext&) = delete;
 
-    static RenderContext& initInstance(ResourceManager& resourceManager, const World& world, const f32v2& screenResolution, SDL_Window* window);
+    static RenderContext& initInstance(const World& world, const f32v2& screenResolution, SDL_Window* window);
     static RenderContext& getInstance();
 
     void initPostLoad();
@@ -85,7 +85,6 @@ private:
     GlobalRenderData mRenderData;
     f32v2 mScreenResolution;
     f32v2 mCurrentFramebufferDims;
-    ResourceManager& mResourceManager;
 
     // Renderers
     mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;

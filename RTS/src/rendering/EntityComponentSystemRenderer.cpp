@@ -18,14 +18,14 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
 
-EntityComponentSystemRenderer::EntityComponentSystemRenderer(ResourceManager& resourceManager, const World& world)
+EntityComponentSystemRenderer::EntityComponentSystemRenderer(const World& world)
 	: mSpriteBatch(std::make_unique<vg::SpriteBatch>())
 	, mSystem(world.getECS())
-	, mResourceManager(resourceManager)
 	, mWorld(world) {
 	// TODO: Render thread assert?
-    mCircleTexture = resourceManager.getTextureCache().addTexture("data/textures/circle_dir.png");
-    mSquareTexture = resourceManager.getTextureCache().addTexture("data/textures/square.png");
+	vg::TextureCache& textureCache = Services::ResourceManager::ref().getTextureCache();
+    mCircleTexture = textureCache.addTexture("data/textures/circle_dir.png");
+    mSquareTexture = textureCache.addTexture("data/textures/square.png");
 	mSpriteBatch->init();
 }
 

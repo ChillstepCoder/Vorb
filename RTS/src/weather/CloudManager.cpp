@@ -8,8 +8,6 @@
 #include "World.h"
 #include "ResourceManager.h"
 
-#include "services/Services.h"
-
 #include "Random.h"
 
 #include "options/DebugOptions.h"
@@ -59,7 +57,7 @@ void CloudManager::init() {
 
     // Initial variables
     mLastCenterPosition = i32v2(centerCloudID.pos.x, centerCloudID.pos.y);
-    mCloudSpriteData = &mWorld.getResourceManager().getSprite("cloud");
+    mCloudSpriteData = &Services::ResourceManager::ref().getSprite("cloud");
 
     std::map<ui32 /*ycoord*/, CloudID /*leftMost*/> spawnLookup;
 

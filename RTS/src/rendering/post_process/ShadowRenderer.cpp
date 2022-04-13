@@ -129,8 +129,8 @@ constexpr int MAX_MIP_LEVELS = 9; // TODO: Make this dynamic?
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps
 // https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
 
-ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mResourceManager(resourceManager), mMaterialRenderer(materialRenderer), mGBufferDims(gbufferDims)
+ShadowRenderer::ShadowRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
+    mMaterialRenderer(materialRenderer), mGBufferDims(gbufferDims)
 {
 
     {// Shadow map gbuffers
@@ -189,11 +189,12 @@ ShadowRenderer::ShadowRenderer(ResourceManager& resourceManager, const MaterialR
     }
 
     // Materials
-    mShadowMapperMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mapper");
-    mShadowVarianceMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_variance");
-    mShadowApplyMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_apply");
-    mBlurMaterial = mResourceManager.getMaterialManager().getMaterial("gaussian_blur_shadows");
-    mShadowMipMaterial = mResourceManager.getMaterialManager().getMaterial("shadow_mipmap");
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper");
+    mShadowVarianceMaterial = materialManager.getMaterial("shadow_variance");
+    mShadowApplyMaterial = materialManager.getMaterial("shadow_apply");
+    mBlurMaterial = materialManager.getMaterial("gaussian_blur_shadows");
+    mShadowMipMaterial = materialManager.getMaterial("shadow_mipmap");
 
 }
 

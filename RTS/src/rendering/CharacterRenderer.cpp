@@ -11,6 +11,7 @@
 #include "rendering/SpriteData.h"
 
 #include "resources/ModelRepository.h"
+#include "ResourceManager.h"
 
 #include "options/DebugOptions.h"
 
@@ -36,8 +37,8 @@
 //    BillboardVertex verts[4];
 //}
 
-CharacterRenderer::CharacterRenderer(const MaterialManager& materialManager, const ModelRepository& modelRepo) :
-    mMaterial(materialManager.getMaterial("character")), mModelRepo(modelRepo) {
+CharacterRenderer::CharacterRenderer() :
+    mMaterial(Services::ResourceManager::ref().getMaterialManager().getMaterial("character")) {
 }
 
 CharacterRenderer::~CharacterRenderer() {

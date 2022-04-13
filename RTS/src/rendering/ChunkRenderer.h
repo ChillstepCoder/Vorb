@@ -17,7 +17,7 @@ class WorldGrid;
 // TODO: IRendererBase?
 class ChunkRenderer {
 public:
-	ChunkRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, const MaterialRenderer& materialRenderer);
+	ChunkRenderer(const WorldGrid& worldGrid, const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
     void renderTiles(const World& world, const Camera3D& camera);
@@ -33,8 +33,6 @@ private:
     void TryRenderBaseMesh(const Chunk& chunk, const Material* material);
     void TryRenderGrassMeshes(const Chunk& chunk, const Material* material, const Camera3D& camera);
     void TryRenderBillboardMesh(const Chunk& chunk, const Material* material);
-
-	ResourceManager& mResourceManager;
 
     const MaterialRenderer& mMaterialRenderer;
     const Material* mShadowMapperMaterial = nullptr;

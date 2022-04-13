@@ -12,8 +12,7 @@
 // TODO: Config
 #include "options/DebugOptions.h"
 
-GPUTextureManipulator::GPUTextureManipulator(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) :
-    mResourceManager(resourceManager),
+GPUTextureManipulator::GPUTextureManipulator(const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer)
 {
 }
@@ -29,7 +28,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
     glBindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
     glViewport(0, 0, TEXTURE_ATLAS_WIDTH_PX, TEXTURE_ATLAS_WIDTH_PX);
 
-    const TextureAtlas& atlas = mResourceManager.getTextureAtlas();
+    const TextureAtlas& atlas = Services::ResourceManager::ref().getTextureAtlas();
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.getAtlasTexture());
@@ -38,7 +37,7 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
 
     // Gather all sprites to generate maps for
     std::map<int /*page*/, std::vector<SpriteData*>> spritesToGenerate;
-    for (auto&& it : mResourceManager.getSpriteRepository().getSprites()) {
+    for (auto&& it : Services::ResourceManager::ref().getSpriteRepository().getSprites()) {
         SpriteData& spriteData = it.second;
         if (spriteData.flags & SPRITEDATA_FLAG_HAS_NORMAL_MAP) {
             continue;
@@ -156,11 +155,12 @@ void GPUTextureManipulator::GenerateNormalMapsForTextureAtlas()
 }
 
 void GPUTextureManipulator::InitPostLoad() {
-    mNormalsMaterial = mResourceManager.getMaterialManager().getMaterial("normals_gen");
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    mNormalsMaterial = resourceManager.getMaterialManager().getMaterial("normals_gen");
     GenerateNormalMapsForTextureAtlas();
 
     // Generate mipmaps
-    const TextureAtlas& atlas = mResourceManager.getTextureAtlas();
+    const TextureAtlas& atlas = resourceManager.getTextureAtlas();
     if (sDebugOptions.mUseCompressedAtlas) {
         atlas.compressTextures();
     }

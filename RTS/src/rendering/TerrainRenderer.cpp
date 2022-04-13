@@ -13,10 +13,11 @@
 
 #include "options/DebugOptions.h"
 
-TerrainRenderer::TerrainRenderer(ResourceManager& resourceManager, const MaterialRenderer& materialRenderer) : mMaterialRenderer(materialRenderer)
+TerrainRenderer::TerrainRenderer(const MaterialRenderer& materialRenderer) : mMaterialRenderer(materialRenderer)
 {
-    mTerrainMaterial = resourceManager.getMaterialManager().getMaterial("terrain");
-    mWaterMaterial = resourceManager.getMaterialManager().getMaterial("water");
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mTerrainMaterial = materialManager.getMaterial("terrain");
+    mWaterMaterial = materialManager.getMaterial("water");
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::vector<HeightmapTerrainQuadtree>& terrainQuadtrees)

@@ -3,22 +3,19 @@
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 
-#include "services/Services.h"
-
 #include "ResourceManager.h"
 #include "MaterialRenderer.h"
 #include "MaterialManager.h"
 
 #include "camera/Camera3D.h"
 
-ItemRenderer::ItemRenderer(const WorldGrid& worldGrid, ResourceManager& resourceManager, MaterialRenderer& materialRenderer)
-    : mResourceManager(resourceManager)
-    , mMaterialRenderer(materialRenderer)
-    , mItemRepository(resourceManager.getItemRepository())
+ItemRenderer::ItemRenderer(const WorldGrid& worldGrid, MaterialRenderer& materialRenderer) :
+    mMaterialRenderer(materialRenderer)
     , mWorldGrid(worldGrid) {
 
-    mItemMeshMaterial = mResourceManager.getMaterialManager().getMaterial("standard_tile");
-    mItemBillboardMaterial = mResourceManager.getMaterialManager().getMaterial("billboard");
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mItemMeshMaterial = materialManager.getMaterial("standard_tile");
+    mItemBillboardMaterial = materialManager.getMaterial("billboard");
 
 }
 
@@ -109,7 +106,7 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
 
 void ItemRenderer::addItemStackToMesh(BillboardMesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
 {
-    const Item& item = mItemRepository.getItem(itemStack.id);
+    const Item& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
     const SpriteData& spriteData = item.mSpriteData;
     const f32v4& uvs = spriteData.uvs;
     mesh.addQuad(pos, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP, 0u, 0u);

@@ -28,7 +28,6 @@
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 #include "particles/ParticleSystemManager.h"
-#include "services/Services.h"
 
 #include "physics/ContactListener.h"
 #include "rendering/RenderContext.h"
@@ -54,9 +53,9 @@ constexpr f64 TICK_RATE_MS = 40.0;
 
 GameplayScreen::GameplayScreen(App* const app)
 	: IAppScreen<App>(app),
-    mResourceManager(&Services::ResourceManager::ref()),
-    mWorld(std::make_unique<World>(*mResourceManager)),
-    mRenderContext(RenderContext::initInstance(*mResourceManager, *mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
+    mResourceManager(Services::ResourceManager::ref()),
+    mWorld(std::make_unique<World>()),
+    mRenderContext(RenderContext::initInstance(*mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
 {
 
     UIContext::initInstance(*mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
@@ -101,8 +100,8 @@ void GameplayScreen::build() {
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 
-    mResourceManager->gatherFiles("data");
-	mResourceManager->loadFiles();
+    mResourceManager.gatherFiles("data");
+	mResourceManager.loadFiles();
 
     {
         ScopedTimer timer("Render context init");
@@ -111,7 +110,7 @@ void GameplayScreen::build() {
 #if WRITE_DEBUG_ATLAS == 1
     {
         ScopedTimer timer("Write debug atlas");
-        mResourceManager->writeDebugAtlas();
+        mResourceManager.writeDebugAtlas();
     }
 #endif
     {
@@ -133,7 +132,7 @@ void GameplayScreen::build() {
             sDebugOptions.mShowNavGraphUpdates = !sDebugOptions.mShowNavGraphUpdates;
         }
         else if (event.keyCode == VKEY_R/* && vui::InputDispatcher::key.isKeyPressed(VKEY_LALT)*/) { // TODO: Broken on laptop (Nvidia alt + r overlay?)
-			mResourceManager->reloadMaterials();
+			mResourceManager.reloadMaterials();
         }
         else if (event.keyCode == VKEY_N) {
 			mRenderContext.selectNextDebugShader();
@@ -238,7 +237,7 @@ void GameplayScreen::build() {
         else if (event.button == vui::MouseButton::RIGHT) {
 			if (vui::InputDispatcher::key.isKeyPressed(VKEY_P)) {
                 /*const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
-                mResourceManager->getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");*/
+                mResourceManager.getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");*/
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
                 /*mWorld->createEntity(worldPos, "villager");*/
@@ -447,7 +446,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
 			ItemStockpile* stockPile = worldObjects.getStockpile();
 			assert(stockPile);
 			ItemStack woodPile;
-			woodPile.id = mResourceManager->getItemRepository().getItem("wood_raw").getID();
+			woodPile.id = mResourceManager.getItemRepository().getItem("wood_raw").getID();
 			woodPile.quantity = 25;
             if (std::unique_ptr<ItemReservation> itemPromise = stockPile->tryPromiseItemStack(woodPile, 1)) {
                 while (!itemPromise->isFinished()) {

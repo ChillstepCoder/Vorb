@@ -8,8 +8,6 @@
 #include "city/City.h"
 #include "city/CityBusinessManager.h"
 
-#include "services/Services.h"
-
 #include "ecs/component/EmployeeComponent.h"
 
 PersonAISystem::PersonAISystem(World& world)
