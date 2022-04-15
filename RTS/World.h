@@ -32,6 +32,7 @@ class NavGraph;
 class WorldEditor;
 class ChunkMesher;
 class HeightmapTerrainQuadtree;
+class Building;
 struct NavNode;
 struct CityGraph;
 
@@ -124,6 +125,8 @@ public:
 
     IntersectionHit2D tryGetRaycastIntersect2D(const f32v2& start, const f32v2& end, f32 zPos);
 	
+	std::vector<std::unique_ptr<Building>> mLooseBuildingsTMP;
+
 private:
 
 	// TODO: Composition? WorldClock? idk

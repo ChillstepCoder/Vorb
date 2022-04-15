@@ -9,16 +9,12 @@
 
 #include "city/CityPlot.h"
 
-#include "rendering/QuadMesh.h"
-#include "rendering/TriangleMesh.h"
-
 #include "definitions/BuildingDef.h"
-
+#include "rendering/mesh/BuildingMesh.h"
 
 struct BuildingRenderData {
-    std::unique_ptr<QuadMesh> mRoofMesh;
-    std::unique_ptr<TriangleMesh> mRoofTriangleMesh;
-    bool mRoofMeshDirty = true;
+    std::unique_ptr<BuildingMesh> mMesh;
+    bool mMeshDirty = true;
 };
 
 // TODO: Can we optimize passing this around so theres no copies?

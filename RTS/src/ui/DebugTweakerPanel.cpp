@@ -99,6 +99,7 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
 
     if (ImGui::CollapsingHeader("Terrain")) {
         ImGui::PushID(++ID);
+        ImGui::Checkbox("Disable", &sDebugOptions.mDisableTerrain);
         ImGui::SliderFloat("Min LOD distance", &sDebugOptions.mTerrainLodDistanceOffset, 0.0f, 2500.0f, "%.1f");
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugTerrainLod);
         ImGui::Separator();
@@ -119,13 +120,12 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mTemperatureNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);
         ImGui::EndChild();
-        ImGui::NewLine();
-        ImGui::Checkbox("Disable", &sDebugOptions.mDisableTerrain);
         ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Water")) {
         ImGui::PushID(++ID);
+        ImGui::Checkbox("Disable", &sDebugOptions.mDisableWater);
         ImGui::ColorPicker4("Shallow Color", &sDebugOptions.mShallowWaterColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::ColorPicker4("Deep Color", &sDebugOptions.mDeepWaterColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::ColorPicker4("Foam Color", &sDebugOptions.mWaterFoamColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
@@ -137,7 +137,6 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::SliderFloat("Distort Tiling", &sDebugOptions.mWaterDistortTiling, 0.0f, 16.0f);
         ImGui::SliderFloat("Noise Tiling", &sDebugOptions.mWaterNoiseTiling, 0.0f, 16.0f);
         ImGui::DragFloatRange2("Foam Dist Range", &sDebugOptions.mWaterFoamDistanceRange.x, &sDebugOptions.mWaterFoamDistanceRange.y, 0.01f, 0.0f, 2.0f);
-        ImGui::Checkbox("Disable", &sDebugOptions.mDisableWater);
         ImGui::PopID();
     }
 

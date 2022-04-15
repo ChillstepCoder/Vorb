@@ -60,8 +60,9 @@ public:
     f32v4 uvTiling;
     color4 color;
     ui16 atlasPage;
+    i8v2 tangent;
     ui8 roughness;
-    ui8 padding[7];
+    ui8 padding[4];
 };
 // Need power of 2 alignment
 static_assert(sizeof(TriangleVertex) == 64, "Power of 2 byte alignment needed");

@@ -14,7 +14,7 @@ public:
     ~BuildingRenderer();
 
     void renderBuildingRoof(const Building& building);
-    void renderBuildingRoofShadows(const Building& building);
+    void renderBuildingShadows(const Building& building);
 
 private:
 

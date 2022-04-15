@@ -289,6 +289,15 @@ struct TileIndex {
 	ui16 index;
 };
 
+namespace {
+    inline const i8v3 compressNormal(const f32v3& normal) {
+        return {
+            (i8)glm::clamp(normal.x * 127.0f, -127.0f, 127.0f),
+            (i8)glm::clamp(normal.y * 127.0f, -127.0f, 127.0f),
+            (i8)glm::clamp(normal.z * 127.0f, -127.0f, 127.0f)
+        };
+    }
+}
 // Tiles
 typedef ui16 TileID;
 

@@ -19,6 +19,27 @@
 #include <CGAL/create_straight_skeleton_2.h>
 #include <boost/shared_ptr.hpp>
 #include <CGAL/Triangulation_2.h>
+#include <CGAL/partition_2.h>
+#include <CGAL/Partition_traits_2.h>
+//#include <CGAL/Delaunay_triangulation_2.h>
+//#include <CGAL/Regular_triangulation_2.h>
+
+constexpr ui32 DEBUG_COLOR_ARRAY_SIZE = 12;
+
+color4 DEBUG_COLOR_ARRAY[DEBUG_COLOR_ARRAY_SIZE] = {
+    COLOR_WHITE,
+    color4(1.0f, 0.0f, 0.0f),
+    color4(0.0f, 1.0f, 0.0f),
+    color4(0.0f, 0.0f, 1.0f),
+    color4(1.0f, 1.0f, 0.0f),
+    color4(0.0f, 1.0f, 1.0f),
+    color4(1.0f, 0.0f, 1.0f),
+    color4(0.5f, 0.1f, 1.0f),
+    color4(0.1f, 0.7f, 0.5f),
+    color4(0.7f, 0.5f, 0.1f),
+    color4(0.5f, 0.5f, 0.5f),
+    color4(0.1f, 0.1f, 0.1f),
+};
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2                   CgalPoint;
@@ -122,18 +143,19 @@ ui32v2 AXIS_UV_LOOKUP_FROM_CARTESIAN[4] = {
 // Step 4 : Raise the vertices according to their distance from the supporting edge.
 void BuildingMesher::buildRoofMesh(const Building& building)
 {
+    constexpr int BUILDING_DEBUG_LIFETIME = 50000;
     const ui32AABB2& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mOwnedTilesInAABB;
     constexpr f32 ROOF_HEIGHT_MULT = 0.3f;
     BuildingRenderData& renderData = building.mRenderData;
-    renderData.mRoofMeshDirty = false;
+    // TODO: Not right
 
     sHeightMap.reserve(100);
     sPoints.reserve(100);
 
-    if (!renderData.mRoofMesh) {
-        renderData.mRoofMesh = std::make_unique<QuadMesh>();
-        renderData.mRoofTriangleMesh = std::make_unique<TriangleMesh>();
+    renderData.mMeshDirty = false;
+    if (!renderData.mMesh) {
+        renderData.mMesh = std::make_unique<BuildingMesh>();
     }
 
     // Detect Edges
@@ -170,7 +192,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         code |= corners[3];
 
         if (!code) {
-            //assert(code); // Must be nonzero or we walked off the edge
+            assert(code); // Must be nonzero or we walked off the edge
             return;
         }
         Cartesian nextEdge = mCornerNextEdgeLookupTable[code];
@@ -202,113 +224,126 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     f32v2 start = building.mAABB.pos;
 
     const SpriteData& spriteData = Services::ResourceManager::ref().getSprite("roof");
-    TriangleMesh& triangleMesh = *renderData.mRoofTriangleMesh;
+    BuildingMesh& buildingMesh = *renderData.mMesh;
 
 
+    ui32 debugColorIndex = 0;
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
-        int kk = 0;
         sHeightMap.clear();
         sPoints.clear();
         do {
-            f32 x = he->vertex()->point().x();
-            f32 y = he->vertex()->point().y();
+            //he->is_border doesnt work but if v1 and v2 time are both 0, it is a contour edge
+            const f32 x1 = he->vertex()->point().x();
+            const f32 y1 = he->vertex()->point().y();
+            const f32 t1 = he->vertex()->time();
+            const f32 h1 = t1 * ROOF_HEIGHT_MULT;
             sPoints.push_back(he->vertex()->point());
-            const f32 h1 = he->vertex()->time() * ROOF_HEIGHT_MULT;
-            sHeightMap[f32v2(x, y)] = h1;
-            x = he->opposite()->vertex()->point().x();
-            y = he->opposite()->vertex()->point().y();
-            const f32 h2 = he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT;
-            sHeightMap[f32v2(x, y)] = h2;
-            if (sDebugOptions.mRoofDebug) {
-                f32v3 p1(start.x + x, start.y + y, building.mZPosRoof + h1);
-                f32v3 p2(start.x + x, start.y + y, building.mZPosRoof + h2);
-                DebugRenderer::drawLineBetweenPoints(p1, p2, color4(1.0f, 1.0f, 1.0f, 1.0f), 5000);
-            }
+            sHeightMap[f32v2(x1, y1)] = h1;
+            const f32 x2 = he->opposite()->vertex()->point().x();
+            const f32 y2 = he->opposite()->vertex()->point().y();
+            const f32 t2 = he->opposite()->vertex()->time();
+            const f32 h2 = t2 * ROOF_HEIGHT_MULT;
+            sHeightMap[f32v2(x2, y2)] = h2;
             he = he->next();
-            ++kk;
 
         } while (he != it->halfedge());
 
-        Triangulation triangulation;
-        triangulation.insert(sPoints.begin(), sPoints.end());
+        // Triangulation only works on convex polygons so we will partition the potentially concave poly into
+        // separate convex polygons
+        // https://stackoverflow.com/questions/1832430/c-cgal-2d-delauny-triangulation-concave-shapes
+  
+        CGAL::Partition_traits_2<K>::Polygon_2 concavePoly;
+        for (auto&& pp : sPoints) {
+            concavePoly.push_back(pp);
+        }
+        std::list<CGAL::Partition_traits_2<K>::Polygon_2> polygonList;
+        CGAL::optimal_convex_partition_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), std::back_inserter(polygonList));
+        for (auto&& convexPoly : polygonList) {
 
-        const f32v2 buildingPos(building.mAABB.pos.x, building.mAABB.pos.y);
-        const f32v2 buildingCenter = f32v2(building.mAABB.pos) + f32v2(building.mAABB.dims) * 0.5f;
-        for (auto&& it = triangulation.all_faces_begin(); it != triangulation.all_faces_end(); ++it) {
-            TriangleVertex verts[3];
-            bool skipTriangle = false;
-            for (int i = 0; i < 3; ++i) {
-                f32 x = it->vertex(i)->point().x();
-                f32 y = it->vertex(i)->point().y();
-                if (isinf(x)) {
-                    skipTriangle = true;
-                }
-                f32 deg1 = sHeightMap[f32v2(x,y)];
+            Triangulation triangulation;
+            triangulation.insert(convexPoly.vertices_begin(), convexPoly.vertices_end());
 
-                verts[i].pos = f32v3(start.x + x, start.y + y, building.mZPosRoof + deg1);
-
-                // Extrude bottom verts
-                if (deg1 == 0.0f) {
-                    f32v2 normal = glm::normalize(f32v2(verts[i].pos.x, verts[i].pos.y) - buildingCenter) * 0.3f;
-                    verts[i].pos.x += normal.x;
-                    verts[i].pos.y += normal.y;
-                }
-
-                if (sDebugOptions.mRoofDebug) {
-                    DebugRenderer::drawWireQuad(verts[i].pos = - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color4(1.0f, 0.0f, 1.0f, 1.0f), 5000);
-                }
-
-                verts[i].uvTiling = spriteData.uvs;
-                verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
-                verts[i].atlasPage = spriteData.atlasPage;
-            }
-
-            if (!skipTriangle) {
-
-                // Determine orientation
-                const f32v3 o1 = verts[1].pos - verts[0].pos;
-                const f32v3 o2 = verts[2].pos - verts[0].pos;
-                const f32v3 normal = glm::normalize(glm::cross(o1, o2));
-                Cartesian dir = Cartesian::LEFT;
-                if (abs(normal.x) < 0.0001f) {
-                    if (normal.y > 0) {
-                        dir = Cartesian::UP;
-                    }
-                    else {
-                        dir = Cartesian::DOWN;
-                    }
-                }
-                else if (normal.x > 0) {
-                    dir = Cartesian::RIGHT;
-                }
-
-                // Determine how we get UVs
-                const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
-
+            const f32v2 buildingPos(building.mAABB.pos.x, building.mAABB.pos.y);
+            const f32v2 buildingCenter = f32v2(building.mAABB.pos) + f32v2(building.mAABB.dims) * 0.5f;
+            for (auto&& it = triangulation.all_faces_begin(); it != triangulation.all_faces_end(); ++it) {
+                TriangleVertex verts[3];
+                bool isInfiniteFace = false;
                 for (int i = 0; i < 3; ++i) {
-                    verts[i].normal = normal;
-                    verts[i].uvs.x = verts[i].pos[uvAxis.x] - buildingPos.x;
-                    verts[i].uvs.y = verts[i].pos[uvAxis.y] - buildingPos.y;
+                    f32 x = it->vertex(i)->point().x();
+                    f32 y = it->vertex(i)->point().y();
+                    if (isinf(x)) {
+                        // TODO: This means we are the convex edge, use it?
+                        isInfiniteFace = true;
+                        break;
+                    }
+                    f32 deg1 = sHeightMap[f32v2(x, y)];
+
+                    verts[i].pos = f32v3(start.x + x, start.y + y, building.mZPosRoof + deg1);
+
+                    // Extrude bottom verts
+                    if (deg1 == 0.0f) {
+                        f32v2 normal = glm::normalize(f32v2(verts[i].pos.x, verts[i].pos.y) - buildingCenter) * 0.3f;
+                        verts[i].pos.x += normal.x;
+                        verts[i].pos.y += normal.y;
+                    }
+
+                    /* if (sDebugOptions.mRoofDebug) {
+                         DebugRenderer::drawWireQuad(verts[i].pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
+                     }*/
+
+                    verts[i].uvTiling = spriteData.uvs;
+                    verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
+                    verts[i].atlasPage = spriteData.atlasPage;
                 }
 
-                triangleMesh.addTriangle(verts);
+                // The infinite face is not needed for our representation
+                if (!isInfiniteFace) {
+
+                    // Determine orientation
+                    const f32v3 o1 = verts[1].pos - verts[0].pos;
+                    const f32v3 o2 = verts[2].pos - verts[0].pos;
+                    const f32v3 normal = glm::normalize(glm::cross(o1, o2));
+                    Cartesian dir = Cartesian::LEFT;
+                    if (abs(normal.x) < 0.0001f) {
+                        if (normal.y > 0) {
+                            dir = Cartesian::UP;
+                        }
+                        else {
+                            dir = Cartesian::DOWN;
+                        }
+                    }
+                    else if (normal.x > 0) {
+                        dir = Cartesian::RIGHT;
+                    }
+
+                    // Determine how we get UVs
+                    const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
+
+                    for (int i = 0; i < 3; ++i) {
+                        verts[i].normal = normal;
+                        verts[i].uvs.x = verts[i].pos[uvAxis.x] - buildingPos.x;
+                        verts[i].uvs.y = verts[i].pos[uvAxis.y] - buildingPos.y;
+                    }
+
+                    DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
+                    buildingMesh.addTriangle(verts);
+                }
             }
         }
-        
+        ++debugColorIndex;
+        if (debugColorIndex >= DEBUG_COLOR_ARRAY_SIZE) debugColorIndex = 0;
     }
 
     // Base of roof
-    QuadMesh& mesh = *renderData.mRoofMesh;
     for (ui32 y = 0; y < aabb.dims.y; ++y) {
         for (ui32 x = 0; x < aabb.dims.x; ++x) {
             const ui32 index = y * aabb.dims.x + x;
             if (ownedTiles.getBit(index)) {
-                f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, 3.0051f);
-                mesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, building.mZPosRoof);
+            //    buildingMesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
             }
         }
     }
-    mesh.finishMesh(MeshDrawMode::STATIC);
-    triangleMesh.finishMesh(MeshDrawMode::STATIC);
+    buildingMesh.finishMesh(MeshDrawMode::STATIC);
 }

@@ -37,7 +37,7 @@ void BuildingRenderer::renderBuildingRoof(const Building& building)
         DebugRenderer::drawWireQuad(f32v3(building.mAABB.x, building.mAABB.y, building.mZPosRoof), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
     }
 
-    if (building.mRenderData.mRoofMeshDirty) {
+    if (building.mRenderData.mMeshDirty) {
         mMesher->buildRoofMesh(building);
     }
 
@@ -45,17 +45,17 @@ void BuildingRenderer::renderBuildingRoof(const Building& building)
     // bindMaterialForRender(material, nullptr);
     // mesh.draw(material.mProgram);
     // TODO: Fix invalid meshes
-    if (building.mRenderData.mRoofTriangleMesh->isValid()) {
-        mMaterialRenderer.renderMesh(*building.mRenderData.mRoofTriangleMesh, *mRoofMaterial);
+    if (building.mRenderData.mMesh->isValid()) {
+        mMaterialRenderer.renderMesh(*building.mRenderData.mMesh, *mRoofMaterial);
     }
-    if (building.mRenderData.mRoofMesh->isValid()) {
-        mMaterialRenderer.renderMesh(*building.mRenderData.mRoofMesh, *mRoofBaseMaterial);
-    }
+    //if (building.mRenderData.mRoofMesh->isValid()) {
+    //    mMaterialRenderer.renderMesh(*building.mRenderData.mRoofMesh, *mRoofBaseMaterial);
+    //}
 }
 
-void BuildingRenderer::renderBuildingRoofShadows(const Building& building) {
+void BuildingRenderer::renderBuildingShadows(const Building& building) {
     // TODO: Fix invalid meshes
-    if (building.mRenderData.mRoofTriangleMesh->isValid()) {
-        mMaterialRenderer.renderMesh(*building.mRenderData.mRoofTriangleMesh, *mRoofShadowMaterial);
+    if (building.mRenderData.mMesh->isValid()) {
+        mMaterialRenderer.renderMesh(*building.mRenderData.mMesh, *mRoofShadowMaterial);
     }
 }
