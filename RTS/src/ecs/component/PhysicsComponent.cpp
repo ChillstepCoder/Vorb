@@ -73,7 +73,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
         tileCollisionRadius = collider->dims.x; // TODO: better?
     }
     else {
-        TileID groundId = tile->getLayersMainThread()[TILE_LAYER_GROUND];
+        TileID groundId = tile->getLayersMainThread(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
         if (groundId == TILE_ID_NONE) {
             return;
         }

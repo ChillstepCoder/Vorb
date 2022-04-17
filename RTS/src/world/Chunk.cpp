@@ -243,7 +243,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
                     TileIndex tileIndex(TileIndex(chunkRelPos.x, chunkRelPos.y));
                     Tile& tile = getMutableTileAt(tileIndex);
-                    if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
+                    if (tile.getLayersMainThread(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
                         setTileBaseZPosition(tileIndex, mWorldGrid->computeCenterHeightAtTile(mChunkId, tileIndex));
                     }
@@ -268,7 +268,7 @@ void Chunk::setTileAt(TileIndex i, Tile tile) {
     oldTile = tile;
     oldTile.setTileFlags(newFlags, readLocked); // Union tile flags
     // Update collision
-    updateTileCollisionAt(i, tile.topLayer, readLocked);
+    updateTileCollisionAt(i, tile.floors[TILE_FLOOR_GROUND].topLayer, readLocked);
     // Only dirty nav graph and mesh if we actually updated data
     if (!readLocked) {
         dirtyNavGraph();
@@ -311,16 +311,17 @@ bool Chunk::tryAddTile(TileIndex i, const TileData& tileData) {
     }
 }
 
-void Chunk::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
+void Chunk::setTileLayer(TileFloor floor, TileIndex i, TileLayer layer, TileID id) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.setTileLayer(layer, id, readLocked);
+    tile.setTileLayer(floor, layer, id, readLocked);
     // Only top has collision
     if (layer == TileLayer::Top) {
-        updateTileCollisionAt(i, tile.topLayer, readLocked);
+        // TODO: Use proper floor for this
+        updateTileCollisionAt(i, tile.floors[TILE_FLOOR_GROUND].topLayer, readLocked);
     }
     if (layer != TileLayer::Mid) {
         // Top and bottom can change nav graph

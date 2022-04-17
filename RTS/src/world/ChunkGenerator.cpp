@@ -47,7 +47,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * fadeMult) {
-                tile.topLayer = pineTree;
+                tile.floors[TILE_FLOOR_GROUND].topLayer = pineTree;
             }
         }
     }
@@ -101,9 +101,9 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     // Set all thread safe data to be copies of base
 
     tile.baseZPositionCompressedThreadSafe = tile.baseZPositionCompressed;
-    tile.groundLayerThreadSafe = tile.groundLayer;
-    tile.midLayerThreadSafe = tile.midLayer;
-    tile.topLayerThreadSafe = tile.topLayer;
+    tile.floors[TILE_FLOOR_GROUND].groundLayerThreadSafe = tile.floors[TILE_FLOOR_GROUND].groundLayer;
+    tile.floors[TILE_FLOOR_GROUND].midLayerThreadSafe = tile.floors[TILE_FLOOR_GROUND].midLayer;
+    tile.floors[TILE_FLOOR_GROUND].topLayerThreadSafe = tile.floors[TILE_FLOOR_GROUND].topLayer;
     tile.tileFlagsThreadSafe = tile.tileFlags;
     tile.pathWeightThreadSafe = tile.pathWeight;
 

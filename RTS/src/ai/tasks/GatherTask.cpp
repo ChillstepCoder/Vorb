@@ -144,9 +144,9 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             // TODO: Interact lock???
             auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
-            TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
+            TileID tileId = tileRef->tile->getLayersMainThread(TILE_FLOOR_GROUND)[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
-            tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+            tileRef->chunk->setTileLayer(TILE_FLOOR_GROUND, tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
             tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
             // TODO: Play animation of tree falling
 

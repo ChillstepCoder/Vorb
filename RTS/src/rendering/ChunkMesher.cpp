@@ -354,7 +354,7 @@ void addTileFloraBillboard(
 
     const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.getLayersThreadSafe()[layerIndex];
+    const TileID tileId = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex];
 
     const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
 
@@ -370,8 +370,8 @@ void addTileFloraBillboard(
     // Allow overlap when adjacent tiles are the same
 
     const f32 tileBaseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
-    const float rightXMult = (rightTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != rightTile.getLayersThreadSafe()[layerIndex]) ? 1.0f : 0.0f;
-    const float topXMult = (topTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != topTile.getLayersThreadSafe()[layerIndex]) ? 1.0f : 0.0f;
+    const float rightXMult = (rightTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != rightTile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex]) ? 1.0f : 0.0f;
+    const float topXMult = (topTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != topTile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex]) ? 1.0f : 0.0f;
     ui32 rnd = Random::getThreadSafe(x, y);
     ui32 batchCount;
     if (spriteData.bunchCount.x == spriteData.bunchCount.y) {
@@ -576,7 +576,7 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
     const SpriteData& spriteData = tileData.spriteData;
     const bool shouldRandFlip = spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.getLayersThreadSafe()[layerIndex];
+    const TileID tileId = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex];
 
     const ui32v2 xyTilePos(tileIndex.getX(), tileIndex.getY());
     const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
@@ -762,7 +762,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                 const Tile& tile = chunk.mTiles[index];
                 const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
+                    TileID layerTile = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex];
                     if (layerTile == TILE_ID_NONE) {
                         continue;
                     }
@@ -837,7 +837,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
 f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, TileIndex tileIndex) {
     f32 height = 0.0f;
-    const TileID tileId = neighbor.getLayersThreadSafe()[TILE_LAYER_GROUND];
+    const TileID tileId = neighbor.getLayersThreadSafe(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
         const TileData& tileData = TileRepository::getTileData(tileId);
         const SpriteData& spriteData = tileData.spriteData;
@@ -852,7 +852,7 @@ f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, Tile
 f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
     const Tile& tile = *neighbor.tile;
     f32 height = 0.0f;
-    const TileID tileId = tile.getLayersThreadSafe()[TILE_LAYER_GROUND];
+    const TileID tileId = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
         const TileData& tileData = TileRepository::getTileData(tileId);
         const SpriteData& spriteData = tileData.spriteData;

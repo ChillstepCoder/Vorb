@@ -872,7 +872,7 @@ void World::setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer) {
     assert(handle.isValid());
     if (handle.isValid()) {
         Chunk* chunk = handle.getMutableChunk();
-        chunk->setTileLayer(handle.index, layer, id);
+        chunk->setTileLayer(TILE_FLOOR_GROUND, handle.index, layer, id);
     }
 }
 

@@ -32,13 +32,14 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TILE_FLAG_HAS_COLLIDER);
     FLAG_DISPLAY(TILE_FLAG_QUEUED_UPDATE);
     FLAG_DISPLAY(TILE_FLAG_IS_RESOURCE_RESERVED);
+    FLAG_DISPLAY(TILE_FLAG_IS_MULTI_FLOOR);
 
-    static_assert(TILE_FLAG_TERM == 1 << 13, "Update");
+    static_assert(TILE_FLAG_TERM == 1 << 14, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
 
-    const ui32 id = tileHandle.tile->getLayersMainThread()[layer];
+    const ui32 id = tileHandle.tile->getLayersMainThread(TILE_FLOOR_GROUND)[layer];
     if (id == TILE_ID_NONE) {
         ImGui::Text(format, id, "NONE");
     }

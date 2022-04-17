@@ -93,10 +93,28 @@ void Tile::clearTileCollisionFlags(bool isReadLocked) {
     }
 }
 
+Tile::Tile(TileID ground, TileID mid, TileID top) {
+    floors[TILE_FLOOR_GROUND].groundLayer = ground;
+    floors[TILE_FLOOR_GROUND].midLayer = mid;
+    floors[TILE_FLOOR_GROUND].topLayer = top;
+}
+
+Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos) : baseZPositionCompressed(compressTileZPosition(zPos)), baseZPositionCompressedThreadSafe(baseZPositionCompressed) {
+    floors[TILE_FLOOR_GROUND].groundLayer = ground;
+    floors[TILE_FLOOR_GROUND].midLayer = mid;
+    floors[TILE_FLOOR_GROUND].topLayer = top;
+}
+
+Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : baseZPositionCompressed(compressTileZPosition(zPos)), baseZPositionCompressedThreadSafe(baseZPositionCompressed), tileFlags(flags), tileFlagsThreadSafe(flags) {
+    floors[TILE_FLOOR_GROUND].groundLayer = ground;
+    floors[TILE_FLOOR_GROUND].midLayer = mid;
+    floors[TILE_FLOOR_GROUND].topLayer = top;
+}
+
 bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) const {
     assert(IS_MAIN_THREAD());
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
-        TileID tileId = layers[i];
+        TileID tileId = floors[TILE_FLOOR_GROUND].layers[i];
         if (tileId != INVALID_TILE_INDEX) {
             if (TileRepository::getTileData(tileId).resource == resource) {
                 if (outLayer) {
@@ -114,16 +132,14 @@ void Tile::updateThreadSafeLayers() {
     tileFlags &= (~TILE_FLAG_QUEUED_UPDATE);
 
     tileFlagsThreadSafe = tileFlags;
-    groundLayerThreadSafe = groundLayer;
-    midLayerThreadSafe = midLayer;
-    topLayerThreadSafe = topLayer;
+    memcpy(floors[TILE_FLOOR_GROUND].layersThreadSafe, floors[TILE_FLOOR_GROUND].layers, sizeof(TileID) * TILE_LAYER_COUNT);
     baseZPositionCompressedThreadSafe = baseZPositionCompressed;
     pathWeightThreadSafe = pathWeight;
 }
 
 bool Tile::canAddTile(const TileData& tile) const {
     assert(IS_MAIN_THREAD());
-    return layers[tile.layer] == TILE_ID_NONE;
+    return floors[TILE_FLOOR_GROUND].layers[tile.layer] == TILE_ID_NONE;
 }
 
 void Tile::addTile(const TileData& tile, bool isReadLocked) {
@@ -131,9 +147,9 @@ void Tile::addTile(const TileData& tile, bool isReadLocked) {
     if (isReadLocked) {
         tileFlags |= TILE_FLAG_QUEUED_UPDATE;
     } else {
-        layersThreadSafe[tile.layer] = tile.id;
+        floors[TILE_FLOOR_GROUND].layersThreadSafe[tile.layer] = tile.id;
     }
-    layers[tile.layer] = tile.id;
+    floors[TILE_FLOOR_GROUND].layers[tile.layer] = tile.id;
 }
 
 bool Tile::tryAddTile(const TileData& tile, bool isReadLocked) {
@@ -144,15 +160,15 @@ bool Tile::tryAddTile(const TileData& tile, bool isReadLocked) {
     return true;
 }
 
-void Tile::setTileLayer(TileLayer layer, TileID id, bool isReadLocked) {
+void Tile::setTileLayer(TileFloor floor, TileLayer layer, TileID id, bool isReadLocked) {
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
         tileFlags |= TILE_FLAG_QUEUED_UPDATE;
     }
     else {
-        layersThreadSafe[e_cast(layer)] = id;
+        floors[floor].layersThreadSafe[e_cast(layer)] = id;
     }
-    layers[e_cast(layer)] = id;
+    floors[floor].layers[e_cast(layer)] = id;
 }
 
 void Tile::setPathWeight(ui8 weight, bool isReadLocked) {
@@ -180,13 +196,13 @@ void Tile::updateCollision(bool isReadLocked) {
     // Clear collision flags
     tileFlags &= (~TILE_COLLISION_FLAGS_MASK);
 
-    if (topLayer == TILE_ID_NONE) {
+    if (floors[TILE_FLOOR_GROUND].topLayer == TILE_ID_NONE) {
         if (tileFlags & TILE_FLAG_HAS_COLLIDER) {
             tileFlags &= ~(TILE_FLAG_HAS_COLLIDER);
         }
     }
     else {
-        const TileCollider& collider = TileRepository::getTileData(topLayer).collider;
+        const TileCollider& collider = TileRepository::getTileData(floors[TILE_FLOOR_GROUND].topLayer).collider;
         if (collider.isValid()) {
             tileFlags |= collider.defaultFlags;
         }
@@ -206,8 +222,8 @@ void Tile::updateCollision(bool isReadLocked) {
 const TileCollider* Tile::tryGetColliderMainThread() const {
     assert(IS_MAIN_THREAD());
     if (tileFlags & TILE_FLAG_HAS_COLLIDER) {
-        assert(topLayer != TILE_ID_NONE);
-        return &TileRepository::getTileData(topLayer).collider;
+        assert(floors[TILE_FLOOR_GROUND].topLayer != TILE_ID_NONE);
+        return &TileRepository::getTileData(floors[TILE_FLOOR_GROUND].topLayer).collider;
     }
     return nullptr;
 }
@@ -215,8 +231,8 @@ const TileCollider* Tile::tryGetColliderMainThread() const {
 const TileCollider* Tile::tryGetColliderThreadSafe() const {
     assert(!IS_MAIN_THREAD());
     if (tileFlagsThreadSafe & TILE_FLAG_HAS_COLLIDER) {
-        assert(topLayerThreadSafe != TILE_ID_NONE);
-        return &TileRepository::getTileData(topLayerThreadSafe).collider;
+        assert(floors[TILE_FLOOR_GROUND].topLayerThreadSafe != TILE_ID_NONE);
+        return &TileRepository::getTileData(floors[TILE_FLOOR_GROUND].topLayerThreadSafe).collider;
     }
     return nullptr;
 }

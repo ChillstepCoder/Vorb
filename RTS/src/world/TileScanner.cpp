@@ -51,7 +51,7 @@ std::vector<TileHandle> TileScanner::scanForResource(World& world, TileResource 
         // Skip the ground layer, it is never a resource
         if (!tileHandle.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED)) {
             for (int i = TILE_LAYER_MID; i < TILE_LAYER_COUNT; ++i) {
-                const TileID id = tileHandle.tile->getLayersMainThread()[i];
+                const TileID id = tileHandle.tile->getLayersMainThread(TILE_FLOOR_GROUND)[i];
                 if (id != TILE_ID_NONE) {
                     if (TileRepository::getTileData(id).resource == resource) {
                         tilesToReturn.emplace_back(tileHandle);

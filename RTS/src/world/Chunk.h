@@ -161,7 +161,7 @@ public:
     bool canAddTile(TileIndex i, const TileData& tileData) const;
     void addTile(TileIndex i, const TileData& tileData);
     bool tryAddTile(TileIndex i, const TileData& tileData);
-    void setTileLayer(TileIndex i, TileLayer layer, TileID id);
+    void setTileLayer(TileFloor floor, TileIndex i, TileLayer layer, TileID id);
     void setTileFlag(TileIndex i, TileFlags flag);
     void setTileFlags(TileIndex i, TileFlags flags);
     void clearTileFlag(TileIndex i, TileFlags flag);
@@ -205,7 +205,7 @@ private:
     // =========== Generation ===========
 	void setTileFromGeneration(TileIndex i, Tile&& tile) {
 		mTiles[i] = tile;
-		updateTileCollisionAt(i, tile.layers[TILE_LAYER_TOP], false);
+		updateTileCollisionAt(i, tile.floors[TILE_FLOOR_GROUND].layers[TILE_LAYER_TOP], false);
 	}
 
     // =========== Collision ===========
