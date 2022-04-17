@@ -24,6 +24,9 @@
 //#include <CGAL/Delaunay_triangulation_2.h>
 //#include <CGAL/Regular_triangulation_2.h>
 
+constexpr f32 ROOF_THICKNESS = 0.0f;
+constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
+constexpr f32 ROOF_HEIGHT_MULT = 0.3f;
 constexpr int BUILDING_DEBUG_LIFETIME = 50000;
 constexpr ui32 DEBUG_COLOR_ARRAY_SIZE = 12;
 color4 DEBUG_COLOR_ARRAY[DEBUG_COLOR_ARRAY_SIZE] = {
@@ -50,15 +53,26 @@ typedef CGAL::Triangulation_2<K>         Triangulation;
 typedef Triangulation::Vertex_circulator Vertex_circulator;
 typedef Triangulation::Point             TriangulationPoint;
 
-class f32v2HashFunction {
+// TODO Move
+class f32v2hash {
 public:
-    size_t operator()(const f32v2& f) const
-    {
-        return (size_t)std::hash<f32>{}(f.x) ^ (size_t)std::hash<f32>{}(f.y * 127.0f);
+    size_t operator()(const f32v2& v) const {
+        size_t h;
+        boost::hash_combine(h, v.x);
+        boost::hash_combine(h, v.y);
+        return h;
     }
 };
 
-thread_local std::unordered_map<f32v2, f32, f32v2HashFunction> sHeightMap;
+//class f32v2HashFunction {
+//public:
+//    size_t operator()(const f32v2& f) const
+//    {
+//        return (size_t)std::hash<f32>{}(f.x) ^ (size_t)std::hash<f32>{}(f.y * 127.0f);
+//    }
+//};
+
+thread_local std::unordered_map<f32v2, f32, f32v2hash> sHeightMap;
 thread_local std::vector<TriangulationPoint> sPoints;
 thread_local Polygon_2 sCgalPoly;
 
@@ -136,27 +150,46 @@ ui32v2 AXIS_UV_LOOKUP_FROM_CARTESIAN[4] = {
     ui32v2(AXIS_X, AXIS_Y), // Cartesian::UP
 };
 
-// TODO Move
-class f32v2hash {
-public:
-    size_t operator()(const f32v2& v) const {
-        size_t h;
-        boost::hash_combine(h, v.x);
-        boost::hash_combine(h, v.y);
-        return h;
-    }
-};
-
 //http://wscg.zcu.cz/wscg2003/Papers_2003/G67.pdf
 // Step 1: Construct the Straight Skeleton http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=0A7158816778A842AE8ABC0A752CD92D?doi=10.1.1.131.7175&rep=rep1&type=pdf
 // Step 2: Determine the distance, d, each vertex is from its supporting edge.
 // Step 3 : Perform a boundary walk, using the least interior angle, to determine the roof planes.
 // Step 4 : Raise the vertices according to their distance from the supporting edge.
+
+void computeGablePointsAndExtrudeNormals(std::unordered_map<f32v2, f32v2, f32v2hash>& gableTargetPoints, std::unordered_map<f32v2, f32v3, f32v2hash>& contourExtrudeNormals, SsPtr iss) {
+    gableTargetPoints.reserve(10);
+    contourExtrudeNormals.reserve(30);
+    // Compute gable target points
+    for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
+        auto&& he = it->halfedge();
+        do {
+            const bool isGablePoint = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
+            if (isGablePoint) {
+                f32v2 gableTarget;
+                gableTarget.x = (he->prev()->vertex()->point().x() + he->next()->vertex()->point().x()) / 2.0f;
+                gableTarget.y = (he->prev()->vertex()->point().y() + he->next()->vertex()->point().y()) / 2.0f;
+                gableTargetPoints[f32v2(he->vertex()->point().x(), he->vertex()->point().y())] = gableTarget;
+            }
+            else if (he->vertex()->is_contour() && he->is_bisector()) {
+
+                // Contour corners that we will extrude along the bisector
+                // Mark for later extrusions
+                const auto& oppositePoint = he->opposite()->vertex()->point();
+                const auto& thisPoint = he->vertex()->point();
+                const float h = he->vertex()->time() * ROOF_HEIGHT_MULT;
+                f32v3 extrudeNormal(thisPoint.x() - oppositePoint.x(), thisPoint.y() - oppositePoint.y(), h - he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
+                extrudeNormal = normalize(extrudeNormal) * ROOF_EXTRUDE_DISTANCE;
+                contourExtrudeNormals[f32v2(thisPoint.x(), thisPoint.y())] = extrudeNormal;
+            }
+            he = he->next();
+        } while (he != it->halfedge());
+    }
+}
+
 void BuildingMesher::buildRoofMesh(const Building& building)
 {
     const ui32AABB2& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mOwnedTilesInAABB;
-    constexpr f32 ROOF_HEIGHT_MULT = 0.3f;
     BuildingRenderData& renderData = building.mRenderData;
     // TODO: Not right
 
@@ -225,35 +258,21 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     } while (cornerPos.x != startX || cornerPos.y != startY);
     
     sCgalPoly.resize(numRoofVertices);
-    // TODO: Resize
     for (ui32 i = 0; i < numRoofVertices; ++i) {
         sCgalPoly[i] = CgalPoint(sRoofVertices[i].x, sRoofVertices[i].y);
     }
-    //assert(sCgalPoly.is_counterclockwise_oriented());
 
+    // Get the straight skeleton
     SsPtr iss = CGAL::create_interior_straight_skeleton_2(sCgalPoly.vertices_begin(), sCgalPoly.vertices_end());
     f32v2 start = building.mAABB.pos;
 
     const SpriteData& spriteData = Services::ResourceManager::ref().getSprite("roof");
     BuildingMesh& buildingMesh = *renderData.mMesh;
 
-    // Maps points to new points, to move gable vertices
+    // Map gable and contour vertex points so we can move all connected verts
     std::unordered_map<f32v2, f32v2, f32v2hash> gableTargetPoints;
-    gableTargetPoints.reserve(10);
-    // Compute gable target points
-    for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
-        auto&& he = it->halfedge();
-        do {
-            const bool isGablePoint = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
-            if (isGablePoint) {
-                f32v2 gableTarget;
-                gableTarget.x = (he->prev()->vertex()->point().x() + he->next()->vertex()->point().x()) / 2.0f;
-                gableTarget.y = (he->prev()->vertex()->point().y() + he->next()->vertex()->point().y()) / 2.0f;
-                gableTargetPoints[f32v2(he->vertex()->point().x(), he->vertex()->point().y())] = gableTarget;
-            }
-            he = he->next();
-        } while (he != it->halfedge());
-    }
+    std::unordered_map<f32v2, f32v3, f32v2hash> contourExtrudeNormals;
+    computeGablePointsAndExtrudeNormals(gableTargetPoints, contourExtrudeNormals, iss);
 
     // Gather and reposition verts
     ui32 debugColorIndex = 0;
@@ -262,31 +281,41 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         sHeightMap.clear();
         sPoints.clear();
         bool isGable = false;
+        // Loop through every edge of the SS poly and mark gables + cache points
         do {
             // Detect gable points
             auto&& gableIt = gableTargetPoints.find(f32v2(he->vertex()->point().x(), he->vertex()->point().y()));
             const bool isGablePoint = gableIt != gableTargetPoints.end();
-
+            
             //he->is_border doesnt work but if v1 and v2 time are both 0, it is a contour edge
             f32 x, y, t, h;
             if (gableIt != gableTargetPoints.end()) {
                 // We are a gable pivot! Get our new position
-
                 x = gableIt->second.x;
                 y = gableIt->second.y;
                 t = he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
-                isGable = true;
+                isGable = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
+                // Extrude along the gable direction
+                f32v3 extrudeNormal(x - he->vertex()->point().x(), y - he->vertex()->point().y(), h * 3.0f); // 3.0f is trial and error
+                extrudeNormal = normalize(extrudeNormal) * ROOF_EXTRUDE_DISTANCE;
+                x += extrudeNormal.x;
+                y += extrudeNormal.y;
             }
             else {
                 x = he->vertex()->point().x();
                 y = he->vertex()->point().y();
                 t = he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
-
-                if (he->vertex()->is_contour() && sDebugOptions.mRoofDebug) {
-                    // Extrude outward
-                    DebugRenderer::drawWireQuad(f32v3(start.x + x, start.y + y, building.mZPosRoof + h) - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
+                // Extrude contours
+                if (he->vertex()->is_contour()) {
+                    auto&& extrudeIt = contourExtrudeNormals.find(f32v2(x, y));
+                    if (extrudeIt != contourExtrudeNormals.end()) {
+                        const f32v3& extrudeNormal = extrudeIt->second;
+                        x += extrudeNormal.x;
+                        y += extrudeNormal.y;
+                        h += extrudeNormal.z;
+                    }
                 }
             }
             sPoints.emplace_back(x, y);
@@ -303,21 +332,25 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         // separate convex polygons
         // https://stackoverflow.com/questions/1832430/c-cgal-2d-delauny-triangulation-concave-shapes
   
+        // Partition 
         CGAL::Partition_traits_2<K>::Polygon_2 concavePoly;
         for (auto&& pp : sPoints) {
             concavePoly.push_back(pp);
         }
-        std::list<CGAL::Partition_traits_2<K>::Polygon_2> polygonList;
+        std::list<CGAL::Partition_traits_2<K>::Polygon_2> convexPolygonList;
         if (!isGable) {
-            CGAL::optimal_convex_partition_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), std::back_inserter(polygonList));
+            // Partition poly into seperate convex pieces
+            CGAL::optimal_convex_partition_2(concavePoly.vertices_begin(), concavePoly.vertices_end(), std::back_inserter(convexPolygonList));
         }
         else {
-            polygonList.push_back(concavePoly);
+            // Gables are never concave ( I THINK )
+            convexPolygonList.push_back(concavePoly);
         }
-        for (auto&& convexPoly : polygonList) {
+        for (auto&& convexPoly : convexPolygonList) {
             // Get triangle points
             f32v2 points[3];
             if (convexPoly.size() == 3) {
+                // Simple triangles are just directly copied
                 for (int i = 0; i < 3; ++i) {
                     points[i].x = convexPoly.vertex(i).x();
                     points[i].y = convexPoly.vertex(i).y();
@@ -349,7 +382,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             const ui32 index = y * aabb.dims.x + x;
             if (ownedTiles.getBit(index)) {
                 f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, building.mZPosRoof);
-            //    buildingMesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                buildingMesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
             }
         }
     }
@@ -379,14 +412,7 @@ void BuildingMesher::addRoofTriangle(
         }
         f32 deg1 = sHeightMap[f32v2(x, y)];
 
-        verts[i].pos = f32v3(start.x + x, start.y + y, building.mZPosRoof + deg1);
-
-        // Extrude bottom verts
-        if (deg1 == 0.0f) {
-            f32v2 normal = glm::normalize(f32v2(verts[i].pos.x, verts[i].pos.y) - buildingCenter) * 0.3f;
-            verts[i].pos.x += normal.x;
-            verts[i].pos.y += normal.y;
-        }
+        verts[i].pos = f32v3(start.x + x, start.y + y, building.mZPosRoof + deg1 + ROOF_THICKNESS);
 
         /* if (sDebugOptions.mRoofDebug) {
              DebugRenderer::drawWireQuad(verts[i].pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
