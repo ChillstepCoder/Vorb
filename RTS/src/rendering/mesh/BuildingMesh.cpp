@@ -137,6 +137,164 @@ void BuildingMesh::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, c
 
 }
 
+void BuildingMesh::addCartesianQuad(const f32v3& startPos, const f32v3& dims, CubeFacing axis, ui16 spriteAtlasPage, const f32v4& uvs, color4 color) {
+    const ui32 v = mVertexData.size();
+    mVertexData.resize(v + 4u);
+    assert(!mVertexData.empty());
+    TriangleVertex* verts = &mVertexData.back() - 3;
+
+    const ui32 ind = mIndexData.size();
+    mIndexData.resize(ind + 6u);
+    mIndexData[ind] = v;
+    mIndexData[ind + 1] = v + 1;
+    mIndexData[ind + 2] = v + 2;
+    mIndexData[ind + 3] = v + 2;
+    mIndexData[ind + 4] = v + 3;
+    mIndexData[ind + 5] = v;
+
+    const i8v3 normal(CUBE_FACING_NORMALS[e_cast(axis)]);
+    const i8v2 tangent(CUBE_FACING_TANGENTS[e_cast(axis)]);
+
+    f32v4 adjustedUvs;
+    adjustedUvs.x = uvs.x + UV_EPSILON;
+    adjustedUvs.y = uvs.y + UV_EPSILON;
+    adjustedUvs.z = uvs.z - UV_EPSILON_2;
+    adjustedUvs.w = uvs.w - UV_EPSILON_2;
+
+    { // Bottom Left
+        TriangleVertex& vbl = verts[0];
+        vbl.pos = startPos;
+        vbl.uvTiling = uvs;
+        vbl.uvs.x = adjustedUvs.x;
+        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbl.color = color;
+        vbl.atlasPage = spriteAtlasPage;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
+    }
+    { // Bottom Right
+        TriangleVertex& vbr = verts[1];
+        vbr.pos = startPos;
+        vbr.uvTiling = uvs;
+        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbr.color = color;
+        vbr.atlasPage = spriteAtlasPage;
+        vbr.pos.x += dims.x;
+        vbr.pos.y += dims.y;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
+    }
+    { // Top Right
+        TriangleVertex& vtr = verts[2];
+        vtr.pos = startPos;
+        vtr.uvTiling = uvs;
+        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vtr.uvs.y = adjustedUvs.y;
+        vtr.color = color;
+        vtr.atlasPage = spriteAtlasPage;
+        vtr.pos += dims;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
+    }
+    { // Top Left
+        TriangleVertex& vtl = verts[3];
+        vtl.pos = startPos;
+        vtl.uvTiling = uvs;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = color;
+        vtl.atlasPage = spriteAtlasPage;
+        vtl.pos.z += dims.z;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+
+}
+
+void BuildingMesh::addQuadBetweenPoints(const f32v3 vertPoints[4], ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool isPointingUp) {
+    const ui32 v = mVertexData.size();
+    mVertexData.resize(v + 4u);
+    assert(!mVertexData.empty());
+    TriangleVertex* verts = &mVertexData.back() - 3;
+
+    const ui32 ind = mIndexData.size();
+    mIndexData.resize(ind + 6u);
+    mIndexData[ind] = v;
+    mIndexData[ind + 1] = v + 1;
+    mIndexData[ind + 2] = v + 2;
+    mIndexData[ind + 3] = v + 2;
+    mIndexData[ind + 4] = v + 3;
+    mIndexData[ind + 5] = v;
+
+
+    // Compute tangents and normals
+    f32v3 tangentF = glm::normalize(vertPoints[1] - vertPoints[0]);
+    f32v3 normalf = glm::normalize(glm::cross(tangentF, vertPoints[3] - vertPoints[0]));
+    if (isPointingUp) {
+        if (normalf.z < 0.0f) {
+            normalf.z = -normalf.z;
+        }
+    }
+    else if (normalf.z > 0.0f) {
+        normalf.z = -normalf.z;
+    }
+    const i8v3 normal = compressNormal(normalf);
+    i8v3 tangent3 = compressNormal(tangentF);
+    i8v2 tangent(tangent3.x, tangent3.y);
+
+    f32v4 adjustedUvs;
+    adjustedUvs.x = uvs.x + UV_EPSILON;
+    adjustedUvs.y = uvs.y + UV_EPSILON;
+    adjustedUvs.z = uvs.z - UV_EPSILON_2;
+    adjustedUvs.w = uvs.w - UV_EPSILON_2;
+
+    { // Bottom Left
+        TriangleVertex& vbl = verts[0];
+        vbl.pos = vertPoints[0];
+        vbl.uvTiling = uvs;
+        vbl.uvs.x = adjustedUvs.x;
+        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbl.color = color;
+        vbl.atlasPage = spriteAtlasPage;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
+    }
+    { // Bottom Right
+        TriangleVertex& vbr = verts[1];
+        vbr.pos = vertPoints[1];
+        vbr.uvTiling = uvs;
+        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
+        vbr.color = color;
+        vbr.atlasPage = spriteAtlasPage;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
+    }
+    { // Top Right
+        TriangleVertex& vtr = verts[2];
+        vtr.pos = vertPoints[2];
+        vtr.uvTiling = uvs;
+        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
+        vtr.uvs.y = adjustedUvs.y;
+        vtr.color = color;
+        vtr.atlasPage = spriteAtlasPage;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
+    }
+    { // Top Left
+        TriangleVertex& vtl = verts[3];
+        vtl.pos = vertPoints[3];
+        vtl.uvTiling = uvs;
+        vtl.uvs.x = adjustedUvs.x;
+        vtl.uvs.y = adjustedUvs.y;
+        vtl.color = color;
+        vtl.atlasPage = spriteAtlasPage;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+}
+
 void BuildingMesh::draw(const vg::GLProgram& program) const
 {
     // Make sure we have been initialized

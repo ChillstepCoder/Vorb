@@ -67,7 +67,7 @@ struct DebugOptions {
     bool mWireframe = false;
     bool mChunkBoundaries = false;
     bool mCities = false;
-    bool mRoofDebug = true;
+    bool mRoofDebug = false;
     bool mShowNavGraph = false;
     bool mShowNavGraphUpdates = false;
     bool mHideCharacters = false;

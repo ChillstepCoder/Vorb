@@ -318,7 +318,7 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
     glUniform1i(diffuseTextureUniform, nextTextureIndex);
     glUniform1i(normalTextureUniform, nextTextureIndex + 1);
     glUniform1i(specularTextureUniform, nextTextureIndex + 2);
-    glUniform1f(scaleUniform, 0.5f);
+    glUniform1f(scaleUniform, 1.0f);
 
     // TODO: Optimize
     f32m4 transform(1.0f);
