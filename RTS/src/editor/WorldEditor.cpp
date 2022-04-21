@@ -460,7 +460,7 @@ void WorldEditor::updateTileEdit() {
             chunk.addTile(tileIndex, data);
 
             if (data.layer == TILE_LAYER_GROUND) {
-                const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(chunkID, tileIndex);
+                const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(heightmapPatchIDFromChunkID(chunkID), tileIndex);
                 chunk.setTileBaseZPosition(tileIndex, height + mGroundTileOffset);
             }
         }
@@ -524,7 +524,7 @@ void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& off
         }
         static_assert((int)TerrainEditState::COUNT == 3, "Update for new edit type");
         const f32 adjust = strength * mCurrentBrushSettings->brushStrength;
-        mWorld.mWorldGrid.adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + vertPos.x, adjust);
+        mWorld.mWorldGrid.adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
 
         // Debug render
         f32v2 chunkPos = id.getWorldPos();

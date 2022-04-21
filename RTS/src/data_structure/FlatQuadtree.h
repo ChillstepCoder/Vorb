@@ -120,6 +120,7 @@ protected:
     // === Protected Methods ===
     void onMeshFinished(ui32 patchIndex, bool isMeshValid); // Called by derived class
     ChunkID getChunkIDForPatchIndex(ui32 patchIndex) const;
+    HeightmapPatchID getHeightmapPatchID(ui32 patchIndex) const;
     virtual void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) = 0;
     virtual void freeMeshForPatch(ui32 patchIndex) = 0;
 
@@ -159,6 +160,12 @@ protected:
     f32v2 mWorldPos;
     const f32* mSubdivideDistancesSq;
 };
+
+template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
+HeightmapPatchID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getHeightmapPatchID(ui32 patchIndex) const {
+    f32v2 pos = f32v2(PATCH_POSITIONS.data[patchIndex].xy);
+    return HeightmapPatchID(mWorldPos + pos);
+}
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 ChunkID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getChunkIDForPatchIndex(ui32 patchIndex) const {

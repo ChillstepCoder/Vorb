@@ -172,36 +172,37 @@ void createTerrainAndWaterMesh(
     waterMesh.setBoundingSphere(c->boundingSphere);
 
     // Center memcopy row by row
+    // TODO: Broken
     for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
-        memcpy(&paddedHeightfield[y + 1][1], &c->data[y * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+        memcpy(&paddedHeightfield[y + 1][1], &c->data[y * HEIGHTMAP_VERT_WIDTH_PER_PATCH], sizeof(f32) * TERRAIN_MESH_PADDED_WIDTH_VERTS);
     }
-    static_assert(TERRAIN_MESH_WIDTH_VERTS == HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+    //static_assert(TERRAIN_MESH_WIDTH_VERTS == HEIGHTMAP_VERT_WIDTH_PER_PATCH);
 
     // === Generate edges ===
     // Left and right edge
     for (int y = 1; y < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++y) {
         { // Left
             constexpr ui32 x = 0;
-            paddedHeightfield[y][x] = l->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 2];
+            paddedHeightfield[y][x] = l->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + HEIGHTMAP_VERT_WIDTH_PER_PATCH - 2];
         }
         { // Right
             constexpr ui32 x = TERRAIN_MESH_PADDED_WIDTH_VERTS - 1;
-            paddedHeightfield[y][x] = r->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1];
+            paddedHeightfield[y][x] = r->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1];
         }
     }
     // Bottom
-    memcpy(&paddedHeightfield[0][1], &b->data[HEIGHTMAP_VERT_SIZE_PER_CHUNK - 2 * HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+    memcpy(&paddedHeightfield[0][1], &b->data[HEIGHTMAP_VERT_SIZE_PER_PATCH - 2 * HEIGHTMAP_VERT_WIDTH_PER_PATCH], sizeof(f32) * TERRAIN_MESH_PADDED_WIDTH_VERTS);
     // Top
-    memcpy(&paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][1], &t->data[HEIGHTMAP_VERT_WIDTH_PER_CHUNK], sizeof(f32) * HEIGHTMAP_VERT_WIDTH_PER_CHUNK);
+    memcpy(&paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][1], &t->data[HEIGHTMAP_VERT_WIDTH_PER_PATCH], sizeof(f32) * TERRAIN_MESH_PADDED_WIDTH_VERTS);
     // 4 Corners
     // Bottom left
-    paddedHeightfield[0][0] = bl->data[HEIGHTMAP_VERT_SIZE_PER_CHUNK - HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 2];
+    paddedHeightfield[0][0] = bl->data[HEIGHTMAP_VERT_SIZE_PER_PATCH - HEIGHTMAP_VERT_WIDTH_PER_PATCH - 2];
     // Bottom right
-    paddedHeightfield[0][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = br->data[HEIGHTMAP_VERT_SIZE_PER_CHUNK - 2 * HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1];
+    paddedHeightfield[0][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = br->data[HEIGHTMAP_VERT_SIZE_PER_PATCH - 2 * HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1];
     // Top Left
-    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][0] = tl->data[HEIGHTMAP_VERT_WIDTH_PER_CHUNK - 2];
+    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][0] = tl->data[HEIGHTMAP_VERT_WIDTH_PER_PATCH - 2];
     // Top Right
-    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = tr->data[HEIGHTMAP_VERT_WIDTH_PER_CHUNK + 1];
+    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = tr->data[HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1];
 
     // Build
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
@@ -222,7 +223,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
 
     if (lod == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         // At highest LOD we ask the heightmap generator to handle it
-        const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+        const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         // Sentinal IDs never mesh
         if (id.isSentinelID()) {
             finishMeshes(patchIndex);
@@ -259,7 +260,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     }
 }
 
-void HeightmapTerrainQuadtree::createMeshes(const ChunkID id, ui32 patchIndex, ui32 lod) {
+void HeightmapTerrainQuadtree::createMeshes(const HeightmapPatchID id, ui32 patchIndex, ui32 lod) {
     const HeightmapPatchData* paddedHeightData[9];
     mWorldGrid->getPaddedHeightDataAt(id, paddedHeightData);
     createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, paddedHeightData);
@@ -279,7 +280,7 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
 {
     // Only highest LOD has reference to heightmap
     if (QUADTREE_LOD_FROM_INDEX[patchIndex] == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
-        const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+        const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         mWorldGrid->releasePaddedHeightDataAt(id);
     }
     mTerrainMeshes[patchIndex].reset();

@@ -13,8 +13,8 @@ inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
     return f32v3(pos2d.x, pos2d.y, worldGrid.tryComputeHeightAtPoint(pos2d));
 }
 
-inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const ChunkID& chunkId, const f32* heightData, const f32v2& pos2d) {
-    return f32v3(pos2d.x, pos2d.y, worldGrid.computeHeightAtPoint(chunkId, heightData, pos2d));
+inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const HeightmapPatchID& patchId, const f32* heightData, const f32v2& pos2d) {
+    return f32v3(pos2d.x, pos2d.y, worldGrid.computeHeightAtPoint(patchId, heightData, pos2d));
 }
 
 struct DisjointSetNode {
@@ -140,8 +140,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     const color4 color1(0.0f, 1.0f, 1.0f, 0.75f);
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
-    const ChunkID& chunkId = chunk.getChunkID();
-    const f32* heightData = worldGrid.getHeightDataAt(chunkId)->data;
+    const HeightmapPatchID& patchId = chunk.getHeightmapPatchID();
+    const f32* heightData = worldGrid.getHeightDataAt(patchId)->data;
     const NavPatch& patch = mPatches[chunk.getChunkID().id];
     // Draw edges
     for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
@@ -156,8 +156,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 if (cartesian == (ui32)Cartesian::RIGHT) cornerPos.x += 1.0f;
                 else if (cartesian == (ui32)Cartesian::UP) cornerPos.y += 1.0f;
                 const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f);
-                const f32v3 pointA = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos);
-                const f32v3 pointB = helperGet3DPoint(worldGrid, chunkId, heightData, cornerPos + offset);
+                const f32v3 pointA = helperGet3DPoint(worldGrid, patchId, heightData, cornerPos);
+                const f32v3 pointB = helperGet3DPoint(worldGrid, patchId, heightData, cornerPos + offset);
                 DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
                 const f32v3 second(cornerPos.x + offset.x * 0.5f, cornerPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
                 const f32v3 third(second.x + CARTESIAN_NORMALS[cartesian].x, second.y + CARTESIAN_NORMALS[cartesian].y, second.z);
@@ -179,7 +179,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 if (cartesian == (ui32)Cartesian::RIGHT) cornerPos1.x += 1.0f;
                 else if (cartesian == (ui32)Cartesian::UP) cornerPos1.y += 1.0f;
                 const f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
-                const f32v3 pointA = helperGet3DPoint(worldGrid, chunkId, heightData, pos1);
+                const f32v3 pointA = helperGet3DPoint(worldGrid, patchId, heightData, pos1);
                 // Connect to our side
                 for (ui32 j = i + 1; j < edgeCount; ++j) {
                     const LiteNavNodeEdge& edge2 = node.edges[cartesian][j];
@@ -189,7 +189,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                     if (cartesian == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
                     else if (cartesian == (ui32)Cartesian::UP) cornerPos2.y += 1.0f;
                     const f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
-                    DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
+                    DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, patchId, heightData, pos2), color2, lifetime, debugId);
                 }
 
                 // Connect to all other sides
@@ -203,7 +203,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                         if (cartesian2 == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
                         else if (cartesian2 == (ui32)Cartesian::UP) cornerPos2.y += 1.0f;
                         const f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
-                        DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, chunkId, heightData, pos2), color2, lifetime, debugId);
+                        DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, patchId, heightData, pos2), color2, lifetime, debugId);
                     }
                 }
             }

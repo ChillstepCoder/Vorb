@@ -92,6 +92,7 @@ public:
     f32v3 getWorldPosCenter3D() const { return f32v3(mWorldPos.x + HALF_CHUNK_WIDTH, mWorldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
 	ChunkState getState() const { return (ChunkState)mState.load(); }
     const ChunkID& getChunkID() const { return mChunkId; }
+	const HeightmapPatchID getHeightmapPatchID() const { return heightmapPatchIDFromChunkID(mChunkId); }
     ui8 getGrassAt(const TileIndex index) const { return mGrass[index]; }
     const f32AABB3& getAABB() const { return mAABB; }
 

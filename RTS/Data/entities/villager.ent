@@ -1,7 +1,7 @@
 person_ai:
 character_model:
 motion:
-  speed: 0.14
+  speed: 0.28
 physics:
   collider_shape: circle
   collider_radius: 0.24

@@ -144,7 +144,7 @@ void World::tick(const f32v2& playerPos) {
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
         if (updateChunk(chunk)) {
-			mWorldGrid.releaseHeightDataAt(chunk.getChunkID());
+			mWorldGrid.releaseHeightDataAt(chunk.getHeightmapPatchID());
             chunk.dispose();
 			mActiveChunks[i] = mActiveChunks.back();
 			mActiveChunks.pop_back();
@@ -674,7 +674,7 @@ void World::generateChunkAsync(Chunk& chunk) {
     chunk.incRef();
 	// TODO: should we be inactive?
     mActiveChunks.push_back(&chunk);
-	const ChunkID& id = chunk.getChunkID();
+	const HeightmapPatchID& id = chunk.getHeightmapPatchID();
 
 	if (mWorldGrid.tryGetHeightDataAt(id)) {
         chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
@@ -688,7 +688,7 @@ void World::generateChunkAsync(Chunk& chunk) {
         chunk.mState.store(e_cast(ChunkState::WAITING_HEIGHT));
 		mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
             chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-			const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
+			const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
             Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
                 mChunkGenerator->GenerateChunk(chunk, mWorldGrid, heightData);
                 chunk.decRef();

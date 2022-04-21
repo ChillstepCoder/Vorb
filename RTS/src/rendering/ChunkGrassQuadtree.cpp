@@ -168,7 +168,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
-    const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+    const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
     if (const HeightmapPatchData* heightData = mWorldGrid.tryGetHeightDataAt(id)) {
         if (!hasAquired) {
             mWorldGrid.aquireHeightData(id);
@@ -215,7 +215,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
     if (mMeshes[patchIndex]) {
-        const ChunkID id = getChunkIDForPatchIndex(patchIndex);
+        const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         mWorldGrid.releaseHeightDataAt(id);
         mMeshes[patchIndex].reset();
     }

@@ -7,7 +7,7 @@ enum class ShadowState : ui8 {
     RIGHT //  Top right vertex on thick objects
 };
 
-struct TileVertex {
+struct alignas(32) TileVertex {
 public:
     TileVertex() {};
     TileVertex(const f32v3& pos, const f32v2& uvs, const color4& color, ui16 atlasPage) :
@@ -25,11 +25,11 @@ public:
 };
 
 // Need power of 2 alignment
-static_assert(sizeof(TileVertex) == 32, "Power of 2 byte alignment needed");
+static_assert(sizeof(TileVertex) == 32, "32 byte alignment needed");
 
 // https://gamedev.net/forums/topic/663329-particles-batching-vs-instancing/5196688/
 constexpr float BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO = 100.0f;
-struct BillboardVertex {
+struct  alignas(32) BillboardVertex {
 public:
     BillboardVertex() {};
     BillboardVertex(const f32v3& pos, const i16v2& xzOffset, const f32v2& uvs, const color4& color, ui16 atlasPage) :
@@ -45,9 +45,9 @@ public:
     ui8 roughness;
 };
 // Need power of 2 alignment
-static_assert(sizeof(BillboardVertex) == 32, "Power of 2 byte alignment needed");
+static_assert(sizeof(BillboardVertex) == 32, "32 byte alignment needed");
 
-struct TriangleVertex {
+struct alignas(32) TriangleVertex {
 public:
     TriangleVertex() {};
     TriangleVertex(const f32v3& pos, const f32v3& normal, const f32v2& uvs, const color4& color, ui16 atlasPage) :
@@ -62,15 +62,25 @@ public:
     ui16 atlasPage;
     i8v2 tangent;
     ui8 roughness;
-    ui8 padding[4];
 };
 // Need power of 2 alignment
-static_assert(sizeof(TriangleVertex) == 64, "Power of 2 byte alignment needed");
+static_assert(sizeof(TriangleVertex) == 64, "32 byte alignment needed");
+
+struct alignas(32) CompressedVertex {
+    f32v3 pos;
+    f32v2 uvs;
+    ui16 textureId;
+    i8v3 normal; // https://stackoverflow.com/questions/5255806/how-to-calculate-tangent-and-binormal
+    i8v2 tangent;
+    color4 color;
+    ui8 roughness;
+};
+static_assert(sizeof(CompressedVertex) == 32, "32 byte alignment needed");
 
 constexpr int MAX_BONES_PER_VERTEX = 4;
 
 // TODO: Reduce https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct SkinnedModelVertex {
+struct alignas(32) SkinnedModelVertex {
 public:
     SkinnedModelVertex() {};
 
@@ -82,10 +92,5 @@ public:
     // TODO: ui16 weights
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
-    //ui8 numBones = 0;
-    ui8 padding[9]; // TODO: remove make 64?
 };
-// Need power of 2 alignment
-//static_assert(sizeof(SkinnedModelVertex) == 64, "Power of 2 byte alignment needed");
-static_assert(sizeof(SkinnedModelVertex) == 80, "16 byte alignment needed");
-//SIZER(SkinnedModelVertex);
+static_assert(sizeof(SkinnedModelVertex) == 96, "32 byte alignment needed");

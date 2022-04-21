@@ -746,7 +746,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     }
     renderData.mBillboardMesh->beginMesh();
 
-    const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getChunkID());
+    const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
     
     Services::Threadpool::ref().addTask([this, &chunk, &renderData, heightData](ThreadPoolWorkerData*) {
 
@@ -782,7 +782,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getChunkID(), index));
+                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getHeightmapPatchID(), index));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
 
                             f32v4 uvs = spriteData.uvs;
@@ -861,5 +861,5 @@ f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
             height = tile.getBaseZPositionUncompressedThreadSafe();
         }
     }
-    return glm::max(height, mWorldGrid.computeMinHeightAtTile(neighbor.chunk->getChunkID(), neighbor.index));
+    return glm::max(height, mWorldGrid.computeMinHeightAtTile(neighbor.chunk->getHeightmapPatchID(), neighbor.index));
 }

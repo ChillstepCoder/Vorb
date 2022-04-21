@@ -40,7 +40,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
                 if (mFirstFreeSlot == UINT32_MAX) mFirstFreeSlot = index;
                 ++mTotalSlots;
                 ref.chunk->setTileFlag(ref.index, TILE_FLAG_IS_STOCKPILE);
-                f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getChunkID(), ref.index);
+                f32 height = worldGrid.computeMaxHeightAtTile(ref.chunk->getHeightmapPatchID(), ref.index);
                 if (height > maxZPos) maxZPos = height;
             }
             ++index;

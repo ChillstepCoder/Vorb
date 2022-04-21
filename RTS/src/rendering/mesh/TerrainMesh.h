@@ -3,19 +3,18 @@
 #include "world/TerrainConstants.h"
 #include "rendering/MeshBase.h"
 
-struct TerrainVertex {
+struct alignas(32) TerrainVertex {
 public:
     TerrainVertex() {};
     TerrainVertex(const f32v3& pos, const f32v3& normal) :
         pos(pos), normal(normal) {
     }
 
-    f32v3 pos; // TODO: Can we compress X/Y into some integer representation
+    f32v3 pos;
     f32v3 normal;
-    ui8 padding[8];
 };
 // Need power of 2 alignment
-static_assert(sizeof(TerrainVertex) == 32, "Power of 2 byte alignment needed");
+static_assert(sizeof(TerrainVertex) == 32, "32 byte alignment needed");
 
 class TerrainMesh : public MeshBase
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world/WorldData.h"
+#include "world/TerrainConstants.h"
 
 constexpr ui32 GRID_ID_INVALID = UINT32_MAX;
 constexpr ui32 CHUNK_ID_INVALID = GRID_ID_INVALID;
@@ -66,7 +66,14 @@ protected:
     }
 };
 
+typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
 typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
+
+namespace {
+    inline HeightmapPatchID heightmapPatchIDFromChunkID(ChunkID id) {
+        return HeightmapPatchID(id.pos / HEIGHTMAP_PATCH_WIDTH_CHUNKS);
+    }
+}
 
 // Hash function
 namespace std {

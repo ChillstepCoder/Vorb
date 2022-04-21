@@ -29,7 +29,7 @@ public:
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
 
-    void createMeshes(const ChunkID id, ui32 patchIndex, ui32 lod);
+    void createMeshes(const HeightmapPatchID id, ui32 patchIndex, ui32 lod);
     void finishMeshes(ui32 patchIndex);
 
     void freeMeshForPatch(ui32 patchIndex) override;

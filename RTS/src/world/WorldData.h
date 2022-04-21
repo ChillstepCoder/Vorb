@@ -22,4 +22,6 @@ namespace WorldData {
     const f32v2 WORLD_CENTER((WORLD_WIDTH_CHUNKS* CHUNK_WIDTH) / 2.0f);
 }
 
+
+
 static_assert(WorldData::WORLD_WIDTH_TILES < UINT16_MAX - 1, "World assumes that xy coordinates can fit inside a ui16v2, going higher also results in integer overflow in WORLD_SIZE_TILES");

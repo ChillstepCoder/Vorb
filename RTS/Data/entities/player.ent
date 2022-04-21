@@ -1,7 +1,7 @@
 player_control:
 character_model:
 motion:
-  speed: 0.15
+  speed: 0.3
 physics:
   collider_shape: circle
   collider_radius: 0.24
