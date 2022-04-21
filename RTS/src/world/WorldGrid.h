@@ -80,15 +80,16 @@ public:
     TerrainPickData pickTerrainFromCameraVector(const Camera3D& camera, const f32v3& rayDir) const;
 
     static f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos);
-    static f32 computeHeightAtChunkOffset(const f32* heightData, const f32v2& chunkOffset);
-    static f32 computeCenterHeightAtTile(const f32* heightData, TileIndex tileIndex);
-    static void computeTileCorners(const f32* heightData, TileIndex tileIndex, OUT f32 corners[4]);
+    static f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset);
+    static f32 computeCenterHeightAtTile(const f32* heightData, TilePosition tilePos);
+    static void computeTileCorners(const f32* heightData, TilePosition tilePos, OUT f32 corners[4]);
     static bool areTrianglesFlippedAtTile(TileIndex tileIndex);
-    f32 computeCenterHeightAtTile(HeightmapPatchID id, TileIndex tileIndex) const;
+    f32 computeCenterHeightAtTile(TilePosition tilePos) const;
+    void copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength);
 
-    static f32 computeMinHeightAtTile(const f32* heightData, TileIndex tileIndex);
-    f32 computeMinHeightAtTile(HeightmapPatchID id, TileIndex tileIndex) const;
-    f32 computeMaxHeightAtTile(HeightmapPatchID id, TileIndex tileIndex) const;
+    static f32 computeMinHeightAtTile(const f32* heightData, TilePosition tilePos);
+    f32 computeMinHeightAtTile(TilePosition tilePos) const;
+    f32 computeMaxHeightAtTile(TilePosition tilePos) const;
 
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);
@@ -97,6 +98,8 @@ private:
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
     static f32 interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY);
+    static ui32v2 getHeightmapXYfromTilePos(TilePosition tilePos);
+    static f32v2 getHeightmapOffsetFromTilePos(TilePosition tilePos);
 
     HeightmapPatch mHeightData[WORLD_SIZE_HEIGHTMAP_PATCHES];
     Chunk mChunks[WorldData::WORLD_SIZE_CHUNKS];

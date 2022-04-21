@@ -48,6 +48,11 @@ void TileRef::release()
     }
 }
 
+TilePosition TileRef::getTilePosition() const {
+    assert(chunk);
+    return TilePosition(chunk->getChunkID(), index);
+}
+
 TileHandle::TileHandle(const Chunk* chunk, TileIndex index) :
     chunk(chunk),
     index(index),

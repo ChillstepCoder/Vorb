@@ -569,7 +569,7 @@ void addBlockConnectedWall(const Chunk& chunk, const TileIndex& tileIndex, int l
     //}
 }
 
-void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, QuadMesh& quadMesh, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData) {
+void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, QuadMesh& quadMesh, f32v3 tilePosition, const TileData& tileData) {
     // Currently only supported for ground layer
     assert(tileData.layer == TILE_LAYER_GROUND);
 
@@ -659,7 +659,7 @@ void ChunkMesher::addFloor(QuadMesh& quadMesh, f32v3 tilePosition, const Heightm
     const SpriteData& spriteData = tileData.spriteData;
 
     f32 corners[4];
-    mWorldGrid.computeTileCorners(heightData->data, tileIndex, corners);
+    mWorldGrid.computeTileCorners(heightData->data, TilePosition(chunk.getChunkID(), tileIndex), corners);
 
     switch (spriteData.method) {
         case TileTextureMethod::SIMPLE: {
@@ -679,7 +679,7 @@ void ChunkMesher::addFloor(QuadMesh& quadMesh, f32v3 tilePosition, const Heightm
     }
 }
 
-void ChunkMesher::addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
+void ChunkMesher::addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
 
     const SpriteData& spriteData = tileData.spriteData;
     switch (spriteData.method) {
@@ -702,7 +702,7 @@ void ChunkMesher::addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const Heightm
             break;
         }
         case TileTextureMethod::VERTICAL: {
-            addBlockVertical(chunk, tileIndex, layerIndex, quadMesh, tilePosition, heightData, tileData);
+            addBlockVertical(chunk, tileIndex, layerIndex, quadMesh, tilePosition, tileData);
             break;
         }
         case TileTextureMethod::WORLD_TILING: {
@@ -782,7 +782,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getHeightmapPatchID(), index));
+                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(TilePosition(chunk.getChunkID(), index)));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
 
                             f32v4 uvs = spriteData.uvs;
@@ -805,7 +805,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
                         // Standard blocks
-                        addBlock(quadMesh, f32v3(x, y, baseZPosition), heightData, tileData, index, chunk, layerIndex);
+                        addBlock(quadMesh, f32v3(x, y, baseZPosition), tileData, index, chunk, layerIndex);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
                        // Standard blocks
@@ -835,7 +835,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     return true;
 }
 
-f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, TileIndex tileIndex) {
+f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, TilePosition tilePos) {
     f32 height = 0.0f;
     const TileID tileId = neighbor.getLayersThreadSafe(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
@@ -846,7 +846,7 @@ f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, Tile
             height = neighbor.getBaseZPositionUncompressedThreadSafe();
         }
     }
-    return glm::max(height, mWorldGrid.computeMinHeightAtTile(heightData, tileIndex));
+    return glm::max(height, mWorldGrid.computeMinHeightAtTile(heightData, tilePos));
 }
 
 f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
@@ -861,5 +861,5 @@ f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
             height = tile.getBaseZPositionUncompressedThreadSafe();
         }
     }
-    return glm::max(height, mWorldGrid.computeMinHeightAtTile(neighbor.chunk->getHeightmapPatchID(), neighbor.index));
+    return glm::max(height, mWorldGrid.computeMinHeightAtTile(TilePosition(neighbor.chunk->getChunkID(), neighbor.index)));
 }

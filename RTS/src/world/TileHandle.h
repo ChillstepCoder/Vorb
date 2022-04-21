@@ -63,6 +63,7 @@ struct TileRef {
     void acquire(Chunk* chunk, TileIndex index);
     void release();
     bool isValid() const { return chunk != nullptr; }
+    TilePosition getTilePosition() const;
 
     Chunk* chunk = nullptr;
     Tile* tile = nullptr;

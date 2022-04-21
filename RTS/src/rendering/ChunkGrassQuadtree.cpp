@@ -142,7 +142,7 @@ void createGrassMesh(
                     rsize += -grassNoise * 0.4f;
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
                     f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
-                    const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData->data, truePos);
+                    const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData->data, chunk.getChunkID(), truePos);
                     grassMesh.addBladeQuad(
                         f32v3(truePos.x, truePos.y, zPos), // TODO: new height
                         f32v2(bladeWidth, rsize),

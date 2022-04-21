@@ -149,7 +149,7 @@ void createTerrainAndWaterMesh(
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
-    const HeightmapPatchData* paddedHeightData[9]
+    const WorldGrid& worldGrid
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
@@ -157,9 +157,9 @@ void createTerrainAndWaterMesh(
     waterMesh.beginMesh(posStart, dims.x);
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
-
+    assert(false); // Need copy
     // Copy bounding sphere
-    const HeightmapPatchData* bl = paddedHeightData[0];
+    /*const HeightmapPatchData* bl = paddedHeightData[0];
     const HeightmapPatchData* b = paddedHeightData[1];
     const HeightmapPatchData* br = paddedHeightData[2];
     const HeightmapPatchData* l = paddedHeightData[3];
@@ -167,42 +167,13 @@ void createTerrainAndWaterMesh(
     const HeightmapPatchData* r = paddedHeightData[5];
     const HeightmapPatchData* tl = paddedHeightData[6];
     const HeightmapPatchData* t = paddedHeightData[7];
-    const HeightmapPatchData* tr = paddedHeightData[8];
-    mesh.setBoundingSphere(c->boundingSphere);
-    waterMesh.setBoundingSphere(c->boundingSphere);
-
-    // Center memcopy row by row
-    // TODO: Broken
-    for (ui32 y = 0; y < TERRAIN_MESH_WIDTH_VERTS; ++y) {
-        memcpy(&paddedHeightfield[y + 1][1], &c->data[y * HEIGHTMAP_VERT_WIDTH_PER_PATCH], sizeof(f32) * TERRAIN_MESH_PADDED_WIDTH_VERTS);
-    }
-    //static_assert(TERRAIN_MESH_WIDTH_VERTS == HEIGHTMAP_VERT_WIDTH_PER_PATCH);
-
-    // === Generate edges ===
-    // Left and right edge
-    for (int y = 1; y < TERRAIN_MESH_PADDED_WIDTH_VERTS - 1; ++y) {
-        { // Left
-            constexpr ui32 x = 0;
-            paddedHeightfield[y][x] = l->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + HEIGHTMAP_VERT_WIDTH_PER_PATCH - 2];
-        }
-        { // Right
-            constexpr ui32 x = TERRAIN_MESH_PADDED_WIDTH_VERTS - 1;
-            paddedHeightfield[y][x] = r->data[(y - 1) * HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1];
-        }
-    }
-    // Bottom
-    memcpy(&paddedHeightfield[0][1], &b->data[HEIGHTMAP_VERT_SIZE_PER_PATCH - 2 * HEIGHTMAP_VERT_WIDTH_PER_PATCH], sizeof(f32) * TERRAIN_MESH_PADDED_WIDTH_VERTS);
-    // Top
-    memcpy(&paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][1], &t->data[HEIGHTMAP_VERT_WIDTH_PER_PATCH], sizeof(f32) * TERRAIN_MESH_PADDED_WIDTH_VERTS);
-    // 4 Corners
-    // Bottom left
-    paddedHeightfield[0][0] = bl->data[HEIGHTMAP_VERT_SIZE_PER_PATCH - HEIGHTMAP_VERT_WIDTH_PER_PATCH - 2];
-    // Bottom right
-    paddedHeightfield[0][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = br->data[HEIGHTMAP_VERT_SIZE_PER_PATCH - 2 * HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1];
-    // Top Left
-    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][0] = tl->data[HEIGHTMAP_VERT_WIDTH_PER_PATCH - 2];
-    // Top Right
-    paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS - 1][TERRAIN_MESH_PADDED_WIDTH_VERTS - 1] = tr->data[HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1];
+    const HeightmapPatchData* tr = paddedHeightData[8];*/
+    BoundingSphere boundingSphere;
+    f32v2 centerxy = worldPos + f32v2(posStart) + f32v2(HeightmapTerrainQuadtree::LOD_DIMS[lod].xy);
+    boundingSphere.center = f32v3(centerxy.x, centerxy.y, 0.0f);
+    boundingSphere.radius = sqrt(SQ(HeightmapTerrainQuadtree::LOD_DIMS[lod].x * 0.5f));
+    mesh.setBoundingSphere(boundingSphere);
+    waterMesh.setBoundingSphere(boundingSphere);
 
     // Build
     mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
@@ -261,9 +232,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
 }
 
 void HeightmapTerrainQuadtree::createMeshes(const HeightmapPatchID id, ui32 patchIndex, ui32 lod) {
-    const HeightmapPatchData* paddedHeightData[9];
-    mWorldGrid->getPaddedHeightDataAt(id, paddedHeightData);
-    createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, paddedHeightData);
+    createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, *mWorldGrid);
 }
 
 void HeightmapTerrainQuadtree::finishMeshes(ui32 patchIndex) {

@@ -125,7 +125,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
     for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
         for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TileIndex(x, y));
+            f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TilePosition(id, TileIndex(x, y)));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
             const f32 baseZPos = tile.getBaseZPositionUncompressedThreadSafe();
