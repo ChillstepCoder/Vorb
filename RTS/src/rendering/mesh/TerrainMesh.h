@@ -30,6 +30,7 @@ public:
     void finishMesh(MeshDrawMode drawMode) override;
 
     static void initGlobalIBO();
+    f32 getQuadWidth() const { assert(mVertexData.size() >= 2); return mVertexData[1].pos.x - mVertexData[0].pos.x; }
 
 private:
     void bindVertexAttribs(const vg::GLProgram & program) const override;

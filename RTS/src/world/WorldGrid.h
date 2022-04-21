@@ -85,7 +85,7 @@ public:
     static void computeTileCorners(const f32* heightData, TilePosition tilePos, OUT f32 corners[4]);
     static bool areTrianglesFlippedAtTile(TileIndex tileIndex);
     f32 computeCenterHeightAtTile(TilePosition tilePos) const;
-    void copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength);
+    void copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) const;
 
     static f32 computeMinHeightAtTile(const f32* heightData, TilePosition tilePos);
     f32 computeMinHeightAtTile(TilePosition tilePos) const;

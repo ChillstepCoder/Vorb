@@ -31,7 +31,7 @@ struct DebugOptions {
     bool mDebugGrassLod = false;
     bool mHideGrass = true;
     // Terrain
-    f32 mTerrainLodDistanceOffset = 1500.0f;
+    f32 mTerrainLodDistanceOffset = 540.0f; // 1500 for ultra
     bool mDebugTerrainLod = false;
     f32 mTerrainHeightColorMult = 0.22f;
     f32 mTerrainWavyColorMult = 0.167f;

@@ -455,7 +455,7 @@ TerrainPickData WorldGrid::pickTerrainFromCameraVector(const Camera3D& camera, c
 
     for (auto&& hitPair : sortedHits) {
         const HeightmapPatch& patch = mHeightData[hitPair.second];
-        f32v2 worldPos2D = ChunkID(hitPair.second).getWorldPos();
+        f32v2 worldPos2D = HeightmapPatchID(hitPair.second).getWorldPos();
         for (ui32 y = 0; y < HEIGHTMAP_QUAD_WIDTH_PER_PATCH; ++y) {
             for (ui32 x = 0; x < HEIGHTMAP_QUAD_WIDTH_PER_PATCH; ++x) {
                 const ui32 blIndex = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x;
@@ -565,20 +565,30 @@ f32 WorldGrid::computeCenterHeightAtTile(TilePosition tilePos) const {
     return computeCenterHeightAtTile(patch.mHeightData->data, tilePos);
 }
 
-void WorldGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) {
-    assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
-    HeightmapPatchID id = HeightmapPatchID::fromWorldUI32v2(worldPosStart);
-    const ui32v2 offset = worldPosStart - id.pos;
-    const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
-    HeightmapPatchData* data = mHeightData[id.id].mHeightData;
-    assert(data);
-    memcpy(dst, data->data, sizeof(f32) * maxLength);
-    if (maxLength < rowLength) {
-        const ui32 nextLength = rowLength - maxLength;
-        data = mHeightData[id.getRightID().id].mHeightData;
+void WorldGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) const {
+    assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH * 2.0f);
+
+    ui32 lengthRemaining = rowLength;
+    ui32v2 worldPos = worldPosStart;
+    int q = 0;
+    do {
+        // Get heightmap position and vertex offset
+        HeightmapPatchID id = HeightmapPatchID::fromWorldUI32v2(worldPos);
+        ui32v2 offset = (worldPos - id.getWorldPosInt()) / HEIGHTMAP_QUAD_SIZE;
+        assert(offset.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+        // Get length values
+        const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
+        const ui32 lengthToCopy = glm::min(maxLength, lengthRemaining);
+        // Copy data
+        HeightmapPatchData* data = mHeightData[id.id].mHeightData;
         assert(data);
-        memcpy(dst + maxLength, data->data, sizeof(f32) * nextLength);
-    }
+        memcpy(dst, &data->data[offset.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + offset.x], sizeof(f32) * lengthToCopy);
+        // Increment pointers and update length + position
+        dst += lengthToCopy;
+        lengthRemaining -= lengthToCopy;
+        worldPos.x += HEIGHTMAP_QUAD_SIZE * lengthToCopy + 1; // +1 since we have a shared vertex on the edge
+        ++q;
+    } while (lengthRemaining > 0);
 }
 
 void WorldGrid::computeTileCorners(const f32* heightData, TilePosition tilePos, f32 corners[4]) {

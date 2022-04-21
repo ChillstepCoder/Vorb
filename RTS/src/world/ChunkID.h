@@ -5,7 +5,7 @@
 constexpr ui32 GRID_ID_INVALID = UINT32_MAX;
 constexpr ui32 CHUNK_ID_INVALID = GRID_ID_INVALID;
 
-template<ui32 GRIDWIDTH, i32 CELLWIDTH>
+template<ui32 GRIDWIDTH, ui32 CELLWIDTH>
 struct GridID {
     GridID() : id(GRID_ID_INVALID), pos(GRID_ID_INVALID) {}
     GridID(const GridID& other) { *this = other; }
@@ -43,6 +43,7 @@ struct GridID {
     bool operator==(const GridID& other) const { return id == other.id; }
 
     f32v2 getWorldPos() const { return f32v2(pos.x * CELLWIDTH, pos.y * CELLWIDTH); }
+    ui32v2 getWorldPosInt() const { return pos * CELLWIDTH; }
     GridID getLeftID() const { return GridID(ui32v2(pos.x - 1, pos.y)); }
     GridID getTopID() const { return GridID(ui32v2(pos.x, pos.y + 1)); }
     GridID getRightID() const { return GridID(ui32v2(pos.x + 1, pos.y)); }

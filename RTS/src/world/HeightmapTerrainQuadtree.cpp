@@ -153,25 +153,30 @@ void createTerrainAndWaterMesh(
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
+    f32v2 patchWorldPos = worldPos + f32v2(posStart);
+    ui32v2 intWorldPos(glm::round(patchWorldPos));
+
     mesh.beginMesh(posStart, dims.x);
     waterMesh.beginMesh(posStart, dims.x);
+    mesh.beginMesh(posStart, dims.x);
+    const ui32 quadWidth = (ui32)mesh.getQuadWidth();
+    intWorldPos -= quadWidth; // Padding so we start on the side
+    assert(quadWidth == HEIGHTMAP_QUAD_SIZE); // Must match heightmap exactly
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
-    assert(false); // Need copy
-    // Copy bounding sphere
-    /*const HeightmapPatchData* bl = paddedHeightData[0];
-    const HeightmapPatchData* b = paddedHeightData[1];
-    const HeightmapPatchData* br = paddedHeightData[2];
-    const HeightmapPatchData* l = paddedHeightData[3];
-    const HeightmapPatchData* c = paddedHeightData[4];
-    const HeightmapPatchData* r = paddedHeightData[5];
-    const HeightmapPatchData* tl = paddedHeightData[6];
-    const HeightmapPatchData* t = paddedHeightData[7];
-    const HeightmapPatchData* tr = paddedHeightData[8];*/
+    for (int y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
+        worldGrid.copyHeightRowToBuffer(paddedHeightfield[y], intWorldPos, TERRAIN_MESH_PADDED_WIDTH_VERTS);
+        intWorldPos.y += quadWidth;
+    }
+
+    // Compute bounds
+    // TODO: TRUE AABB generated bounding sphere via boundingSphereFromAABB
     BoundingSphere boundingSphere;
-    f32v2 centerxy = worldPos + f32v2(posStart) + f32v2(HeightmapTerrainQuadtree::LOD_DIMS[lod].xy);
+    f32 lodRadius = HeightmapTerrainQuadtree::LOD_DIMS[lod].x * 0.5f;
+    f32v2 centerxy = patchWorldPos + f32v2(lodRadius);
     boundingSphere.center = f32v3(centerxy.x, centerxy.y, 0.0f);
-    boundingSphere.radius = sqrt(SQ(HeightmapTerrainQuadtree::LOD_DIMS[lod].x * 0.5f));
+    f32 lodRadius2 = SQ(lodRadius);
+    boundingSphere.radius = sqrt(lodRadius2 + lodRadius2) + 10.0f;// 10.0f is tmp until true bounding sphere
     mesh.setBoundingSphere(boundingSphere);
     waterMesh.setBoundingSphere(boundingSphere);
 
