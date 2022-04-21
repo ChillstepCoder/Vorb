@@ -570,7 +570,6 @@ void WorldGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLe
 
     ui32 lengthRemaining = rowLength;
     ui32v2 worldPos = worldPosStart;
-    int q = 0;
     do {
         // Get heightmap position and vertex offset
         HeightmapPatchID id = HeightmapPatchID::fromWorldUI32v2(worldPos);
@@ -587,7 +586,6 @@ void WorldGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLe
         dst += lengthToCopy;
         lengthRemaining -= lengthToCopy;
         worldPos.x += HEIGHTMAP_QUAD_SIZE * lengthToCopy + 1; // +1 since we have a shared vertex on the edge
-        ++q;
     } while (lengthRemaining > 0);
 }
 
