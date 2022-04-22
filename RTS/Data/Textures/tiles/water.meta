@@ -1,8 +1,0 @@
-dims_cells: [1,3]
-tiles:
-  - name: watertop
-    cell_rect: [0,0,1,1]
-  - name: water
-    cell_rect: [0,1,1,1]
-  - name: waterbot
-    cell_rect: [0,2,1,1]

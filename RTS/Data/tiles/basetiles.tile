@@ -12,8 +12,6 @@ bricks1:
   recipe:
     - item: wood_raw
       count: 3
-water:
-  tex: water
 door:
   tex: door
   recipe:

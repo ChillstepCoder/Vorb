@@ -1,4 +1,5 @@
 #include "../GlobalUbo.glsl"
+#include "util/hsv.glsl"
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
@@ -146,9 +147,17 @@ void main() {
     //oColor.rgb *= texture(GrassTexture, fUV).rgb;
     
     // =========== END NEW ART STYLE ==========
+    // TMP Texturing test with color remapping
+    // We use the texture value with the terrain color and saturation
+    vec3 textureColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp) * GrassColor;
+    vec3 currhsv = rgb2hsv(oColor.rgb);
+    vec3 texturehsv = rgb2hsv(textureColor);
+    //currhsv.b = texturehsv.b;
+    currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
+    oColor.rgb = hsv2rgb(currhsv);
     
     // === Roughness ===
     
-	oRoughness.r = 1.0 - texture(GreyNoise, fUV * 4.0).r * 0.4;
+	oRoughness.r = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3;
 	oRoughness.a = 1.0;
 }

@@ -91,7 +91,6 @@ void SkinnedMesh::draw(const vg::GLProgram& program) const { // Make sure we hav
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
     glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_SHORT, nullptr);
     RenderStats::recordDrawCall(mIndexCount / 3);
-
     glBindVertexArray(0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);

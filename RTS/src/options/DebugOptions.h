@@ -109,7 +109,7 @@ struct DebugOptions {
     // Camera settings
     f32 mFoV = 75.0f;
     f32 mZFar = 200000.0f;
-    f32 mCameraZHeight = 1.0f;
+    f32 mCameraZHeight = 1.5f;
     f32 mCameraXYDistance = 1.0f;
     CameraMode mCameraMode = CameraMode::MMO;
     // Shader debug

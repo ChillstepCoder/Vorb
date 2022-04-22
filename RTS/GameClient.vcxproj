@@ -241,6 +241,8 @@
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\mesh\BuildingMesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\WaterMesh.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
@@ -258,6 +260,7 @@
     <ClCompile Include="src\rendering\SpriteData.cpp" />
     <ClCompile Include="src\rendering\SpriteRepository.cpp" />
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
+    <ClCompile Include="src\rendering\texture\TextureRepository.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
@@ -418,7 +421,10 @@
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\BuildingMesh.h" />
+    <ClInclude Include="src\rendering\mesh\Mesh.h" />
+    <ClInclude Include="src\rendering\mesh\MeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMesh.h" />
+    <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\WaterMesh.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
@@ -431,6 +437,7 @@
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
+    <ClInclude Include="src\rendering\texture\TextureRepository.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />

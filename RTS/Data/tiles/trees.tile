@@ -28,12 +28,3 @@ tree_pine:
   drops:
     - item: wood_raw
       count: [5, 8]
-tree_huge:
-  tex: mega_tree
-  col: box
-  shape: Thin
-  height: 8.0
-  resource: wood
-  drops:
-    - item: wood_raw
-      count: [250, 320]

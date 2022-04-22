@@ -23,7 +23,6 @@ public:
     ui8 windInfluence = 0;
     // TODO: Roughness :/
 };
-
 // Need power of 2 alignment
 static_assert(sizeof(TileVertex) == 32, "32 byte alignment needed");
 
@@ -65,17 +64,6 @@ public:
 };
 // Need power of 2 alignment
 static_assert(sizeof(TriangleVertex) == 64, "32 byte alignment needed");
-
-struct alignas(32) CompressedVertex {
-    f32v3 pos;
-    f32v2 uvs;
-    ui16 textureId;
-    i8v3 normal; // https://stackoverflow.com/questions/5255806/how-to-calculate-tangent-and-binormal
-    i8v2 tangent;
-    color4 color;
-    ui8 roughness;
-};
-static_assert(sizeof(CompressedVertex) == 32, "32 byte alignment needed");
 
 constexpr int MAX_BONES_PER_VERTEX = 4;
 

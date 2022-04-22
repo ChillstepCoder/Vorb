@@ -49,9 +49,10 @@ void main() {
     depthDiff = clamp(depthDiff / maxDepthDiff, 0.0, 1.0);
     vec4 waterColor = mix(unShallowColor, unDeepColor, depthDiff);
     
+    vec2 timeOffset = vec2(Time) * unSurfaceMoveSpeed;
     vec2 distortSample = texture(unSurfaceDistort, fUV.xy * unDistortTiling).rg * unSurfaceDistortAmount;
     
-    vec2 noiseUV = fUV + vec2(Time) * unSurfaceMoveSpeed + distortSample;
+    vec2 noiseUV = fUV + timeOffset + distortSample;
      
     // TODO tex2dproj?
     float surfaceNoiseSample = texture(unSurfaceNoise, noiseUV * unNoiseTiling).r;
@@ -84,7 +85,8 @@ void main() {
     vec3 colorJitter = texture(unHsvJitter, colorNoiseUV * 0.2).rgb;
     oColor.rgb += cos(colorJitter * 15.0) * unColorNoiseIntensity;
     
-    vec3 normal = normalize(vec3((distortSample.xy - 0.1) * 2.0, 0.5));
+    vec2 normalSample = texture(unSurfaceDistort, fUV.xy * unDistortTiling + timeOffset).rg * unSurfaceDistortAmount;
+    vec3 normal = normalize(vec3((normalSample.xy - 0.1) * 2.0, 0.5));
     
     // Lighting and shadow
 	float shadow = texture(ShadowTexture, fboUV).r;
