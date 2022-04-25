@@ -243,8 +243,6 @@
     <ClCompile Include="src\rendering\mesh\BuildingMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp" />
-    <ClCompile Include="src\rendering\mesh\TerrainMesh.cpp" />
-    <ClCompile Include="src\rendering\mesh\WaterMesh.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
@@ -423,9 +421,7 @@
     <ClInclude Include="src\rendering\mesh\BuildingMesh.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\MeshBuilder.h" />
-    <ClInclude Include="src\rendering\mesh\TerrainMesh.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
-    <ClInclude Include="src\rendering\mesh\WaterMesh.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
@@ -465,6 +461,7 @@
     <ClInclude Include="src\util\IntersectionHit.h" />
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
+    <ClInclude Include="src\util\StringHash.h" />
     <ClInclude Include="src\util\TileUtil.h" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\weather\CloudManager.h" />

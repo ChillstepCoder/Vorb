@@ -66,7 +66,7 @@ void vg::GraphicsDevice::refreshInformation() {
     glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &_props.maxDepthSamples);
 
     // Get Texture Unit Information
-    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &_props.maxTextureUnits);
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &_props.maxTextureUnits);
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &_props.maxTextureSize);
     glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &_props.max3DTextureSize);
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &_props.maxArrayTextureLayers);
@@ -84,7 +84,7 @@ void vg::GraphicsDevice::refreshInformation() {
     printf("Max Vertex Attributes:    %d\n", _props.maxVertexAttributes);
 
     printf("\n=== Texture Properties ===\n");
-    printf("Max Texture Units:        %d\n", _props.maxTextureUnits);
+    printf("Max Frag Texture Units:   %d\n", _props.maxTextureUnits);
     printf("Max Texture Size:         %d\n", _props.maxTextureSize);
     printf("Max 3D Texture Size:      %d\n", _props.max3DTextureSize);
     printf("Max Array Texture Layers: %d\n", _props.maxArrayTextureLayers);

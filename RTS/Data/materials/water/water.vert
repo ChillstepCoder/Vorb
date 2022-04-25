@@ -2,8 +2,8 @@
 
 uniform vec3 unOffset;
 
-in vec4 vPosition;
-in float vDepth;
+layout(location = 0) in vec4 vPosition;
+layout(location = 1) in float vDepth;
 
 out vec3 fPosition;
 out vec2 fUV;

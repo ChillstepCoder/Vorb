@@ -4,6 +4,7 @@
 #include "Material.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/RenderContext.h"
+#include "rendering/mesh/Mesh.h"
 #include "camera/ICamera.h"
 
 #include <Vorb/graphics/SamplerState.h>
@@ -34,6 +35,13 @@ void MaterialRenderer::renderMesh(const MeshBase& mesh, const Material& material
     bindMaterialForRender(material, nullptr);
 
     mesh.draw(material.mProgram);
+}
+
+void MaterialRenderer::renderMesh(const Mesh& mesh, const Material& material) const
+{
+    bindMaterialForRender(material, nullptr);
+
+    mesh.draw();
 }
 
 void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect)

@@ -151,7 +151,7 @@ void IQuadMesh<VERTEX>::setData(const VERTEX* meshData, unsigned vertexCount, Me
 
     lazyInitBuffers();
     const unsigned indexCount = (vertexCount / 4) * 6;
-    assert(indexCount < MAX_MESH_INDICES);
+    assert(indexCount < MAX_QUAD_MESH_INDICES);
 
     mIndexCount = indexCount;
 

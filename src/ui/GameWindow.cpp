@@ -298,7 +298,8 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
     // Make sure we are using the right gl version (4.5)
     const ui32 minor = getGLMinorVersion();
     const ui32 major = getGLMajorVersion();
-    assert(minor == 5 && major == 4);
+    printf("Initializing opengl for imgui with minor %u and major %u", minor, major);
+    assert(minor == 5 && major == 4 && "App.config needs opengl set to 4.5\n");
     ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(m_window), m_glc);
     ImGui_ImplOpenGL3_Init(glsl_version);
 #endif

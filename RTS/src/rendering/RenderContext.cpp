@@ -24,12 +24,12 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/QuadMesh.h"
-#include "rendering/mesh/TerrainMesh.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
+#include "rendering/mesh/MeshBuilder.h"
 #include "TextureManip.h"
 
 #include "ui/UIContext.h"
@@ -142,9 +142,8 @@ RenderContext::RenderContext(const World& world, const f32v2& screenResolution, 
     }
 
     // Mesh init
+    MeshBuilder::initStaticIBOs();
     MeshBase::initStaticIBO();
-    TerrainMesh::initGlobalIBO();
-    WaterMesh::initGlobalIBO();
     checkGlError("Meshbase init");
 
     // int UI resources
@@ -196,7 +195,7 @@ RenderContext::RenderContext(const World& world, const f32v2& screenResolution, 
     // UBO
     glGenBuffers(1, &mGlobalUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, mGlobalUbo);
-    glBufferData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), NULL, GL_STATIC_DRAW); // allocate 152 bytes of memory
+    glBufferData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), NULL, GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 

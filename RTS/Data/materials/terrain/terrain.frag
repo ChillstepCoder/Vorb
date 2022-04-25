@@ -1,5 +1,6 @@
-#include "../GlobalUbo.glsl"
 #include "util/hsv.glsl"
+#include "GlobalUbo.glsl"
+#include "TextureUbo.glsl"
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;

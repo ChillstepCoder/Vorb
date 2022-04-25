@@ -1,11 +1,69 @@
 #pragma once
 
 #include "Vertex.h"
+#include "Mesh.h"
+#include "world/TerrainConstants.h"
+
+#define SUBMESH_INDEX_MAIN = -1;
+typedef i32 SubmeshIndex;
+
+// Keep track of all they types of indices so we can decide to share if needed
+enum class PolyTypeFlags : ui8 {
+    ARRAY_TRIANGLES   = 1 << 0,
+    QUADS             = 1 << 1,
+    INDEXED_TRIANGLES = 1 << 2,
+    TERRAIN           = 1 << 3,
+    WATER             = 1 << 4,
+    COUNT = 5, // KEEP UPDATED
+};
 
 class MeshBuilder
 {
 public:
+
+    static void initStaticIBOs();
+
+    void setBoundingSphere(BoundingSphere sphere) { mBoundingSphere = sphere; }
     void addAxisAlignedQuad();
     void addTriangle();
-};
 
+    void setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
+    void setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
+
+    void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
+
+    // Override allocation to use boost::singleton_pool
+    static void* operator new(size_t count);
+    static void operator delete(void* pointer, size_t size);
+
+private:
+    struct InProgressSubMeshData {
+        void clear() {
+            mVerts.clear();
+            mIndices.clear();
+            mTextureCount = 0;
+        }
+
+        std::vector<Vertex32> mVerts;
+        std::vector<ui32> mIndices;
+        VGTexture mTextures[32];
+        ui8 mTextureCount;
+    };
+
+
+    void setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo);
+    void initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool allocateIbo);
+    void uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);
+    void bindVertexAttribs(SubMeshData& subMesh);
+
+    // TODO: Try both multi-context opengl and pool_allocator
+    std::unordered_map<VGTexture, i32> mTextureToSubmesh;
+    std::vector<InProgressSubMeshData> mSubMeshesData;
+    InProgressSubMeshData              mMainSubMeshData;
+    BoundingSphere                     mBoundingSphere;
+    BitFlags<PolyTypeFlags>            mPolyTypeFlags;
+
+    // Shared index buffers
+    static VGBuffer sQuadIbo;
+    static VGBuffer sTerrainIbo;
+};

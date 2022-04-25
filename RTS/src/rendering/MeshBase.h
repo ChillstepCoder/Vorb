@@ -1,14 +1,8 @@
 #pragma once
 
-DECL_VG(class GLProgram);
-enum class MeshDrawMode {
-    DYNAMIC = GL_DYNAMIC_DRAW,
-    STREAM = GL_STREAM_DRAW,
-    STATIC = GL_STATIC_DRAW
-};
+#include "mesh/Mesh.h"
 
-// Enough for a full chunk of grass + padding
-constexpr unsigned MAX_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
+DECL_VG(class GLProgram);
 
 // TODO: Store material ID here?
 class MeshBase {

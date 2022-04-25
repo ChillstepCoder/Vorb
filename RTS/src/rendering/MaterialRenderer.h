@@ -3,6 +3,7 @@
 class RenderContext;
 class Material;
 class MeshBase;
+class Mesh;
 
 #include <Vorb/graphics/DepthState.h>
 
@@ -14,6 +15,7 @@ public:
 
     void renderFullScreenQuad(const Material& material) const;
     void renderMesh(const MeshBase& mesh, const Material& material) const;
+    void renderMesh(const Mesh& mesh, const Material& material) const;
     void renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect);
     void renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect);
 

@@ -5,6 +5,7 @@
 #include "options/DebugOptions.h"
 #include "DebugRenderer.h"
 #include "world/WorldGrid.h"
+#include "rendering/mesh/MeshBuilder.h"
 
 #include "generation/WorldGeneration.h"
 #include <Vorb/graphics/GLProgram.h>
@@ -60,7 +61,7 @@ void HeightmapTerrainQuadtree::renderTerrain(const Camera3D& camera, const vg::G
             }
             const BoundingSphere& bounds = mesh->getBoundingSphere();
             if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-                mesh->draw(program);
+                mesh->draw();
             }
         }
     }
@@ -87,7 +88,7 @@ void HeightmapTerrainQuadtree::renderWater(const Camera3D& camera, const vg::GLP
             }
             const BoundingSphere& bounds = mesh->getBoundingSphere();
             if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-                mesh->draw(program);
+                mesh->draw();
             }
         }
     }
@@ -102,16 +103,14 @@ void HeightmapTerrainQuadtree::markDirty() {
 }
 
 void createTerrainAndWaterMesh(
-    TerrainMesh& mesh,
-    WaterMesh& waterMesh,
+    MeshBuilder& terrainBuilder,
+    MeshBuilder& waterBuilder,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
-    mesh.beginMesh(posStart, dims.x);
-    waterMesh.beginMesh(posStart, dims.x);
 
     // AABB calculation
     f32AABB3 aabb;
@@ -133,19 +132,19 @@ void createTerrainAndWaterMesh(
             paddedHeightfield[y][x] = zPos;
         }
     }
-    mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
-    waterMesh.setVertsFromPaddedHeightfield(paddedHeightfield);
+    terrainBuilder.setVertsTerrainFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
+    waterBuilder.setVertsWaterFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
     // Bounding sphere
     aabb.pos.z = minZ;
     aabb.dims.z = maxZ - minZ;
     const BoundingSphere sphere = boundingSphereFromAABB(aabb);
-    mesh.setBoundingSphere(sphere);
-    waterMesh.setBoundingSphere(sphere);
+    terrainBuilder.setBoundingSphere(sphere);
+    waterBuilder.setBoundingSphere(sphere);
 };
 
 void createTerrainAndWaterMesh(
-    TerrainMesh& mesh,
-    WaterMesh& waterMesh,
+    MeshBuilder& terrainBuilder,
+    MeshBuilder& waterBuilder,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
@@ -156,12 +155,8 @@ void createTerrainAndWaterMesh(
     f32v2 patchWorldPos = worldPos + f32v2(posStart);
     ui32v2 intWorldPos(glm::round(patchWorldPos));
 
-    mesh.beginMesh(posStart, dims.x);
-    waterMesh.beginMesh(posStart, dims.x);
-    mesh.beginMesh(posStart, dims.x);
-    const ui32 quadWidth = (ui32)mesh.getQuadWidth();
+    const ui32 quadWidth = HEIGHTMAP_QUAD_SIZE;
     intWorldPos -= quadWidth; // Padding so we start on the side
-    assert(quadWidth == HEIGHTMAP_QUAD_SIZE); // Must match heightmap exactly
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (int y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
@@ -177,12 +172,12 @@ void createTerrainAndWaterMesh(
     boundingSphere.center = f32v3(centerxy.x, centerxy.y, 0.0f);
     f32 lodRadius2 = SQ(lodRadius);
     boundingSphere.radius = sqrt(lodRadius2 + lodRadius2) + 10.0f;// 10.0f is tmp until true bounding sphere
-    mesh.setBoundingSphere(boundingSphere);
-    waterMesh.setBoundingSphere(boundingSphere);
+    terrainBuilder.setBoundingSphere(boundingSphere);
+    waterBuilder.setBoundingSphere(boundingSphere);
 
     // Build
-    mesh.setVertsFromPaddedHeightfield(paddedHeightfield);
-    waterMesh.setVertsFromPaddedHeightfield(paddedHeightfield);
+    terrainBuilder.setVertsTerrainFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
+    waterBuilder.setVertsWaterFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)
@@ -190,8 +185,8 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     bool hasAquired = true;
     if (!mTerrainMeshes[patchIndex]) {
         hasAquired = false; // If we dont have a mesh, we haven't aquired yet
-        mTerrainMeshes[patchIndex] = std::make_unique<TerrainMesh>();
-        mWaterMeshes[patchIndex] = std::make_unique<WaterMesh>();
+        mTerrainMeshes[patchIndex] = std::make_unique<Mesh>();
+        mWaterMeshes[patchIndex] = std::make_unique<Mesh>();
         assert(patch.mStatus == QUADTREE_PATCH_STATUS_INVALID || patch.mStatus == QUADTREE_PATCH_STATUS_RECOMBINING);
     }
     ++mRefCount;
@@ -202,47 +197,56 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
         // Sentinal IDs never mesh
         if (id.isSentinelID()) {
-            finishMeshes(patchIndex);
+            finishMeshes(nullptr, nullptr, patchIndex);
             return;
         }
 
+        // TODO: Can we malloc these together?
+        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>();
+        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>();
+
         if (hasAquired || mWorldGrid->tryAquirePaddedHeightDataAt(id)) {
             // Instantly generate
-            Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {
-                createMeshes(id, patchIndex, lod);
-            }, [this, &patch, patchIndex]() {
-                finishMeshes(patchIndex);
+            Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder](ThreadPoolWorkerData*) {
+                createMeshes(*terrainBuilder, *waterBuilder, id, patchIndex, lod);
+            }, [this, &patch, patchIndex, terrainBuilder, waterBuilder]() {
+                finishMeshes(terrainBuilder.get(), waterBuilder.get(), patchIndex);
             });
         }
         else {
             // Wait for the terrain generator to generate our chunk
-            mWorldGrid->requestPaddedHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
-                Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id](ThreadPoolWorkerData*) {
-                    createMeshes(id, patchIndex, lod);
-                }, [this, &patch, patchIndex]() {
-                    finishMeshes(patchIndex);
+            mWorldGrid->requestPaddedHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder]() {
+                Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder](ThreadPoolWorkerData*) {
+                    createMeshes(*terrainBuilder, *waterBuilder, id, patchIndex, lod);
+                }, [this, &patch, patchIndex, terrainBuilder, waterBuilder]() {
+                    finishMeshes(terrainBuilder.get(), waterBuilder.get(), patchIndex);
                 });
             });
         }
     }
     else {
+        // TODO: Can we malloc these together?
+        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>();
+        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>();
         // At lower LODs we have to regenerate every time
         // TODO: we actually shouldnt do this.. it ignores diffs
-        Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex](ThreadPoolWorkerData*) {
-            createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos);
-        }, [this, &patch, patchIndex]() {
-            finishMeshes(patchIndex);
+        Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, terrainBuilder, waterBuilder](ThreadPoolWorkerData*) {
+            createTerrainAndWaterMesh(*terrainBuilder, *waterBuilder, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos);
+        }, [this, &patch, patchIndex, terrainBuilder, waterBuilder]() {
+            finishMeshes(terrainBuilder.get(), waterBuilder.get(), patchIndex);
         });
     }
 }
 
-void HeightmapTerrainQuadtree::createMeshes(const HeightmapPatchID id, ui32 patchIndex, ui32 lod) {
-    createTerrainAndWaterMesh(*mTerrainMeshes[patchIndex], *mWaterMeshes[patchIndex], PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, *mWorldGrid);
+void HeightmapTerrainQuadtree::createMeshes(MeshBuilder& terrainMeshBuilder, MeshBuilder& waterMeshBuilder, const HeightmapPatchID id, ui32 patchIndex, ui32 lod) {
+    createTerrainAndWaterMesh(terrainMeshBuilder, waterMeshBuilder, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, *mWorldGrid);
 }
 
-void HeightmapTerrainQuadtree::finishMeshes(ui32 patchIndex) {
-    mTerrainMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
-    mWaterMeshes[patchIndex]->finishMesh(MeshDrawMode::STATIC);
+void HeightmapTerrainQuadtree::finishMeshes(MeshBuilder* terrainMeshBuilder, MeshBuilder* waterMeshBuilder, ui32 patchIndex) {
+    if (terrainMeshBuilder) {
+        terrainMeshBuilder->finishMesh(*mTerrainMeshes[patchIndex], MeshDrawMode::STATIC);
+        waterMeshBuilder->finishMesh(*mWaterMeshes[patchIndex], MeshDrawMode::STATIC);
+    }
     onMeshFinished(patchIndex, mTerrainMeshes[patchIndex]->isValid() || mWaterMeshes[patchIndex]->isValid());
     // Update refcount
     --mRefCount;

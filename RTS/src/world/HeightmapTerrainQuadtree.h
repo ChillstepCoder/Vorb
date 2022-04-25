@@ -3,12 +3,11 @@
 #include "world/WorldData.h"
 #include "data_structure/FlatQuadtree.h"
 
-// Why does excluding this cause an error
-#include "rendering/mesh/TerrainMesh.h"
-#include "rendering/mesh/WaterMesh.h"
+#include "rendering/mesh/Mesh.h"
 
 class Camera3D;
 class WorldGrid;
+class MeshBuilder;
 DECL_VG(class GLProgram);
 
 class HeightmapTerrainQuadtree : public FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>
@@ -29,13 +28,13 @@ public:
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;
 
-    void createMeshes(const HeightmapPatchID id, ui32 patchIndex, ui32 lod);
-    void finishMeshes(ui32 patchIndex);
+    void createMeshes(MeshBuilder& terrainMeshBuilder, MeshBuilder& waterMeshBuilder, const HeightmapPatchID id, ui32 patchIndex, ui32 lod);
+    void finishMeshes(MeshBuilder* terrainMeshBuilder, MeshBuilder* waterMeshBuilder, ui32 patchIndex);
 
     void freeMeshForPatch(ui32 patchIndex) override;
 
-    std::unique_ptr<TerrainMesh> mTerrainMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
-    std::unique_ptr<WaterMesh> mWaterMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
+    std::unique_ptr<Mesh> mTerrainMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
+    std::unique_ptr<Mesh> mWaterMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     ui32 mRefCount = 0; // TODO: This is probably unneeded
     WorldGrid* mWorldGrid = nullptr;
 };

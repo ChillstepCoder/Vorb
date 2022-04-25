@@ -1,22 +1,54 @@
 #pragma once
 
-enum class MeshFlags : ui8 {
-    TRIANGLES,
-    QUADS,
+// Enough for a full chunk of grass + padding
+// TODO: How much do we really save doing this?
+// Profile how often we use this...
+constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
+
+enum class MeshDrawMode {
+    DYNAMIC = GL_DYNAMIC_DRAW,
+    STREAM = GL_STREAM_DRAW,
+    STATIC = GL_STATIC_DRAW
 };
-constexpr ui8 MESH_FLAGS_MIXED_POLYS = e_cast(MeshFlags::TRIANGLES) | e_cast(MeshFlags::QUADS);
+
+enum class MeshFlags : ui8 {
+    USING_SHARED_IBO = 1 << 0
+};
+
+struct SubMeshData {
+    union {
+        struct {
+            VGBuffer  mVao;
+            VGBuffer  mVbo;
+            VGBuffer  mTextureUbo;
+            VGBuffer  mIbo; // This should stay last since its possible to be shared
+        };
+        VGBuffer mBuffers[4] = {};
+    };
+    ui32 mIndexCount = 0; ///< Current capacity of mIbo
+    ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
+
+    void destroy(bool isUsingSharedIbo);
+};
 
 class Mesh
 {
+    friend class MeshBuilder;
 public:
-    // TODO: Try having the program define bindVertexAttribs, since the program knows its attributes, not the mesh
-private:
-    VGVertexArray       mVao = 0;
-    VGBuffer            mVbo = 0;
-    VGIndexBuffer       mIbo = 0;
-    ui32                mIndexCount = 0; ///< Current capacity of mIbo
-    mutable VGProgram   mLastUsedProgram = UINT32_MAX;
-    BoundingSphere      mBoundingSphere;  ///< Optional
-    ui16                mIndexType; // SHORT OR INT
-    BitFlags<MeshFlags> mFlags;
+    class Mesh();
+    virtual ~Mesh();
+
+    virtual void draw() const;
+    void destroy();
+    bool isValid() const { return mMainMesh.mVao != 0; }
+
+    const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
+
+protected:
+    SubMeshData              mMainMesh;
+    // TODO: Pool allocate?
+    std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
+    BoundingSphere           mBoundingSphere;  ///< Optional
+    BitFlags<MeshFlags>      mFlags;
+    ui8                      mVertexType; // UNUSED?
 };

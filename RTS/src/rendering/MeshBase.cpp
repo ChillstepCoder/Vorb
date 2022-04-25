@@ -18,8 +18,8 @@ void MeshBase::initStaticIBO() {
     }
 
     ui32 i = 0;
-    std::vector<ui32> quadIndices(MAX_MESH_INDICES);
-    for (ui32 v = 0; i < MAX_MESH_INDICES; v += 4u) {
+    std::vector<ui32> quadIndices(MAX_QUAD_MESH_INDICES);
+    for (ui32 v = 0; i < MAX_QUAD_MESH_INDICES; v += 4u) {
         quadIndices[i++] = v;
         quadIndices[i++] = v + 1;
         quadIndices[i++] = v + 2;
@@ -30,7 +30,7 @@ void MeshBase::initStaticIBO() {
 
     glGenBuffers(1, &sQuadIbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sQuadIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_MESH_INDICES * sizeof(ui32), quadIndices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_QUAD_MESH_INDICES * sizeof(ui32), quadIndices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
