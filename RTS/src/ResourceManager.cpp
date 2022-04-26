@@ -17,6 +17,7 @@
 #include "resources/RigRepository.h"
 #include "resources/AnimMachineRepository.h"
 #include "resources/SkillRepository.h"
+#include "resources/TextureRepository.h"
 #include "world/TileRepository.h"
 #include "editor/BrushRepository.h"
 
@@ -57,6 +58,7 @@ ResourceManager::ResourceManager() {
     mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache, *mRigRepository);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
     mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
+    mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -133,6 +135,13 @@ void ResourceManager::loadFiles() {
             else if (!vio::containsSubpath(entry, ".fbm")) { // Don't load .fbm as these are used by models
                 mSpriteRepository->loadSpriteTexture(entry);
             }
+        }
+    }
+
+    {
+        ScopedTimer timer("NEW: Texture load");
+        for (auto&& entry : mTextureFiles) {
+            mTextureRepository->loadTexture(entry);
         }
     }
 

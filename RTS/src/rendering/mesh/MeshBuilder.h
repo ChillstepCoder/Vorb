@@ -3,8 +3,9 @@
 #include "Vertex.h"
 #include "Mesh.h"
 #include "world/TerrainConstants.h"
+#include "rendering/texture/SubTexture.h"
 
-#define SUBMESH_INDEX_MAIN = -1;
+#define SUBMESH_INDEX_MAIN -1
 typedef i32 SubmeshIndex;
 
 // Keep track of all they types of indices so we can decide to share if needed
@@ -23,12 +24,15 @@ public:
 
     static void initStaticIBOs();
 
-    void setBoundingSphere(BoundingSphere sphere) { mBoundingSphere = sphere; }
-    void addAxisAlignedQuad();
-    void addTriangle();
+    void reserveVertexCount(ui32 count);
 
+    void setBoundingSphere(BoundingSphere sphere) { mBoundingSphere = sphere; }
+
+    // Geometry builders
     void setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
     void setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
+    void addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, SubTexture& texture, color4 color);
+    void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], SubTexture& texture, color4 color, bool flipTriangleDir);
 
     void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
 
@@ -41,25 +45,26 @@ private:
         void clear() {
             mVerts.clear();
             mIndices.clear();
-            mTextureCount = 0;
+            mTextures.clear();
         }
 
+        // TODO: Pool allocators
         std::vector<Vertex32> mVerts;
         std::vector<ui32> mIndices;
-        VGTexture mTextures[32];
-        ui8 mTextureCount;
+        std::vector<TextureHandle> mTextures;
     };
 
-
+    void getSubmeshAndTextureIndex(SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex);
     void setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo);
     void initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool allocateIbo);
     void uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);
     void bindVertexAttribs(SubMeshData& subMesh);
 
+
     // TODO: Try both multi-context opengl and pool_allocator
-    std::unordered_map<VGTexture, i32> mTextureToSubmesh;
-    std::vector<InProgressSubMeshData> mSubMeshesData;
+    std::unordered_map<VGTexture, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/>> mTextureToSubmesh;
     InProgressSubMeshData              mMainSubMeshData;
+    std::vector<InProgressSubMeshData> mSubMeshesData;
     BoundingSphere                     mBoundingSphere;
     BitFlags<PolyTypeFlags>            mPolyTypeFlags;
 

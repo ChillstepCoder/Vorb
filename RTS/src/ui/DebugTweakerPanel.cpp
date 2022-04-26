@@ -8,6 +8,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
+#include "rendering/GLExtensions.h"
+
 #include "options/DebugOptions.h"
 
 #include "definitions/ModelDef.h"
@@ -426,6 +428,11 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
             ImGui::Text((nString("Total VRAM: ") + std::to_string(total_mem_kb / 1000) + " mb").c_str());
             ImGui::Text((nString("Available VRAM: ") + std::to_string(cur_avail_mem_kb / 1000) + " mb").c_str());
             ImGui::Text((nString("Used VRAM: ") + std::to_string(totalUsedMem / 1000) + " mb").c_str());
+        }
+        ImGui::Separator();
+        ImGui::Text("Extensions:");
+        for (auto&& extension : sGlExtensions.sExtensions) {
+            ImGui::Text(extension.c_str());
         }
     }
 

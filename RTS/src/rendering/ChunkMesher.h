@@ -10,7 +10,7 @@ class Chunk;
 class TextureAtlas;
 class Camera3D;
 class WorldGrid;
-class QuadMesh;
+class MeshBuilder;
 struct TileData;
 class Tile;
 struct SpriteData;
@@ -35,9 +35,9 @@ public:
 private:
     bool createMeshAsync(const Chunk& chunk);
 
-    void addBlock(QuadMesh& quadMesh, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex);
-    void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, QuadMesh& quadMesh, f32v3 tilePosition, const TileData& tileData);
-    void addFloor(QuadMesh& quadMesh, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex);
+    void addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex);
+    void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData);
+    void addFloor(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex);
     f32 getTileHeight(const Tile& neighbor, const f32* heightData, TilePosition tilePos);
     f32 getTileHeight(const TileHandle& neighbor);
 

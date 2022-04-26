@@ -3,6 +3,11 @@
 
 #include "rendering/RenderStats.h"
 
+#include <boost/pool/singleton_pool.hpp>
+
+struct mesh_pool {};
+using singleton_task_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
+
 Mesh::Mesh() {
 
 }
@@ -17,6 +22,10 @@ void Mesh::draw() const {
 
     // Draw main mesh
     glBindVertexArray(mMainMesh.mVao);
+    // texture UBOs go at index 1 since globalUBO is index 0
+    if (mMainMesh.mTextureUbo) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, mMainMesh.mTextureUbo);
+    }
     glDrawElements(GL_TRIANGLES, mMainMesh.mIndexCount, mMainMesh.mIndexType, (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mMainMesh.mIndexCount / 3);
 
@@ -61,4 +70,16 @@ void SubMeshData::destroy(bool isUsingSharedIbo) {
         }
         mVao = 0;
     }
+}
+
+void* Mesh::operator new(size_t count) {
+    assert(IS_MAIN_THREAD());
+    UNUSED(count);
+    return singleton_task_pool::malloc();
+}
+
+void Mesh::operator delete(void* pointer, size_t size) {
+    assert(IS_MAIN_THREAD());
+    UNUSED(size);
+    return singleton_task_pool::free(pointer);
 }

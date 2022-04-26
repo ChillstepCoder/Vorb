@@ -1,5 +1,7 @@
+#extension GL_ARB_bindless_texture : enable
 // This must not be modified, it is bound to code layout
-//layout (std140, binding = 1) uniform TextureUbo
-//{
-//    sampler2D Textures[32]; // TODO: Use a define
-//};
+
+layout(bindless_sampler) uniform;
+layout (std140, binding = 1) uniform TextureUbo {
+    uvec4 Textures[250];
+};

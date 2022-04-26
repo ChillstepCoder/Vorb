@@ -232,6 +232,7 @@
     <ClCompile Include="src\rendering\CityDebugRenderer.cpp" />
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\GLExtensions.cpp" />
     <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
@@ -258,7 +259,6 @@
     <ClCompile Include="src\rendering\SpriteData.cpp" />
     <ClCompile Include="src\rendering\SpriteRepository.cpp" />
     <ClCompile Include="src\rendering\TextureAtlas.cpp" />
-    <ClCompile Include="src\rendering\texture\TextureRepository.cpp" />
     <ClCompile Include="src\rendering\TileSpriteLoader.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
@@ -268,6 +268,7 @@
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\resources\SkillRepository.cpp" />
+    <ClCompile Include="src\resources\TextureRepository.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
@@ -409,6 +410,7 @@
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\GLExtensions.h" />
     <ClInclude Include="src\rendering\GlobalUboData.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
@@ -433,7 +435,7 @@
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
-    <ClInclude Include="src\rendering\texture\TextureRepository.h" />
+    <ClInclude Include="src\rendering\texture\SubTexture.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />
@@ -449,6 +451,7 @@
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\resources\SkillRepository.h" />
+    <ClInclude Include="src\resources\TextureRepository.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />

@@ -4,6 +4,7 @@
 // TODO: How much do we really save doing this?
 // Profile how often we use this...
 constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
+constexpr ui32 MAX_TEXTURES_PER_MESH = 500; // Must be even
 
 enum class MeshDrawMode {
     DYNAMIC = GL_DYNAMIC_DRAW,
@@ -44,11 +45,15 @@ public:
 
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 
+    // Override allocation to use boost::singleton_pool
+    static void* operator new(size_t count);
+    static void operator delete(void* pointer, size_t size);
+
 protected:
     SubMeshData              mMainMesh;
     // TODO: Pool allocate?
+    // TODO: We dont need dynamic vector, just use a C array
     std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
     BoundingSphere           mBoundingSphere;  ///< Optional
     BitFlags<MeshFlags>      mFlags;
-    ui8                      mVertexType; // UNUSED?
 };

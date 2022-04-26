@@ -8,6 +8,7 @@
 
 class Chunk;
 class QuadMesh;
+class Mesh;
 class BillboardMesh;
 class TBOBillboardMesh;
 class GrassBillboardMesh;
@@ -35,7 +36,7 @@ enum class ChunkState : ui8 {
 struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
-    std::unique_ptr<QuadMesh> mChunkMesh = nullptr;
+    std::unique_ptr<Mesh> mChunkMesh = nullptr;
     std::unique_ptr<ChunkBillboardMesh> mBillboardMesh = nullptr;
 	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
 	bool mMeshDirty = true;

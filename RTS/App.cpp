@@ -5,6 +5,8 @@
 
 #include "Random.h"
 
+#include "rendering/GLExtensions.h"
+
 #include <Vorb/Delegate.hpp>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/ScreenList.h>
@@ -64,6 +66,7 @@ void App::onInit() {
     sDebugOptions.mScreenResolution = f32v2(m_window.getWidth(), m_window.getHeight());
 
 	Services::init();
+    sGlExtensions.init();
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);
 

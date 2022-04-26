@@ -9,7 +9,7 @@ enum class VertexVariantType {
 struct alignas(32) StandardVertex {
     f32v3 pos;
     f32v2 uvs;
-    ui8 textureId;
+    ui8 textureIndex;
     i8v3 normal; // https://stackoverflow.com/questions/5255806/how-to-calculate-tangent-and-binormal
     i8v2 tangent;
     color4 color;

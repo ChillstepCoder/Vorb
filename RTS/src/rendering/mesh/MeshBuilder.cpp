@@ -2,6 +2,7 @@
 #include "MeshBuilder.h"
 
 #include <boost/pool/singleton_pool.hpp>
+#include "Random.h"
 
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
 constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
@@ -11,6 +12,23 @@ using singleton_task_pool = boost::singleton_pool<mesh_builder_pool, sizeof(Mesh
 
 VGBuffer MeshBuilder::sQuadIbo = 0;
 VGBuffer MeshBuilder::sTerrainIbo = 0;
+
+const f32v2 CUBE_FACING_AXIS_DIRECTIONS[e_cast(CubeFacing::COUNT)] = {
+    f32v2(-1, 1), // LEFT
+    f32v2(1,  1),  // FRONT
+    f32v2(1,  1),  // RIGHT
+    f32v2(-1, 1), // BACK
+    f32v2(1,  1),  // TOP
+    f32v2(-1, -1)   // BOTTOM
+};
+const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
+    f32v2(1, 0), // LEFT
+    f32v2(0, 0),  // FRONT
+    f32v2(0, 0),  // RIGHT
+    f32v2(1, 0), // BACK
+    f32v2(0, 0),  // TOP
+    f32v2(1, 1)   // BOTTOM
+};
 
 void MeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
@@ -105,6 +123,205 @@ void MeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32
     }
 }
 
+void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, SubTexture& texture, color4 color) {
+    
+    InProgressSubMeshData* submesh;
+    ui8 textureIndex;
+    getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    std::vector<Vertex32>& vertexData = submesh->mVerts;
+    vertexData.resize(vertexData.size() + 4);
+
+    StandardVertex* verts = (StandardVertex*)(&vertexData.back() - 3);
+
+    const i32v2& xyAxis = CUBE_FACING_AXIS[e_cast(axis)];
+    const i8v3 normal(CUBE_FACING_NORMALS[e_cast(axis)]);
+    const i8v2 tangent(CUBE_FACING_TANGENTS[e_cast(axis)]);
+    const f32v2& xyAxisDirection = CUBE_FACING_AXIS_DIRECTIONS[e_cast(axis)];
+    const f32v2& initialOffsetMult = CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(axis)];
+    f32v4 uvs = texture.mUvRect;
+    
+    // TODO: Support indexes?
+    mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
+
+    // Offset for back faces so we can invert direction and have proper back face culling
+    tilePosition[xyAxis.x] += xyDims.x * initialOffsetMult.x;
+    tilePosition[xyAxis.y] += xyDims.y * initialOffsetMult.y;
+
+    if (texture.mFlags.isBitSet(SubTextureFlags::RAND_FLIP) && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        uvs.x = uvs.x + uvs.z;
+        uvs.y = uvs.y;
+        uvs.z = -uvs.z;
+        uvs.w = uvs.w;
+    }
+
+    { // Bottom Left
+        StandardVertex& vbl = verts[0];
+        vbl.pos = tilePosition;
+        vbl.uvs.x = uvs.x;
+        vbl.uvs.y = uvs.y + uvs.w;
+        vbl.color = color;
+        vbl.textureIndex = textureIndex;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
+    }
+    { // Bottom Right
+        StandardVertex& vbr = verts[1];
+        vbr.pos = tilePosition;
+        vbr.uvs.x = uvs.x + uvs.z;
+        vbr.uvs.y = uvs.y + uvs.w;
+        vbr.color = color;
+        vbr.textureIndex = textureIndex;
+        vbr.pos[xyAxis.x] += (xyDims.x) * xyAxisDirection.x;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
+    }
+    { // Top Right
+        StandardVertex& vtr = verts[2];
+        vtr.pos = tilePosition;
+        vtr.uvs.x = uvs.x + uvs.z;
+        vtr.uvs.y = uvs.y;
+        vtr.color = color;
+        vtr.textureIndex = textureIndex;
+        vtr.pos[xyAxis.x] += (xyDims.x) * xyAxisDirection.x;
+        vtr.pos[xyAxis.y] += (xyDims.y) * xyAxisDirection.y;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
+    }
+    { // Top Left
+        StandardVertex& vtl = verts[3];
+        vtl.pos = tilePosition;
+        vtl.uvs.x = uvs.x;
+        vtl.uvs.y = uvs.y;
+        vtl.color = color;
+        vtl.textureIndex = textureIndex;
+        vtl.pos[xyAxis.y] += (xyDims.y) * xyAxisDirection.y;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+}
+
+void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], SubTexture& texture, color4 color, bool flipTriangleDir)
+{
+
+    InProgressSubMeshData* submesh;
+    ui8 textureIndex;
+    getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    std::vector<Vertex32>& vertexData = submesh->mVerts;
+    vertexData.resize(vertexData.size() + 4);
+
+    StandardVertex* verts = (StandardVertex*)(&vertexData.back() - 3);
+
+    mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
+
+    // TODO: This is a bad approximation
+    const f32 dX = ((terrainCorners[0] - terrainCorners[1]) + (terrainCorners[2] - terrainCorners[3])) * 0.5f;
+    const f32 dY = ((terrainCorners[0] - terrainCorners[2]) + (terrainCorners[1] - terrainCorners[3])) * 0.5f;
+    const f32 dZ = 1.0f;
+    f32v4 uvs = texture.mUvRect;
+
+    f32v3 n(dX, dY, dZ);
+    i8v3 normal(glm::normalize(n) * 127.0f);
+
+    const i8v2 tangent(0, 1);
+
+    if (texture.mFlags.isBitSet(SubTextureFlags::RAND_FLIP) && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
+        // Flip horizontal
+        uvs.x = uvs.x;
+        uvs.y = uvs.y;
+        uvs.z = -uvs.z;
+        uvs.w = uvs.w;
+    }
+
+    if (flipTriangleDir) {
+        { // Bottom Right
+            StandardVertex& vbr = verts[0];
+            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1]);
+            vbr.uvs.x = uvs.x + uvs.z;
+            vbr.uvs.y = uvs.y + uvs.w;
+            vbr.color = color;
+            vbr.textureIndex = textureIndex;
+            vbr.normal = normal;
+            vbr.tangent = tangent;
+        }
+        { // Top Right
+            StandardVertex& vtr = verts[1];
+            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3]);
+            vtr.uvs.x = uvs.x + uvs.z;
+            vtr.uvs.y = uvs.y;
+            vtr.color = color;
+            vtr.textureIndex = textureIndex;
+            vtr.normal = normal;
+            vtr.tangent = tangent;
+        }
+        { // Top Left
+            StandardVertex& vtl = verts[2];
+            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2]);
+            vtl.uvs.x = uvs.x;
+            vtl.uvs.y = uvs.y;
+            vtl.color = color;
+            vtl.textureIndex = textureIndex;
+            vtl.normal = normal;
+            vtl.tangent = tangent;
+        }
+        { // Bottom Left
+            StandardVertex& vbl = verts[3];
+            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0]);
+            vbl.uvs.x = uvs.x;
+            vbl.uvs.y = uvs.y + uvs.w;
+            vbl.color = color;
+            vbl.textureIndex = textureIndex;
+            vbl.normal = normal;
+            vbl.tangent = tangent;
+        }
+    }
+    else {
+
+        { // Bottom Left
+            StandardVertex& vbl = verts[0];
+            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0]);
+            vbl.uvs.x = uvs.x;
+            vbl.uvs.y = uvs.y + uvs.w;
+            vbl.color = color;
+            vbl.textureIndex = textureIndex;
+            vbl.normal = normal;
+            vbl.tangent = tangent;
+        }
+        { // Bottom Right
+            StandardVertex& vbr = verts[1];
+            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1]);
+            vbr.uvs.x = uvs.x + uvs.z;
+            vbr.uvs.y = uvs.y + uvs.w;
+            vbr.color = color;
+            vbr.textureIndex = textureIndex;
+            vbr.normal = normal;
+            vbr.tangent = tangent;
+        }
+        { // Top Right
+            StandardVertex& vtr = verts[2];
+            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3]);
+            vtr.uvs.x = uvs.x + uvs.z;
+            vtr.uvs.y = uvs.y;
+            vtr.color = color;
+            vtr.textureIndex = textureIndex;
+            vtr.normal = normal;
+            vtr.tangent = tangent;
+        }
+        { // Top Left
+            StandardVertex& vtl = verts[3];
+            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2]);
+            vtl.uvs.x = uvs.x;
+            vtl.uvs.y = uvs.y;
+            vtl.color = color;
+            vtl.textureIndex = textureIndex;
+            vtl.normal = normal;
+            vtl.tangent = tangent;
+        }
+    }
+}
+
 void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
 
     // return blank mesh if we have no geometry
@@ -125,7 +342,7 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
     // Allocate correct number of submeshes
     mesh.mSubMeshes.resize(mSubMeshesData.size());
 
-    const bool usingTextureUbo = mMainSubMeshData.mTextureCount > 0;
+    const bool usingTextureUbo = mMainSubMeshData.mTextures.size() > 0u;
 
     // Hook in shared IBOs if needed
     bool usingSharedIbo = false;
@@ -178,6 +395,58 @@ void MeshBuilder::operator delete(void* pointer, size_t size) {
     assert(IS_MAIN_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
+}
+
+void MeshBuilder::getSubmeshAndTextureIndex(SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
+    auto&& it = mTextureToSubmesh.find(texture.mTextureDiffuse);
+    if (it != mTextureToSubmesh.end()) {
+        i32 subTextureIndex = it->second.first;
+        *textureIndex = it->second.second;
+        if (subTextureIndex == SUBMESH_INDEX_MAIN) {
+            *submesh = &mMainSubMeshData;
+        }
+        else {
+            *submesh = &mSubMeshesData[subTextureIndex];
+        }
+    }
+    else {
+        if (mMainSubMeshData.mTextures.size() < MAX_TEXTURES_PER_MESH) {
+            // This texture fits in the main submesh
+            *textureIndex = mMainSubMeshData.mTextures.size();
+            mMainSubMeshData.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+            mMainSubMeshData.mTextures.emplace_back(texture.mTextureHandleNormal);
+            mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(SUBMESH_INDEX_MAIN, *textureIndex);
+            *submesh = &mMainSubMeshData;
+        }
+        else {
+            // Our main mesh has too many textures already, find a valid submesh for it
+            bool foundSubmesh = false;
+            for (size_t i = 0; i < mSubMeshesData.size(); ++i) {
+                InProgressSubMeshData& data = mSubMeshesData[i];
+                if (data.mTextures.size() < MAX_TEXTURES_PER_MESH) {
+                    // This texture fits in the main submesh
+                    *textureIndex = data.mTextures.size();
+                    data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+                    data.mTextures.emplace_back(texture.mTextureHandleNormal);
+                    mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(i, *textureIndex);
+                    foundSubmesh = true;
+                    *submesh = &data;
+                    break;
+                }
+            }
+            // No valid submesh, make a new submesh
+            if (!foundSubmesh) {
+                InProgressSubMeshData& data = mSubMeshesData.emplace_back();
+                textureIndex = 0;
+                data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+                data.mTextures.emplace_back(texture.mTextureHandleNormal);
+                mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
+                *submesh = &data;
+            }
+        }
+    }
+    // Ignoring normals when applying to the mesh verts
+    *textureIndex = *textureIndex / 2;
 }
 
 void MeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo) {
@@ -266,18 +535,24 @@ void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshDa
 
     // VBO
     // Allocate orphaned
-    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
     glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
     // Set data
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, data.mVerts.data());
 
     // UBO
     if (subMesh.mTextureUbo) {
-        const ui32 textureBufferSizeBytes = data.mTextureCount * sizeof(VGTexture);
+        const ui32 textureBufferSizeBytes = data.mTextures.size() * sizeof(TextureHandle);
+        // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
+        ui32v2 buffer[MAX_TEXTURES_PER_MESH * 2];
+        for (ui32 i = 0; i < data.mTextures.size(); ++i) {
+            TextureHandle handle = data.mTextures[i];
+            buffer[i].x = handle & 0xffffffff;
+            buffer[i].y = handle >> 32;
+        }
         // Allocate orphaned
-        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, GL_STATIC_DRAW); // allocate 152 bytes of memory
+        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, GL_STATIC_DRAW);
         // Set data
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, data.mTextures);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, buffer);
     }
     checkGlError("MeshBuilder::uploadMeshData");
 
@@ -307,14 +582,14 @@ void MeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1 /*index*/, 2 /*size*/, GL_FLOAT, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, uvs));
         glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2 /*index*/, 1 /*size*/, GL_UNSIGNED_SHORT, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, textureId));
+        glVertexAttribIPointer(2 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, sizeof(StandardVertex), (void*)offsetof(StandardVertex, textureIndex));
         glEnableVertexAttribArray(3);
         glVertexAttribPointer(3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StandardVertex), (void*)offsetof(StandardVertex, color));
-        //glVertexAttribPointer(4 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StandardVertex), (void*)offsetof(StandardVertex, windInfluence));
         glEnableVertexAttribArray(4);
         glVertexAttribPointer(4 /*index*/, 3 /*size*/, GL_BYTE, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, normal));
         glEnableVertexAttribArray(5);
         glVertexAttribPointer(5 /*index*/, 2 /*size*/, GL_BYTE, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, tangent));
+        //glVertexAttribPointer(6 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StandardVertex), (void*)offsetof(StandardVertex, windInfluence));
     }
 }
 
@@ -430,4 +705,8 @@ void MeshBuilder::initStaticIBOs() {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, TERRAIN_MESH_INDICES * sizeof(ui32), indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     checkGlError("TerrainMesh::initGlobalIBO");
+}
+
+void MeshBuilder::reserveVertexCount(ui32 count) {
+    mMainSubMeshData.mVerts.reserve(count);
 }

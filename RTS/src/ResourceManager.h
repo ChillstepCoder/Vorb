@@ -6,6 +6,7 @@ DECL_VG(class TextureCache);
 class BrushRepository;
 class SpriteRepository;
 class TextureAtlas;
+class TextureRepository;
 class MaterialManager;
 class ParticleSystemManager;
 class BuildingDescriptionRepository;
@@ -49,6 +50,7 @@ public:
     ModelRepository& getModelRepository() const { return *mModelRepository; }
     BrushRepository& getBrushRepository() const { return *mBrushRepository; }
     SkillRepository& getSkillRepository() const { return *mSkillRepository; }
+    TextureRepository& getTextureRepository() const { return *mTextureRepository; }
 
     // Hot reload
     void reloadMaterials();
@@ -95,6 +97,7 @@ private:
     std::unique_ptr<BrushRepository> mBrushRepository;
     std::unique_ptr<SkillRepository> mSkillRepository;
     std::unique_ptr<vg::TextureCache> mTextureCache;
+    std::unique_ptr<TextureRepository> mTextureRepository;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

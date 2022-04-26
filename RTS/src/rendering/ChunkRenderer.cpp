@@ -109,7 +109,7 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camer
 void ChunkRenderer::TryRenderBaseMesh(const Chunk& chunk, const Material* material) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-        renderData.mChunkMesh->draw(material->mProgram);
+        renderData.mChunkMesh->draw();
     }
 }
 
