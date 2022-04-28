@@ -1,5 +1,6 @@
 #pragma once
 
+
 typedef ui32 SubTextureID;
 
 enum class SubTextureFlags : ui8 {
@@ -8,11 +9,11 @@ enum class SubTextureFlags : ui8 {
 };
 
 struct SubTexture {
-    SubTextureID mId;
-    VGTexture mTextureDiffuse;
     TextureHandle mTextureHandleDiffuse;
-    VGTexture mTextureNormal;
     TextureHandle mTextureHandleNormal;
+    VGTexture mTextureDiffuse;
+    VGTexture mTextureNormal;
     f32v4 mUvRect;
+    SubTextureID mId;
     BitFlags<SubTextureFlags> mFlags;
 };

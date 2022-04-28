@@ -1,13 +1,11 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
-#include "rendering/TextureAtlas.h"
 
 #include "world/Chunk.h"
 #include "world/TileRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshBuilder.h"
 #include "rendering/QuadMesh.h"
-#include "rendering/SpriteData.h"
 #include "Random.h"
 #include "options/DebugOptions.h"
 #include <Vorb/graphics/SamplerState.h>
@@ -22,6 +20,11 @@
 #include "resources/TextureRepository.h"
 
 constexpr float LAYER_DEPTH_ADD = 0.001f;
+
+constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
+constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 5;
+constexpr int TILE_TEX_METHOD_VERTICAL_WALL_HEIGHT = 3;
+constexpr int TILE_TEX_METHOD_VERTICAL_WALL_WIDTH = 1;
 
 // TODO: Method(s) file?
 struct ConnectedWallData {
@@ -134,8 +137,8 @@ f32v2 getUvsOffsetsFromConnectedWallIndex(int index) {
 
 f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     f32v2 rv;
-    rv.x = float(index % (int)VERTICAL_WALL_DIMS.x);
-    rv.y = VERTICAL_WALL_DIMS.y - float(index / (int)VERTICAL_WALL_DIMS.x) - 1;
+    rv.x = 0.0f;
+    rv.y = (2 - index) / 3.0f;
     return rv;
 }
 
@@ -220,9 +223,8 @@ void initConnectedOffsets() {
     }
 }
 
-ChunkMesher::ChunkMesher(const WorldGrid& worldGrid, const TextureAtlas& textureAtlas) :
-    mWorldGrid(worldGrid),
-    mTextureAtlas(textureAtlas)
+ChunkMesher::ChunkMesher(const WorldGrid& worldGrid) :
+    mWorldGrid(worldGrid)
 {
     initConnectedOffsets();
 }
@@ -297,91 +299,12 @@ const CubeFacing EXPOSED_NEIGHBOR_QUAD_FACINGS[4] = {
 constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
 
-void addTileFloraBillboard(
-    ChunkBillboardMesh& billboardMesh,
-    const Chunk& chunk,
-    const TileIndex& tileIndex,
-    int layerIndex,
-    const TileData& tileData,
-    const SpriteData& spriteData,
-    const Tile& rightTile,
-    const Tile& topTile
-) {
-
-    assert(false); // TODO: real grass
-
-    const float layerDepth = layerIndex * LAYER_DEPTH_ADD;
-    const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex];
-
-    const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
-
-    /*Tile neighbors[8];
-    chunk.getTileNeighbors(tileIndex, neighbors);
-
-    const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
-    const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
-    const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
-
-    const int x = tileIndex.getX();
-    const int y = tileIndex.getY();
-    // Allow overlap when adjacent tiles are the same
-
-    const f32 tileBaseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
-    const float rightXMult = (rightTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != rightTile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex]) ? 1.0f : 0.0f;
-    const float topXMult = (topTile.getBaseZPositionUncompressedThreadSafe() != tileBaseZPosition || tileId != topTile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex]) ? 1.0f : 0.0f;
-    ui32 rnd = Random::getThreadSafe(x, y);
-    ui32 batchCount;
-    if (spriteData.bunchCount.x == spriteData.bunchCount.y) {
-        batchCount = spriteData.bunchCount.x;
-    }
-    else {
-        batchCount = spriteData.bunchCount.x + Random::getCachedRandomSpecific(rnd++) % (spriteData.bunchCount.y - spriteData.bunchCount.x);
-    }
-    // TODO: Allow grass overlap if right and upper neighbors are same tile + height
-    for (int i = 0; i < batchCount; ++i) {
-        const float width = vmath::lerp(spriteData.sizeRange.x, spriteData.sizeRange.y, Random::getCachedRandomfSpecific(rnd++));
-        const float xOffset = Random::getCachedRandomfSpecific(rnd++) * (1.0f - width * rightXMult);
-        const float yOffset = Random::getCachedRandomfSpecific(rnd++) * (1.0f - width * topXMult);
-
-        // TODO: SHARED FUNCTION
-        f32v4 uvs = spriteData.uvs;
-        const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
-
-        if (variantCount) {
-            f32 grassNoise = -sWorldGen.mGrassNoise.compute((f64)tileWorldPos.x + i * 0.2, (f64)tileWorldPos.y + i * 0.2);
-
-            // Handle variant UVs
-            ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
-            ui32 variantY = variantIndex / spriteData.variantCount.x;
-            ui32 variantX = variantIndex % spriteData.variantCount.x;
-
-            uvs.x += variantX * spriteData.uvs.z;
-            uvs.y += variantY * spriteData.uvs.w;
-        }
-
-        billboardMesh.addQuad(
-            f32v3(tileWorldPos.x + xOffset, tileWorldPos.y + yOffset, tileBaseZPosition),
-            spriteData.dimsMeters * width,
-            f32v2(0.0f),
-            spriteData.atlasPage,
-            uvs,
-            COLOR_WHITE,
-            (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP),
-            255u,
-            51u // Roughness
-        );
-        rnd += i * 73; // Add random prime
-    }
-}
-
-void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData) {
+void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData) {
     // Currently only supported for ground layer
     assert(tileData.layer == TILE_LAYER_GROUND);
 
-    const SpriteData& spriteData = tileData.spriteData;
+    const SubTexture& texture = tileData.texture;
     const Tile& tile = chunk.getTileAtNoAssert(tileIndex);
-    const TileID tileId = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[layerIndex];
 
     const ui32v2 xyTilePos(tileIndex.getX(), tileIndex.getY());
     const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
@@ -401,9 +324,10 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
     // Render top
     quadMeshBuilder.addAxisAlignedQuad(
         tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
-        spriteData.dimsMeters,
+        f32v2(1.0f), // Dimensions
         CubeFacing::TOP,
-        Services::ResourceManager::ref().getTextureRepository().getTexture("gold_coins"),
+        texture,
+        f32v4(0.0f, 2.0f / 3.0f, 1.0f,  1.0f / 3.0f),
         COLOR_WHITE
     );
 
@@ -414,14 +338,16 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
             CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
             const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
             const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(2);
-            f32v4 uvs = spriteData.uvs;
-            uvs.x += offsets.x * uvs.z;
+            f32v4 uvs = texture.mUvRect;
             uvs.y += offsets.y * uvs.w;
+            uvs.w /= 3.0f;
+
             quadMeshBuilder.addAxisAlignedQuad(
                 quadPos,
-                spriteData.dimsMeters,
+                f32v2(1.0f), // Dimensions
                 quadFacing,
-                Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_normal"),
+                texture,
+                uvs,
                 COLOR_WHITE
             );
 
@@ -429,21 +355,26 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
             for (int i = 1; i < heightDiffs[c]; ++i) {
                 unsigned sideCheck = 0;
                 // New exposure check for left and right on towers
-                const ui16 val = glm::max(2 - i, 0);
+                ui16 val = 1;
+                // Only bottom uses bottom texture
+                if (i + 1.5f >= heightDiffs[c]) {
+                    val = 2;
+                } 
 
                 const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(val);
-                f32v4 uvs = spriteData.uvs;
-                uvs.x += offsets.x * uvs.z;
+                f32v4 uvs = texture.mUvRect;
                 // + 1 for the tall wall variants
                 uvs.y += offsets.y * uvs.w;
+                uvs.w /= 3.0f;
                 // TODO: this resize here...
 
                 // TODO: Stretched quads?
                 quadMeshBuilder.addAxisAlignedQuad(
                     f32v3(quadPos.x, quadPos.y, quadPos.z - i),
-                    spriteData.dimsMeters,
+                    f32v2(1.0f), // Dimensions
                     quadFacing,
-                    Services::ResourceManager::ref().getTextureRepository().getTexture("roof"),
+                    texture,
+                    uvs,
                     COLOR_WHITE
                 );
             }
@@ -451,38 +382,32 @@ void ChunkMesher::addBlockVertical(const Chunk& chunk, const TileIndex& tileInde
     }
 }
 
-void ChunkMesher::addFloor(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
-    const SpriteData& spriteData = tileData.spriteData;
+void ChunkMesher::addFloor(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk) {
+    const SubTexture& texture = tileData.texture;
 
     f32 corners[4];
     mWorldGrid.computeTileCorners(heightData->data, TilePosition(chunk.getChunkID(), tileIndex), corners);
 
-    switch (spriteData.method) {
-        case TileTextureMethod::SIMPLE: {
-            quadMeshBuilder.addTerrainAlignedQuad(
-                tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
-                corners,
-                Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_normal"),
-                COLOR_WHITE,
-                mWorldGrid.areTrianglesFlippedAtTile(tileIndex)
-            );
-            break;
-        default:
-            assert(false); // Unsupported
-        }
-    }
+    quadMeshBuilder.addTerrainAlignedQuad(
+        tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+        corners,
+        texture,
+        COLOR_WHITE,
+        mWorldGrid.areTrianglesFlippedAtTile(tileIndex)
+    );
 }
 
-void ChunkMesher::addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex) {
+void ChunkMesher::addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk) {
 
-    const SpriteData& spriteData = tileData.spriteData;
-    switch (spriteData.method) {
+    const SubTexture& texture = tileData.texture;
+    switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
             quadMeshBuilder.addAxisAlignedQuad(
                 tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
-                spriteData.dimsMeters,
+                f32v2(1.0f) /*dims*/,
                 CubeFacing::TOP,
-                Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_normal"),
+                texture,
+                texture.mUvRect,
                 COLOR_WHITE
             );
             break;
@@ -492,7 +417,7 @@ void ChunkMesher::addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, con
             break;
         }
         case TileTextureMethod::VERTICAL: {
-            addBlockVertical(chunk, tileIndex, layerIndex, quadMeshBuilder, tilePosition, tileData);
+            addBlockVertical(chunk, tileIndex, quadMeshBuilder, tilePosition, tileData);
             break;
         }
         case TileTextureMethod::WORLD_TILING: {
@@ -501,9 +426,10 @@ void ChunkMesher::addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, con
             int yOff = 7 - (ui32)tilePosition.y % 8;
             quadMeshBuilder.addAxisAlignedQuad(
                 tilePosition + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
-                spriteData.dimsMeters,
+                f32v2(1.0f) /*dims*/,
                 CubeFacing::TOP,
-                Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_normal"),
+                texture,
+                texture.mUvRect,
                 COLOR_WHITE
             );
             break;
@@ -556,13 +482,13 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     }
 
                     const TileData& tileData = TileRepository::getTileData(layerTile);
-                    const SpriteData& spriteData = tileData.spriteData;
+                    const SubTexture& texture = tileData.texture;
 
                     // Tile mesh
                     // Flora mesh ONLY
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
-                        if (spriteData.method == TileTextureMethod::FLORA) {
+                        if (tileData.textureMethod == TileTextureMethod::FLORA) {
                             /*f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
                             Tile rightTile = chunk.getRightTileHandle(index).tile;
                             Tile topTile = chunk.getTopTileHandle(index).tile;
@@ -573,29 +499,29 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(TilePosition(chunk.getChunkID(), index)));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
 
-                            f32v4 uvs = spriteData.uvs;
-                            const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
+                            f32v4 uvs = texture.mUvRect;
+                            //const ui32 variantCount = spriteData.variantCount.x * spriteData.variantCount.y;
 
-                            if (variantCount) {
-                                f32 grassNoise = sWorldGen.mGrassNoise.compute((f64)tilePosition.x, (f64)tilePosition.y);
+                            //if (variantCount) {
+                            //    f32 grassNoise = sWorldGen.mGrassNoise.compute((f64)tilePosition.x, (f64)tilePosition.y);
 
-                                // Handle variant UVs
-                                ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
-                                ui32 variantY = variantIndex / spriteData.variantCount.x;
-                                ui32 variantX = variantIndex % spriteData.variantCount.x;
+                            //    // Handle variant UVs
+                            //    ui32 variantIndex = (ui32)((grassNoise + 1.0f) * SQ(variantCount)) % variantCount;
+                            //    ui32 variantY = variantIndex / spriteData.variantCount.x;
+                            //    ui32 variantX = variantIndex % spriteData.variantCount.x;
 
-                                uvs.x += variantX * spriteData.uvs.z;
-                                uvs.y += variantY * spriteData.uvs.w;
-                            }
+                            //    uvs.x += variantX * spriteData.uvs.z;
+                            //    uvs.y += variantY * spriteData.uvs.w;
+                            //}
 
-                            billboardMesh.addQuad(tilePosition, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, uvs, COLOR_WHITE, (spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP), 255u, 0u);
+                            billboardMesh.addQuad(tilePosition, f32v2(1.0f), f32v2(0.0f), texture.mId, uvs, COLOR_WHITE, false, 255u, 0u);
                         }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        addBlock(*quadMeshBuilder, f32v3(x, y, baseZPosition), tileData, index, chunk, layerIndex);
+                        addBlock(*quadMeshBuilder, f32v3(x, y, baseZPosition), tileData, index, chunk);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
-                        addFloor(*quadMeshBuilder, f32v3(x, y, baseZPosition), heightData, tileData, index, chunk, layerIndex);
+                        addFloor(*quadMeshBuilder, f32v3(x, y, baseZPosition), heightData, tileData, index, chunk);
                     }
                 }
             }
@@ -625,12 +551,12 @@ f32 ChunkMesher::getTileHeight(const Tile& neighbor, const f32* heightData, Tile
     f32 height = 0.0f;
     const TileID tileId = neighbor.getLayersThreadSafe(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
-        const TileData& tileData = TileRepository::getTileData(tileId);
-        const SpriteData& spriteData = tileData.spriteData;
+        //const TileData& tileData = TileRepository::getTileData(tileId);
+        height = neighbor.getBaseZPositionUncompressedThreadSafe();
         // Transparent tiles do not count
-        if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
+      /*  if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
             height = neighbor.getBaseZPositionUncompressedThreadSafe();
-        }
+        }*/
     }
     return glm::max(height, mWorldGrid.computeMinHeightAtTile(heightData, tilePos));
 }
@@ -640,12 +566,13 @@ f32 ChunkMesher::getTileHeight(const TileHandle& neighbor) {
     f32 height = 0.0f;
     const TileID tileId = tile.getLayersThreadSafe(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
     if (tileId != TILE_ID_NONE) {
-        const TileData& tileData = TileRepository::getTileData(tileId);
-        const SpriteData& spriteData = tileData.spriteData;
+        /* const TileData& tileData = TileRepository::getTileData(tileId);
+         const SpriteData& spriteData = tileData.spriteData;*/
+        height = tile.getBaseZPositionUncompressedThreadSafe();
         // Transparent tiles appear to be 1 tile lower
-        if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
+        /*if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
             height = tile.getBaseZPositionUncompressedThreadSafe();
-        }
+        }*/
     }
     return glm::max(height, mWorldGrid.computeMinHeightAtTile(TilePosition(neighbor.chunk->getChunkID(), neighbor.index)));
 }

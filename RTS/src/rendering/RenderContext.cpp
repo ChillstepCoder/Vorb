@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "RenderContext.h"
 #include "ResourceManager.h"
-#include "TextureAtlas.h"
 #include "World.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/TileRepository.h"
@@ -187,8 +186,8 @@ RenderContext::RenderContext(const World& world, const f32v2& screenResolution, 
 
     int maxTextureSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
-    if (maxTextureSize < TEXTURE_ATLAS_WIDTH_PX) {
-        pError("GFX card does not support 4k textures :(");
+    if (maxTextureSize < 4096) {
+        pError("GFX card does not support 4k textures :( please try updating drivers or refund the game");
         assert(false);
     }
 
@@ -221,14 +220,6 @@ void RenderContext::initPostLoad() {
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
-
-    // TODO: These can be eliminated and put into constructor???
-    {
-        ScopedTimer timer("Finish atlas normals and mips", 2);
-        mTextureManipulator = std::make_unique<GPUTextureManipulator>(*mMaterialRenderer);
-        mTextureManipulator->InitPostLoad();
-        checkGlError("Init texture manipulator");
-    }
 
     // Initialize renderer after material assets are loaded
     {
@@ -289,7 +280,6 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     RenderStats::clear();
     // Misc renderData
     mRenderData.mainCamera = camera;
-    mRenderData.atlas = Services::ResourceManager::ref().getTextureAtlas().getAtlasTexture();
     mRenderData.cameraZAngle = camera->getZAngle();
     mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
     // Ubo data

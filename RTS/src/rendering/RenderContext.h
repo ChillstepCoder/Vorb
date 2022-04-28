@@ -9,7 +9,6 @@ class CloudRenderer;
 class AmbientOcclusionPostProcess;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
-class GPUTextureManipulator;
 class ICamera;
 class ItemRenderer;
 class LightRenderer;
@@ -34,7 +33,6 @@ DECL_VG(class SpriteFont);
 
 struct GlobalRenderData {
     GlobalUboData globalUboData;
-    VGTexture atlas;
     f32 cameraZAngle;
     f32m4 skyRotMatrix;
     const f32m4* shadowFrustumMatrices;
@@ -91,7 +89,6 @@ private:
     mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
-    mutable std::unique_ptr<GPUTextureManipulator> mTextureManipulator;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
     mutable std::unique_ptr<ItemRenderer> mItemRenderer;

@@ -34,7 +34,7 @@ static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
 ChunkRenderer::ChunkRenderer(const WorldGrid& worldGrid, const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer),
-    mMesher(std::make_unique<ChunkMesher>(worldGrid, Services::ResourceManager::ref().getTextureAtlas()))
+    mMesher(std::make_unique<ChunkMesher>(worldGrid))
 {
 }
 

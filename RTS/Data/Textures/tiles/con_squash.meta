@@ -1,4 +1,0 @@
-tiles:
-  - name: con_squash
-    method: connected_wall
-    opaque: true

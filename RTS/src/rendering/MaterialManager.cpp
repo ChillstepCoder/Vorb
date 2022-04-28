@@ -1,15 +1,15 @@
 #include "stdafx.h"
 #include "MaterialManager.h"
 
-#include "rendering/SpriteRepository.h"
+#include "resources/TextureRepository.h"
 #include "ShaderLoader.h"
 
 #include <Vorb/io/IOManager.h>
 #include <Vorb/graphics/TextureCache.h> //TODO: Remove
 #include <Vorb/graphics/GLProgram.h>
 
-MaterialManager::MaterialManager(vio::IOManager& ioManager, SpriteRepository& spriteRepository, vg::TextureCache& textureCache) :
-    mIoManager(ioManager), mSpriteRepository(spriteRepository), mTextureCache(textureCache) {
+MaterialManager::MaterialManager(vio::IOManager& ioManager, TextureRepository& textureRepository, vg::TextureCache& textureCache) :
+    mIoManager(ioManager), mTextureRepository(textureRepository), mTextureCache(textureCache) {
 
 }
 
@@ -55,19 +55,6 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
         // Get shader
         newMaterial->mProgram = ShaderLoader::getOrCreateProgram(materialData.vertexShaderName, materialData.fragmentShaderName, materialData.geometryShaderName, materialData.tessControlShaderName, materialData.tessEvalShaderName);
         assert(newMaterial->mProgram.isLinked());
-
-        for (int i = 0; i < materialData.atlasTextures.size(); ++i) {
-            const MaterialAtlasTextureInputData& textureData = materialData.atlasTextures[i];
-            const SpriteData& sprite = mSpriteRepository.getSprite(textureData.textureName);
-            assert(textureData.uniformPageName.size() && textureData.uniformRectName.size());
-            // If this is an atlas subtexture, our material will need the uvrect and page of the texture
-            MaterialAtlasTextureInput input;
-            input.uvRect = sprite.uvs;
-            input.page = sprite.atlasPage;
-            input.uvRectUniform = newMaterial->mProgram.getUniform(textureData.uniformRectName.c_str());
-            input.pageUniform = newMaterial->mProgram.getUniform(textureData.uniformPageName.c_str());
-            newMaterial->mInputAtlasTextures.emplace_back(std::move(input));
-        }
 
         for (int i = 0; i < materialData.textures.size(); ++i) {
             const MaterialTextureInputData& textureData = materialData.textures[i];

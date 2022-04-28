@@ -1,10 +1,10 @@
-uniform sampler2DArray Atlas;
 #include "../GlobalUbo.glsl"
 
 uniform vec4 unSphereNormalRect;
 uniform float unSphereNormalPage;
 uniform sampler2D unCloudSil;
 uniform sampler2D unCloudNormals;
+uniform sampler2D unSphereNormal;
 
 in vec2 fUV;
 in vec2 fPosition;
@@ -16,10 +16,9 @@ layout (location = 0) out vec4 fNormal;
 
 void main() {
     vec2 uvTest = vec2(fPosition.x, 1.0 - fPosition.y);
-    fNormal.a = texture(Atlas, vec3(fUV, fAtlasPage)).a * fTint.a;
+    fNormal.a = 1.0;
     // TODO: Why??
-    vec4 adjustedRect = vec4(unSphereNormalRect.x, unSphereNormalRect.y + unSphereNormalRect.w, unSphereNormalRect.z, -unSphereNormalRect.w);
-	vec3 norm = texture(Atlas, vec3(adjustedRect.xy + fPosition * adjustedRect.zw, unSphereNormalPage)).rgb;
+	vec3 norm = texture(unSphereNormal, fPosition).rgb;
     norm = norm * 0.00001 + texture(unCloudNormals, uvTest).rgb;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average

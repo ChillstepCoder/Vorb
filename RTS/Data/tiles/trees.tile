@@ -1,13 +1,3 @@
-tree_large:
-  tex: tree_large
-  col: circle
-  width: 0.175
-  shape: Thin
-  height: 3.0
-  resource: wood
-  drops:
-    - item: wood_raw
-      count: [25, 35]
 tree_small:
   tex: tree_small
   col: circle

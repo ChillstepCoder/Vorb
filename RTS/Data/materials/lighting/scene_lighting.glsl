@@ -1,5 +1,4 @@
-uniform vec4 GradientRect;
-uniform float GradientAtlasPage;
+uniform sampler2D GradientTexture;
 uniform vec3 ShadowColor;
 
 // Lighting uniforms
@@ -108,7 +107,7 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
 	float depthHaze = hazeDepth * (pow(hazeIntensity, 0.5));
 	vec2 adjustedUV = screenUV;
 	adjustedUV.y = hazeIntensity;
-	vec3 sunTextureColor = texture(Atlas, vec3(GradientRect.xy + adjustedUV * GradientRect.zw, GradientAtlasPage)).rgb;
+	vec3 sunTextureColor = texture(GradientTexture, adjustedUV).rgb;
 	// Day Haze
 	pixelColor = pixelColor * (1.0 - depthHaze * isGround) + depthHaze * sunTextureColor;
 

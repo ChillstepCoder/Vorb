@@ -23,9 +23,9 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
     ItemStockpileRenderData& renderData = stockpile.mRenderData;
     // TODO: Multithread?
     if (!renderData.mBillboardMesh) {
-        renderData.mBillboardMesh = std::make_unique<BillboardMesh>();
+        renderData.mBillboardMesh = std::make_unique<TBOBillboardMesh>();
     }
-    BillboardMesh& mesh = *renderData.mBillboardMesh;
+    TBOBillboardMesh& mesh = *renderData.mBillboardMesh;
 
     mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
 
@@ -40,7 +40,7 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
             continue;
         }
 
-        const SpriteData& spriteData = item.mSpriteData;
+        const SubTexture& texture = item.mTexture;
 
         for (ui32 index : record.stackLocations) {
             const ItemStack& stack = stockpile.mStorage[index].stack;
@@ -55,7 +55,7 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
                 billboardPos.x += (i % w) * spacingRatio;
                 billboardPos.y += ((i % (w * w)) / w) * spacingRatio;
                 billboardPos.z += (i / (w * w)) * spacingRatio;
-                mesh.addQuad(billboardPos, spriteData.dimsMeters * spacingRatio, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false, 0u, 0u);
+                mesh.addQuad(billboardPos, f32v2(0.3f) * spacingRatio, f32v2(0.0f), 0, texture.mUvRect, COLOR_WHITE, false, 0u, 0u);
             }
         }
     }
@@ -104,12 +104,12 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
     renderData.mQuadMeshDirty = false;
 }
 
-void ItemRenderer::addItemStackToMesh(BillboardMesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
+void ItemRenderer::addItemStackToMesh(TBOBillboardMesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
 {
     const Item& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
-    const SpriteData& spriteData = item.mSpriteData;
-    const f32v4& uvs = spriteData.uvs;
-    mesh.addQuad(pos, spriteData.dimsMeters, f32v2(0.0f), spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, spriteData.flags & SPRITEDATA_FLAG_RAND_FLIP, 0u, 0u);
+    const SubTexture& texture = item.mTexture;
+    const f32v4& uvs = texture.mUvRect;
+    mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
 }
 
 void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3D& camera) const
@@ -133,7 +133,7 @@ void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3
     }
 }
 
-void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const BillboardMesh& itemMesh, const Camera3D& camera) const {
+void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const TBOBillboardMesh& itemMesh, const Camera3D& camera) const {
     VGUniform offsetUniform = mItemBillboardMaterial->mProgram.getUniform("unOffset");
     const f32v3 stockpilePos(stockpile.mAABB.pos.x, stockpile.mAABB.pos.y, 0.0f);
     const f32v3 offset = stockpilePos - camera.getPosition();
@@ -157,7 +157,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const QuadMesh& it
 
 void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const {
 
-    const SpriteData& spriteData = item.mSpriteData;
+    const SubTexture& texture = item.mTexture;
 
     const ui32v3& stackDims = item.mStackDims;
     const ui32 stackLayer = stackDims.x * stackDims.y;
@@ -180,7 +180,7 @@ void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const I
             for (int j = e_cast(CubeFacing::LEFT); j <= e_cast(CubeFacing::TOP); ++j) {
                 const f32v2& axis = CUBE_FACING_AXIS[j];
                 const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
-                mesh.addAxisAlignedQuad(boxPos + OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                mesh.addAxisAlignedQuad(boxPos + OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, 0, texture.mUvRect, COLOR_WHITE, false);
             }
         }
     }

@@ -123,7 +123,7 @@ void MeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32
     }
 }
 
-void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, SubTexture& texture, color4 color) {
+void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color) {
     
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
@@ -139,7 +139,7 @@ void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, Cu
     const i8v2 tangent(CUBE_FACING_TANGENTS[e_cast(axis)]);
     const f32v2& xyAxisDirection = CUBE_FACING_AXIS_DIRECTIONS[e_cast(axis)];
     const f32v2& initialOffsetMult = CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(axis)];
-    f32v4 uvs = texture.mUvRect;
+    f32v4 uvs = uvRect;
     
     // TODO: Support indexes?
     mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
@@ -202,9 +202,9 @@ void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, Cu
     }
 }
 
-void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], SubTexture& texture, color4 color, bool flipTriangleDir)
+void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const SubTexture& texture, color4 color, bool flipTriangleDir)
 {
-
+    constexpr f32 EPSILON = 0.01f;
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
@@ -238,7 +238,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
     if (flipTriangleDir) {
         { // Bottom Right
             StandardVertex& vbr = verts[0];
-            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1]);
+            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1] + EPSILON);
             vbr.uvs.x = uvs.x + uvs.z;
             vbr.uvs.y = uvs.y + uvs.w;
             vbr.color = color;
@@ -248,7 +248,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
         }
         { // Top Right
             StandardVertex& vtr = verts[1];
-            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3]);
+            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3] + EPSILON);
             vtr.uvs.x = uvs.x + uvs.z;
             vtr.uvs.y = uvs.y;
             vtr.color = color;
@@ -258,7 +258,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
         }
         { // Top Left
             StandardVertex& vtl = verts[2];
-            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2]);
+            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2] + EPSILON);
             vtl.uvs.x = uvs.x;
             vtl.uvs.y = uvs.y;
             vtl.color = color;
@@ -268,7 +268,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
         }
         { // Bottom Left
             StandardVertex& vbl = verts[3];
-            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0]);
+            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0] + EPSILON);
             vbl.uvs.x = uvs.x;
             vbl.uvs.y = uvs.y + uvs.w;
             vbl.color = color;
@@ -281,7 +281,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
 
         { // Bottom Left
             StandardVertex& vbl = verts[0];
-            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0]);
+            vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0] + EPSILON);
             vbl.uvs.x = uvs.x;
             vbl.uvs.y = uvs.y + uvs.w;
             vbl.color = color;
@@ -291,7 +291,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
         }
         { // Bottom Right
             StandardVertex& vbr = verts[1];
-            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1]);
+            vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1] + EPSILON);
             vbr.uvs.x = uvs.x + uvs.z;
             vbr.uvs.y = uvs.y + uvs.w;
             vbr.color = color;
@@ -301,7 +301,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
         }
         { // Top Right
             StandardVertex& vtr = verts[2];
-            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3]);
+            vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3] + EPSILON);
             vtr.uvs.x = uvs.x + uvs.z;
             vtr.uvs.y = uvs.y;
             vtr.color = color;
@@ -311,7 +311,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
         }
         { // Top Left
             StandardVertex& vtl = verts[3];
-            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2]);
+            vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2] + EPSILON);
             vtl.uvs.x = uvs.x;
             vtl.uvs.y = uvs.y;
             vtl.color = color;
@@ -397,7 +397,7 @@ void MeshBuilder::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-void MeshBuilder::getSubmeshAndTextureIndex(SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
+void MeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
     auto&& it = mTextureToSubmesh.find(texture.mTextureDiffuse);
     if (it != mTextureToSubmesh.end()) {
         i32 subTextureIndex = it->second.first;

@@ -1,15 +1,12 @@
 cloud_post:
   vert: cloud_post.vert
   frag: cloud_post.frag
-  atlas_textures:
-    - name: cloud_color
-      unrect: unCloudTextureRect
-      unpage: unCloudTexturePage
-    - name: sky_gradient
-      unrect: GradientRect
-      unpage: GradientAtlasPage
   textures:
     - name: van_gogh_2
       uniform: PreturbTexture
     - name: gradient_smoothed
       uniform: unGradientTexture
+    - name: cloud_color
+      uniform: unCloudColor
+    - name: sky_gradient
+      uniform: GradientTexture

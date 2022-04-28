@@ -1,9 +1,0 @@
-dims_cells: [1,1]
-tiles:
-  - name: grass_variants
-    method: flora
-    cell_rect: [0,0,1,1]
-    variant_count: [4, 3]
-    rand_flip: true
-    bunch_count: [5, 5]
-    size_range: [0.8, 1.5]

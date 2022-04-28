@@ -4,6 +4,17 @@
 vg::BlendState vg::BlendState::CURR(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 vg::BlendState vg::BlendState::PREV(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+vg::BlendStates vg::sBlendStates = {
+    {
+        vg::BlendState(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA), // ALPHA
+        vg::BlendState(GL_ONE, GL_ONE_MINUS_SRC_ALPHA),       // ALPHA_PREMULTIPLIED
+        vg::BlendState(GL_SRC_ALPHA, GL_ONE),                 // ADDITIVE
+        vg::BlendState(GL_ONE, GL_ZERO),                      // REPLACE
+        vg::BlendState(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA), // MULTIPLY
+    }
+};
+static_assert((int)vg::BlendStateType::COUNT == 5, "Add new blend states above");
+
 KEG_ENUM_DEF(BlendStateType, vg::BlendStateType, kt) {
     kt.addValue("alpha", vg::BlendStateType::ALPHA);
     kt.addValue("alpha_premult", vg::BlendStateType::ALPHA_PREMULTIPLIED);

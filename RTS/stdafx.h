@@ -353,7 +353,7 @@ extern nString getFullPath(const cString initialDir);
 extern void pError(const cString message);
 extern void pError(const nString& message);
 
-extern bool checkGlError(const nString& errorLocation);
+extern bool checkGlError(const cString errorLocation);
 
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.

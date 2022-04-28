@@ -1,12 +1,10 @@
 cloud:
   vert: cloud.vert
   frag: cloud.frag
-  atlas_textures:
-    - name: sphere_normal
-      unrect: unSphereNormalRect
-      unpage: unSphereNormalPage
   textures:
     - name: cloud_sil
       uniform: unCloudSil
     - name: cloud_normals4k
       uniform: unCloudNormals
+    - name: sphere_normal
+      uniform: unSphereNormal

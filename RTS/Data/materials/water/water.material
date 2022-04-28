@@ -10,7 +10,5 @@ water:
       uniform: unOilCanvas
     - name: hsv_jitter
       uniform: unHsvJitter
-  atlas_textures:
     - name: sky_gradient
-      unrect: GradientRect
-      unpage: GradientAtlasPage
+      uniform: GradientTexture

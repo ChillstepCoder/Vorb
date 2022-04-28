@@ -7,7 +7,6 @@
 #include <Vorb/concurrentqueue.h>
 
 class Chunk;
-class TextureAtlas;
 class Camera3D;
 class WorldGrid;
 class MeshBuilder;
@@ -27,7 +26,7 @@ struct StaticLight {
 
 class ChunkMesher {
 public:
-    ChunkMesher(const WorldGrid& worldGrid, const TextureAtlas& textureAtlas);
+    ChunkMesher(const WorldGrid& worldGrid);
     ~ChunkMesher();
 
     void updateMesh(const Chunk& chunk, const f32v3& cameraPos);
@@ -35,14 +34,13 @@ public:
 private:
     bool createMeshAsync(const Chunk& chunk);
 
-    void addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex);
-    void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, int layerIndex, MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData);
-    void addFloor(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk, int layerIndex);
+    void addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk);
+    void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData);
+    void addFloor(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk);
     f32 getTileHeight(const Tile& neighbor, const f32* heightData, TilePosition tilePos);
     f32 getTileHeight(const TileHandle& neighbor);
 
     // Shared vertex buffer to eliminate allocations
-    const TextureAtlas& mTextureAtlas;
     const WorldGrid& mWorldGrid;
 };
 

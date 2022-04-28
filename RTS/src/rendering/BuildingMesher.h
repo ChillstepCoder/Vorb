@@ -19,7 +19,7 @@ public:
         const f32v2 points[3],
         f32v2& start,
         const Building& building,
-        const SpriteData& spriteData,
+        const SubTexture& texture,
         ui32 debugColorIndex,
         BuildingMesh& buildingMesh
     );

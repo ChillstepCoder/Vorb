@@ -6,8 +6,6 @@
 #include "definitions/ModelDef.h"
 #include "definitions/RigDef.h"
 
-#include "rendering/SpriteRepository.h"
-
 // TODO: Remove, this is used for the static sShadowTexture load
 #include "CharacterRenderer.h"
 #include <ozz/animation/runtime/animation.h>

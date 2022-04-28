@@ -1,7 +1,6 @@
 scene_lighting:
   vert: pass_through.vert
   frag: scene_lighting.frag
-  atlas_textures:
+  textures:
     - name: sky_gradient
-      unrect: GradientRect
-      unpage: GradientAtlasPage
+      uniform: GradientTexture

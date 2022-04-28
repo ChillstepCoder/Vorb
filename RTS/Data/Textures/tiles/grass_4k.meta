@@ -1,5 +1,0 @@
-dims_cells: [1,1]
-tiles:
-  - name: grass_4k
-    method: world_tiling
-    cell_rect: [0,0,1,1]

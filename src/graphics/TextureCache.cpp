@@ -50,13 +50,13 @@ vio::Path vg::TextureCache::getTexturePath(ui32 textureID) {
     return "";
 }
 
-vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
-                                                 vg::TextureTarget textureTarget      /* = vg::TextureTarget::TEXTURE_2D*/,
-                                                     SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
-                                         vg::TextureInternalFormat internalFormat     /* = vg::TextureInternalFormat::RGBA */,
-                                                 vg::TextureFormat textureFormat      /* = vg::TextureFormat::RGBA */,
-                                                               i32 mipmapLevels       /* = INT_MAX */,
-                                                              bool flipV              /* = false*/) {
+vg::Texture vg::TextureCache::addTexture(const vio::Path& filePath,
+                                         vg::TextureTarget textureTarget /* = vg::TextureTarget::TEXTURE_2D*/,
+                                         const SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
+                                         vg::TextureInternalFormat internalFormat /* = vg::TextureInternalFormat::RGBA */,
+                                         vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
+                                         i32 mipmapLevels /* = INT_MAX */,
+                                         bool flipV /* = false*/) {
     // Get absolute path of texture.
     vio::Path texPath; 
     resolvePath(filePath, texPath);
@@ -86,16 +86,16 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
     return texture;
 }
 
-vg::Texture vg::TextureCache::addTexture(    const vio::Path& filePath,
-                                           const nString& textureName,
-                                           OUT vg::BitmapResource& rvBitmap,
-                                                 vg::ImageIOFormat rvFormat,
-                                                 vg::TextureTarget textureTarget      /* = vg::TextureTarget::TEXTURE_2D*/,
-                                                     SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
-                                         vg::TextureInternalFormat internalFormat     /* = vg::TextureInternalFormat::RGBA */,
-                                                 vg::TextureFormat textureFormat      /* = vg::TextureFormat::RGBA */,
-                                                               i32 mipmapLevels       /* = INT_MAX */,
-                                                              bool flipV              /* = false*/) {
+vg::Texture vg::TextureCache::addTexture(const vio::Path& filePath,
+                                         const nString& textureName,
+                                         OUT vg::BitmapResource& rvBitmap,
+                                         vg::ImageIOFormat rvFormat,
+                                         vg::TextureTarget textureTarget /* = vg::TextureTarget::TEXTURE_2D*/,
+                                         const SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
+                                         vg::TextureInternalFormat internalFormat /* = vg::TextureInternalFormat::RGBA */,
+                                         vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
+                                         i32 mipmapLevels /* = INT_MAX */,
+                                         bool flipV /* = false*/) {
     // Get absolute path of texture.
     vio::Path texPath;
     resolvePath(filePath, texPath);
@@ -141,14 +141,14 @@ vg::Texture vg::TextureCache::addTexture(    const vio::Path& filePath,
     return texture;
 }
 
-vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
+vg::Texture vg::TextureCache::addTexture(const vio::Path& filePath,
                                          const vg::BitmapResource* rs,
-                                                  TexturePixelType texturePixelType   /* = TexturePixelType::UNSIGNED_BYTE*/,
-                                                 vg::TextureTarget textureTarget      /* = vg::TextureTarget::TEXTURE_2D*/,
-                                                     SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
-                                         vg::TextureInternalFormat internalFormat     /* = vg::TextureInternalFormat::RGBA */,
-                                                 vg::TextureFormat textureFormat      /* = vg::TextureFormat::RGBA */,
-                                                               i32 mipmapLevels       /* = INT_MAX */) {
+                                         TexturePixelType texturePixelType /* = TexturePixelType::UNSIGNED_BYTE*/,
+                                         vg::TextureTarget textureTarget /* = vg::TextureTarget::TEXTURE_2D*/,
+                                         const SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
+                                         vg::TextureInternalFormat internalFormat /* = vg::TextureInternalFormat::RGBA */,
+                                         vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
+                                         i32 mipmapLevels /* = INT_MAX */) {
   
     // Check if the texture is already cached.
     Texture texture = findTexture(filePath);
@@ -175,12 +175,12 @@ vg::Texture vg::TextureCache::addTexture(         const vio::Path& filePath,
 vg::Texture vg::TextureCache::addTexture(
     const vio::Path& filePath,
     const nString& textureName,
-    vg::TextureTarget textureTarget      /* = vg::TextureTarget::TEXTURE_2D*/,
-    SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
-    vg::TextureInternalFormat internalFormat     /* = vg::TextureInternalFormat::RGBA */,
-    vg::TextureFormat textureFormat      /* = vg::TextureFormat::RGBA */,
-    i32 mipmapLevels       /* = INT_MAX */,
-    bool flipV              /* = false*/) {
+    vg::TextureTarget textureTarget /* = vg::TextureTarget::TEXTURE_2D*/,
+    const SamplerState* samplingParameters /* = &SamplerState::LINEAR_CLAMP_MIPMAP */,
+    vg::TextureInternalFormat internalFormat /* = vg::TextureInternalFormat::RGBA */,
+    vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
+    i32 mipmapLevels  /* = INT_MAX */,
+    bool flipV /* = false*/) {
 
     // Check if the texture is already cached.
     Texture texture = findTexture(textureName);

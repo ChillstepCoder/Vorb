@@ -1,4 +1,3 @@
-uniform sampler2DArray Atlas;
 uniform sampler2D Fbo0;
 uniform sampler2D FboNormals;
 uniform sampler2D FboDepth;

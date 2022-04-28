@@ -1,7 +1,5 @@
 #include "GlobalUbo.glsl"
 
-uniform sampler2DArray Atlas; // THIS IS FOR COLOR GRADIENT, TODO: Non atlas? hmm
-
 uniform sampler2D FboDepth;
 uniform sampler2D ShadowTexture;
 uniform vec2 ScreenResolution;

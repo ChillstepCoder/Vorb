@@ -2,6 +2,7 @@ wood_wall_gothic:
   layer: 0
   tex: wood_wall_gothic
   col: box
+  texture_method: vertical
   recipe:
     - item: wood_raw
       count: 5
@@ -17,7 +18,3 @@ door:
   recipe:
     - item: wood_raw
       count: 3
-tall_grass:
-  layer: 1
-  tex: grass_variants
-  shape: Thin

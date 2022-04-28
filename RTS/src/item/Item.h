@@ -1,9 +1,9 @@
 #pragma once
 
 // TODO: instead have the ItemRenderer manage this mapping
-#include "rendering/SpriteData.h"
 
 #include "item/ItemStack.h"
+#include "rendering/texture/SubTexture.h"
 
 enum class ItemType {
     UNKNOWN,
@@ -46,7 +46,8 @@ protected:
     ItemType mType = ItemType::UNKNOWN;
     ItemStorageShape mShape = ItemStorageShape::POINT;
     ItemID mId;
-    SpriteData mSpriteData; // TODO: instead have the ItemRenderer manage this mapping?
+    // TODO: Model or something?
+    SubTexture mTexture; // TODO: instead have the ItemRenderer manage this mapping?
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;
     ui32 mStackSize = 10;

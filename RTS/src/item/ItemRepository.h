@@ -4,13 +4,13 @@
 
 DECL_VIO(class IOManager);
 
-class SpriteRepository;
+class TextureRepository;
 class ItemRepository
 {
 public:
     ItemRepository(vio::IOManager& ioManager);
 
-    void loadItemFile(const vio::Path& filePath, SpriteRepository& spriteRepo);
+    void loadItemFile(const vio::Path& filePath, TextureRepository& textureRepo);
 
     const Item& getItem(ItemID id) const { assert(itemExists(id)); return mItems[id]; }
     const Item& getItem(const nString& itemName) const;

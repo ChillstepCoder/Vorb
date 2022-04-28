@@ -32,21 +32,6 @@ private:
     std::vector<TileVertex> mVertexData; // TODO: Recycle?
 };
 
-class BillboardMesh : public IQuadMesh<BillboardVertex> {
-public:
-    BillboardMesh() = default;
-    VORB_NON_COPYABLE_BUT_MOVABLE(BillboardMesh);
-
-    void reserveQuadCount(size_t count);
-    void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness);
-    void finishMesh(MeshDrawMode drawMode) override;
-
-private:
-    void bindVertexAttribs(const vg::GLProgram& program) const override;
-
-    std::vector<BillboardVertex> mVertexData; // TODO: Recycle?
-};
-
 // TODO: 16 bit
 struct TBOBillboardInstanceData {
     f32v3 position; // TODO: Compress
@@ -93,7 +78,7 @@ public:
     void beginMesh();
     void reserveQuadCount(size_t count);
     void reserveAdditionalQuadCount(size_t count);
-    void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness);
+    void addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 texture, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness);
     void draw(const vg::GLProgram& program) const override;
     void finishMesh(MeshDrawMode drawMode) override;
     void destroy() override;

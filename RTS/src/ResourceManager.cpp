@@ -1,9 +1,7 @@
 #include "stdafx.h"
 #include "ResourceManager.h"
 
-#include "rendering/SpriteRepository.h"
 #include "rendering/MaterialManager.h"
-#include "rendering/TextureAtlas.h"
 #include "rendering/ShaderLoader.h"
 #include "particles/ParticleSystemManager.h"
 #include "city/Building.h"
@@ -44,8 +42,8 @@ ResourceManager::ResourceManager() {
     mTextureCache = std::make_unique<vg::TextureCache>();
     mTextureCache->init(mIoManager.get());
 
-    mSpriteRepository = std::make_unique<SpriteRepository>(*mIoManager);
-    mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mSpriteRepository, *mTextureCache);
+    mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
+    mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mTextureRepository, *mTextureCache);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
@@ -58,7 +56,6 @@ ResourceManager::ResourceManager() {
     mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache, *mRigRepository);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
     mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
-    mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
 }
 
 ResourceManager::~ResourceManager() {
@@ -106,38 +103,6 @@ void ResourceManager::loadFiles() {
 
     PreciseTimer totalTimer;
 
-    // NOTE: Order is important due to dependencies
-
-    // Load Textures
-    {
-        ScopedTimer timer("Texture load");
-        for (auto&& entry : mTextureFiles) {
-            if (vio::containsSubpath(entry, "_noatlas")) {
-                // TODO: Allow custom sampler state
-                vg::Texture texture = mTextureCache->addTexture(
-                    entry,
-                    vio::getLeafNameFromFilePathNoExtension(entry),
-                    vg::TextureTarget::TEXTURE_2D,
-                    &vg::SamplerState::LINEAR_WRAP_MIPMAP, // TODO: Not always mipmaps?
-                    vg::TextureInternalFormat::COMPRESSED_RGBA
-                );
-                // Anisotropic filtering
-                // TODO: Is this working?
-                GLint maxAnisotropy = 0;
-                glBindTexture(GL_TEXTURE_2D, texture.id);
-                glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-            else if (vio::containsSubpath(entry, "_brushes")) {
-                mBrushRepository->loadBrush(entry, *mTextureCache);
-            }
-            else if (!vio::containsSubpath(entry, ".fbm")) { // Don't load .fbm as these are used by models
-                mSpriteRepository->loadSpriteTexture(entry);
-            }
-        }
-    }
-
     {
         ScopedTimer timer("NEW: Texture load");
         for (auto&& entry : mTextureFiles) {
@@ -149,7 +114,7 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("Item load");
         for (auto&& entry : mItemFiles) {
-            mItemRepository->loadItemFile(entry, *mSpriteRepository);
+            mItemRepository->loadItemFile(entry, *mTextureRepository);
         }
     }
 
@@ -246,12 +211,6 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Update textures
-    {
-        ScopedTimer timer("Atlas upload");
-        mSpriteRepository->mTextureAtlas->uploadDirtyPages();
-    }
-
     // Load entity definitions
     {
         ScopedTimer timer("Entity load");
@@ -260,22 +219,17 @@ void ResourceManager::loadFiles() {
         }
     }
 
-
     mHasLoadedResources = true;
 
     std::cout << "Loaded resources in " << totalTimer.stop() << " ms" << std::endl;
 }
 
-const SpriteData& ResourceManager::getSprite(const std::string& spriteName) const {
-    return mSpriteRepository->getSprite(spriteName);
+const SubTexture& ResourceManager::getTexture(const nString& textureName) const {
+    return mTextureRepository->getTexture(textureName);
 }
 
 vg::TextureCache& ResourceManager::getTextureCache() {
     return *mTextureCache;
-}
-
-const TextureAtlas& ResourceManager::getTextureAtlas() const {
-    return mSpriteRepository->getTextureAtlas();
 }
 
 void ResourceManager::reloadMaterials() {
@@ -293,10 +247,6 @@ void ResourceManager::reloadMaterials() {
 void ResourceManager::generateNormalMaps() {
     //TODO: This not do anything!
     glTextureBarrier();
-}
-
-void ResourceManager::writeDebugAtlas() const {
-    mSpriteRepository->mTextureAtlas->writeDebugPages();
 }
 
 void ResourceManager::gatherRecursive(const vio::Path& folderPath)
@@ -401,6 +351,7 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         tileData.pathWeight = fileData.pathWeight;
         tileData.resource = fileData.resource;
         tileData.shape = fileData.tileShape;
+        tileData.textureMethod = fileData.textureMethod;
         // Collider
         tileData.collider.shape = fileData.colliderShape;
         if (fileData.colliderShape != TileCollisionShape::NONE) {
@@ -428,8 +379,7 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         assert(nextId < UINT16_MAX); // Make sure we dont roll over
         assert(TileRepository::sTileIdMapping.find(key) == TileRepository::sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
-        tileData.spriteData = getSprite(fileData.textureName);
-        assert(tileData.spriteData.isValid()); // TODO: Error msg
+        tileData.texture = getTexture(fileData.textureName);
         TileRepository::sTileIdMapping[key] = nextId;
         // TODO: Serialize the string > ID mapping
         TileRepository::sTileData.emplace_back(std::move(tileData));

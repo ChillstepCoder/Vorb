@@ -106,33 +106,33 @@ void pError(const nString& message)
 }
 
 //Checks the output of glGetError and prints an appropriate error message if needed.
-bool checkGlError(const nString& errorLocation) {
+bool checkGlError(const cString errorLocation) {
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
         switch (error) {
             case GL_INVALID_ENUM:
-                pError("At " + errorLocation + ". Error code 1280: GL_INVALID_ENUM");
+                pError("At " + nString(errorLocation) + ". Error code 1280: GL_INVALID_ENUM");
                 break;
             case GL_INVALID_VALUE:
-                pError("At " + errorLocation + ". Error code 1281: GL_INVALID_VALUE");
+                pError("At " + nString(errorLocation) + ". Error code 1281: GL_INVALID_VALUE");
                 break;
             case GL_INVALID_OPERATION:
-                pError("At " + errorLocation + ". Error code 1282: GL_INVALID_OPERATION");
+                pError("At " + nString(errorLocation) + ". Error code 1282: GL_INVALID_OPERATION");
                 break;
             case GL_STACK_OVERFLOW:
-                pError("At " + errorLocation + ". Error code 1283: GL_STACK_OVERFLOW");
+                pError("At " + nString(errorLocation) + ". Error code 1283: GL_STACK_OVERFLOW");
                 break;
             case GL_STACK_UNDERFLOW:
-                pError("At " + errorLocation + ". Error code 1284: GL_STACK_UNDERFLOW");
+                pError("At " + nString(errorLocation) + ". Error code 1284: GL_STACK_UNDERFLOW");
                 break;
             case GL_OUT_OF_MEMORY:
-                pError("At " + errorLocation + ". Error code 1285: GL_OUT_OF_MEMORY");
+                pError("At " + nString(errorLocation) + ". Error code 1285: GL_OUT_OF_MEMORY");
                 break;
             case GL_INVALID_FRAMEBUFFER_OPERATION:
-                pError("At " + errorLocation + ". Error code 1285: GL_INVALID_FRAMEBUFFER_OPERATION");
+                pError("At " + nString(errorLocation) + ". Error code 1285: GL_INVALID_FRAMEBUFFER_OPERATION");
                 break;
             default:
-                pError("At " + errorLocation + ". Error code " + std::to_string(error) + ": UNKNOWN");
+                pError("At " + nString(errorLocation) + ". Error code " + std::to_string(error) + ": UNKNOWN");
                 break;
         }
         return true;

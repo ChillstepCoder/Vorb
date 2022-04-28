@@ -2,6 +2,10 @@
 
 #include "TileConst.h"
 #include "TileCollider.h"
+#include "item/ItemStack.h"
+
+// TODO: Do we need rendering here?
+#include "rendering/texture/SubTexture.h"
 
 enum TileFloor {
     TILE_FLOOR_GROUND,
@@ -14,7 +18,34 @@ constexpr inline ui16 compressTileZPosition(f32 zPosition) {
 	return (ui32)((zPosition - MIN_WORLD_HEIGHT) * SCALED_Z_UNITS_PER_TILE);
 }
 
-struct TileData;
+enum class TileTextureMethod : ui8 {
+    SIMPLE,
+    CONNECTED,
+    CONNECTED_WALL,
+    VERTICAL,
+    FLORA,
+    WORLD_TILING,
+    COUNT
+};
+KEG_ENUM_DECL(TileTextureMethod);
+
+struct TileData {
+    TileID id;
+    ui8 layer = 2;
+    ui8 pathWeight = 255;
+    TileCollider collider;
+    //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
+    TileShape shape = TileShape::BLOCK;
+    TileResource resource = TileResource::NONE;
+    SubTexture texture; // TODO: Model instead also make it a pointer this is huge?
+    TileTextureMethod textureMethod;
+    std::string name;
+    std::vector<ItemDrop> itemDrops;
+    std::vector<ItemStack> recipe;
+};
+#ifdef DEBUG // Release has different size
+static_assert(sizeof(TileData) == 192, "Keep it small as possible");
+#endif
 
 class Tile {
     friend class Chunk;

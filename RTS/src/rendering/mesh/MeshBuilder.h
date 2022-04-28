@@ -31,8 +31,8 @@ public:
     // Geometry builders
     void setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
     void setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
-    void addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, SubTexture& texture, color4 color);
-    void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], SubTexture& texture, color4 color, bool flipTriangleDir);
+    void addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color);
+    void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const SubTexture& texture, color4 color, bool flipTriangleDir);
 
     void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
 
@@ -54,7 +54,7 @@ private:
         std::vector<TextureHandle> mTextures;
     };
 
-    void getSubmeshAndTextureIndex(SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex);
+    void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex);
     void setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo);
     void initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool allocateIbo);
     void uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);

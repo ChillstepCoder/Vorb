@@ -4,7 +4,6 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 
 class BrushRepository;
-class SpriteRepository;
 class TextureAtlas;
 class TextureRepository;
 class MaterialManager;
@@ -19,7 +18,7 @@ class AnimationRepository;
 class RigRepository;
 class AnimMachineRepository;
 class SkillRepository;
-struct SpriteData;
+struct SubTexture;
 
 // Loads and manages textures, tiles, and other resources
 // TODO: ResourceLoader?
@@ -32,12 +31,10 @@ public:
     void loadFiles();
 
     // Resource Accessors
-    const SpriteData& getSprite(const std::string& spriteName) const;
+    const SubTexture& getTexture(const nString& textureName) const;
 
-    SpriteRepository& getSpriteRepository() { return *mSpriteRepository; }
     // TODO: Replace?
     vg::TextureCache& getTextureCache();
-    const TextureAtlas& getTextureAtlas() const;
     const MaterialManager& getMaterialManager() const { return *mMaterialManager; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
@@ -58,7 +55,6 @@ public:
     bool hasLoadedResources() const { return mHasLoadedResources; }
 
     void generateNormalMaps();
-    void writeDebugAtlas() const;
     
 private:
     void gatherRecursive(const vio::Path& folderPath);
@@ -82,7 +78,6 @@ private:
     std::vector<vio::Path> mModelFiles;
     std::vector<vio::Path> mSkillFiles;
 
-    std::unique_ptr<SpriteRepository> mSpriteRepository;
     std::unique_ptr<MaterialManager> mMaterialManager;
     std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;

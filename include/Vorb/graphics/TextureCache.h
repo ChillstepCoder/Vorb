@@ -88,21 +88,21 @@ namespace vorb {
              *
              * \return The stored texture.
              */
-            Texture addTexture(         const vio::Path& filePath,
-                                       vg::TextureTarget textureTarget      = vg::TextureTarget::TEXTURE_2D,
-                                           SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
-                               vg::TextureInternalFormat internalFormat     = vg::TextureInternalFormat::RGBA,
-                                       vg::TextureFormat textureFormat      = vg::TextureFormat::RGBA,
-                                                     i32 mipmapLevels       = INT_MAX,
-                                                    bool flipV              = false);
             Texture addTexture(const vio::Path& filePath,
-                const nString& textureName,
-                vg::TextureTarget textureTarget = vg::TextureTarget::TEXTURE_2D,
-                SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
-                vg::TextureInternalFormat internalFormat = vg::TextureInternalFormat::RGBA,
-                vg::TextureFormat textureFormat = vg::TextureFormat::RGBA,
-                i32 mipmapLevels = INT_MAX,
-                bool flipV = false);
+                               vg::TextureTarget textureTarget = vg::TextureTarget::TEXTURE_2D,
+                               const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
+                               vg::TextureInternalFormat internalFormat = vg::TextureInternalFormat::RGBA,
+                               vg::TextureFormat textureFormat = vg::TextureFormat::RGBA,
+                               i32 mipmapLevels = INT_MAX,
+                               bool flipV = false);
+            Texture addTexture(const vio::Path& filePath,
+                               const nString& textureName,
+                               vg::TextureTarget textureTarget = vg::TextureTarget::TEXTURE_2D,
+                               const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
+                               vg::TextureInternalFormat internalFormat = vg::TextureInternalFormat::RGBA,
+                               vg::TextureFormat textureFormat = vg::TextureFormat::RGBA,
+                               i32 mipmapLevels = INT_MAX,
+                               bool flipV = false);
             /*!
              * \brief Loads from disk, and uploads to GPU a PNG texture and adds it to the cache if it is not already present.
              * Returns a populated bitmap resource of the texture.
@@ -124,7 +124,7 @@ namespace vorb {
                                OUT vg::BitmapResource& rvBitmap,
                                vg::ImageIOFormat rvFormat,
                                vg::TextureTarget textureTarget          = vg::TextureTarget::TEXTURE_2D,
-                               SamplerState* samplingParameters         = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                               const SamplerState* samplingParameters         = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
                                vg::TextureInternalFormat internalFormat = vg::TextureInternalFormat::RGBA,
                                vg::TextureFormat textureFormat          = vg::TextureFormat::RGBA,
                                i32 mipmapLevels                         = INT_MAX,
@@ -147,7 +147,7 @@ namespace vorb {
                                const vg::BitmapResource* rs,
                                         TexturePixelType texturePixelType   = TexturePixelType::UNSIGNED_BYTE,
                                        vg::TextureTarget textureTarget      = vg::TextureTarget::TEXTURE_2D,
-                                           SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                                           const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
                                vg::TextureInternalFormat internalFormat     = vg::TextureInternalFormat::RGBA,
                                        vg::TextureFormat textureFormat      = vg::TextureFormat::RGBA,
                                                      i32 mipmapLevels       = INT_MAX);

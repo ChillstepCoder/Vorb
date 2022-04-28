@@ -279,7 +279,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     SsPtr iss = CGAL::create_interior_straight_skeleton_2(sCgalPoly.vertices_begin(), sCgalPoly.vertices_end());
     f32v2 start = building.mAABB.pos;
 
-    const SpriteData& spriteData = Services::ResourceManager::ref().getSprite("roof");
+    const SubTexture& texture = Services::ResourceManager::ref().getTexture("roof");
     BuildingMesh& buildingMesh = *renderData.mMesh;
 
     // Map gable and contour vertex points so we can move all connected verts
@@ -387,7 +387,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                     points[i].y = convexPoly.vertex(i).y();
                 }
                 // Add to mesh
-                addRoofTriangle(points, start, building, spriteData, debugColorIndex, buildingMesh);
+                addRoofTriangle(points, start, building, texture, debugColorIndex, buildingMesh);
             }
             else {
                 // Triangulate higher order polys
@@ -399,7 +399,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                         points[i].y = it->vertex(i)->point().y();
                     }
                     // Add to mesh
-                    addRoofTriangle(points, start, building, spriteData, debugColorIndex, buildingMesh);
+                    addRoofTriangle(points, start, building, texture, debugColorIndex, buildingMesh);
                 }
             }
         }
@@ -425,14 +425,14 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             axis = CubeFacing::LEFT;
         }
         //DebugRenderer::drawLineBetweenPoints(first, second, color4(1.0f, 0.0f, 0.0f, 1.0f), BUILDING_DEBUG_LIFETIME);
-        buildingMesh.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE);
+        buildingMesh.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, 0, texture.mUvRect, COLOR_WHITE);
         // Bottom
         f32v3 points[4];
         points[0] = first;
         points[1] = second;
         points[2] = f32v3(start.x + edge.parent2.x, start.y + edge.parent2.y, building.mZPosRoof - ROOF_THICKNESS);
         points[3] = f32v3(start.x + edge.parent1.x, start.y + edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
-        buildingMesh.addQuadBetweenPoints(points, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+        buildingMesh.addQuadBetweenPoints(points, 0, texture.mUvRect, COLOR_WHITE, false);
     }
 
 
@@ -443,7 +443,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             const ui32 index = y * aabb.dims.x + x;
             if (ownedTiles.getBit(index)) {
                 f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, building.mZPosRoof);
-                buildingMesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, spriteData.atlasPage, spriteData.uvs, COLOR_WHITE, false);
+                buildingMesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, 0, texture.mUvRect, COLOR_WHITE, false);
             }
         }
     }
@@ -454,7 +454,7 @@ void BuildingMesher::addRoofTriangle(
     const f32v2 points[3],
     f32v2& start,
     const Building& building,
-    const SpriteData& spriteData,
+    const SubTexture& texture,
     ui32 debugColorIndex,
     BuildingMesh& buildingMesh
 ) {
@@ -479,9 +479,9 @@ void BuildingMesher::addRoofTriangle(
              DebugRenderer::drawWireQuad(verts[i].pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
          }*/
 
-        verts[i].uvTiling = spriteData.uvs;
+        verts[i].uvTiling = texture.mUvRect;
         verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
-        verts[i].atlasPage = spriteData.atlasPage;
+        verts[i].atlasPage = 0;
     }
 
     // The infinite face is not needed for our representation

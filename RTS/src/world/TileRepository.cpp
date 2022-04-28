@@ -7,6 +7,7 @@ std::vector<TileData> TileRepository::sTileData;
 KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("tex", keg::Value::basic(offsetof(TileFileData, textureName), keg::BasicType::STRING));
     kt.addValue("col", keg::Value::custom(offsetof(TileFileData, colliderShape), "TileCollisionShape", true));
+    kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
     kt.addValue("width", keg::Value::basic(offsetof(TileFileData, colliderDims.x), keg::BasicType::F32));
     kt.addValue("depth", keg::Value::basic(offsetof(TileFileData, colliderDims.y), keg::BasicType::F32));
     kt.addValue("height", keg::Value::basic(offsetof(TileFileData, colliderDims.z), keg::BasicType::F32));

@@ -355,129 +355,6 @@ void QuadMesh::bindVertexAttribs(const vg::GLProgram& program) const {
     }
 }
 
-void BillboardMesh::reserveQuadCount(size_t count) {
-    mVertexData.reserve(count * 4u);
-}
-
-void BillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
-    mVertexData.resize(mVertexData.size() + 4);
-    BillboardVertex* verts = &mVertexData.back() - 3;
-
-    f32v4 adjustedUvs;
-    if (shouldRandFlipHorizontal && Random::getThreadSafef(tilePosition.x, tilePosition.y) > 0.5f) {
-        // Flip horizontal
-        adjustedUvs.x = uvs.x + uvs.z - UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = -uvs.z + UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-    else {
-        adjustedUvs.x = uvs.x + UV_EPSILON;
-        adjustedUvs.y = uvs.y + UV_EPSILON;
-        adjustedUvs.z = uvs.z - UV_EPSILON_2;
-        adjustedUvs.w = uvs.w - UV_EPSILON_2;
-    }
-    i16v2 compressedOffset = i16v2(xyOffset * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
-    i16v2 compressedDims = i16v2(xyDims * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
-    const i16 halfX = (i16)(xyDims.x * 0.5f * BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO);
-
-    { // Bottom Left
-        BillboardVertex& vbl = verts[0];
-        vbl.rootPos.x = tilePosition.x;
-        vbl.rootPos.y = tilePosition.y;
-        vbl.rootPos.z = tilePosition.z;
-        vbl.uvs.x = adjustedUvs.x;
-        vbl.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbl.color = color;
-        vbl.atlasPage = spriteAtlasPage;
-        vbl.xzOffset.x = compressedOffset.x - halfX;
-        vbl.xzOffset.y = compressedOffset.y;
-        vbl.roughness = roughness;
-    }
-    { // Bottom Right
-        BillboardVertex& vbr = verts[1];
-        vbr.rootPos.x = tilePosition.x;
-        vbr.rootPos.y = tilePosition.y;
-        vbr.rootPos.z = tilePosition.z;
-        vbr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vbr.uvs.y = adjustedUvs.y + adjustedUvs.w;
-        vbr.color = color;
-        vbr.atlasPage = spriteAtlasPage;
-        vbr.xzOffset.x = compressedOffset.x + halfX;
-        vbr.xzOffset.y = compressedOffset.y;
-        vbr.roughness = roughness;
-    }
-
-    const f32 topZ = tilePosition.z + xyDims.y;
-    { // Top Right
-        BillboardVertex& vtr = verts[2];
-        vtr.rootPos.x = tilePosition.x;
-        vtr.rootPos.y = tilePosition.y;
-        vtr.rootPos.z = tilePosition.z;
-        vtr.uvs.x = adjustedUvs.x + adjustedUvs.z;
-        vtr.uvs.y = adjustedUvs.y;
-        vtr.color = color;
-        vtr.atlasPage = spriteAtlasPage;
-        vtr.xzOffset.x = compressedOffset.x + halfX;
-        vtr.xzOffset.y = compressedOffset.y + compressedDims.y;
-        vtr.windInfluence = windInfluence;
-        vtr.roughness = roughness;
-    }
-    { // Top Left
-        BillboardVertex& vtl = verts[3];
-        vtl.rootPos.x = tilePosition.x;
-        vtl.rootPos.y = tilePosition.y;
-        vtl.rootPos.z = tilePosition.z;
-        vtl.uvs.x = adjustedUvs.x;
-        vtl.uvs.y = adjustedUvs.y;
-        vtl.color = color;
-        vtl.atlasPage = spriteAtlasPage;
-        vtl.xzOffset.x = compressedOffset.x - halfX;
-        vtl.xzOffset.y = compressedOffset.y + compressedDims.y;
-        vtl.windInfluence = windInfluence;
-        vtl.roughness = roughness;
-    }
-    
-}
-
-void BillboardMesh::finishMesh(MeshDrawMode drawMode) {
-    if (mVertexData.size()) {
-        setData(mVertexData.data(), mVertexData.size(), drawMode);
-    }
-    else {
-        destroy(); // Mesh is now empty, destroy if it was valid
-    }
-    std::vector<BillboardVertex>().swap(mVertexData);
-}
-
-void BillboardMesh::bindVertexAttribs(const vg::GLProgram& program) const {
-    // TODO: can we not do this every time?
-    if (mLastUsedProgram != program.getID()) {
-        mLastUsedProgram = program.getID();
-        glBindBuffer(GL_ARRAY_BUFFER, mVbo);
-
-        program.enableVertexAttribArrays();
-        // TODO: no more string lookup attributes :C
-        glVertexAttribPointer(program.getAttribute("vPosition"), 3, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, rootPos));
-        glVertexAttribPointer(program.getAttribute("vXZOffset"), 2, GL_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, xzOffset));
-        if (const VGAttribute* attr = program.tryGetAttribute("vUV")) {
-            glVertexAttribPointer(*attr, 2, GL_FLOAT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, uvs));
-        }
-        if (const VGAttribute* attr = program.tryGetAttribute("vAtlasPage")) {
-            glVertexAttribPointer(*attr, 1, GL_UNSIGNED_SHORT, false, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, atlasPage));
-        }
-        if (const VGAttribute* attr = program.tryGetAttribute("vWindInfluence")) {
-            glVertexAttribPointer(*attr, 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, windInfluence));
-        }
-        if (const VGAttribute* attr = program.tryGetAttribute("vTint")) {
-            glVertexAttribPointer(*attr, 4, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, color));
-        }
-        if (const VGAttribute* attr = program.tryGetAttribute("vRoughness")) {
-            glVertexAttribPointer(*attr, 1, GL_UNSIGNED_BYTE, true, sizeof(BillboardVertex), (void*)offsetof(BillboardVertex, roughness));
-        }
-    }
-}
-
 void TBOBillboardMesh::beginMesh() {
     mTextureData.clear();
     mIsInProgress = true;
@@ -492,7 +369,7 @@ void TBOBillboardMesh::reserveAdditionalQuadCount(size_t count)
     mTextureData.reserve(mTextureData.size() + count);
 }
 
-void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 spriteAtlasPage, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
+void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f32v2& xyOffset, ui16 texture, const f32v4& uvs, color4 color, bool shouldRandFlipHorizontal, ui8 windInfluence, ui8 roughness) {
     UNUSED(color, xyOffset);
     // Signal for a new batch
     if (mTextureData.empty()) {
@@ -514,7 +391,7 @@ void TBOBillboardMesh::addQuad(f32v3 tilePosition, const f32v2& xyDims, const f3
         adjustedUvs.w = uvs.w - UV_EPSILON_2;
     }
 
-    TBOBillboardUniformData uniformData = TBOBillboardUniformData{ adjustedUvs, f32v3((f32)spriteAtlasPage, windInfluence / 255.0f, roughness / 255.0f) };
+    TBOBillboardUniformData uniformData = TBOBillboardUniformData{ adjustedUvs, f32v3((f32)texture, windInfluence / 255.0f, roughness / 255.0f) };
 
     f32 type;
     auto&& it = mTypes.find(uniformData);

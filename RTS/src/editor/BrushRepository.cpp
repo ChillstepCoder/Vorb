@@ -26,7 +26,7 @@ void BrushRepository::loadBrush(const vio::Path& filePath, vg::TextureCache& tex
         rs,
         vg::ImageIOFormat::RGBA_UI8,
         vg::TextureTarget::TEXTURE_2D,
-        &vg::SamplerState::LINEAR_WRAP,
+        &vg::sSamplerStates.LINEAR_WRAP,
         vg::TextureInternalFormat::COMPRESSED_RGBA
     );
 

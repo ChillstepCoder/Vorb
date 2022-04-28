@@ -311,10 +311,6 @@ void vg::GLProgram::initUniforms() {
             m_uniforms[name] = loc;
         }
     }
-
-    if (m_uniforms.size() == 17) {
-        printf("lol");
-    }
 }
 
 void vg::GLProgram::bindFragDataLocation(ui32 colorNumber, const char* name) {

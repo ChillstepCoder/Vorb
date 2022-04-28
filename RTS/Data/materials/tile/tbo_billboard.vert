@@ -5,7 +5,7 @@
 uniform vec3 unOffset;
 
 out vec2 fUV;
-flat out float fAtlasPage;
+flat out int fTextureIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
@@ -26,7 +26,7 @@ void main() {
 	
 	// Compute uvs
     fUV = getUvsFromType(type);
-    fAtlasPage = atlasPageRoughnessWind.r;
+    fTextureIndex = int(atlasPageRoughnessWind.r);
 	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();

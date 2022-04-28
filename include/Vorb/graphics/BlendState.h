@@ -59,8 +59,7 @@ namespace vorb {
         };
 
         // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
-        static union BlendStates {
-
+        union BlendStates {
             const vg::BlendState STATE_ARRAY[(int)BlendStateType::COUNT];
             struct {
                 const vg::BlendState ALPHA;
@@ -73,17 +72,13 @@ namespace vorb {
 
                 // ONE, ZERO
                 const vg::BlendState REPLACE;
+
+                // ONE, ZERO
+                const vg::BlendState MULTIPLY;
             };
-        } sBlendStates = {
-            {
-                vg::BlendState(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA), // ALPHA
-                vg::BlendState(GL_ONE, GL_ONE_MINUS_SRC_ALPHA),       // ALPHA_PREMULTIPLIED
-                vg::BlendState(GL_SRC_ALPHA, GL_ONE),                 // ADDITIVE
-                vg::BlendState(GL_ONE, GL_ZERO),                      // REPLACE
-                vg::BlendState(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA), // MULTIPLY
-            }
         };
         static_assert((int)vg::BlendStateType::COUNT == 5, "Add new blend states above");
+        extern BlendStates sBlendStates;
 
     }
 }

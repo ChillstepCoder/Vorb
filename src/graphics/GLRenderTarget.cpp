@@ -25,7 +25,7 @@ vg::GLRenderTarget& vg::GLRenderTarget::init(vg::TextureInternalFormat format /*
     } else {
         glTexImage2D(_textureTarget, 0, (VGEnum)format, _size.x, _size.y, 0, (VGEnum)pFormat, (VGEnum)pType, nullptr);
     }
-    SamplerState::POINT_CLAMP.set(_textureTarget);
+    vg::sSamplerStates.POINT_CLAMP.set(_textureTarget);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textureTarget, _texColor, 0);
 
     // Set the output location for pixels
@@ -48,7 +48,7 @@ vg::GLRenderTarget& vg::GLRenderTarget::initDepth(vg::TextureInternalFormat dept
     } else {
         glTexImage2D(_textureTarget, 0, (VGEnum)depthFormat, _size.x, _size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::FLOAT, nullptr);
     }
-    SamplerState::POINT_CLAMP.set(_textureTarget);
+    vg::sSamplerStates.POINT_CLAMP.set(_textureTarget);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _textureTarget, _texDepth, 0);
 
     // Unbind used resources
@@ -68,7 +68,7 @@ vg::GLRenderTarget& vg::GLRenderTarget::initDepthStencil(TextureInternalFormat s
     } else {
         glTexImage2D(_textureTarget, 0, (VGEnum)stencilFormat, _size.x, _size.y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
     }
-    SamplerState::POINT_CLAMP.set(_textureTarget);
+    vg::sSamplerStates.POINT_CLAMP.set(_textureTarget);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, _textureTarget, _texDepth, 0);
 
     // Unbind used resources

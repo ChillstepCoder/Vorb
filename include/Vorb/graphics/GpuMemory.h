@@ -53,7 +53,7 @@ namespace vorb {
                                       ui32 height,
                                       TexturePixelType texturePixelType = TexturePixelType::UNSIGNED_BYTE,
                                       TextureTarget textureTarget = TextureTarget::TEXTURE_2D,
-                                      SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                                      const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
                                       TextureInternalFormat internalFormat = TextureInternalFormat::RGBA,
                                       TextureFormat textureFormat = TextureFormat::RGBA,
                                       i32 mipmapLevels = INT_MAX);
@@ -72,7 +72,7 @@ namespace vorb {
                                            ui32 height,
                                            TexturePixelType texturePixelType = TexturePixelType::UNSIGNED_BYTE,
                                            TextureTarget textureTarget = TextureTarget::TEXTURE_2D,
-                                           SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                                           const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
                                            TextureInternalFormat internalFormat = TextureInternalFormat::RGBA,
                                            TextureFormat textureFormat = TextureFormat::RGBA,
                                            i32 mipmapLevels = INT_MAX) {
@@ -95,7 +95,7 @@ namespace vorb {
                                       const BitmapResource* res,
                                       TexturePixelType texturePixelType = TexturePixelType::UNSIGNED_BYTE,
                                       TextureTarget textureTarget = TextureTarget::TEXTURE_2D,
-                                      SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                                      const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
                                       TextureInternalFormat internalFormat = TextureInternalFormat::RGBA,
                                       TextureFormat textureFormat = TextureFormat::RGBA,
                                       i32 mipmapLevels = INT_MAX);
@@ -110,7 +110,7 @@ namespace vorb {
             static VGTexture uploadTexture(const BitmapResource* res,
                                            TexturePixelType texturePixelType = TexturePixelType::UNSIGNED_BYTE,
                                            TextureTarget textureTarget = TextureTarget::TEXTURE_2D,
-                                           SamplerState* samplingParameters = &SamplerState::LINEAR_CLAMP_MIPMAP,
+                                           const SamplerState* samplingParameters = &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP,
                                            TextureInternalFormat internalFormat = TextureInternalFormat::RGBA,
                                            TextureFormat textureFormat = TextureFormat::RGBA,
                                            i32 mipmapLevels = INT_MAX) {

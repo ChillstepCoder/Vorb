@@ -1,7 +1,0 @@
-dims_cells: [1,1]
-tiles:
-  - name: grass_paint
-    method: flora
-    cell_rect: [0,0,1,1]
-    opaque: false
-    rand_flip: true

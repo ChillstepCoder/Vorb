@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ItemRepository.h"
-#include "rendering/SpriteRepository.h"
+
+#include "resources/TextureRepository.h"
 
 #include <Vorb/io/IOManager.h>
 
@@ -31,7 +32,7 @@ ItemRepository::ItemRepository(vio::IOManager& ioManager) :
     mItems.emplace_back();
 }
 
-void ItemRepository::loadItemFile(const vio::Path& filePath, SpriteRepository& spriteRepo)
+void ItemRepository::loadItemFile(const vio::Path& filePath, TextureRepository& textureRepo)
 {
     if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
@@ -43,7 +44,7 @@ void ItemRepository::loadItemFile(const vio::Path& filePath, SpriteRepository& s
         newItem.mShape = def.shape;
         newItem.mId = mItems.size() - 1;
         newItem.mName = key;
-        newItem.mSpriteData = spriteRepo.getSprite(def.textureName);
+        newItem.mTexture = textureRepo.getTexture(def.textureName);
         newItem.mValue = def.value;
         newItem.mWeight = def.weight;
         newItem.mStackSize = def.stackSize;

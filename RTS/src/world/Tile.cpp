@@ -3,6 +3,15 @@
 
 #include "world/TileRepository.h"
 
+KEG_ENUM_DEF(TileTextureMethod, TileTextureMethod, kt) {
+    kt.addValue("simple", TileTextureMethod::SIMPLE);
+    kt.addValue("connected", TileTextureMethod::CONNECTED);
+    kt.addValue("connected_wall", TileTextureMethod::CONNECTED_WALL);
+    kt.addValue("vertical", TileTextureMethod::VERTICAL);
+    kt.addValue("flora", TileTextureMethod::FLORA);
+    kt.addValue("world_tiling", TileTextureMethod::WORLD_TILING);
+}
+static_assert(e_cast(TileTextureMethod::COUNT) == 6);
 
 KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Thin", TileShape::THIN);

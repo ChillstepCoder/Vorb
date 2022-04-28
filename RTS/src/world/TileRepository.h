@@ -1,14 +1,12 @@
 #pragma once
 
 #include "Tile.h"
-#include "rendering/SpriteData.h"
-
-#include "item/ItemStack.h"
 
 struct TileFileData {
     f32v3 colliderDims = f32v3(0.5f, 0.5f, 1.0f);
     TileShape tileShape = TileShape::BLOCK;
     TileCollisionShape colliderShape = TileCollisionShape::NONE;
+    TileTextureMethod textureMethod = TileTextureMethod::SIMPLE;
     TileResource resource = TileResource::NONE;
     ui8 pathWeight = 255;
     ui8 layer = 2;
@@ -17,23 +15,6 @@ struct TileFileData {
     Array<ItemInputDef> recipe;
 };
 KEG_TYPE_DECL(TileFileData);
-
-struct TileData {
-    TileID id;
-    ui8 layer = 2;
-    ui8 pathWeight = 255;
-    TileCollider collider;
-    //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
-    TileShape shape = TileShape::BLOCK;
-    TileResource resource = TileResource::NONE;
-    SpriteData spriteData;
-    std::string name;
-    std::vector<ItemDrop> itemDrops;
-    std::vector<ItemStack> recipe;
-};
-#ifdef DEBUG // Release has different size
-static_assert(sizeof(TileData) == 200, "Keep it small as possible");
-#endif
 
 // TODO: non static
 class TileRepository {

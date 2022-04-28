@@ -8,7 +8,6 @@
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/TileVertex.h"
-#include "rendering/SpriteData.h"
 
 #include "resources/ModelRepository.h"
 #include "ResourceManager.h"

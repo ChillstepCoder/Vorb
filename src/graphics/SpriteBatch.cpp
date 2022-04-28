@@ -93,7 +93,7 @@ void vg::SpriteBatch::init() {
         glBindTexture(GL_TEXTURE_2D, m_texPixel);
         ui32 pix = 0xffffffffu;
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pix);
-        vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
+        vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
@@ -287,7 +287,7 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
     //if (bs == nullptr) bs = BlendState::PremultipliedAlphaBlend;
     if (ds == nullptr) ds = &DepthState::NONE;
     if (rs == nullptr) rs = &RasterizerState::CULL_NONE;
-    if (ss == nullptr) ss = &SamplerState::LINEAR_WRAP;
+    if (ss == nullptr) ss = &vg::sSamplerStates.LINEAR_WRAP;
     if (shader == nullptr) shader = &s_program;
 
     // Make sure we have been initialized

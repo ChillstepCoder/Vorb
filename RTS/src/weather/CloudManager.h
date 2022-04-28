@@ -3,7 +3,7 @@
 
 class World;
 class TBOBillboardMesh;
-struct SpriteData;
+struct SubTexture;
 
 #include "world/ChunkID.h"
 
@@ -36,7 +36,7 @@ private:
     void spawnNewCloudWaveX(i32 dir);
     void spawnNewCloudWaveY(i32 dir);
 
-    const SpriteData* mCloudSpriteData; // TODO: Mesher?
+    const SubTexture* mCloudTexture; // TODO: Mesher?
     std::vector<CloudBatch> mCloudBatches;
     std::map<ui32, CloudBatch> mGeneratingBatches; // Use this so we dont need synchronization
     std::vector<std::unique_ptr<TBOBillboardMesh>> mRecycledMeshes;

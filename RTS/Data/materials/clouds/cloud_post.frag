@@ -1,12 +1,11 @@
-uniform sampler2DArray Atlas;
+
 uniform sampler2D CloudFbo;
 uniform sampler2D FboDepth;
 uniform sampler2D PreturbTexture;
 uniform sampler2D unGradientTexture;
+uniform sampler2D unCloudColor;
+uniform sampler2D unSkyGradient;
 #include "GlobalUbo.glsl"
-
-uniform vec4 unCloudTextureRect;
-uniform float unCloudTexturePage;
 
 uniform float DebugFloat2;
 
@@ -33,7 +32,7 @@ void main() {
     // Get alpha
 	vec2 tex = vec2(0.0, max(computeDiffuse(norm, SunPosition), 0.001));
 	tex.y = 1.0 - tex.y;
-	fColor.a = texture(Atlas, vec3(unCloudTextureRect.xy + tex * unCloudTextureRect.zw, unCloudTexturePage)).a * baseAlpha;
+	fColor.a = texture(unCloudColor, tex).a * baseAlpha;
 	
     // =========START TOON SHADING==========
 	

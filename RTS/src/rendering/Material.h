@@ -6,7 +6,6 @@ DECL_VG(class Texture);
 
 enum class MaterialUniform {
     INVALID,
-    Atlas,
     Fbo0,
     FboDepth,
     FboNormals,
@@ -50,7 +49,6 @@ struct MaterialTextureInputData {
 KEG_TYPE_DECL(MaterialTextureInputData);
 
 struct MaterialData {
-    Array<MaterialAtlasTextureInputData> atlasTextures;
     Array<MaterialTextureInputData> textures;
     nString vertexShaderName;
     nString fragmentShaderName;

@@ -2,7 +2,6 @@
 #include "CloudManager.h"
 
 #include "rendering/QuadMesh.h"
-#include "rendering/SpriteData.h"
 #include "DebugRenderer.h"
 
 #include "World.h"
@@ -57,7 +56,7 @@ void CloudManager::init() {
 
     // Initial variables
     mLastCenterPosition = i32v2(centerCloudID.pos.x, centerCloudID.pos.y);
-    mCloudSpriteData = &Services::ResourceManager::ref().getSprite("cloud");
+    mCloudTexture = &Services::ResourceManager::ref().getTexture("cloud");
 
     std::map<ui32 /*ycoord*/, CloudID /*leftMost*/> spawnLookup;
 
@@ -226,7 +225,8 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                     newSize *= 1.3f;// TALIA SIZE TESTING
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
-                    mesh->addQuad(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+                    // TODO: Fix clouds
+                    //mesh->addQuad(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
                 }
             }
         }

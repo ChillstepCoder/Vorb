@@ -93,11 +93,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
     // Bind uniforms
     for (auto&& it : material.mUniforms) {
         switch (it.first) {
-            case MaterialUniform::Atlas:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
-                glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.atlas);
-                break;
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
@@ -195,6 +190,6 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniform1f(it.second, sDebugOptions.mDebugFloat04);
                 break;
         }
-        static_assert((int)MaterialUniform::COUNT == 26, "Update for new uniform type");
+        static_assert((int)MaterialUniform::COUNT == 25, "Update for new uniform type");
     }
 }

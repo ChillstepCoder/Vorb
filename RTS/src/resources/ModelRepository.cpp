@@ -211,7 +211,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
 
         vio::Path diffusePath = textureNameRoot + vio::Path("diffuse.png");
         if (diffusePath.isValid()) {
-            vg::Texture tex = mTextureCache.addTexture(diffusePath, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
+            vg::Texture tex = mTextureCache.addTexture(diffusePath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
             for (int i = 0; i < numMeshes; ++i) {
                 model.mMeshes[i].setDiffuseTexture(tex.id);
             }
@@ -219,7 +219,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
 
         vio::Path normalPath = textureNameRoot + vio::Path("normal.png");
         if (normalPath.isValid()) {
-            vg::Texture tex = mTextureCache.addTexture(normalPath, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
+            vg::Texture tex = mTextureCache.addTexture(normalPath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
             for (int i = 0; i < numMeshes; ++i) {
                 model.mMeshes[i].setNormalTexture(tex.id);
             }
@@ -227,7 +227,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
 
         vio::Path specularPath = textureNameRoot + vio::Path("specular.png");
         if (specularPath.isValid()) {
-            vg::Texture tex = mTextureCache.addTexture(specularPath, vg::TextureTarget::TEXTURE_2D, &vg::SamplerState::LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
+            vg::Texture tex = mTextureCache.addTexture(specularPath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
             for (int i = 0; i < numMeshes; ++i) {
                 model.mMeshes[i].setSpecularTexture(tex.id);
             }
