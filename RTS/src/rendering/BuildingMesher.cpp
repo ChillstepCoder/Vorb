@@ -57,10 +57,10 @@ typedef Triangulation::Point             TriangulationPoint;
 class f32v2hash {
 public:
     size_t operator()(const f32v2& v) const {
-        size_t h;
-        boost::hash_combine(h, v.x);
-        boost::hash_combine(h, v.y);
-        return h;
+        size_t seed = 0;
+        boost::hash_combine(seed, v.x);
+        boost::hash_combine(seed, v.y);
+        return seed;
     }
 };
 

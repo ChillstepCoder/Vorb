@@ -30,6 +30,7 @@ enum class TileTextureMethod : ui8 {
 KEG_ENUM_DECL(TileTextureMethod);
 
 struct TileData {
+    f32v3 dims = f32v3(1.0f);
     TileID id;
     ui8 layer = 2;
     ui8 pathWeight = 255;
@@ -44,7 +45,7 @@ struct TileData {
     std::vector<ItemStack> recipe;
 };
 #ifdef DEBUG // Release has different size
-static_assert(sizeof(TileData) == 192, "Keep it small as possible");
+static_assert(sizeof(TileData) == 200, "Keep it small as possible");
 #endif
 
 class Tile {

@@ -183,7 +183,6 @@ ShadowRenderer::ShadowRenderer(const MaterialRenderer& materialRenderer, const f
             mShadowBlurGBuffers[i].bindGeometryTexture(0);
             vg::sSamplerStates.LINEAR_CLAMP.set(GL_TEXTURE_2D);
         }
-        glBindTexture(GL_TEXTURE_2D, 0);
 
         checkGlError("Shadow FBO 2 init");
     }
@@ -379,7 +378,6 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
     // Mip it
     mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     assert(activeGBuffer);
 
     f32v3 offset = cameraPos - mLastUpdatedCameraPos;

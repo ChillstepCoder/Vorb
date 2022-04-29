@@ -4,8 +4,11 @@
 #include "rendering/QuadMesh.h"
 #include "DebugRenderer.h"
 
+#include "rendering/mesh/BillboardMeshBuilder.h"
+
 #include "World.h"
 #include "ResourceManager.h"
+#include "resources/TextureRepository.h"
 
 #include "Random.h"
 
@@ -192,18 +195,17 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
     CloudBatch& newBatch = mGeneratingBatches[index];
     newBatch.mRootPos = f32v3(pos.x + mDx, pos.y + mDy, 110.0f);
     newBatch.mBoundsRadius = CLOUD_DIAGONAL_RADIUS + 10.0f;
-    if (mRecycledMeshes.size()) {
-        newBatch.mMesh = std::move(mRecycledMeshes.back());
-        mRecycledMeshes.pop_back();
-    }
-    else {
-        newBatch.mMesh = std::make_unique<TBOBillboardMesh>();
-    }
+    newBatch.mMesh = std::make_unique<Mesh>();
 
     f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
 
-    TBOBillboardMesh* mesh = newBatch.mMesh.get();
-    Services::Threadpool::ref().addTask([mesh, size, genPos, this](ThreadPoolWorkerData*) {
+    Mesh* mesh = newBatch.mMesh.get();
+
+    std::shared_ptr<BillboardMeshBuilder> meshBuilder = std::make_shared<BillboardMeshBuilder>();
+
+    SubTexture& cloudSubTexture = Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_sil");
+
+    Services::Threadpool::ref().addTask([size, genPos, this, meshBuilder, cloudSubTexture](ThreadPoolWorkerData*) {
         for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {
             for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += CLOUD_GEN_STRIDE) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
@@ -226,12 +228,12 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     // TODO: Fix clouds
-                    //mesh->addQuad(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), f32v2(0.0f), mCloudSpriteData->atlasPage, mCloudSpriteData->uvs, COLOR_WHITE, true, 0u, 240u);
+                    meshBuilder->addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudSubTexture);
                 }
             }
         }
-    }, [&newBatch, index, this]() {
-        newBatch.mMesh->finishMesh(MeshDrawMode::STATIC);
+    }, [&newBatch, index, this, mesh, meshBuilder]() {
+        meshBuilder->finishMesh(*mesh, MeshDrawMode::STATIC);
         auto&& it = mGeneratingBatches.find(index);
         if (newBatch.mMesh->isValid()) { // If we actually generated a cloud mesh, store it as active
             mCloudBatches.emplace_back(std::move(it->second));
@@ -244,10 +246,6 @@ void CloudManager::destroyCloudBatch(CloudBatch& batch)
 {
     ui32 index = ((const char*)&batch - (const char*)&mCloudBatches[0]) / sizeof(CloudBatch); // Get the index in our vector
     assert(&batch == &mCloudBatches[index]);
-    if (batch.mMesh->isValid() && mRecycledMeshes.size() < MAX_MESH_RECYCLES) {
-        batch.mMesh->clearForRecycleRetainMemory();
-        mRecycledMeshes.push_back(std::move(batch.mMesh));
-    }
     mCloudBatches[index] = std::move(mCloudBatches.back());
     mCloudBatches.pop_back();
 }

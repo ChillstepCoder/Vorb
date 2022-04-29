@@ -13,7 +13,7 @@ Mesh::Mesh() {
 }
 
 Mesh::~Mesh() {
-
+    destroy();
 }
 
 void Mesh::draw() const {
@@ -22,9 +22,13 @@ void Mesh::draw() const {
 
     // Draw main mesh
     glBindVertexArray(mMainMesh.mVao);
+    // TODO: Why do we have to do this every call
     // texture UBOs go at index 1 since globalUBO is index 0
-    if (mMainMesh.mTextureUbo) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, mMainMesh.mTextureUbo);
+    if (mMainMesh.mUbo) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, mMainMesh.mUbo);
+    }
+    if (mMainMesh.mSSBO) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, mMainMesh.mSSBO);
     }
     glDrawElements(GL_TRIANGLES, mMainMesh.mIndexCount, mMainMesh.mIndexType, (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mMainMesh.mIndexCount / 3);
@@ -47,9 +51,16 @@ void Mesh::destroy() {
         if (!isUsingShared){
             glDeleteBuffers(1, &mMainMesh.mIbo);
         }
-        if (mMainMesh.mTextureUbo) {
-            glDeleteBuffers(1, &mMainMesh.mTextureUbo);
+        if (mMainMesh.mUbo) {
+            glDeleteBuffers(1, &mMainMesh.mUbo);
         }
+        if (mMainMesh.mSSBO) {
+            glDeleteBuffers(1, &mMainMesh.mSSBO);
+        }
+        if (mMainMesh.mVbo) {
+            glDeleteBuffers(1, &mMainMesh.mVbo);
+        }
+        glDeleteVertexArrays(1, &mMainMesh.mVao);
         mMainMesh.mVao = 0;
         for (auto&& subMesh : mSubMeshes) {
             subMesh.destroy(isUsingShared);
@@ -60,14 +71,20 @@ void Mesh::destroy() {
 
 void SubMeshData::destroy(bool isUsingSharedIbo) {
     if (mVao) {
-        glDeleteBuffers(1, &mVbo);
+        if (mVbo) {
+            glDeleteBuffers(1, &mVbo);
+        }
         // When using shared IBO we don't delete the IBO, which is the last buffer
         if (!isUsingSharedIbo) {
             glDeleteBuffers(1, &mIbo);
         }
-        if (mTextureUbo) {
-            glDeleteBuffers(1, &mTextureUbo);
+        if (mUbo) {
+            glDeleteBuffers(1, &mUbo);
         }
+        if (mSSBO) {
+            glDeleteBuffers(1, &mSSBO);
+        }
+        glDeleteVertexArrays(1, &mVao);
         mVao = 0;
     }
 }

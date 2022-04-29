@@ -1,9 +1,14 @@
 #include "stdafx.h"
 #include "MeshBuilder.h"
 
+#include "rendering/texture/SubTexture.h"
+
 #include <boost/pool/singleton_pool.hpp>
 #include "Random.h"
 
+#define SUBMESH_INDEX_MAIN -1
+
+constexpr ui32 MAX_TEXTURES_PER_MESH = 500; // Must be even
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
 constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
 
@@ -400,13 +405,13 @@ void MeshBuilder::operator delete(void* pointer, size_t size) {
 void MeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
     auto&& it = mTextureToSubmesh.find(texture.mTextureDiffuse);
     if (it != mTextureToSubmesh.end()) {
-        i32 subTextureIndex = it->second.first;
+        i32 submeshIndex = it->second.first;
         *textureIndex = it->second.second;
-        if (subTextureIndex == SUBMESH_INDEX_MAIN) {
+        if (submeshIndex == SUBMESH_INDEX_MAIN) {
             *submesh = &mMainSubMeshData;
         }
         else {
-            *submesh = &mSubMeshesData[subTextureIndex];
+            *submesh = &mSubMeshesData[submeshIndex];
         }
     }
     else {
@@ -437,7 +442,7 @@ void MeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InPro
             // No valid submesh, make a new submesh
             if (!foundSubmesh) {
                 InProgressSubMeshData& data = mSubMeshesData.emplace_back();
-                textureIndex = 0;
+                *textureIndex = 0;
                 data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
                 data.mTextures.emplace_back(texture.mTextureHandleNormal);
                 mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
@@ -477,13 +482,13 @@ void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool a
     }
     // UBO
     if (allocateUbo) {
-        if (subMesh.mTextureUbo == 0) {
-            glGenBuffers(1, &subMesh.mTextureUbo);
+        if (subMesh.mUbo == 0) {
+            glGenBuffers(1, &subMesh.mUbo);
         }
     }
-    else if (subMesh.mTextureUbo) {
-        glDeleteBuffers(1, &subMesh.mTextureUbo);
-        subMesh.mTextureUbo = 0;
+    else if (subMesh.mUbo) {
+        glDeleteBuffers(1, &subMesh.mUbo);
+        subMesh.mUbo = 0;
     }
     // IBO
     if (allocateIbo && subMesh.mIbo == 0) {
@@ -495,9 +500,9 @@ void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool a
     glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
     // texture UBOs go at index 1 since globalUBO is index 0
-    if (subMesh.mTextureUbo) {
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mTextureUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mTextureUbo);
+    if (subMesh.mUbo) {
+        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
     }
 
     checkGlError("MeshBuilder::initMeshBuffers");
@@ -527,6 +532,7 @@ void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshDa
         subMesh.mIndexCount = data.mIndices.size();
         const ui32 indexBufferSizeBytes = subMesh.mIndexCount * sizeof(ui32);
         // Allocate orphaned
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
         // Set data
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, data.mIndices.data());
@@ -535,12 +541,13 @@ void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshDa
 
     // VBO
     // Allocate orphaned
+    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
     glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
     // Set data
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, data.mVerts.data());
 
     // UBO
-    if (subMesh.mTextureUbo) {
+    if (subMesh.mUbo) {
         const ui32 textureBufferSizeBytes = data.mTextures.size() * sizeof(TextureHandle);
         // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
         ui32v2 buffer[MAX_TEXTURES_PER_MESH * 2];
@@ -550,7 +557,8 @@ void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshDa
             buffer[i].y = handle >> 32;
         }
         // Allocate orphaned
-        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, GL_STATIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, e_cast(drawMode));
         // Set data
         glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, buffer);
     }
@@ -709,4 +717,5 @@ void MeshBuilder::initStaticIBOs() {
 
 void MeshBuilder::reserveVertexCount(ui32 count) {
     mMainSubMeshData.mVerts.reserve(count);
+    mMainSubMeshData.mTextures.reserve(5); // Arbitrary
 }

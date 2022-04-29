@@ -352,6 +352,7 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         tileData.resource = fileData.resource;
         tileData.shape = fileData.tileShape;
         tileData.textureMethod = fileData.textureMethod;
+        tileData.dims = fileData.dims;
         // Collider
         tileData.collider.shape = fileData.colliderShape;
         if (fileData.colliderShape != TileCollisionShape::NONE) {

@@ -385,5 +385,9 @@ extern std::thread::id NAV_THREAD_ID;
 
 typedef GLuint64 TextureHandle;
 
+// DEBUGGING GRAPHICS
+// We get texture warnings if we bind a null texture. TODO: Why? (Used to bind 0 in shadow mapping)
+//#define glBindTexture(x, y) assert(y); glBindTexture(x, y)
+
 
 #endif // stdafx_h__RTS

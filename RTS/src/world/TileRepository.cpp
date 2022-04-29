@@ -8,9 +8,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("tex", keg::Value::basic(offsetof(TileFileData, textureName), keg::BasicType::STRING));
     kt.addValue("col", keg::Value::custom(offsetof(TileFileData, colliderShape), "TileCollisionShape", true));
     kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
-    kt.addValue("width", keg::Value::basic(offsetof(TileFileData, colliderDims.x), keg::BasicType::F32));
-    kt.addValue("depth", keg::Value::basic(offsetof(TileFileData, colliderDims.y), keg::BasicType::F32));
-    kt.addValue("height", keg::Value::basic(offsetof(TileFileData, colliderDims.z), keg::BasicType::F32));
+    kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
     kt.addValue("path_weight", keg::Value::basic(offsetof(TileFileData, pathWeight), keg::BasicType::UI8));
     kt.addValue("layer", keg::Value::basic(offsetof(TileFileData, layer), keg::BasicType::UI8));
     kt.addValue("col_dims", keg::Value::basic(offsetof(TileFileData, colliderDims.x), keg::BasicType::F32_V3));

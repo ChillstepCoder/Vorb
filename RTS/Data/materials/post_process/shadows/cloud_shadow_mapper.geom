@@ -4,10 +4,10 @@ layout(triangle_strip, max_vertices = 3) out;
 uniform mat4 ShadowFrustumMatrices[4]; // match invocation count
 
 in vec2 gUV[3];
-flat in float gAtlasPage[3];
+flat in int gTextureIndex[3];
 
 out vec2 fUV;
-flat out float fAtlasPage;
+flat out int fTextureIndex;
     
 void main()
 {          
@@ -16,7 +16,7 @@ void main()
         gl_Position = ShadowFrustumMatrices[gl_InvocationID] * gl_in[i].gl_Position;
         gl_Layer = gl_InvocationID;
 		fUV = gUV[i];
-		fAtlasPage = gAtlasPage[i];
+		fTextureIndex = gTextureIndex[i];
         EmitVertex();
     }
     EndPrimitive();

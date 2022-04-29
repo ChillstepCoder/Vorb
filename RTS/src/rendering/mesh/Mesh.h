@@ -4,7 +4,6 @@
 // TODO: How much do we really save doing this?
 // Profile how often we use this...
 constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
-constexpr ui32 MAX_TEXTURES_PER_MESH = 500; // Must be even
 
 enum class MeshDrawMode {
     DYNAMIC = GL_DYNAMIC_DRAW,
@@ -17,17 +16,13 @@ enum class MeshFlags : ui8 {
 };
 
 struct SubMeshData {
-    union {
-        struct {
-            VGBuffer  mVao;
-            VGBuffer  mVbo;
-            VGBuffer  mTextureUbo;
-            VGBuffer  mIbo; // This should stay last since its possible to be shared
-        };
-        VGBuffer mBuffers[4] = {};
-    };
+    VGBuffer  mVao = 0;
+    VGBuffer  mVbo = 0;
+    VGBuffer  mUbo = 0;
+    VGBuffer  mIbo = 0;
+    VGBuffer  mSSBO = 0;
     ui32 mIndexCount = 0; ///< Current capacity of mIbo
-    ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
+    ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT // TODO: DELETE
 
     void destroy(bool isUsingSharedIbo);
 };
@@ -35,13 +30,16 @@ struct SubMeshData {
 class Mesh
 {
     friend class MeshBuilder;
+    friend class BillboardMeshBuilder;
 public:
     class Mesh();
     virtual ~Mesh();
 
+    VORB_NON_COPYABLE_BUT_MOVABLE(Mesh);
+
     virtual void draw() const;
     void destroy();
-    bool isValid() const { return mMainMesh.mVao != 0; }
+    bool isValid() const { return mMainMesh.mIndexCount != 0; }
 
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 

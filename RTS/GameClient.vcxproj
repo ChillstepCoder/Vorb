@@ -241,6 +241,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\MeshBase.cpp" />
+    <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\BuildingMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp" />
@@ -418,6 +419,7 @@
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
+    <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\BuildingMesh.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\MeshBuilder.h" />

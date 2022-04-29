@@ -20,49 +20,49 @@ ItemRenderer::ItemRenderer(const WorldGrid& worldGrid, MaterialRenderer& materia
 }
 
 void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) const {
-    ItemStockpileRenderData& renderData = stockpile.mRenderData;
-    // TODO: Multithread?
-    if (!renderData.mBillboardMesh) {
-        renderData.mBillboardMesh = std::make_unique<TBOBillboardMesh>();
-    }
-    TBOBillboardMesh& mesh = *renderData.mBillboardMesh;
+    //ItemStockpileRenderData& renderData = stockpile.mRenderData;
+    //// TODO: Multithread?
+    //if (!renderData.mBillboardMesh) {
+    //    renderData.mBillboardMesh = std::make_unique<TBOBillboardMesh>();
+    //}
+    //TBOBillboardMesh& mesh = *renderData.mBillboardMesh;
 
-    mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
+    //mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
 
-    for (auto& it : stockpile.mItemContents) {
-        ItemID itemID = it.first;
-        const ItemStockpileRecord& record = it.second;
+    //for (auto& it : stockpile.mItemContents) {
+    //    ItemID itemID = it.first;
+    //    const ItemStockpileRecord& record = it.second;
 
-        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
-        const Item& item = itemRepo.getItem(itemID);
-        // Only points are billboards
-        if (item.mShape != ItemStorageShape::POINT) {
-            continue;
-        }
+    //    ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+    //    const Item& item = itemRepo.getItem(itemID);
+    //    // Only points are billboards
+    //    if (item.mShape != ItemStorageShape::POINT) {
+    //        continue;
+    //    }
 
-        const SubTexture& texture = item.mTexture;
+    //    const SubTexture& texture = item.mTexture;
 
-        for (ui32 index : record.stackLocations) {
-            const ItemStack& stack = stockpile.mStorage[index].stack;
-            // TODO: Z
-            ui32v2 pos2d = ui32v2(index / stockpile.mAABB.width, index % stockpile.mAABB.width);
-            f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
-            for (ui32 i = 0; i < stack.quantity; ++i) {
-                f32v3 billboardPos = pos;
-                // TODO: Not just 5 by 5
-                constexpr ui32 w = 5;
-                constexpr float spacingRatio = 1.0f / w;
-                billboardPos.x += (i % w) * spacingRatio;
-                billboardPos.y += ((i % (w * w)) / w) * spacingRatio;
-                billboardPos.z += (i / (w * w)) * spacingRatio;
-                mesh.addQuad(billboardPos, f32v2(0.3f) * spacingRatio, f32v2(0.0f), 0, texture.mUvRect, COLOR_WHITE, false, 0u, 0u);
-            }
-        }
-    }
+    //    for (ui32 index : record.stackLocations) {
+    //        const ItemStack& stack = stockpile.mStorage[index].stack;
+    //        // TODO: Z
+    //        ui32v2 pos2d = ui32v2(index / stockpile.mAABB.width, index % stockpile.mAABB.width);
+    //        f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
+    //        for (ui32 i = 0; i < stack.quantity; ++i) {
+    //            f32v3 billboardPos = pos;
+    //            // TODO: Not just 5 by 5
+    //            constexpr ui32 w = 5;
+    //            constexpr float spacingRatio = 1.0f / w;
+    //            billboardPos.x += (i % w) * spacingRatio;
+    //            billboardPos.y += ((i % (w * w)) / w) * spacingRatio;
+    //            billboardPos.z += (i / (w * w)) * spacingRatio;
+    //            mesh.addQuad(billboardPos, f32v2(0.3f) * spacingRatio, f32v2(0.0f), 0, texture.mUvRect, COLOR_WHITE, false, 0u, 0u);
+    //        }
+    //    }
+    //}
 
-    mesh.finishMesh(MeshDrawMode::DYNAMIC);
+    //mesh.finishMesh(MeshDrawMode::DYNAMIC);
 
-    renderData.mBillboardMeshDirty = false;
+   // renderData.mBillboardMeshDirty = false;
 }
 
 void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const {
@@ -104,12 +104,12 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
     renderData.mQuadMeshDirty = false;
 }
 
-void ItemRenderer::addItemStackToMesh(TBOBillboardMesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
+void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
 {
     const Item& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
     const SubTexture& texture = item.mTexture;
     const f32v4& uvs = texture.mUvRect;
-    mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
+    //mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
 }
 
 void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3D& camera) const
@@ -125,15 +125,15 @@ void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3
         updateStockpileQuadMesh(stockpile);
     }
 
-    if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
-        renderMesh(stockpile, *renderData.mBillboardMesh, camera);
-    }
+    //if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
+    //    renderMesh(stockpile, *renderData.mBillboardMesh, camera);
+    //}
     if (renderData.mQuadMesh && renderData.mQuadMesh->isValid()) {
         renderMesh(stockpile, *renderData.mQuadMesh, camera);
     }
 }
 
-void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const TBOBillboardMesh& itemMesh, const Camera3D& camera) const {
+void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const {
     VGUniform offsetUniform = mItemBillboardMaterial->mProgram.getUniform("unOffset");
     const f32v3 stockpilePos(stockpile.mAABB.pos.x, stockpile.mAABB.pos.y, 0.0f);
     const f32v3 offset = stockpilePos - camera.getPosition();
@@ -141,7 +141,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const TBOBillboard
     // TODO: Reduce swaps
     mMaterialRenderer.bindMaterialForRender(*mItemBillboardMaterial, nullptr);
     glUniform3fv(offsetUniform, 1, &offset.x);
-    itemMesh.draw(mItemBillboardMaterial->mProgram);
+    itemMesh.draw();
 }
 
 void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const QuadMesh& itemMesh, const Camera3D& camera) const {

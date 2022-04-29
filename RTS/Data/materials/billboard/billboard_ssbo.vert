@@ -1,6 +1,5 @@
-
-#include "../GlobalUbo.glsl"
-#include "../TboBillboardShared.glsl"
+#include "BillboardSSBO.glsl"
+#include "GlobalUbo.glsl"
 
 uniform vec3 unOffset;
 
@@ -10,23 +9,38 @@ out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
 
-#include "../util/wind.glsl"
+
+BillboardData getBillboardData() {
+  return billboardData[(gl_VertexID / 4)];
+}
+
+vec2 getUvsFromTextureIndex(int textureIndex) {
+    vec2 uvMult = (VertexData[gl_VertexID % 4] + 1.0) * 0.5;
+	vec4 vUV = typeData[textureIndex].uvs;
+	vec4 uvAdjusted = vUV;
+    // TODO: Why?
+	uvAdjusted.w = -uvAdjusted.w;
+	uvAdjusted.y -= uvAdjusted.w;
+    return uvAdjusted.xy + uvAdjusted.zw * uvMult;
+}
+
+vec2 getVertexOffsets() {
+    vec2 vertexOffsets = VertexData[gl_VertexID % 4];
+	vertexOffsets.y += UnYOffset;
+	vertexOffsets *= 0.5;
+	return vertexOffsets;
+}
 
 void main() {
 
-	vec4 vPosition = vec4(getPositionFromTbo(), 1.0);
-	vec3 typeSize = getTypeSizeFromTbo();
-	vec2 vDims = typeSize.yz;
-	int type = int(typeSize.x);
-	
-	// Get uniform info
-	vec3 atlasPageRoughnessWind = UnAtlasPageRoughnessWind[type].rgb;
-	fRoughness = atlasPageRoughnessWind.g;
-	float vWindInfluence = atlasPageRoughnessWind.b;
+    BillboardData data = getBillboardData();
+    
+	vec4 vPosition = vec4(data.position, 1.0);
+	vec2 vDims = data.dims;
 	
 	// Compute uvs
-    fUV = getUvsFromType(type);
-    fTextureIndex = int(atlasPageRoughnessWind.r);
+    fUV = getUvsFromTextureIndex(data.texture);
+    fTextureIndex = data.texture;
 	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();
@@ -37,9 +51,6 @@ void main() {
 	
 	vec4 worldPos = vertexPosition + vec4(unOffset, 0.0);
     
-    // Wind
-    worldPos.xyz += CameraRight * getWindAtPosition(Time, vPosition) * vWindInfluence * vertexOffsets.y;
-	
 	vec4 glPos = VP * worldPos;
 	vec4 screenCamera = VP * vec4(CameraFront, 0.0);
 	
@@ -55,11 +66,10 @@ void main() {
 
     fTint = vec4(1.0);
 	
-	// Hardcoded for facing the camera
-	//fTBN = mat3(-CameraUp, -CameraRight, -CameraFront);
 	// Hardcoded for facing up
 	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
-	
+    
+    fRoughness = 0.9;
 	
     gl_Position = glPos;
 }

@@ -42,9 +42,11 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
 
     VGTexture normalTexture = mNormalMapGenerator->generateNormalTexture(texture.id, texture.dims, vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
 
+    assert(texture.id && normalTexture);
      // Generate handle
     TextureHandle handleDiffuse = glGetTextureHandleARB(texture.id);
     TextureHandle handleNormal = glGetTextureHandleARB(normalTexture);
+    assert(handleDiffuse && handleNormal);
     // Residency means it is now fixed in active memory
     // TODO: Only textures referenced by tiles need to be resident?
     glMakeTextureHandleResidentARB(handleDiffuse);

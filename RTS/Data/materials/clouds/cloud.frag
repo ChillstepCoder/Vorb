@@ -1,14 +1,13 @@
-#include "../GlobalUbo.glsl"
+#include "BillboardSSBO.glsl"
+#include "GlobalUbo.glsl"
 
 uniform vec4 unSphereNormalRect;
 uniform float unSphereNormalPage;
-uniform sampler2D unCloudSil;
 uniform sampler2D unCloudNormals;
-uniform sampler2D unSphereNormal;
 
 in vec2 fUV;
 in vec2 fPosition;
-flat in float fAtlasPage;
+flat in int fTextureIndex; // TODO: DELETE
 in vec4 fTint;
 in mat3 fTBN;
 
@@ -18,13 +17,12 @@ void main() {
     vec2 uvTest = vec2(fPosition.x, 1.0 - fPosition.y);
     fNormal.a = 1.0;
     // TODO: Why??
-	vec3 norm = texture(unSphereNormal, fPosition).rgb;
-    norm = norm * 0.00001 + texture(unCloudNormals, uvTest).rgb;
+	vec3 norm = texture(unCloudNormals, uvTest).rgb;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
     
     // Replace alpha
-    fNormal.a = texture(unCloudSil, uvTest).a;
+    fNormal.a = texture(sampler2D(typeData[fTextureIndex].texture.xy), uvTest).a;
 
     // https://gamedev.stackexchange.com/questions/16588/computing-gl-fragdepth
     float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);

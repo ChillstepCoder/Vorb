@@ -61,7 +61,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     for (auto&& batch : cloudManager.mCloudBatches) {
         if (camera.sphereIsVisible(batch.mRootPos, batch.mBoundsRadius)) {
             glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-            batch.mMesh->draw(mCloudMaterial->mProgram);
+            batch.mMesh->draw();
         }
     }
 
@@ -89,7 +89,7 @@ void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const C
     // All clouds are rendered for shadows
     for (auto&& batch : cloudManager.mCloudBatches) {
         glUniform3fv(rootPosUniform, 1, &batch.mRootPos.x);
-        batch.mMesh->draw(mCloudShadowMaterial->mProgram);
+        batch.mMesh->draw();
     }
 }
 

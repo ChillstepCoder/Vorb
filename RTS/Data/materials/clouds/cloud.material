@@ -2,9 +2,5 @@ cloud:
   vert: cloud.vert
   frag: cloud.frag
   textures:
-    - name: cloud_sil
-      uniform: unCloudSil
-    - name: cloud_normals4k
+    - name: cloud_sil_norm
       uniform: unCloudNormals
-    - name: sphere_normal
-      uniform: unSphereNormal

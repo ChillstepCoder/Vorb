@@ -1,18 +1,39 @@
-#include "../GlobalUbo.glsl"
-#include "../TboBillboardShared.glsl"
+#include "BillboardSSBO.glsl"
+#include "GlobalUbo.glsl"
 
 uniform vec3 UnRootPos;
 
 // TODO: Don't use the altas, shrink the coordinates
 out vec2 fUV;
 out vec2 fPosition;
-flat out float fAtlasPage;
+flat out int fTextureIndex;
 out vec4 fTint;
 out float fRoughness;
 out mat3 fTBN;
 
 uniform float DebugFloat1;
 uniform float DebugFloat2;
+
+BillboardData getBillboardData() {
+  return billboardData[(gl_VertexID / 4)];
+}
+
+vec2 getUvsFromTextureIndex(int textureIndex) {
+    vec2 uvMult = (VertexData[gl_VertexID % 4] + 1.0) * 0.5;
+	vec4 vUV = vec4(0.0, 0.0, 1.0, 1.0);
+	vec4 uvAdjusted = vUV;
+    // TODO: Why?
+	uvAdjusted.w = -uvAdjusted.w;
+	uvAdjusted.y -= uvAdjusted.w;
+    return uvAdjusted.xy + uvAdjusted.zw * uvMult;
+}
+
+vec2 getVertexOffsets() {
+    vec2 vertexOffsets = VertexData[gl_VertexID % 4];
+	vertexOffsets.y += UnYOffset;
+	vertexOffsets *= 0.5;
+	return vertexOffsets;
+}
 
 vec3 rotateXY(vec3 inVec, float angle) {
     vec3 rv;
@@ -40,17 +61,14 @@ mat4 rotationMatrix(vec3 axis, float angle) {
 
 void main() {
 
-	vec4 vPosition = vec4(getPositionFromTbo(), 1.0);
-	vec3 typeSize = getTypeSizeFromTbo();
-	vec2 vDims = typeSize.yz;
-	int type = int(typeSize.x);
-	
-	// Get uniform info
-	vec3 atlasPageRoughnessWind = UnAtlasPageRoughnessWind[type].rgb;
-	
+    BillboardData data = getBillboardData();
+    
 	// Compute uvs
-    fUV = getUvsFromType(type);
-    fAtlasPage = atlasPageRoughnessWind.r;
+    fUV = getUvsFromTextureIndex(data.texture);
+
+	vec4 vPosition = vec4(data.position, 1.0);
+	vec2 vDims = data.dims;
+    fTextureIndex = data.texture;
 	
 	
 	// Compute position

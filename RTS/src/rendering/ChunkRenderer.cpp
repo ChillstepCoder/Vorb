@@ -123,7 +123,7 @@ void ChunkRenderer::TryRenderGrassMeshes(const Chunk& chunk, const Material* mat
 void ChunkRenderer::TryRenderBillboardMesh(const Chunk& chunk, const Material* material) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
-        renderData.mBillboardMesh->draw(material->mProgram);
+        renderData.mBillboardMesh->draw();
     }
 }
 
@@ -133,11 +133,7 @@ void ChunkRenderer::InitPostLoad()
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mStandardMaterial = materialManager.getMaterial("standard_tile");
     mGrassMaterial = materialManager.getMaterial("grass");
-#if USE_INSTANCED_BILLBOARDS == 1
-    mBillboardMaterial = materialManager.getMaterial("tbo_billboard");
-#else
-    mBillboardMaterial = materialManager.getMaterial("billboard");
-#endif
+    mBillboardMaterial = materialManager.getMaterial("billboard_ssbo");
     mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper");
     mShadowMapperMaterialBillboard = materialManager.getMaterial("shadow_mapper");
 }

@@ -2,7 +2,7 @@
 
 
 class World;
-class TBOBillboardMesh;
+class Mesh;
 struct SubTexture;
 
 #include "world/ChunkID.h"
@@ -16,7 +16,7 @@ struct CloudBatch {
     f32v3 mRootPos;
     f32 mBoundsRadius; // TODO: AABB
     f32 mFadeAlpha;
-    std::unique_ptr<TBOBillboardMesh> mMesh;
+    std::unique_ptr<Mesh> mMesh;
 };
 
 class CloudManager
@@ -39,7 +39,6 @@ private:
     const SubTexture* mCloudTexture; // TODO: Mesher?
     std::vector<CloudBatch> mCloudBatches;
     std::map<ui32, CloudBatch> mGeneratingBatches; // Use this so we dont need synchronization
-    std::vector<std::unique_ptr<TBOBillboardMesh>> mRecycledMeshes;
     std::vector<i32v2> mCloudSpawnOffsets;
     std::unordered_map<i32 /*yOffset*/, i32 /*xOffset*/> mCloudBoundsCheckMap;
 

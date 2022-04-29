@@ -3,6 +3,7 @@
 #include "Tile.h"
 
 struct TileFileData {
+    f32v3 dims = f32v3(1.0f, 1.0f, 1.0f);
     f32v3 colliderDims = f32v3(0.5f, 0.5f, 1.0f);
     TileShape tileShape = TileShape::BLOCK;
     TileCollisionShape colliderShape = TileCollisionShape::NONE;

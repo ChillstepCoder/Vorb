@@ -1,0 +1,3 @@
+billboard_ssbo:
+  vert: billboard_ssbo.vert
+  frag: billboard_ssbo.frag

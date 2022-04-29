@@ -5,6 +5,7 @@
 #include "world/TileRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/BillboardMeshBuilder.h"
 #include "rendering/QuadMesh.h"
 #include "Random.h"
 #include "options/DebugOptions.h"
@@ -455,19 +456,19 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     ChunkRenderData& renderData = chunk.mChunkRenderData;
     if (!renderData.mChunkMesh) {
         renderData.mChunkMesh = std::make_unique<Mesh>();
-        renderData.mBillboardMesh = std::make_unique<ChunkBillboardMesh>();
+        renderData.mBillboardMesh = std::make_unique<Mesh>();
     }
-    renderData.mBillboardMesh->beginMesh();
 
     const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
     
+    // TODO: Different way than using two shared ptr? Does it matter?
     std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>();
+    std::shared_ptr<BillboardMeshBuilder> billboardMeshBuilder = std::make_shared<BillboardMeshBuilder>();
 
-    Services::Threadpool::ref().addTask([this, &chunk, &renderData, heightData, quadMeshBuilder](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([this, &chunk, &renderData, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
 
         quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
-        ChunkBillboardMesh& billboardMesh = *renderData.mBillboardMesh;
-        billboardMesh.reserveQuadCount(CHUNK_SIZE); // Most chunks will have less than 1 quad per tile
+        billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
 
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
@@ -514,7 +515,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             //    uvs.y += variantY * spriteData.uvs.w;
                             //}
 
-                            billboardMesh.addQuad(tilePosition, f32v2(1.0f), f32v2(0.0f), texture.mId, uvs, COLOR_WHITE, false, 255u, 0u);
+                            // Tile dims needed
+                            billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
@@ -531,14 +533,15 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         chunk.decReadLockNeighbors4();
         chunk.decReadLock();
         chunk.decRefNeighbors4();
-    }, [this, &chunk, quadMeshBuilder]() {
+    }, [this, &chunk, quadMeshBuilder, billboardMeshBuilder]() {
 
         ChunkRenderData& renderData = chunk.mChunkRenderData;
 
+        // Upload mesh buffers
         quadMeshBuilder->finishMesh(*renderData.mChunkMesh, MeshDrawMode::STATIC);
-        renderData.mBillboardMesh->finishMesh(MeshDrawMode::STATIC);
+        billboardMeshBuilder->finishMesh(*renderData.mBillboardMesh, MeshDrawMode::STATIC);
 
-        // Recycle and flag as free
+        // Flag as free
         chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
 
         // No longer need to exist

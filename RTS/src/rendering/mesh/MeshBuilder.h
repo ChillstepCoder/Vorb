@@ -3,9 +3,9 @@
 #include "Vertex.h"
 #include "Mesh.h"
 #include "world/TerrainConstants.h"
-#include "rendering/texture/SubTexture.h"
 
-#define SUBMESH_INDEX_MAIN -1
+struct SubTexture;
+
 typedef i32 SubmeshIndex;
 
 // Keep track of all they types of indices so we can decide to share if needed
@@ -20,6 +20,7 @@ enum class PolyTypeFlags : ui8 {
 
 class MeshBuilder
 {
+    friend class BillboardMeshBuilder;
 public:
 
     static void initStaticIBOs();
@@ -48,7 +49,7 @@ private:
             mTextures.clear();
         }
 
-        // TODO: Pool allocators
+        // TODO: Pool allocators or reserve?
         std::vector<Vertex32> mVerts;
         std::vector<ui32> mIndices;
         std::vector<TextureHandle> mTextures;
@@ -59,7 +60,6 @@ private:
     void initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool allocateIbo);
     void uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);
     void bindVertexAttribs(SubMeshData& subMesh);
-
 
     // TODO: Try both multi-context opengl and pool_allocator
     std::unordered_map<VGTexture, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/>> mTextureToSubmesh;

@@ -1,15 +1,14 @@
-uniform sampler2DArray Atlas;
 
 in vec2 fUV;
-flat in float fAtlasPage;
+flat in int fTextureIndex;
 
 out vec4 fColor;
 
 void main()
 {
-  if (texture(Atlas, vec3(fUV, fAtlasPage)).a < 0.99) {
-    discard;
-  }
+  //if (texture(Atlas, vec3(fUV, fAtlasPage)).a < 0.99) {
+  //  discard;
+  //}
   float depth = gl_FragCoord.z;
   
   // Partial derivatives of depth

@@ -3,5 +3,5 @@
 
 layout(bindless_sampler) uniform;
 layout (std140, binding = 1) uniform TextureUbo {
-    uvec4 Textures[250];
+    uvec4 Textures[256];
 };

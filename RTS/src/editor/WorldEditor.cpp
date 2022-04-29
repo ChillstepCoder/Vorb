@@ -86,6 +86,8 @@ WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world),
 void WorldEditor::update(const Camera3D& camera) {
     const f32v3& pickRay = sDebugOptions.mMousePickRay;
 
+    PreciseTimer timer;
+    // TODO: THIS RAY PICK IS EXTREMELY EXPENSIVE! NEED TO OPTIMIZE TO A RAYMARCH
     mPickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(camera, sDebugOptions.mMousePickRay);
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {

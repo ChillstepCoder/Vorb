@@ -430,8 +430,8 @@ TerrainPickData WorldGrid::pickTerrainFromCameraVector(const Camera3D& camera, c
     const f32v3 rayEnd = rayStart + rayDir * RAY_CHECK_LENGTH;
 
     std::vector<std::pair<f32 /*closeTime*/, ui32> > sortedHits;
-    sortedHits.reserve(30); // TODO: Prevent realloc
 
+    sortedHits.reserve(30); // TODO: Prevent realloc
     for (ui32 i : mActiveHeightmapPatches) {
         const HeightmapPatch& patch = mHeightData[i];
         assert(patch.isDone());
@@ -456,6 +456,9 @@ TerrainPickData WorldGrid::pickTerrainFromCameraVector(const Camera3D& camera, c
     for (auto&& hitPair : sortedHits) {
         const HeightmapPatch& patch = mHeightData[hitPair.second];
         f32v2 worldPos2D = HeightmapPatchID(hitPair.second).getWorldPos();
+        // TODO: Instead of this, raymarch over the grid so we dont iterate the entire patch (BIG PERF)
+        // This is currently a significant performance impact
+
         for (ui32 y = 0; y < HEIGHTMAP_QUAD_WIDTH_PER_PATCH; ++y) {
             for (ui32 x = 0; x < HEIGHTMAP_QUAD_WIDTH_PER_PATCH; ++x) {
                 const ui32 blIndex = y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x;

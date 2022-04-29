@@ -1,0 +1,68 @@
+#pragma once
+
+#include "Mesh.h"
+#include "rendering/texture/SubTexture.h"
+
+#include <boost/container_hash/hash.hpp>
+
+// TBO Billboards
+// TODO: 16 bit
+struct BillboardInstanceData {
+    f32v3 position; // TODO: Compress?
+    f32 type; // Lookup into uniform array
+    f32 sizeX;
+    f32 sizeY; // TODO: Compress
+};
+static_assert(sizeof(BillboardInstanceData) == 24);
+struct SubtextureUniformData {
+    f32v4 uvRect; //TODO: ui16v2?
+    TextureHandle textureDiffuse;
+    TextureHandle textureNormal;
+     // TODO: Color?
+};
+
+class BillboardMeshBuilder
+{
+public:
+    BillboardMeshBuilder();
+    ~BillboardMeshBuilder();
+
+    void addBillboard(f32v3 position, const f32v2& xyDims, const SubTexture& texture);
+    void reserveBillboardCount(ui32 count);
+
+    void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
+
+    // Override allocation to use boost::singleton_pool
+    static void* operator new(size_t count);
+    static void operator delete(void* pointer, size_t size);
+private:
+
+    struct BillboardData {
+        f32v3 mPos;
+        int mTexture;
+        f32v2 mDims;
+        f32v2 PADDING;
+    };
+
+    struct InProgressSubMeshData {
+        void clear() {
+            mBillboards.clear();
+            mSubtextureData.clear();
+        }
+
+        // TODO: Reserve? Pool allocators?
+        std::vector<BillboardData> mBillboards;
+        std::vector<SubtextureUniformData> mSubtextureData;
+    };
+
+    void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* subtextureIndex);
+    void initMeshBuffers(SubMeshData& subMesh);
+    void uploadBufferData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);
+
+    // Map subtexture IDs to submeshes 
+    std::unordered_map<SubTextureID, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/> > mSubtextureLookup;
+    InProgressSubMeshData              mMainSubMeshData;
+    std::vector<InProgressSubMeshData> mSubMeshesData;
+    BoundingSphere                     mBoundingSphere;
+};
+
