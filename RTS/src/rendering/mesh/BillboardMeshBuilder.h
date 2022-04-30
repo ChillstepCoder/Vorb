@@ -41,8 +41,10 @@ private:
         f32v3 mPos;
         int mTexture;
         f32v2 mDims;
-        f32v2 PADDING;
+        f32 mXFlip;
+        f32 PADDING;
     };
+    static_assert(sizeof(BillboardData) == 32);
 
     struct InProgressSubMeshData {
         void clear() {

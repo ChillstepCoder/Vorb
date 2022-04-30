@@ -1,3 +1,4 @@
+#include "BillboardSSBO.glsl"
 
 in vec2 fUV;
 flat in int fTextureIndex;
@@ -6,9 +7,9 @@ out vec4 fColor;
 
 void main()
 {
-  //if (texture(Atlas, vec3(fUV, fAtlasPage)).a < 0.99) {
-  //  discard;
-  //}
+  if (texture(sampler2D(typeData[fTextureIndex].texture.xy), fUV).a < 0.99) {
+    discard;
+  }
   float depth = gl_FragCoord.z;
   
   // Partial derivatives of depth

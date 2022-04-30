@@ -18,13 +18,16 @@ BillboardData getBillboardData() {
   return billboardData[(gl_VertexID / 4)];
 }
 
-vec2 getUvsFromTextureIndex(int textureIndex) {
+vec2 getUvsFromTextureIndex(int textureIndex, float xFlip) {
     vec2 uvMult = (VertexData[gl_VertexID % 4] + 1.0) * 0.5;
 	vec4 vUV = vec4(0.0, 0.0, 1.0, 1.0);
 	vec4 uvAdjusted = vUV;
     // TODO: Why?
 	uvAdjusted.w = -uvAdjusted.w;
 	uvAdjusted.y -= uvAdjusted.w;
+    // Flip if needed
+    uvAdjusted.x -= step(0.0, xFlip) * uvAdjusted.z;
+    uvAdjusted.z *= -xFlip;
     return uvAdjusted.xy + uvAdjusted.zw * uvMult;
 }
 
@@ -64,7 +67,7 @@ void main() {
     BillboardData data = getBillboardData();
     
 	// Compute uvs
-    fUV = getUvsFromTextureIndex(data.texture);
+    fUV = getUvsFromTextureIndex(data.texture, data.xFlip);
 
 	vec4 vPosition = vec4(data.position, 1.0);
 	vec2 vDims = data.dims;
@@ -92,10 +95,6 @@ void main() {
 	vec3 binormal = -worldUp;
     vec3 tangent = worldRight;
 	fTBN = mat3(tangent, binormal, normal);
-    
-	// Hacky way to make the x,z offsets all 1
-	fPosition = clamp(xzOffsetUncompressed * 10.0, -1.0, 1.0);
-	fPosition = (fPosition + 1.0) * 0.5; // 0 - 1 range
 
     fTint = vec4(1.0);
 	

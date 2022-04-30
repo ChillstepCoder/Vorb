@@ -35,17 +35,33 @@ bool vorb::io::containsSubpath(const Path& path, const char* subPath) {
 }
 
 std::string vorb::io::getLeafNameFromFilePathNoExtension(const vio::Path& path) {
-    std::string textureName = path.getLeaf();
-    size_t i = textureName.size();
+    std::string fileName = path.getLeaf();
+    size_t i = fileName.size();
     bool hadExtension = false;
     for (; i > 0; --i) {
-        if (textureName[i] == '.') {
+        if (fileName[i] == '.') {
             hadExtension = true;
             break;
         }
     }
     if (hadExtension) {
-        textureName.resize(i); // Chop off .png
+        fileName.resize(i); // Chop off extension
     }
-    return textureName;
+    return fileName;
+}
+
+std::string vorb::io::getStringNoExtension(const vio::Path& path) {
+    std::string fileName = path.getString();
+    size_t i = fileName.size();
+    bool hadExtension = false;
+    for (; i > 0; --i) {
+        if (fileName[i] == '.') {
+            hadExtension = true;
+            break;
+        }
+    }
+    if (hadExtension) {
+        fileName.resize(i); // Chop off extension
+    }
+    return fileName;
 }

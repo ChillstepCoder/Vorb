@@ -10,7 +10,7 @@
 #include "generation/WorldGeneration.h"
 #include <Vorb/graphics/GLProgram.h>
 
-constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths
+constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[TERRAIN_QUADTREE_MAX_LOD] = { // sqrt(pow(WIDTH, 2) * 2) for diagonal distance widths
     SQ(6000.0f),
     SQ(3000.0f),
     SQ(600.0f),

@@ -33,8 +33,8 @@ private:
 
     void freeMeshForPatch(ui32 patchIndex) override;
 
-    std::unique_ptr<Mesh> mTerrainMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
-    std::unique_ptr<Mesh> mWaterMeshes[FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
+    std::unique_ptr<Mesh> mTerrainMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
+    std::unique_ptr<Mesh> mWaterMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     ui32 mRefCount = 0; // TODO: This is probably unneeded
     WorldGrid* mWorldGrid = nullptr;
 };

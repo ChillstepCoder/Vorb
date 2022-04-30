@@ -6,7 +6,6 @@ uniform float unSphereNormalPage;
 uniform sampler2D unCloudNormals;
 
 in vec2 fUV;
-in vec2 fPosition;
 flat in int fTextureIndex; // TODO: DELETE
 in vec4 fTint;
 in mat3 fTBN;
@@ -14,15 +13,13 @@ in mat3 fTBN;
 layout (location = 0) out vec4 fNormal;
 
 void main() {
-    vec2 uvTest = vec2(fPosition.x, 1.0 - fPosition.y);
-    fNormal.a = 1.0;
     // TODO: Why??
-	vec3 norm = texture(unCloudNormals, uvTest).rgb;
+	vec3 norm = texture(sampler2D(typeData[fTextureIndex].texture.zw), fUV).rgb;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
     
     // Replace alpha
-    fNormal.a = texture(sampler2D(typeData[fTextureIndex].texture.xy), uvTest).a;
+    fNormal.a = texture(sampler2D(typeData[fTextureIndex].texture.xy), fUV).a;
 
     // https://gamedev.stackexchange.com/questions/16588/computing-gl-fragdepth
     float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);

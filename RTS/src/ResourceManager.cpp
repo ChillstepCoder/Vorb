@@ -270,7 +270,12 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             gatherRecursive(entry);
         }
         else if (fileHasExtension(entry, ".png")) {
-            mTextureFiles.emplace_back(entry);
+            // Ignore .norm files they will be grabbed
+            // automatically if needed
+            const nString& str = entry.getString();
+            if (str.size() <= sizeof(".norm.png") || (strcmp(&str[str.size() - 9], ".norm.png") != 0)) {
+                mTextureFiles.emplace_back(entry);
+            }
         }
         else if (fileHasExtension(entry, ".room")) {
             mRoomFiles.emplace_back(entry);

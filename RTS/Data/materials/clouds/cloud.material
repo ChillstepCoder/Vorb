@@ -1,6 +1,3 @@
 cloud:
   vert: cloud.vert
   frag: cloud.frag
-  textures:
-    - name: cloud_sil_norm
-      uniform: unCloudNormals

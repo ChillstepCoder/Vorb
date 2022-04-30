@@ -32,7 +32,8 @@ TextureRepository::~TextureRepository() {
 }
 
 bool TextureRepository::loadTexture(const vio::Path& filePath) {
-    std::string textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
+    // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
+    nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
 
     // Get any metadata
     TextureMetaData metaData = getFileMetadata(filePath);
@@ -40,7 +41,20 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
     // Load and add texture to cache
     vg::Texture texture = mTextureCache.addTexture(filePath, textureName, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
 
-    VGTexture normalTexture = mNormalMapGenerator->generateNormalTexture(texture.id, texture.dims, vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
+    // Check if there is an acompanying normal file
+    VGTexture normalTexture;
+    vio::Path normalTexturePath = getStringNoExtension(filePath) + ".norm.png";
+    if (mIoManager.fileExists(normalTexturePath)) {
+        // Read the normals
+        vg::Texture normalTextureFull = mTextureCache.addTexture(normalTexturePath, vio::getLeafNameFromFilePathNoExtension(normalTexturePath), vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
+        assert(normalTextureFull.dims == texture.dims);
+        normalTexture = normalTextureFull.id;
+    }
+    else {
+        // Generate the normals
+        normalTexture = mNormalMapGenerator->generateNormalTexture(texture.id, texture.dims, vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
+    }
+
 
     assert(texture.id && normalTexture);
      // Generate handle

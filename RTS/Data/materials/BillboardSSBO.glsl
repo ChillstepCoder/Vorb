@@ -14,6 +14,7 @@ struct BillboardData {
    vec3 position;
    int texture;
    vec2 dims;
+   float xFlip;
    // TODO: What else?
 };
 

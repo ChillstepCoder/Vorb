@@ -28,16 +28,9 @@ void BillboardMeshBuilder::addBillboard(f32v3 position, const f32v2& xyDims, con
     ui8 subtextureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &subtextureIndex);
 
-    f32v4 uvs = texture.mUvRect;
-    if (texture.mFlags.isBitSet(SubTextureFlags::RAND_FLIP) && Random::getThreadSafef(position.x, position.y) > 0.5f) {
-        // Flip horizontal
-        uvs.x = uvs.x + uvs.z;
-        uvs.y = uvs.y;
-        uvs.z = -uvs.z;
-        uvs.w = uvs.w;
-    }
+    const f32 xFlip = (f32)(texture.mFlags.isBitSet(SubTextureFlags::RAND_FLIP) && Random::getThreadSafef(position.x, position.y) > 0.5f) ? 1.0f : -1.0f;
 
-    submesh->mBillboards.emplace_back(BillboardData{ position, subtextureIndex, xyDims });
+    submesh->mBillboards.emplace_back(BillboardData{ position, subtextureIndex, xyDims, xFlip });
 }
 
 void BillboardMeshBuilder::reserveBillboardCount(ui32 count) {
