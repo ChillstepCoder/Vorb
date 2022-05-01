@@ -8,8 +8,8 @@
 
 #include "util/IntersectionUtil.h"
 
-#include "rendering/QuadMesh.h"
-#include "rendering/TriangleMesh.h"
+#include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshBuilder.h"
 
 #include "options/DebugOptions.h"
 
@@ -201,17 +201,21 @@ struct ContourEdgeInfo {
 
 void BuildingMesher::buildRoofMesh(const Building& building)
 {
+
+    // TODO: ASYNC
+    MeshBuilder meshBuilder(false);
+
     const ui32AABB2& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mOwnedTilesInAABB;
     BuildingRenderData& renderData = building.mRenderData;
-    // TODO: Not right
 
+    // TODO: Not right
     sHeightMap.reserve(100);
     sPoints.reserve(100);
 
     renderData.mMeshDirty = false;
     if (!renderData.mMesh) {
-        renderData.mMesh = std::make_unique<BuildingMesh>();
+        renderData.mMesh = std::make_unique<Mesh>();
     }
 
     // Detect Edges
@@ -226,7 +230,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     ui32 startX = index % aabb.dims.x;
     ui32 startY = index / aabb.dims.y;
     i32v2 cornerPos(startX, startY);
-    Cartesian edge = Cartesian::DOWN; // We are guarenteed theres always a bottom edge at this corner
+    Cartesian edge = Cartesian::DOWN; // We are guaranteed theres always a bottom edge at this corner
 
     // Debug output
     //std::cout << "GENERATING ROOF\n";
@@ -280,7 +284,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     f32v2 start = building.mAABB.pos;
 
     const SubTexture& texture = Services::ResourceManager::ref().getTexture("roof");
-    BuildingMesh& buildingMesh = *renderData.mMesh;
+    Mesh& buildingMesh = *renderData.mMesh;
 
     // Map gable and contour vertex points so we can move all connected verts
     std::unordered_map<f32v2, f32v2, f32v2hash> gableTargetPoints;
@@ -387,7 +391,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                     points[i].y = convexPoly.vertex(i).y();
                 }
                 // Add to mesh
-                addRoofTriangle(points, start, building, texture, debugColorIndex, buildingMesh);
+                addRoofTriangle(meshBuilder, points, start, building, texture, debugColorIndex, buildingMesh);
             }
             else {
                 // Triangulate higher order polys
@@ -399,7 +403,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                         points[i].y = it->vertex(i)->point().y();
                     }
                     // Add to mesh
-                    addRoofTriangle(points, start, building, texture, debugColorIndex, buildingMesh);
+                    addRoofTriangle(meshBuilder, points, start, building, texture, debugColorIndex, buildingMesh);
                 }
             }
         }
@@ -425,14 +429,14 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             axis = CubeFacing::LEFT;
         }
         //DebugRenderer::drawLineBetweenPoints(first, second, color4(1.0f, 0.0f, 0.0f, 1.0f), BUILDING_DEBUG_LIFETIME);
-        buildingMesh.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, 0, texture.mUvRect, COLOR_WHITE);
+        meshBuilder.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, texture, texture.mUvRect, COLOR_WHITE);
         // Bottom
         f32v3 points[4];
         points[0] = first;
         points[1] = second;
         points[2] = f32v3(start.x + edge.parent2.x, start.y + edge.parent2.y, building.mZPosRoof - ROOF_THICKNESS);
         points[3] = f32v3(start.x + edge.parent1.x, start.y + edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
-        buildingMesh.addQuadBetweenPoints(points, 0, texture.mUvRect, COLOR_WHITE, false);
+        meshBuilder.addQuadBetweenPoints(points, texture, texture.mUvRect, COLOR_WHITE, false);
     }
 
 
@@ -443,25 +447,26 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             const ui32 index = y * aabb.dims.x + x;
             if (ownedTiles.getBit(index)) {
                 f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, building.mZPosRoof);
-                buildingMesh.addAxisAlignedQuad(startPos, f32v2(1.000f), f32v2(0.0f), CubeFacing::BOTTOM, 0, texture.mUvRect, COLOR_WHITE, false);
+                meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, texture, texture.mUvRect, COLOR_WHITE);
             }
         }
     }
-    buildingMesh.finishMesh(MeshDrawMode::STATIC);
+    meshBuilder.finishMesh(buildingMesh, MeshDrawMode::STATIC);
 }
 
 void BuildingMesher::addRoofTriangle(
+    MeshBuilder& meshBuilder,
     const f32v2 points[3],
     f32v2& start,
     const Building& building,
     const SubTexture& texture,
     ui32 debugColorIndex,
-    BuildingMesh& buildingMesh
+    Mesh& buildingMesh
 ) {
     const f32v2 buildingPos(building.mAABB.pos.x, building.mAABB.pos.y);
     const f32v2 buildingCenter = f32v2(building.mAABB.pos) + f32v2(building.mAABB.dims) * 0.5f;
 
-    TriangleVertex verts[3];
+    StandardVertex verts[3];
     bool isInfiniteFace = false;
     for (int i = 0; i < 3; ++i) {
         f32 x = points[i].x;
@@ -479,9 +484,7 @@ void BuildingMesher::addRoofTriangle(
              DebugRenderer::drawWireQuad(verts[i].pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
          }*/
 
-        verts[i].uvTiling = texture.mUvRect;
         verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
-        verts[i].atlasPage = 0;
     }
 
     // The infinite face is not needed for our representation
@@ -508,17 +511,21 @@ void BuildingMesher::addRoofTriangle(
         const ui32v2 uvAxis = AXIS_UV_LOOKUP_FROM_CARTESIAN[e_cast(dir)];
 
         const f32 UV_SCALE = 0.4f;
+        i8v3 compressedNormal = compressNormal(normal);
+        const i8v2 tangent(CUBE_FACING_TANGENTS[e_cast(dir)]);
         // Different texturing for nearly vertical polygons
         if (normal.z > 0.3f) {
             for (int i = 0; i < 3; ++i) {
-                verts[i].normal = normal;
+                verts[i].normal = compressedNormal;
+                verts[i].tangent = tangent;
                 verts[i].uvs.x = (verts[i].pos[uvAxis.x] - buildingPos.x) * UV_SCALE;
                 verts[i].uvs.y = (verts[i].pos[uvAxis.y] - buildingPos.y) * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)] * normal.z;
             }
         }
         else {
             for (int i = 0; i < 3; ++i) {
-                verts[i].normal = normal;
+                verts[i].normal = compressedNormal;
+                verts[i].tangent = tangent;
                 verts[i].uvs.x = (verts[i].pos[uvAxis.x] - buildingPos.x) * UV_SCALE;
                 verts[i].uvs.y = verts[i].pos.z * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)];
             }
@@ -526,6 +533,6 @@ void BuildingMesher::addRoofTriangle(
         if (sDebugOptions.mRoofDebug) {
             DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
         }
-        buildingMesh.addTriangle(verts);
+        meshBuilder.addTriangle(verts, texture, false);
     }
 }

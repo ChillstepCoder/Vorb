@@ -202,8 +202,8 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         }
 
         // TODO: Can we malloc these together?
-        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>();
-        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>();
+        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>(true);
+        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>(true);
 
         if (hasAquired || mWorldGrid->tryAquirePaddedHeightDataAt(id)) {
             // Instantly generate
@@ -226,8 +226,8 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
     }
     else {
         // TODO: Can we malloc these together?
-        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>();
-        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>();
+        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>(true);
+        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>(true);
         // At lower LODs we have to regenerate every time
         // TODO: we actually shouldnt do this.. it ignores diffs
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, terrainBuilder, waterBuilder](ThreadPoolWorkerData*) {

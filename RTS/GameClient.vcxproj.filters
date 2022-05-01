@@ -438,9 +438,6 @@
     <ClCompile Include="src\options\LightingOptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\BuildingMesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\mesh\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -993,9 +990,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\options\LightingOptions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\mesh\BuildingMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\Mesh.h">

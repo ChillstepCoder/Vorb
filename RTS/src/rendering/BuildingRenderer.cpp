@@ -18,7 +18,7 @@ BuildingRenderer::BuildingRenderer(const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer)
 {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mRoofMaterial = materialManager.getMaterial("standard_roof");
+    mRoofMaterial = materialManager.getMaterial("standard_tile");
     mRoofBaseMaterial = materialManager.getMaterial("standard_tile");
     mRoofShadowMaterial = materialManager.getMaterial("shadow_mapper");
     mMesher = std::make_unique<BuildingMesher>();

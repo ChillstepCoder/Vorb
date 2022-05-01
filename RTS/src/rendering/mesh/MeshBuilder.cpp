@@ -35,7 +35,19 @@ const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v2(1, 1)   // BOTTOM
 };
 
+
+MeshBuilder::MeshBuilder(bool useSharedIndexBuffer) : mUsingSharedIndexBuffer(useSharedIndexBuffer) {
+
+}
+
+MeshBuilder::~MeshBuilder() {
+
+}
+
+
 void MeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+    assert(mUsingSharedIndexBuffer); // Shared only
+    
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
     std::vector<Vertex32>& terrainVerts = mMainSubMeshData.mVerts;
     terrainVerts.resize(TERRAIN_MESH_SIZE_VERTS);
@@ -111,6 +123,8 @@ void MeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f
 
 void MeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS])
 {
+    assert(mUsingSharedIndexBuffer); // Shared only
+
     std::vector<Vertex32>& waterVerts = mMainSubMeshData.mVerts;
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
     waterVerts.resize(TERRAIN_MESH_SIZE_VERTS);
@@ -133,6 +147,20 @@ void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, Cu
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    // Add indices if needed
+    if (!mUsingSharedIndexBuffer) {
+        const size_t v = submesh->mVerts.size();
+        std::vector<ui32>& indexData = submesh->mIndices;
+        const size_t ind = indexData.size();
+        indexData.resize(ind + 6u);
+        indexData[ind] = v;
+        indexData[ind + 1u] = v + 1u;
+        indexData[ind + 2u] = v + 2u;
+        indexData[ind + 3u] = v + 2u;
+        indexData[ind + 4u] = v + 3u;
+        indexData[ind + 5u] = v;
+    }
 
     std::vector<Vertex32>& vertexData = submesh->mVerts;
     vertexData.resize(vertexData.size() + 4);
@@ -213,6 +241,20 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    // Add indices if needed
+    if (!mUsingSharedIndexBuffer) {
+        const size_t v = submesh->mVerts.size();
+        std::vector<ui32>& indexData = submesh->mIndices;
+        const size_t ind = indexData.size();
+        indexData.resize(ind + 6u);
+        indexData[ind] = v;
+        indexData[ind + 1u] = v + 1u;
+        indexData[ind + 2u] = v + 2u;
+        indexData[ind + 3u] = v + 2u;
+        indexData[ind + 4u] = v + 3u;
+        indexData[ind + 5u] = v;
+    }
 
     std::vector<Vertex32>& vertexData = submesh->mVerts;
     vertexData.resize(vertexData.size() + 4);
@@ -327,6 +369,194 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
     }
 }
 
+void MeshBuilder::addCartesianQuad(const f32v3& startPos, const f32v3& dims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color) {
+    InProgressSubMeshData* submesh;
+    ui8 textureIndex;
+    getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    // Add indices if needed
+    if (!mUsingSharedIndexBuffer) {
+        const size_t v = submesh->mVerts.size();
+        std::vector<ui32>& indexData = submesh->mIndices;
+        const size_t ind = indexData.size();
+        indexData.resize(ind + 6u);
+        indexData[ind] = v;
+        indexData[ind + 1u] = v + 1u;
+        indexData[ind + 2u] = v + 2u;
+        indexData[ind + 3u] = v + 2u;
+        indexData[ind + 4u] = v + 3u;
+        indexData[ind + 5u] = v;
+    }
+
+    std::vector<Vertex32>& vertexData = submesh->mVerts;
+    vertexData.resize(vertexData.size() + 4);
+
+    StandardVertex* verts = (StandardVertex*)(&vertexData.back() - 3);
+
+    mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
+
+    const i8v3 normal(CUBE_FACING_NORMALS[e_cast(axis)]);
+    const i8v2 tangent(CUBE_FACING_TANGENTS[e_cast(axis)]);
+
+    { // Bottom Left
+        StandardVertex& vbl = verts[0];
+        vbl.pos = startPos;
+        vbl.uvs.x = uvRect.x;
+        vbl.uvs.y = uvRect.y + uvRect.w;
+        vbl.color = color;
+        vbl.textureIndex = textureIndex;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
+    }
+    { // Bottom Right
+        StandardVertex& vbr = verts[1];
+        vbr.pos = startPos;
+        vbr.uvs.x = uvRect.x + uvRect.z;
+        vbr.uvs.y = uvRect.y + uvRect.w;
+        vbr.color = color;
+        vbr.textureIndex = textureIndex;
+        vbr.pos.x += dims.x;
+        vbr.pos.y += dims.y;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
+    }
+    { // Top Right
+        StandardVertex& vtr = verts[2];
+        vtr.pos = startPos;
+        vtr.uvs.x = uvRect.x + uvRect.z;
+        vtr.uvs.y = uvRect.y;
+        vtr.color = color;
+        vtr.textureIndex = textureIndex;
+        vtr.pos += dims;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
+    }
+    { // Top Left
+        StandardVertex& vtl = verts[3];
+        vtl.pos = startPos;
+        vtl.uvs.x = uvRect.x;
+        vtl.uvs.y = uvRect.y;
+        vtl.color = color;
+        vtl.textureIndex = textureIndex;
+        vtl.pos.z += dims.z;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+}
+
+void MeshBuilder::addTriangle(StandardVertex verts[3], const SubTexture& texture, bool calculateNormals) {
+    static_assert(sizeof(StandardVertex) == sizeof(Vertex32));
+
+    assert(!calculateNormals); // Unsupported so far
+    assert(!mUsingSharedIndexBuffer); // Non shared IBO only
+
+    InProgressSubMeshData* submesh;
+    ui8 textureIndex;
+    getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    mPolyTypeFlags.setBit(PolyTypeFlags::INDEXED_TRIANGLES);
+
+    std::vector<Vertex32>& vertexData = submesh->mVerts;
+    std::vector<ui32>& indexData = submesh->mIndices;
+
+    const size_t i = indexData.size();
+    const size_t v = vertexData.size();
+    indexData.resize(i + 3u);
+    vertexData.resize(v + 3u);
+    memcpy(&vertexData[vertexData.size() - 3], verts, sizeof(StandardVertex) * 3);
+    // Set indices
+    for (ui32 j = v; j < vertexData.size(); ++j) {
+        vertexData[j].mStandard.textureIndex = textureIndex;
+    }
+    // TODO: Can we just draw arrays this?
+    indexData[i] = v;
+    indexData[i + 1u] = v + 1u;
+    indexData[i + 2u] = v + 2u;
+}
+
+void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, const f32v4& uvRect, color4 color, bool isPointingUp) {
+    InProgressSubMeshData* submesh;
+    ui8 textureIndex;
+    getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    // Add indices if needed
+    if (!mUsingSharedIndexBuffer) {
+        const size_t v = submesh->mVerts.size();
+        std::vector<ui32>& indexData = submesh->mIndices;
+        const size_t ind = indexData.size();
+        indexData.resize(ind + 6u);
+        indexData[ind] = v;
+        indexData[ind + 1u] = v + 1u;
+        indexData[ind + 2u] = v + 2u;
+        indexData[ind + 3u] = v + 2u;
+        indexData[ind + 4u] = v + 3u;
+        indexData[ind + 5u] = v;
+    }
+
+    std::vector<Vertex32>& vertexData = submesh->mVerts;
+    vertexData.resize(vertexData.size() + 4);
+
+    StandardVertex* verts = (StandardVertex*)(&vertexData.back() - 3);
+
+    mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
+
+    // Compute tangents and normals
+    f32v3 tangentF = glm::normalize(vertPoints[1] - vertPoints[0]);
+    f32v3 normalf = glm::normalize(glm::cross(tangentF, vertPoints[3] - vertPoints[0]));
+    if (isPointingUp) {
+        if (normalf.z < 0.0f) {
+            normalf.z = -normalf.z;
+        }
+    }
+    else if (normalf.z > 0.0f) {
+        normalf.z = -normalf.z;
+    }
+    const i8v3 normal = compressNormal(normalf);
+    i8v3 tangent3 = compressNormal(tangentF);
+    i8v2 tangent(tangent3.x, tangent3.y);
+
+    { // Bottom Left
+        StandardVertex& vbl = verts[0];
+        vbl.pos = vertPoints[0];
+        vbl.uvs.x = uvRect.x;
+        vbl.uvs.y = uvRect.y + uvRect.w;
+        vbl.color = color;
+        vbl.textureIndex = textureIndex;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
+    }
+    { // Bottom Right
+        StandardVertex& vbr = verts[1];
+        vbr.pos = vertPoints[1];
+        vbr.uvs.x = uvRect.x + uvRect.z;
+        vbr.uvs.y = uvRect.y + uvRect.w;
+        vbr.color = color;
+        vbr.textureIndex = textureIndex;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
+    }
+    { // Top Right
+        StandardVertex& vtr = verts[2];
+        vtr.pos = vertPoints[2];
+        vtr.uvs.x = uvRect.x + uvRect.z;
+        vtr.uvs.y = uvRect.y;
+        vtr.color = color;
+        vtr.textureIndex = textureIndex;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
+    }
+    { // Top Left
+        StandardVertex& vtl = verts[3];
+        vtl.pos = vertPoints[3];
+        vtl.uvs.x = uvRect.x;
+        vtl.uvs.y = uvRect.y;
+        vtl.color = color;
+        vtl.textureIndex = textureIndex;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+}
+
 void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
 
     // return blank mesh if we have no geometry
@@ -365,6 +595,9 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
         assert(!mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN));
     }
     static_assert(e_cast(PolyTypeFlags::COUNT) == 5, "Update any new shared IBO");
+
+    // Make sure we didn't fuck up
+    assert(usingSharedIbo == mUsingSharedIndexBuffer && "Mesh was flagged improperly as shared index buffer");
 
     // Allocate all buffers if needed
     initMeshBuffers(mesh.mMainMesh, usingTextureUbo, !usingSharedIbo);

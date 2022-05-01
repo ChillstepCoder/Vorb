@@ -10,10 +10,17 @@
 #include "city/CityPlot.h"
 
 #include "definitions/BuildingDef.h"
-#include "rendering/mesh/BuildingMesh.h"
+#include "rendering/mesh/Mesh.h"
+
+class Mesh;
 
 struct BuildingRenderData {
-    std::unique_ptr<BuildingMesh> mMesh;
+    BuildingRenderData() = default;
+    ~BuildingRenderData();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(BuildingRenderData);
+
+    std::unique_ptr<Mesh> mMesh;
     bool mMeshDirty = true;
 };
 

@@ -462,7 +462,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
     
     // TODO: Different way than using two shared ptr? Does it matter?
-    std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>();
+    std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
     std::shared_ptr<BillboardMeshBuilder> billboardMeshBuilder = std::make_shared<BillboardMeshBuilder>();
 
     Services::Threadpool::ref().addTask([this, &chunk, &renderData, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {

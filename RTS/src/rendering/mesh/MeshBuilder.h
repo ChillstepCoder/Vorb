@@ -22,6 +22,8 @@ class MeshBuilder
 {
     friend class BillboardMeshBuilder;
 public:
+    MeshBuilder(bool useSharedIndexBuffer);
+    ~MeshBuilder();
 
     static void initStaticIBOs();
 
@@ -32,9 +34,14 @@ public:
     // Geometry builders
     void setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
     void setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]);
+    
     void addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color);
     void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const SubTexture& texture, color4 color, bool flipTriangleDir);
+    void addCartesianQuad(const f32v3& startPos, const f32v3& dims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color);
+    void addTriangle(StandardVertex verts[3], const SubTexture& texture, bool calculateNormals);
+    void addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, const f32v4& uvRect, color4 color, bool isPointingUp);
 
+    // Upload buffers
     void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
 
     // Override allocation to use boost::singleton_pool
@@ -67,6 +74,7 @@ private:
     std::vector<InProgressSubMeshData> mSubMeshesData;
     BoundingSphere                     mBoundingSphere;
     BitFlags<PolyTypeFlags>            mPolyTypeFlags;
+    bool                               mUsingSharedIndexBuffer;
 
     // Shared index buffers
     static VGBuffer sQuadIbo;

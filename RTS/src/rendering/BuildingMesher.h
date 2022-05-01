@@ -4,6 +4,7 @@
 
 class ResourceManager;
 class Building;
+class MeshBuilder;
 
 
 constexpr ui32 ROOF_VERTEX_CORNER_TABLE_SIZE = 16; // 4^2
@@ -16,12 +17,13 @@ public:
     void buildRoofMesh(const Building& building);
 
     void addRoofTriangle(
+        MeshBuilder& meshBuilder,
         const f32v2 points[3],
         f32v2& start,
         const Building& building,
         const SubTexture& texture,
         ui32 debugColorIndex,
-        BuildingMesh& buildingMesh
+        Mesh& buildingMesh
     );
 
 private:
