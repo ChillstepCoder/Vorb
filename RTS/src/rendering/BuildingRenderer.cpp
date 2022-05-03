@@ -12,6 +12,8 @@
 #include "rendering/BuildingMesher.h"
 #include "ResourceManager.h"
 
+#include "camera/Camera3D.h"
+
 #include "DebugRenderer.h"
 
 BuildingRenderer::BuildingRenderer(const MaterialRenderer& materialRenderer) :
@@ -29,7 +31,7 @@ BuildingRenderer::~BuildingRenderer()
 
 }
 
-void BuildingRenderer::renderBuildingRoof(const Building& building)
+void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera3D& camera)
 {
 
     if (sDebugOptions.mRoofDebug) {
@@ -46,16 +48,22 @@ void BuildingRenderer::renderBuildingRoof(const Building& building)
     // mesh.draw(material.mProgram);
     // TODO: Fix invalid meshes
     if (building.mRenderData.mMesh->isValid()) {
-        mMaterialRenderer.renderMesh(*building.mRenderData.mMesh, *mRoofMaterial);
+        mMaterialRenderer.bindMaterialForRender(*mRoofMaterial);
+        f32v3 offset = f32v3(building.mAABB.getBottomLeft().x, building.mAABB.getBottomLeft().y, 0.0f) - camera.getPosition();
+        glUniform3fv(mRoofMaterial->getUniform("unOffset"), 1, &offset.x);
+        building.mRenderData.mMesh->draw();
     }
     //if (building.mRenderData.mRoofMesh->isValid()) {
     //    mMaterialRenderer.renderMesh(*building.mRenderData.mRoofMesh, *mRoofBaseMaterial);
     //}
 }
 
-void BuildingRenderer::renderBuildingShadows(const Building& building) {
+void BuildingRenderer::renderBuildingShadows(const Building& building, const Camera3D& camera) {
     // TODO: Fix invalid meshes
     if (building.mRenderData.mMesh->isValid()) {
-        mMaterialRenderer.renderMesh(*building.mRenderData.mMesh, *mRoofShadowMaterial);
+        mMaterialRenderer.bindMaterialForRender(*mRoofShadowMaterial);
+        f32v3 offset = f32v3(building.mAABB.getBottomLeft().x, building.mAABB.getBottomLeft().y, 0.0f) - camera.getPosition();
+        glUniform3fv(mRoofShadowMaterial->getUniform("unOffset"), 1, &offset.x);
+        building.mRenderData.mMesh->draw();
     }
 }

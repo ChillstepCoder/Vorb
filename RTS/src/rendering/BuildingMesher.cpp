@@ -13,6 +13,8 @@
 
 #include "options/DebugOptions.h"
 
+#include "Random.h"
+
 //CGal
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Polygon_2.h>
@@ -60,6 +62,31 @@ public:
         size_t seed = 0;
         boost::hash_combine(seed, v.x);
         boost::hash_combine(seed, v.y);
+        return seed;
+    }
+};
+
+class f32v3hash {
+public:
+    size_t operator()(const f32v3& v) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, v.x);
+        boost::hash_combine(seed, v.y);
+        boost::hash_combine(seed, v.z);
+        return seed;
+    }
+};
+
+class f32v3pairhash {
+public:
+    size_t operator()(const std::pair<f32v3, f32v3>& v) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, v.first.x);
+        boost::hash_combine(seed, v.first.y);
+        boost::hash_combine(seed, v.first.z);
+        boost::hash_combine(seed, v.second.x);
+        boost::hash_combine(seed, v.second.y);
+        boost::hash_combine(seed, v.second.z);
         return seed;
     }
 };
@@ -197,6 +224,7 @@ struct ContourEdgeInfo {
     f32v3 parent1;
     f32v3 v2;
     f32v3 parent2;
+    Cartesian dir;
 };
 
 void BuildingMesher::buildRoofMesh(const Building& building)
@@ -283,7 +311,8 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     SsPtr iss = CGAL::create_interior_straight_skeleton_2(sCgalPoly.vertices_begin(), sCgalPoly.vertices_end());
     f32v2 start = building.mAABB.pos;
 
-    const SubTexture& texture = Services::ResourceManager::ref().getTexture("roof");
+    const SubTexture& shinglesTexture = Services::ResourceManager::ref().getTexture("roof");
+    const SubTexture& rawWoodTexture = Services::ResourceManager::ref().getTexture("raw_wood_dark");
     Mesh& buildingMesh = *renderData.mMesh;
 
     // Map gable and contour vertex points so we can move all connected verts
@@ -294,6 +323,10 @@ void BuildingMesher::buildRoofMesh(const Building& building)
     // For thickening
     std::vector<ContourEdgeInfo> contourEdges;
     contourEdges.reserve(20);
+
+    // For bisector board placement
+    std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
+    bisectorBoardPositions.reserve(20);
 
     // Gather and reposition verts
     ui32 debugColorIndex = 0;
@@ -307,6 +340,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             // Detect gable points
             auto&& gableIt = gableTargetPoints.find(f32v2(he->vertex()->point().x(), he->vertex()->point().y()));
             const bool isGablePoint = gableIt != gableTargetPoints.end();
+            const bool isContourEdge = he->vertex()->is_contour() && he->next()->vertex()->is_contour();
             
             f32 x, y, t, h;
             if (gableIt != gableTargetPoints.end()) {
@@ -327,32 +361,82 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                 y = he->vertex()->point().y();
                 t = he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
+                
                 // Extrude contours
                 if (he->vertex()->is_contour()) {
                     assert(t == 0.0f);
                     auto&& extrudeIt = contourExtrudePositions.find(f32v2(x, y));
                     if (extrudeIt != contourExtrudePositions.end()) {
+                        // Create a column
+                        const f32v3 boardStart(x, y, building.mZPosFloor - 0.2f);
+                        const f32v3 boardEnd(x, y, building.mZPosRoof);
+                        meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v3(0.1f), rawWoodTexture, 1.0f);
+
                         const f32v3& extrudePosition = extrudeIt->second;
+                        // Extrude
                         x = extrudePosition.x;
                         y = extrudePosition.y;
                         h = extrudePosition.z;
                     }
                 }
             }
+
+            // Edge boards
+            if (!isContourEdge) {
+                const f32v3 boardStart(x, y, building.mZPosRoof + h + ROOF_THICKNESS);
+                // Check if next point is extruded
+                f32 nextX = he->next()->vertex()->point().x();
+                f32 nextY = he->next()->vertex()->point().y();
+                f32 nextH = he->next()->vertex()->time() * ROOF_HEIGHT_MULT;
+                auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextX, nextY));
+                if (extrudeIt != contourExtrudePositions.end()) {
+                    const f32v3& extrudePosition = extrudeIt->second;
+                    nextX = extrudePosition.x;
+                    nextY = extrudePosition.y;
+                    nextH = extrudePosition.z;
+                }
+
+                const f32v3 boardEnd(nextX, nextY, building.mZPosRoof + nextH + ROOF_THICKNESS);
+
+                // Make sure we dont double add
+                if (bisectorBoardPositions.find(std::make_pair(boardStart, boardEnd)) == bisectorBoardPositions.end() &&
+                    bisectorBoardPositions.find(std::make_pair(boardEnd, boardStart)) == bisectorBoardPositions.end()) {
+                    bisectorBoardPositions.insert(std::make_pair(boardStart, boardEnd));
+                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v3(0.1f), rawWoodTexture, 1.0f);
+                }
+            }
+
             sPoints.emplace_back(x, y);
             sHeightMap[f32v2(x, y)] = h;
 
             // Mark contour edges for thickening
-            if (he->vertex()->is_contour() && he->next()->vertex()->is_contour()) {
+            if (isContourEdge) {
                 const auto& thisVert = he->vertex()->point();
                 const auto& nextVert = he->next()->vertex()->point();
                 auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextVert.x(), nextVert.y()));
                 assert(extrudeIt != contourExtrudePositions.end());
+                // Figure out direction based on position offsets
+                Cartesian dir;
+                constexpr f32 DIR_EPSILON = 0.01f;
+                if (nextVert.x() > thisVert.x() + DIR_EPSILON) {
+                    dir = Cartesian::DOWN;
+                }
+                else if (nextVert.x() < thisVert.x() - DIR_EPSILON) {
+                    dir = Cartesian::UP;
+                }
+                else if (nextVert.y() > thisVert.y() + DIR_EPSILON) {
+                    dir = Cartesian::RIGHT;
+                }
+                else {
+                    dir = Cartesian::LEFT;
+                }
+
                 contourEdges.emplace_back(ContourEdgeInfo{
                     f32v3(x, y, h),
                     f32v3(thisVert.x(), thisVert.y(), 0.0f),
                     f32v3(extrudeIt->second.x, extrudeIt->second.y, extrudeIt->second.z),
                     f32v3(nextVert.x(), nextVert.y(), 0.0f),
+                    dir
                     });
             }
 
@@ -391,7 +475,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                     points[i].y = convexPoly.vertex(i).y();
                 }
                 // Add to mesh
-                addRoofTriangle(meshBuilder, points, start, building, texture, debugColorIndex, buildingMesh);
+                addRoofTriangle(meshBuilder, points, building, shinglesTexture, debugColorIndex, buildingMesh);
             }
             else {
                 // Triangulate higher order polys
@@ -403,7 +487,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                         points[i].y = it->vertex(i)->point().y();
                     }
                     // Add to mesh
-                    addRoofTriangle(meshBuilder, points, start, building, texture, debugColorIndex, buildingMesh);
+                    addRoofTriangle(meshBuilder, points, building, shinglesTexture, debugColorIndex, buildingMesh);
                 }
             }
         }
@@ -413,8 +497,8 @@ void BuildingMesher::buildRoofMesh(const Building& building)
 
     // Thickness
     for (auto&& edge : contourEdges) {
-        f32v3 first(start.x + edge.v1.x, start.y + edge.v1.y, edge.v1.z + building.mZPosRoof);
-        f32v3 second(start.x + edge.v2.x, start.y + edge.v2.y, edge.v2.z + building.mZPosRoof);
+        f32v3 first(edge.v1.x, edge.v1.y, edge.v1.z + building.mZPosRoof);
+        f32v3 second(edge.v2.x, edge.v2.y, edge.v2.z + building.mZPosRoof);
         CubeFacing axis;
         if (first.x < second.x) {
             axis = CubeFacing::FRONT;
@@ -429,25 +513,43 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             axis = CubeFacing::LEFT;
         }
         //DebugRenderer::drawLineBetweenPoints(first, second, color4(1.0f, 0.0f, 0.0f, 1.0f), BUILDING_DEBUG_LIFETIME);
-        meshBuilder.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, texture, texture.mUvRect, COLOR_WHITE);
+        meshBuilder.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, shinglesTexture, shinglesTexture.mUvRect, COLOR_WHITE);
         // Bottom
         f32v3 points[4];
         points[0] = first;
         points[1] = second;
-        points[2] = f32v3(start.x + edge.parent2.x, start.y + edge.parent2.y, building.mZPosRoof - ROOF_THICKNESS);
-        points[3] = f32v3(start.x + edge.parent1.x, start.y + edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, texture, texture.mUvRect, COLOR_WHITE, false);
+        points[2] = f32v3(edge.parent2.x, edge.parent2.y, building.mZPosRoof - ROOF_THICKNESS);
+        points[3] = f32v3(edge.parent1.x, edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
+        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, 1.0f, COLOR_WHITE, false);
+
+        // Step along the edge and add extruded board pieces
+        size_t randSeed = f32v3pairhash
+        constexpr f32 BOARDS_PER_METER = 2;
+        constexpr f32 BOARD_DISTANCE = 0.25f + ROOF_EXTRUDE_DISTANCE;
+        const f32v3 diff = second - first;
+        const f32 distance = glm::length(diff);
+        const f32v3 iterNormal = diff / distance;
+        const f32v3& edgeNormal = CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
+        const int boardCount = (int)round(distance * BOARDS_PER_METER);
+        const f32 boardGapSize = distance / (boardCount + 1);
+        const f32v2 boardHalfDims = f32v2(0.05f);
+        const f32v3 start = first - edgeNormal * ROOF_EXTRUDE_DISTANCE + f32v3(0.0f, 0.0f, 0.15 + boardHalfDims.y);
+        for (int i = 1; i <= boardCount; ++i) {
+            // Extruded boards
+            f32v3 offset = iterNormal * (i * boardGapSize);
+            f32v3 p1 = start + offset;
+            f32v3 p2 = p1 + edgeNormal * BOARD_DISTANCE - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT);
+            meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodTexture, 1.0f);
+        }
     }
-
-
 
     // Base of roof
     for (ui32 y = 0; y < aabb.dims.y; ++y) {
         for (ui32 x = 0; x < aabb.dims.x; ++x) {
             const ui32 index = y * aabb.dims.x + x;
             if (ownedTiles.getBit(index)) {
-                f32v3 startPos(aabb.pos.x + x, aabb.pos.y + y, building.mZPosRoof);
-                meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, texture, texture.mUvRect, COLOR_WHITE);
+                f32v3 startPos(x, y, building.mZPosRoof);
+                meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
             }
         }
     }
@@ -457,13 +559,11 @@ void BuildingMesher::buildRoofMesh(const Building& building)
 void BuildingMesher::addRoofTriangle(
     MeshBuilder& meshBuilder,
     const f32v2 points[3],
-    f32v2& start,
     const Building& building,
     const SubTexture& texture,
     ui32 debugColorIndex,
     Mesh& buildingMesh
 ) {
-    const f32v2 buildingPos(building.mAABB.pos.x, building.mAABB.pos.y);
     const f32v2 buildingCenter = f32v2(building.mAABB.pos) + f32v2(building.mAABB.dims) * 0.5f;
 
     StandardVertex verts[3];
@@ -478,7 +578,7 @@ void BuildingMesher::addRoofTriangle(
         }
         f32 deg1 = sHeightMap[f32v2(x, y)];
 
-        verts[i].pos = f32v3(start.x + x, start.y + y, building.mZPosRoof + deg1 + ROOF_THICKNESS);
+        verts[i].pos = f32v3(x, y, building.mZPosRoof + deg1 + ROOF_THICKNESS);
 
         /* if (sDebugOptions.mRoofDebug) {
              DebugRenderer::drawWireQuad(verts[i].pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.15f + debugColorIndex * 0.015f), DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
@@ -518,21 +618,21 @@ void BuildingMesher::addRoofTriangle(
             for (int i = 0; i < 3; ++i) {
                 verts[i].normal = compressedNormal;
                 verts[i].tangent = tangent;
-                verts[i].uvs.x = (verts[i].pos[uvAxis.x] - buildingPos.x) * UV_SCALE;
-                verts[i].uvs.y = (verts[i].pos[uvAxis.y] - buildingPos.y) * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)] * normal.z;
+                verts[i].uvs.x = verts[i].pos[uvAxis.x] * UV_SCALE;
+                verts[i].uvs.y = (verts[i].pos[uvAxis.y]) * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)] * normal.z;
             }
         }
         else {
             for (int i = 0; i < 3; ++i) {
                 verts[i].normal = compressedNormal;
                 verts[i].tangent = tangent;
-                verts[i].uvs.x = (verts[i].pos[uvAxis.x] - buildingPos.x) * UV_SCALE;
+                verts[i].uvs.x = (verts[i].pos[uvAxis.x]) * UV_SCALE;
                 verts[i].uvs.y = verts[i].pos.z * UV_SCALE * AXIS_V_DIR_FROM_CARTESIAN[e_cast(dir)];
             }
         }
-        if (sDebugOptions.mRoofDebug) {
+       /* if (sDebugOptions.mRoofDebug) {
             DebugRenderer::drawWireTriangle(verts[0].pos, verts[1].pos, verts[2].pos, DEBUG_COLOR_ARRAY[debugColorIndex], BUILDING_DEBUG_LIFETIME);
-        }
+        }*/
         meshBuilder.addTriangle(verts, texture, false);
     }
 }

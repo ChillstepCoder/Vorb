@@ -156,6 +156,12 @@ const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
     i32v2(1,  0), // RIGHT
     i32v2(0,  1), // UP
 };
+const f32v3 CARTESIAN_NORMALS_3D[CARTESIAN_COUNT] = {
+    f32v3(0, -1, 0), // DOWN
+    f32v3(-1, 0, 0), // LEFT
+    f32v3(1,  0, 0), // RIGHT
+    f32v3(0,  1, 0), // UP
+};
 const i32v2 CARTESIAN_EDGE_DIRS_ABS[CARTESIAN_COUNT] = {
     i32v2(1, 0), // DOWN
     i32v2(0, 1), // LEFT

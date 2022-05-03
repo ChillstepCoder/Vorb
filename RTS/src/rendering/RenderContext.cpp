@@ -396,11 +396,11 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     for (auto&& city : cities.mNodes) {
         const std::vector<Building>& buildings = city->getBuildings();
         for (auto&& building : buildings) {
-            mBuildingRenderer->renderBuildingRoof(building);
+            mBuildingRenderer->renderBuildingRoof(building, camera);
         }
     }
     for (auto&& building : mWorld.mLooseBuildingsTMP) {
-        mBuildingRenderer->renderBuildingRoof(*building);
+        mBuildingRenderer->renderBuildingRoof(*building, camera);
     }
 
     // Ambient occlusion
@@ -467,8 +467,11 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             for (auto&& city : cities.mNodes) {
                 const std::vector<Building>& buildings = city->getBuildings();
                 for (auto& building : buildings) {
-                    mBuildingRenderer->renderBuildingShadows(building);
+                    mBuildingRenderer->renderBuildingShadows(building, camera);
                 }
+            }
+            for (auto&& building : mWorld.mLooseBuildingsTMP) {
+                mBuildingRenderer->renderBuildingShadows(*building, camera);
             }
 
 

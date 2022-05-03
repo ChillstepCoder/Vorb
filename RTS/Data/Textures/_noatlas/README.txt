@@ -1,1 +1,0 @@
-This is for files that should not be in a texture atlas

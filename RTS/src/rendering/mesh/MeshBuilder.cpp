@@ -474,7 +474,11 @@ void MeshBuilder::addTriangle(StandardVertex verts[3], const SubTexture& texture
     indexData[i + 2u] = v + 2u;
 }
 
-void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, const f32v4& uvRect, color4 color, bool isPointingUp) {
+void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, f32 uvScale, color4 color, bool isPointingUp) {
+    addQuadBetweenPoints(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], texture, uvScale, color, isPointingUp);
+}
+
+void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32 uvScale, color4 color, bool isPointingUp) {
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
@@ -501,8 +505,8 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTextu
     mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
 
     // Compute tangents and normals
-    f32v3 tangentF = glm::normalize(vertPoints[1] - vertPoints[0]);
-    f32v3 normalf = glm::normalize(glm::cross(tangentF, vertPoints[3] - vertPoints[0]));
+    f32v3 tangentF = glm::normalize(v1 - v0);
+    f32v3 normalf = glm::normalize(glm::cross(tangentF, v3 - v0));
     if (isPointingUp) {
         if (normalf.z < 0.0f) {
             normalf.z = -normalf.z;
@@ -515,11 +519,12 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTextu
     i8v3 tangent3 = compressNormal(tangentF);
     i8v2 tangent(tangent3.x, tangent3.y);
 
+    // TODO: These UV calculations are only accurate for perfect quads, for squished quads it wont work
     { // Bottom Left
         StandardVertex& vbl = verts[0];
-        vbl.pos = vertPoints[0];
-        vbl.uvs.x = uvRect.x;
-        vbl.uvs.y = uvRect.y + uvRect.w;
+        vbl.pos = v0;
+        vbl.uvs.x = 0.0f;
+        vbl.uvs.y = 0.0f;
         vbl.color = color;
         vbl.textureIndex = textureIndex;
         vbl.normal = normal;
@@ -527,9 +532,9 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTextu
     }
     { // Bottom Right
         StandardVertex& vbr = verts[1];
-        vbr.pos = vertPoints[1];
-        vbr.uvs.x = uvRect.x + uvRect.z;
-        vbr.uvs.y = uvRect.y + uvRect.w;
+        vbr.pos = v1;
+        vbr.uvs.x = uvScale * glm::length(v1 - v0);
+        vbr.uvs.y = 0.0f;
         vbr.color = color;
         vbr.textureIndex = textureIndex;
         vbr.normal = normal;
@@ -537,9 +542,9 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTextu
     }
     { // Top Right
         StandardVertex& vtr = verts[2];
-        vtr.pos = vertPoints[2];
-        vtr.uvs.x = uvRect.x + uvRect.z;
-        vtr.uvs.y = uvRect.y;
+        vtr.pos = v2;
+        vtr.uvs.x = uvScale * glm::length(v2 - v3);
+        vtr.uvs.y = uvScale * glm::length(v2 - v1);
         vtr.color = color;
         vtr.textureIndex = textureIndex;
         vtr.normal = normal;
@@ -547,14 +552,52 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTextu
     }
     { // Top Left
         StandardVertex& vtl = verts[3];
-        vtl.pos = vertPoints[3];
-        vtl.uvs.x = uvRect.x;
-        vtl.uvs.y = uvRect.y;
+        vtl.pos = v3;
+        vtl.uvs.x = uvScale * 0.0f;
+        vtl.uvs.y = uvScale * glm::length(v3 - v0);
         vtl.color = color;
         vtl.textureIndex = textureIndex;
         vtl.normal = normal;
         vtl.tangent = tangent;
     }
+}
+
+void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32 uvScale) {
+    f32v3 offset = p2 - p1;
+    f32v3 tangent = glm::cross(offset, f32v3(0.0f, 0.0f, 1.0f));
+    // If vertical board, new tangent
+    if (glm::length2(tangent) < 0.00001f) {
+        tangent = glm::cross(offset, f32v3(1.0f, 0.0f, 0.0f));
+    }
+    tangent = glm::normalize(tangent);
+    f32v3 bitangent = glm::normalize(glm::cross(tangent, offset));
+
+    f32v3 pointsP1[4];
+    pointsP1[0] = p1 - tangent * halfDims.x - bitangent * halfDims.y; // BL
+    pointsP1[1] = p1 + tangent * halfDims.x - bitangent * halfDims.y; // BR
+    pointsP1[2] = p1 + tangent * halfDims.x + bitangent * halfDims.y; // TR
+    pointsP1[3] = p1 - tangent * halfDims.x + bitangent * halfDims.y; // TL
+
+    f32v3 pointsP2[4];
+    pointsP2[0] = p2 - tangent * halfDims.x - bitangent * halfDims.y; // BL
+    pointsP2[1] = p2 + tangent * halfDims.x - bitangent * halfDims.y; // BR
+    pointsP2[2] = p2 + tangent * halfDims.x + bitangent * halfDims.y; // TR
+    pointsP2[3] = p2 - tangent * halfDims.x + bitangent * halfDims.y; // TL
+
+    // P1 cap
+    addQuadBetweenPoints(pointsP1, texture, uvScale, COLOR_WHITE, true);
+    // P2 cap
+    addQuadBetweenPoints(pointsP2, texture, uvScale, COLOR_WHITE, true);
+
+    // Bottom
+    addQuadBetweenPoints(pointsP1[0], pointsP1[1], pointsP2[1], pointsP2[0], texture, uvScale, COLOR_WHITE, false);
+    // Left
+    addQuadBetweenPoints(pointsP1[0], pointsP1[3], pointsP2[3], pointsP2[0], texture, uvScale, COLOR_WHITE, false);
+    // Right
+    addQuadBetweenPoints(pointsP1[1], pointsP1[2], pointsP2[2], pointsP2[1], texture, uvScale, COLOR_WHITE, false);
+    // Top
+    addQuadBetweenPoints(pointsP1[2], pointsP1[3], pointsP2[3], pointsP2[2], texture, uvScale, COLOR_WHITE, false);
+
 }
 
 void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {

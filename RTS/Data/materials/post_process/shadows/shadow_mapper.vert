@@ -1,5 +1,5 @@
 // Input
-in vec3 vPosition; // Position in world space
+layout(location = 0) in vec3 vPosition; // Position in world space
 #include "../../GlobalUbo.glsl"
 
 uniform vec3 unOffset;

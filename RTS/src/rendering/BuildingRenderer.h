@@ -13,8 +13,8 @@ public:
     BuildingRenderer(const MaterialRenderer& materialRenderer);
     ~BuildingRenderer();
 
-    void renderBuildingRoof(const Building& building);
-    void renderBuildingShadows(const Building& building);
+    void renderBuildingRoof(const Building& building, const Camera3D& camera);
+    void renderBuildingShadows(const Building& building, const Camera3D& camera);
 
 private:
 
