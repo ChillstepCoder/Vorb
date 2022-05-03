@@ -15,6 +15,7 @@ namespace Random {
 
     extern ui32 getThreadSafe(ui32 x, ui32 y);
     extern float getThreadSafef(ui32 x, ui32 y);
+    extern float getThreadSafef(ui64 x);
 
     class RandomPermutationTable {
     public:

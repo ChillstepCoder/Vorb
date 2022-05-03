@@ -28,6 +28,7 @@ public:
     static void initStaticIBOs();
 
     void reserveVertexCount(ui32 count);
+    void reserveIndexCount(ui32 count);
 
     void setBoundingSphere(BoundingSphere sphere) { mBoundingSphere = sphere; }
 

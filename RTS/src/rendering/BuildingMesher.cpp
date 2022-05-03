@@ -224,14 +224,21 @@ struct ContourEdgeInfo {
     f32v3 parent1;
     f32v3 v2;
     f32v3 parent2;
-    Cartesian dir;
 };
+
+f32 randFromf32v3(const f32v3& x, ui64 additional) {
+    return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
+}
 
 void BuildingMesher::buildRoofMesh(const Building& building)
 {
+    PreciseTimer timer;
 
     // TODO: ASYNC
     MeshBuilder meshBuilder(false);
+    constexpr ui32 RESERVE_VERT_COUNT = 10000; // Average size
+    meshBuilder.reserveVertexCount(RESERVE_VERT_COUNT);
+    meshBuilder.reserveIndexCount(RESERVE_VERT_COUNT * 1.5f); // 1.5 is approx
 
     const ui32AABB2& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mOwnedTilesInAABB;
@@ -402,7 +409,12 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                 if (bisectorBoardPositions.find(std::make_pair(boardStart, boardEnd)) == bisectorBoardPositions.end() &&
                     bisectorBoardPositions.find(std::make_pair(boardEnd, boardStart)) == bisectorBoardPositions.end()) {
                     bisectorBoardPositions.insert(std::make_pair(boardStart, boardEnd));
-                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v3(0.1f), rawWoodTexture, 1.0f);
+                    constexpr f32 BOARD_SIZE_VARIANCE = 0.05f;
+                    // Random size offset
+                    const f32v2 halfDims = f32v2(
+                        0.1f + (randFromf32v3(boardStart - boardEnd, (ui64)&it /*hax*/) - 0.5f) * BOARD_SIZE_VARIANCE
+                    );
+                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, rawWoodTexture, 1.0f);
                 }
             }
 
@@ -416,27 +428,13 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                 auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextVert.x(), nextVert.y()));
                 assert(extrudeIt != contourExtrudePositions.end());
                 // Figure out direction based on position offsets
-                Cartesian dir;
-                constexpr f32 DIR_EPSILON = 0.01f;
-                if (nextVert.x() > thisVert.x() + DIR_EPSILON) {
-                    dir = Cartesian::DOWN;
-                }
-                else if (nextVert.x() < thisVert.x() - DIR_EPSILON) {
-                    dir = Cartesian::UP;
-                }
-                else if (nextVert.y() > thisVert.y() + DIR_EPSILON) {
-                    dir = Cartesian::RIGHT;
-                }
-                else {
-                    dir = Cartesian::LEFT;
-                }
+               
 
                 contourEdges.emplace_back(ContourEdgeInfo{
                     f32v3(x, y, h),
                     f32v3(thisVert.x(), thisVert.y(), 0.0f),
                     f32v3(extrudeIt->second.x, extrudeIt->second.y, extrudeIt->second.z),
-                    f32v3(nextVert.x(), nextVert.y(), 0.0f),
-                    dir
+                    f32v3(nextVert.x(), nextVert.y(), 0.0f)
                     });
             }
 
@@ -522,23 +520,50 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         points[3] = f32v3(edge.parent1.x, edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
         meshBuilder.addQuadBetweenPoints(points, shinglesTexture, 1.0f, COLOR_WHITE, false);
 
+        // Compute edge dir
+        Cartesian dir;
+        constexpr f32 DIR_EPSILON = 0.01f;
+        if (edge.v2.x > edge.v1.x + DIR_EPSILON) {
+            dir = Cartesian::DOWN;
+        }
+        else if (edge.v2.x < edge.v1.x - DIR_EPSILON) {
+            dir = Cartesian::UP;
+        }
+        else if (edge.v2.y > edge.v1.y + DIR_EPSILON) {
+            dir = Cartesian::RIGHT;
+        }
+        else {
+            dir = Cartesian::LEFT;
+        }
+
         // Step along the edge and add extruded board pieces
-        size_t randSeed = f32v3pairhash
+
+        // Random dims
+        constexpr f32 BOARD_SIZE_VARIANCE = 0.04f;
+        constexpr f32 BOARD_GAP_VARIANCE = 0.1f;
+        constexpr f32 BOARD_ANGLE_VARIANCE = 0.15f;
+        constexpr f32 BOARD_LENGTH_VARIANCE = 0.15f;
         constexpr f32 BOARDS_PER_METER = 2;
         constexpr f32 BOARD_DISTANCE = 0.25f + ROOF_EXTRUDE_DISTANCE;
         const f32v3 diff = second - first;
         const f32 distance = glm::length(diff);
         const f32v3 iterNormal = diff / distance;
-        const f32v3& edgeNormal = CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
+        const f32v3& edgeNormal = CARTESIAN_NORMALS_3D[e_cast(dir)];
         const int boardCount = (int)round(distance * BOARDS_PER_METER);
         const f32 boardGapSize = distance / (boardCount + 1);
-        const f32v2 boardHalfDims = f32v2(0.05f);
-        const f32v3 start = first - edgeNormal * ROOF_EXTRUDE_DISTANCE + f32v3(0.0f, 0.0f, 0.15 + boardHalfDims.y);
+        const f32v3 start = first - edgeNormal * ROOF_EXTRUDE_DISTANCE;
         for (int i = 1; i <= boardCount; ++i) {
-            // Extruded boards
-            f32v3 offset = iterNormal * (i * boardGapSize);
-            f32v3 p1 = start + offset;
-            f32v3 p2 = p1 + edgeNormal * BOARD_DISTANCE - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT);
+            // Get dims
+            const f32v2 boardHalfDims = f32v2(
+                0.03f + randFromf32v3(first, i << 3) * BOARD_SIZE_VARIANCE,
+                0.03f + randFromf32v3(second, i << 3) * BOARD_SIZE_VARIANCE
+            );
+            const f32v3 startWithBoardOffset = f32v3(start.x, start.y, start.z + 0.2 - boardHalfDims.y);
+            // Extruded boards with random offset variance
+            const f32v3 offset = iterNormal * (i * boardGapSize + (randFromf32v3(startWithBoardOffset, i << 4) - 0.5f) * BOARD_GAP_VARIANCE);
+            const f32v3 p1 = startWithBoardOffset + offset;
+            const f32 boardLength = BOARD_DISTANCE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
+            const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.8f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
             meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodTexture, 1.0f);
         }
     }
@@ -554,6 +579,8 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         }
     }
     meshBuilder.finishMesh(buildingMesh, MeshDrawMode::STATIC);
+
+    std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
 }
 
 void BuildingMesher::addRoofTriangle(

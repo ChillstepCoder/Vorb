@@ -995,3 +995,7 @@ void MeshBuilder::reserveVertexCount(ui32 count) {
     mMainSubMeshData.mVerts.reserve(count);
     mMainSubMeshData.mTextures.reserve(5); // Arbitrary
 }
+
+void MeshBuilder::reserveIndexCount(ui32 count) {
+    mMainSubMeshData.mIndices.reserve(count);
+}

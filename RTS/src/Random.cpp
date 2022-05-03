@@ -67,6 +67,10 @@ extern float Random::getThreadSafef(ui32 x, ui32 y) {
     return (getThreadSafe(x, y) % 6421343) / 6421343.0f;
 }
 
+extern float Random::getThreadSafef(ui64 x) {
+    return (getThreadSafe(x, x << 32) % 6421343) / 6421343.0f;
+}
+
 Random::RandomPermutationTable::RandomPermutationTable(unsigned count) :
     mPerm(count)
 {
