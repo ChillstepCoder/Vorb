@@ -286,7 +286,7 @@ void vg::SpriteBatch::end(SpriteSortMode ssm /*= SpriteSortMode::Texture*/) {
 void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const BlendState* bs = nullptr,*/ const SamplerState* ss /*= nullptr*/, const DepthState* ds /*= nullptr*/, const RasterizerState* rs /*= nullptr*/, vg::GLProgram* shader /*= nullptr*/) {
     //if (bs == nullptr) bs = BlendState::PremultipliedAlphaBlend;
     if (ds == nullptr) ds = &DepthState::NONE;
-    if (rs == nullptr) rs = &RasterizerState::CULL_NONE;
+    if (rs == nullptr) rs = &RasterizerState::CULL_CLOCKWISE;
     if (ss == nullptr) ss = &vg::sSamplerStates.LINEAR_WRAP;
     if (shader == nullptr) shader = &s_program;
 

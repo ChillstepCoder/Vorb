@@ -282,13 +282,13 @@ bool Chunk::canAddTile(TileIndex i, const TileData& tileData) const {
     return mTiles[i].canAddTile(tileData);
 }
 
-void Chunk::addTile(TileIndex i, const TileData& tileData) {
+void Chunk::addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.addTile(tileData, readLocked);
+    tile.addTile(tileFloor, tileData, readLocked);
     if (!readLocked) {
         dirtyMesh();
         if (tileData.layer != TILE_LAYER_MID) {

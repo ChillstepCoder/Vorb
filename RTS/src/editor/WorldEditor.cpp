@@ -284,6 +284,7 @@ void WorldEditor::renderGrassEditUI() const {
 }
 
 void WorldEditor::renderTileEditUI() const {
+    ImGui::SliderInt("Floor", &mSelectedFloor, 0, TILE_FLOOR_COUNT - 1);
     ImGui::SliderFloat("Ground tile Z offset", &mGroundTileOffset, 0.0f, 10.0f, "%.2f");
     ImGui::Text("Tile select");
     const std::vector<TileData>& allData = TileRepository::getAllTileData();
@@ -459,9 +460,9 @@ void WorldEditor::updateTileEdit() {
         if (chunkID != prevChunkID || tileIndex != prevTileIndex) {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
-            chunk.addTile(tileIndex, data);
+            chunk.addTile((TileFloor)mSelectedFloor, tileIndex, data);
 
-            if (data.layer == TILE_LAYER_GROUND) {
+            if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
                 const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(TilePosition(chunkID, tileIndex));
                 chunk.setTileBaseZPosition(tileIndex, height + mGroundTileOffset);
             }

@@ -113,7 +113,7 @@ Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
                     TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
                     Chunk* chunk = handle.getMutableChunk();
-                    chunk->addTile(handle.index, TileRepository::getTileData(tileId));
+                    chunk->addTile(TILE_FLOOR_GROUND, handle.index, TileRepository::getTileData(tileId));
                     chunk->setTileFlag(handle.index, TILE_FLAG_IS_BUILDING);
                     chunk->setTileBaseZPosition(handle.index, height);
                 }

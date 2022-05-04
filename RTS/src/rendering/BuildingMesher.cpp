@@ -23,6 +23,7 @@
 #include <CGAL/Triangulation_2.h>
 #include <CGAL/partition_2.h>
 #include <CGAL/Partition_traits_2.h>
+
 //#include <CGAL/Delaunay_triangulation_2.h>
 //#include <CGAL/Regular_triangulation_2.h>
 
@@ -409,7 +410,7 @@ void BuildingMesher::buildRoofMesh(const Building& building)
                 if (bisectorBoardPositions.find(std::make_pair(boardStart, boardEnd)) == bisectorBoardPositions.end() &&
                     bisectorBoardPositions.find(std::make_pair(boardEnd, boardStart)) == bisectorBoardPositions.end()) {
                     bisectorBoardPositions.insert(std::make_pair(boardStart, boardEnd));
-                    constexpr f32 BOARD_SIZE_VARIANCE = 0.05f;
+                    constexpr f32 BOARD_SIZE_VARIANCE = 0.03f;
                     // Random size offset
                     const f32v2 halfDims = f32v2(
                         0.1f + (randFromf32v3(boardStart - boardEnd, (ui64)&it /*hax*/) - 0.5f) * BOARD_SIZE_VARIANCE
@@ -463,7 +464,12 @@ void BuildingMesher::buildRoofMesh(const Building& building)
             // Gables are never concave ( I THINK )
             convexPolygonList.push_back(concavePoly);
         }
+
+
+       
+
         for (auto&& convexPoly : convexPolygonList) {
+
             // Get triangle points
             f32v2 points[3];
             if (convexPoly.size() == 3) {
@@ -514,11 +520,11 @@ void BuildingMesher::buildRoofMesh(const Building& building)
         meshBuilder.addCartesianQuad(first, f32v3(second.x - first.x, second.y - first.y, ROOF_THICKNESS), axis, shinglesTexture, shinglesTexture.mUvRect, COLOR_WHITE);
         // Bottom
         f32v3 points[4];
-        points[0] = first;
-        points[1] = second;
-        points[2] = f32v3(edge.parent2.x, edge.parent2.y, building.mZPosRoof - ROOF_THICKNESS);
-        points[3] = f32v3(edge.parent1.x, edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, 1.0f, COLOR_WHITE, false);
+        points[0] = second;
+        points[1] = first;
+        points[2] = f32v3(edge.parent1.x, edge.parent1.y, building.mZPosRoof - ROOF_THICKNESS);
+        points[3] = f32v3(edge.parent2.x, edge.parent2.y, building.mZPosRoof - ROOF_THICKNESS);
+        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, 1.0f, COLOR_WHITE);
 
         // Compute edge dir
         Cartesian dir;

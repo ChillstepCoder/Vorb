@@ -83,7 +83,7 @@ public:
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTile(const TileData& tile) const;
-    void addTile(const TileData& tile, bool isReadLocked);
+    void addTile(TileFloor floor, const TileData& tile, bool isReadLocked);
     bool tryAddTile(const TileData& tile, bool isReadLocked);
     void setTileLayer(TileFloor floor, TileLayer layer, TileID id, bool isReadLocked);
     void setTileFlag(TileFlags flag, bool isReadLocked);

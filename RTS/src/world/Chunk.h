@@ -161,7 +161,7 @@ public:
 	// =========== Tile mutators ===========
     void setTileAt(TileIndex i, Tile tile);
     bool canAddTile(TileIndex i, const TileData& tileData) const;
-    void addTile(TileIndex i, const TileData& tileData);
+    void addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData);
     bool tryAddTile(TileIndex i, const TileData& tileData);
     void setTileLayer(TileFloor floor, TileIndex i, TileLayer layer, TileID id);
     void setTileFlag(TileIndex i, TileFlags flag);

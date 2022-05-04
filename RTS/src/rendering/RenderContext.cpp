@@ -374,7 +374,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Replace With BlendState
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glEnable(GL_CULL_FACE);
     // Tiles
     mChunkRenderer->renderTiles(mWorld, camera);
 
@@ -392,7 +391,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render building roofs
     // TODO: Frustum cull
-
     const CityGraph& cities = mWorld.getCities();
     for (auto&& city : cities.mNodes) {
         const std::vector<Building>& buildings = city->getBuildings();

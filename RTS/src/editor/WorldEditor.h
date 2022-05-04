@@ -98,6 +98,7 @@ private:
     mutable BrushSettings* mCurrentBrushSettings = &mTerrainBrushSettings;
     // Tile Edit
     mutable ui32 mSelectedTile = 0;
+    mutable int mSelectedFloor = 0;
     mutable f32 mGroundTileOffset = 1.0f;
     // Building Edit
     mutable ui32 mSelectedBuilding = 0;

@@ -151,21 +151,21 @@ bool Tile::canAddTile(const TileData& tile) const {
     return floors[TILE_FLOOR_GROUND].layers[tile.layer] == TILE_ID_NONE;
 }
 
-void Tile::addTile(const TileData& tile, bool isReadLocked) {
+void Tile::addTile(TileFloor floor, const TileData& tile, bool isReadLocked) {
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
         tileFlags |= TILE_FLAG_QUEUED_UPDATE;
     } else {
-        floors[TILE_FLOOR_GROUND].layersThreadSafe[tile.layer] = tile.id;
+        floors[floor].layersThreadSafe[tile.layer] = tile.id;
     }
-    floors[TILE_FLOOR_GROUND].layers[tile.layer] = tile.id;
+    floors[floor].layers[tile.layer] = tile.id;
 }
 
 bool Tile::tryAddTile(const TileData& tile, bool isReadLocked) {
     if (!canAddTile(tile)) {
         return false;
     }
-    addTile(tile, isReadLocked);
+    addTile(TILE_FLOOR_GROUND, tile, isReadLocked);
     return true;
 }
 

@@ -887,7 +887,7 @@ void World::addTile(const ui32v2& worldPos, const TileData& tileData) {
     assert(handle.isValid());
     if (handle.isValid()) {
         Chunk* chunk = handle.getMutableChunk();
-        chunk->addTile(handle.index, tileData);
+        chunk->addTile(TILE_FLOOR_GROUND, handle.index, tileData);
     }
 }
 
