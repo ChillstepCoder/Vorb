@@ -92,6 +92,8 @@ Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
         }
     }
     meanHeight /= (f32)total;
+    // Clamp building height to 1 meter increments
+    meanHeight = round(meanHeight);
 
     // Flatten heightmap
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
@@ -115,7 +117,7 @@ Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     Chunk* chunk = handle.getMutableChunk();
                     chunk->addTile(TILE_FLOOR_GROUND, handle.index, TileRepository::getTileData(tileId));
                     chunk->setTileFlag(handle.index, TILE_FLAG_IS_BUILDING);
-                    chunk->setTileBaseZPosition(handle.index, height);
+                    chunk->setTileBaseZPosition(TILE_FLOOR_GROUND, handle.index, height);
                 }
             }
         }
@@ -145,7 +147,8 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     ui32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.height; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
-            mWorld.addTile(xy, TileRepository::getTileData(tileId));
+            TileHandle handle = mWorld.getTileHandleAtWorldPos(xy);
+            handle.getMutableChunk()->addTile(TILE_FLOOR_GROUND, handle.index, TileRepository::getTileData(tileId));
         }
     }
 }

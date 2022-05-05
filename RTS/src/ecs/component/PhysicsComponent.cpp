@@ -82,7 +82,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
     float colliderRadius = cmp.mCollisionRadius;
     const f32v2& colliderCenter = cmp.getXYPosition();
     f32v2 offsetToCollider = colliderCenter - tileCenter;
-    const f32 baseZPosition = tile->getBaseZPositionUncompressedMainThread();
+    const f32 baseZPosition = tile->getBaseZPositionUncompressedMainThread(TILE_FLOOR_GROUND);
 
 	bool isCollidingWithTop = false;
 	float zOffset = cmp.getZPosition() - baseZPosition;

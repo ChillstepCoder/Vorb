@@ -463,8 +463,10 @@ void WorldEditor::updateTileEdit() {
             chunk.addTile((TileFloor)mSelectedFloor, tileIndex, data);
 
             if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
-                const f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(TilePosition(chunkID, tileIndex));
-                chunk.setTileBaseZPosition(tileIndex, height + mGroundTileOffset);
+                f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(TilePosition(chunkID, tileIndex)) + mGroundTileOffset;
+                height = round(height);
+                if (height == 0.0f) height = 1.0f;
+                chunk.setTileBaseZPosition(TILE_FLOOR_GROUND, tileIndex, height);
             }
         }
     }

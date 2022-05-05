@@ -410,28 +410,28 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
 			// TODO: HANDLE RACE CONDITION
             if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+                handle.getMutableChunk()->setTileAt(TILE_FLOOR_GROUND, handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+                handle.getMutableChunk()->setTileAt(TILE_FLOOR_GROUND, handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
+                handle.getMutableChunk()->setTileAt(TILE_FLOOR_GROUND, handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
             }
         }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableChunk()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
+                handle.getMutableChunk()->setTileAt(TILE_FLOOR_GROUND, handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
             }
         }
         else if (result & INTERACT_MENU_RESULT_INSPECT) {

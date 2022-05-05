@@ -47,6 +47,29 @@ struct TileData {
 #ifdef DEBUG // Release has different size
 static_assert(sizeof(TileData) == 200, "Keep it small as possible");
 #endif
+// There is exactly 1 of these per integer x,y coordinate pair over the entire world
+class TileBase {
+    TileID mTerrainAlignedTile; // Rocks, trees, berry bushes, whatever
+    TileBaseFlags mFlags;
+    ui32 mStructureID; // Complicated structures like large rock formations, or buildings, or anything
+    ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread only
+    ui8 mPathWeight;
+};
+
+class StructureTile {
+    union {
+        struct {
+            TileID mIdWall;
+            TileID mIdFloor;
+            TileID mIdObject;
+        };
+        TileID mTileIDs[3];
+    };
+    TileFlags flags;
+    ui8 mPathWeight;
+    // TODO: //ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread only
+};
+SIZER(StructureTile);
 
 class Tile {
     friend class Chunk;
@@ -71,8 +94,8 @@ public:
     ui8 getPathWeightMainThread() const { assert(IS_MAIN_THREAD()); return pathWeight; }
     ui8 getPathWeightNavThread() const { assert(IS_NAV_THREAD()); return pathWeightThreadSafe; }
 
-    f32 getBaseZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)baseZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
-    f32 getBaseZPositionUncompressedThreadSafe() const { return (f32)baseZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
+    f32 getBaseZPositionUncompressedMainThread(TileFloor floor) const { assert(IS_MAIN_THREAD()); return (f32)floors[floor].baseZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
+    f32 getBaseZPositionUncompressedThreadSafe(TileFloor floor) const { return (f32)floors[floor].baseZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
 
     const TileCollider* tryGetColliderMainThread() const;
     const TileCollider* tryGetColliderThreadSafe() const;
@@ -82,9 +105,9 @@ public:
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
-    bool canAddTile(const TileData& tile) const;
+    bool canAddTile(TileFloor floor, const TileData& tile) const;
     void addTile(TileFloor floor, const TileData& tile, bool isReadLocked);
-    bool tryAddTile(const TileData& tile, bool isReadLocked);
+    bool tryAddTile(TileFloor floor, const TileData& tile, bool isReadLocked);
     void setTileLayer(TileFloor floor, TileLayer layer, TileID id, bool isReadLocked);
     void setTileFlag(TileFlags flag, bool isReadLocked);
     void setTileFlags(TileFlags flags, bool isReadLocked);
@@ -92,9 +115,9 @@ private:
     void clearTileFlags(bool isReadLocked);
     void clearTileCollisionFlags(bool isReadLocked);
     void setPathWeight(ui8 weight, bool isReadLocked);
-    void setBaseZPosition(f32 baseZPosition, bool isReadLocked);
+    void setBaseZPosition(TileFloor floor, f32 baseZPosition, bool isReadLocked);
     void updateCollision(bool isReadLocked);
-    bool isUpdateQueued() { return tileFlags & TILE_FLAG_QUEUED_UPDATE; }
+    bool isUpdateQueued() { return tileFlags & TILE_FLAG_QUEUED_THREADSAFE_UPDATE; }
     bool isMultiFloor() const { return tileFlags & TILE_FLAG_IS_MULTI_FLOOR; }
 
     struct Floor {
@@ -114,16 +137,16 @@ private:
             };
             TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
         };
+        ui16 baseZPositionCompressed;
+        ui16 baseZPositionCompressedThreadSafe;
     };
     Floor floors[TILE_FLOOR_COUNT];
     ui16 tileFlags = (TileFlags)0u;
     ui16 tileFlagsThreadSafe = (TileFlags)0u;
 	// Collision stuff
-    ui16 baseZPositionCompressed = 0; // Compressed height
-    ui16 baseZPositionCompressedThreadSafe = 0; // Compressed height
     ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread
     ui8 pathWeight = 255u;
     ui8 pathWeightThreadSafe = 255u;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 48, "Keep small");
+static_assert(sizeof(Tile) == 56, "Keep small");

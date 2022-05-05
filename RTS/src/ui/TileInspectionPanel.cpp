@@ -30,7 +30,7 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TILE_FLAG_ROAD);
     FLAG_DISPLAY(TILE_FLAG_HAS_ROOF);
     FLAG_DISPLAY(TILE_FLAG_HAS_COLLIDER);
-    FLAG_DISPLAY(TILE_FLAG_QUEUED_UPDATE);
+    FLAG_DISPLAY(TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     FLAG_DISPLAY(TILE_FLAG_IS_RESOURCE_RESERVED);
     FLAG_DISPLAY(TILE_FLAG_IS_MULTI_FLOOR);
 
@@ -60,7 +60,7 @@ void TileInspectionPanel::updateAndRender() {
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);
-    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getBaseZPositionUncompressedMainThread());
+    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getBaseZPositionUncompressedMainThread(TILE_FLOOR_GROUND));
     ImGui::Text("ChunkID: %u", chunk.getChunkID().id);
     ImGui::Separator();
     ImGui::Text("Layers:");

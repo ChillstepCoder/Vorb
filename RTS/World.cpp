@@ -848,49 +848,6 @@ void World::createCityAt(const ui32v2& worldPos) {
 	mCities->mNodes.emplace_back(std::move(newCity));
 }
 
-void World::setTileAt(const ui32v2& worldPos, Tile tile) {
-
-    TileHandle handle = getTileHandleAtWorldPos(worldPos);
-	assert(handle.isValid());
-    if (handle.isValid()) {
-        Chunk* chunk = handle.getMutableChunk();
-        chunk->setTileAt(handle.index, tile);
-    }
-}
-
-void World::setTileAt(ChunkID id, TileIndex tileIndex, Tile tile) {
-	Chunk& chunk = mWorldGrid.getChunk(id);
-	chunk.setTileAt(tileIndex, tile);
-}
-
-void World::setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer) {
-    TileHandle handle = getTileHandleAtWorldPos(worldPos);
-	setTileLayerAt(handle, id, layer);
-}
-
-void World::setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer) {
-    assert(handle.isValid());
-    if (handle.isValid()) {
-        Chunk* chunk = handle.getMutableChunk();
-        chunk->setTileLayer(TILE_FLOOR_GROUND, handle.index, layer, id);
-    }
-}
-
-void World::setTileFlagAt(const ui32v2& worldPos, TileFlags flag) {
-    TileHandle handle = getTileHandleAtWorldPos(worldPos);
-    Chunk* chunk = handle.getMutableChunk();
-    chunk->setTileFlag(handle.index, flag);
-}
-
-void World::addTile(const ui32v2& worldPos, const TileData& tileData) {
-    TileHandle handle = getTileHandleAtWorldPos(worldPos);
-    assert(handle.isValid());
-    if (handle.isValid()) {
-        Chunk* chunk = handle.getMutableChunk();
-        chunk->addTile(TILE_FLOOR_GROUND, handle.index, tileData);
-    }
-}
-
 bool World::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
 	TileHandle handle = getTileHandleAtWorldPos(worldPos);
 	if (handle.isValid()) {

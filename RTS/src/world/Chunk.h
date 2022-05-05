@@ -159,10 +159,10 @@ public:
 
 
 	// =========== Tile mutators ===========
-    void setTileAt(TileIndex i, Tile tile);
-    bool canAddTile(TileIndex i, const TileData& tileData) const;
+    void setTileAt(TileFloor floor, TileIndex i, Tile tile);
+    bool canAddTile(TileFloor floor, TileIndex i, const TileData& tileData) const;
     void addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData);
-    bool tryAddTile(TileIndex i, const TileData& tileData);
+    bool tryAddTile(TileFloor floor, TileIndex i, const TileData& tileData);
     void setTileLayer(TileFloor floor, TileIndex i, TileLayer layer, TileID id);
     void setTileFlag(TileIndex i, TileFlags flag);
     void setTileFlags(TileIndex i, TileFlags flags);
@@ -170,7 +170,7 @@ public:
     void clearTileFlags(TileIndex i);
     void clearTileCollisionFlags(TileIndex i);
     void setTilePathWeight(TileIndex i, ui8 weight);
-    void setTileBaseZPosition(TileIndex i, f32 baseZPosition);
+    void setTileBaseZPosition(TileFloor floor, TileIndex i, f32 baseZPosition);
 
     // =========== Ref counting  ===========
 	inline void incRef() const {
@@ -219,7 +219,6 @@ private:
 	f32AABB3 mAABB = f32AABB3(0.0f); // TODO: Combine with worldpos?
 	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 	bool mDirtyNavGraph = false;
-
 
 	// Refcount for threading
     mutable std::atomic_uint32_t mRefCount = 0;

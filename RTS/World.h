@@ -59,13 +59,6 @@ public:
 	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 	void createCityAt(const ui32v2& worldPos);
 
-    void setTileAt(ChunkID id, TileIndex tileIndex, Tile tile);
-	void setTileAt(const ui32v2& worldPos, Tile tile);
-    void setTileLayerAt(const ui32v2& worldPos, TileID id, TileLayer layer);
-    void setTileLayerAt(TileHandle& handle, TileID id, TileLayer layer);
-    void setTileFlagAt(const ui32v2& worldPos, TileFlags flag);
-    void addTile(const ui32v2& worldPos, const TileData& tileData);
-
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
 
     // Internal public interface

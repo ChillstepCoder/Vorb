@@ -1,10 +1,6 @@
 #pragma once
 
-#include "rendering/TileVertex.h"
-#include "world/ChunkID.h" // For tile position
 #include "world/Tile.h"
-
-#include <Vorb/concurrentqueue.h>
 
 class Chunk;
 class Camera3D;
@@ -33,12 +29,6 @@ public:
 
 private:
     bool createMeshAsync(const Chunk& chunk);
-
-    void addBlock(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk);
-    void addBlockVertical(const Chunk& chunk, const TileIndex& tileIndex, MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const TileData& tileData);
-    void addFloor(MeshBuilder& quadMeshBuilder, f32v3 tilePosition, const HeightmapPatchData* heightData, const TileData& tileData, const TileIndex& tileIndex, const Chunk& chunk);
-    f32 getTileHeight(const Tile& neighbor, const f32* heightData, TilePosition tilePos);
-    f32 getTileHeight(const TileHandle& neighbor);
 
     // Shared vertex buffer to eliminate allocations
     const WorldGrid& mWorldGrid;

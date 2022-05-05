@@ -246,7 +246,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                     Tile& tile = getMutableTileAt(tileIndex);
                     if (tile.getLayersMainThread(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        setTileBaseZPosition(tileIndex, mWorldGrid->computeCenterHeightAtTile(TilePosition(getChunkID(), tileIndex)));
+                        setTileBaseZPosition(TILE_FLOOR_GROUND, tileIndex, mWorldGrid->computeCenterHeightAtTile(TilePosition(getChunkID(), tileIndex)));
                     }
                     else {
                         // What happens here? What happens when we cover up the tile?
@@ -258,7 +258,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
 
 }
 
-void Chunk::setTileAt(TileIndex i, Tile tile) {
+void Chunk::setTileAt(TileFloor floor, TileIndex i, Tile tile) {
     assert(i < CHUNK_SIZE);
     const bool readLocked = isReadLocked();
     Tile& oldTile = mTiles[i];
@@ -269,7 +269,7 @@ void Chunk::setTileAt(TileIndex i, Tile tile) {
     oldTile = tile;
     oldTile.setTileFlags(newFlags, readLocked); // Union tile flags
     // Update collision
-    updateTileCollisionAt(i, tile.floors[TILE_FLOOR_GROUND].topLayer, readLocked);
+    updateTileCollisionAt(i, tile.floors[floor].topLayer, readLocked);
     // Only dirty nav graph and mesh if we actually updated data
     if (!readLocked) {
         dirtyNavGraph();
@@ -278,8 +278,8 @@ void Chunk::setTileAt(TileIndex i, Tile tile) {
 
 }
 
-bool Chunk::canAddTile(TileIndex i, const TileData& tileData) const {
-    return mTiles[i].canAddTile(tileData);
+bool Chunk::canAddTile(TileFloor floor, TileIndex i, const TileData& tileData) const {
+    return mTiles[i].canAddTile(floor, tileData);
 }
 
 void Chunk::addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData) {
@@ -297,18 +297,18 @@ void Chunk::addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData) 
     }
 }
 
-bool Chunk::tryAddTile(TileIndex i, const TileData& tileData) {
+bool Chunk::tryAddTile(TileFloor floor, TileIndex i, const TileData& tileData) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
-        bool success = tile.tryAddTile(tileData, readLocked);
+        bool success = tile.tryAddTile(floor, tileData, readLocked);
         if (success) {
             mTilesNeedingThreadSafeCopy.push_back(i);
         }
         return success;
     }
     else {
-        return tile.tryAddTile(tileData, readLocked);
+        return tile.tryAddTile(floor, tileData, readLocked);
     }
 }
 
@@ -392,13 +392,13 @@ void Chunk::setTilePathWeight(TileIndex i, ui8 weight) {
 
 }
 
-void Chunk::setTileBaseZPosition(TileIndex i, f32 baseZPosition) {
+void Chunk::setTileBaseZPosition(TileFloor floor, TileIndex i, f32 baseZPosition) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.setBaseZPosition(baseZPosition, readLocked);
+    tile.setBaseZPosition(floor, baseZPosition, readLocked);
     if (!readLocked) {
         dirtyMesh();
     }

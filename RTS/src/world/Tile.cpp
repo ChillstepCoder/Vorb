@@ -45,7 +45,7 @@ void Tile::setTileFlag(TileFlags flag, bool isReadLocked) {
 
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         tileFlagsThreadSafe |= flag;
@@ -57,7 +57,7 @@ void Tile::setTileFlags(TileFlags flags, bool isReadLocked) {
 
     assert(IS_MAIN_THREAD()); 
     if (isReadLocked) {
-        tileFlags = flags | TILE_FLAG_QUEUED_UPDATE;
+        tileFlags = flags | TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         tileFlagsThreadSafe = flags;
@@ -69,7 +69,7 @@ void Tile::clearTileFlag(TileFlags flag, bool isReadLocked) {
 
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         tileFlagsThreadSafe &= (~flag);
@@ -81,7 +81,7 @@ void Tile::clearTileFlags(bool isReadLocked) {
 
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
-        tileFlags = TILE_FLAG_QUEUED_UPDATE;
+        tileFlags = TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         tileFlagsThreadSafe = 0;
@@ -95,7 +95,7 @@ void Tile::clearTileCollisionFlags(bool isReadLocked) {
 
     tileFlags &= (~TILE_COLLISION_FLAGS_MASK);
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         tileFlagsThreadSafe = tileFlags;
@@ -108,21 +108,28 @@ Tile::Tile(TileID ground, TileID mid, TileID top) {
     floors[TILE_FLOOR_GROUND].topLayer = top;
 }
 
-Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos) : baseZPositionCompressed(compressTileZPosition(zPos)), baseZPositionCompressedThreadSafe(baseZPositionCompressed) {
+Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos) {
     floors[TILE_FLOOR_GROUND].groundLayer = ground;
     floors[TILE_FLOOR_GROUND].midLayer = mid;
     floors[TILE_FLOOR_GROUND].topLayer = top;
+    floors[TILE_FLOOR_GROUND].baseZPositionCompressed = compressTileZPosition(zPos);
+    // TODO: Do we need to update thread safe layers here?????
+    // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
 
-Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : baseZPositionCompressed(compressTileZPosition(zPos)), baseZPositionCompressedThreadSafe(baseZPositionCompressed), tileFlags(flags), tileFlagsThreadSafe(flags) {
+Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : tileFlags(flags), tileFlagsThreadSafe(flags) {
     floors[TILE_FLOOR_GROUND].groundLayer = ground;
     floors[TILE_FLOOR_GROUND].midLayer = mid;
     floors[TILE_FLOOR_GROUND].topLayer = top;
+    floors[TILE_FLOOR_GROUND].baseZPositionCompressed = compressTileZPosition(zPos);
+    // TODO: Do we need to update thread safe layers here?????
+    // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
 
 bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) const {
     assert(IS_MAIN_THREAD());
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
+        // Harvestble resources only exist on ground floor
         TileID tileId = floors[TILE_FLOOR_GROUND].layers[i];
         if (tileId != INVALID_TILE_INDEX) {
             if (TileRepository::getTileData(tileId).resource == resource) {
@@ -137,42 +144,44 @@ bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) co
 }
 
 void Tile::updateThreadSafeLayers() {
-    assert(tileFlags & TILE_FLAG_QUEUED_UPDATE);
-    tileFlags &= (~TILE_FLAG_QUEUED_UPDATE);
+    assert(tileFlags & TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+    tileFlags &= (~TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
 
     tileFlagsThreadSafe = tileFlags;
-    memcpy(floors[TILE_FLOOR_GROUND].layersThreadSafe, floors[TILE_FLOOR_GROUND].layers, sizeof(TileID) * TILE_LAYER_COUNT);
-    baseZPositionCompressedThreadSafe = baseZPositionCompressed;
+    for (int i = 0; i < TILE_FLOOR_COUNT; ++i) {
+        memcpy(floors[i].layersThreadSafe, floors[i].layers, sizeof(TileID) * TILE_LAYER_COUNT);
+        floors[i].baseZPositionCompressedThreadSafe = floors[i].baseZPositionCompressed;
+    }
     pathWeightThreadSafe = pathWeight;
 }
 
-bool Tile::canAddTile(const TileData& tile) const {
+bool Tile::canAddTile(TileFloor floor, const TileData& tile) const {
     assert(IS_MAIN_THREAD());
-    return floors[TILE_FLOOR_GROUND].layers[tile.layer] == TILE_ID_NONE;
+    return floors[floor].layers[tile.layer] == TILE_ID_NONE;
 }
 
 void Tile::addTile(TileFloor floor, const TileData& tile, bool isReadLocked) {
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     } else {
         floors[floor].layersThreadSafe[tile.layer] = tile.id;
     }
     floors[floor].layers[tile.layer] = tile.id;
 }
 
-bool Tile::tryAddTile(const TileData& tile, bool isReadLocked) {
-    if (!canAddTile(tile)) {
+bool Tile::tryAddTile(TileFloor floor, const TileData& tile, bool isReadLocked) {
+    if (!canAddTile(floor, tile)) {
         return false;
     }
-    addTile(TILE_FLOOR_GROUND, tile, isReadLocked);
+    addTile(floor, tile, isReadLocked);
     return true;
 }
 
 void Tile::setTileLayer(TileFloor floor, TileLayer layer, TileID id, bool isReadLocked) {
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         floors[floor].layersThreadSafe[e_cast(layer)] = id;
@@ -183,7 +192,7 @@ void Tile::setTileLayer(TileFloor floor, TileLayer layer, TileID id, bool isRead
 void Tile::setPathWeight(ui8 weight, bool isReadLocked) {
     assert(IS_MAIN_THREAD());
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         pathWeightThreadSafe = weight;
@@ -191,13 +200,13 @@ void Tile::setPathWeight(ui8 weight, bool isReadLocked) {
     pathWeight = weight;
 }
 
-void Tile::setBaseZPosition(f32 baseZPosition, bool isReadLocked) {
-    baseZPositionCompressed = compressTileZPosition(baseZPosition);
+void Tile::setBaseZPosition(TileFloor floor, f32 baseZPosition, bool isReadLocked) {
+    floors[floor].baseZPositionCompressed = compressTileZPosition(baseZPosition);
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
-        baseZPositionCompressedThreadSafe = baseZPositionCompressed;
+        floors[floor].baseZPositionCompressedThreadSafe = floors[floor].baseZPositionCompressed;
     }
 }
 
@@ -221,7 +230,7 @@ void Tile::updateCollision(bool isReadLocked) {
     }
 
     if (isReadLocked) {
-        tileFlags |= TILE_FLAG_QUEUED_UPDATE;
+        tileFlags |= TILE_FLAG_QUEUED_THREADSAFE_UPDATE;
     }
     else {
         tileFlagsThreadSafe = tileFlags;
