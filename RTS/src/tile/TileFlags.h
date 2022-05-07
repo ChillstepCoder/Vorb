@@ -1,12 +1,12 @@
 #pragma once
 
-enum TileBaseFlags : ui8 {
+enum class TileBaseFlags : ui8 {
     TILE_BASE_FLAG_IN_CITY = 1 << 0,
     TILE_BASE_FLAG_IS_RESOURCE_RESERVED = 1 << 1,
+    TILE_BASE_FLAG_QUEUED_THREADSAFE_UPDATE = 1 << 2,
 };
 
-// TODO: Move to new file
-enum TileFlags : ui8 {
+enum class TileFlags : ui8 {
     TILE_FLAG_IS_INTERACTING = 1 << 0,
     TILE_FLAG_IS_STOCKPILE = 1 << 1, // True if owned by a stockpile
      // True if inside city limits
@@ -17,4 +17,4 @@ enum TileFlags : ui8 {
 
     TILE_FLAG_TERM = 1 << 6, // Keep this at +1
 };
-static_assert(TILE_FLAG_TERM <= 0x80); // Must fit into a byte
+static_assert(e_cast(TileFlags::TILE_FLAG_TERM) <= 0x80); // Must fit into a byte

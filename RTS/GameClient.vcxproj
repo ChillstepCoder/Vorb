@@ -270,6 +270,7 @@
     <ClCompile Include="src\resources\TextureRepository.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
+    <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
@@ -451,6 +452,7 @@
     <ClInclude Include="src\resources\TextureRepository.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\structure\Structure.h" />
     <ClInclude Include="src\tile\TileFlags.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\TileInspectionPanel.h" />

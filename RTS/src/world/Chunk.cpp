@@ -258,18 +258,18 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
 
 }
 
-void Chunk::setTileAt(TileFloor floor, TileIndex i, Tile tile) {
+void Chunk::setTileAt(TileIndex i, Tile tile) {
     assert(i < CHUNK_SIZE);
     const bool readLocked = isReadLocked();
     Tile& oldTile = mTiles[i];
     if (readLocked && !oldTile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    TileFlags newFlags = TileFlags(oldTile.tileFlags | tile.tileFlags);
+    TileFlags newFlags = TileFlags(oldTile.tileFlags.getBits() | tile.tileFlags.getBits());
     oldTile = tile;
     oldTile.setTileFlags(newFlags, readLocked); // Union tile flags
     // Update collision
-    updateTileCollisionAt(i, tile.floors[floor].topLayer, readLocked);
+    updateTileCollisionAt(i, tile.topLayer, readLocked);
     // Only dirty nav graph and mesh if we actually updated data
     if (!readLocked) {
         dirtyNavGraph();
@@ -278,17 +278,17 @@ void Chunk::setTileAt(TileFloor floor, TileIndex i, Tile tile) {
 
 }
 
-bool Chunk::canAddTile(TileFloor floor, TileIndex i, const TileData& tileData) const {
-    return mTiles[i].canAddTile(floor, tileData);
+bool Chunk::canAddTile(TileIndex i, const TileData& tileData) const {
+    return mTiles[i].canAddTile(tileData);
 }
 
-void Chunk::addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData) {
+void Chunk::addTile(TileIndex i, const TileData& tileData) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.addTile(tileFloor, tileData, readLocked);
+    tile.addTile(tileData, readLocked);
     if (!readLocked) {
         dirtyMesh();
         if (tileData.layer != TILE_LAYER_MID) {
@@ -297,32 +297,32 @@ void Chunk::addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData) 
     }
 }
 
-bool Chunk::tryAddTile(TileFloor floor, TileIndex i, const TileData& tileData) {
+bool Chunk::tryAddTile(TileIndex i, const TileData& tileData) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
-        bool success = tile.tryAddTile(floor, tileData, readLocked);
+        bool success = tile.tryAddTile(tileData, readLocked);
         if (success) {
             mTilesNeedingThreadSafeCopy.push_back(i);
         }
         return success;
     }
     else {
-        return tile.tryAddTile(floor, tileData, readLocked);
+        return tile.tryAddTile(tileData, readLocked);
     }
 }
 
-void Chunk::setTileLayer(TileFloor floor, TileIndex i, TileLayer layer, TileID id) {
+void Chunk::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.setTileLayer(floor, layer, id, readLocked);
+    tile.setTileLayer(layer, id, readLocked);
     // Only top has collision
     if (layer == TileLayer::Top) {
         // TODO: Use proper floor for this
-        updateTileCollisionAt(i, tile.floors[TILE_FLOOR_GROUND].topLayer, readLocked);
+        updateTileCollisionAt(i, tile.topLayer, readLocked);
     }
     if (layer != TileLayer::Mid) {
         // Top and bottom can change nav graph
@@ -392,13 +392,13 @@ void Chunk::setTilePathWeight(TileIndex i, ui8 weight) {
 
 }
 
-void Chunk::setTileBaseZPosition(TileFloor floor, TileIndex i, f32 baseZPosition) {
+void Chunk::setTileBaseZPosition(TileIndex i, f32 baseZPosition) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.setBaseZPosition(floor, baseZPosition, readLocked);
+    tile.setBaseZPosition(baseZPosition, readLocked);
     if (!readLocked) {
         dirtyMesh();
     }

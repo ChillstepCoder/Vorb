@@ -159,18 +159,18 @@ public:
 
 
 	// =========== Tile mutators ===========
-    void setTileAt(TileFloor floor, TileIndex i, Tile tile);
-    bool canAddTile(TileFloor floor, TileIndex i, const TileData& tileData) const;
-    void addTile(TileFloor tileFloor, TileIndex i, const TileData& tileData);
-    bool tryAddTile(TileFloor floor, TileIndex i, const TileData& tileData);
-    void setTileLayer(TileFloor floor, TileIndex i, TileLayer layer, TileID id);
+    void setTileAt(TileIndex i, Tile tile);
+    bool canAddTile(TileIndex i, const TileData& tileData) const;
+    void addTile(TileIndex i, const TileData& tileData);
+    bool tryAddTile(TileIndex i, const TileData& tileData);
+    void setTileLayer(TileIndex i, TileLayer layer, TileID id);
     void setTileFlag(TileIndex i, TileFlags flag);
     void setTileFlags(TileIndex i, TileFlags flags);
     void clearTileFlag(TileIndex i, TileFlags flag);
     void clearTileFlags(TileIndex i);
     void clearTileCollisionFlags(TileIndex i);
     void setTilePathWeight(TileIndex i, ui8 weight);
-    void setTileBaseZPosition(TileFloor floor, TileIndex i, f32 baseZPosition);
+    void setTileBaseZPosition(TileIndex i, f32 baseZPosition);
 
     // =========== Ref counting  ===========
 	inline void incRef() const {

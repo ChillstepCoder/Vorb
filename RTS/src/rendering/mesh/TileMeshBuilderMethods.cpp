@@ -120,7 +120,7 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     return rv;
 }
 
-void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, TileFloor floor, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
     const SubTexture& texture = tileData.texture;
     switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
@@ -139,7 +139,7 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, TileFloor floor,
             break;
         }
         case TileTextureMethod::VERTICAL: {
-            addBlockVertical(meshBuilder, floor, floorBaseHeight, tileXY, tileHandle, tileData);
+            addBlockVertical(meshBuilder, floorBaseHeight, tileXY, tileHandle, tileData);
             break;
         }
         case TileTextureMethod::WORLD_TILING: {
@@ -164,14 +164,14 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, TileFloor floor,
     static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
-void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, TileFloor floor, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
     // Currently only supported for ground layer
     assert(tileData.layer == TILE_LAYER_GROUND);
 
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
 
-    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe(floor);
+    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
     const f32v3 tilePos(tileXY.x, tileXY.y, baseZPosition);
 
     /*TileHandle neighbors[4];
@@ -253,7 +253,7 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, TileFloo
     }
 }
 
-void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, TileFloor floor, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
     const SubTexture& texture = tileData.texture;
 
     /*f32 corners[4];
@@ -273,7 +273,7 @@ void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, TileFloor floor,
     }*/
 }
 
-void TileMeshBuilderMethods::addFloorTerrainAligned(MeshBuilder& meshBuilder, TileFloor floor, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addFloorTerrainAligned(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
     const SubTexture& texture = tileData.texture;
 
     //f32 corners[4];

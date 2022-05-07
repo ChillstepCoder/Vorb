@@ -462,6 +462,9 @@
     <ClCompile Include="src\rendering\mesh\TileMeshBuilderMethods.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\structure\Structure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App.h">
@@ -1026,6 +1029,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileFlags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\structure\Structure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
