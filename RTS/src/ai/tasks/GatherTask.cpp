@@ -26,7 +26,7 @@ GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique
     mResource(resource),
     mItemPromise(std::move(itemPromise)) {
     // Gather task requires target tile to be reserved already
-    assert(tileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
+    assert(tileTarget.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
     assert(mItemPromise->isPromise());
 }
 
@@ -34,7 +34,7 @@ GatherTask::~GatherTask() {
     // Clear tile flag on abort
     if (!IS_SHUTTING_DOWN) {
         if (mState <= GatherTaskState::HARVESTING) {
-            mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+            mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
         }
     }
 }
@@ -128,7 +128,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
     }
 
     // Interact
-    if (mTileTarget.tile->hasFlagMainThread(TILE_FLAG_IS_INTERACTING)) {
+    if (mTileTarget.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_INTERACTING)) {
         // Someone else is using this tile, try again next tick.
         return false;
     }
@@ -144,10 +144,10 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             // TODO: Interact lock???
             auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
-            TileID tileId = tileRef->tile->getLayersMainThread(TILE_FLOOR_GROUND)[cmp.mTileLayer];
+            TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
-            tileRef->chunk->setTileLayer(TILE_FLOOR_GROUND, tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
-            tileRef->chunk->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
+            tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+            tileRef->chunk->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
             // TODO: Play animation of tree falling
 
             // Award loot
@@ -240,7 +240,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
 
 void GatherTask::failTask() {
     if (mState <= GatherTaskState::HARVESTING) {
-        mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+        mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
         mState = GatherTaskState::FAIL;
     }
     mItemPromise = nullptr;

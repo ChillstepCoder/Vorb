@@ -19,27 +19,21 @@ TileInspectionPanel::TileInspectionPanel(const f32v2& screenPos, const TileHandl
 
 inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     ImGui::Text("Flags:");
-    FLAG_DISPLAY(TILE_FLAG_IS_INTERACTING);
-    FLAG_DISPLAY(TILE_FLAG_IS_STOCKPILE);
-    FLAG_DISPLAY(TILE_FLAG_IN_CITY);
-    FLAG_DISPLAY(TILE_FLAG_HAS_ITEM_STACK);
-    FLAG_DISPLAY(TILE_FLAG_IS_BUILDING);
-    FLAG_DISPLAY(TILE_FLAG_IS_LARGE_OBJECT_ROOT);
-    FLAG_DISPLAY(TILE_FLAG_DOOR);
-    FLAG_DISPLAY(TILE_FLAG_BREAKABLE);
-    FLAG_DISPLAY(TILE_FLAG_ROAD);
-    FLAG_DISPLAY(TILE_FLAG_HAS_ROOF);
-    FLAG_DISPLAY(TILE_FLAG_HAS_COLLIDER);
-    FLAG_DISPLAY(TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
-    FLAG_DISPLAY(TILE_FLAG_IS_RESOURCE_RESERVED);
-    FLAG_DISPLAY(TILE_FLAG_IS_MULTI_FLOOR);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_INTERACTING);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_STOCKPILE);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_IN_CITY);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_HAS_ITEM_STACK);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_DOOR);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_HAS_COLLIDER);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
 
-    static_assert(TILE_FLAG_TERM == 1 << 14, "Update");
+    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 7, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
 
-    const ui32 id = tileHandle.tile->getLayersMainThread(TILE_FLOOR_GROUND)[layer];
+    const ui32 id = tileHandle.tile->getLayersMainThread()[layer];
     if (id == TILE_ID_NONE) {
         ImGui::Text(format, id, "NONE");
     }
@@ -60,7 +54,7 @@ void TileInspectionPanel::updateAndRender() {
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);
-    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getBaseZPositionUncompressedMainThread(TILE_FLOOR_GROUND));
+    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getBaseZPositionUncompressedMainThread());
     ImGui::Text("ChunkID: %u", chunk.getChunkID().id);
     ImGui::Separator();
     ImGui::Text("Layers:");

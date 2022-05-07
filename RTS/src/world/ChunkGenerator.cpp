@@ -47,7 +47,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * fadeMult) {
-                tile.floors[TILE_FLOOR_GROUND].topLayer = pineTree;
+                tile.topLayer = pineTree;
             }
         }
     }
@@ -96,14 +96,14 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     //}
 
 
-    tile.floors[TILE_FLOOR_GROUND].baseZPositionCompressed = compressTileZPosition(height);
+    tile.baseZPositionCompressed = compressTileZPosition(height);
     
     // Set all thread safe data to be copies of base
 
-    tile.floors[TILE_FLOOR_GROUND].baseZPositionCompressedThreadSafe = tile.floors[TILE_FLOOR_GROUND].baseZPositionCompressed;
-    tile.floors[TILE_FLOOR_GROUND].groundLayerThreadSafe = tile.floors[TILE_FLOOR_GROUND].groundLayer;
-    tile.floors[TILE_FLOOR_GROUND].midLayerThreadSafe = tile.floors[TILE_FLOOR_GROUND].midLayer;
-    tile.floors[TILE_FLOOR_GROUND].topLayerThreadSafe = tile.floors[TILE_FLOOR_GROUND].topLayer;
+    tile.baseZPositionCompressedThreadSafe = tile.baseZPositionCompressed;
+    tile.groundLayerThreadSafe = tile.groundLayer;
+    tile.midLayerThreadSafe = tile.midLayer;
+    tile.topLayerThreadSafe = tile.topLayer;
     tile.tileFlagsThreadSafe = tile.tileFlags;
     tile.pathWeightThreadSafe = tile.pathWeight;
 
@@ -128,7 +128,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
             f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TilePosition(id, TileIndex(x, y)));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
-            const f32 baseZPos = tile.getBaseZPositionUncompressedThreadSafe(TILE_FLOOR_GROUND);
+            const f32 baseZPos = tile.getBaseZPositionUncompressedThreadSafe();
             if (baseZPos + 1.0f > maxHeight) {
                 maxHeight = baseZPos + 1.0f;
             }

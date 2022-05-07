@@ -115,9 +115,9 @@ Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
                     TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
                     Chunk* chunk = handle.getMutableChunk();
-                    chunk->addTile(TILE_FLOOR_GROUND, handle.index, TileRepository::getTileData(tileId));
-                    chunk->setTileFlag(handle.index, TILE_FLAG_IS_BUILDING);
-                    chunk->setTileBaseZPosition(TILE_FLOOR_GROUND, handle.index, height);
+                    chunk->addTile(handle.index, TileRepository::getTileData(tileId));
+                    assert(false); // Set building structure pointer
+                    chunk->setTileBaseZPosition(handle.index, height);
                 }
             }
         }
@@ -148,7 +148,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.height; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = mWorld.getTileHandleAtWorldPos(xy);
-            handle.getMutableChunk()->addTile(TILE_FLOOR_GROUND, handle.index, TileRepository::getTileData(tileId));
+            handle.getMutableChunk()->addTile(handle.index, TileRepository::getTileData(tileId));
         }
     }
 }

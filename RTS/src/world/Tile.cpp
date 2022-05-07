@@ -93,7 +93,7 @@ void Tile::clearTileCollisionFlags(bool isReadLocked) {
 
     assert(IS_MAIN_THREAD());
 
-    tileFlags &= (~TILE_COLLISION_FLAGS_MASK);
+    tileFlags.clearMaskBits(TILE_COLLISION_FLAGS_MASK);
     if (isReadLocked) {
         tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     }
@@ -210,7 +210,7 @@ void Tile::setBaseZPosition(f32 baseZPosition, bool isReadLocked) {
 
 void Tile::updateCollision(bool isReadLocked) {
     // Clear collision flags
-    tileFlags &= (~TILE_COLLISION_FLAGS_MASK);
+    tileFlags.setBit((TileFlags)TILE_COLLISION_FLAGS_MASK);
 
     if (topLayer == TILE_ID_NONE) {
         tileFlags.clearBit(TileFlags::TILE_FLAG_HAS_COLLIDER);

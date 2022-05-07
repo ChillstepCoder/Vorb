@@ -12,7 +12,7 @@ public:
     // ============== Mutators ==============
 
     void setBit(T bit) { mBits |= e_cast(bit); }
-    void overwriteBits(T bits) { mBits = bits; }
+    void overwriteBits(T bits) { mBits = e_cast(bits); }
 
     template <typename... T>
     void setBits(T... args) {

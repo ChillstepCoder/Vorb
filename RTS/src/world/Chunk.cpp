@@ -244,9 +244,9 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
                     TileIndex tileIndex(TileIndex(chunkRelPos.x, chunkRelPos.y));
                     Tile& tile = getMutableTileAt(tileIndex);
-                    if (tile.getLayersMainThread(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND] == TILE_ID_NONE) {
+                    if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        setTileBaseZPosition(TILE_FLOOR_GROUND, tileIndex, mWorldGrid->computeCenterHeightAtTile(TilePosition(getChunkID(), tileIndex)));
+                        setTileBaseZPosition(tileIndex, mWorldGrid->computeCenterHeightAtTile(TilePosition(getChunkID(), tileIndex)));
                     }
                     else {
                         // What happens here? What happens when we cover up the tile?

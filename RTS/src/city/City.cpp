@@ -184,13 +184,13 @@ RoadID City::addRoad(CityRoad& road)
     }
 
     // Update tile flags with road info
-    ui32v2 worldPos;
+    /*ui32v2 worldPos;
     for (worldPos.y = newRoad.aabb.pos.y; worldPos.y < newRoad.aabb.pos.y + newRoad.aabb.dims.y; ++worldPos.y) {
         for (worldPos.x = newRoad.aabb.pos.x; worldPos.x < newRoad.aabb.pos.x + newRoad.aabb.dims.x; ++worldPos.x) {
             TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
-            handle.getMutableChunk()->setTileFlag(handle.index, TILE_FLAG_ROAD);
+            handle.getMutableChunk()->setTileFlag(handle.index, TileFlags::TILE_FLAG_ROAD);
         }
-    }
+    }*/
 
     mCityBuilder->addRoadToBuild(id);
     return id;

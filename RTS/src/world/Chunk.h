@@ -63,6 +63,8 @@ enum class NeighborIndex8 {
 	COUNT        = 8
 };
 
+
+// TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
 	friend class World;
 	friend class WorldGrid;
@@ -207,7 +209,7 @@ private:
     // =========== Generation ===========
 	void setTileFromGeneration(TileIndex i, Tile&& tile) {
 		mTiles[i] = tile;
-		updateTileCollisionAt(i, tile.floors[TILE_FLOOR_GROUND].layers[TILE_LAYER_TOP], false);
+		updateTileCollisionAt(i, tile.layers[TILE_LAYER_TOP], false);
 	}
 
     // =========== Collision ===========

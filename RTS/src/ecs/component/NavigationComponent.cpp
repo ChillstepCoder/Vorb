@@ -61,7 +61,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	const Tile* targetTile = world.tryGetTileAtWorldPos(nextTilePos);
 	if (targetTile) {
         const TileCollider* collider = targetTile->tryGetColliderMainThread();
-        f32 baseZ = targetTile->getBaseZPositionUncompressedMainThread(TILE_FLOOR_GROUND);
+        f32 baseZ = targetTile->getBaseZPositionUncompressedMainThread();
 		// TODO: Remove
 		if (sDebugOptions.mShowPaths) {
 			DebugRenderer::drawWireQuad(f32v3(nextTilePos.x, nextTilePos.y, baseZ), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
@@ -109,7 +109,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 			const Tile* tile = world.tryGetTileAtWorldPos(hit.tilePos);
 			if (tile) {
 				const TileCollider* collider = tile->tryGetColliderMainThread();
-				f32 baseZ = tile->getBaseZPositionUncompressedMainThread(TILE_FLOOR_GROUND);
+				f32 baseZ = tile->getBaseZPositionUncompressedMainThread();
 				if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
 					// Climb
 					motionCmp.mDesiredMode = LocomotionMode::BEGIN_JUMP;

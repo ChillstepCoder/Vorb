@@ -388,11 +388,11 @@ bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
     mCity.mWorld.efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
         // TODO: Look into forcing branch prediction, we should rarely conflict
         const Tile& tile = chunk.getTileAt(tileIndex);
-        if (tile.hasFlagMainThread(TILE_FLAG_IN_CITY)) {
+        if (tile.hasFlagMainThread(TileFlags::TILE_FLAG_IN_CITY)) {
             wasConflict = true;
         }
         else {
-            chunk.setTileFlag(tileIndex, TILE_FLAG_IN_CITY);
+            chunk.setTileFlag(tileIndex, TileFlags::TILE_FLAG_IN_CITY);
         }
     });
 

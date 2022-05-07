@@ -30,7 +30,7 @@ void WorldObjectQuery::refresh() {
 
     // TODO: Tile flag city?
     // Stockpile
-    if (handle.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)) {
+    if (handle.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_STOCKPILE)) {
         const ChunkID id = handle.chunk->getChunkID();
         const auto* stockPiles = mWorld.getItemStockpileRegistry().tryGetStockpilesAtChunkPosition(id);
         if (stockPiles) {

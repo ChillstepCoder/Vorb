@@ -59,8 +59,8 @@ public:
     Tile(TileID ground, TileID mid, TileID top, f32 zPos);
     Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags);
 
-    bool hasFlagMainThread(TileFlags flag) const { return tileFlags & flag; }
-    bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe & flag; }
+    bool hasFlagMainThread(TileFlags flag) const { return tileFlags.isBitSet(flag); }
+    bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe.isBitSet(flag); }
 
     bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
 

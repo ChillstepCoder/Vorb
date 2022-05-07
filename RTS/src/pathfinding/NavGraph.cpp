@@ -52,14 +52,14 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     TileIndex index(cornerX + x, cornerY + y);
                     Tile& tile = tiles[index];
-                    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe(TILE_FLOOR_GROUND);
+                    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                     const int djArryIndex = y * SUBCHUNK_WIDTH + x;
                     bool assigned = false;
                     
                     if (x != 0) {
                         Tile& left = tiles[index - 1];
                         // Check if we can cross between
-                        if (abs(left.getBaseZPositionUncompressedThreadSafe(TILE_FLOOR_GROUND) - baseZPosition) < 2.0f) {
+                        if (abs(left.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
                             djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
                             assigned = true;
                         }
@@ -67,7 +67,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                     if (y != 0) {
                         Tile& bottom = tiles[index - CHUNK_WIDTH];
                         // Check if we can cross between
-                        if (abs(bottom.getBaseZPositionUncompressedThreadSafe(TILE_FLOOR_GROUND) - baseZPosition) < 2.0f) {
+                        if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
                             if (assigned) {
                                 // If we already assigned to left, merge the sets
                                 ui32 prevID = djNodeIDs[djArryIndex];
@@ -237,7 +237,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
             prevNodeId = currNodeId;
         }
 
-        if (abs(bottom.getBaseZPositionUncompressedThreadSafe(TILE_FLOOR_GROUND) - tile.getBaseZPositionUncompressedThreadSafe(TILE_FLOOR_GROUND)) < 2.0f) {
+        if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - tile.getBaseZPositionUncompressedThreadSafe()) < 2.0f) {
             // Start new edge
             if (length == 0) {
                 start = chunkRelativePos;

@@ -14,7 +14,7 @@ IntersectionHit2D TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& 
     if (!collider) return IntersectionHit2D();
 
     // TODO: Multiple floors?
-    f32 baseZPosition = tile.getBaseZPositionUncompressedMainThread(TILE_FLOOR_GROUND);
+    f32 baseZPosition = tile.getBaseZPositionUncompressedMainThread();
     
     // Ground check
     float zOffset = zOffsetFromTerrain - baseZPosition;
