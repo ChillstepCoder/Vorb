@@ -4,7 +4,7 @@
 
 #include "city/CityBuilder.h"
 
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include <Vorb/Timing.h>
 #include "Random.h"

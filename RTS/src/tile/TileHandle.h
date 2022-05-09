@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ChunkID.h"
-#include "Tile.h"
+#include "world/ChunkID.h"
+#include "tile/Tile.h"
 
 class Chunk;
 

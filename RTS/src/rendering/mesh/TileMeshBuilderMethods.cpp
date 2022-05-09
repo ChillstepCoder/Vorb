@@ -3,7 +3,7 @@
 
 #include "rendering/mesh/MeshBuilder.h"
 
-#include "world/TileHandle.h"
+#include "tile/TileHandle.h"
 #include "world/Chunk.h"
 
 

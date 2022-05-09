@@ -268,26 +268,27 @@
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\resources\SkillRepository.cpp" />
     <ClCompile Include="src\resources\TextureRepository.cpp" />
+    <ClCompile Include="src\resources\TileRepository.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
+    <ClCompile Include="src\tile\Tile.cpp" />
+    <ClCompile Include="src\tile\TileContainer.cpp" />
+    <ClCompile Include="src\tile\TileHandle.cpp" />
+    <ClCompile Include="src\tile\TileScanner.cpp" />
+    <ClCompile Include="src\tile\TileUtil.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
     <ClCompile Include="src\ui\UIContext.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
-    <ClCompile Include="src\util\TileUtil.cpp" />
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
-    <ClCompile Include="src\world\Tile.cpp" />
-    <ClCompile Include="src\world\TileHandle.cpp" />
-    <ClCompile Include="src\world\TileRepository.cpp" />
-    <ClCompile Include="src\world\TileScanner.cpp" />
     <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -296,7 +297,6 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="World.cpp" />
-    <ClCompile Include="TileSet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
@@ -450,10 +450,18 @@
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\resources\SkillRepository.h" />
     <ClInclude Include="src\resources\TextureRepository.h" />
+    <ClInclude Include="src\resources\TileRepository.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\structure\Structure.h" />
+    <ClInclude Include="src\tile\Tile.h" />
+    <ClInclude Include="src\tile\TileCollider.h" />
+    <ClInclude Include="src\tile\TileConst.h" />
+    <ClInclude Include="src\tile\TileContainer.h" />
     <ClInclude Include="src\tile\TileFlags.h" />
+    <ClInclude Include="src\tile\TileHandle.h" />
+    <ClInclude Include="src\tile\TileScanner.h" />
+    <ClInclude Include="src\tile\TileUtil.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\TileInspectionPanel.h" />
     <ClInclude Include="src\ui\UIContext.h" />
@@ -465,7 +473,6 @@
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\StringHash.h" />
-    <ClInclude Include="src\util\TileUtil.h" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\weather\CloudManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
@@ -474,19 +481,12 @@
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
-    <ClInclude Include="src\world\Tile.h" />
-    <ClInclude Include="src\world\TileCollider.h" />
-    <ClInclude Include="src\world\TileConst.h" />
-    <ClInclude Include="src\world\TileHandle.h" />
-    <ClInclude Include="src\world\TileRepository.h" />
-    <ClInclude Include="src\world\TileScanner.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextureManip.h" />
     <ClInclude Include="World.h" />
-    <ClInclude Include="TileSet.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>

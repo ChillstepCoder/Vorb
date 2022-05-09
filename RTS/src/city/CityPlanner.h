@@ -3,7 +3,7 @@
 #include "Building.h"
 #include "BuildingBlueprintGenerator.h"
 
-#include "world/TileConst.h"
+#include "tile/TileConst.h"
 
 class City;
 class CityBuilder;

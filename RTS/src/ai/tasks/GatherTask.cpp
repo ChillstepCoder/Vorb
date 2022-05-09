@@ -13,7 +13,7 @@
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "Random.h"
 
 #include <boost/pool/singleton_pool.hpp>

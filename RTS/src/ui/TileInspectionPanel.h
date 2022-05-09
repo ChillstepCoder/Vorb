@@ -1,5 +1,5 @@
 #pragma once
-#include "world/TileHandle.h"
+#include "tile/TileHandle.h"
 
 class TileInspectionPanel
 {

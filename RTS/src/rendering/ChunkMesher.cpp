@@ -2,7 +2,7 @@
 #include "ChunkMesher.h"
 
 #include "world/Chunk.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshBuilder.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"

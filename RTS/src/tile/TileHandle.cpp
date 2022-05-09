@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "TileHandle.h"
+#include "tile/TileHandle.h"
 
-#include "Chunk.h"
+#include "world/Chunk.h"
 
 
 TileRef::TileRef(Chunk* chunk, TileIndex index) :

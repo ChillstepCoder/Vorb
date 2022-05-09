@@ -11,9 +11,9 @@
 #include "ResourceManager.h"
 #include "city/BuildingDescriptionRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
-#include "world/TileScanner.h"
+#include "tile/TileScanner.h"
 #include "item/ItemStockpile.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include "DebugRenderer.h"
 #include "options/DebugOptions.h"
@@ -97,8 +97,8 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
 
             // Mark all tiles as reserved
             for (auto&& it : gatherCmp.mScannedTiles) {
-                assert(!it.getMutableChunk()->getTileAt(it.index).hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
-                it.getMutableChunk()->setTileFlag(it.index, TILE_FLAG_IS_RESOURCE_RESERVED);
+                assert(!it.getMutableChunk()->getTileAt(it.index).hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
+                it.getMutableChunk()->setTileFlag(it.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
             }
             break;
         }
@@ -109,7 +109,7 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
         while (businessCmp.mIdleWorkers.size() && gatherCmp.mScannedTiles.size()) {
             TileHandle handle = gatherCmp.mScannedTiles.back();
 
-            assert(handle.tile->hasFlagMainThread(TILE_FLAG_IS_RESOURCE_RESERVED));
+            assert(handle.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
 
             entt::entity worker = businessCmp.mIdleWorkers.front();
 
@@ -120,7 +120,7 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
             TileLayer gatherLayer;
             if (handle.tile->hasHarvestableResource(gatherCmp.mResourceToGather, &gatherLayer)) {
 
-                const TileData& tileData = TileRepository::getTileData(handle.tile->getLayersMainThread(TILE_FLOOR_GROUND)[e_cast(gatherLayer)]);
+                const TileData& tileData = TileRepository::getTileData(handle.tile->getLayersMainThread()[e_cast(gatherLayer)]);
                 // TODO: Play animation of tree falling
 
                 // TODO: HANDLE MULTIPLE DROPS

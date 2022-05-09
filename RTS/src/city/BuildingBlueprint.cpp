@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "BuildingBlueprint.h"
 
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 BuildingBlueprint::BuildingBlueprint(
     const BuildingDef& desc,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world/TileConst.h"
+#include "tile/TileConst.h"
 #include "tile/TileFlags.h"
 
 class Building;

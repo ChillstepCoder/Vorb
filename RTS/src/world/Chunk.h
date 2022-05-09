@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ChunkID.h"
-#include "TileHandle.h"
+#include "tile/TileHandle.h"
 
 #include "item/ItemStack.h"
 #include "util/AABB.hpp"

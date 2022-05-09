@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "world/Tile.h"
+#include "tile/Tile.h"
 
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 KEG_ENUM_DEF(TileTextureMethod, TileTextureMethod, kt) {
     kt.addValue("simple", TileTextureMethod::SIMPLE);

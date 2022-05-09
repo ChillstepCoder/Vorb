@@ -2,7 +2,7 @@
 #include "PathFinder.h"
 
 #include "World.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include "pathfinding/NavGraph.h"
 

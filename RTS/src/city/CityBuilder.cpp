@@ -7,7 +7,7 @@
 #include "BuildingBlueprint.h"
 
 #include "World.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include "ecs/EntityComponentSystem.h"
 
@@ -116,7 +116,7 @@ Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
                     Chunk* chunk = handle.getMutableChunk();
                     chunk->addTile(handle.index, TileRepository::getTileData(tileId));
-                    assert(false); // Set building structure pointer
+                    //assert(false); // Set building structure pointer
                     chunk->setTileBaseZPosition(handle.index, height);
                 }
             }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world/Tile.h"
+#include "tile/Tile.h"
 
 class Chunk;
 class Camera3D;

@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "TileInspectionPanel.h"
 
-#include "world/TileHandle.h"
+#include "tile/TileHandle.h"
 #include "world/Chunk.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>

@@ -5,7 +5,7 @@
 #include "DebugRenderer.h"
 #include "world/ChunkGenerator.h"
 #include "world/HeightmapTerrainQuadtree.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "weather/CloudManager.h"
 #include "physics/ContactListener.h"
 #include "physics/ContactFilter.h"

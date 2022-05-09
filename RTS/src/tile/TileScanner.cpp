@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "World.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "TileScanner.h"
 
 struct BfsNode {

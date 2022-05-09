@@ -16,7 +16,7 @@
 #include "resources/AnimMachineRepository.h"
 #include "resources/SkillRepository.h"
 #include "resources/TextureRepository.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "editor/BrushRepository.h"
 
 #include <Vorb/io/IOManager.h>

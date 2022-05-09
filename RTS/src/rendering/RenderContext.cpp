@@ -3,7 +3,7 @@
 #include "ResourceManager.h"
 #include "World.h"
 #include "world/HeightmapTerrainQuadtree.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "pathfinding/NavGraph.h"
 #include "pathfinding/NavThread.h"
 

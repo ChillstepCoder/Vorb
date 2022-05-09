@@ -8,7 +8,7 @@
 #include "world/WorldData.h"
 #include "world/WorldGrid.h"
 #include "world/Region.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include "generation/NoiseFunction.hpp"
 #include "generation/WorldGeneration.h"

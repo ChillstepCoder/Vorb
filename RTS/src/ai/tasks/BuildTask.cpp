@@ -6,7 +6,7 @@
 #include "ecs/component/InventoryComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
 
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "World.h"
 
 #include "city/BuildingBlueprint.h"

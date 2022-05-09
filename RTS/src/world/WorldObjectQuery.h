@@ -7,7 +7,7 @@ class ItemStockpile;
 class Building;
 class Chunk;
 
-#include "world/TileHandle.h"
+#include "tile/TileHandle.h"
 #include "actor/ActorTypes.h"
 
 class WorldObjectQuery {

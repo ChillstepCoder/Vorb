@@ -3,8 +3,7 @@
 #include <optional>
 
 #include "actor/ActorTypes.h"
-#include "TileSet.h"
-#include "world/Tile.h"
+#include "tile/Tile.h"
 #include "ecs/factory/EntityType.h"
 
 #include "world/WorldGrid.h"

@@ -19,7 +19,7 @@
 #include "camera/CameraController.h"
 
 #include "World.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 #include "world/WorldObjectQuery.h"
 #include "Utils.h"
 

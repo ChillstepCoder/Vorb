@@ -12,7 +12,7 @@
 #include "ResourceManager.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "editor/BrushRepository.h"
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include "city/City.h"
 #include "city/BuildingBlueprintGenerator.h"

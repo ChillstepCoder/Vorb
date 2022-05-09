@@ -9,7 +9,7 @@
 #include "pathfinding/NavThread.h"
 #include "world/WorldGrid.h"
 
-#include "world/TileRepository.h"
+#include "resources/TileRepository.h"
 
 #include "ResourceManager.h"
 #include "item/ItemRepository.h"
