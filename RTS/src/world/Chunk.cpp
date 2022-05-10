@@ -37,9 +37,6 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
     mAABB.width = CHUNK_WIDTH;
     mAABB.depth = CHUNK_WIDTH;
     mAABB.height = 4.0f;
-
-    ui32v3 worldPos3d(chunkId.getWorldPosInt().x, chunkId.getWorldPosInt().y, 0);
-    mTileContainer.init(worldPos3d, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1));
 }
 
 void Chunk::allocateTiles() {
@@ -80,7 +77,7 @@ void Chunk::dispose() {
     mDataReadyNeighborCount = 0;
     
     // Reset render data
-    mChunkRenderData.mMeshDirty = true;
+    mTileContainer.setDirtyMesh(true);
     mChunkRenderData.mIsVisible = false;
 
     mChunkRenderData.mBillboardMesh.reset();
@@ -227,7 +224,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
         if (mChunkRenderData.mGrassLod) {
             mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
         }
-        mChunkRenderData.mMeshDirty = true;
+        mTileContainer.setDirtyMesh(true);
 
         // Update baseZ position
         const f32v2 startPos = editRadius - f32v2(editRadius);

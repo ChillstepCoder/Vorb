@@ -115,9 +115,10 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
     PreciseTimer timer;
 
     // Allocate tiles if needed
-    if (!chunk.mTiles.size()) {
-        chunk.allocateTiles();
-    }
+    const ui32v2& worldPosInt2D = chunk.getChunkID().getWorldPosInt();
+    const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
+    chunk.mTileContainer.init(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1));
+    chunk.allocateTiles();
     const ChunkID& id = chunk.getChunkID();
 
     const f32v2& chunkPosWorld = chunk.getWorldPos();
@@ -125,7 +126,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
     for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
         for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, TilePosition(id, TileIndex(x, y)));
+            f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, worldPosInt2D + ui32v2(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
             const f32 baseZPos = tile.getBaseZPositionUncompressedThreadSafe();
@@ -133,7 +134,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
                 maxHeight = baseZPos + 1.0f;
             }
             TileIndex index(x, y);
-            chunk.setTileFromGeneration(index, std::move(tile));
+            chunk.mTileContainer.setTileFromGeneration(index, std::move(tile));
             chunk.mGrass[index] = grass;
         }
     }

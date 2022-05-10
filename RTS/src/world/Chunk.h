@@ -40,7 +40,6 @@ struct ChunkRenderData {
     std::unique_ptr<Mesh> mChunkMesh = nullptr;
     std::unique_ptr<Mesh> mBillboardMesh = nullptr;
 	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
-	bool mMeshDirty = true;
     bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
 	bool mIsVisible = false;
 };

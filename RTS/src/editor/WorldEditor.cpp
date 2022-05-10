@@ -463,7 +463,7 @@ void WorldEditor::updateTileEdit() {
             tileContainer.addTile(tileIndex, data);
 
             if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
-                f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(TilePosition(chunkID, tileIndex)) + mGroundTileOffset;
+                f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(mPickData.hit.position) + mGroundTileOffset;
                 height = round(height);
                 if (height == 0.0f) height = 1.0f;
                 tileContainer.setTileBaseZPosition(tileIndex, height);

@@ -823,19 +823,19 @@ f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const
 }
 
 ui32v2 WorldGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
-    ui32v2 heightmapXY = ui32v2(tilePos.tileIndex.getX(), tilePos.tileIndex.getY());
+    ui32v2 heightmapXY = worldTilePos;
     // Offset into the heightmap by our chunk position
-    heightmapXY += (tilePos.chunkId.pos % HEIGHTMAP_PATCH_WIDTH_CHUNKS) * (ui32)CHUNK_WIDTH;
+    heightmapXY = heightmapXY % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);
     heightmapXY /= HEIGHTMAP_QUAD_SIZE;
     return heightmapXY;
 }
 
 f32v2 WorldGrid::getHeightmapOffsetFromTilePos(ui32v2 worldTilePos)
 {
-    f32v2 offset = f32v2(tilePos.tileIndex.getX(), tilePos.tileIndex.getY());
+    ui32v2 offset = worldTilePos;
     // Offset into the heightmap by our chunk position
-    offset += (tilePos.chunkId.pos % HEIGHTMAP_PATCH_WIDTH_CHUNKS) * (ui32)CHUNK_WIDTH;
-    return offset;
+    offset = offset % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);
+    return f32v2(offset);
 }
 
 HeightmapPatch::~HeightmapPatch() {

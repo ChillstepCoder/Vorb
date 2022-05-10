@@ -13,6 +13,18 @@ void TileContainer::freeTiles() {
     std::vector<Tile>().swap(mTiles);
 }
 
+void TileContainer::updateMainThread() {
+    assert(IS_MAIN_THREAD());
+    if (mTilesNeedingThreadSafeCopy.size() && mReadLockCount == 0) {
+        for (TileIndex& id : mTilesNeedingThreadSafeCopy) {
+            mTiles[id].updateThreadSafeLayers();
+        }
+        mTilesNeedingThreadSafeCopy.clear();
+        mDirtyMesh = true;
+        mDirtyNav = true; // TODO: Make this smarter
+    }
+}
+
 void TileContainer::setTileAt(TileIndex i, Tile tile) {
     assert(i < CHUNK_SIZE);
     const bool readLocked = isReadLocked();

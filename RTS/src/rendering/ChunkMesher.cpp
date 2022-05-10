@@ -167,7 +167,7 @@ ChunkMesher::~ChunkMesher()
 void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
     UNUSED(cameraPos);
     ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingBaseMesh && renderData.mMeshDirty) {
+    if (!renderData.mIsBuildingBaseMesh && chunk.getTileContainer().isDirtyMesh()) {
         createMeshAsync(chunk);
     }
 }
@@ -178,7 +178,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
 
     // TODO: Move somewhere else?
-    chunk.mChunkRenderData.mMeshDirty = false;
+    chunk.getTileContainer().setDirtyMesh(false);
     chunk.incReadLockAndRefCountNeighbors4AndSelf();
 
     ChunkRenderData& renderData = chunk.mChunkRenderData;
@@ -225,7 +225,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getWorldPos()));
+                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }

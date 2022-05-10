@@ -42,7 +42,7 @@
 #include "ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
 
-#include "util/TileUtil.h"
+#include "tile/TileUtil.h"
 
 #include "options/DebugOptions.h"
 
@@ -106,14 +106,7 @@ void World::updateTaskQueues() {
 	// Update any pending updates if pathfinding is idle
 	if (!Services::NavThread::ref().isRunningPathfind()) {
 		for (auto&& chunk : mActiveChunks) {
-			if (chunk->mTilesNeedingThreadSafeCopy.size() && chunk->mReadLockCount == 0) {
-				for (TileIndex& id : chunk->mTilesNeedingThreadSafeCopy) {
-					chunk->mTiles[id].updateThreadSafeLayers();
-				}
-				chunk->mTilesNeedingThreadSafeCopy.clear();
-				chunk->dirtyMesh();
-				chunk->dirtyNavGraph(); // TODO: Make this smarter
-			}
+			chunk->mTileContainer.updateMainThread();
 		}
 	}
 }
@@ -304,7 +297,7 @@ const Tile& World::getTileAtWorldPos(const f32v2& worldPos) const {
 	assert(chunk->isDataReady());
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-    return chunk->getTileAt(TileIndex(x, y));
+    return chunk->getTileContainer().getTileAt(TileIndex(x, y));
 }
 
 const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
@@ -312,7 +305,7 @@ const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return &chunk->getTileAt(TileIndex(x, y));
+        return &chunk->getTileContainer().getTileAt(TileIndex(x, y));
     }
     return nullptr;
 }
@@ -322,7 +315,7 @@ const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
 	if (chunk->isDataReady()) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return &chunk->getTileAt(TileIndex(x, y));
+		return &chunk->getTileContainer().getTileAt(TileIndex(x, y));
 	}
 	return nullptr;
 }
@@ -332,7 +325,7 @@ const Tile* World::tryGetTileAtWorldPos(const ui16v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return &chunk->getTileAt(TileIndex(x, y));
+        return &chunk->getTileContainer().getTileAt(TileIndex(x, y));
     }
     return nullptr;
 }
@@ -342,7 +335,7 @@ const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-	const Tile& tile = chunk.getTileAt(TileIndex(x, y));
+	const Tile& tile = chunk.getTileContainer().getTileAt(TileIndex(x, y));
 	ui16 navNodeIndex = tile.getNavNodeIndex();
 	if (navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
 	return mNavGraph->getNode({ chunk.getChunkID().id, navNodeIndex });
@@ -372,8 +365,8 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
 	for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.height;) {
         for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.height;) {
             TileHandle cornerHandle = getTileHandleAtWorldPos(worldPos);
-            assert(cornerHandle.chunk && cornerHandle.chunk->isDataReady());
-            Chunk& chunk = *cornerHandle.getMutableChunk();
+            assert(cornerHandle.container);
+            Chunk& chunk = mWorldGrid.getChunk(ChunkID::fromWorldUI32v2(cornerHandle.getWorldPos2D()));
             const ui32 distFromRightEdge = CHUNK_WIDTH - cornerHandle.index.getX();
             const ui32 distFromTopEdge = CHUNK_WIDTH - cornerHandle.index.getY();
             spanX = std::min(distFromRightEdge, aabb.width);
@@ -532,7 +525,7 @@ void World::updateSun() {
 
 bool World::updateChunk(Chunk& chunk) {
 	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
-		if (chunk.mRefCount.load()) {
+		if (chunk.getTileContainer().getRefCount()) {
 			// Waiting on a thread or handle to release us
 			return false;
 		}
@@ -576,7 +569,7 @@ bool World::updateChunk(Chunk& chunk) {
 		}
 		
 	}
-	else if (chunk.mRefCount.load() == 0) {
+	else if (chunk.getTileContainer().getRefCount() == 0) {
 		// If we are not in use, we are done generating
 		onChunkDataReady(chunk);
 	}

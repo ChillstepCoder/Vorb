@@ -48,7 +48,7 @@ struct NavNode {
     };
     mutable bool isClosed; // For use in single threaded pathfinding
 };
-static_assert(sizeof(NavNode) == 44, "Keep small");
+static_assert(sizeof(NavNode) == 48, "Keep small");
 
 struct NavNodeIndexPair {
     ui32 chunkId;

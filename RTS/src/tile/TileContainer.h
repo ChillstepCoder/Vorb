@@ -11,6 +11,8 @@ public:
     void init(ui32v3 rootPos, ui32v3 dims);
     void freeTiles();
 
+    void updateMainThread();
+
     // =========== Tile mutators ===========
     void setTileAt(TileIndex i, Tile tile);
     bool canAddTile(TileIndex i, const TileData& tileData) const;
@@ -72,8 +74,8 @@ public:
     // =========== Dirty bits  ===========
     bool isDirtyMesh() const { return mDirtyMesh; }
     bool isDirtyNav() const { return mDirtyNav; }
-    bool setDirtyMesh(bool dirty) { mDirtyMesh = dirty; }
-    bool setDirtyNav(bool dirty) { mDirtyNav = dirty; }
+    void setDirtyMesh(bool dirty) const { mDirtyMesh = dirty; }
+    void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
 
 
 
