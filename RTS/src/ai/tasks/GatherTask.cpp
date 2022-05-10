@@ -34,7 +34,7 @@ GatherTask::~GatherTask() {
     // Clear tile flag on abort
     if (!IS_SHUTTING_DOWN) {
         if (mState <= GatherTaskState::HARVESTING) {
-            mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+            mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
         }
     }
 }
@@ -101,12 +101,12 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
 
     // Make sure tile still has the resource
-    if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos(), mResource, nullptr)) {
+    if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, nullptr)) {
         failTask();
         return;
     }
 
-    navCmp.requestCoarsePathWithCallback(physCmp.getXYPosition(), mTileTarget.getWorldPos(), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(physCmp.getXYPosition(), PathPoint(mTileTarget.getWorldPos2D()), [this](bool success) {
         if (success == true) {
             mState = GatherTaskState::BEGIN_HARVEST;
         }
@@ -122,7 +122,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
-    if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos(), mResource, &layer)) {
+    if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, &layer)) {
         failTask();
         return false;
     }
@@ -146,8 +146,8 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             //if (tileHandle.tile.layers[cmp.mTileLayer])
             TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
-            tileRef->chunk->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
-            tileRef->chunk->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
+            tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+            tileRef->container->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
             // TODO: Play animation of tree falling
 
             // Award loot
@@ -240,7 +240,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
 
 void GatherTask::failTask() {
     if (mState <= GatherTaskState::HARVESTING) {
-        mTileTarget.getMutableChunk()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+        mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
         mState = GatherTaskState::FAIL;
     }
     mItemPromise = nullptr;

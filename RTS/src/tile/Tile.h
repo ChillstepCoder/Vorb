@@ -51,7 +51,7 @@ class TileBase {
 static_assert(sizeof(TileBase) == 12, "Keep small");
 
 class Tile {
-    friend class Chunk;
+    friend class TileContainer;
     friend class ChunkGenerator;
 public:
 	Tile() {};
@@ -68,7 +68,7 @@ public:
 
     // Only nav thread can access this data
     ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navNodeIndex; }
-    void setNavNodeIndex(ui16 index) { assert(IS_NAV_THREAD()); navNodeIndex = index; }
+    void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navNodeIndex = index; }
 
     ui8 getPathWeightMainThread() const { assert(IS_MAIN_THREAD()); return pathWeight; }
     ui8 getPathWeightNavThread() const { assert(IS_NAV_THREAD()); return pathWeightThreadSafe; }
@@ -119,7 +119,7 @@ private:
     BitFlags<TileFlags> tileFlags;
     BitFlags<TileFlags> tileFlagsThreadSafe;
 	// Collision stuff
-    ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread
+    mutable ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread
     ui8 pathWeight = 255u;
     ui8 pathWeightThreadSafe = 255u;
 };

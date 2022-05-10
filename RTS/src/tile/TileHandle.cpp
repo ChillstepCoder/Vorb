@@ -4,18 +4,18 @@
 #include "world/Chunk.h"
 
 
-TileRef::TileRef(Chunk* chunk, TileIndex index) :
-    chunk(chunk),
+TileRef::TileRef(TileContainer* container, TileIndex index) :
+    container(container),
     index(index),
-    tile(&chunk->mTiles[index]) {
-    chunk->incRef();
+    tile(&container->mTiles[index]) {
+    container->incRef();
 }
 
 TileRef::TileRef(TileHandle handle) :
-    chunk(const_cast<Chunk*>(handle.chunk)), // FUCK YOU I DO WHAT I WANT
+    container(const_cast<TileContainer*>(handle.container)), // FUCK YOU I DO WHAT I WANT
     index(handle.index),
-    tile(&chunk->mTiles[handle.index]) {
-    chunk->incRef();
+    tile(&container->mTiles[handle.index]) {
+    container->incRef();
 }
 
 TileRef::TileRef() {
@@ -24,42 +24,37 @@ TileRef::TileRef() {
 
 void TileRef::acquire(TileHandle handle) {
     assert(IS_MAIN_THREAD());
-    assert(!chunk);
-    chunk = const_cast<Chunk*>(handle.chunk); // FUCK YOU I DO WHAT I WANT;
+    assert(!container);
+    container = const_cast<TileContainer*>(handle.container); // FUCK YOU I DO WHAT I WANT;
     index = handle.index;
-    tile = &chunk->mTiles[index];
-    chunk->incRef();
+    tile = &container->mTiles[index];
+    container->incRef();
 }
 
-void TileRef::acquire(Chunk* newChunk, TileIndex newIndex) {
+void TileRef::acquire(TileContainer* newContainer, TileIndex newIndex) {
     assert(IS_MAIN_THREAD());
-    assert(!chunk);
-    chunk = newChunk;
+    assert(!container);
+    container = newContainer;
     index = newIndex;
-    tile = &chunk->mTiles[newIndex];
-    chunk->incRef();
+    tile = &container->mTiles[newIndex];
+    container->incRef();
 }
 
 void TileRef::release()
 {
-    if (chunk) {
-        chunk->decRef();
-        chunk = nullptr;
+    if (container) {
+        container->decRef();
+        container = nullptr;
     }
 }
 
-TilePosition TileRef::getTilePosition() const {
-    assert(chunk);
-    return TilePosition(chunk->getChunkID(), index);
-}
-
-TileHandle::TileHandle(const Chunk* chunk, TileIndex index) :
-    chunk(chunk),
+TileHandle::TileHandle(const TileContainer* container, TileIndex index) :
+    container(container),
     index(index),
-    tile(&chunk->mTiles[index]) {
+    tile(&container->mTiles[index]) {
 
 }
 
-f32v2 TileHandle::getWorldPos() {
-    return chunk->getWorldPos() + f32v2(index.getX(), index.getY());
+ui32v2 TileHandle::getWorldPos2D() const {
+    return container->getWorldPos2D() + ui32v2(index.getX(), index.getY());
 }

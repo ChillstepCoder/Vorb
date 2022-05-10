@@ -76,15 +76,6 @@ namespace {
     }
 }
 
-// TODO: Somewhere else?
-struct TilePosition {
-    TilePosition() {};
-    TilePosition(ChunkID chunkId, TileIndex tileIndex) : chunkId(chunkId), tileIndex(tileIndex)  {};
-
-    ChunkID chunkId;
-    TileIndex tileIndex;
-};
-
 
 // Hash function
 namespace std {

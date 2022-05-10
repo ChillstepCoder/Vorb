@@ -542,10 +542,10 @@ f32 WorldGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId
     return interpolateHeightAtOffset(dxy, heightData, heightmapXY);
 }
 
-f32 WorldGrid::computeCenterHeightAtTile(const f32* heightData, TilePosition tilePos)
+f32 WorldGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos)
 {
-    const f32v2 offset = getHeightmapOffsetFromTilePos(tilePos) + f32v2(0.5f);
-    const ui32v2 heightmapXY = getHeightmapXYfromTilePos(tilePos);
+    const f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos) + f32v2(0.5f);
+    const ui32v2 heightmapXY = getHeightmapXYfromTilePos(worldTilePos);
 
     // Compute normalized offset from bl
     // TODO: Optimize
@@ -556,16 +556,16 @@ f32 WorldGrid::computeCenterHeightAtTile(const f32* heightData, TilePosition til
 
 }
 
-f32 WorldGrid::computeCenterHeightAtTile(TilePosition tilePos) const {
+f32 WorldGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
 
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(tilePos.chunkId);
+    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldUI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
         return 0.0f;
     }
 
-    return computeCenterHeightAtTile(patch.mHeightData->data, tilePos);
+    return computeCenterHeightAtTile(patch.mHeightData->data, worldTilePos);
 }
 
 void WorldGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) const {
@@ -592,12 +592,12 @@ void WorldGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLe
     } while (lengthRemaining > 0);
 }
 
-void WorldGrid::computeTileCorners(const f32* heightData, TilePosition tilePos, f32 corners[4]) {
+void WorldGrid::computeTileCorners(const f32* heightData, ui32v2 worldTilePos, f32 corners[4]) {
 
     constexpr f32 tileWidthHeightmap = 1.0f / HEIGHTMAP_QUAD_SIZE;
 
-    f32v2 offset = getHeightmapOffsetFromTilePos(tilePos);
-    ui32v2 heightmapXY = getHeightmapXYfromTilePos(tilePos);
+    f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos);
+    ui32v2 heightmapXY = getHeightmapXYfromTilePos(worldTilePos);
     // Compute normalized offset from bl
     // TODO: Optimize
     f32v2 dxy = (offset - f32v2(heightmapXY) * (f32)HEIGHTMAP_QUAD_SIZE) / f32(HEIGHTMAP_QUAD_SIZE);
@@ -614,26 +614,26 @@ bool WorldGrid::areTrianglesFlippedAtTile(TileIndex tileIndex) {
     return (heightmapXY.x + heightmapXY.y) % 2 == 0;
 }
 
-f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, TilePosition tilePos) {
+f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos) {
     f32 corners[4];
-    computeTileCorners(heightData, tilePos, corners);
+    computeTileCorners(heightData, worldTilePos, corners);
     return glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
-f32 WorldGrid::computeMinHeightAtTile(TilePosition tilePos) const {
+f32 WorldGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
 
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(tilePos.chunkId);
+    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldUI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
         return 0.0f;
     }
 
-    return computeMinHeightAtTile(patch.mHeightData->data, tilePos);
+    return computeMinHeightAtTile(patch.mHeightData->data, worldTilePos);
 }
 
-f32 WorldGrid::computeMaxHeightAtTile(TilePosition tilePos) const {
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(tilePos.chunkId);
+f32 WorldGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
+    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldUI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
@@ -641,7 +641,7 @@ f32 WorldGrid::computeMaxHeightAtTile(TilePosition tilePos) const {
     }
 
     f32 corners[4];
-    computeTileCorners(patch.mHeightData->data, tilePos, corners);
+    computeTileCorners(patch.mHeightData->data, worldTilePos, corners);
     return glm::max(glm::max(glm::max(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
@@ -822,7 +822,7 @@ f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const
     }
 }
 
-ui32v2 WorldGrid::getHeightmapXYfromTilePos(TilePosition tilePos) {
+ui32v2 WorldGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
     ui32v2 heightmapXY = ui32v2(tilePos.tileIndex.getX(), tilePos.tileIndex.getY());
     // Offset into the heightmap by our chunk position
     heightmapXY += (tilePos.chunkId.pos % HEIGHTMAP_PATCH_WIDTH_CHUNKS) * (ui32)CHUNK_WIDTH;
@@ -830,7 +830,7 @@ ui32v2 WorldGrid::getHeightmapXYfromTilePos(TilePosition tilePos) {
     return heightmapXY;
 }
 
-f32v2 WorldGrid::getHeightmapOffsetFromTilePos(TilePosition tilePos)
+f32v2 WorldGrid::getHeightmapOffsetFromTilePos(ui32v2 worldTilePos)
 {
     f32v2 offset = f32v2(tilePos.tileIndex.getX(), tilePos.tileIndex.getY());
     // Offset into the heightmap by our chunk position

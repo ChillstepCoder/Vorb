@@ -3,7 +3,7 @@
 #include "world/ChunkID.h"
 #include "tile/Tile.h"
 
-class Chunk;
+class TileContainer;
 
 struct LiteTileHandle {
     LiteTileHandle() {};
@@ -23,20 +23,21 @@ struct LiteTileHandle {
 struct TileHandle {
 
     TileHandle() {};
-    TileHandle(const Chunk* chunk, TileIndex index);
+    TileHandle(const TileContainer* container, TileIndex index);
 
-    bool isValid() const { return chunk != nullptr; }
-    Chunk* getMutableChunk() { assert(IS_MAIN_THREAD());  return const_cast<Chunk*>(chunk); }
-    f32v2 getWorldPos();
+    bool isValid() const { return container != nullptr; }
+    TileContainer* getMutableContainer() { assert(IS_MAIN_THREAD());  return const_cast<TileContainer*>(container); }
+    ui32v2 getWorldPos2D() const;
+    ChunkID getChunkIDAtPos() const { return ChunkID::fromWorldUI32v2(getWorldPos2D()); }
 
     TileHandle& operator=(const TileHandle& other) {
-        chunk = other.chunk;
+        container = other.container;
         const_cast<TileIndex&>(index) = other.index;
         tile = other.tile;
         return *this;
     }
 
-    const Chunk* chunk = nullptr;
+    const TileContainer* container = nullptr;
     const Tile* tile = nullptr;
     const TileIndex index;
 };
@@ -46,26 +47,25 @@ static_assert(sizeof(TileHandle) == 24, "Keep small as possible");
 struct TileRef {
     TileRef();
     TileRef(TileHandle handle);
-    TileRef(Chunk* chunk, TileIndex index);
+    TileRef(TileContainer* container, TileIndex index);
     ~TileRef() { release(); }
 
     VORB_NON_COPYABLE(TileRef);
     TileRef(TileRef&& o) {
         // Moving calls destructor on other, so we should reaquire
-        acquire(o.chunk, o.index);
+        acquire(o.container, o.index);
     }
     TileRef& operator=(TileRef&& o) {
         // Moving calls destructor on other, so we should reaquire
-        acquire(o.chunk, o.index);
+        acquire(o.container, o.index);
     }
 
     void acquire(TileHandle handle);
-    void acquire(Chunk* chunk, TileIndex index);
+    void acquire(TileContainer* container, TileIndex index);
     void release();
-    bool isValid() const { return chunk != nullptr; }
-    TilePosition getTilePosition() const;
+    bool isValid() const { return container != nullptr; }
 
-    Chunk* chunk = nullptr;
+    TileContainer* container = nullptr;
     Tile* tile = nullptr;
     TileIndex index;
 };

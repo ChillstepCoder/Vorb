@@ -176,11 +176,11 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
     // Build tile
     const ui32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
     TileHandle tileHandle = world.getTileHandleAtWorldPos(worldPos);
-    Chunk* chunk = tileHandle.getMutableChunk();
-    chunk->setTileLayer(tileHandle.index, (TileLayer)tileData.layer, tileId);
+    TileContainer& tiles = *tileHandle.getMutableContainer();
+    tiles.setTileLayer(tileHandle.index, (TileLayer)tileData.layer, tileId);
     // Walls have higher base Z position
     if (bpTile.type == BlueprintTileType::WALL) {
-        chunk->setTileBaseZPosition(tileHandle.index, tileHandle.tile->getBaseZPositionUncompressedMainThread() + 3.0f);
+        tiles.setTileBaseZPosition(tileHandle.index, tileHandle.tile->getBaseZPositionUncompressedMainThread() + 3.0f);
     }
 
     // Notify blueprint

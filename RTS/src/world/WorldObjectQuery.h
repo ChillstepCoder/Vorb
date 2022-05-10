@@ -25,7 +25,7 @@ public:
     ItemStockpile* getStockpile() const { return mStockpileAtTile; }
     Building* getBuilding() const { return mBuildingAtTile; }
     const std::vector<EntityDistSortKey>& getEntities() const { return mEntitiesAtTile; }
-    TileHandle getTileHandle() const { return TileHandle(mTileRef.chunk, mTileRef.index); }
+    TileHandle getTileHandle() const { return TileHandle(mTileRef.container, mTileRef.index); }
     World& getWorld() const { return mWorld; }
     const f32v2& getTilePos() const { return mTilePos; }
 

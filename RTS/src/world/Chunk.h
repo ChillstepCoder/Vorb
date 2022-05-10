@@ -2,6 +2,7 @@
 
 #include "ChunkID.h"
 #include "tile/TileHandle.h"
+#include "tile/TileContainer.h"
 
 #include "item/ItemStack.h"
 #include "util/AABB.hpp"
@@ -136,84 +137,36 @@ public:
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
 
 
-    // =========== Tile accessors  ===========
-    Tile& getMutableTileAt(TileIndex i) {
-		assert(IS_MAIN_THREAD());
-        assert(i < CHUNK_SIZE);
-        assert(mState == e_cast(ChunkState::FINISHED));
-		return mTiles[i];
-	}
-
-    const Tile& getTileAt(TileIndex i) const {
-        assert(i < CHUNK_SIZE);
-        assert(mState == e_cast(ChunkState::FINISHED));
-        return mTiles[i];
-    }
-
-	const Tile& getTileAtNoAssert(TileIndex i) const {
-        return mTiles[i];
-	}
+    // =========== Tiles  ===========
+    TileContainer& getTileContainer() { return mTileContainer; }
+    const TileContainer& getTileContainer() const { return mTileContainer; }
 
 
     // =========== Dirtyness  ===========
-	void dirtyNavGraph() { mDirtyNavGraph = true; }
-	void dirtyMesh() { mChunkRenderData.mMeshDirty = true; }
+	void dirtyNavGraph() { mTileContainer.setDirtyNav(true); }
+	void dirtyMesh() { mTileContainer.setDirtyMesh(true); }
 
-
-	// =========== Tile mutators ===========
-    void setTileAt(TileIndex i, Tile tile);
-    bool canAddTile(TileIndex i, const TileData& tileData) const;
-    void addTile(TileIndex i, const TileData& tileData);
-    bool tryAddTile(TileIndex i, const TileData& tileData);
-    void setTileLayer(TileIndex i, TileLayer layer, TileID id);
-    void setTileFlag(TileIndex i, TileFlags flag);
-    void setTileFlags(TileIndex i, TileFlags flags);
-    void clearTileFlag(TileIndex i, TileFlags flag);
-    void clearTileFlags(TileIndex i);
-    void clearTileCollisionFlags(TileIndex i);
-    void setTilePathWeight(TileIndex i, ui8 weight);
-    void setTileBaseZPosition(TileIndex i, f32 baseZPosition);
 
     // =========== Ref counting  ===========
-	inline void incRef() const {
-		assert(IS_MAIN_THREAD()); // Only main thread is allowed to incref
-		assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
-		++mRefCount;
-        if (mRefCount > 200) {
-            std::cout << "DETECTED " << mRefCount << " REF COUNTS ON CHUNK " << std::endl;
-            assert(false);
-        }
-	}
-    inline void decRef() const {
-		assert(mRefCount.load());
-		--mRefCount;
-	}
+	void incReadLock() const { mTileContainer.incReadLock(); }
+	void decReadLock() const { mTileContainer.decReadLock(); }
+	inline void incRef() const { mTileContainer.incRef(); }
+	inline void decRef() const { mTileContainer.decRef(); }
 	void incRefNeighbors4() const;
 	void decRefNeighbors4() const;
 	void incReadLockNeighbors4() const;
 	void decReadLockNeighbors4() const;
     void incReadLockAndRefCountNeighbors4AndSelf() const;
     void decReadLockAndRefCountNeighbors4AndSelf() const;
-	void incReadLock() const { ++mReadLockCount; assert(isDataReady()); }
-	void decReadLock() const { assert(mReadLockCount.load() > 0);  --mReadLockCount; }
-    void incReadLockAndRefCount() const { incRef(); incReadLock();  }
-    void decReadLockAndRefCount() const { decReadLock(); decRef(); }
+    void incReadLockAndRefCount() const { incRef(); mTileContainer.incReadLock();  }
+    void decReadLockAndRefCount() const { mTileContainer.decReadLock(); decRef(); }
 
     // =========== Events ===========
 	Event<Chunk*> onDispose;
 
 private:
     // =========== Read lock ===========
-	bool isReadLocked() const;
-
-    // =========== Generation ===========
-	void setTileFromGeneration(TileIndex i, Tile&& tile) {
-		mTiles[i] = tile;
-		updateTileCollisionAt(i, tile.layers[TILE_LAYER_TOP], false);
-	}
-
-    // =========== Collision ===========
-	void updateTileCollisionAt(TileIndex i, TileID tileId, bool readLocked);
+	bool isReadLocked() const { return mTileContainer.isReadLocked(); }
 
     // =========== Members ===========
 	ChunkID mChunkId;
@@ -222,20 +175,14 @@ private:
 	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 	bool mDirtyNavGraph = false;
 
-	// Refcount for threading
-    mutable std::atomic_uint32_t mRefCount = 0;
-    mutable std::atomic_uint32_t mReadLockCount = 0;
-
 	// Atomic tasking checks
 	std::atomic_bool mIsNavmeshing = false;
 
 	ui8 mDataReadyNeighborCount = 0;
 	WorldGrid* mWorldGrid = nullptr;
 
-    std::vector<Tile> mTiles; // TODO: Memory recycler
+	TileContainer mTileContainer;
     std::vector<ui8> mGrass; // Grass densities
-    // All tiles that need to update when read lock is free
-    std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	// For use by ChunkRenderer

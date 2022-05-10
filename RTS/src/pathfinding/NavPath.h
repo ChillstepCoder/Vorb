@@ -5,6 +5,7 @@ struct PathPoint {
     PathPoint(ui16v2&& r) : xy(std::move(r)) {};
     PathPoint(const ui16v2& r) : xy(r) {};
     PathPoint(const f32v2& r) : xy(r) {};
+    PathPoint(const ui32v2& r) : xy(r) {};
     PathPoint(ui16 x, ui16 y) : xy(x, y) {};
 
     PathPoint& operator+=(const PathPoint& r) {

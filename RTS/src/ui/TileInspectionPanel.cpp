@@ -49,13 +49,13 @@ void TileInspectionPanel::updateAndRender() {
     ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
-    const Chunk& chunk = *mTileHandle.chunk;
-    const ui32v2 worldPos = ui32v2(chunk.getWorldPos().x + mTileHandle.index.getX(), chunk.getWorldPos().y + mTileHandle.index.getY());
+    const TileContainer& container = *mTileHandle.container;
+    const ui32v2 worldPos = ui32v2(container.getWorldPos2D().x + mTileHandle.index.getX(), container.getWorldPos2D().y + mTileHandle.index.getY());
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);
     ImGui::Text("Base Z Position: %f", mTileHandle.tile->getBaseZPositionUncompressedMainThread());
-    ImGui::Text("ChunkID: %u", chunk.getChunkID().id);
+    ImGui::Text("ChunkID: %u", ChunkID::fromWorldUI32v2(worldPos));
     ImGui::Separator();
     ImGui::Text("Layers:");
     showTileLayerMainThread("  Ground: %u %s", TILE_LAYER_GROUND, mTileHandle);

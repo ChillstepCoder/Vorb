@@ -37,7 +37,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
 
     // TODO: Separate internal with border chunks for faster lookups??
     // Iterate through sub chunks
-    std::vector<Tile>& tiles = chunk.mTiles;
+    const std::vector<Tile>& tiles = chunk.mTileContainer.getTiles();
     for (int sy = 0; sy < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sy) {
         const int cornerY = sy * SUBCHUNK_WIDTH;
         for (int sx = 0; sx < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sx) {
@@ -51,13 +51,13 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     TileIndex index(cornerX + x, cornerY + y);
-                    Tile& tile = tiles[index];
+                    const Tile& tile = tiles[index];
                     const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                     const int djArryIndex = y * SUBCHUNK_WIDTH + x;
                     bool assigned = false;
                     
                     if (x != 0) {
-                        Tile& left = tiles[index - 1];
+                        const Tile& left = tiles[index - 1];
                         // Check if we can cross between
                         if (abs(left.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
                             djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
@@ -65,7 +65,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                         }
                     }
                     if (y != 0) {
-                        Tile& bottom = tiles[index - CHUNK_WIDTH];
+                        const Tile& bottom = tiles[index - CHUNK_WIDTH];
                         // Check if we can cross between
                         if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
                             if (assigned) {
@@ -104,7 +104,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     const int cornerX = sx * SUBCHUNK_WIDTH;
                     TileIndex index(cornerX + x, cornerY + y);
-                    Tile& tile = tiles[index];
+                    const Tile& tile = tiles[index];
                     const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
                     const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
                     const NavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
@@ -213,7 +213,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
 
 void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
 {
-    std::vector<Tile>& tiles = chunk.mTiles;
+    const std::vector<Tile>& tiles = chunk.getTileContainer().getTiles();
     ui32 currNodeId;
     i32v2 start(0);
     int length = 0;
@@ -223,7 +223,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
     i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
         TileIndex index(chunkRelativePos.x, chunkRelativePos.y);
-        Tile& tile = tiles[index];
+        const Tile& tile = tiles[index];
         const Tile& bottom = mWorld.getTileAtWorldPos(f32v2(adjWorldPos));
         const ui32 djIndex = subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x;
         currNodeId = djNodes[djNodeIDs[djIndex]].id;

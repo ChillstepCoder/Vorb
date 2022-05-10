@@ -278,10 +278,10 @@ struct TileIndex {
     TileIndex(const TileIndex& index) : index(index.index) {};
 	TileIndex(unsigned x, unsigned y) : index((y << TILE_INDEX_Y_SHIFT) + x) {};
 
-	inline ui16 getX() const { return index & TILE_INDEX_X_MASK; }
-	inline ui16 getY() const { return index >> TILE_INDEX_Y_SHIFT; }
+	inline ui32 getX() const { return index & TILE_INDEX_X_MASK; }
+	inline ui32 getY() const { return index >> TILE_INDEX_Y_SHIFT; }
 
-	operator ui16() const { return index; }
+	operator ui32() const { return index; }
 
 	TileIndex& operator++() {
 		++index;
@@ -292,7 +292,7 @@ struct TileIndex {
         return *this;
     }
 
-	ui16 index;
+	ui32 index;
 };
 
 namespace {

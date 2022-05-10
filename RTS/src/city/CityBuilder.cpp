@@ -114,10 +114,10 @@ Building CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     // TODO: Always ground??
                     newBuilding.mOwnedTilesInAABB.setBitTo(index, true);
                     TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
-                    Chunk* chunk = handle.getMutableChunk();
-                    chunk->addTile(handle.index, TileRepository::getTileData(tileId));
+                    TileContainer& container = *handle.getMutableContainer();
+                    container.addTile(handle.index, TileRepository::getTileData(tileId));
                     //assert(false); // Set building structure pointer
-                    chunk->setTileBaseZPosition(handle.index, height);
+                    container.setTileBaseZPosition(handle.index, height);
                 }
             }
         }
@@ -148,7 +148,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.height; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = mWorld.getTileHandleAtWorldPos(xy);
-            handle.getMutableChunk()->addTile(handle.index, TileRepository::getTileData(tileId));
+            handle.getMutableContainer()->addTile(handle.index, TileRepository::getTileData(tileId));
         }
     }
 }

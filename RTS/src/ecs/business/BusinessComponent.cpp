@@ -91,14 +91,14 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
             std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
             if (sDebugOptions.mShowPaths) {
                 for (auto&& it : gatherCmp.mScannedTiles) {
-                    DebugRenderer::drawWireQuad(it.getWorldPos(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+                    DebugRenderer::drawWireQuad(it.getWorldPos2D(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
                 }
             }
 
             // Mark all tiles as reserved
             for (auto&& it : gatherCmp.mScannedTiles) {
-                assert(!it.getMutableChunk()->getTileAt(it.index).hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
-                it.getMutableChunk()->setTileFlag(it.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+                assert(!it.getMutableContainer()->getTileAt(it.index).hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
+                it.getMutableContainer()->setTileFlag(it.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
             }
             break;
         }

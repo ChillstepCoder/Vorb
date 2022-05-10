@@ -202,7 +202,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
                 //  TODO: Multiple world layers
                 TileIndex index(x, y);
-                const Tile& tile = chunk.mTiles[index];
+                const Tile& tile = chunk.getTileContainer().getTileAt(index);
                 const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
@@ -225,13 +225,13 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(TilePosition(chunk.getChunkID(), index)));
+                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getWorldPos()));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, 0.0f /*TODO REAL FLOOR HEIGHT*/, f32v2(x, y), TileHandle(&chunk, index), tileData);
+                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, 0.0f /*TODO REAL FLOOR HEIGHT*/, f32v2(x, y), TileHandle(&chunk.getTileContainer(), index), tileData);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
                             

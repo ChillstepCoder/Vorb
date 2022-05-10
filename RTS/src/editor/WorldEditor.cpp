@@ -451,7 +451,7 @@ void WorldEditor::updateTileEdit() {
     static TileIndex prevTileIndex;
     if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
         ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
-        Chunk& chunk = mWorld.mWorldGrid.getChunk(chunkID);
+        TileContainer& tileContainer = mWorld.mWorldGrid.getChunk(chunkID).getTileContainer();
         TileIndex tileIndex((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH);
         Tile tile;
         const TileData& data = TileRepository::getTileData(mSelectedTile);
@@ -460,13 +460,13 @@ void WorldEditor::updateTileEdit() {
         if (chunkID != prevChunkID || tileIndex != prevTileIndex) {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
-            chunk.addTile(tileIndex, data);
+            tileContainer.addTile(tileIndex, data);
 
             if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
                 f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(TilePosition(chunkID, tileIndex)) + mGroundTileOffset;
                 height = round(height);
                 if (height == 0.0f) height = 1.0f;
-                chunk.setTileBaseZPosition(tileIndex, height);
+                tileContainer.setTileBaseZPosition(tileIndex, height);
             }
         }
     }

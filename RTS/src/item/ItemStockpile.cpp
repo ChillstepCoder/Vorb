@@ -29,7 +29,8 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
         std::cout << "  ";
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
-            TileRef ref(world.getTileHandleAtWorldPos(ui32v2(x, y)));
+            const ui32v2 worldPos(x, y);
+            TileRef ref(world.getTileHandleAtWorldPos(worldPos));
             bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid
@@ -39,8 +40,8 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
                 // Valid slot
                 if (mFirstFreeSlot == UINT32_MAX) mFirstFreeSlot = index;
                 ++mTotalSlots;
-                ref.chunk->setTileFlag(ref.index, TileFlags::TILE_FLAG_IS_STOCKPILE);
-                f32 height = worldGrid.computeMaxHeightAtTile(ref.getTilePosition());
+                ref.container->setTileFlag(ref.index, TileFlags::TILE_FLAG_IS_STOCKPILE);
+                f32 height = worldGrid.computeMaxHeightAtTile(worldPos);
                 if (height > maxZPos) maxZPos = height;
             }
             ++index;

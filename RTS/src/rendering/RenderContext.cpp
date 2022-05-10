@@ -700,8 +700,8 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
             }
             // Count refs
-            const int refCount = chunk.mRefCount.load();
-            const int readCount = chunk.mReadLockCount.load();
+            const int refCount = chunk.getTileContainer().getRefCount();
+            const int readCount = chunk.getTileContainer().getReadLockCount();
             constexpr f32 REF_BOX_WIDTH = 1.0f;
             constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
             for (int i = 0; i < refCount; ++i) {
