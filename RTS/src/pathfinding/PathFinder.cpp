@@ -422,7 +422,8 @@ void coarseAstarEdgePropagate(const World& world, const NavNode* navNode, Coarse
     const Chunk& chunk = worldGrid.getChunk(navNode->chunkId);
     PathPoint chunkWorldPos = PathPoint(chunk.getWorldPos());
     // Iterate all edges
-    const PathPoint cornerWorldPos = chunkWorldPos + PathPoint(navNode->cornerPos.getX(), navNode->cornerPos.getY());
+    const ui32v2 tileOffset = chunk.getTileContainer().getTileXYOffset(navNode->cornerPos);
+    const PathPoint cornerWorldPos = chunkWorldPos + PathPoint(tileOffset);
     for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
         ui32 count = navNode->counts[cartesian];
         for (ui32 edgeIndex = 0; edgeIndex < count; ++edgeIndex) {

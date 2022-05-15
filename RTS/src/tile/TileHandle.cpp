@@ -56,5 +56,9 @@ TileHandle::TileHandle(const TileContainer* container, TileIndex index) :
 }
 
 ui32v2 TileHandle::getWorldPos2D() const {
-    return container->getWorldPos2D() + ui32v2(index.getX(), index.getY());
+    return container->getWorldPos2D() + container->getTileXYOffset(index);
+}
+
+ui32v3 TileHandle::getContainerOffset() const {
+    return container->getTileXYZOffset(index);
 }

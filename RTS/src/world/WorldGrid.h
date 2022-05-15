@@ -83,7 +83,7 @@ public:
     static f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset);
     static f32 computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
     static void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]);
-    static bool areTrianglesFlippedAtTile(TileIndex tileIndex);
+    static bool areTrianglesFlippedAtTile(const TileHandle& tileHandle);
     f32 computeCenterHeightAtTile(ui32v2 worldTilePos) const;
     void copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) const;
 

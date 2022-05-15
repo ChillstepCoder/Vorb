@@ -50,7 +50,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
             // Iterate internally to find disjoint sets
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
-                    TileIndex index(cornerX + x, cornerY + y);
+                    TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
                     const Tile& tile = tiles[index];
                     const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                     const int djArryIndex = y * SUBCHUNK_WIDTH + x;
@@ -92,7 +92,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
             NavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
             memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
-            const TileIndex cornerIndex(cornerX, cornerY);
+            const TileIndex cornerIndex = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, 0);
             buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::DOWN);
             buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::LEFT);
             buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::RIGHT);
@@ -103,7 +103,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                 const int cornerY = sy * SUBCHUNK_WIDTH;
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     const int cornerX = sx * SUBCHUNK_WIDTH;
-                    TileIndex index(cornerX + x, cornerY + y);
+                    TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
                     const Tile& tile = tiles[index];
                     const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
                     const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
@@ -146,7 +146,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     // Draw edges
     for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
         const NavNode& node = patch.nodes[nodeIndex];
-        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(node.cornerPos.getX(), node.cornerPos.getY());
+        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(chunk.mTileContainer.getTileXYOffset(node.cornerPos));
         for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
@@ -168,7 +168,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     // Draw connections between edges
     for (int nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
         const NavNode& node = patch.nodes[nodeIndex];
-        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(node.cornerPos.getX(), node.cornerPos.getY());
+        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(chunk.mTileContainer.getTileXYOffset(node.cornerPos));
         for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
@@ -213,7 +213,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
 
 void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
 {
-    const std::vector<Tile>& tiles = chunk.getTileContainer().getTiles();
+    const TileContainer& tileContainer = chunk.getTileContainer();
+    const std::vector<Tile>& tiles = tileContainer.getTiles();
     ui32 currNodeId;
     i32v2 start(0);
     int length = 0;
@@ -222,7 +223,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
     i32v2 chunkRelativePos(cornerX, cornerY);
     i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
-        TileIndex index(chunkRelativePos.x, chunkRelativePos.y);
+        TileIndex index = tileContainer.getTileIndexFromXYZOffset(chunkRelativePos.x, chunkRelativePos.y, 0);
         const Tile& tile = tiles[index];
         const Tile& bottom = mWorld.getTileAtWorldPos(f32v2(adjWorldPos));
         const ui32 djIndex = subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x;
@@ -231,7 +232,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
         if (currNodeId != prevNodeId) {
             // Finish edge
             if (length != 0) {
-                addNodeEdge(chunk, navNodeIdTable, prevNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
+                addNodeEdge(chunk, navNodeIdTable, prevNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
                 length = 0;
             }
             prevNodeId = currNodeId;
@@ -246,7 +247,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
             ++length;
         }
         else if (length != 0) {
-            addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
+            addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
             length = 0;
         }
         const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[e_cast(dir)];
@@ -256,7 +257,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
     }
     // Add final edge if we reached end
     if (length != 0) {
-        addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, TileIndex(start.x, start.y), length, dir);
+        addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
     }
 }
 
@@ -288,18 +289,22 @@ void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui3
     edge.lengthMinusOne = length - 1;
 
     // Because dir is separated into separate arrays, and is always along the subchunk boundary, we can encode where the start is along a 0-15 integer (4 byte)
+    const ui32v2 cornerXYOffset = chunk.mTileContainer.getTileXYOffset(corner);
+    const ui32v2 startXYOffset = chunk.mTileContainer.getTileXYOffset(start);
     switch (dir) {
         case Cartesian::LEFT:
         case Cartesian::RIGHT: {
-            int offsety = start.getY() - corner.getY();
-            assert(offsety < 16 && offsety >= 0);
+            assert(startXYOffset.y >= cornerXYOffset.y);
+            int offsety = startXYOffset.y - cornerXYOffset.y;
+            assert(offsety < 16);
             edge.start = offsety;
         }
         break;
         case Cartesian::DOWN:
         case Cartesian::UP: {
-            int offsetX = start.getX() - corner.getX();
-            assert(offsetX < 16 && offsetX >= 0);
+            assert(startXYOffset.x >= cornerXYOffset.x);
+            int offsetX = startXYOffset.x - cornerXYOffset.x;
+            assert(offsetX < 16);
             edge.start = offsetX;
         }
         break;

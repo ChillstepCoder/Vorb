@@ -126,8 +126,6 @@ constexpr int MIN_SUBCHUNKS_PER_CHUNK = SQ(MIN_SUBCHUNKS_PER_CHUNK_ROW);
 
 constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
-constexpr ui16 INVALID_TILE_INDEX = 0xffff;
-
 // Cartesian
 enum class Cartesian : ui8 {
     DOWN = 0, //-y  south
@@ -271,29 +269,14 @@ const f32v3 OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, 0.0) // BOTTOM
 };
 
+typedef ui32 TileIndex;
+constexpr TileIndex INVALID_TILE_INDEX = UINT32_MAX;
 
-struct TileIndex {
-	TileIndex() : index(INVALID_TILE_INDEX) {};
-	TileIndex(ui16 index) : index(index) {};
-    TileIndex(const TileIndex& index) : index(index.index) {};
-	TileIndex(unsigned x, unsigned y) : index((y << TILE_INDEX_Y_SHIFT) + x) {};
-
-	inline ui32 getX() const { return index & TILE_INDEX_X_MASK; }
-	inline ui32 getY() const { return index >> TILE_INDEX_Y_SHIFT; }
-
-	operator ui32() const { return index; }
-
-	TileIndex& operator++() {
-		++index;
-		return *this;
-	}
-    TileIndex& operator--() {
-        --index;
-        return *this;
-    }
-
-	ui32 index;
-};
+//struct TilePos {
+//    TileIndex index;
+//    ui8v3 xyz;
+//    // ui8 pad?
+//};
 
 namespace {
     inline const i8v3 compressNormal(const f32v3& normal) {

@@ -5,21 +5,6 @@
 
 class TileContainer;
 
-struct LiteTileHandle {
-    LiteTileHandle() {};
-    LiteTileHandle(ChunkID chunkID, TileIndex index) : chunkID(chunkID), index(index) {};
-
-    f32v2 getWorldPos() const {
-        f32v2 rv = chunkID.getWorldPos();
-        rv.x += index.getX();
-        rv.y += index.getY();
-        return rv;
-    }
-
-    ChunkID chunkID;
-    TileIndex index;
-};
-
 struct TileHandle {
 
     TileHandle() {};
@@ -29,6 +14,7 @@ struct TileHandle {
     TileContainer* getMutableContainer() { assert(IS_MAIN_THREAD());  return const_cast<TileContainer*>(container); }
     ui32v2 getWorldPos2D() const;
     ChunkID getChunkIDAtPos() const { return ChunkID::fromWorldUI32v2(getWorldPos2D()); }
+    ui32v3 getContainerOffset() const;
 
     TileHandle& operator=(const TileHandle& other) {
         container = other.container;
@@ -39,7 +25,7 @@ struct TileHandle {
 
     const TileContainer* container = nullptr;
     const Tile* tile = nullptr;
-    const TileIndex index;
+    const TileIndex index = INVALID_TILE_INDEX;
 };
 static_assert(sizeof(TileHandle) == 24, "Keep small as possible");
 

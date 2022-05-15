@@ -201,7 +201,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
                 //  TODO: Multiple world layers
-                TileIndex index(x, y);
+                TileIndex index = chunk.getTileContainer().getTileIndexFromXYZOffset(x, y, 0);
                 const Tile& tile = chunk.getTileContainer().getTileAt(index);
                 const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {

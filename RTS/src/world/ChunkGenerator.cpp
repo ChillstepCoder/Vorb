@@ -133,7 +133,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
             if (baseZPos + 1.0f > maxHeight) {
                 maxHeight = baseZPos + 1.0f;
             }
-            TileIndex index(x, y);
+            TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(x, y, 0);
             chunk.mTileContainer.setTileFromGeneration(index, std::move(tile));
             chunk.mGrass[index] = grass;
         }

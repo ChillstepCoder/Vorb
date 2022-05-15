@@ -47,9 +47,29 @@ public:
         assert(i < mTiles.size());
         return mTiles[i];
     }
+    const Tile& getTileAt(ui32 x, ui32 y, ui32 z) const {
+        const TileIndex i = getTileIndexFromXYZOffset(x, y, z);
+        assert(i < mTiles.size());
+        return mTiles[i];
+    }
 
     const Tile& getTileAtNoAssert(TileIndex i) const {
         return mTiles[i];
+    }
+
+    ui32v3 getTileXYZOffset(TileIndex i) const {
+       const ui32 layerSize = mDims.x * mDims.y;
+       return ui32v3(i % mDims.x, (i % layerSize) / mDims.x, i / layerSize);
+    }
+    ui32v2 getTileXYOffset(TileIndex i) const {
+        const ui32 layerSize = mDims.x * mDims.y;
+        return ui32v2(i % mDims.x, (i % layerSize) / mDims.x);
+    }
+    TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
+        return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;
+    }
+    TileIndex getTileIndexFromXYZOffset(ui32 x, ui32 y, ui32 z) const {
+        return x + y * mDims.x + z * mDims.x * mDims.y;
     }
 
 

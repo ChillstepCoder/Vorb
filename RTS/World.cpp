@@ -267,7 +267,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	if (chunk->isDataReady()) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return chunk->getTileHandleAt(TileIndex(x, y));
+		return chunk->getTileHandleAt(chunk->getTileContainer().getTileIndexFromXYZOffset(x, y, 0));
 	}
 	return TileHandle();
 }
@@ -278,7 +278,7 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getTileHandleAt(TileIndex(x, y));
+        return chunk->getTileHandleAt(chunk->getTileContainer().getTileIndexFromXYZOffset(x, y, 0));
     }
     return TileHandle();
 }
@@ -297,7 +297,7 @@ const Tile& World::getTileAtWorldPos(const f32v2& worldPos) const {
 	assert(chunk->isDataReady());
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-    return chunk->getTileContainer().getTileAt(TileIndex(x, y));
+    return chunk->getTileContainer().getTileAt(x, y, 0);
 }
 
 const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
@@ -305,7 +305,7 @@ const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return &chunk->getTileContainer().getTileAt(TileIndex(x, y));
+        return &chunk->getTileContainer().getTileAt(x, y, 0);
     }
     return nullptr;
 }
@@ -315,7 +315,7 @@ const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
 	if (chunk->isDataReady()) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return &chunk->getTileContainer().getTileAt(TileIndex(x, y));
+		return &chunk->getTileContainer().getTileAt(x, y, 0);
 	}
 	return nullptr;
 }
@@ -325,7 +325,7 @@ const Tile* World::tryGetTileAtWorldPos(const ui16v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return &chunk->getTileContainer().getTileAt(TileIndex(x, y));
+        return &chunk->getTileContainer().getTileAt(x, y, 0);
     }
     return nullptr;
 }
@@ -335,7 +335,7 @@ const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-	const Tile& tile = chunk.getTileContainer().getTileAt(TileIndex(x, y));
+	const Tile& tile = chunk.getTileContainer().getTileAt(x, y, 0);
 	ui16 navNodeIndex = tile.getNavNodeIndex();
 	if (navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
 	return mNavGraph->getNode({ chunk.getChunkID().id, navNodeIndex });
@@ -367,15 +367,14 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
             TileHandle cornerHandle = getTileHandleAtWorldPos(worldPos);
             assert(cornerHandle.container);
             Chunk& chunk = mWorldGrid.getChunk(ChunkID::fromWorldUI32v2(cornerHandle.getWorldPos2D()));
-            const ui32 distFromRightEdge = CHUNK_WIDTH - cornerHandle.index.getX();
-            const ui32 distFromTopEdge = CHUNK_WIDTH - cornerHandle.index.getY();
+			ui32v3 offset = cornerHandle.getContainerOffset();
+			const ui32 distFromRightEdge = CHUNK_WIDTH - offset.x;
+            const ui32 distFromTopEdge = CHUNK_WIDTH - offset.y;
             spanX = std::min(distFromRightEdge, aabb.width);
             spanY = std::min(distFromTopEdge, aabb.height); // TODO: Prob clever way to move this up a loop
-            const ui32 x = cornerHandle.index.getX();
-            const ui32 y = cornerHandle.index.getY();
 			for (ui32 dy = 0; dy < spanY; ++dy) {
 				for (ui32 dx = 0; dx < spanX; ++dx) {
-					func(chunk, TileIndex(x + dx, y + dy));
+					func(chunk, chunk.getTileContainer().getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
 				}
 			}
 			worldPos.x += spanX;

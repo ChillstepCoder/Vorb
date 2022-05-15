@@ -425,9 +425,9 @@ void WorldEditor::updateGrassEdit() {
             for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                 for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                     ChunkID id(worldPos);
-                    const f32v2 chunkWorldPos = id.getWorldPos();
-                    TileIndex tileIndex((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH);
-                    const f32v2 tilePosWorld = chunkWorldPos + f32v2(tileIndex.getX() + 0.5f, tileIndex.getY() + 0.5f);
+                    const TileContainer& tileContainer = mWorld.getChunk(id).getTileContainer();
+                    TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
+                    const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                     const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
                     if (glm::length2(offsetToTile) < brushSizeSq) {
                         editGrass(id, tileIndex, offsetToTile);
@@ -452,7 +452,7 @@ void WorldEditor::updateTileEdit() {
     if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
         ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
         TileContainer& tileContainer = mWorld.mWorldGrid.getChunk(chunkID).getTileContainer();
-        TileIndex tileIndex((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH);
+        TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH, 0);
         Tile tile;
         const TileData& data = TileRepository::getTileData(mSelectedTile);
 
@@ -542,7 +542,7 @@ void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& off
 void WorldEditor::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile) {
 
     f32 strength = getBrushStrengthAtPoint(offsetToTile) * mCurrentBrushSettings->brushStrength;
-    const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex.index);
+    const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     if (random < strength) {
         if (mGrassEditState == GrassEditState::ADD) {
             mWorld.mWorldGrid.getChunk(id).setGrassAt(tileIndex, 1);

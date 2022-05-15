@@ -95,8 +95,8 @@ TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
 }
 
 TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
-    const ui16 x = index.getX();
-    if (x > 0) {
+    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    if (offset.x > 0) {
         return TileHandle(&mTileContainer, index - 1);
     }
     const Chunk& leftNeighbor = getLeftNeighbor();
@@ -107,8 +107,8 @@ TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
 }
 
 TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
-    const ui16 x = index.getX();
-    if (x < CHUNK_WIDTH - 1) {
+    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    if (offset.x < CHUNK_WIDTH - 1) {
         return TileHandle(&mTileContainer, index + 1);
     }
 
@@ -120,8 +120,8 @@ TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
 }
 
 TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
-    const ui16 y = index.getY();
-    if (y < CHUNK_WIDTH - 1) {
+    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    if (offset.y < CHUNK_WIDTH - 1) {
         return TileHandle(&mTileContainer, index + CHUNK_WIDTH);
     }
 
@@ -133,8 +133,8 @@ TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
 }
 
 TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
-    const ui16 y = index.getY();
-    if (y > 0) {
+    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    if (offset.y > 0) {
         return TileHandle(&mTileContainer, index - CHUNK_WIDTH);
     }
 
@@ -243,7 +243,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
             for (f32 x = 0.0f; x <= rangeX; ++x) {
                 const ui32v2 chunkRelPos(offsetFromChunk.x + x, offsetFromChunk.y + y);
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
-                    TileIndex tileIndex(TileIndex(chunkRelPos.x, chunkRelPos.y));
+                    TileIndex tileIndex = mTileContainer.getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
                     Tile& tile = mTileContainer.getMutableTileAt(tileIndex);
                     if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height

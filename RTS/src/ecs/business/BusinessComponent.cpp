@@ -91,7 +91,7 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
             std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
             if (sDebugOptions.mShowPaths) {
                 for (auto&& it : gatherCmp.mScannedTiles) {
-                    DebugRenderer::drawWireQuad(it.getWorldPos2D(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+                    DebugRenderer::drawWireQuad(f32v2(it.getWorldPos2D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
                 }
             }
 

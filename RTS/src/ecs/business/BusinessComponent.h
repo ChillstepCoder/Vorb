@@ -7,10 +7,11 @@
 #include "ai/tasks/IAgentTask.h"
 #include "city/business_jobs/IBusinessJob.h"
 
+#include "tile/TileHandle.h"
+#include "tile/TileConst.h"
+
 #include <boost/circular_buffer.hpp>
 
-// TODO: This is getting heavyweight, we only include for LiteTileHandle
-#include "world/Chunk.h"
 
 class City;
 class World;

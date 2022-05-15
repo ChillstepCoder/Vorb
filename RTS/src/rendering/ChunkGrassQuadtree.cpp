@@ -101,17 +101,20 @@ void createGrassMesh(
     const f32 bladeWidth = GRASS_BLADE_WIDTHS[lod];
     grassMesh.reserveQuadCount((size_t)dims.x * dims.y * density * density);
 
+    // TODO: Optimize redundant math
     for (ui32 y = 0; y < dims.y; ++y) {
         for (ui32 x = 0; x < dims.x; ++x) {
             assert(tilePosStart.x + x < CHUNK_WIDTH && tilePosStart.y + y < CHUNK_WIDTH);
-            TileIndex tileIndex(tilePosStart.x + x, tilePosStart.y + y);
+            const ui32 tx = tilePosStart.x + x;
+            const ui32 ty = tilePosStart.y + y;
+            TileIndex tileIndex = chunk.getTileContainer().getTileIndexFromXYZOffset(tx, ty, 0u);
 
             ui8 grassVal = chunk.getGrassAt(tileIndex);
             if (grassVal == 0) {
                 continue;
             }
 
-            const f32v2 tileWorldPos = f32v2(tileIndex.getX(), tileIndex.getY());
+            const f32v2 tileWorldPos = f32v2(tx, ty);
 
             /*Tile neighbors[8];
             chunk.getTileNeighbors(tileIndex, neighbors);
@@ -120,8 +123,6 @@ void createGrassMesh(
             const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
             const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
 
-            const int tx = tileIndex.getX();
-            const int ty = tileIndex.getY();
             // Allow overlap when adjacent tiles are the same
             //const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
             //const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
