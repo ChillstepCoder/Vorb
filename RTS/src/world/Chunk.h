@@ -34,6 +34,7 @@ enum class ChunkState : ui8 {
 	FINISHED,
 };
 
+// TODO: Meshcomponent for cache friendly iterate?
 struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();

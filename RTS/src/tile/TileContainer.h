@@ -7,6 +7,9 @@ class TileContainer
     friend class TileRef;
     friend class TileHandle;
 public:
+    TileContainer() = default;
+    ~TileContainer() = default;
+    VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
     void init(ui32v3 rootPos, ui32v3 dims);
     void freeTiles();
@@ -103,6 +106,7 @@ public:
     const ui32v2& getWorldPos2D() const { return reinterpret_cast<const ui32v2&>(mRootPos); }
     const ui32v3& getWorldPos3D() const { return mRootPos; }
     const ui32v3& getDims() const { return mDims; }
+    f32 getFloorHeight() const { return mFloorHeight; }
 
     ui32 getReadLockCount() const { return mReadLockCount; }
     ui32 getRefCount() const { return mRefCount; }
@@ -115,6 +119,7 @@ private:
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     ui32v3 mDims;
     ui32v3 mRootPos;
+    f32 mFloorHeight = 3.0f;
     mutable std::atomic_uint32_t mReadLockCount = 0;
     mutable std::atomic_uint32_t mRefCount = 0;
     mutable bool mDirtyMesh = false;

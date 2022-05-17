@@ -11,6 +11,7 @@
 
 #include "definitions/BuildingDef.h"
 #include "rendering/mesh/Mesh.h"
+#include "tile/TileContainer.h"
 
 class Mesh;
 
@@ -29,13 +30,19 @@ class Building {
 public:
     friend class BuildingRenderer;
     friend class BuildingMesher;
+    friend class CityBuilder;
+    friend class City;
 
     Building() {};
     ~Building() {};
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Building);
 
+    // TODO: Boost allocator
+
+private:
     // Building bounds are a series of corner segments
+    TileContainer mTileContainer;
     ui32AABB2 mAABB;
     f32 mZPosFloor;
     f32 mZPosRoof;
@@ -46,8 +53,6 @@ public:
     BuildingID mId;
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
-
-private:
     mutable BuildingRenderData mRenderData;
 
     // TODO: Move to Business?

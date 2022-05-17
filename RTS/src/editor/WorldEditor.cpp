@@ -505,7 +505,9 @@ void WorldEditor::updateBuildingEdit() {
 
         BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
         std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::LEFT, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0));
-        mWorld.mLooseBuildingsTMP.emplace_back(std::make_unique<Building>(CityBuilder::debugBuildInstant(*bp, mWorld)));
+        std::unique_ptr<Building> newBuilding = std::make_unique<Building>();
+        CityBuilder::debugBuildInstant(*bp, mWorld, *newBuilding);
+        mWorld.mLooseBuildingsTMP.emplace_back(std::move(newBuilding));
     }
 }
 

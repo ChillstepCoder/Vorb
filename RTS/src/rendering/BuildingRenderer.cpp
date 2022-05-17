@@ -40,7 +40,7 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
     }
 
     if (building.mRenderData.mMeshDirty) {
-        mMesher->buildRoofMesh(building);
+        mMesher->buildMesh(building);
     }
 
     // TODO: Redundant binds here

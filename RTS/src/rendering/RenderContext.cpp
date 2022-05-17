@@ -393,9 +393,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // TODO: Frustum cull
     const CityGraph& cities = mWorld.getCities();
     for (auto&& city : cities.mNodes) {
-        const std::vector<Building>& buildings = city->getBuildings();
+        const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
         for (auto&& building : buildings) {
-            mBuildingRenderer->renderBuildingRoof(building, camera);
+            mBuildingRenderer->renderBuildingRoof(*building, camera);
         }
     }
     for (auto&& building : mWorld.mLooseBuildingsTMP) {
@@ -464,9 +464,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
             const CityGraph& cities = mWorld.getCities();
             for (auto&& city : cities.mNodes) {
-                const std::vector<Building>& buildings = city->getBuildings();
+                const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
                 for (auto& building : buildings) {
-                    mBuildingRenderer->renderBuildingShadows(building, camera);
+                    mBuildingRenderer->renderBuildingShadows(*building, camera);
                 }
             }
             for (auto&& building : mWorld.mLooseBuildingsTMP) {

@@ -229,7 +229,7 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
                 ui16 val = 1;
                 // Only bottom uses bottom texture
                 if (i + 1.5f >= heightDiffs[c]) {
-                    val = 2;
+                    val = 0;
                 }
 
                 const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(val);

@@ -132,7 +132,7 @@ public:
 
     // Accessors
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
-    const std::vector<Building>& getBuildings() { return mBuildings; }
+    const std::vector<std::unique_ptr<Building>>& getBuildings() { return mBuildings; }
 
     // Mutators
     void addResidentToCity(entt::entity entity);
@@ -142,7 +142,7 @@ private:
     void tick();
 
     RoadID addRoad(CityRoad& road);
-    BuildingID addCompletedBuilding(Building&& building);
+    BuildingID addCompletedBuilding(std::unique_ptr<Building> building);
 
     World& mWorld;
 
@@ -153,7 +153,7 @@ private:
     std::string mName;
     // All chunks that contain the city
     std::vector<Chunk*> mChunks;
-    std::vector<Building> mBuildings;
+    std::vector<std::unique_ptr<Building>> mBuildings;
     std::vector<std::unique_ptr<CityRoad>> mRoads;
     std::vector<entt::entity> mBusinesses;
 
