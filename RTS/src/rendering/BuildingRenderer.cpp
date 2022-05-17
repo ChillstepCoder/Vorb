@@ -36,7 +36,6 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
 
     if (sDebugOptions.mRoofDebug) {
         DebugRenderer::drawWireQuad(f32v3(building.mAABB.x, building.mAABB.y, building.mZPosFloor), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
-        DebugRenderer::drawWireQuad(f32v3(building.mAABB.x, building.mAABB.y, building.mZPosRoof), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
     }
 
     if (building.mRenderData.mMeshDirty) {

@@ -54,6 +54,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
 void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Building& outBuilding) {
 
     const ui32v2& worldPos = bp.aabb.pos;
+    constexpr ui32 FLOOR_COUNT = 3;
 
     static f32 BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
         0.0f, // NONE
@@ -66,7 +67,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
     // Register with the city
     outBuilding.mAABB.pos = bp.aabb.pos;
     outBuilding.mAABB.dims = bp.aabb.dims;
-    outBuilding.mOwnedTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y);
+    outBuilding.mInteriorTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y * FLOOR_COUNT);
 
     // === Flatten terrain ===
     // Compute mean height of height grid
@@ -96,15 +97,16 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
 
     // Flatten heightmap
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
-    constexpr ui32 FLOOR_COUNT = 3;
     TileContainer& tileContainer = outBuilding.mTileContainer;
     tileContainer.init(ui32v3(bp.aabb.pos.x, bp.aabb.pos.y, meanHeight), ui32v3(bp.aabb.dims.x, bp.aabb.dims.y, FLOOR_COUNT /*FLOOR COUNT*/));
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
+    ui32 bitIndex = 0;
     for (ui32 z = 0; z < FLOOR_COUNT; ++z) {
         for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
             for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
                 const ui32 index = y * bp.aabb.dims.x + x;
+                // TODO: Bitindex
                 const BlueprintTileType type = bp.tiles[index].type;
                 if (type != BlueprintTileType::NONE) {
                     // Flatten heightmap
@@ -117,7 +119,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
                     if (tileId != TILE_ID_NONE) {
                         const f32 height = BUILD_HEIGHTS[e_cast(type)] + meanHeight + z * tileContainer.getFloorHeight();
                         // TODO: Always ground??
-                        outBuilding.mOwnedTilesInAABB.setBitTo(index, true);
+                        outBuilding.mInteriorTilesInAABB.setBitTo(bitIndex, true);
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                         tileContainer.addTile(index, TileRepository::getTileData(tileId));
                         //assert(false); // Set building structure pointer
@@ -131,6 +133,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
                         //container.setTileBaseZPosition(handle.index, height);
                     }
                 }
+                ++bitIndex;
             }
         }
     }
@@ -138,7 +141,6 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
     world.dirtyTerrainFromBrush(f32v2(outBuilding.mAABB.getCenter()), glm::length(f32v2(outBuilding.mAABB.dims)) * 0.5f);
     
     outBuilding.mZPosFloor = meanHeight;
-    outBuilding.mZPosRoof = meanHeight + 3.0005f;
     outBuilding.mGraph = std::move(bp.rooms);
     outBuilding.mFunction = bp.desc.function;
     outBuilding.mPlotIndex = bp.plotIndex;

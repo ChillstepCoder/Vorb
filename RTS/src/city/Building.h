@@ -43,11 +43,10 @@ public:
 private:
     // Building bounds are a series of corner segments
     TileContainer mTileContainer;
-    ui32AABB2 mAABB;
+    ui32AABB2 mAABB; // TODO: Just use tilecontainer AABB?
     f32 mZPosFloor;
-    f32 mZPosRoof;
     std::vector<RoomNode> mGraph;
-    BitArray mOwnedTilesInAABB;
+    BitArray mInteriorTilesInAABB;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;

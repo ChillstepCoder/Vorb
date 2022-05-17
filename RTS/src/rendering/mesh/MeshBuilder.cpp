@@ -641,8 +641,8 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
     }
     static_assert(e_cast(PolyTypeFlags::COUNT) == 5, "Update any new shared IBO");
 
-    // Make sure we didn't fuck up
-    assert(usingSharedIbo == mUsingSharedIndexBuffer && "Mesh was flagged improperly as shared index buffer");
+    // Make sure we didn't fuck up and say shared when it wasnt
+    assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
     // Allocate all buffers if needed
     initMeshBuffers(mesh.mMainMesh, usingTextureUbo, !usingSharedIbo);
