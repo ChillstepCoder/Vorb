@@ -53,9 +53,10 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, color4* inpu
             const int index = y * bp.aabb.dims.x + x;
             RoomNodeID id = bp.ownerArray[index];
             if (id != INVALID_ROOM_ID) {
+                const RoomNode& room = bp.rooms[id];
                 const ui32v2 worldPos = bp.aabb.pos + ui32v2(x, y);
                 const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
-                DebugRenderer::drawFilledQuad(f32v3((f32)worldPos.x, (f32)worldPos.y, height), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
+                DebugRenderer::drawFilledQuad(f32v3((f32)worldPos.x, (f32)worldPos.y, height + room.floorIndex * 3.0f), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
             }
         }
     }
@@ -70,8 +71,8 @@ void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, color4* inpu
         // Draw parent line
         if (node.parentRoom != INVALID_ROOM_ID) {
             RoomNode& parent = bp.rooms[node.parentRoom];
-            const f32v3 startPos(node.aabb.getCenter().x + 0.5f, node.aabb.getCenter().y + 0.5f, heightPlusE);
-            const f32v3 endPos(bp.aabb.pos.x + parent.offsetFromZero.x + 0.5f, bp.aabb.pos.y + parent.offsetFromZero.y + 0.5f, heightPlusE);
+            const f32v3 startPos(node.aabb.getCenter().x + 0.5f, node.aabb.getCenter().y + 0.5f, heightPlusE + node.floorIndex * 3.0f);
+            const f32v3 endPos(bp.aabb.pos.x + parent.offsetFromZero.x + 0.5f, bp.aabb.pos.y + parent.offsetFromZero.y + 0.5f, heightPlusE + parent.floorIndex * 3.0f);
             if (node.isPrivate) {
                 DebugRenderer::drawLine(startPos, endPos - startPos, color4(1.0f, 1.0f, 0.0f));
             }

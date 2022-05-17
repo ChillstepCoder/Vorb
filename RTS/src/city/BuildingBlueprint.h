@@ -37,6 +37,7 @@ struct BuildingBlueprint {
     float sizeAlpha;
     Cartesian entrySide = Cartesian::LEFT;
     ui32AABB2 aabb;
+    ui32 floorCount = 1u;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
     std::vector<RoomNode> rooms;
