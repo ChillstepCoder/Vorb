@@ -13,12 +13,12 @@ BitArray::~BitArray()
 
 }
 
-void BitArray::resize(ui32 size) {
-    mData.resize((size_t)size * BITS_PER_ELEMENT);
+void BitArray::resize(ui32 numBits) {
+    mData.resize((size_t)numBits / BITS_PER_ELEMENT);
 }
 
-void BitArray::resizeAndZero(ui32 size) {
-    mData.resize((size_t)size * BITS_PER_ELEMENT, 0ui8);
+void BitArray::resizeAndZero(ui32 numBits) {
+    mData.resize((size_t)numBits / BITS_PER_ELEMENT, 0ui8);
 }
 
 void BitArray::setBitTo(ui32 index, bool val) {
@@ -37,7 +37,7 @@ bool BitArray::getBit(ui32 index) const {
 }
 
 void BitArray::zeroAllBits() {
-    memset(mData.data(), 0, mData.size() * BITS_PER_ELEMENT);
+    memset(mData.data(), 0, mData.size() * sizeof(ui8));
 }
 
 void BitArray::debugPrint(ui32 width, ui32 height) const

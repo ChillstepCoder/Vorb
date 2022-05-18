@@ -208,74 +208,93 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 }
 
 
-SsPtr buildRoofStraightSkeleton(const BitArray& ownedTiles, const ui32AABB2& aabb, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, ui32 floor) {
+std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const ui32AABB2& aabb, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, ui32 floor) {
     // Detect Edges
     ui32 numRoofVertices = 0;
+    std::vector<SsPtr> skeletons;
+
+    BitArray checkedTiles;
+    checkedTiles.resizeAndZero(ownedTiles.getNumBits());
 
     // Find first corner
     ui32 index = 0;
-    // TODO: This could be checked byte by byte for nonzero then extract most significant bit
-    while (!ownedTiles.getBit(index)) {
-        ++index;
-        if (index >= ownedTiles.getNumBits()) {
-            // There are no roof tiles
-            return nullptr;
+    // Get multiple straight skeletons
+    while (true) {
+        // TODO: This could be checked byte by byte for nonzero then extract most significant bit?
+        while (checkedTiles.getBit(index) || !ownedTiles.getBit(index)) {
+            ++index;
+            if (index >= ownedTiles.getNumBits()) {
+                // There are no roof tiles
+                return skeletons;
+            }
+        }
+        checkedTiles.setBitTo(index, true);
+
+        ui32 startX = index % aabb.dims.x;
+        ui32 startY = index / aabb.dims.y;
+        i32v2 cornerPos(startX, startY);
+        Cartesian edge = Cartesian::DOWN; // We are guaranteed theres always a bottom edge at this corner
+        // If we do not have a free tile below, it means we are an interior tile on an already skeletoned segment, so continue
+        if (cornerPos.y > 0 && ownedTiles.getBit((cornerPos.y - 1) * aabb.dims.x + cornerPos.x)) {
+            continue;
+        }
+
+        // Debug output
+        //std::cout << "GENERATING ROOF\n";
+        //ownedTiles.debugPrint(aabb.dims.x, aabb.dims.y);
+
+        sRoofVertices[numRoofVertices++] = cornerPos;
+        // First edge always goes right
+        ++cornerPos.x;
+        do {
+            index = cornerPos.y * aabb.dims.x + cornerPos.x;
+            checkedTiles.setBitTo(index, true);
+
+            ui8 corners[4];
+            corners[CORNER_TOP_LEFT] = (cornerPos.x == 0 || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index - 1);
+            corners[CORNER_TOP_RIGHT] = (cornerPos.x == aabb.dims.x || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index);
+            corners[CORNER_BOTTOM_LEFT] = (cornerPos.x == 0 || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - 1 - aabb.dims.x);
+            corners[CORNER_BOTTOM_RIGHT] = (cornerPos.x == aabb.dims.x || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - aabb.dims.x);
+            ui8 code = corners[0] << 3;
+            code |= corners[1] << 2;
+            code |= corners[2] << 1;
+            code |= corners[3];
+
+            // TODO: FIX THIS LOGIC
+            if (!code) {
+                assert(code); // Must be nonzero or we walked off the edge
+                return skeletons;
+            }
+            Cartesian nextEdge = mCornerNextEdgeLookupTable[code];
+            if (nextEdge == Cartesian::NONE) {
+                std::cout << "Edge detection failed due to bad corner\n";
+                assert(false); // NEED TO IMPLEMENT DIAGONAL EDGE DETECT
+            }
+            else if (nextEdge != Cartesian::INVALID) {
+                const CornerWinding winding = mCornerTypeLookupTable[code];
+                assert(edge != nextEdge);
+                edge = nextEdge;
+                // New vertex and connect previous
+                assert(numRoofVertices < MAX_ROOF_VERTICES);
+                sRoofVertices[numRoofVertices] = cornerPos;
+                ++numRoofVertices;
+            }
+            cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge)];
+
+        } while (cornerPos.x != startX || cornerPos.y != startY);
+
+        sCgalPoly.resize(numRoofVertices);
+        for (ui32 i = 0; i < numRoofVertices; ++i) {
+            sCgalPoly[i] = CgalPoint(sRoofVertices[i].x, sRoofVertices[i].y);
+        }
+
+        // Get the straight skeleton
+        SsPtr newSS = CGAL::create_interior_straight_skeleton_2(sCgalPoly.vertices_begin(), sCgalPoly.vertices_end());
+        if (newSS) {
+            skeletons.emplace_back(std::move(newSS));
         }
     }
-    ui32 startX = index % aabb.dims.x;
-    ui32 startY = index / aabb.dims.y;
-    i32v2 cornerPos(startX, startY);
-    Cartesian edge = Cartesian::DOWN; // We are guaranteed theres always a bottom edge at this corner
-
-    // Debug output
-    //std::cout << "GENERATING ROOF\n";
-    //ownedTiles.debugPrint(aabb.dims.x, aabb.dims.y);
-
-    sRoofVertices[numRoofVertices++] = cornerPos;
-    // First edge always goes right
-    ++cornerPos.x;
-    do {
-        index = cornerPos.y * aabb.dims.x + cornerPos.x;
-        ui8 corners[4];
-        corners[CORNER_TOP_LEFT] = (cornerPos.x == 0 || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index - 1);
-        corners[CORNER_TOP_RIGHT] = (cornerPos.x == aabb.dims.x || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index);
-        corners[CORNER_BOTTOM_LEFT] = (cornerPos.x == 0 || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - 1 - aabb.dims.x);
-        corners[CORNER_BOTTOM_RIGHT] = (cornerPos.x == aabb.dims.x || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - aabb.dims.x);
-        ui8 code = corners[0] << 3;
-        code |= corners[1] << 2;
-        code |= corners[2] << 1;
-        code |= corners[3];
-
-        // TODO: FIX THIS LOGIC
-        if (!code) {
-            assert(code); // Must be nonzero or we walked off the edge
-            return nullptr;
-        }
-        Cartesian nextEdge = mCornerNextEdgeLookupTable[code];
-        if (nextEdge == Cartesian::NONE) {
-            std::cout << "Edge detection failed due to bad corner\n";
-            assert(false); // NEED TO IMPLEMENT EDGE DETECT
-        }
-        else if (nextEdge != Cartesian::INVALID) {
-            const CornerWinding winding = mCornerTypeLookupTable[code];
-            assert(edge != nextEdge);
-            edge = nextEdge;
-            // New vertex and connect previous
-            assert(numRoofVertices < MAX_ROOF_VERTICES);
-            sRoofVertices[numRoofVertices] = cornerPos;
-            ++numRoofVertices;
-        }
-        cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge)];
-
-    } while (cornerPos.x != startX || cornerPos.y != startY);
-
-    sCgalPoly.resize(numRoofVertices);
-    for (ui32 i = 0; i < numRoofVertices; ++i) {
-        sCgalPoly[i] = CgalPoint(sRoofVertices[i].x, sRoofVertices[i].y);
-    }
-
-    // Get the straight skeleton
-    return CGAL::create_interior_straight_skeleton_2(sCgalPoly.vertices_begin(), sCgalPoly.vertices_end());
+    return skeletons;
 }
 
 void BuildingMesher::buildMesh(const Building& building) {
@@ -322,22 +341,25 @@ void BuildingMesher::buildMesh(const Building& building) {
                 const ui32 buildingBitIndex = floor * floorTileCount + floorBitIndex;
                 // If we own this tile, and above us is clear, we are a roofed tile
                 if (building.mInteriorTilesInAABB.getBit(buildingBitIndex) &&
-                    (floor == floorCount-1 || !building.mInteriorTilesInAABB.getBit(buildingBitIndex + floorTileCount))) {
+                    (floor == floorCount - 1 || !building.mInteriorTilesInAABB.getBit(buildingBitIndex + floorTileCount))) {
                     roofedTiles.setBitTo(floorBitIndex, true);
                 }
             }
         }
 
-        // TODO: Generate a list of straight skeletons?
-        SsPtr iss = buildRoofStraightSkeleton(roofedTiles, aabb, mCornerNextEdgeLookupTable, mCornerTypeLookupTable, zPos);
-        if (iss) {
-            std::vector<RoofContourEdgeInfo> contourEdges;
-            contourEdges.reserve(20);
+        // Generate a list of straight skeletons
+        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, aabb, mCornerNextEdgeLookupTable, mCornerTypeLookupTable, zPos);
+        std::vector<RoofContourEdgeInfo> contourEdges;
+        contourEdges.reserve(20);
 
-            buildMeshFromStraightSkeleton(iss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos);
+        // Mesh each individual straight skeleton
+        for (auto& ss : iss) {
+
+            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos);
 
             // ========================== Contours and extruded side boards ===============================
             meshRoofContourEdges(contourEdges, building, meshBuilder, shinglesTexture, rawWoodTexture, zPos);
+            contourEdges.clear();
         }
     }
 

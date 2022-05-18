@@ -650,11 +650,11 @@ void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) {
             bool finalWasSuccess = false;
             // Iterate along the wall and mark as wall nodes
             for (int j = 0; j <= wallLength; ++j) {
-                ui32 index = pos.y * bp.aabb.dims.x + pos.x;
+                const ui32 index = getIndexAtPos(pos, bp.aabb.dims, room.floorIndex);
                 // Only place wall if we own this tile
                 if (bp.ownerArray[index] == roomId) {
                     i16v2 facadePos = pos + outerDir;
-                    ui32 facadeIndex = facadePos.y * bp.aabb.dims.x + facadePos.x;
+                    ui32 facadeIndex = getIndexAtPos(facadePos, bp.aabb.dims, room.floorIndex);
                     // Only place facade if this is an unowned tile
                     if (bp.ownerArray[facadeIndex] == INVALID_ROOM_ID) {
                         bp.tiles[facadeIndex].type = BlueprintTileType::WALL;
@@ -672,7 +672,7 @@ void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) {
             // If last tile was successful, do one more to place the corner piece
             if (finalWasSuccess) {
                 i16v2 facadePos = pos + outerDir;
-                ui32 facadeIndex = facadePos.y * bp.aabb.dims.x + facadePos.x;
+                ui32 facadeIndex = getIndexAtPos(facadePos, bp.aabb.dims, room.floorIndex);
                 // Only place facade if this is an unowned tile
                 if (bp.ownerArray[facadeIndex] == INVALID_ROOM_ID) {
                     bp.tiles[facadeIndex].type = BlueprintTileType::WALL;
@@ -684,58 +684,60 @@ void BuildingBlueprintGenerator::placeFacadeWalls(BuildingBlueprint& bp) {
 
 void BuildingBlueprintGenerator::placeInteriorWalls(BuildingBlueprint& bp) {
     // First place main segments
-    for (ui16 y = 1; y < bp.aabb.dims.y - 1; ++y) {
-        for (ui16 x = 1; x < bp.aabb.dims.x - 1; ++x) {
-            ui16 index = y * bp.aabb.dims.x + x;
-            RoomNodeID roomId = bp.ownerArray[index];
-            if (roomId == INVALID_ROOM_ID) {
-                continue;
-            }
-            int placedWalls = 0;
-            { // Right
-                ui16 nIndex = index + 1;
-                RoomNodeID nId = bp.ownerArray[nIndex];
-                if (nId != INVALID_ROOM_ID && nId != roomId) {
-                    bp.tiles[nIndex].type = BlueprintTileType::WALL;
-                    ++placedWalls;
+    for (ui32 z = 0; z < bp.floorCount; ++z) {
+        for (ui32 y = 1; y < bp.aabb.dims.y - 1; ++y) {
+            for (ui32 x = 1; x < bp.aabb.dims.x - 1; ++x) {
+                const ui32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+                RoomNodeID roomId = bp.ownerArray[index];
+                if (roomId == INVALID_ROOM_ID) {
+                    continue;
                 }
-            }
-            { // Down
-                ui16 nIndex = index - bp.aabb.dims.x;
-                RoomNodeID nId = bp.ownerArray[nIndex];
-                if (nId != INVALID_ROOM_ID && nId != roomId) {
-                    bp.tiles[nIndex].type = BlueprintTileType::WALL;
-                    ++placedWalls;
+                int placedWalls = 0;
+                { // Right
+                    ui32 nIndex = index + 1;
+                    RoomNodeID nId = bp.ownerArray[nIndex];
+                    if (nId != INVALID_ROOM_ID && nId != roomId) {
+                        bp.tiles[nIndex].type = BlueprintTileType::WALL;
+                        ++placedWalls;
+                    }
                 }
-            }
-        }
-    }
-    // Next place corners
-    for (ui16 y = 1; y < bp.aabb.dims.y - 1; ++y) {
-        for (ui16 x = 1; x < bp.aabb.dims.x - 1; ++x) {
-            ui16 index = y * bp.aabb.dims.x + x;
-            if (bp.tiles[index].type != BlueprintTileType::WALL) {
-                continue;
-            }
-            // Down-right configuration
-            {
-                const ui16 downRightIndex = index - bp.aabb.dims.x + 1;
-                if (bp.tiles[downRightIndex].type == BlueprintTileType::WALL) {
-                    const ui16 downIndex = index - bp.aabb.dims.x;
-                    if (bp.tiles[downIndex].type != BlueprintTileType::WALL) {
-                        // Always place to right
-                        bp.tiles[index + 1].type = BlueprintTileType::WALL;
+                { // Down
+                    ui32 nIndex = index - bp.aabb.dims.x;
+                    RoomNodeID nId = bp.ownerArray[nIndex];
+                    if (nId != INVALID_ROOM_ID && nId != roomId) {
+                        bp.tiles[nIndex].type = BlueprintTileType::WALL;
+                        ++placedWalls;
                     }
                 }
             }
-            // Up-right configuration
-            {
-                const ui16 upRightIndex = index + bp.aabb.dims.x + 1;
-                if (bp.tiles[upRightIndex].type == BlueprintTileType::WALL) {
-                    const ui16 upIndex = index + bp.aabb.dims.x;
-                    if (bp.tiles[upIndex].type != BlueprintTileType::WALL) {
-                        // Always place to right
-                        bp.tiles[index + 1].type = BlueprintTileType::WALL;
+        }
+        // Next place corners
+        for (ui32 y = 1; y < bp.aabb.dims.y - 1; ++y) {
+            for (ui32 x = 1; x < bp.aabb.dims.x - 1; ++x) {
+                ui32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+                if (bp.tiles[index].type != BlueprintTileType::WALL) {
+                    continue;
+                }
+                // Down-right configuration
+                {
+                    const ui32 downRightIndex = index - bp.aabb.dims.x + 1;
+                    if (bp.tiles[downRightIndex].type == BlueprintTileType::WALL) {
+                        const ui32 downIndex = index - bp.aabb.dims.x;
+                        if (bp.tiles[downIndex].type != BlueprintTileType::WALL) {
+                            // Always place to right
+                            bp.tiles[index + 1].type = BlueprintTileType::WALL;
+                        }
+                    }
+                }
+                // Up-right configuration
+                {
+                    const ui32 upRightIndex = index + bp.aabb.dims.x + 1;
+                    if (bp.tiles[upRightIndex].type == BlueprintTileType::WALL) {
+                        const ui32 upIndex = index + bp.aabb.dims.x;
+                        if (bp.tiles[upIndex].type != BlueprintTileType::WALL) {
+                            // Always place to right
+                            bp.tiles[index + 1].type = BlueprintTileType::WALL;
+                        }
                     }
                 }
             }
@@ -952,10 +954,12 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp)
     constexpr int CELLULAR_AUTOMATA_ITERATIONS = 1;
 
     for (int step = 0; step < CELLULAR_AUTOMATA_ITERATIONS; ++step) {
-        for (ui16 y = 1; y < bp.aabb.dims.y - 1; ++y) {
-            for (ui16 x = 1; x < bp.aabb.dims.x - 1; ++x) {
-                ui16 index = y * bp.aabb.dims.x + x;
-                FixupSingleRoomPieces(bp, x, y, index);
+        for (ui16 z = 0; z < bp.floorCount; ++z) {
+            for (ui16 y = 1; y < bp.aabb.dims.y - 1; ++y) {
+                for (ui16 x = 1; x < bp.aabb.dims.x - 1; ++x) {
+                    const ui16 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+                    FixupSingleRoomPieces(bp, x, y, index);
+                }
             }
         }
     }

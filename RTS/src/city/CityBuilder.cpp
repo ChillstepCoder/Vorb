@@ -59,7 +59,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
         0.0f, // NONE
         0.0f, // FLOOR
         0.0f, // DOOR
-        3.0f, // WALL
+        1.0f, // WALL
     };
     static_assert(e_cast(BlueprintTileType::TYPES) == 4);
 
@@ -115,7 +115,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
 
                     const TileID tileId = bp.tileIDs[e_cast(type)];
                     if (tileId != TILE_ID_NONE) {
-                        const f32 height = BUILD_HEIGHTS[e_cast(type)] + meanHeight + z * tileContainer.getFloorHeight();
+                        const f32 height = meanHeight + (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
                         // TODO: Always ground??
                         outBuilding.mInteriorTilesInAABB.setBitTo(tileIndex, true);
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
