@@ -40,6 +40,8 @@ public:
 
     // TODO: Boost allocator
 
+    const ui32AABB2& getAABB() const { return mAABB; }
+
 private:
     // Building bounds are a series of corner segments
     TileContainer mTileContainer;

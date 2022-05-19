@@ -211,6 +211,10 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     mCamera.setPosition(followTargetPos - lookAtOffset);
     mCamera.lookAt(followTargetPos);
 
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
+        mIsMouseHidden = false;
+    }
+
     if (mIsMouseHidden != mWasMouseHidden) {
         if (mIsMouseHidden) {
             mWindow.setRelativeMouseMode(true);

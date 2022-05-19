@@ -174,19 +174,56 @@ f32 AXIS_V_DIR_FROM_CARTESIAN[4] = {
 // Step 3 : Perform a boundary walk, using the least interior angle, to determine the roof planes.
 // Step 4 : Raise the vertices according to their distance from the supporting edge.
 
-void computeGablePointsAndExtrudePositions(std::unordered_map<f32v2, f32v2, f32v2hash>& gableTargetPoints, std::unordered_map<f32v2, f32v3, f32v2hash>& contourExtrudePositions, SsPtr iss) {
+struct GableTargetPointInfo {
+    f32v2 pos;
+    ui32 borderCount; // If this is ever > 1, we ignore
+
+    bool isValidGable() const { return borderCount == 1; }
+};
+
+void computeGablePointsAndExtrudePositions(const Building& building, f32 zPos, std::unordered_map<f32v2, GableTargetPointInfo, f32v2hash>& gableTargetPoints, std::unordered_map<f32v2, f32v3, f32v2hash>& contourExtrudePositions, SsPtr iss, VisualLog* visLog) {
     gableTargetPoints.reserve(10);
     contourExtrudePositions.reserve(30);
     // Compute gable target points
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
+
+        // Visual log
+        if (visLog) {
+            const auto& thisPoint = he->vertex()->point();
+            const auto& oppositePoint = he->opposite()->vertex()->point();
+            const auto& nextPoint = he->next()->vertex()->point();
+            f32v3 p1(building.getAABB().pos.x + thisPoint.x(), building.getAABB().pos.y + thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
+            {
+                f32v3 p2(building.getAABB().pos.x + oppositePoint.x(), building.getAABB().pos.y + oppositePoint.y(), zPos + he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
+                visLog->addLineBetweenPoints(p1, p2, color4(1.0f, 0.0f, 0.0f, 0.75f));
+            }
+            {
+                f32v3 p2(building.getAABB().pos.x + nextPoint.x(), building.getAABB().pos.y + nextPoint.y(), zPos + he->next()->vertex()->time() * ROOF_HEIGHT_MULT);
+                visLog->addLineBetweenPoints(p1, p2, color4(1.0f, 0.0f, 1.0f, 0.75f));
+            }
+        }
+
         do {
             const bool isGablePoint = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
             if (isGablePoint) {
                 f32v2 gableTarget;
                 gableTarget.x = (he->prev()->vertex()->point().x() + he->next()->vertex()->point().x()) / 2.0f;
                 gableTarget.y = (he->prev()->vertex()->point().y() + he->next()->vertex()->point().y()) / 2.0f;
-                gableTargetPoints[f32v2(he->vertex()->point().x(), he->vertex()->point().y())] = gableTarget;
+                const f32v2 lookup = f32v2(he->vertex()->point().x(), he->vertex()->point().y());
+                auto&& it = gableTargetPoints.find(lookup);
+                if (it == gableTargetPoints.end()) {
+                    gableTargetPoints[lookup] = GableTargetPointInfo{ gableTarget, 1 };
+                }
+                else {
+                    ++it->second.borderCount;
+                }
+                // Visual log
+                if (visLog) {
+                    const auto& thisPoint = he->vertex()->point();
+                    f32v3 p1(building.getAABB().pos.x + thisPoint.x(), building.getAABB().pos.y + thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
+                    visLog->addWireQuad(p1 - f32v3(0.2f, 0.2f, 0.0f), f32v2(0.4f), color4(0.0f, 1.0f, 0.0f, 0.75f));
+                }
             }
             else if (he->vertex()->is_contour() && he->is_bisector()) {
 
@@ -242,7 +279,7 @@ void BuildingMesher::buildMesh(const Building& building) {
     }
 
     // ========================== Straight Skeleton ===============================
-    if (visLog) visLog->nextStep("Straight skeleton");
+    
 
     const ui32 floorCount = tileContainer.getDims().z;
     const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
@@ -264,14 +301,18 @@ void BuildingMesher::buildMesh(const Building& building) {
         }
 
         // Generate a list of straight skeletons
+
+        if (visLog) visLog->nextStep("Detect walls " + std::to_string(floor));
         std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, mCornerNextEdgeLookupTable, mCornerTypeLookupTable, zPos, visLog);
         std::vector<RoofContourEdgeInfo> contourEdges;
         contourEdges.reserve(20);
 
         // Mesh each individual straight skeleton
+        ui32 n = 0;
         for (auto& ss : iss) {
 
-            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos);
+            if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
+            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
             meshRoofContourEdges(contourEdges, building, meshBuilder, shinglesTexture, rawWoodTexture, zPos);
@@ -334,6 +375,7 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
 
 std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, f32 zPos, VisualLog* visLog) {
     // Detect Edges
+
     const ui32AABB2& aabb = building.mAABB;
     std::vector<SsPtr> skeletons;
 
@@ -373,6 +415,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
         sRoofVertices[numRoofVertices++] = cornerPos;
         // First edge always goes right
         ++cornerPos.x;
+
         do {
             index = cornerPos.y * aabb.dims.x + cornerPos.x;
 
@@ -380,7 +423,6 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
             if (visLog) {
                 const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
                 visLog->addWireQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
-                visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.5f));
             }
 
             checkedTiles.setBitTo(index, true);
@@ -433,16 +475,16 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
 }
 
 
-void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, f32 zPos) {
+void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
 
     // ========================== Gables and Extrudes ===============================
     // Map gable and contour vertex points so we can move all connected verts
-    std::unordered_map<f32v2, f32v2, f32v2hash> gableTargetPoints;
+    std::unordered_map<f32v2, GableTargetPointInfo, f32v2hash> gableTargetPoints;
     std::unordered_map<f32v2, f32v3, f32v2hash> contourExtrudePositions;
-    computeGablePointsAndExtrudePositions(gableTargetPoints, contourExtrudePositions, iss);
+    computeGablePointsAndExtrudePositions(building, zPos, gableTargetPoints, contourExtrudePositions, iss, visLog);
 
     // Gather and reposition verts
     ui32 debugColorIndex = 0;
@@ -459,10 +501,10 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
             const bool isContourEdge = he->vertex()->is_contour() && he->next()->vertex()->is_contour();
 
             f32 x, y, t, h;
-            if (gableIt != gableTargetPoints.end()) {
+            if (gableIt != gableTargetPoints.end() && gableIt->second.isValidGable()) {
                 // We are a gable pivot! Get our new position
-                x = gableIt->second.x;
-                y = gableIt->second.y;
+                x = gableIt->second.pos.x;
+                y = gableIt->second.pos.y;
                 t = he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
                 isGable = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
@@ -488,6 +530,10 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                         const f32v3 boardStart(x, y, building.mZPosFloor - 0.2f);
                         const f32v3 boardEnd(x, y, zPos);
                         meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v3(0.1f), rawWoodTexture, 1.0f);
+                        // Visual log
+                        if (visLog) {
+                            visLog->addLineBetweenPoints(boardStart + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), boardEnd + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), color4(0.0f, 1.0f, 1.0f, 1.0f));
+                        }
 
                         const f32v3& extrudePosition = extrudeIt->second;
                         // Extrude
@@ -525,6 +571,10 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                         0.1f + (randFromf32v3(boardStart - boardEnd, (ui64)&it /*hax*/) - 0.5f) * BOARD_SIZE_VARIANCE
                     );
                     meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, rawWoodTexture, 1.0f);
+                    // Visual log
+                    if (visLog) {
+                        visLog->addLineBetweenPoints(boardStart + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), boardEnd + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), color4(0.0f, 1.0f, 1.0f, 1.0f));
+                    }
                 }
             }
 
@@ -691,7 +741,6 @@ void BuildingMesher::addRoofTriangle(
         meshBuilder.addTriangle(verts, texture, false);
     }
 }
-
 
 void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos) {
     for (auto&& edge : contourEdges) {

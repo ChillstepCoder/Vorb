@@ -14,6 +14,7 @@ struct SimpleQuad {
 
 enum class VisualLogShapeType {
     LINE,
+    WIRE_QUAD,
     QUAD,
 };
 
@@ -68,7 +69,8 @@ private:
     // Drawing
     int mSelectedRenderStep = 0;
     int mShapesToRender = 0;
-    bool mRenderSingleStep = false;
+    bool mRenderSingleStep = true;
+    bool mRenderSingleShape = false;
     bool mDirtyRender = true;
 
     ui32 mNumQuads = 0;

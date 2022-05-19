@@ -51,39 +51,15 @@ void VisualLog::addLineBetweenPoints(const f32v3& origin, const f32v3& end, cons
 void VisualLog::addWireQuad(const f32v3& origin, const f32v2& dims, color4 color) {
     mNumLines += 4;
     const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
-    // Wire quad is 4 shapes
     {
         ++mRenderStepInfo.back().shapeCount;
         VisualLogShape& newShape = mShapes.emplace_back();
-        newShape.type = VisualLogShapeType::LINE;
-        newShape.line.position1 = origin;
-        newShape.line.position2 = origin + f32v3(dims.x, 0.0f, 0.0f);
+        newShape.type = VisualLogShapeType::WIRE_QUAD;
+        newShape.quad.position = origin;
+        newShape.quad.dims = dims;
         newShape.color = color;
     }
-    {
-        ++mRenderStepInfo.back().shapeCount;
-        VisualLogShape& newShape = mShapes.emplace_back();
-        newShape.type = VisualLogShapeType::LINE;
-        newShape.line.position1 = origin;
-        newShape.line.position2 = origin + f32v3(0.0f, dims.y, 0.0f);
-        newShape.color = color;
-    }
-    {
-        ++mRenderStepInfo.back().shapeCount;
-        VisualLogShape& newShape = mShapes.emplace_back();
-        newShape.type = VisualLogShapeType::LINE;
-        newShape.line.position1 = topRight;
-        newShape.line.position2 = topRight - f32v3(dims.x, 0.0f, 0.0f);
-        newShape.color = color;
-    }
-    {
-        ++mRenderStepInfo.back().shapeCount;
-        VisualLogShape& newShape = mShapes.emplace_back();
-        newShape.type = VisualLogShapeType::LINE;
-        newShape.line.position1 = topRight;
-        newShape.line.position2 = topRight - f32v3(0.0f, dims.y, 0.0f);
-        newShape.color = color;
-    }
+   
 }
 
 void VisualLog::addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color) {
@@ -151,14 +127,17 @@ void VisualLog::buildMesh() {
     std::vector<SimpleMeshVertex> lineVertices;
     std::vector<SimpleMeshVertex> quadVertices;
     // Reserve maximum size of mesh
-    lineVertices.reserve(mNumLines);
-    quadVertices.reserve(mNumQuads);
+    lineVertices.reserve(mNumLines * 2);
+    quadVertices.reserve(mNumQuads * 4);
 
     ui32 i = 0;
     const ui32 end = mRenderStepInfo[mSelectedRenderStep].startIndex + mShapesToRender;
-    if (mRenderSingleStep) {
+    if (mRenderSingleShape) {
+        i = end - 1;
+    } else if (mRenderSingleStep) {
         i = mRenderStepInfo[mSelectedRenderStep].startIndex;
     }
+    
 
     // Build meshes
     for (; i < end; ++i) {
@@ -166,28 +145,67 @@ void VisualLog::buildMesh() {
         switch (shape.type) {
             case VisualLogShapeType::LINE: {
                 SimpleMeshVertex& v1 = lineVertices.emplace_back();
-                SimpleMeshVertex& v2 = lineVertices.emplace_back();
                 v1.position = shape.line.position1;
-                v2.position = shape.line.position2;
                 v1.color = shape.color;
+                SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                v2.position = shape.line.position2;
                 v2.color = shape.color;
                 break;
             }
             case VisualLogShapeType::QUAD: {
-                SimpleMeshVertex& v1 = quadVertices.emplace_back();
-                SimpleMeshVertex& v2 = quadVertices.emplace_back();
-                SimpleMeshVertex& v3 = quadVertices.emplace_back();
-                SimpleMeshVertex& v4 = quadVertices.emplace_back();
                 const SimpleQuad& q = shape.quad;
-
+                SimpleMeshVertex& v1 = quadVertices.emplace_back();
                 v1.position = q.position;
-                v2.position = q.position + f32v3(q.dims.x, 0.0f, 0.0f);
-                v3.position = q.position + f32v3(q.dims.x, q.dims.y, 0.0f);
-                v4.position = q.position + f32v3(0.0f, q.dims.y, 0.0f);
                 v1.color = shape.color;
+                SimpleMeshVertex& v2 = quadVertices.emplace_back();
+                v2.position = q.position + f32v3(q.dims.x, 0.0f, 0.0f);
                 v2.color = shape.color;
+                SimpleMeshVertex& v3 = quadVertices.emplace_back();
+                v3.position = q.position + f32v3(q.dims.x, q.dims.y, 0.0f);
                 v3.color = shape.color;
+                SimpleMeshVertex& v4 = quadVertices.emplace_back();
+                v4.position = q.position + f32v3(0.0f, q.dims.y, 0.0f);
                 v4.color = shape.color;
+                break;
+            }
+            case VisualLogShapeType::WIRE_QUAD: {
+                const f32v3 p1 = shape.quad.position;
+                const f32v3 p2 = p1 + f32v3(shape.quad.dims.x, 0.0f, 0.0f);
+                const f32v3 p3 = p1 + f32v3(shape.quad.dims.x, shape.quad.dims.y, 0.0f);
+                const f32v3 p4 = p1 + f32v3(0.0f, shape.quad.dims.y, 0.0f);
+                // Four lines
+                {
+                    SimpleMeshVertex& v1 = lineVertices.emplace_back();
+                    v1.position = p1;
+                    v1.color = shape.color;
+                    SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                    v2.position = p2;
+                    v2.color = shape.color; 
+                }
+                {
+                    SimpleMeshVertex& v1 = lineVertices.emplace_back();
+                    v1.position = p2;
+                    v1.color = shape.color;
+                    SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                    v2.position = p3;
+                    v2.color = shape.color;
+                }
+                {
+                    SimpleMeshVertex& v1 = lineVertices.emplace_back();
+                    v1.position = p3;
+                    v1.color = shape.color;
+                    SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                    v2.position = p4;
+                    v2.color = shape.color;
+                }
+                {
+                    SimpleMeshVertex& v1 = lineVertices.emplace_back();
+                    v1.position = p4;
+                    v1.color = shape.color;
+                    SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                    v2.position = p1;
+                    v2.color = shape.color;
+                }
                 break;
             }
             default:
@@ -280,10 +298,15 @@ void VisualLogger::renderImgui() {
         if (ImGui::Checkbox("Render single step", &log.mRenderSingleStep)) {
             log.mDirtyRender = true;
         }
+        if (ImGui::Checkbox("Render single shape", &log.mRenderSingleShape)) {
+            log.mDirtyRender = true;
+        }
+        ImGui::Text("%s", log.mRenderStepInfo[log.mSelectedRenderStep].stepName.c_str());
         if (log.mRenderStepInfo.size() > 1) {
             if (ImGui::Button("-1")) {
                 if (log.mSelectedRenderStep > 0) {
                     --log.mSelectedRenderStep;
+                    log.mShapesToRender = log.mRenderStepInfo[log.mSelectedRenderStep].shapeCount;
                     log.mDirtyRender = true;
                 }
             }
@@ -291,6 +314,7 @@ void VisualLogger::renderImgui() {
             if (ImGui::Button("+1")) {
                 if (log.mSelectedRenderStep < log.mRenderStepInfo.size() - 1) {
                     ++log.mSelectedRenderStep;
+                    log.mShapesToRender = log.mRenderStepInfo[log.mSelectedRenderStep].shapeCount;
                     log.mDirtyRender = true;
                 }
             }
@@ -300,9 +324,10 @@ void VisualLogger::renderImgui() {
             log.mDirtyRender = true;
         }
 
+        ImGui::Separator();
         VisualLogRenderStepInfo& selected = log.mRenderStepInfo[log.mSelectedRenderStep];
-        ImGui::Text("  name: %s", selected.stepName.c_str());
         if (selected.shapeCount > 1) {
+            ImGui::PushID(9999);
             if (ImGui::Button("-1")) {
                 if (log.mShapesToRender > 0) {
                     --log.mShapesToRender;
@@ -311,19 +336,22 @@ void VisualLogger::renderImgui() {
             }
             ImGui::SameLine();
             if (ImGui::Button("+1")) {
-                if (log.mShapesToRender < selected.shapeCount - 1) {
+                if (log.mShapesToRender < selected.shapeCount) {
                     ++log.mShapesToRender;
                     log.mDirtyRender = true;
                 }
             }
+            if (ImGui::SliderInt("Shapes", &log.mShapesToRender, 0, selected.shapeCount)) {
+                log.mDirtyRender = true;
+            }
+            ImGui::PopID();
         }
-        if (ImGui::SliderInt("Shapes", &log.mShapesToRender, 0, selected.shapeCount - 1)) {
-            log.mDirtyRender = true;
-        }
+        ImGui::Separator();
         if (ImGui::Button("Delete")) {
             deleteLog(&log);
         }
     }
+    ImGui::Separator();
 }
 
 void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
