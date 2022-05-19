@@ -239,6 +239,45 @@ void computeGablePointsAndExtrudePositions(const Building& building, f32 zPos, s
             he = he->next();
         } while (he != it->halfedge());
     }
+
+    // Fixup extrude positions that may be colliding with walls on above floors
+    for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
+        auto&& he = it->halfedge();
+        do {
+            const auto& thisPoint = he->vertex()->point();
+            auto&& it1 = contourExtrudePositions.find(f32v2(thisPoint.x(), thisPoint.y()));
+            if (it1 != contourExtrudePositions.end()) {
+                const auto& oppositePoint = he->opposite()->vertex()->point();
+                auto&& it2 = contourExtrudePositions.find(f32v2(oppositePoint.x(), oppositePoint.y()));
+                if (it2 != contourExtrudePositions.end()) {
+                    // Loop along the edge and check for collisions
+                    dfdfdfdfd
+                }
+            }
+            he = he->next();
+        } while (he != it->halfedge());
+    }
+
+    // Collide extrusions with any neighboring rooms and stop the extrude so we dont clip through walls of second stories
+    //for (auto&& it = contourExtrudePositions.begin(); it != contourExtrudePositions.end(); ++it) {
+    //    int x = (int)glm::floor(it->second.x);
+    //    int y = (int)glm::floor(it->second.y);
+    //    // If we extruded out of the box, just assume its fine
+    //    if (x < 0 || y < 0 || x >= building.mAABB.dims.x || y >= building.mAABB.dims.y) {
+    //        continue;
+    //    }
+
+    //    const ui32 bitIndex = floor * building.mAABB.dims.y * building.mAABB.dims.x + y * building.mAABB.dims.x + x;
+    //    if (building.mInteriorTilesInAABB.getBit(bitIndex)) {
+    //        // Collided!
+    //        it->second.x = it->first.x;
+    //        it->second.y = it->first.y;
+    //        it->second.z = 0.0f;
+    //        if (visLog) {
+    //            visLog->addFilledQuad(f32v3(building.mAABB.pos.x + it->second.x - 0.2f, building.mAABB.pos.y - 0.2f + it->second.y, zPos), f32v2(0.4f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+    //        }
+    //    }
+    //}
 }
 
 f32 randFromf32v3(const f32v3& x, ui64 additional) {
@@ -312,7 +351,7 @@ void BuildingMesher::buildMesh(const Building& building) {
         for (auto& ss : iss) {
 
             if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
-            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos, visLog);
+            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
             meshRoofContourEdges(contourEdges, building, meshBuilder, shinglesTexture, rawWoodTexture, zPos);
@@ -475,7 +514,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
 }
 
 
-void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, f32 zPos, VisualLog* visLog) {
+void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
@@ -588,7 +627,6 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                 auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextVert.x(), nextVert.y()));
                 assert(extrudeIt != contourExtrudePositions.end());
                 // Figure out direction based on position offsets
-
 
                 contourEdges.emplace_back(RoofContourEdgeInfo{
                     f32v3(x, y, h),
