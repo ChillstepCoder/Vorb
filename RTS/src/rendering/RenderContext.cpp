@@ -8,6 +8,7 @@
 #include "pathfinding/NavThread.h"
 
 #include "DebugRenderer.h"
+#include "debugging/VisualLogger.h"
 #include "EntityComponentSystemRenderer.h"
 #include "rendering/BuildingRenderer.h"
 #include "rendering/CharacterRenderer.h"
@@ -659,6 +660,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
         mCityDebugRenderer->clearMeshes();
     }
 
+
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
         mWorld.enumVisibleChunks([](const Chunk& chunk) {
@@ -753,6 +755,11 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
+
+    // Visual logger
+    if (sDebugOptions.mEnableVisualLogs) {
+        VisualLogger::renderActiveLogs(camera.getPosition(), camera.getVPMatrix());
+    }
 }
 
 void RenderContext::renderUI(const Camera3D& camera) {

@@ -170,6 +170,8 @@
     <ClCompile Include="src\city\CityResidentManager.cpp" />
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
+    <ClCompile Include="src\debugging\DebugMesh.cpp" />
+    <ClCompile Include="src\debugging\VisualLogger.cpp" />
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
     <ClCompile Include="src\definitions\BuildingDef.cpp" />
     <ClCompile Include="src\definitions\BusinessDef.cpp" />
@@ -333,6 +335,9 @@
     <ClInclude Include="src\crafting\CraftingRepository.h" />
     <ClInclude Include="src\data_structure\FlatQuadtree.h" />
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
+    <ClInclude Include="src\debugging\DebugMesh.h" />
+    <ClInclude Include="src\debugging\SimpleMesh.h" />
+    <ClInclude Include="src\debugging\VisualLogger.h" />
     <ClInclude Include="src\definitions\AnimMachineDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
     <ClInclude Include="src\definitions\BusinessDef.h" />

@@ -5,6 +5,7 @@
 #include "ResourceManager.h"
 
 #include "DebugRenderer.h"
+#include "debugging/VisualLogger.h"
 
 #include "util/IntersectionUtil.h"
 
@@ -207,10 +208,133 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
     return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
 }
 
+void BuildingMesher::buildMesh(const Building& building) {
+    PreciseTimer timer;
 
-std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const ui32AABB2& aabb, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, ui32 floor) {
+    // Debug log
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
+
+    // TODO: ASYNC
+    MeshBuilder meshBuilder(false);
+    constexpr ui32 RESERVE_VERT_COUNT = 10000; // Average size
+    meshBuilder.reserveVertexCount(RESERVE_VERT_COUNT);
+    meshBuilder.reserveIndexCount(RESERVE_VERT_COUNT * 1.5f); // 1.5 is approx
+
+    const ui32AABB2& aabb = building.mAABB;
+    const BitArray& ownedTiles = building.mInteriorTilesInAABB;
+    BuildingRenderData& renderData = building.mRenderData;
+    const TileContainer& tileContainer = building.mTileContainer;
+
+    // Textures
+    const SubTexture& shinglesTexture = Services::ResourceManager::ref().getTexture("roof");
+    const SubTexture& rawWoodTexture = Services::ResourceManager::ref().getTexture("raw_wood_dark");
+
+    // TODO: Not right
+    sHeightMap.reserve(100);
+    sRoofFacePoints.reserve(100);
+
+    // ========================== Mesh Tiles ===============================
+    meshTiles(building, meshBuilder);
+
+    renderData.mMeshDirty = false;
+    if (!renderData.mMesh) {
+        renderData.mMesh = std::make_unique<Mesh>();
+    }
+
+    // ========================== Straight Skeleton ===============================
+    if (visLog) visLog->nextStep("Straight skeleton");
+
+    const ui32 floorCount = tileContainer.getDims().z;
+    const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
+    for (ui32 floor = 0; floor < floorCount; ++floor) {
+        const f32 zPos = building.mZPosFloor + (floor + 1.0f) * tileContainer.getFloorHeight();
+        // TODO: Replace bitarray with bool array
+        BitArray roofedTiles;
+        roofedTiles.resizeAndZero(building.mAABB.dims.x * building.mAABB.dims.y);
+        for (ui32 y = 0; y < building.mAABB.dims.y; ++y) {
+            for (ui32 x = 0; x < building.mAABB.dims.x; ++x) {
+                const ui32 floorBitIndex = y * building.mAABB.dims.x + x;
+                const ui32 buildingBitIndex = floor * floorTileCount + floorBitIndex;
+                // If we own this tile, and above us is clear, we are a roofed tile
+                if (building.mInteriorTilesInAABB.getBit(buildingBitIndex) &&
+                    (floor == floorCount - 1 || !building.mInteriorTilesInAABB.getBit(buildingBitIndex + floorTileCount))) {
+                    roofedTiles.setBitTo(floorBitIndex, true);
+                }
+            }
+        }
+
+        // Generate a list of straight skeletons
+        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, mCornerNextEdgeLookupTable, mCornerTypeLookupTable, zPos, visLog);
+        std::vector<RoofContourEdgeInfo> contourEdges;
+        contourEdges.reserve(20);
+
+        // Mesh each individual straight skeleton
+        for (auto& ss : iss) {
+
+            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos);
+
+            // ========================== Contours and extruded side boards ===============================
+            meshRoofContourEdges(contourEdges, building, meshBuilder, shinglesTexture, rawWoodTexture, zPos);
+            contourEdges.clear();
+        }
+    }
+
+    // ========================== Flat base ===============================
+    for (ui32 y = 0; y < aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < aabb.dims.x; ++x) {
+            const ui32 index = y * aabb.dims.x + x;
+            if (ownedTiles.getBit(index)) {
+                f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight());
+                meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+            }
+        }
+    }
+
+    meshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
+
+    if (visLog) visLog->finish();
+
+    std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
+}
+
+void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilder) {
+    const ui32v3& tileDims = building.mTileContainer.getDims();
+    for (ui32 z = 0; z < tileDims.z; ++z) {
+        for (ui32 y = 0; y < tileDims.y; ++y) {
+            for (ui32 x = 0; x < tileDims.x; ++x) {
+                TileIndex index = building.mTileContainer.getTileIndexFromXYZOffset(x, y, z);
+                const Tile& tile = building.mTileContainer.getTileAt(index);
+                const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
+                for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
+                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
+                    if (layerTile == TILE_ID_NONE) {
+                        continue;
+                    }
+
+                    const TileData& tileData = TileRepository::getTileData(layerTile);
+                    const SubTexture& texture = tileData.texture;
+
+                    // Tile mesh
+                    // Flora mesh ONLY
+                    if (tileData.shape == TileShape::THIN) {
+                        assert(false); // Unsupported
+                    }
+                    else if (tileData.shape == TileShape::BLOCK) {
+                        TileMeshBuilderMethods::addBlock(meshBuilder, building.mZPosFloor + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
+                    }
+                    else if (tileData.shape == TileShape::FLOOR) {
+
+                        //TileMeshBuilderMethods::addFloor(*quadMeshBuilder, (TileFloor)floor, f32v2(x, y), heightData, tileData, index, chunk, floor == TILE_FLOOR_GROUND);
+                    }
+                }
+            }
+        }
+    }
+}
+
+std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, f32 zPos, VisualLog* visLog) {
     // Detect Edges
-    ui32 numRoofVertices = 0;
+    const ui32AABB2& aabb = building.mAABB;
     std::vector<SsPtr> skeletons;
 
     BitArray checkedTiles;
@@ -220,6 +344,8 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const 
     ui32 index = 0;
     // Get multiple straight skeletons
     while (true) {
+        ui32 numRoofVertices = 0;
+
         // TODO: This could be checked byte by byte for nonzero then extract most significant bit?
         while (checkedTiles.getBit(index) || !ownedTiles.getBit(index)) {
             ++index;
@@ -228,6 +354,7 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const 
                 return skeletons;
             }
         }
+
         checkedTiles.setBitTo(index, true);
 
         ui32 startX = index % aabb.dims.x;
@@ -248,6 +375,14 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const 
         ++cornerPos.x;
         do {
             index = cornerPos.y * aabb.dims.x + cornerPos.x;
+
+            // Visual log
+            if (visLog) {
+                const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
+                visLog->addWireQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
+                visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.5f));
+            }
+
             checkedTiles.setBitTo(index, true);
 
             ui8 corners[4];
@@ -297,124 +432,6 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const 
     return skeletons;
 }
 
-void BuildingMesher::buildMesh(const Building& building) {
-    PreciseTimer timer;
-
-    // TODO: ASYNC
-    MeshBuilder meshBuilder(false);
-    constexpr ui32 RESERVE_VERT_COUNT = 10000; // Average size
-    meshBuilder.reserveVertexCount(RESERVE_VERT_COUNT);
-    meshBuilder.reserveIndexCount(RESERVE_VERT_COUNT * 1.5f); // 1.5 is approx
-
-    const ui32AABB2& aabb = building.mAABB;
-    const BitArray& ownedTiles = building.mInteriorTilesInAABB;
-    BuildingRenderData& renderData = building.mRenderData;
-    const TileContainer& tileContainer = building.mTileContainer;
-
-    // Textures
-    const SubTexture& shinglesTexture = Services::ResourceManager::ref().getTexture("roof");
-    const SubTexture& rawWoodTexture = Services::ResourceManager::ref().getTexture("raw_wood_dark");
-
-    // TODO: Not right
-    sHeightMap.reserve(100);
-    sRoofFacePoints.reserve(100);
-
-    // ========================== Mesh Tiles ===============================
-    meshTiles(building, meshBuilder);
-
-    renderData.mMeshDirty = false;
-    if (!renderData.mMesh) {
-        renderData.mMesh = std::make_unique<Mesh>();
-    }
-
-    // ========================== Straight Skeleton ===============================
-    const ui32 floorCount = tileContainer.getDims().z;
-    const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
-    for (ui32 floor = 0; floor < floorCount; ++floor) {
-        const f32 zPos = building.mZPosFloor + (floor + 1.0f) * tileContainer.getFloorHeight();
-        // TODO: Replace bitarray with bool array
-        BitArray roofedTiles;
-        roofedTiles.resizeAndZero(building.mAABB.dims.x * building.mAABB.dims.y);
-        for (ui32 y = 0; y < building.mAABB.dims.y; ++y) {
-            for (ui32 x = 0; x < building.mAABB.dims.x; ++x) {
-                const ui32 floorBitIndex = y * building.mAABB.dims.x + x;
-                const ui32 buildingBitIndex = floor * floorTileCount + floorBitIndex;
-                // If we own this tile, and above us is clear, we are a roofed tile
-                if (building.mInteriorTilesInAABB.getBit(buildingBitIndex) &&
-                    (floor == floorCount - 1 || !building.mInteriorTilesInAABB.getBit(buildingBitIndex + floorTileCount))) {
-                    roofedTiles.setBitTo(floorBitIndex, true);
-                }
-            }
-        }
-
-        // Generate a list of straight skeletons
-        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, aabb, mCornerNextEdgeLookupTable, mCornerTypeLookupTable, zPos);
-        std::vector<RoofContourEdgeInfo> contourEdges;
-        contourEdges.reserve(20);
-
-        // Mesh each individual straight skeleton
-        for (auto& ss : iss) {
-
-            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, zPos);
-
-            // ========================== Contours and extruded side boards ===============================
-            meshRoofContourEdges(contourEdges, building, meshBuilder, shinglesTexture, rawWoodTexture, zPos);
-            contourEdges.clear();
-        }
-    }
-
-    // ========================== Flat base ===============================
-    for (ui32 y = 0; y < aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < aabb.dims.x; ++x) {
-            const ui32 index = y * aabb.dims.x + x;
-            if (ownedTiles.getBit(index)) {
-                f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight());
-                meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
-            }
-        }
-    }
-
-    meshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
-
-    std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
-}
-
-
-
-void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilder) {
-    const ui32v3& tileDims = building.mTileContainer.getDims();
-    for (ui32 z = 0; z < tileDims.z; ++z) {
-        for (ui32 y = 0; y < tileDims.y; ++y) {
-            for (ui32 x = 0; x < tileDims.x; ++x) {
-                TileIndex index = building.mTileContainer.getTileIndexFromXYZOffset(x, y, z);
-                const Tile& tile = building.mTileContainer.getTileAt(index);
-                const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
-                for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
-                    if (layerTile == TILE_ID_NONE) {
-                        continue;
-                    }
-
-                    const TileData& tileData = TileRepository::getTileData(layerTile);
-                    const SubTexture& texture = tileData.texture;
-
-                    // Tile mesh
-                    // Flora mesh ONLY
-                    if (tileData.shape == TileShape::THIN) {
-                        assert(false); // Unsupported
-                    }
-                    else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(meshBuilder, building.mZPosFloor + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
-                    }
-                    else if (tileData.shape == TileShape::FLOOR) {
-
-                        //TileMeshBuilderMethods::addFloor(*quadMeshBuilder, (TileFloor)floor, f32v2(x, y), heightData, tileData, index, chunk, floor == TILE_FLOOR_GROUND);
-                    }
-                }
-            }
-        }
-    }
-}
 
 void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, f32 zPos) {
     // For bisector board placement

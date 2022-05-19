@@ -11,6 +11,8 @@
 #include <CGAL/partition_2.h>
 #include <CGAL/Partition_traits_2.h>
 
+class VisualLog;
+
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2                   CgalPoint;
 typedef CGAL::Polygon_2<K>           Polygon_2;
@@ -42,6 +44,7 @@ public:
 
 private:
     void meshTiles(const Building& building, MeshBuilder& meshBuilder);
+    std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, f32 zPos, VisualLog* visLog);
     void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, f32 zPos);
     void triangulateRoofFacePolygons(bool isGable, MeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos);
     void addRoofTriangle(

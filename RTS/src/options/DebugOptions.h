@@ -77,6 +77,7 @@ struct DebugOptions {
     bool mShowEditor = false;
     bool mShowPaths = true;
     bool mShowEntityQueries = false;
+    bool mEnableVisualLogs = true;
     // Water
     f32v4 mShallowWaterColor = f32v4(159.0f / 255.0f, 194.0f / 255.0f, 206.0f / 255.0f, 185.0f / 255.0f);
     f32v4 mDeepWaterColor = f32v4(57.0f / 255.0f, 83.0f / 255.0f, 122.0f / 255.0f, 191.0f / 255.0f);

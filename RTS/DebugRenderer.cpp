@@ -15,134 +15,7 @@
 
 #include "rendering/RenderStats.h"
 
-namespace {
-    const cString VERT_SRC = R"(
-// Uniforms
-uniform mat4 unWVP;
-uniform vec3 CameraPos;
-// Input
-in vec4 vPosition; // Position in object space
-in vec4 vColor;
-out vec4 fColor;
-void main() {
-  fColor = vColor;
-  gl_Position = unWVP * (vPosition - vec4(CameraPos, 0.0));
-}
-)";
-    const cString FRAG_SRC = R"(
-in vec4 fColor;
-// Output
-out vec4 pColor;
-void main() {
-  pColor = fColor;
-}
-)";
-
-    const cString VERT_CIRCLE_SRC = R"(
-// Uniforms
-uniform mat4 unWVP;
-uniform vec3 CameraPos;
-// Input
-in vec4 vPosition; // Position in object space
-in vec4 vColor;
-in float vRadius;
-in vec2 vOffset;
-out vec4 fColor;
-out float fRadius;
-out vec2 fOffset;
-void main() {
-  fColor = vColor;
-  fRadius = vRadius;
-  fOffset = vOffset;
-  gl_Position = unWVP * (vPosition - vec4(CameraPos, 0.0));
-}
-)";
-    const cString FRAG_CIRCLE_SRC = R"(
-in vec4 fColor;
-in float fRadius;
-in vec2 fOffset;
-// Output
-out vec4 pColor;
-void main() {
-  vec2 scaled = fOffset / fRadius;
-  float slength = length(scaled);
-  pColor = fColor;
-  if (slength > 1.00 || slength < 0.93) {
-    discard;
-  }
-}
-)";
-}
-
-struct DebugLine {
-    DebugLine(const f32v2& pos1, const f32v2& pos2, const color4& colr)
-        : position1(pos1.x, pos1.y, 0.0f)
-        , position2(pos2.x, pos2.y, 0.0f)
-        , color(colr) {
-    }
-    DebugLine(const f32v3& pos1, const f32v3& pos2, const color4& colr)
-        : position1(pos1)
-        , position2(pos2)
-        , color(colr) {
-    }
-    f32v3 position1;
-    f32v3 position2;
-    color4 color;
-};
-
-struct DebugQuad {
-    DebugQuad(const f32v2& position, const f32v2& dims, const color4& colr)
-        : position(position.x, position.y, 0.0f)
-        , dims(dims)
-        , color(colr) {
-    }
-    DebugQuad(const f32v3& position, const f32v2& dims, const color4& colr)
-        : position(position)
-        , dims(dims)
-        , color(colr) {
-    }
-    f32v3 position;
-    f32v2 dims;
-    color4 color;
-};
-
-struct DebugCircle {
-    DebugCircle(const f32v3& position, const f32 radius, const color4& colr)
-        : position(position)
-        , radius(radius)
-        , color(colr) {
-    }
-    f32v3 position;
-    f32 radius;
-    color4 color;
-};
-
-struct SimpleMeshVertex {
-    f32v3 position;
-    color4 color;
-};
-
-struct SimpleMeshCircleVertex {
-    f32v3 position;
-    f32v2 offset;
-    f32 radius;
-    color4 color;
-};
-
-enum class DebugMeshType {
-    LINES,
-    QUADS
-};
-struct SimpleMesh {
-    VGBuffer vbo;
-    DebugMeshType type;
-    int lifetime;
-    int id;
-    GLsizei numVerts;
-};
-
-vg::GLProgram sProgram;
-vg::GLProgram sCircleProgram;
+#include "debugging/DebugMesh.h"
 
 struct IntPairHasher
 {
@@ -352,12 +225,12 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
     assert(IS_MAIN_THREAD());
 
     // Quad meshes
-    if (!sProgram.isCreated()) {
-        sProgram = vg::ShaderManager::createProgram(VERT_SRC, FRAG_SRC, nullptr);
+    if (!sGlobalSimpleProgram.isCreated()) {
+        initGlobalSimpleProgram();
     }
 
-    sProgram.use();
-    sProgram.enableVertexAttribArrays();
+    sGlobalSimpleProgram.use();
+    sGlobalSimpleProgram.enableVertexAttribArrays();
 
     // context in
     for (auto&& lineIt : sNewLines) {
@@ -466,13 +339,13 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
     
     for (size_t i = 0; i < sDebugMeshes.size();) {
         auto&& mesh = sDebugMeshes[i];
-        // Lines
+
         glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glVertexAttribPointer(sProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
-        glVertexAttribPointer(sProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
-        glUniformMatrix4fv(sProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
-        glUniform3fv(sProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
+        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
+        glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+        glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         if (mesh.type == DebugMeshType::LINES) {
             glLineWidth(1.0f);
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);
@@ -495,16 +368,16 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         }
     }
 
-    sProgram.disableVertexAttribArrays();
-    sProgram.unuse();
+    sGlobalSimpleProgram.disableVertexAttribArrays();
+    sGlobalSimpleProgram.unuse();
 
     // Circle meshes
-    if (!sCircleProgram.isCreated()) {
-        sCircleProgram = vg::ShaderManager::createProgram(VERT_CIRCLE_SRC, FRAG_CIRCLE_SRC, nullptr);
+    if (!sGlobalCircleProgram.isCreated()) {
+        initGlobalCircleProgram();
     }
 
-    sCircleProgram.use();
-    sCircleProgram.enableVertexAttribArrays();
+    sGlobalCircleProgram.use();
+    sGlobalCircleProgram.enableVertexAttribArrays();
 
     for (auto&& circleIt : sNewCircles) {
         SimpleMesh newMesh;
@@ -552,12 +425,12 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         // Lines
         glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glVertexAttribPointer(sCircleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, position));
-        glVertexAttribPointer(sCircleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, color));
-        glVertexAttribPointer(sCircleProgram.getAttribute("vRadius"), 1, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, radius));
-        glVertexAttribPointer(sCircleProgram.getAttribute("vOffset"), 2, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, offset));
-        glUniformMatrix4fv(sCircleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
-        glUniform3fv(sCircleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+        glVertexAttribPointer(sGlobalCircleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, position));
+        glVertexAttribPointer(sGlobalCircleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, color));
+        glVertexAttribPointer(sGlobalCircleProgram.getAttribute("vRadius"), 1, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, radius));
+        glVertexAttribPointer(sGlobalCircleProgram.getAttribute("vOffset"), 2, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshCircleVertex), offsetptr(SimpleMeshCircleVertex, offset));
+        glUniformMatrix4fv(sGlobalCircleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+        glUniform3fv(sGlobalCircleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
         RenderStats::recordDrawCall(mesh.numVerts / 2);
 
@@ -577,8 +450,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    sCircleProgram.disableVertexAttribArrays();
-    sCircleProgram.unuse();
+    sGlobalCircleProgram.disableVertexAttribArrays();
+    sGlobalCircleProgram.unuse();
 }
 
 void DebugRenderer::clearAllMeshesWithId(int id)

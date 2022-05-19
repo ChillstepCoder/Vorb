@@ -4,6 +4,8 @@
 #include "generation/WorldGeneration.h"
 #include "editor/ImguiViews.hpp"
 
+#include "debugging/VisualLogger.h"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
@@ -369,6 +371,10 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::SliderFloat("DebugFloat3", &sDebugOptions.mDebugFloat03, 0.0f, 1.0f);
         ImGui::SliderFloat("DebugFloat4", &sDebugOptions.mDebugFloat04, 0.0f, 1.0f);
         ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Visual Logs")) {
+        VisualLogger::renderImgui();
     }
 
     if (ImGui::CollapsingHeader("Animation Debugger")) {

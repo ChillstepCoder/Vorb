@@ -5,7 +5,7 @@
 #include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/GLProgram.h>
 
-const char* VERT_SRC = R"(
+const char* SIMPLE_VERT_SRC = R"(
 in vec2 vPosition; // Position in screen space
 uniform vec4 unUvRect;
 out vec2 fUV;
@@ -16,7 +16,7 @@ void main() {
 }
 )";
 
-const char* FRAG_SRC = R"(
+const char* SIMPLE_FRAG_SRC = R"(
 uniform sampler2D unTexture;
 uniform vec2 unPixelDims;
 uniform vec4 unUvRect;
@@ -116,8 +116,8 @@ void NormalMapGenerator::init() {
     mProgram = std::make_unique<vg::GLProgram>();
     mProgram->onShaderCompilationError += makeDelegate(onError);
     mProgram->init();
-    mProgram->addShader(vg::ShaderType::VERTEX_SHADER, VERT_SRC);
-    mProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, FRAG_SRC);
+    mProgram->addShader(vg::ShaderType::VERTEX_SHADER, SIMPLE_VERT_SRC);
+    mProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, SIMPLE_FRAG_SRC);
     mProgram->link();
     mProgram->initUniforms();
 

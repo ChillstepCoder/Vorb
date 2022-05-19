@@ -1,0 +1,348 @@
+#include "stdafx.h"
+#include "VisualLogger.h"
+
+#include "rendering/RenderStats.h"
+
+#include "debugging/DebugMesh.h"
+#include "options/DebugOptions.h"
+
+#include <Vorb/ui/imgui/imgui.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
+#include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
+
+#include <Vorb/graphics/GLProgram.h>
+
+std::vector<std::unique_ptr<VisualLog>> VisualLogger::sVisualLogs;
+std::mutex VisualLogger::sMutex;
+
+VisualLog::VisualLog(const nString& name) : mName(name) {
+
+}
+
+VisualLog::~VisualLog() {
+    if (mLinesMesh.vbo) {
+        glDeleteBuffers(1, &mLinesMesh.vbo);
+        mLinesMesh.vbo = 0;
+    }
+    if (mQuadsMesh.vbo) {
+        glDeleteBuffers(1, &mQuadsMesh.vbo);
+        mQuadsMesh.vbo = 0;
+    }
+}
+
+void VisualLog::reserve(ui32 shapeCount) {
+    mShapes.reserve(shapeCount);
+}
+
+void VisualLog::nextStep(const nString& stepName) {
+    mRenderStepInfo.emplace_back(VisualLogRenderStepInfo{ (ui32)mShapes.size(), 0u, stepName });
+}
+
+void VisualLog::addLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color) {
+    ++mNumLines;
+    ++mRenderStepInfo.back().shapeCount;
+    VisualLogShape& newShape = mShapes.emplace_back();
+    newShape.type = VisualLogShapeType::LINE;
+    newShape.line.position1 = origin;
+    newShape.line.position2 = end;
+    newShape.color = color;
+}
+
+void VisualLog::addWireQuad(const f32v3& origin, const f32v2& dims, color4 color) {
+    mNumLines += 4;
+    const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
+    // Wire quad is 4 shapes
+    {
+        ++mRenderStepInfo.back().shapeCount;
+        VisualLogShape& newShape = mShapes.emplace_back();
+        newShape.type = VisualLogShapeType::LINE;
+        newShape.line.position1 = origin;
+        newShape.line.position2 = origin + f32v3(dims.x, 0.0f, 0.0f);
+        newShape.color = color;
+    }
+    {
+        ++mRenderStepInfo.back().shapeCount;
+        VisualLogShape& newShape = mShapes.emplace_back();
+        newShape.type = VisualLogShapeType::LINE;
+        newShape.line.position1 = origin;
+        newShape.line.position2 = origin + f32v3(0.0f, dims.y, 0.0f);
+        newShape.color = color;
+    }
+    {
+        ++mRenderStepInfo.back().shapeCount;
+        VisualLogShape& newShape = mShapes.emplace_back();
+        newShape.type = VisualLogShapeType::LINE;
+        newShape.line.position1 = topRight;
+        newShape.line.position2 = topRight - f32v3(dims.x, 0.0f, 0.0f);
+        newShape.color = color;
+    }
+    {
+        ++mRenderStepInfo.back().shapeCount;
+        VisualLogShape& newShape = mShapes.emplace_back();
+        newShape.type = VisualLogShapeType::LINE;
+        newShape.line.position1 = topRight;
+        newShape.line.position2 = topRight - f32v3(0.0f, dims.y, 0.0f);
+        newShape.color = color;
+    }
+}
+
+void VisualLog::addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color) {
+    ++mNumQuads;
+    ++mRenderStepInfo.back().shapeCount;
+    VisualLogShape& newShape = mShapes.emplace_back();
+    newShape.type = VisualLogShapeType::QUAD;
+    newShape.quad.position = origin;
+    newShape.quad.dims = dims;
+    newShape.color = color;
+}
+
+void VisualLog::finish() {
+    mSelectedRenderStep = 0;
+    mShapesToRender = mRenderStepInfo[0].shapeCount;
+    mFinishedBuilding = true;
+    mDirtyRender = true;
+}
+
+void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
+    assert(IS_MAIN_THREAD());
+
+    // Rebuild if needed
+    if (mDirtyRender) {
+        buildMesh();
+    }
+
+    // Quad meshes
+    if (!sGlobalSimpleProgram.isCreated()) {
+        initGlobalSimpleProgram();
+    }
+
+    sGlobalSimpleProgram.use();
+    sGlobalSimpleProgram.enableVertexAttribArrays();
+
+    if (mQuadsMesh.vbo) {
+        glBindBuffer(GL_ARRAY_BUFFER, mQuadsMesh.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
+        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
+        glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+        glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+        glDrawArrays(GL_QUADS, 0, (GLsizei)mQuadsMesh.numVerts);
+        RenderStats::recordDrawCall(mQuadsMesh.numVerts / 4);
+    }
+    if (mLinesMesh.vbo) {
+        glBindBuffer(GL_ARRAY_BUFFER, mLinesMesh.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
+        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
+        glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+        glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+        glDrawArrays(GL_LINES, 0, (GLsizei)mLinesMesh.numVerts);
+        RenderStats::recordDrawCall(mLinesMesh.numVerts / 2);
+    }
+
+    sGlobalSimpleProgram.disableVertexAttribArrays();
+    sGlobalSimpleProgram.unuse();
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void VisualLog::buildMesh() {
+    std::vector<SimpleMeshVertex> lineVertices;
+    std::vector<SimpleMeshVertex> quadVertices;
+    // Reserve maximum size of mesh
+    lineVertices.reserve(mNumLines);
+    quadVertices.reserve(mNumQuads);
+
+    ui32 i = 0;
+    const ui32 end = mRenderStepInfo[mSelectedRenderStep].startIndex + mShapesToRender;
+    if (mRenderSingleStep) {
+        i = mRenderStepInfo[mSelectedRenderStep].startIndex;
+    }
+
+    // Build meshes
+    for (; i < end; ++i) {
+        const VisualLogShape& shape = mShapes[i];
+        switch (shape.type) {
+            case VisualLogShapeType::LINE: {
+                SimpleMeshVertex& v1 = lineVertices.emplace_back();
+                SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                v1.position = shape.line.position1;
+                v2.position = shape.line.position2;
+                v1.color = shape.color;
+                v2.color = shape.color;
+                break;
+            }
+            case VisualLogShapeType::QUAD: {
+                SimpleMeshVertex& v1 = quadVertices.emplace_back();
+                SimpleMeshVertex& v2 = quadVertices.emplace_back();
+                SimpleMeshVertex& v3 = quadVertices.emplace_back();
+                SimpleMeshVertex& v4 = quadVertices.emplace_back();
+                const SimpleQuad& q = shape.quad;
+
+                v1.position = q.position;
+                v2.position = q.position + f32v3(q.dims.x, 0.0f, 0.0f);
+                v3.position = q.position + f32v3(q.dims.x, q.dims.y, 0.0f);
+                v4.position = q.position + f32v3(0.0f, q.dims.y, 0.0f);
+                v1.color = shape.color;
+                v2.color = shape.color;
+                v3.color = shape.color;
+                v4.color = shape.color;
+                break;
+            }
+            default:
+                assert(false);
+                break;
+        }
+    }
+    // Lines
+    if (lineVertices.size()) {
+        if (mLinesMesh.vbo == 0) {
+            glGenBuffers(1, &mLinesMesh.vbo);
+        }
+        mLinesMesh.numVerts = lineVertices.size();
+        mLinesMesh.type = DebugMeshType::LINES;
+        glBindBuffer(GL_ARRAY_BUFFER, mLinesMesh.vbo);
+        glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(SimpleMeshVertex), nullptr, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data());
+    }
+    else if (mLinesMesh.vbo) {
+        glDeleteBuffers(1, &mLinesMesh.vbo);
+        mLinesMesh.vbo = 0;
+    }
+
+    // Quads
+    if (quadVertices.size()) {
+        if (mQuadsMesh.vbo == 0) {
+            glGenBuffers(1, &mQuadsMesh.vbo);
+        }
+        mQuadsMesh.numVerts = quadVertices.size();
+        mQuadsMesh.type = DebugMeshType::QUADS;
+        glBindBuffer(GL_ARRAY_BUFFER, mQuadsMesh.vbo);
+        glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(SimpleMeshVertex), nullptr, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data());
+    }
+    else if (mQuadsMesh.vbo) {
+        glDeleteBuffers(1, &mQuadsMesh.vbo);
+        mQuadsMesh.vbo = 0;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    mDirtyRender = false;
+}
+
+VisualLog* VisualLogger::tryGetNewVisualLog(const nString& name) {
+    if (!sDebugOptions.mEnableVisualLogs) {
+        return nullptr;
+    }
+
+    std::unique_lock<std::mutex> lock(sMutex);
+    VisualLog& newLog = *sVisualLogs.emplace_back(std::make_unique<VisualLog>(name));
+    return &newLog;
+}
+
+void VisualLogger::renderImgui() {
+
+    static ui32 sSelected = UINT32_MAX;
+
+    ImGui::Text("Logs");
+    ImGui::Checkbox("Enable", &sDebugOptions.mEnableVisualLogs);
+
+    ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
+
+    std::unique_lock<std::mutex> lock(sMutex);
+    for (size_t i = 0; i < sVisualLogs.size(); ++i) {
+        ImGui::PushID(999 + i);
+        const VisualLog& log = *sVisualLogs[i];
+        if (!log.mFinishedBuilding) {
+            continue;
+        }
+
+        ImGui::TableNextColumn();
+        const ui32 prevSelected = sSelected;
+        if (ImGui::RadioButton(log.mName.c_str(), sSelected == (ui32)i)) {
+            sSelected = (ui32)i;
+            if (prevSelected < sVisualLogs.size()) {
+                sVisualLogs[prevSelected]->mShouldRender = false;
+            }
+            sVisualLogs[sSelected]->mShouldRender = true;
+        }
+        ImGui::TableNextColumn();
+        ImGui::PopID();
+    }
+    ImGui::EndTable();
+
+    // Info about selected
+    if (sSelected < sVisualLogs.size()) {
+        VisualLog& log = *sVisualLogs[sSelected];
+        ImGui::Separator();
+        ImGui::Text(log.mName.c_str());
+        if (ImGui::Checkbox("Render single step", &log.mRenderSingleStep)) {
+            log.mDirtyRender = true;
+        }
+        if (log.mRenderStepInfo.size() > 1) {
+            if (ImGui::Button("-1")) {
+                if (log.mSelectedRenderStep > 0) {
+                    --log.mSelectedRenderStep;
+                    log.mDirtyRender = true;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("+1")) {
+                if (log.mSelectedRenderStep < log.mRenderStepInfo.size() - 1) {
+                    ++log.mSelectedRenderStep;
+                    log.mDirtyRender = true;
+                }
+            }
+        }
+        if (ImGui::SliderInt("Step", &log.mSelectedRenderStep, 0, log.mRenderStepInfo.size() - 1)) {
+            log.mShapesToRender = log.mRenderStepInfo[log.mSelectedRenderStep].shapeCount;
+            log.mDirtyRender = true;
+        }
+
+        VisualLogRenderStepInfo& selected = log.mRenderStepInfo[log.mSelectedRenderStep];
+        ImGui::Text("  name: %s", selected.stepName.c_str());
+        if (selected.shapeCount > 1) {
+            if (ImGui::Button("-1")) {
+                if (log.mShapesToRender > 0) {
+                    --log.mShapesToRender;
+                    log.mDirtyRender = true;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("+1")) {
+                if (log.mShapesToRender < selected.shapeCount - 1) {
+                    ++log.mShapesToRender;
+                    log.mDirtyRender = true;
+                }
+            }
+        }
+        if (ImGui::SliderInt("Shapes", &log.mShapesToRender, 0, selected.shapeCount - 1)) {
+            log.mDirtyRender = true;
+        }
+        if (ImGui::Button("Delete")) {
+            deleteLog(&log);
+        }
+    }
+}
+
+void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
+
+    std::unique_lock<std::mutex> lock(sMutex);
+    for (auto&& log : sVisualLogs) {
+        if (log->mShouldRender) {
+            log->render(cameraPos, viewMatrix);
+        }
+    }
+}
+
+void VisualLogger::deleteLog(VisualLog* log) {
+
+    for (size_t i = 0; i < sVisualLogs.size(); ++i) {
+        if (sVisualLogs[i].get() == log) {
+            sVisualLogs[i] = std::move(sVisualLogs.back());
+            sVisualLogs.pop_back();
+            return;
+        }
+    }
+}
