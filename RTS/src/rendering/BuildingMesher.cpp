@@ -473,8 +473,7 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
                         TileMeshBuilderMethods::addBlock(meshBuilder, building.mZPosFloor + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
-
-                        //TileMeshBuilderMethods::addFloor(*quadMeshBuilder, (TileFloor)floor, f32v2(x, y), heightData, tileData, index, chunk, floor == TILE_FLOOR_GROUND);
+                        TileMeshBuilderMethods::addFloor(meshBuilder, building.mZPosFloor + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
                     }
                 }
             }

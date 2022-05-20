@@ -253,8 +253,19 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
     }
 }
 
-void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
     const SubTexture& texture = tileData.texture;
+    const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight);
+    // Render top
+    meshBuilder.addAxisAlignedQuad(
+        tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+        f32v2(1.0f), // Dimensions
+        CubeFacing::TOP,
+        texture,
+        f32v4(0.0f, 2.0f / 3.0f, 1.0f, 1.0f / 3.0f),
+        COLOR_WHITE
+    );
+    // TODO: Thickness
 
     /*f32 corners[4];
     mWorldGrid.computeTileCorners(heightData->data, TilePosition(chunk.getChunkID(), tileIndex), corners);
