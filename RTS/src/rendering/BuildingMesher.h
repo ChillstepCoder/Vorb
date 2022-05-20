@@ -31,6 +31,7 @@ struct RoofContourEdgeInfo {
     f32v3 parent1;
     f32v3 v2;
     f32v3 parent2;
+    Cartesian dir;
 };
 
 constexpr ui32 ROOF_VERTEX_CORNER_TABLE_SIZE = 16; // 4^2
@@ -55,7 +56,7 @@ private:
         ui32 debugColorIndex,
         f32 zPos
     );
-    void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos);
+    void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog);
 
     Cartesian mCornerNextEdgeLookupTable[ROOF_VERTEX_CORNER_TABLE_SIZE];
     CornerWinding mCornerTypeLookupTable[ROOF_VERTEX_CORNER_TABLE_SIZE];

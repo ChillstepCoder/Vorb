@@ -41,6 +41,7 @@ public:
     // TODO: Boost allocator
 
     const ui32AABB2& getAABB() const { return mAABB; }
+    const BitArray& getInteriorTilesInAABB() const { return mInteriorTilesInAABB; }
 
 private:
     // Building bounds are a series of corner segments
