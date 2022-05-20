@@ -17,6 +17,8 @@
 #include "definitions/ModelDef.h"
 #include "ecs/EntityComponentSystem.h"
 
+#include "debugging/ValueTweaker.h"
+
 // TODO: Use
 void setDefaultTheme() {
     // Colors
@@ -344,6 +346,7 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::Checkbox("Show Business Debug", &sDebugOptions.mShowBusinessDebug);
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
+        ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
     }
     if (activeGBuffer) {
@@ -375,6 +378,12 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
 
     if (ImGui::CollapsingHeader("Visual Logs")) {
         VisualLogger::renderImgui();
+    }
+
+    if (ImGui::CollapsingHeader("Value Tweaker")) {
+        ImGui::PushID(++ID);
+        renderTweakerImgui();
+        ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Animation Debugger")) {

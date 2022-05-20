@@ -753,6 +753,14 @@ void RenderContext::renderDebug(const Camera3D& camera) {
         }
     }
 
+    // Axis labels
+    if (sDebugOptions.mShowDevHud) {
+        const f32v3 axisOrigin = camera.getPosition() + camera.getFrontVector() * 5.0f + camera.getRightVector() * -5.0f + camera.getUpVector() * 2.5f;
+        DebugRenderer::drawLine(axisOrigin, f32v3(1.0f, 0.0f, 0.0f), color4(1.0f, 0.0f, 0.0f)); //X
+        DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 1.0f, 0.0f), color4(0.0f, 1.0f, 0.0f)); //Y
+        DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 0.0f, 1.0f), color4(0.0f, 0.0f, 1.0f)); //Z
+    }
+
     // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
@@ -760,9 +768,13 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     if (sDebugOptions.mEnableVisualLogs) {
         VisualLogger::renderActiveLogs(camera.getPosition(), camera.getVPMatrix());
     }
+
 }
 
 void RenderContext::renderUI(const Camera3D& camera) {
+    if (!sDebugOptions.mShowDevHud) {
+        return;
+    }
     mSb->begin();
     char buffer[255];
     f32 scales = 1.0f;

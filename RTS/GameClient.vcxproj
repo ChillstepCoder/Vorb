@@ -171,6 +171,7 @@
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\debugging\DebugMesh.cpp" />
+    <ClCompile Include="src\debugging\ValueTweaker.cpp" />
     <ClCompile Include="src\debugging\VisualLogger.cpp" />
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
     <ClCompile Include="src\definitions\BuildingDef.cpp" />
@@ -336,6 +337,7 @@
     <ClInclude Include="src\data_structure\FlatQuadtree.h" />
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
     <ClInclude Include="src\debugging\DebugMesh.h" />
+    <ClInclude Include="src\debugging\ValueTweaker.h" />
     <ClInclude Include="src\debugging\SimpleMesh.h" />
     <ClInclude Include="src\debugging\VisualLogger.h" />
     <ClInclude Include="src\definitions\AnimMachineDef.h" />

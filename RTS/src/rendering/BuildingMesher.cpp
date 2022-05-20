@@ -422,13 +422,20 @@ void BuildingMesher::buildMesh(const Building& building) {
         }
     }
 
-    // ========================== Flat base ===============================
-    for (ui32 y = 0; y < aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < aabb.dims.x; ++x) {
-            const ui32 index = y * aabb.dims.x + x;
-            if (ownedTiles.getBit(index)) {
-                f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight());
-                meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+    // ========================== Flat top under roof bits ===============================
+   
+    for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
+        const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
+        for (ui32 y = 0; y < aabb.dims.y; ++y) {
+            for (ui32 x = 0; x < aabb.dims.x; ++x) {
+                const ui32 index = floorIndex + y * aabb.dims.x + x;
+                if (ownedTiles.getBit(index)) {
+                    // Add a top quad if theres no floor above us
+                    if (z == building.mTileContainer.getDims().z - 1 || !ownedTiles.getBit(index + aabb.dims.x * aabb.dims.y)) {
+                        f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight() * (z + 1));
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                    }
+                }
             }
         }
     }
@@ -437,7 +444,7 @@ void BuildingMesher::buildMesh(const Building& building) {
 
     if (visLog) visLog->finish();
 
-    std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
+    //std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
 }
 
 void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilder) {

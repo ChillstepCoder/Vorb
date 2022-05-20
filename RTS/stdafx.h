@@ -379,4 +379,8 @@ typedef GLuint64 TextureHandle;
 //#define glBindTexture(x, y) assert(y); glBindTexture(x, y)
 
 
+// Runs automatically at program startup
+#define AUTO_RUNTIME_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()
+
+
 #endif // stdafx_h__RTS
