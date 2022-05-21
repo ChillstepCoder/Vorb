@@ -47,6 +47,7 @@ public:
 
     // TODO: Pool allocator?
 
+    void setRootPos(const f32v3& rootPos) { mRootPos = rootPos; }
     void reserve(ui32 shapeCount);
     void nextStep(const nString& stepName);
 
@@ -73,6 +74,7 @@ private:
     bool mRenderSingleShape = false;
     bool mDirtyRender = true;
 
+    f32v3 mRootPos = f32v3(0.0f);
     ui32 mNumQuads = 0;
     ui32 mNumLines = 0;
     SimpleMesh mLinesMesh;

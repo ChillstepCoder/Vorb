@@ -3,6 +3,7 @@ class BitArray
 {
 public:
     BitArray();
+    BitArray(ui32 numBits);
     ~BitArray();
 
     void resize(ui32 numBits);

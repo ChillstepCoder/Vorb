@@ -14,6 +14,8 @@
 
 #include "World.h"
 
+#include "util/BitArray.h"
+
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
 // point p with respect to triangle (a, b, c)
@@ -399,6 +401,7 @@ f32 WorldGrid::getHeightAtVert(ChunkID id, const ui32v2& vertPos) const {
 }
 
 bool WorldGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
+    // assert(IS_MAIN_THREAD) // TODO: Uncomment this, im lazy rn
     HeightmapPatchID id(worldPos);
     const HeightmapPatch& patch = mHeightData[id.id];
 
@@ -643,6 +646,50 @@ f32 WorldGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
     f32 corners[4];
     computeTileCorners(patch.mHeightData->data, worldTilePos, corners);
     return glm::max(glm::max(glm::max(corners[0], corners[1]), corners[2]), corners[3]);
+}
+
+f32 WorldGrid::computeMeanHeightAtAABB(const ui32AABB2& aabb) const {
+    // Compute mean height of height grid
+    f32 meanHeight = 0.0f;
+    ui32 total = 0;
+    for (ui32 y = 0; y < aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < aabb.dims.x; ++x) {
+            const ui32 index = y * aabb.dims.x + x;
+            f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
+            f32 h;
+            if (tryComputeHeightAtPoint(pos, &h)) {
+                meanHeight += h;
+                ++total;
+            }
+            else {
+                assert(false); // Failed to compute height for city builder debug build instant
+            }
+        }
+    }
+    return  meanHeight / (f32)total;
+}
+
+f32 WorldGrid::computeMeanHeightAtAABB(const ui32AABB2& aabb, const BitArray& checkBits) const {
+    // Compute mean height of height grid
+    f32 meanHeight = 0.0f;
+    ui32 total = 0;
+    for (ui32 y = 0; y < aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < aabb.dims.x; ++x) {
+            const ui32 index = y * aabb.dims.x + x;
+            if (checkBits.getBit(index)) {
+                f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
+                f32 h;
+                if (tryComputeHeightAtPoint(pos, &h)) {
+                    meanHeight += h;
+                    ++total;
+                }
+                else {
+                    assert(false); // Failed to compute height for city builder debug build instant
+                }
+            }
+        }
+    }
+    return meanHeight / (f32)total;
 }
 
 void WorldGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position) {

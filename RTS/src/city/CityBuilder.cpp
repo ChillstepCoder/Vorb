@@ -68,31 +68,27 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
     outBuilding.mAABB.dims = bp.aabb.dims;
     outBuilding.mInteriorTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y * bp.floorCount);
 
-    // === Flatten terrain ===
-    // Compute mean height of height grid
-    f32 meanHeight = 0.0f;
-    ui32 total = 0;
-    WorldGrid& grid = world.getWorldGrid();
+    // For mean heigh calc
+    BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
     for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
         for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
-            const ui32 index = y * bp.aabb.dims.x + x;
-            const BlueprintTileType type = bp.tiles[index].type;
+            const ui32 tileIndex = y * bp.aabb.dims.x + x;
+            const BlueprintTileType type = bp.tiles[tileIndex].type;
             if (type != BlueprintTileType::NONE) {
-                f32v2 pos(worldPos.x + x + 0.5f, worldPos.y + y + 0.5f);
-                f32 h;
-                if (grid.tryComputeHeightAtPoint(pos, &h)) {
-                    meanHeight += h;
-                    ++total;
-                }
-                else {
-                    assert(false); // Failed to compute height for city builder debug build instant
+
+                const TileID tileId = bp.tileIDs[e_cast(type)];
+                if (tileId != TILE_ID_NONE) {
+                    ownedTilesOnFirstFloor.setBitTo(tileIndex, true);
                 }
             }
         }
     }
-    meanHeight /= (f32)total;
+
+
+    // === Flatten terrain ===
     // Clamp building height to 1 meter increments
-    meanHeight = round(meanHeight);
+    WorldGrid& grid = world.getWorldGrid();
+    const f32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
 
     // Flatten heightmap
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);

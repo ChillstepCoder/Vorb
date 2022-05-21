@@ -6,6 +6,8 @@
 
 #include "BuildingBlueprint.h"
 
+class VisualLog;
+
 class CityBuilder;
 class BuildingDescriptionRepository;
 
@@ -13,9 +15,9 @@ class BuildingBlueprintGenerator
 {
 public:
     BuildingBlueprintGenerator(BuildingDescriptionRepository& buildingRepo, CityBuilder& cityBuilder);
-    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    std::unique_ptr<BuildingBlueprint> generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
 
-    static std::unique_ptr<BuildingBlueprint> generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
+    static std::unique_ptr<BuildingBlueprint> generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox);
 
 private:
     static void generateBlueprintInternal(BuildingBlueprint* bPtr, BuildingDescriptionRepository& buildingRepo);
@@ -25,13 +27,13 @@ private:
     static void addPrivateRoomsToGraph(BuildingBlueprint& bp);
     static void addStickOnRoomsToGraph();
     static void initRooms(BuildingBlueprint& bp, BuildingDescriptionRepository& buildingRepo);
-    static void placeRooms(BuildingBlueprint& bp);
-    static void expandRooms(BuildingBlueprint& bp);
-    static void roomCleanup(BuildingBlueprint& bp);
+    static void placeRooms(BuildingBlueprint& bp, VisualLog* visLog);
+    static void expandRooms(BuildingBlueprint& bp, VisualLog* visLog);
+    static void roomCleanup(BuildingBlueprint& bp, VisualLog* visLog);
     static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
-    static void placeFacadeWalls(BuildingBlueprint& bp);
-    static void placeInteriorWalls(BuildingBlueprint& bp);
-    static void placeDoors(BuildingBlueprint& bp);
+    static void placeFacadeWalls(BuildingBlueprint& bp, VisualLog* visLog);
+    static void placeInteriorWalls(BuildingBlueprint& bp, VisualLog* visLog);
+    static void placeDoors(BuildingBlueprint& bp, VisualLog* visLog);
 
     static void postProcessBlueprint(BuildingBlueprint& bp);
 

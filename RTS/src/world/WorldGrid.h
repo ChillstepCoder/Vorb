@@ -6,6 +6,7 @@
 #include "world/TerrainConstants.h"
 #include "util/IntersectionHit.h"
 
+class BitArray;
 class Camera3D;
 class World;
 
@@ -90,6 +91,9 @@ public:
     static f32 computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
     f32 computeMinHeightAtTile(ui32v2 worldTilePos) const;
     f32 computeMaxHeightAtTile(ui32v2 worldTilePos) const;
+
+    f32 computeMeanHeightAtAABB(const ui32AABB2& aabb) const;
+    f32 computeMeanHeightAtAABB(const ui32AABB2& aabb, const BitArray& checkBits) const;
 
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);

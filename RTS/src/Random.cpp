@@ -4,7 +4,7 @@
 static ui32 x = 123456789, y = 362436069, z = 521288629;
 bool hasInitCachedRandom = false;
 std::vector<ui32> cachedRandom;
-static unsigned cachedRandomIndex = 0;
+static thread_local unsigned cachedRandomIndex = 0;
 
 ui32 Random::xorshf96() {          //period 2^96-1
     ui32 t;

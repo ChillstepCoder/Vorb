@@ -8,6 +8,11 @@ BitArray::BitArray()
 
 }
 
+BitArray::BitArray(ui32 numBits)
+{
+    resizeAndZero(numBits);
+}
+
 BitArray::~BitArray()
 {
 

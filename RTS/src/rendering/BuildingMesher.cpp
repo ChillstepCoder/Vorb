@@ -541,10 +541,54 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
             }
             Cartesian nextEdge = mCornerNextEdgeLookupTable[code];
             if (nextEdge == Cartesian::NONE) {
-                std::cout << "Edge detection failed due to bad corner\n";
-                assert(false); // NEED TO IMPLEMENT DIAGONAL EDGE DETECT
+                //std::cout << "Edge detection failed due to bad corner\n";
+               // assert(false); // NEED TO IMPLEMENT DIAGONAL EDGE DETECT
+
+                // Branch on these special corners based on where we were coming from
+                if (code == 0b1001) {
+                    // 1 0
+                    // 0 1
+                    if (edge == Cartesian::DOWN) {
+                        nextEdge = Cartesian::RIGHT;
+                        if (visLog) {
+                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
+                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
+                        }
+                    }
+                    else if (edge == Cartesian::UP) {
+                        nextEdge = Cartesian::LEFT;
+                        if (visLog) {
+                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
+                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+                        }
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
+                else {
+                    // 0 1
+                    // 1 0
+                    if (edge == Cartesian::DOWN) {
+                        nextEdge = Cartesian::LEFT;
+                        if (visLog) {
+                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
+                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                        }
+                    }
+                    else if (edge == Cartesian::RIGHT) {
+                        nextEdge = Cartesian::UP;
+                        if (visLog) {
+                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
+                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
+                        }
+                    }
+                    else {
+                        assert(false);
+                    }
+                }
             }
-            else if (nextEdge != Cartesian::INVALID) {
+            if (nextEdge != Cartesian::INVALID) {
                 const CornerWinding winding = mCornerTypeLookupTable[code];
                 assert(edge != nextEdge);
                 edge = nextEdge;
@@ -974,7 +1018,7 @@ void BuildingMesher::meshRoomSupports(const Building& building, const ui32AABB2&
                     } while (++x < aabb.dims.x && building.mInteriorTilesInAABB.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
-                    const f32v3 startPos(startX, y + 0.5f, building.mZPosFloor + tileContainer.getFloorHeight() * z - boardThickness * 0.5f);
+                    const f32v3 startPos(startX, y + 0.5f, building.mZPosFloor + tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
                     meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v3(boardThickness), rawWoodTexture, 1.0f);
                 }
             }

@@ -30,6 +30,8 @@ struct RoomDef {
     RoomType roomType = RoomType::NONE;
     ui8 minWidth = 2;
     ui8 maxWidth = 12;
+    f32 stairsChance = 0.0f;
+    bool canStairsConnect = true;
 };
 KEG_TYPE_DECL(RoomDef);
 

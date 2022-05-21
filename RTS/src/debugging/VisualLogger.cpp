@@ -43,19 +43,19 @@ void VisualLog::addLineBetweenPoints(const f32v3& origin, const f32v3& end, cons
     ++mRenderStepInfo.back().shapeCount;
     VisualLogShape& newShape = mShapes.emplace_back();
     newShape.type = VisualLogShapeType::LINE;
-    newShape.line.position1 = origin;
-    newShape.line.position2 = end;
+    newShape.line.position1 = mRootPos + origin;
+    newShape.line.position2 = mRootPos + end;
     newShape.color = color;
 }
 
 void VisualLog::addWireQuad(const f32v3& origin, const f32v2& dims, color4 color) {
     mNumLines += 4;
-    const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
+    const f32v3 topRight = mRootPos + origin + f32v3(dims.x, dims.y, 0.0f);
     {
         ++mRenderStepInfo.back().shapeCount;
         VisualLogShape& newShape = mShapes.emplace_back();
         newShape.type = VisualLogShapeType::WIRE_QUAD;
-        newShape.quad.position = origin;
+        newShape.quad.position = mRootPos + origin;
         newShape.quad.dims = dims;
         newShape.color = color;
     }
@@ -67,7 +67,7 @@ void VisualLog::addFilledQuad(const f32v3& origin, const f32v2& dims, color4 col
     ++mRenderStepInfo.back().shapeCount;
     VisualLogShape& newShape = mShapes.emplace_back();
     newShape.type = VisualLogShapeType::QUAD;
-    newShape.quad.position = origin;
+    newShape.quad.position = mRootPos + origin;
     newShape.quad.dims = dims;
     newShape.color = color;
 }
@@ -273,6 +273,7 @@ void VisualLogger::renderImgui() {
         ImGui::PushID(999 + i);
         const VisualLog& log = *sVisualLogs[i];
         if (!log.mFinishedBuilding) {
+            ImGui::PopID();
             continue;
         }
 

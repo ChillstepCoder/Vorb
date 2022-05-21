@@ -24,4 +24,6 @@ KEG_TYPE_DEF_SAME_NAME(RoomDef, kt) {
     kt.addValue("type", keg::Value::custom(offsetof(RoomDef, roomType), "RoomType", true));
     kt.addValue("min_width", keg::Value::basic(offsetof(RoomDef, minWidth), keg::BasicType::UI8));
     kt.addValue("max_width", keg::Value::basic(offsetof(RoomDef, maxWidth), keg::BasicType::UI8));
+    kt.addValue("stairs_chance", keg::Value::basic(offsetof(RoomDef, stairsChance), keg::BasicType::F32));
+    kt.addValue("stairs_connect", keg::Value::basic(offsetof(RoomDef, canStairsConnect), keg::BasicType::BOOL));
 }
