@@ -43,6 +43,7 @@ public:
 
     void buildMesh(const Building& building);
 
+
 private:
     void meshTiles(const Building& building, MeshBuilder& meshBuilder);
     std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, f32 zPos, VisualLog* visLog);
@@ -57,6 +58,8 @@ private:
         f32 zPos
     );
     void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog);
+    void meshRoomCeilings(const Building& building, const ui32AABB2& aabb, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
+    void meshRoomSupports(const Building& building, const ui32AABB2& aabb, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
 
     Cartesian mCornerNextEdgeLookupTable[ROOF_VERTEX_CORNER_TABLE_SIZE];
     CornerWinding mCornerTypeLookupTable[ROOF_VERTEX_CORNER_TABLE_SIZE];

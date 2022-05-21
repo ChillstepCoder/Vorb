@@ -422,23 +422,12 @@ void BuildingMesher::buildMesh(const Building& building) {
         }
     }
 
-    // ========================== Flat top under roof bits ===============================
-   
-    for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
-        const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
-        for (ui32 y = 0; y < aabb.dims.y; ++y) {
-            for (ui32 x = 0; x < aabb.dims.x; ++x) {
-                const ui32 index = floorIndex + y * aabb.dims.x + x;
-                if (ownedTiles.getBit(index)) {
-                    // Add a top quad if theres no floor above us
-                    if (z == building.mTileContainer.getDims().z - 1 || !ownedTiles.getBit(index + aabb.dims.x * aabb.dims.y)) {
-                        f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight() * (z + 1));
-                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.000f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
-                    }
-                }
-            }
-        }
-    }
+    // ========================== Room Ceilings ===============================
+    meshRoomCeilings(building, aabb, meshBuilder, rawWoodTexture);
+
+    // ========================== Room supports ===============================
+    meshRoomSupports(building, aabb, meshBuilder, rawWoodTexture);
+
 
     meshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
 
@@ -942,6 +931,53 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
             const f32 boardLength = BOARD_DISTANCE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
             const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.8f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
             meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodTexture, 1.0f);
+        }
+    }
+}
+
+void BuildingMesher::meshRoomCeilings(const Building& building, const ui32AABB2& aabb, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+    const TileContainer& tileContainer = building.mTileContainer;
+    for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
+        const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
+        for (ui32 y = 0; y < aabb.dims.y; ++y) {
+            for (ui32 x = 0; x < aabb.dims.x; ++x) {
+                const ui32 index = floorIndex + y * aabb.dims.x + x;
+                if (building.mInteriorTilesInAABB.getBit(index)) {
+                    // Add a top quad
+                    //if (z == building.mTileContainer.getDims().z - 1 || !ownedTiles.getBit(index + aabb.dims.x * aabb.dims.y)) {
+                    f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight() * (z + 1));
+                    meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                    // }
+                }
+            }
+        }
+    }
+}
+
+void BuildingMesher::meshRoomSupports(const Building& building, const ui32AABB2& aabb, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+    const TileContainer& tileContainer = building.mTileContainer;
+    const ui32 floorStride = aabb.dims.x * aabb.dims.y;
+    for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
+        const ui32 floorIndex = z * floorStride;
+        // Loop along the y axis to look for free tiles
+        for (ui32 y = 0; y < aabb.dims.y; ++y) {
+            const ui32 yIndex = floorIndex + y * aabb.dims.x;
+            for (ui32 x = 0; x < aabb.dims.x; ++x) {
+                ui32 index = yIndex + x;
+                // Check if we should start supports here, i.e. below us is outside the building
+                if (building.mInteriorTilesInAABB.getBit(index) && (z == 0 || !building.mInteriorTilesInAABB.getBit(index - floorStride))) {
+                    // Place floor tiles and increment X
+                    const ui32 startX = x;
+                    do {
+                        const f32v3 floorPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight() * z - 0.0001f);
+                        meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                    } while (++x < aabb.dims.x && building.mInteriorTilesInAABB.getBit(++index));
+                    // TODO: ADD BOARD
+                    const f32 boardThickness = 0.1f;
+                    const f32v3 startPos(startX, y + 0.5f, building.mZPosFloor + tileContainer.getFloorHeight() * z - boardThickness * 0.5f);
+                    meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v3(boardThickness), rawWoodTexture, 1.0f);
+                }
+            }
         }
     }
 }

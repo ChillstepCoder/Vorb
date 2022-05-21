@@ -255,7 +255,7 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
 
 void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
     const SubTexture& texture = tileData.texture;
-    const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight);
+    const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight + 0.0001f);
     // Render top
     meshBuilder.addAxisAlignedQuad(
         tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
