@@ -13,6 +13,8 @@
 #include "rendering/mesh/Mesh.h"
 #include "tile/TileContainer.h"
 
+#include "structure/Structure.h"
+
 class Mesh;
 
 struct BuildingRenderData {
@@ -26,7 +28,7 @@ struct BuildingRenderData {
 };
 
 // TODO: Can we optimize passing this around so theres no copies?
-class Building {
+class Building : public Structure {
 public:
     friend class BuildingRenderer;
     friend class BuildingMesher;
@@ -44,10 +46,7 @@ public:
     const BitArray& getInteriorTilesInAABB() const { return mInteriorTilesInAABB; }
 
 private:
-    // Building bounds are a series of corner segments
-    TileContainer mTileContainer;
-    ui32AABB2 mAABB; // TODO: Just use tilecontainer AABB?
-    f32 mZPosFloor;
+   
     std::vector<RoomNode> mGraph;
     BitArray mInteriorTilesInAABB;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;

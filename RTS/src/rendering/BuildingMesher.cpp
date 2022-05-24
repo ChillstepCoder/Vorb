@@ -309,7 +309,11 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
 
                     // Make sure we are straight walls
                     assert(start.x != end.x || start.y != end.y);
-                    assert(!(start.x != end.x && start.y != end.y));
+                    //assert(!(start.x != end.x && start.y != end.y));
+                    if (!(start.x != end.x && start.y != end.y)) {
+                        // wtf is this lolol
+                        continue;
+                    }
 
                     // Determine which direction edge we are
                     // TODO: This could be simplified into functions where we pass the iteration dimension

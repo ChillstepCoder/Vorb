@@ -42,6 +42,7 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
 void Chunk::allocateTiles() {
     // TODO: Not always
     mGrass.resize(CHUNK_SIZE);
+    mStructures.resize(CHUNK_SIZE, nullptr);
 }
 
 void Chunk::freeTiles() {

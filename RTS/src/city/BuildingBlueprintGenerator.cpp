@@ -944,11 +944,11 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
             // Replace!
             if (bestId != myID) {
                 // Visual log
-                if (visLog) {
-                    visLog->addFilledQuad(f32v3(x, y, bp.rooms[bestId].floorIndex * bp.floorHeight), f32v2(1.0f), ROOM_COLORS[bestId % MAX_ROOM_COLORS]);
-                }
                 if (bestId != INVALID_ROOM_ID) {
                     ++bp.rooms[bestId].size;
+                    if (visLog) {
+                        visLog->addFilledQuad(f32v3(x, y, bp.rooms[bestId].floorIndex * bp.floorHeight), f32v2(1.0f), ROOM_COLORS[bestId % MAX_ROOM_COLORS]);
+                    }
                 }
 
                 bp.ownerArray[index] = bestId;

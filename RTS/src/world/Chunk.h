@@ -15,6 +15,7 @@ class TBOBillboardMesh;
 class GrassBillboardMesh;
 class ChunkGrassQuadtree;
 class NavGraph;
+class Structure;
 
 #define USE_INSTANCED_BILLBOARDS 1
 #if USE_INSTANCED_BILLBOARDS == 1
@@ -183,6 +184,7 @@ private:
 
 	TileContainer mTileContainer;
     std::vector<ui8> mGrass; // Grass densities
+	std::vector<Structure*> mStructures; // TODO: List or something for multiple structures? idk
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	// For use by ChunkRenderer
