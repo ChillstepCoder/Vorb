@@ -11,7 +11,7 @@ public:
     ~TileContainer() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
-    void init(ui32v3 rootPos, ui32v3 dims);
+    void init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight);
     void freeTiles();
 
     void updateMainThread();
@@ -50,8 +50,8 @@ public:
         assert(i < mTiles.size());
         return mTiles[i];
     }
-    const Tile& getTileAt(ui32 x, ui32 y, ui32 z) const {
-        const TileIndex i = getTileIndexFromXYZOffset(x, y, z);
+    const Tile& getTileAt(ui32 offsetX, ui32 offsetY, ui32 offsetZ) const {
+        const TileIndex i = getTileIndexFromXYZOffset(offsetX, offsetY, offsetZ);
         assert(i < mTiles.size());
         return mTiles[i];
     }
@@ -101,7 +101,6 @@ public:
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
 
 
-
     // =========== Accessors  ===========
     const ui32v2& getWorldPos2D() const { return reinterpret_cast<const ui32v2&>(mRootPos); }
     const ui32v3& getWorldPos3D() const { return mRootPos; }
@@ -119,9 +118,9 @@ private:
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     ui32v3 mDims;
     ui32v3 mRootPos;
-    f32 mFloorHeight = 3.0f;
-    mutable std::atomic_uint32_t mReadLockCount = 0;
-    mutable std::atomic_uint32_t mRefCount = 0;
+    ui32 mFloorHeight = 3u;
+    mutable std::atomic_uint32_t mReadLockCount = 0u;
+    mutable std::atomic_uint32_t mRefCount = 0u;
     mutable bool mDirtyMesh = false;
     mutable bool mDirtyNav = false;
 };

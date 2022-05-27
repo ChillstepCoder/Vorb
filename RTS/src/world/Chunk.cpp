@@ -42,7 +42,7 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
 void Chunk::allocateTiles() {
     // TODO: Not always
     mGrass.resize(CHUNK_SIZE);
-    mStructures.resize(CHUNK_SIZE, nullptr);
+    mStructures.resize(CHUNK_SIZE);
 }
 
 void Chunk::freeTiles() {
@@ -89,6 +89,20 @@ void Chunk::dispose() {
     mChunkRenderData.mGrassLod.reset();
 
     freeTiles();
+}
+
+void Chunk::updateMainThread() {
+    mTileContainer.updateMainThread();
+
+    // Structure thread safety
+    if (mStructuresNeedingThreadSafeCopy.size() && !isReadLocked()) {
+        for (TileIndex& i : mStructuresNeedingThreadSafeCopy) {
+            ChunkStructureVector& handle = mStructures[i];
+            handle.copyThreadData();
+        }
+        mStructuresNeedingThreadSafeCopy.clear();
+        // mDirtyNav = true; // TODO: Make this smarter
+    }
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
@@ -213,6 +227,45 @@ void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
     /* if (mChunkRenderData.mGrassLod) {
          mChunkRenderData.mGrassLod
      }*/
+}
+
+void Chunk::setStructureAt(const TileIndex index, Structure* structure) {
+    ChunkStructureVector& handle = mStructures[index];
+    assert(structure != nullptr);
+    const bool readLocked = isReadLocked();
+    handle.add(structure, readLocked);
+   
+    if (readLocked) {
+        if (!handle.isQueuedWorkerThreadCopy()) {
+            mStructuresNeedingThreadSafeCopy.push_back(index);
+            handle.setQueuedWorkerThreadCopy();
+        }
+    }
+}
+
+
+void Chunk::removeStructureAt(const TileIndex index, Structure* structure) {
+    ChunkStructureVector& handle = mStructures[index];
+    assert(structure != nullptr);
+    const bool readLocked = isReadLocked();
+    handle.remove(structure, readLocked);
+
+    if (readLocked) {
+        if (!handle.isQueuedWorkerThreadCopy()) {
+            mStructuresNeedingThreadSafeCopy.push_back(index);
+            handle.setQueuedWorkerThreadCopy();
+        }
+    }
+}
+
+StructureArrayPtr Chunk::getStructuresAt(const TileIndex index) const {
+    assert(IS_MAIN_THREAD());
+    return mStructures[index].getMainThreadData();
+}
+
+StructureArrayPtr Chunk::getStructuresAtThreadSafe(const TileIndex index) const {
+    assert(!IS_MAIN_THREAD());
+    return mStructures[index].getWorkerThreadData();
 }
 
 void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {

@@ -3,9 +3,10 @@
 
 #include "pathfinding/NavThread.h"
 
-void TileContainer::init(ui32v3 rootPos, ui32v3 dims) {
+void TileContainer::init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight) {
     mRootPos = rootPos;
     mDims = dims;
+    mFloorHeight = floorHeight;
     mTiles.resize(dims.x * dims.y * dims.z);
 }
 

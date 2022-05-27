@@ -47,8 +47,8 @@ void ItemStockpileRegistry::addStockpileToAreaLookup(ItemStockpile& stockpile) {
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(ChunkID(f32v2(aabb.pos)));
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(aabb.width, 0.0f))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(0.0f, aabb.height))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(aabb.width, aabb.height))));
+    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(0.0f, aabb.depth))));
+    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(aabb.width, aabb.depth))));
     stockpile.mResidingChunks.reserve(chunkPositions.size());
     for (auto&& id : chunkPositions) {
         mAreaLookup[id].push_back(&stockpile);
@@ -63,8 +63,8 @@ void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpi
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(ChunkID(f32v2(aabb.pos)));
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(aabb.width, 0.0f))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(0.0f, aabb.height))));
-    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(aabb.width, aabb.height))));
+    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(0.0f, aabb.depth))));
+    chunkPositions.insert(ChunkID(f32v2(aabb.pos + ui32v2(aabb.width, aabb.depth))));
     for (auto&& id : chunkPositions) {
         const auto& it = mAreaLookup.find(id);
         assert(it != mAreaLookup.end());

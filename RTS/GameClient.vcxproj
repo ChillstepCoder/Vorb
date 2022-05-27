@@ -461,6 +461,7 @@
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\structure\Structure.h" />
+    <ClInclude Include="src\structure\StructureManager.h" />
     <ClInclude Include="src\tile\Tile.h" />
     <ClInclude Include="src\tile\TileCollider.h" />
     <ClInclude Include="src\tile\TileConst.h" />
@@ -480,6 +481,7 @@
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\StringHash.h" />
+    <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\weather\CloudManager.h" />
     <ClInclude Include="src\world\Chunk.h" />

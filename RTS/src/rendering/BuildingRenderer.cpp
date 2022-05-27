@@ -35,7 +35,7 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
 {
 
     if (sDebugOptions.mRoofDebug) {
-        DebugRenderer::drawWireQuad(f32v3(building.mAABB.x, building.mAABB.y, building.mZPosFloor), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
+        DebugRenderer::drawWireQuad(f32v3(building.mAABB.pos), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
     }
 
     if (building.mRenderData.mMeshDirty) {
@@ -48,7 +48,7 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
     // TODO: Fix invalid meshes
     if (building.mRenderData.mMesh->isValid()) {
         mMaterialRenderer.bindMaterialForRender(*mRoofMaterial);
-        f32v3 offset = f32v3(building.mAABB.getBottomLeft().x, building.mAABB.getBottomLeft().y, 0.0f) - camera.getPosition();
+        f32v3 offset = f32v3(building.mAABB.x, building.mAABB.y, 0.0f) - camera.getPosition();
         glUniform3fv(mRoofMaterial->getUniform("unOffset"), 1, &offset.x);
         building.mRenderData.mMesh->draw();
     }
@@ -61,7 +61,7 @@ void BuildingRenderer::renderBuildingShadows(const Building& building, const Cam
     // TODO: Fix invalid meshes
     if (building.mRenderData.mMesh->isValid()) {
         mMaterialRenderer.bindMaterialForRender(*mRoofShadowMaterial);
-        f32v3 offset = f32v3(building.mAABB.getBottomLeft().x, building.mAABB.getBottomLeft().y, 0.0f) - camera.getPosition();
+        f32v3 offset = f32v3(building.mAABB.x, building.mAABB.y, 0.0f) - camera.getPosition();
         glUniform3fv(mRoofShadowMaterial->getUniform("unOffset"), 1, &offset.x);
         building.mRenderData.mMesh->draw();
     }

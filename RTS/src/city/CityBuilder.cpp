@@ -13,6 +13,8 @@
 
 #include "DebugRenderer.h"
 
+#include "structure/StructureManager.h"
+
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"
 
@@ -51,7 +53,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
     mBlueprintsToBuild.push_back(blueprint);
 }
 
-void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Building& outBuilding) {
+Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
 
     const ui32v2& worldPos = bp.aabb.pos;
 
@@ -63,12 +65,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
     };
     static_assert(e_cast(BlueprintTileType::TYPES) == 4);
 
-    // Register with the city
-    outBuilding.mAABB.pos = bp.aabb.pos;
-    outBuilding.mAABB.dims = bp.aabb.dims;
-    outBuilding.mInteriorTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y * bp.floorCount);
-
-    // For mean heigh calc
+    // For mean height calc
     BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
     for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
         for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
@@ -84,16 +81,26 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
         }
     }
 
-
-    // === Flatten terrain ===
     // Clamp building height to 1 meter increments
     WorldGrid& grid = world.getWorldGrid();
-    const f32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
 
-    // Flatten heightmap
+    ui32 floorHeight = 3;
+    ui32AABB3 aabb;
+    aabb.x = bp.aabb.x;
+    aabb.y = bp.aabb.y;
+    aabb.z = meanHeight;
+    aabb.width = bp.aabb.width;
+    aabb.depth = bp.aabb.depth;
+    aabb.height = bp.floorCount * floorHeight;
+
+    // Allocate the building
+    Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, aabb, floorHeight));
+    newBuilding->mInteriorTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y * bp.floorCount);
+
+    // === Flatten terrain ===
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
-    TileContainer& tileContainer = outBuilding.mTileContainer;
-    tileContainer.init(ui32v3(bp.aabb.pos.x, bp.aabb.pos.y, meanHeight), ui32v3(bp.aabb.dims.x, bp.aabb.dims.y, bp.floorCount));
+    TileContainer& tileContainer = newBuilding->mTileContainer;
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;
@@ -113,7 +120,7 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
                     if (tileId != TILE_ID_NONE) {
                         const f32 height = meanHeight + (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
                         // TODO: Always ground??
-                        outBuilding.mInteriorTilesInAABB.setBitTo(tileIndex, true);
+                        newBuilding->mInteriorTilesInAABB.setBitTo(tileIndex, true);
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                         tileContainer.addTile(index, TileRepository::getTileData(tileId));
                         //assert(false); // Set building structure pointer
@@ -132,12 +139,12 @@ void CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world, Buildin
         }
     }
     // Notify terrain data change (TODO: More precise, automatic)
-    world.dirtyTerrainFromBrush(f32v2(outBuilding.mAABB.getCenter()), glm::length(f32v2(outBuilding.mAABB.dims)) * 0.5f);
+    world.dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
-    outBuilding.mZPosFloor = meanHeight;
-    outBuilding.mGraph = std::move(bp.rooms);
-    outBuilding.mFunction = bp.desc.function;
-    outBuilding.mPlotIndex = bp.plotIndex;
+    newBuilding->mGraph = std::move(bp.rooms);
+    newBuilding->mFunction = bp.desc.function;
+    newBuilding->mPlotIndex = bp.plotIndex;
+    return newBuilding;
 }
 
 void CityBuilder::debugBuildInstant(RoadID roadId)
@@ -150,7 +157,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
 
     WorldGrid& grid = mWorld.getWorldGrid();
     ui32v2 xy;
-    for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.height; ++xy.y) {
+    for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = mWorld.getTileHandleAtWorldPos(xy);
             handle.getMutableContainer()->addTile(handle.index, TileRepository::getTileData(tileId));

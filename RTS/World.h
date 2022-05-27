@@ -32,6 +32,7 @@ class WorldEditor;
 class ChunkMesher;
 class HeightmapTerrainQuadtree;
 class Building;
+class StructureManager;
 struct NavNode;
 struct CityGraph;
 
@@ -81,6 +82,7 @@ public:
     const Tile* tryGetTileAtWorldPos(const f32v2& worldPos) const;
     const Tile* tryGetTileAtWorldPos(const ui32v2& worldPos) const;
     const Tile* tryGetTileAtWorldPos(const ui16v2& worldPos) const;
+	StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
 	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
@@ -93,6 +95,8 @@ public:
     const NavGraph& getNavGraph() const { return *mNavGraph; }
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
+    StructureManager& getStructureManager() { return *mStructuremanager; }
+    const StructureManager& getStructureManager() const { return *mStructuremanager; }
 
     size_t getNumVisibleChunks() const { return mVisibleChunks.size(); }
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
@@ -116,8 +120,6 @@ public:
 	City* getClosestCityToPoint(const f32v2& pos) const;
 
     IntersectionHit2D tryGetRaycastIntersect2D(const f32v2& start, const f32v2& end, f32 zPos);
-	
-	std::vector<std::unique_ptr<Building>> mLooseBuildingsTMP;
 
 private:
 
@@ -155,6 +157,9 @@ private:
 
 	// Cities
 	std::unique_ptr<CityGraph> mCities;
+
+	// Structures
+	std::unique_ptr<StructureManager> mStructuremanager;
 
 	// Stockpiles
 	std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;

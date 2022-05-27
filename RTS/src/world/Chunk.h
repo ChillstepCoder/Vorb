@@ -6,6 +6,7 @@
 
 #include "item/ItemStack.h"
 #include "util/AABB.hpp"
+#include "util/TinyThreadsafeVector.hpp"
 
 class Chunk;
 class QuadMesh;
@@ -46,6 +47,9 @@ struct ChunkRenderData {
 	bool mIsVisible = false;
 };
 
+typedef TinyThreadsafeVector<Structure*> ChunkStructureVector;
+typedef std::pair<Structure*const*, ui16> StructureArrayPtr;
+
 enum class NeighborIndex4 {
 	BOTTOM = 0,
 	LEFT   = 1,
@@ -64,7 +68,6 @@ enum class NeighborIndex8 {
 	TOP_RIGHT    = 7,
 	COUNT        = 8
 };
-
 
 // TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
@@ -88,6 +91,7 @@ public:
 	void allocateTiles();
 	void freeTiles();
 	void dispose();
+	void updateMainThread();
 
 
     // =========== Accessors  ===========
@@ -108,7 +112,6 @@ public:
 	TileHandle getRightTileHandle(const TileIndex index) const;
 	TileHandle getTopTileHandle(const TileIndex index) const;
 	TileHandle getBottomTileHandle(const TileIndex index) const;
-
 
     // =========== Neighbor access  ===========
 	// Get neighbors starting from top left
@@ -133,6 +136,12 @@ public:
 
 	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
+
+    // =========== Structures  ===========
+    void setStructureAt(const TileIndex index, Structure* structure);
+    void removeStructureAt(const TileIndex index, Structure* structure);
+	StructureArrayPtr getStructuresAt(const TileIndex index) const;
+	StructureArrayPtr getStructuresAtThreadSafe(const TileIndex index) const;
 
     // =========== Terrain update  ===========
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
@@ -174,7 +183,6 @@ private:
 	f32v2 mWorldPos = f32v2(0.0f);
 	f32AABB3 mAABB = f32AABB3(0.0f); // TODO: Combine with worldpos?
 	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
-	bool mDirtyNavGraph = false;
 
 	// Atomic tasking checks
 	std::atomic_bool mIsNavmeshing = false;
@@ -184,7 +192,8 @@ private:
 
 	TileContainer mTileContainer;
     std::vector<ui8> mGrass; // Grass densities
-	std::vector<Structure*> mStructures; // TODO: List or something for multiple structures? idk
+	std::vector<ChunkStructureVector> mStructures; // TODO: List or something for multiple structures? idk
+	std::vector<TileIndex> mStructuresNeedingThreadSafeCopy;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
 	// For use by ChunkRenderer

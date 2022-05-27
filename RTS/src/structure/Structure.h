@@ -4,11 +4,30 @@
 #include "tile/TileFlags.h"
 #include "tile/TileContainer.h"
 
-// Store these in boost::rtree?
+enum class StructureType {
+    Building
+};
+
+
+typedef ui32 StructureID;
+
+
 class Structure {
+    friend class StructureManager;
+public:
+    Structure() = default;
+    virtual ~Structure() = default;
+
+    const ui32AABB3& getAABB() const { return mAABB; }
+
+    StructureType getType() const { return mType; }
+    const TileContainer& getTileContainer() const { return mTileContainer; }
+
 protected:
     TileContainer mTileContainer;
-    ui32AABB2 mAABB;
-    f32 mZPosFloor;
+    ui32AABB3 mAABB;
+    //f32 mZPosFloor;
+    StructureType mType = StructureType::Building; // TODO: Different types?
+    StructureID mId;
 };
 

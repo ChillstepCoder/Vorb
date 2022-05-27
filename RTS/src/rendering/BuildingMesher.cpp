@@ -181,7 +181,7 @@ struct GableTargetPointInfo {
     bool isValidGable() const { return borderCount == 1; }
 };
 
-bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const ui32AABB2& aabb, const ui32 floorIndex, f32 zPos, const Building& building, VisualLog* visLog) {
+bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const ui32AABB3& aabb, const ui32 floorIndex, f32 zPos, const Building& building, VisualLog* visLog) {
     // If we are out of the AABB, its a collide
     if (start[!axis] < 0 || start[!axis] >= aabb.dims[!axis]) {
         return true;
@@ -196,11 +196,11 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
                 ui32 bitIndex;
                 if (axis == 0) {
                     bitIndex = floorIndex + start.y * aabb.dims.x + i;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.pos.x + i, aabb.pos.y + start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + i, aabb.y + start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 else {
                     bitIndex = floorIndex + i * aabb.dims.x + start.x;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.pos.x + start.x, aabb.pos.y + i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + start.x, aabb.y + i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
                     return true;
@@ -215,11 +215,11 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
                 ui32 bitIndex;
                 if (axis == 0) {
                     bitIndex = floorIndex + start.y * aabb.dims.x + i;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.pos.x + i, aabb.pos.y + start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + i, aabb.y + start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 else {
                     bitIndex = floorIndex + i * aabb.dims.x + start.x;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.pos.x + start.x, aabb.pos.y + i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + start.x, aabb.y + i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
                     return true;
@@ -291,7 +291,7 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
 
     // Fixup extrude positions that may be colliding with walls on above floors
     const ui32 floorIndex = floor * building.getAABB().dims.y * building.getAABB().dims.x;
-    const ui32AABB2& aabb = building.getAABB();
+    const ui32AABB3& aabb = building.getAABB();
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
         do {
@@ -353,7 +353,7 @@ void BuildingMesher::buildMesh(const Building& building) {
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
     if (visLog) {
         visLog->nextStep("AABB");
-        visLog->addWireQuad(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, building.mZPosFloor), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
+        visLog->addWireQuad(f32v3(building.mAABB.pos), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
     
 
@@ -363,7 +363,7 @@ void BuildingMesher::buildMesh(const Building& building) {
     meshBuilder.reserveVertexCount(RESERVE_VERT_COUNT);
     meshBuilder.reserveIndexCount(RESERVE_VERT_COUNT * 1.5f); // 1.5 is approx
 
-    const ui32AABB2& aabb = building.mAABB;
+    const ui32AABB3& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mInteriorTilesInAABB;
     BuildingRenderData& renderData = building.mRenderData;
     const TileContainer& tileContainer = building.mTileContainer;
@@ -390,7 +390,7 @@ void BuildingMesher::buildMesh(const Building& building) {
     const ui32 floorCount = tileContainer.getDims().z;
     const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
     for (ui32 floor = 0; floor < floorCount; ++floor) {
-        const f32 zPos = building.mZPosFloor + (floor + 1.0f) * tileContainer.getFloorHeight();
+        const f32 zPos = building.mAABB.z + (floor + 1.0f) * tileContainer.getFloorHeight();
         // TODO: Replace bitarray with bool array
         BitArray roofedTiles;
         roofedTiles.resizeAndZero(building.mAABB.dims.x * building.mAABB.dims.y);
@@ -427,10 +427,10 @@ void BuildingMesher::buildMesh(const Building& building) {
     }
 
     // ========================== Room Ceilings ===============================
-    meshRoomCeilings(building, aabb, meshBuilder, rawWoodTexture);
+    meshRoomCeilings(building, meshBuilder, rawWoodTexture);
 
     // ========================== Room supports ===============================
-    meshRoomSupports(building, aabb, meshBuilder, rawWoodTexture);
+    meshRoomSupports(building, meshBuilder, rawWoodTexture);
 
 
     meshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
@@ -463,10 +463,10 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
                         assert(false); // Unsupported
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(meshBuilder, building.mZPosFloor + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
+                        TileMeshBuilderMethods::addBlock(meshBuilder, building.mAABB.z + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
-                        TileMeshBuilderMethods::addFloor(meshBuilder, building.mZPosFloor + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
+                        TileMeshBuilderMethods::addFloor(meshBuilder, building.mAABB.z + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
                     }
                 }
             }
@@ -477,7 +477,7 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
 std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
-    const ui32AABB2& aabb = building.mAABB;
+    const ui32AABB3& aabb = building.mAABB;
     std::vector<SsPtr> skeletons;
 
     BitArray checkedTiles;
@@ -672,7 +672,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                     if (extrudeIt != contourExtrudePositions.end()) {
                         // Create a column
                         // TODO: This column will intersect lower floors! Make it smarter
-                        const f32v3 boardStart(x, y, building.mZPosFloor - 0.2f);
+                        const f32v3 boardStart(x, y, building.mAABB.z - 0.2f);
                         const f32v3 boardEnd(x, y, zPos);
                         meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v3(0.1f), rawWoodTexture, 1.0f);
                         // Visual log
@@ -983,7 +983,8 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
     }
 }
 
-void BuildingMesher::meshRoomCeilings(const Building& building, const ui32AABB2& aabb, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+    const ui32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = building.mTileContainer;
     for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
         const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
@@ -993,7 +994,7 @@ void BuildingMesher::meshRoomCeilings(const Building& building, const ui32AABB2&
                 if (building.mInteriorTilesInAABB.getBit(index)) {
                     // Add a top quad
                     //if (z == building.mTileContainer.getDims().z - 1 || !ownedTiles.getBit(index + aabb.dims.x * aabb.dims.y)) {
-                    f32v3 startPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight() * (z + 1));
+                    f32v3 startPos(x, y, aabb.z + tileContainer.getFloorHeight() * (z + 1));
                     meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
                     // }
                 }
@@ -1002,7 +1003,8 @@ void BuildingMesher::meshRoomCeilings(const Building& building, const ui32AABB2&
     }
 }
 
-void BuildingMesher::meshRoomSupports(const Building& building, const ui32AABB2& aabb, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+    const ui32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
     for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
@@ -1017,12 +1019,12 @@ void BuildingMesher::meshRoomSupports(const Building& building, const ui32AABB2&
                     // Place floor tiles and increment X
                     const ui32 startX = x;
                     do {
-                        const f32v3 floorPos(x, y, building.mZPosFloor + tileContainer.getFloorHeight() * z - 0.0001f);
+                        const f32v3 floorPos(x, y, aabb.z + tileContainer.getFloorHeight() * z - 0.0001f);
                         meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
                     } while (++x < aabb.dims.x && building.mInteriorTilesInAABB.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
-                    const f32v3 startPos(startX, y + 0.5f, building.mZPosFloor + tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
+                    const f32v3 startPos(startX, y + 0.5f, aabb.z + tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
                     meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v3(boardThickness), rawWoodTexture, 1.0f);
                 }
             }

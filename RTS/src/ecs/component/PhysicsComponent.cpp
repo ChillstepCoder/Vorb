@@ -214,7 +214,7 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
 
     const f32v2& xyPosition = cmp.getXYPosition();
 
-    // TODO: Handle larger colliders
+    // TODO: Handle larger colliders and Z collision
     const f32v2 cornerPositions[4] = {
         xyPosition + f32v2(-0.5f,-0.5f), // Bottom left
         xyPosition + f32v2(0.5f,-0.5f), // Bottom right
@@ -225,11 +225,28 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     // TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
     bool isOnTile = false;
     for (int i = 0; i < 4; ++i) {
-        const Tile* tile = world.tryGetTileAtWorldPos(cornerPositions[i]);
+        const f32v2& worldPos = cornerPositions[i];
+        const f32v2 tileCenter(floor(worldPos.x) + 0.5f, floor(worldPos.y) + 0.5f);
+        // Tiles
+        const Tile* tile = world.tryGetTileAtWorldPos(worldPos);
         if (tile) {
             // TODO: This can reduntantly collide
-            const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
             resolveCircleTileCollision(tileCenter, tile, cmp, isOnTile);
+        }
+        // Structures
+        StructureArrayPtr structures = world.tryGetStructuresAtWorldPos(worldPos);
+        for (ui16 j = 0; j < structures.second; ++j) {
+            const Structure* structure = structures.first[j];
+            const ui32AABB3& aabb = structure->getAABB();
+            f32 zOffset = cmp.mZPosition - aabb.z;
+            // TODO: Real Z collision
+            constexpr float COLLIDER_HEIGHT = 2.0f;
+            if (zOffset > -COLLIDER_HEIGHT || zOffset < aabb.height) {
+                ui32v3 xyzOffset(worldPos.x - aabb.x, worldPos.y - aabb.y, glm::clamp(zOffset, 0.0f, aabb.height - 0.5f));
+                const Tile& tile = structure->getTileContainer().getTileAt(xyzOffset.x, xyzOffset.y, xyzOffset.z);
+                bool TMP = false;
+                resolveCircleTileCollision(tileCenter, &tile, cmp, TMP);
+            }
         }
     }
 

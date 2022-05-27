@@ -32,6 +32,8 @@
 #include "rendering/mesh/MeshBuilder.h"
 #include "TextureManip.h"
 
+#include "structure/StructureManager.h"
+
 #include "ui/UIContext.h"
 
 #include "editor/WorldEditor.h"
@@ -399,8 +401,13 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             mBuildingRenderer->renderBuildingRoof(*building, camera);
         }
     }
-    for (auto&& building : mWorld.mLooseBuildingsTMP) {
-        mBuildingRenderer->renderBuildingRoof(*building, camera);
+    const StructureManager& structureManager = mWorld.getStructureManager();
+    const StructureList& structures = structureManager.getStructures();
+    for (auto&& structure : structures) {
+        // TODO: List of buildings instead?
+        if (structure->getType() == StructureType::Building) {
+            mBuildingRenderer->renderBuildingRoof((Building&)*structure, camera);
+        }
     }
 
     // Ambient occlusion
@@ -470,10 +477,12 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
                     mBuildingRenderer->renderBuildingShadows(*building, camera);
                 }
             }
-            for (auto&& building : mWorld.mLooseBuildingsTMP) {
-                mBuildingRenderer->renderBuildingShadows(*building, camera);
+            for (auto&& structure : structures) {
+                // TODO: List of buildings instead?
+                if (structure->getType() == StructureType::Building) {
+                    mBuildingRenderer->renderBuildingShadows((Building&)*structure, camera);
+                }
             }
-
 
             glDisable(GL_DEPTH_CLAMP);
         }

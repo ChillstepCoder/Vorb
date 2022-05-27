@@ -10,6 +10,7 @@
 #include "physics/ContactListener.h"
 #include "physics/ContactFilter.h"
 #include "item/ItemStockpileRegistry.h"
+#include "structure/StructureManager.h"
 
 #include "ecs/factory/EntityFactory.h"
 
@@ -71,6 +72,9 @@ World::World() :
 	// Cities
 	mCities = std::make_unique<CityGraph>();
 
+	// Structures
+	mStructuremanager = std::make_unique<StructureManager>(*this);
+
 	// Stockpiles
 	mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
 
@@ -106,7 +110,7 @@ void World::updateTaskQueues() {
 	// Update any pending updates if pathfinding is idle
 	if (!Services::NavThread::ref().isRunningPathfind()) {
 		for (auto&& chunk : mActiveChunks) {
-			chunk->mTileContainer.updateMainThread();
+			chunk->updateMainThread();
 		}
 	}
 }
@@ -330,6 +334,16 @@ const Tile* World::tryGetTileAtWorldPos(const ui16v2& worldPos) const {
     return nullptr;
 }
 
+StructureArrayPtr World::tryGetStructuresAtWorldPos(const ui32v2& worldPos) const {
+    const Chunk* chunk = &getChunkAtPosition(worldPos);
+    if (chunk->isDataReady()) {
+        ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+		return chunk->getStructuresAt(chunk->getTileContainer().getTileIndexFromXYZOffset(x, y, 0));
+    }
+    return std::make_pair(nullptr, 0);
+}
+
 const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
 	const Chunk& chunk = getChunkAtPosition(worldPos); // TODO: Stop casting??
 	if (!chunk.isDataReady()) return nullptr;
@@ -362,8 +376,8 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
 	ui32v2 worldPos;
 	ui32 spanX = CHUNK_WIDTH; // Logically these initial values wont actually be used, but need to please compiler
 	ui32 spanY = CHUNK_WIDTH;
-	for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.height;) {
-        for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.height;) {
+	for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.depth;) {
+        for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.depth;) {
             TileHandle cornerHandle = getTileHandleAtWorldPos(worldPos);
             assert(cornerHandle.container);
             Chunk& chunk = mWorldGrid.getChunk(ChunkID::fromWorldUI32v2(cornerHandle.getWorldPos2D()));
@@ -371,7 +385,7 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
 			const ui32 distFromRightEdge = CHUNK_WIDTH - offset.x;
             const ui32 distFromTopEdge = CHUNK_WIDTH - offset.y;
             spanX = std::min(distFromRightEdge, aabb.width);
-            spanY = std::min(distFromTopEdge, aabb.height); // TODO: Prob clever way to move this up a loop
+            spanY = std::min(distFromTopEdge, aabb.depth); // TODO: Prob clever way to move this up a loop
 			for (ui32 dy = 0; dy < spanY; ++dy) {
 				for (ui32 dx = 0; dx < spanX; ++dx) {
 					func(chunk, chunk.getTileContainer().getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
@@ -537,10 +551,10 @@ bool World::updateChunk(Chunk& chunk) {
 		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
 			tryCreateNeighbors(chunk);
 		}
-		else if (chunk.mDirtyNavGraph && chunk.mIsNavmeshing.load(/*memory order relaxed?*/) == false) {
+		else if (chunk.mTileContainer.isDirtyNav() && chunk.mIsNavmeshing.load(/*memory order relaxed?*/) == false) {
             // Update nav graph when all neighbors are loaded
 			// TODO: Async?
-            chunk.mDirtyNavGraph = false;
+			chunk.mTileContainer.setDirtyNav(false);
 			Services::NavThread::ref().addNavgraphBuildTask(chunk);
 		}
 		else {
@@ -599,7 +613,7 @@ void World::onChunkAllNeighborsDataReady(Chunk& chunk) {
     assert(chunk.getTopNeighbor().isDataReady());
 
 	// Dirty our nav graph
-    chunk.mDirtyNavGraph = true;
+    chunk.mTileContainer.setDirtyNav(true);
 	// Update our mesh
     chunk.dirtyMesh();
     mChunkMesher->updateMesh(chunk, f32v3(mLoadCenter, 0.0f));

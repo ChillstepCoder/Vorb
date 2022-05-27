@@ -12,37 +12,31 @@ class CityQuartermaster;
 class BuildingDescriptionRepository;
 class World;
 
-
-enum class MarketStallType {
-    PRODUCE,
-    MEAT,
-    FISH,
-    CHEESE,
-    WEAPONS,
-    ARMOR,
-    TRINKETS,
-    CLOTHES,
-    WOOD,
-};
-
-// Structures are standalone objects that are invariant, and cannot be entered, but can optionally be interacted with
-enum class StructureType {
-    SILO,
-    LARGE_STATUE,
-
-};
-
-enum class FurnitureType {
-    CHAIR,
-    TABLE,
-    BED,
-    BARREL,
-    DRAWERS,
-    CUPBOARDS,
-    DRESSER,
-    STOVE,
-    CHEST,
-};
+//
+//enum class MarketStallType {
+//    PRODUCE,
+//    MEAT,
+//    FISH,
+//    CHEESE,
+//    WEAPONS,
+//    ARMOR,
+//    TRINKETS,
+//    CLOTHES,
+//    WOOD,
+//};
+//
+//
+//enum class FurnitureType {
+//    CHAIR,
+//    TABLE,
+//    BED,
+//    BARREL,
+//    DRAWERS,
+//    CUPBOARDS,
+//    DRESSER,
+//    STOVE,
+//    CHEST,
+//};
 
 struct CityTileData {
     ui8 isOccupied : 1;

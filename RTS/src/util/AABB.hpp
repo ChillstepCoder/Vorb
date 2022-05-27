@@ -2,8 +2,8 @@
 
 struct ui32AABB2 {
     ui32AABB2() = default;
-    ui32AABB2(ui32 v) : x(v), y(v), width(v), height(v) {};
-    ui32AABB2(ui32 x, ui32 y, ui32 width, ui32 height) : x(x), y(y), width(width), height(height) {};
+    ui32AABB2(ui32 v) : x(v), y(v), width(v), depth(v) {};
+    ui32AABB2(ui32 x, ui32 y, ui32 width, ui32 depth) : x(x), y(y), width(width), depth(depth) {};
 
     ui32& operator[](int i) { return data[i]; }
 
@@ -15,8 +15,8 @@ struct ui32AABB2 {
     void getCorners(ui32v2 aabbCorners[4]) const {
         aabbCorners[0] = { x, y };
         aabbCorners[1] = { x + width, y };
-        aabbCorners[2] = { x, y + height };
-        aabbCorners[3] = { x + width, y + height };
+        aabbCorners[2] = { x, y + depth };
+        aabbCorners[3] = { x + width, y + depth };
     }
 
     union {
@@ -32,7 +32,7 @@ struct ui32AABB2 {
             union {
                 struct {
                     ui32 width;
-                    ui32 height;
+                    ui32 depth;
                 };
                 ui32v2 dims;
             };
@@ -42,8 +42,8 @@ struct ui32AABB2 {
 
 struct ui16AABB2 {
     ui16AABB2() = default;
-    ui16AABB2(ui16 v) : x(v), y(v), width(v), height(v) {};
-    ui16AABB2(ui16 x, ui16 y, ui16 width, ui16 height) : x(x), y(y), width(width), height(height) {};
+    ui16AABB2(ui16 v) : x(v), y(v), width(v), depth(v) {};
+    ui16AABB2(ui16 x, ui16 y, ui16 width, ui16 depth) : x(x), y(y), width(width), depth(depth) {};
 
     ui16& operator[](int i) { return data[i]; }
 
@@ -55,8 +55,8 @@ struct ui16AABB2 {
     void getCorners(ui16v2 aabbCorners[4]) const {
         aabbCorners[0] = { x, y };
         aabbCorners[1] = { x + width, y };
-        aabbCorners[2] = { x, y + height };
-        aabbCorners[3] = { x + width, y + height };
+        aabbCorners[2] = { x, y + depth };
+        aabbCorners[3] = { x + width, y + depth };
     }
 
     union {
@@ -72,7 +72,7 @@ struct ui16AABB2 {
             union {
                 struct {
                     ui16 width;
-                    ui16 height;
+                    ui16 depth;
                 };
                 ui16v2 dims;
             };
@@ -169,12 +169,12 @@ inline bool testAABBAABB_SIMD(const ui32AABB2& a, const ui32AABB2& b) {
     // SIMD optimized AABB-AABB test
     // Optimized by removing conditional branches
     const i64 cxa = a.x + a.width / 2;
-    const i64 cya = a.y + a.height / 2;
+    const i64 cya = a.y + a.depth / 2;
     const i64 cxb = b.x + b.width / 2;
-    const i64 cyb = b.y + b.height / 2;
+    const i64 cyb = b.y + b.depth / 2;
     // -1 to check if within
     const bool x = std::fabs((i64)cxa - (i64)cxb) <= (((i64)a.width + (i64)b.width) / 2) - 1;
-    const bool y = std::fabs((i64)cya - (i64)cyb) <= (((i64)a.height + (i64)b.height) / 2) - 1;
+    const bool y = std::fabs((i64)cya - (i64)cyb) <= (((i64)a.depth + (i64)b.depth) / 2) - 1;
 
     return x && y;
 }
@@ -185,12 +185,12 @@ inline bool pointIsWithinAABBInclusive(const ui32v2& point, const ui32AABB2& aab
     return point.x >= aabb.x &&
         point.y >= aabb.y &&
         point.x < aabb.x + aabb.width &&
-        point.y < aabb.y + aabb.height;
+        point.y < aabb.y + aabb.depth;
 }
 
 inline bool pointIsWithinAABB(const ui32v2& point, const ui32AABB2& aabb) {
     return point.x > aabb.x &&
         point.y > aabb.y &&
         point.x < aabb.x + aabb.width &&
-        point.y < aabb.y + aabb.height;
+        point.y < aabb.y + aabb.depth;
 }

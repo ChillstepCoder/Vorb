@@ -6,6 +6,8 @@
 #include "DebugRenderer.h"
 #include "options/DebugOptions.h"
 
+#include "debugging/VisualLogger.h"
+
 // 0 or 1 for rendering debug
 #define DEBUG_RENDER_NAV_NODES 1
 
@@ -27,6 +29,9 @@ NavGraph::NavGraph(World& world) : mWorld(world)
 }
 
 void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
+
+    VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Nav Graph");
+
     // Nav thread only
     assert(IS_NAV_THREAD());
 
@@ -50,33 +55,37 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
             // Iterate internally to find disjoint sets
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
-                    TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
-                    const Tile& tile = tiles[index];
-                    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
-                    const int djArryIndex = y * SUBCHUNK_WIDTH + x;
                     bool assigned = false;
-                    
-                    if (x != 0) {
-                        const Tile& left = tiles[index - 1];
-                        // Check if we can cross between
-                        if (abs(left.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
-                            djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
-                            assigned = true;
-                        }
-                    }
-                    if (y != 0) {
-                        const Tile& bottom = tiles[index - CHUNK_WIDTH];
-                        // Check if we can cross between
-                        if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
-                            if (assigned) {
-                                // If we already assigned to left, merge the sets
-                                ui32 prevID = djNodeIDs[djArryIndex];
-                                ui32 botID = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
-                                djNodes[prevID].id = djNodes[botID].id;
-                            }
-                            else {
-                                djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
+                    const int djArryIndex = y * SUBCHUNK_WIDTH + x;
+                    const TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
+                    // Structures block navgraph
+                    StructureArrayPtr structures = chunk.getStructuresAtThreadSafe(index);
+                    if (!structures.first) {
+                        const Tile& tile = tiles[index];
+                        const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
+
+                        if (x != 0) {
+                            const Tile& left = tiles[index - 1];
+                            // Check if we can cross between
+                            if (abs(left.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
+                                djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
                                 assigned = true;
+                            }
+                        }
+                        if (y != 0) {
+                            const Tile& bottom = tiles[index - CHUNK_WIDTH];
+                            // Check if we can cross between
+                            if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
+                                if (assigned) {
+                                    // If we already assigned to left, merge the sets
+                                    ui32 prevID = djNodeIDs[djArryIndex];
+                                    ui32 botID = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
+                                    djNodes[prevID].id = djNodes[botID].id;
+                                }
+                                else {
+                                    djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
+                                    assigned = true;
+                                }
                             }
                         }
                     }

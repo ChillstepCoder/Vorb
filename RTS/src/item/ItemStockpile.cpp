@@ -15,9 +15,9 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
     , mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
 
-    assert(mAABB.width <= MAX_STOCKPILE_WIDTH && mAABB.height <= MAX_STOCKPILE_WIDTH);
+    assert(mAABB.width <= MAX_STOCKPILE_WIDTH && mAABB.depth <= MAX_STOCKPILE_WIDTH);
 
-    mStorage.resize(mAABB.width * mAABB.height);
+    mStorage.resize(mAABB.width * mAABB.depth);
 
     mFirstFreeSlot = UINT32_MAX;
 
@@ -26,7 +26,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
     // Set stockpile flags
 
     ui32 index = 0;
-    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.height; ++y) {
+    for (ui32 y = mAABB.y; y < mAABB.y + mAABB.depth; ++y) {
         std::cout << "  ";
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             const ui32v2 worldPos(x, y);
