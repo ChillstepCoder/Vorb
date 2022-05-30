@@ -28,6 +28,10 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
 
 BuildingBlueprintId BuildingBlueprintGenerator::sCurrentId = 0;
 
+inline bool boundsCheckTile(const i16v2& pos, const ui32AABB2& aabb) {
+    return pos.x >= 0 && pos.x < aabb.width&& pos.y >= 0 && pos.y < aabb.depth;
+}
+
 // Dont place on outer border, thats where facade goes
 bool boundsCheckRoom(i16 pos, i16 dim) {
     return pos >= 1 && pos < dim - 1;
@@ -1101,41 +1105,78 @@ struct DoorBFSNode {
     ui32 index;
 };
 
-void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, RoomWallOuterDir dir, ui32 nodeIndex, RoomNode& room, const i16v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
+void placeInteriorDoor(BuildingBlueprint& bp, std::vector<bool>& isConnected, RoomNode& room, RoomNode& adjacentRoom, ui32 tileIndex, const ui32 doorTileIndex, const ui32 outerTileIndex, VisualLog* visLog) {
+    if (bp.tiles[outerTileIndex].type <= BlueprintTileType::FLOOR_1) {
+        isConnected[adjacentRoom.id] = true;
+        room.adjacentRooms[room.numAdjacentRooms++] = RoomGateInfo{ adjacentRoom.id, outerTileIndex };
+        adjacentRoom.adjacentRooms[adjacentRoom.numAdjacentRooms++] = RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex };
+        bp.tiles[doorTileIndex].type = BlueprintTileType::DOOR;
+        // Visual log
+        if (visLog) {
+            const f32v3 pos(doorTileIndex % bp.aabb.dims.x, doorTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, adjacentRoom.floorIndex * bp.floorHeight);
+            visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+        }
+    }
+    else if (visLog) {
+        const f32v3 pos(doorTileIndex % bp.aabb.dims.x, doorTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, adjacentRoom.floorIndex * bp.floorHeight);
+        visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+    }
+}
+
+void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, RoomWallOuterDir dir, ui32 tileIndex, RoomNode& room, const i16v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
     const i16v2& directionOffset = EXPAND_OFFSETS[e_cast(dir)];
     const i16v2 nextPos = currentPos + directionOffset;
-    ui32 nextIndex = getIndexAtPos(ui32v2(nextPos), bp.aabb.dims, room.floorIndex);
-    if (!visited[nextIndex]) {
-        RoomNodeID nextId = bp.ownerArray[nextIndex];
-        visited[nextIndex] = true;
-        if (nextId == bp.ownerArray[nodeIndex]) {
-
-            bfs[bfsBackIndex++].index = nextIndex;
+    const ui32 nextTileIndex = getIndexAtPos(ui32v2(nextPos), bp.aabb.dims, room.floorIndex);
+    if (!visited[nextTileIndex]) {
+        RoomNodeID nextId = bp.ownerArray[nextTileIndex];
+        visited[nextTileIndex] = true;
+        if (nextId == bp.ownerArray[tileIndex]) {
+            bfs[bfsBackIndex++].index = nextTileIndex;
             if (bfsBackIndex >= bfs.size()) bfsBackIndex = 0;
         }
         else {
 
             if (nextId == INVALID_ROOM_ID) {
-                // Exterior doors
-                if (canConnectToOutside) {
-
-                    canConnectToOutside = false;
-                    if (bp.tiles[nodeIndex].type == BlueprintTileType::WALL && bp.tiles[nextIndex].type == BlueprintTileType::FLOOR_1) {
-                        bp.tiles[nodeIndex].type = BlueprintTileType::DOOR;
-                        bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[nodeIndex], nodeIndex });
-                        // Visual log
-                        if (visLog) {
-                            const f32v3 pos(nodeIndex % bp.aabb.dims.x, nodeIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (nodeIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
-                            visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+                // Check if this is actually technically an interior wall that is marked as exterior,
+                // which can happen if these tiles are unowned but directly between two rooms
+                const i16v2 outerPos = nextPos + directionOffset;
+                const ui32 outerIndex = getIndexAtPos(ui32v2(outerPos), bp.aabb.dims, room.floorIndex);
+                // Check if we are in bounds, if this is a room
+                if (boundsCheckTile(outerPos, bp.aabb) && bp.ownerArray[outerIndex] != INVALID_ROOM_ID) {
+                    // If not same as previous room
+                    if (bp.ownerArray[outerIndex] != bp.ownerArray[tileIndex]) {
+                        RoomNode& adjacent = bp.rooms[bp.ownerArray[outerIndex]];
+                        if (adjacent.numAdjacentRooms == MAX_ADJACENT_ROOMS) {
+                            return;
+                        }
+                        // TODO: By removing this check we can knock down a whole wall. Kinda cool...
+                        if (!isConnected[adjacent.id]) {
+                            placeInteriorDoor(bp, isConnected, room, adjacent, tileIndex, nextTileIndex, outerIndex, visLog);
                         }
                     }
-                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR_1) {
-                        bp.tiles[nextIndex].type = BlueprintTileType::DOOR;
-                        bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[nodeIndex], nodeIndex });
-                        // Visual log
-                        if (visLog) {
-                            const f32v3 pos(nextIndex % bp.aabb.dims.x, nextIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (nextIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
-                            visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+                }
+                else {
+                    // Exterior doors
+                    if (canConnectToOutside) {
+
+                        canConnectToOutside = false;
+                        if (bp.tiles[tileIndex].type == BlueprintTileType::WALL && bp.tiles[nextTileIndex].type == BlueprintTileType::FLOOR_1) {
+                            bp.tiles[tileIndex].type = BlueprintTileType::DOOR;
+                            bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex });
+                            // Visual log
+                            if (visLog) {
+                                const f32v3 pos(tileIndex % bp.aabb.dims.x, tileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (tileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
+                                visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+                            }
+                        }
+                        if (bp.tiles[nextTileIndex].type == BlueprintTileType::WALL && bp.tiles[tileIndex].type == BlueprintTileType::FLOOR_1) {
+                            bp.tiles[nextTileIndex].type = BlueprintTileType::DOOR;
+                            bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex });
+                            // Visual log
+                            if (visLog) {
+                                const f32v3 pos(nextTileIndex % bp.aabb.dims.x, nextTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (nextTileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
+                                visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+                            }
                         }
                     }
                 }
@@ -1145,37 +1186,15 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 RoomNode& adjacent = bp.rooms[nextId];
                 if (adjacent.numAdjacentRooms < MAX_ADJACENT_ROOMS) {
 
-                    if (bp.tiles[nextIndex].type == BlueprintTileType::WALL && bp.tiles[nodeIndex].type == BlueprintTileType::FLOOR_1) {
+                    if (bp.tiles[nextTileIndex].type == BlueprintTileType::WALL && bp.tiles[tileIndex].type == BlueprintTileType::FLOOR_1) {
 
                         const i16v2 outerPos = nextPos + directionOffset;
-                        // Bounds check
-                        switch (dir) {
-                            case RoomWallOuterDir::LEFT:
-                                if (outerPos.x < 0) return;
-                                break;
-                            case RoomWallOuterDir::BOTTOM:
-                                if (outerPos.y < 0) return;
-                                break;
-                            case RoomWallOuterDir::RIGHT:
-                                if (outerPos.x >= bp.aabb.dims.x) return;
-                                break;
-                            case RoomWallOuterDir::TOP:
-                                if (outerPos.y >= bp.aabb.dims.y) return;
-                                break;
+                        if (!boundsCheckTile(outerPos, bp.aabb)) {
+                            return;
                         }
 
                         const ui32 outerIndex = getIndexAtPos(ui32v2(outerPos), bp.aabb.dims, room.floorIndex);
-                        if (bp.tiles[outerIndex].type <= BlueprintTileType::FLOOR_1) {
-                            isConnected[nextId] = true;
-                            room.adjacentRooms[room.numAdjacentRooms++] = RoomGateInfo{ nextId, outerIndex };
-                            adjacent.adjacentRooms[adjacent.numAdjacentRooms++] = RoomGateInfo{ bp.ownerArray[nodeIndex], nodeIndex };
-                            bp.tiles[nextIndex].type = BlueprintTileType::DOOR;
-                            // Visual log
-                            if (visLog) {
-                                const f32v3 pos(nextIndex % bp.aabb.dims.x, nextIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, bp.rooms[nextId].floorIndex * bp.floorHeight);
-                                visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
-                            }
-                        }
+                        placeInteriorDoor(bp, isConnected, room, adjacent, tileIndex, nextTileIndex, outerIndex, visLog);
                     }
                 }
             }
@@ -1221,6 +1240,10 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
             const DoorBFSNode& node = bfs[bfsFrontIndex];
             i32v2 pos(node.index % bp.aabb.dims.x, (node.index % floorSize) / bp.aabb.dims.x);
             RoomNodeID roomId = bp.ownerArray[node.index];
+            assert(roomId == room.id);
+            if (room.numAdjacentRooms == MAX_ADJACENT_ROOMS) {
+                break;
+            }
 
             if (visLog) {
                 visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.8f, 0.8f, 0.8f, 0.5f));

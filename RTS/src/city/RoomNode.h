@@ -29,7 +29,7 @@ struct RoomNode {
     RoomDefID roomDefId;
     RoomNodeID parentRoom = INVALID_ROOM_ID; // Connected via door or stairs
     RoomNodeID childRooms[MAX_CHILD_ROOMS]; // Connected via door or stairs, max of 4
-    RoomGateInfo adjacentRooms[MAX_CHILD_ROOMS]; // Like child rooms, connected via door or open wall, but is not a direct child
+    RoomGateInfo adjacentRooms[MAX_ADJACENT_ROOMS]; // Like child rooms, connected via door or open wall, but is not necessarily a direct child
     RoomNodeID id = INVALID_ROOM_ID;
     RoomWall walls[MAX_WALLS_PER_ROOM]; // Starts at bottommost + leftmost, wall corner and proceeds in +y direction, then x,y,x,y,x, ect...
     ui32AABB2 aabb = { 0 };
