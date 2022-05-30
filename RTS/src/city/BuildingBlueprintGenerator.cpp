@@ -351,13 +351,13 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     // Determine which dims to use for cartesian
     ui16v2 dims;
     switch (bp.entrySide) {
-        case Cartesian::DOWN:
-        case Cartesian::UP:
+        case Cartesian::SOUTH:
+        case Cartesian::NORTH:
             dims.x = bp.aabb.dims.y;
             dims.y = bp.aabb.dims.x;
             break;
-        case Cartesian::LEFT:
-        case Cartesian::RIGHT:
+        case Cartesian::WEST:
+        case Cartesian::EAST:
             dims = bp.aabb.dims;
             break;
     }
@@ -374,19 +374,19 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     // Rotate all coordinates around for Cartesian direction
     // Left is the base case so do nothing for that
     switch (bp.entrySide) {
-        case Cartesian::DOWN:
+        case Cartesian::SOUTH:
             for (auto&& room : bp.rooms) {
                 ui16 tmp = room.offsetFromZero.x;
                 room.offsetFromZero.x = room.offsetFromZero.y;
                 room.offsetFromZero.y = bp.aabb.dims.y - tmp - 1;
             }
             break;
-        case Cartesian::RIGHT:
+        case Cartesian::EAST:
             for (auto&& room : bp.rooms) {
                 room.offsetFromZero.x = bp.aabb.dims.x - room.offsetFromZero.x - 1;
             }
             break;
-        case Cartesian::UP:
+        case Cartesian::NORTH:
             for (auto&& room : bp.rooms) {
                 std::swap(room.offsetFromZero.x, room.offsetFromZero.y);
                 room.offsetFromZero.x = bp.aabb.dims.x - room.offsetFromZero.x - 1;
@@ -916,7 +916,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
                 bestId = downID;
                 bestCount = downCount;
                 iterateAgain = true;
-                bestDir = Cartesian::DOWN;
+                bestDir = Cartesian::SOUTH;
             }
             // Left
             const ui8 leftCount = ROOM_NODE_COUNT_CACHE[leftID];
@@ -924,7 +924,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
                 bestId = leftID;
                 bestCount = leftCount;
                 iterateAgain = true;
-                bestDir = Cartesian::LEFT;
+                bestDir = Cartesian::WEST;
             }
 
             // Right
@@ -933,7 +933,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
                 bestId = rightID;
                 bestCount = rightCount;
                 iterateAgain = true;
-                bestDir = Cartesian::RIGHT;
+                bestDir = Cartesian::EAST;
             }
 
             // Top
@@ -942,7 +942,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
                 bestId = topID;
                 bestCount = topCount;
                 iterateAgain = true;
-                bestDir = Cartesian::UP;
+                bestDir = Cartesian::NORTH;
             }
 
             // Replace!
@@ -980,28 +980,28 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
             // TODO: CONSTANTS
             // Shift to next tile
             switch (bestDir) {
-                case Cartesian::DOWN: // down
+                case Cartesian::SOUTH: // down
                     if (y == 1) {
                         return;
                     }
                     --y;
                     index -= bp.aabb.dims.x;
                     break;
-                case Cartesian::LEFT: // left
+                case Cartesian::WEST: // left
                     if (x == 1) {
                         return;
                     }
                     --x;
                     --index;
                     break;
-                case Cartesian::RIGHT: // right
+                case Cartesian::EAST: // right
                     if (x == bp.aabb.dims.x - 2) {
                         return;
                     }
                     ++x;
                     ++index;
                     break;
-                case Cartesian::UP: // up
+                case Cartesian::NORTH: // up
                     if (y == bp.aabb.dims.y - 2) {
                         return;
                     }

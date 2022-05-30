@@ -67,10 +67,10 @@ private:
     bool mIsMouseHidden = false;
 
     entt::entity mEntityFollow = entt::null; // TODO: Need an event for entity destroy
-    Cartesian mCameraCartesianDirection = Cartesian::UP;
+    Cartesian mCameraCartesianDirection = Cartesian::NORTH;
     Tweener<f32v3> mCameraPositionTweener = Tweener<f32v3>(f32v3(0.0f));
     Tweener<f32> mCameraBoomLengthTweener = Tweener<f32>(1.0f);
-    SphericalTweener<f32v3> mCameraDirectionTweener = SphericalTweener<f32v3>(TARGET_CAMERA_NORMALS_3D[e_cast(Cartesian::UP)], 0.4f/*speed*/, 0.2f/*acceleration*/);
+    SphericalTweener<f32v3> mCameraDirectionTweener = SphericalTweener<f32v3>(TARGET_CAMERA_NORMALS_3D[e_cast(Cartesian::NORTH)], 0.4f/*speed*/, 0.2f/*acceleration*/);
     f32 mCameraDirectionZOffset = -0.3f;
     i32v2 mLastMousePositionBeforeRelative;
 };

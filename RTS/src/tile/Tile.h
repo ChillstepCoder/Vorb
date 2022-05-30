@@ -50,6 +50,15 @@ class TileBase {
 };
 static_assert(sizeof(TileBase) == 12, "Keep small");
 
+
+struct TileOrientation {
+    Cartesian orientationBase : 2;
+    Cartesian orientationMid : 2;
+    Cartesian orientationTop : 2;
+    //Cartesian PADDING : 2; // Use this for something?
+};
+static_assert(sizeof(TileOrientation) == 1);
+
 class Tile {
     friend class TileContainer;
     friend class ChunkGenerator;
@@ -73,14 +82,17 @@ public:
     ui8 getPathWeightMainThread() const { assert(IS_MAIN_THREAD()); return pathWeight; }
     ui8 getPathWeightNavThread() const { assert(IS_NAV_THREAD()); return pathWeightThreadSafe; }
 
-    f32 getBaseZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)baseZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
-    f32 getBaseZPositionUncompressedThreadSafe() const { return (f32)baseZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
+    f32 getGroundZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)groundZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
+    f32 getGroundZPositionUncompressedThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return (f32)groundZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
 
     const TileCollider* tryGetColliderMainThread() const;
     const TileCollider* tryGetColliderThreadSafe() const;
 
 	const TileID* getLayersMainThread() const { assert(IS_MAIN_THREAD()); return layers; }
-    const TileID* getLayersThreadSafe() const { return layersThreadSafe; }
+    const TileID* getLayersThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe; }
+
+    const TileOrientation& getOrientationMainThread() const { assert(IS_MAIN_THREAD()); return orientation; }
+    const TileOrientation& getOrientationThreadSafe() const { assert(!IS_MAIN_THREAD()); return orientation; }
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
@@ -94,7 +106,7 @@ private:
     void clearTileFlags(bool isReadLocked);
     void clearTileCollisionFlags(bool isReadLocked);
     void setPathWeight(ui8 weight, bool isReadLocked);
-    void setBaseZPosition(f32 baseZPosition, bool isReadLocked);
+    void setGroundZPosition(f32 groundZPosition, bool isReadLocked);
     void updateCollision(bool isReadLocked);
     bool isUpdateQueued() { return tileFlags.isBitSet(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE); }
 
@@ -114,8 +126,10 @@ private:
         };
         TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
     };
-    ui16 baseZPositionCompressed;
-    ui16 baseZPositionCompressedThreadSafe;
+    TileOrientation orientation;
+    TileOrientation orientationThreadSafe;
+    ui16 groundZPositionCompressed;
+    ui16 groundZPositionCompressedThreadSafe;
     BitFlags<TileFlags> tileFlags;
     BitFlags<TileFlags> tileFlagsThreadSafe;
 	// Collision stuff
@@ -124,4 +138,4 @@ private:
     ui8 pathWeightThreadSafe = 255u;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 22, "Keep small");
+static_assert(sizeof(Tile) == 24, "Keep small");

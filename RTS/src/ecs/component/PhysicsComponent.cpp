@@ -82,10 +82,10 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
     float colliderRadius = cmp.mCollisionRadius;
     const f32v2& colliderCenter = cmp.getXYPosition();
     f32v2 offsetToCollider = colliderCenter - tileCenter;
-    const f32 baseZPosition = tile->getBaseZPositionUncompressedMainThread();
+    const f32 groundZPosition = tile->getGroundZPositionUncompressedMainThread();
 
 	bool isCollidingWithTop = false;
-	float zOffset = cmp.getZPosition() - baseZPosition;
+	float zOffset = cmp.getZPosition() - groundZPosition;
 	if (zOffset > 0.0f) {
 		// We are above, do nothing
 		return;
@@ -135,7 +135,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
                 // Just pop up
                 // TODO: Move up smoother, always counter gravity
                 if (isCollidingWithTop) {
-                    cmp.setZPosition(baseZPosition);
+                    cmp.setZPosition(groundZPosition);
                     cmp.setZVelocity(0.0f);
                     isOnTile = true;
                     return;

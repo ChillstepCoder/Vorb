@@ -106,35 +106,35 @@ BuildingMesher::BuildingMesher() {
     // Set up corners shapes, we move counter clockwise always
     // 0 1
     // 0 0
-    mCornerNextEdgeLookupTable[0b0100] = Cartesian::DOWN;
+    mCornerNextEdgeLookupTable[0b0100] = Cartesian::SOUTH;
     mCornerTypeLookupTable[0b0100] = CornerWinding::TOP_RIGHT;
     // 1 0
     // 1 1
-    mCornerNextEdgeLookupTable[0b1011] = Cartesian::RIGHT;
+    mCornerNextEdgeLookupTable[0b1011] = Cartesian::EAST;
     mCornerTypeLookupTable[0b1011] = CornerWinding::BOTTOM_LEFT;
     // 1 0
     // 0 0
-    mCornerNextEdgeLookupTable[0b1000] = Cartesian::RIGHT;
+    mCornerNextEdgeLookupTable[0b1000] = Cartesian::EAST;
     mCornerTypeLookupTable[0b1000] = CornerWinding::TOP_LEFT;
     // 0 1
     // 1 1
-    mCornerNextEdgeLookupTable[0b0111] = Cartesian::UP;
+    mCornerNextEdgeLookupTable[0b0111] = Cartesian::NORTH;
     mCornerTypeLookupTable[0b0111] = CornerWinding::BOTTOM_RIGHT;
     // 0 0
     // 1 0
-    mCornerNextEdgeLookupTable[0b0010] = Cartesian::UP;
+    mCornerNextEdgeLookupTable[0b0010] = Cartesian::NORTH;
     mCornerTypeLookupTable[0b0010] = CornerWinding::BOTTOM_LEFT;
     // 1 1
     // 0 1
-    mCornerNextEdgeLookupTable[0b1101] = Cartesian::LEFT;
+    mCornerNextEdgeLookupTable[0b1101] = Cartesian::WEST;
     mCornerTypeLookupTable[0b1101] = CornerWinding::TOP_RIGHT;
     // 0 0
     // 0 1
-    mCornerNextEdgeLookupTable[0b0001] = Cartesian::LEFT;
+    mCornerNextEdgeLookupTable[0b0001] = Cartesian::WEST;
     mCornerTypeLookupTable[0b0001] = CornerWinding::BOTTOM_RIGHT;
     // 1 1
     // 1 0
-    mCornerNextEdgeLookupTable[0b1110] = Cartesian::DOWN;
+    mCornerNextEdgeLookupTable[0b1110] = Cartesian::SOUTH;
     mCornerTypeLookupTable[0b1110] = CornerWinding::TOP_LEFT;
     // Diagonal edge cases
     // 1 0
@@ -447,9 +447,9 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
             for (ui32 x = 0; x < tileDims.x; ++x) {
                 TileIndex index = building.mTileContainer.getTileIndexFromXYZOffset(x, y, z);
                 const Tile& tile = building.mTileContainer.getTileAt(index);
-                const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
+                const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
+                    TileID layerTile = tile.getLayersMainThread()[layerIndex];  // TODO: Thread safe when async
                     if (layerTile == TILE_ID_NONE) {
                         continue;
                     }
@@ -503,7 +503,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
         ui32 startX = index % aabb.dims.x;
         ui32 startY = index / aabb.dims.y;
         i32v2 cornerPos(startX, startY);
-        Cartesian edge = Cartesian::DOWN; // We are guaranteed theres always a bottom edge at this corner
+        Cartesian edge = Cartesian::SOUTH; // We are guaranteed theres always a bottom edge at this corner
         // If we do not have a free tile below, it means we are an interior tile on an already skeletoned segment, so continue
         if (cornerPos.y > 0 && ownedTiles.getBit((cornerPos.y - 1) * aabb.dims.x + cornerPos.x)) {
             continue;
@@ -552,15 +552,15 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
                 if (code == 0b1001) {
                     // 1 0
                     // 0 1
-                    if (edge == Cartesian::DOWN) {
-                        nextEdge = Cartesian::RIGHT;
+                    if (edge == Cartesian::SOUTH) {
+                        nextEdge = Cartesian::EAST;
                         if (visLog) {
                             const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
                             visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
                         }
                     }
-                    else if (edge == Cartesian::UP) {
-                        nextEdge = Cartesian::LEFT;
+                    else if (edge == Cartesian::NORTH) {
+                        nextEdge = Cartesian::WEST;
                         if (visLog) {
                             const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
                             visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
@@ -573,15 +573,15 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
                 else {
                     // 0 1
                     // 1 0
-                    if (edge == Cartesian::DOWN) {
-                        nextEdge = Cartesian::LEFT;
+                    if (edge == Cartesian::SOUTH) {
+                        nextEdge = Cartesian::WEST;
                         if (visLog) {
                             const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
                             visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                         }
                     }
-                    else if (edge == Cartesian::RIGHT) {
-                        nextEdge = Cartesian::UP;
+                    else if (edge == Cartesian::EAST) {
+                        nextEdge = Cartesian::NORTH;
                         if (visLog) {
                             const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
                             visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -845,17 +845,17 @@ void BuildingMesher::addRoofTriangle(
         f32v3 normal = glm::normalize(glm::cross(o1, o2));
         // Invert normal if needed
         if (normal.z < 0.0f) normal = -normal;
-        Cartesian dir = Cartesian::LEFT;
+        Cartesian dir = Cartesian::WEST;
         if (abs(normal.x) < abs(normal.y)) {
             if (normal.y > 0) {
-                dir = Cartesian::UP;
+                dir = Cartesian::NORTH;
             }
             else {
-                dir = Cartesian::DOWN;
+                dir = Cartesian::SOUTH;
             }
         }
         else if (normal.x > 0) {
-            dir = Cartesian::RIGHT;
+            dir = Cartesian::EAST;
         }
 
         // Determine how we get UVs
@@ -932,21 +932,21 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
         if (xDiff > yDiff) {
            if (edge.v2.x > edge.v1.x) {
                if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(1.0f, 0.0f, 0.0f));
-               dir = Cartesian::DOWN;
+               dir = Cartesian::SOUTH;
             }
            else {
                if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(0.0f, 1.0f, 0.0f));
-               dir = Cartesian::UP;
+               dir = Cartesian::NORTH;
            }
         }
         else {
             if (edge.v2.y > edge.v1.y) {
                 if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(0.0f, 1.0f, 1.0f));
-                dir = Cartesian::RIGHT;
+                dir = Cartesian::EAST;
             }
             else {
                 if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(0.0f, 0.0f, 1.0f));
-                dir = Cartesian::LEFT;
+                dir = Cartesian::WEST;
             }
         }
 

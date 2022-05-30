@@ -51,15 +51,15 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     //plotDims.y = plotDims.x * desc.minAspectRatio;
 
     const ui32v2 bottomLeftPos(plot.aabb.pos); // TODO: Actual position
-    Cartesian dir = Cartesian::UP;
-    if (plot.neighborRoads[e_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
-        dir = Cartesian::LEFT;
+    Cartesian dir = Cartesian::NORTH;
+    if (plot.neighborRoads[e_cast(Cartesian::WEST)] != INVALID_ROAD_ID) {
+        dir = Cartesian::WEST;
     }
-    else if (plot.neighborRoads[e_cast(Cartesian::RIGHT)] != INVALID_ROAD_ID) {
-        dir = Cartesian::RIGHT;
+    else if (plot.neighborRoads[e_cast(Cartesian::EAST)] != INVALID_ROAD_ID) {
+        dir = Cartesian::EAST;
     }
-    else if (plot.neighborRoads[e_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
-        dir = Cartesian::DOWN;
+    else if (plot.neighborRoads[e_cast(Cartesian::NORTH)] != INVALID_ROAD_ID) {
+        dir = Cartesian::SOUTH;
     }
     plot.mPendingBlueprint = mBuildingGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos, plot.mOwnerEntity, flags, 5.0f /*TODO: Pass in*/);
     plot.mPendingBlueprint->plotIndex = plot.plotIndex;

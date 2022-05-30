@@ -62,12 +62,12 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                     StructureArrayPtr structures = chunk.getStructuresAtThreadSafe(index);
                     if (!structures.first) {
                         const Tile& tile = tiles[index];
-                        const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
+                        const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
 
                         if (x != 0) {
                             const Tile& left = tiles[index - 1];
                             // Check if we can cross between
-                            if (abs(left.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
+                            if (abs(left.getGroundZPositionUncompressedThreadSafe() - groundZPosition) < 2.0f) {
                                 djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
                                 assigned = true;
                             }
@@ -75,7 +75,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                         if (y != 0) {
                             const Tile& bottom = tiles[index - CHUNK_WIDTH];
                             // Check if we can cross between
-                            if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - baseZPosition) < 2.0f) {
+                            if (abs(bottom.getGroundZPositionUncompressedThreadSafe() - groundZPosition) < 2.0f) {
                                 if (assigned) {
                                     // If we already assigned to left, merge the sets
                                     ui32 prevID = djNodeIDs[djArryIndex];
@@ -102,10 +102,10 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
             memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
             const TileIndex cornerIndex = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, 0);
-            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::DOWN);
-            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::LEFT);
-            buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::RIGHT);
-            buildEdges(chunk, cornerX, cornerY + SUBCHUNK_WIDTH - 1, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::UP);
+            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
+            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
+            buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
+            buildEdges(chunk, cornerX, cornerY + SUBCHUNK_WIDTH - 1, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
 
             // Update all nav indices
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
@@ -162,8 +162,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 const LiteNavNodeEdge& edge = node.edges[cartesian][i];
                 const f32v2 edgeOffset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                 f32v2 cornerPos = cornerWorldPos + edgeOffset;
-                if (cartesian == (ui32)Cartesian::RIGHT) cornerPos.x += 1.0f;
-                else if (cartesian == (ui32)Cartesian::UP) cornerPos.y += 1.0f;
+                if (cartesian == (ui32)Cartesian::EAST) cornerPos.x += 1.0f;
+                else if (cartesian == (ui32)Cartesian::NORTH) cornerPos.y += 1.0f;
                 const f32v2 offset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f);
                 const f32v3 pointA = helperGet3DPoint(worldGrid, patchId, heightData, cornerPos);
                 const f32v3 pointB = helperGet3DPoint(worldGrid, patchId, heightData, cornerPos + offset);
@@ -185,8 +185,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 const f32v2 edgeOffset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge1.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                 f32v2 cornerPos1 = cornerWorldPos + edgeOffset1;
                 const f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge1.lengthMinusOne + 1.0f);
-                if (cartesian == (ui32)Cartesian::RIGHT) cornerPos1.x += 1.0f;
-                else if (cartesian == (ui32)Cartesian::UP) cornerPos1.y += 1.0f;
+                if (cartesian == (ui32)Cartesian::EAST) cornerPos1.x += 1.0f;
+                else if (cartesian == (ui32)Cartesian::NORTH) cornerPos1.y += 1.0f;
                 const f32v2 pos1 = cornerPos1 + offset1 * 0.5f;
                 const f32v3 pointA = helperGet3DPoint(worldGrid, patchId, heightData, pos1);
                 // Connect to our side
@@ -195,8 +195,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                     const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                     f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
                     const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge2.lengthMinusOne + 1.0f);
-                    if (cartesian == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
-                    else if (cartesian == (ui32)Cartesian::UP) cornerPos2.y += 1.0f;
+                    if (cartesian == (ui32)Cartesian::EAST) cornerPos2.x += 1.0f;
+                    else if (cartesian == (ui32)Cartesian::NORTH) cornerPos2.y += 1.0f;
                     const f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
                     DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, patchId, heightData, pos2), color2, lifetime, debugId);
                 }
@@ -209,8 +209,8 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                         const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian2]);
                         f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
                         const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)(edge2.lengthMinusOne + 1.0f);
-                        if (cartesian2 == (ui32)Cartesian::RIGHT) cornerPos2.x += 1.0f;
-                        else if (cartesian2 == (ui32)Cartesian::UP) cornerPos2.y += 1.0f;
+                        if (cartesian2 == (ui32)Cartesian::EAST) cornerPos2.x += 1.0f;
+                        else if (cartesian2 == (ui32)Cartesian::NORTH) cornerPos2.y += 1.0f;
                         const f32v2 pos2 = cornerPos2 + offset2 * 0.5f;
                         DebugRenderer::drawLineBetweenPoints(pointA, helperGet3DPoint(worldGrid, patchId, heightData, pos2), color2, lifetime, debugId);
                     }
@@ -247,7 +247,7 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
             prevNodeId = currNodeId;
         }
 
-        if (abs(bottom.getBaseZPositionUncompressedThreadSafe() - tile.getBaseZPositionUncompressedThreadSafe()) < 2.0f) {
+        if (abs(bottom.getGroundZPositionUncompressedThreadSafe() - tile.getGroundZPositionUncompressedThreadSafe()) < 2.0f) {
             // Start new edge
             if (length == 0) {
                 start = chunkRelativePos;
@@ -301,16 +301,16 @@ void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui3
     const ui32v2 cornerXYOffset = chunk.mTileContainer.getTileXYOffset(corner);
     const ui32v2 startXYOffset = chunk.mTileContainer.getTileXYOffset(start);
     switch (dir) {
-        case Cartesian::LEFT:
-        case Cartesian::RIGHT: {
+        case Cartesian::WEST:
+        case Cartesian::EAST: {
             assert(startXYOffset.y >= cornerXYOffset.y);
             int offsety = startXYOffset.y - cornerXYOffset.y;
             assert(offsety < 16);
             edge.start = offsety;
         }
         break;
-        case Cartesian::DOWN:
-        case Cartesian::UP: {
+        case Cartesian::SOUTH:
+        case Cartesian::NORTH: {
             assert(startXYOffset.x >= cornerXYOffset.x);
             int offsetX = startXYOffset.x - cornerXYOffset.x;
             assert(offsetX < 16);

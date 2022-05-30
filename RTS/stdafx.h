@@ -128,25 +128,25 @@ constexpr int HALF_CHUNK_WIDTH = CHUNK_WIDTH / 2;
 constexpr int CHUNK_SIZE = CHUNK_WIDTH * CHUNK_WIDTH;
 // Cartesian
 enum class Cartesian : ui8 {
-    DOWN = 0, //-y  south
-    LEFT = 1, //-x  west
-    RIGHT = 2, //+x east
-    UP = 3,  //+y    north
+    SOUTH = 0, //-y  south
+    WEST = 1, //-x  west
+    EAST = 2, //+x east
+    NORTH = 3,  //+y    north
     NONE = 100,
     INVALID = 101
 };
 constexpr int CARTESIAN_COUNT = 4; 
 constexpr Cartesian CARTESIAN_NEIGHBORS[CARTESIAN_COUNT][2] = {
-    { Cartesian::LEFT, Cartesian::RIGHT }, // DOWN
-    { Cartesian::UP, Cartesian::DOWN }, // LEFT
-    { Cartesian::DOWN, Cartesian::UP }, // RIGHT
-    { Cartesian::RIGHT, Cartesian::LEFT }, // UP
+    { Cartesian::WEST, Cartesian::EAST }, // DOWN
+    { Cartesian::NORTH, Cartesian::SOUTH }, // LEFT
+    { Cartesian::SOUTH, Cartesian::NORTH }, // RIGHT
+    { Cartesian::EAST, Cartesian::WEST }, // UP
 };
 constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
-    Cartesian::UP,
-    Cartesian::RIGHT,
-    Cartesian::LEFT,
-    Cartesian::DOWN,
+    Cartesian::NORTH,
+    Cartesian::EAST,
+    Cartesian::WEST,
+    Cartesian::SOUTH,
 };
 const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
     i32v2(0, -1), // DOWN

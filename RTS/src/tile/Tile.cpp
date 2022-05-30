@@ -112,7 +112,7 @@ Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos) {
     groundLayer = ground;
     midLayer = mid;
     topLayer = top;
-    baseZPositionCompressed = compressTileZPosition(zPos);
+    groundZPositionCompressed = compressTileZPosition(zPos);
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
@@ -121,7 +121,7 @@ Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : t
     groundLayer = ground;
     midLayer = mid;
     topLayer = top;
-    baseZPositionCompressed = compressTileZPosition(zPos);
+    groundZPositionCompressed = compressTileZPosition(zPos);
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
@@ -149,7 +149,7 @@ void Tile::updateThreadSafeLayers() {
 
     tileFlagsThreadSafe = tileFlags;
     memcpy(layersThreadSafe, layers, sizeof(TileID) * TILE_LAYER_COUNT);
-    baseZPositionCompressedThreadSafe = baseZPositionCompressed;
+    groundZPositionCompressedThreadSafe = groundZPositionCompressed;
     pathWeightThreadSafe = pathWeight;
 }
 
@@ -198,13 +198,13 @@ void Tile::setPathWeight(ui8 weight, bool isReadLocked) {
     pathWeight = weight;
 }
 
-void Tile::setBaseZPosition(f32 baseZPosition, bool isReadLocked) {
-    baseZPositionCompressed = compressTileZPosition(baseZPosition);
+void Tile::setGroundZPosition(f32 groundZPosition, bool isReadLocked) {
+    groundZPositionCompressed = compressTileZPosition(groundZPosition);
     if (isReadLocked) {
         tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     }
     else {
-        baseZPositionCompressedThreadSafe = baseZPositionCompressed;
+        groundZPositionCompressedThreadSafe = groundZPositionCompressed;
     }
 }
 

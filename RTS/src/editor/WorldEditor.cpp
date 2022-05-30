@@ -466,7 +466,7 @@ void WorldEditor::updateTileEdit() {
                 f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(mPickData.hit.position) + mGroundTileOffset;
                 height = round(height);
                 if (height == 0.0f) height = 1.0f;
-                tileContainer.setTileBaseZPosition(tileIndex, height);
+                tileContainer.setTileGroundZPosition(tileIndex, height);
             }
         }
     }
@@ -507,7 +507,7 @@ void WorldEditor::updateBuildingEdit() {
         const f32 meanHeight = round(mWorld.getWorldGrid().computeMeanHeightAtAABB(plot.aabb));
 
         BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
-        std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::LEFT, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
+        std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::WEST, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
 
         CityBuilder::debugBuildInstant(*bp, mWorld);
     }

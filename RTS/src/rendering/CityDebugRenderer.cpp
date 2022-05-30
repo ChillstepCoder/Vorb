@@ -154,16 +154,16 @@ void CityDebugRenderer::renderCityPlotterDebug(const CityPlotter& cityPlotter) c
         color = color4(1.0f, 0.0f, 1.0f, ROOM_COLOR_ALPHA * 2);
         DebugRenderer::drawAABB(f32v2(plot.aabb.pos), f32v2(plot.aabb.dims), 0.0f, color, PERIOD_FRAMES, DEBUG_ID_CITY);
         // Plot edges
-        if (plot.neighborRoads[e_cast(Cartesian::LEFT)] != INVALID_ROAD_ID) {
+        if (plot.neighborRoads[e_cast(Cartesian::WEST)] != INVALID_ROAD_ID) {
             DebugRenderer::drawLine(f32v2(plot.aabb.pos), f32v2(0.0f, plot.aabb.dims.y), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
         }
-        if (plot.neighborRoads[e_cast(Cartesian::RIGHT)] != INVALID_ROAD_ID) {
+        if (plot.neighborRoads[e_cast(Cartesian::EAST)] != INVALID_ROAD_ID) {
             DebugRenderer::drawLine(f32v2(plot.aabb.pos.x + plot.aabb.dims.x, plot.aabb.pos.y), f32v2(0.0f, plot.aabb.dims.y), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
         }
-        if (plot.neighborRoads[e_cast(Cartesian::DOWN)] != INVALID_ROAD_ID) {
+        if (plot.neighborRoads[e_cast(Cartesian::SOUTH)] != INVALID_ROAD_ID) {
             DebugRenderer::drawLine(f32v2(plot.aabb.pos.x, plot.aabb.pos.y), f32v2(plot.aabb.dims.x, 0.0f), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
         }
-        if (plot.neighborRoads[e_cast(Cartesian::UP)] != INVALID_ROAD_ID) {
+        if (plot.neighborRoads[e_cast(Cartesian::NORTH)] != INVALID_ROAD_ID) {
             DebugRenderer::drawLine(f32v2(plot.aabb.pos.x, plot.aabb.pos.y + plot.aabb.dims.y), f32v2(plot.aabb.dims.x, 0.0f), color4(0.0f, 1.0f, 0.0f), PERIOD_FRAMES, DEBUG_ID_CITY);
         }
     }

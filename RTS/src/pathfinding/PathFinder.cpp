@@ -287,7 +287,7 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
         const PathPoint nodePoint = nodeIndexToWorldPos(nodeIndex, bottomLeftPoint);
         const Tile* startTile = world.tryGetTileAtWorldPos(nodePoint.xy);
         assert(startTile);
-        const f32 startBaseZPosition = startTile->getBaseZPositionUncompressedThreadSafe();
+        const f32 startgroundZPosition = startTile->getGroundZPositionUncompressedThreadSafe();
         
         /*if (sDebugOptions.mShowPaths) {
             if (debugCount > 255) debugCount = 0;
@@ -315,11 +315,11 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
             const Tile* tile = world.tryGetTileAtWorldPos(nextPoint.xy);
             assert(tile);
             f32 weight = (tile->getPathWeightNavThread() / 255.0f);
-            const f32 baseZPosition = tile->getBaseZPositionUncompressedThreadSafe();
-            if (baseZPosition >= startBaseZPosition + 2) {
+            const f32 groundZPosition = tile->getGroundZPositionUncompressedThreadSafe();
+            if (groundZPosition >= startgroundZPosition + 2) {
                 // Too tall!
                 pathWeights[i] = 0.0f;
-            } else if (baseZPosition >= startBaseZPosition + 1) {
+            } else if (groundZPosition >= startgroundZPosition + 1) {
                 // Upward
                 pathWeights[i] = weight * 0.5f;
             }

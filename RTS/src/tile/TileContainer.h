@@ -28,7 +28,7 @@ public:
     void clearTileFlags(TileIndex i);
     void clearTileCollisionFlags(TileIndex i);
     void setTilePathWeight(TileIndex i, ui8 weight);
-    void setTileBaseZPosition(TileIndex i, f32 baseZPosition);
+    void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
 
     // =========== Generation ===========
     void setTileFromGeneration(TileIndex i, Tile&& tile) {

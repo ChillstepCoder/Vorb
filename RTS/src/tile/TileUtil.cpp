@@ -14,10 +14,10 @@ IntersectionHit2D TileUtil::tryRayTileIntersect(const Tile& tile, const ui32v2& 
     if (!collider) return IntersectionHit2D();
 
     // TODO: Multiple floors?
-    f32 baseZPosition = tile.getBaseZPositionUncompressedMainThread();
+    f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
     
     // Ground check
-    float zOffset = zOffsetFromTerrain - baseZPosition;
+    float zOffset = zOffsetFromTerrain - groundZPosition;
     if (zOffset < 0.0f) {
         const f32v2 aabbCenter = f32v2(tilePos) + f32v2(0.5f);
         IntersectionHit2D hit = IntersectionUtil::segmentAABBIntersect(start, end - start, aabbCenter, collider->getDimsXy(), f32v2(rayThickness));

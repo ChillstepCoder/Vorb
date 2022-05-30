@@ -127,14 +127,14 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                         tileContainer.addTile(index, TileRepository::getTileData(tileId));
                         //assert(false); // Set building structure pointer
-                        tileContainer.setTileBaseZPosition(index, height);
+                        tileContainer.setTileGroundZPosition(index, height);
 
                         // TERRAIN
                         //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
                         //TileContainer& container = *handle.getMutableContainer();
                         //container.addTile(handle.index, TileRepository::getTileData(tileId));
                         ////assert(false); // Set building structure pointer
-                        //container.setTileBaseZPosition(handle.index, height);
+                        //container.setTileGroundZPosition(handle.index, height);
                     }
                 }
                 ++tileIndex;

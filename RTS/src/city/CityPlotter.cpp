@@ -185,19 +185,19 @@ CityDistrict* CityPlotter::addDistrict(DistrictType type, CityDistrict* parent, 
         // Set AABB using neighbor AABB of parent
         // TODO: Center on roads? Collide with other districts
         switch (randDirection) {
-            case e_cast(Cartesian::DOWN):
+            case e_cast(Cartesian::SOUTH):
                 newDistrict->aabb.x = parent->aabb.x;
                 newDistrict->aabb.y = parent->aabb.y - newDistrict->aabb.depth;
                 break;
-            case e_cast(Cartesian::LEFT):
+            case e_cast(Cartesian::WEST):
                 newDistrict->aabb.x = parent->aabb.x - newDistrict->aabb.width;
                 newDistrict->aabb.y = parent->aabb.y;
                 break;
-            case e_cast(Cartesian::RIGHT):
+            case e_cast(Cartesian::EAST):
                 newDistrict->aabb.x = parent->aabb.x + parent->aabb.width;
                 newDistrict->aabb.y = parent->aabb.y;
                 break;
-            case e_cast(Cartesian::UP):
+            case e_cast(Cartesian::NORTH):
                 newDistrict->aabb.x = parent->aabb.x;
                 newDistrict->aabb.y = parent->aabb.y + parent->aabb.depth;
                 break;
@@ -668,18 +668,18 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
 
     // Adjust neighbor connections
     if (axis == AXIS_HORIZONTAL) {
-        newPlot.setNeighborRoad(Cartesian::UP, plotToSplit.getNeighborRoad(Cartesian::UP));
-        plotToSplit.setNeighborRoad(Cartesian::UP, roadID);
-        newPlot.setNeighborRoad(Cartesian::DOWN, roadID);
-        newPlot.setNeighborRoad(Cartesian::LEFT, plotToSplit.getNeighborRoad(Cartesian::LEFT));
-        newPlot.setNeighborRoad(Cartesian::RIGHT, plotToSplit.getNeighborRoad(Cartesian::RIGHT));
+        newPlot.setNeighborRoad(Cartesian::NORTH, plotToSplit.getNeighborRoad(Cartesian::NORTH));
+        plotToSplit.setNeighborRoad(Cartesian::NORTH, roadID);
+        newPlot.setNeighborRoad(Cartesian::SOUTH, roadID);
+        newPlot.setNeighborRoad(Cartesian::WEST, plotToSplit.getNeighborRoad(Cartesian::WEST));
+        newPlot.setNeighborRoad(Cartesian::EAST, plotToSplit.getNeighborRoad(Cartesian::EAST));
     }
     else {
-        newPlot.setNeighborRoad(Cartesian::RIGHT, plotToSplit.getNeighborRoad(Cartesian::RIGHT));
-        plotToSplit.setNeighborRoad(Cartesian::RIGHT, roadID);
-        newPlot.setNeighborRoad(Cartesian::LEFT, roadID);
-        newPlot.setNeighborRoad(Cartesian::UP, plotToSplit.getNeighborRoad(Cartesian::UP));
-        newPlot.setNeighborRoad(Cartesian::DOWN, plotToSplit.getNeighborRoad(Cartesian::DOWN));
+        newPlot.setNeighborRoad(Cartesian::EAST, plotToSplit.getNeighborRoad(Cartesian::EAST));
+        plotToSplit.setNeighborRoad(Cartesian::EAST, roadID);
+        newPlot.setNeighborRoad(Cartesian::WEST, roadID);
+        newPlot.setNeighborRoad(Cartesian::NORTH, plotToSplit.getNeighborRoad(Cartesian::NORTH));
+        newPlot.setNeighborRoad(Cartesian::SOUTH, plotToSplit.getNeighborRoad(Cartesian::SOUTH));
     }
     return (CityPlotIndex)(mPlots.size() - 1);
 }
@@ -702,27 +702,27 @@ void CityPlotter::tryConnectRoad(CityPlotIndex plotIndex, const ui32AABB2& roadA
         roadAABBCorners[e_cast(CornerWinding::TOP_LEFT)],
         plotAABBCorners[e_cast(CornerWinding::BOTTOM_RIGHT)],
         plotAABBCorners[e_cast(CornerWinding::TOP_RIGHT)])) {
-        plot.setNeighborRoad(Cartesian::RIGHT, roadID);
+        plot.setNeighborRoad(Cartesian::EAST, roadID);
     }
     else if (MathUtil::areParallelSegmentsTouching(
         roadAABBCorners[e_cast(CornerWinding::BOTTOM_RIGHT)],
         roadAABBCorners[e_cast(CornerWinding::TOP_RIGHT)],
         plotAABBCorners[e_cast(CornerWinding::BOTTOM_LEFT)],
         plotAABBCorners[e_cast(CornerWinding::TOP_LEFT)])) {
-        plot.setNeighborRoad(Cartesian::LEFT, roadID);
+        plot.setNeighborRoad(Cartesian::WEST, roadID);
     }
     if (MathUtil::areParallelSegmentsTouching(
         roadAABBCorners[e_cast(CornerWinding::BOTTOM_LEFT)],
         roadAABBCorners[e_cast(CornerWinding::BOTTOM_RIGHT)],
         plotAABBCorners[e_cast(CornerWinding::TOP_LEFT)],
         plotAABBCorners[e_cast(CornerWinding::TOP_RIGHT)])) {
-        plot.setNeighborRoad(Cartesian::UP, roadID);
+        plot.setNeighborRoad(Cartesian::NORTH, roadID);
     }
     else if (MathUtil::areParallelSegmentsTouching(
         roadAABBCorners[e_cast(CornerWinding::TOP_LEFT)],
         roadAABBCorners[e_cast(CornerWinding::TOP_RIGHT)],
         plotAABBCorners[e_cast(CornerWinding::BOTTOM_LEFT)],
         plotAABBCorners[e_cast(CornerWinding::BOTTOM_RIGHT)])) {
-        plot.setNeighborRoad(Cartesian::DOWN, roadID);
+        plot.setNeighborRoad(Cartesian::SOUTH, roadID);
     }
 }

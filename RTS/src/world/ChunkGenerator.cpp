@@ -55,7 +55,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     //if (height > 0.3) {
     //    //tile.groundLayer = rock1;
     //    // Mountains
-    //    tile.baseZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
+    //    tile.groundZPosition = (ui16)((height - 0.3) / 0.004) + 1u;
     //}
     //else if (height < -0.45) {
     //    //tile.groundLayer = water;
@@ -96,11 +96,11 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     //}
 
 
-    tile.baseZPositionCompressed = compressTileZPosition(height);
+    tile.groundZPositionCompressed = compressTileZPosition(height);
     
     // Set all thread safe data to be copies of base
 
-    tile.baseZPositionCompressedThreadSafe = tile.baseZPositionCompressed;
+    tile.groundZPositionCompressedThreadSafe = tile.groundZPositionCompressed;
     tile.groundLayerThreadSafe = tile.groundLayer;
     tile.midLayerThreadSafe = tile.midLayer;
     tile.topLayerThreadSafe = tile.topLayer;
@@ -129,7 +129,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
             f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, worldPosInt2D + ui32v2(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
-            const f32 baseZPos = tile.getBaseZPositionUncompressedThreadSafe();
+            const f32 baseZPos = tile.getGroundZPositionUncompressedThreadSafe();
             if (baseZPos + 1.0f > maxHeight) {
                 maxHeight = baseZPos + 1.0f;
             }

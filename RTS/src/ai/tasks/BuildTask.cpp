@@ -180,7 +180,7 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
     tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
     // Walls have higher base Z position
     if (bpTile.type == BlueprintTileType::WALL) {
-        tiles.setTileBaseZPosition(tileHandle.tileIndex, tileHandle.tile->getBaseZPositionUncompressedMainThread() + 3.0f);
+        tiles.setTileGroundZPosition(tileHandle.tileIndex, tileHandle.tile->getGroundZPositionUncompressedMainThread() + 3.0f);
     }
 
     // Notify blueprint

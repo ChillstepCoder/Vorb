@@ -161,13 +161,13 @@ void TileContainer::setTilePathWeight(TileIndex i, ui8 weight) {
     tile.setPathWeight(weight, readLocked);
 }
 
-void TileContainer::setTileBaseZPosition(TileIndex i, f32 baseZPosition) {
+void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
-    tile.setBaseZPosition(baseZPosition, readLocked);
+    tile.setGroundZPosition(groundZPosition, readLocked);
     if (!readLocked) {
         mDirtyMesh = true;
     }

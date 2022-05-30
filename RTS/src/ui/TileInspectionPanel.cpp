@@ -54,7 +54,7 @@ void TileInspectionPanel::updateAndRender() {
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);
-    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getBaseZPositionUncompressedMainThread());
+    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getGroundZPositionUncompressedMainThread());
     ImGui::Text("ChunkID: %u", ChunkID::fromWorldUI32v2(worldPos));
     ImGui::Separator();
     ImGui::Text("Layers:");

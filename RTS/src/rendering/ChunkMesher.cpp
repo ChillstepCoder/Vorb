@@ -203,7 +203,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                 //  TODO: Multiple world layers
                 TileIndex index = chunk.getTileContainer().getTileIndexFromXYZOffset(x, y, 0);
                 const Tile& tile = chunk.getTileContainer().getTileAt(index);
-                const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
+                const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
                     if (layerTile == TILE_ID_NONE) {
@@ -218,14 +218,14 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         if (tileData.textureMethod == TileTextureMethod::FLORA) {
-                            /*f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.baseZPosition);
+                            /*f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.groundZPosition);
                             Tile rightTile = chunk.getRightTileHandle(index).tile;
                             Tile topTile = chunk.getTopTileHandle(index).tile;
                             addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);*/
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(baseZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
+                            f32 zPosition = glm::max(groundZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }

@@ -119,13 +119,13 @@ void createGrassMesh(
             /*Tile neighbors[8];
             chunk.getTileNeighbors(tileIndex, neighbors);
 
-            const int zPosition = tile.baseZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
+            const int zPosition = tile.groundZPosition + ((spriteData.flags & SPRITEDATA_FLAG_OPAQUE) ? 1 : 0);
             const int bottomHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::BOTTOM], layerIndex);
             const int topHeightDiff = zPosition - getTileHeight(neighbors[(int)NeighborIndex::TOP], layerIndex);*/
 
             // Allow overlap when adjacent tiles are the same
-            //const float rightXMult = (rightTile.baseZPosition != tile.baseZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
-            //const float topXMult = (topTile.baseZPosition != tile.baseZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
+            //const float rightXMult = (rightTile.groundZPosition != tile.groundZPosition || tileId != rightTile.layers[layerIndex]) ? 1.0f : 0.0f;
+            //const float topXMult = (topTile.groundZPosition != tile.groundZPosition || tileId != topTile.layers[layerIndex]) ? 1.0f : 0.0f;
 
             // Handle variant UVs
             constexpr int NUM_GRASS_TYPES = 4;

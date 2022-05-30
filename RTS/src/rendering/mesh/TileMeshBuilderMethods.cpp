@@ -171,15 +171,15 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
 
-    const f32 baseZPosition = tile.getBaseZPositionUncompressedThreadSafe();
-    const f32v3 tilePos(tileXY.x, tileXY.y, baseZPosition);
+    const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
+    const f32v3 tilePos(tileXY.x, tileXY.y, groundZPosition);
 
     /*TileHandle neighbors[4];
     chunk.getTileNeighbors4(tileHandle.index, neighbors);*/
 
     // Get height offsets to adjacent tiles
-    //const f32 zPosition = tile.baseZPosition; // Dont check terrain here, assume above // TODO: make sure this is right
-    const f32 heightDiff = baseZPosition - floorBaseHeight;
+    //const f32 zPosition = tile.groundZPosition; // Dont check terrain here, assume above // TODO: make sure this is right
+    const f32 heightDiff = groundZPosition - floorBaseHeight;
     f32 heightDiffs[4];
     // f32 occluderHeight
     // TODO: Fix this
@@ -187,10 +187,10 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
         heightDiffs[i] = heightDiff;
     }
     // Old culling
-    /*heightDiffs[(int)NeighborIndex4::BOTTOM] = baseZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::BOTTOM]);
-    heightDiffs[(int)NeighborIndex4::LEFT] = baseZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::LEFT]);
-    heightDiffs[(int)NeighborIndex4::RIGHT] = baseZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::RIGHT]);
-    heightDiffs[(int)NeighborIndex4::TOP] = baseZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::TOP]);*/
+    /*heightDiffs[(int)NeighborIndex4::BOTTOM] = groundZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::BOTTOM]);
+    heightDiffs[(int)NeighborIndex4::LEFT] = groundZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::LEFT]);
+    heightDiffs[(int)NeighborIndex4::RIGHT] = groundZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::RIGHT]);
+    heightDiffs[(int)NeighborIndex4::TOP] = groundZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::TOP]);*/
 
     // Render top
     meshBuilder.addAxisAlignedQuad(
@@ -310,10 +310,10 @@ void TileMeshBuilderMethods::addFloorTerrainAligned(MeshBuilder& meshBuilder, f3
 //    const TileID tileId = neighbor.getLayersThreadSafe(TILE_FLOOR_GROUND)[TILE_LAYER_GROUND];
 //    if (tileId != TILE_ID_NONE) {
 //        //const TileData& tileData = TileRepository::getTileData(tileId);
-//        height = neighbor.getBaseZPositionUncompressedThreadSafe(floor);
+//        height = neighbor.getGroundZPositionUncompressedThreadSafe(floor);
 //        // Transparent tiles do not count
 //      /*  if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
-//            height = neighbor.getBaseZPositionUncompressedThreadSafe();
+//            height = neighbor.getGroundZPositionUncompressedThreadSafe();
 //        }*/
 //    }
 //    return glm::max(height, mWorldGrid.computeMinHeightAtTile(heightData, tilePos));
@@ -326,10 +326,10 @@ void TileMeshBuilderMethods::addFloorTerrainAligned(MeshBuilder& meshBuilder, f3
 //    if (tileId != TILE_ID_NONE) {
 //        /* const TileData& tileData = TileRepository::getTileData(tileId);
 //         const SpriteData& spriteData = tileData.spriteData;*/
-//        height = tile.getBaseZPositionUncompressedThreadSafe(floor);
+//        height = tile.getGroundZPositionUncompressedThreadSafe(floor);
 //        // Transparent tiles appear to be 1 tile lower
 //        /*if (!(spriteData.flags & SPRITEDATA_FLAG_TRANSPARENT)) {
-//            height = tile.getBaseZPositionUncompressedThreadSafe();
+//            height = tile.getGroundZPositionUncompressedThreadSafe();
 //        }*/
 //    }
 //    return glm::max(height, mWorldGrid.computeMinHeightAtTile(TilePosition(neighbor.chunk->getChunkID(), neighbor.index)));

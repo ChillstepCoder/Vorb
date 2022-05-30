@@ -35,7 +35,7 @@ struct BuildingBlueprint {
 
     const BuildingDef& desc;
     float sizeAlpha;
-    Cartesian entrySide = Cartesian::LEFT;
+    Cartesian entrySide = Cartesian::WEST;
     ui32AABB2 aabb;
     ui32 floorCount = 1u;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
