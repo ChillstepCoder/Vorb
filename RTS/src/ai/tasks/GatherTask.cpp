@@ -34,7 +34,7 @@ GatherTask::~GatherTask() {
     // Clear tile flag on abort
     if (!IS_SHUTTING_DOWN) {
         if (mState <= GatherTaskState::HARVESTING) {
-            mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+            mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
         }
     }
 }
@@ -147,7 +147,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
             TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
             tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
-            tileRef->container->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
+            tileRef->container->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
             // TODO: Play animation of tree falling
 
             // Award loot
@@ -240,7 +240,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
 
 void GatherTask::failTask() {
     if (mState <= GatherTaskState::HARVESTING) {
-        mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.index, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+        mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
         mState = GatherTaskState::FAIL;
     }
     mItemPromise = nullptr;

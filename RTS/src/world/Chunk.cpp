@@ -169,9 +169,9 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 		if (bottom.isValid()) {
             Chunk& bottomChunk = mWorldGrid->getChunk(ChunkID::fromWorldUI32v2(bottom.getWorldPos2D()));
 			neighbors[(int)NeighborIndex8::BOTTOM] = *bottom.tile;
-			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.index);
+			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = *bottomLeft.tile;
-            TileHandle bottomRight = bottomChunk.getRightTileHandle(bottom.index);
+            TileHandle bottomRight = bottomChunk.getRightTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_RIGHT] = *bottomRight.tile;
 		}
 	}
@@ -187,9 +187,9 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
         if (top.isValid()) {
             Chunk& topChunk = mWorldGrid->getChunk(ChunkID::fromWorldUI32v2(top.getWorldPos2D()));
             neighbors[(int)NeighborIndex8::TOP] = *top.tile;
-            TileHandle topLeft = topChunk.getLeftTileHandle(top.index);
+            TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;
-            TileHandle topRight = topChunk.getRightTileHandle(top.index);
+            TileHandle topRight = topChunk.getRightTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_RIGHT] = *topRight.tile;
         }
     }

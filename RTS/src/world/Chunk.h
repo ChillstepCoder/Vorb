@@ -48,7 +48,7 @@ struct ChunkRenderData {
 };
 
 typedef TinyThreadsafeVector<Structure*> ChunkStructureVector;
-typedef std::pair<Structure*const*, ui16> StructureArrayPtr;
+typedef std::pair<Structure*const *, ui16> StructureArrayPtr;
 
 enum class NeighborIndex4 {
 	BOTTOM = 0,

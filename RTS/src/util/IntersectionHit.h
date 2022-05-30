@@ -31,7 +31,7 @@ struct IntersectionHit3D {
 };
 
 struct TerrainPickData {
-    ui32 id;
+    ui32 heightmapDataIndex;
     const f32* heightData;
     f32 height;
     ui32 cornerIndex;

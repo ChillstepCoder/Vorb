@@ -4,8 +4,8 @@
 
 class TileContainer
 {
-    friend class TileRef;
-    friend class TileHandle;
+    friend struct TileRef;
+    friend struct TileHandle;
 public:
     TileContainer() = default;
     ~TileContainer() = default;

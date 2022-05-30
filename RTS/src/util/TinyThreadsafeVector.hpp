@@ -36,7 +36,7 @@ template <typename T>
 void TinyThreadsafeVector<T>::copyThreadData() {
     assert(IS_MAIN_THREAD() && mIsQueuedWorkerThreadCopy);
     mWorkerThreadData = std::unique_ptr<T[]>(new T[mMainThreadDataSize]);
-    memcpy(*mWorkerThreadData, *mMainThreadData, mMainThreadData * sizeof(T));
+    memcpy(mWorkerThreadData.get(), mMainThreadData.get(), mMainThreadDataSize * sizeof(T));
     mIsQueuedWorkerThreadCopy = false;
 }
 
@@ -63,15 +63,15 @@ void TinyThreadsafeVector<T>::addInternal(std::unique_ptr<T[]>& dataArray, ui16&
         // Resize the array and copy data
         std::unique_ptr<T[]> newArray(new T[size + 1]);
         for (ui16 i = 0; i < size; ++i) {
-            newArray[i] = size[i];
+            newArray.get()[i] = dataArray[i];
         }
-        (*newArray)[size] = val;
+        newArray.get()[size] = val;
         ++size;
         dataArray = std::move(newArray);
     }
     else {
         dataArray = std::unique_ptr<T[]>(new T[1]);
         size = 1;
-        (*dataArray)[0] = val;
+        dataArray[0] = val;
     }
 }

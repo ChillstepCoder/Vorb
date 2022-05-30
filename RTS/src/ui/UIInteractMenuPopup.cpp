@@ -84,6 +84,19 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
                 break;
             }
 
+            // Structure list
+            ++optionCount;
+            TileHandle handle = mWorldObjectQuery.getTileHandle();
+            Chunk& chunk = world.getChunk(handle.getChunkIDAtPos());
+            StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
+            if (structures.second) {
+                nextState = UIInteractMenuState::SELECTED_STRUCTURE_LIST;
+                if (ImGui::Button("Structures")) {
+                    mState = nextState;
+                    break;
+                }
+            }
+
             if (optionCount == 0) {
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
             }
@@ -136,15 +149,53 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             }
             break;
         }
+        case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
+            ImGui::Begin("Structures", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            TileHandle handle = mWorldObjectQuery.getTileHandle();
+            Chunk& chunk = world.getChunk(handle.getChunkIDAtPos());
+            StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
+            if (!structures.second) {
+                // If we got here the structure  was deleted while we had it selected
+                resultFlags = INTERACT_MENU_RESULT_INVALID;
+            }
+            else {
+                for (ui16 i = 0; i < structures.second; ++i) {
+                    Structure* structure = structures.first[i];
+                    if (structure->getType() == StructureType::Building) {
+                        nString name = "Building " + std::to_string(i);
+                        if (ImGui::Button(name.c_str())) {
+                            mState = UIInteractMenuState::SELECTED_STRUCTURE;
+                            mSelectedStructure = structure;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case UIInteractMenuState::SELECTED_STRUCTURE: {
+            if (mSelectedStructure->getType() == StructureType::Building) {
+                Building* building = static_cast<Building*>(mSelectedStructure);
+                ImGui::Text("Select room");
+                const std::vector<RoomNode>& roomGraph = building->getRoomGraph();
+                for (size_t i = 0; i < roomGraph.size(); ++i) {
+                    const RoomNode& room = roomGraph[i];
+                    room.roomDef->id;
+                    if (ImGui::Button(std::to_string(i).c_str())) {
+                        assert(false);
+                    }
+                }
+            }
+            break;
+        }
         default:
             assert(false);
             break;
 
     }
-    static_assert(INTERACT_MENU_RESULT_COUNT == 10, "update");
-    static_assert(e_cast(UIInteractMenuState::COUNT) == 4, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
+    static_assert(e_cast(UIInteractMenuState::COUNT) == 6, "update");
 
     ImGui::End();
-
+    // TODO: Why are these flags? Use bitflags?
     return static_cast<UIInteractMenuResultFlags>(resultFlags);
 }

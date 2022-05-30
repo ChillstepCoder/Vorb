@@ -161,7 +161,7 @@ void GameplayScreen::build() {
             mRightClickTimer.start();
             TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
             if (pickData.hit.didHit()) {
-                mRightClickPickId = pickData.id;
+                mRightClickPickId = pickData.heightmapDataIndex;
             }
             else {
                 mRightClickPickId = UINT32_MAX;
@@ -250,7 +250,7 @@ void GameplayScreen::build() {
                 else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                     TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
                     if (pickData.hit.didHit()) {
-                        if (pickData.id == mRightClickPickId) {
+                        if (pickData.heightmapDataIndex == mRightClickPickId) {
                             f32v2 worldPos = f32v2(pickData.hit.position.x, pickData.hit.position.y);
                             WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
                             // Right click picking
@@ -410,28 +410,28 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
 			// TODO: HANDLE RACE CONDITION
             if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.index, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
+                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
             }
         }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
             // grass
             TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
             if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
+                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
             }
         }
         else if (result & INTERACT_MENU_RESULT_INSPECT) {
@@ -461,9 +461,12 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
 			mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
-
+            assert(false);
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 10, "update");
+        else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_ROOM) {
+            assert(false);
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
 
         // If we had a result, close window
         if (result) {

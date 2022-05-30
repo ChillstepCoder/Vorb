@@ -275,6 +275,7 @@
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\structure\Structure.cpp" />
+    <ClCompile Include="src\structure\StructureManager.cpp" />
     <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\tile\Tile.cpp" />
     <ClCompile Include="src\tile\TileContainer.cpp" />

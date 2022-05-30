@@ -177,10 +177,10 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
     const ui32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
     TileHandle tileHandle = world.getTileHandleAtWorldPos(worldPos);
     TileContainer& tiles = *tileHandle.getMutableContainer();
-    tiles.setTileLayer(tileHandle.index, (TileLayer)tileData.layer, tileId);
+    tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
     // Walls have higher base Z position
     if (bpTile.type == BlueprintTileType::WALL) {
-        tiles.setTileBaseZPosition(tileHandle.index, tileHandle.tile->getBaseZPositionUncompressedMainThread() + 3.0f);
+        tiles.setTileBaseZPosition(tileHandle.tileIndex, tileHandle.tile->getBaseZPositionUncompressedMainThread() + 3.0f);
     }
 
     // Notify blueprint

@@ -43,6 +43,7 @@ public:
     // TODO: Boost allocator
 
     const BitArray& getInteriorTilesInAABB() const { return mInteriorTilesInAABB; }
+    const std::vector<RoomNode>& getRoomGraph() const { return mGraph; }
 
 private:
    

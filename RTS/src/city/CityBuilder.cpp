@@ -55,6 +55,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
 
 Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
 
+    PreciseTimer timer;
     const ui32v2& worldPos = bp.aabb.pos;
 
     static f32 BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
@@ -95,8 +96,10 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     aabb.height = bp.floorCount * floorHeight;
 
     // Allocate the building
+    //PreciseTimer timer;
     Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, aabb, floorHeight));
     newBuilding->mInteriorTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y * bp.floorCount);
+    //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
@@ -144,6 +147,9 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     newBuilding->mGraph = std::move(bp.rooms);
     newBuilding->mFunction = bp.desc.function;
     newBuilding->mPlotIndex = bp.plotIndex;
+
+    std::cout << "DebugBuildInstant " << timer.stop() << " ms\n";
+
     return newBuilding;
 }
 
@@ -160,7 +166,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = mWorld.getTileHandleAtWorldPos(xy);
-            handle.getMutableContainer()->addTile(handle.index, TileRepository::getTileData(tileId));
+            handle.getMutableContainer()->addTile(handle.tileIndex, TileRepository::getTileData(tileId));
         }
     }
 }

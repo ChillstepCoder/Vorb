@@ -8,7 +8,7 @@ class TileContainer;
 struct TileHandle {
 
     TileHandle() {};
-    TileHandle(const TileContainer* container, TileIndex index);
+    TileHandle(const TileContainer* container, TileIndex tileIndex);
 
     bool isValid() const { return container != nullptr; }
     TileContainer* getMutableContainer() { assert(IS_MAIN_THREAD());  return const_cast<TileContainer*>(container); }
@@ -18,14 +18,14 @@ struct TileHandle {
 
     TileHandle& operator=(const TileHandle& other) {
         container = other.container;
-        const_cast<TileIndex&>(index) = other.index;
+        const_cast<TileIndex&>(tileIndex) = other.tileIndex;
         tile = other.tile;
         return *this;
     }
 
     const TileContainer* container = nullptr;
     const Tile* tile = nullptr;
-    const TileIndex index = INVALID_TILE_INDEX;
+    const TileIndex tileIndex = INVALID_TILE_INDEX;
 };
 static_assert(sizeof(TileHandle) == 24, "Keep small as possible");
 

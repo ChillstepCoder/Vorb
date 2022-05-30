@@ -1,6 +1,7 @@
 #pragma once
 
 struct SDL_Window;
+class Structure;
 
 #include "world/WorldObjectQuery.h"
 
@@ -14,8 +15,9 @@ enum UIInteractMenuResultFlags : ui32 {
     INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD = 1 << 6,
     INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK = 1 << 7,
     INTERACT_MENU_RESULT_DEBUG_KILL_AGENT  = 1 << 8,
-    INTERACT_MENU_RESULT_INVALID           = 1 << 9,
-    INTERACT_MENU_RESULT_COUNT             = 10
+    INTERACT_MENU_RESULT_DEBUG_PATH_ROOM = 1 << 9,
+    INTERACT_MENU_RESULT_INVALID           = 1 << 10,
+    INTERACT_MENU_RESULT_COUNT             = 11
 };
 
 enum class UIInteractMenuState {
@@ -23,6 +25,8 @@ enum class UIInteractMenuState {
     SELECTED_TILE,
     SELECTED_STOCKPILE,
     SELECTED_AGENT,
+    SELECTED_STRUCTURE_LIST,
+    SELECTED_STRUCTURE,
     COUNT
 };
 
@@ -42,5 +46,6 @@ private:
     SDL_Window* mWindow;
     WorldObjectQuery mWorldObjectQuery;
     UIInteractMenuState mState = UIInteractMenuState::SELECT_OBJECT;
+    Structure* mSelectedStructure = nullptr;
 };
 
