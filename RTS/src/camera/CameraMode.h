@@ -6,5 +6,6 @@ enum class CameraMode {
     MOUSELOCK,
     MMO,
     FREE_LOOK,
+    FIRST_PERSON,
     COUNT
 };

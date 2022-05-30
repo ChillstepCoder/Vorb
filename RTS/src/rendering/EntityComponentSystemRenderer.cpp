@@ -11,6 +11,7 @@
 #include "rendering/CharacterRenderer.h"
 #include "rendering/LightRenderer.h"
 #include "DebugRenderer.h"
+#include "options/DebugOptions.h"
 #include "rendering/CityDebugRenderer.h"
 
 #include <Vorb/utils.h>
@@ -75,7 +76,11 @@ void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& ren
 	
     auto& ecs = mWorld.getECS();
 	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent, LocomotionComponent>().each([&](auto& physCmp, auto& modelCmp, auto& motionCmp) {
-		// TODO: Common?
+		// When in first person dont render player model
+		if (modelCmp.mIsPlayer && sDebugOptions.mCameraMode == CameraMode::FIRST_PERSON) {
+			return;
+        }
+        // TODO: Common?
 		renderer.addModel(camera, modelCmp, physCmp, motionCmp, elapsedSec, frameAlpha, materialRenderer);
 	});
 	renderer.renderBatch(camera, materialRenderer);

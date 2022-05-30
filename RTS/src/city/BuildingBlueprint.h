@@ -7,6 +7,7 @@ enum class BlueprintTileType : ui8 {
     FLOOR_1 = 1, // THIS SHOULD ALWAYS BE 1
     DOOR    = 2,
     WALL    = 3,
+    STAIRS  = 4,
     TYPES   = 4
 };
 static_assert(int(BlueprintTileType::TYPES) < 1 << 6);

@@ -113,6 +113,9 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
     // placeHallwayDoors
     placeDoors(*bPtr, visLog);
 
+    // Stairs
+    placeStairs(*bPtr, visLog);
+
     // Furniture
 
     // Flooring
@@ -1268,6 +1271,23 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
                 doorBfs(bfs, bfsBackIndex, bp, RoomWallOuterDir::TOP, node.index, room, pos, visited, isConnected, canConnectToOutside, visLog);
             }
             ++bfsFrontIndex;
+        }
+    }
+}
+
+void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* visLog) {
+    if (visLog) visLog->nextStep("Place stairs");
+    for (auto&& room : bp.rooms) {
+        for (int i = 0; i < room.numChildren; ++i) {
+            RoomNode& child = bp.rooms[room.childRooms[i]];
+            if (child.floorIndex == room.floorIndex + 1) {
+                // We require stairs! Find best AABB for stairs
+                if (visLog) {
+                    visLog->addWireQuad(f32v3(room.offsetFromZero.x, room.offsetFromZero.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 1.0f, 0.0, 1.0f));
+                    visLog->addWireQuad(f32v3(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 0.0f, 1.0, 1.0f));
+                }
+
+            }
         }
     }
 }

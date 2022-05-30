@@ -34,6 +34,7 @@ private:
     static void placeFacadeWalls(BuildingBlueprint& bp, VisualLog* visLog);
     static void placeInteriorWalls(BuildingBlueprint& bp, VisualLog* visLog);
     static void placeDoors(BuildingBlueprint& bp, VisualLog* visLog);
+    static void placeStairs(BuildingBlueprint& bp, VisualLog* visLog);
 
     static void postProcessBlueprint(BuildingBlueprint& bp);
 

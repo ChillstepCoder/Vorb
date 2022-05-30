@@ -47,10 +47,13 @@ void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
         case CameraMode::FREE_LOOK:
             updateCameraFreeLookMode(frameAlpha, gameTime.deltaTime);
             break;
+        case CameraMode::FIRST_PERSON:
+            updateCameraFirstPersonMode(frameAlpha);
+            break;
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 5, "Add new mode functionality");
+    static_assert(e_cast(CameraMode::COUNT) == 6, "Add new mode functionality");
 
     // Update camera itself
     mCamera.update();
@@ -93,11 +96,16 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         case CameraMode::FREE_LOOK:
             vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputFreeLookMode);
             break;
+        case CameraMode::FIRST_PERSON:
+            vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputFirstPersonMode);
+            mWindow.setRelativeMouseMode(false);
+            mIsMouseHidden = false;
+            break;
         case CameraMode::NONE:
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 5, "Update any input unregister");
+    static_assert(e_cast(CameraMode::COUNT) == 6, "Update any input unregister");
 
     // Switch our camera mode
     mCameraMode = cameraMode;
@@ -119,11 +127,16 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         case CameraMode::FREE_LOOK:
             vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputFreeLookMode);
             break;
+        case CameraMode::FIRST_PERSON:
+            vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputFirstPersonMode);
+            mIsMouseHidden = true;
+            mLastMousePositionBeforeRelative = i32v2(mWindow.getWidth() * 0.5f, mWindow.getHeight() * 0.5f);
+            break;
         case CameraMode::NONE:
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 5, "Update any input register");
+    static_assert(e_cast(CameraMode::COUNT) == 6, "Update any input register");
 
 }
 
@@ -154,8 +167,6 @@ void CameraController::updateCameraCartesianMode(f32 frameAlpha) {
     // Position tweener causes juttering
     //mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z + f32v3(0.0f, 0.0f, playerZPos));
     mCamera.setPosition(targetPos - lookAtOffset * mCameraPositionTweener.mTarget.z + f32v3(0.0f, 0.0f, followTargetPos.z));
-
-
 
     // Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
     /*const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
@@ -231,6 +242,26 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);*/
 }
 
+void CameraController::updateCameraFirstPersonMode(f32 frameAlpha) {
+    const f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
+    mCamera.setPosition(followTargetPos + f32v3(0.0f, 0.0f, sDebugOptions.mCameraZHeight));
+
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
+        mIsMouseHidden = false;
+    }
+
+    if (mIsMouseHidden != mWasMouseHidden) {
+        if (mIsMouseHidden) {
+            mWindow.setRelativeMouseMode(true);
+        }
+        else {
+            mWindow.setRelativeMouseMode(false);
+            mWindow.warpMouse(mLastMousePositionBeforeRelative.x, mLastMousePositionBeforeRelative.y);
+        }
+        mWasMouseHidden = mIsMouseHidden;
+    }
+}
+
 void CameraController::updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt) {
     mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + evnt.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_ZOOM_RANGE.x, CAMERA_ZOOM_RANGE.y);
 }
@@ -248,6 +279,13 @@ void CameraController::updateMouseMotionInputFreeLookMode(Sender s, const vui::M
 
 void CameraController::updateMouseMotionInputMMOMode(Sender s, const vui::MouseMotionEvent& evnt) {
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
+        constexpr f32 ROTATE_SPEED = 0.002f;
+        mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
+    }
+}
+
+void CameraController::updateMouseMotionInputFirstPersonMode(Sender s, const vui::MouseMotionEvent& evnt) {
+    if (mIsMouseHidden) {
         constexpr f32 ROTATE_SPEED = 0.002f;
         mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
     }

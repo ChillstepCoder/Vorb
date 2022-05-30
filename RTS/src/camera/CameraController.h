@@ -44,12 +44,14 @@ private:
     void updateCameraCartesianMode(f32 frameAlpha);
     void updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime);
     void updateCameraMMOMode(f32 frameAlpha);
+    void updateCameraFirstPersonMode(f32 frameAlpha);
 
     // Delegates
     void updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt);
     void updateMouseWheelInputMMOMode(Sender s, const vui::MouseWheelEvent& evnt);
     void updateMouseMotionInputFreeLookMode(Sender s, const vui::MouseMotionEvent& evnt);
     void updateMouseMotionInputMMOMode(Sender s, const vui::MouseMotionEvent& evnt);
+    void updateMouseMotionInputFirstPersonMode(Sender s, const vui::MouseMotionEvent& evnt);
     void updateKeyInputCartesianMode(Sender sender, const vui::KeyEvent& evnt);
     void updateMouseButtonDownInputMMO(Sender s, const vui::MouseButtonEvent& evnt);
     void updateMouseButtonUpInputMMO(Sender s, const vui::MouseButtonEvent& evnt);

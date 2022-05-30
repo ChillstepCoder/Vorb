@@ -66,6 +66,8 @@ struct CharacterModelComponent {
     AnimState mAnimState;
     f32 mFootstepAlpha;
     LocomotionMode mPrevLocomotionMode = LocomotionMode::IDLE;
+    // TODO: Flags
+    bool mIsPlayer = true;
 
     void init(const ModelDef* model);
     void setAnimTrackWeight(AnimMachineState currentState, f32 weightScale);

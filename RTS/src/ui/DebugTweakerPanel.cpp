@@ -285,7 +285,10 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         if (ImGui::RadioButton("MMO", sDebugOptions.mCameraMode == CameraMode::MMO)) {
             sDebugOptions.mCameraMode = CameraMode::MMO;
         }
-        static_assert(e_cast(CameraMode::COUNT) == 5, "Update options");
+        if (ImGui::RadioButton("First Person", sDebugOptions.mCameraMode == CameraMode::FIRST_PERSON)) {
+            sDebugOptions.mCameraMode = CameraMode::FIRST_PERSON;
+        }
+        static_assert(e_cast(CameraMode::COUNT) == 6, "Update options");
         ImGui::PopID();
     }
     
