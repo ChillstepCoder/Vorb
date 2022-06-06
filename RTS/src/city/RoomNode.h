@@ -2,8 +2,10 @@
 
 struct RoomDef;
 
+#include "util/GridEdge.h"
+
 // Describes initial four walls
-enum class RoomWallOuterDir {
+enum class RoomBorderOuterDir {
     LEFT,
     TOP,
     RIGHT,
@@ -11,12 +13,12 @@ enum class RoomWallOuterDir {
 };
 
 // Describes a building graph
-struct RoomWall {
+struct RoomBorder {
     i16v2 startPos;
     i16v2 endPos;
-    RoomWall* startAdjacent;
-    RoomWall* endAdjacent;
-    RoomWallOuterDir outerDir;
+    RoomBorder* startAdjacent;
+    RoomBorder* endAdjacent;
+    RoomBorderOuterDir outerDir;
     ui8 length;
 };
 
@@ -31,7 +33,9 @@ struct RoomNode {
     RoomNodeID childRooms[MAX_CHILD_ROOMS]; // Connected via door or stairs, max of 4
     RoomGateInfo adjacentRooms[MAX_ADJACENT_ROOMS]; // Like child rooms, connected via door or open wall, but is not necessarily a direct child
     RoomNodeID id = INVALID_ROOM_ID;
-    RoomWall walls[MAX_WALLS_PER_ROOM]; // Starts at bottommost + leftmost, wall corner and proceeds in +y direction, then x,y,x,y,x, ect...
+    RoomBorder borders[MAX_WALLS_PER_ROOM]; // Starts at bottommost + leftmost, wall corner and proceeds in +y direction, then x,y,x,y,x, ect...
+    std::vector<GridEdge> interiorEdges;
+    std::vector<TileIndex> edgeWalk;
     ui32AABB2 aabb = { 0 };
     ui16v2 offsetFromZero;
     ui16 size = 0;

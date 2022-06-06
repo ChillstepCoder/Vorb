@@ -287,6 +287,7 @@
     <ClCompile Include="src\ui\UIContext.cpp" />
     <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
+    <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
@@ -478,6 +479,8 @@
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\BitArray.h" />
     <ClInclude Include="src\util\BitFlags.h" />
+    <ClInclude Include="src\util\GridEdge.h" />
+    <ClInclude Include="src\util\GridEdgeFinder.h" />
     <ClInclude Include="src\util\IntersectionHit.h" />
     <ClInclude Include="src\util\IntersectionUtil.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />

@@ -20,6 +20,8 @@
 #include "resources/TileRepository.h"
 #include "rendering/mesh/TileMeshBuilderMethods.h"
 
+#include "util/GridEdgeFinder.h"
+
 constexpr f32 ROOF_THICKNESS = 0.04f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3
@@ -98,50 +100,6 @@ enum Corners {
     CORNER_BOTTOM_RIGHT = 3
 };
 
-BuildingMesher::BuildingMesher() {
-    // Zero table
-    for (ui32 i = 0; i < ROOF_VERTEX_CORNER_TABLE_SIZE; ++i) {
-        mCornerNextEdgeLookupTable[i] = Cartesian::INVALID;
-    }
-    // Set up corners shapes, we move counter clockwise always
-    // 0 1
-    // 0 0
-    mCornerNextEdgeLookupTable[0b0100] = Cartesian::SOUTH;
-    mCornerTypeLookupTable[0b0100] = CornerWinding::TOP_RIGHT;
-    // 1 0
-    // 1 1
-    mCornerNextEdgeLookupTable[0b1011] = Cartesian::EAST;
-    mCornerTypeLookupTable[0b1011] = CornerWinding::BOTTOM_LEFT;
-    // 1 0
-    // 0 0
-    mCornerNextEdgeLookupTable[0b1000] = Cartesian::EAST;
-    mCornerTypeLookupTable[0b1000] = CornerWinding::TOP_LEFT;
-    // 0 1
-    // 1 1
-    mCornerNextEdgeLookupTable[0b0111] = Cartesian::NORTH;
-    mCornerTypeLookupTable[0b0111] = CornerWinding::BOTTOM_RIGHT;
-    // 0 0
-    // 1 0
-    mCornerNextEdgeLookupTable[0b0010] = Cartesian::NORTH;
-    mCornerTypeLookupTable[0b0010] = CornerWinding::BOTTOM_LEFT;
-    // 1 1
-    // 0 1
-    mCornerNextEdgeLookupTable[0b1101] = Cartesian::WEST;
-    mCornerTypeLookupTable[0b1101] = CornerWinding::TOP_RIGHT;
-    // 0 0
-    // 0 1
-    mCornerNextEdgeLookupTable[0b0001] = Cartesian::WEST;
-    mCornerTypeLookupTable[0b0001] = CornerWinding::BOTTOM_RIGHT;
-    // 1 1
-    // 1 0
-    mCornerNextEdgeLookupTable[0b1110] = Cartesian::SOUTH;
-    mCornerTypeLookupTable[0b1110] = CornerWinding::TOP_LEFT;
-    // Diagonal edge cases
-    // 1 0
-    // 0 1
-    mCornerNextEdgeLookupTable[0b1001] = Cartesian::NONE;
-    mCornerNextEdgeLookupTable[0b0110] = Cartesian::NONE;
-}
 
 constexpr int MAX_ROOF_VERTICES = 8192;
 thread_local f32v2 sRoofVertices[MAX_ROOF_VERTICES];
@@ -409,7 +367,7 @@ void BuildingMesher::buildMesh(const Building& building) {
         // Generate a list of straight skeletons
 
         if (visLog) visLog->nextStep("Detect walls " + std::to_string(floor));
-        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, mCornerNextEdgeLookupTable, mCornerTypeLookupTable, zPos, visLog);
+        std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, zPos, visLog);
         std::vector<RoofContourEdgeInfo> contourEdges;
         contourEdges.reserve(20);
 
@@ -474,7 +432,7 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
     }
 }
 
-std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, Cartesian* mCornerNextEdgeLookupTable, CornerWinding* mCornerTypeLookupTable, f32 zPos, VisualLog* visLog) {
+std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
     const ui32AABB3& aabb = building.mAABB;
@@ -528,72 +486,20 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
 
             checkedTiles.setBitTo(index, true);
 
-            ui8 corners[4];
-            corners[CORNER_TOP_LEFT] = (cornerPos.x == 0 || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index - 1);
-            corners[CORNER_TOP_RIGHT] = (cornerPos.x == aabb.dims.x || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index);
-            corners[CORNER_BOTTOM_LEFT] = (cornerPos.x == 0 || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - 1 - aabb.dims.x);
-            corners[CORNER_BOTTOM_RIGHT] = (cornerPos.x == aabb.dims.x || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - aabb.dims.x);
-            ui8 code = corners[0] << 3;
-            code |= corners[1] << 2;
-            code |= corners[2] << 1;
-            code |= corners[3];
+            GridCell4x4 gridCell4x4;
+            gridCell4x4.topLeft = (cornerPos.x == 0 || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index - 1);
+            gridCell4x4.topRight = (cornerPos.x == aabb.dims.x || cornerPos.y == aabb.dims.y) ? 0 : ownedTiles.getBit(index);
+            gridCell4x4.bottomLeft = (cornerPos.x == 0 || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - 1 - aabb.dims.x);
+            gridCell4x4.bottomRight = (cornerPos.x == aabb.dims.x || cornerPos.y == 0) ? 0 : ownedTiles.getBit(index - aabb.dims.x);
 
             // TODO: FIX THIS LOGIC
-            if (!code) {
-                assert(code); // Must be nonzero or we walked off the edge
+            if (!gridCell4x4.data) {
+                assert(false && "Must be nonzero or we walked off the edge");
                 return skeletons;
             }
-            Cartesian nextEdge = mCornerNextEdgeLookupTable[code];
-            if (nextEdge == Cartesian::NONE) {
-                //std::cout << "Edge detection failed due to bad corner\n";
-               // assert(false); // NEED TO IMPLEMENT DIAGONAL EDGE DETECT
-
-                // Branch on these special corners based on where we were coming from
-                if (code == 0b1001) {
-                    // 1 0
-                    // 0 1
-                    if (edge == Cartesian::SOUTH) {
-                        nextEdge = Cartesian::EAST;
-                        if (visLog) {
-                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
-                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
-                        }
-                    }
-                    else if (edge == Cartesian::NORTH) {
-                        nextEdge = Cartesian::WEST;
-                        if (visLog) {
-                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
-                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
-                        }
-                    }
-                    else {
-                        assert(false);
-                    }
-                }
-                else {
-                    // 0 1
-                    // 1 0
-                    if (edge == Cartesian::SOUTH) {
-                        nextEdge = Cartesian::WEST;
-                        if (visLog) {
-                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
-                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
-                        }
-                    }
-                    else if (edge == Cartesian::EAST) {
-                        nextEdge = Cartesian::NORTH;
-                        if (visLog) {
-                            const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
-                            visLog->addFilledQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
-                        }
-                    }
-                    else {
-                        assert(false);
-                    }
-                }
-            }
+            Cartesian nextEdge = GridEdgeFinder::getNextEdgeDirFromGrid4x4(gridCell4x4, edge, nullptr);
+            
             if (nextEdge != Cartesian::INVALID) {
-                const CornerWinding winding = mCornerTypeLookupTable[code];
                 assert(edge != nextEdge);
                 edge = nextEdge;
                 // New vertex and connect previous
@@ -603,7 +509,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
             }
             cornerPos += CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[e_cast(edge)];
 
-        } while (cornerPos.x != startX || cornerPos.y != startY);
+        } while ((cornerPos.x != startX || cornerPos.y != startY)/* && edge != Cartesian::SOUTH*/);
 
         sCgalPoly.resize(numRoofVertices);
         for (ui32 i = 0; i < numRoofVertices; ++i) {

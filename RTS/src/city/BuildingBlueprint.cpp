@@ -16,7 +16,7 @@ BuildingBlueprint::BuildingBlueprint(
 
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = 0;
-    tileIDs[e_cast(BlueprintTileType::FLOOR_1)] = TileRepository::getTile("bricks1");
+    tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile("bricks1");
     tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile("door");
     tileIDs[e_cast(BlueprintTileType::WALL)] = TileRepository::getTile("wood_wall_gothic");
     static_assert(e_cast(BlueprintTileType::TYPES) == 4);

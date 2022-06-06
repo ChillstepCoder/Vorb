@@ -26,6 +26,21 @@ void BitArray::resizeAndZero(ui32 numBits) {
     mData.resize((size_t)numBits / BITS_PER_ELEMENT, 0ui8);
 }
 
+void BitArray::setBit(ui32 index) {
+    const ui32 i = index >> 3;
+    const ui8 j = (ui8)(index - (i << 3));
+    static_assert(BITS_PER_ELEMENT == 8);
+    const ui8 bit = ((ui8)1 << j);
+    mData[i] = mData[i] | bit;
+}
+
+void BitArray::clearBit(ui32 index) {
+    const ui32 i = index >> 3;
+    const ui8 j = (ui8)(index - (i << 3));
+    static_assert(BITS_PER_ELEMENT == 8);
+    mData[i] = (mData[i] & (~(1ui8 << j)));
+}
+
 void BitArray::setBitTo(ui32 index, bool val) {
     const ui32 i = index >> 3;
     const ui8 j = (ui8)(index - (i << 3));

@@ -8,6 +8,8 @@ public:
 
     void resize(ui32 numBits);
     void resizeAndZero(ui32 numBits);
+    void setBit(ui32 index);
+    void clearBit(ui32 index);
     void setBitTo(ui32 index, bool val);
     bool getBit(ui32 index) const;
     void zeroAllBits();

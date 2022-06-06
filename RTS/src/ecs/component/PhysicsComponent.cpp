@@ -242,7 +242,7 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
             // TODO: Real Z collision
             constexpr float COLLIDER_HEIGHT = 2.0f;
             if (zOffset > -COLLIDER_HEIGHT || zOffset < aabb.height) {
-                ui32v3 xyzOffset(worldPos.x - aabb.x, worldPos.y - aabb.y, glm::clamp(zOffset, 0.0f, aabb.height - 0.5f));
+                ui32v3 xyzOffset(worldPos.x - aabb.x, worldPos.y - aabb.y, glm::clamp(zOffset, 0.0f, (aabb.height / structure->getTileContainer().getFloorHeight()) - 0.5f));
                 const Tile& tile = structure->getTileContainer().getTileAt(xyzOffset.x, xyzOffset.y, xyzOffset.z);
                 bool TMP = false;
                 resolveCircleTileCollision(tileCenter, &tile, cmp, TMP);

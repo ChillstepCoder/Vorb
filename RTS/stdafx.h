@@ -137,10 +137,10 @@ enum class Cartesian : ui8 {
 };
 constexpr int CARTESIAN_COUNT = 4; 
 constexpr Cartesian CARTESIAN_NEIGHBORS[CARTESIAN_COUNT][2] = {
-    { Cartesian::WEST, Cartesian::EAST }, // DOWN
-    { Cartesian::NORTH, Cartesian::SOUTH }, // LEFT
-    { Cartesian::SOUTH, Cartesian::NORTH }, // RIGHT
-    { Cartesian::EAST, Cartesian::WEST }, // UP
+    { Cartesian::WEST, Cartesian::EAST }, // SOUTH
+    { Cartesian::NORTH, Cartesian::SOUTH }, // WEST
+    { Cartesian::SOUTH, Cartesian::NORTH }, // EAST
+    { Cartesian::EAST, Cartesian::WEST }, // NORTH
 };
 constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
     Cartesian::NORTH,
@@ -149,35 +149,36 @@ constexpr Cartesian CARTESIAN_OPPOSITES[CARTESIAN_COUNT] = {
     Cartesian::SOUTH,
 };
 const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
-    i32v2(0, -1), // DOWN
-    i32v2(-1, 0), // LEFT
-    i32v2(1,  0), // RIGHT
-    i32v2(0,  1), // UP
+    i32v2(0, -1), // SOUTH
+    i32v2(-1, 0), // WEST
+    i32v2(1,  0), // EAST
+    i32v2(0,  1), // NORTH
 };
 const f32v3 CARTESIAN_NORMALS_3D[CARTESIAN_COUNT] = {
-    f32v3(0, -1, 0), // DOWN
-    f32v3(-1, 0, 0), // LEFT
-    f32v3(1,  0, 0), // RIGHT
-    f32v3(0,  1, 0), // UP
+    f32v3(0, -1, 0), // SOUTH
+    f32v3(-1, 0, 0), // WEST
+    f32v3(1,  0, 0), // EAST
+    f32v3(0,  1, 0), // NORTH
 };
 const i32v2 CARTESIAN_EDGE_DIRS_ABS[CARTESIAN_COUNT] = {
-    i32v2(1, 0), // DOWN
-    i32v2(0, 1), // LEFT
-    i32v2(0, 1), // RIGHT
-    i32v2(1, 0), // UP
+    i32v2(1, 0), // SOUTH
+    i32v2(0, 1), // WEST
+    i32v2(0, 1), // EAST
+    i32v2(1, 0), // NORTH
 };
 const i32v2 CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[CARTESIAN_COUNT] = {
-    i32v2(1, 0), // DOWN
-    i32v2(0, -1), // LEFT
-    i32v2(0, 1), // RIGHT
-    i32v2(-1, 0), // UP
+    i32v2(1, 0), // SOUTH
+    i32v2(0, -1), // WEST
+    i32v2(0, 1), // EAST
+    i32v2(-1, 0), // NORTH
 };
 const i32v2 CARTESIAN_EDGE_INDEX_OFFSET_MULTS[CARTESIAN_COUNT] = {
-    i32v2(0, 0), // DOWN
-    i32v2(0, 0), // LEFT
-    i32v2(1, 0), // RIGHT
-    i32v2(0, 1), // UP
+    i32v2(0, 0), // SOUTH
+    i32v2(0, 0), // WEST
+    i32v2(1, 0), // EAST
+    i32v2(0, 1), // NORTH
 };
+
 // Corner winding
 constexpr int CORNER_COUNT = 4;
 enum class CornerWinding {
@@ -380,7 +381,7 @@ typedef GLuint64 TextureHandle;
 
 
 // Runs automatically at program startup
-#define AUTO_RUNTIME_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()
+#define RUNTIME_INIT_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()
 
 
 #endif // stdafx_h__RTS
