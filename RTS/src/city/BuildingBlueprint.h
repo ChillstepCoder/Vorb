@@ -8,7 +8,8 @@ enum class BlueprintTileType : ui8 {
     DOOR    = 2,
     WALL    = 3,
     STAIRS  = 4,
-    TYPES   = 4
+    AIR     = 5,
+    TYPES   = 6
 };
 static_assert(int(BlueprintTileType::TYPES) < 1 << 6);
 
@@ -57,6 +58,6 @@ struct BuildingBlueprint {
     bool isBuilding = false;
     BuildingBlueprintFlags flags = {};
     f32 zPos = 0.0f;
-    f32 floorHeight = 3.0f;
+    ui32 floorHeight = 3;
     // TODO: This is for debug only
 };

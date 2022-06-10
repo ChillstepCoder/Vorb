@@ -63,8 +63,10 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
         0.0f, // FLOOR
         0.0f, // DOOR
         1.0f, // WALL
+        0.0f, // STAIRS
+        0.0f, // AIR
     };
-    static_assert(e_cast(BlueprintTileType::TYPES) == 4);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
 
     // For mean height calc
     BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);

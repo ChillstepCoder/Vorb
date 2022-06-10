@@ -390,6 +390,8 @@ void BuildingMesher::buildMesh(const Building& building) {
     // ========================== Room supports ===============================
     meshRoomSupports(building, meshBuilder, rawWoodTexture);
 
+    // ========================== Stairs ===============================
+    meshStairs(building, meshBuilder, rawWoodTexture);
 
     meshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
 
@@ -931,8 +933,68 @@ void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& mes
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
                     const f32v3 startPos(startX, y + 0.5f, aabb.z + tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
-                    meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v3(boardThickness), rawWoodTexture, 1.0f);
+                    meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v2(boardThickness), rawWoodTexture, 1.0f);
                 }
+            }
+        }
+    }
+}
+
+const i32v2 STAIR_DIR_OFFSETS[CARTESIAN_COUNT] = {
+    i32v2(0, 1), // SOUTH
+    i32v2(1, 0), // WEST
+    i32v2(0, 0), // EAST
+    i32v2(0, 0), // NORTH
+};
+
+const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
+    f32v2(1, 0.25), // SOUTH
+    f32v2(0.25, 1), // WEST
+    f32v2(0.25, 1), // EAST
+    f32v2(1, 0.25), // NORTH
+};
+
+void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+    const ui32AABB3& aabb = building.mAABB;
+    const TileContainer& tileContainer = building.mTileContainer;
+    const ui32 floorStride = aabb.dims.x * aabb.dims.y;
+    // TODO: Dynamic
+    constexpr f32 STAIR_TILE_HEIGHT = 3.0f / 4.0f;
+    constexpr ui32 STEPS_PER_TILE = 4;
+    constexpr f32 heightPerStep = STAIR_TILE_HEIGHT / STEPS_PER_TILE;
+    for (auto& room : building.getRoomGraph()) {
+        const f32 baseHeight = room.floorIndex * building.mTileContainer.getFloorHeight();
+        for (auto& stairPiece : room.stairs) {
+            f32v3 pos = building.mTileContainer.getTileXYZOffset(stairPiece.pos);
+            pos.z *= tileContainer.getFloorHeight();
+            pos.z += aabb.z;
+            meshBuilder.addBoardBetweenPoints(pos, pos + f32v3(0.0f, 0.0f, 0.1f + stairPiece.height), f32v2(0.1f), rawWoodTexture, 1.0f);
+            // Place stair steps
+            const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
+            const Cartesian dir = stairPiece.dir;
+            i32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
+            constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
+            for (i32 step = 0; step < STEPS_PER_TILE; ++step) {
+                const f32 height = pos.z + heightAdd + step * heightPerStep;
+                // Top bit
+                f32v2 cornerPos2D(pos.x + stepDir.x * step * stepWidth, pos.y + stepDir.y * step * stepWidth);
+                cornerPos2D += f32v2(STAIR_DIR_OFFSETS[e_cast(dir)]) - f32v2(STAIR_DIR_OFFSETS[e_cast(dir)]) * 0.25f;
+                const f32v2& stairDims = STAIR_DIR_DIMS[e_cast(dir)];
+                f32v3 pointsTop[4] = {
+                    f32v3(cornerPos2D.x, cornerPos2D.y, height),
+                    f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y, height),
+                    f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y + stairDims.y, height),
+                    f32v3(cornerPos2D.x, cornerPos2D.y + stairDims.y, height),
+                };
+                meshBuilder.addQuadBetweenPoints(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE);
+                // Side bit
+                f32v3 pointsSide[4] = {
+                    f32v3(cornerPos2D.x, cornerPos2D.y, height),
+                    f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y, height),
+                    f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y + stairDims.y, height),
+                    f32v3(cornerPos2D.x, cornerPos2D.y + stairDims.y, height),
+                };
+                meshBuilder.addQuadBetweenPoints(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE);
             }
         }
     }

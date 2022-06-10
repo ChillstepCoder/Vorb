@@ -55,6 +55,7 @@ private:
     void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog);
     void meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
     void meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
+    void meshStairs(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
 
 
 };

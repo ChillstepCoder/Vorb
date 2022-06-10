@@ -27,6 +27,15 @@ struct RoomGateInfo {
     ui32 tileIndex;
 };
 
+struct StairPiece {
+    TileIndex pos;
+    ui16 height;
+    bool isFlatPart : 1;
+    bool isBuilt : 1;
+    bool isReserved : 1;
+    Cartesian dir;
+};
+
 struct RoomNode {
     RoomDefID roomDefId;
     RoomNodeID parentRoom = INVALID_ROOM_ID; // Connected via door or stairs
@@ -36,6 +45,7 @@ struct RoomNode {
     RoomBorder borders[MAX_WALLS_PER_ROOM]; // Starts at bottommost + leftmost, wall corner and proceeds in +y direction, then x,y,x,y,x, ect...
     std::vector<GridEdge> interiorEdges;
     std::vector<TileIndex> edgeWalk;
+    std::vector<StairPiece> stairs;
     ui32AABB2 aabb = { 0 };
     ui16v2 offsetFromZero;
     ui16 size = 0;
@@ -46,5 +56,6 @@ struct RoomNode {
     ui8 numChildren = 0;
     ui8 numAdjacentRooms = 0;
     bool isPrivate = false;
+    bool hasStairs = false;
     const RoomDef* roomDef = nullptr;
 };

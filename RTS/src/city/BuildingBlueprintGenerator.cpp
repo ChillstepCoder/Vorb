@@ -12,6 +12,8 @@
 #include "debugging/VisualLogger.h"
 #include "util/GridEdgeFinder.h"
 
+#include <boost/container/static_vector.hpp>
+
 // For vislog
 constexpr int MAX_ROOM_COLORS = 8;
 constexpr float ROOM_COLOR_ALPHA = 0.2f;
@@ -118,7 +120,9 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
     placeDoors(*bPtr, visLog);
 
     // Stairs
-    placeStairs(*bPtr, visLog);
+    if (!placeStairs(*bPtr, visLog)) {
+        pError("Failed to place stairs!");
+    }
 
     // Furniture
 
@@ -269,7 +273,7 @@ ui16 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
     return maximumChildDepth + 1;
 }
 
-void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 availableWidthSpan, ui16 maxXOffsetPerLayer, ui16v2 currentOffset, VisualLog* visLog) {
+void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 availableWidthSpan, ui32 maxXOffsetPerLayer, ui32v2 currentOffset, const ui32v2& dims2d, VisualLog* visLog) {
     if (node->numChildren == 0) {
         return;
     }
@@ -287,46 +291,72 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
     }
 
     const f32 desiredWidthSpan = vmath::min((f32)totalChildSpan, availableWidthSpan);
-
-    // TODO: Dynamic child Y span based on available space?
-    f32 childWidthSpan = desiredWidthSpan / node->numChildren;
-    f32 widthSegmentSize = childWidthSpan / 2.0f;
-    // Start at the top
-    currentOffset.y -= (ui16)(widthSegmentSize * (node->numChildren - 1));
+    
+    // Place a child above with stairs if possible
     bool didCreateStairs = false;
     for (int i = 0; i < node->numChildren; ++i) {
         RoomNode& child = nodes[node->childRooms[i]];
-        const ui16 childDesiredRadius = child.desiredWidth / 2;
-        
-        ui16 xOffset = vmath::min(maxXOffsetPerLayer, (ui16)(myDesiredRadius + childDesiredRadius));
-        if (xOffset < 1) xOffset = 1;
-
+        child.floorIndex = node->floorIndex;
         // New floor TODO: Random? Statistics?
-        if (!didCreateStairs && node->roomDef->stairsChance && child.roomDef->canStairsConnect && child.desiredWidth >= 3) {
+        if (node->roomDef->stairsChance && child.roomDef->canStairsConnect && child.desiredWidth >= 3) {
             if (Random::getCachedRandomf() > node->roomDef->stairsChance) {
                 didCreateStairs = true;
-                xOffset = 0;
+                node->hasStairs = true;
 
+                child.offsetFromZero = currentOffset;
                 child.floorIndex = node->floorIndex + 1;
                 if (child.floorIndex == bp.floorCount) {
                     ++bp.floorCount;
                 }
+                // Visual log
+                if (visLog) {
+                    const color4& color = ROOM_COLORS[node->childRooms[i] % MAX_ROOM_COLORS];
+                    const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * bp.floorHeight);
+                    visLog->addWireQuad(childPos, f32v2(1.0f), color);
+                    const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
+                    visLog->addLineBetweenPoints(childPos, parentPos, color);
+                }
+                placeChildrenRecursive(bp, &child, dims2d.y, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
+                break;
             }
         }
+    }
 
-        child.offsetFromZero = currentOffset;
-        child.offsetFromZero.x += xOffset;
-        // Visual log
-        if (visLog) {
-            const color4& color = ROOM_COLORS[node->childRooms[i] % MAX_ROOM_COLORS];
-            const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * bp.floorHeight);
-            visLog->addWireQuad(childPos, f32v2(1.0f), color);
-            const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
-            visLog->addLineBetweenPoints(childPos, parentPos, color);
+    const ui8 numChildrenOnSameFloor = node->numChildren - (int)didCreateStairs;
+
+    // TODO: Dynamic child Y span based on available space?
+    // Place any children on same floor
+    if (numChildrenOnSameFloor) {
+        f32 childWidthSpan = desiredWidthSpan / numChildrenOnSameFloor;
+        f32 widthSegmentSize = childWidthSpan / 2.0f;
+        // Start at the top
+        currentOffset.y -= (ui16)(widthSegmentSize * (node->numChildren - 1));
+        for (int i = 0; i < node->numChildren; ++i) {
+            RoomNode& child = nodes[node->childRooms[i]];
+            // If above, continue since we did this already
+            if (child.floorIndex == node->floorIndex + 1) {
+                continue;
+            }
+
+            const ui16 childDesiredRadius = child.desiredWidth / 2;
+
+            ui16 xOffset = vmath::min(maxXOffsetPerLayer, (ui32)(myDesiredRadius + childDesiredRadius));
+            if (xOffset < 1) xOffset = 1;
+
+            child.offsetFromZero = currentOffset;
+            child.offsetFromZero.x += xOffset;
+            // Visual log
+            if (visLog) {
+                const color4& color = ROOM_COLORS[node->childRooms[i] % MAX_ROOM_COLORS];
+                const f32v3 childPos(child.offsetFromZero.x, child.offsetFromZero.y, child.floorIndex * bp.floorHeight);
+                visLog->addWireQuad(childPos, f32v2(1.0f), color);
+                const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
+                visLog->addLineBetweenPoints(childPos, parentPos, color);
+            }
+            assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
+            placeChildrenRecursive(bp, &child, childWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
+            currentOffset.y += widthSegmentSize * 2;
         }
-        assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
-        placeChildrenRecursive(bp, &child, childWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, visLog);
-        currentOffset.y += widthSegmentSize * 2;
     }
 }
 
@@ -353,10 +383,10 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     if (visLog) visLog->nextStep("Place rooms");
     // Breadth first search room placement
     RoomNode* root = &bp.rooms[0];
-    ui16 maximumDepth = getMaximumDepthRecursive(bp.rooms, root);
+    ui32 maximumDepth = getMaximumDepthRecursive(bp.rooms, root);
 
     // Determine which dims to use for cartesian
-    ui16v2 dims;
+    ui32v2 dims;
     switch (bp.entrySide) {
         case Cartesian::SOUTH:
         case Cartesian::NORTH:
@@ -368,15 +398,15 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
             dims = bp.aabb.dims;
             break;
     }
-    const ui16 maxDepthOffsetPerLayer = dims.x / maximumDepth;
+    const ui32 maxDepthOffsetPerLayer = dims.x / maximumDepth;
     f32 availableWidthSpan = dims.y;
     // Place the root, +1 so we are less likely to touch the side of the AABB
-    root->offsetFromZero = i16v2(vmath::min(maxDepthOffsetPerLayer / 2, root->desiredWidth / 2) + 1, dims.y / 2);
+    root->offsetFromZero = i32v2(vmath::min(maxDepthOffsetPerLayer / 2, (ui32)root->desiredWidth / 2) + 1, dims.y / 2);
     if (root->offsetFromZero.x == 0) root->offsetFromZero.x = 1u;
     assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
     // We will generate to the right, then will rotate the coordinates around based on the cartesian
-    placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, visLog);
+    placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, dims, visLog);
 
     // Rotate all coordinates around for Cartesian direction
     // Left is the base case so do nothing for that
@@ -1343,13 +1373,228 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
     std::cout << " LOL " << timer.stop() << std::endl;
 }
 
-void BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* visLog) {
-    if (visLog) visLog->nextStep("Place stairs");
-    for (auto&& room : bp.rooms) {
-        for (auto&& edge : room.interiorEdges) {
+bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
+    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+    if (pos.x > 0 && bp.tiles[index - 1].type == BlueprintTileType::DOOR) {
+        return true;
+    }
+    if (pos.y > 0 && bp.tiles[index - bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
+        return true;
+    }
+    if (pos.x < bp.aabb.dims.x - 1 && bp.tiles[index + 1].type == BlueprintTileType::DOOR) {
+        return true;
+    }
+    if (pos.y < bp.aabb.dims.y - 1 && bp.tiles[index + bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
+        return true;
+    }
+    return false;
+}
 
+bool canPlaceStairsHere(TileIndex index, BuildingBlueprint& bp, RoomNode& child) {
+    const TileIndex aboveIndex = index + bp.aabb.dims.x * bp.aabb.dims.y;
+    if (bp.tiles[index].type == BlueprintTileType::FLOOR &&
+        bp.ownerArray[aboveIndex] == child.id &&
+        bp.tiles[aboveIndex].type == BlueprintTileType::FLOOR &&
+        !tileBlocksDoor(index, bp) && !tileBlocksDoor(aboveIndex, bp)) {
+        return true;
+    }
+    return false;
+}
+
+bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* visLog) {
+    if (visLog) visLog->nextStep("Place stairs");
+
+    boost::container::static_vector<TileIndex, 256> runs;
+    boost::container::static_vector<ui8, 256> runStarts;
+    boost::container::static_vector<ui8, 256> runLengths;
+    boost::container::static_vector<Cartesian, 256> dirs;
+    BitArray usedTiles;
+    usedTiles.resize(bp.aabb.dims.x * bp.aabb.dims.y);
+    for (auto&& room : bp.rooms) {
+        runs.clear();
+        runStarts.clear();
+        runLengths.clear();
+        dirs.clear();
+        usedTiles.zeroAllBits();
+        if (!room.hasStairs) {
+            continue;
+        }
+
+        RoomNode* child = nullptr;
+        for (auto&& id : room.childRooms) {
+            if (bp.rooms[id].floorIndex == room.floorIndex + 1) {
+                child = &bp.rooms[id];
+                break;
+            }
+        }
+        assert(child != nullptr);
+
+        // Find stairs placement runs
+        ui32 currentRunLength = 0;
+        ui32 i = 0;
+        while (true) {
+            const ui32 bitIndex = room.edgeWalk[i];
+            const TileIndex index = bitIndex + room.floorIndex * bp.aabb.dims.x * bp.aabb.dims.y;
+            // Valid stair placement?
+            if (currentRunLength < room.edgeWalk.size() && canPlaceStairsHere(index, bp, *child) &&
+                (currentRunLength == 0 || index != runs.back() /*make sure we dont double back*/)) {
+                // New run?
+                if (currentRunLength == 0) {
+                    if (usedTiles.getBit(bitIndex)) {
+                        // If this is a brand new run on an already used tile, were done
+                        assert(runStarts.size() == runLengths.size());
+                        break; // <== LOOP EXIT
+                    }
+                    else {
+                        // Begin new run
+                        runStarts.push_back(runs.size());
+                    }
+                }
+                runs.push_back(index);
+                ++currentRunLength;
+                if (visLog) {
+                    const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+                    visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.25f));
+                }
+            }
+            else {
+                if (currentRunLength) {
+                    runLengths.push_back(currentRunLength);
+                } else if (usedTiles.getBit(bitIndex)) {
+                    assert(runStarts.size() == runLengths.size());
+                    break; // <== LOOP EXIT
+                }
+                currentRunLength = 0;
+                if (visLog) {
+                    const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.7f, 0.0f, 0.0f, 0.9f));
+                }
+            }
+            usedTiles.setBit(bitIndex);
+            ++i;
+            // Looparound
+            if (i == room.edgeWalk.size()) {
+                i = 0;
+            }
+        }
+        assert(currentRunLength == 0);
+        // Enumerate runs and find the best/most valid one for stairs
+        const ui32 STAIRS_UP_COUNT = bp.floorHeight + 1;
+        ui32 bestRunStart = UINT32_MAX;
+        ui32 bestRunLength = UINT32_MAX;
+        if (runs.size()) {
+            dirs.resize(runs.size());
+            for (size_t i = 0; i < runStarts.size(); ++i) {
+                const ui32 runStart = runStarts[i];
+                const ui32 runLength = runLengths[i];
+                if (runLength < STAIRS_UP_COUNT) {
+                    continue;
+                }
+
+                Cartesian prevDir = Cartesian::NONE;
+                Cartesian dir;
+                
+                ui32 upCount = 0;
+                bool wasFlat = false;
+                ui32 j;
+                for (j = 0; j < runLength - 1; ++j) {
+                    // Look ahead for direction
+                    const i32v2 pos = getPosAtIndex(runs[runStart + j], bp.aabb.dims);
+                    const i32v2 nextPos = getPosAtIndex(runs[runStart + j + 1], bp.aabb.dims);
+                    if (nextPos.x > pos.x) {
+                        dir = Cartesian::EAST;
+                        assert(prevDir != Cartesian::WEST);
+                        if (visLog) {
+                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 0.5f));
+                        }
+                    }
+                    else if (nextPos.y > pos.y) {
+                        dir = Cartesian::NORTH;
+                        assert(prevDir != Cartesian::SOUTH);
+                        if (visLog) {
+                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 0.0f, 1.0f, 0.5f));
+                        }
+                    }
+                    else if (nextPos.x < pos.x) {
+                        dir = Cartesian::WEST;
+                        assert(prevDir != Cartesian::EAST);
+                        if (visLog) {
+                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+                        }
+                    }
+                    else {
+                        dir = Cartesian::SOUTH;
+                        assert(prevDir != Cartesian::NORTH);
+                        if (visLog) {
+                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 1.0f, 1.0f, 0.5f));
+                        }
+                    }
+                    // Store dir
+                    dirs[runStart + j] = dir;
+                    if (prevDir == dir || prevDir == Cartesian::NONE) {
+                        ++upCount;
+                        // Valid!
+                        if (upCount == STAIRS_UP_COUNT) {
+                            // Check if this is the best
+                            if (j < bestRunLength) {
+                                bestRunStart = runStart;
+                                bestRunLength = j + 1;
+                                if (visLog) {
+                                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+                                }
+                            }
+
+                            break;
+                        }
+                        if (visLog) {
+                            visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
+                        }
+                    }
+                    else {
+                        if (visLog) {
+                            visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 0.0f, 1.0f, 1.0f));
+                        }
+                    }
+
+                    prevDir = dir;
+                }
+                // Last one is up always (if not into a wall)
+                if (upCount == STAIRS_UP_COUNT - 1) {
+                    //++upCount;
+                    // Check if this is the best
+                    if (j < bestRunLength) {
+                        bestRunStart = runStart;
+                        bestRunLength = j + 1;
+                    }
+                    break;
+                }
+
+            }
+        }
+        else {
+            continue; // Invalid! TODO: Ladder?
+        }
+        if (bestRunStart == UINT32_MAX) {
+            continue; // No run found! TODO: Ladder?
+        }
+        // Add stair pieces
+        room.stairs.reserve(room.stairs.size() + bestRunLength);
+        ui32 height = 0;
+        for (ui32 j = 0; j < bestRunLength; ++j) {
+            const TileIndex tileIndex = runs[bestRunStart + j];
+            bp.tiles[tileIndex].type = BlueprintTileType::STAIRS;
+            bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y].type = BlueprintTileType::AIR;
+            StairPiece& stairPiece = room.stairs.emplace_back(StairPiece{});
+            stairPiece.height = height++;
+            stairPiece.pos = tileIndex;
+            stairPiece.dir = dirs[bestRunStart + j];
+            if (visLog) {
+                const i32v2 pos = getPosAtIndex(runs[bestRunStart + j], bp.aabb.dims);
+                visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
+            }
         }
     }
+    return true;
 }
 
 void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
@@ -1360,7 +1605,9 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]).recipe;
     bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]).recipe;
     bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::WALL)]).recipe;
-    static_assert(e_cast(BlueprintTileType::TYPES) == 4);
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = nullptr;
+    bp.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
+    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
 
     std::unordered_map<RoomNodeID, ui32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
@@ -1391,11 +1638,14 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
         // Tile postprocess
         switch (bp.tiles[i].type) {
             case BlueprintTileType::NONE:
+            case BlueprintTileType::AIR:
+            case BlueprintTileType::STAIRS: // TODO: Not stairs
                 bp.tiles[i].isBuilt = true;
                 break;
             case BlueprintTileType::WALL:
             case BlueprintTileType::FLOOR:
             case BlueprintTileType::DOOR:
+
                 ++bp.totalTilesToBuild;
                 for (auto&& itemStack : *bp.tileRecipes[e_cast(bp.tiles[i].type)]) {
                     auto&& it = requiredItems.find(itemStack.id);
@@ -1413,7 +1663,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
                 break;
         }
     }
-    static_assert(e_cast(BlueprintTileType::TYPES) == 4);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
 
     // Set up AABBs
     for (auto&& it : roomBoundsLookup) {
