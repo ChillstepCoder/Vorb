@@ -961,41 +961,128 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
     // TODO: Dynamic
     constexpr f32 STAIR_TILE_HEIGHT = 3.0f / 4.0f;
     constexpr ui32 STEPS_PER_TILE = 4;
-    constexpr f32 heightPerStep = STAIR_TILE_HEIGHT / STEPS_PER_TILE;
+    constexpr f32 stepHeight = STAIR_TILE_HEIGHT / STEPS_PER_TILE;
     for (auto& room : building.getRoomGraph()) {
         const f32 baseHeight = room.floorIndex * building.mTileContainer.getFloorHeight();
         for (auto& stairPiece : room.stairs) {
-            f32v3 pos = building.mTileContainer.getTileXYZOffset(stairPiece.pos);
-            pos.z *= tileContainer.getFloorHeight();
-            pos.z += aabb.z;
-            meshBuilder.addBoardBetweenPoints(pos, pos + f32v3(0.0f, 0.0f, 0.1f + stairPiece.height), f32v2(0.1f), rawWoodTexture, 1.0f);
+            f32v3 tilePos = building.mTileContainer.getTileXYZOffset(stairPiece.pos);
+            tilePos.z *= tileContainer.getFloorHeight();
+            tilePos.z += aabb.z;
             // Place stair steps
             const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
             const Cartesian dir = stairPiece.dir;
-            i32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
+            const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
             constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
+            const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
             for (i32 step = 0; step < STEPS_PER_TILE; ++step) {
-                const f32 height = pos.z + heightAdd + step * heightPerStep;
+                const f32 height = stairPieceBaseHeight + (step + 1) * stepHeight + 0.0001f/*epsilon*/;
                 // Top bit
-                f32v2 cornerPos2D(pos.x + stepDir.x * step * stepWidth, pos.y + stepDir.y * step * stepWidth);
+                const f32v2 stepStride = stepDir * stepWidth;
+                const f32v2 stepOffset = (f32)step * stepStride;
+                f32v2 cornerPos2D(tilePos.x + stepOffset.x, tilePos.y + stepOffset.y);
                 cornerPos2D += f32v2(STAIR_DIR_OFFSETS[e_cast(dir)]) - f32v2(STAIR_DIR_OFFSETS[e_cast(dir)]) * 0.25f;
+
                 const f32v2& stairDims = STAIR_DIR_DIMS[e_cast(dir)];
-                f32v3 pointsTop[4] = {
+                const f32v3 pointsTop[4] = {
                     f32v3(cornerPos2D.x, cornerPos2D.y, height),
                     f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y, height),
                     f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y + stairDims.y, height),
                     f32v3(cornerPos2D.x, cornerPos2D.y + stairDims.y, height),
                 };
-                meshBuilder.addQuadBetweenPoints(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE);
-                // Side bit
-                f32v3 pointsSide[4] = {
+                // Side bit and ground bit using switch cause I dont feel like figuring out a clever branchless way
+                f32v3 pointsFront[4] = {
                     f32v3(cornerPos2D.x, cornerPos2D.y, height),
-                    f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y, height),
-                    f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y + stairDims.y, height),
-                    f32v3(cornerPos2D.x, cornerPos2D.y + stairDims.y, height),
+                    f32v3(cornerPos2D.x, cornerPos2D.y, height),
+                    f32v3(cornerPos2D.x, cornerPos2D.y, height),
+                    f32v3(cornerPos2D.x, cornerPos2D.y, height),
                 };
+                // 8 Points since we have two sides
+                f32v3 pointsSide[8] = {}; // TODO: UNZERO
+                //  We have to reduce the base of each next step 
+                switch (dir) {
+                    case Cartesian::SOUTH:
+                        pointsFront[0].y += stepWidth;
+                        pointsFront[1].y += stepWidth;
+                        pointsFront[2].y += stepWidth;
+                        pointsFront[3].y += stepWidth;
+
+                        pointsFront[2].x += 1.0f;
+                        pointsFront[3].x += 1.0f;
+
+                        pointsFront[0].z -= stepHeight;
+                        pointsFront[3].z -= stepHeight;
+                        break;
+                    case Cartesian::WEST:
+                        pointsFront[0].x += stepWidth;
+                        pointsFront[1].x += stepWidth;
+                        pointsFront[2].x += stepWidth;
+                        pointsFront[3].x += stepWidth;
+
+                        pointsFront[2].y += 1.0f;
+                        pointsFront[3].y += 1.0f;
+
+                        pointsFront[1].z -= stepHeight;
+                        pointsFront[2].z -= stepHeight;
+
+                        pointsSide[0] = f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight);
+                        pointsSide[1] = pointsFront[1];
+                        pointsSide[2] = pointsTop[1];
+                        pointsSide[3] = pointsTop[0];
+
+                        /* pointsSide[4] = tilePos + f32v3(0.0f, 1.0f, 0.0f);
+                         pointsSide[5] = pointsTop[2];
+                         pointsSide[6] = pointsTop[1];
+                         pointsSide[7] = pointsFront[2];*/
+                        break;
+                    case Cartesian::EAST:
+                        pointsFront[2].y += 1.0f;
+                        pointsFront[3].y += 1.0f;
+
+                        pointsFront[0].z -= stepHeight;
+                        pointsFront[3].z -= stepHeight;
+                        break;
+                    case Cartesian::NORTH:
+                        pointsFront[2].x += 1.0f;
+                        pointsFront[3].x += 1.0f;
+
+                        pointsFront[1].z -= stepHeight;
+                        pointsFront[2].z -= stepHeight;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+                }
+
                 meshBuilder.addQuadBetweenPoints(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE);
+                // The very first step in the entire chain shouldn't have base pieces
+                const bool isVeryFirstStep = stairPiece.height == 0 && step == 0;
+                meshBuilder.addQuadBetweenPoints(pointsFront, rawWoodTexture, 1.0f, COLOR_WHITE);
+                meshBuilder.addQuadBetweenPoints(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE);
+                meshBuilder.addQuadBetweenPoints(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE);
             }
+            // Place square walls to the ground
+            f32v3 pointsSide[8] = { tilePos, tilePos, tilePos, tilePos, tilePos, tilePos, tilePos, tilePos };
+            switch (dir) {
+                case Cartesian::SOUTH:
+                    break;
+                case Cartesian::WEST:
+                    pointsSide[1].x += 1.0f;
+                    pointsSide[2].x += 1.0f;
+                    pointsSide[2].z = stairPieceBaseHeight;
+                    pointsSide[3].z = stairPieceBaseHeight;
+                    break;
+                case Cartesian::EAST:
+                    break;
+                case Cartesian::NORTH:
+                    break;
+                default:
+                    break;
+
+            }
+            meshBuilder.addQuadBetweenPoints(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE);
+            meshBuilder.addQuadBetweenPoints(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE);
+            // Railings
+            meshBuilder.addBoardBetweenPoints(tilePos, f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight + stepHeight * (STEPS_PER_TILE + 5)), f32v2(0.05f), rawWoodTexture, 1.0f);
         }
     }
 }
