@@ -16,8 +16,8 @@
 
 // For vislog
 constexpr int MAX_ROOM_COLORS = 8;
-constexpr float ROOM_COLOR_ALPHA = 0.2f;
-constexpr float ROOM_COLOR_ALPHA_WHITE = 0.6f;
+constexpr float ROOM_COLOR_ALPHA = 0.6f;
+constexpr float ROOM_COLOR_ALPHA_WHITE = 0.7f;
 const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
     color4(1.0f, 0.5f, 0.0f, ROOM_COLOR_ALPHA),
     color4(0.0f, 1.0f, 0.5f, ROOM_COLOR_ALPHA),
@@ -30,6 +30,54 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
 };
 
 BuildingBlueprintId BuildingBlueprintGenerator::sCurrentId = 0;
+
+void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4* inputColor/* = nullptr*/) {
+    visLog.nextStep("Final Floorplan");
+    // Render the AABB of the floor plan
+    constexpr f32 EPSILON = 0.001f;
+
+    // Entire AABB
+    visLog.addWireQuad(f32v3(0.0f, 0.0f, 0.0f), bp.aabb.dims, inputColor ? *inputColor : color4(0.7f, 0.4f, 0.0f));
+
+    // AABBS first
+    int i = 0;
+    for (auto&& node : bp.rooms) {
+
+        const color4& color = ROOM_COLORS[i % MAX_ROOM_COLORS];
+        visLog.addWireQuad(f32v3(node.aabb.x - bp.aabb.x, node.aabb.y - bp.aabb.y, node.floorIndex * bp.floorHeight), node.aabb.dims, color4(color.r, color.g, color.b, 255u));
+        // Draw parent line
+        if (node.parentRoom != INVALID_ROOM_ID) {
+            RoomNode& parent = bp.rooms[node.parentRoom];
+            const f32v3 startPos(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * bp.floorHeight);
+            const f32v3 endPos(parent.offsetFromZero.x + 0.5f, parent.offsetFromZero.y + 0.5f, parent.floorIndex * bp.floorHeight);
+            if (node.isPrivate) {
+                visLog.addLineBetweenPoints(startPos, endPos, color4(1.0f, 1.0f, 0.0f));
+            }
+            else {
+                visLog.addLineBetweenPoints(startPos, endPos, color4(0.0f, 1.0f, 0.0f));
+            }
+        }
+        ++i;
+    }
+
+    // Render all the tiles
+    for (int z = 0; z < bp.floorCount; ++z) {
+        const ui32 floorIndex = z * bp.aabb.dims.x * bp.aabb.dims.y;
+        for (int y = 0; y < bp.aabb.dims.y; ++y) {
+            for (int x = 0; x < bp.aabb.dims.x; ++x) {
+                const TileIndex index = floorIndex + y * bp.aabb.dims.x + x;
+                RoomNodeID id = bp.ownerArray[index];
+                if (id != INVALID_ROOM_ID) {
+                    const RoomNode& room = bp.rooms[id];
+                    const f32v2 pos = f32v2(x, y);
+                    const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
+                    visLog.addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
+                }
+            }
+        }
+    }
+
+}
 
 inline bool boundsCheckTile(const i16v2& pos, const ui32AABB2& aabb) {
     return pos.x >= 0 && pos.x < aabb.width&& pos.y >= 0 && pos.y < aabb.depth;
@@ -87,9 +135,7 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint");
     if (visLog) {
-        visLog->nextStep("AABB");
         visLog->setRootPos(f32v3(bPtr->aabb.pos.x, bPtr->aabb.pos.y, bPtr->zPos));
-        visLog->addWireQuad(f32v3(0.0f, 0.0f, 0.0f), bPtr->aabb.dims, color4(1.0f, 0.0f, 0.0f, 0.5f));
     }
 
     // Room Graph
@@ -132,6 +178,8 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
     postProcessBlueprint(*bPtr);
 
     if (visLog) {
+        // Draw the entire room graph
+        renderBlueprintDebugVislog(*bPtr, *visLog, nullptr);
         visLog->finish();
     }
 }
@@ -1671,7 +1719,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
         // Compute bounds
         RoomNodeID id = bp.ownerArray[i];
         if (id != INVALID_ROOM_ID) {
-            const ui32v2 pos(i % bp.aabb.dims.x, i / bp.aabb.dims.x);
+            const ui32v2 pos = getPosAtIndex(i, bp.aabb.dims);
             auto&& it = roomBoundsLookup.find(id);
             if (it == roomBoundsLookup.end()) {
                 roomBoundsLookup[id] = ui32v4(pos.x, pos.x, pos.y, pos.y);
@@ -1723,9 +1771,9 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     // Set up AABBs
     for (auto&& it : roomBoundsLookup) {
         RoomNode& room = bp.rooms[it.first];
-        room.aabb.pos.x = it.second.x + bp.aabb.pos.x;
+        room.aabb.pos.x = it.second.x + bp.aabb.x;
         room.aabb.dims.x = it.second.y - it.second.x + 1;
-        room.aabb.pos.y = it.second.z + bp.aabb.pos.y;
+        room.aabb.pos.y = it.second.z + bp.aabb.y;
         room.aabb.dims.y = it.second.w - it.second.z + 1;
     }
 

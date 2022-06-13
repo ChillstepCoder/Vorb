@@ -1122,6 +1122,16 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
 
                             pointsFront[1].z -= stepHeight;
                             pointsFront[2].z -= stepHeight;
+
+                            pointsSide[0] = f32v3(tilePos.x, tilePos.y + 1.0f, stairPieceBaseHeight);
+                            pointsSide[1] = pointsFront[1];
+                            pointsSide[2] = pointsTop[0];
+                            pointsSide[3] = pointsTop[3];
+
+                            pointsSide[4] = f32v3(tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceBaseHeight);
+                            pointsSide[5] = pointsTop[2];
+                            pointsSide[6] = pointsTop[1];
+                            pointsSide[7] = pointsFront[2];
                             break;
                         default:
                             assert(false);
@@ -1210,8 +1220,8 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
             }
             meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
             meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
-            // Railings
-            meshBuilder.addBoardBetweenPoints(tilePos, f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight + stepHeight * (STEPS_PER_TILE + 5)), f32v2(0.05f), rawWoodTexture, 1.0f);
+            // TODO: Railings
+            //meshBuilder.addBoardBetweenPoints(tilePos, f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight + stepHeight * (STEPS_PER_TILE + 5)), f32v2(0.05f), rawWoodTexture, 1.0f);
         }
     }
 }
