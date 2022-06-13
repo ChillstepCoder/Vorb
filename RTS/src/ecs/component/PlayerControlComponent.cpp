@@ -10,6 +10,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "camera/Camera3D.h"
+#include "options/DebugOptions.h"
 
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
@@ -90,6 +91,8 @@ inline void updateComponent(entt::entity entity, PlayerControlComponent& control
 }
 
 void PlayerControlSystem::update(entt::registry& registry, const Camera3D& camera) {
+    // Don't update while in free fly
+    if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }
 	// Update components
     auto view = registry.view<PlayerControlComponent, LocomotionComponent>();
     for (auto entity : view) {

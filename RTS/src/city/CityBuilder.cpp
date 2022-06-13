@@ -121,23 +121,24 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                         grid.setHeightAt(tileWorldPos, meanHeight);
                     }
 
+                    newBuilding->mInteriorTilesInAABB.setBitTo(tileIndex, true);
+
                     const TileID tileId = bp.tileIDs[e_cast(type)];
                     if (tileId != TILE_ID_NONE) {
                         const f32 height = meanHeight + (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
-                        // TODO: Always ground??
-                        newBuilding->mInteriorTilesInAABB.setBitTo(tileIndex, true);
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                         tileContainer.addTile(index, TileRepository::getTileData(tileId));
                         //assert(false); // Set building structure pointer
+                        // TODO: always set ground position?
                         tileContainer.setTileGroundZPosition(index, height);
-
-                        // TERRAIN
-                        //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
-                        //TileContainer& container = *handle.getMutableContainer();
-                        //container.addTile(handle.index, TileRepository::getTileData(tileId));
-                        ////assert(false); // Set building structure pointer
-                        //container.setTileGroundZPosition(handle.index, height);
                     }
+
+                    // TERRAIN
+                    //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
+                    //TileContainer& container = *handle.getMutableContainer();
+                    //container.addTile(handle.index, TileRepository::getTileData(tileId));
+                    ////assert(false); // Set building structure pointer
+                    //container.setTileGroundZPosition(handle.index, height);
                 }
                 ++tileIndex;
             }

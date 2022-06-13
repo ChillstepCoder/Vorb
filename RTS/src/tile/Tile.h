@@ -94,6 +94,9 @@ public:
     const TileOrientation& getOrientationMainThread() const { assert(IS_MAIN_THREAD()); return orientation; }
     const TileOrientation& getOrientationThreadSafe() const { assert(!IS_MAIN_THREAD()); return orientation; }
 
+    bool isEmptyMainThread() const { assert(IS_MAIN_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MID] == TILE_ID_NONE && layers[TILE_LAYER_TOP] == TILE_ID_NONE; }
+    bool isEmptyThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MID] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_TOP] == TILE_ID_NONE; }
+
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTile(const TileData& tile) const;

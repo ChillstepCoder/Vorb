@@ -892,19 +892,29 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
 }
 
 void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+    constexpr f32 CEILING_THICKNESS = 0.05f;
     const ui32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = building.mTileContainer;
     for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
         const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
             for (ui32 x = 0; x < aabb.dims.x; ++x) {
-                const ui32 index = floorIndex + y * aabb.dims.x + x;
+                const TileIndex index = floorIndex + y * aabb.dims.x + x;
                 if (building.mInteriorTilesInAABB.getBit(index)) {
-                    // Add a top quad
-                    //if (z == building.mTileContainer.getDims().z - 1 || !ownedTiles.getBit(index + aabb.dims.x * aabb.dims.y)) {
-                    f32v3 startPos(x, y, aabb.z + tileContainer.getFloorHeight() * (z + 1));
-                    meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
-                    // }
+                    // If were at the top or the tile above us is outside the interior, or its interior and a non air tile above us, mesh a ceiling
+                    const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
+                    if (z == tileContainer.getDims().z - 1 || // If were at the top
+                        !building.mInteriorTilesInAABB.getBit(aboveIndex) || // Or tile above us is an exterior tile
+                        !tileContainer.getTileAt(aboveIndex).isEmptyMainThread()) { // Or its an interior tile and not empty
+                        // Mesh ceiling
+                        f32v3 startPos(x, y, aabb.z + tileContainer.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                        // TODO: Cull edges appropriately
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::LEFT, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::RIGHT, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::FRONT, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                        meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f, CEILING_THICKNESS), CubeFacing::BACK, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
+                    }
                 }
             }
         }
@@ -974,9 +984,12 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
             const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
             constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
             const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
+            const f32 stairPieceTopHeight = stairPieceBaseHeight + STEPS_PER_TILE * stepHeight;
             AXIS_3D sideUvOrient; // For UV mapping
             AXIS_3D frontUvOrient; // For UV mapping
+
             if (stairPiece.isFlatPart) {
+                // Flat parts are just a single quad on top
                 const f32v3 pointsTop[4] = {
                     f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight),
                     f32v3(tilePos.x + 1.0f, tilePos.y, stairPieceBaseHeight),
@@ -1007,6 +1020,7 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                 }
             }
             else {
+                // Mesh each step and its sides
                 for (i32 step = 0; step < STEPS_PER_TILE; ++step) {
                     const f32 height = stairPieceBaseHeight + (step + 1) * stepHeight + 0.0001f/*epsilon*/;
                     // Top bit
@@ -1046,6 +1060,16 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
 
                             pointsFront[0].z -= stepHeight;
                             pointsFront[3].z -= stepHeight;
+
+                            pointsSide[0] = f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight);
+                            pointsSide[1] = pointsTop[0];
+                            pointsSide[2] = pointsTop[3];
+                            pointsSide[3] = pointsFront[0];
+
+                            pointsSide[4] = f32v3(tilePos.x + 1.0f, tilePos.y, stairPieceBaseHeight);
+                            pointsSide[5] = pointsFront[3];
+                            pointsSide[6] = pointsTop[2];
+                            pointsSide[7] = pointsTop[1];
                             break;
                         case Cartesian::WEST:
                             sideUvOrient = AXIS_Y;
@@ -1111,12 +1135,62 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                     meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
                     meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
                 }
-            }
+
+                // Endcap quad
+                // TODO: World space mesher util for cartesian quad?
+                if (stairPiece.isLastPiece) {
+                    f32v3 pointsEndcap[4];
+                    AXIS_3D endcapUvOrient;
+                    switch (dir) {
+                        case Cartesian::NORTH:
+                            endcapUvOrient = AXIS_Y;
+                            pointsEndcap[0] = { tilePos.x, tilePos.y + 1.0f, tilePos.z };
+                            pointsEndcap[1] = { tilePos.x, tilePos.y + 1.0f, stairPieceTopHeight };
+                            pointsEndcap[2] = { tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceTopHeight };
+                            pointsEndcap[3] = { tilePos.x + 1.0f, tilePos.y + 1.0f, tilePos.z };
+                            break;
+                        case Cartesian::SOUTH:
+                            endcapUvOrient = AXIS_Y;
+                            pointsEndcap[0] = { tilePos.x, tilePos.y, tilePos.z };
+                            pointsEndcap[1] = { tilePos.x + 1.0f, tilePos.y, tilePos.z };
+                            pointsEndcap[2] = { tilePos.x + 1.0f, tilePos.y, stairPieceTopHeight };
+                            pointsEndcap[3] = { tilePos.x, tilePos.y, stairPieceTopHeight };
+                            break;
+                        case Cartesian::WEST:
+                            endcapUvOrient = AXIS_X;
+                            pointsEndcap[0] = { tilePos.x, tilePos.y, tilePos.z };
+                            pointsEndcap[1] = { tilePos.x, tilePos.y, stairPieceTopHeight };
+                            pointsEndcap[2] = { tilePos.x, tilePos.y + 1.0f, stairPieceTopHeight };
+                            pointsEndcap[3] = { tilePos.x, tilePos.y + 1.0f, tilePos.z };
+                            break;
+                        case Cartesian::EAST:
+                            endcapUvOrient = AXIS_X;
+                            pointsEndcap[0] = { tilePos.x + 1.0f, tilePos.y + 1.0f, tilePos.z };
+                            pointsEndcap[1] = { tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceTopHeight };
+                            pointsEndcap[2] = { tilePos.x + 1.0f, tilePos.y, stairPieceTopHeight };
+                            pointsEndcap[3] = { tilePos.x + 1.0f, tilePos.y, tilePos.z };
+                            break;
+                        default:
+                            break;
+
+                    }
+                    meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, rawWoodTexture, 1.0f, COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
+                }
+             }
             // Place square walls to the ground
             f32v3 pointsSide[8] = { tilePos, tilePos, tilePos, tilePos, tilePos, tilePos, tilePos, tilePos };
             switch (dir) {
                 case Cartesian::NORTH:
                 case Cartesian::SOUTH:
+                    pointsSide[1].z = stairPieceBaseHeight;
+                    pointsSide[2].z = stairPieceBaseHeight;
+                    pointsSide[2].y += 1.0f;
+                    pointsSide[3].y += 1.0f;
+
+                    pointsSide[4] += f32v3(1.0f, 1.0f, 0.0f);
+                    pointsSide[7].x += 1.0f;
+                    pointsSide[5] = f32v3(pointsSide[4].x, pointsSide[4].y, stairPieceBaseHeight);
+                    pointsSide[6] = f32v3(pointsSide[7].x, pointsSide[7].y, stairPieceBaseHeight);
                     break;
                 case Cartesian::WEST:
                 case Cartesian::EAST:

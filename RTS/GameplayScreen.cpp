@@ -153,6 +153,22 @@ void GameplayScreen::build() {
         else if (event.keyCode == VKEY_T) {
             sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
         }
+        else if (event.keyCode == VKEY_U) {
+            if (sDebugOptions.mCameraMode == CameraMode::MMO) {
+                sDebugOptions.mCameraMode = CameraMode::FIRST_PERSON;
+            }
+            else {
+                sDebugOptions.mCameraMode = CameraMode::MMO;
+            }
+        }
+        else if (event.keyCode == VKEY_F) {
+            if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) {
+                sDebugOptions.mCameraMode = CameraMode::MMO;
+            }
+            else {
+                sDebugOptions.mCameraMode = CameraMode::FREE_LOOK;
+            }
+        }
 	});
 
 	vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
