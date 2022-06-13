@@ -43,7 +43,7 @@ struct RoomNode {
     RoomNodeID childRooms[MAX_CHILD_ROOMS]; // Connected via door or stairs, max of 4
     RoomGateInfo adjacentRooms[MAX_ADJACENT_ROOMS]; // Like child rooms, connected via door or open wall, but is not necessarily a direct child
     RoomNodeID id = INVALID_ROOM_ID;
-    RoomBorder borders[MAX_WALLS_PER_ROOM]; // Starts at bottommost + leftmost, wall corner and proceeds in +y direction, then x,y,x,y,x, ect...
+    RoomBorder borders[4]; // Used to grow AABB, (TODO: just use AABB? hmm)
     std::vector<GridEdge> interiorEdges;
     std::vector<TileIndex> edgeWalk;
     std::vector<StairPiece> stairs;
@@ -58,5 +58,6 @@ struct RoomNode {
     ui8 numAdjacentRooms = 0;
     bool isPrivate = false;
     bool hasStairs = false;
+    bool connectedToParentWithStairs = false;
     const RoomDef* roomDef = nullptr;
 };

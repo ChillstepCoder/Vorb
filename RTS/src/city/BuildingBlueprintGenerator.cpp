@@ -351,6 +351,7 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                 didCreateStairs = true;
                 node->hasStairs = true;
 
+                child.connectedToParentWithStairs = true;
                 child.offsetFromZero = currentOffset;
                 child.floorIndex = node->floorIndex + 1;
                 if (child.floorIndex == bp.floorCount) {
@@ -696,19 +697,19 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
             return didExpand;
         }
 
-        RoomBorder& wall = room.borders[i];
+        RoomBorder& border = room.borders[i];
         // Expand
-        const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(wall.outerDir)];
-        const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(wall.outerDir)];
-        const int xOrY = (int)wall.outerDir % 2;
-        const i16v2 nextStart = wall.startPos + expandOffset;
+        const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(border.outerDir)];
+        const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(border.outerDir)];
+        const int xOrY = (int)border.outerDir % 2;
+        const i16v2 nextStart = border.startPos + expandOffset;
         // Bounds check
         if (boundsCheckRoom(nextStart[xOrY], bp.aabb.dims[xOrY])) {
-            assert(wall.length <= MAX_WALL_LENGTH);
+            assert(border.length <= MAX_WALL_LENGTH);
             // We will only expand if we arent expanding into another room
             bool canExpand = true;
             i16v2 outerPos = nextStart;
-            for (int j = 0; j < wall.length; ++j) {
+            for (int j = 0; j < border.length; ++j) {
                 const ui32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
                 RoomNodeID ownerId = bp.ownerArray[index];
                 if (ownerId != INVALID_ROOM_ID) {
@@ -720,10 +721,10 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
             }
             // If we have room to expand, expand
             if (canExpand) {
-                expandWall(wall, bp, room);
+                expandWall(border, bp, room);
                 if (visLog) {
-                    const f32v3 lineStart(wall.startPos.x + 0.5f, wall.startPos.y + 0.5f, room.floorIndex * bp.floorHeight);
-                    const f32v3 lineEnd(wall.endPos.x + 0.5f, wall.endPos.y + 0.5f, room.floorIndex * bp.floorHeight);
+                    const f32v3 lineStart(border.startPos.x + 0.5f, border.startPos.y + 0.5f, room.floorIndex * bp.floorHeight);
+                    const f32v3 lineEnd(border.endPos.x + 0.5f, border.endPos.y + 0.5f, room.floorIndex * bp.floorHeight);
                     visLog->addLineBetweenPoints(lineStart, lineEnd, ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
                 }
                 didExpand = true;
@@ -749,19 +750,19 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
                 return didExpand;
             }
 
-            RoomBorder& wall = room.borders[i];
+            RoomBorder& border = room.borders[i];
             // Expand
-            const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(wall.outerDir)];
-            const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(wall.outerDir)];
-            const int xOrY = (int)wall.outerDir % 2;
-            const i16v2 nextStart = wall.startPos + expandOffset;
+            const i16v2& expandOffset = EXPAND_OFFSETS[e_cast(border.outerDir)];
+            const i16v2& iterateOffset = ITERATE_OFFSETS[e_cast(border.outerDir)];
+            const int xOrY = (int)border.outerDir % 2;
+            const i16v2 nextStart = border.startPos + expandOffset;
             // Bounds check
             if (boundsCheckRoom(nextStart[xOrY], bp.aabb.dims[xOrY])) {
-                assert(wall.length <= MAX_WALL_LENGTH);
+                assert(border.length <= MAX_WALL_LENGTH);
                 // We will only expand if there is free space
                 bool canExpand = false;
                 i16v2 outerPos = nextStart;
-                for (int j = 0; j < wall.length; ++j) {
+                for (int j = 0; j < border.length; ++j) {
                     // We will expand if there is at least one empty square here
                     const ui32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
                     RoomNodeID ownerId = bp.ownerArray[index];
@@ -774,7 +775,7 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
                 }
                 // If we have room to expand, expand
                 if (canExpand) {
-                    expandWallGapsOnly(wall, bp, room, visLog);
+                    expandWallGapsOnly(border, bp, room, visLog);
                     didExpand = true;
                     ++expandCount;
                 }
@@ -938,25 +939,62 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* v
     for (size_t i = 0; i < bp.rooms.size(); ++i) {
         initRoomWalls(bp, bp.rooms[i]);
     }
+    // Expand one floor at a time so that second story rooms can copy their
+    // lower parent layout for easier stair placement
+    boost::container::static_vector<RoomNode*, 256> roomsOnThisFloorToExpand;
 
-    // Expand walls in square shape, no overwrite
-    for (int iters = 0; iters < MAX_WALL_LENGTH; ++iters) {
-        int failCount = 0;
-        for (size_t i = 0; i < bp.rooms.size(); ++i) {
-            failCount += expandRoomSquare(bp, bp.rooms[i], visLog) ? 0 : 1;
+    for (ui32 z = 0; z < bp.floorCount; ++z) {
+        // Collect rooms, direct copy any rooms that are connected to parent via stairs
+        roomsOnThisFloorToExpand.clear();
+        for (auto&& room : bp.rooms) {
+            if (room.floorIndex == z) {
+                if (room.connectedToParentWithStairs) {
+                    assert(z != 0);
+                    // Direct copy!
+                    RoomNode& parent = bp.rooms[room.parentRoom];
+                    for (ui32 i = 0; i < 4; ++i) {
+                        room.borders[i] = parent.borders[i];
+                    }
+                    // Iterate over every tile on the floor to copy
+                    // TODO: AABB iterate instead
+                    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
+                        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+                            TileIndex myIndex = getIndexAtPos(x, y, bp.aabb.dims, z);
+                            TileIndex parentIndex = myIndex - bp.aabb.dims.x * bp.aabb.dims.y;
+                            if (bp.ownerArray[parentIndex] == parent.id) {
+                                bp.ownerArray[myIndex] = room.id;
+                                bp.tiles[myIndex].type = bp.tiles[parentIndex].type;
+                                room.size = parent.size;
+                            }
+                        }
+                    }
+
+                }
+                else {
+                    roomsOnThisFloorToExpand.push_back(&room);
+                }
+            }
         }
-        if (failCount == bp.rooms.size()) {
-            break;
+
+        // Expand walls in square shape, no overwrite
+        for (int iters = 0; iters < MAX_WALL_LENGTH; ++iters) {
+            int failCount = 0;
+            for (auto&& room : roomsOnThisFloorToExpand) {
+                failCount += expandRoomSquare(bp, *room, visLog) ? 0 : 1;
+            }
+            if (failCount == roomsOnThisFloorToExpand.size()) {
+                break;
+            }
         }
-    }
-    // Fill in gaps, no overwrite
-    for (int iters = 0; iters < MAX_WALL_LENGTH / ITER_STEP; ++iters) {
-        int failCount = 0;
-        for (size_t i = 0; i < bp.rooms.size(); ++i) {
-            failCount += expandRoomGaps(bp, bp.rooms[i], visLog) ? 0 : 1;
-        }
-        if (failCount == bp.rooms.size()) {
-            break;
+        // Fill in gaps, no overwrite
+        for (int iters = 0; iters < MAX_WALL_LENGTH / ITER_STEP; ++iters) {
+            int failCount = 0;
+            for (auto&& room : roomsOnThisFloorToExpand) {
+                 failCount += expandRoomGaps(bp, *room, visLog) ? 0 : 1;
+            }
+            if (failCount == roomsOnThisFloorToExpand.size()) {
+                break;
+            }
         }
     }
 }
