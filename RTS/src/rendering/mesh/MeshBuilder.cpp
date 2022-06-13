@@ -564,6 +564,113 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f
     }
 }
 
+void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const SubTexture& texture, f32 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+    addQuadBetweenPointsWorldUV(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], texture, uvScale, color, uvOrient, worldUVRoot, flipUv);
+}
+
+void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+    InProgressSubMeshData* submesh;
+    ui8 textureIndex;
+    getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
+
+    // Add indices if needed
+    if (!mUsingSharedIndexBuffer) {
+        const size_t v = submesh->mVerts.size();
+        std::vector<ui32>& indexData = submesh->mIndices;
+        const size_t ind = indexData.size();
+        indexData.resize(ind + 6u);
+        indexData[ind] = v;
+        indexData[ind + 1u] = v + 1u;
+        indexData[ind + 2u] = v + 2u;
+        indexData[ind + 3u] = v + 2u;
+        indexData[ind + 4u] = v + 3u;
+        indexData[ind + 5u] = v;
+    }
+
+    std::vector<Vertex32>& vertexData = submesh->mVerts;
+    vertexData.resize(vertexData.size() + 4);
+
+    StandardVertex* verts = (StandardVertex*)(&vertexData.back() - 3);
+
+    mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
+
+    // Compute tangents and normals
+    f32v3 tangentF = glm::normalize(v1 - v0);
+    f32v3 normalf = glm::normalize(glm::cross(tangentF, v3 - v0));
+
+    const i8v3 normal = compressNormal(normalf);
+    i8v3 tangent3 = compressNormal(tangentF);
+    i8v2 tangent(tangent3.x, tangent3.y);
+    if (tangent == i8v2(0)) {
+        tangent.x = 1.0f;
+    }
+
+    
+    { // Bottom Left
+        StandardVertex& vbl = verts[0];
+        vbl.pos = v0;
+        vbl.color = color;
+        vbl.textureIndex = textureIndex;
+        vbl.normal = normal;
+        vbl.tangent = tangent;
+    }
+    { // Bottom Right
+        StandardVertex& vbr = verts[1];
+        vbr.pos = v1;
+        vbr.color = color;
+        vbr.textureIndex = textureIndex;
+        vbr.normal = normal;
+        vbr.tangent = tangent;
+    }
+    { // Top Right
+        StandardVertex& vtr = verts[2];
+        vtr.pos = v2;
+        vtr.color = color;
+        vtr.textureIndex = textureIndex;
+        vtr.normal = normal;
+        vtr.tangent = tangent;
+    }
+    { // Top Left
+        StandardVertex& vtl = verts[3];
+        vtl.pos = v3;
+        vtl.color = color;
+        vtl.textureIndex = textureIndex;
+        vtl.normal = normal;
+        vtl.tangent = tangent;
+    }
+
+    // TODO: This could be an axis lookup for branchless
+    switch (uvOrient) {
+        case AXIS_X:
+            for (int i = 0; i < 4; ++i) {
+                verts[i].uvs.x = (verts[i].pos.y - worldUVRoot.y) * uvScale;
+                verts[i].uvs.y = (verts[i].pos.z - worldUVRoot.z) * uvScale;
+            }
+            break;
+        case AXIS_Y:
+            for (int i = 0; i < 4; ++i) {
+                verts[i].uvs.x = (verts[i].pos.x - worldUVRoot.x) * uvScale;
+                verts[i].uvs.y = (verts[i].pos.z - worldUVRoot.z) * uvScale;
+            }
+            break;
+        case AXIS_Z:
+            for (int i = 0; i < 4; ++i) {
+                verts[i].uvs.x = (verts[i].pos.x - worldUVRoot.x) * uvScale;
+                verts[i].uvs.y = (verts[i].pos.y - worldUVRoot.y) * uvScale;
+            }
+            break;
+        default:
+            assert(false);
+            break;
+
+    }
+    if (flipUv) {
+        for (int i = 0; i < 4; ++i) {
+            std::swap(verts[i].uvs.x, verts[i].uvs.y);
+        }
+    }
+}
+
 void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32 uvScale) {
     f32v3 offset = p2 - p1;
     f32v3 tangent = glm::cross(offset, f32v3(0.0f, 0.0f, 1.0f));

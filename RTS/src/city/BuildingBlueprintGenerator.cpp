@@ -1200,24 +1200,29 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 else {
                     // Exterior doors
                     if (canConnectToOutside) {
-
-                        canConnectToOutside = false;
+                        const i16v2 nextNextPos = nextPos + directionOffset;
+                        const ui32 nextNextTileIndex = getIndexAtPos(ui32v2(nextNextPos), bp.aabb.dims, room.floorIndex);
                         if (bp.tiles[tileIndex].type == BlueprintTileType::WALL && bp.tiles[nextTileIndex].type == BlueprintTileType::FLOOR) {
+                            canConnectToOutside = false;
                             bp.tiles[tileIndex].type = BlueprintTileType::DOOR;
                             bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex });
                             // Visual log
                             if (visLog) {
                                 const f32v3 pos(tileIndex % bp.aabb.dims.x, tileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (tileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
-                                visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+                                visLog->addFilledQuad(pos, f32v2(1.0f), color4(0.0f, 1.0f, 1.0f, 0.8f));
                             }
                         }
-                        if (bp.tiles[nextTileIndex].type == BlueprintTileType::WALL && bp.tiles[tileIndex].type == BlueprintTileType::FLOOR) {
-                            bp.tiles[nextTileIndex].type = BlueprintTileType::DOOR;
-                            bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex });
-                            // Visual log
-                            if (visLog) {
-                                const f32v3 pos(nextTileIndex % bp.aabb.dims.x, nextTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (nextTileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
-                                visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
+                        else if (bp.tiles[nextTileIndex].type == BlueprintTileType::WALL && bp.tiles[tileIndex].type == BlueprintTileType::FLOOR) {
+                            // Make sure there isn't a second wall in the way, which can happen at edge of adjacent room
+                            if (!boundsCheckTile(nextNextPos, bp.aabb) || bp.tiles[nextNextTileIndex].type != BlueprintTileType::WALL) {
+                                canConnectToOutside = false;
+                                bp.tiles[nextTileIndex].type = BlueprintTileType::DOOR;
+                                bp.exteriorDoors.emplace_back(RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex });
+                                // Visual log
+                                if (visLog) {
+                                    const f32v3 pos(nextTileIndex % bp.aabb.dims.x, nextTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, (nextTileIndex / (bp.aabb.dims.x * bp.aabb.dims.y)) * bp.floorHeight);
+                                    visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f));
+                                }
                             }
                         }
                     }
@@ -1375,16 +1380,17 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
 
 bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
     const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-    if (pos.x > 0 && bp.tiles[index - 1].type == BlueprintTileType::DOOR) {
+    assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
+    if (bp.tiles[index - 1].type == BlueprintTileType::DOOR) {
         return true;
     }
-    if (pos.y > 0 && bp.tiles[index - bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
+    if (bp.tiles[index - bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
         return true;
     }
-    if (pos.x < bp.aabb.dims.x - 1 && bp.tiles[index + 1].type == BlueprintTileType::DOOR) {
+    if (bp.tiles[index + 1].type == BlueprintTileType::DOOR) {
         return true;
     }
-    if (pos.y < bp.aabb.dims.y - 1 && bp.tiles[index + bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
+    if (bp.tiles[index + bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
         return true;
     }
     return false;
@@ -1399,6 +1405,34 @@ bool canPlaceStairsHere(TileIndex index, BuildingBlueprint& bp, RoomNode& child)
         return true;
     }
     return false;
+}
+
+bool isAtWallCorner(TileIndex index, BuildingBlueprint& bp) {
+    const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+    assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
+    ui32 adjacentWallCount = 0;
+    if (bp.tiles[index - 1].type == BlueprintTileType::WALL) {
+        ++adjacentWallCount;
+    }
+    if (bp.tiles[index - bp.aabb.dims.x].type == BlueprintTileType::WALL) {
+        ++adjacentWallCount;
+    }
+    if (bp.tiles[index + 1].type == BlueprintTileType::WALL) {
+        ++adjacentWallCount;
+    }
+    if (bp.tiles[index + bp.aabb.dims.x].type == BlueprintTileType::WALL) {
+        ++adjacentWallCount;
+    }
+    // TODO: This disallows single block hallways but meh...
+    return adjacentWallCount >= 2;
+}
+
+bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprint& bp, Cartesian dir) {
+    i16v2 pos = getPosAtIndex(index, bp.aabb.dims);
+    const ui32 floorIndex = index / (bp.aabb.dims.x * bp.aabb.dims.y);
+    assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
+    pos += CARTESIAN_NORMALS[e_cast(dir)];
+    return bp.tiles[getIndexAtPos(pos, bp.aabb.dims, floorIndex + 1)].type != BlueprintTileType::FLOOR;
 }
 
 bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* visLog) {
@@ -1437,7 +1471,8 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
             const TileIndex index = bitIndex + room.floorIndex * bp.aabb.dims.x * bp.aabb.dims.y;
             // Valid stair placement?
             if (currentRunLength < room.edgeWalk.size() && canPlaceStairsHere(index, bp, *child) &&
-                (currentRunLength == 0 || index != runs.back() /*make sure we dont double back*/)) {
+                (currentRunLength == 0 || index != runs.back() /*make sure we dont double back*/) &&
+                (currentRunLength != 0 || !isAtWallCorner(index, bp))) {
                 // New run?
                 if (currentRunLength == 0) {
                     if (usedTiles.getBit(bitIndex)) {
@@ -1499,7 +1534,8 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 ui32 j;
                 for (j = 0; j < runLength - 1; ++j) {
                     // Look ahead for direction
-                    const i32v2 pos = getPosAtIndex(runs[runStart + j], bp.aabb.dims);
+                    const TileIndex index = runs[runStart + j];
+                    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
                     const i32v2 nextPos = getPosAtIndex(runs[runStart + j + 1], bp.aabb.dims);
                     if (nextPos.x > pos.x) {
                         dir = Cartesian::EAST;
@@ -1535,16 +1571,22 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                         ++upCount;
                         // Valid!
                         if (upCount == STAIRS_UP_COUNT) {
-                            // Check if this is the best
-                            if (j < bestRunLength) {
-                                bestRunStart = runStart;
-                                bestRunLength = j + 1;
-                                if (visLog) {
-                                    visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
-                                }
+                            // If we are running into a wall on the next floor, we arent done
+                            if (isRunningIntoWallAtEnd(index, bp, dir)) {
+                                --upCount;
                             }
+                            else {
+                                // Check if this is the best
+                                if (j < bestRunLength) {
+                                    bestRunStart = runStart;
+                                    bestRunLength = j + 1;
+                                    if (visLog) {
+                                        visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
+                                    }
+                                }
 
-                            break;
+                                break;
+                            }
                         }
                         if (visLog) {
                             visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -1560,13 +1602,15 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 }
                 // Last one is up always (if not into a wall)
                 if (upCount == STAIRS_UP_COUNT - 1) {
-                    //++upCount;
-                    // Check if this is the best
-                    if (j < bestRunLength) {
-                        bestRunStart = runStart;
-                        bestRunLength = j + 1;
+                    // If running into a wall, not done
+                    if (!isRunningIntoWallAtEnd(runs[runStart + j], bp, dir)) {
+                        // Check if this is the best
+                        if (j < bestRunLength) {
+                            bestRunStart = runStart;
+                            bestRunLength = j + 1;
+                        }
+                        break;
                     }
-                    break;
                 }
 
             }
@@ -1580,14 +1624,25 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         // Add stair pieces
         room.stairs.reserve(room.stairs.size() + bestRunLength);
         ui32 height = 0;
+        Cartesian prevDir = Cartesian::NONE;
         for (ui32 j = 0; j < bestRunLength; ++j) {
             const TileIndex tileIndex = runs[bestRunStart + j];
             bp.tiles[tileIndex].type = BlueprintTileType::STAIRS;
-            bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y].type = BlueprintTileType::AIR;
+            if (j > 0) {
+                bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y].type = BlueprintTileType::AIR;
+            }
             StairPiece& stairPiece = room.stairs.emplace_back(StairPiece{});
-            stairPiece.height = height++;
-            stairPiece.pos = tileIndex;
             stairPiece.dir = dirs[bestRunStart + j];
+            stairPiece.pos = tileIndex;
+            stairPiece.isLastPiece = (j == bestRunLength - 1);
+            if (prevDir != Cartesian::NONE && stairPiece.dir != prevDir) {
+                stairPiece.height = height;
+                stairPiece.isFlatPart = true;
+            }
+            else {
+                stairPiece.height = height++;
+            }
+            prevDir = stairPiece.dir;
             if (visLog) {
                 const i32v2 pos = getPosAtIndex(runs[bestRunStart + j], bp.aabb.dims);
                 visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));

@@ -31,6 +31,7 @@ struct StairPiece {
     TileIndex pos;
     ui16 height;
     bool isFlatPart : 1;
+    bool isLastPiece : 1;
     bool isBuilt : 1;
     bool isReserved : 1;
     Cartesian dir;
