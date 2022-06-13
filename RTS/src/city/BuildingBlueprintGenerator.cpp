@@ -1626,30 +1626,21 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                     if (nextPos.x > pos.x) {
                         dir = Cartesian::EAST;
                         assert(prevDir != Cartesian::WEST);
-                        if (visLog) {
-                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 0.5f));
-                        }
                     }
                     else if (nextPos.y > pos.y) {
                         dir = Cartesian::NORTH;
                         assert(prevDir != Cartesian::SOUTH);
-                        if (visLog) {
-                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 0.0f, 1.0f, 0.5f));
-                        }
                     }
                     else if (nextPos.x < pos.x) {
                         dir = Cartesian::WEST;
                         assert(prevDir != Cartesian::EAST);
-                        if (visLog) {
-                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
-                        }
                     }
                     else {
                         dir = Cartesian::SOUTH;
                         assert(prevDir != Cartesian::NORTH);
-                        if (visLog) {
-                            visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 1.0f, 1.0f, 0.5f));
-                        }
+                    }
+                    if (visLog) {
+                        visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), CARTESIAN_COLORS[e_cast(dir)]);
                     }
                     // Store dir
                     dirs[runStart + j] = dir;
@@ -1688,6 +1679,7 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 }
                 // Last one is up always (if not into a wall)
                 if (upCount == STAIRS_UP_COUNT - 1) {
+                    dirs[runStart + j] = dir;
                     // If running into a wall, not done
                     if (!isRunningIntoWallAtEnd(runs[runStart + j], bp, dir)) {
                         // Check if this is the best
@@ -1731,7 +1723,9 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
             prevDir = stairPiece.dir;
             if (visLog) {
                 const i32v2 pos = getPosAtIndex(runs[bestRunStart + j], bp.aabb.dims);
-                visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
+                const f32v3 visPos = f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight);
+                visLog->addFilledQuad(visPos, f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
+                visLog->addCartesianArrow(visPos + f32v3(0.5f, 0.5f, 0.0f), 0.75f, CARTESIAN_COLORS[e_cast(stairPiece.dir)], stairPiece.dir);
             }
         }
     }

@@ -16,6 +16,7 @@ enum class VisualLogShapeType {
     LINE,
     WIRE_QUAD,
     QUAD,
+    ARROW,
 };
 
 struct VisualLogShape {
@@ -54,6 +55,7 @@ public:
     void addLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color);
     void addWireQuad(const f32v3& origin, const f32v2& dims, color4 color);
     void addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color);
+    void addCartesianArrow(const f32v3& center, f32 length, color4 color, Cartesian dir);
 
     void finish();
 
@@ -77,6 +79,7 @@ private:
     f32v3 mRootPos = f32v3(0.0f);
     ui32 mNumQuads = 0;
     ui32 mNumLines = 0;
+    ui32 mNumArrows = 0;
     SimpleMesh mLinesMesh;
     SimpleMesh mQuadsMesh;
     nString mName;

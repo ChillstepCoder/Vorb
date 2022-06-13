@@ -1000,19 +1000,15 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                 switch (dir) {
                     case Cartesian::SOUTH:
                         sideUvOrient = AXIS_X;
-                        frontUvOrient = AXIS_Y;
                         break;
                     case Cartesian::WEST:
                         sideUvOrient = AXIS_Y;
-                        frontUvOrient = AXIS_X;
                         break;
                     case Cartesian::EAST:
                         sideUvOrient = AXIS_Y;
-                        frontUvOrient = AXIS_X;
                         break;
                     case Cartesian::NORTH:
                         sideUvOrient = AXIS_X;
-                        frontUvOrient = AXIS_Y;
                         break;
                     default:
                         assert(false);

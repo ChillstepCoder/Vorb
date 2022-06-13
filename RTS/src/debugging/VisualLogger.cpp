@@ -12,6 +12,8 @@
 
 #include <Vorb/graphics/GLProgram.h>
 
+#include "util/MathUtil.hpp"
+
 std::vector<std::unique_ptr<VisualLog>> VisualLogger::sVisualLogs;
 std::mutex VisualLogger::sMutex;
 
@@ -72,6 +74,38 @@ void VisualLog::addFilledQuad(const f32v3& origin, const f32v2& dims, color4 col
     newShape.color = color;
 }
 
+void VisualLog::addCartesianArrow(const f32v3& center, f32 length, color4 color, Cartesian dir) {
+    ++mNumArrows;
+    ++mRenderStepInfo.back().shapeCount;
+    VisualLogShape& newShape = mShapes.emplace_back();
+    newShape.type = VisualLogShapeType::ARROW;
+    newShape.color = color;
+    const f32v3 worldCenter = mRootPos + center;
+    const f32 halfLength = length * 0.5f;
+    switch (dir) {
+        case Cartesian::SOUTH:
+            newShape.line.position1 = worldCenter + f32v3(0.0f, halfLength, 0.0f);
+            newShape.line.position2 = worldCenter + f32v3(0.0f, -halfLength, 0.0f);
+            break;
+        case Cartesian::WEST:
+            newShape.line.position1 = worldCenter + f32v3(halfLength, 0.0f, 0.0f);
+            newShape.line.position2 = worldCenter + f32v3(-halfLength, 0.0f, 0.0f);
+            break;
+        case Cartesian::EAST:
+            newShape.line.position1 = worldCenter + f32v3(-halfLength, 0.0f, 0.0f);
+            newShape.line.position2 = worldCenter + f32v3(halfLength, 0.0f, 0.0f);
+            break;
+        case Cartesian::NORTH:
+            newShape.line.position1 = worldCenter + f32v3(0.0f, -halfLength, 0.0f);
+            newShape.line.position2 = worldCenter + f32v3(0.0f, halfLength, 0.0f);
+            break;
+        default:
+            assert(false);
+            break;
+
+    }
+}
+
 void VisualLog::finish() {
     mSelectedRenderStep = 0;
     mShapesToRender = mRenderStepInfo[0].shapeCount;
@@ -127,7 +161,7 @@ void VisualLog::buildMesh() {
     std::vector<SimpleMeshVertex> lineVertices;
     std::vector<SimpleMeshVertex> quadVertices;
     // Reserve maximum size of mesh
-    lineVertices.reserve(mNumLines * 2);
+    lineVertices.reserve(mNumLines * 2 + mNumArrows * 6);
     quadVertices.reserve(mNumQuads * 4);
 
     ui32 i = 0;
@@ -206,6 +240,31 @@ void VisualLog::buildMesh() {
                     v2.position = p1;
                     v2.color = shape.color;
                 }
+                break;
+            }
+            case VisualLogShapeType::ARROW: {
+                SimpleMeshVertex& v1 = lineVertices.emplace_back();
+                v1.position = shape.line.position1;
+                v1.color = shape.color;
+                SimpleMeshVertex& v2 = lineVertices.emplace_back();
+                v2.position = shape.line.position2;
+                v2.color = shape.color;
+                // Arrow parts
+                const f32v3 offset = v1.position - v2.position;
+                const f32v2 l1 = MathUtil::RotateVector(offset.x, offset.y, 30.0f) * 0.2f;
+                const f32v2 l2 = MathUtil::RotateVector(offset.x, offset.y, -30.0f) * 0.2f;
+                SimpleMeshVertex& v3 = lineVertices.emplace_back();
+                v3.position = shape.line.position2;
+                v3.color = shape.color;
+                SimpleMeshVertex& v4 = lineVertices.emplace_back();
+                v4.position = shape.line.position2 + f32v3(l1.x, l1.y, 0.0f);
+                v4.color = shape.color;
+                SimpleMeshVertex& v5 = lineVertices.emplace_back();
+                v5.position = shape.line.position2;
+                v5.color = shape.color;
+                SimpleMeshVertex& v6 = lineVertices.emplace_back();
+                v6.position = shape.line.position2 + f32v3(l2.x, l2.y, 0.0f);
+                v6.color = shape.color;
                 break;
             }
             default:

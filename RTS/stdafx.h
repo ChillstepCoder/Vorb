@@ -178,6 +178,12 @@ const i32v2 CARTESIAN_EDGE_INDEX_OFFSET_MULTS[CARTESIAN_COUNT] = {
     i32v2(1, 0), // EAST
     i32v2(0, 1), // NORTH
 };
+const color4 CARTESIAN_COLORS[CARTESIAN_COUNT] = {
+    color4(0, 128, 128, 255), // SOUTH
+    color4(128, 0, 128, 255), // WEST
+    color4(255, 0, 0, 255), // EAST
+    color4(0, 255, 0, 255), // NORTH
+};
 
 // Corner winding
 constexpr int CORNER_COUNT = 4;
