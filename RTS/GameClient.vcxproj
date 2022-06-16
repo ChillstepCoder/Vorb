@@ -260,6 +260,7 @@
     <ClCompile Include="src\rendering\RenderStats.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
     <ClCompile Include="src\rendering\Skybox.cpp" />
+    <ClCompile Include="src\rendering\TextRenderer.cpp" />
     <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp" />
     <ClCompile Include="src\rendering\texture\SubTexture.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
@@ -267,6 +268,7 @@
     <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
+    <ClCompile Include="src\resources\FontRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\resources\SkillRepository.cpp" />
@@ -419,6 +421,7 @@
     <ClInclude Include="src\rendering\CityDebugRenderer.h" />
     <ClInclude Include="src\rendering\CloudRenderer.h" />
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h" />
+    <ClInclude Include="src\rendering\font\Font.h" />
     <ClInclude Include="src\rendering\GLExtensions.h" />
     <ClInclude Include="src\rendering\GlobalUboData.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
@@ -445,6 +448,7 @@
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
+    <ClInclude Include="src\rendering\TextRenderer.h" />
     <ClInclude Include="src\rendering\texture\NormalMapGenerator.h" />
     <ClInclude Include="src\rendering\texture\SubTexture.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />
@@ -455,6 +459,7 @@
     <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
+    <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\resources\SkillRepository.h" />

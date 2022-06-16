@@ -1,12 +1,12 @@
 #pragma once
 
+class AmbientOcclusionPostProcess;
 class BuildingRenderer;
 class Camera3D;
 class CharacterRenderer;
 class ChunkRenderer;
 class CityDebugRenderer;
 class CloudRenderer;
-class AmbientOcclusionPostProcess;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
 class ICamera;
@@ -17,9 +17,10 @@ class MaterialRenderer;
 class ParticleSystemRenderer;
 class QuadMesh;
 class ResourceManager;
-class Skybox;
 class ShadowRenderer;
+class Skybox;
 class TerrainRenderer;
+class TextRenderer;
 class UIContext;
 class World;
 
@@ -99,6 +100,7 @@ private:
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
+    mutable std::unique_ptr<TextRenderer> mTextRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

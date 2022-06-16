@@ -179,15 +179,15 @@ void vg::SpriteFont::init(const cString font, ui32 size, char cs, char ce) {
     m_glyphs[m_regLength].size = m_glyphs[0].size;
     m_glyphs[m_regLength].uvRect = f32v4(0.0f, 0.0f, (f32)rs / (f32)bestWidth, (f32)rs / (f32)bestHeight);
 
-#ifdef DEBUG
-    // Save An Image
-    std::vector<ui8> pixels;
-    pixels.resize(bestWidth * bestHeight * 4);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
-    char buffer[512];
-    sprintf(buffer, "SFont_%s_%s_%d.png", TTF_FontFaceFamilyName(f), TTF_FontFaceStyleName(f), size);
-    vg::ImageIO().save(buffer, pixels.data(), bestWidth, bestHeight, vg::ImageIOFormat::RGBA_UI8);
-#endif // DEBUG
+//#ifdef DEBUG
+//    // Save An Image
+//    std::vector<ui8> pixels;
+//    pixels.resize(bestWidth * bestHeight * 4);
+//    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+//    char buffer[512];
+//    sprintf(buffer, "SFont_%s_%s_%d.png", TTF_FontFaceFamilyName(f), TTF_FontFaceStyleName(f), size);
+//    vg::ImageIO().save(buffer, pixels.data(), bestWidth, bestHeight, vg::ImageIOFormat::RGBA_UI8);
+//#endif // DEBUG
 
     glBindTexture(GL_TEXTURE_2D, 0);
     delete[] glyphRects;
@@ -278,6 +278,7 @@ std::vector<ui32>* vg::SpriteFont::createRows(i32v4* rects, ui32 rectsLength, ui
         if (cw[i] > w) w = cw[i];
     }
 
+    delete[] cw;
     return l;
 }
 

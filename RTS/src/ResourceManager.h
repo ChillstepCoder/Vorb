@@ -18,6 +18,7 @@ class AnimationRepository;
 class RigRepository;
 class AnimMachineRepository;
 class SkillRepository;
+class FontRepository;
 struct SubTexture;
 
 // Loads and manages textures, tiles, and other resources
@@ -48,6 +49,7 @@ public:
     BrushRepository& getBrushRepository() const { return *mBrushRepository; }
     SkillRepository& getSkillRepository() const { return *mSkillRepository; }
     TextureRepository& getTextureRepository() const { return *mTextureRepository; }
+    FontRepository& getFontRepository() const { return *mFontRepository; }
 
     // Hot reload
     void reloadMaterials();
@@ -77,6 +79,7 @@ private:
     std::vector<vio::Path> mAnimMachineFiles;
     std::vector<vio::Path> mModelFiles;
     std::vector<vio::Path> mSkillFiles;
+    std::vector<vio::Path> mFontFiles;
 
     std::unique_ptr<MaterialManager> mMaterialManager;
     std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
@@ -93,6 +96,7 @@ private:
     std::unique_ptr<SkillRepository> mSkillRepository;
     std::unique_ptr<vg::TextureCache> mTextureCache;
     std::unique_ptr<TextureRepository> mTextureRepository;
+    std::unique_ptr<FontRepository> mFontRepository;
 
     std::unique_ptr<vio::IOManager> mIoManager;
 

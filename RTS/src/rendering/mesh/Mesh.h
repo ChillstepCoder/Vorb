@@ -32,7 +32,7 @@ class Mesh
     friend class MeshBuilder;
     friend class BillboardMeshBuilder;
 public:
-    class Mesh();
+    Mesh();
     virtual ~Mesh();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Mesh);

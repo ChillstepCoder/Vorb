@@ -17,6 +17,7 @@
 #include "resources/SkillRepository.h"
 #include "resources/TextureRepository.h"
 #include "resources/TileRepository.h"
+#include "resources/FontRepository.h"
 #include "editor/BrushRepository.h"
 
 #include <Vorb/io/IOManager.h>
@@ -56,6 +57,7 @@ ResourceManager::ResourceManager() {
     mModelRepository = std::make_unique<ModelRepository>(*mIoManager, *mTextureCache, *mRigRepository);
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
     mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
+    mFontRepository = std::make_unique<FontRepository>();
 }
 
 ResourceManager::~ResourceManager() {
@@ -90,6 +92,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mRigFiles.clear();
     mAnimMachineFiles.clear();
     mSkillFiles.clear();
+    mFontFiles.clear();
 
     gatherRecursive(folderPath);
 
@@ -219,6 +222,14 @@ void ResourceManager::loadFiles() {
         }
     }
 
+    // Load font definitions
+    {
+        ScopedTimer timer("Font load");
+        for (auto&& entry : mFontFiles) {
+            mFontRepository->loadFont(entry);
+        }
+    }
+
     mHasLoadedResources = true;
 
     std::cout << "Loaded resources in " << totalTimer.stop() << " ms" << std::endl;
@@ -334,7 +345,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         else if (fileHasExtension(entry, ".anim")) {
             mAnimFiles.emplace_back(entry);
         }
-        // TODO: .ttf?
+        else if (fileHasExtension(entry, ".ttf")) {
+            mFontFiles.emplace_back(entry);
+        }
     }
 }
 

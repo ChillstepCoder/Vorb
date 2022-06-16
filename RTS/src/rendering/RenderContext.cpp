@@ -30,6 +30,7 @@
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/mesh/MeshBuilder.h"
+#include "rendering/TextRenderer.h"
 #include "TextureManip.h"
 
 #include "structure/StructureManager.h"
@@ -71,7 +72,7 @@ void APIENTRY glDebugOutput(GLenum source,
     const void* userParam) {
     // ignore non-significant error/warning codes
     // 131218 - performance - recompiling shader... hmmm
-    if (/*id == 131169 || */id == 131185 || id == 131218 /*|| id == 131204*/) return;
+    if (/*id == 131169 || */id == 131185 || id == 131218 || id == 131204) return;
 
     std::cout << "---------------" << std::endl;
     std::cout << "Debug message (" << id << " - " << std::hex << "0x" << id << "): " << message << std::endl;
@@ -241,6 +242,9 @@ void RenderContext::initPostLoad() {
         mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(*mMaterialRenderer, mScreenResolution);
         mShadowRenderer = std::make_unique<ShadowRenderer>(*mMaterialRenderer, mScreenResolution);
         mTerrainRenderer = std::make_unique<TerrainRenderer>(*mMaterialRenderer);
+        // Init Text
+        mTextRenderer = std::make_unique<TextRenderer>(*mMaterialRenderer);
+        //mTextRenderer->initFont("data/fonts/titilium_semibold.ttf");
         checkGlError("Renderer init");
     }
 

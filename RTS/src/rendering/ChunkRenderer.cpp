@@ -127,8 +127,7 @@ void ChunkRenderer::TryRenderBillboardMesh(const Chunk& chunk, const Material* m
 }
 
 
-void ChunkRenderer::InitPostLoad()
-{
+void ChunkRenderer::InitPostLoad() {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mStandardMaterial = materialManager.getMaterial("standard_tile");
     mGrassMaterial = materialManager.getMaterial("grass");
