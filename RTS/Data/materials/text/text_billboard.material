@@ -1,0 +1,3 @@
+text_billboard:
+  vert: text_billboard.vert
+  frag: text_billboard.frag

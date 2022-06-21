@@ -12,13 +12,11 @@ using singleton_task_pool = boost::singleton_pool<billboard_mesh_builder_pool, s
 #define SUBMESH_INDEX_MAIN -1
 constexpr ui32 MAX_SUBTEXTURES_PER_MESH = 255;
 
-BillboardMeshBuilder::BillboardMeshBuilder()
-{
+BillboardMeshBuilder::BillboardMeshBuilder() {
 
 }
 
-BillboardMeshBuilder::~BillboardMeshBuilder()
-{
+BillboardMeshBuilder::~BillboardMeshBuilder() {
 
 }
 

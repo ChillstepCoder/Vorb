@@ -6,14 +6,6 @@
 #include <boost/container_hash/hash.hpp>
 
 // TBO Billboards
-// TODO: 16 bit
-struct BillboardInstanceData {
-    f32v3 position; // TODO: Compress?
-    f32 type; // Lookup into uniform array
-    f32 sizeX;
-    f32 sizeY; // TODO: Compress
-};
-static_assert(sizeof(BillboardInstanceData) == 24);
 struct SubtextureUniformData {
     f32v4 uvRect; //TODO: ui16v2?
     TextureHandle textureDiffuse;

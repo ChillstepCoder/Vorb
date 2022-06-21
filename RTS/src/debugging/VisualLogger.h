@@ -1,6 +1,11 @@
 #pragma once
 
+#include "rendering/mesh/Mesh.h"
 #include "debugging/SimpleMesh.h"
+
+class MaterialRenderer;
+
+class Font;
 
 struct SimpleLine {
     f32v3 position1;
@@ -17,12 +22,15 @@ enum class VisualLogShapeType {
     WIRE_QUAD,
     QUAD,
     ARROW,
+    TEXT,
+    COUNT
 };
 
 struct VisualLogShape {
     union {
         SimpleLine line;
         SimpleQuad quad;
+        ui32 textIndex;
     };
     color4 color;
     VisualLogShapeType type;
@@ -36,6 +44,14 @@ struct VisualLogRenderStepInfo {
     ui32 startIndex;
     ui32 shapeCount;
     nString stepName;
+};
+
+struct VisualLogTextData {
+    const Font* font;
+    nString str;
+    f32v3 rootPos;
+    f32v2 offset2D;
+    f32 glyphHeight;
 };
 
 class VisualLog {
@@ -56,16 +72,18 @@ public:
     void addWireQuad(const f32v3& origin, const f32v2& dims, color4 color);
     void addFilledQuad(const f32v3& origin, const f32v2& dims, color4 color);
     void addCartesianArrow(const f32v3& center, f32 length, color4 color, Cartesian dir);
+    void addText(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, color4 color);
 
     void finish();
 
-    void render(const f32v3& cameraPos, const f32m4& viewMatrix);
+    void render(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer);
 
 private:
     void buildMesh();
 
     std::vector<VisualLogRenderStepInfo> mRenderStepInfo;
     std::vector<VisualLogShape> mShapes;
+    std::vector<VisualLogTextData> mTextData;
     std::atomic_bool mFinishedBuilding = false;
     std::atomic_bool mShouldRender = false;
 
@@ -82,6 +100,7 @@ private:
     ui32 mNumArrows = 0;
     SimpleMesh mLinesMesh;
     SimpleMesh mQuadsMesh;
+    Mesh mTextMesh;
     nString mName;
 };
 
@@ -90,7 +109,7 @@ public:
     static VisualLog* tryGetNewVisualLog(const nString& name);
     static void renderImgui();
 
-    static void renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix);
+    static void renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer);
     
     static std::vector<std::unique_ptr<VisualLog>> sVisualLogs;
 

@@ -17,6 +17,7 @@
 #include "Vorb/utils.h"
 #include <iostream>
 
+
 // X Offset multipliers for vg::TextAlign
 const f32 X_OFF_MULTS[10] = {
     0.0f, // NONE
@@ -162,7 +163,6 @@ void vg::SpriteFont::init(const cString font, ui32 size, char cs, char ce) {
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rs, rs, GL_RGBA, GL_UNSIGNED_BYTE, pureWhiteSquare);
     delete[] pureWhiteSquare;
     pureWhiteSquare = nullptr;
-
     // Create SpriteBatch Glyphs
     m_glyphs = new CharGlyph[m_regLength + 1];
     for (i = 0; i < m_regLength; i++) {

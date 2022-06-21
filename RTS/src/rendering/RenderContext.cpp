@@ -30,7 +30,6 @@
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/mesh/MeshBuilder.h"
-#include "rendering/TextRenderer.h"
 #include "TextureManip.h"
 
 #include "structure/StructureManager.h"
@@ -242,9 +241,6 @@ void RenderContext::initPostLoad() {
         mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(*mMaterialRenderer, mScreenResolution);
         mShadowRenderer = std::make_unique<ShadowRenderer>(*mMaterialRenderer, mScreenResolution);
         mTerrainRenderer = std::make_unique<TerrainRenderer>(*mMaterialRenderer);
-        // Init Text
-        mTextRenderer = std::make_unique<TextRenderer>(*mMaterialRenderer);
-        //mTextRenderer->initFont("data/fonts/titilium_semibold.ttf");
         checkGlError("Renderer init");
     }
 
@@ -779,7 +775,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Visual logger
     if (sDebugOptions.mEnableVisualLogs) {
-        VisualLogger::renderActiveLogs(camera.getPosition(), camera.getVPMatrix());
+        VisualLogger::renderActiveLogs(camera.getPosition(), camera.getVPMatrix(), *mMaterialRenderer);
     }
 
 }

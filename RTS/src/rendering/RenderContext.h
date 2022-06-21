@@ -100,7 +100,6 @@ private:
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
-    mutable std::unique_ptr<TextRenderer> mTextRenderer;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

@@ -31,6 +31,7 @@ class Mesh
 {
     friend class MeshBuilder;
     friend class BillboardMeshBuilder;
+    friend class TextMeshBuilder;
 public:
     Mesh();
     virtual ~Mesh();
@@ -39,7 +40,7 @@ public:
 
     virtual void draw() const;
     void destroy();
-    bool isValid() const { return mMainMesh.mIndexCount != 0; }
+    bool isValid() const { return mMainMesh.mVao != 0; }
 
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 

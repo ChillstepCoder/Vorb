@@ -1,20 +1,22 @@
 #include "stdafx.h"
-#include "TextRenderer.h"
+#include "TextMeshBuilder.h"
 
-#include "rendering/mesh/BillboardMeshBuilder.h"
-#include "rendering/MaterialManager.h"
-
-#include "ResourceManager.h"
-#include "resources/FontRepository.h"
+#include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/MeshBuilder.h"
 
 
-TextMeshBillboard::TextMeshBillboard() {
+TextMeshBuilder::TextMeshBuilder() {
 
 }
 
-TextMeshBillboard::~TextMeshBillboard() {
+TextMeshBuilder::~TextMeshBuilder() {
 
 }
+
+
+#define SUBMESH_INDEX_MAIN -1
+constexpr ui32 MAX_SUBTEXTURES_PER_MESH = 255;
+
 
 // X Offset multipliers for TextAlign
 const f32 X_OFF_MULTS[10] = {
@@ -36,12 +38,6 @@ struct GlyphToRender {
     size_t gi;
     f32 x;
 };
-
-
-TextRenderer::TextRenderer(const MaterialRenderer& materialRenderer) : mMaterialRenderer(materialRenderer) {
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mBillboardMaterial = materialManager.getMaterial("billboard_ssbo");
-}
 
 
 f32 getInitialYOffset(const Font& font, TextAlign textAlign, f32 glyphHeight) {
@@ -88,14 +84,8 @@ f32 getYOffset(size_t numRows, TextAlign align, f32 glyphHeight) {
     return 0.0f; // Should never happen
 }
 
-
-
-void TextRenderer::createTextMesh(Font& font, TextMeshBillboard& mesh, const cString text, const f32v3& rootPosWorld, const f32v2& offset2D, const f32 glyphHeight, const color4& color, TextAlign align /*= TextAlign::CENTER*/, const f32v4& clipRect, bool shouldWrap /*= false*/) {
+void TextMeshBuilder::addString(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, TextAlign align, const f32v4 clipRect /*= f32v4(-1000.0f, -1000.0f, 2000.0f, 2000.0f)*/, bool shouldWrap /*= true*/) {
     assert(align == TextAlign::CENTER); // TODO: IMPLEMENT
-
-    BillboardMeshBuilder meshBuilder;
-
-    mesh.mRootPosition = rootPosWorld;
 
     f32v2 posOffset2D = offset2D;
     posOffset2D.y += getInitialYOffset(font, align, glyphHeight) * glyphHeight;
@@ -107,8 +97,8 @@ void TextRenderer::createTextMesh(Font& font, TextMeshBillboard& mesh, const cSt
     std::vector <std::vector<GlyphToRender> > rows(1); // Rows of glyphs
     std::vector <f32> rightEdges(1, 0.0f); // Right edge positions for rows
     int si;
-    for (si = 0; text[si] != 0; ++si) {
-        char c = text[si];
+    for (si = 0; si < str.size(); ++si) {
+        char c = str[si];
         if (c == '\n') {
             // Go to new row on newlines
             rightEdges.back() = gx;
@@ -150,7 +140,7 @@ void TextRenderer::createTextMesh(Font& font, TextMeshBillboard& mesh, const cSt
                     else {
                         // Count the word size
                         int numChars = 0;
-                        while (text[si - numChars] != ' ' && si - numChars != 0) numChars++;
+                        while (str[si - numChars] != ' ' && si - numChars != 0) numChars++;
 
                         if (si - numChars > 0) {
                             for (int i = 0; i < numChars; i++) {
@@ -180,17 +170,18 @@ void TextRenderer::createTextMesh(Font& font, TextMeshBillboard& mesh, const cSt
     }
 
     // Reserve for efficiency
-    meshBuilder.reserveBillboardCount(si);
+    mFontData.mGlyphs.reserve(mFontData.mGlyphs.size() + si);
 
     rightEdges.back() = gx;
     // Get y offset
     f32 yOff = getYOffset(rows.size(), align, glyphHeight);
+
+    const ui8 subtextureIndex = getFontIndex(font.mTexture);
+
     // Render each row
     for (size_t y = 0; y < rows.size(); y++) {
-        // TODO(Matthew): This value isn't used, use or kill.
-        //f32 rightEdge = rightEdges[y];
         for (auto& g : rows[y]) {
-            f32v2 position = posOffset2D + f32v2(g.x + rightEdges[y] * X_OFF_MULTS[(int)align], yOff + y * glyphHeight);
+            f32v2 position = posOffset2D + f32v2(g.x + rightEdges[y] * X_OFF_MULTS[(int)align], yOff - y * glyphHeight);
             f32v2 dims = font.mGlyphs[g.gi].size * glyphScale;
             f32v4 uvRect = font.mGlyphs[g.gi].uvRect;
             // Clip the glyphs with clipRect
@@ -198,10 +189,106 @@ void TextRenderer::createTextMesh(Font& font, TextMeshBillboard& mesh, const cSt
             // Don't draw the glyph if its too small after clipping
             if (dims.x > 0.0f && dims.y > 0.0f) {
                 // Add glyph
-                meshBuilder.addBillboard(f32v3(position.x, position.y, 0.0f), dims, font.mTexture);
+                mFontData.mGlyphs.emplace_back(GlyphData{ uvRect, rootPosition, subtextureIndex, dims, position });
             }
         }
     }
+}
 
-    meshBuilder.finishMesh(mesh.mMesh, MeshDrawMode::STATIC);
+void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
+    // return blank mesh if we have no geometry
+    if (mFontData.mGlyphs.empty()) {
+        mesh.destroy();
+        return;
+    }
+    // Always shared
+    mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+
+    // Set bounds
+    mesh.mBoundingSphere = mBoundingSphere;
+
+    // Allocate all buffers if needed
+    initMeshBuffers(mesh.mMainMesh);
+
+    // Upload data
+    uploadBufferData(mesh.mMainMesh, mFontData, drawMode);
+    mFontData.clear();
+
+    // Cleanup
+    // TODO: Do we need this really?
+    mSubtextureLookup.clear();
+
+    glBindVertexArray(0);
+}
+
+ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {
+    auto&& it = mSubtextureLookup.find(texture.mTextureDiffuse);
+    if (it != mSubtextureLookup.end()) {
+      // TODO: UNEEDED
+        return it->second;
+    }
+    else {
+        assert(mFontData.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);
+        // This texture fits in the main submesh
+        const ui8 fontIndex = mFontData.mFontTextures.size();
+        mFontData.mFontTextures.emplace_back(texture.mTextureHandleDiffuse);
+        mSubtextureLookup[texture.mTextureDiffuse] = fontIndex;
+        return fontIndex;
+    }
+}
+
+void TextMeshBuilder::initMeshBuffers(SubMeshData& subMesh) {
+    // VAO
+    if (subMesh.mVao == 0) {
+        glGenVertexArrays(1, &subMesh.mVao);
+    }
+    glBindVertexArray(subMesh.mVao);
+    // UBO
+    if (subMesh.mUbo == 0) {
+        glGenBuffers(1, &subMesh.mUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
+    }
+    // SSBO
+    if (subMesh.mSSBO == 0) {
+        glGenBuffers(1, &subMesh.mSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
+    }
+    // IBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MeshBuilder::sQuadIbo);
+
+    checkGlError("TextMeshBuilder::initMeshBuffers");
+}
+
+void TextMeshBuilder::uploadBufferData(SubMeshData& subMesh, const FontMeshData& data, MeshDrawMode drawMode) {
+    glBindVertexArray(subMesh.mVao);
+
+    // IBO
+    subMesh.mIndexCount = data.mGlyphs.size() * 6;
+
+    // UBO
+    if (subMesh.mUbo) {
+        const ui32 textureBufferSizeBytes = data.mFontTextures.size() * sizeof(ui32v4);
+        // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
+        ui32v4 buffer[MAX_SUBTEXTURES_PER_MESH];
+        assert(data.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);
+        for (ui32 i = 0; i < data.mFontTextures.size(); ++i) {
+            TextureHandle handle = data.mFontTextures[i];
+            // We pack two textures into a single ui32v4
+            ui32 textureOffset = (i % 2) * 2;
+            buffer[i][textureOffset] = handle & 0xffffffff;
+            buffer[i][textureOffset + 1] = handle >> 32;
+        }
+        // Allocate orphaned
+        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, e_cast(drawMode));
+        // Set data
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, buffer);
+    }
+
+    // SSBO
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GlyphData) * data.mGlyphs.size(), data.mGlyphs.data(), GL_STATIC_COPY);
+    checkGlError("TextMeshBuilder::uploadMeshData");
 }

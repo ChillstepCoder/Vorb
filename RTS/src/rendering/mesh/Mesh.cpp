@@ -46,22 +46,26 @@ void Mesh::draw() const {
 void Mesh::destroy() {
     if (mMainMesh.mVao) {
         const bool isUsingShared = mFlags.isBitSet(MeshFlags::USING_SHARED_IBO);
-        glDeleteBuffers(1, &mMainMesh.mVbo);
         // When using shared IBO we don't delete the IBO, which is the last buffer
         if (!isUsingShared){
             glDeleteBuffers(1, &mMainMesh.mIbo);
         }
+        mMainMesh.mIbo = 0;
         if (mMainMesh.mUbo) {
             glDeleteBuffers(1, &mMainMesh.mUbo);
+            mMainMesh.mUbo = 0;
         }
         if (mMainMesh.mSSBO) {
             glDeleteBuffers(1, &mMainMesh.mSSBO);
+            mMainMesh.mSSBO = 0;
         }
         if (mMainMesh.mVbo) {
             glDeleteBuffers(1, &mMainMesh.mVbo);
+            mMainMesh.mVbo = 0;
         }
         glDeleteVertexArrays(1, &mMainMesh.mVao);
         mMainMesh.mVao = 0;
+        mMainMesh.mIndexCount = 0;
         for (auto&& subMesh : mSubMeshes) {
             subMesh.destroy(isUsingShared);
         }

@@ -32,6 +32,7 @@ struct RoomDef {
     ui8 maxWidth = 12;
     f32 stairsChance = 0.0f;
     bool canStairsConnect = true;
+    nString name;
 };
 KEG_TYPE_DECL(RoomDef);
 

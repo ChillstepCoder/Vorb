@@ -20,7 +20,9 @@ enum class PolyTypeFlags : ui8 {
 
 class MeshBuilder
 {
+    // For access to shared IBOs
     friend class BillboardMeshBuilder;
+    friend class TextMeshBuilder;
 public:
     MeshBuilder(bool useSharedIndexBuffer);
     ~MeshBuilder();

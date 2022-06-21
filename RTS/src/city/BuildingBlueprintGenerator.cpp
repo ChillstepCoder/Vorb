@@ -14,6 +14,12 @@
 
 #include <boost/container/static_vector.hpp>
 
+// For font
+#include "resources/FontRepository.h"
+#include "ResourceManager.h"
+
+const Font* sFontVisLog = nullptr;
+
 // For vislog
 constexpr int MAX_ROOM_COLORS = 8;
 constexpr float ROOM_COLOR_ALPHA = 0.6f;
@@ -57,6 +63,9 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
                 visLog.addLineBetweenPoints(startPos, endPos, color4(0.0f, 1.0f, 0.0f));
             }
         }
+
+        // Room name
+        visLog.addText(node.roomDef->name, f32v3(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
         ++i;
     }
 
@@ -93,14 +102,12 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
     mBuildingRepo(buildingRepo),
     mCityBuilder(cityBuilder)
 {
-
 }
 
 std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
     BuildingBlueprintId id = getNextBuildingID();
-
 
     std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
@@ -136,6 +143,7 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Blueprint");
     if (visLog) {
         visLog->setRootPos(f32v3(bPtr->aabb.pos.x, bPtr->aabb.pos.y, bPtr->zPos));
+        sFontVisLog = &Services::ResourceManager::ref().getFontRepository().getFont("titilium_semibold");
     }
 
     // Room Graph
@@ -364,6 +372,8 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                     visLog->addWireQuad(childPos, f32v2(1.0f), color);
                     const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
                     visLog->addLineBetweenPoints(childPos, parentPos, color);
+
+                    visLog->addText(child.roomDef->name, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
                 }
                 placeChildrenRecursive(bp, &child, dims2d.y, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
                 break;
@@ -401,6 +411,8 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                 visLog->addWireQuad(childPos, f32v2(1.0f), color);
                 const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
                 visLog->addLineBetweenPoints(childPos, parentPos, color);
+
+                visLog->addText(child.roomDef->name, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
             }
             assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
             placeChildrenRecursive(bp, &child, childWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
@@ -455,6 +467,8 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
     // We will generate to the right, then will rotate the coordinates around based on the cartesian
+
+    visLog->addText(root->roomDef->name, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
     placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, dims, visLog);
 
     // Rotate all coordinates around for Cartesian direction

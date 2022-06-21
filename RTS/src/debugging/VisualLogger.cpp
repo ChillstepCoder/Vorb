@@ -2,6 +2,11 @@
 #include "VisualLogger.h"
 
 #include "rendering/RenderStats.h"
+#include "rendering/mesh/TextMeshBuilder.h"
+#include "rendering/MaterialRenderer.h"
+#include "rendering/MaterialManager.h"
+
+#include "ResourceManager.h"
 
 #include "debugging/DebugMesh.h"
 #include "options/DebugOptions.h"
@@ -106,6 +111,14 @@ void VisualLog::addCartesianArrow(const f32v3& center, f32 length, color4 color,
     }
 }
 
+void VisualLog::addText(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, color4 color) {
+    VisualLogShape& newShape = mShapes.emplace_back();
+    newShape.type = VisualLogShapeType::TEXT;
+    newShape.color = color;
+    newShape.textIndex = mTextData.size();
+    mTextData.emplace_back(VisualLogTextData{&font, str, rootPosition, offset2D, glyphHeight});
+}
+
 void VisualLog::finish() {
     mSelectedRenderStep = 0;
     mShapesToRender = mRenderStepInfo[0].shapeCount;
@@ -113,7 +126,7 @@ void VisualLog::finish() {
     mDirtyRender = true;
 }
 
-void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
+void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer) {
     assert(IS_MAIN_THREAD());
 
     // Rebuild if needed
@@ -125,6 +138,9 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
     if (!sGlobalSimpleProgram.isCreated()) {
         initGlobalSimpleProgram();
     }
+
+    // Make sure we dont modify state
+    glBindVertexArray(0);
 
     sGlobalSimpleProgram.use();
     sGlobalSimpleProgram.enableVertexAttribArrays();
@@ -155,6 +171,17 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Render text
+    if (mTextMesh.isValid()) {
+        glDisable(GL_CULL_FACE);
+        const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+        const Material* material = materialManager.getMaterial("text_billboard");
+        materialRenderer.bindMaterialForRender(*material);
+        f32v3 offset = mRootPos - cameraPos;
+        glUniform3fv(material->getUniform("unOffset"), 1, &offset.x);
+        mTextMesh.draw();
+    }
 }
 
 void VisualLog::buildMesh() {
@@ -171,8 +198,9 @@ void VisualLog::buildMesh() {
     } else if (mRenderSingleStep) {
         i = mRenderStepInfo[mSelectedRenderStep].startIndex;
     }
-    
 
+    TextMeshBuilder textBuilder;
+    
     // Build meshes
     for (; i < end; ++i) {
         const VisualLogShape& shape = mShapes[i];
@@ -267,11 +295,18 @@ void VisualLog::buildMesh() {
                 v6.color = shape.color;
                 break;
             }
+            case VisualLogShapeType::TEXT: {
+                VisualLogTextData& data = mTextData[shape.textIndex];
+                textBuilder.addString(data.str, data.rootPos, *data.font, data.glyphHeight, data.offset2D, TextAlign::CENTER);
+                break;
+            }
             default:
                 assert(false);
                 break;
         }
     }
+    static_assert(e_cast(VisualLogShapeType::COUNT) == 5);
+
     // Lines
     if (lineVertices.size()) {
         if (mLinesMesh.vbo == 0) {
@@ -303,6 +338,9 @@ void VisualLog::buildMesh() {
         glDeleteBuffers(1, &mQuadsMesh.vbo);
         mQuadsMesh.vbo = 0;
     }
+
+    // Finish text
+    textBuilder.finishMesh(mTextMesh, MeshDrawMode::STATIC);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     mDirtyRender = false;
@@ -414,12 +452,12 @@ void VisualLogger::renderImgui() {
     ImGui::Separator();
 }
 
-void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
+void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer) {
 
     std::unique_lock<std::mutex> lock(sMutex);
     for (auto&& log : sVisualLogs) {
         if (log->mShouldRender) {
-            log->render(cameraPos, viewMatrix);
+            log->render(cameraPos, viewMatrix, materialRenderer);
         }
     }
 }

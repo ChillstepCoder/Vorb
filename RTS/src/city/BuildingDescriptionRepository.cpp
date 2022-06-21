@@ -70,6 +70,7 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
         assert(mRoomTypes.find(key) == mRoomTypes.end());
         RoomDefID newID = static_cast<RoomDefID>(mRoomDefs.size());
         description.id = newID;
+        description.name = key;
         mRoomTypes[key] = newID;
         mRoomDefs.emplace_back(std::move(description));
     }))) {
