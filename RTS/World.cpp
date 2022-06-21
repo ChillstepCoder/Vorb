@@ -7,8 +7,6 @@
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
 #include "weather/CloudManager.h"
-#include "physics/ContactListener.h"
-#include "physics/ContactFilter.h"
 #include "item/ItemStockpileRegistry.h"
 #include "structure/StructureManager.h"
 
@@ -26,10 +24,6 @@
 
 #include "ui/UIContext.h"
 
-#include <box2d/b2_world.h>
-#include <box2d/b2_fixture.h>
-
-#include "physics/PhysQueryCallback.h"
 #include "Utils.h"
 
 #include "city/City.h"
@@ -61,13 +55,6 @@ World::World() :
 
     // Init factories
 	mEntityFactory = std::make_unique<EntityFactory>(*mEcs);
-
-    // Init physics
-    mPhysWorld = std::make_unique<b2World>(b2Vec2(0.0f, 0.0f));
-    mContactListener = std::make_unique<ContactListener>(*mEcs);
-    mPhysWorld->SetContactListener(mContactListener.get());
-    mContactFilter = std::make_unique<ContactFilter>(*mEcs);
-    mPhysWorld->SetContactFilter(mContactFilter.get());
 
 	// Cities
 	mCities = std::make_unique<CityGraph>();
@@ -160,7 +147,7 @@ void World::tick(const f32v2& playerPos) {
 	mEcs->mPhysicsSystem.updateFrameBegin(mEcs->mRegistry);
 
 	// Update physics
-	mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
+	//mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
 
 	// Update particles (TODO: Ecs?)
 	// TODO: eww why is a resource updating?
@@ -715,139 +702,10 @@ void World::debugRefreshWorldGeneration() {
     }
 }
 
-std::vector<EntityDistSortKey> World::queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except /*= (entt::entity)0*/) {
-	// TODO: No allocation?
-
-	// Empty mask = all types
-	if (includeMask == 0) {
-		includeMask = ~0;
-	}
-
-	// TODO: Components as well? Better lookup?
-	std::vector<EntityDistSortKey> entities;
-
-	PhysQueryCallback queryCallBack(entities, pos, mEcs->mRegistry, includeMask, excludeMask, radius, except);
-	b2AABB aabb;
-	aabb.lowerBound = b2Vec2(pos.x - radius, pos.y - radius);
-	aabb.upperBound = b2Vec2(pos.x + radius, pos.y + radius);
-	mPhysWorld->QueryAABB(&queryCallBack, aabb);
-
-	if (sDebugOptions.mShowEntityQueries) {
-		f32 height = mWorldGrid.tryComputeHeightAtPoint(pos);
-		DebugRenderer::drawAABB(aabb, height, color4(0.0f, 1.0f, 0.0f), 100);
-	}
-
-	if (sorted) {
-		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
-			return a.first.dist < b.first.dist;
-		});
-	}
-
-	return entities;
-}
-
-inline void testExtremePoint(const f32v2& point, b2AABB& aabb) {
-	if (point.x < aabb.lowerBound.x) {
-		aabb.lowerBound.x = point.x;
-	}
-	else if (point.x > aabb.upperBound.x) {
-		aabb.upperBound.x = point.x;
-	}
-	if (point.y < aabb.lowerBound.y) {
-		aabb.lowerBound.y = point.y;
-	}
-	else if (point.y > aabb.upperBound.y) {
-		aabb.upperBound.y = point.y;
-	}
-}
-
-std::vector<EntityDistSortKey> World::queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except /*= (entt::entity)0*/) {
-	const float halfAngle = arcAngle * 0.5f;
-
-	// Empty mask = all types
-	if (includeMask == 0) {
-		includeMask = ~0;
-	}
-	
-	// TODO: Implementation is wrong for >= 180 degrees angles
-	// To fix we would need to start in our aim quadrant and increment/decrement nearby quadrants to see if they lie within
-	assert(arcAngle <= M_PI);
-
-	// TODO: Components as well? Better lookup?
-	std::vector<EntityDistSortKey> entities;
-
-	CONST f32v2 scaledNormal = normal * radius;
-	
-	// Center
-	b2AABB aabb;
-	aabb.lowerBound = TO_BVEC2_C(pos);
-	aabb.upperBound = TO_BVEC2_C(pos);
-
-	// Left ray
-	f32v2 offset = glm::rotate(scaledNormal, -halfAngle);
-	f32v2 point1 = pos + offset;
-	testExtremePoint(point1, aabb);
-
-	float centerAngle = atan2(normal.y, normal.x);
-
-	float startAngle = centerAngle - halfAngle;
-	float endAngle = centerAngle + halfAngle;
-
-	// Right ray
-	offset = glm::rotate(scaledNormal, +halfAngle);
-	f32v2 point2 = pos + offset;
-	testExtremePoint(point2, aabb);
-
-	static const f32v2 axisExtrema[5] = { {-1.0f, 0.0f}, {0.0f, -1.0f}, {1.0f, 0.0f}, {0.0f, 1.0f}, {-1.0f, 0.0f} };
-
-	int i = 0;
-	for (float angle = -M_PIf; i < 5; angle += M_PI_2f, ++i) {
-		if (angle > startAngle && angle < endAngle) {
-			testExtremePoint(pos + axisExtrema[i] * radius, aabb);
-			if (sDebugOptions.mShowEntityQueries) {
-				const f32 height = mWorldGrid.tryComputeHeightAtPoint(pos);
-				const f32v3 pos3d(pos.x, pos.y, height);
-				const f32v2 extrema = (pos + axisExtrema[i] * radius);
-				DebugRenderer::drawLine(pos3d, f32v3(extrema.x, extrema.y, height) - pos3d, color4(0.0f, 1.0f, 0.0f), 1);
-			}
-		}
-	}
-
-	ArcQueryCallback queryCallBack(entities, pos, mEcs->mRegistry, includeMask, excludeMask, radius, except, normal, halfAngle, quadrants);
-	mPhysWorld->QueryAABB(&queryCallBack, aabb);
-
-	if (sorted) {
-		std::sort(entities.begin(), entities.end(), [](const EntityDistSortKey& a, const EntityDistSortKey& b) {
-			return a.first.dist < b.first.dist;
-		});
-	}
-
-	if (sDebugOptions.mShowEntityQueries) {
-		static const int lifetime = 1;
-
-		const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
-		const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
-		const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
-		const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
-
-        const f32 height = mWorldGrid.tryComputeHeightAtPoint(pos);
-		const f32v3 pos3d(pos.x, pos.y, height);
-		DebugRenderer::drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color4(1.0f, 0.0f, 1.0f), lifetime);
-		DebugRenderer::drawLine(pos3d, f32v3(point1.x, point1.y, height) - pos3d, color4(0.0f, 0.0f, 1.0f), lifetime);
-		DebugRenderer::drawLine(pos3d, f32v3(point2.x, point2.y, height) - pos3d, color4(0.0f, 0.0f, 1.0f), lifetime);
-		DebugRenderer::drawLine(pos3d, f32v3(scaledNormal.x, scaledNormal.y, height), color4(0.0f, 0.0f, 1.0f), lifetime);
-	}
-
-	return entities;
-}
-
 entt::entity World::createEntity(const f32v2& pos, const nString& typeName) {
 	return mEntityFactory->createEntity(pos, typeName);
 }
 
-b2Body* World::createPhysBody(const b2BodyDef* bodyDef) {
-	return mPhysWorld->CreateBody(bodyDef);
-}
 
 void World::createCityAt(const ui32v2& worldPos) {
 	std::unique_ptr<City> newCity = std::make_unique<City>(worldPos, *this);

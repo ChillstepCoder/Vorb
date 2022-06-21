@@ -74,7 +74,7 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Release;$(LibraryPath)</LibraryPath>
@@ -98,14 +98,14 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;..\RTS\dependencies\box2d\build\bin\Debug\box2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug\libfbxsdk-md.lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug\libxml2-md.lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug\zlib-md.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\zlibd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\SDL2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\pngd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\glewd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib\enetd.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;C:\SoA\Vorb\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug\libfbxsdk-md.lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug\libxml2-md.lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug\zlib-md.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -223,9 +223,6 @@
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
-    <ClCompile Include="src\physics\ContactFilter.cpp" />
-    <ClCompile Include="src\physics\ContactListener.cpp" />
-    <ClCompile Include="src\physics\PhysQueryCallback.cpp" />
     <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\BuildingMesher.cpp" />
     <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
@@ -247,6 +244,7 @@
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\TextMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TileMeshBuilderMethods.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
@@ -260,7 +258,6 @@
     <ClCompile Include="src\rendering\RenderStats.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
     <ClCompile Include="src\rendering\Skybox.cpp" />
-    <ClCompile Include="src\rendering\TextRenderer.cpp" />
     <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp" />
     <ClCompile Include="src\rendering\texture\SubTexture.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
@@ -409,9 +406,6 @@
     <ClInclude Include="src\pathfinding\NavThread.h" />
     <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
-    <ClInclude Include="src\physics\ContactFilter.h" />
-    <ClInclude Include="src\physics\ContactListener.h" />
-    <ClInclude Include="src\physics\PhysQueryCallback.h" />
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\BuildingMesher.h" />
     <ClInclude Include="src\rendering\BuildingRenderer.h" />
@@ -435,6 +429,7 @@
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\MeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\TextMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TileMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
@@ -448,7 +443,6 @@
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
-    <ClInclude Include="src\rendering\TextRenderer.h" />
     <ClInclude Include="src\rendering\texture\NormalMapGenerator.h" />
     <ClInclude Include="src\rendering\texture\SubTexture.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />

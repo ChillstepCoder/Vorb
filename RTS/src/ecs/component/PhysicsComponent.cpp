@@ -5,11 +5,6 @@
 #include "ecs/EntityComponentSystem.h"
 
 #include "resources/TileRepository.h"
-
-#include <box2d/b2_body.h>
-#include <box2d/b2_circle_shape.h>
-#include <box2d/b2_fixture.h>
-
 constexpr float MIN_Z_SPEED = -0.24f;
 constexpr float TOP_COLLISION_THRESHOLD = 0.75f;
 constexpr float TOP_COLLISION_DEPTH = 1.0f - TOP_COLLISION_THRESHOLD;
@@ -141,14 +136,14 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
                     return;
                 }
                 // Collision!
-                b2Vec2 currentVelocity = cmp.mBody->GetLinearVelocity();
+                f32v2 currentVelocity = cmp.getLinearVelocity();
                 if (dx2 > dy2) {
                     // X collision
                     if (offsetToWall.x < 0.0f) {
                         // Colliding with left wall
                         if (currentVelocity.x < 0.0f) {
                             currentVelocity.x = -currentVelocity.x * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                            cmp.setLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius + offsetToWall.x;
                         cmp.setXYPosition(f32v2(colliderCenter.x + collisionDepth, colliderCenter.y));
@@ -157,7 +152,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
                         // Colliding with right wall
                         if (currentVelocity.x > 0.0f) {
                             currentVelocity.x = -currentVelocity.x * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                            cmp.setLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius - offsetToWall.x;
                         cmp.setXYPosition(f32v2(colliderCenter.x - collisionDepth, colliderCenter.y));
@@ -170,7 +165,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
                         // Colliding with bottom wall
                         if (currentVelocity.y < 0.0f) {
                             currentVelocity.y = -currentVelocity.y * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                            cmp.setLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius + offsetToWall.y;
                         cmp.setXYPosition(f32v2(colliderCenter.x, colliderCenter.y + collisionDepth));
@@ -179,7 +174,7 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
                         // Colliding with top wall
                         if (currentVelocity.y > 0.0f) {
                             currentVelocity.y = -currentVelocity.y * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
+                            cmp.setLinearVelocity(currentVelocity);
                         }
                         const float collisionDepth = colliderRadius - offsetToWall.y;
                         cmp.setXYPosition(f32v2(colliderCenter.x, colliderCenter.y - collisionDepth));
@@ -198,7 +193,6 @@ void resolveCircleTileCollision(const f32v2& tileCenter, const Tile* tile, Physi
 // TODO: Measure perf of this vs non inline vs macro
 inline void updateComponent(World& world, PhysicsComponent& cmp) {
     const f32v2& xyVel = cmp.getLinearVelocity();
-
     // TODO: TestBit
     if (/*(cmp.mFlags & e_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && */(glm::abs(xyVel.x) > 0.0001f || glm::abs(xyVel.y) >= 0.0001f)) {
         cmp.mDir = glm::normalize(lerp(cmp.mDir, glm::normalize(xyVel), 0.7f));
@@ -254,6 +248,9 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
     const WorldGrid& grid = world.getWorldGrid();
     f32 terrainHeight;
     constexpr f32 SNAP_THRESHOLD = 0.01f;
+    if (abs(xyPosition.y - 16384.0f) > 2.0f) {
+        std::cout << "here";
+    }
     if (grid.tryComputeHeightAtPoint(xyPosition, &terrainHeight)) {
         if (terrainHeight >= cmp.mZPosition - SNAP_THRESHOLD) {
             cmp.mZPosition = terrainHeight;
@@ -274,12 +271,12 @@ inline void updateComponent(World& world, PhysicsComponent& cmp) {
         cmp.setZVelocity(0.0f);
     }
 
-    // Refilters for pseudo3d collision
-    if (fabs(cmp.mZPosition - cmp.mLastZPositionAtRefilter) > REFILTER_HEIGHT_CHANGE) {
-        cmp.mLastZPositionAtRefilter = cmp.mZPosition;
-        b2Fixture* f = cmp.mBody->GetFixtureList();
-        f->Refilter();
-    }
+    //// Refilters for pseudo3d collision
+    //if (fabs(cmp.mZPosition - cmp.mLastZPositionAtRefilter) > REFILTER_HEIGHT_CHANGE) {
+    //    cmp.mLastZPositionAtRefilter = cmp.mZPosition;
+    //    b2Fixture* f = cmp.mBody->GetFixtureList();
+    //    f->Refilter();
+    //}
 
 }
 
@@ -305,43 +302,45 @@ void PhysicsSystem::update(entt::registry& registry) {
 }
 
 PhysicsComponent::PhysicsComponent(World& world, const f32v2& centerPosition, bool isStatic) {
-    b2BodyDef bodyDef;
-    if (isStatic) {
-        bodyDef.type = b2_staticBody;
-        bodyDef.position.Set(centerPosition.x, centerPosition.y);
-        mBody = world.createPhysBody(&bodyDef);
-    }
-    else {
-        bodyDef.type = b2_dynamicBody;
-        bodyDef.position.Set(centerPosition.x, centerPosition.y);
-        mBody = world.createPhysBody(&bodyDef);
-        mBody->SetLinearDamping(0.3f);
-    }
+    /*  b2BodyDef bodyDef;
+      if (isStatic) {
+          bodyDef.type = b2_staticBody;
+          bodyDef.position.Set(centerPosition.x, centerPosition.y);
+          mBody = world.createPhysBody(&bodyDef);
+      }
+      else {
+          bodyDef.type = b2_dynamicBody;
+          bodyDef.position.Set(centerPosition.x, centerPosition.y);
+          mBody = world.createPhysBody(&bodyDef);
+          mBody->SetLinearDamping(0.3f);
+      }*/
+    mPosition.x = centerPosition.x;
+    mPosition.y = centerPosition.y;
 	mPrevXYPosition = centerPosition;
 	mPrevZPosition = mZPosition;
 }
 
 void PhysicsComponent::addCollider(entt::entity entityId, ColliderShapes shape, const float halfWidth) {
 
-	// Init physics body
-	switch (shape) {
-		case ColliderShapes::CIRCLE: {
-			b2CircleShape dynamicCircle;
-			dynamicCircle.m_radius = halfWidth;
-			mCollisionRadius = dynamicCircle.m_radius;
+	//// Init physics body
+	//switch (shape) {
+	//	case ColliderShapes::CIRCLE: {
+	//		b2CircleShape dynamicCircle;
+	//		dynamicCircle.m_radius = halfWidth;
+	//		mCollisionRadius = dynamicCircle.m_radius;
 
-			b2FixtureDef fixtureDef;
-			fixtureDef.shape = &dynamicCircle;
-			fixtureDef.density = 1.0f;
-			fixtureDef.userData.pointer = static_cast<uintptr_t>(entityId);
+	//		b2FixtureDef fixtureDef;
+	//		fixtureDef.shape = &dynamicCircle;
+	//		fixtureDef.density = 1.0f;
+	//		fixtureDef.userData.pointer = static_cast<uintptr_t>(entityId);
 
-			mBody->CreateFixture(&fixtureDef);
-			break;
-		}
-		case ColliderShapes::NONE:
-			ASSERT_FAIL; // Invalid collider type
-		default:
-			ASSERT_FAIL; // Need to add collider type
-	}
+	//		mBody->CreateFixture(&fixtureDef);
+	//		break;
+	//	}
+	//	case ColliderShapes::NONE:
+	//		ASSERT_FAIL; // Invalid collider type
+	//	default:
+	//		ASSERT_FAIL; // Need to add collider type
+	//}
 
 }

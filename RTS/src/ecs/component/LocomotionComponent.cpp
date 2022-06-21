@@ -68,9 +68,10 @@ inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& ph
     // F = M * A
     // A = dv/dt
     // Linear damping useful info: https://gamedev.stackexchange.com/questions/160047/what-does-lineardamping-mean-in-box2d
-    const f32 mass = physCmp.mBody->GetMass();
+    const f32 linearDamping = 0.1f;
+    const f32 mass = 1.0f;
     const f32 currentSpeedInDirection = currentSpeed * dotp;
-    const f32 damping = 1.0f - physCmp.mBody->GetLinearDamping();
+    const f32 damping = 1.0f - linearDamping;
     desiredSpeed /= damping;
     if (currentSpeedInDirection < desiredSpeed) {
 
@@ -79,7 +80,7 @@ inline void updateComponent(LocomotionComponent& motionCmp, PhysicsComponent& ph
         const f32 forceToApply = glm::min(forceToDesiredSpeed, motionCmp.getCurrentAcceleration() * ACCELERATION);
 
         const f32v2 force = motionCmp.mDesiredDirection * forceToApply;
-        physCmp.mBody->ApplyForceToCenter(reinterpret_cast<const b2Vec2&>(force), true);
+        //physCmp.mBody->ApplyForceToCenter(reinterpret_cast<const b2Vec2&>(force), true);
         /* std::cout << "APPLYING FORCE " << force.x << " " << force.y << " " << glm::length(force) << "\n";
          std::cout << "  CURRENT SPEED " << currentSpeed << " vs desired " << desiredSpeed * damping << "\n";
          std::cout << "  FORCE NEEDED " << forceToDesiredSpeed << " " << forceToApply << std::endl;*/

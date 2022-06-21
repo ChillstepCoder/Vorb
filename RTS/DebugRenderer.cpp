@@ -8,7 +8,6 @@
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
-#include <box2d/b2_collision.h>
 #include "pathfinding/NavPath.h"
 
 #include "world/WorldGrid.h" // For terrain height data
@@ -144,14 +143,15 @@ void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*
     lines.reserve(lines.size() + count);
 }
 
-void DebugRenderer::drawAABB(const b2AABB& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_MAIN_THREAD());
-	const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
-	const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
-	const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
-	const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
+void DebugRenderer::drawAABB(const f32AABB3& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    /* assert(IS_MAIN_THREAD());
+     const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
+     const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
+     const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
+     const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
 
-    drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);
+     drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);*/
+    std::cout << "DebugRenderer::drawAABB not implemented\n";
 }
 
 void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {

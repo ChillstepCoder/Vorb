@@ -1,8 +1,6 @@
 #pragma once
 #include "actor/ActorTypes.h"
 
-#include <box2d/b2_body.h>
-
 class World;
 class b2Body;
 class EntityComponentSystem;
@@ -27,10 +25,11 @@ public:
 	void addCollider (entt::entity entityId, ColliderShapes shape, const float halfWidth);
 
     void setXYPosition(const f32v2& pos) {
-        mBody->SetTransform(reinterpret_cast<const b2Vec2&>(pos), mBody->GetAngle());
+		mPosition.x = pos.x;
+		mPosition.y = pos.y;
     }
 	void setLinearVelocity(const f32v2& vel) {
-		mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(vel));
+		mLinearVelocity = vel;
 	}
 	void setZPosition(f32 z) {
 		mZPosition = z;
@@ -39,8 +38,8 @@ public:
 		mZVelocity = vel;
 	}
 
-	const f32v2& getXYPosition() const {
-		return reinterpret_cast<const f32v2&>(mBody->GetPosition());
+	const f32v2 getXYPosition() const {
+		return f32v2(mPosition.x, mPosition.y);
 	}
 	const float getZPosition() const {
 		return mZPosition;
@@ -68,24 +67,26 @@ public:
 	}
 
 	const f32v2& getLinearVelocity() const {
-		return reinterpret_cast<const f32v2&>(mBody->GetLinearVelocity());
+		return mLinearVelocity;
 	}
 
     void teleportToPoint(const f32v2& worldPos) {
-		mBody->SetTransform(reinterpret_cast<const b2Vec2&>(worldPos), mBody->GetAngle());
+		setXYPosition(worldPos);
 		if (mZPosition < 0.0f) {
 			mZPosition = 2.0f;
 		}
     }
 
     void teleportToPoint(const f32v3& worldPos) {
-        mBody->SetTransform(reinterpret_cast<const b2Vec2&>(worldPos), mBody->GetAngle());
+		setXYPosition(f32v2(worldPos.x, worldPos.y));
 		mZPosition = worldPos.z;
     }
 
 	bool isOnGround() const { return mFlags.isBitSet(PhysicsComponentFlag::IS_ON_GROUND); }
 
+	f32v3 mPosition = f32v3(0.0f);
 	f32v2 mPrevXYPosition = f32v2(0.0f);
+	f32v2 mLinearVelocity = f32v2(0.0f);
 	f32 mPrevZPosition = 0.0f;
 	f32v2 mDir = f32v2(0.0f, -1.0f);
     f32 mCollisionRadius = 0.0f;

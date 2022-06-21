@@ -3,8 +3,6 @@
 
 #include "World.h"
 
-#include <box2d/b2_fixture.h>
-
 #include "camera/Camera3D.h"
 
 const float DEAD_COLOR_MULT = 0.4f;

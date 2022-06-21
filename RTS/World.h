@@ -52,11 +52,7 @@ public:
 
 	void lazyInit();
 
-	std::vector<EntityDistSortKey> queryActorsInRadius(const f32v2& pos, float radius, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, entt::entity except = INVALID_ENTITY);
-	std::vector<EntityDistSortKey> queryActorsInArc(const f32v2& pos, float radius, const f32v2& normal, float arcAngle, ActorTypesMask includeMask, ActorTypesMask excludeMask, bool sorted, int quadrants, entt::entity except = INVALID_ENTITY);
-
 	entt::entity createEntity(const f32v2& pos, const nString& typeName);
-	b2Body* createPhysBody(const b2BodyDef* bodyDef);
 	void createCityAt(const ui32v2& worldPos);
 
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
@@ -143,11 +139,6 @@ private:
 
     // ECS
     std::unique_ptr<EntityComponentSystem> mEcs;
-
-	// Physics
-	std::unique_ptr<b2World> mPhysWorld;
-    std::unique_ptr<ContactListener> mContactListener;
-    std::unique_ptr<ContactFilter> mContactFilter;
 
 	// Generation
     std::unique_ptr<ChunkGenerator> mChunkGenerator;

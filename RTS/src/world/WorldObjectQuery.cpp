@@ -45,6 +45,6 @@ void WorldObjectQuery::refresh() {
 
     // Entities
     // TODO: more precise
-    const f32v2 queryPos(mTilePos.x + 0.5f, mTilePos.y + 0.5f);
-    mEntitiesAtTile = mWorld.queryActorsInRadius(queryPos, 0.5f, ACTORTYPE_ANY, 0, true);
+    //const f32v2 queryPos(mTilePos.x + 0.5f, mTilePos.y + 0.5f);
+    //mEntitiesAtTile = mWorld.queryActorsInRadius(queryPos, 0.5f, ACTORTYPE_ANY, 0, true);
 }

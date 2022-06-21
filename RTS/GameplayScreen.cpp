@@ -13,9 +13,6 @@
 
 #include "DebugRenderer.h"
 
-#include <box2d/b2_body.h>
-#include <box2d/b2_contact.h>
-
 #include "camera/CameraController.h"
 
 #include "World.h"
@@ -29,7 +26,6 @@
 #include "item/ItemStockpileRegistry.h"
 #include "particles/ParticleSystemManager.h"
 
-#include "physics/ContactListener.h"
 #include "rendering/RenderContext.h"
 
 #include "TextureManip.h"

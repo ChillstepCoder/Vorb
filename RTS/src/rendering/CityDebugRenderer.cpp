@@ -3,8 +3,6 @@
 
 #include "DebugRenderer.h"
 
-#include "box2d/b2_collision.h"
-
 #include "city/City.h"
 #include "city/CityBuilder.h"
 #include "city/CityPlanner.h"
@@ -32,56 +30,6 @@ const color4 ROOM_COLORS[MAX_ROOM_COLORS] = {
 
 void CityDebugRenderer::renderBlueprintDebug(BuildingBlueprint& bp, color4* inputColor/* = nullptr*/) {
 
-    if (bp.isGenerating)
-        return;
-
-    // Render the AABB of the floor plan
-    b2AABB aabb;
-    aabb.lowerBound.x = bp.aabb.pos.x;
-    aabb.lowerBound.y = bp.aabb.pos.y;
-    
-    aabb.upperBound.x = aabb.lowerBound.x + bp.aabb.dims.x;
-    aabb.upperBound.y = aabb.lowerBound.y + bp.aabb.dims.y;
-
-    constexpr f32 EPSILON = 0.001f;
-    const f32 height = 1.0f;
-    const f32 heightPlusE = height + EPSILON;
-
-    // Render all the metadata on bottom
-    for (int y = 0; y < bp.aabb.dims.y; ++y) {
-        for (int x = 0; x < bp.aabb.dims.x; ++x) {
-            const int index = y * bp.aabb.dims.x + x;
-            RoomNodeID id = bp.ownerArray[index];
-            if (id != INVALID_ROOM_ID) {
-                const RoomNode& room = bp.rooms[id];
-                const ui32v2 worldPos = bp.aabb.pos + ui32v2(x, y);
-                const color4& color = inputColor ? *inputColor : ROOM_COLORS[id % MAX_ROOM_COLORS];
-                DebugRenderer::drawFilledQuad(f32v3((f32)worldPos.x, (f32)worldPos.y, height + room.floorIndex * 3.0f), f32v2(1.0f), color4(color.r, color.g, color.b, 128u));
-            }
-        }
-    }
-
-    DebugRenderer::drawAABB(aabb, heightPlusE, inputColor ? *inputColor : color4(0.7f, 0.4f, 0.0f));
-    // Render the room graph in world space
-    int i = 0;
-    for (auto&& node : bp.rooms) {
-
-        const color4& color = ROOM_COLORS[i % MAX_ROOM_COLORS];
-        DebugRenderer::drawAABB(node.aabb, heightPlusE, color4(color.r, color.g, color.b, 255u));
-        // Draw parent line
-        if (node.parentRoom != INVALID_ROOM_ID) {
-            RoomNode& parent = bp.rooms[node.parentRoom];
-            const f32v3 startPos(node.aabb.getCenter().x + 0.5f, node.aabb.getCenter().y + 0.5f, heightPlusE + node.floorIndex * 3.0f);
-            const f32v3 endPos(bp.aabb.pos.x + parent.offsetFromZero.x + 0.5f, bp.aabb.pos.y + parent.offsetFromZero.y + 0.5f, heightPlusE + parent.floorIndex * 3.0f);
-            if (node.isPrivate) {
-                DebugRenderer::drawLine(startPos, endPos - startPos, color4(1.0f, 1.0f, 0.0f));
-            }
-            else {
-                DebugRenderer::drawLine(startPos, endPos - startPos, color4(0.0f, 1.0f, 0.0f));
-            }
-        }
-        ++i;
-    }
 
 }
 
