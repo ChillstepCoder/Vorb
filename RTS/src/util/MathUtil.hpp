@@ -4,6 +4,17 @@
 #define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
 #define SQ(x) ((x) * (x))
 
+#include "LinearMath/btVector3.h"
+
+namespace {
+    inline f32v3 btVector3ToF32v3(const btVector3& v) {
+        return f32v3(v.x(), v.y(), v.z());
+    }
+    inline btVector3 f32v3ToBtVector3(const f32v3& v) {
+        return btVector3(v.x, v.y, v.z);
+    }
+}
+
 namespace MathUtil {
     inline f32v2 RotateVector(float x, float y, float angleDeg) {
         const float angleRad = DEG_TO_RAD(angleDeg);

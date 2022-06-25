@@ -50,7 +50,7 @@ f32v2 getMovementDir(const Camera3D& camera) {
 }
 
 
-inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, LocomotionComponent& motionCmp, entt::registry& registry, const Camera3D& camera) {
+inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, const Camera3D& camera) {
 
     // Inputs for states, but only while we are on ground
     if (!motionCmp.isInAirState()) {
@@ -94,10 +94,10 @@ void PlayerControlSystem::update(entt::registry& registry, const Camera3D& camer
     // Don't update while in free fly
     if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }
 	// Update components
-    auto view = registry.view<PlayerControlComponent, LocomotionComponent>();
+    auto view = registry.view<PlayerControlComponent, CharacterControlComponent>();
     for (auto entity : view) {
 		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
-		LocomotionComponent& motionCmp = view.get<LocomotionComponent>(entity);
+		CharacterControlComponent& motionCmp = view.get<CharacterControlComponent>(entity);
 		updateComponent(entity, controlCmp, motionCmp, registry, camera);
 	};
 }

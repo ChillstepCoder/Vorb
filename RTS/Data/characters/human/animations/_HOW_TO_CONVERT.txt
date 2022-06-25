@@ -1,0 +1,3 @@
+$ fbx2ozz.exe --file="./Flying.fbx"
+Rename animation.ozz to animation.anim
+delete extra files and fbx

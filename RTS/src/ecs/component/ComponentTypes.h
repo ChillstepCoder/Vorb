@@ -23,7 +23,7 @@ enum class ComponentTypes {
 };
 const nString ComponentTypeStrings[e_cast(ComponentTypes::COUNT)] = {
     "character_model",
-    "motion",
+    "character",
     "combat",
     "corpse",
     "character_details",

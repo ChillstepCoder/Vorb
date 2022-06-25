@@ -57,7 +57,7 @@ constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(LocomotionMode::COUNT)] = {
 static_assert(e_cast(LocomotionMode::COUNT) == 9, "Update above tables");
 
 
-struct LocomotionComponent {
+struct CharacterControlComponent {
     f32 mSpeedRun = 0.3f;
     f32v2 mDesiredDirection = f32v2(0.0f);
     LocomotionMode mMode = LocomotionMode::IDLE;
@@ -70,7 +70,7 @@ struct LocomotionComponent {
     f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
     f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mMode)]; }
 };
-static_assert(sizeof(LocomotionComponent) == 24, "Keep small");
+static_assert(sizeof(CharacterControlComponent) == 24, "Keep small");
 
 
 class LocomotionSystem {

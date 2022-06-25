@@ -11,6 +11,7 @@
 // TODO: move
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
+#include "physics/PhysicsWorld.h"
 
 #include "World.h"
 
@@ -470,7 +471,7 @@ TerrainPickData WorldGrid::pickTerrainFromCameraVector(const Camera3D& camera, c
                 const f32v3 v1 = f32v3(worldPos2D.x + (x + 1) * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + y * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex + 1]);
                 const f32v3 v2 = f32v3(worldPos2D.x + x * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + (y + 1) * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex + HEIGHTMAP_VERT_WIDTH_PER_PATCH]);
                 const f32v3 v3 = f32v3(worldPos2D.x + (x + 1) * HEIGHTMAP_QUAD_SIZE, worldPos2D.y + (y + 1) * HEIGHTMAP_QUAD_SIZE, patch.mHeightData->data[blIndex + HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1]);
-                if ((x + y) % 2) {
+                if ((x + y) % 2 == 0) {
                     // 2********3
                     // *     ** *
                     // *   **   *
@@ -614,7 +615,7 @@ void WorldGrid::computeTileCorners(const f32* heightData, ui32v2 worldTilePos, f
 
 bool WorldGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) {
     ui32v2 heightmapXY = tileHandle.getWorldPos2D() / HEIGHTMAP_QUAD_SIZE;
-    return (heightmapXY.x + heightmapXY.y) % 2 == 0;
+    return (heightmapXY.x + heightmapXY.y) % 2 == 1;
 }
 
 f32 WorldGrid::computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos) {
@@ -733,6 +734,10 @@ void WorldGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
         }
     }
 
+    assert(!patch.mHeightData->mCollider);
+    // Generate collider
+    patch.mHeightData->mCollider = mWorld.getPhysicsWorld().addHeightField(patch);
+
     // See if any other patches were waiting on us for padded data access
     {
         auto&& it = mPaddedGenListeners.find(id.id);
@@ -811,7 +816,7 @@ void WorldGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatch
 
 f32 WorldGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY) {
     // Select which triangle we are looking at, taking into account orientation
-    if ((heightmapXY.x + heightmapXY.y) % 2) {
+    if ((heightmapXY.x + heightmapXY.y) % 2 == 0) {
         // This shape
         // **********
         // *     ** *

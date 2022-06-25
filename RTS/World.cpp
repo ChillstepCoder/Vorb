@@ -10,6 +10,8 @@
 #include "item/ItemStockpileRegistry.h"
 #include "structure/StructureManager.h"
 
+#include "physics/PhysicsWorld.h"
+
 #include "ecs/factory/EntityFactory.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -70,6 +72,9 @@ World::World() :
 
     // Weather (Init post load because it contains rendering and requires render context to be initialized, TODO: Fix this)
     mCloudManager = std::make_unique<CloudManager>(*this);
+
+	// Physics
+	mPhysWorld = std::make_unique<PhysicsWorld>();
 
 	// Activate the nav thread
 	Services::NavThread::ref().init(*this);
@@ -166,7 +171,7 @@ void World::tick(const f32v2& playerPos) {
     mEcs->tick();
 }
 
-void World::frameUpdate(const Camera3D& camera) {
+void World::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
 	mEcs->frameUpdate(camera);
 
 	// Client only, rendering stuff
@@ -183,7 +188,10 @@ void World::frameUpdate(const Camera3D& camera) {
                 chunk->mChunkRenderData.mIsVisible = false;
             }
         }
-	}
+    }
+
+	// Physworld will handle internal interpolation and timestep itself
+    mPhysWorld->stepSimulation(elapsedSec);
 }
 
 void World::lazyInit() {
@@ -702,8 +710,8 @@ void World::debugRefreshWorldGeneration() {
     }
 }
 
-entt::entity World::createEntity(const f32v2& pos, const nString& typeName) {
-	return mEntityFactory->createEntity(pos, typeName);
+entt::entity World::createEntity(const f32v3& pos, const nString& typeName) {
+	return mEntityFactory->createEntity(*mPhysWorld, pos, typeName);
 }
 
 

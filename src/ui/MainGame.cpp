@@ -213,7 +213,7 @@ void vui::MainGame::refreshElapsedTime() {
     m_lastTime = m_curTime;
     m_curTime.elapsedSec = elapsedSec;
     m_curTime.totalSec += elapsedSec;
-    m_curTime.deltaTime = vmath::clamp((float)(elapsedMs / 16.0), 0.5f, 2.0f); // Shoot for 16ms per frame (~60hz)
+    m_curTime.deltaTime = (float)(elapsedMs / 16.666); // Shoot for 16ms per frame (~60hz)
 }
 void vui::MainGame::onUpdateFrame() {
     // Perform the screen's update logic

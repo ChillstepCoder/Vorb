@@ -947,20 +947,20 @@ void MeshBuilder::initStaticIBOs() {
             ui32 vertIndex = y * TERRAIN_MESH_WIDTH_VERTS + x;
             // Change triangle orientation based on odd or even
             if ((x + y) % 2) {
-                indices[index++] = vertIndex;
                 indices[index++] = vertIndex + 1;
                 indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS + 1;
-                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS + 1;
+                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
                 indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
                 indices[index++] = vertIndex;
+                indices[index++] = vertIndex + 1;
             }
             else {
-                indices[index++] = vertIndex + 1;
-                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS + 1;
-                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
-                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
                 indices[index++] = vertIndex;
                 indices[index++] = vertIndex + 1;
+                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS + 1;
+                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS + 1;
+                indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;
+                indices[index++] = vertIndex;
             }
         }
     }

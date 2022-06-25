@@ -11,7 +11,6 @@ public:
 
 	void tick();
     void frameUpdate(const Camera3D& playerCamera);
-	void convertEntityToCorpse(entt::entity entity);
 
     /*DECL_COMPONENT_TABLE(mPhysicsTable, PhysicsComponent);
     DECL_COMPONENT_TABLE(mSpriteTable, SimpleSpriteComponent);
@@ -26,7 +25,6 @@ public:
 
     // TODO: UniquePtr for faster include
     LocomotionSystem mLocomotionSystem;
-    PhysicsSystem mPhysicsSystem;
     PlayerControlSystem mPlayerControlSystem;
     PersonAISystem mPersonAISystem;
     NavigationComponentSystem mNavigationSystem;

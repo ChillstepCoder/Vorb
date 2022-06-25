@@ -216,7 +216,8 @@ void GameplayScreen::build() {
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
                     TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
 					if (pickData.hit.didHit()) {
-						phys->teleportToPoint(pickData.hit.position);
+                        assert(false);
+                        //phys->teleportToPoint(pickData.hit.position);
 					}
 				}
 			}
@@ -286,8 +287,10 @@ void GameplayScreen::build() {
 
 
     // Add player
+    f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
+    mWorld->getWorldGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
     auto&& ecs = mWorld->getECS();
-    ecs.mPlayerEntity = mWorld->createEntity(WorldData::WORLD_CENTER, "player");
+    ecs.mPlayerEntity = mWorld->createEntity(playerPos, "player");
     assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
 
     mCameraController->setEntityFollow(ecs.mPlayerEntity);
@@ -328,7 +331,8 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
 	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-        mWorld->tick(playerPhysCmp.getXYPosition());
+        f32v3 position = playerPhysCmp.getPosition();
+        mWorld->tick(position);
 
 	}
 
@@ -339,8 +343,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
 
 	updateTilePicking();
-
-    mWorld->frameUpdate(mCameraController->getOwnedCamera());
+    mWorld->frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
 
 }
 
@@ -354,7 +357,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
     auto&& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-    const f32v3& playerPos = cmp.getPositionInterpolated(frameAlpha);
+    const f32v3 playerPos = cmp.getInterpolatedPosition();
 	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
 
 	tryUpdateAndRenderInteractPopup((const f32v2&)playerPos);

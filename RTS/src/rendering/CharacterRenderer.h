@@ -12,7 +12,7 @@ struct BillboardVertex;
 class BillboardMesh;
 class ModelRepository;
 struct CharacterModelComponent;
-struct LocomotionComponent;
+struct CharacterControlComponent;
 class PhysicsComponent;
 
 
@@ -22,7 +22,7 @@ public:
 	CharacterRenderer();
 	~CharacterRenderer();
 
-	void addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const LocomotionComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer);
+	void addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer);
     void renderBatch(const Camera3D& camera, const MaterialRenderer& materialRenderer);
 
 private:

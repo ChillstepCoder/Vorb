@@ -71,7 +71,7 @@ struct DebugOptions {
     bool mShowNavGraph = false;
     bool mShowNavGraphUpdates = false;
     bool mHideCharacters = false;
-    bool mShowPhysicsDebug = false;
+    bool mShowPhysicsDebug = true;
     bool mShowBusinessDebug = true;
     bool mShowTweaker = false;
     bool mShowEditor = false;

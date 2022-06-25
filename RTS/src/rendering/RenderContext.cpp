@@ -44,6 +44,7 @@
 
 #include "camera/ICamera.h"
 #include "camera/Camera3D.h"
+#include "physics/PhysicsWorld.h"
 
 #include "city/City.h"
 
@@ -428,9 +429,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     if (!sDebugOptions.mHideCharacters) {
         mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, frameAlpha, elapsedSec);
     }
-    if (sDebugOptions.mShowPhysicsDebug) {
-        mEcsRenderer->renderPhysicsDebug(camera);
-    }
     if (sDebugOptions.mShowBusinessDebug) {
         mEcsRenderer->renderBusinessDebug(camera);
     }
@@ -769,6 +767,9 @@ void RenderContext::renderDebug(const Camera3D& camera) {
         DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 1.0f, 0.0f), color4(0.0f, 1.0f, 0.0f)); //Y
         DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 0.0f, 1.0f), color4(0.0f, 0.0f, 1.0f)); //Z
     }
+
+    // Physics
+    mWorld.getPhysicsWorld().debugRender();
 
     // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());

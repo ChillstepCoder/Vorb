@@ -16,9 +16,11 @@ constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
 constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles
 //constexpr int QUADRANTS = 5; //bad name
 
-bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, LocomotionComponent& motionCmp, World& world) {
+bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, CharacterControlComponent& motionCmp, World& world) {
   
-	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - physCmp.getXYPosition();
+	f32v3 position = physCmp.getPosition();
+	position.z // TODO: FINISH
+	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - *(f32v2*)&position;
     const float distance2 = glm::length2(offset);
     if (distance2 <= SQ(MIN_DISTANCE)) {
 		motionCmp.mDesiredMode = LocomotionMode::IDLE;
@@ -32,7 +34,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	return false;
 }
 
-bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, LocomotionComponent& motionCmp, World& world) {
+bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, CharacterControlComponent& motionCmp, World& world) {
 
 	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return false;
@@ -99,54 +101,55 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	// Steer around obstacles and corners
 	// Raycast forward to find a collision intersect
 	if (navCmp.mFramesUntilNextRayCheck == 0) {
-		constexpr f32 STEER_MULT = 1.5f;
-		f32v2 steerVector = motionCmp.mDesiredDirection * STEER_MULT; //Look ahead
-		IntersectionHit2D hit = world.tryGetRaycastIntersect2D(physCmp.getXYPosition(), physCmp.getXYPosition() + steerVector, physCmp.getZPosition());
-		if (hit.didHit()) {
-			// Something in the way!
+		// Old pre 3D physics steering
+		//constexpr f32 STEER_MULT = 1.5f;
+		//f32v2 steerVector = motionCmp.mDesiredDirection * STEER_MULT; //Look ahead
+		//IntersectionHit2D hit = world.tryGetRaycastIntersect2D(physCmp.getXYPosition(), physCmp.getXYPosition() + steerVector, physCmp.getZPosition());
+		//if (hit.didHit()) {
+		//	// Something in the way!
 
-			// Check if we need to climb
-			const Tile* tile = world.tryGetTileAtWorldPos(hit.tilePos);
-			if (tile) {
-				const TileCollider* collider = tile->tryGetColliderMainThread();
-				f32 baseZ = tile->getGroundZPositionUncompressedMainThread();
-				if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
-					// Climb
-					motionCmp.mDesiredMode = LocomotionMode::BEGIN_JUMP;
-				}
-				else {
-					// Steer
+		//	// Check if we need to climb
+		//	const Tile* tile = world.tryGetTileAtWorldPos(hit.tilePos);
+		//	if (tile) {
+		//		const TileCollider* collider = tile->tryGetColliderMainThread();
+		//		f32 baseZ = tile->getGroundZPositionUncompressedMainThread();
+		//		if (collider && hit.tilePos == nextTilePos && baseZ > physCmp.getZPosition() && baseZ < physCmp.getZPosition() + 1.1f) {
+		//			// Climb
+		//			motionCmp.mDesiredMode = LocomotionMode::BEGIN_JUMP;
+		//		}
+		//		else {
+		//			// Steer
 
-					f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
-					// Large negative is positive
-					if (angle < -M_PIF) {
-						angle = M_2_PIF - angle;
-					}
+		//			f32 angle = atan2(-hit.normal.y, -hit.normal.x) - atan2(steerVector.y, steerVector.x);
+		//			// Large negative is positive
+		//			if (angle < -M_PIF) {
+		//				angle = M_2_PIF - angle;
+		//			}
 
-					constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
-					if (angle > 0.0f) {
-						motionCmp.mDesiredDirection = glm::rotate(motionCmp.mDesiredDirection, -STEERING_ADJUST);
-						steerVector = motionCmp.mDesiredDirection * STEER_MULT;
-					}
-					else {
-						motionCmp.mDesiredDirection = glm::rotate(motionCmp.mDesiredDirection, STEERING_ADJUST);
-						steerVector = motionCmp.mDesiredDirection * STEER_MULT;
-					}
+		//			constexpr float STEERING_ADJUST = DEG_TO_RAD(30.0f);
+		//			if (angle > 0.0f) {
+		//				motionCmp.mDesiredDirection = glm::rotate(motionCmp.mDesiredDirection, -STEERING_ADJUST);
+		//				steerVector = motionCmp.mDesiredDirection * STEER_MULT;
+		//			}
+		//			else {
+		//				motionCmp.mDesiredDirection = glm::rotate(motionCmp.mDesiredDirection, STEERING_ADJUST);
+		//				steerVector = motionCmp.mDesiredDirection * STEER_MULT;
+		//			}
 
-					// Debug render
-					if (sDebugOptions.mShowPaths) {
-						DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
-						DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
-						DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
-					}
-				}
-			}
-		}
-		else {
-			// No hits so relax for a bit
-			navCmp.mFramesUntilNextRayCheck = RAYCHECK_INTERVAL_FRAMES;
-			//DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
-		}
+		//			// Debug render
+		//			if (sDebugOptions.mShowPaths) {
+		//				DebugRenderer::drawVector(hit.position, hit.delta, color4(0.0f, 1.0f, 0.0f, 0.8f), 250);
+		//				DebugRenderer::drawVector(hit.position, hit.normal, color4(0.0f, 1.0f, 1.0f, 0.8f), 250);
+		//				DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+		//			}
+		//		}
+		//	}
+		//}
+		//else {
+		//	// No hits so relax for a bit
+		//	navCmp.mFramesUntilNextRayCheck = RAYCHECK_INTERVAL_FRAMES;
+		//	//DebugRenderer::drawVector(physCmp.getXYPosition(), steerVector, color4(1.0f, 0.0f, 0.0f, 0.8f), 250);
+		//}
 	}
 	else {
 		--navCmp.mFramesUntilNextRayCheck;
@@ -192,7 +195,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	
 }
 
-void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp, LocomotionComponent& motionCmp) {
+void onPathingFinished(PhysicsComponent& physCmp, NavigationComponent& navCmp, CharacterControlComponent& motionCmp) {
 	// Target reached
 	motionCmp.mDesiredMode = LocomotionMode::IDLE;
 	navCmp.mFinePath = nullptr;
@@ -218,7 +221,7 @@ void requestPathToCoarsePoint(NavigationComponent& navCmp, PhysicsComponent& phy
 	}
 }
 
-bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, LocomotionComponent& motionCmp, World& world) {
+bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, CharacterControlComponent& motionCmp, World& world) {
 
     if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return false;
@@ -295,12 +298,12 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 
 void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 	// Update components
-    auto view = registry.view<NavigationComponent, PhysicsComponent, LocomotionComponent>();
+    auto view = registry.view<NavigationComponent, PhysicsComponent, CharacterControlComponent>();
 
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
         auto& physCmp = view.get<PhysicsComponent>(entity);
-        auto& motionCmp = view.get<LocomotionComponent>(entity);
+        auto& motionCmp = view.get<CharacterControlComponent>(entity);
         switch (navCmp.mNavigationType) {
             case NavigationType::FINE_PATH:
 				if (updateComponentFinePath(entity, navCmp, physCmp, motionCmp, world)) {
@@ -368,7 +371,7 @@ void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, 
     mFinishedCallback = finishedCallback;
 }
 
-void NavigationComponent::abort(LocomotionComponent& motionCmp) {
+void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     motionCmp.mDesiredMode = LocomotionMode::IDLE;
     mFlags |= NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH;
 	mFinePath.reset();

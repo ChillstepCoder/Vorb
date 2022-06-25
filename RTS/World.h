@@ -33,6 +33,7 @@ class ChunkMesher;
 class HeightmapTerrainQuadtree;
 class Building;
 class StructureManager;
+class PhysicsWorld;
 struct NavNode;
 struct CityGraph;
 
@@ -48,11 +49,11 @@ public:
 	void updateTaskQueues();
 
 	void tick(const f32v2& playerPos);
-	void frameUpdate(const Camera3D& camera);
+	void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
 	void lazyInit();
 
-	entt::entity createEntity(const f32v2& pos, const nString& typeName);
+	entt::entity createEntity(const f32v3& pos, const nString& typeName);
 	void createCityAt(const ui32v2& worldPos);
 
 	bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
@@ -85,14 +86,23 @@ public:
 
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
+
     WorldGrid& getWorldGrid() { return mWorldGrid; }
     const WorldGrid& getWorldGrid() const { return mWorldGrid; }
+
     NavGraph& getNavGraph() { return *mNavGraph; }
     const NavGraph& getNavGraph() const { return *mNavGraph; }
+
     const CloudManager& getCloudManager() const { return *mCloudManager; }
+
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
+
     StructureManager& getStructureManager() { return *mStructuremanager; }
     const StructureManager& getStructureManager() const { return *mStructuremanager; }
+
+    PhysicsWorld& getPhysicsWorld() { return *mPhysWorld; }
+    const PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
+
 
     size_t getNumVisibleChunks() const { return mVisibleChunks.size(); }
     size_t getNumActiveChunks() const { return mActiveChunks.size(); }
@@ -160,6 +170,9 @@ private:
 
 	// Clouds
 	std::unique_ptr<CloudManager> mCloudManager;
+
+	// Physics
+	std::unique_ptr<PhysicsWorld> mPhysWorld;
 
 	// Meshing
 	ChunkMesher* mChunkMesher = nullptr;

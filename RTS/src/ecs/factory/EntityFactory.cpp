@@ -23,7 +23,7 @@ EntityFactory::~EntityFactory()
 
 }
 
-entt::entity EntityFactory::createEntity(const f32v2& position, const nString& typeName) {
+entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& position, const nString& typeName) {
 
     entt::registry& registry = mEcs.mRegistry;
     const entt::entity newEntity = registry.create();
@@ -40,7 +40,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
                 break;
             }
             case ComponentTypes::Locomotion: {
-                auto& cmp = registry.emplace<LocomotionComponent>(newEntity);
+                auto& cmp = registry.emplace<CharacterControlComponent>(newEntity);
                 cmp.mSpeedRun = cdef.locomotion.mSpeed;
                 break;
             }
@@ -80,8 +80,7 @@ entt::entity EntityFactory::createEntity(const f32v2& position, const nString& t
             }
             case ComponentTypes::Physics: {
                 auto& physics = registry.emplace<PhysicsComponent>(newEntity, mEcs.mWorld, position, false);
-                physics.mQueryActorTypes = ACTORTYPE_HUMAN;
-                physics.addCollider(newEntity, cdef.physics.colliderShape, cdef.physics.colliderRadius);
+                physics.mRigidBody = physWorld.addRigidBody(newEntity, cdef.physics.colliderShape, cdef.physics.colliderRadius);
                 break;
             }
             case ComponentTypes::PlayerControl: {

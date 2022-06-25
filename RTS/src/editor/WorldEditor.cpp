@@ -477,7 +477,7 @@ void WorldEditor::updateTileEdit() {
 
 void WorldEditor::updateEntityEdit() {
     if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
-        mWorld.createEntity(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mSelectedEntity);
+        mWorld.createEntity(mPickData.hit.position, mSelectedEntity);
     }
 }
 

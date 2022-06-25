@@ -4,7 +4,7 @@
 
 // All component includes
 #include "ecs/component/PlayerControlComponent.h"
-#include "ecs/component/LocomotionComponent.h"
+#include "ecs/component/CharacterControlComponent.h"
 #include "ecs/component/CombatComponent.h"
 #include "ecs/component/CorpseComponent.h"
 #include "ecs/component/CharacterDetailsComponent.h"

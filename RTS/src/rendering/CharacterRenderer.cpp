@@ -2,7 +2,7 @@
 #include "CharacterRenderer.h"
 
 #include "ecs/component/PhysicsComponent.h"
-#include "ecs/component/LocomotionComponent.h"
+#include "ecs/component/CharacterControlComponent.h"
 
 #include "rendering/MaterialManager.h"
 
@@ -44,7 +44,7 @@ CharacterRenderer::~CharacterRenderer() {
 
 }
 
-void updateAnimationStates(const PhysicsComponent& physCmp, const LocomotionComponent& motionCmp, CharacterModelComponent& cmp, f32 elapsedSec) {
+void updateAnimationStates(const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, CharacterModelComponent& cmp, f32 elapsedSec) {
 
     // Update feel
     cmp.updateFootstepAlpha(elapsedSec, motionCmp.mMode);
@@ -111,7 +111,7 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const LocomotionComp
     cmp.mPrevLocomotionMode = motionCmp.mMode;
 }
 
-bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& cmp, const LocomotionComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
+bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& cmp, const CharacterControlComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
 
     // Speed blend, run/walk/sprint
     updateAnimationStates(physCmp, motionCmp, cmp, elapsedSec);
@@ -295,13 +295,12 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
 }
 
-void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const LocomotionComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
+void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
 
     // Get physics info
-    const f32 angle = atan2(physCmp.mDir.y, physCmp.mDir.x);
-    f32v2 interpolatedXY = physCmp.getXYInterpolated(frameAlpha);
-    f32 interpolatedZ = physCmp.getZInterpolated(frameAlpha);
-    const f32v3 position(interpolatedXY.x, interpolatedXY.y, interpolatedZ);
+    const f32v2 dir = physCmp.getInterpolatedDir();
+    const f32v3 position = physCmp.getInterpolatedPosition();
+    const f32 angle = atan2(dir.y, dir.x);
 
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");

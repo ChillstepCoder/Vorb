@@ -1,10 +1,10 @@
 person_ai:
 character_model:
-motion:
+character:
   speed: 0.28
 physics:
-  collider_shape: circle
-  collider_radius: 0.24
-  is_static: true
+  shape: capsule
+  disable_xy_rot: true
+  mass: 68
 inventory:
 character_details:

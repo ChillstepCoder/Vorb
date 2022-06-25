@@ -4,6 +4,19 @@ DECL_VG(class GLProgram);
 
 #include "debugging/SimpleMesh.h"
 
+struct DebugWireTriangle {
+    DebugWireTriangle(const f32v3& pos1, const f32v3& pos2, const f32v3& pos3, const color4& colr)
+        : position1(pos1)
+        , position2(pos2)
+        , position3(pos3)
+        , color(colr) {
+    }
+    f32v3 position1;
+    f32v3 position2;
+    f32v3 position3;
+    color4 color;
+};
+
 struct DebugLine {
     DebugLine(const f32v2& pos1, const f32v2& pos2, const color4& colr)
         : position1(pos1.x, pos1.y, 0.0f)

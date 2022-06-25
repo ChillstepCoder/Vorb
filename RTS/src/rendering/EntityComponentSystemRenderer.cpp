@@ -30,15 +30,6 @@ EntityComponentSystemRenderer::EntityComponentSystemRenderer(const World& world)
 	mSpriteBatch->init();
 }
 
-void EntityComponentSystemRenderer::renderPhysicsDebug(const Camera3D& camera) const {
-
-	auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent>().each([this](auto& cmp) {
-        DebugRenderer::drawCircle(cmp.getPosition(), cmp.mCollisionRadius, color4(1.0f, 0.0f, 0.0f));
-        //DebugRenderer::drawCircle(cmp.getPosition() + f32v3(0.0f, 0.0f, cmp.mCollisionHeight), cmp.mCollisionRadius, color4(0.5f, 0.0f, 0.0f));
-	});
-}
-
 void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) const {
 
     int i = 0;
@@ -55,27 +46,12 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
     });
 }
 
-void EntityComponentSystemRenderer::renderSimpleSprites(const Camera3D& camera) const {
-	mSpriteBatch->begin();
-
-    auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, SimpleSpriteComponent>().each([this](auto& physCmp, auto& spriteCmp) {
-		const f32 rotation = atan2(physCmp.mDir.y, physCmp.mDir.x);
-		color4 color;
-		color.lerp(spriteCmp.mColor, color4(1.0f, 0.0f, 0.0f, 1.0f), spriteCmp.mHitFlash);
-		mSpriteBatch->draw(mCircleTexture.id, nullptr, nullptr, physCmp.getXYPosition(), f32v2(0.5f), spriteCmp.mDims, rotation, spriteCmp.mColor, 0.05f);
-	});
-
-	mSpriteBatch->end();
-	mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
-}
-
 void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 frameAlpha, f32 elapsedSec) {
 	// TODO: This should not be using spritebatch. It should use a custom 
 	// renderer so that it can add screen depth like the world shaders do
 	
     auto& ecs = mWorld.getECS();
-	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent, LocomotionComponent>().each([&](auto& physCmp, auto& modelCmp, auto& motionCmp) {
+	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent, CharacterControlComponent>().each([&](auto& physCmp, auto& modelCmp, auto& motionCmp) {
 		// When in first person dont render player model
 		if (modelCmp.mIsPlayer && sDebugOptions.mCameraMode == CameraMode::FIRST_PERSON) {
 			return;
@@ -90,9 +66,10 @@ void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D&
     auto& ecs = mWorld.getECS();
 	// TODO: 3D
 	ecs.mRegistry.view<PhysicsComponent, DynamicLightComponent>().each([&](auto& physCmp, auto& lightCmp) {
-		f32v2 pos = physCmp.getXYPosition();
-		pos.y += physCmp.getZPosition() * 0.75f; // Magic z_to_xy_ratio
-		lightRenderer.RenderLight(pos, lightCmp.mLightData, camera);
+		assert(false);
+		//f32v2 pos = physCmp.getXYPosition();
+		//pos.y += physCmp.getZPosition() * 0.75f; // Magic z_to_xy_ratio
+		//lightRenderer.RenderLight(pos, lightCmp.mLightData, camera);
 	});
 }
 
@@ -103,13 +80,14 @@ void EntityComponentSystemRenderer::renderInteractUI(const Camera3D& camera) con
 
 	const f32v2 fullSize(1.0f, 0.25f);
 	const f32v2 offset(fullSize.x * -0.5f, 1.0f);
-    ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize, offset](auto& physCmp, auto& interactCmp) {
-		// Background
-        mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fullSize, 0.0f /*rot*/, color4(1.0f, 0.0f, 0.0f, 0.5f), 1.7f);
-		// Foreground fill
-		const f32v2 fillSize(fullSize.x * interactCmp.mProgress, fullSize.y);
-		mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fillSize, 0.0f /*rot*/, color4(0.0f, 1.0f, 0.0f, 1.0f), 1.71f);
-    });
+  //  ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize, offset](auto& physCmp, auto& interactCmp) {
+		//// Background
+  //      mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fullSize, 0.0f /*rot*/, color4(1.0f, 0.0f, 0.0f, 0.5f), 1.7f);
+		//// Foreground fill
+		//const f32v2 fillSize(fullSize.x * interactCmp.mProgress, fullSize.y);
+		//mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fillSize, 0.0f /*rot*/, color4(0.0f, 1.0f, 0.0f, 1.0f), 1.71f);
+  //  });
+	assert(false);
 
     mSpriteBatch->end();
     mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
