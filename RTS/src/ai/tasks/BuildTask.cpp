@@ -69,7 +69,7 @@ void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
 
-    const f32v2& myPos = physCmp.getXYPosition();
+    const f32v3 myPos = physCmp.getPosition();
 
     // TODO: Make sure the stockpile didnt die
     assert(mSourceItems.size());
@@ -126,7 +126,7 @@ void BuildTask::pathToBlueprint(World& world, entt::registry& registry, entt::en
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
 
-    const f32v2& myPos = physCmp.getXYPosition();
+    const f32v3 myPos = physCmp.getPosition();
 
     PathPoint targetPos(mBlueprint.getWorldPositionOfTile(mTargetTiles.back()));
 

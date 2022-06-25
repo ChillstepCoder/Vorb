@@ -5,6 +5,6 @@ public:
 };
 
 struct CharacterDetailsComponentDef {
-    const char* name;
+    const char* name = nullptr;
 };
 KEG_TYPE_DECL(CharacterDetailsComponentDef);

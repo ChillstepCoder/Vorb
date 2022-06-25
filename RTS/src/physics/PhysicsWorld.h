@@ -17,6 +17,13 @@ class DynamicCharacterController;
 
 #include "world/TerrainConstants.h"
 
+#include "physics/CollisionShapes.h"
+
+enum class RigidBodyRotationType {
+    FULL,
+    NO_ROTATE,
+    NO_ROTATE_XY,
+};
 
 class PhysicsWorld
 {
@@ -27,12 +34,12 @@ public:
     void stepSimulation(f32 deltaTime);
     DynamicCharacterController* addDynamicCharacterController(const f32v3& position, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
-    btRigidBody* addRigidBody(entt::entity entityOwner, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f));
+    btRigidBody* addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
 
     void debugRender() const;
 
 private:
-    btRigidBody* createRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
+    btRigidBody* createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
     std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfiguration;
     std::unique_ptr<btCollisionDispatcher> mDispatcher;

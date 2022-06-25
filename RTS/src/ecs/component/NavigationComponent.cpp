@@ -19,7 +19,6 @@ constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large t
 bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, PhysicsComponent& physCmp, CharacterControlComponent& motionCmp, World& world) {
   
 	f32v3 position = physCmp.getPosition();
-	position.z // TODO: FINISH
 	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - *(f32v2*)&position;
     const float distance2 = glm::length2(offset);
     if (distance2 <= SQ(MIN_DISTANCE)) {
@@ -68,13 +67,13 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 		if (sDebugOptions.mShowPaths) {
 			DebugRenderer::drawWireQuad(f32v3(nextTilePos.x, nextTilePos.y, baseZ), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
 		}
-        if (baseZ >= physCmp.getZPosition() + 0.1f /*1.1*/) {
+        if (baseZ >= physCmp.getPosition().z + 0.1f /*1.1*/) {
             // Climb
 			motionCmp.mDesiredMode = LocomotionMode::JUMPING;
         }
 	}
 
-	const f32v2& offset = nextPoint - physCmp.getXYPosition();
+	const f32v2& offset = nextPoint - f32v2(physCmp.getPosition());
 	const float distance2 = glm::length2(offset);
 	if (distance2 <= SQ(MIN_DISTANCE)) {
         ++navCmp.mCurrentFinePoint;
@@ -156,7 +155,8 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	}
 		
 	// TODO: Do we need this?
-	physCmp.mDir = motionCmp.mDesiredDirection;
+	assert(false);
+	//physCmp.mDir = motionCmp.mDesiredDirection;
 	return false;
 
     //const float ARC_LENGTH = DEG_TO_RAD(175.0f);
@@ -212,12 +212,12 @@ void requestPathToCoarsePoint(NavigationComponent& navCmp, PhysicsComponent& phy
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
 		std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(physCmp.getPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
 			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
 		});
 	}
 	else {
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(physCmp.getXYPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/);
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(physCmp.getPosition()), PathPoint(nextCoarseTilePos), false /*isCoarse*/);
 	}
 }
 
@@ -249,7 +249,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 
 	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
 
-	const f32v2& offset = nextCoarseTilePos - physCmp.getXYPosition();
+	const f32v2& offset = nextCoarseTilePos - f32v2(physCmp.getPosition());
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;

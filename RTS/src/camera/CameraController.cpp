@@ -325,8 +325,5 @@ f32v3 CameraController::getFollowTargetPos(f32 frameAlpha) {
 
     const EntityComponentSystem& ecs = mWorld.getECS();
     const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(mEntityFollow);
-    const f32v2& targetXYPos = physCmp.getXYInterpolated(frameAlpha);
-    const f32 targetZPos = physCmp.getZInterpolated(frameAlpha);
-
-    return f32v3(targetXYPos.x, targetXYPos.y, targetZPos);
+    return physCmp.getInterpolatedPosition();
 }

@@ -148,12 +148,6 @@ void World::tick(const f32v2& playerPos) {
 		it->update();
 	}
 
-	// TODO: Give physworld ownership to physicssystem?
-	mEcs->mPhysicsSystem.updateFrameBegin(mEcs->mRegistry);
-
-	// Update physics
-	//mPhysWorld->Step(1.0f /*deltaTime*/, 1, 1);
-
 	// Update particles (TODO: Ecs?)
 	// TODO: eww why is a resource updating?
 	Services::ResourceManager::ref().getParticleSystemManager().update(playerPos);

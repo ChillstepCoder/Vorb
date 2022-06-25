@@ -30,7 +30,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
             entityDef->components.emplace_back(ComponentTypes::CharacterModel);
         } else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Locomotion)]) {
             ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::Locomotion);
-            fileData.locomotion.mSpeed = 0.3f;
+            fileData.locomotion = LocomotionComponentDef(); // Default initialize
             keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(LocomotionComponentDef));
         }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Combat)]) {
@@ -41,7 +41,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterDetails)]) {
             ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::CharacterDetails);
-            fileData.characterDetails.name = nullptr; // Initialize
+            fileData.characterDetails = CharacterDetailsComponentDef(); // Default initialize
             keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(CharacterDetailsComponentDef));
         }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::DynamicLight)]) {
@@ -61,6 +61,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
             //physics.mQueryActorTypes = ACTORTYPE_HUMAN;
             //physics.addCollider(newEntity, ColliderShapes::SPHERE, SPRITE_RADIUS);
             ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::Physics);
+            fileData.physics = PhysicsComponentDef(); // Default initialize
             keg::parse((ui8*)&fileData.physics, value, readContext, &KEG_GLOBAL_TYPE(PhysicsComponentDef));
         }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::PlayerControl)]) {

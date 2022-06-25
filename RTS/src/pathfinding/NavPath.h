@@ -7,6 +7,7 @@ struct PathPoint {
     PathPoint(const f32v2& r) : xy(r) {};
     PathPoint(const ui32v2& r) : xy(r) {};
     PathPoint(ui16 x, ui16 y) : xy(x, y) {};
+    PathPoint(const f32v3& r) : xy(r.x, r.y) {};
 
     PathPoint& operator+=(const PathPoint& r) {
         xy += r.xy;

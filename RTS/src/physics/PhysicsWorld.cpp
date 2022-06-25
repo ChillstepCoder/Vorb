@@ -121,17 +121,35 @@ btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     );
     heightFieldShape->setUseDiamondSubdivision();
     heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));
-    return createRigidBody(0.0f, startTransform, heightFieldShape);
+    return createRigidBody(entt::null, 0.0f, startTransform, heightFieldShape);
 }
 
-btRigidBody* PhysicsWorld::addRigidBody(entt::entity entityOwner, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/) {
+btRigidBody* PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
     btTransform startTransform;
     startTransform.setOrigin(btVector3(position.x, position.y, position.z));
     //startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
-    btRigidBody* rigidBody = createRigidBody(mass, startTransform, s
+    assert(shape != CollisionShapes::NONE);
+    btCollisionShape* collisionShape = (btCollisionShape*)mShapes[e_cast(shape)];
+    btRigidBody* rigidBody = createRigidBody(ownerEntity, mass, startTransform, collisionShape);
+
+    // Disable rotation optionally
+    if (rotationType == RigidBodyRotationType::NO_ROTATE) {
+    //    rigidBody->setAngularFactor(0.0);
+    }
+    else if (rotationType == RigidBodyRotationType::NO_ROTATE_XY) {
+   //     rigidBody->setAngularFactor(btVector3(0.0, 0.0, 1.0));
+    }
+
+    //  TODO: Scaling that isnt global...
+    // If we are convex we can apply local scaling
+ /*   btConvexShape* convexShape = dynamic_cast<btConvexShape*>(rigidBody);
+    if (convexShape) {
+        convexShape->setLocalScaling(f32v3ToBtVector3(scale));
+    }*/
+    return rigidBody;
 }
 
-btRigidBody* PhysicsWorld::createRigidBody(btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
+btRigidBody* PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
 {
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
     
@@ -152,8 +170,8 @@ btRigidBody* PhysicsWorld::createRigidBody(btScalar mass, const btTransform& sta
         body = new btRigidBody(mass, 0, shape, localInertia);
         body->setWorldTransform(startTransform);
     }
-
-    body->setUserIndex(-1);
+    assert((size_t)ownerEntity < INT32_MAX && "Entity ID overflow in createRigidBody");
+    body->setUserIndex((int)ownerEntity); // TODO: ENTT?
     mDynamicsWorld->addRigidBody(body);
     return body;
 }

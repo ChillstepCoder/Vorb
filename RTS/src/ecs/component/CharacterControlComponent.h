@@ -14,7 +14,7 @@ enum class LocomotionMode : ui8 {
 };
 
 struct LocomotionComponentDef {
-    float mSpeed;
+    float mSpeed = 0.3f;
 };
 KEG_TYPE_DECL(LocomotionComponentDef);
 

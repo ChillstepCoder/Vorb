@@ -13,6 +13,8 @@
 
 #include <ozz/animation/runtime/animation.h>
 
+#include "physics/PhysicsWorld.h"
+
 EntityFactory::EntityFactory(EntityComponentSystem& ecs) :
     mEcs(ecs)
 {
@@ -79,8 +81,15 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
                 break;
             }
             case ComponentTypes::Physics: {
-                auto& physics = registry.emplace<PhysicsComponent>(newEntity, mEcs.mWorld, position, false);
-                physics.mRigidBody = physWorld.addRigidBody(newEntity, cdef.physics.colliderShape, cdef.physics.colliderRadius);
+                auto& physics = registry.emplace<PhysicsComponent>(newEntity);
+                RigidBodyRotationType rotType = RigidBodyRotationType::FULL;
+                if (cdef.physics.disableXyzRot) {
+                    rotType = RigidBodyRotationType::NO_ROTATE;
+                }
+                else if (cdef.physics.disableXyRot) {
+                    rotType = RigidBodyRotationType::NO_ROTATE_XY;
+                }
+                physics.mRigidBody = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.massKg, cdef.physics.colliderScale, rotType);
                 break;
             }
             case ComponentTypes::PlayerControl: {

@@ -106,7 +106,7 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
         return;
     }
 
-    navCmp.requestCoarsePathWithCallback(physCmp.getXYPosition(), PathPoint(mTileTarget.getWorldPos2D()), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(physCmp.getPosition(), PathPoint(mTileTarget.getWorldPos2D()), [this](bool success) {
         if (success == true) {
             mState = GatherTaskState::BEGIN_HARVEST;
         }
@@ -178,7 +178,7 @@ void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, ent
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
 
-    const f32v2& myPos = physCmp.getXYPosition();
+    const f32v3 myPos = physCmp.getPosition();
 
     // TODO: Make sure the stockpile didnt die
     assert(mItemPromise->isValid());

@@ -20,7 +20,7 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
-        ai.mCity = world.getClosestCityToPoint(physics.getXYPosition());
+        ai.mCity = world.getClosestCityToPoint(physics.getPosition());
         // No city? No work!
         if (!ai.mCity) {
             return;

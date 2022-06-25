@@ -80,14 +80,15 @@ void EntityComponentSystemRenderer::renderInteractUI(const Camera3D& camera) con
 
 	const f32v2 fullSize(1.0f, 0.25f);
 	const f32v2 offset(fullSize.x * -0.5f, 1.0f);
-  //  ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize, offset](auto& physCmp, auto& interactCmp) {
+    ecs.mRegistry.view<PhysicsComponent, TimedTileInteractComponent>().each([this, fullSize, offset](auto& physCmp, auto& interactCmp) {
 		//// Background
   //      mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fullSize, 0.0f /*rot*/, color4(1.0f, 0.0f, 0.0f, 0.5f), 1.7f);
 		//// Foreground fill
 		//const f32v2 fillSize(fullSize.x * interactCmp.mProgress, fullSize.y);
 		//mSpriteBatch->draw(mSquareTexture.id, nullptr, nullptr, physCmp.getXYPosition() + offset, f32v2(0.0f), fillSize, 0.0f /*rot*/, color4(0.0f, 1.0f, 0.0f, 1.0f), 1.71f);
-  //  });
-	assert(false);
+		assert(false);
+	});
+	
 
     mSpriteBatch->end();
     mSpriteBatch->render(f32m4(1.0f), camera.getVPMatrix(), nullptr, &vg::DepthState::FULL);
