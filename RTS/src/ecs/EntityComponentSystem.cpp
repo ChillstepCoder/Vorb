@@ -20,7 +20,7 @@ void EntityComponentSystem::tick() {
     //mPlayerControlSystem.update(mRegistry, playerCamera);
 	mPersonAISystem.update(mRegistry);
     mNavigationSystem.update(mRegistry, mWorld);
-	mLocomotionSystem.update(mRegistry);
+	mCharacterControlSystem.update(mRegistry);
 	mTimedTileInteractSystem.update(mRegistry);
 	//mCorpseTable.update();
 }

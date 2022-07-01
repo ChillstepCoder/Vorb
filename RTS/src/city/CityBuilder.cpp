@@ -12,6 +12,7 @@
 #include "ecs/EntityComponentSystem.h"
 
 #include "DebugRenderer.h"
+#include "rendering/BuildingMesher.h"
 
 #include "structure/StructureManager.h"
 
@@ -152,6 +153,9 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     newBuilding->mPlotIndex = bp.plotIndex;
 
     std::cout << "DebugBuildInstant " << timer.stop() << " ms\n";
+
+    // TODO: Multithread
+    BuildingMesher::buildMeshAndPhysics(*newBuilding, world.getPhysicsWorld());
 
     return newBuilding;
 }

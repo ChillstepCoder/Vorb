@@ -395,7 +395,7 @@ void WorldGrid::flattenAABB(const ui32AABB2& aabb, f32 flattenHeight) {
     mWorld.dirtyTerrainFromBrush(aabbCenter, aabbDiagonalRadius);
 }
 
-f32 WorldGrid::getHeightAtVert(ChunkID id, const ui32v2& vertPos) const {
+f32 WorldGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const {
     const HeightmapPatch& patch = mHeightData[id.id];
     if (!patch.isDone()) return 0.0f;
     return patch.mHeightData->data[vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x];

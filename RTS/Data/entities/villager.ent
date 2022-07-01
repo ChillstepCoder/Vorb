@@ -1,7 +1,7 @@
 person_ai:
 character_model:
 character:
-  speed: 0.28
+  speed: 4.0
 physics:
   shape: capsule
   disable_xy_rot: true

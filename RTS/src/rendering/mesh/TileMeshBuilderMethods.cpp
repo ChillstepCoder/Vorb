@@ -6,6 +6,7 @@
 #include "tile/TileHandle.h"
 #include "world/Chunk.h"
 
+#include "physics/StaticPhysicsMesh.h"
 
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 5;
@@ -120,12 +121,12 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     return rv;
 }
 
-void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
     const SubTexture& texture = tileData.texture;
     switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
             meshBuilder.addAxisAlignedQuad(
-                f32v3(tileXY.x, tileXY.y, floorBaseHeight) + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+                tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::BOTTOM)],
                 f32v2(1.0f) /*dims*/,
                 CubeFacing::TOP,
                 texture,
@@ -139,15 +140,15 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, f32 floorBaseHei
             break;
         }
         case TileTextureMethod::VERTICAL: {
-            addBlockVertical(meshBuilder, floorBaseHeight, tileXY, tileHandle, tileData);
+            addBlockVertical(meshBuilder, tilePos, tileHandle, tileData, physMesh);
             break;
         }
         case TileTextureMethod::WORLD_TILING: {
             // todo: FIX
-            int xOff = (ui32)tileXY.x % 8;
-            int yOff = 7 - (ui32)tileXY.y % 8;
+            //int xOff = (ui32)tilePos.x % 8;
+            //int yOff = 7 - (ui32)tilePos.y % 8;
             meshBuilder.addAxisAlignedQuad(
-                f32v3(tileXY.x, tileXY.y, floorBaseHeight) + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+                tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::BOTTOM)],
                 f32v2(1.0f) /*dims*/,
                 CubeFacing::TOP,
                 texture,
@@ -164,27 +165,27 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, f32 floorBaseHei
     static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
-void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
     // Currently only supported for ground layer
     assert(tileData.layer == TILE_LAYER_GROUND);
 
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
 
-    const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
-    const f32v3 tilePos(tileXY.x, tileXY.y, groundZPosition);
+    const f32 topZPosition = tile.getGroundZPositionUncompressedThreadSafe();
+    const f32v3 topPos(tilePos.x, tilePos.y, topZPosition);
 
     /*TileHandle neighbors[4];
     chunk.getTileNeighbors4(tileHandle.index, neighbors);*/
 
     // Get height offsets to adjacent tiles
     //const f32 zPosition = tile.groundZPosition; // Dont check terrain here, assume above // TODO: make sure this is right
-    const f32 heightDiff = groundZPosition - floorBaseHeight;
+    const f32 quadHeight = topZPosition - tilePos.z;
     f32 heightDiffs[4];
     // f32 occluderHeight
     // TODO: Fix this
     for (int i = 0; i < 4; ++i) {
-        heightDiffs[i] = heightDiff;
+        heightDiffs[i] = quadHeight;
     }
     // Old culling
     /*heightDiffs[(int)NeighborIndex4::BOTTOM] = groundZPosition - getTileHeight(floor, neighbors[(int)NeighborIndex4::BOTTOM]);
@@ -194,20 +195,32 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
 
     // Render top
     meshBuilder.addAxisAlignedQuad(
-        tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+        topPos,
         f32v2(1.0f), // Dimensions
         CubeFacing::TOP,
         texture,
         f32v4(0.0f, 2.0f / 3.0f, 1.0f, 1.0f / 3.0f),
         COLOR_WHITE
     );
+    if (physMesh) {
+        physMesh->addTileQuad(topPos, f32v2(1.0f), CubeFacing::TOP);
+
+         for (int c = 0; c < 4; ++c) {
+             if (heightDiffs[c] > 0.0f) {
+                 CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
+                 const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
+                 physMesh->addTileQuad(f32v3(quadPos.x, quadPos.y, quadPos.z), f32v2(1.0f, heightDiffs[c]), quadFacing);
+             }
+         }
+    }
 
     // Render sides
+    const f32v3 topBase = topPos - f32v3(0.0f, 0.0f, 1.0f);
     for (int c = 0; c < 4; ++c) {
         // Render exposed cardinal wall if needed
         if (heightDiffs[c] > 0.0f) {
             CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
-            const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
+            const f32v3 quadPos = topBase + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
             const f32v2 offsets = getUvsOffsetsFromVerticalWallIndex(2);
             f32v4 uvs = texture.mUvRect;
             uvs.y += offsets.y * uvs.w;
@@ -253,18 +266,21 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, f32 floo
     }
 }
 
-void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData) {
+void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
     const SubTexture& texture = tileData.texture;
     const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight + 0.0001f);
     // Render top
     meshBuilder.addAxisAlignedQuad(
-        tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::TOP)],
+        tilePos,
         f32v2(1.0f), // Dimensions
         CubeFacing::TOP,
         texture,
         f32v4(0.0f, 2.0f / 3.0f, 1.0f, 1.0f / 3.0f),
         COLOR_WHITE
     );
+    if (physMesh) {
+        physMesh->addTileQuad(tilePos, f32v2(1.0f), CubeFacing::TOP);
+    }
     // TODO: Thickness
 
     /*f32 corners[4];

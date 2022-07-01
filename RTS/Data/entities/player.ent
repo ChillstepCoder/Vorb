@@ -1,7 +1,7 @@
 player_control:
 character_model:
 character:
-  speed: 0.3
+  speed: 6.2
 physics:
   shape: capsule
   disable_xy_rot: true

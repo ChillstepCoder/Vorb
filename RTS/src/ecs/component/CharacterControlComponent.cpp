@@ -4,56 +4,60 @@
 #include "options/DebugOptions.h"
 
 #include "ecs/component/PhysicsComponent.h"
+#include "physics/DynamicCharacterController.h"
 
 constexpr float ACCELERATION = 0.01f;
 constexpr float JUMP_VELOCITY = 0.20f;
 
-KEG_TYPE_DEF_SAME_NAME(LocomotionComponentDef, kt) {
-    kt.addValue("speed", keg::Value::basic(offsetof(LocomotionComponentDef, mSpeed), keg::BasicType::F32));
+KEG_TYPE_DEF_SAME_NAME(CharacterControlComponentDef, kt) {
+    kt.addValue("speed", keg::Value::basic(offsetof(CharacterControlComponentDef, mSpeed), keg::BasicType::F32));
 }
 
 inline void updateComponent(CharacterControlComponent& motionCmp, PhysicsComponent& physCmp) {
- 
+    DynamicCharacterController& controller = *motionCmp.mController;
     // Transitions
-    //if (motionCmp.mDesiredMode == LocomotionMode::BEGIN_JUMP) {
-    //    motionCmp.mDesiredMode = LocomotionMode::JUMPING;
-    //    motionCmp.mMode = LocomotionMode::JUMPING;
-    //    physCmp.setZVelocity(JUMP_VELOCITY);
-    //}
-    //else if (motionCmp.isInAirState()) {
-    //    if (physCmp.isOnGround()) {
-    //        // Transition back to grounded
-    //        motionCmp.mMode = LocomotionMode::LANDING;
-    //        motionCmp.mLandingTimer.start();
-    //    }
-    //    else if (motionCmp.mMode == LocomotionMode::JUMPING) {
-    //        if (physCmp.mZVelocity <= 0.0f) {
-    //            motionCmp.mMode = LocomotionMode::FALLING;
-    //        }
-    //    }
-    //}
+    if (motionCmp.mDesiredMode == LocomotionMode::BEGIN_JUMP && controller.canJump()) {
+        motionCmp.mDesiredMode = LocomotionMode::JUMPING;
+        motionCmp.mMode = LocomotionMode::JUMPING;
+        controller.jump();
+    }
+    else if (motionCmp.isInAirState()) {
+        if (controller.canJump()) {
+            // Transition back to grounded
+            motionCmp.mMode = LocomotionMode::LANDING;
+            motionCmp.mLandingTimer.start();
+        }
+        else if (motionCmp.mMode == LocomotionMode::JUMPING) {
+            if (physCmp.mRigidBody->getLinearVelocity().getZ() <= 0.0f) {
+                motionCmp.mMode = LocomotionMode::FALLING;
+            }
+        }
+    }
 
-    //if (motionCmp.mMode != motionCmp.mDesiredMode) {
-    //    if (motionCmp.mMode == LocomotionMode::LANDING) {
-    //        constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
-    //        if (motionCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
-    //            motionCmp.mMode = motionCmp.mDesiredMode;
-    //        }
-    //    }
-    //    else {
-    //        motionCmp.mMode = motionCmp.mDesiredMode;
-    //    }
-    //}
+    if (motionCmp.mMode != motionCmp.mDesiredMode) {
+        if (motionCmp.mMode == LocomotionMode::LANDING) {
+            constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
+            if (motionCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
+                motionCmp.mMode = motionCmp.mDesiredMode;
+            }
+        }
+        else {
+            motionCmp.mMode = motionCmp.mDesiredMode;
+        }
+    }
 
-    //// If we have no desired motion, do nothing and let physics system add friction
-    //if (motionCmp.mDesiredDirection.x == 0.0f && motionCmp.mDesiredDirection.y == 0.0f) {
-    //    return;
-    //}
 
-    //float desiredSpeed = motionCmp.getCurrentSpeed();
+    float desiredSpeed = motionCmp.getCurrentSpeed();
+    controller.setMovementDirection(btVector3(motionCmp.mMoveDirection.x, motionCmp.mMoveDirection.y, 0.0f));
+    controller.setMaxLinearVelocity(desiredSpeed);
+    // If we have no desired motion, do nothing and let physics system add friction
+   /* if (motionCmp.mDesiredDirection.x == 0.0f && motionCmp.mDesiredDirection.y == 0.0f) {
+        return;
+    }*/
+
     //// TODO: assert normalized?
     //// Determine angle to our desired direction
-    //float dotp = glm::dot(motionCmp.mDesiredDirection, physCmp.mDir);
+    //float dotp = glm::dot(motionCmp.mDesiredDirection, physCmp.getDir());
     //dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
     //const float angleOffset = acos(dotp);
     //assert(angleOffset == angleOffset && "Nan angle offset"); // nan check
@@ -86,11 +90,11 @@ inline void updateComponent(CharacterControlComponent& motionCmp, PhysicsCompone
     //     std::cout << "  FORCE NEEDED " << forceToDesiredSpeed << " " << forceToApply << std::endl;*/
     //}
 
-    ////}
+    //}
 
 }
 
-void LocomotionSystem::update(entt::registry& registry) {
+void CharacterControlSystem::update(entt::registry& registry) {
     // Update components
     // TODO: Check performance of lambda vs non lambda iteration (see PlayerControlComponent)
     registry.view<CharacterControlComponent, PhysicsComponent>().each([](auto& motionCmp, auto& physCmp) {

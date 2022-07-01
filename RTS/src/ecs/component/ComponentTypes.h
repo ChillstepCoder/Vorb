@@ -3,7 +3,7 @@
 // All supported component types a
 enum class ComponentTypes {
     CharacterModel,
-    Locomotion,
+    CharacterControl,
     Combat,
     Corpse,
     CharacterDetails,

@@ -231,7 +231,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                         }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, 0.0f /*TODO REAL FLOOR HEIGHT*/, f32v2(x, y), TileHandle(&chunk.getTileContainer(), index), tileData);
+                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, f32v3(x, y, 0.0f /*TODO REAL FLOOR HEIGHT*/), TileHandle(&chunk.getTileContainer(), index), tileData, nullptr);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
                             

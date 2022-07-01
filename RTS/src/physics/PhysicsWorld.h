@@ -14,6 +14,7 @@ class btTransform;
 class btVector4;
 class btHeightfieldTerrainShape;
 class DynamicCharacterController;
+class StaticPhysicsMesh;
 
 #include "world/TerrainConstants.h"
 
@@ -25,6 +26,8 @@ enum class RigidBodyRotationType {
     NO_ROTATE_XY,
 };
 
+typedef std::pair<btRigidBody*, f32/*colliderHalfHeight*/> RigidBodyPair;
+
 class PhysicsWorld
 {
 public:
@@ -32,14 +35,16 @@ public:
     ~PhysicsWorld();
 
     void stepSimulation(f32 deltaTime);
-    DynamicCharacterController* addDynamicCharacterController(const f32v3& position, f32 rotationYaw);
+    DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
-    btRigidBody* addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+    RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+
+    void addStaticMesh(StaticPhysicsMesh& staticMesh);
 
     void debugRender() const;
 
 private:
-    btRigidBody* createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
+    RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
 
     std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfiguration;
     std::unique_ptr<btCollisionDispatcher> mDispatcher;
@@ -50,7 +55,8 @@ private:
     std::vector<btCollisionShape*> mShapes;
 
     std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;
-    mutable bool mWasDebugRendering = false;
+    mutable bool mWasRenderingStatic = false;
+    mutable bool mWasRenderingTerrain = false;
 
     std::unique_ptr<btHeightfieldTerrainShape> mHeightShapes[WORLD_SIZE_HEIGHTMAP_PATCHES];
 

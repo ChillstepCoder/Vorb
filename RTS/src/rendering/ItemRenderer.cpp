@@ -180,7 +180,7 @@ void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const I
             for (int j = e_cast(CubeFacing::LEFT); j <= e_cast(CubeFacing::TOP); ++j) {
                 const f32v2& axis = CUBE_FACING_AXIS[j];
                 const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
-                mesh.addAxisAlignedQuad(boxPos + OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, 0, texture.mUvRect, COLOR_WHITE, false);
+                mesh.addAxisAlignedQuad(boxPos + CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, 0, texture.mUvRect, COLOR_WHITE, false);
             }
         }
     }

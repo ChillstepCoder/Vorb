@@ -48,7 +48,7 @@ public:
     void adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
     void flattenAABB(const ui32AABB2& aabb, f32 flattenHeight);
 
-    f32 getHeightAtVert(ChunkID id, const ui32v2& vertPos) const;
+    f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
     f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
 

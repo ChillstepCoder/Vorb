@@ -23,7 +23,6 @@ BuildingRenderer::BuildingRenderer(const MaterialRenderer& materialRenderer) :
     mRoofMaterial = materialManager.getMaterial("standard_tile");
     mRoofBaseMaterial = materialManager.getMaterial("standard_tile");
     mRoofShadowMaterial = materialManager.getMaterial("shadow_mapper");
-    mMesher = std::make_unique<BuildingMesher>();
 }
 
 BuildingRenderer::~BuildingRenderer()
@@ -36,10 +35,6 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
 
     if (sDebugOptions.mRoofDebug) {
         DebugRenderer::drawWireQuad(f32v3(building.mAABB.pos), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
-    }
-
-    if (building.mRenderData.mMeshDirty) {
-        mMesher->buildMesh(building);
     }
 
     // TODO: Redundant binds here

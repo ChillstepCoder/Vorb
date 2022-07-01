@@ -35,7 +35,7 @@ struct ComponentDefinition {
         PhysicsComponentDef          physics;
         SimpleSpriteComponentDef     simpleSprite;
         CharacterDetailsComponentDef characterDetails;
-        LocomotionComponentDef       locomotion;
+        CharacterControlComponentDef characterControl;
     };
     // TODO: Instead of union, polymorphism? This doesnt work in union due to array destructor
     SkillsComponentFileData      skillsFileData;

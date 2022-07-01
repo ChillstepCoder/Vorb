@@ -22,6 +22,8 @@
 
 #include "util/GridEdgeFinder.h"
 
+#include "physics/PhysicsWorld.h"
+
 constexpr f32 ROOF_THICKNESS = 0.04f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3
@@ -304,7 +306,7 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
     return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
 }
 
-void BuildingMesher::buildMesh(const Building& building) {
+void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld& physWorld) {
     PreciseTimer timer;
 
     // Debug log
@@ -397,6 +399,10 @@ void BuildingMesher::buildMesh(const Building& building) {
 
     if (visLog) visLog->finish();
 
+    building.mPhysicsMesh.setRootPos(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f));
+    building.mPhysicsMesh.finish();
+    physWorld.addStaticMesh(building.mPhysicsMesh);
+
     //std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
 }
 
@@ -407,7 +413,7 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
             for (ui32 x = 0; x < tileDims.x; ++x) {
                 TileIndex index = building.mTileContainer.getTileIndexFromXYZOffset(x, y, z);
                 const Tile& tile = building.mTileContainer.getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread(); // TODO: Thread safe when async
+                const f32 groundZPositchion = tile.getGroundZPositionUncompressedMainThread(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersMainThread()[layerIndex];  // TODO: Thread safe when async
                     if (layerTile == TILE_ID_NONE) {
@@ -423,10 +429,10 @@ void BuildingMesher::meshTiles(const Building& building, MeshBuilder& meshBuilde
                         assert(false); // Unsupported
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(meshBuilder, building.mAABB.z + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
+                        TileMeshBuilderMethods::addBlock(meshBuilder, f32v3(x, y, building.mAABB.z + z * building.mTileContainer.getFloorHeight()), TileHandle(&building.mTileContainer, index), tileData, &building.mPhysicsMesh);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
-                        TileMeshBuilderMethods::addFloor(meshBuilder, building.mAABB.z + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData);
+                        TileMeshBuilderMethods::addFloor(meshBuilder, building.mAABB.z + z * building.mTileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&building.mTileContainer, index), tileData, &building.mPhysicsMesh);
                     }
                 }
             }
@@ -997,6 +1003,7 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                     f32v3(tilePos.x, tilePos.y + 1.0f, stairPieceBaseHeight),
                 };
                 meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+                building.mPhysicsMesh.addQuadBetweenPoints(pointsTop);
                 switch (dir) {
                     case Cartesian::SOUTH:
                         sideUvOrient = AXIS_X;
@@ -1140,7 +1147,72 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                     meshBuilder.addQuadBetweenPointsWorldUV(pointsFront, rawWoodTexture, 1.0f, COLOR_WHITE, frontUvOrient, f32v3(0.0f));
                     meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
                     meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+
                 }
+                // Collision for the side and top of a stair
+                f32v3 collisionPointsLeft[3];
+                f32v3 collisionPointsRight[3];
+                f32v3 collisionPointsRamp[4];
+                const f32v3 rampBasePos(tilePos.x, tilePos.y, stairPieceBaseHeight);
+                const f32v3 rampTopPos(tilePos.x, tilePos.y, stairPieceTopHeight);
+                // Winding doesnt matter
+                switch (dir) {
+                    case Cartesian::SOUTH:
+                        collisionPointsLeft[0] = rampBasePos;
+                        collisionPointsLeft[1] = rampTopPos;
+                        collisionPointsLeft[2] = rampBasePos + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRamp[0] = collisionPointsLeft[1];
+                        collisionPointsRamp[1] = collisionPointsLeft[2];
+                        collisionPointsRamp[2] = collisionPointsRight[2];
+                        collisionPointsRamp[3] = collisionPointsRight[1];
+                        break;
+                    case Cartesian::WEST:
+                        collisionPointsLeft[0] = rampBasePos;
+                        collisionPointsLeft[1] = rampTopPos;
+                        collisionPointsLeft[2] = rampBasePos + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRamp[0] = collisionPointsLeft[1];
+                        collisionPointsRamp[1] = collisionPointsLeft[2];
+                        collisionPointsRamp[2] = collisionPointsRight[2];
+                        collisionPointsRamp[3] = collisionPointsRight[1];
+                        break;
+                    case Cartesian::EAST:
+                        collisionPointsLeft[0] = rampBasePos;
+                        collisionPointsLeft[1] = rampTopPos + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsLeft[2] = rampBasePos + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsRamp[0] = collisionPointsLeft[0];
+                        collisionPointsRamp[1] = collisionPointsLeft[1];
+                        collisionPointsRamp[2] = collisionPointsRight[1];
+                        collisionPointsRamp[3] = collisionPointsRight[0];
+                        break;
+                    case Cartesian::NORTH:
+                        collisionPointsLeft[0] = rampBasePos + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsLeft[1] = rampTopPos + f32v3(0.0f, 1.0f, 0.0f);
+                        collisionPointsLeft[2] = rampBasePos;
+                        collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(1.0f, 0.0f, 0.0f);
+                        collisionPointsRamp[0] = collisionPointsLeft[1];
+                        collisionPointsRamp[1] = collisionPointsLeft[2];
+                        collisionPointsRamp[2] = collisionPointsRight[2];
+                        collisionPointsRamp[3] = collisionPointsRight[1];
+                        break;
+                    default:
+                        assert(false);
+                        break;
+
+                }
+                building.mPhysicsMesh.addTriangleBetweenPoints(collisionPointsLeft);
+                building.mPhysicsMesh.addTriangleBetweenPoints(collisionPointsRight);
+                building.mPhysicsMesh.addQuadBetweenPoints(collisionPointsRamp);
 
                 // Endcap quad
                 // TODO: World space mesher util for cartesian quad?
@@ -1181,6 +1253,7 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
 
                     }
                     meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, rawWoodTexture, 1.0f, COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
+                    building.mPhysicsMesh.addQuadBetweenPoints(pointsEndcap);
                 }
              }
             // Place square walls to the ground
@@ -1215,7 +1288,9 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
 
             }
             meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+            building.mPhysicsMesh.addQuadBetweenPoints(pointsSide);
             meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+            building.mPhysicsMesh.addQuadBetweenPoints(&(pointsSide[4]));
             // TODO: Railings
             //meshBuilder.addBoardBetweenPoints(tilePos, f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight + stepHeight * (STEPS_PER_TILE + 5)), f32v2(0.05f), rawWoodTexture, 1.0f);
         }

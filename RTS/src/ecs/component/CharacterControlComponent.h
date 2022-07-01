@@ -13,10 +13,10 @@ enum class LocomotionMode : ui8 {
     COUNT
 };
 
-struct LocomotionComponentDef {
+struct CharacterControlComponentDef {
     float mSpeed = 0.3f;
 };
-KEG_TYPE_DECL(LocomotionComponentDef);
+KEG_TYPE_DECL(CharacterControlComponentDef);
 
 constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(LocomotionMode::COUNT)] = {
     0.0f, // IDLE
@@ -58,8 +58,12 @@ static_assert(e_cast(LocomotionMode::COUNT) == 9, "Update above tables");
 
 
 struct CharacterControlComponent {
-    f32 mSpeedRun = 0.3f;
-    f32v2 mDesiredDirection = f32v2(0.0f);
+    // TODO: Use non dynamic allocation which requires stable CharacterControlComponent
+    // https://github.com/skypjack/entt/blob/master/docs/md/entity.md#pointer-stability
+    class DynamicCharacterController* mController = nullptr;
+    f32v2 mMoveDirection = f32v2(0.0f);
+    f32v2 mControllerDirection = f32v2(1.0f, 0.0f);
+    f32 mSpeedRun = 4.167f; // ~15 kmph
     LocomotionMode mMode = LocomotionMode::IDLE;
     LocomotionMode mDesiredMode = LocomotionMode::IDLE;
     PreciseTimer mLandingTimer; // TODO: This is wrong as it doesn't account tick rate or timestep
@@ -70,10 +74,9 @@ struct CharacterControlComponent {
     f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
     f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mMode)]; }
 };
-static_assert(sizeof(CharacterControlComponent) == 24, "Keep small");
+static_assert(sizeof(CharacterControlComponent) == 40, "Keep small");
 
-
-class LocomotionSystem {
+class CharacterControlSystem {
 public:
     void update(entt::registry& registry);
 };

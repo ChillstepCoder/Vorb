@@ -388,11 +388,11 @@ void WorldEditor::updateTerrainEdit() {
             f32v2 worldPos;
             for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
                 for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
-                    ChunkID id(worldPos);
-                    const f32v2 chunkWorldPos = id.getWorldPos();
-                    const f32v2 offset = worldPos - chunkWorldPos;
+                    HeightmapPatchID id(worldPos);
+                    const f32v2 terrainWorldPos = id.getWorldPos();
+                    const f32v2 offset = worldPos - terrainWorldPos;
                     const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
-                    const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + chunkWorldPos;
+                    const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
                     const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
                     if (glm::length2(offsetToVertex) < brushSizeSq) {
                         editVertex(id, vertexPos, offsetToVertex);
@@ -513,7 +513,7 @@ void WorldEditor::updateBuildingEdit() {
     }
 }
 
-void WorldEditor::editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
+void WorldEditor::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
     
     // Read brush data
     f32 strength = getBrushStrengthAtPoint(offsetToVertex);

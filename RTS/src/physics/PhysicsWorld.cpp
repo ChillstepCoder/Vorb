@@ -10,8 +10,8 @@
 #include "debugging/PhysicsDebugDrawer.h"
 
 #include "physics/DynamicCharacterController.h"
-
 #include "physics/CollisionShapes.h"
+#include "physics/StaticPhysicsMesh.h"
 
 #include "terrain/HeightmapPatch.h"
 #include "options/DebugOptions.h"
@@ -20,6 +20,7 @@ const btVector3 GRAVITY(0.0f, 0.0f, -10.0f);
 
 const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);
+const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
 
 PhysicsWorld::PhysicsWorld() {
     /// collision configuration contains default setup for memory , collision setup . Advanced users can create their own configuration .
@@ -85,19 +86,9 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
     mDynamicsWorld->stepSimulation(elapsedSec, 3 /*maxSubSteps*/);
 }
 
-DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(const f32v3& position, f32 rotationYaw) {
-    btTransform startTransform;
-    startTransform.setOrigin(btVector3(position.x, position.y, position.z));
-    startTransform.setRotation(btQuaternion(rotationYaw, 0.0, 0.0));
-
-    // TODO: Custom btAction character controller
-    // https://www.pierov.org/2020/05/23/dynamic-character-controller-bullet/
-    btCapsuleShape* shape = (btCapsuleShape*)mShapes[e_cast(CollisionShapes::CAPSULE)];
-    btRigidBody* body = createRigidBody(1.0f, startTransform, shape);
-    body->setAngularFactor(0.0);
-    body->setSleepingThresholds(0.0, 0.0);
-
-    DynamicCharacterController* dynamicCharacterController = new DynamicCharacterController(body, shape);
+DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {
+    assert(rigidBody->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::CAPSULE_SHAPE_PROXYTYPE);
+    DynamicCharacterController* dynamicCharacterController = new DynamicCharacterController(rigidBody, (btCapsuleShape*)rigidBody->getCollisionShape());
     mDynamicsWorld->addAction(dynamicCharacterController);
     return dynamicCharacterController;
 }
@@ -121,23 +112,24 @@ btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     );
     heightFieldShape->setUseDiamondSubdivision();
     heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));
-    return createRigidBody(entt::null, 0.0f, startTransform, heightFieldShape);
+
+    return createRigidBody(entt::null, 0.0f, startTransform, heightFieldShape).first;
 }
 
-btRigidBody* PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
+RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
     btTransform startTransform;
     startTransform.setOrigin(btVector3(position.x, position.y, position.z));
-    //startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
     assert(shape != CollisionShapes::NONE);
     btCollisionShape* collisionShape = (btCollisionShape*)mShapes[e_cast(shape)];
-    btRigidBody* rigidBody = createRigidBody(ownerEntity, mass, startTransform, collisionShape);
+    RigidBodyPair rv = createRigidBody(ownerEntity, mass, startTransform, collisionShape);
 
     // Disable rotation optionally
     if (rotationType == RigidBodyRotationType::NO_ROTATE) {
-    //    rigidBody->setAngularFactor(0.0);
+        rv.first->setAngularFactor(0.0);
     }
     else if (rotationType == RigidBodyRotationType::NO_ROTATE_XY) {
-   //     rigidBody->setAngularFactor(btVector3(0.0, 0.0, 1.0));
+        rv.first->setAngularFactor(btVector3(0.0, 0.0, 1.0));
     }
 
     //  TODO: Scaling that isnt global...
@@ -146,11 +138,40 @@ btRigidBody* PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& p
     if (convexShape) {
         convexShape->setLocalScaling(f32v3ToBtVector3(scale));
     }*/
-    return rigidBody;
+    return rv;
 }
 
-btRigidBody* PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
+void PhysicsWorld::addStaticMesh(StaticPhysicsMesh& staticMesh) {
+    assert(IS_MAIN_THREAD());
+    if (!staticMesh.mPhysicsMesh) {
+        return;
+    }
+    ScopedTimer timer("Build btBvh Mesh");
+
+    btIndexedMesh indexedMesh;
+    indexedMesh.m_vertexType = PHY_FLOAT;
+    indexedMesh.m_vertexStride = sizeof(f32v3);
+    indexedMesh.m_numVertices = staticMesh.mVerts.size();
+    indexedMesh.m_vertexBase = (unsigned char*)staticMesh.mVerts.data();
+    indexedMesh.m_triangleIndexBase = (unsigned char*)staticMesh.mIndices.data();
+    indexedMesh.m_triangleIndexStride = 3 * sizeof(ui32);
+    indexedMesh.m_numTriangles = staticMesh.mIndices.size() / 3;
+    staticMesh.mPhysicsMesh->addIndexedMesh(indexedMesh, PHY_ScalarType::PHY_INTEGER);
+
+    assert(!staticMesh.mRigidBody);
+    btTransform startTransform;
+    startTransform.setOrigin(f32v3ToBtVector3(staticMesh.getRootPos()));
+    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+    // TODO: House owner entity
+    staticMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(staticMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
+    staticMesh.mRigidBody = createRigidBody(entt::null, 0.0f, startTransform, staticMesh.mShape.get()).first;
+    staticMesh.mIndices.clear();
+    staticMesh.mVerts.clear();
+}
+
+RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
 {
+    assert(IS_MAIN_THREAD());
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
     
     btVector3 localInertia(0, 0, 0);
@@ -170,57 +191,95 @@ btRigidBody* PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar ma
         body = new btRigidBody(mass, 0, shape, localInertia);
         body->setWorldTransform(startTransform);
     }
-    assert((size_t)ownerEntity < INT32_MAX && "Entity ID overflow in createRigidBody");
-    body->setUserIndex((int)ownerEntity); // TODO: ENTT?
+
+    if (ownerEntity == entt::null) {
+        body->setUserIndex(INT_MAX);
+    }
+    else {
+        assert((size_t)ownerEntity <= INT32_MAX && "Entity ID overflow in createRigidBody");
+        body->setUserIndex((int)ownerEntity); // TODO: ENTT?
+    }
     mDynamicsWorld->addRigidBody(body);
-    return body;
+
+    RigidBodyPair rv;
+    rv.first = body;
+    // Get shape half height
+    switch (shape->getShapeType()) {
+        case BroadphaseNativeTypes::CAPSULE_SHAPE_PROXYTYPE:
+            rv.second = ((btCapsuleShape*)shape)->getHalfHeight() + ((btCapsuleShape*)shape)->getRadius();
+            break;
+        case BroadphaseNativeTypes::TRIANGLE_MESH_SHAPE_PROXYTYPE:
+        case BroadphaseNativeTypes::TERRAIN_SHAPE_PROXYTYPE:
+            rv.second = 0.0f;
+            break;
+        default:
+            rv.second = 0.0f;
+            pError("Need to implement new shape type!");
+            assert(false && "Need to implement new shape type!");
+    }
+    return rv;
 }
 
 void PhysicsWorld::debugRender() const {
-    if (sDebugOptions.mShowPhysicsDebug) {
-        if (!mWasDebugRendering) {
-            mWasDebugRendering = true;
+    const bool showStatic = sDebugOptions.mShowStaticPhysics;
+    const bool showDynamic = sDebugOptions.mShowDynamicPhysics;
+    const bool showTerrain = sDebugOptions.mShowTerrainPhysics;
+    bool renderStaticPass = false;
+
+    // Refresh static geometry
+    if (mWasRenderingStatic != showStatic || mWasRenderingTerrain != showTerrain) {
+        mWasRenderingStatic = showStatic;
+        mWasRenderingTerrain = showTerrain;
+        mDebugDrawer->clearStaticLines();
+        renderStaticPass = true;
+    }
+
+    if (renderStaticPass) {
             // Draw static and dynamic
-            ScopedTimer timer("Static debug");
-            mDebugDrawer->reserveStaticLines(2000000);
-            for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
-                btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
-                btRigidBody* body = btRigidBody::upcast(obj);
-                if (body->getMass()) {
+        ScopedTimer timer("Static debug");
+        if (showTerrain) mDebugDrawer->reserveStaticLines(2000000);
+
+        for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
+            btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
+            btRigidBody* body = btRigidBody::upcast(obj);
+            if (body->getMass()) {
+                if (showDynamic) {
                     mDebugDrawer->setIsStaticMode(false);
                     mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_DYNAMIC);
                 }
-                else {
+            }
+            else {
+                // Terrain and other static geo
+                if (body->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::TERRAIN_SHAPE_PROXYTYPE) {
+                    if (showTerrain) {
+                        mDebugDrawer->setIsStaticMode(true);
+                        mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_TERRAIN);
+                    }
+                }
+                else if (showStatic) {
                     mDebugDrawer->setIsStaticMode(true);
                     mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_STATIC);
                 }
             }
         }
-        else {
-            // Draw only dynamic
-            mDebugDrawer->setIsStaticMode(false);
-            for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
-                btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
-                btRigidBody* body = btRigidBody::upcast(obj);
-                if (body->getMass()) {
-                    mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_DYNAMIC);
-                }
+    }
+    else if (showDynamic) {
+        for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
+            btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
+            btRigidBody* body = btRigidBody::upcast(obj);
+            if (body->getMass()) {
+                mDebugDrawer->setIsStaticMode(false);
+                mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_DYNAMIC);
             }
         }
+    }
+
+    if (sDebugOptions.mShowPhysicsActions) {
         // Draw actions
         const auto& actions = mDynamicsWorld->getActions();
         for (int i = 0; i < actions.size(); ++i) {
             actions[i]->debugDraw(mDebugDrawer.get());
         }
     }
-    else {
-        if (mWasDebugRendering) {
-            mWasDebugRendering = false;
-            // Disable static geometry
-            mDebugDrawer->clearStaticLines();
-        }
-    }
-    //mDynamicsWorld->debugDrawWorld();
-    // Dont debug terrain as it is terribly slow
     
 }

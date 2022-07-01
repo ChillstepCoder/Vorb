@@ -345,12 +345,18 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
         ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
         ImGui::Checkbox("Show Navgraph", &sDebugOptions.mShowNavGraph);
         ImGui::Checkbox("Show Navgraph Updates", &sDebugOptions.mShowNavGraphUpdates);
-        ImGui::Checkbox("Show Physics Debug", &sDebugOptions.mShowPhysicsDebug);
         ImGui::Checkbox("Show Business Debug", &sDebugOptions.mShowBusinessDebug);
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
+        ImGui::Separator();
+        ImGui::Text("Physics Debug");
+        ImGui::Checkbox("Static Physics (Toggle to refresh)", &sDebugOptions.mShowStaticPhysics);
+        ImGui::Checkbox("Terrain Physics (Toggle to refresh)", &sDebugOptions.mShowTerrainPhysics);
+        ImGui::Checkbox("Dynamic Physics", &sDebugOptions.mShowDynamicPhysics);
+        ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
+        
     }
     if (activeGBuffer) {
         if (ImGui::CollapsingHeader("GBuffer")) {

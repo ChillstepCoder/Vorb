@@ -2,7 +2,6 @@
 
 class Building;
 class Camera3D;
-class BuildingMesher;
 class TextureAtlas;
 class MaterialRenderer;
 class Material;
@@ -17,8 +16,6 @@ public:
     void renderBuildingShadows(const Building& building, const Camera3D& camera);
 
 private:
-
-    std::unique_ptr<BuildingMesher> mMesher;
 
     const MaterialRenderer& mMaterialRenderer;
     const Material* mRoofMaterial = nullptr;

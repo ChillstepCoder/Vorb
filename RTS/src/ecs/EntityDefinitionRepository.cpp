@@ -28,10 +28,10 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
 
         if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterModel)]) {
             entityDef->components.emplace_back(ComponentTypes::CharacterModel);
-        } else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Locomotion)]) {
-            ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::Locomotion);
-            fileData.locomotion = LocomotionComponentDef(); // Default initialize
-            keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(LocomotionComponentDef));
+        } else if (key == ComponentTypeStrings[e_cast(ComponentTypes::CharacterControl)]) {
+            ComponentDefinition& fileData = entityDef->components.emplace_back(ComponentTypes::CharacterControl);
+            fileData.characterControl = CharacterControlComponentDef(); // Default initialize
+            keg::parse((ui8*)&fileData.characterDetails, value, readContext, &KEG_GLOBAL_TYPE(CharacterControlComponentDef));
         }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Combat)]) {
             entityDef->components.emplace_back(ComponentTypes::Combat);

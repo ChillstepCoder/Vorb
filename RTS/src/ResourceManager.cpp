@@ -109,7 +109,12 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("NEW: Texture load");
         for (auto&& entry : mTextureFiles) {
-            mTextureRepository->loadTexture(entry);
+            if (vio::containsSubpath(entry, "_brushes")) {
+                mBrushRepository->loadBrush(entry, *mTextureCache);
+            }
+            else {
+                mTextureRepository->loadTexture(entry);
+            }
         }
     }
 

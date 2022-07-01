@@ -216,8 +216,7 @@ void GameplayScreen::build() {
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
                     TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
 					if (pickData.hit.didHit()) {
-                        assert(false);
-                        //phys->teleportToPoint(pickData.hit.position);
+                        phys->teleportToPoint(pickData.hit.position);
 					}
 				}
 			}

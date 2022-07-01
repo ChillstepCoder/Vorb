@@ -25,6 +25,7 @@ typedef Triangulation::Point             TriangulationPoint;
 class ResourceManager;
 class Building;
 class MeshBuilder;
+class PhysicsWorld;
 
 struct RoofContourEdgeInfo {
     f32v3 v1;
@@ -37,14 +38,14 @@ struct RoofContourEdgeInfo {
 class BuildingMesher
 {
 public:
-    void buildMesh(const Building& building);
+    static void buildMeshAndPhysics(const Building& building, PhysicsWorld& physWorld);
 
 private:
-    void meshTiles(const Building& building, MeshBuilder& meshBuilder);
-    std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog);
-    void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog);
-    void triangulateRoofFacePolygons(bool isGable, MeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos);
-    void addRoofTriangle(
+    static void meshTiles(const Building& building, MeshBuilder& meshBuilder);
+    static std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog);
+    static void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog);
+    static void triangulateRoofFacePolygons(bool isGable, MeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos);
+    static void addRoofTriangle(
         MeshBuilder& meshBuilder,
         const f32v2 points[3],
         const Building& building,
@@ -52,10 +53,10 @@ private:
         ui32 debugColorIndex,
         f32 zPos
     );
-    void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog);
-    void meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
-    void meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
-    void meshStairs(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
+    static void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog);
+    static void meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
+    static void meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
+    static void meshStairs(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture);
 
 
 };

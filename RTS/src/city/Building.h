@@ -15,7 +15,10 @@
 
 #include "structure/Structure.h"
 
+#include "physics/StaticPhysicsMesh.h"
+
 class Mesh;
+class btTriangleIndexVertexArray;
 
 struct BuildingRenderData {
     BuildingRenderData() = default;
@@ -36,7 +39,7 @@ public:
     friend class City;
 
     Building() {};
-    ~Building() {};
+    ~Building();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Building);
 
@@ -54,8 +57,9 @@ private:
     BuildingID mId;
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
-    mutable BuildingRenderData mRenderData;
 
+    mutable BuildingRenderData mRenderData;
+    mutable StaticPhysicsMesh mPhysicsMesh;
     // TODO: Move to Business?
     //ItemTradeManager mTradeManager; // TODO: This is a large copy and we pass building by value
 };

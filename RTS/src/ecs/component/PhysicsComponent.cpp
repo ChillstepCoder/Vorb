@@ -2,6 +2,7 @@
 #include "PhysicsComponent.h"
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
+#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 
 #include "World.h"
 #include "ecs/EntityComponentSystem.h"
@@ -41,14 +42,29 @@ f32v2 PhysicsComponent::getInterpolatedDir() const {
     return f32v2(result.getX(), result.getY());
 }
 
+#include "DebugRenderer.h"
 f32v3 PhysicsComponent::getPosition() const {
     // TODO: Physics system could cache position
     // TODO: Get origin?
-    return btVector3ToF32v3(mRigidBody->getWorldTransform().getOrigin());
+    f32v3 rv = btVector3ToF32v3(mRigidBody->getWorldTransform().getOrigin());
+    rv.z += mZPosOffset;
+    return rv;
 }
 
 f32v3 PhysicsComponent::getInterpolatedPosition() const {
     // TODO: Physics system could cache position
-    return btVector3ToF32v3(mRigidBody->getInterpolationWorldTransform().getOrigin());
+    f32v3 rv = btVector3ToF32v3(mRigidBody->getInterpolationWorldTransform().getOrigin());
+    rv.z += mZPosOffset;
+    return rv;
+}
+
+void PhysicsComponent::teleportToPoint(f32v3 worldPos)
+{
+    assert(mRigidBody);
+    btTransform worldTransform;
+    worldPos.z -= mZPosOffset;
+    worldTransform.setOrigin(f32v3ToBtVector3(worldPos));
+    worldTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+    mRigidBody->setWorldTransform(worldTransform);
 }
 

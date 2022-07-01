@@ -85,7 +85,8 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const CharacterContr
                 break;
             }
             case LocomotionMode::BEGIN_JUMP:
-                assert(false && "We should never try to play Begin Jump anim");
+                //assert(false && "We should never try to play Begin Jump anim");
+                std::cout << "BEGIN JUMP ASSERT FAIL\n";
                 break;
             case LocomotionMode::JUMPING: {
                 cmp.mAnimState.fadeInStateTrack(AnimMachineState::JUMPING, FADE_IN_FAST);
@@ -298,7 +299,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
 
     // Get physics info
-    const f32v2 dir = physCmp.getInterpolatedDir();
+    const f32v2& dir = motionCmp.mControllerDirection;
     const f32v3 position = physCmp.getInterpolatedPosition();
     const f32 angle = atan2(dir.y, dir.x);
 

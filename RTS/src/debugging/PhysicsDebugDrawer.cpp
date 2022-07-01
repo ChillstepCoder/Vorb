@@ -16,7 +16,11 @@ void PhysicsDebugDrawer::drawLine(const btVector3& from, const btVector3& to, co
 }
 
 void PhysicsDebugDrawer::drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) {
-    throw std::logic_error("The method or operation is not implemented.");
+    f32v3 pos = btVector3ToF32v3(PointOnB);
+    f32v3 normal = btVector3ToF32v3(normalOnB);
+    const int adjustedLifetime = lifeTime / 10;
+    DebugRenderer::drawWireQuad(pos - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color4(0.0f, 1.0f, 1.0f), adjustedLifetime);
+    DebugRenderer::drawLine(pos, normal * (f32)distance, color4(0.0f, 1.0f, 1.0f), adjustedLifetime);
 }
 
 void PhysicsDebugDrawer::reportErrorWarning(const char* warningString) {

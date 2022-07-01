@@ -32,6 +32,8 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeName);
+    // Char control needs further initialization post physics load
+    CharacterControlComponent* charControlCmp = nullptr;
     // Initialize components
     for (auto&& cdef : edef.components) {
         switch (cdef.type) {
@@ -41,9 +43,10 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
                 modelCmp.init(&resourceManager.getModelRepository().getModelDef(0));
                 break;
             }
-            case ComponentTypes::Locomotion: {
+            case ComponentTypes::CharacterControl: {
                 auto& cmp = registry.emplace<CharacterControlComponent>(newEntity);
-                cmp.mSpeedRun = cdef.locomotion.mSpeed;
+                cmp.mSpeedRun = cdef.characterControl.mSpeed;
+                charControlCmp = &cmp;
                 break;
             }
             case ComponentTypes::Combat: {
@@ -89,7 +92,9 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
                 else if (cdef.physics.disableXyRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE_XY;
                 }
-                physics.mRigidBody = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.massKg, cdef.physics.colliderScale, rotType);
+                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.massKg, cdef.physics.colliderScale, rotType);
+                physics.mRigidBody = rbp.first;
+                physics.mZPosOffset = -rbp.second;
                 break;
             }
             case ComponentTypes::PlayerControl: {
@@ -128,6 +133,11 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
                 break;
         }
         static_assert(e_cast(ComponentTypes::COUNT) == 16, "Update component construction");
+    }
+
+    // Post load
+    if (charControlCmp) {
+        charControlCmp->mController = physWorld.addDynamicCharacterController(newEntity, registry.get<PhysicsComponent>(newEntity).mRigidBody, 0.0f);
     }
 
     return newEntity;

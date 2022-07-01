@@ -78,7 +78,7 @@ private:
     void updateCityEdit();
     void updateBuildingEdit();
 
-    void editVertex(ChunkID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
+    void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
     void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile);
     f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;

@@ -17,7 +17,6 @@ constexpr f32 GRASS_FADE_MULT = 5.55555f;
 constexpr f32 DEFAULT_GRASS_DISTANCE = 220.0f;
 constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 
-
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
@@ -71,7 +70,10 @@ struct DebugOptions {
     bool mShowNavGraph = false;
     bool mShowNavGraphUpdates = false;
     bool mHideCharacters = false;
-    bool mShowPhysicsDebug = true;
+    bool mShowTerrainPhysics = false;
+    bool mShowStaticPhysics = false;
+    bool mShowDynamicPhysics = true;
+    bool mShowPhysicsActions = true;
     bool mShowBusinessDebug = true;
     bool mShowTweaker = false;
     bool mShowEditor = false;

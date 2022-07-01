@@ -6,3 +6,8 @@
 BuildingRenderData::~BuildingRenderData() {
 
 }
+
+Building::~Building()
+{
+
+}

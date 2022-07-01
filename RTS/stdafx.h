@@ -253,21 +253,12 @@ const i32v2 CUBE_FACING_TANGENTS[e_cast(CubeFacing::COUNT)] = {
 };
 
 const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
-    f32v3(0, 0, -1.0), // LEFT
-    f32v3(0, 0, -1.0), // FRONT
-    f32v3(1.0f, 0, -1.0), // RIGHT
-    f32v3(0, 1.0f, -1.0), // BACK
-    f32v3(0, 0, 0.0f),  // TOP
-    f32v3(0, 0, -1.0) // BOTTOM
-};
-
-const f32v3 OBJECT_CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
-    f32v3(0, 0, 0.0), // LEFT
-    f32v3(0, 0, 0.0), // FRONT
-    f32v3(1.0f, 0, 0.0), // RIGHT
-    f32v3(0, 1.0f, 0.0), // BACK
+    f32v3(0, 0, 0), // LEFT
+    f32v3(0, 0, 0), // FRONT
+    f32v3(1.0f, 0, 0), // RIGHT
+    f32v3(0, 1.0f, 0), // BACK
     f32v3(0, 0, 1.0f),  // TOP
-    f32v3(0, 0, 0.0) // BOTTOM
+    f32v3(0, 0, 0) // BOTTOM
 };
 
 typedef ui32 TileIndex;

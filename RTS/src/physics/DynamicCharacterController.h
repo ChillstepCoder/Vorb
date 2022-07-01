@@ -32,6 +32,8 @@ public:
 	 */
 	void setMovementDirection(const btVector3& walkDirection);
 
+	void setMaxLinearVelocity(f32 maxVelocity);
+
 	/**
 	 * Get the movement direction in local coordinates
 	 * \return The direction
@@ -73,7 +75,7 @@ public:
 	btScalar mJumpSpeed = 4.5;
 
 	/// The damp to use to stop movements
-	btScalar mSpeedDamping = 0.1;
+	btScalar mSpeedDamping = 0.94;
 
 	/// The maximum step to automatically climb to
 	btScalar mMaxStepHeight = 0.5;

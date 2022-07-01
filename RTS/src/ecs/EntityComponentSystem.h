@@ -24,7 +24,7 @@ public:
     DECL_COMPONENT_TABLE(mDynamicLightComponentTable, DynamicLightComponent);*/
 
     // TODO: UniquePtr for faster include
-    LocomotionSystem mLocomotionSystem;
+    CharacterControlSystem mCharacterControlSystem;
     PlayerControlSystem mPlayerControlSystem;
     PersonAISystem mPersonAISystem;
     NavigationComponentSystem mNavigationSystem;

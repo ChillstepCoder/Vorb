@@ -29,7 +29,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	// TODO: Allow variable pathing urgency
     motionCmp.mDesiredMode = LocomotionMode::SPRINT;
 
-	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
+	motionCmp.mMoveDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 	return false;
 }
 
@@ -93,7 +93,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 		}
 	}
 
-	motionCmp.mDesiredDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
+	motionCmp.mMoveDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
     // TODO: Allow variable pathing urgency
     motionCmp.mDesiredMode = LocomotionMode::SPRINT;
 	    
@@ -155,7 +155,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, P
 	}
 		
 	// TODO: Do we need this?
-	assert(false);
+	//assert(false);
 	//physCmp.mDir = motionCmp.mDesiredDirection;
 	return false;
 

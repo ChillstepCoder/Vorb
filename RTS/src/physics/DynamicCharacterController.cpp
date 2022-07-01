@@ -135,8 +135,7 @@ void DynamicCharacterController::updateVelocity(float dt)
 		btVector3 dv = mMoveDirection * (mWalkAccel * dt);
 		linearVelocity += dv;
 
-		btScalar speed2 = pow(linearVelocity.x(), 2)
-			+ pow(linearVelocity.y(), 2);
+		btScalar speed2 = SQ(linearVelocity.x()) + SQ(linearVelocity.y());
 		if (speed2 > mMaxLinearVelocity2) {
 			btScalar correction = sqrt(mMaxLinearVelocity2 / speed2);
 			linearVelocity[0] *= correction;
@@ -217,6 +216,10 @@ void DynamicCharacterController::setMovementDirection(
 	if (!mMoveDirection.fuzzyZero()) {
 		mMoveDirection.normalize();
 	}
+}
+
+void DynamicCharacterController::setMaxLinearVelocity(f32 maxVelocity) {
+	mMaxLinearVelocity2 = SQ(maxVelocity);
 }
 
 const btVector3& DynamicCharacterController::getMovementDirection() const

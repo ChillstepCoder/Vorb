@@ -227,6 +227,7 @@
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
     <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
+    <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
     <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\BuildingMesher.cpp" />
     <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
@@ -414,6 +415,7 @@
     <ClInclude Include="src\physics\CollisionShapes.h" />
     <ClInclude Include="src\physics\DynamicCharacterController.h" />
     <ClInclude Include="src\physics\PhysicsWorld.h" />
+    <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
     <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\BuildingMesher.h" />
     <ClInclude Include="src\rendering\BuildingRenderer.h" />

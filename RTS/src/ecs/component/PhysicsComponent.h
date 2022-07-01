@@ -22,7 +22,10 @@ public:
 	f32v3 getPosition() const;
 	f32v3 getInterpolatedPosition() const;
 
-	btRigidBody* mRigidBody = nullptr; // TODO: Pack btRigidBody?
+	void teleportToPoint(f32v3 worldPos);
+
+    btRigidBody* mRigidBody = nullptr; // TODO: Pack btRigidBody?
+    f32 mZPosOffset = 0.0f; // Used for calculating the position at the bottom of the rigidbody
     BitFlags<PhysicsComponentFlag> mFlags;
 
 };
