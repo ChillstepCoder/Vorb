@@ -36,6 +36,7 @@ UIInteractMenuPopup::~UIInteractMenuPopup()
 
 UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 {
+    constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
     ui32 resultFlags = 0;
     const ImVec2 buttonSize(150, 25);
     const f32v2 panelDims(buttonSize.x + 16, INTERACT_MENU_RESULT_COUNT * buttonSize.y + 45);
@@ -48,7 +49,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 
     switch (mState) {
         case UIInteractMenuState::SELECT_OBJECT: {
-            ImGui::Begin("Select Object", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            ImGui::Begin("Select Object", nullptr, WINDOW_FLAGS);
 
             int i = 1;
             int optionCount = 0;
@@ -108,7 +109,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
         }
         case UIInteractMenuState::SELECTED_TILE: {
-            ImGui::Begin("Tile action", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            ImGui::Begin("Tile action", nullptr, WINDOW_FLAGS);
 
             if (ImGui::Button("Go Here", buttonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
@@ -131,7 +132,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
         }
         case UIInteractMenuState::SELECTED_STOCKPILE: {
-            ImGui::Begin("Stockpile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            ImGui::Begin("Stockpile", nullptr, WINDOW_FLAGS);
 
             if (ImGui::Button("DEBUG: Add 25 wood", buttonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD;
@@ -142,7 +143,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
         }
         case UIInteractMenuState::SELECTED_AGENT: {
-            ImGui::Begin("Agent", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            ImGui::Begin("Agent", nullptr, WINDOW_FLAGS);
 
             if (ImGui::Button("DEBUG: Kill Agent", buttonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_KILL_AGENT;
@@ -150,7 +151,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
         }
         case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
-            ImGui::Begin("Structures", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+            ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
             TileHandle handle = mWorldObjectQuery.getTileHandle();
             Chunk& chunk = world.getChunk(handle.getChunkIDAtPos());
             StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
@@ -166,6 +167,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
                         if (ImGui::Button(name.c_str())) {
                             mState = UIInteractMenuState::SELECTED_STRUCTURE;
                             mSelectedStructure = structure;
+                            break;
                         }
                     }
                 }
@@ -173,15 +175,18 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             break;
         }
         case UIInteractMenuState::SELECTED_STRUCTURE: {
+            ImGui::Begin("Structure", nullptr, WINDOW_FLAGS);
             if (mSelectedStructure->getType() == StructureType::Building) {
                 Building* building = static_cast<Building*>(mSelectedStructure);
-                ImGui::Text("Select room");
+                // TODO: Path to room
+                ImGui::Text("Path to room");
                 const std::vector<RoomNode>& roomGraph = building->getRoomGraph();
                 for (size_t i = 0; i < roomGraph.size(); ++i) {
                     const RoomNode& room = roomGraph[i];
-                    room.roomDef->id;
-                    if (ImGui::Button(std::to_string(i).c_str())) {
-                        assert(false);
+                    if (ImGui::Button((room.roomDef->name + " " + std::to_string(i)).c_str())) {
+                        resultFlags |= INTERACT_MENU_RESULT_DEBUG_PATH_ROOM;
+                        mSelectedRoomID = room.id;
+                        break;
                     }
                 }
             }
@@ -198,4 +203,23 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
     ImGui::End();
     // TODO: Why are these flags? Use bitflags?
     return static_cast<UIInteractMenuResultFlags>(resultFlags);
+}
+
+const RoomNode* UIInteractMenuPopup::tryGetSelectedRoom() const {
+    if (!mSelectedStructure || mSelectedRoomID == INVALID_ROOM_ID) {
+        return nullptr;
+    }
+    assert(mSelectedStructure->getType() == StructureType::Building);
+
+    Building* building = static_cast<Building*>(mSelectedStructure);
+    auto&& roomGraph = building->getRoomGraph();
+    assert(mSelectedRoomID < roomGraph.size());
+    return &roomGraph[mSelectedRoomID];
+}
+
+Building* UIInteractMenuPopup::tryGetSelectedBuilding() const {
+    if (mSelectedStructure && mSelectedStructure->getType() == StructureType::Building) {
+        return static_cast<Building*>(mSelectedStructure);
+    }
+    return nullptr;
 }

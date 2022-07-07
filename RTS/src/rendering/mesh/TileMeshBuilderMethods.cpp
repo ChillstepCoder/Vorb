@@ -7,6 +7,7 @@
 #include "world/Chunk.h"
 
 #include "physics/StaticPhysicsMesh.h"
+#include "resources/TileRepository.h"
 
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 5;
@@ -119,6 +120,40 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     rv.x = 0.0f;
     rv.y = (2 - index) / 3.0f;
     return rv;
+}
+
+void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
+    const ui32v3& tileDims = tileContainer.getDims();
+    for (ui32 z = 0; z < tileDims.z; ++z) {
+        for (ui32 y = 0; y < tileDims.y; ++y) {
+            for (ui32 x = 0; x < tileDims.x; ++x) {
+                TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+                const Tile& tile = tileContainer.getTileAt(index);
+                const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread(); // TODO: Thread safe when async
+                for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
+                    TileID layerTile = tile.getLayersMainThread()[layerIndex];  // TODO: Thread safe when async
+                    if (layerTile == TILE_ID_NONE) {
+                        continue;
+                    }
+
+                    const TileData& tileData = TileRepository::getTileData(layerTile);
+                    const SubTexture& texture = tileData.texture;
+
+                    // Tile mesh
+                    // Flora mesh ONLY
+                    if (tileData.shape == TileShape::THIN) {
+                        assert(false); // Unsupported
+                    }
+                    else if (tileData.shape == TileShape::BLOCK) {
+                        TileMeshBuilderMethods::addBlock(meshBuilder, f32v3(x, y, z * tileContainer.getFloorHeight()), TileHandle(&tileContainer, index), tileData, physMesh);
+                    }
+                    else if (tileData.shape == TileShape::FLOOR) {
+                        TileMeshBuilderMethods::addFloor(meshBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physMesh);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {

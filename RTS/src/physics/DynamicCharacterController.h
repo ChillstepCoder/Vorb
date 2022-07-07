@@ -66,7 +66,7 @@ public:
 	btScalar mMaxLinearVelocity2 = pow(15 / 3.6, 2);
 
 	/// The acceleration to use when starting walking
-	btScalar mWalkAccel = 25.0;
+	btScalar mWalkAccel = 40.0;//25.0;
 
 	/**
 	 * The initial speed for the jump.

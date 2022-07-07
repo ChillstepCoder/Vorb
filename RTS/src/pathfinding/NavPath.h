@@ -75,7 +75,6 @@ public:
     const PathPoint* getPoints() const { return points; }
     ui32 getNumPoints() const { return numPoints; }
 
-
 private:
     PathPoint* points = nullptr; // Raw pointer
     ui32 numPoints = 0;

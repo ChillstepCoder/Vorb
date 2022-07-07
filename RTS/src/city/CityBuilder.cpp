@@ -126,7 +126,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
 
                     const TileID tileId = bp.tileIDs[e_cast(type)];
                     if (tileId != TILE_ID_NONE) {
-                        const f32 height = meanHeight + (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
+                        // We dont add to mean height here because tile height is relative to the root of the tile container
+                        const f32 height = (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                         tileContainer.addTile(index, TileRepository::getTileData(tileId));
                         //assert(false); // Set building structure pointer
@@ -148,14 +149,9 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     // Notify terrain data change (TODO: More precise, automatic)
     world.dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
-    newBuilding->mGraph = std::move(bp.rooms);
-    newBuilding->mFunction = bp.desc.function;
-    newBuilding->mPlotIndex = bp.plotIndex;
+    finishBuilding(*newBuilding, bp, world);
 
     std::cout << "DebugBuildInstant " << timer.stop() << " ms\n";
-
-    // TODO: Multithread
-    BuildingMesher::buildMeshAndPhysics(*newBuilding, world.getPhysicsWorld());
 
     return newBuilding;
 }
@@ -182,6 +178,18 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
     if (blueprint->flags & BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE) {
         mCity.getCityQuartermaster().createStockpilesForBlueprint(*blueprint);
     }
+}
+
+void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint, World& world) {
+    building.mGraph = std::move(blueprint.rooms);
+    building.mFunction = blueprint.desc.function;
+    building.mPlotIndex = blueprint.plotIndex;
+    building.mEntrances = blueprint.exteriorDoors;
+    assert(building.mEntrances.size());
+    assert(building.mGraph.size());
+
+    // TODO: Multithread
+    BuildingMesher::buildMeshAndPhysics(building, world.getPhysicsWorld());
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {

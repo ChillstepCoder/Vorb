@@ -24,6 +24,8 @@
 #include "rendering/ChunkMesher.h"
 #include "rendering/ChunkGrassQuadtree.h"
 
+#include "physics/PhysHitResult.h"
+
 #include "ui/UIContext.h"
 
 #include "Utils.h"

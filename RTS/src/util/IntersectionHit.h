@@ -1,5 +1,7 @@
 #pragma once
 
+// TODO: REMOVE
+
 enum class IntersectionHitShape {
     NO_HIT,
     CIRCLE,
@@ -28,12 +30,4 @@ struct IntersectionHit3D {
     IntersectionHitShape shape = IntersectionHitShape::NO_HIT;
 
     bool didHit() const { return shape != IntersectionHitShape::NO_HIT; }
-};
-
-struct TerrainPickData {
-    ui32 heightmapDataIndex;
-    const f32* heightData;
-    f32 height;
-    ui32 cornerIndex;
-    IntersectionHit3D hit;
 };

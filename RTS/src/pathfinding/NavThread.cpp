@@ -94,12 +94,27 @@ void NavThread::navThreadFunc() {
         }
 
         if (hasTask) {
-            if (pathArgs.first.isCoarse) {
-                mPathFinder.generateCoarsePathSynchronous(*mWorld, pathArgs.first.start, pathArgs.first.goal, *pathArgs.first.pathToBuild);
+            switch (pathArgs.first.type) {
+                case PathRequestType::TERRAIN_FINE: {
+                    const TerrainPathArgs& args = pathArgs.first.terrainArgs;
+                    mPathFinder.generateFinePathSynchronous(*mWorld, args.start, args.goal, *pathArgs.first.pathToBuild);
+                    break;
+                }
+                case PathRequestType::TERRAIN_COARSE: {
+                    const TerrainPathArgs& args = pathArgs.first.terrainArgs;
+                    mPathFinder.generateCoarsePathSynchronous(*mWorld, args.start, args.goal, *pathArgs.first.pathToBuild);
+                    break;
+                }
+                case PathRequestType::BUILDING_FINE: {
+                    const BuildingPathArgs& args = pathArgs.first.buildingArgs;
+                    mPathFinder.generateBuildingPathSynchronous(*args.building, args.start, args.goal, *pathArgs.first.pathToBuild);
+                    break;
+                 }
+                default:
+                    assert(false);
             }
-            else {
-                mPathFinder.generateFinePathSynchronous(*mWorld, pathArgs.first.start, pathArgs.first.goal, *pathArgs.first.pathToBuild);
-            }
+            static_assert(e_cast(PathRequestType::COUNT) == 3);
+           
             if (pathArgs.second) {
                 mMainThreadProcs.enqueue(std::move(pathArgs.second));
             }

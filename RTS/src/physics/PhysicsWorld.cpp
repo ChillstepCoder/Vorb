@@ -16,6 +16,8 @@
 #include "terrain/HeightmapPatch.h"
 #include "options/DebugOptions.h"
 
+#include "DebugRenderer.h"
+
 const btVector3 GRAVITY(0.0f, 0.0f, -10.0f);
 
 const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
@@ -282,4 +284,38 @@ void PhysicsWorld::debugRender() const {
         }
     }
     
+}
+
+struct CustomRayResult : public btCollisionWorld::RayResultCallback
+{
+    virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& r, bool b)
+    {
+        if (b && r.m_hitFraction < m_closestHitFraction) {
+            mHitNormal = btVector3ToF32v3(r.m_hitNormalLocal);
+            m_closestHitFraction = r.m_hitFraction;
+            m_collisionObject = r.m_collisionObject;
+            //r.m_localShapeInfo
+        }
+        return 0; // Return value appears to be ignored?
+    }
+
+    f32v3 mHitNormal = f32v3(0.0f);
+};
+
+PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes)
+{
+    CustomRayResult rayResult;
+    if (pickTypes == PICK_TYPE_ALL) {
+        // TODO: Instead use filter mask on the result callback
+        mDynamicsWorld->rayTest(f32v3ToBtVector3(rayStart), f32v3ToBtVector3(rayEnd), rayResult);
+    }
+    else {
+        assert(false); // TODO: IMPLEMENT
+    }
+    PhysHitResult rv;
+    rv.mTime = rayResult.m_closestHitFraction;
+    rv.mNormal = rayResult.mHitNormal;
+    rv.mCollisionObject = rayResult.m_collisionObject;
+    rv.mPosition = rayStart + (rayEnd - rayStart) * rv.mTime;
+    return rv;
 }

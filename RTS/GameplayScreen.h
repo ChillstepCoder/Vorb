@@ -44,7 +44,7 @@ private:
 
     void updateTimeScaling(const vui::GameTime& gameTime);
     void updateTilePicking();
-    void tryUpdateAndRenderInteractPopup(const f32v2& xyPos);
+    void tryUpdateAndRenderInteractPopup(const f32v2& playerPos);
 
 	std::unique_ptr<World> mWorld;
 
@@ -64,7 +64,7 @@ private:
     std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
 	PreciseTimer mRightClickTimer;
-	ui32 mRightClickPickId = UINT32_MAX;
+	f32v3 mRightClickPickPos = f32v3(FLT_MAX);
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 

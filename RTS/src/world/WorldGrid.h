@@ -4,7 +4,6 @@
 #include <Vorb/concurrentqueue.h>
 
 #include "world/TerrainConstants.h"
-#include "util/IntersectionHit.h"
 
 #include "terrain/HeightmapPatch.h"
 
@@ -51,8 +50,6 @@ public:
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
     f32 tryComputeHeightAtPoint(const f32v2& worldPos) const;
-
-    TerrainPickData pickTerrainFromCameraVector(const Camera3D& camera, const f32v3& rayDir) const;
 
     static f32 computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos);
     static f32 computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset);

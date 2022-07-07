@@ -175,7 +175,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 // TODO: HaulTask
 void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
-    NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
+    NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
 
     const f32v3 myPos = physCmp.getPosition();

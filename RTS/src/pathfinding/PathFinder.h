@@ -3,6 +3,7 @@
 #include "NavPath.h"
 
 class World;
+class Building;
 struct NavNode;
 
 #include <boost/heap/priority_queue.hpp>
@@ -38,6 +39,7 @@ public:
 
     // Fine grid paths
     bool generateFinePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
+    bool generateBuildingPathSynchronous(const Building& building, TileIndex start, TileIndex goal, OUT NavPath& path);
 
     // Coarse grid paths
     bool generateCoarsePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);

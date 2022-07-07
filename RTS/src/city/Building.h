@@ -47,6 +47,7 @@ public:
 
     const BitArray& getInteriorTilesInAABB() const { return mInteriorTilesInAABB; }
     const std::vector<RoomNode>& getRoomGraph() const { return mGraph; }
+    const std::vector<RoomGateInfo>& getEntrances() const { return mEntrances; }
 
 private:
    
@@ -55,6 +56,8 @@ private:
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;
+
+    std::vector<RoomGateInfo> mEntrances;
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
 

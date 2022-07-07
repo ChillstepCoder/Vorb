@@ -47,6 +47,8 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
                 auto& cmp = registry.emplace<CharacterControlComponent>(newEntity);
                 cmp.mSpeedRun = cdef.characterControl.mSpeed;
                 charControlCmp = &cmp;
+                // Character control begets navigation always
+                registry.get_or_emplace<NavigationComponent>(newEntity);
                 break;
             }
             case ComponentTypes::Combat: {
@@ -72,7 +74,7 @@ entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& p
                 break;
             }
             case ComponentTypes::Navigation: {
-                registry.emplace<NavigationComponent>(newEntity);
+                registry.get_or_emplace<NavigationComponent>(newEntity);
                 break;
             }
             case ComponentTypes::PersonAI: {

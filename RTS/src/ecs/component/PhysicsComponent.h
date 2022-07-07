@@ -29,7 +29,7 @@ public:
     BitFlags<PhysicsComponentFlag> mFlags;
 
 };
-static_assert(sizeof(PhysicsComponent) == 16, "Keep tiny");
+static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");
 
 struct PhysicsComponentDef {
 	CollisionShapes colliderShape = CollisionShapes::CAPSULE;

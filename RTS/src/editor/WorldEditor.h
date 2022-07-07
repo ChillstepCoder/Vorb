@@ -4,7 +4,7 @@ class World;
 class Camera3D;
 
 #include "world/ChunkID.h"
-#include "util/IntersectionHit.h"
+#include "physics/PhysHitResult.h"
 
 class Brush;
 class BrushRepository;
@@ -105,6 +105,6 @@ private:
     mutable i32v2 mPlotDims = i32v2(16);
 
     mutable nString mSelectedEntity = "";
-    TerrainPickData mPickData;
+    PhysHitResult mHitResult;
 };
 

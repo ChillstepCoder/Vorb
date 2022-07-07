@@ -18,6 +18,7 @@ class StaticPhysicsMesh;
 
 #include "world/TerrainConstants.h"
 
+#include "physics/PhysHitResult.h"
 #include "physics/CollisionShapes.h"
 
 enum class RigidBodyRotationType {
@@ -27,6 +28,13 @@ enum class RigidBodyRotationType {
 };
 
 typedef std::pair<btRigidBody*, f32/*colliderHalfHeight*/> RigidBodyPair;
+
+enum PickTypes {
+    PICK_TYPE_STATIC = 1 << 0,
+    PICK_TYPE_DYNAMIC = 1 << 1,
+    PICK_TYPE_TERRAIN = 1 << 2,
+    PICK_TYPE_ALL = PICK_TYPE_STATIC | PICK_TYPE_DYNAMIC | PICK_TYPE_TERRAIN,
+};
 
 class PhysicsWorld
 {
@@ -38,10 +46,12 @@ public:
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
-
     void addStaticMesh(StaticPhysicsMesh& staticMesh);
 
     void debugRender() const;
+
+    // Picking
+    PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes);
 
 private:
     RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);

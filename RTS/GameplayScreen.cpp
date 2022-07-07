@@ -26,6 +26,8 @@
 #include "item/ItemStockpileRegistry.h"
 #include "particles/ParticleSystemManager.h"
 
+#include "physics/PhysicsWorld.h"
+
 #include "rendering/RenderContext.h"
 
 #include "TextureManip.h"
@@ -171,12 +173,13 @@ void GameplayScreen::build() {
         UIContext::getInstance().closeTileInspectionPanel();
         if (event.button == vorb::ui::MouseButton::RIGHT) {
             mRightClickTimer.start();
-            TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
-            if (pickData.hit.didHit()) {
-                mRightClickPickId = pickData.heightmapDataIndex;
+            const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
+            PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+            if (hitResult.didHit()) {
+                mRightClickPickPos = hitResult.mPosition;
             }
             else {
-                mRightClickPickId = UINT32_MAX;
+                mRightClickPickPos = f32v3(FLT_MAX);
             }
         }
 	});
@@ -214,9 +217,10 @@ void GameplayScreen::build() {
                 // Teleport
                 auto&& ecs = mWorld->getECS();
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
-                    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
-					if (pickData.hit.didHit()) {
-                        phys->teleportToPoint(pickData.hit.position);
+                    const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
+                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+					if (hitResult.didHit()) {
+                        phys->teleportToPoint(hitResult.mPosition);
 					}
 				}
 			}
@@ -260,10 +264,12 @@ void GameplayScreen::build() {
                     mRightClickInteractPopup.reset();
 				}
                 else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
-                    TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(mCameraController->getOwnedCamera(), sDebugOptions.mMousePickRay);
-                    if (pickData.hit.didHit()) {
-                        if (pickData.heightmapDataIndex == mRightClickPickId) {
-                            f32v2 worldPos = f32v2(pickData.hit.position.x, pickData.hit.position.y);
+                    const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
+                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                    if (hitResult.didHit()) {
+                        // For interact must click in about the same spot
+                        if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
+                            f32v2 worldPos = f32v2(hitResult.mPosition.x, hitResult.mPosition.y);
                             WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
                             // Right click picking
                             mSelectedTilePosition = worldPos;
@@ -404,7 +410,7 @@ void GameplayScreen::updateTilePicking() {
 }
 
 
-void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
+void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
     // Handle interact menu TODO: Notify to get this out of here
     if (mRightClickInteractPopup) {
         // Render selected
@@ -417,7 +423,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             auto&& ecs = mWorld->getECS();
             NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            cmp.requestCoarsePath(PathPoint(xyPos), PathPoint(worldPosInt));
+            cmp.requestCoarsePath(PathPoint(playerPos), PathPoint(worldPosInt));
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
             // grass
@@ -478,7 +484,25 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& xyPos) {
             assert(false);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_ROOM) {
-            assert(false);
+            const RoomNode* selectedNode = mRightClickInteractPopup->tryGetSelectedRoom();
+            assert(selectedNode);
+            const Building* building = mRightClickInteractPopup->tryGetSelectedBuilding();
+            assert(building);
+            const ui32AABB3& aabb = building->getAABB();
+            ui32v2 roomWorldPos = ui32v2(selectedNode->offsetFromZero) + ui32v2(aabb.x, aabb.y);
+
+            // TODO: Closest entrance?
+            RoomGateInfo entrance = building->getEntrances()[0];
+            const ui32v3 targetPos = building->getWorldPositionOfTile(entrance.tileIndex);
+            // TODO: Path into the actual room
+            auto&& ecs = mWorld->getECS();
+            NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
+            cmp.requestCoarsePathWithCallback(PathPoint(playerPos), PathPoint(targetPos), [this](bool success) {
+                if (success) {
+                    assert(false);
+                }
+                assert(false);
+            });
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
 

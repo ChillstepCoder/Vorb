@@ -19,6 +19,9 @@
 #include "city/CityBuilder.h"
 #include "city/BuildingDescriptionRepository.h"
 
+#include "physics/PhysicsWorld.h"
+#include "camera/Camera3D.h"
+
 #include "Random.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -87,8 +90,7 @@ void WorldEditor::update(const Camera3D& camera) {
     const f32v3& pickRay = sDebugOptions.mMousePickRay;
 
     PreciseTimer timer;
-    // TODO: THIS RAY PICK IS EXTREMELY EXPENSIVE! NEED TO OPTIMIZE TO A RAYMARCH
-    mPickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(camera, sDebugOptions.mMousePickRay);
+    mHitResult = mWorld.getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + sDebugOptions.mMousePickRay * 10000.0f, PICK_TYPE_ALL);
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
         updateTerrainEdit();
@@ -107,17 +109,17 @@ void WorldEditor::update(const Camera3D& camera) {
 }
 
 void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
-    if (!mPickData.hit.didHit()) {
+    if (!mHitResult.didHit()) {
         return;
     }
 
     if (mCurrentBrushSettings) {
-        f32v3 origin = mPickData.hit.position - f32v3(mCurrentBrushSettings->brushSize, mCurrentBrushSettings->brushSize, 0.0f);
+        f32v3 origin = mHitResult.mPosition - f32v3(mCurrentBrushSettings->brushSize, mCurrentBrushSettings->brushSize, 0.0f);
         f32v2 dims(mCurrentBrushSettings->brushSize * 2.0f);
         DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
     }
     else {
-        f32v3 origin = f32v3((int)mPickData.hit.position.x, (int)mPickData.hit.position.y, mPickData.hit.position.z);
+        f32v3 origin = f32v3((int)mHitResult.mPosition.x, (int)mHitResult.mPosition.y, mHitResult.mPosition.z);
         f32v2 dims(1.0f);
         DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
     }
@@ -377,11 +379,11 @@ void WorldEditor::updateTerrainEdit() {
     //PreciseTimer timer;
     // Pick terrain
     //std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
-    if (mPickData.hit.didHit()) {
+    if (mHitResult.didHit()) {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
             PreciseTimer timer;
             // Edit the terrain with iteration
-            const f32v2 hitPosition2D(mPickData.hit.position.x, mPickData.hit.position.y);
+            const f32v2 hitPosition2D(mHitResult.mPosition.x, mHitResult.mPosition.y);
             const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mCurrentBrushSettings->brushSize);
             const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mCurrentBrushSettings->brushSize);
             const f32 brushSizeSq = SQ(mCurrentBrushSettings->brushSize);
@@ -401,7 +403,7 @@ void WorldEditor::updateTerrainEdit() {
             }
 
             // Notify all terrain stuff to update
-            mWorld.dirtyTerrainFromBrush(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
+            mWorld.dirtyTerrainFromBrush(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
             std::cout << "TERRAIN FLOOD MS " << timer.stop() << std::endl;
         }
     }
@@ -413,11 +415,11 @@ void WorldEditor::updateGrassEdit() {
         return;
     }
 
-    if (mPickData.hit.didHit()) {
+    if (mHitResult.didHit()) {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
             PreciseTimer timer;
             // Edit the terrain with iteration
-            const f32v2 hitPosition2D(mPickData.hit.position.x, mPickData.hit.position.y);
+            const f32v2 hitPosition2D(mHitResult.mPosition.x, mHitResult.mPosition.y);
             const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mCurrentBrushSettings->brushSize);
             const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mCurrentBrushSettings->brushSize);
             const f32 brushSizeSq = SQ(mCurrentBrushSettings->brushSize);
@@ -438,7 +440,7 @@ void WorldEditor::updateGrassEdit() {
             // Notify grass to update
             for (Chunk* chunk : mWorld.mActiveChunks) {
                 if (chunk->mChunkRenderData.mGrassLod) {
-                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mPickData.hit.position.x, mPickData.hit.position.y), mCurrentBrushSettings->brushSize);
+                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize);
                 }
             }
         }
@@ -449,10 +451,10 @@ void WorldEditor::updateTileEdit() {
 
     static ChunkID prevChunkID;
     static TileIndex prevTileIndex;
-    if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
-        ChunkID chunkID(f32v2(mPickData.hit.position.x, mPickData.hit.position.y));
+    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
+        ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
         TileContainer& tileContainer = mWorld.mWorldGrid.getChunk(chunkID).getTileContainer();
-        TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)mPickData.hit.position.x % CHUNK_WIDTH, (ui32)mPickData.hit.position.y % CHUNK_WIDTH, 0);
+        TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)mHitResult.mPosition.x % CHUNK_WIDTH, (ui32)mHitResult.mPosition.y % CHUNK_WIDTH, 0);
         Tile tile;
         const TileData& data = TileRepository::getTileData(mSelectedTile);
 
@@ -463,7 +465,7 @@ void WorldEditor::updateTileEdit() {
             tileContainer.addTile(tileIndex, data);
 
             if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
-                f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(mPickData.hit.position) + mGroundTileOffset;
+                f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(mHitResult.mPosition) + mGroundTileOffset;
                 height = round(height);
                 if (height == 0.0f) height = 1.0f;
                 tileContainer.setTileGroundZPosition(tileIndex, height);
@@ -476,15 +478,15 @@ void WorldEditor::updateTileEdit() {
 }
 
 void WorldEditor::updateEntityEdit() {
-    if (mPickData.hit.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
-        mWorld.createEntity(mPickData.hit.position, mSelectedEntity);
+    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
+        mWorld.createEntity(mHitResult.mPosition, mSelectedEntity);
     }
 }
 
 void WorldEditor::updateCityEdit() {
     // Happens on mouse up
-    if (mPickData.hit.didHit() && mCityEditState == CityEditState::CREATE) {
-        f32v2 worldPos(mPickData.hit.position.x, mPickData.hit.position.y);
+    if (mHitResult.didHit() && mCityEditState == CityEditState::CREATE) {
+        f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
         TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
         mWorld.createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
     }
@@ -492,8 +494,8 @@ void WorldEditor::updateCityEdit() {
 
 void WorldEditor::updateBuildingEdit() {
     // Happens on mouse up
-    if (mPickData.hit.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
-        f32v2 worldPos(mPickData.hit.position.x, mPickData.hit.position.y);
+    if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
+        f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
         TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
         ui32v2 createPos(floor(worldPos.x), floor(worldPos.y));
 

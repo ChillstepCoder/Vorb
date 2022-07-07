@@ -25,6 +25,7 @@ public:
 
 private:
     void preprocessBlueprint(BuildingBlueprint* blueprint);
+    static void finishBuilding(Building& building, BuildingBlueprint& blueprint, World& world);
     bool trySendBuildingJob(BuildingBlueprint* blueprint);
 
     City& mCity;

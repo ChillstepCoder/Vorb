@@ -1,6 +1,7 @@
 #pragma once
 
 struct RoomDef;
+class Building;
 
 #include "util/GridEdge.h"
 

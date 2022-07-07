@@ -7,12 +7,49 @@
 
 class World;
 class Chunk;
+class Building;
 
-struct PathArgs {
-    std::shared_ptr<NavPath> pathToBuild;
+enum class PathRequestType {
+    TERRAIN_FINE,
+    TERRAIN_COARSE,
+    BUILDING_FINE,
+    COUNT
+};
+
+struct TerrainPathArgs {
     PathPoint start;
     PathPoint goal;
-    bool isCoarse;
+};
+struct BuildingPathArgs {
+    const Building* building;
+    TileIndex start;
+    TileIndex goal;
+};
+
+struct PathArgs {
+    PathArgs() {};
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const PathPoint& start, const PathPoint& end, bool isCoarse) :
+        pathToBuild(pathToBuild),
+        terrainArgs({ start, end }) {
+        if (isCoarse) {
+            type = PathRequestType::TERRAIN_COARSE;
+        }
+        else {
+            type = PathRequestType::TERRAIN_FINE;
+        }
+    }
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const TileIndex start, const TileIndex end, const Building* building) :
+        pathToBuild(pathToBuild),
+        buildingArgs({ building, start, end }),
+        type(PathRequestType::BUILDING_FINE) {
+    };
+
+    std::shared_ptr<NavPath> pathToBuild;
+    union {
+        TerrainPathArgs terrainArgs;
+        BuildingPathArgs buildingArgs;
+    };
+    PathRequestType type;
 };
 
 using NavThreadPathArgs = std::pair<PathArgs, std::function<void()>>;
@@ -31,10 +68,16 @@ public:
     void clearTasks();
 
     void addPathfindTask(std::shared_ptr<NavPath>& path, const PathPoint& start, const PathPoint& goal, bool isCoarse, std::function<void()>&& mainProc) {
-        mPathTasks.enqueue(std::make_pair(PathArgs{ path, start, goal, isCoarse }, std::move(mainProc)));
+        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
     }
     void addPathfindTask(std::shared_ptr<NavPath>& path, const PathPoint& start, const PathPoint& goal, bool isCoarse) {
-        mPathTasks.enqueue(std::make_pair(PathArgs{ path, start, goal, isCoarse }, nullptr));
+        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
+    }
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const Building* building, TileIndex start, TileIndex goal, std::function<void()>&& mainProc) {
+        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, building), std::move(mainProc)));
+    }
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const Building* building, TileIndex start, TileIndex goal) {
+        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, building), nullptr));
     }
 
     void addNavgraphBuildTask(Chunk& chunk);

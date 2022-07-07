@@ -2,7 +2,10 @@
 
 struct SDL_Window;
 class Structure;
+struct RoomNode;
+class Building;
 
+#include "city/CityConst.h"
 #include "world/WorldObjectQuery.h"
 
 enum UIInteractMenuResultFlags : ui32 {
@@ -41,11 +44,17 @@ public:
 
     WorldObjectQuery& getWorldObjects() { return mWorldObjectQuery; }
 
+    Structure* getSelectedStructure() const { return mSelectedStructure; }
+    RoomNodeID getSelectedRoomID() const { return mSelectedRoomID; }
+    const RoomNode* tryGetSelectedRoom() const;
+    Building* tryGetSelectedBuilding() const;
+
 private:
     const ui32v2 mScreenPos;
     SDL_Window* mWindow;
     WorldObjectQuery mWorldObjectQuery;
     UIInteractMenuState mState = UIInteractMenuState::SELECT_OBJECT;
     Structure* mSelectedStructure = nullptr;
+    RoomNodeID mSelectedRoomID = INVALID_ROOM_ID;
 };
 
