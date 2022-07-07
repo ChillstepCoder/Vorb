@@ -46,7 +46,7 @@ struct BuildingBlueprint {
     std::vector<RoomNodeID> ownerArray;
     std::vector<BlueprintTile> tiles;
     std::vector<ItemStackUnbounded> requiredItemsToBuild;
-    std::vector<RoomGateInfo> exteriorDoors;
+    std::map<TileIndex, RoomNodeID> exteriorDoors;
     const std::vector<ItemStack>* tileRecipes[e_cast(BlueprintTileType::TYPES)];
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];
 

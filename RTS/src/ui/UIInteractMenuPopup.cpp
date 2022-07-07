@@ -180,7 +180,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
                 Building* building = static_cast<Building*>(mSelectedStructure);
                 // TODO: Path to room
                 ImGui::Text("Path to room");
-                const std::vector<RoomNode>& roomGraph = building->getRoomGraph();
+                const std::vector<RoomNode>& roomGraph = building->getRooms();
                 for (size_t i = 0; i < roomGraph.size(); ++i) {
                     const RoomNode& room = roomGraph[i];
                     if (ImGui::Button((room.roomDef->name + " " + std::to_string(i)).c_str())) {
@@ -212,7 +212,7 @@ const RoomNode* UIInteractMenuPopup::tryGetSelectedRoom() const {
     assert(mSelectedStructure->getType() == StructureType::Building);
 
     Building* building = static_cast<Building*>(mSelectedStructure);
-    auto&& roomGraph = building->getRoomGraph();
+    auto&& roomGraph = building->getRooms();
     assert(mSelectedRoomID < roomGraph.size());
     return &roomGraph[mSelectedRoomID];
 }

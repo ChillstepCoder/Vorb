@@ -34,7 +34,7 @@ class HeightmapTerrainQuadtree;
 class Building;
 class StructureManager;
 class PhysicsWorld;
-struct NavNode;
+struct TerrainNavNode;
 struct CityGraph;
 
 class World
@@ -82,7 +82,7 @@ public:
 	StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
-	const NavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
+	const TerrainNavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
 
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }

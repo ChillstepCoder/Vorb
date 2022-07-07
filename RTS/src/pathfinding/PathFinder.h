@@ -4,7 +4,7 @@
 
 class World;
 class Building;
-struct NavNode;
+struct TerrainNavNode;
 
 #include <boost/heap/priority_queue.hpp>
 
@@ -25,7 +25,7 @@ struct compareCoarseNode {
 
 // TODO: Is there a better choice?
 typedef boost::heap::priority_queue<std::pair<f32, CoarseAstarNodeID>, boost::heap::compare<compareCoarseNode>> CoarseOpenList;
-typedef std::vector<const NavNode*> CoarseClosedList;
+typedef std::vector<const TerrainNavNode*> CoarseClosedList;
 
 // TODO: Memory recycler for path memory
 //class PathCache {

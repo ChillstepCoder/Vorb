@@ -181,12 +181,12 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
 }
 
 void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint, World& world) {
-    building.mGraph = std::move(blueprint.rooms);
+    building.mRooms = std::move(blueprint.rooms);
     building.mFunction = blueprint.desc.function;
     building.mPlotIndex = blueprint.plotIndex;
-    building.mEntrances = blueprint.exteriorDoors;
-    assert(building.mEntrances.size());
-    assert(building.mGraph.size());
+    building.mNavEntrances = blueprint.exteriorDoors;
+    assert(building.mNavEntrances.size());
+    assert(building.mRooms.size());
 
     // TODO: Multithread
     BuildingMesher::buildMeshAndPhysics(building, world.getPhysicsWorld());

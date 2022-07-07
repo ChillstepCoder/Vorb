@@ -37,7 +37,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
 
     //ScopedTimer timer("Built nav graph");
 
-    std::vector<NavNode> navNodes;
+    std::vector<TerrainNavNode> navNodes;
     navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK * 2);
 
     // TODO: Separate internal with border chunks for faster lookups??
@@ -98,7 +98,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                 }
             }
             // Now, iterate through the edges to produce nav nodes with edge information
-            NavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
+            TerrainNavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
             memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
             const TileIndex cornerIndex = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, 0);
@@ -116,7 +116,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
                     const Tile& tile = tiles[index];
                     const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
                     const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
-                    const NavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
+                    const TerrainNavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
                     tile.setNavNodeIndex(navNodeIndex);
                 }
             }
@@ -126,7 +126,7 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
     // TODO: what? did I forget to do this
 
     // Build nav list as static array
-    NavPatch& patch = mPatches[chunk.getChunkID().id];
+    TerrainNavPatch& patch = mTerrainPatches[chunk.getChunkID().id];
 
     // If we have old nav data, delete it
     if (patch.nodes) {
@@ -135,8 +135,8 @@ void NavGraph::buildNavNodesForChunk(Chunk& chunk) {
 
     if (navNodes.size()) {
         patch.size = (ui32)navNodes.size();
-        patch.nodes = new NavNode[patch.size];
-        memcpy(patch.nodes, navNodes.data(), sizeof(NavNode) * patch.size);
+        patch.nodes = new TerrainNavNode[patch.size];
+        memcpy(patch.nodes, navNodes.data(), sizeof(TerrainNavNode) * patch.size);
     }
     else {
         patch.nodes = nullptr;
@@ -151,15 +151,15 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
     const HeightmapPatchID& patchId = chunk.getHeightmapPatchID();
     const f32* heightData = worldGrid.getHeightDataAt(patchId)->data;
-    const NavPatch& patch = mPatches[chunk.getChunkID().id];
+    const TerrainNavPatch& patch = mTerrainPatches[chunk.getChunkID().id];
     // Draw edges
     for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
-        const NavNode& node = patch.nodes[nodeIndex];
+        const TerrainNavNode& node = patch.nodes[nodeIndex];
         const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(chunk.mTileContainer.getTileXYOffset(node.cornerPos));
         for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
-                const LiteNavNodeEdge& edge = node.edges[cartesian][i];
+                const LiteTerrainNavNodeEdge& edge = node.edges[cartesian][i];
                 const f32v2 edgeOffset = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                 f32v2 cornerPos = cornerWorldPos + edgeOffset;
                 if (cartesian == (ui32)Cartesian::EAST) cornerPos.x += 1.0f;
@@ -176,12 +176,12 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     }
     // Draw connections between edges
     for (int nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
-        const NavNode& node = patch.nodes[nodeIndex];
+        const TerrainNavNode& node = patch.nodes[nodeIndex];
         const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(chunk.mTileContainer.getTileXYOffset(node.cornerPos));
         for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
-                const LiteNavNodeEdge& edge1 = node.edges[cartesian][i];
+                const LiteTerrainNavNodeEdge& edge1 = node.edges[cartesian][i];
                 const f32v2 edgeOffset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge1.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                 f32v2 cornerPos1 = cornerWorldPos + edgeOffset1;
                 const f32v2 offset1 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge1.lengthMinusOne + 1.0f);
@@ -191,7 +191,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 const f32v3 pointA = helperGet3DPoint(worldGrid, patchId, heightData, pos1);
                 // Connect to our side
                 for (ui32 j = i + 1; j < edgeCount; ++j) {
-                    const LiteNavNodeEdge& edge2 = node.edges[cartesian][j];
+                    const LiteTerrainNavNodeEdge& edge2 = node.edges[cartesian][j];
                     const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian]);
                     f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
                     const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge2.lengthMinusOne + 1.0f);
@@ -205,7 +205,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
                 for (ui32 cartesian2 = cartesian + 1; cartesian2 < 4; ++cartesian2) {
                     const ui32 edgeCount2 = node.counts[cartesian2];
                     for (ui32 j = 0; j < edgeCount2; ++j) {
-                        const LiteNavNodeEdge& edge2 = node.edges[cartesian2][j];
+                        const LiteTerrainNavNodeEdge& edge2 = node.edges[cartesian2][j];
                         const f32v2 edgeOffset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)edge2.start + f32v2(NAV_NODE_EDGE_OFFSETS[cartesian2]);
                         f32v2 cornerPos2 = cornerWorldPos + edgeOffset2;
                         const f32v2 offset2 = f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian2]) * (f32)(edge2.lengthMinusOne + 1.0f);
@@ -220,7 +220,7 @@ void NavGraph::debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int 
     }
 }
 
-void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir)
+void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, TerrainNavNodeIndex* navNodeIdTable, std::vector<TerrainNavNode>& navNodes, Cartesian dir)
 {
     const TileContainer& tileContainer = chunk.getTileContainer();
     const std::vector<Tile>& tiles = tileContainer.getTiles();
@@ -270,8 +270,8 @@ void NavGraph::buildEdges(Chunk& chunk, const int cornerX, const int cornerY, Ti
     }
 }
 
-void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir) {
-    NavNode* currNavNode;
+void NavGraph::addNodeEdge(Chunk& chunk, TerrainNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<TerrainNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir) {
+    TerrainNavNode* currNavNode;
     // Add nav node if it doesnt exist yet
     ui16& navNodeId = navNodeIdTable[djIndex];
     if (navNodeId == INVALID_NAV_NODE_INDEX) {
@@ -294,7 +294,7 @@ void NavGraph::addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui3
     assert(length > 0 && length <= 16);
 
     // Add edge
-    LiteNavNodeEdge& edge = currNavNode->edges[e_cast(dir)][currCount++];
+    LiteTerrainNavNodeEdge& edge = currNavNode->edges[e_cast(dir)][currCount++];
     edge.lengthMinusOne = length - 1;
 
     // Because dir is separated into separate arrays, and is always along the subchunk boundary, we can encode where the start is along a 0-15 integer (4 byte)

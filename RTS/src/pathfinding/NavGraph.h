@@ -4,12 +4,12 @@
 
 class World;
 class Chunk;
-struct NavNode;
+struct TerrainNavNode;
 
 constexpr int MAX_NAV_NODE_COUNT = UINT8_MAX;
 constexpr int INVALID_NAV_NODE_INDEX = UINT16_MAX;
 
-typedef ui16 NavNodeIndex;
+typedef ui16 TerrainNavNodeIndex;
 struct DisjointSetNode;
 
 const ui16v2 NAV_NODE_EDGE_OFFSETS[4] = {
@@ -19,13 +19,13 @@ const ui16v2 NAV_NODE_EDGE_OFFSETS[4] = {
     {0, 15}  // UP
 };
 
-struct LiteNavNodeEdge {
+struct LiteTerrainNavNodeEdge {
     ui8 lengthMinusOne : 4;
     ui8 start : 4;
 };
-static_assert(sizeof(LiteNavNodeEdge) == sizeof(ui8), "Must be single byte");
+static_assert(sizeof(LiteTerrainNavNodeEdge) == sizeof(ui8), "Must be single byte");
 
-struct NavNode {
+struct TerrainNavNode {
     ui32 chunkId;
     TileIndex cornerPos;
     union {
@@ -38,28 +38,28 @@ struct NavNode {
         };
     };
     union {
-        LiteNavNodeEdge edges[4][8];
+        LiteTerrainNavNodeEdge edges[4][8];
         struct {
-            LiteNavNodeEdge bottomEdges[8];
-            LiteNavNodeEdge leftEdges[8];
-            LiteNavNodeEdge rightEdges[8];
-            LiteNavNodeEdge topEdges[8];
+            LiteTerrainNavNodeEdge bottomEdges[8];
+            LiteTerrainNavNodeEdge leftEdges[8];
+            LiteTerrainNavNodeEdge rightEdges[8];
+            LiteTerrainNavNodeEdge topEdges[8];
         };
     };
     mutable bool isClosed; // For use in single threaded pathfinding
 };
-static_assert(sizeof(NavNode) == 48, "Keep small");
+static_assert(sizeof(TerrainNavNode) == 48, "Keep small");
 
-struct NavNodeIndexPair {
+struct TerrainNavNodeIndexPair {
     ui32 chunkId;
-    NavNodeIndex index;
+    TerrainNavNodeIndex index;
 };
-static_assert(sizeof(NavNodeIndexPair) == 8, "Keep small");
+static_assert(sizeof(TerrainNavNodeIndexPair) == 8, "Keep small");
 
-struct NavPatch {
+struct TerrainNavPatch {
     // Could fit another ui32 here
     ui32 size = 0;
-    NavNode* nodes = nullptr;
+    TerrainNavNode* nodes = nullptr;
 };
 
 class NavGraph
@@ -70,16 +70,16 @@ public:
     void buildNavNodesForChunk(Chunk& chunk);
     void debugDrawNavGraphForChunk(const Chunk& chunk, ui32 lifetime, int debugId = 0) const;
 
-    const NavNode* getNode(NavNodeIndexPair index) const {
-        const NavPatch& patch = mPatches[index.chunkId];
+    const TerrainNavNode* getNode(TerrainNavNodeIndexPair index) const {
+        const TerrainNavPatch& patch = mTerrainPatches[index.chunkId];
         assert(index.index < patch.size);
         return &patch.nodes[index.index];
     }
 
 private:
-    void buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, NavNodeIndex* navNodeIdTable, std::vector<NavNode>& navNodes, Cartesian dir);
-    void addNodeEdge(Chunk& chunk, NavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<NavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
+    void buildEdges(Chunk& chunk, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, TerrainNavNodeIndex* navNodeIdTable, std::vector<TerrainNavNode>& navNodes, Cartesian dir);
+    void addNodeEdge(Chunk& chunk, TerrainNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<TerrainNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
 
-    NavPatch mPatches[WorldData::WORLD_SIZE_CHUNKS];
+    TerrainNavPatch mTerrainPatches[WorldData::WORLD_SIZE_CHUNKS];
     World& mWorld;
 };

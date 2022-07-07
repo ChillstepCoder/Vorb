@@ -224,6 +224,7 @@
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
+    <ClCompile Include="src\pathfinding\BuildingNavGraph.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
     <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
@@ -412,6 +413,7 @@
     <ClInclude Include="src\pathfinding\NavThread.h" />
     <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
+    <ClInclude Include="src\pathfinding\BuildingNavGraph.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
     <ClInclude Include="src\physics\DynamicCharacterController.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />

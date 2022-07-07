@@ -17,6 +17,8 @@
 
 #include "physics/StaticPhysicsMesh.h"
 
+#include "pathfinding/BuildingNavGraph.h"
+
 class Mesh;
 class btTriangleIndexVertexArray;
 
@@ -35,10 +37,11 @@ class Building : public Structure {
 public:
     friend class BuildingRenderer;
     friend class BuildingMesher;
+    friend class BuildingNavGraph;
     friend class CityBuilder;
     friend class City;
 
-    Building() {};
+    Building();
     ~Building();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Building);
@@ -46,18 +49,22 @@ public:
     // TODO: Boost allocator
 
     const BitArray& getInteriorTilesInAABB() const { return mInteriorTilesInAABB; }
-    const std::vector<RoomNode>& getRoomGraph() const { return mGraph; }
-    const std::vector<RoomGateInfo>& getEntrances() const { return mEntrances; }
+    const std::vector<RoomNode>& getRooms() const { return mRooms; }
+    const std::map<TileIndex, RoomNodeID>& getNavEntrances() const { return mNavEntrances; }
+
+    void updateNavGraph();
+    
 
 private:
    
-    std::vector<RoomNode> mGraph;
+    std::vector<RoomNode> mRooms;
     BitArray mInteriorTilesInAABB;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;
+    BuildingNavGraph mNavGraph;
 
-    std::vector<RoomGateInfo> mEntrances;
+    std::map<TileIndex, RoomNodeID> mNavEntrances;
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
 

@@ -344,11 +344,12 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     // Update editors
     UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
 
-	// TODO: Actual usage of deltatime?
-    mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
 
 	updateTilePicking();
     mWorld->frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
+
+    // TODO: Actual usage of deltatime?
+    mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
 
 }
 
@@ -492,8 +493,9 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
             ui32v2 roomWorldPos = ui32v2(selectedNode->offsetFromZero) + ui32v2(aabb.x, aabb.y);
 
             // TODO: Closest entrance?
-            RoomGateInfo entrance = building->getEntrances()[0];
-            const ui32v3 targetPos = building->getWorldPositionOfTile(entrance.tileIndex);
+            //RoomNodeID entrance = building->getNavEntrances().begin()->second;
+            TileIndex id = building->getNavEntrances().begin()->first;
+            const ui32v3 targetPos = building->getWorldPositionOfTile(id);
             // TODO: Path into the actual room
             auto&& ecs = mWorld->getECS();
             NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);

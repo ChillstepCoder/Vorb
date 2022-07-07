@@ -6,6 +6,7 @@ struct ui32AABB2 {
     ui32AABB2(ui32 x, ui32 y, ui32 width, ui32 depth) : x(x), y(y), width(width), depth(depth) {};
 
     ui32& operator[](int i) { return data[i]; }
+    bool operator==(const ui32AABB2& other) { return data == other.data; }
 
     const ui32v2& getBottomLeft() const { return pos; }
     ui32v2 getCenter() const { return pos + dims / 2u; }
@@ -46,6 +47,7 @@ struct ui16AABB2 {
     ui16AABB2(ui16 x, ui16 y, ui16 width, ui16 depth) : x(x), y(y), width(width), depth(depth) {};
 
     ui16& operator[](int i) { return data[i]; }
+    bool operator==(const ui16AABB2& other) { return data == other.data; }
 
     const ui16v2& getBottomLeft() const { return pos; }
     ui16v2 getCenter() const { return pos + dims / 2ui16; }

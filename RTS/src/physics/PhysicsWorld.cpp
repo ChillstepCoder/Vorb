@@ -85,7 +85,7 @@ PhysicsWorld::~PhysicsWorld() {
 }
 
 void PhysicsWorld::stepSimulation(f32 elapsedSec) {
-    mDynamicsWorld->stepSimulation(elapsedSec, 3 /*maxSubSteps*/);
+    mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }
 
 DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {

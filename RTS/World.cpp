@@ -335,7 +335,7 @@ StructureArrayPtr World::tryGetStructuresAtWorldPos(const ui32v2& worldPos) cons
     return std::make_pair(nullptr, 0);
 }
 
-const NavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
+const TerrainNavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
 	const Chunk& chunk = getChunkAtPosition(worldPos); // TODO: Stop casting??
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus

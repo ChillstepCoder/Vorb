@@ -7,7 +7,15 @@ BuildingRenderData::~BuildingRenderData() {
 
 }
 
-Building::~Building()
+Building::Building() : mNavGraph(*this)
 {
 
+}
+
+Building::~Building() {
+
+}
+
+void Building::updateNavGraph() {
+    mNavGraph.update();
 }

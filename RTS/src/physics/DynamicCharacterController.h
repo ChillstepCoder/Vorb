@@ -63,19 +63,15 @@ public:
 	 * The squared maximum speed that the character can walk.
 	 * By default, 15km/h.
 	 */
-	btScalar mMaxLinearVelocity2 = pow(15 / 3.6, 2);
+	btScalar mMaxLinearVelocity = pow(15 / 3.6, 2);
 
-	/// The acceleration to use when starting walking
-	btScalar mWalkAccel = 40.0;//25.0;
+	btScalar mAcceleration = 0.008f; // Between 0 and 1, smaller is faster
 
 	/**
 	 * The initial speed for the jump.
 	 * The default is about 1m starting still, with g=-9.81
 	 */
-	btScalar mJumpSpeed = 4.5;
-
-	/// The damp to use to stop movements
-	btScalar mSpeedDamping = 0.94;
+	btScalar mJumpSpeed = 6.5;
 
 	/// The maximum step to automatically climb to
 	btScalar mMaxStepHeight = 0.5;
@@ -139,14 +135,6 @@ protected:
 	 */
 	void updateVelocity(float dt);
 
-	/**
-	 * Make the character step up stairs
-	 * \param dt The time elapsed since the last step
-	 */
-	void stepUp(float dt);
-
-	/// Cancel auto stepping
-	inline void cancelStep();
 
 	/// The controlled rigid body
 	btRigidBody* mRigidBody;
@@ -173,15 +161,4 @@ protected:
 	 */
 	btVector3 mGroundPoint;
 
-	/// Tells whether the character is auto stepping
-	bool mStepping;
-
-	/// Tells the point the character is stepping to
-	btVector3 mSteppingTo;
-
-	/// The normal of the step we are stepping to, seen from the stepping point
-	btVector3 mSteppingInvNormal;
-
-	/// Tells the flag to restore to make the character dynamic again after step
-	int mPrestepFlags;
 };

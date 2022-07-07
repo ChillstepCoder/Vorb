@@ -31,8 +31,7 @@ private:
     static void expandRooms(BuildingBlueprint& bp, VisualLog* visLog);
     static void roomCleanup(BuildingBlueprint& bp, VisualLog* visLog);
     static void initRoomWalls(BuildingBlueprint& bp, RoomNode& room);
-    static void placeFacadeWalls(BuildingBlueprint& bp, VisualLog* visLog);
-    static void placeInteriorWalls(BuildingBlueprint& bp, VisualLog* visLog);
+    static void placeWalls(BuildingBlueprint& bp, VisualLog* visLog);
     static void placeDoors(BuildingBlueprint& bp, VisualLog* visLog);
     static void buildRoomInteriorEdges(BuildingBlueprint& bp, VisualLog* visLog);
     static bool placeStairs(BuildingBlueprint& bp, VisualLog* visLog);

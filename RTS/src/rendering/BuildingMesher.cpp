@@ -944,7 +944,7 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
     constexpr f32 STAIR_TILE_HEIGHT = 3.0f / 4.0f;
     constexpr ui32 STEPS_PER_TILE = 4;
     constexpr f32 stepHeight = STAIR_TILE_HEIGHT / STEPS_PER_TILE;
-    for (auto& room : building.getRoomGraph()) {
+    for (auto& room : building.getRooms()) {
         const f32 baseHeight = room.floorIndex * building.mTileContainer.getFloorHeight();
         for (auto& stairPiece : room.stairs) {
             f32v3 tilePos = building.mTileContainer.getTileXYZOffset(stairPiece.pos);
