@@ -125,15 +125,16 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     newBuilding->mInteriorTilesInAABB.setBitTo(tileIndex, true);
 
                     const TileID tileId = bp.tileIDs[e_cast(type)];
+                    TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                     if (tileId != TILE_ID_NONE) {
                         // We dont add to mean height here because tile height is relative to the root of the tile container
                         const f32 height = (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
-                        TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
                         tileContainer.addTile(index, TileRepository::getTileData(tileId));
                         //assert(false); // Set building structure pointer
                         // TODO: always set ground position?
                         tileContainer.setTileGroundZPosition(index, height);
                     }
+                    tileContainer.setWallsAt(index, bp.walls[index]);
 
                     // TERRAIN
                     //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);

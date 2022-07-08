@@ -59,6 +59,25 @@ struct TileOrientation {
 };
 static_assert(sizeof(TileOrientation) == 1);
 
+struct TileWall {
+    TileID wallID = TILE_ID_NONE;
+    TileID paintID = TILE_ID_NONE;
+};
+
+struct TileWalls {
+    TileWalls() : walls{ {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE} } {}
+    static_assert(sizeof(TileWall) == 4, "Make sure constructor still works");
+    union {
+        TileWall walls[4];
+        struct {
+            TileWall south;
+            TileWall west;
+            TileWall east;
+            TileWall north;
+        };
+    };
+};
+
 class Tile {
     friend class TileContainer;
     friend class ChunkGenerator;
@@ -85,9 +104,6 @@ public:
     f32 getGroundZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)groundZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
     f32 getGroundZPositionUncompressedThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return (f32)groundZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
 
-    const TileCollider* tryGetColliderMainThread() const;
-    const TileCollider* tryGetColliderThreadSafe() const;
-
 	const TileID* getLayersMainThread() const { assert(IS_MAIN_THREAD()); return layers; }
     const TileID* getLayersThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe; }
 
@@ -107,12 +123,12 @@ private:
     void setTileFlags(TileFlags flags, bool isReadLocked);
     void clearTileFlag(TileFlags flag, bool isReadLocked);
     void clearTileFlags(bool isReadLocked);
-    void clearTileCollisionFlags(bool isReadLocked);
     void setPathWeight(ui8 weight, bool isReadLocked);
     void setGroundZPosition(f32 groundZPosition, bool isReadLocked);
     void updateCollision(bool isReadLocked);
     bool isUpdateQueued() { return tileFlags.isBitSet(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE); }
 
+    // ================================= Data =================================
     union { // These can safely be modified at any time and will only be accessed by the main thread
         struct {
             TileID groundLayer; // Walls, floors, foundation     // ALWAYS BOX COLLISION

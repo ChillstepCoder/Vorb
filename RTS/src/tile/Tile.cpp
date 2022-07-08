@@ -17,7 +17,9 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Thin", TileShape::THIN);
     kt.addValue("Block", TileShape::BLOCK);
     kt.addValue("Floor", TileShape::FLOOR);
+    kt.addValue("Wall", TileShape::WALL);
 }
+static_assert(e_cast(TileShape::COUNT) == 4);
 
 KEG_ENUM_DEF(TileResource, TileResource, kt) {
     kt.addValue("none", TileResource::NONE);
@@ -86,19 +88,6 @@ void Tile::clearTileFlags(bool isReadLocked) {
     else {
         tileFlagsThreadSafe = 0;
         tileFlags = 0;
-    }
-}
-
-void Tile::clearTileCollisionFlags(bool isReadLocked) {
-
-    assert(IS_MAIN_THREAD());
-
-    tileFlags.clearMaskBits(TILE_COLLISION_FLAGS_MASK);
-    if (isReadLocked) {
-        tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
-    }
-    else {
-        tileFlagsThreadSafe = tileFlags;
     }
 }
 
@@ -210,7 +199,7 @@ void Tile::setGroundZPosition(f32 groundZPosition, bool isReadLocked) {
 
 void Tile::updateCollision(bool isReadLocked) {
     // Clear collision flags
-    tileFlags.setBit((TileFlags)TILE_COLLISION_FLAGS_MASK);
+    /*tileFlags.setBit((TileFlags)TILE_COLLISION_FLAGS_MASK);
 
     if (topLayer == TILE_ID_NONE) {
         tileFlags.clearBit(TileFlags::TILE_FLAG_HAS_COLLIDER);
@@ -223,7 +212,7 @@ void Tile::updateCollision(bool isReadLocked) {
         else {
             tileFlags.clearBit(TileFlags::TILE_FLAG_HAS_COLLIDER);
         }
-    }
+    }*/
 
     if (isReadLocked) {
         tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
@@ -233,20 +222,14 @@ void Tile::updateCollision(bool isReadLocked) {
     }
 }
 
-const TileCollider* Tile::tryGetColliderMainThread() const {
-    assert(IS_MAIN_THREAD());
-    if (tileFlags.isBitSet(TileFlags::TILE_FLAG_HAS_COLLIDER)) {
-        assert(topLayer != TILE_ID_NONE);
-        return &TileRepository::getTileData(topLayer).collider;
-    }
-    return nullptr;
-}
-
-const TileCollider* Tile::tryGetColliderThreadSafe() const {
-    assert(!IS_MAIN_THREAD());
-    if (tileFlagsThreadSafe.isBitSet(TileFlags::TILE_FLAG_HAS_COLLIDER)) {
-        assert(topLayerThreadSafe != TILE_ID_NONE);
-        return &TileRepository::getTileData(topLayerThreadSafe).collider;
-    }
-    return nullptr;
-}
+//void Tile::setWall(Cartesian cartesianSouthOrWest, TileWall wall, bool isReadLocked) {
+//    assert(e_cast(cartesianSouthOrWest) <= 1);
+//    assert(IS_MAIN_THREAD());
+//    if (isReadLocked) {
+//        tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+//    }
+//    else {
+//        wallsThreadSafe[e_cast(cartesianSouthOrWest)] = wall;
+//    }
+//    walls[e_cast(cartesianSouthOrWest)] = wall;
+//}

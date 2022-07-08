@@ -4,6 +4,7 @@
 #include "options/DebugOptions.h"
 
 #include "World.h"
+#include "physics/PhysicsWorld.h"
 
 #include "ecs/EntityComponentSystem.h"
 #include <Vorb/ui/GameWindow.h>
@@ -206,6 +207,7 @@ void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
 
 void CameraController::updateCameraMMOMode(f32 frameAlpha)
 {
+
     // Must have a follow
     if (mEntityFollow == entt::null) {
         return;
@@ -219,8 +221,18 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     followTargetPos.z += sDebugOptions.mCameraZHeight + SQ(mCameraBoomLengthTweener.getCurr() * 0.5f);
 
     const f32v3 lookAtOffset = mCamera.getDirection() * sDebugOptions.mCameraXYDistance * 2.0f * mCameraBoomLengthTweener.getCurr();
-    mCamera.setPosition(followTargetPos - lookAtOffset);
+    const f32v3 camPos = followTargetPos - lookAtOffset;
+    mCamera.setPosition(camPos);
     mCamera.lookAt(followTargetPos);
+
+    // Collision raycast
+    PhysHitResult result = mWorld.getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
+    // DebugRenderer::drawWireQuad(followTargetPos, f32v2(0.2f), COLOR_WHITE);
+    if (result.didHit()) {
+        mCamera.setPosition(result.mPosition);
+        std::cout << "HIT";
+    }
+
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
         mIsMouseHidden = false;

@@ -14,6 +14,23 @@ constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 5;
 constexpr int TILE_TEX_METHOD_VERTICAL_WALL_HEIGHT = 3;
 constexpr int TILE_TEX_METHOD_VERTICAL_WALL_WIDTH = 1;
 
+enum class WallCornerType {
+    FLAT, // No change to edge length
+    INWARD, // Shrink edg
+    OUTWARD
+};
+
+// Track what quads are at a tile
+struct WallChainData {
+    f32v3 startPos;
+    f32 length;
+    f32 groundPos;
+    WallCornerType cornerTypeStart;
+    WallCornerType cornerTypeEnd;
+    Cartesian dir;
+    TileID tileId;
+};
+
 // TODO: Method(s) file?
 struct ConnectedWallData {
     union {
@@ -122,12 +139,14 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     return rv;
 }
 
+
 void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
     const ui32v3& tileDims = tileContainer.getDims();
+    // =============== Mesh tiles ===============
+    TileIndex index = 0;
     for (ui32 z = 0; z < tileDims.z; ++z) {
         for (ui32 y = 0; y < tileDims.y; ++y) {
-            for (ui32 x = 0; x < tileDims.x; ++x) {
-                TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+            for (ui32 x = 0; x < tileDims.x; ++x, ++index) {
                 const Tile& tile = tileContainer.getTileAt(index);
                 const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
@@ -153,6 +172,95 @@ void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const T
                 }
             }
         }
+    }
+    // =============== Greedy mesh walls ===============
+    // TileID prevSouthWall; Pull ahead greedy meshing like in SoA
+
+    // TODO: separate vector per wall dir? hmm
+    std::vector<WallChainData> wallData;
+
+    for (ui32 z = 0; z < tileDims.z; ++z) {
+        // Construct all wall data by iterating one direction at a time
+        // South and North walls (+x)
+        ui32 prevSouthWallIndex;
+        for (ui32 y = 0; y < tileDims.y; ++y) {
+            // Each row we can merge
+            prevSouthWallIndex = UINT32_MAX;
+            for (ui32 x = 0; x < tileDims.x; ++x) {
+                TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+                const Tile& tile = tileContainer.getTileAt(wallsIndex);
+                const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
+                // TODO: Greedy meshing
+                const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
+                // TODO: Use paint ID
+                // TODO: Use indices so we dont copy paste?
+                if (walls.south.wallID != TILE_ID_NONE) {
+                    bool didMerge = false;
+                    if (prevSouthWallIndex != UINT32_MAX) {
+                        WallChainData& prevSouthWall = wallData[prevSouthWallIndex];
+                        if (prevSouthWall.groundPos == groundZPosition && prevSouthWall.tileId == walls.south.wallID) {
+                            // Extend previous wall
+                            ++prevSouthWall.length;
+                            didMerge = true;
+                        }
+                    }
+                    if (!didMerge) {
+                        // Add new wall
+                        // TODO: No copy paste
+                        prevSouthWallIndex = wallData.size();
+                        WallChainData& newSouthWall = wallData.emplace_back();
+                        newSouthWall.tileId = walls.south.wallID;
+                        newSouthWall.dir = Cartesian::SOUTH;
+                        newSouthWall.length = 1;
+                        newSouthWall.startPos = f32v3(x, y, z);
+                        newSouthWall.cornerTypeStart = WallCornerType::FLAT;
+                    }
+                }
+                else if (prevSouthWallIndex != UINT32_MAX) {
+                    // End previous wall
+                    WallChainData& prevSouthWall = wallData[prevSouthWallIndex];
+                    prevSouthWall.cornerTypeEnd = WallCornerType::FLAT;
+                    prevSouthWallIndex = UINT32_MAX;
+                }
+            }
+        }
+        // East and West walls (+y)
+        for (ui32 x = 0; x < tileDims.x; ++x) {
+            for (ui32 y = 0; y < tileDims.y; ++y) {
+                TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+                // TODO: Greedy meshing
+                const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
+            }
+        }
+        // Mesh walls
+        f32v3 wallPoints[4];
+        for (auto&& wall : wallData) {
+            switch (wall.dir) {
+                case Cartesian::SOUTH:
+                    wallPoints[0] = wall.startPos;
+                    wallPoints[1] = wall.startPos + f32v3(wall.length, 0.0f, 0.0f);
+                    wallPoints[2] = wall.startPos + f32v3(wall.length, 0.0f, tileContainer.getFloorHeight());
+                    wallPoints[3] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
+                    break;
+                case Cartesian::WEST:
+                    break;
+                case Cartesian::EAST:
+                    break;
+                case Cartesian::NORTH:
+                    break;
+                default:
+                    assert(false);
+                    break;
+
+            }
+            const TileData& tileData = TileRepository::getTileData(wall.tileId);
+            const SubTexture& texture = tileData.texture;
+            meshBuilder.addQuadBetweenPoints(wallPoints, texture, 1.0f, COLOR_WHITE);
+            if (physMesh) {
+                physMesh->addQuadBetweenPoints(wallPoints);
+            }
+        }
+        wallData.clear();
     }
 }
 
@@ -353,6 +461,34 @@ void TileMeshBuilderMethods::addFloorTerrainAligned(MeshBuilder& meshBuilder, f3
     //else {
     //    assert(false);
     //}
+}
+
+void TileMeshBuilderMethods::addWall(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, OPT StaticPhysicsMesh* physMesh) {
+    constexpr f32 WALL_THICKNESS = 0.05f;
+    assert(false);
+    //f32v3 rootPos = tilePos
+    //meshBuilder.addQuadBetweenPointsWorldUV()
+    //meshBuilder.addQuadBetweenPoints()
+    //meshBuilder.addAxisAlignedQuad(
+    //    topPos,
+    //    f32v2(1.0f), // Dimensions
+    //    CubeFacing::TOP,
+    //    texture,
+    //    f32v4(0.0f, 2.0f / 3.0f, 1.0f, 1.0f / 3.0f),
+    //    COLOR_WHITE
+    //);
+    //if (physMesh) {
+    //    physMesh->addTileQuad(topPos, f32v2(1.0f), CubeFacing::TOP);
+
+    //    for (int c = 0; c < 4; ++c) {
+    //        if (heightDiffs[c] > 0.0f) {
+    //            CubeFacing quadFacing = EXPOSED_NEIGHBOR_QUAD_FACINGS[c];
+    //            const f32v3 quadPos = tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(quadFacing)];
+    //            physMesh->addTileQuad(f32v3(quadPos.x, quadPos.y, quadPos.z), f32v2(1.0f, heightDiffs[c]), quadFacing);
+    //        }
+    //    }
+    //}
+
 }
 
 //

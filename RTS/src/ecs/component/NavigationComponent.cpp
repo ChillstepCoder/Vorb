@@ -60,7 +60,6 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 	// Check for stuck on new tile
 	const Tile* targetTile = world.tryGetTileAtWorldPos(nextTilePos);
 	if (targetTile) {
-        const TileCollider* collider = targetTile->tryGetColliderMainThread();
         f32 baseZ = targetTile->getGroundZPositionUncompressedMainThread();
 		// TODO: Remove
 		if (sDebugOptions.mShowPaths) {

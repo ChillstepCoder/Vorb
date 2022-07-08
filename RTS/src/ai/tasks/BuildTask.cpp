@@ -178,10 +178,10 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
     TileHandle tileHandle = world.getTileHandleAtWorldPos(worldPos);
     TileContainer& tiles = *tileHandle.getMutableContainer();
     tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
-    // Walls have higher base Z position
-    if (bpTile.type == BlueprintTileType::WALL) {
-        tiles.setTileGroundZPosition(tileHandle.tileIndex, tileHandle.tile->getGroundZPositionUncompressedMainThread() + 3.0f);
-    }
+    //// Walls have higher base Z position
+    //if (bpTile.type == BlueprintTileType::WALL) {
+    //    tiles.setTileGroundZPosition(tileHandle.tileIndex, tileHandle.tile->getGroundZPositionUncompressedMainThread() + 3.0f);
+    //}
 
     // Notify blueprint
     bpTile.isBuilt = true;

@@ -5,6 +5,7 @@
 #include "btBulletCollisionCommon.h"
 #include "BulletCollision/CollisionShapes/btCapsuleShape.h"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+#include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 //#include "BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "debugging/PhysicsDebugDrawer.h"
@@ -286,8 +287,13 @@ void PhysicsWorld::debugRender() const {
     
 }
 
-struct CustomRayResult : public btCollisionWorld::RayResultCallback
+struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
 {
+    CustomRayResult(const btVector3& rayFromWorld, const btVector3& rayToWorld)
+        : btCollisionWorld::ClosestRayResultCallback(rayFromWorld, rayToWorld) // TODO: UNUSED?
+    {
+    }
+
     virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult& r, bool b)
     {
         if (b && r.m_hitFraction < m_closestHitFraction) {
@@ -296,22 +302,30 @@ struct CustomRayResult : public btCollisionWorld::RayResultCallback
             m_collisionObject = r.m_collisionObject;
             //r.m_localShapeInfo
         }
-        return 0; // Return value appears to be ignored?
+        return r.m_hitFraction;
     }
 
     f32v3 mHitNormal = f32v3(0.0f);
 };
 
-PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes)
+PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const
 {
-    CustomRayResult rayResult;
-    if (pickTypes == PICK_TYPE_ALL) {
-        // TODO: Instead use filter mask on the result callback
-        mDynamicsWorld->rayTest(f32v3ToBtVector3(rayStart), f32v3ToBtVector3(rayEnd), rayResult);
+    btVector3 start = f32v3ToBtVector3(rayStart);
+    btVector3 end = f32v3ToBtVector3(rayEnd);
+    // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
+    CustomRayResult rayResult(start, end);
+    int collisionMask = btBroadphaseProxy::DefaultFilter;
+
+    if (pickTypes & PICK_TYPE_DYNAMIC) {
+        collisionMask |= btBroadphaseProxy::KinematicFilter;
     }
-    else {
-        assert(false); // TODO: IMPLEMENT
+    if (pickTypes & PICK_TYPE_STATIC) {
+        collisionMask |= btBroadphaseProxy::StaticFilter;
     }
+    rayResult.m_collisionFilterMask = collisionMask;
+    //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+    mDynamicsWorld->rayTest(start, end, rayResult);
+
     PhysHitResult rv;
     rv.mTime = rayResult.m_closestHitFraction;
     rv.mNormal = rayResult.mHitNormal;

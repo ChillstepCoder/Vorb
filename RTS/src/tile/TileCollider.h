@@ -14,13 +14,9 @@ enum class TileCollisionShape : ui8 {
 //typedef ui16 TileColliderID;
 //constexpr TileColliderID INVALID_COLLIDER_ID = UINT16_MAX;
 
-
-// Wut?
-constexpr ui16 TILE_COLLISION_FLAGS_MASK = e_cast(TileFlags::TILE_FLAG_DOOR) | e_cast(TileFlags::TILE_FLAG_HAS_COLLIDER);
-
 struct TileCollider {
     f32v3 dims = f32v3(0.0f);
-    TileFlags defaultFlags = TileFlags::TILE_FLAG_HAS_COLLIDER;
+    TileFlags defaultFlags = (TileFlags)0;
     TileCollisionShape shape = TileCollisionShape::NONE;
 
     const f32v2& getDimsXy() const { return reinterpret_cast<const f32v2&>(dims); } // It just works - Todd howard

@@ -125,8 +125,6 @@ public:
 	const CityGraph& getCities() const { return *mCities; }
 	City* getClosestCityToPoint(const f32v2& pos) const;
 
-    IntersectionHit2D tryGetRaycastIntersect2D(const f32v2& start, const f32v2& end, f32 zPos);
-
 private:
 
 	// TODO: Composition? WorldClock? idk

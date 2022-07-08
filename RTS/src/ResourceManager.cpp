@@ -380,7 +380,7 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         tileData.collider.shape = fileData.colliderShape;
         if (fileData.colliderShape != TileCollisionShape::NONE) {
             // TODO: Doors and shit? Move?
-            tileData.collider.defaultFlags = TileFlags::TILE_FLAG_HAS_COLLIDER;
+            tileData.collider.defaultFlags = (TileFlags)0;
             tileData.collider.dims = fileData.colliderDims;
         }
 

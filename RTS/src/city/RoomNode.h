@@ -5,14 +5,6 @@ class Building;
 
 #include "util/GridEdge.h"
 
-// Describes initial four walls
-enum class RoomBorderOuterDir {
-    LEFT,
-    TOP,
-    RIGHT,
-    BOTTOM
-};
-
 struct RoomGateInfo {
     RoomNodeID adjacentRoom;
     ui32 tileIndex;

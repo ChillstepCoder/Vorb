@@ -46,7 +46,7 @@ void Chunk::allocateTiles() {
 }
 
 void Chunk::freeTiles() {
-    mTileContainer.freeTiles();
+    mTileContainer.freeData();
     std::vector<ui8>().swap(mGrass);
 }
 

@@ -32,8 +32,7 @@ typedef std::pair<btRigidBody*, f32/*colliderHalfHeight*/> RigidBodyPair;
 enum PickTypes {
     PICK_TYPE_STATIC = 1 << 0,
     PICK_TYPE_DYNAMIC = 1 << 1,
-    PICK_TYPE_TERRAIN = 1 << 2,
-    PICK_TYPE_ALL = PICK_TYPE_STATIC | PICK_TYPE_DYNAMIC | PICK_TYPE_TERRAIN,
+    PICK_TYPE_ALL = PICK_TYPE_STATIC | PICK_TYPE_DYNAMIC
 };
 
 class PhysicsWorld
@@ -51,7 +50,7 @@ public:
     void debugRender() const;
 
     // Picking
-    PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes);
+    PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const;
 
 private:
     RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);

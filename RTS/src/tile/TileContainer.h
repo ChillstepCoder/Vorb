@@ -2,6 +2,16 @@
 
 #include "tile/Tile.h"
 
+struct TileWallContainer {
+    TileWalls walls; // Cartesian
+    TileWalls wallsThreadSafe; // Cartesian
+
+    void copyThreadSafeData() {
+        wallsThreadSafe = walls;
+    }
+};
+static_assert(sizeof(TileWallContainer) == 32, "Keep small");
+
 class TileContainer
 {
     friend struct TileRef;
@@ -12,7 +22,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
     void init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight);
-    void freeTiles();
+    void freeData();
 
     void updateMainThread();
 
@@ -26,9 +36,13 @@ public:
     void setTileFlags(TileIndex i, TileFlags flags);
     void clearTileFlag(TileIndex i, TileFlags flag);
     void clearTileFlags(TileIndex i);
-    void clearTileCollisionFlags(TileIndex i);
     void setTilePathWeight(TileIndex i, ui8 weight);
     void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
+    void setWallAt(TileIndex i, Cartesian dir, TileWall wall);
+    void setWallsAt(TileIndex i, TileWalls walls);
+
+    const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i].walls; }
+    const TileWalls& getWallsThreadSafe(TileIndex i) const { return mWalls[i].wallsThreadSafe; }
 
     // =========== Generation ===========
     void setTileFromGeneration(TileIndex i, Tile&& tile) {
@@ -111,9 +125,11 @@ public:
     ui32 getRefCount() const { return mRefCount; }
 
     const std::vector<Tile>& getTiles() const { return mTiles; }
+    const std::vector< TileWallContainer>& getWalls() const { return mWalls; }
 
 private:
-    std::vector<Tile> mTiles; // TODO: Memory recycler
+    std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
+    std::vector<TileWallContainer> mWalls; // TODO: Memory recycler and or compression
     // All tiles that need to update when read lock is free
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     ui32v3 mDims;

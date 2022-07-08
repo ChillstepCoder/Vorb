@@ -8,10 +8,12 @@ void TileContainer::init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight) {
     mDims = dims;
     mFloorHeight = floorHeight;
     mTiles.resize(dims.x * dims.y * dims.z);
+    mWalls.resize(dims.x * dims.y * dims.z);
 }
 
-void TileContainer::freeTiles() {
+void TileContainer::freeData() {
     std::vector<Tile>().swap(mTiles);
+    std::vector<TileWallContainer>().swap(mWalls);
 }
 
 void TileContainer::updateMainThread() {
@@ -19,6 +21,7 @@ void TileContainer::updateMainThread() {
     if (mTilesNeedingThreadSafeCopy.size() && mReadLockCount == 0) {
         for (TileIndex& id : mTilesNeedingThreadSafeCopy) {
             mTiles[id].updateThreadSafeLayers();
+            mWalls[id].copyThreadSafeData();
         }
         mTilesNeedingThreadSafeCopy.clear();
         mDirtyMesh = true;
@@ -143,15 +146,6 @@ void TileContainer::clearTileFlags(TileIndex i) {
     tile.clearTileFlags(readLocked);
 }
 
-void TileContainer::clearTileCollisionFlags(TileIndex i) {
-    const bool readLocked = isReadLocked();
-    Tile& tile = mTiles[i];
-    if (readLocked && !tile.isUpdateQueued()) {
-        mTilesNeedingThreadSafeCopy.push_back(i);
-    }
-    tile.clearTileCollisionFlags(readLocked);
-}
-
 void TileContainer::setTilePathWeight(TileIndex i, ui8 weight) {
     const bool readLocked = isReadLocked();
     Tile& tile = mTiles[i];
@@ -171,6 +165,38 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     if (!readLocked) {
         mDirtyMesh = true;
     }
+}
+
+void TileContainer::setWallAt(TileIndex i, Cartesian dir, TileWall wall) {
+    const bool readLocked = isReadLocked();
+    TileWallContainer& tileWalls = mWalls[i];
+    Tile& tile = mTiles[i];
+    if (readLocked) {
+        if (!tile.isUpdateQueued()) {
+            tile.tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+            mTilesNeedingThreadSafeCopy.push_back(i);
+        }
+    }
+    else {
+        tileWalls.wallsThreadSafe.walls[e_cast(dir)] = wall;
+    }
+    tileWalls.walls.walls[e_cast(dir)] = wall;
+}
+
+void TileContainer::setWallsAt(TileIndex i, TileWalls walls) {
+    const bool readLocked = isReadLocked();
+    TileWallContainer& tileWalls = mWalls[i];
+    Tile& tile = mTiles[i];
+    if (readLocked) {
+        if (!tile.isUpdateQueued()) {
+            tile.tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+            mTilesNeedingThreadSafeCopy.push_back(i);
+        }
+    }
+    else {
+        tileWalls.wallsThreadSafe = walls;
+    }
+    tileWalls.walls = walls;
 }
 
 void TileContainer::updateTileCollisionAt(TileIndex i, TileID tileId, bool readLocked) {

@@ -24,11 +24,10 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IN_CITY);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_HAS_ITEM_STACK);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_DOOR);
-    FLAG_DISPLAY(TileFlags::TILE_FLAG_HAS_COLLIDER);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
 
-    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 7, "Update");
+    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 6, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
