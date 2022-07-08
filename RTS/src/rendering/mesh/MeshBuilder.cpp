@@ -405,11 +405,11 @@ void MeshBuilder::addTriangle(StandardVertex verts[3], const SubTexture& texture
     indexData[i + 2u] = v + 2u;
 }
 
-void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, f32 uvScale, color4 color) {
+void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, f32v2 uvScale, color4 color) {
     addQuadBetweenPoints(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], texture, uvScale, color);
 }
 
-void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32 uvScale, color4 color) {
+void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color) {
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
@@ -460,7 +460,7 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f
     { // Bottom Right
         StandardVertex& vbr = verts[1];
         vbr.pos = v1;
-        vbr.uvs.x = uvScale * glm::length(v1 - v0);
+        vbr.uvs.x = uvScale.x * glm::length(v1 - v0);
         vbr.uvs.y = 0.0f;
         vbr.color = color;
         vbr.textureIndex = textureIndex;
@@ -470,8 +470,8 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f
     { // Top Right
         StandardVertex& vtr = verts[2];
         vtr.pos = v2;
-        vtr.uvs.x = uvScale * glm::length(v2 - v3);
-        vtr.uvs.y = uvScale * glm::length(v2 - v1);
+        vtr.uvs.x = uvScale.x * glm::length(v2 - v3);
+        vtr.uvs.y = uvScale.y * glm::length(v2 - v1);
         vtr.color = color;
         vtr.textureIndex = textureIndex;
         vtr.normal = normal;
@@ -480,8 +480,8 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f
     { // Top Left
         StandardVertex& vtl = verts[3];
         vtl.pos = v3;
-        vtl.uvs.x = uvScale * 0.0f;
-        vtl.uvs.y = uvScale * glm::length(v3 - v0);
+        vtl.uvs.x = uvScale.x * 0.0f;
+        vtl.uvs.y = uvScale.y * glm::length(v3 - v0);
         vtl.color = color;
         vtl.textureIndex = textureIndex;
         vtl.normal = normal;
@@ -489,11 +489,11 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f
     }
 }
 
-void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const SubTexture& texture, f32 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
     addQuadBetweenPointsWorldUV(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], texture, uvScale, color, uvOrient, worldUVRoot, flipUv);
 }
 
-void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
@@ -568,20 +568,20 @@ void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, 
     switch (uvOrient) {
         case AXIS_X:
             for (int i = 0; i < 4; ++i) {
-                verts[i].uvs.x = (verts[i].pos.y - worldUVRoot.y) * uvScale;
-                verts[i].uvs.y = (verts[i].pos.z - worldUVRoot.z) * uvScale;
+                verts[i].uvs.x = (verts[i].pos.y - worldUVRoot.y) * uvScale.x;
+                verts[i].uvs.y = (verts[i].pos.z - worldUVRoot.z) * uvScale.y;
             }
             break;
         case AXIS_Y:
             for (int i = 0; i < 4; ++i) {
-                verts[i].uvs.x = (verts[i].pos.x - worldUVRoot.x) * uvScale;
-                verts[i].uvs.y = (verts[i].pos.z - worldUVRoot.z) * uvScale;
+                verts[i].uvs.x = (verts[i].pos.x - worldUVRoot.x) * uvScale.x;
+                verts[i].uvs.y = (verts[i].pos.z - worldUVRoot.z) * uvScale.y;
             }
             break;
         case AXIS_Z:
             for (int i = 0; i < 4; ++i) {
-                verts[i].uvs.x = (verts[i].pos.x - worldUVRoot.x) * uvScale;
-                verts[i].uvs.y = (verts[i].pos.y - worldUVRoot.y) * uvScale;
+                verts[i].uvs.x = (verts[i].pos.x - worldUVRoot.x) * uvScale.x;
+                verts[i].uvs.y = (verts[i].pos.y - worldUVRoot.y) * uvScale.y;
             }
             break;
         default:
@@ -619,18 +619,19 @@ void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const 
     pointsP2[3] = p2 + tangent * halfDims.x + bitangent * halfDims.y; // TL
 
     // P1 cap
-    addQuadBetweenPoints(pointsP1, texture, uvScale, COLOR_WHITE);
+    f32v2 uvScale2(uvScale);
+    addQuadBetweenPoints(pointsP1, texture, uvScale2, COLOR_WHITE);
     // P2 cap
-    addQuadBetweenPoints(pointsP2, texture, uvScale, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP2, texture, uvScale2, COLOR_WHITE);
 
     // Bottom
-    addQuadBetweenPoints(pointsP1[1], pointsP1[0], pointsP2[1], pointsP2[0], texture, uvScale, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[1], pointsP1[0], pointsP2[1], pointsP2[0], texture, uvScale2, COLOR_WHITE);
     // Left
-    addQuadBetweenPoints(pointsP1[2], pointsP1[1], pointsP2[0], pointsP2[3], texture, uvScale, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[2], pointsP1[1], pointsP2[0], pointsP2[3], texture, uvScale2, COLOR_WHITE);
     // Right
-    addQuadBetweenPoints(pointsP1[0], pointsP1[3], pointsP2[2], pointsP2[1], texture, uvScale, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[0], pointsP1[3], pointsP2[2], pointsP2[1], texture, uvScale2, COLOR_WHITE);
     // Top
-    addQuadBetweenPoints(pointsP1[3], pointsP1[2], pointsP2[3], pointsP2[2], texture, uvScale, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[3], pointsP1[2], pointsP2[3], pointsP2[2], texture, uvScale2, COLOR_WHITE);
 
 }
 

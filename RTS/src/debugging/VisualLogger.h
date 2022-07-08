@@ -41,9 +41,14 @@ struct VisualLogRenderStep {
 };
 
 struct VisualLogRenderStepInfo {
+
+    void end() { totalMs = timer.stop(); }
+
+    nString stepName;
     ui32 startIndex;
     ui32 shapeCount;
-    nString stepName;
+    PreciseTimer timer;
+    f32 totalMs;
 };
 
 struct VisualLogTextData {

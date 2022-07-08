@@ -139,6 +139,124 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
     return rv;
 }
 
+struct PrevWallIndices {
+    ui32 westIndex = UINT32_MAX;
+    ui32 eastIndex = UINT32_MAX;
+};
+
+constexpr f32 WALL_THICKNESS = 0.05f;
+
+
+void mergeOrMakeNorthSouthWall(const TileContainer& tileContainer, ui32 x, ui32 y, ui32 z, ui32v2& prevSouthNorthWallIndices, std::vector<WallChainData>& wallData, int isNorth) {
+    TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+    const Tile& tile = tileContainer.getTileAt(wallsIndex);
+    const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
+    // TODO: Greedy meshing
+    const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
+    // TODO: Use paint ID
+    ui32& prevIndex = prevSouthNorthWallIndices[isNorth];
+    const ui32 wallIndex = isNorth * 3; // Match cartesian
+    if (walls.walls[wallIndex].wallID != TILE_ID_NONE) {
+        bool didMerge = false;
+        if (prevIndex != UINT32_MAX) {
+            WallChainData& prevWall = wallData[prevIndex];
+            if (prevWall.groundPos == groundZPosition && prevWall.tileId == walls.walls[wallIndex].wallID) {
+                // Extend previous wall
+                ++prevWall.length;
+                didMerge = true;
+            }
+        }
+        if (!didMerge) {
+            // Add new wall
+            // TODO: No copy paste
+            prevIndex = wallData.size();
+            WallChainData& newWall = wallData.emplace_back();
+            newWall.tileId = walls.walls[wallIndex].wallID;
+            newWall.dir = Cartesian(wallIndex);
+            newWall.length = 1;
+            newWall.startPos = f32v3(x, y + isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, z * tileContainer.getFloorHeight());
+            newWall.cornerTypeStart = WallCornerType::FLAT;
+        }
+    }
+    else if (prevIndex != UINT32_MAX) {
+        // End previous wall
+        WallChainData& prevWall = wallData[prevIndex];
+        prevWall.cornerTypeEnd = WallCornerType::FLAT;
+        prevIndex = UINT32_MAX;
+    }
+}
+
+void meshWalls(const TileContainer& tileContainer, MeshBuilder& meshBuilder, OPT StaticPhysicsMesh* physMesh) {
+    // =============== Greedy mesh walls ===============
+    // TileID prevSouthWall; Pull ahead greedy meshing like in SoA
+
+    // TODO: separate vector per wall dir? hmm
+    const ui32v3& tileDims = tileContainer.getDims();
+    assert(tileDims.x <= 256);
+
+    std::vector<WallChainData> wallData;
+    wallData.reserve(tileDims.x * tileDims.y);
+
+
+    for (ui32 z = 0; z < tileDims.z; ++z) {
+
+        PrevWallIndices prevWestEastIndices[257];
+        // Construct all wall data by iterating one direction at a time
+        // South and North walls (+x)
+        ui32v2 prevSouthNorthWallIndices;
+        for (ui32 y = 0; y < tileDims.y; ++y) {
+            // Each row we can merge
+            prevSouthNorthWallIndices = { UINT32_MAX, UINT32_MAX };
+            for (ui32 x = 0; x < tileDims.x; ++x) {
+                // South
+                mergeOrMakeNorthSouthWall(tileContainer, x, y, z, prevSouthNorthWallIndices, wallData, false);
+                // North
+                mergeOrMakeNorthSouthWall(tileContainer, x, y, z, prevSouthNorthWallIndices, wallData, true);
+            }
+        }
+        //// East and West walls (+y)
+        //for (ui32 x = 0; x < tileDims.x; ++x) {
+        //    for (ui32 y = 0; y < tileDims.y; ++y) {
+        //        TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+        //        // TODO: Greedy meshing
+        //        const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
+        //    }
+        //}
+        // Mesh walls
+        f32v3 wallPoints[4];
+        for (auto&& wall : wallData) {
+            switch (wall.dir) {
+                case Cartesian::SOUTH:
+                    wallPoints[0] = wall.startPos;
+                    wallPoints[1] = wall.startPos + f32v3(wall.length, 0.0f, 0.0f);
+                    wallPoints[2] = wall.startPos + f32v3(wall.length, 0.0f, tileContainer.getFloorHeight());
+                    wallPoints[3] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
+                    break;
+                case Cartesian::WEST:
+                    break;
+                case Cartesian::EAST:
+                    break;
+                case Cartesian::NORTH:
+                    wallPoints[0] = wall.startPos + f32v3(wall.length, 0.0f, 0.0f);
+                    wallPoints[1] = wall.startPos;
+                    wallPoints[2] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
+                    wallPoints[3] = wall.startPos + f32v3(wall.length, 0.0f, tileContainer.getFloorHeight());
+                    break;
+                default:
+                    assert(false);
+                    break;
+
+            }
+            const TileData& tileData = TileRepository::getTileData(wall.tileId);
+            const SubTexture& texture = tileData.texture;
+            meshBuilder.addQuadBetweenPoints(wallPoints, texture, f32v2(1.0f, 1.0f / 3.0f), COLOR_WHITE);
+            if (physMesh) {
+                physMesh->addQuadBetweenPoints(wallPoints);
+            }
+        }
+        wallData.clear();
+    }
+}
 
 void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
     const ui32v3& tileDims = tileContainer.getDims();
@@ -173,95 +291,8 @@ void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const T
             }
         }
     }
-    // =============== Greedy mesh walls ===============
-    // TileID prevSouthWall; Pull ahead greedy meshing like in SoA
 
-    // TODO: separate vector per wall dir? hmm
-    std::vector<WallChainData> wallData;
-
-    for (ui32 z = 0; z < tileDims.z; ++z) {
-        // Construct all wall data by iterating one direction at a time
-        // South and North walls (+x)
-        ui32 prevSouthWallIndex;
-        for (ui32 y = 0; y < tileDims.y; ++y) {
-            // Each row we can merge
-            prevSouthWallIndex = UINT32_MAX;
-            for (ui32 x = 0; x < tileDims.x; ++x) {
-                TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
-                const Tile& tile = tileContainer.getTileAt(wallsIndex);
-                const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
-                // TODO: Greedy meshing
-                const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
-                // TODO: Use paint ID
-                // TODO: Use indices so we dont copy paste?
-                if (walls.south.wallID != TILE_ID_NONE) {
-                    bool didMerge = false;
-                    if (prevSouthWallIndex != UINT32_MAX) {
-                        WallChainData& prevSouthWall = wallData[prevSouthWallIndex];
-                        if (prevSouthWall.groundPos == groundZPosition && prevSouthWall.tileId == walls.south.wallID) {
-                            // Extend previous wall
-                            ++prevSouthWall.length;
-                            didMerge = true;
-                        }
-                    }
-                    if (!didMerge) {
-                        // Add new wall
-                        // TODO: No copy paste
-                        prevSouthWallIndex = wallData.size();
-                        WallChainData& newSouthWall = wallData.emplace_back();
-                        newSouthWall.tileId = walls.south.wallID;
-                        newSouthWall.dir = Cartesian::SOUTH;
-                        newSouthWall.length = 1;
-                        newSouthWall.startPos = f32v3(x, y, z);
-                        newSouthWall.cornerTypeStart = WallCornerType::FLAT;
-                    }
-                }
-                else if (prevSouthWallIndex != UINT32_MAX) {
-                    // End previous wall
-                    WallChainData& prevSouthWall = wallData[prevSouthWallIndex];
-                    prevSouthWall.cornerTypeEnd = WallCornerType::FLAT;
-                    prevSouthWallIndex = UINT32_MAX;
-                }
-            }
-        }
-        // East and West walls (+y)
-        for (ui32 x = 0; x < tileDims.x; ++x) {
-            for (ui32 y = 0; y < tileDims.y; ++y) {
-                TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
-                // TODO: Greedy meshing
-                const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
-            }
-        }
-        // Mesh walls
-        f32v3 wallPoints[4];
-        for (auto&& wall : wallData) {
-            switch (wall.dir) {
-                case Cartesian::SOUTH:
-                    wallPoints[0] = wall.startPos;
-                    wallPoints[1] = wall.startPos + f32v3(wall.length, 0.0f, 0.0f);
-                    wallPoints[2] = wall.startPos + f32v3(wall.length, 0.0f, tileContainer.getFloorHeight());
-                    wallPoints[3] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
-                    break;
-                case Cartesian::WEST:
-                    break;
-                case Cartesian::EAST:
-                    break;
-                case Cartesian::NORTH:
-                    break;
-                default:
-                    assert(false);
-                    break;
-
-            }
-            const TileData& tileData = TileRepository::getTileData(wall.tileId);
-            const SubTexture& texture = tileData.texture;
-            meshBuilder.addQuadBetweenPoints(wallPoints, texture, 1.0f, COLOR_WHITE);
-            if (physMesh) {
-                physMesh->addQuadBetweenPoints(wallPoints);
-            }
-        }
-        wallData.clear();
-    }
+    meshWalls(tileContainer, meshBuilder, physMesh);
 }
 
 void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {

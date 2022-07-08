@@ -797,13 +797,13 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
         points[1] = second;
         points[2] = second + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
         points[3] = first + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, 1.0f, COLOR_WHITE);
+        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, f32v2(1.0f), COLOR_WHITE);
         // Bottom
         points[0] = second;
         points[1] = first;
         points[2] = f32v3(edge.parent1.x, edge.parent1.y, zPos - ROOF_THICKNESS);
         points[3] = f32v3(edge.parent2.x, edge.parent2.y, zPos - ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, 1.0f, COLOR_WHITE);
+        meshBuilder.addQuadBetweenPoints(points, shinglesTexture, f32v2(1.0f), COLOR_WHITE);
 
         // Compute edge dir
         Cartesian dir;
@@ -967,7 +967,7 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                     f32v3(tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceBaseHeight),
                     f32v3(tilePos.x, tilePos.y + 1.0f, stairPieceBaseHeight),
                 };
-                meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+                meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, rawWoodTexture, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
                 building.mPhysicsMesh.addQuadBetweenPoints(pointsTop);
                 switch (dir) {
                     case Cartesian::SOUTH:
@@ -1105,13 +1105,13 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                             assert(false);
                             break;
                     }
-
-                    meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, rawWoodTexture, 1.0f, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+                    const f32v2 uvScale = f32v2(1.0f);
+                    meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, rawWoodTexture, uvScale, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
                     // The very first step in the entire chain shouldn't have base pieces
                     const bool isVeryFirstStep = stairPiece.height == 0 && step == 0;
-                    meshBuilder.addQuadBetweenPointsWorldUV(pointsFront, rawWoodTexture, 1.0f, COLOR_WHITE, frontUvOrient, f32v3(0.0f));
-                    meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
-                    meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+                    meshBuilder.addQuadBetweenPointsWorldUV(pointsFront, rawWoodTexture, uvScale, COLOR_WHITE, frontUvOrient, f32v3(0.0f));
+                    meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+                    meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
 
                 }
                 // Collision for the side and top of a stair
@@ -1217,7 +1217,7 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                             break;
 
                     }
-                    meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, rawWoodTexture, 1.0f, COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
+                    meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, rawWoodTexture, f32v2(1.0f), COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
                     building.mPhysicsMesh.addQuadBetweenPoints(pointsEndcap);
                 }
              }
@@ -1252,9 +1252,9 @@ void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuild
                     break;
 
             }
-            meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+            meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, rawWoodTexture, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
             building.mPhysicsMesh.addQuadBetweenPoints(pointsSide);
-            meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, 1.0f, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+            meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), rawWoodTexture, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
             building.mPhysicsMesh.addQuadBetweenPoints(&(pointsSide[4]));
             // TODO: Railings
             //meshBuilder.addBoardBetweenPoints(tilePos, f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight + stepHeight * (STEPS_PER_TILE + 5)), f32v2(0.05f), rawWoodTexture, 1.0f);

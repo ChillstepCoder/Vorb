@@ -42,7 +42,10 @@ void VisualLog::reserve(ui32 shapeCount) {
 }
 
 void VisualLog::nextStep(const nString& stepName) {
-    mRenderStepInfo.emplace_back(VisualLogRenderStepInfo{ (ui32)mShapes.size(), 0u, stepName });
+    if (mRenderStepInfo.size()) {
+        mRenderStepInfo.back().end();
+    }
+    mRenderStepInfo.emplace_back(VisualLogRenderStepInfo{ stepName, (ui32)mShapes.size(), 0u });
 }
 
 void VisualLog::addLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color) {
@@ -120,6 +123,8 @@ void VisualLog::addText(const nString& str, const f32v3& rootPosition, const Fon
 }
 
 void VisualLog::finish() {
+    assert(mRenderStepInfo.size());
+    mRenderStepInfo.back().end();
     mSelectedRenderStep = 0;
     mShapesToRender = mRenderStepInfo[0].shapeCount;
     mFinishedBuilding = true;
@@ -393,6 +398,12 @@ void VisualLogger::renderImgui() {
         VisualLog& log = *sVisualLogs[sSelected];
         ImGui::Separator();
         ImGui::Text(log.mName.c_str());
+        // Collecct total time
+        f32 total = 0.0f;
+        for (auto&& step : log.mRenderStepInfo) {
+            total += step.totalMs;
+        }
+        ImGui::Text("Total ms: %.2f", total);
         if (ImGui::Checkbox("Render single step", &log.mRenderSingleStep)) {
             log.mDirtyRender = true;
         }
@@ -424,8 +435,9 @@ void VisualLogger::renderImgui() {
 
         ImGui::Separator();
         VisualLogRenderStepInfo& selected = log.mRenderStepInfo[log.mSelectedRenderStep];
+        ImGui::PushID(9999);
+        ImGui::Text("Step ms: %.2f", selected.totalMs);
         if (selected.shapeCount > 1) {
-            ImGui::PushID(9999);
             if (ImGui::Button("-1")) {
                 if (log.mShapesToRender > 0) {
                     --log.mShapesToRender;
@@ -442,8 +454,8 @@ void VisualLogger::renderImgui() {
             if (ImGui::SliderInt("Shapes", &log.mShapesToRender, 0, selected.shapeCount)) {
                 log.mDirtyRender = true;
             }
-            ImGui::PopID();
         }
+        ImGui::PopID();
         ImGui::Separator();
         if (ImGui::Button("Delete")) {
             deleteLog(&log);
