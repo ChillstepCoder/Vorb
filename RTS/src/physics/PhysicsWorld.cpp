@@ -44,7 +44,7 @@ PhysicsWorld::PhysicsWorld() {
     // ========================= Create all shapes =========================
     mShapes.resize(e_cast(CollisionShapes::COUNT));
     {
-        mShapes[e_cast(CollisionShapes::CAPSULE)] = new btCapsuleShapeZ(0.25f /*radius*/, 1.0f /*height*/);
+        mShapes[e_cast(CollisionShapes::CAPSULE)] = new btCapsuleShapeZ(0.24f /*radius*/, 1.1f /*height*/);
     }
 
     static_assert(e_cast(CollisionShapes::COUNT) == 1, "Update new shapes");

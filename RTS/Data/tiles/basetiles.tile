@@ -1,8 +1,15 @@
-wood_wall_gothic:
+wood_wall_gothic_thick:
   layer: 0
   tex: wood_wall_gothic
   col: box
   texture_method: vertical
+  recipe:
+    - item: wood_raw
+      count: 5
+wood_wall_gothic:
+  tex: wood_wall_gothic
+  texture_method: vertical
+  shape: Wall
   recipe:
     - item: wood_raw
       count: 5
@@ -15,6 +22,7 @@ bricks1:
       count: 3
 door:
   tex: door
+  shape: Door
   recipe:
     - item: wood_raw
       count: 3

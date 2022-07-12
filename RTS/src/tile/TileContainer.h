@@ -2,6 +2,8 @@
 
 #include "tile/Tile.h"
 
+class Mesh;
+
 struct TileWallContainer {
     TileWalls walls; // Cartesian
     TileWalls wallsThreadSafe; // Cartesian
@@ -12,6 +14,43 @@ struct TileWallContainer {
 };
 static_assert(sizeof(TileWallContainer) == 32, "Keep small");
 
+enum DynamicTileType : ui8 {
+    // Walls (Keep first)
+    WALL_SOUTH = e_cast(Cartesian::SOUTH),
+    WALL_WEST = e_cast(Cartesian::WEST),
+    WALL_EAST = e_cast(Cartesian::EAST),
+    WALL_NORTH = e_cast(Cartesian::NORTH),
+    WALL_TERM = WALL_NORTH,
+    // Layers
+    TILE_GROUND,
+    TILE_MID,
+    TILE_TOP
+};
+enum DynamicTileFlags : ui8 {
+    ACTIVE = 1 << 0,
+};
+
+struct DynamicTile {
+    TileIndex mTileIndex;
+    BitFlags<DynamicTileFlags> mFlags;
+    DynamicTileType mType;
+};
+static_assert(sizeof(DynamicTile) == 8, "Keep small");
+
+struct TileContainerRenderData {
+    TileContainerRenderData() = default;
+    ~TileContainerRenderData();
+    std::unique_ptr<Mesh> mStaticMesh = nullptr;
+    std::unique_ptr<Mesh> mDynamicMesh = nullptr;
+    bool mIsBuildingStaticMesh = false; // When true, we are waiting for our mesh to be completed
+    bool mIsVisible = false;
+    bool mDirtyStaticMesh = false;
+    bool mDirtyDynamicMesh = false;
+
+    void reset();
+};
+
+// TODO: Memory recycler?
 class TileContainer
 {
     friend struct TileRef;
@@ -25,6 +64,7 @@ public:
     void freeData();
 
     void updateMainThread();
+    void updateActiveDynamicTiles();
 
     // =========== Tile mutators ===========
     void setTileAt(TileIndex i, Tile tile);
@@ -38,11 +78,13 @@ public:
     void clearTileFlags(TileIndex i);
     void setTilePathWeight(TileIndex i, ui8 weight);
     void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
-    void setWallAt(TileIndex i, Cartesian dir, TileWall wall);
-    void setWallsAt(TileIndex i, TileWalls walls);
+    void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
+    void setWallsAt(TileIndex index, TileWalls walls);
 
     const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i].walls; }
     const TileWalls& getWallsThreadSafe(TileIndex i) const { return mWalls[i].wallsThreadSafe; }
+
+    const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
 
     // =========== Generation ===========
     void setTileFromGeneration(TileIndex i, Tile&& tile) {
@@ -109,11 +151,14 @@ public:
     const bool isReadLocked() const;
 
     // =========== Dirty bits  ===========
-    bool isDirtyMesh() const { return mDirtyMesh; }
+    bool shouldBuildStaticMesh() const { return !isBuildingStaticMesh() && isDirtyStaticMesh(); }
+    bool isBuildingStaticMesh() const { return mRenderData.mIsBuildingStaticMesh; }
+    bool isDirtyStaticMesh() const { return mRenderData.mDirtyStaticMesh; }
+    bool isDirtyDynamicMesh() const { return mRenderData.mDirtyDynamicMesh; }
     bool isDirtyNav() const { return mDirtyNav; }
-    void setDirtyMesh(bool dirty) const { mDirtyMesh = dirty; }
+    void setDirtyStaticMesh(bool dirty) const { mRenderData.mDirtyStaticMesh = dirty; }
+    void setDirtyDynamicMesh(bool dirty) const { mRenderData.mDirtyDynamicMesh = dirty; }
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
-
 
     // =========== Accessors  ===========
     const ui32v2& getWorldPos2D() const { return reinterpret_cast<const ui32v2&>(mRootPos); }
@@ -125,11 +170,20 @@ public:
     ui32 getRefCount() const { return mRefCount; }
 
     const std::vector<Tile>& getTiles() const { return mTiles; }
-    const std::vector< TileWallContainer>& getWalls() const { return mWalls; }
+    const std::vector<TileWallContainer>& getWalls() const { return mWalls; }
+
+    // =========== Rendering  ===========
+    bool isVisible() const { return mRenderData.mIsVisible; }
+    TileContainerRenderData& getRenderData() const { return mRenderData; }
 
 private:
+    void addDoor(Cartesian doorSide, TileIndex tileIndex);
+    void removeDoor(Cartesian doorSide, TileIndex tileIndex);
+
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
     std::vector<TileWallContainer> mWalls; // TODO: Memory recycler and or compression
+    std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
+    std::vector<ui16> mActiveDynamicTiles; // Iterate and update
     // All tiles that need to update when read lock is free
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     ui32v3 mDims;
@@ -137,7 +191,7 @@ private:
     ui32 mFloorHeight = 3u;
     mutable std::atomic_uint32_t mReadLockCount = 0u;
     mutable std::atomic_uint32_t mRefCount = 0u;
-    mutable bool mDirtyMesh = false;
+
+    mutable TileContainerRenderData mRenderData;
     mutable bool mDirtyNav = false;
 };
-

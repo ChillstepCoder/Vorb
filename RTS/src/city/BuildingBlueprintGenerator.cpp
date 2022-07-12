@@ -204,8 +204,6 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
     buildRoomInteriorEdges(*bPtr, visLog);
 
     // Doors
-    // placeHallwayDoors
-    // TODO: Move this above place doors
     placeDoors(*bPtr, visLog);
 
     // Stairs
@@ -782,10 +780,10 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
         // Expand
         const WallInfo wallInfo = getWallInfoFromRoomAABB(wallDir, aabb);
         const i16v2& iterateOffset = WALL_ITERATE_OFFSETS[i];
-        const int xOrY = (int)(wallDir == Cartesian::WEST || wallDir == Cartesian::EAST);
+        const int isY = (int)(wallDir == Cartesian::SOUTH || wallDir == Cartesian::NORTH);
         const i32v2 nextStart = i32v2(wallInfo.startPos) + WALL_EXPAND_OFFSETS[i];
         // Bounds check
-        if (boundsCheckRoom(nextStart[xOrY], bp.aabb.dims[xOrY])) {
+        if (boundsCheckRoom(nextStart[isY], bp.aabb.dims[isY])) {
             assert(wallInfo.length <= MAX_WALL_LENGTH);
             // We will only expand if we arent expanding into another room
             bool canExpand = true;
@@ -1260,6 +1258,9 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
 
                         TileWalls& walls = bp.walls[tileIndex];
                         walls.walls[e_cast(dir)].wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
+                        // Clear opposite wall
+                        bp.walls[nextTileIndex].walls[e_cast(CARTESIAN_OPPOSITES[e_cast(dir)])].clear();
+                        // Clear out any wall on opposite side
                         isConnected[adjacent.id] = true;
                         room.adjacentRooms[room.numAdjacentRooms++] = RoomGateInfo{ adjacent.id, nextTileIndex };
                         adjacent.adjacentRooms[adjacent.numAdjacentRooms++] = RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex };
@@ -1405,19 +1406,33 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
 
 }
 
+inline bool isDoor(TileID tileId) {
+    return tileId != TILE_ID_NONE && TileRepository::getTileData(tileId).shape == TileShape::DOOR;
+}
+
 bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
     const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
-    if (bp.tiles[index - 1].type == BlueprintTileType::DOOR) {
+    TileWalls& walls = bp.walls[index];
+    for (int i = 0; i < 4; ++i) {
+        if (isDoor(walls.walls[i].wallID)) {
+            return true;
+        }
+    }
+    // Check South
+    if (isDoor(bp.walls[index - bp.aabb.dims.x].north.wallID)) {
         return true;
     }
-    if (bp.tiles[index - bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
+    // Check west
+    if (isDoor(bp.walls[index - 1].east.wallID)) {
         return true;
     }
-    if (bp.tiles[index + 1].type == BlueprintTileType::DOOR) {
+    // Check East
+    if (isDoor(bp.walls[index + 1].west.wallID)) {
         return true;
     }
-    if (bp.tiles[index + bp.aabb.dims.x].type == BlueprintTileType::DOOR) {
+    // Check North
+    if (isDoor(bp.walls[index + bp.aabb.dims.x].south.wallID)) {
         return true;
     }
     return false;

@@ -51,7 +51,7 @@ void ChunkRenderer::renderTiles(const World& world, const Camera3D& camera)
         ChunkRenderData& renderData = chunk.mChunkRenderData;
         f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
         glUniform3fv(offsetUniform, 1, &offset.x);
-        TryRenderBaseMesh(chunk, mStandardMaterial);
+        tryRenderStaticMesh(chunk, mStandardMaterial);
     });
 }
 
@@ -99,16 +99,16 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camer
             if (glm::length2(chunk.getWorldPosCenter3D() - camera.getPosition()) <= maxDistSQ) {
                 f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
                 glUniform3fv(mShadowMapperMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
-                TryRenderBaseMesh(chunk, mShadowMapperMaterial);
+                tryRenderStaticMesh(chunk, mShadowMapperMaterial);
             }
         }
     });
 }
 
-void ChunkRenderer::TryRenderBaseMesh(const Chunk& chunk, const Material* material) {
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (renderData.mChunkMesh && renderData.mChunkMesh->isValid()) {
-        renderData.mChunkMesh->draw();
+void ChunkRenderer::tryRenderStaticMesh(const Chunk& chunk, const Material* material) {
+    TileContainerRenderData& renderData = chunk.mTileContainer.getRenderData();
+    if (renderData.mStaticMesh && renderData.mStaticMesh->isValid()) {
+        renderData.mStaticMesh->draw();
     }
 }
 

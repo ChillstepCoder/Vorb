@@ -230,9 +230,7 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     // DebugRenderer::drawWireQuad(followTargetPos, f32v2(0.2f), COLOR_WHITE);
     if (result.didHit()) {
         mCamera.setPosition(result.mPosition);
-        std::cout << "HIT";
     }
-
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
         mIsMouseHidden = false;

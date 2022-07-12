@@ -166,25 +166,28 @@ ChunkMesher::~ChunkMesher()
 
 void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
     UNUSED(cameraPos);
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mIsBuildingBaseMesh && chunk.getTileContainer().isDirtyMesh()) {
+    if (chunk.mTileContainer.shouldBuildStaticMesh()) {
         createMeshAsync(chunk);
     }
 }
 
 bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
-    
-    assert(!chunk.mChunkRenderData.mIsBuildingBaseMesh);
-    chunk.mChunkRenderData.mIsBuildingBaseMesh = true;
+
+    ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
+    TileContainerRenderData& tileRenderData = chunk.getTileContainer().getRenderData();
+    assert(!tileRenderData.mIsBuildingStaticMesh);
+    tileRenderData.mIsBuildingStaticMesh = true;
 
     // TODO: Move somewhere else?
-    chunk.getTileContainer().setDirtyMesh(false);
+    chunk.getTileContainer().setDirtyStaticMesh(false);
     chunk.incReadLockAndRefCountNeighbors4AndSelf();
 
-    ChunkRenderData& renderData = chunk.mChunkRenderData;
-    if (!renderData.mChunkMesh) {
-        renderData.mChunkMesh = std::make_unique<Mesh>();
-        renderData.mBillboardMesh = std::make_unique<Mesh>();
+    // TODO: Do we need to do this?
+    if (!chunkRenderData.mBillboardMesh) {
+        chunkRenderData.mBillboardMesh = std::make_unique<Mesh>();
+    }
+    if (!tileRenderData.mStaticMesh) {
+        tileRenderData.mStaticMesh = std::make_unique<Mesh>();
     }
 
     const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
@@ -193,7 +196,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
     std::shared_ptr<BillboardMeshBuilder> billboardMeshBuilder = std::make_shared<BillboardMeshBuilder>();
 
-    Services::Threadpool::ref().addTask([this, &chunk, &renderData, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([this, &chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
 
         quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
         billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
@@ -247,14 +250,15 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         chunk.decRefNeighbors4();
     }, [this, &chunk, quadMeshBuilder, billboardMeshBuilder]() {
 
-        ChunkRenderData& renderData = chunk.mChunkRenderData;
+        ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
+        TileContainerRenderData& tileRenderData = chunk.mTileContainer.getRenderData();
 
         // Upload mesh buffers
-        quadMeshBuilder->finishMesh(*renderData.mChunkMesh, MeshDrawMode::STATIC);
-        billboardMeshBuilder->finishMesh(*renderData.mBillboardMesh, MeshDrawMode::STATIC);
+        quadMeshBuilder->finishMesh(*tileRenderData.mStaticMesh, MeshDrawMode::STATIC);
+        billboardMeshBuilder->finishMesh(*chunkRenderData.mBillboardMesh, MeshDrawMode::STATIC);
 
         // Flag as free
-        chunk.mChunkRenderData.mIsBuildingBaseMesh = false;
+        tileRenderData.mIsBuildingStaticMesh = false;
 
         // No longer need to exist
         chunk.decRef();

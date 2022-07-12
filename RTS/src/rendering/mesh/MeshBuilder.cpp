@@ -596,7 +596,7 @@ void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, 
     }
 }
 
-void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32 uvScale) {
+void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32v2 uvScale) {
     f32v3 offset = p2 - p1;
     f32v3 tangent = glm::cross(offset, f32v3(0.0f, 0.0f, 1.0f));
     // If vertical board, new tangent

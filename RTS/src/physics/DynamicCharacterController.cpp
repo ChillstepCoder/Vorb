@@ -82,6 +82,7 @@ void DynamicCharacterController::updateAction(btCollisionWorld* collisionWorld,
 
 void DynamicCharacterController::updateVelocity(float dt)
 {
+	assert(mRigidBody->isActive());
 	btTransform transform;
 	mRigidBody->getMotionState()->getWorldTransform(transform);
 	btMatrix3x3& basis = transform.getBasis();

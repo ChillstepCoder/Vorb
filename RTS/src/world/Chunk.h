@@ -40,11 +40,8 @@ enum class ChunkState : ui8 {
 struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
-    std::unique_ptr<Mesh> mChunkMesh = nullptr;
     std::unique_ptr<Mesh> mBillboardMesh = nullptr;
 	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
-    bool mIsBuildingBaseMesh = false; // When true, we are waiting for our mesh to be completed
-	bool mIsVisible = false;
 };
 
 typedef TinyThreadsafeVector<Structure*> ChunkStructureVector;
@@ -132,7 +129,7 @@ public:
 	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
 	bool isDataReady() const { return mState == e_cast(ChunkState::FINISHED); }
 	bool isFinished() const { return mState == e_cast(ChunkState::FINISHED) && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
-	bool isVisible() const { return mChunkRenderData.mIsVisible; }
+	bool isVisible() const { return mTileContainer.isVisible(); }
 
 	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
@@ -154,7 +151,7 @@ public:
 
     // =========== Dirtyness  ===========
 	void dirtyNavGraph() { mTileContainer.setDirtyNav(true); }
-	void dirtyMesh() { mTileContainer.setDirtyMesh(true); }
+	void dirtyMesh() { mTileContainer.setDirtyStaticMesh(true); }
 
 
     // =========== Ref counting  ===========

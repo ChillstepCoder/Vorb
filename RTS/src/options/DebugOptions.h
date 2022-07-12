@@ -72,7 +72,7 @@ struct DebugOptions {
     bool mHideCharacters = false;
     bool mShowTerrainPhysics = false;
     bool mShowStaticPhysics = false;
-    bool mShowDynamicPhysics = true;
+    bool mShowDynamicPhysics = false;
     bool mShowPhysicsActions = true;
     bool mShowBusinessDebug = true;
     bool mShowTweaker = false;

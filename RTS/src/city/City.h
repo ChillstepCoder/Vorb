@@ -126,7 +126,8 @@ public:
 
     // Accessors
     const ui32v2& getCityCenterWorldPos() { return mCityCenterWorldPos; }
-    const std::vector<std::unique_ptr<Building>>& getBuildings() { return mBuildings; }
+    std::vector<std::unique_ptr<Building>>& getBuildings() { return mBuildings; }
+    const std::vector<std::unique_ptr<Building>>& getBuildings() const { return mBuildings; }
 
     // Mutators
     void addResidentToCity(entt::entity entity);

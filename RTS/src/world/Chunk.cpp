@@ -78,11 +78,10 @@ void Chunk::dispose() {
     mDataReadyNeighborCount = 0;
     
     // Reset render data
-    mTileContainer.setDirtyMesh(true);
-    mChunkRenderData.mIsVisible = false;
+    mTileContainer.setDirtyStaticMesh(true);
 
     mChunkRenderData.mBillboardMesh.reset();
-    mChunkRenderData.mChunkMesh.reset();
+    mTileContainer.getRenderData().reset();
     // Make sure no funny business
     // TOCO: Crashes on shutdown
     if (mChunkRenderData.mGrassLod) assert(!mChunkRenderData.mGrassLod->getRefCount());
@@ -278,7 +277,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
         if (mChunkRenderData.mGrassLod) {
             mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
         }
-        mTileContainer.setDirtyMesh(true);
+        mTileContainer.setDirtyStaticMesh(true);
 
         // Update baseZ position
         const f32v2 startPos = editRadius - f32v2(editRadius);

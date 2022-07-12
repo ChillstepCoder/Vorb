@@ -318,10 +318,10 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     
 
     // TODO: ASYNC
-    MeshBuilder meshBuilder(false);
-    constexpr ui32 RESERVE_VERT_COUNT = 10000; // Average size
-    meshBuilder.reserveVertexCount(RESERVE_VERT_COUNT);
-    meshBuilder.reserveIndexCount(RESERVE_VERT_COUNT * 1.5f); // 1.5 is approx
+    MeshBuilder staticMeshBuilder(false);
+    constexpr ui32 RESERVE_VERT_COUNT_STATIC = 10000; // Average size
+    staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);
+    staticMeshBuilder.reserveIndexCount(RESERVE_VERT_COUNT_STATIC * 1.5f); // 1.5 is approx
 
     const ui32AABB3& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mInteriorTilesInAABB;
@@ -337,7 +337,8 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    TileMeshBuilderMethods::meshTileContainer(meshBuilder, building.mTileContainer, &building.mPhysicsMesh);
+    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, building.mTileContainer, &building.mPhysicsMesh);
+    TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, building.mTileContainer);
 
     renderData.mMeshDirty = false;
     if (!renderData.mMesh) {
@@ -378,24 +379,24 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
         for (auto& ss : iss) {
 
             if (visLog) visLog->nextStep("Skeleton " + std::to_string(floor) + " " + std::to_string(n));
-            buildMeshFromStraightSkeleton(ss, building, meshBuilder, contourEdges, rawWoodTexture, shinglesTexture, floor, zPos, visLog);
+            buildMeshFromStraightSkeleton(ss, building, staticMeshBuilder, contourEdges, rawWoodTexture, shinglesTexture, floor, zPos, visLog);
 
             // ========================== Contours and extruded side boards ===============================
-            meshRoofContourEdges(contourEdges, building, meshBuilder, shinglesTexture, rawWoodTexture, zPos, visLog);
+            meshRoofContourEdges(contourEdges, building, staticMeshBuilder, shinglesTexture, rawWoodTexture, zPos, visLog);
             contourEdges.clear();
         }
     }
 
     // ========================== Room Ceilings ===============================
-    meshRoomCeilings(building, meshBuilder, rawWoodTexture);
+    meshRoomCeilings(building, staticMeshBuilder, rawWoodTexture);
 
     // ========================== Room supports ===============================
-    meshRoomSupports(building, meshBuilder, rawWoodTexture);
+    meshRoomSupports(building, staticMeshBuilder, rawWoodTexture);
 
     // ========================== Stairs ===============================
-    meshStairs(building, meshBuilder, rawWoodTexture);
+    meshStairs(building, staticMeshBuilder, rawWoodTexture);
 
-    meshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
+    staticMeshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
 
     if (visLog) visLog->finish();
 
@@ -552,9 +553,9 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                     if (extrudeIt != contourExtrudePositions.end()) {
                         // Create a column
                         // TODO: This column will intersect lower floors! Make it smarter
-                        const f32v3 boardStart(x, y, 0.2f);
+                        const f32v3 boardStart(x, y, -0.2f);
                         const f32v3 boardEnd(x, y, zPos);
-                        meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v3(0.1f), rawWoodTexture, 1.0f);
+                        meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v2(0.11f), rawWoodTexture, f32v2(1.0f));
                         // Visual log
                         if (visLog) {
                             visLog->addLineBetweenPoints(boardStart + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), boardEnd + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), color4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -595,7 +596,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                     const f32v2 halfDims = f32v2(
                         0.1f + (randFromf32v3(boardStart - boardEnd, (ui64)&it /*hax*/) - 0.5f) * BOARD_SIZE_VARIANCE
                     );
-                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, rawWoodTexture, 1.0f);
+                    meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, rawWoodTexture, f32v2(1.0f));
                     // Visual log
                     if (visLog) {
                         visLog->addLineBetweenPoints(boardStart + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), boardEnd + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), color4(0.0f, 1.0f, 1.0f, 1.0f));
@@ -858,7 +859,7 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
             const f32v3 p1 = startWithBoardOffset + offset;
             const f32 boardLength = BOARD_DISTANCE + (randFromf32v3(offset, i << 2) - 0.5f) * BOARD_LENGTH_VARIANCE;
             const f32v3 p2 = p1 + edgeNormal * boardLength - f32v3(0.0f, 0.0f, ROOF_HEIGHT_MULT * (0.8f + (randFromf32v3(p1, i) - 0.5f) * BOARD_ANGLE_VARIANCE));
-            meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodTexture, 1.0f);
+            meshBuilder.addBoardBetweenPoints(p1, p2, boardHalfDims, rawWoodTexture, f32v2(1.0f));
         }
     }
 }
@@ -915,7 +916,7 @@ void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& mes
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
                     const f32v3 startPos(startX, y + 0.5f, tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
-                    meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v2(boardThickness), rawWoodTexture, 1.0f);
+                    meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v2(boardThickness), rawWoodTexture, f32v2(1.0f));
                 }
             }
         }

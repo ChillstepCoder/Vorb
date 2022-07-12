@@ -25,6 +25,7 @@ enum class TileShape {
     BLOCK, // Most blocks
     FLOOR,
     WALL,
+    DOOR,
     // Custom TODO
     COUNT
 };

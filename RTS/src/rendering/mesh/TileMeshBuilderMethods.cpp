@@ -17,7 +17,8 @@ constexpr int TILE_TEX_METHOD_VERTICAL_WALL_WIDTH = 1;
 enum class WallCornerType {
     FLAT, // No change to edge length
     INWARD, // Shrink edg
-    OUTWARD
+    OUTWARD,
+    NONE, // Render no flat edge
 };
 
 // Track what quads are at a tile
@@ -29,6 +30,7 @@ struct WallChainData {
     WallCornerType cornerTypeEnd;
     Cartesian dir;
     TileID tileId;
+    bool isPrimary;
 };
 
 // TODO: Method(s) file?
@@ -140,49 +142,142 @@ f32v2 getUvsOffsetsFromVerticalWallIndex(int index) {
 }
 
 struct PrevWallIndices {
-    ui32 westIndex = UINT32_MAX;
-    ui32 eastIndex = UINT32_MAX;
+    PrevWallIndices() : indices{ UINT32_MAX, UINT32_MAX, UINT32_MAX, UINT32_MAX } {};
+    union {
+        struct {
+            ui32 indexInA;
+            ui32 indexOutA;
+            ui32 indexInB;
+            ui32 indexOutB;
+        };
+        ui32 indices[4];
+    };
 };
 
-constexpr f32 WALL_THICKNESS = 0.05f;
+constexpr f32 WALL_THICKNESS = 0.1f;
+constexpr f32 OUTSIDE_EPSILON = 0.01f;
+constexpr f32 WALL_THICKNESS_PLUS_EPSILON = WALL_THICKNESS + OUTSIDE_EPSILON;
 
-
-void mergeOrMakeNorthSouthWall(const TileContainer& tileContainer, ui32 x, ui32 y, ui32 z, ui32v2& prevSouthNorthWallIndices, std::vector<WallChainData>& wallData, int isNorth) {
-    TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
-    const Tile& tile = tileContainer.getTileAt(wallsIndex);
-    const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
-    // TODO: Greedy meshing
-    const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
-    // TODO: Use paint ID
-    ui32& prevIndex = prevSouthNorthWallIndices[isNorth];
-    const ui32 wallIndex = isNorth * 3; // Match cartesian
-    if (walls.walls[wallIndex].wallID != TILE_ID_NONE) {
-        bool didMerge = false;
-        if (prevIndex != UINT32_MAX) {
-            WallChainData& prevWall = wallData[prevIndex];
-            if (prevWall.groundPos == groundZPosition && prevWall.tileId == walls.walls[wallIndex].wallID) {
-                // Extend previous wall
-                ++prevWall.length;
-                didMerge = true;
-            }
-        }
-        if (!didMerge) {
-            // Add new wall
-            // TODO: No copy paste
-            prevIndex = wallData.size();
-            WallChainData& newWall = wallData.emplace_back();
-            newWall.tileId = walls.walls[wallIndex].wallID;
-            newWall.dir = Cartesian(wallIndex);
-            newWall.length = 1;
-            newWall.startPos = f32v3(x, y + isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, z * tileContainer.getFloorHeight());
-            newWall.cornerTypeStart = WallCornerType::FLAT;
+void mergeOrMakeWallFace(const TileContainer& tileContainer, ui32& prevIndex, std::vector<WallChainData>& wallData, f32 groundZPosition, const TileWalls& walls, ui32 wallCartesian, Cartesian wallDir, ui32 x, ui32 y, ui32 z, f32 xAdd, f32 yAdd, bool isInside)
+{
+    bool didMerge = false;
+    if (prevIndex != UINT32_MAX) {
+        WallChainData& prevWall = wallData[prevIndex];
+        // We can only merge if same height, same tile ID, and not a door
+        if (prevWall.groundPos == groundZPosition && prevWall.tileId == walls.walls[wallCartesian].wallID) {
+            // Extend previous wall
+            ++prevWall.length;
+            didMerge = true;
         }
     }
-    else if (prevIndex != UINT32_MAX) {
-        // End previous wall
-        WallChainData& prevWall = wallData[prevIndex];
-        prevWall.cornerTypeEnd = WallCornerType::FLAT;
-        prevIndex = UINT32_MAX;
+    if (!didMerge) {
+        // Check if this is a door and if so ignore it because its a dynamic object not part of this mesh
+        const TileID tileId = walls.walls[wallCartesian].wallID;
+        if (TileRepository::getTileData(tileId).shape == TileShape::DOOR) {
+            prevIndex = UINT32_MAX;
+            return;
+        }
+        prevIndex = wallData.size();
+        WallChainData& newWall = wallData.emplace_back();
+        // Add new wall
+        // TODO: No copy paste
+        newWall.tileId = tileId;
+        newWall.dir = wallDir;
+        newWall.length = 1;
+        newWall.groundPos = groundZPosition;
+        newWall.startPos = f32v3(x + xAdd, y + yAdd, z * tileContainer.getFloorHeight());
+        newWall.cornerTypeStart = WallCornerType::FLAT;
+        newWall.isPrimary = isInside;
+    }         
+}
+
+void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 y, ui32 z, PrevWallIndices& prevSouthNorthWallIndices, std::vector<WallChainData>& wallData, int isNorth) {
+    const ui32v3& dims = tileContainer.getDims();
+    TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+    const Tile& tile = tileContainer.getTileAt(tileIndex);
+    const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
+    // TODO: Greedy meshing
+    const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
+    // TODO: Use paint ID
+    ui32& prevInnerIndex = prevSouthNorthWallIndices.indices[isNorth * 2];
+    ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isNorth * 2 + 1];
+    const ui32 wallCartesian = isNorth * 3; // Match cartesian
+    if (walls.walls[wallCartesian].wallID != TILE_ID_NONE) {
+        // We have a wall
+        // Inside walls
+        mergeOrMakeWallFace(tileContainer, prevInnerIndex, wallData, groundZPosition, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, 0.0f, isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, true);
+        // Outside walls
+        if (isNorth) {
+            if (y == dims.y - 1 || tileContainer.getWallsMainThread(tileIndex + dims.x).south.wallID == TILE_ID_NONE) {
+                mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, 1.0f + OUTSIDE_EPSILON, false);
+            }
+        }
+        else {
+            if (y == 0 || tileContainer.getWallsMainThread(tileIndex - dims.x).north.wallID == TILE_ID_NONE) {
+                mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, -OUTSIDE_EPSILON, false);
+            }
+        }
+        
+    }
+    else {
+        // End both prev walls
+        if (prevInnerIndex != UINT32_MAX) {
+            // End previous wall
+            WallChainData& prevWall = wallData[prevInnerIndex];
+            prevWall.cornerTypeEnd = WallCornerType::FLAT;
+            prevInnerIndex = UINT32_MAX;
+        }
+        if (prevOuterIndex != UINT32_MAX) {
+            // End previous wall
+            WallChainData& prevWall = wallData[prevOuterIndex];
+            prevWall.cornerTypeEnd = WallCornerType::FLAT;
+            prevOuterIndex = UINT32_MAX;
+        }
+    }
+}
+
+void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y, ui32 z, PrevWallIndices& prevSouthNorthWallIndices, std::vector<WallChainData>& wallData, int isEast) {
+    const ui32v3& dims = tileContainer.getDims();
+    TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
+    const Tile& tile = tileContainer.getTileAt(tileIndex);
+    const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
+    // TODO: Greedy meshing
+    const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
+    // TODO: Use paint ID
+    ui32& prevInnerIndex = prevSouthNorthWallIndices.indices[isEast * 2];
+    ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isEast * 2 + 1];
+    const ui32 wallCartesian = 1 + isEast; // Match cartesian
+    if (walls.walls[wallCartesian].wallID != TILE_ID_NONE) {
+        // We have a wall
+        // Inside walls
+        mergeOrMakeWallFace(tileContainer, prevInnerIndex, wallData, groundZPosition, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, isEast * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, 0.0f, true);
+        // Outside walls
+        if (isEast) {
+            if (x == dims.x - 1 || tileContainer.getWallsMainThread(tileIndex + 1).west.wallID == TILE_ID_NONE) {
+                mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 1.0f + OUTSIDE_EPSILON, 0.0f, false);
+            }
+        }
+        else {
+            if (x == 0 || tileContainer.getWallsMainThread(tileIndex + 1).east.wallID == TILE_ID_NONE) {
+                mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, -OUTSIDE_EPSILON, 0.0f, false);
+            }
+        }
+
+    }
+    else {
+        // End both prev walls
+        if (prevInnerIndex != UINT32_MAX) {
+            // End previous wall
+            WallChainData& prevWall = wallData[prevInnerIndex];
+            prevWall.cornerTypeEnd = WallCornerType::FLAT;
+            prevInnerIndex = UINT32_MAX;
+        }
+        if (prevOuterIndex != UINT32_MAX) {
+            // End previous wall
+            WallChainData& prevWall = wallData[prevOuterIndex];
+            prevWall.cornerTypeEnd = WallCornerType::FLAT;
+            prevOuterIndex = UINT32_MAX;
+        }
     }
 }
 
@@ -203,62 +298,174 @@ void meshWalls(const TileContainer& tileContainer, MeshBuilder& meshBuilder, OPT
         PrevWallIndices prevWestEastIndices[257];
         // Construct all wall data by iterating one direction at a time
         // South and North walls (+x)
-        ui32v2 prevSouthNorthWallIndices;
         for (ui32 y = 0; y < tileDims.y; ++y) {
             // Each row we can merge
-            prevSouthNorthWallIndices = { UINT32_MAX, UINT32_MAX };
+            PrevWallIndices prevSouthNorthWallIndices;
             for (ui32 x = 0; x < tileDims.x; ++x) {
+                // TODO: We can unify these two methods
                 // South
-                mergeOrMakeNorthSouthWall(tileContainer, x, y, z, prevSouthNorthWallIndices, wallData, false);
+                mergeOrMakeSouthNorthWall(tileContainer, x, y, z, prevSouthNorthWallIndices, wallData, false);
                 // North
-                mergeOrMakeNorthSouthWall(tileContainer, x, y, z, prevSouthNorthWallIndices, wallData, true);
+                mergeOrMakeSouthNorthWall(tileContainer, x, y, z, prevSouthNorthWallIndices, wallData, true);
+                // West
+                mergeOrMakeWestEastWall(tileContainer, x, y, z, prevWestEastIndices[x], wallData, false);
+                // East
+                mergeOrMakeWestEastWall(tileContainer, x, y, z, prevWestEastIndices[x], wallData, true);
             }
         }
-        //// East and West walls (+y)
-        //for (ui32 x = 0; x < tileDims.x; ++x) {
-        //    for (ui32 y = 0; y < tileDims.y; ++y) {
-        //        TileIndex wallsIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
-        //        // TODO: Greedy meshing
-        //        const TileWalls& walls = tileContainer.getWallsMainThread(wallsIndex);
-        //    }
-        //}
-        // Mesh walls
+        // Mesh walls and doors
         f32v3 wallPoints[4];
+        f32v3 encapPointsStart[4];
+        f32v3 encapPointsEnd[4];
         for (auto&& wall : wallData) {
+
+            // Mesh walls
+            bool endcapStart = false;
+            bool endcapEnd = false;
             switch (wall.dir) {
-                case Cartesian::SOUTH:
+                case Cartesian::SOUTH: {
                     wallPoints[0] = wall.startPos;
                     wallPoints[1] = wall.startPos + f32v3(wall.length, 0.0f, 0.0f);
                     wallPoints[2] = wall.startPos + f32v3(wall.length, 0.0f, tileContainer.getFloorHeight());
                     wallPoints[3] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
+                    // Endcaps 
+                    // TODO: Endcaps im pretty sure can use lookup array. Maybe walldirs too..
+                    if (wall.isPrimary) {
+                        if (wall.cornerTypeStart != WallCornerType::NONE) {
+                            encapPointsStart[0] = wallPoints[0];
+                            encapPointsStart[1] = wallPoints[3];
+                            encapPointsStart[2] = wallPoints[3];
+                            encapPointsStart[2].y += WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsStart[3] = wallPoints[0];
+                            encapPointsStart[3].y += WALL_THICKNESS_PLUS_EPSILON;
+                            endcapStart = true;
+                        }
+                        if (wall.cornerTypeEnd != WallCornerType::NONE) {
+                            encapPointsEnd[0] = wallPoints[2];
+                            encapPointsEnd[1] = wallPoints[1];
+                            encapPointsEnd[2] = wallPoints[1];
+                            encapPointsEnd[2].y += WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsEnd[3] = wallPoints[2];
+                            encapPointsEnd[3].y += WALL_THICKNESS_PLUS_EPSILON;
+                            endcapEnd = true;
+                        }
+                    }
                     break;
-                case Cartesian::WEST:
+                }
+                case Cartesian::WEST: {
+                    wallPoints[0] = wall.startPos + f32v3(0.0f, wall.length, 0.0f);
+                    wallPoints[1] = wall.startPos;
+                    wallPoints[2] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
+                    wallPoints[3] = wall.startPos + f32v3(0.0f, wall.length, tileContainer.getFloorHeight());
+                    if (wall.isPrimary) {
+                        if (wall.cornerTypeStart != WallCornerType::NONE) {
+                            encapPointsStart[0] = wallPoints[0];
+                            encapPointsStart[1] = wallPoints[3];
+                            encapPointsStart[2] = wallPoints[3];
+                            encapPointsStart[2].x += WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsStart[3] = wallPoints[0];
+                            encapPointsStart[3].x += WALL_THICKNESS_PLUS_EPSILON;
+                            endcapStart = true;
+                        }
+                        if (wall.cornerTypeEnd != WallCornerType::NONE) {
+                            encapPointsEnd[0] = wallPoints[2];
+                            encapPointsEnd[1] = wallPoints[1];
+                            encapPointsEnd[2] = wallPoints[1];
+                            encapPointsEnd[2].x += WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsEnd[3] = wallPoints[2];
+                            encapPointsEnd[3].x += WALL_THICKNESS_PLUS_EPSILON;
+                            endcapEnd = true;
+                        }
+                    }
                     break;
-                case Cartesian::EAST:
+                }
+                case Cartesian::EAST: {
+                    wallPoints[0] = wall.startPos;
+                    wallPoints[1] = wall.startPos + f32v3(0.0f, wall.length, 0.0f);
+                    wallPoints[2] = wall.startPos + f32v3(0.0f, wall.length, tileContainer.getFloorHeight());
+                    wallPoints[3] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
+                    if (wall.isPrimary) {
+                        if (wall.cornerTypeStart != WallCornerType::NONE) {
+                            encapPointsStart[0] = wallPoints[0];
+                            encapPointsStart[1] = wallPoints[3];
+                            encapPointsStart[2] = wallPoints[3];
+                            encapPointsStart[2].x -= WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsStart[3] = wallPoints[0];
+                            encapPointsStart[3].x -= WALL_THICKNESS_PLUS_EPSILON;
+                            endcapStart = true;
+                        }
+                        if (wall.cornerTypeEnd != WallCornerType::NONE) {
+                            encapPointsEnd[0] = wallPoints[2];
+                            encapPointsEnd[1] = wallPoints[1];
+                            encapPointsEnd[2] = wallPoints[1];
+                            encapPointsEnd[2].x -= WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsEnd[3] = wallPoints[2];
+                            encapPointsEnd[3].x -= WALL_THICKNESS_PLUS_EPSILON;
+                            endcapEnd = true;
+                        }
+                    }
                     break;
-                case Cartesian::NORTH:
+                }
+                case Cartesian::NORTH: {
                     wallPoints[0] = wall.startPos + f32v3(wall.length, 0.0f, 0.0f);
                     wallPoints[1] = wall.startPos;
                     wallPoints[2] = wall.startPos + f32v3(0.0f, 0.0f, tileContainer.getFloorHeight());
                     wallPoints[3] = wall.startPos + f32v3(wall.length, 0.0f, tileContainer.getFloorHeight());
+                    if (wall.isPrimary) {
+                        if (wall.cornerTypeStart != WallCornerType::NONE) {
+                            encapPointsStart[0] = wallPoints[2];
+                            encapPointsStart[1] = wallPoints[1];
+                            encapPointsStart[2] = wallPoints[1];
+                            encapPointsStart[2].y -= WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsStart[3] = wallPoints[2];
+                            encapPointsStart[3].y -= WALL_THICKNESS_PLUS_EPSILON;
+                            endcapStart = true;
+                        }
+                        if (wall.cornerTypeEnd != WallCornerType::NONE) {
+                            encapPointsEnd[0] = wallPoints[0];
+                            encapPointsEnd[1] = wallPoints[3];
+                            encapPointsEnd[2] = wallPoints[3];
+                            encapPointsEnd[2].y -= WALL_THICKNESS_PLUS_EPSILON;
+                            encapPointsEnd[3] = wallPoints[0];
+                            encapPointsEnd[3].y -= WALL_THICKNESS_PLUS_EPSILON;
+                            endcapEnd = true;
+                        }
+                    }
                     break;
+                }
                 default:
                     assert(false);
                     break;
 
             }
+            // Main faces
             const TileData& tileData = TileRepository::getTileData(wall.tileId);
             const SubTexture& texture = tileData.texture;
-            meshBuilder.addQuadBetweenPoints(wallPoints, texture, f32v2(1.0f, 1.0f / 3.0f), COLOR_WHITE);
+            meshBuilder.addQuadBetweenPoints(wallPoints, texture, f32v2(1.0f, -1.0f / 3.0f), COLOR_WHITE);
             if (physMesh) {
                 physMesh->addQuadBetweenPoints(wallPoints);
             }
+            if (endcapStart) {
+                meshBuilder.addQuadBetweenPoints(encapPointsStart, texture, f32v2(1.0f, -1.0f / 3.0f), COLOR_WHITE);
+                // The collision is thin enough here we just dont really need it
+                /*if (physMesh) {
+                    physMesh->addQuadBetweenPoints(encapPointsStart);
+                }*/
+            }
+            if (endcapEnd) {
+                meshBuilder.addQuadBetweenPoints(encapPointsEnd, texture, f32v2(1.0f, -1.0f / 3.0f), COLOR_WHITE);
+                // The collision is thin enough here we just dont really need it
+                /*if (physMesh) {
+                    physMesh->addQuadBetweenPoints(encapPointsStart);
+                }*/
+            }
+            
         }
         wallData.clear();
     }
 }
 
-void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
     const ui32v3& tileDims = tileContainer.getDims();
     // =============== Mesh tiles ===============
     TileIndex index = 0;
@@ -293,6 +500,60 @@ void TileMeshBuilderMethods::meshTileContainer(MeshBuilder& meshBuilder, const T
     }
 
     meshWalls(tileContainer, meshBuilder, physMesh);
+}
+
+constexpr f32 DOOR_THICKNESS = 0.1f;
+void TileMeshBuilderMethods::meshTileContainerDynamic(MeshBuilder& meshBuilder, const TileContainer& tileContainer) {
+    for (auto&& dynamicTile : tileContainer.getDynamicTiles()) {
+        TileIndex tileIndex = dynamicTile.mTileIndex;
+        // If this is a wall
+        if (dynamicTile.mType <= DynamicTileType::WALL_TERM) {
+            Cartesian dir = Cartesian(dynamicTile.mType);
+            static_assert(e_cast(DynamicTileType::WALL_SOUTH) == 0 && e_cast(DynamicTileType::WALL_TERM) == 3);
+            const TileWall& wall = tileContainer.getWallsMainThread(tileIndex).walls[e_cast(dir)];
+            assert(wall.wallID != TILE_ID_NONE);
+            // Check if is door
+            const TileData& tileData = TileRepository::getTileData(wall.wallID);
+            if (tileData.shape == TileShape::DOOR) {
+                f32v2 dims;
+                f32v3 p1 = tileContainer.getTileXYZOffset(tileIndex);
+                p1.z *= tileContainer.getFloorHeight();
+                switch (dir) {
+                    case Cartesian::SOUTH:
+                        dims = f32v2(DOOR_THICKNESS, 0.5f);
+                        p1.x += 0.5f;
+                        break;
+                    case Cartesian::WEST:
+                        dims = f32v2(0.5f, DOOR_THICKNESS);
+                        p1.y += 0.5f;
+                        break;
+                    case Cartesian::EAST:
+                        dims = f32v2(0.5f, DOOR_THICKNESS);
+                        p1.x += 1.0f;
+                        p1.y += 0.5f;
+                        break;
+                    case Cartesian::NORTH:
+                        dims = f32v2(DOOR_THICKNESS, 0.5f);
+                        p1.x += 0.5f;
+                        p1.y += 1.0f;
+                        break;
+                    default:
+                        assert(false);
+                        break;
+
+                }
+                f32v3 p2 = p1;
+                p2.z += tileContainer.getFloorHeight();
+                meshBuilder.addBoardBetweenPoints(p1, p2, dims, tileData.texture, f32v2(1.0f, 1.0f / 3.0f));
+            }
+            else {
+                assert(false);
+            }
+        }
+        else {
+            assert(false); // Implement other types
+        }
+    }
 }
 
 void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {

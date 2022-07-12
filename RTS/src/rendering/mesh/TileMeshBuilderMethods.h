@@ -11,7 +11,8 @@ class StaticPhysicsMesh;
 class TileContainer;
 
 namespace TileMeshBuilderMethods {
-    void meshTileContainer(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh);
+    void meshTileContainerStatic(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh);
+    void meshTileContainerDynamic(MeshBuilder& meshBuilder, const TileContainer& tileContainer);
 
     void addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh);
     void addBlockVertical(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh);

@@ -62,6 +62,8 @@ static_assert(sizeof(TileOrientation) == 1);
 struct TileWall {
     TileID wallID = TILE_ID_NONE;
     TileID paintID = TILE_ID_NONE;
+
+    void clear() { wallID = TILE_ID_NONE; paintID = TILE_ID_NONE; }
 };
 
 struct TileWalls {

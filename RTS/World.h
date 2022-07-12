@@ -31,7 +31,6 @@ class NavGraph;
 class WorldEditor;
 class ChunkMesher;
 class HeightmapTerrainQuadtree;
-class Building;
 class StructureManager;
 class PhysicsWorld;
 struct TerrainNavNode;
@@ -47,6 +46,7 @@ public:
 
 	void initPostLoad(ChunkMesher& chunkMesher);
 	void updateTaskQueues();
+	void updateActiveDynamicTiles();
 
 	void tick(const f32v2& playerPos);
 	void frameUpdate(const Camera3D& camera, f32 elapsedSec);
@@ -97,8 +97,8 @@ public:
 
 	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
 
-    StructureManager& getStructureManager() { return *mStructuremanager; }
-    const StructureManager& getStructureManager() const { return *mStructuremanager; }
+    StructureManager& getStructureManager() { return *mStructureManager; }
+    const StructureManager& getStructureManager() const { return *mStructureManager; }
 
     PhysicsWorld& getPhysicsWorld() { return *mPhysWorld; }
     const PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
@@ -158,7 +158,7 @@ private:
 	std::unique_ptr<CityGraph> mCities;
 
 	// Structures
-	std::unique_ptr<StructureManager> mStructuremanager;
+	std::unique_ptr<StructureManager> mStructureManager;
 
 	// Stockpiles
 	std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;

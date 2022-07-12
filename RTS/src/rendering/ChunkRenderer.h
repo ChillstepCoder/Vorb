@@ -30,7 +30,7 @@ public:
     ChunkMesher& getMesher() { return *mMesher; }
 private:
     // Different rendering methods
-    void TryRenderBaseMesh(const Chunk& chunk, const Material* material);
+    void tryRenderStaticMesh(const Chunk& chunk, const Material* material);
     void TryRenderGrassMeshes(const Chunk& chunk, const Material* material, const Camera3D& camera);
     void TryRenderBillboardMesh(const Chunk& chunk, const Material* material);
 

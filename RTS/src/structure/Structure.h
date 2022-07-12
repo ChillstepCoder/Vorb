@@ -21,6 +21,7 @@ public:
     const ui32AABB3& getAABB() const { return mAABB; }
 
     StructureType getType() const { return mType; }
+    TileContainer& getTileContainer() { return mTileContainer; }
     const TileContainer& getTileContainer() const { return mTileContainer; }
     ui32v3 getWorldPositionOfTile(TileIndex tile) const;
 

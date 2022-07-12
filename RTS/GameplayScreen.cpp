@@ -329,6 +329,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
 
     // Update main thread update queues
     mWorld->updateTaskQueues();
+    mWorld->updateActiveDynamicTiles();
 
     // Update the world with fixed timestep
     int ticks = 0;
