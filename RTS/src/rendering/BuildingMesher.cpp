@@ -141,7 +141,7 @@ struct GableTargetPointInfo {
     bool isValidGable() const { return borderCount == 1; }
 };
 
-bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const ui32AABB3& aabb, const ui32 floorIndex, f32 zPos, const Building& building, VisualLog* visLog) {
+bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const i32AABB3& aabb, const ui32 floorIndex, f32 zPos, const Building& building, VisualLog* visLog) {
     // If we are out of the AABB, its a collide
     if (start[!axis] < 0 || start[!axis] >= aabb.dims[!axis]) {
         return true;
@@ -251,7 +251,7 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
 
     // Fixup extrude positions that may be colliding with walls on above floors
     const ui32 floorIndex = floor * building.getAABB().dims.y * building.getAABB().dims.x;
-    const ui32AABB3& aabb = building.getAABB();
+    const i32AABB3& aabb = building.getAABB();
     for (auto&& it = iss->faces_begin(); it != iss->faces_end(); ++it) {
         auto&& he = it->halfedge();
         do {
@@ -323,7 +323,7 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);
     staticMeshBuilder.reserveIndexCount(RESERVE_VERT_COUNT_STATIC * 1.5f); // 1.5 is approx
 
-    const ui32AABB3& aabb = building.mAABB;
+    const i32AABB3& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mInteriorTilesInAABB;
     BuildingRenderData& renderData = building.mRenderData;
     const TileContainer& tileContainer = building.mTileContainer;
@@ -410,7 +410,7 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
 std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog) {
     // Detect Edges
 
-    const ui32AABB3& aabb = building.mAABB;
+    const i32AABB3& aabb = building.mAABB;
     std::vector<SsPtr> skeletons;
 
     BitArray checkedTiles;
@@ -866,7 +866,7 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
 
 void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
     constexpr f32 CEILING_THICKNESS = 0.05f;
-    const ui32AABB3& aabb = building.mAABB;
+    const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = building.mTileContainer;
     for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
         const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
@@ -895,7 +895,7 @@ void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& mes
 }
 
 void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
-    const ui32AABB3& aabb = building.mAABB;
+    const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
     for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
@@ -938,7 +938,7 @@ const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
 };
 
 void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
-    const ui32AABB3& aabb = building.mAABB;
+    const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
     // TODO: Dynamic

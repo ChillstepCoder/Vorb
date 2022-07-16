@@ -521,7 +521,7 @@ void WorldGrid::computeTileCorners(const f32* heightData, ui32v2 worldTilePos, f
 }
 
 bool WorldGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) {
-    ui32v2 heightmapXY = tileHandle.getWorldPos2D() / HEIGHTMAP_QUAD_SIZE;
+    i32v2 heightmapXY = tileHandle.getWorldPos2D() / (i32)HEIGHTMAP_QUAD_SIZE;
     return (heightmapXY.x + heightmapXY.y) % 2 == 1;
 }
 

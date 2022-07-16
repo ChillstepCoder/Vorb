@@ -58,7 +58,7 @@ void NavThread::addNavgraphBuildTask(Chunk& chunk) {
 
         mNavGraphBuildTasks.enqueue(std::make_pair(chunk.getChunkID().id, [&]() {
             if (sDebugOptions.mShowNavGraphUpdates) {
-                mWorld->getNavGraph().debugDrawNavGraphForChunk(chunk, 250);
+                mWorld->getNavGraph().debugDrawNavPatchForContainer(chunk, 250);
             }
         }));
     }
@@ -85,7 +85,7 @@ void NavThread::navThreadFunc() {
         // lazily generate ALL nav graphs
         while (mNavGraphBuildTasks.try_dequeue(graphArgs)) {
             Chunk& chunk = mWorld->getChunk(graphArgs.first);
-            navGraph.buildNavNodesForChunk(chunk);
+            navGraph.buildNavPatchForContainer(chunk);
             chunk.mIsNavmeshing.store(false);
             chunk.decReadLockAndRefCountNeighbors4AndSelf();
             if (graphArgs.second) {

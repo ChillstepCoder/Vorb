@@ -10,9 +10,9 @@
 #include "ecs/component/CharacterDetailsComponent.h"
 
 
-WorldObjectQuery::WorldObjectQuery(World& world, const f32v2& tilePos) :
+WorldObjectQuery::WorldObjectQuery(World& world, const f32v3& worldPos) :
     mWorld(world),
-    mTilePos(tilePos)
+    mWorldPos(worldPos)
 {
     refresh();
 }
@@ -21,12 +21,25 @@ void WorldObjectQuery::refresh() {
     mStockpileAtTile = nullptr;
     mBuildingAtTile = nullptr;
 
-    TileHandle handle = mWorld.getTileHandleAtWorldPos(mTilePos);
+    f32v2 tilePos2D(mWorldPos.x, mWorldPos.y);
+    TileHandle handle = mWorld.getTileHandleAtWorldPos(tilePos2D);
     if (!handle.isValid()) {
         return;
     }
 
     mTileRef.acquire(handle);
+    Chunk& chunk = mWorld.getChunkAtPosition(tilePos2D);
+    if (chunk.isDataReady()) {
+        StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
+        for (int i = 0; i < structures.second; ++i) {
+            Structure* structure = structures.first[i];
+            TileHandle handle = structure->getTileContainer().tryGetTileHandleAtWorldPos(mWorldPos);
+            if (handle.isValid() && structure->isTileOwned(handle.tileIndex)) {
+                mStructureTileRef.acquire(handle);
+                break;
+            }
+        }
+    }
 
     // TODO: Tile flag city?
     // Stockpile
@@ -35,7 +48,7 @@ void WorldObjectQuery::refresh() {
         const auto* stockPiles = mWorld.getItemStockpileRegistry().tryGetStockpilesAtChunkPosition(id);
         if (stockPiles) {
             for (auto& stockpile : *stockPiles) {
-                if (pointIsWithinAABBInclusive(mTilePos, stockpile->getAABB())) {
+                if (pointIsWithinAABBInclusive(mWorldPos, stockpile->getAABB())) {
                     mStockpileAtTile = stockpile;
                     break;
                 }

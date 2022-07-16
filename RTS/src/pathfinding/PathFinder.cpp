@@ -418,7 +418,7 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
 
 bool PathFinder::generateBuildingPathSynchronous(const Building& building, TileIndex start, TileIndex goal, OUT NavPath& path) {
     assert(path.numPoints == 0); // Should be uninitialized
-    const ui32AABB3 aabb = building.getAABB();
+    const i32AABB3 aabb = building.getAABB();
     const TileContainer& tileContainer = building.getTileContainer();
     assert(aabb.width * aabb.height * aabb.depth < LOOKUP_LIST_SIZE);
   // Only runs on nav thread
@@ -596,7 +596,7 @@ bool PathFinder::generateBuildingPathSynchronous(const Building& building, TileI
     return true;
 }
 
-void coarseAstarEdgePropagate(const World& world, const TerrainNavNode* navNode, CoarseClosedList& closedList, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const PathPoint& goal, CoarseOpenList& openList, CoarseAstarNodeID parentId, f32 prevG, const PathPoint& parentPos) {
+void coarseAstarEdgePropagate(const World& world, const CoarseNavNode* navNode, CoarseClosedList& closedList, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const PathPoint& goal, CoarseOpenList& openList, CoarseAstarNodeID parentId, f32 prevG, const PathPoint& parentPos) {
     const WorldGrid& worldGrid = world.getWorldGrid();
     const Chunk& chunk = worldGrid.getChunk(navNode->chunkId);
     PathPoint chunkWorldPos = PathPoint(chunk.getWorldPos());
@@ -606,7 +606,7 @@ void coarseAstarEdgePropagate(const World& world, const TerrainNavNode* navNode,
     for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
         ui32 count = navNode->counts[cartesian];
         for (ui32 edgeIndex = 0; edgeIndex < count; ++edgeIndex) {
-            const LiteTerrainNavNodeEdge& edge = navNode->edges[cartesian][edgeIndex];
+            const LiteCoarseNavNodeEdge& edge = navNode->edges[cartesian][edgeIndex];
             const PathPoint edgeOffset = PathPoint(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (ui16)edge.start;
 
             PathPoint position = cornerWorldPos + edgeOffset;
@@ -614,7 +614,7 @@ void coarseAstarEdgePropagate(const World& world, const TerrainNavNode* navNode,
             position = PathPoint(i32v2(position.xy) + CARTESIAN_NORMALS[cartesian]);
             // Offset to center of edge
             position += PathPoint(f32v2(CARTESIAN_EDGE_DIRS_ABS[cartesian]) * (f32)(edge.lengthMinusOne + 1.0f) * 0.5f) + NAV_NODE_EDGE_OFFSETS[cartesian];
-            const TerrainNavNode* nextNode = world.tryGetNavNodeAtWorldPos(position.xy);
+            const CoarseNavNode* nextNode = world.tryGetNavNodeAtWorldPos(position.xy);
             if (!nextNode || nextNode->isClosed) {
                 // TODO: Update G if better?
                 continue;
@@ -651,13 +651,13 @@ bool PathFinder::generateCoarsePathSynchronous(const World& world, const PathPoi
     const WorldGrid& worldGrid = world.getWorldGrid();
 
     // We pathfind backwards
-    const TerrainNavNode* startNode = world.tryGetNavNodeAtWorldPos(goal.xy);
+    const CoarseNavNode* startNode = world.tryGetNavNodeAtWorldPos(goal.xy);
     if (!startNode) {
         //pError("Error: Failed to find coarse path due to invalid start\n");
         path.finishedGenerating.store(true);
         return false;
     }
-    const TerrainNavNode* endNode = world.tryGetNavNodeAtWorldPos(start.xy);
+    const CoarseNavNode* endNode = world.tryGetNavNodeAtWorldPos(start.xy);
     if (!endNode) {
         //pError("Error: Failed to find coarse path due to invalid end\n");
         path.finishedGenerating.store(true);
@@ -696,7 +696,7 @@ bool PathFinder::generateCoarsePathSynchronous(const World& world, const PathPoi
         id = topNode.second;
         CoarseAStarNode& astarNode = sCoarseAstarNodes[id];
         mOpenList.pop();
-        const TerrainNavNode* navNode = world.tryGetNavNodeAtWorldPos(astarNode.position.xy);
+        const CoarseNavNode* navNode = world.tryGetNavNodeAtWorldPos(astarNode.position.xy);
         if (navNode == endNode) {
             foundGoal = true;
             break;

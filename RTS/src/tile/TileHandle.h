@@ -12,7 +12,8 @@ struct TileHandle {
 
     bool isValid() const { return container != nullptr; }
     TileContainer* getMutableContainer() { assert(IS_MAIN_THREAD());  return const_cast<TileContainer*>(container); }
-    ui32v2 getWorldPos2D() const;
+    i32v2 getWorldPos2D() const;
+    i32v3 getWorldPos3D() const;
     ChunkID getChunkIDAtPos() const { return ChunkID::fromWorldUI32v2(getWorldPos2D()); }
     ui32v3 getContainerOffset() const;
 

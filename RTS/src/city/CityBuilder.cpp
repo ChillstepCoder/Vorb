@@ -90,7 +90,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
 
     ui32 floorHeight = 3;
-    ui32AABB3 aabb;
+    i32AABB3 aabb;
     aabb.x = bp.aabb.x;
     aabb.y = bp.aabb.y;
     aabb.z = meanHeight;

@@ -33,7 +33,7 @@ class ChunkMesher;
 class HeightmapTerrainQuadtree;
 class StructureManager;
 class PhysicsWorld;
-struct TerrainNavNode;
+struct CoarseNavNode;
 struct CityGraph;
 
 class World
@@ -72,6 +72,7 @@ public:
     const Chunk& getChunk(ui32 chunkId) const;
 
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
+	TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const { return getTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
     TileHandle getTileHandle(ui32 chunkId, TileIndex tileIndex) const;
@@ -82,7 +83,7 @@ public:
 	StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
-	const TerrainNavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
+	const CoarseNavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
 
 	EntityComponentSystem& getECS() const { return *mEcs; }
 	ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }

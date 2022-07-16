@@ -8,7 +8,8 @@
 const float DEAD_COLOR_MULT = 0.4f;
 
 EntityComponentSystem::EntityComponentSystem(World& world)
-	: mPersonAISystem(world)
+	: mPlayerControlSystem(world)
+	, mPersonAISystem(world)
 	, mBusinessSystem(world)
 	, mTimedTileInteractSystem(world)
     , mWorld(world) {

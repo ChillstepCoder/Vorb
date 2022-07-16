@@ -23,7 +23,7 @@ public:
     StructureManager(World& world);
     ~StructureManager() = default;
 
-    Structure* makeNewStructure(StructureType type, const ui32AABB3& aabb, ui32 floorHeight);
+    Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight);
 
     const StructureList& getStructures() const { return mStructures; }
 

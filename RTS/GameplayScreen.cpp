@@ -269,13 +269,15 @@ void GameplayScreen::build() {
                     if (hitResult.didHit()) {
                         // For interact must click in about the same spot
                         if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                            f32v2 worldPos = f32v2(hitResult.mPosition.x, hitResult.mPosition.y);
+                            f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
                             WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
-                            // Right click picking
-                            mSelectedTilePosition = worldPos;
-                            // Enable context menu
-                            mSelectedScreenPos = screenPos;
-                            mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                            if (worldObjectQuery.isValid()) {
+                                // Right click picking
+                                mSelectedTilePosition = worldPos;
+                                // Enable context menu
+                                mSelectedScreenPos = screenPos;
+                                mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                            }
                         }
                     }
 				}
@@ -417,8 +419,8 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
     if (mRightClickInteractPopup) {
         // Render selected
         const ui32v2 worldPosInt = mSelectedTilePosition;
-        const f32 height = mWorld->getWorldGrid().tryComputeHeightAtPoint(f32v2(worldPosInt) + f32v2(0.5f));
-        DebugRenderer::drawFilledQuad(f32v3(worldPosInt.x, worldPosInt.y, height), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+        DebugRenderer::drawFilledQuad(mSelectedTilePosition - f32v3(0.05f, 0.05f, 0.0f), f32v2(0.1f), color4(1.0f, 1.0f, 0.0f, 0.4f));
+        DebugRenderer::drawWireQuad(glm::floor(mSelectedTilePosition), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
 
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
@@ -485,27 +487,33 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
             assert(false);
         }
-        else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_ROOM) {
+        else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_ROOM) {/*
             const RoomNode* selectedNode = mRightClickInteractPopup->tryGetSelectedRoom();
             assert(selectedNode);
             const Building* building = mRightClickInteractPopup->tryGetSelectedBuilding();
             assert(building);
-            const ui32AABB3& aabb = building->getAABB();
-            ui32v2 roomWorldPos = ui32v2(selectedNode->offsetFromZero) + ui32v2(aabb.x, aabb.y);
-
-            // TODO: Closest entrance?
-            //RoomNodeID entrance = building->getNavEntrances().begin()->second;
-            TileIndex id = building->getNavEntrances().begin()->first;
-            const ui32v3 targetPos = building->getWorldPositionOfTile(id);
-            // TODO: Path into the actual room
+            const i32AABB3& aabb = building->getAABB();
+            i32v2 roomWorldPos = i32v2(selectedNode->offsetFromZero) + i32v2(aabb.x, aabb.y);*/
             auto&& ecs = mWorld->getECS();
             NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            cmp.requestCoarsePathWithCallback(PathPoint(playerPos), PathPoint(targetPos), [this](bool success) {
-                if (success) {
-                    assert(false);
-                }
-                assert(false);
-            });
+            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+            if (tileHandle.isValid()) {
+                cmp.setSimpleLinearTargetPoint(tileHandle.getWorldPos3D(), nullptr);
+            }
+
+            //// TODO: Closest entrance?
+            ////RoomNodeID entrance = building->getNavEntrances().begin()->second;
+            //TileIndex id = building->getNavEntrances().begin()->first;
+            //const ui32v3 targetPos = building->getWorldPositionOfTile(id);
+            //// TODO: Path into the actual room
+            //auto&& ecs = mWorld->getECS();
+            //NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
+            //cmp.requestCoarsePathWithCallback(PathPoint(playerPos), PathPoint(targetPos), [this](bool success) {
+            //    if (success) {
+            //        assert(false);
+            //    }
+            //    assert(false);
+            //});
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
 

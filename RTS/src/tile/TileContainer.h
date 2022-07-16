@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tile/Tile.h"
+#include "tile/TileHandle.h"
 
 class Mesh;
 
@@ -50,6 +51,29 @@ struct TileContainerRenderData {
     void reset();
 };
 
+struct TileContainerEntranceEdge {
+    ui16 adjacentIndex;
+    ui16 distanceTiles;
+};
+
+struct TileContainerEntrance {
+    mutable std::vector<TileContainerEntranceEdge> adjacentEntrances; // TODO: Smaller data structure
+    TileIndex tileIndex;
+    bool isLocked; // TODO: Access type enum?
+};
+
+typedef ui32 TileContainerID;
+
+// Static class
+class TileContainerRepository {
+public:
+    static TileContainer* getNewTileContainer();
+    static void destroyTileContainer(TileContainer* container);
+
+private:
+    std::vector<std::unique_ptr<TileContainer>> mTileContainers;
+};
+
 // TODO: Memory recycler?
 class TileContainer
 {
@@ -60,7 +84,7 @@ public:
     ~TileContainer() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
-    void init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight);
+    void init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain);
     void freeData();
 
     void updateMainThread();
@@ -85,6 +109,8 @@ public:
     const TileWalls& getWallsThreadSafe(TileIndex i) const { return mWalls[i].wallsThreadSafe; }
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
+
+    TileHandle tryGetTileHandleAtWorldPos(const f32v3& worldPos);
 
     // =========== Generation ===========
     void setTileFromGeneration(TileIndex i, Tile&& tile) {
@@ -115,7 +141,10 @@ public:
     const Tile& getTileAtNoAssert(TileIndex i) const {
         return mTiles[i];
     }
-
+    ui32v3 getTileXYZOffsetWithZScale(TileIndex i) const {
+        const ui32 layerSize = mDims.x * mDims.y;
+        return ui32v3(i % mDims.x, (i % layerSize) / mDims.x, (i / layerSize) * mFloorHeight);
+    }
     ui32v3 getTileXYZOffset(TileIndex i) const {
        const ui32 layerSize = mDims.x * mDims.y;
        return ui32v3(i % mDims.x, (i % layerSize) / mDims.x, i / layerSize);
@@ -130,7 +159,8 @@ public:
     TileIndex getTileIndexFromXYZOffset(ui32 x, ui32 y, ui32 z) const {
         return x + y * mDims.x + z * mDims.x * mDims.y;
     }
-
+    TileContainerID getId() const { return mId; }
+    bool isTerrain() const { return mIsTerrain; }
 
     // =========== Thread safety  ===========
     void incReadLock() const { ++mReadLockCount; }
@@ -139,9 +169,9 @@ public:
         assert(IS_MAIN_THREAD()); // Only main thread is allowed to incref
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
-        if (mRefCount > 200) {
+        if (mRefCount > 400) {
             std::cout << "DETECTED " << mRefCount << " REF COUNTS ON CHUNK " << std::endl;
-            assert(false);
+            assert(false && "Too many chunk refcounts");
         }
     }
     inline void decRef() const {
@@ -161,9 +191,9 @@ public:
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
 
     // =========== Accessors  ===========
-    const ui32v2& getWorldPos2D() const { return reinterpret_cast<const ui32v2&>(mRootPos); }
-    const ui32v3& getWorldPos3D() const { return mRootPos; }
-    const ui32v3& getDims() const { return mDims; }
+    const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mRootPos); }
+    const i32v3& getWorldPos3D() const { return mRootPos; }
+    const i32v3& getDims() const { return mDims; }
     f32 getFloorHeight() const { return mFloorHeight; }
 
     ui32 getReadLockCount() const { return mReadLockCount; }
@@ -176,6 +206,10 @@ public:
     bool isVisible() const { return mRenderData.mIsVisible; }
     TileContainerRenderData& getRenderData() const { return mRenderData; }
 
+    const std::vector<TileContainerEntrance>& getEntrances() const { return mEntrances; }
+    void addEntrance(TileIndex pos, bool isLocked);
+    void removeEntrance(TileIndex pos);
+
 private:
     void addDoor(Cartesian doorSide, TileIndex tileIndex);
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
@@ -186,12 +220,16 @@ private:
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
     // All tiles that need to update when read lock is free
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
-    ui32v3 mDims;
-    ui32v3 mRootPos;
+    std::vector<TileContainerEntrance> mEntrances;
+    std::vector<TileContainerEntrance> mEntrancesThreadSafeCopy;
+    TileContainerID mId;
+    i32v3 mDims;
+    i32v3 mRootPos;
     ui32 mFloorHeight = 3u;
     mutable std::atomic_uint32_t mReadLockCount = 0u;
     mutable std::atomic_uint32_t mRefCount = 0u;
 
     mutable TileContainerRenderData mRenderData;
     mutable bool mDirtyNav = false;
+    bool mIsTerrain = false;
 };

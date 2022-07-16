@@ -23,21 +23,25 @@ TileRef::TileRef() {
 }
 
 void TileRef::acquire(TileHandle handle) {
-    assert(IS_MAIN_THREAD());
-    assert(!container);
-    container = const_cast<TileContainer*>(handle.container); // FUCK YOU I DO WHAT I WANT;
-    index = handle.tileIndex;
-    tile = &container->mTiles[index];
-    container->incRef();
+    if (handle.container) {
+        assert(IS_MAIN_THREAD());
+        assert(!container);
+        container = const_cast<TileContainer*>(handle.container); // FUCK YOU I DO WHAT I WANT;
+        index = handle.tileIndex;
+        tile = &container->mTiles[index];
+        container->incRef();
+    }
 }
 
 void TileRef::acquire(TileContainer* newContainer, TileIndex newIndex) {
-    assert(IS_MAIN_THREAD());
-    assert(!container);
-    container = newContainer;
-    index = newIndex;
-    tile = &container->mTiles[newIndex];
-    container->incRef();
+    if (newContainer) {
+        assert(IS_MAIN_THREAD());
+        assert(!container);
+        container = newContainer;
+        index = newIndex;
+        tile = &container->mTiles[newIndex];
+        container->incRef();
+    }
 }
 
 void TileRef::release()
@@ -50,13 +54,18 @@ void TileRef::release()
 
 TileHandle::TileHandle(const TileContainer* container, TileIndex tileIndex) :
     container(container),
-    tileIndex(tileIndex),
-    tile(&container->mTiles[tileIndex]) {
-
+    tileIndex(tileIndex) {
+    if (container) {
+        tile = &container->mTiles[tileIndex];
+    }
 }
 
-ui32v2 TileHandle::getWorldPos2D() const {
-    return container->getWorldPos2D() + container->getTileXYOffset(tileIndex);
+i32v2 TileHandle::getWorldPos2D() const {
+    return container->getWorldPos2D() + i32v2(container->getTileXYOffset(tileIndex));
+}
+
+i32v3 TileHandle::getWorldPos3D() const {
+    return container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(tileIndex));
 }
 
 ui32v3 TileHandle::getContainerOffset() const {

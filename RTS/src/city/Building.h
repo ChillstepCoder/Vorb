@@ -58,7 +58,6 @@ public:
 private:
    
     std::vector<RoomNode> mRooms;
-    BitArray mInteriorTilesInAABB;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId;

@@ -9,7 +9,7 @@ StructureManager::StructureManager(World& world) : mWorld(world) {
 
 }
 
-Structure* StructureManager::makeNewStructure(StructureType type, const ui32AABB3& aabb, ui32 floorHeight) {
+Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight) {
     assert(IS_MAIN_THREAD());
     std::unique_ptr<Structure> newStructure;
     switch (type) {
@@ -25,7 +25,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const ui32AABB
     ui32v3 tileDims = aabb.dims;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
-    newStructure->mTileContainer.init(aabb.pos, tileDims, floorHeight);
+    newStructure->mTileContainer.init(aabb.pos, tileDims, floorHeight, false);
     newStructure->mId = mStructures.size();
 
     BBox newBox(BoxPoint(aabb.x, aabb.y), BoxPoint(aabb.x + aabb.width, aabb.y + aabb.depth));

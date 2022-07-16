@@ -140,7 +140,7 @@ void Tile::updateThreadSafeLayers() {
     tileFlagsThreadSafe = tileFlags;
     memcpy(layersThreadSafe, layers, sizeof(TileID) * TILE_LAYER_COUNT);
     groundZPositionCompressedThreadSafe = groundZPositionCompressed;
-    pathWeightThreadSafe = pathWeight;
+    navData.pathWeightThreadSafe = navData.pathWeight;
 }
 
 bool Tile::canAddTile(const TileData& tile) const {
@@ -183,9 +183,9 @@ void Tile::setPathWeight(ui8 weight, bool isReadLocked) {
         tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     }
     else {
-        pathWeightThreadSafe = weight;
+        navData.pathWeightThreadSafe = weight;
     }
-    pathWeight = weight;
+    navData.pathWeight = weight;
 }
 
 void Tile::setGroundZPosition(f32 groundZPosition, bool isReadLocked) {

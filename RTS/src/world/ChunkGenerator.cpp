@@ -105,7 +105,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     tile.midLayerThreadSafe = tile.midLayer;
     tile.topLayerThreadSafe = tile.topLayer;
     tile.tileFlagsThreadSafe = tile.tileFlags;
-    tile.pathWeightThreadSafe = tile.pathWeight;
+    tile.navData.pathWeightThreadSafe = tile.navData.pathWeight;
 
     return tile;
 }
@@ -117,7 +117,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
     // Allocate tiles if needed
     const ui32v2& worldPosInt2D = chunk.getChunkID().getWorldPosInt();
     const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
-    chunk.mTileContainer.init(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1);
+    chunk.mTileContainer.init(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, true);
     chunk.allocateTiles();
     const ChunkID& id = chunk.getChunkID();
 

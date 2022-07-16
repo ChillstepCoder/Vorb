@@ -40,16 +40,6 @@ struct TileData {
 #ifdef DEBUG // Release has different size
 static_assert(sizeof(TileData) == 200, "Keep it small as possible");
 #endif
-// There is exactly 1 of these per integer x,y coordinate pair over the entire world
-class TileBase {
-    ui32 mStructureID; // Complicated structures like large rock formations, or buildings, or anything
-    TileID mTerrainAlignedTile; // Rocks, trees, berry bushes, whatever
-    ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread only
-    TileBaseFlags mFlags;
-    ui8 mPathWeight;
-};
-static_assert(sizeof(TileBase) == 12, "Keep small");
-
 
 struct TileOrientation {
     Cartesian orientationBase : 2;
@@ -80,6 +70,32 @@ struct TileWalls {
     };
 };
 
+// Per tile steering and navigation usage
+struct TileNavData {
+    union {
+        struct {
+            entt::entity e0; // Southwest
+            entt::entity e1; // Southeast
+            entt::entity e2; // Northwest
+            entt::entity e3; // Northeast
+        };
+        entt::entity entities[4];
+    };
+    union {
+        struct {
+            bool southOpen;
+            bool westOpen;
+            bool eastOpen;
+            bool northOpen;
+        };
+        bool adjacencyOpen[4];
+    };
+    // Collision stuff
+    mutable ui16 coarseNavNodeIndex = UINT16_MAX; // Modified by nav thread
+    ui8 pathWeight = 255u;
+    ui8 pathWeightThreadSafe = 255u;
+};
+
 class Tile {
     friend class TileContainer;
     friend class ChunkGenerator;
@@ -97,11 +113,11 @@ public:
     void updateThreadSafeLayers();
 
     // Only nav thread can access this data
-    ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navNodeIndex; }
-    void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navNodeIndex = index; }
+    ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navData.coarseNavNodeIndex; }
+    void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navData.coarseNavNodeIndex = index; }
 
-    ui8 getPathWeightMainThread() const { assert(IS_MAIN_THREAD()); return pathWeight; }
-    ui8 getPathWeightNavThread() const { assert(IS_NAV_THREAD()); return pathWeightThreadSafe; }
+    ui8 getPathWeightMainThread() const { assert(IS_MAIN_THREAD()); return navData.pathWeight; }
+    ui8 getPathWeightNavThread() const { assert(IS_NAV_THREAD()); return navData.pathWeightThreadSafe; }
 
     f32 getGroundZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)groundZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
     f32 getGroundZPositionUncompressedThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return (f32)groundZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
@@ -153,10 +169,7 @@ private:
     ui16 groundZPositionCompressedThreadSafe;
     BitFlags<TileFlags> tileFlags;
     BitFlags<TileFlags> tileFlagsThreadSafe;
-	// Collision stuff
-    mutable ui16 navNodeIndex = UINT16_MAX; // Modified by nav thread
-    ui8 pathWeight = 255u;
-    ui8 pathWeightThreadSafe = 255u;
+    TileNavData navData;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 24, "Keep small");
+static_assert(sizeof(Tile) == 44, "Keep small");

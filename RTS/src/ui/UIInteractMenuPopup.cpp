@@ -10,6 +10,12 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/ui/GameWindow.h>
+
+#include "DebugRenderer.h"
+
+
+const ImVec2 sButtonSize(150, 25);
+constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
 //
 //static bool view(NoiseFunction& n) {
 //    bool changed = false;
@@ -36,15 +42,28 @@ UIInteractMenuPopup::~UIInteractMenuPopup()
 
 UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 {
-    constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar;
-    ui32 resultFlags = 0;
-    const ImVec2 buttonSize(150, 25);
-    const f32v2 panelDims(buttonSize.x + 16, INTERACT_MENU_RESULT_COUNT * buttonSize.y + 45);
+    ui32 resultFlags;
+    const f32v2 panelDims(sButtonSize.x + 16, INTERACT_MENU_RESULT_COUNT * sButtonSize.y + 45);
     const f32v2 clampedScreenPos = sMainGameWindowHandle->clampBoxPosToWindow(mScreenPos, panelDims);
     
     ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
+    if (mWorldObjectQuery.getStructureTileHandle().isValid()) {
+        resultFlags = updateAndRenderStructureTile();
+    }
+    else {
+        resultFlags = updateAndRenderTerrainTile();
+    }
+
+
+    ImGui::End();
+    // TODO: Why are these flags? Use bitflags?
+    return static_cast<UIInteractMenuResultFlags>(resultFlags);
+}
+
+ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
+    ui32 resultFlags = 0;
     World& world = mWorldObjectQuery.getWorld();
 
     switch (mState) {
@@ -60,7 +79,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
                 if (CharacterDetailsComponent* cmp = world.getECS().mRegistry.try_get<CharacterDetailsComponent>(it.second)) {
                     ++optionCount;
                     nextState = UIInteractMenuState::SELECTED_AGENT;
-                    if (ImGui::Button((std::to_string(i++) + " " + cmp->name).c_str(), buttonSize)) {
+                    if (ImGui::Button((std::to_string(i++) + " " + cmp->name).c_str(), sButtonSize)) {
                         mState = nextState;
                         break;
                     }
@@ -71,7 +90,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             if (mWorldObjectQuery.getStockpile()) {
                 ++optionCount;
                 nextState = UIInteractMenuState::SELECTED_STOCKPILE;
-                if (ImGui::Button((std::to_string(i++) + " Stockpile").c_str(), buttonSize)) {
+                if (ImGui::Button((std::to_string(i++) + " Stockpile").c_str(), sButtonSize)) {
                     mState = nextState;
                     break;
                 }
@@ -80,7 +99,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
             // Tile
             ++optionCount;
             nextState = UIInteractMenuState::SELECTED_TILE;
-            if (ImGui::Button((std::to_string(i++) + " Tile").c_str(), buttonSize)) {
+            if (ImGui::Button((std::to_string(i++) + " Tile").c_str(), sButtonSize)) {
                 mState = nextState;
                 break;
             }
@@ -111,22 +130,22 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
         case UIInteractMenuState::SELECTED_TILE: {
             ImGui::Begin("Tile action", nullptr, WINDOW_FLAGS);
 
-            if (ImGui::Button("Go Here", buttonSize)) {
+            if (ImGui::Button("Go Here", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
             }
-            if (ImGui::Button("Inspect", buttonSize)) {
+            if (ImGui::Button("Inspect", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_INSPECT;
             }
-            if (ImGui::Button("Clear Tile", buttonSize)) {
+            if (ImGui::Button("Clear Tile", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_CLEAR_TILE;
             }
-            if (ImGui::Button("Plant Tree", buttonSize)) {
+            if (ImGui::Button("Plant Tree", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PLANT_TREE;
             }
-            if (ImGui::Button("Plant Pine Tree", buttonSize)) {
+            if (ImGui::Button("Plant Pine Tree", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PLANT_TREE_2;
             }
-            if (ImGui::Button("Build Wall", buttonSize)) {
+            if (ImGui::Button("Build Wall", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_BUILD_WALL;
             }
             break;
@@ -134,10 +153,10 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
         case UIInteractMenuState::SELECTED_STOCKPILE: {
             ImGui::Begin("Stockpile", nullptr, WINDOW_FLAGS);
 
-            if (ImGui::Button("DEBUG: Add 25 wood", buttonSize)) {
+            if (ImGui::Button("DEBUG: Add 25 wood", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD;
             }
-            if (ImGui::Button("DEBUG: Destroy", buttonSize)) {
+            if (ImGui::Button("DEBUG: Destroy", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK;
             }
             break;
@@ -145,7 +164,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
         case UIInteractMenuState::SELECTED_AGENT: {
             ImGui::Begin("Agent", nullptr, WINDOW_FLAGS);
 
-            if (ImGui::Button("DEBUG: Kill Agent", buttonSize)) {
+            if (ImGui::Button("DEBUG: Kill Agent", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_KILL_AGENT;
             }
             break;
@@ -198,11 +217,18 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
 
     }
     static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
-    static_assert(e_cast(UIInteractMenuState::COUNT) == 6, "update");
+    static_assert(e_cast(UIInteractMenuState::COUNT) == 6, "update");    return resultFlags;
+}
 
-    ImGui::End();
-    // TODO: Why are these flags? Use bitflags?
-    return static_cast<UIInteractMenuResultFlags>(resultFlags);
+ui32 UIInteractMenuPopup::updateAndRenderStructureTile() {
+    ui32 resultFlags = 0;
+    ImGui::Begin("Structure", nullptr, WINDOW_FLAGS);
+    if (ImGui::Button("Move Here")) {
+        resultFlags |= INTERACT_MENU_RESULT_DEBUG_PATH_ROOM;
+        mSelectedTileHandle = mWorldObjectQuery.getStructureTileHandle();
+    }
+    DebugRenderer::drawWireQuad(f32v3(mWorldObjectQuery.getStructureTileHandle().getWorldPos3D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
+    return resultFlags;
 }
 
 const RoomNode* UIInteractMenuPopup::tryGetSelectedRoom() const {

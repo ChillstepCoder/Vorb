@@ -49,7 +49,7 @@ void TileInspectionPanel::updateAndRender() {
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
     const TileContainer& container = *mTileHandle.container;
-    const ui32v2 worldPos = container.getTileXYOffset(mTileHandle.tileIndex) + container.getWorldPos2D();
+    const i32v2 worldPos = i32v2(container.getTileXYOffset(mTileHandle.tileIndex)) + container.getWorldPos2D();
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);

@@ -20,12 +20,13 @@ void TileContainerRenderData::reset() {
     mDynamicMesh.reset();
 }
 
-void TileContainer::init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight) {
+void TileContainer::init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain) {
     mRootPos = rootPos;
     mDims = dims;
     mFloorHeight = floorHeight;
     mTiles.resize(dims.x * dims.y * dims.z);
     mWalls.resize(dims.x * dims.y * dims.z);
+    mIsTerrain = isTerrain;
 }
 
 void TileContainer::freeData() {
@@ -259,6 +260,17 @@ void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
   
 }
 
+TileHandle TileContainer::tryGetTileHandleAtWorldPos(const f32v3& worldPos)
+{
+    i32v3 offset = i32v3(worldPos) - mRootPos;
+    if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= mDims.x || offset.y >= mDims.y || offset.z >= mDims.z * mFloorHeight) {
+        return TileHandle();
+    }
+    // Scale to floor height
+    offset.z /= mFloorHeight;
+    return TileHandle(this, getTileIndexFromXYZOffset(ui32v3(offset)));
+}
+
 void TileContainer::updateTileCollisionAt(TileIndex i, TileID tileId, bool readLocked) {
     Tile& tile = mTiles[i];
     if (readLocked && !tile.isUpdateQueued()) {
@@ -269,6 +281,25 @@ void TileContainer::updateTileCollisionAt(TileIndex i, TileID tileId, bool readL
 
 const bool TileContainer::isReadLocked() const {
     return mReadLockCount.load() > 0 || Services::NavThread::ref().isRunningPathfind();
+}
+
+void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
+    assert(IS_MAIN_THREAD());
+    mDirtyNav = true;
+    auto&& newEntrance = mEntrances.emplace_back();
+    newEntrance.tileIndex = pos;
+    newEntrance.isLocked = true;
+}
+
+void TileContainer::removeEntrance(TileIndex pos)
+{
+    for (size_t i = 0; i < mEntrances.size(); ++i) {
+        if (mEntrances[i].tileIndex == pos) {
+            mEntrances[i] = mEntrances.back();
+            mEntrances.pop_back();
+        }
+    }
+    mDirtyNav = true;
 }
 
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {

@@ -13,7 +13,7 @@ class Chunk;
 class WorldObjectQuery {
     friend class UIInteractMenuPopup;
 public:
-    WorldObjectQuery(World& world, const f32v2& tilePos);
+    WorldObjectQuery(World& world, const f32v3& worldPos);
 
     VORB_NON_COPYABLE_BUT_MOVABLE(WorldObjectQuery);
 
@@ -26,14 +26,16 @@ public:
     Building* getBuilding() const { return mBuildingAtTile; }
     const std::vector<EntityDistSortKey>& getEntities() const { return mEntitiesAtTile; }
     TileHandle getTileHandle() const { return TileHandle(mTileRef.container, mTileRef.index); }
+    TileHandle getStructureTileHandle() const { return TileHandle(mStructureTileRef.container, mStructureTileRef.index); }
     World& getWorld() const { return mWorld; }
-    const f32v2& getTilePos() const { return mTilePos; }
+    const f32v2& getTilePos() const { return mWorldPos; }
 
 private:
     ItemStockpile* mStockpileAtTile = nullptr;
     Building* mBuildingAtTile = nullptr;
     std::vector<EntityDistSortKey> mEntitiesAtTile;
     World& mWorld;
-    f32v2 mTilePos;
+    f32v3 mWorldPos;
     TileRef mTileRef;
+    TileRef mStructureTileRef;
 };

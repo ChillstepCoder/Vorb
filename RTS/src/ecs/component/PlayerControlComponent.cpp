@@ -50,7 +50,7 @@ f32v2 getMovementDir(const Camera3D& camera) {
 }
 
 
-inline void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, const Camera3D& camera) {
+void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, const Camera3D& camera) {
 
     // Inputs for states, but only while we are on ground
     if (!motionCmp.isInAirState()) {
@@ -90,6 +90,10 @@ inline void updateComponent(entt::entity entity, PlayerControlComponent& control
 	else if (!motionCmp.isInAirState() && motionCmp.mDesiredMode != LocomotionMode::BEGIN_JUMP) {
         motionCmp.mDesiredMode = LocomotionMode::IDLE;
 	}
+
+}
+
+PlayerControlSystem::PlayerControlSystem(World& world) : mWorld(world) {
 
 }
 

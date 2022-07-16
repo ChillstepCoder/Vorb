@@ -38,6 +38,12 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 		return false;
     }
 
+    // Update tileNavData
+    ui32v2 navCell = ui32v2(pos.x * 0.5f, pos.y * 0.5f);
+    if (navCell != navCmp.mPrevNavCell) {
+		assert(false);
+    }
+
     ui32 numPoints = navCmp.mFinePath->getNumPoints();
 
     if (navCmp.mCurrentFinePoint >= numPoints) {
@@ -304,11 +310,13 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 	// Update components
     auto view = registry.view<NavigationComponent, PhysicsComponent, CharacterControlComponent>();
 
+
     for (auto entity : view) {
 		auto& navCmp = view.get<NavigationComponent>(entity);
         auto& physCmp = view.get<PhysicsComponent>(entity);
         auto& controlCmp = view.get<CharacterControlComponent>(entity);
 		const f32v3 position = physCmp.getPosition();
+
         switch (navCmp.mNavigationType) {
             case NavigationType::FINE_PATH:
 				if (updateComponentFinePath(entity, navCmp, controlCmp, position, world)) {
@@ -336,6 +344,10 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 		}
 		static_assert((int)NavigationType::INVALID == 4, "Update for new nav");
 	}
+}
+
+void NavigationComponent::requestPathTo(const TileHandle& targetTile) {
+
 }
 
 void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback) {
@@ -390,7 +402,6 @@ void NavigationComponent::requestFineBuildingPathWithCallback(const Building& bu
     mCoarsePath.reset();
     mFinePath = std::shared_ptr<NavPath>(new NavPath());
     Services::NavThread::ref().addPathfindTask(mFinePath, &building, start, goal);
-	mBuilding = &building;
     mCurrentFinePoint = 0;
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
     mFinishedCallback = finishedCallback;
@@ -400,7 +411,6 @@ void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     motionCmp.mDesiredMode = LocomotionMode::IDLE;
     mFlags |= NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH;
 	mFinePath.reset();
-	mBuilding = nullptr;
 	if (mFinishedCallback) {
 		mFinishedCallback(false /*success*/);
 		mFinishedCallback = nullptr;

@@ -82,37 +82,37 @@ struct ui16AABB2 {
     };
 };
 
-struct ui32AABB3 {
-    ui32AABB3() = default;
-    ui32AABB3(ui32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};
-    ui32AABB3(ui32 x, ui32 y, ui32 z, ui32 width, ui32 depth, ui32 height) : x(x), y(y), z(z), width(width), depth(depth), height(height) {};
+struct i32AABB3 {
+    i32AABB3() = default;
+    i32AABB3(i32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};
+    i32AABB3(i32 x, i32 y, i32 z, i32 width, i32 depth, i32 height) : x(x), y(y), z(z), width(width), depth(depth), height(height) {};
 
-    ui32& operator[](int i) { return data[i]; }
+    i32& operator[](int i) { return data[i]; }
 
-    ui32v3 getCenter() const { return pos + dims / 2u; }
-    ui32 getMaxX() const { return x + width; }
-    ui32 getMaxY() const { return y + depth; }
-    ui32 getMaxZ() const { return z + height; }
-    ui32 getMax(ui32 d) const { return pos[d] + dims[d]; }
+    i32v3 getCenter() const { return pos + dims / 2; }
+    i32 getMaxX() const { return x + width; }
+    i32 getMaxY() const { return y + depth; }
+    i32 getMaxZ() const { return z + height; }
+    i32 getMax(i32 d) const { return pos[d] + dims[d]; }
 
     union {
-        ui32 data[6];
+        i32 data[6];
         struct {
             union {
                 struct {
-                    ui32 x;
-                    ui32 y;
-                    ui32 z;
+                    i32 x;
+                    i32 y;
+                    i32 z;
                 };
-                ui32v3 pos;
+                i32v3 pos;
             };
             union {
                 struct {
-                    ui32 width;
-                    ui32 depth;
-                    ui32 height;
+                    i32 width;
+                    i32 depth;
+                    i32 height;
                 };
-                ui32v3 dims;
+                i32v3 dims;
             };
         };
     };

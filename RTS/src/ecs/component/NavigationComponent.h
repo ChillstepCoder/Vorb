@@ -6,6 +6,8 @@
 class World;
 class Building;
 struct CharacterControlComponent;
+struct TileHandle;
+class TileContainer;
 
 enum class NavigationType : ui8 {
 	FINE_PATH,
@@ -22,7 +24,7 @@ enum NavigationComponentFlags : ui8 {
 
 struct NavigationComponent {
 
-	// void navigateTo(TileRef&& targetTile);
+	void requestPathTo(const TileHandle& targetTile);
 
 	// Make sure navigation component is destroyed before the callback owner is destroyed
     // Callback should ideally only be set from the same entity
@@ -50,7 +52,6 @@ struct NavigationComponent {
     std::shared_ptr<NavPath> mFinePath;
     std::shared_ptr<NavPath> mPendingFinePath;
     std::shared_ptr<NavPath> mCoarsePath;
-	const Building* mBuilding = nullptr;
 	union {
 		struct {
             ui32 mCurrentFinePoint;
@@ -58,6 +59,9 @@ struct NavigationComponent {
 		};
 		ui32v2 mSimpleTargetPoint = ui32v2(0);
     };
+	TileContainer* mResidingTileContainer = nullptr;
+	TileIndex mResidingTile;
+	ui32v2 mPrevNavCell;
     NavigationType mNavigationType = NavigationType::INVALID;
 	ui8 mFlags = 0u;
 	ui8 mFramesUntilNextRayCheck = 0;
@@ -65,8 +69,8 @@ struct NavigationComponent {
 	// TileRef mTargetTile; // Can be any tile in existance, automatically figures out how to nav to
 	// void navigateTo(TileRef&& targetTile);
 };
-static_assert(sizeof(NavigationComponent) == 136, "Keep components small");
-
+// TODO: COMPRESS
+//static_assert(sizeof(NavigationComponent) == 144, "Keep components small");
 
 class NavigationComponentSystem {
 public:

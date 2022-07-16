@@ -42,19 +42,24 @@ public:
 
     UIInteractMenuResultFlags updateAndRender();
 
+
     WorldObjectQuery& getWorldObjects() { return mWorldObjectQuery; }
 
     Structure* getSelectedStructure() const { return mSelectedStructure; }
     RoomNodeID getSelectedRoomID() const { return mSelectedRoomID; }
     const RoomNode* tryGetSelectedRoom() const;
     Building* tryGetSelectedBuilding() const;
+    TileHandle getSelectedTileHandle() const { return mSelectedTileHandle; }
 
 private:
+    ui32 updateAndRenderTerrainTile();
+    ui32 updateAndRenderStructureTile();
     const ui32v2 mScreenPos;
     SDL_Window* mWindow;
     WorldObjectQuery mWorldObjectQuery;
     UIInteractMenuState mState = UIInteractMenuState::SELECT_OBJECT;
     Structure* mSelectedStructure = nullptr;
     RoomNodeID mSelectedRoomID = INVALID_ROOM_ID;
+    TileHandle mSelectedTileHandle;
 };
 

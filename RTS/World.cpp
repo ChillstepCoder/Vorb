@@ -109,8 +109,7 @@ void World::updateTaskQueues() {
 	}
 }
 
-void World::updateActiveDynamicTiles()
-{
+void World::updateActiveDynamicTiles() {
 	PreciseTimer timer;
     for (auto&& chunk : mActiveChunks) {
         chunk->getTileContainer().updateActiveDynamicTiles();
@@ -129,7 +128,6 @@ void World::updateActiveDynamicTiles()
             ((Building*)structure.get())->getTileContainer().updateActiveDynamicTiles();
         }
     }
-	std::cout << timer.stop() << std::endl;
 }
 
 void World::tick(const f32v2& playerPos) {
@@ -358,7 +356,7 @@ StructureArrayPtr World::tryGetStructuresAtWorldPos(const ui32v2& worldPos) cons
     return std::make_pair(nullptr, 0);
 }
 
-const TerrainNavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
+const CoarseNavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const {
 	const Chunk& chunk = getChunkAtPosition(worldPos); // TODO: Stop casting??
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
