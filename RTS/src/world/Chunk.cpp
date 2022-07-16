@@ -39,19 +39,25 @@ void Chunk::init(const ChunkID& chunkId, WorldGrid& worldGrid) {
     mAABB.height = 4.0f;
 }
 
-void Chunk::allocateTiles() {
+void Chunk::allocateTileContainer() {
     // TODO: Not always
+    const ui32v2& worldPosInt2D = mChunkId.getWorldPosInt();
+    const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
+    mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, true);
     mGrass.resize(CHUNK_SIZE);
     mStructures.resize(CHUNK_SIZE);
 }
 
 void Chunk::freeTiles() {
-    mTileContainer.freeData();
+    if (mTileContainer) {
+        TileContainerRepository::destroyTileContainer(mTileContainer);
+        mTileContainer = nullptr;
+    }
     std::vector<ui8>().swap(mGrass);
 }
 
 void Chunk::dispose() {
-    assert(IS_SHUTTING_DOWN || mTileContainer.getRefCount() == 0);
+    assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
 
     onDispose(this);
     if (isDataReady()) {
@@ -76,12 +82,8 @@ void Chunk::dispose() {
     mState = e_cast(ChunkState::INVALID);
 
     mDataReadyNeighborCount = 0;
-    
-    // Reset render data
-    mTileContainer.setDirtyStaticMesh(true);
 
     mChunkRenderData.mBillboardMesh.reset();
-    mTileContainer.getRenderData().reset();
     // Make sure no funny business
     // TOCO: Crashes on shutdown
     if (mChunkRenderData.mGrassLod) assert(!mChunkRenderData.mGrassLod->getRefCount());
@@ -91,7 +93,8 @@ void Chunk::dispose() {
 }
 
 void Chunk::updateMainThread() {
-    mTileContainer.updateMainThread();
+    assert(mTileContainer);
+    mTileContainer->updateMainThread();
 
     // Structure thread safety
     if (mStructuresNeedingThreadSafeCopy.size() && !isReadLocked()) {
@@ -105,56 +108,57 @@ void Chunk::updateMainThread() {
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
-    return TileHandle(&mTileContainer, index);
+    return TileHandle(mTileContainer, index);
 }
 
 TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
-    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    assert(mTileContainer);
+    const ui32v2 offset = mTileContainer->getTileXYOffset(index);
     if (offset.x > 0) {
-        return TileHandle(&mTileContainer, index - 1);
+        return TileHandle(mTileContainer, index - 1);
     }
     const Chunk& leftNeighbor = getLeftNeighbor();
     if (leftNeighbor.isDataReady()) {
-        return TileHandle(&leftNeighbor.getTileContainer(), index + CHUNK_WIDTH - 1);
+        return TileHandle(leftNeighbor.getTileContainer(), index + CHUNK_WIDTH - 1);
     }
 	return TileHandle();
 }
 
 TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
-    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    const ui32v2 offset = mTileContainer->getTileXYOffset(index);
     if (offset.x < CHUNK_WIDTH - 1) {
-        return TileHandle(&mTileContainer, index + 1);
+        return TileHandle(mTileContainer, index + 1);
     }
 
     const Chunk& rightNeighbor = getRightNeighbor();
     if (rightNeighbor.isDataReady()) {
-        return TileHandle(&rightNeighbor.getTileContainer(), index - CHUNK_WIDTH + 1);
+        return TileHandle(rightNeighbor.getTileContainer(), index - CHUNK_WIDTH + 1);
     }
     return TileHandle();
 }
 
 TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
-    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    const ui32v2 offset = mTileContainer->getTileXYOffset(index);
     if (offset.y < CHUNK_WIDTH - 1) {
-        return TileHandle(&mTileContainer, index + CHUNK_WIDTH);
+        return TileHandle(mTileContainer, index + CHUNK_WIDTH);
     }
 
     Chunk& topNeighbor = getTopNeighbor();
 	if (topNeighbor.isDataReady()) {
-        return TileHandle(&topNeighbor.getTileContainer(), index + CHUNK_WIDTH - CHUNK_SIZE);
+        return TileHandle(topNeighbor.getTileContainer(), index + CHUNK_WIDTH - CHUNK_SIZE);
 	}
     return TileHandle();
 }
 
 TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
-    const ui32v2 offset = mTileContainer.getTileXYOffset(index);
+    const ui32v2 offset = mTileContainer->getTileXYOffset(index);
     if (offset.y > 0) {
-        return TileHandle(&mTileContainer, index - CHUNK_WIDTH);
+        return TileHandle(mTileContainer, index - CHUNK_WIDTH);
     }
 
     Chunk& bottomNeighbor = getBottomNeighbor();
     if (bottomNeighbor.isDataReady()) {
-        return TileHandle(&bottomNeighbor.getTileContainer(), index - CHUNK_WIDTH + CHUNK_SIZE);
+        return TileHandle(bottomNeighbor.getTileContainer(), index - CHUNK_WIDTH + CHUNK_SIZE);
     }
 	return TileHandle();
 }
@@ -277,7 +281,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
         if (mChunkRenderData.mGrassLod) {
             mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
         }
-        mTileContainer.setDirtyStaticMesh(true);
+        mTileContainer->setDirtyStaticMesh(true);
 
         // Update baseZ position
         const f32v2 startPos = editRadius - f32v2(editRadius);
@@ -296,11 +300,11 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
             for (f32 x = 0.0f; x <= rangeX; ++x) {
                 const ui32v2 chunkRelPos(offsetFromChunk.x + x, offsetFromChunk.y + y);
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
-                    TileIndex tileIndex = mTileContainer.getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
-                    Tile& tile = mTileContainer.getMutableTileAt(tileIndex);
+                    TileIndex tileIndex = mTileContainer->getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
+                    Tile& tile = mTileContainer->getMutableTileAt(tileIndex);
                     if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        mTileContainer.setTileGroundZPosition(tileIndex, mWorldGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + mWorldPos));
+                        mTileContainer->setTileGroundZPosition(tileIndex, mWorldGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + mWorldPos));
                     }
                     else {
                         // What happens here? What happens when we cover up the tile?
@@ -314,34 +318,34 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
 
 void Chunk::incRefNeighbors4() const {
     assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer().incRef();
-    getLeftNeighbor().getTileContainer().incRef();
-    getRightNeighbor().getTileContainer().incRef();
-    getTopNeighbor().getTileContainer().incRef();
+    getBottomNeighbor().getTileContainer()->incRef();
+    getLeftNeighbor().getTileContainer()->incRef();
+    getRightNeighbor().getTileContainer()->incRef();
+    getTopNeighbor().getTileContainer()->incRef();
 }
 
 void Chunk::decRefNeighbors4() const {
     assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer().decRef();
-    getLeftNeighbor().getTileContainer().decRef();
-    getRightNeighbor().getTileContainer().decRef();
-    getTopNeighbor().getTileContainer().decRef();
+    getBottomNeighbor().getTileContainer()->decRef();
+    getLeftNeighbor().getTileContainer()->decRef();
+    getRightNeighbor().getTileContainer()->decRef();
+    getTopNeighbor().getTileContainer()->decRef();
 }
 
 void Chunk::incReadLockNeighbors4() const {
     assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer().incReadLock();
-    getLeftNeighbor().getTileContainer().incReadLock();
-    getRightNeighbor().getTileContainer().incReadLock();
-    getTopNeighbor().getTileContainer().incReadLock();
+    getBottomNeighbor().getTileContainer()->incReadLock();
+    getLeftNeighbor().getTileContainer()->incReadLock();
+    getRightNeighbor().getTileContainer()->incReadLock();
+    getTopNeighbor().getTileContainer()->incReadLock();
 }
 
 void Chunk::decReadLockNeighbors4() const {
     assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer().decReadLock();
-    getLeftNeighbor().getTileContainer().decReadLock();
-    getRightNeighbor().getTileContainer().decReadLock();
-    getTopNeighbor().getTileContainer().decReadLock();
+    getBottomNeighbor().getTileContainer()->decReadLock();
+    getLeftNeighbor().getTileContainer()->decReadLock();
+    getRightNeighbor().getTileContainer()->decReadLock();
+    getTopNeighbor().getTileContainer()->decReadLock();
 }
 
 void Chunk::incReadLockAndRefCountNeighbors4AndSelf() const {

@@ -25,8 +25,10 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     ui32v3 tileDims = aabb.dims;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
-    newStructure->mTileContainer.init(aabb.pos, tileDims, floorHeight, false);
+    newStructure->mTileContainer = TileContainerRepository::getNewTileContainer(aabb.pos, tileDims, floorHeight, false /*isTerrain*/);
+    newStructure->mTileContainer->allocateData();
     newStructure->mId = mStructures.size();
+    // TODO: This structure ID needs a lookup
 
     BBox newBox(BoxPoint(aabb.x, aabb.y), BoxPoint(aabb.x + aabb.width, aabb.y + aabb.depth));
     mSpatialLookup.insert(std::make_pair(newBox, newStructure->mId));
@@ -41,9 +43,9 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
             Chunk& chunk = mWorld.getChunkAtPosition(worldXY);
             assert(chunk.isDataReady());
             const ui32v2 xyOffset(worldXY.x - chunk.getChunkID().getWorldPosInt().x, worldXY.y - chunk.getChunkID().getWorldPosInt().y);
-            chunk.setStructureAt(chunk.getTileContainer().getTileIndexFromXYZOffset(xyOffset.x, xyOffset.y, 0), rv);
+            chunk.setStructureAt(chunk.getTileContainer()->getTileIndexFromXYZOffset(xyOffset.x, xyOffset.y, 0), rv);
             // Nav is dirty since structure will block
-            chunk.getTileContainer().setDirtyNav(true);
+            chunk.getTileContainer()->setDirtyNav(true);
         }
     }
 

@@ -326,7 +326,7 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     const i32AABB3& aabb = building.mAABB;
     const BitArray& ownedTiles = building.mInteriorTilesInAABB;
     BuildingRenderData& renderData = building.mRenderData;
-    const TileContainer& tileContainer = building.mTileContainer;
+    const TileContainer& tileContainer = *building.mTileContainer;
 
     // Textures
     const SubTexture& shinglesTexture = Services::ResourceManager::ref().getTexture("roof");
@@ -337,8 +337,8 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, building.mTileContainer, &building.mPhysicsMesh);
-    TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, building.mTileContainer);
+    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, *building.mTileContainer, &building.mPhysicsMesh);
+    TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
 
     renderData.mMeshDirty = false;
     if (!renderData.mMesh) {
@@ -455,7 +455,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
 
             // Visual log
             if (visLog) {
-                const ui32v2& xy = building.mTileContainer.getTileXYOffset(index);
+                const ui32v2& xy = building.mTileContainer->getTileXYOffset(index);
                 visLog->addWireQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
             }
 
@@ -867,8 +867,8 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
 void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
     constexpr f32 CEILING_THICKNESS = 0.05f;
     const i32AABB3& aabb = building.mAABB;
-    const TileContainer& tileContainer = building.mTileContainer;
-    for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
+    const TileContainer& tileContainer = *building.mTileContainer;
+    for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
         const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
             for (ui32 x = 0; x < aabb.dims.x; ++x) {
@@ -896,9 +896,9 @@ void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& mes
 
 void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
     const i32AABB3& aabb = building.mAABB;
-    const TileContainer& tileContainer = building.mTileContainer;
+    const TileContainer& tileContainer = *building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
-    for (ui32 z = 0; z < building.mTileContainer.getDims().z; ++z) {
+    for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
         const ui32 floorIndex = z * floorStride;
         // Loop along the y axis to look for free tiles
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
@@ -939,16 +939,16 @@ const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
 
 void BuildingMesher::meshStairs(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
     const i32AABB3& aabb = building.mAABB;
-    const TileContainer& tileContainer = building.mTileContainer;
+    const TileContainer& tileContainer = *building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
     // TODO: Dynamic
     constexpr f32 STAIR_TILE_HEIGHT = 3.0f / 4.0f;
     constexpr ui32 STEPS_PER_TILE = 4;
     constexpr f32 stepHeight = STAIR_TILE_HEIGHT / STEPS_PER_TILE;
     for (auto& room : building.getRooms()) {
-        const f32 baseHeight = room.floorIndex * building.mTileContainer.getFloorHeight();
+        const f32 baseHeight = room.floorIndex * tileContainer.getFloorHeight();
         for (auto& stairPiece : room.stairs) {
-            f32v3 tilePos = building.mTileContainer.getTileXYZOffset(stairPiece.pos);
+            f32v3 tilePos = tileContainer.getTileXYZOffset(stairPiece.pos);
             tilePos.z *= tileContainer.getFloorHeight();
             // Place stair steps
             const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;

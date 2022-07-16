@@ -33,7 +33,7 @@ struct VerticalCoarseNavNodeEdge {
 };
 
 struct CoarseNavNode {
-    std::vector<VerticalCoarseNavNodeEdge> verticalEdges; // TODO: Compress, pool, (use boost?)
+    //std::vector<VerticalCoarseNavNodeEdge> verticalEdges; // TODO: Compress, pool, (use boost?)
     ui32 tileContainerID; // TODO: ContainerID?
     TileIndex cornerPos;
     union {
@@ -60,7 +60,7 @@ struct CoarseNavNode {
     ui8 depth = 8;
 };
 
-static_assert(sizeof(CoarseNavNode) == 80, "Keep small");
+//static_assert(sizeof(CoarseNavNode) == 80, "Keep small");
 
 struct CoarseNavNodeIndexPair {
     TileContainerID tileContainerID;
@@ -85,7 +85,9 @@ public:
 
     const CoarseNavNode* getNode(CoarseNavNodeIndexPair index) const {
         // TODO: what if invalid
-        const CoarseNavPatch& patch = mNavPatches[index.tileContainerID];
+        auto&& it = mNavPatches.find(index.tileContainerID);
+        assert(it != mNavPatches.end());
+        const CoarseNavPatch& patch = it->second;
         assert(index.index < patch.size);
         return &patch.nodes[index.index];
     }

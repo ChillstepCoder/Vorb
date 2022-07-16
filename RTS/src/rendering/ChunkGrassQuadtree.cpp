@@ -107,7 +107,7 @@ void createGrassMesh(
             assert(tilePosStart.x + x < CHUNK_WIDTH && tilePosStart.y + y < CHUNK_WIDTH);
             const ui32 tx = tilePosStart.x + x;
             const ui32 ty = tilePosStart.y + y;
-            TileIndex tileIndex = chunk.getTileContainer().getTileIndexFromXYZOffset(tx, ty, 0u);
+            TileIndex tileIndex = chunk.getTileContainer()->getTileIndexFromXYZOffset(tx, ty, 0u);
 
             ui8 grassVal = chunk.getGrassAt(tileIndex);
             if (grassVal == 0) {

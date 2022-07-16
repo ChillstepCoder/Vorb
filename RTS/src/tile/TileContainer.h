@@ -62,30 +62,37 @@ struct TileContainerEntrance {
     bool isLocked; // TODO: Access type enum?
 };
 
-typedef ui32 TileContainerID;
-
+class TileContainer;
 // Static class
 class TileContainerRepository {
 public:
-    static TileContainer* getNewTileContainer();
+    static TileContainer* getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, bool isTerrain);
     static void destroyTileContainer(TileContainer* container);
+    
+    static TileContainer* getTileContainer(TileContainerID id);
 
-private:
-    std::vector<std::unique_ptr<TileContainer>> mTileContainers;
+    static std::vector<std::unique_ptr<TileContainer>>& getTileContainers();
 };
 
 // TODO: Memory recycler?
 class TileContainer
 {
+public:
     friend struct TileRef;
     friend struct TileHandle;
-public:
+    friend class TileContainerRepository;
+    friend class ChunkGenerator;
     TileContainer() = default;
     ~TileContainer() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
-    void init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain);
+private:
+
+    void init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain);
     void freeData();
+
+public:
+    void allocateData();
 
     void updateMainThread();
     void updateActiveDynamicTiles();

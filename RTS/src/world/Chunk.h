@@ -85,7 +85,7 @@ public:
 
     // =========== Main methods  ===========
 	void init(const ChunkID& chunkId, WorldGrid& worldGrid);
-	void allocateTiles();
+	void allocateTileContainer();
 	void freeTiles();
 	void dispose();
 	void updateMainThread();
@@ -129,7 +129,7 @@ public:
 	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
 	bool isDataReady() const { return mState == e_cast(ChunkState::FINISHED); }
 	bool isFinished() const { return mState == e_cast(ChunkState::FINISHED) && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
-	bool isVisible() const { return mTileContainer.isVisible(); }
+	bool isVisible() const { return mTileContainer->isVisible(); }
 
 	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
@@ -145,35 +145,35 @@ public:
 
 
     // =========== Tiles  ===========
-    TileContainer& getTileContainer() { return mTileContainer; }
-    const TileContainer& getTileContainer() const { return mTileContainer; }
+    TileContainer* getTileContainer() { return mTileContainer; }
+    const TileContainer* getTileContainer() const { return mTileContainer; }
 
 
     // =========== Dirtyness  ===========
-	void dirtyNavGraph() { mTileContainer.setDirtyNav(true); }
-	void dirtyMesh() { mTileContainer.setDirtyStaticMesh(true); }
+	void dirtyNavGraph() { mTileContainer->setDirtyNav(true); }
+	void dirtyMesh() { mTileContainer->setDirtyStaticMesh(true); }
 
 
     // =========== Ref counting  ===========
-	void incReadLock() const { mTileContainer.incReadLock(); }
-	void decReadLock() const { mTileContainer.decReadLock(); }
-	inline void incRef() const { mTileContainer.incRef(); }
-	inline void decRef() const { mTileContainer.decRef(); }
+	void incReadLock() const { mTileContainer->incReadLock(); }
+	void decReadLock() const { mTileContainer->decReadLock(); }
+	inline void incRef() const { mTileContainer->incRef(); }
+	inline void decRef() const { mTileContainer->decRef(); }
 	void incRefNeighbors4() const;
 	void decRefNeighbors4() const;
 	void incReadLockNeighbors4() const;
 	void decReadLockNeighbors4() const;
     void incReadLockAndRefCountNeighbors4AndSelf() const;
     void decReadLockAndRefCountNeighbors4AndSelf() const;
-    void incReadLockAndRefCount() const { incRef(); mTileContainer.incReadLock();  }
-    void decReadLockAndRefCount() const { mTileContainer.decReadLock(); decRef(); }
+    void incReadLockAndRefCount() const { incRef(); mTileContainer->incReadLock();  }
+    void decReadLockAndRefCount() const { mTileContainer->decReadLock(); decRef(); }
 
     // =========== Events ===========
 	Event<Chunk*> onDispose;
 
 private:
     // =========== Read lock ===========
-	bool isReadLocked() const { return mTileContainer.isReadLocked(); }
+	bool isReadLocked() const { return mTileContainer->isReadLocked(); }
 
     // =========== Members ===========
 	ChunkID mChunkId;
@@ -187,7 +187,7 @@ private:
 	ui8 mDataReadyNeighborCount = 0;
 	WorldGrid* mWorldGrid = nullptr;
 
-	TileContainer mTileContainer;
+	TileContainer* mTileContainer = nullptr;
     std::vector<ui8> mGrass; // Grass densities
 	std::vector<ChunkStructureVector> mStructures; // TODO: List or something for multiple structures? idk
 	std::vector<TileIndex> mStructuresNeedingThreadSafeCopy;

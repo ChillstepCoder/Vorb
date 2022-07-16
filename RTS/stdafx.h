@@ -261,6 +261,8 @@ const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, 0) // BOTTOM
 };
 
+
+typedef ui32 TileContainerID;
 typedef ui32 TileIndex;
 constexpr TileIndex INVALID_TILE_INDEX = UINT32_MAX;
 

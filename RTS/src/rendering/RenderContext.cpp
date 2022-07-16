@@ -709,8 +709,8 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                 }
             }
             // Count refs
-            const int refCount = chunk.getTileContainer().getRefCount();
-            const int readCount = chunk.getTileContainer().getReadLockCount();
+            const int refCount = chunk.getTileContainer()->getRefCount();
+            const int readCount = chunk.getTileContainer()->getReadLockCount();
             constexpr f32 REF_BOX_WIDTH = 1.0f;
             constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
             for (int i = 0; i < refCount; ++i) {
@@ -742,7 +742,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
             DebugRenderer::reserveLines(mWorld.getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             mWorld.enumActiveChunks([&camera, this, NAVGRAPH_ID](const Chunk& chunk) {
                 if (chunk.isDataReady() && !chunk.mIsNavmeshing) {
-                    mWorld.getNavGraph().debugDrawNavPatchForContainer(chunk, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                    mWorld.getNavGraph().debugDrawNavPatchForContainer(*chunk.getTileContainer(), MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                 }
             });
             wasRenderingNavGraph = true;

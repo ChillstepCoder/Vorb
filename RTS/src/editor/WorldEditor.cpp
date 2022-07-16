@@ -427,7 +427,7 @@ void WorldEditor::updateGrassEdit() {
             for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                 for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                     ChunkID id(worldPos);
-                    const TileContainer& tileContainer = mWorld.getChunk(id).getTileContainer();
+                    const TileContainer& tileContainer = *mWorld.getChunk(id).getTileContainer();
                     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
                     const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                     const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
@@ -453,7 +453,7 @@ void WorldEditor::updateTileEdit() {
     static TileIndex prevTileIndex;
     if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
         ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
-        TileContainer& tileContainer = mWorld.mWorldGrid.getChunk(chunkID).getTileContainer();
+        TileContainer& tileContainer = *mWorld.mWorldGrid.getChunk(chunkID).getTileContainer();
         TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)mHitResult.mPosition.x % CHUNK_WIDTH, (ui32)mHitResult.mPosition.y % CHUNK_WIDTH, 0);
         Tile tile;
         const TileData& data = TileRepository::getTileData(mSelectedTile);

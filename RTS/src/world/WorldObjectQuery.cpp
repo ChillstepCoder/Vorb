@@ -33,7 +33,7 @@ void WorldObjectQuery::refresh() {
         StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
         for (int i = 0; i < structures.second; ++i) {
             Structure* structure = structures.first[i];
-            TileHandle handle = structure->getTileContainer().tryGetTileHandleAtWorldPos(mWorldPos);
+            TileHandle handle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(mWorldPos);
             if (handle.isValid() && structure->isTileOwned(handle.tileIndex)) {
                 mStructureTileRef.acquire(handle);
                 break;

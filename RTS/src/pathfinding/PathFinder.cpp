@@ -417,192 +417,193 @@ bool PathFinder::generateFinePathSynchronous(const World& world, const PathPoint
 
 
 bool PathFinder::generateBuildingPathSynchronous(const Building& building, TileIndex start, TileIndex goal, OUT NavPath& path) {
-    assert(path.numPoints == 0); // Should be uninitialized
-    const i32AABB3 aabb = building.getAABB();
-    const TileContainer& tileContainer = building.getTileContainer();
-    assert(aabb.width * aabb.height * aabb.depth < LOOKUP_LIST_SIZE);
-  // Only runs on nav thread
-    assert(IS_NAV_THREAD());
-    // TODO: Profiling
-    PreciseTimer timer;
+    assert(false);
+  //  assert(path.numPoints == 0); // Should be uninitialized
+  //  const i32AABB3 aabb = building.getAABB();
+  //  const TileContainer& tileContainer = *building.getTileContainer();
+  //  assert(aabb.width * aabb.height * aabb.depth < LOOKUP_LIST_SIZE);
+  //// Only runs on nav thread
+  //  assert(IS_NAV_THREAD());
+  //  // TODO: Profiling
+  //  PreciseTimer timer;
 
-    // Clear out the nodes
-    // TODO: Is this faster or slower than using a closed list?
-    memset(sNodes, 0, sizeof(AStarNode) * LOOKUP_LIST_SIZE);
+  //  // Clear out the nodes
+  //  // TODO: Is this faster or slower than using a closed list?
+  //  memset(sNodes, 0, sizeof(AStarNode) * LOOKUP_LIST_SIZE);
 
-    NodeList openList;
-    // TODO: 3D
-    PathPoint goalPoint(tileContainer.getTileXYOffset(goal));
-    PathPoint startPoint(tileContainer.getTileXYOffset(start));
+  //  NodeList openList;
+  //  // TODO: 3D
+  //  PathPoint goalPoint(tileContainer.getTileXYOffset(goal));
+  //  PathPoint startPoint(tileContainer.getTileXYOffset(start));
 
-    // Add start (goal since working backwards) node to the open list
-    const AStarNodeID startNodeIndex = goal;
-    AStarNode& startNode = getNode(startNodeIndex);
-    startNode.isInOpenList = true;
-    startNode.g = 0;
-    startNode.h = getDiagonalHeuristicAtPosition(goalPoint, startPoint);
-    openList.add(startNodeIndex, startNode.getScore());
+  //  // Add start (goal since working backwards) node to the open list
+  //  const AStarNodeID startNodeIndex = goal;
+  //  AStarNode& startNode = getNode(startNodeIndex);
+  //  startNode.isInOpenList = true;
+  //  startNode.g = 0;
+  //  startNode.h = getDiagonalHeuristicAtPosition(goalPoint, startPoint);
+  //  openList.add(startNodeIndex, startNode.getScore());
 
-    int TOTAL = 0;
+  //  int TOTAL = 0;
 
-    const AStarNodeID goalNodeIndex = goal;
-    bool foundGoal = false;
-    while (openList.size() && openList.size() < MAX_OPEN_LIST_SIZE) {
-        ++TOTAL;
-        // Pull best node off of the open list (Linear search)
-        const AStarNodeID nodeIndex = openList.popLowestScoreNode().nodeIndex;
-        if (nodeIndex == goalNodeIndex) {
-            foundGoal = true;
-            break;
-        }
+  //  const AStarNodeID goalNodeIndex = goal;
+  //  bool foundGoal = false;
+  //  while (openList.size() && openList.size() < MAX_OPEN_LIST_SIZE) {
+  //      ++TOTAL;
+  //      // Pull best node off of the open list (Linear search)
+  //      const AStarNodeID nodeIndex = openList.popLowestScoreNode().nodeIndex;
+  //      if (nodeIndex == goalNodeIndex) {
+  //          foundGoal = true;
+  //          break;
+  //      }
 
-        AStarNode& node = getNode(nodeIndex);
-        // Add current node to implicit closed list
-        node.isInOpenList = false;
-        node.isInClosedList = true;
+  //      AStarNode& node = getNode(nodeIndex);
+  //      // Add current node to implicit closed list
+  //      node.isInOpenList = false;
+  //      node.isInClosedList = true;
 
-        // TODO: 3D
-        const PathPoint nodePoint(tileContainer.getTileXYOffset(nodeIndex));
-        const Tile& thisTile = tileContainer.getTileAt(nodeIndex);
-        const f32 startgroundZPosition = thisTile.getGroundZPositionUncompressedThreadSafe();
+  //      // TODO: 3D
+  //      const PathPoint nodePoint(tileContainer.getTileXYOffset(nodeIndex));
+  //      const Tile& thisTile = tileContainer.getTileAt(nodeIndex);
+  //      const f32 startgroundZPosition = thisTile.getGroundZPositionUncompressedThreadSafe();
 
-        /*if (sDebugOptions.mShowPaths) {
-            if (debugCount > 255) debugCount = 0;
-            f32v3 point3d = helperGet3DPoint(worldGrid, f32v2(nodePoint));
-            DebugRenderer::drawFilledQuad(point3d, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), DEBUG_DURATION, 0);
-        }*/
+  //      /*if (sDebugOptions.mShowPaths) {
+  //          if (debugCount > 255) debugCount = 0;
+  //          f32v3 point3d = helperGet3DPoint(worldGrid, f32v2(nodePoint));
+  //          DebugRenderer::drawFilledQuad(point3d, f32v2(1.0f), color4(debugCount++ / 255.0f, node.h / 128.0f, 0.0f, 0.2f), DEBUG_DURATION, 0);
+  //      }*/
 
-        // Precompute collision weights and points for neighbors
-        PathPoint nextPoints[8];
-        f32 pathWeights[8];
-        for (int dir = NODE_DIR_DOWN_LEFT; dir <= NODE_DIR_UP_RIGHT; ++dir) {
-            const i32v2& offset = NODE_OFFSETS[dir];
-            const int i = dir - 1;
-            // TODO: This will result in a math error when casting the ui32 to i32 truncates large integers
-            const PathPoint& nextPoint = nextPoints[i] = PathPoint((i32)nodePoint.x + offset.x, (i32)nodePoint.y + offset.y);
+  //      // Precompute collision weights and points for neighbors
+  //      PathPoint nextPoints[8];
+  //      f32 pathWeights[8];
+  //      for (int dir = NODE_DIR_DOWN_LEFT; dir <= NODE_DIR_UP_RIGHT; ++dir) {
+  //          const i32v2& offset = NODE_OFFSETS[dir];
+  //          const int i = dir - 1;
+  //          // TODO: This will result in a math error when casting the ui32 to i32 truncates large integers
+  //          const PathPoint& nextPoint = nextPoints[i] = PathPoint((i32)nodePoint.x + offset.x, (i32)nodePoint.y + offset.y);
 
-            // Bounds check
-            if (nextPoint.x < 0 ||
-                nextPoint.y < 0 ||
-                nextPoint.x >= aabb.width ||
-                nextPoint.y >= aabb.depth) {
-                pathWeights[i] = 0.0f;
-                continue;
-            }
-            // TODO: 3D
-            const Tile& tile = tileContainer.getTileAt(nextPoint.x, nextPoint.y, 0);
-            f32 weight = (tile.getPathWeightNavThread() / 255.0f);
-            const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
-            if (groundZPosition >= startgroundZPosition + 2) {
-                // Too tall!
-                pathWeights[i] = 0.0f;
-            }
-            else if (groundZPosition >= startgroundZPosition + 1) {
-                // Upward
-                pathWeights[i] = weight * 0.5f;
-            }
-            else {
-                // Standard or downward
-                pathWeights[i] = weight;
-            }
+  //          // Bounds check
+  //          if (nextPoint.x < 0 ||
+  //              nextPoint.y < 0 ||
+  //              nextPoint.x >= aabb.width ||
+  //              nextPoint.y >= aabb.depth) {
+  //              pathWeights[i] = 0.0f;
+  //              continue;
+  //          }
+  //          // TODO: 3D
+  //          const Tile& tile = tileContainer.getTileAt(nextPoint.x, nextPoint.y, 0);
+  //          f32 weight = (tile.getPathWeightNavThread() / 255.0f);
+  //          const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
+  //          if (groundZPosition >= startgroundZPosition + 2) {
+  //              // Too tall!
+  //              pathWeights[i] = 0.0f;
+  //          }
+  //          else if (groundZPosition >= startgroundZPosition + 1) {
+  //              // Upward
+  //              pathWeights[i] = weight * 0.5f;
+  //          }
+  //          else {
+  //              // Standard or downward
+  //              pathWeights[i] = weight;
+  //          }
 
-            // ROADS ARE WORTH MORE
-           /* if (tile->hasFlagThreadSafe(TileFlags::TILE_FLAG_ROAD)) {
-                pathWeights[i] *= 2.0f;
-            }*/
-        }
+  //          // ROADS ARE WORTH MORE
+  //         /* if (tile->hasFlagThreadSafe(TileFlags::TILE_FLAG_ROAD)) {
+  //              pathWeights[i] *= 2.0f;
+  //          }*/
+  //      }
 
-        // Check neighbors
-        for (int dir = NODE_DIR_DOWN_LEFT; dir <= NODE_DIR_UP_RIGHT; ++dir) {
-            const int i = dir - 1;
-            const PathPoint& nextPoint = nextPoints[i];
-            // Check if we can move here
-            if (pathWeights[i] > 0.0001f) {
+  //      // Check neighbors
+  //      for (int dir = NODE_DIR_DOWN_LEFT; dir <= NODE_DIR_UP_RIGHT; ++dir) {
+  //          const int i = dir - 1;
+  //          const PathPoint& nextPoint = nextPoints[i];
+  //          // Check if we can move here
+  //          if (pathWeights[i] > 0.0001f) {
 
-                // For diagonal nodes, make sure one both neighbors is clear
-                if (MOVEMENT_COSTS[dir] == MOVE_COST_DIAGONAL) {
-                    const i32v2& neighbors = NODE_CORNER_NEIGHBORS[dir];
-                    if (pathWeights[neighbors.x] <= 0.0001f ||
-                        pathWeights[neighbors.y] <= 0.0001f) {
-                        continue;
-                    }
-                }
-                // TODO: 3D
-                const ui32 nextNodeIndex = tileContainer.getTileIndexFromXYZOffset(nextPoint.x, nextPoint.y, 0);
-                AStarNode& nextNode = getNode(nextNodeIndex);
+  //              // For diagonal nodes, make sure one both neighbors is clear
+  //              if (MOVEMENT_COSTS[dir] == MOVE_COST_DIAGONAL) {
+  //                  const i32v2& neighbors = NODE_CORNER_NEIGHBORS[dir];
+  //                  if (pathWeights[neighbors.x] <= 0.0001f ||
+  //                      pathWeights[neighbors.y] <= 0.0001f) {
+  //                      continue;
+  //                  }
+  //              }
+  //              // TODO: 3D
+  //              const ui32 nextNodeIndex = tileContainer.getTileIndexFromXYZOffset(nextPoint.x, nextPoint.y, 0);
+  //              AStarNode& nextNode = getNode(nextNodeIndex);
 
-                const ui32 cost = node.g + MOVEMENT_COSTS[dir] / pathWeights[i];
-                if (nextNode.isInOpenList) {
-                    if (cost < nextNode.g) {
-                        // Reparent the node
-                        nextNode.g = cost;
-                        nextNode.parentDir = OPPOSITE_NODE_DIRS[dir];
-                        openList.replaceScore(nextNodeIndex, nextNode.getScore());
-                    }
-                }
-                else if (nextNode.isInClosedList) {
-                    if (cost < nextNode.g) {
-                        nextNode.g = cost;
-                        nextNode.h = getDiagonalHeuristicAtPosition(nextPoint, startPoint);
-                        // This could be a single assignment since bitfield
-                        nextNode.isInClosedList = false;
-                        nextNode.isInOpenList = true;
-                        openList.add(nextNodeIndex, nextNode.getScore());
-                    }
-                }
-                else {
-                    nextNode.g = cost;
-                    nextNode.h = getDiagonalHeuristicAtPosition(nextPoint, startPoint);
-                    nextNode.parentDir = OPPOSITE_NODE_DIRS[dir];
-                    nextNode.isInOpenList = true;
-                    openList.add(nextNodeIndex, nextNode.getScore());
-                }
-            }
-        }
-    }
+  //              const ui32 cost = node.g + MOVEMENT_COSTS[dir] / pathWeights[i];
+  //              if (nextNode.isInOpenList) {
+  //                  if (cost < nextNode.g) {
+  //                      // Reparent the node
+  //                      nextNode.g = cost;
+  //                      nextNode.parentDir = OPPOSITE_NODE_DIRS[dir];
+  //                      openList.replaceScore(nextNodeIndex, nextNode.getScore());
+  //                  }
+  //              }
+  //              else if (nextNode.isInClosedList) {
+  //                  if (cost < nextNode.g) {
+  //                      nextNode.g = cost;
+  //                      nextNode.h = getDiagonalHeuristicAtPosition(nextPoint, startPoint);
+  //                      // This could be a single assignment since bitfield
+  //                      nextNode.isInClosedList = false;
+  //                      nextNode.isInOpenList = true;
+  //                      openList.add(nextNodeIndex, nextNode.getScore());
+  //                  }
+  //              }
+  //              else {
+  //                  nextNode.g = cost;
+  //                  nextNode.h = getDiagonalHeuristicAtPosition(nextPoint, startPoint);
+  //                  nextNode.parentDir = OPPOSITE_NODE_DIRS[dir];
+  //                  nextNode.isInOpenList = true;
+  //                  openList.add(nextNodeIndex, nextNode.getScore());
+  //              }
+  //          }
+  //      }
+  //  }
 
-    if (!foundGoal) {
-        std::cout << "Failed to find path in " << timer.stop() << " ms\n";
-        path.finishedGenerating.store(true);
-        return false;
-    }
+  //  if (!foundGoal) {
+  //      std::cout << "Failed to find path in " << timer.stop() << " ms\n";
+  //      path.finishedGenerating.store(true);
+  //      return false;
+  //  }
 
-    // Generate the path by reverse iterating from the goal
-    AStarNode& goalNode = getNode(goalNodeIndex);
+  //  // Generate the path by reverse iterating from the goal
+  //  AStarNode& goalNode = getNode(goalNodeIndex);
 
-    ui32 pathSize = 0;
-    {
-        AStarNode* node = &goalNode;
-        PathPoint worldPoint(tileContainer.getTileXYZOffset(goalNodeIndex));
+  //  ui32 pathSize = 0;
+  //  {
+  //      AStarNode* node = &goalNode;
+  //      PathPoint worldPoint(tileContainer.getTileXYZOffset(goalNodeIndex));
 
-        // Find out the path size and cache the points
-        while (node != &startNode) {
-            sPathPointBuffer[pathSize++] = worldPoint;
-            const i32v2& offsetToParent = NODE_OFFSETS[node->parentDir];
-            worldPoint = PathPoint((i32)worldPoint.x + offsetToParent.x, (i32)worldPoint.y + offsetToParent.y);
-            // TODO: 3D
-            node = &getNode(tileContainer.getTileIndexFromXYZOffset(worldPoint.x, worldPoint.y, 0));
-        }
-    }
+  //      // Find out the path size and cache the points
+  //      while (node != &startNode) {
+  //          sPathPointBuffer[pathSize++] = worldPoint;
+  //          const i32v2& offsetToParent = NODE_OFFSETS[node->parentDir];
+  //          worldPoint = PathPoint((i32)worldPoint.x + offsetToParent.x, (i32)worldPoint.y + offsetToParent.y);
+  //          // TODO: 3D
+  //          node = &getNode(tileContainer.getTileIndexFromXYZOffset(worldPoint.x, worldPoint.y, 0));
+  //      }
+  //  }
 
-    // TODO: Path memory pool);
-    assert(pathSize < MAX_PATH_BUFFER_SIZE);
-    path.allocatePath(pathSize);
-    // Copy the path
-    memcpy(path.points, sPathPointBuffer, pathSize * sizeof(PathPoint));
+  //  // TODO: Path memory pool);
+  //  assert(pathSize < MAX_PATH_BUFFER_SIZE);
+  //  path.allocatePath(pathSize);
+  //  // Copy the path
+  //  memcpy(path.points, sPathPointBuffer, pathSize * sizeof(PathPoint));
 
-    std::cout << "Generated building path in " << timer.stop() << " ms with " << TOTAL << " nodes checked\n";
-    path.finishedGenerating.store(true);
+  //  std::cout << "Generated building path in " << timer.stop() << " ms with " << TOTAL << " nodes checked\n";
+  //  path.finishedGenerating.store(true);
     return true;
 }
 
 void coarseAstarEdgePropagate(const World& world, const CoarseNavNode* navNode, CoarseClosedList& closedList, CoarseAstarNodeID& totalAstarNodes, CoarseAStarNode* astarNodes, const PathPoint& goal, CoarseOpenList& openList, CoarseAstarNodeID parentId, f32 prevG, const PathPoint& parentPos) {
-    const WorldGrid& worldGrid = world.getWorldGrid();
-    const Chunk& chunk = worldGrid.getChunk(navNode->chunkId);
-    PathPoint chunkWorldPos = PathPoint(chunk.getWorldPos());
+
+    const TileContainer* tileContainer = TileContainerRepository::getTileContainer(navNode->tileContainerID);
+    PathPoint containerWorldPos = PathPoint(tileContainer->getWorldPos2D());
     // Iterate all edges
-    const ui32v2 tileOffset = chunk.getTileContainer().getTileXYOffset(navNode->cornerPos);
-    const PathPoint cornerWorldPos = chunkWorldPos + PathPoint(tileOffset);
+    const ui32v2 tileOffset = tileContainer->getTileXYOffset(navNode->cornerPos);
+    const PathPoint cornerWorldPos = containerWorldPos + PathPoint(tileOffset);
     for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
         ui32 count = navNode->counts[cartesian];
         for (ui32 edgeIndex = 0; edgeIndex < count; ++edgeIndex) {
@@ -630,8 +631,10 @@ void coarseAstarEdgePropagate(const World& world, const CoarseNavNode* navNode, 
             node.g = prevG + glm::length(f32v2(node.position.xy) - f32v2(parentPos.xy));
             node.h = getEuclideanHeuristicAtPosition(node.position, goal);
             if (sDebugOptions.mShowPaths) {
-                f32v3 pos1 = helperGet3DPoint(worldGrid, f32v2(node.position.xy));
-                f32v3 pos2 = helperGet3DPoint(worldGrid, f32v2(parentPos.xy));
+                //f32v3 pos1 = helperGet3DPoint(worldGrid, f32v2(node.position.xy));
+                //f32v3 pos2 = helperGet3DPoint(worldGrid, f32v2(parentPos.xy));
+                f32v3 pos1(node.position.x, node.position.y, 0.0f);
+                f32v3 pos2(parentPos.x, parentPos.y, 0.0f);
                 DebugRenderer::drawLineBetweenPointsThreadSafe(pos1, pos2, color4(((int)node.g % 255) / 255.0f, ((int)node.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
             }
             node.parentIndex = parentId;

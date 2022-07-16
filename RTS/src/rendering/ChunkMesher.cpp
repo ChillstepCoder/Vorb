@@ -166,7 +166,7 @@ ChunkMesher::~ChunkMesher()
 
 void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
     UNUSED(cameraPos);
-    if (chunk.mTileContainer.shouldBuildStaticMesh()) {
+    if (chunk.mTileContainer->shouldBuildStaticMesh()) {
         createMeshAsync(chunk);
     }
 }
@@ -174,12 +174,12 @@ void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
 bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
     ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
-    TileContainerRenderData& tileRenderData = chunk.getTileContainer().getRenderData();
+    TileContainerRenderData& tileRenderData = chunk.getTileContainer()->getRenderData();
     assert(!tileRenderData.mIsBuildingStaticMesh);
     tileRenderData.mIsBuildingStaticMesh = true;
 
     // TODO: Move somewhere else?
-    chunk.getTileContainer().setDirtyStaticMesh(false);
+    chunk.getTileContainer()->setDirtyStaticMesh(false);
     chunk.incReadLockAndRefCountNeighbors4AndSelf();
 
     // TODO: Do we need to do this?
@@ -204,8 +204,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
         for (int y = 0; y < CHUNK_WIDTH; ++y) {
             for (int x = 0; x < CHUNK_WIDTH; ++x) {
                 //  TODO: Multiple world layers
-                TileIndex index = chunk.getTileContainer().getTileIndexFromXYZOffset(x, y, 0);
-                const Tile& tile = chunk.getTileContainer().getTileAt(index);
+                TileIndex index = chunk.getTileContainer()->getTileIndexFromXYZOffset(x, y, 0);
+                const Tile& tile = chunk.getTileContainer()->getTileAt(index);
                 const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
@@ -234,7 +234,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                         }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, f32v3(x, y, 0.0f /*TODO REAL FLOOR HEIGHT*/), TileHandle(&chunk.getTileContainer(), index), tileData, nullptr);
+                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, f32v3(x, y, 0.0f /*TODO REAL FLOOR HEIGHT*/), TileHandle(chunk.getTileContainer(), index), tileData, nullptr);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
                             
@@ -251,7 +251,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     }, [this, &chunk, quadMeshBuilder, billboardMeshBuilder]() {
 
         ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
-        TileContainerRenderData& tileRenderData = chunk.mTileContainer.getRenderData();
+        TileContainerRenderData& tileRenderData = chunk.mTileContainer->getRenderData();
 
         // Upload mesh buffers
         quadMeshBuilder->finishMesh(*tileRenderData.mStaticMesh, MeshDrawMode::STATIC);

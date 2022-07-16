@@ -111,22 +111,9 @@ void World::updateTaskQueues() {
 
 void World::updateActiveDynamicTiles() {
 	PreciseTimer timer;
-    for (auto&& chunk : mActiveChunks) {
-        chunk->getTileContainer().updateActiveDynamicTiles();
-    }
-
-    for (auto&& city : mCities->mNodes) {
-        std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
-        for (auto&& building : buildings) {
-			building->getTileContainer().updateActiveDynamicTiles();
-        }
-    }
-    const StructureList& structures = mStructureManager->getStructures();
-    for (auto&& structure : structures) {
-        // TODO: List of buildings instead?
-        if (structure->getType() == StructureType::Building) {
-            ((Building*)structure.get())->getTileContainer().updateActiveDynamicTiles();
-        }
+	auto&& tileContainers = TileContainerRepository::getTileContainers();
+    for (auto&& container : tileContainers) {
+		container->updateActiveDynamicTiles();
     }
 }
 
@@ -199,10 +186,10 @@ void World::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
             const f32v2& worldPos = chunk->getWorldPos();
             if (camera.sphereIsVisible(f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f), CHUNK_DIAGONAL_RADIUS + 30.0f /*padding for camera pan fix :C WHY*/)) { // TODO: Broken + AABB Test?
                 mVisibleChunks.push_back(chunk);
-                chunk->mTileContainer.getRenderData().mIsVisible = true;
+                chunk->mTileContainer->getRenderData().mIsVisible = true;
             }
             else {
-                chunk->mTileContainer.getRenderData().mIsVisible = false;
+                chunk->mTileContainer->getRenderData().mIsVisible = false;
             }
         }
     }
@@ -283,7 +270,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	if (chunk->isDataReady()) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return chunk->getTileHandleAt(chunk->getTileContainer().getTileIndexFromXYZOffset(x, y, 0));
+		return chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
 	}
 	return TileHandle();
 }
@@ -294,7 +281,7 @@ TileHandle World::getTileHandleAtWorldPos(const ui32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getTileHandleAt(chunk->getTileContainer().getTileIndexFromXYZOffset(x, y, 0));
+        return chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
     }
     return TileHandle();
 }
@@ -313,7 +300,7 @@ const Tile& World::getTileAtWorldPos(const f32v2& worldPos) const {
 	assert(chunk->isDataReady());
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-    return chunk->getTileContainer().getTileAt(x, y, 0);
+    return chunk->getTileContainer()->getTileAt(x, y, 0);
 }
 
 const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
@@ -321,7 +308,7 @@ const Tile* World::tryGetTileAtWorldPos(const f32v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return &chunk->getTileContainer().getTileAt(x, y, 0);
+        return &chunk->getTileContainer()->getTileAt(x, y, 0);
     }
     return nullptr;
 }
@@ -331,7 +318,7 @@ const Tile* World::tryGetTileAtWorldPos(const ui32v2& worldPos) const {
 	if (chunk->isDataReady()) {
 		ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
 		ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return &chunk->getTileContainer().getTileAt(x, y, 0);
+		return &chunk->getTileContainer()->getTileAt(x, y, 0);
 	}
 	return nullptr;
 }
@@ -341,7 +328,7 @@ const Tile* World::tryGetTileAtWorldPos(const ui16v2& worldPos) const {
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return &chunk->getTileContainer().getTileAt(x, y, 0);
+        return &chunk->getTileContainer()->getTileAt(x, y, 0);
     }
     return nullptr;
 }
@@ -351,7 +338,7 @@ StructureArrayPtr World::tryGetStructuresAtWorldPos(const ui32v2& worldPos) cons
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-		return chunk->getStructuresAt(chunk->getTileContainer().getTileIndexFromXYZOffset(x, y, 0));
+		return chunk->getStructuresAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
     }
     return std::make_pair(nullptr, 0);
 }
@@ -361,10 +348,10 @@ const CoarseNavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) cons
 	if (!chunk.isDataReady()) return nullptr;
     ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
     ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-	const Tile& tile = chunk.getTileContainer().getTileAt(x, y, 0);
+	const Tile& tile = chunk.getTileContainer()->getTileAt(x, y, 0);
 	ui16 navNodeIndex = tile.getNavNodeIndex();
 	if (navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
-	return mNavGraph->getNode({ chunk.getChunkID().id, navNodeIndex });
+	return mNavGraph->getNode({ chunk.getTileContainer()->getId(), navNodeIndex });
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
@@ -400,7 +387,7 @@ void World::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chun
             spanY = std::min(distFromTopEdge, aabb.depth); // TODO: Prob clever way to move this up a loop
 			for (ui32 dy = 0; dy < spanY; ++dy) {
 				for (ui32 dx = 0; dx < spanX; ++dx) {
-					func(chunk, chunk.getTileContainer().getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
+					func(chunk, chunk.getTileContainer()->getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
 				}
 			}
 			worldPos.x += spanX;
@@ -470,7 +457,7 @@ void World::updateSun() {
 
 bool World::updateChunk(Chunk& chunk) {
 	if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
-		if (chunk.getTileContainer().getRefCount()) {
+		if (chunk.getTileContainer()->getRefCount()) {
 			// Waiting on a thread or handle to release us
 			return false;
 		}
@@ -483,10 +470,10 @@ bool World::updateChunk(Chunk& chunk) {
 		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
 			tryCreateNeighbors(chunk);
 		}
-		else if (chunk.mTileContainer.isDirtyNav() && chunk.mIsNavmeshing.load(/*memory order relaxed?*/) == false) {
+		else if (chunk.mTileContainer->isDirtyNav() && chunk.mIsNavmeshing.load(/*memory order relaxed?*/) == false) {
             // Update nav graph when all neighbors are loaded
 			// TODO: Async?
-			chunk.mTileContainer.setDirtyNav(false);
+			chunk.mTileContainer->setDirtyNav(false);
 			Services::NavThread::ref().addNavgraphBuildTask(chunk);
 		}
 		else {
@@ -514,7 +501,7 @@ bool World::updateChunk(Chunk& chunk) {
 		}
 		
 	}
-	else if (chunk.getTileContainer().getRefCount() == 0) {
+	else if (chunk.getTileContainer()->getRefCount() == 0) {
 		// If we are not in use, we are done generating
 		onChunkDataReady(chunk);
 	}
@@ -545,7 +532,7 @@ void World::onChunkAllNeighborsDataReady(Chunk& chunk) {
     assert(chunk.getTopNeighbor().isDataReady());
 
 	// Dirty our nav graph
-    chunk.mTileContainer.setDirtyNav(true);
+    chunk.mTileContainer->setDirtyNav(true);
 	// Update our mesh
     chunk.dirtyMesh();
     mChunkMesher->updateMesh(chunk, f32v3(mLoadCenter, 0.0f));
@@ -609,6 +596,8 @@ void World::initChunk(Chunk& chunk)
 }
 
 void World::generateChunkAsync(Chunk& chunk) {
+
+    chunk.allocateTileContainer();
     chunk.incRef();
 	// TODO: should we be inactive?
     mActiveChunks.push_back(&chunk);

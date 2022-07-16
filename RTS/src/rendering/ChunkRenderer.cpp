@@ -106,7 +106,7 @@ void ChunkRenderer::renderWorldShadows(const World& world, const Camera3D& camer
 }
 
 void ChunkRenderer::tryRenderStaticMesh(const Chunk& chunk, const Material* material) {
-    TileContainerRenderData& renderData = chunk.mTileContainer.getRenderData();
+    TileContainerRenderData& renderData = chunk.mTileContainer->getRenderData();
     if (renderData.mStaticMesh && renderData.mStaticMesh->isValid()) {
         renderData.mStaticMesh->draw();
     }

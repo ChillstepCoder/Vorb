@@ -7,7 +7,50 @@
 
 #include "resources/TileRepository.h"
 
+std::vector<std::unique_ptr<TileContainer>> sTileContainers;
+std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
+TileContainerID sTileContainerIdGen = 0;
 
+
+RUNTIME_INIT_FUNC(reserveTileContainerData) {
+    sTileContainers.reserve(500);
+    sTileContainerLookup.reserve(500);
+}
+
+TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, bool isTerrain) {
+    std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
+    TileContainer* rv = newContainer.get();
+    newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, isTerrain);
+    sTileContainerLookup[newContainer->mId] = rv;
+    sTileContainers.push_back(std::move(newContainer));
+    return rv;
+}
+
+void TileContainerRepository::destroyTileContainer(TileContainer* container) {
+    sTileContainerLookup.erase(container->mId);
+    // TODO: Profile linear search
+    for (size_t i = 0; i < sTileContainers.size(); ++i) {
+        if (sTileContainers[i].get() == container) {
+            // container->freeData();
+            sTileContainers[i] = std::move(sTileContainers.back());
+            sTileContainers.pop_back();
+            return;
+        }
+    }
+    assert(false); // Not found
+}
+
+
+
+TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
+    auto&& it = sTileContainerLookup.find(id);
+    assert(it != sTileContainerLookup.end());
+    return it->second;
+}
+
+std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileContainers() {
+    return sTileContainers;
+}
 
 TileContainerRenderData::~TileContainerRenderData()
 {
@@ -18,15 +61,21 @@ void TileContainerRenderData::reset() {
     mIsVisible = false;
     mStaticMesh.reset();
     mDynamicMesh.reset();
+    mDirtyStaticMesh = false;
+    mDirtyDynamicMesh = false;
 }
 
-void TileContainer::init(ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain) {
+void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain) {
     mRootPos = rootPos;
     mDims = dims;
     mFloorHeight = floorHeight;
-    mTiles.resize(dims.x * dims.y * dims.z);
-    mWalls.resize(dims.x * dims.y * dims.z);
     mIsTerrain = isTerrain;
+    mId = id;
+}
+
+void TileContainer::allocateData() {
+    mTiles.resize(mDims.x * mDims.y * mDims.z);
+    mWalls.resize(mDims.x * mDims.y * mDims.z);
 }
 
 void TileContainer::freeData() {

@@ -58,7 +58,7 @@ void NavThread::addNavgraphBuildTask(Chunk& chunk) {
 
         mNavGraphBuildTasks.enqueue(std::make_pair(chunk.getChunkID().id, [&]() {
             if (sDebugOptions.mShowNavGraphUpdates) {
-                mWorld->getNavGraph().debugDrawNavPatchForContainer(chunk, 250);
+                mWorld->getNavGraph().debugDrawNavPatchForContainer(*chunk.getTileContainer(), 250);
             }
         }));
     }
@@ -83,9 +83,10 @@ void NavThread::navThreadFunc() {
         bool hasTask = mRunningPathfind;
 
         // lazily generate ALL nav graphs
+        //  TODO: We shouldnt  know about chunks or chunk IDs, just TileContainer
         while (mNavGraphBuildTasks.try_dequeue(graphArgs)) {
             Chunk& chunk = mWorld->getChunk(graphArgs.first);
-            navGraph.buildNavPatchForContainer(chunk);
+            navGraph.buildNavPatchForContainer(*chunk.getTileContainer());
             chunk.mIsNavmeshing.store(false);
             chunk.decReadLockAndRefCountNeighbors4AndSelf();
             if (graphArgs.second) {

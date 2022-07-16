@@ -106,7 +106,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
 
     // === Flatten terrain ===
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
-    TileContainer& tileContainer = newBuilding->mTileContainer;
+    TileContainer& tileContainer = *newBuilding->mTileContainer;
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;

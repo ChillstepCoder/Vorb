@@ -40,9 +40,14 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     std::vector<CoarseNavNode> navNodes;
     navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK * 2);
 
+    Chunk* chunk = nullptr;
+    if (tileContainer.isTerrain()) {
+        chunk = &mWorld.getWorldGrid().getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
+    }
+
     // TODO: Separate internal with border chunks for faster lookups??
     // Iterate through sub chunks
-    const std::vector<Tile>& tiles = chunk.mTileContainer.getTiles();
+    const std::vector<Tile>& tiles = tileContainer.getTiles();
     for (int sy = 0; sy < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sy) {
         const int cornerY = sy * SUBCHUNK_WIDTH;
         for (int sx = 0; sx < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sx) {
@@ -57,9 +62,9 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     bool assigned = false;
                     const int djArryIndex = y * SUBCHUNK_WIDTH + x;
-                    const TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
+                    const TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
                     // Structures block navgraph
-                    StructureArrayPtr structures = chunk.getStructuresAtThreadSafe(index);
+                    StructureArrayPtr structures = chunk ? chunk->getStructuresAtThreadSafe(index) : StructureArrayPtr{ nullptr, 0 };
                     if (!structures.first) {
                         const Tile& tile = tiles[index];
                         const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
@@ -101,18 +106,18 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
             CoarseNavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
             memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
-            const TileIndex cornerIndex = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, 0);
-            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
-            buildEdges(chunk, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
-            buildEdges(chunk, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
-            buildEdges(chunk, cornerX, cornerY + SUBCHUNK_WIDTH - 1, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
+            const TileIndex cornerIndex = tileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, 0);
+            buildEdges(tileContainer, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
+            buildEdges(tileContainer, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
+            buildEdges(tileContainer, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
+            buildEdges(tileContainer, cornerX, cornerY + SUBCHUNK_WIDTH - 1, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
 
             // Update all nav indices
             for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
                 const int cornerY = sy * SUBCHUNK_WIDTH;
                 for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
                     const int cornerX = sx * SUBCHUNK_WIDTH;
-                    TileIndex index = chunk.mTileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
+                    TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
                     const Tile& tile = tiles[index];
                     const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
                     const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
@@ -126,7 +131,7 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     // TODO: what? did I forget to do this
 
     // Build nav list as static array
-    CoarseNavPatch& patch = mTerrainPatches[chunk.getChunkID().id];
+    CoarseNavPatch& patch = mNavPatches[tileContainer.getId()];
 
     // If we have old nav data, delete it
     if (patch.nodes) {
@@ -149,13 +154,17 @@ void NavGraph::debugDrawNavPatchForContainer(const TileContainer& tileContainer,
     const color4 color1(0.0f, 1.0f, 1.0f, 0.75f);
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
-    const HeightmapPatchID& patchId = chunk.getHeightmapPatchID();
-    const f32* heightData = worldGrid.getHeightDataAt(patchId)->data;
-    const CoarseNavPatch& patch = mTerrainPatches[chunk.getChunkID().id];
+    const TileContainerID containerId = tileContainer.getId();
+    const f32* heightData = nullptr;
+    HeightmapPatchID patchId(f32v2(tileContainer.getWorldPos2D()));
+    if (tileContainer.isTerrain()) {
+        heightData = worldGrid.getHeightDataAt(patchId)->data;
+    }
+    const CoarseNavPatch& patch = mNavPatches.find(containerId)->second;
     // Draw edges
     for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
         const CoarseNavNode& node = patch.nodes[nodeIndex];
-        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(chunk.mTileContainer.getTileXYOffset(node.cornerPos));
+        const f32v2 cornerWorldPos = f32v2(tileContainer.getWorldPos2D()) + f32v2(tileContainer.getTileXYOffset(node.cornerPos));
         for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
@@ -177,7 +186,7 @@ void NavGraph::debugDrawNavPatchForContainer(const TileContainer& tileContainer,
     // Draw connections between edges
     for (int nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
         const CoarseNavNode& node = patch.nodes[nodeIndex];
-        const f32v2 cornerWorldPos = chunk.getWorldPos() + f32v2(chunk.mTileContainer.getTileXYOffset(node.cornerPos));
+        const f32v2 cornerWorldPos = f32v2(tileContainer.getWorldPos2D()) + f32v2(tileContainer.getTileXYOffset(node.cornerPos));
         for (ui32 cartesian = 0; cartesian < 4; ++cartesian) {
             const ui32 edgeCount = node.counts[cartesian];
             for (ui32 i = 0; i < edgeCount; ++i) {
@@ -222,7 +231,6 @@ void NavGraph::debugDrawNavPatchForContainer(const TileContainer& tileContainer,
 
 void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir)
 {
-    const TileContainer& tileContainer = chunk.getTileContainer();
     const std::vector<Tile>& tiles = tileContainer.getTiles();
     ui32 currNodeId;
     i32v2 start(0);
@@ -230,7 +238,7 @@ void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const
     i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[e_cast(dir)] * (SUBCHUNK_WIDTH - 1);
     ui32 prevNodeId = djNodes[subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x].id;
     i32v2 chunkRelativePos(cornerX, cornerY);
-    i32v2 adjWorldPos = i32v2(chunk.getWorldPos()) + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
+    i32v2 adjWorldPos = tileContainer.getWorldPos2D() + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
         TileIndex index = tileContainer.getTileIndexFromXYZOffset(chunkRelativePos.x, chunkRelativePos.y, 0);
         const Tile& tile = tiles[index];
@@ -241,7 +249,7 @@ void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const
         if (currNodeId != prevNodeId) {
             // Finish edge
             if (length != 0) {
-                addNodeEdge(chunk, navNodeIdTable, prevNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
+                addNodeEdge(tileContainer, navNodeIdTable, prevNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
                 length = 0;
             }
             prevNodeId = currNodeId;
@@ -256,7 +264,7 @@ void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const
             ++length;
         }
         else if (length != 0) {
-            addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
+            addNodeEdge(tileContainer, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
             length = 0;
         }
         const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[e_cast(dir)];
@@ -266,7 +274,7 @@ void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const
     }
     // Add final edge if we reached end
     if (length != 0) {
-        addNodeEdge(chunk, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
+        addNodeEdge(tileContainer, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
     }
 }
 
@@ -300,8 +308,8 @@ void NavGraph::addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* nav
     edge.lengthMinusOne = length - 1;
 
     // Because dir is separated into separate arrays, and is always along the subchunk boundary, we can encode where the start is along a 0-15 integer (4 byte)
-    const ui32v2 cornerXYOffset = chunk.mTileContainer.getTileXYOffset(corner);
-    const ui32v2 startXYOffset = chunk.mTileContainer.getTileXYOffset(start);
+    const ui32v2 cornerXYOffset = tileContainer.getTileXYOffset(corner);
+    const ui32v2 startXYOffset = tileContainer.getTileXYOffset(start);
     switch (dir) {
         case Cartesian::WEST:
         case Cartesian::EAST: {

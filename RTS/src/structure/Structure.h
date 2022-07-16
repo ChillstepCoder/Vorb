@@ -23,15 +23,15 @@ public:
     const i32AABB3& getAABB() const { return mAABB; }
 
     StructureType getType() const { return mType; }
-    TileContainer& getTileContainer() { return mTileContainer; }
-    const TileContainer& getTileContainer() const { return mTileContainer; }
+    TileContainer* getTileContainer() { return mTileContainer; }
+    const TileContainer* getTileContainer() const { return mTileContainer; }
     i32v3 getWorldPositionOfTile(TileIndex tile) const;
 
     bool isTileOwned(TileIndex index) const { return mInteriorTilesInAABB.getBit(index); }
 
 
 protected:
-    TileContainer mTileContainer;
+    TileContainer* mTileContainer = nullptr;
     BitArray mInteriorTilesInAABB;
     i32AABB3 mAABB;
     //f32 mZPosFloor;
