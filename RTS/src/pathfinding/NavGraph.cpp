@@ -141,7 +141,9 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     if (navNodes.size()) {
         patch.size = (ui32)navNodes.size();
         patch.nodes = new CoarseNavNode[patch.size];
-        memcpy(patch.nodes, navNodes.data(), sizeof(CoarseNavNode) * patch.size);
+        for (int i = 0; i < patch.size; ++i) {
+            patch.nodes[i] = std::move(navNodes[i]);
+        }
     }
     else {
         patch.nodes = nullptr;

@@ -33,7 +33,7 @@ struct VerticalCoarseNavNodeEdge {
 };
 
 struct CoarseNavNode {
-    //std::vector<VerticalCoarseNavNodeEdge> verticalEdges; // TODO: Compress, pool, (use boost?)
+    std::vector<VerticalCoarseNavNodeEdge> verticalEdges; // TODO: Compress, pool, (use boost?)
     ui32 tileContainerID; // TODO: ContainerID?
     TileIndex cornerPos;
     union {
