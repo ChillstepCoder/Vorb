@@ -473,7 +473,6 @@ bool World::updateChunk(Chunk& chunk) {
 		else if (chunk.mTileContainer->shouldBuildNavMesh()) {
             // Update nav graph when all neighbors are loaded
 			// TODO: Async?
-			chunk.mTileContainer->setDirtyNav(false);
 			Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
 		}
 		else {

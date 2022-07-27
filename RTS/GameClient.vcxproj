@@ -220,9 +220,9 @@
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
-    <ClCompile Include="src\pathfinding\NavGraph.cpp" />
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
+    <ClCompile Include="src\pathfinding\NavWorld.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\pathfinding\BuildingNavGraph.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
@@ -412,6 +412,7 @@
     <ClInclude Include="src\pathfinding\NavGraph.h" />
     <ClInclude Include="src\pathfinding\NavThread.h" />
     <ClInclude Include="src\pathfinding\NavPath.h" />
+    <ClInclude Include="src\pathfinding\NavWorld.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
     <ClInclude Include="src\pathfinding\BuildingNavGraph.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />

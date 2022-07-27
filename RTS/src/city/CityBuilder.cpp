@@ -6,6 +6,8 @@
 #include "CityPlanner.h"
 #include "BuildingBlueprint.h"
 
+#include "pathfinding/NavThread.h"
+
 #include "World.h"
 #include "resources/TileRepository.h"
 
@@ -101,12 +103,12 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     // Allocate the building
     //PreciseTimer timer;
     Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, aabb, floorHeight));
-    newBuilding->mInteriorTilesInAABB.resizeAndZero(bp.aabb.dims.x * bp.aabb.dims.y * bp.floorCount);
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
     //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
     TileContainer& tileContainer = *newBuilding->mTileContainer;
+    tileContainer.allocateOwnedTiles();
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;
@@ -122,7 +124,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                         grid.setHeightAt(tileWorldPos, meanHeight);
                     }
 
-                    newBuilding->mInteriorTilesInAABB.setBitTo(tileIndex, true);
+                    tileContainer.setOwnedTile(tileIndex);
 
                     const TileID tileId = bp.tileIDs[e_cast(type)];
                     TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
@@ -188,6 +190,9 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     building.mNavEntrances = blueprint.exteriorDoors;
     assert(building.mNavEntrances.size());
     assert(building.mRooms.size());
+
+    // Navmesh
+    Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
 
     // TODO: Multithread
     BuildingMesher::buildMeshAndPhysics(building, world.getPhysicsWorld());

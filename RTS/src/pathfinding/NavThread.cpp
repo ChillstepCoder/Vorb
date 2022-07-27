@@ -50,8 +50,10 @@ void NavThread::clearTasks() {
 }
 
 void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
+    assert(IS_MAIN_THREAD());
     assert(!tileContainer.mIsNavmeshing.load());
     tileContainer.incReadLockAndRef();
+    tileContainer.setDirtyNav(false);
     tileContainer.mIsNavmeshing.store(true);
     if (sDebugOptions.mShowNavGraphUpdates) {
 

@@ -129,6 +129,18 @@ enum class Cartesian : ui8 {
     NONE = 100,
     INVALID = 101
 };
+
+enum AXIS_2D {
+    AXIS_HORIZONTAL = 0,
+    AXIS_VERTICAL = 1
+};
+
+enum AXIS_3D {
+    AXIS_X = 0,
+    AXIS_Y = 1,
+    AXIS_Z = 2
+};
+
 constexpr int CARTESIAN_COUNT = 4; 
 constexpr Cartesian CARTESIAN_NEIGHBORS[CARTESIAN_COUNT][2] = {
     { Cartesian::WEST, Cartesian::EAST }, // SOUTH
@@ -172,11 +184,24 @@ const i32v2 CARTESIAN_EDGE_INDEX_OFFSET_MULTS[CARTESIAN_COUNT] = {
     i32v2(1, 0), // EAST
     i32v2(0, 1), // NORTH
 };
+const int CARTESIAN_EDGEWALK_AXIS[CARTESIAN_COUNT] = {
+    AXIS_X, // SOUTH
+    AXIS_Y, // WEST
+    AXIS_Y, // EAST
+    AXIS_X, // NORTH
+};
 const color4 CARTESIAN_COLORS[CARTESIAN_COUNT] = {
     color4(0, 128, 128, 255), // SOUTH
     color4(128, 0, 128, 255), // WEST
     color4(255, 0, 0, 255), // EAST
     color4(0, 255, 0, 255), // NORTH
+};
+
+const AXIS_2D CARTESIAN_TO_AXIS_2D[CARTESIAN_COUNT] = {
+    AXIS_VERTICAL,  // DOWN
+    AXIS_HORIZONTAL,// LEFT
+    AXIS_HORIZONTAL,// RIGHT
+    AXIS_VERTICAL   // UP
 };
 
 // Corner winding
@@ -193,24 +218,6 @@ const ui32v2 CORNER_WINDING_OFFSETS[CORNER_COUNT] = {
     ui32v2(1,  0), // BOTTOM_RIGHT
     ui32v2(0,  1), // TOP_LEFT
     ui32v2(1,  1), // TOP_RIGHT
-};
-
-enum AXIS_2D {
-    AXIS_HORIZONTAL = 0,
-    AXIS_VERTICAL   = 1
-};
-
-const AXIS_2D CARTESIAN_TO_AXIS_2D[CARTESIAN_COUNT] = {
-    AXIS_VERTICAL,  // DOWN
-    AXIS_HORIZONTAL,// LEFT
-    AXIS_HORIZONTAL,// RIGHT
-    AXIS_VERTICAL   // UP
-};
-
-enum AXIS_3D {
-    AXIS_X = 0,
-    AXIS_Y = 1,
-    AXIS_Z = 2
 };
 
 // QUAD FACINGS

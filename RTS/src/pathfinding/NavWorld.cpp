@@ -16,6 +16,10 @@ inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
 }
 
 inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const HeightmapPatchID& patchId, const f32* heightData, const f32v2& pos2d) {
+    if (!heightData)
+    {
+        return f32v3(pos2d.x, pos2d.y, 4.0f);
+    }
     return f32v3(pos2d.x, pos2d.y, worldGrid.computeHeightAtPoint(patchId, heightData, pos2d));
 }
 
@@ -67,15 +71,13 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                 }
                 assert(subchunkDepth);
                 assert(subchunkWidth);
-                assert(subchunkDepth == SUBCHUNK_WIDTH);
-                assert(subchunkWidth == SUBCHUNK_WIDTH);
                 // Find the nav nodes for each sub chunk
                 DisjointSetNode djNodes[SUBCHUNK_WIDTH_SQ];
                 ui32 djNodeIDs[SUBCHUNK_WIDTH_SQ];
                 ui32 totalSets = 0;
                 // Iterate internally to find disjoint sets
-                for (int y = 0; y < subchunkWidth; ++y) {
-                    for (int x = 0; x < subchunkDepth; ++x) {
+                for (int y = 0; y < subchunkDepth; ++y) {
+                    for (int x = 0; x < subchunkWidth; ++x) {
                         bool assigned = false;
                         const int djArryIndex = y * SUBCHUNK_WIDTH + x;
                         const TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, sz);
@@ -123,15 +125,16 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                 memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
                 const TileIndex cornerIndex = tileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, sz);
-                buildEdges(tileContainer, cornerX, cornerY, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
-                buildEdges(tileContainer, cornerX, cornerY, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
-                buildEdges(tileContainer, cornerX + SUBCHUNK_WIDTH - 1, cornerY, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
-                buildEdges(tileContainer, cornerX, cornerY + SUBCHUNK_WIDTH - 1, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
+                const i32v2 subchunkDims(subchunkWidth, subchunkDepth);
+                buildEdges(tileContainer, cornerX, cornerY, sz, subchunkDims, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
+                buildEdges(tileContainer, cornerX, cornerY, sz, subchunkDims, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
+                buildEdges(tileContainer, cornerX + subchunkWidth - 1, cornerY, sz, subchunkDims, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
+                buildEdges(tileContainer, cornerX, cornerY + subchunkDepth - 1, sz, subchunkDims, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
 
                 // Update all nav indices
-                for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
+                for (int y = 0; y < subchunkDepth; ++y) {
                     const int cornerY = sy * SUBCHUNK_WIDTH;
-                    for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
+                    for (int x = 0; x < subchunkWidth; ++x) {
                         const int cornerX = sx * SUBCHUNK_WIDTH;
                         TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, sz);
                         const Tile& tile = tiles[index];
@@ -253,20 +256,20 @@ void NavWorld::debugDrawNavGraphForContainer(const TileContainer& tileContainer,
     }
 }
 
-void NavWorld::buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir)
+void NavWorld::buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir)
 {
     const std::vector<Tile>& tiles = tileContainer.getTiles();
     ui32 currNodeId;
     i32v2 start(0);
     int length = 0;
-    i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[e_cast(dir)] * (SUBCHUNK_WIDTH - 1);
+    i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[e_cast(dir)] * (subchunkDims - 1);
     ui32 prevNodeId = djNodes[subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x].id;
     i32v2 containerRelativePos(cornerX, cornerY);
     i32v2 adjWorldPos = tileContainer.getWorldPos2D() + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
 
     ui16 edgeBits = 0;
-
-    for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
+    int axis = CARTESIAN_EDGEWALK_AXIS[e_cast(dir)];
+    for (int i = 0; i < subchunkDims[axis]; ++i) {
         TileIndex index = tileContainer.getTileIndexFromXYZOffset(containerRelativePos.x, containerRelativePos.y, zPos);
         const Tile& tile = tiles[index];
         const ui32 djIndex = subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x;

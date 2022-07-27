@@ -27,12 +27,11 @@ public:
     const TileContainer* getTileContainer() const { return mTileContainer; }
     i32v3 getWorldPositionOfTile(TileIndex tile) const;
 
-    bool isTileOwned(TileIndex index) const { return mInteriorTilesInAABB.getBit(index); }
+    bool isTileOwned(TileIndex index) const { assert(mTileContainer);  return mTileContainer->isTileOwned(index); }
 
 
 protected:
     TileContainer* mTileContainer = nullptr;
-    BitArray mInteriorTilesInAABB;
     i32AABB3 mAABB;
     //f32 mZPosFloor;
     StructureType mType = StructureType::Building; // TODO: Different types?

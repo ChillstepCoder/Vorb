@@ -28,6 +28,7 @@
 
 #include "physics/PhysicsWorld.h"
 
+#include "pathfinding/NavWorld.h"
 #include "rendering/RenderContext.h"
 
 #include "TextureManip.h"
@@ -515,7 +516,11 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
             //    assert(false);
             //});
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
+        else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
+            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+            mWorld->getNavGraph().debugDrawNavGraphForContainer(*tileHandle.container, 2000);
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 12, "update");
 
         // If we had a result, close window
         if (result) {

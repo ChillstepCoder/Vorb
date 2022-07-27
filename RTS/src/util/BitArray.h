@@ -13,8 +13,10 @@ public:
     void setBitTo(ui32 index, bool val);
     bool getBit(ui32 index) const;
     void zeroAllBits();
+    void freeData() { std::vector<ui8>().swap(mData); }
 
     size_t getNumBits() const { return mData.size() * (sizeof(ui8) * 8u); }
+    bool isEmpty() const { return mData.empty(); }
 
     void debugPrint(ui32 width, ui32 height) const;
 private:

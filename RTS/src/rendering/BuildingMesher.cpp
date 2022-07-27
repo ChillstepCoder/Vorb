@@ -324,9 +324,9 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     staticMeshBuilder.reserveIndexCount(RESERVE_VERT_COUNT_STATIC * 1.5f); // 1.5 is approx
 
     const i32AABB3& aabb = building.mAABB;
-    const BitArray& ownedTiles = building.mInteriorTilesInAABB;
     BuildingRenderData& renderData = building.mRenderData;
     const TileContainer& tileContainer = *building.mTileContainer;
+    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
 
     // Textures
     const SubTexture& shinglesTexture = Services::ResourceManager::ref().getTexture("roof");
@@ -360,8 +360,8 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
                 const ui32 floorBitIndex = y * building.mAABB.dims.x + x;
                 const ui32 buildingBitIndex = floor * floorTileCount + floorBitIndex;
                 // If we own this tile, and above us is clear, we are a roofed tile
-                if (building.mInteriorTilesInAABB.getBit(buildingBitIndex) &&
-                    (floor == floorCount - 1 || !building.mInteriorTilesInAABB.getBit(buildingBitIndex + floorTileCount))) {
+                if (ownedTiles.getBit(buildingBitIndex) &&
+                    (floor == floorCount - 1 || !ownedTiles.getBit(buildingBitIndex + floorTileCount))) {
                     roofedTiles.setBitTo(floorBitIndex, true);
                 }
             }
@@ -868,16 +868,17 @@ void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& mes
     constexpr f32 CEILING_THICKNESS = 0.05f;
     const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = *building.mTileContainer;
+    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
     for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
         const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
             for (ui32 x = 0; x < aabb.dims.x; ++x) {
                 const TileIndex index = floorIndex + y * aabb.dims.x + x;
-                if (building.mInteriorTilesInAABB.getBit(index)) {
+                if (ownedTiles.getBit(index)) {
                     // If were at the top or the tile above us is outside the interior, or its interior and a non air tile above us, mesh a ceiling
                     const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
                     if (z == tileContainer.getDims().z - 1 || // If were at the top
-                        !building.mInteriorTilesInAABB.getBit(aboveIndex) || // Or tile above us is an exterior tile
+                        !ownedTiles.getBit(aboveIndex) || // Or tile above us is an exterior tile
                         !tileContainer.getTileAt(aboveIndex).isEmptyMainThread()) { // Or its an interior tile and not empty
                         // Mesh ceiling
                         f32v3 startPos(x, y, tileContainer.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
@@ -898,6 +899,7 @@ void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& mes
     const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = *building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
+    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
     for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
         const ui32 floorIndex = z * floorStride;
         // Loop along the y axis to look for free tiles
@@ -906,13 +908,13 @@ void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& mes
             for (ui32 x = 0; x < aabb.dims.x; ++x) {
                 ui32 index = yIndex + x;
                 // Check if we should start supports here, i.e. below us is outside the building
-                if (building.mInteriorTilesInAABB.getBit(index) && (z == 0 || !building.mInteriorTilesInAABB.getBit(index - floorStride))) {
+                if (ownedTiles.getBit(index) && (z == 0 || !ownedTiles.getBit(index - floorStride))) {
                     // Place floor tiles and increment X
                     const ui32 startX = x;
                     do {
                         const f32v3 floorPos(x, y, tileContainer.getFloorHeight() * z - 0.0001f);
                         meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);
-                    } while (++x < aabb.dims.x && building.mInteriorTilesInAABB.getBit(++index));
+                    } while (++x < aabb.dims.x && ownedTiles.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
                     const f32v3 startPos(startX, y + 0.5f, tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);

@@ -130,6 +130,10 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
         case UIInteractMenuState::SELECTED_TILE: {
             ImGui::Begin("Tile action", nullptr, WINDOW_FLAGS);
 
+            if (ImGui::Button("Debug Navmesh")) {
+                resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
+                mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+            }
             if (ImGui::Button("Go Here", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
             }
@@ -200,6 +204,12 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
                 // TODO: Path to room
                 ImGui::Text("Path to room");
                 const std::vector<RoomNode>& roomGraph = building->getRooms();
+
+                if (ImGui::Button("Debug Navmesh")) {
+                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
+                    mSelectedTileHandle = TileHandle(building->getTileContainer(), 0);
+                    break;
+                }
                 for (size_t i = 0; i < roomGraph.size(); ++i) {
                     const RoomNode& room = roomGraph[i];
                     if (ImGui::Button((room.roomDef->name + " " + std::to_string(i)).c_str())) {
@@ -216,7 +226,7 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
             break;
 
     }
-    static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 12, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 6, "update");    return resultFlags;
 }
 

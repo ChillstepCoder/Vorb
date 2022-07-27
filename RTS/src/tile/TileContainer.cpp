@@ -82,6 +82,7 @@ void TileContainer::freeData() {
     std::vector<Tile>().swap(mTiles);
     std::vector<TileWallContainer>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
+    mOwnedTiles.freeData();
 }
 
 void TileContainer::updateMainThread() {

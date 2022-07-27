@@ -48,7 +48,7 @@ public:
 
     // TODO: Boost allocator
 
-    const BitArray& getInteriorTilesInAABB() const { return mInteriorTilesInAABB; }
+    const BitArray& getInteriorTilesInAABB() const { return mTileContainer->getOwnedTiles(); }
     const std::vector<RoomNode>& getRooms() const { return mRooms; }
     const std::map<TileIndex, RoomNodeID>& getNavEntrances() const { return mNavEntrances; }
 

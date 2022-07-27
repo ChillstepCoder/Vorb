@@ -2,6 +2,7 @@
 
 #include "tile/Tile.h"
 #include "tile/TileHandle.h"
+#include "util/BitArray.h"
 
 class Mesh;
 
@@ -170,7 +171,15 @@ public:
     TileContainerID getId() const { return mId; }
     bool isTerrain() const { return mIsTerrain; }
 
-    // =========== Thread safety  ===========
+    // =========== Ownership  ===========
+    bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
+    const BitArray& getOwnedTiles() const { return mOwnedTiles; }
+    void allocateOwnedTiles() { mOwnedTiles.resizeAndZero(mDims.x * mDims.y * mDims.z); assert(!mOwnedTiles.isEmpty()); }
+    void setOwnedTile(TileIndex index) { mOwnedTiles.setBit(index); }
+    void clearOwnedTile(TileIndex index) { mOwnedTiles.clearBit(index); }
+    void setOwnedTileTo(TileIndex index, bool isOwned) { mOwnedTiles.setBitTo(index, isOwned); }
+
+    // =========== Thread safety and refcount  ===========
     void incReadLock() const { ++mReadLockCount; }
     void decReadLock() const { assert(mReadLockCount.load() > 0);  --mReadLockCount; }
     inline void incRef() const {
@@ -226,10 +235,12 @@ private:
     void addDoor(Cartesian doorSide, TileIndex tileIndex);
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
 
+    BitArray mOwnedTiles;
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
     std::vector<TileWallContainer> mWalls; // TODO: Memory recycler and or compression
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
+
     // All tiles that need to update when read lock is free
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     std::vector<TileContainerEntrance> mEntrances;

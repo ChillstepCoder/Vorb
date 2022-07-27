@@ -20,7 +20,8 @@ enum UIInteractMenuResultFlags : ui32 {
     INTERACT_MENU_RESULT_DEBUG_KILL_AGENT  = 1 << 8,
     INTERACT_MENU_RESULT_DEBUG_PATH_ROOM = 1 << 9,
     INTERACT_MENU_RESULT_INVALID           = 1 << 10,
-    INTERACT_MENU_RESULT_COUNT             = 11
+    INTERACT_MENU_RESULT_DEBUG_NAVMESH     = 1 << 11,
+    INTERACT_MENU_RESULT_COUNT             = 12
 };
 
 enum class UIInteractMenuState {
