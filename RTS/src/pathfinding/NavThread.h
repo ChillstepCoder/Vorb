@@ -6,7 +6,7 @@
 #include "PathFinder.h"
 
 class World;
-class Chunk;
+class TileContainer;
 class Building;
 
 enum class PathRequestType {
@@ -52,8 +52,9 @@ struct PathArgs {
     PathRequestType type;
 };
 
+// TODO: we can definitely replace std::function with a function pointer that takes TileContainerID as parameter
 using NavThreadPathArgs = std::pair<PathArgs, std::function<void()>>;
-using NavThreadGraphBuildArgs = std::pair<ui32 /*chunkId*/, std::function<void()>>;
+using NavThreadGraphBuildArgs = std::pair<TileContainerID, std::function<void()>>;
 
 class NavThread {
 public:
@@ -80,7 +81,7 @@ public:
         mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, building), nullptr));
     }
 
-    void addNavgraphBuildTask(Chunk& chunk);
+    void addNavgraphBuildTask(TileContainer& tileContainer);
 
     size_t getTasksSizeApprox() const { return mPathTasks.size_approx() + mNavGraphBuildTasks.size_approx(); }
     size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }

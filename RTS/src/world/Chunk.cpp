@@ -5,7 +5,7 @@
 #include "rendering/QuadMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 
-#include "pathfinding/NavGraph.h"
+#include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
 #include "world/WorldGrid.h"
 

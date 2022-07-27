@@ -13,6 +13,7 @@ enum class TileFlags : ui8 {
     TILE_FLAG_QUEUED_THREADSAFE_UPDATE = 1 << 4,
     TILE_FLAG_IN_CITY = 1 << 5, // TODO: Remove?
     TILE_FLAG_IS_RESOURCE_RESERVED = 1 << 6,
+    TILE_FLAG_IS_IMPASSABLE = 1 << 7,
 
     TILE_FLAG_TERM = TILE_FLAG_IS_RESOURCE_RESERVED, // Keep this at last
 };

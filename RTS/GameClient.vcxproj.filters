@@ -264,7 +264,7 @@
     <ClCompile Include="src\item\ItemStockpileRegistry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\pathfinding\NavGraph.cpp">
+    <ClCompile Include="src\pathfinding\NavWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ai\tasks\BuildTask.cpp">
@@ -821,7 +821,7 @@
     <ClInclude Include="src\item\ItemStockpileRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\pathfinding\NavGraph.h">
+    <ClInclude Include="src\pathfinding\NavWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\BuildTask.h">
@@ -1029,9 +1029,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\Tile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tile\TileCollider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileConst.h">

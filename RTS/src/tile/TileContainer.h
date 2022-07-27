@@ -82,6 +82,7 @@ public:
     friend struct TileHandle;
     friend class TileContainerRepository;
     friend class ChunkGenerator;
+    friend class NavThread; // TODO: Too many friends?
     TileContainer() = default;
     ~TileContainer() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
@@ -177,14 +178,16 @@ public:
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
         if (mRefCount > 400) {
-            std::cout << "DETECTED " << mRefCount << " REF COUNTS ON CHUNK " << std::endl;
-            assert(false && "Too many chunk refcounts");
+            std::cout << "DETECTED " << mRefCount << " REF COUNTS ON TILE CONTAINER " << std::endl;
+            assert(false && "Too many container refcounts");
         }
     }
     inline void decRef() const {
         assert(mRefCount.load());
         --mRefCount;
     }
+    void incReadLockAndRef() { incRef(); incReadLock(); }
+    void decReadLockAndRef() {  decReadLock(); decRef(); }
     const bool isReadLocked() const;
 
     // =========== Dirty bits  ===========
@@ -196,6 +199,8 @@ public:
     void setDirtyStaticMesh(bool dirty) const { mRenderData.mDirtyStaticMesh = dirty; }
     void setDirtyDynamicMesh(bool dirty) const { mRenderData.mDirtyDynamicMesh = dirty; }
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
+    bool isNavMeshing() const { return mIsNavmeshing.load(/*memory order relaxed?*/); }
+    bool shouldBuildNavMesh() const { return isDirtyNav() && !isNavMeshing(); }
 
     // =========== Accessors  ===========
     const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mRootPos); }
@@ -237,6 +242,7 @@ private:
     mutable std::atomic_uint32_t mRefCount = 0u;
 
     mutable TileContainerRenderData mRenderData;
+    std::atomic_bool mIsNavmeshing = false;
     mutable bool mDirtyNav = false;
     bool mIsTerrain = false;
 };

@@ -2,9 +2,9 @@
 #include "NavThread.h"
 
 #include "World.h"
-#include "NavGraph.h"
+#include "NavWorld.h"
 
-#include "world/Chunk.h"
+#include "tile/TileContainer.h"
 
 #include "options/DebugOptions.h"
 
@@ -49,21 +49,20 @@ void NavThread::clearTasks() {
     while (mPathTasks.try_dequeue(args));
 }
 
-void NavThread::addNavgraphBuildTask(Chunk& chunk) {
-    assert(!chunk.mIsNavmeshing.load());
-
-    chunk.incReadLockAndRefCountNeighbors4AndSelf();
-    chunk.mIsNavmeshing.store(true);
+void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
+    assert(!tileContainer.mIsNavmeshing.load());
+    tileContainer.incReadLockAndRef();
+    tileContainer.mIsNavmeshing.store(true);
     if (sDebugOptions.mShowNavGraphUpdates) {
 
-        mNavGraphBuildTasks.enqueue(std::make_pair(chunk.getChunkID().id, [&]() {
+        mNavGraphBuildTasks.enqueue(std::make_pair(tileContainer.getId(), [&]() {
             if (sDebugOptions.mShowNavGraphUpdates) {
-                mWorld->getNavGraph().debugDrawNavPatchForContainer(*chunk.getTileContainer(), 250);
+                mWorld->getNavGraph().debugDrawNavGraphForContainer(tileContainer, 250);
             }
         }));
     }
     else {
-        mNavGraphBuildTasks.enqueue(std::make_pair(chunk.getChunkID().id, nullptr));
+        mNavGraphBuildTasks.enqueue(std::make_pair(tileContainer.getId(), nullptr));
     }
 }
 
@@ -75,7 +74,7 @@ void NavThread::navThreadFunc() {
 
     NavThreadPathArgs pathArgs;
     NavThreadGraphBuildArgs graphArgs;
-    NavGraph& navGraph = mWorld->getNavGraph();
+    NavWorld& navGraph = mWorld->getNavGraph();
     while (!mStop.load()) {
         // TODO: Super tiny chance of race condition here in isRunning(). We could dequeue a single task and be considered not running very briefly even tho we are
         mRunningPathfind = false;
@@ -85,10 +84,10 @@ void NavThread::navThreadFunc() {
         // lazily generate ALL nav graphs
         //  TODO: We shouldnt  know about chunks or chunk IDs, just TileContainer
         while (mNavGraphBuildTasks.try_dequeue(graphArgs)) {
-            Chunk& chunk = mWorld->getChunk(graphArgs.first);
-            navGraph.buildNavPatchForContainer(*chunk.getTileContainer());
-            chunk.mIsNavmeshing.store(false);
-            chunk.decReadLockAndRefCountNeighbors4AndSelf();
+            TileContainer* tileContainer = TileContainerRepository::getTileContainer(graphArgs.first);
+            assert(tileContainer);
+            navGraph.buildNavGraphForContainer(*tileContainer);
+            tileContainer->mIsNavmeshing.store(false);
             if (graphArgs.second) {
                 mMainThreadProcs.enqueue(std::move(graphArgs.second));
             }

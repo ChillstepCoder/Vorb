@@ -15,7 +15,7 @@ class BillboardMesh;
 class TBOBillboardMesh;
 class GrassBillboardMesh;
 class ChunkGrassQuadtree;
-class NavGraph;
+class NavWorld;
 class Structure;
 
 #define USE_INSTANCED_BILLBOARDS 1
@@ -75,7 +75,7 @@ class Chunk {
 	friend class ChunkRenderer;
 	friend class ChunkMesher;
     friend class RenderContext; // For debug rendering of neighbors only
-    friend class NavGraph;
+    friend class NavWorld;
 	friend class NavThread;
 	friend struct TileHandle;
 	friend struct TileRef;
@@ -180,9 +180,6 @@ private:
 	f32v2 mWorldPos = f32v2(0.0f);
 	f32AABB3 mAABB = f32AABB3(0.0f); // TODO: Combine with worldpos?
 	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
-
-	// Atomic tasking checks
-	std::atomic_bool mIsNavmeshing = false;
 
 	ui8 mDataReadyNeighborCount = 0;
 	WorldGrid* mWorldGrid = nullptr;

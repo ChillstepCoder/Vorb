@@ -4,7 +4,7 @@
 #include "World.h"
 #include "resources/TileRepository.h"
 
-#include "pathfinding/NavGraph.h"
+#include "pathfinding/NavWorld.h"
 
 #include "options/DebugOptions.h"
 

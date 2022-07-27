@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "NavGraph.h"
+#include "NavWorld.h"
 
 #include "World.h"
 #include "world/Chunk.h"
@@ -23,12 +23,12 @@ struct DisjointSetNode {
     ui32 id;
 };
 
-NavGraph::NavGraph(World& world) : mWorld(world)
+NavWorld::NavWorld(World& world) : mWorld(world)
 {
 
 }
 
-void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
+void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
 
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("Nav Graph");
 
@@ -36,9 +36,11 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     assert(IS_NAV_THREAD());
 
     //ScopedTimer timer("Built nav graph");
+    const i32v3& dims = tileContainer.getDims();
+    const i32v2 subchunkCount(ceil((f32)dims.x / SUBCHUNK_WIDTH), ceil((f32)dims.y / SUBCHUNK_WIDTH));
 
     std::vector<CoarseNavNode> navNodes;
-    navNodes.reserve(MIN_SUBCHUNKS_PER_CHUNK * 2);
+    navNodes.reserve(subchunkCount.x * subchunkCount.y * tileContainer.getDims().z);
 
     Chunk* chunk = nullptr;
     if (tileContainer.isTerrain()) {
@@ -48,81 +50,96 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     // TODO: Separate internal with border chunks for faster lookups??
     // Iterate through sub chunks
     const std::vector<Tile>& tiles = tileContainer.getTiles();
-    for (int sy = 0; sy < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sy) {
-        const int cornerY = sy * SUBCHUNK_WIDTH;
-        for (int sx = 0; sx < MIN_SUBCHUNKS_PER_CHUNK_ROW; ++sx) {
-            const int cornerX = sx * SUBCHUNK_WIDTH;
+    for (int sz = 0; sz < tileContainer.getDims().z; ++sz) {
+        //const int zIndexStart = sz * dims.x * dims.y;
+        for (int sy = 0; sy < subchunkCount.y; ++sy) {
+            const int cornerY = sy * SUBCHUNK_WIDTH;
+            for (int sx = 0; sx < subchunkCount.x; ++sx) {
+                const int cornerX = sx * SUBCHUNK_WIDTH;
+                int subchunkWidth = SUBCHUNK_WIDTH;
+                int subchunkDepth = SUBCHUNK_WIDTH;
+                // Last subchunk might be smaller
+                if (sx == subchunkCount.x - 1) {
+                    subchunkWidth = SUBCHUNK_WIDTH - (cornerX + SUBCHUNK_WIDTH - dims.x);
+                }
+                if (sy == subchunkCount.y - 1) {
+                    subchunkDepth = SUBCHUNK_WIDTH - (cornerY + SUBCHUNK_WIDTH - dims.y);
+                }
+                assert(subchunkDepth);
+                assert(subchunkWidth);
+                assert(subchunkDepth == SUBCHUNK_WIDTH);
+                assert(subchunkWidth == SUBCHUNK_WIDTH);
+                // Find the nav nodes for each sub chunk
+                DisjointSetNode djNodes[SUBCHUNK_WIDTH_SQ];
+                ui32 djNodeIDs[SUBCHUNK_WIDTH_SQ];
+                ui32 totalSets = 0;
+                // Iterate internally to find disjoint sets
+                for (int y = 0; y < subchunkWidth; ++y) {
+                    for (int x = 0; x < subchunkDepth; ++x) {
+                        bool assigned = false;
+                        const int djArryIndex = y * SUBCHUNK_WIDTH + x;
+                        const TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, sz);
+                        // Structures block navgraph
+                        StructureArrayPtr structures = chunk ? chunk->getStructuresAtThreadSafe(index) : StructureArrayPtr{ nullptr, 0 };
+                        if (!structures.first) {
+                            const Tile& tile = tiles[index];
+                            const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
 
-            // Find the nav nodes for each sub chunk
-            DisjointSetNode djNodes[SUBCHUNK_WIDTH_SQ];
-            ui32 djNodeIDs[SUBCHUNK_WIDTH_SQ];
-            ui32 totalSets = 0;
-            // Iterate internally to find disjoint sets
-            for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
-                for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
-                    bool assigned = false;
-                    const int djArryIndex = y * SUBCHUNK_WIDTH + x;
-                    const TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
-                    // Structures block navgraph
-                    StructureArrayPtr structures = chunk ? chunk->getStructuresAtThreadSafe(index) : StructureArrayPtr{ nullptr, 0 };
-                    if (!structures.first) {
-                        const Tile& tile = tiles[index];
-                        const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
-
-                        if (x != 0) {
-                            const Tile& left = tiles[index - 1];
-                            // Check if we can cross between
-                            if (abs(left.getGroundZPositionUncompressedThreadSafe() - groundZPosition) < 2.0f) {
-                                djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
-                                assigned = true;
-                            }
-                        }
-                        if (y != 0) {
-                            const Tile& bottom = tiles[index - CHUNK_WIDTH];
-                            // Check if we can cross between
-                            if (abs(bottom.getGroundZPositionUncompressedThreadSafe() - groundZPosition) < 2.0f) {
-                                if (assigned) {
-                                    // If we already assigned to left, merge the sets
-                                    ui32 prevID = djNodeIDs[djArryIndex];
-                                    ui32 botID = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
-                                    djNodes[prevID].id = djNodes[botID].id;
-                                }
-                                else {
-                                    djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
+                            if (x != 0) {
+                                const Tile& left = tiles[index - 1];
+                                // Check if we can cross between
+                                if (abs(left.getGroundZPositionUncompressedThreadSafe() - groundZPosition) < 2.0f) {
+                                    djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - 1];
                                     assigned = true;
                                 }
                             }
+                            if (y != 0) {
+                                const Tile& bottom = tiles[index - dims.x];
+                                // Check if we can cross between
+                                if (abs(bottom.getGroundZPositionUncompressedThreadSafe() - groundZPosition) < 2.0f) {
+                                    if (assigned) {
+                                        // If we already assigned to left, merge the sets
+                                        ui32 prevID = djNodeIDs[djArryIndex];
+                                        ui32 botID = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
+                                        djNodes[prevID].id = djNodes[botID].id;
+                                    }
+                                    else {
+                                        djNodeIDs[djArryIndex] = djNodeIDs[djArryIndex - SUBCHUNK_WIDTH];
+                                        assigned = true;
+                                    }
+                                }
+                            }
+                        }
+                        // If we haven't been joined, make a new node
+                        if (!assigned) {
+                            djNodeIDs[djArryIndex] = totalSets;
+                            djNodes[totalSets] = { totalSets };
+                            ++totalSets;
                         }
                     }
-                    // If we haven't been joined, make a new node
-                    if (!assigned) {
-                        djNodeIDs[djArryIndex] = totalSets;
-                        djNodes[totalSets] = { totalSets };
-                        ++totalSets;
-                    }
                 }
-            }
-            // Now, iterate through the edges to produce nav nodes with edge information
-            CoarseNavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
-            memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
+                // Now, iterate through the edges to produce nav nodes with edge information
+                CoarseNavNodeIndex navNodeIdTable[SUBCHUNK_WIDTH_SQ];
+                memset(navNodeIdTable, 0xffui8, sizeof(ui16) * SUBCHUNK_WIDTH_SQ);
 
-            const TileIndex cornerIndex = tileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, 0);
-            buildEdges(tileContainer, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
-            buildEdges(tileContainer, cornerX, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
-            buildEdges(tileContainer, cornerX + SUBCHUNK_WIDTH - 1, cornerY, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
-            buildEdges(tileContainer, cornerX, cornerY + SUBCHUNK_WIDTH - 1, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
+                const TileIndex cornerIndex = tileContainer.getTileIndexFromXYZOffset(cornerX, cornerY, sz);
+                buildEdges(tileContainer, cornerX, cornerY, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::SOUTH);
+                buildEdges(tileContainer, cornerX, cornerY, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::WEST);
+                buildEdges(tileContainer, cornerX + SUBCHUNK_WIDTH - 1, cornerY, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::EAST);
+                buildEdges(tileContainer, cornerX, cornerY + SUBCHUNK_WIDTH - 1, sz, cornerIndex, djNodes, djNodeIDs, navNodeIdTable, navNodes, Cartesian::NORTH);
 
-            // Update all nav indices
-            for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
-                const int cornerY = sy * SUBCHUNK_WIDTH;
-                for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
-                    const int cornerX = sx * SUBCHUNK_WIDTH;
-                    TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, 0);
-                    const Tile& tile = tiles[index];
-                    const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
-                    const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
-                    const CoarseNavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
-                    tile.setNavNodeIndex(navNodeIndex);
+                // Update all nav indices
+                for (int y = 0; y < SUBCHUNK_WIDTH; ++y) {
+                    const int cornerY = sy * SUBCHUNK_WIDTH;
+                    for (int x = 0; x < SUBCHUNK_WIDTH; ++x) {
+                        const int cornerX = sx * SUBCHUNK_WIDTH;
+                        TileIndex index = tileContainer.getTileIndexFromXYZOffset(cornerX + x, cornerY + y, sz);
+                        const Tile& tile = tiles[index];
+                        const ui32 djIndex = y * SUBCHUNK_WIDTH + x;
+                        const ui32 navTableId = djNodes[djNodeIDs[djIndex]].id;
+                        const CoarseNavNodeIndex navNodeIndex = navNodeIdTable[navTableId];
+                        tile.setNavNodeIndex(navNodeIndex);
+                    }
                 }
             }
         }
@@ -131,7 +148,7 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     // TODO: what? did I forget to do this
 
     // Build nav list as static array
-    CoarseNavPatch& patch = mNavPatches[tileContainer.getId()];
+    CoarseNavGraph& patch = mNavGraphs[tileContainer.getId()];
 
     // If we have old nav data, delete it
     if (patch.nodes) {
@@ -151,7 +168,7 @@ void NavGraph::buildNavPatchForContainer(TileContainer& tileContainer) {
     }
 }
 
-void NavGraph::debugDrawNavPatchForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId /*= 0*/) const
+void NavWorld::debugDrawNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId /*= 0*/) const
 {
     const color4 color1(0.0f, 1.0f, 1.0f, 0.75f);
     const color4 color2(1.0f, 0.0f, 0.0f, 0.75f);
@@ -162,7 +179,12 @@ void NavGraph::debugDrawNavPatchForContainer(const TileContainer& tileContainer,
     if (tileContainer.isTerrain()) {
         heightData = worldGrid.getHeightDataAt(patchId)->data;
     }
-    const CoarseNavPatch& patch = mNavPatches.find(containerId)->second;
+    auto&& it = mNavGraphs.find(containerId);
+    if (it == mNavGraphs.end()) {
+        std::cout << "Failed to find navgraph for container " << containerId << std::endl;
+        return;
+    }
+    const CoarseNavGraph& patch = it->second;
     // Draw edges
     for (ui32 nodeIndex = 0; nodeIndex < patch.size; ++nodeIndex) {
         const CoarseNavNode& node = patch.nodes[nodeIndex];
@@ -231,7 +253,7 @@ void NavGraph::debugDrawNavPatchForContainer(const TileContainer& tileContainer,
     }
 }
 
-void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir)
+void NavWorld::buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir)
 {
     const std::vector<Tile>& tiles = tileContainer.getTiles();
     ui32 currNodeId;
@@ -239,48 +261,54 @@ void NavGraph::buildEdges(TileContainer& tileContainer, const int cornerX, const
     int length = 0;
     i32v2 subChunkRelativePos = CARTESIAN_EDGE_INDEX_OFFSET_MULTS[e_cast(dir)] * (SUBCHUNK_WIDTH - 1);
     ui32 prevNodeId = djNodes[subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x].id;
-    i32v2 chunkRelativePos(cornerX, cornerY);
+    i32v2 containerRelativePos(cornerX, cornerY);
     i32v2 adjWorldPos = tileContainer.getWorldPos2D() + i32v2(cornerX + CARTESIAN_NORMALS[e_cast(dir)].x, cornerY + CARTESIAN_NORMALS[e_cast(dir)].y);
+
+    ui16 edgeBits = 0;
+
     for (int i = 0; i < SUBCHUNK_WIDTH; ++i) {
-        TileIndex index = tileContainer.getTileIndexFromXYZOffset(chunkRelativePos.x, chunkRelativePos.y, 0);
+        TileIndex index = tileContainer.getTileIndexFromXYZOffset(containerRelativePos.x, containerRelativePos.y, zPos);
         const Tile& tile = tiles[index];
-        const Tile& bottom = mWorld.getTileAtWorldPos(f32v2(adjWorldPos));
         const ui32 djIndex = subChunkRelativePos.y * SUBCHUNK_WIDTH + subChunkRelativePos.x;
         currNodeId = djNodes[djNodeIDs[djIndex]].id;
         // Check if we have an edge break
         if (currNodeId != prevNodeId) {
             // Finish edge
             if (length != 0) {
-                addNodeEdge(tileContainer, navNodeIdTable, prevNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
+                addNodeEdge(tileContainer, navNodeIdTable, prevNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, zPos), length, dir);
                 length = 0;
             }
             prevNodeId = currNodeId;
         }
+        const bool isImpassable = tile.hasFlagThreadSafe(TileFlags::TILE_FLAG_IS_IMPASSABLE);
+        if (!isImpassable) {
+            edgeBits |= 1 << i;
+        }
 
-        if (abs(bottom.getGroundZPositionUncompressedThreadSafe() - tile.getGroundZPositionUncompressedThreadSafe()) < 2.0f) {
+        if (true/*if we dont have an edge break*/) {
             // Start new edge
             if (length == 0) {
-                start = chunkRelativePos;
+                start = containerRelativePos;
             }
             // Extend edge length
             ++length;
         }
         else if (length != 0) {
-            addNodeEdge(tileContainer, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
+            addNodeEdge(tileContainer, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, zPos), length, dir);
             length = 0;
         }
         const i32v2& edgeDir = CARTESIAN_EDGE_DIRS_ABS[e_cast(dir)];
         adjWorldPos += edgeDir;
-        chunkRelativePos += edgeDir;
+        containerRelativePos += edgeDir;
         subChunkRelativePos += edgeDir;
     }
     // Add final edge if we reached end
     if (length != 0) {
-        addNodeEdge(tileContainer, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, 0), length, dir);
+        addNodeEdge(tileContainer, navNodeIdTable, currNodeId, navNodes, cornerIndex, tileContainer.getTileIndexFromXYZOffset(start.x, start.y, zPos), length, dir);
     }
 }
 
-void NavGraph::addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir) {
+void NavWorld::addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir) {
     CoarseNavNode* currNavNode;
     // Add nav node if it doesnt exist yet
     ui16& navNodeId = navNodeIdTable[djIndex];
@@ -294,8 +322,8 @@ void NavGraph::addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* nav
         currNavNode->numEast = 0;
         currNavNode->numNorth = 0;
         currNavNode->isClosed = false;
-        currNavNode->width = 8;
-        currNavNode->depth = 8;
+        currNavNode->width = SUBCHUNK_WIDTH;
+        currNavNode->depth = SUBCHUNK_WIDTH;
     }
     else {
         currNavNode = &navNodes[navNodeId];

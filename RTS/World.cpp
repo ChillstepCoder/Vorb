@@ -34,7 +34,7 @@
 #include "camera/Camera3D.h"
 
 #include "generation/WorldGeneration.h"
-#include "pathfinding/NavGraph.h"
+#include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
 
 // TODO: remove?
@@ -70,7 +70,7 @@ World::World() :
 	mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
 
 	// Nav graph
-	mNavGraph = std::make_unique<NavGraph>(*this);
+	mNavGraph = std::make_unique<NavWorld>(*this);
 
     // Weather (Init post load because it contains rendering and requires render context to be initialized, TODO: Fix this)
     mCloudManager = std::make_unique<CloudManager>(*this);
@@ -470,11 +470,11 @@ bool World::updateChunk(Chunk& chunk) {
 		if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
 			tryCreateNeighbors(chunk);
 		}
-		else if (chunk.mTileContainer->isDirtyNav() && chunk.mIsNavmeshing.load(/*memory order relaxed?*/) == false) {
+		else if (chunk.mTileContainer->shouldBuildNavMesh()) {
             // Update nav graph when all neighbors are loaded
 			// TODO: Async?
 			chunk.mTileContainer->setDirtyNav(false);
-			Services::NavThread::ref().addNavgraphBuildTask(chunk);
+			Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
 		}
 		else {
 			// Update grass

@@ -27,7 +27,7 @@ class CloudManager;
 class ItemStockpileRegistry;
 class EntityComponentSystem;
 class EntityFactory;
-class NavGraph;
+class NavWorld;
 class WorldEditor;
 class ChunkMesher;
 class HeightmapTerrainQuadtree;
@@ -91,8 +91,8 @@ public:
     WorldGrid& getWorldGrid() { return mWorldGrid; }
     const WorldGrid& getWorldGrid() const { return mWorldGrid; }
 
-    NavGraph& getNavGraph() { return *mNavGraph; }
-    const NavGraph& getNavGraph() const { return *mNavGraph; }
+    NavWorld& getNavGraph() { return *mNavGraph; }
+    const NavWorld& getNavGraph() const { return *mNavGraph; }
 
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 
@@ -165,7 +165,7 @@ private:
 	std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
 
 	// Nav graph
-	std::unique_ptr<NavGraph> mNavGraph;
+	std::unique_ptr<NavWorld> mNavGraph;
 
 	// Clouds
 	std::unique_ptr<CloudManager> mCloudManager;

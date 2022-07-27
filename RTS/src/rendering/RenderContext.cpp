@@ -4,7 +4,7 @@
 #include "World.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
-#include "pathfinding/NavGraph.h"
+#include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
 
 #include "DebugRenderer.h"
@@ -741,8 +741,8 @@ void RenderContext::renderDebug(const Camera3D& camera) {
             ScopedTimer timer("Debug Draw Navgraph");
             DebugRenderer::reserveLines(mWorld.getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             mWorld.enumActiveChunks([&camera, this, NAVGRAPH_ID](const Chunk& chunk) {
-                if (chunk.isDataReady() && !chunk.mIsNavmeshing) {
-                    mWorld.getNavGraph().debugDrawNavPatchForContainer(*chunk.getTileContainer(), MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                if (chunk.isDataReady() && !chunk.getTileContainer()->isNavMeshing()) {
+                    mWorld.getNavGraph().debugDrawNavGraphForContainer(*chunk.getTileContainer(), MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                 }
             });
             wasRenderingNavGraph = true;
