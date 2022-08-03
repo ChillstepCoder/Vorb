@@ -742,7 +742,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
             DebugRenderer::reserveLines(mWorld.getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             mWorld.enumActiveChunks([&camera, this, NAVGRAPH_ID](const Chunk& chunk) {
                 if (chunk.isDataReady() && !chunk.getTileContainer()->isNavMeshing()) {
-                    mWorld.getNavGraph().debugDrawNavGraphForContainer(*chunk.getTileContainer(), MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                    mWorld.getNavWorld().debugDrawNavGraphForContainer(*chunk.getTileContainer(), MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                 }
             });
             wasRenderingNavGraph = true;

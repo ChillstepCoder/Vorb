@@ -24,6 +24,7 @@ void NavThread::init(World& world) {
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&NavThread::navThreadFunc, this);
     }
+    mPathFinder = std::make_unique<PathFinder>(world);
 }
 
 void NavThread::mainThreadUpdate() {
@@ -59,7 +60,7 @@ void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
 
         mNavGraphBuildTasks.enqueue(std::make_pair(tileContainer.getId(), [&]() {
             if (sDebugOptions.mShowNavGraphUpdates) {
-                mWorld->getNavGraph().debugDrawNavGraphForContainer(tileContainer, 250);
+                mWorld->getNavWorld().debugDrawNavGraphForContainer(tileContainer, 250);
             }
         }));
     }
@@ -76,7 +77,7 @@ void NavThread::navThreadFunc() {
 
     NavThreadPathArgs pathArgs;
     NavThreadGraphBuildArgs graphArgs;
-    NavWorld& navGraph = mWorld->getNavGraph();
+    NavWorld& navGraph = mWorld->getNavWorld();
     while (!mStop.load()) {
         // TODO: Super tiny chance of race condition here in isRunning(). We could dequeue a single task and be considered not running very briefly even tho we are
         mRunningPathfind = false;
@@ -96,26 +97,20 @@ void NavThread::navThreadFunc() {
         }
 
         if (hasTask) {
-            switch (pathArgs.first.type) {
-                case PathRequestType::TERRAIN_FINE: {
-                    const TerrainPathArgs& args = pathArgs.first.terrainArgs;
-                    mPathFinder.generateFinePathSynchronous(*mWorld, args.start, args.goal, *pathArgs.first.pathToBuild);
+            const PathArgs& args = pathArgs.first;
+            switch (args.type) {
+                case PathRequestType::FINE: {
+                    mPathFinder->generateFinePathSynchronous(args.start, args.goal, *args.pathToBuild);
                     break;
                 }
-                case PathRequestType::TERRAIN_COARSE: {
-                    const TerrainPathArgs& args = pathArgs.first.terrainArgs;
-                    mPathFinder.generateCoarsePathSynchronous(*mWorld, args.start, args.goal, *pathArgs.first.pathToBuild);
+                case PathRequestType::COARSE: {
+                    mPathFinder->generateCoarsePathSynchronous(args.start, args.goal, *args.pathToBuild);
                     break;
                 }
-                case PathRequestType::BUILDING_FINE: {
-                    const BuildingPathArgs& args = pathArgs.first.buildingArgs;
-                    mPathFinder.generateBuildingPathSynchronous(*args.building, args.start, args.goal, *pathArgs.first.pathToBuild);
-                    break;
-                 }
                 default:
                     assert(false);
             }
-            static_assert(e_cast(PathRequestType::COUNT) == 3);
+            static_assert(e_cast(PathRequestType::COUNT) == 2);
            
             if (pathArgs.second) {
                 mMainThreadProcs.enqueue(std::move(pathArgs.second));

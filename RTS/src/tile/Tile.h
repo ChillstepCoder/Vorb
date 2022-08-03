@@ -22,6 +22,8 @@ enum class TileTextureMethod : ui8 {
 };
 KEG_ENUM_DECL(TileTextureMethod);
 
+// TODO: separate certain data into multiple arrays because right now every TileData lookup is a cache miss
+// For example we only look up path weight when constructing the nav  graph, why not  have it in a separate vector?
 struct TileData {
     f32v3 dims = f32v3(1.0f);
     TileID id;
@@ -54,6 +56,7 @@ struct TileWall {
     TileID paintID = TILE_ID_NONE;
 
     void clear() { wallID = TILE_ID_NONE; paintID = TILE_ID_NONE; }
+    bool isValid() const { return wallID != TILE_ID_NONE; }
 };
 
 struct TileWalls {
@@ -81,19 +84,8 @@ struct TileNavData {
         };
         entt::entity entities[4];
     };
-    union {
-        struct {
-            bool southOpen;
-            bool westOpen;
-            bool eastOpen;
-            bool northOpen;
-        };
-        bool adjacencyOpen[4];
-    };
     // Collision stuff
     mutable ui16 coarseNavNodeIndex = UINT16_MAX; // Modified by nav thread
-    ui8 pathWeight = 255u;
-    ui8 pathWeightThreadSafe = 255u;
 };
 
 class Tile {
@@ -115,9 +107,6 @@ public:
     // Only nav thread can access this data
     ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navData.coarseNavNodeIndex; }
     void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navData.coarseNavNodeIndex = index; }
-
-    ui8 getPathWeightMainThread() const { assert(IS_MAIN_THREAD()); return navData.pathWeight; }
-    ui8 getPathWeightNavThread() const { assert(IS_NAV_THREAD()); return navData.pathWeightThreadSafe; }
 
     f32 getGroundZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)groundZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
     f32 getGroundZPositionUncompressedThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return (f32)groundZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
@@ -141,7 +130,6 @@ private:
     void setTileFlags(TileFlags flags, bool isReadLocked);
     void clearTileFlag(TileFlags flag, bool isReadLocked);
     void clearTileFlags(bool isReadLocked);
-    void setPathWeight(ui8 weight, bool isReadLocked);
     void setGroundZPosition(f32 groundZPosition, bool isReadLocked);
     void updateCollision(bool isReadLocked);
     bool isUpdateQueued() { return tileFlags.isBitSet(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE); }
@@ -163,13 +151,13 @@ private:
         };
         TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
     };
+    TileNavData navData;
     TileOrientation orientation;
     TileOrientation orientationThreadSafe;
     ui16 groundZPositionCompressed;
     ui16 groundZPositionCompressedThreadSafe;
     BitFlags<TileFlags> tileFlags;
     BitFlags<TileFlags> tileFlagsThreadSafe;
-    TileNavData navData;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 44, "Keep small");
+static_assert(sizeof(Tile) == 40, "Keep small");

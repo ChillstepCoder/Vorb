@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "tile/TileHandle.h"
+#include "tile/TileContainer.h"
 
 #include "world/Chunk.h"
 
@@ -70,4 +71,22 @@ i32v3 TileHandle::getWorldPos3D() const {
 
 ui32v3 TileHandle::getContainerOffset() const {
     return container->getTileXYZOffset(tileIndex);
+}
+
+LiteTileHandle TileHandle::toLiteTileHandle() const {
+    return LiteTileHandle(container->getId(), tileIndex);
+}
+
+TileContainer* LiteTileHandle::getTileContainer() const {
+    return TileContainerRepository::getTileContainer(containerId);
+}
+
+TileHandle LiteTileHandle::toTileHandle() const {
+    return TileHandle(getTileContainer(), index);
+}
+
+i32v3 LiteTileHandle::getWorldPosition() const
+{
+    TileContainer* container = getTileContainer();
+    return container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(index));
 }

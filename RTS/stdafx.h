@@ -128,6 +128,30 @@ enum class Cartesian : ui8 {
     NORTH = 3,  //+y    north
     NONE = 100,
     INVALID = 101
+}; 
+
+enum class Cartesian8 : ui8 {
+    SOUTH_WEST = 0,
+    SOUTH = 1,
+    SOUTH_EAST = 2,
+    WEST = 3,
+    EAST = 4,
+    NORTH_WEST = 5,
+    NORTH = 6,
+    NORTH_EAST = 7,
+    NONE = 100,
+    INVALID = 101
+};
+
+constexpr Cartesian CARTESIAN8_TO_CARTESIAN[8] = {
+    Cartesian::NONE, //SOUTH_WEST
+    Cartesian::SOUTH, //SOUTH 
+    Cartesian::NONE, //SOUTH_EAST
+    Cartesian::WEST, //WEST
+    Cartesian::EAST, //EAST
+    Cartesian::NONE, //NORTH_WEST
+    Cartesian::NORTH, //NORTH
+    Cartesian::NONE, //NORTH_EAST
 };
 
 enum AXIS_2D {
@@ -272,6 +296,7 @@ const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
 typedef ui32 TileContainerID;
 typedef ui32 TileIndex;
 constexpr TileIndex INVALID_TILE_INDEX = UINT32_MAX;
+constexpr TileContainerID INVALID_TILE_CONTAINER_ID = UINT32_MAX;
 
 //struct TilePos {
 //    TileIndex index;

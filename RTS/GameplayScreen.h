@@ -59,7 +59,7 @@ private:
 	bool mIsPathfinding = false;
 
     // UI
-	f32v3 mSelectedTilePosition = f32v3(0.0f);
+	TileHandle mSelectedTileHandle;
 	f32v2 mSelectedScreenPos = f32v2(0.0f);
     std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);

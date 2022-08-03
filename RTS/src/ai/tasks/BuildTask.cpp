@@ -73,10 +73,10 @@ void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt
 
     // TODO: Make sure the stockpile didnt die
     assert(mSourceItems.size());
-    PathPoint targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
-
+    f32v2 targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
+    assert(false); // itemreservation should use TileHandle or most probably, TileRef
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(PathPoint(myPos), targetPos, [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPosWITHSTRUCTURES(myPos), world.getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }
@@ -129,16 +129,16 @@ void BuildTask::pathToBlueprint(World& world, entt::registry& registry, entt::en
     const f32v3 myPos = physCmp.getPosition();
 
     PathPoint targetPos(mBlueprint.getWorldPositionOfTile(mTargetTiles.back()));
-
-    navCmp.requestCoarsePathWithCallback(PathPoint(myPos), targetPos, [this](bool success) {
-        if (success) {
-            mState = BuildTaskState::BUILD_TILE;
-        }
-        else {
-            // Failed to path, fail he task
-            failTask();
-        }
-    });
+    assert(false); // We need to actually have a tileContainer with proper TileHandles to path to
+    //navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPosWITHSTRUCTURES(myPos), mTargetTiles.back(), [this](bool success) {
+    //    if (success) {
+    //        mState = BuildTaskState::BUILD_TILE;
+    //    }
+    //    else {
+    //        // Failed to path, fail he task
+    //        failTask();
+    //    }
+    //});
     mState = BuildTaskState::PATH_TO_BLUEPRINT_TILE;
 }
 

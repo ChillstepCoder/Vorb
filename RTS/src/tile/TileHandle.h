@@ -3,7 +3,10 @@
 #include "world/ChunkID.h"
 #include "tile/Tile.h"
 
+#include <boost/container_hash/hash.hpp>
+
 class TileContainer;
+struct LiteTileHandle;
 
 struct TileHandle {
 
@@ -16,6 +19,7 @@ struct TileHandle {
     i32v3 getWorldPos3D() const;
     ChunkID getChunkIDAtPos() const { return ChunkID::fromWorldUI32v2(getWorldPos2D()); }
     ui32v3 getContainerOffset() const;
+    LiteTileHandle toLiteTileHandle() const;
 
     TileHandle& operator=(const TileHandle& other) {
         container = other.container;
@@ -29,6 +33,34 @@ struct TileHandle {
     const TileIndex tileIndex = INVALID_TILE_INDEX;
 };
 static_assert(sizeof(TileHandle) == 24, "Keep small as possible");
+
+struct LiteTileHandle {
+    LiteTileHandle() {};
+    LiteTileHandle(TileContainerID containerId, TileIndex index) : containerId(containerId), index(index) {};
+
+    TileContainer* getTileContainer() const;
+    bool isValid() const { return  containerId != INVALID_TILE_CONTAINER_ID; }
+    TileHandle toTileHandle() const;
+
+    i32v3 getWorldPosition() const;
+
+    bool operator==(const LiteTileHandle& rhs) const { return index == rhs.index && containerId == rhs.containerId; }
+    bool operator!=(const LiteTileHandle& rhs) const { return index != rhs.index || containerId != rhs.containerId; }
+
+    TileContainerID containerId = INVALID_TILE_CONTAINER_ID;
+    TileIndex index = INVALID_TILE_INDEX;
+};
+static_assert(sizeof(LiteTileHandle) == 8, "Keep small as possible");
+
+class LiteTileHandleHash {
+public:
+    size_t operator()(const LiteTileHandle& v) const {
+        size_t h = 0;
+        boost::hash_combine(h, v.containerId);
+        boost::hash_combine(h, v.index);
+        return h;
+    }
+};
 
 // DOES NOT PROVIDE THREAD SAFE READ/WRITE
 struct TileRef {

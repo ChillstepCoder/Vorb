@@ -63,6 +63,47 @@ struct TileContainerEntrance {
     bool isLocked; // TODO: Access type enum?
 };
 
+enum class TileFineNavEdgeType {
+    NONE = 0,
+    DOWN = 1,
+    UP = 2,
+    EXTERIOR = 3,
+};
+
+struct TileFineNavData {
+
+    void setCanAccessDirection(Cartesian8 dir8, bool canAccess) {
+        const ui8 bitShift = e_cast(dir8);
+        const ui8 bitMask = 1ui8 << bitShift;
+        accessBits = (accessBits & (~bitMask)) | (canAccess << bitShift);
+    }
+    bool canAccessDirection(Cartesian8 dir8) const {
+        return accessBits & 1ui8 << e_cast(dir8);
+    }
+    void setEdgeType(Cartesian dir, TileFineNavEdgeType edgeType) {
+        const ui8 bitShift = e_cast(dir) * 2ui8;
+        const ui8 bitMask = 0b11 << bitShift;
+        edgeTypeCartesian = (edgeTypeCartesian & (~bitMask)) | (e_cast(edgeType) << bitShift);
+    }
+    TileFineNavEdgeType getEdgeType(Cartesian dir) const {
+        const ui8 bitShift = e_cast(dir) * 2ui8;
+        const ui8 bitMask = 0b11 << bitShift;
+        return TileFineNavEdgeType((edgeTypeCartesian & bitMask) >> bitShift);
+    }
+
+    void reset() {
+        accessBits = 0;
+        edgeTypeCartesian = 0;
+        pathWeight = 255;
+    }
+
+    ui8 accessBits = 0; // from diagonal left to diagonal up right
+    ui8 edgeTypeCartesian = 0; // Each cartesian gets 2 bits 0 = flat, 1 = down, 2 = up, 3 = exterior
+    ui8 pathWeight = 255;
+
+};
+static_assert(sizeof(TileFineNavData) == 3, "Keep tiny");
+
 class TileContainer;
 // Static class
 class TileContainerRepository {
@@ -84,6 +125,8 @@ public:
     friend class TileContainerRepository;
     friend class ChunkGenerator;
     friend class NavThread; // TODO: Too many friends?
+    friend class NavWorld;
+    friend class PathFinder;
     TileContainer() = default;
     ~TileContainer() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
@@ -109,13 +152,13 @@ public:
     void setTileFlags(TileIndex i, TileFlags flags);
     void clearTileFlag(TileIndex i, TileFlags flag);
     void clearTileFlags(TileIndex i);
-    void setTilePathWeight(TileIndex i, ui8 weight);
     void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
     void setWallsAt(TileIndex index, TileWalls walls);
 
     const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i].walls; }
     const TileWalls& getWallsThreadSafe(TileIndex i) const { return mWalls[i].wallsThreadSafe; }
+    const std::vector<TileWallContainer>& getTileWallContainers() const { return mWalls; }
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
 
@@ -222,6 +265,7 @@ public:
 
     const std::vector<Tile>& getTiles() const { return mTiles; }
     const std::vector<TileWallContainer>& getWalls() const { return mWalls; }
+    const std::vector<TileFineNavData>& getFineNavData() const { return mFineNavData; }
 
     // =========== Rendering  ===========
     bool isVisible() const { return mRenderData.mIsVisible; }
@@ -236,10 +280,12 @@ private:
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
 
     BitArray mOwnedTiles;
+    // TODO: Can we use arrays instead of vectors to shrink these a bit?
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
     std::vector<TileWallContainer> mWalls; // TODO: Memory recycler and or compression
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
+    std::vector<TileFineNavData> mFineNavData;
 
     // All tiles that need to update when read lock is free
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;

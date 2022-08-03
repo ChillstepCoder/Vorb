@@ -72,6 +72,8 @@ public:
     const Chunk& getChunk(ui32 chunkId) const;
 
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
+    TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const i32v3& worldPos) const { assert(false); return TileHandle(); /*make sure to use owned array*/ }
+	TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const f32v3& worldPos) const { assert(false); return TileHandle(); }
 	TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const { return getTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
@@ -91,8 +93,8 @@ public:
     WorldGrid& getWorldGrid() { return mWorldGrid; }
     const WorldGrid& getWorldGrid() const { return mWorldGrid; }
 
-    NavWorld& getNavGraph() { return *mNavGraph; }
-    const NavWorld& getNavGraph() const { return *mNavGraph; }
+    NavWorld& getNavWorld() { return *mNavWorld; }
+    const NavWorld& getNavWorld() const { return *mNavWorld; }
 
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 
@@ -165,7 +167,7 @@ private:
 	std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
 
 	// Nav graph
-	std::unique_ptr<NavWorld> mNavGraph;
+	std::unique_ptr<NavWorld> mNavWorld;
 
 	// Clouds
 	std::unique_ptr<CloudManager> mCloudManager;

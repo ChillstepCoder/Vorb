@@ -105,7 +105,6 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     tile.midLayerThreadSafe = tile.midLayer;
     tile.topLayerThreadSafe = tile.topLayer;
     tile.tileFlagsThreadSafe = tile.tileFlags;
-    tile.navData.pathWeightThreadSafe = tile.navData.pathWeight;
 
     return tile;
 }

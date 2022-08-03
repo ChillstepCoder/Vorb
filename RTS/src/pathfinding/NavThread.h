@@ -4,22 +4,18 @@
 #include <Vorb/blockingconcurrentqueue.h>
 
 #include "PathFinder.h"
+#include "tile/TileHandle.h"
 
 class World;
 class TileContainer;
 class Building;
 
 enum class PathRequestType {
-    TERRAIN_FINE,
-    TERRAIN_COARSE,
-    BUILDING_FINE,
+    FINE,
+    COARSE,
     COUNT
 };
 
-struct TerrainPathArgs {
-    PathPoint start;
-    PathPoint goal;
-};
 struct BuildingPathArgs {
     const Building* building;
     TileIndex start;
@@ -28,27 +24,21 @@ struct BuildingPathArgs {
 
 struct PathArgs {
     PathArgs() {};
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const PathPoint& start, const PathPoint& end, bool isCoarse) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const TileHandle& start, const TileHandle& end, bool isCoarse) :
         pathToBuild(pathToBuild),
-        terrainArgs({ start, end }) {
+        start(start),
+        goal(end) {
         if (isCoarse) {
-            type = PathRequestType::TERRAIN_COARSE;
+            type = PathRequestType::COARSE;
         }
         else {
-            type = PathRequestType::TERRAIN_FINE;
+            type = PathRequestType::FINE;
         }
     }
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const TileIndex start, const TileIndex end, const Building* building) :
-        pathToBuild(pathToBuild),
-        buildingArgs({ building, start, end }),
-        type(PathRequestType::BUILDING_FINE) {
-    };
 
     std::shared_ptr<NavPath> pathToBuild;
-    union {
-        TerrainPathArgs terrainArgs;
-        BuildingPathArgs buildingArgs;
-    };
+    TileHandle start;
+    TileHandle goal;
     PathRequestType type;
 };
 
@@ -68,17 +58,11 @@ public:
     /// Clears all unprocessed tasks from the task queue
     void clearTasks();
 
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const PathPoint& start, const PathPoint& goal, bool isCoarse, std::function<void()>&& mainProc) {
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse, std::function<void()>&& mainProc) {
         mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
     }
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const PathPoint& start, const PathPoint& goal, bool isCoarse) {
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse) {
         mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
-    }
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const Building* building, TileIndex start, TileIndex goal, std::function<void()>&& mainProc) {
-        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, building), std::move(mainProc)));
-    }
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const Building* building, TileIndex start, TileIndex goal) {
-        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, building), nullptr));
     }
 
     void addNavgraphBuildTask(TileContainer& tileContainer);
@@ -91,7 +75,7 @@ public:
 private:
     void navThreadFunc();
 
-    PathFinder mPathFinder;
+    std::unique_ptr<PathFinder> mPathFinder;
     World* mWorld = nullptr;
     std::atomic_bool mStop = false;
     std::atomic_bool mRunningPathfind = false;

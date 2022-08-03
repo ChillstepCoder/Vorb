@@ -74,14 +74,17 @@ void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 f
 }
 
 void TileContainer::allocateData() {
-    mTiles.resize(mDims.x * mDims.y * mDims.z);
-    mWalls.resize(mDims.x * mDims.y * mDims.z);
+    size_t numTiles = mDims.x * mDims.y * mDims.z;
+    mTiles.resize(numTiles);
+    mWalls.resize(numTiles);
+    mFineNavData.resize(numTiles);
 }
 
 void TileContainer::freeData() {
     std::vector<Tile>().swap(mTiles);
     std::vector<TileWallContainer>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
+    std::vector<TileFineNavData>().swap(mFineNavData);
     mOwnedTiles.freeData();
 }
 
@@ -230,15 +233,6 @@ void TileContainer::clearTileFlags(TileIndex i) {
         mTilesNeedingThreadSafeCopy.push_back(i);
     }
     tile.clearTileFlags(readLocked);
-}
-
-void TileContainer::setTilePathWeight(TileIndex i, ui8 weight) {
-    const bool readLocked = isReadLocked();
-    Tile& tile = mTiles[i];
-    if (readLocked && !tile.isUpdateQueued()) {
-        mTilesNeedingThreadSafeCopy.push_back(i);
-    }
-    tile.setPathWeight(weight, readLocked);
 }
 
 void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {

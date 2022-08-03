@@ -52,8 +52,8 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 	}
 
 	// TODO: do this conversion in the generator?
-	const PathPoint* points = navCmp.mFinePath->getPoints();
-	const ui32v2& nextTilePos = points[navCmp.mCurrentFinePoint].xy;
+	const LiteTileHandle* points = navCmp.mFinePath->getPoints();
+	const ui32v2& nextTilePos = points[navCmp.mCurrentFinePoint].getWorldPosition();
 	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
@@ -94,7 +94,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 		else {
 			// Immediately raycheck each time we get to a new point
 			navCmp.mFramesUntilNextRayCheck = 0;
-			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].xy) + f32v2(0.5f);
+			nextPoint = f32v2(points[navCmp.mCurrentFinePoint].getWorldPosition()) + f32v2(0.5f);
 		}
 	}
 
@@ -212,17 +212,17 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestPathToCoarsePoint(NavigationComponent& navCmp, const f32v3& pos, f32v2 nextCoarseTilePos, World& world) {
+void requestPathToCoarsePoint(NavigationComponent& navCmp, const TileHandle& start, const TileHandle& goal, World& world) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
 		std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(pos), PathPoint(nextCoarseTilePos), false /*isCoarse*/, [pathHandle, &world]() {
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle, &world]() {
 			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
 		});
 	}
 	else {
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, PathPoint(pos), PathPoint(nextCoarseTilePos), false /*isCoarse*/);
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/);
 	}
 }
 
@@ -248,9 +248,9 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
         return true;
     }
 
-	const PathPoint* points = navCmp.mCoarsePath->getPoints();
+	const LiteTileHandle* points = navCmp.mCoarsePath->getPoints();
 
-	f32v2 nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
+	f32v2 nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v2(0.5f);
 
 	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
 
@@ -258,7 +258,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestPathToCoarsePoint(navCmp, pos, nextCoarseTilePos, world);
+		requestPathToCoarsePoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(nextCoarseTilePos.x, nextCoarseTilePos.y, 0.0f)), world);
 
     }
     else {
@@ -290,8 +290,8 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     // Immediately raycheck each time we get to a new point
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
-                    nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].xy) + f32v2(0.5f);
-                    requestPathToCoarsePoint(navCmp, pos, nextCoarseTilePos, world);
+                    nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v2(0.5f);
+                    requestPathToCoarsePoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(nextCoarseTilePos.x, nextCoarseTilePos.y, 0.0f)), world);
                 }
 			}
 		}
@@ -365,19 +365,15 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
 	}
 }
 
-void NavigationComponent::requestFinePath(const PathPoint& start, const PathPoint& goal) {
+void NavigationComponent::requestFinePath(const TileHandle& start, const TileHandle& goal) {
     requestCoarsePathWithCallback(start, goal, nullptr);
 }
 
-void NavigationComponent::requestCoarsePath(const PathPoint& start, const PathPoint& goal) {
+void NavigationComponent::requestCoarsePath(const TileHandle& start, const TileHandle& goal) {
 	requestCoarsePathWithCallback(start, goal, nullptr);
 }
 
-void NavigationComponent::requestFineBuildingPath(const Building& building, TileIndex start, TileIndex goal) {
-	requestFineBuildingPathWithCallback(building, start, goal, nullptr);
-}
-
-void NavigationComponent::requestFinePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::requestFinePathWithCallback(const TileHandle& start, const TileHandle& goal, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::FINE_PATH;
     mCoarsePath.reset();
     mFinePath = std::shared_ptr<NavPath>(new NavPath());
@@ -387,7 +383,7 @@ void NavigationComponent::requestFinePathWithCallback(const PathPoint& start, co
     mFinishedCallback = finishedCallback;
 }
 
-void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::requestCoarsePathWithCallback(const TileHandle& start, const TileHandle& goal, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
@@ -398,15 +394,6 @@ void NavigationComponent::requestCoarsePathWithCallback(const PathPoint& start, 
     mFinishedCallback = finishedCallback;
 }
 
-void NavigationComponent::requestFineBuildingPathWithCallback(const Building& building, TileIndex start, TileIndex goal, std::function<void(bool)> finishedCallback) {
-    mNavigationType = NavigationType::FINE_PATH;
-    mCoarsePath.reset();
-    mFinePath = std::shared_ptr<NavPath>(new NavPath());
-    Services::NavThread::ref().addPathfindTask(mFinePath, &building, start, goal);
-    mCurrentFinePoint = 0;
-    mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
-    mFinishedCallback = finishedCallback;
-}
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     motionCmp.mDesiredMode = LocomotionMode::IDLE;

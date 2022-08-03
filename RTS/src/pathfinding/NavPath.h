@@ -1,5 +1,7 @@
 #pragma once
 
+struct LiteTileHandle;
+
 struct PathPoint {
     PathPoint() = default;
     PathPoint(ui16v2&& r) : xy(std::move(r)) {};
@@ -72,11 +74,11 @@ public:
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t count);
 
-    const PathPoint* getPoints() const { return points; }
+    const LiteTileHandle* getPoints() const { return points; }
     ui32 getNumPoints() const { return numPoints; }
 
 private:
-    PathPoint* points = nullptr; // Raw pointer
+    LiteTileHandle* points = nullptr; // Raw pointer
     ui32 numPoints = 0;
 public:
     // Atomic access check

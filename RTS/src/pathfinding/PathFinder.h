@@ -3,14 +3,17 @@
 #include "NavPath.h"
 
 class World;
-class Building;
+class NavWorld;
+class TileContainer;
 struct CoarseNavNode;
+struct CoarseNavGraph;
+struct TileHandle;
 
 #include <boost/heap/priority_queue.hpp>
 
 typedef ui16 CoarseAstarNodeID;
 constexpr ui16 INVALID_COARSE_NODE_PARENT = UINT16_MAX;
-static_assert(sizeof(CoarseAstarNodeID) == sizeof(ui16), "Update invalid parent");
+
 struct compareCoarseNode {
     bool operator()(const std::pair<f32, CoarseAstarNodeID>& n1, const std::pair<f32, CoarseAstarNodeID>& n2) const {
         if (n1.first > n2.first) {
@@ -35,17 +38,18 @@ typedef std::vector<const CoarseNavNode*> CoarseClosedList;
 // TODO: Also support flow path finding for large group movements, such as for moving in formation
 class PathFinder {
 public:
-    PathFinder() {};
+    PathFinder(const World& world);
 
-    // Fine grid paths
-    bool generateFinePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
-    bool generateBuildingPathSynchronous(const Building& building, TileIndex start, TileIndex goal, OUT NavPath& path);
-
-    // Coarse grid paths
-    bool generateCoarsePathSynchronous(const World& world, const PathPoint& start, const PathPoint& goal, OUT NavPath& path);
+    bool generateFinePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path);
+    bool generateCoarsePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path);
 
 private:
+    void coarseAstarEdgePropagate(const CoarseNavNode* navNode, const TileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG);
+
     CoarseOpenList mOpenList;
     CoarseClosedList mCoarseClosedList;
+    CoarseAstarNodeID mTotalAstarNodes;
+    const World& mWorld;
+    const NavWorld& mNavWorld;
 };
 

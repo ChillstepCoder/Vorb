@@ -4,7 +4,6 @@
 #include "pathfinding/PathFinder.h"
 
 class World;
-class Building;
 struct CharacterControlComponent;
 struct TileHandle;
 class TileContainer;
@@ -30,13 +29,11 @@ struct NavigationComponent {
     // Callback should ideally only be set from the same entity
     void setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback);
 
-    void requestFinePath(const PathPoint& start, const PathPoint& goal);
-	void requestCoarsePath(const PathPoint& start, const PathPoint& goal);
-	void requestFineBuildingPath(const Building& building, TileIndex start, TileIndex goal);
+    void requestFinePath(const TileHandle& start, const TileHandle& goal);
+	void requestCoarsePath(const TileHandle& start, const TileHandle& goal);
 
-    void requestFinePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback);
-    void requestCoarsePathWithCallback(const PathPoint& start, const PathPoint& goal, std::function<void(bool)> finishedCallback);
-    void requestFineBuildingPathWithCallback(const Building& building, TileIndex start, TileIndex goal, std::function<void(bool)> finishedCallback);
+    void requestFinePathWithCallback(const TileHandle& start, const TileHandle& goal, std::function<void(bool)> finishedCallback);
+    void requestCoarsePathWithCallback(const TileHandle& start, const TileHandle& goal, std::function<void(bool)> finishedCallback);
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);

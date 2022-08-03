@@ -5,26 +5,22 @@
 class World;
 class Chunk;
 class TileContainer;
+struct TileFineNavData;
 struct CoarseNavNode;
+struct TileWalls;
 
 constexpr int MAX_NAV_NODE_COUNT = UINT8_MAX;
 constexpr int INVALID_NAV_NODE_INDEX = UINT16_MAX;
 
+typedef ui32 DisjointSetNode;
 typedef ui16 CoarseNavNodeIndex;
-struct DisjointSetNode;
 
-const ui16v2 NAV_NODE_EDGE_OFFSETS[4] = {
-    {0, 0}, // DOWN
-    {0, 0}, // LEFT
-    {15, 0}, // RIGHT
-    {0, 15}  // UP
-};
-
-struct LiteCoarseNavNodeEdge {
-    ui8 lengthMinusOne : 4;
-    ui8 start : 4;
-};
-static_assert(sizeof(LiteCoarseNavNodeEdge) == sizeof(ui8), "Must be single byte");
+//const ui16v2 NAV_NODE_EDGE_OFFSETS[4] = {
+//    {0, 0}, // DOWN
+//    {0, 0}, // LEFT
+//    {15, 0}, // RIGHT
+//    {0, 15}  // UP
+//};
 //
 //struct VerticalCoarseNavNodeEdge {
 //    TileContainer* adjacentContainer;
@@ -32,35 +28,26 @@ static_assert(sizeof(LiteCoarseNavNodeEdge) == sizeof(ui8), "Must be single byte
 //    bool isUp;
 //};
 
-struct CoarseNavNode {
-    //std::vector<VerticalCoarseNavNodeEdge> verticalEdges; // TODO: Compress, pool, (use boost?)
-    ui32 tileContainerID; // TODO: ContainerID?
-    TileIndex cornerPos;
-    union {
-        ui8 counts[4];
-        struct {
-            ui8 numSouth;
-            ui8 numWest;
-            ui8 numEast;
-            ui8 numNorth;
-        };
-    };
-    union {
-        LiteCoarseNavNodeEdge edges[4][8]; // Cartesian, 8x8 so 8 possible edges per side
-        struct {
-            LiteCoarseNavNodeEdge southEdges[8];
-            LiteCoarseNavNodeEdge westEdges[8];
-            LiteCoarseNavNodeEdge eastEdgest[8];
-            LiteCoarseNavNodeEdge northEdges[8];
-        };
-    };
-    ui8 numNestedContainers;
-    mutable bool isClosed; // For use in single threaded pathfinding
-    ui8 width = SUBCHUNK_WIDTH;
-    ui8 depth = SUBCHUNK_WIDTH;
-};
+// An edge determines where we can move OUT or IN to this chunk
+// We can only traverse an EXTERNAL_EDGE if there is an adjacent edge on the other side
+struct CoarseNavNodeEdge {
+    TileIndex startPos;
+    ui16 adjacentNodeIndex;
+    Cartesian dir;
+    ui8 edgeLength = 0;
 
-//static_assert(sizeof(CoarseNavNode) == 80, "Keep small");
+    bool isExternalEdge() { return adjacentNodeIndex == INVALID_NAV_NODE_INDEX; }
+};
+static_assert(sizeof(CoarseNavNodeEdge) == 8, "Keep small");
+
+struct CoarseNavNode {
+    CoarseNavNodeEdge* edges = nullptr;
+    ui32 tileContainerID = 0;
+    ui16 edgeCount = 0;
+    mutable bool isClosed = false; // For use in single threaded pathfinding
+    // can have extra byte for flags field
+};
+static_assert(sizeof(CoarseNavNode) == 16, "Keep small");
 
 struct CoarseNavNodeIndexPair {
     TileContainerID tileContainerID;
@@ -68,26 +55,30 @@ struct CoarseNavNodeIndexPair {
 };
 static_assert(sizeof(CoarseNavNodeIndexPair) == 8, "Keep small");
 
-// For each subchunk, describes whether entry is possible from a specific direction
-struct SubChunkNavEdgeBits {
-    union {
-        ui16 edgeBits[4];
-        struct {
-            ui16 edgeBitsSouth;
-            ui16 edgeBitsWest;
-            ui16 edgeBitsEast;
-            ui16 edgeBitsNorth;
-        };
-    };
-};
-static_assert(SUBCHUNK_WIDTH <= 16, "Update edge bits count");
-
 struct CoarseNavGraph {
     // Could fit another ui32 here
-    SubChunkNavEdgeBits* subchunkEdgeBits; // Size = number of sub chunks in the container
     TileContainer* parentContainer; // TODO: Is this needed?
-    CoarseNavNode* nodes = nullptr;
-    ui32 size = 0;
+    std::unique_ptr<CoarseNavNode[]> nodes;
+    std::unique_ptr<CoarseNavNodeEdge[]> edges;
+    ui32 numNodes = 0;
+    ui32 numEdges = 0;
+
+    const CoarseNavNode& getNode(ui32 nodeIndex) const {
+        assert(nodeIndex < numNodes);
+        return nodes[nodeIndex];
+    }
+};
+
+struct TileEdgePointer {
+    union {
+        struct {
+            ui32 bottom;
+            ui32 left;
+            ui32 right;
+            ui32 up;
+        };
+        ui32 edges[4];
+    };
 };
 
 class NavWorld
@@ -96,20 +87,35 @@ public:
     NavWorld(World& world);
     // TODO: async
     void buildNavGraphForContainer(TileContainer& tileContainer);
+
+    void setFineNavEdgeCartesian(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, TileContainer& tileContainer, const f32 groundZPosition, TileFineNavData& fineNavData);
+
     void debugDrawNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
 
-    const CoarseNavNode* getNode(CoarseNavNodeIndexPair index) const {
+    const CoarseNavGraph& getCoarseNavGraph(TileContainerID containerId) const {
+        auto&& it = mNavGraphs.find(containerId);
+        assert(it != mNavGraphs.end());
+        return it->second;
+    }
+    const CoarseNavNode* getCoarseNavNode(CoarseNavNodeIndexPair index) const {
+        return getCoarseNavNode(index.tileContainerID, index.index);
+    }
+    const CoarseNavNode* getCoarseNavNode(TileContainerID containerId, ui16 navNodeIndex) const {
         // TODO: what if invalid
-        auto&& it = mNavGraphs.find(index.tileContainerID);
+        auto&& it = mNavGraphs.find(containerId);
         assert(it != mNavGraphs.end());
         const CoarseNavGraph& patch = it->second;
-        assert(index.index < patch.size);
-        return &patch.nodes[index.index];
+        assert(navNodeIndex < patch.numNodes);
+        return &patch.nodes[navNodeIndex];
     }
 
 private:
-    void buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir);
-    void addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
+
+    //void buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir);
+    //void addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
+
+    // Return true if a new edge was made
+    bool tryBuildEdge(const TileWalls& walls, const TileIndex index, const TileIndex prevIndex, const TileIndex outerIndex, TileContainer& tileContainer, const ui16 navNodeIndex, std::vector<TileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge);
 
     std::unordered_map<TileContainerID, CoarseNavGraph> mNavGraphs;
     World& mWorld;

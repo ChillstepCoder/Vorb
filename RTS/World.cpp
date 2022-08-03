@@ -70,7 +70,7 @@ World::World() :
 	mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
 
 	// Nav graph
-	mNavGraph = std::make_unique<NavWorld>(*this);
+	mNavWorld = std::make_unique<NavWorld>(*this);
 
     // Weather (Init post load because it contains rendering and requires render context to be initialized, TODO: Fix this)
     mCloudManager = std::make_unique<CloudManager>(*this);
@@ -351,7 +351,7 @@ const CoarseNavNode* World::tryGetNavNodeAtWorldPos(const ui32v2& worldPos) cons
 	const Tile& tile = chunk.getTileContainer()->getTileAt(x, y, 0);
 	ui16 navNodeIndex = tile.getNavNodeIndex();
 	if (navNodeIndex == INVALID_NAV_NODE_INDEX) return nullptr;
-	return mNavGraph->getNode({ chunk.getTileContainer()->getId(), navNodeIndex });
+	return mNavWorld->getCoarseNavNode({ chunk.getTileContainer()->getId(), navNodeIndex });
 }
 
 void World::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {

@@ -274,7 +274,7 @@ void GameplayScreen::build() {
                             WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
                             if (worldObjectQuery.isValid()) {
                                 // Right click picking
-                                mSelectedTilePosition = worldPos;
+                                mSelectedTileHandle = worldObjectQuery.getTileHandle();
                                 // Enable context menu
                                 mSelectedScreenPos = screenPos;
                                 mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
@@ -419,51 +419,47 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
     // Handle interact menu TODO: Notify to get this out of here
     if (mRightClickInteractPopup) {
         // Render selected
-        const ui32v2 worldPosInt = mSelectedTilePosition;
-        DebugRenderer::drawFilledQuad(mSelectedTilePosition - f32v3(0.05f, 0.05f, 0.0f), f32v2(0.1f), color4(1.0f, 1.0f, 0.0f, 0.4f));
-        DebugRenderer::drawWireQuad(glm::floor(mSelectedTilePosition), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
+        const f32v3 worldPos = mSelectedTileHandle.getWorldPos3D();
+        const ui32v2 worldPosInt = worldPos;
+        DebugRenderer::drawFilledQuad(worldPos - f32v3(0.05f, 0.05f, 0.0f), f32v2(0.1f), color4(1.0f, 1.0f, 0.0f, 0.4f));
+        DebugRenderer::drawWireQuad(glm::floor(worldPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
 
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
-            auto&& ecs = mWorld->getECS();
-            NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            cmp.requestCoarsePath(PathPoint(playerPos), PathPoint(worldPosInt));
+            if (mSelectedTileHandle.isValid()) {
+                auto&& ecs = mWorld->getECS();
+                NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
+                cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(playerPos.x, playerPos.y, 0.0f)), mSelectedTileHandle);
+            }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
-            // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
 			// TODO: HANDLE RACE CONDITION
-            if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+            if (mSelectedTileHandle.isValid()) {
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
             // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+            if (mSelectedTileHandle.isValid()) {
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
             // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
+            if (mSelectedTileHandle.isValid()) {
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
             }
         }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
             // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-            if (handle.isValid()) {
-                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
+            if (mSelectedTileHandle.isValid()) {
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
             }
         }
         else if (result & INTERACT_MENU_RESULT_INSPECT) {
             // grass
-            TileHandle handle = mWorld->getTileHandleAtWorldPos(mSelectedTilePosition);
-
-            UIContext::getInstance().activateTileInspectionPanel(mSelectedScreenPos, handle);
+            UIContext::getInstance().activateTileInspectionPanel(mSelectedScreenPos, mSelectedTileHandle);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {
             // grass
@@ -518,7 +514,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
             TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld->getNavGraph().debugDrawNavGraphForContainer(*tileHandle.container, 2000);
+            mWorld->getNavWorld().debugDrawNavGraphForContainer(*tileHandle.container, 2000);
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 12, "update");
 

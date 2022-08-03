@@ -1,16 +1,18 @@
 #include "stdafx.h"
 #include "NavPath.h"
 
+#include "tile/TileHandle.h"
+
 #include <boost/pool/singleton_pool.hpp>
 
 struct nav_pool {};
 using singleton_path_pool = boost::singleton_pool<nav_pool, sizeof(NavPath), boost::default_user_allocator_new_delete, std::mutex, 128u>;
 struct path_point_pool {};
-using singleton_point_pool = boost::singleton_pool<path_point_pool, sizeof(PathPoint), boost::default_user_allocator_new_delete, std::mutex, 512>;
+using singleton_point_pool = boost::singleton_pool<path_point_pool, sizeof(LiteTileHandle), boost::default_user_allocator_new_delete, std::mutex, 512>;
 
 void NavPath::allocatePath(ui32 numPoints) {
     this->numPoints = numPoints;
-    points = (PathPoint*)singleton_point_pool::ordered_malloc(numPoints);
+    points = (LiteTileHandle*)singleton_point_pool::ordered_malloc(numPoints);
 }
 
 void NavPath::freePath() {
