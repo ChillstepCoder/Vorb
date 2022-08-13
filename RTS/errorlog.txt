@@ -41,3 +41,83 @@
 *ERROR: At Shadow GBuffer Init. Error code 1280: GL_INVALID_ENUM 
 *ERROR: At Shadow GBuffer Init. Error code 1281: GL_INVALID_VALUE 
 *ERROR: At Shadow GBuffer Init. Error code 1281: GL_INVALID_VALUE 
+*ERROR: Asset import failure - data\models\characterpaladin.fbx - Unable to open file "data\models\characterpaladin.fbx". 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: There's more than one mesh in the file: data\models\character\paladin.model 
+*ERROR: There's more than one mesh in the file: data\models\character\paladin.model 
+*ERROR: Failed to read skinning data: data\models\character\paladin.model 
+*ERROR: Failed to read skinning data: data\models\character\paladin.model 
+*ERROR: Failed to read skinning data: data\models\character\paladin.model 
+*ERROR: Animation import failure - data\characters\rigs\human\sword_shield_turn_2.ozz. sword_shield_walk.ozz 
+*ERROR: Animation import failure - data\characters\rigs\human\sword_shield_walk.ozz 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Animation import failure - data\characters\human\animations\human.anim\sheath_sword.ozz 
+*ERROR: Animation import failure - data\characters\human\animations\human.anim\sheath_sword.ozz 
+*ERROR: Anim machine animation falling_idle_1 does not exist in rig. Machine file: data\characters\human\human.machine 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms22222. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At TerrainMesh::bindVertexAttribs. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::draw. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::draw. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::draw4. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::finishMesh. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At BuildingMesh::draw4. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::draw. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::draw. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::draw. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::fffff. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At TextureAtlas::allocateTexture. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At TextureRepository::loadTexture. Error code 1281: GL_INVALID_VALUE 
+*ERROR: Failed to find texture - tree_small 
+*ERROR: Failed to load internal normal map generator shader with error 0(2) : error C0000: syntax error, unexpected type identifier, expecting ',' or ';' at token "vec4"
+(0) : error C0000: syntax error, unexpected $end at token "<EOF>"
+ 
+*ERROR: Failed to load internal normal map generator shader with error (0) : error C0000: syntax error, unexpected $end at token "<EOF>"
+ 
+*ERROR: Failed to load internal normal map generator shader with error (0) : error C0000: syntax error, unexpected $end at token "<EOF>"
+ 
+*ERROR: Failed to place stairs! 
+*ERROR: Failed to place stairs! 
+*ERROR: Overflow in AABB, object removed from simulation 
+*ERROR: If you can reproduce this, please email bugs@continuousphysics.com
+ 
+*ERROR: Please include above information, your Platform, version of OS.
+ 
+*ERROR: Thanks.
+ 
+*ERROR: Overflow in AABB, object removed from simulation 
+*ERROR: Need to implement new shape type! 

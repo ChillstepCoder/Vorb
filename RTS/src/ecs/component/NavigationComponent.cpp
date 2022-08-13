@@ -39,11 +39,11 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
     }
 
     // Update tileNavData
-    ui32v2 navCell = ui32v2(pos.x * 0.5f, pos.y * 0.5f);
+	// TODO: Entity steering
+    /*ui32v2 navCell = ui32v2(pos.x * 0.5f, pos.y * 0.5f);
     if (navCell != navCmp.mPrevNavCell) {
-		//assert(false);
-		std::cout << "TODO: UPDATE DATA\n";
-    }
+        assert(false);
+    }*/
 
     ui32 numPoints = navCmp.mFinePath->getNumPoints();
 

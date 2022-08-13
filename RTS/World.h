@@ -72,8 +72,9 @@ public:
     const Chunk& getChunk(ui32 chunkId) const;
 
     TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
-    TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const i32v3& worldPos) const { assert(false); return TileHandle(); /*make sure to use owned array*/ }
-	TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const f32v3& worldPos) const { assert(false); return TileHandle(); }
+    TileHandle getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(const i32v3& worldPos) const;
+	TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const i32v3& worldPos) const;
+	TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const f32v3& worldPos) const;
 	TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const { return getTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
     TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;

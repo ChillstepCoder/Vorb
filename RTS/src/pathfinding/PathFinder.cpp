@@ -83,7 +83,6 @@ public:
 
     void replace(LiteTileHandle handle, ui16 newG, f32 h) {
         // TODO: Figure out to update the priority heap
-        
         assert(false);
     }
 
@@ -206,9 +205,9 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
     openList.reserve(MAX_OPEN_LIST_SIZE);
     nodeLookup.reserve(MAX_OPEN_LIST_SIZE);
 
-    // Add start node to the open list
-    LiteTileHandle startLiteHandle = start.toLiteTileHandle();
-    LiteTileHandle goalLiteHandle = goal.toLiteTileHandle();
+    // Add start node to the open list (inverted because we pathfind backwards)
+    LiteTileHandle startLiteHandle = goal.toLiteTileHandle();
+    LiteTileHandle goalLiteHandle = start.toLiteTileHandle();
     openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startLiteHandle, goalWorldPos));
     nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ startLiteHandle, 0 }));
 
@@ -246,7 +245,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             TileIndex adjIndex = container->getTileIndexFromXYZOffset(adjPos);
             if (adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)) {
                 // External edge
-                const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURES(adjPos + container->getWorldPos3D());
+                const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(adjPos + container->getWorldPos3D());
                 if (!externalHandle.isValid()) {
                     continue;
                 }
@@ -280,9 +279,11 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             if (newG < prevG) {
                 if (openList.contains(adjHandle)) {
                     // New node is better than current openlist node
-                    openList.replace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
-                    it->second.g = newG;
-                    it->second.parent = handle;
+                    std::cout << "Detected open list node with better priority. TODO: Implement increase priority and benchmark\n";
+                    //openList.replace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
+                    //it->second.g = newG;
+                    //it->second.parent = handle;
+                    //assert(handle.isValid());
                 }
                 else {
                     // This is an unvisited node OR
@@ -292,9 +293,11 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
                     if (it != nodeLookup.end()) {
                         it->second.g = newG;
                         it->second.parent = handle;
+                        assert(handle.isValid());
                     }
                     else {
                         nodeLookup.emplace(std::make_pair(adjHandle, FineNodeData{ handle, newG }));
+                        assert(handle.isValid());
                     }
                 }
             }
@@ -314,7 +317,8 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
 
         // Find out the path size and cache the tile handles
         while (handle != startLiteHandle && pathSize < PATH_POINT_BUFFER_SIZE) {
-            sPathPointBuffer[pathSize++] = handle;
+            sPathPointBuffer[pathSize] = handle;
+            assert(sPathPointBuffer[pathSize].isValid());
             auto&& it = nodeLookup.find(handle);
             assert(it != nodeLookup.end());
             handle = it->second.parent;
@@ -404,7 +408,7 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
         TileHandle handle = astarNode.tileHandle.toTileHandle();
         ui16 navNodeIndex = handle.container->getTileAt(handle.tileIndex).getNavNodeIndex();
         const CoarseNavGraph& navGraph = mNavWorld.getCoarseNavGraph(astarNode.tileHandle.containerId);
-        const CoarseNavNode* navNode = &startNavGraph.getNode(navNodeIndex);
+        const CoarseNavNode* navNode = &navGraph.getNode(navNodeIndex);
         if (navNode == endNode) {
             foundGoal = true;
             break;
@@ -426,6 +430,7 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     }*/
 
     if (!foundGoal) {
+        std::cout << "Coarse path failed in " << timer.stop() << "ms with " << mTotalAstarNodes << " total nodes checked\n";
         path.finishedGenerating.store(true);
         return false;
     }
@@ -451,23 +456,33 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     // TODO: Path memory pool
     path.allocatePath(pathSize);
     // Copy the path
-    memcpy(path.points, sPathPointBuffer, pathSize * sizeof(PathPoint));
+    memcpy(path.points, sPathPointBuffer, pathSize * sizeof(LiteTileHandle));
 
 
     if (sDebugOptions.mShowPaths) {
         for (ui32 i = 1; i < path.numPoints; ++i) {
+            assert(path.points[i - 1].isValid());
             const f32v3 a = path.points[i - 1].getWorldPosition();
+            assert(path.points[i].isValid());
             const f32v3 b = path.points[i].getWorldPosition();
             DebugRenderer::drawLineBetweenPointsThreadSafe(a, b, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
         }
     }
 
-        // Back propagation
     std::cout << "Coarse path found in " << timer.stop() << "ms with " << mTotalAstarNodes << " total nodes checked\n";
     path.finishedGenerating.store(true);
     return true;
 }
 
+class EdgeNodeHash {
+public:
+    size_t operator()(const std::pair<TileContainerID, ui32>& v) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, v.first);
+        boost::hash_combine(seed, v.second);
+        return seed;
+    }
+};
 
 void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const TileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG) {
     const TileContainer* container = tileHandle.container;
@@ -479,13 +494,54 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
         containerDims.x   // North
     };
 
-    const f32v3 tilePos = tileHandle.getWorldPos3D();
+    const i32v3 tilePos = tileHandle.getWorldPos3D();
     // Iterate all edges
     for (ui16 i = 0; i < navNode->edgeCount; ++i) {
         CoarseNavNodeEdge& edge = navNode->edges[i];
         if (edge.isExternalEdge()) {
             // With external edges we have to look up the adjacent nav nodes
+            std::unordered_map<std::pair<TileContainerID, ui32 /*navNode*/>, TileIndex, EdgeNodeHash> edgeNodes;
+            const i32v3 edgeStartPosWorld = container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(edge.startPos));
+            for (ui32 i = 0; i < (ui32)edge.edgeLength; ++i) {
+                const i32v3 edgePos = edgeStartPosWorld + CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)];
+                const i32v3 worldPosOuter = edgePos + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
+                TileHandle handle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(worldPosOuter);
+                if (!handle.isValid()) {
+                    continue;
+                }
+                // This will either never happen or might be rare... I think it should never?
+                assert(handle.container != container);
+                // TODO: This always picks last node
+                edgeNodes[std::make_pair(handle.container->getId(), handle.tile->getNavNodeIndex())] = handle.tileIndex;
+            }
+            for (auto&& it : edgeNodes) {
+                //TileContainer* adjContainer = TileContainerRepository::getTileContainer(it.first);
+                const TileContainerID nextContainerId = it.first.first;
+                const CoarseNavGraph* adjNavGraph = mNavWorld.tryGetCoarseNavGraph(nextContainerId);
+                if (!adjNavGraph) {
+                    continue;
+                }
+                const CoarseNavNode& nextNode = adjNavGraph->getNode(it.first.second);
+                if (nextNode.isClosed) {
+                    continue;
+                }
 
+                // Add position and node to the lists as below
+                nextNode.isClosed = true;
+                mCoarseClosedList.push_back(&nextNode);
+
+                const CoarseAstarNodeID newId = mTotalAstarNodes++;
+                CoarseAStarNode& newAstarNode = sCoarseAstarNodes[newId];
+                newAstarNode.tileHandle = LiteTileHandle(nextContainerId, it.second);
+                const i32v3 nextPos = newAstarNode.tileHandle.getWorldPosition();
+                newAstarNode.g = prevG + glm::length(f32v3(nextPos - tilePos));
+                newAstarNode.h = getEuclideanHeuristicAtPosition(nextPos, goalPos);
+                if (sDebugOptions.mShowPaths) {
+                    DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 0.0f, 0.5f), DEBUG_DURATION);
+                }
+                newAstarNode.parentIndex = parentId;
+                mOpenList.push(std::make_pair(newAstarNode.getScore(), newId));
+            }
         }
         else {
             // Internal edges will store the adjacent nav nodes and share tileContainer
@@ -499,14 +555,14 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
             nextNode.isClosed = true;
             mCoarseClosedList.push_back(&nextNode);
             
-            Cartesian edgeWalkDir = CARTESIAN_COARSE_EDGE_WALK_CARTESIAN[e_cast(edge.dir)];
-            TileIndex midPoint = edge.startPos + internalIndexOffsetsCartesian[e_cast(edgeWalkDir)] * (edge.edgeLength / 2);
-            TileIndex nextTileIndex = midPoint + internalIndexOffsetsCartesian[e_cast(edge.dir)];
-            CoarseAstarNodeID newId = mTotalAstarNodes++;
+            const Cartesian edgeWalkDir = CARTESIAN_COARSE_EDGE_WALK_CARTESIAN[e_cast(edge.dir)];
+            const TileIndex midPoint = edge.startPos + internalIndexOffsetsCartesian[e_cast(edgeWalkDir)] * (edge.edgeLength / 2);
+            const TileIndex nextTileIndex = midPoint + internalIndexOffsetsCartesian[e_cast(edge.dir)];
+            const CoarseAstarNodeID newId = mTotalAstarNodes++;
             CoarseAStarNode& newAstarNode = sCoarseAstarNodes[newId];
             newAstarNode.tileHandle = LiteTileHandle(tileHandle.container->getId(), nextTileIndex);
-            const f32v3 nextPos = newAstarNode.tileHandle.getWorldPosition();
-            newAstarNode.g = prevG + glm::length(nextPos - tilePos);
+            const i32v3 nextPos = newAstarNode.tileHandle.getWorldPosition();
+            newAstarNode.g = prevG + glm::length(f32v3(nextPos - tilePos));
             newAstarNode.h = getEuclideanHeuristicAtPosition(nextPos, goalPos);
             if (sDebugOptions.mShowPaths) {
                 DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);

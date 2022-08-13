@@ -264,6 +264,56 @@ TileHandle World::getTileFromCameraPickVector(const Camera3D& camera, const f32v
 	return TileHandle();
 }
 
+TileHandle World::getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(const i32v3& worldPos) const
+{
+    const Chunk* chunk = &getChunkAtPosition(ui32v2(worldPos));
+    if (chunk->isDataReady()) {
+        const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+        TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
+        StructureArrayPtr structures = chunk->getStructuresAtThreadSafe(baseHandle.tileIndex);
+        for (ui16 i = 0; i < structures.second; ++i) {
+            Structure* structure = structures.first[i];
+            const TileContainer* container = structure->getTileContainer();
+            if (container) {
+                TileHandle structureHandle = container->tryGetTileHandleAtWorldPos(worldPos);
+                if (structureHandle.isValid() && container->isTileOwned(structureHandle.tileIndex)) {
+                    return structureHandle;
+                }
+            }
+        }
+        return baseHandle;
+    }
+    return TileHandle();
+}
+
+TileHandle World::getTileHandleAtWorldPosWITHSTRUCTURES(const i32v3& worldPos) const {
+    const Chunk* chunk = &getChunkAtPosition(ui32v2(worldPos));
+    if (chunk->isDataReady()) {
+        const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
+        const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
+		TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
+		StructureArrayPtr structures = chunk->getStructuresAt(baseHandle.tileIndex);
+		for (ui16 i = 0; i < structures.second; ++i) {
+			Structure* structure = structures.first[i];
+			const TileContainer* container = structure->getTileContainer();
+			if (container) {
+				TileHandle structureHandle = container->tryGetTileHandleAtWorldPos(worldPos);
+				if (structureHandle.isValid() && container->isTileOwned(structureHandle.tileIndex)) {
+					return structureHandle;
+				}
+			}
+		}
+		return baseHandle;
+    }
+    return TileHandle();
+}
+
+TileHandle World::getTileHandleAtWorldPosWITHSTRUCTURES(const f32v3& worldPos) const {
+	i32v3 wpi(worldPos.x, worldPos.y, floor(worldPos.z));
+	return getTileHandleAtWorldPosWITHSTRUCTURES(wpi);
+}
+
 TileHandle World::getTileHandleAtWorldPos(const f32v2& worldPos) const {
 	TileHandle handle;
 	const Chunk* chunk = &getChunkAtPosition(worldPos);

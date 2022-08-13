@@ -18,6 +18,7 @@ RUNTIME_INIT_FUNC(reserveTileContainerData) {
 }
 
 TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, bool isTerrain) {
+    assert(IS_MAIN_THREAD());
     std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
     TileContainer* rv = newContainer.get();
     newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, isTerrain);
@@ -27,6 +28,7 @@ TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPo
 }
 
 void TileContainerRepository::destroyTileContainer(TileContainer* container) {
+    assert(IS_MAIN_THREAD());
     sTileContainerLookup.erase(container->mId);
     // TODO: Profile linear search
     for (size_t i = 0; i < sTileContainers.size(); ++i) {
@@ -43,6 +45,7 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
 
 
 TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
+    assert(IS_MAIN_THREAD() || IS_NAV_THREAD()); // Nav thread is allowed to access tile containers because the world is write locked during nav
     auto&& it = sTileContainerLookup.find(id);
     assert(it != sTileContainerLookup.end());
     return it->second;
@@ -304,9 +307,9 @@ void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
   
 }
 
-TileHandle TileContainer::tryGetTileHandleAtWorldPos(const f32v3& worldPos)
+TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) const
 {
-    i32v3 offset = i32v3(worldPos) - mRootPos;
+    i32v3 offset = worldPos - mRootPos;
     if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= mDims.x || offset.y >= mDims.y || offset.z >= mDims.z * mFloorHeight) {
         return TileHandle();
     }

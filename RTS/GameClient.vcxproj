@@ -74,7 +74,7 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Release;$(LibraryPath)</LibraryPath>
@@ -220,9 +220,9 @@
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
     <ClCompile Include="src\particles\ParticleSystemData.cpp" />
     <ClCompile Include="src\particles\ParticleSystemManager.cpp" />
+    <ClCompile Include="src\pathfinding\NavWorld.cpp" />
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
-    <ClCompile Include="src\pathfinding\NavWorld.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\pathfinding\BuildingNavGraph.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
@@ -409,7 +409,7 @@
     <ClInclude Include="src\particles\ParticleSystem.h" />
     <ClInclude Include="src\particles\ParticleSystemData.h" />
     <ClInclude Include="src\particles\ParticleSystemManager.h" />
-    <ClInclude Include="src\pathfinding\NavGraph.h" />
+    <ClInclude Include="src\pathfinding\CoarseNavGraph.h" />
     <ClInclude Include="src\pathfinding\NavThread.h" />
     <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\NavWorld.h" />
@@ -479,7 +479,6 @@
     <ClInclude Include="src\structure\StructureManager.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
     <ClInclude Include="src\tile\Tile.h" />
-    <ClInclude Include="src\tile\TileCollider.h" />
     <ClInclude Include="src\tile\TileConst.h" />
     <ClInclude Include="src\tile\TileContainer.h" />
     <ClInclude Include="src\tile\TileFlags.h" />

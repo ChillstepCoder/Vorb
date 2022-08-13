@@ -3,6 +3,8 @@
 #include <Vorb/concurrentqueue.h>
 #include <Vorb/blockingconcurrentqueue.h>
 
+#include "CoarseNavGraph.h"
+
 #include "PathFinder.h"
 #include "tile/TileHandle.h"
 
@@ -44,7 +46,11 @@ struct PathArgs {
 
 // TODO: we can definitely replace std::function with a function pointer that takes TileContainerID as parameter
 using NavThreadPathArgs = std::pair<PathArgs, std::function<void()>>;
-using NavThreadGraphBuildArgs = std::pair<TileContainerID, std::function<void()>>;
+struct NavThreadGraphBuildArgs {
+    NavGraphTileDataToCopy navTileData;
+    CoarseNavGraph navGraph;
+    TileContainer* container;
+};
 
 class NavThread {
 public:

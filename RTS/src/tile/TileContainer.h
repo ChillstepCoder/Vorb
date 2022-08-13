@@ -162,7 +162,8 @@ public:
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
 
-    TileHandle tryGetTileHandleAtWorldPos(const f32v3& worldPos);
+    // This needs to be floor(f32v3worldPos)
+    TileHandle tryGetTileHandleAtWorldPos(const i32v3& worldPos) const;
 
     // =========== Generation ===========
     void setTileFromGeneration(TileIndex i, Tile&& tile) {

@@ -184,17 +184,23 @@ const i32v2 CARTESIAN_NORMALS[CARTESIAN_COUNT] = {
     i32v2(1,  0), // EAST
     i32v2(0,  1), // NORTH
 };
-const f32v3 CARTESIAN_NORMALS_3D[CARTESIAN_COUNT] = {
-    f32v3(0, -1, 0), // SOUTH
-    f32v3(-1, 0, 0), // WEST
-    f32v3(1,  0, 0), // EAST
-    f32v3(0,  1, 0), // NORTH
+const i32v3 CARTESIAN_NORMALS_3D[CARTESIAN_COUNT] = {
+    i32v3(0, -1, 0), // SOUTH
+    i32v3(-1, 0, 0), // WEST
+    i32v3(1,  0, 0), // EAST
+    i32v3(0,  1, 0), // NORTH
 };
 const i32v2 CARTESIAN_EDGE_DIRS_ABS[CARTESIAN_COUNT] = {
     i32v2(1, 0), // SOUTH
     i32v2(0, 1), // WEST
     i32v2(0, 1), // EAST
     i32v2(1, 0), // NORTH
+};
+const i32v3 CARTESIAN_EDGE_DIRS_ABS_3D[CARTESIAN_COUNT] = {
+    i32v3(1, 0, 0), // SOUTH
+    i32v3(0, 1, 0), // WEST
+    i32v3(0, 1, 0), // EAST
+    i32v3(1, 0, 0), // NORTH
 };
 const i32v2 CARTESIAN_EDGE_DIRS_COUNTER_CLOCKWISE[CARTESIAN_COUNT] = {
     i32v2(1, 0), // SOUTH
