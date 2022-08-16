@@ -1,7 +1,7 @@
 #pragma once
 
 
-typedef ui32 DisjointSetNode;
+typedef ui16 DisjointSetNode;
 struct NavGraphTileDataToCopy {
     std::vector<DisjointSetNode> djNodes;
     std::vector<ui16> tileDjNodeIDs;

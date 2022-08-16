@@ -221,6 +221,22 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
     //std::cout << " A " << timer.stop() << std::endl;
     // ================= Allocate nav nodes =================
     if (totalDjSets) {
+        // Compress DJ nodes to remove orphaned ones
+        std::map<ui16 /*NavNodeIndices*/, std::set<ui16> /*DJPositions*/> nodes;
+        for (ui32 i = 0; i < totalDjSets; ++i) {
+            nodes[navTileData.djNodes[i]].insert(i);
+        }
+        // Compress
+        totalDjSets = nodes.size();
+        ui32 i = 0;
+        for (auto&& it : nodes) {
+            for (auto&& it2 : it.second) {
+                navTileData.djNodes[it2] = i;
+            }
+            ++i;
+        }
+
+        // Allocate the graph
         navGraph.numNodes = totalDjSets;
         navGraph.nodes = std::unique_ptr<CoarseNavNode[]>(new CoarseNavNode[totalDjSets]);
         // Tell the nav nodes who they belong to
@@ -254,12 +270,16 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                 // Determine if we own this tile
                 const TileIndex index = tileContainer.getTileIndexFromXYZOffset(tx, ty, tz);
                 const Tile& tile = tileContainer.getTileAt(index);
-                const ui16 navNodeIndex = navTileData.tileDjNodeIDs[index];
+                const ui16 djNodeIndex = navTileData.tileDjNodeIDs[index];
+                if (djNodeIndex == INVALID_NAV_NODE_INDEX) {
+                    continue;
+                }
+                const ui16 navNodeIndex = navTileData.djNodes[djNodeIndex];
                 // This must be part of a nav node
                 if (navNodeIndex == INVALID_NAV_NODE_INDEX) {
                     continue;
                 }
-                
+    
                 const TileWalls& walls = tileContainer.getWallsThreadSafe(index);
 
                 edgeCount += (int)tryBuildEdge(navTileData, walls, index, index - 1, index - dims.x, tileContainer, navNodeIndex, tileEdgePointers, nodeEdges, Cartesian::SOUTH, ty == 0, tx > 0);
@@ -351,7 +371,8 @@ bool NavWorld::tryBuildEdge(NavGraphTileDataToCopy& navTileData, const TileWalls
             // External edge
             if (canExtendPrevEdge) {
                 const Tile& prevTile = tileContainer.getTileAt(prevIndex);
-                if (navTileData.tileDjNodeIDs[prevIndex] == navNodeIndex) {
+                const ui16 prevDjNodeIndex = navTileData.tileDjNodeIDs[prevIndex];
+                if (prevDjNodeIndex != INVALID_NAV_NODE_INDEX && navTileData.djNodes[prevDjNodeIndex] == navNodeIndex) {
                     TileEdgePointer& prevEdgePointer = tileEdgePointers[prevIndex];
                     std::vector<CoarseNavNodeEdge>& edges = nodeEdges[navNodeIndex];
                     ui32 prevEdgeID = prevEdgePointer.edges[e_cast(dir)];
@@ -367,7 +388,12 @@ bool NavWorld::tryBuildEdge(NavGraphTileDataToCopy& navTileData, const TileWalls
         else {
             // Internal edge
             const Tile& outerTile = tileContainer.getTileAt(outerIndex);
-            const ui32 outerNavNodeIndex = navTileData.tileDjNodeIDs[outerIndex];
+            const ui16 outerDjNodeIndex = navTileData.tileDjNodeIDs[outerIndex];
+            // No edge because outer has no nav
+            if (outerDjNodeIndex == INVALID_DJ_NODE_ID) {
+                return false;
+            }
+            const ui16 outerNavNodeIndex = navTileData.djNodes[outerDjNodeIndex];
             // No edge becase we are the same nav node
             if (outerNavNodeIndex == navNodeIndex) {
                 return false;
@@ -378,7 +404,8 @@ bool NavWorld::tryBuildEdge(NavGraphTileDataToCopy& navTileData, const TileWalls
                 // If we can extend prev wall
                 if (canExtendPrevEdge) {
                     const Tile& prevTile = tileContainer.getTileAt(prevIndex);
-                    if (navTileData.tileDjNodeIDs[prevIndex] == navNodeIndex) {
+                    const ui16 prevDjNodeIndex = navTileData.tileDjNodeIDs[prevIndex];
+                    if (prevDjNodeIndex != INVALID_DJ_NODE_ID && navTileData.djNodes[prevDjNodeIndex] == navNodeIndex) {
                         TileEdgePointer& prevEdgePointer = tileEdgePointers[prevIndex];
                         std::vector<CoarseNavNodeEdge>& edges = nodeEdges[navNodeIndex];
                         ui32 prevEdgeID = prevEdgePointer.edges[e_cast(dir)];
@@ -507,7 +534,7 @@ const f32v3 FINE_EDGE_OFFSETS[8] = {
     f32v3(1.0f, 1.0f, 0.0f), //NORTH_EAST
 };
 
-constexpr ui32 COARSE_NAV_COLOR_COUNT = 16;
+constexpr ui32 COARSE_NAV_COLOR_COUNT = 9;
 constexpr f32 COARSE_NAV_COLOR_ALPHA = 0.25f;
 color4 COARSE_NAV_COLORS[COARSE_NAV_COLOR_COUNT] = {
     color4(1.0f, 1.0f, 1.0f, 0.35f),
@@ -518,14 +545,7 @@ color4 COARSE_NAV_COLORS[COARSE_NAV_COLOR_COUNT] = {
     color4(0.0f, 1.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
     color4(0.0f, 0.0f, 1.0f, COARSE_NAV_COLOR_ALPHA),
     color4(0.4f, 0.1f, 0.7f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
-    color4(0.0f, 0.0f, 0.0f, COARSE_NAV_COLOR_ALPHA),
+    color4(0.1f, 0.6f, 0.4f, COARSE_NAV_COLOR_ALPHA),
 };
 
 void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId /*= 0*/) const
@@ -549,8 +569,9 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
             f32v3 worldPos = f32v3(tileContainer.getTileXYZOffsetWithZScale(tileIndex) + tileContainer.getWorldPos3D());
             const f32v3 centerPos = worldPos + f32v3(0.5f, 0.5f, 0.0f);
             const TileFineNavData& navData = fineNavData[tileIndex];
-            const ui32 colorIndex = tiles[tileIndex].getNavNodeIndex_DEBUG_MAIN_THREAD() % COARSE_NAV_COLOR_COUNT;
-            DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COARSE_NAV_COLORS[colorIndex], lifetime, debugId);
+            const ui32 navNodeIndex = tiles[tileIndex].getNavNodeIndex_DEBUG_MAIN_THREAD();
+            std::cout << navNodeIndex << std::endl;
+            const ui32 colorIndex = navNodeIndex % COARSE_NAV_COLOR_COUNT;
             for (int dir = 0; dir < 8; ++dir) {
                 if (navData.canAccessDirection(Cartesian8(dir))) {
                     f32v3 edgePos = worldPos + FINE_EDGE_OFFSETS[dir];
@@ -578,6 +599,7 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
                 worldPos3.z = worldGrid.computeHeightAtPoint(patchId, heightData, f32v2(worldPos3));
                 worldPos4.z = worldGrid.computeHeightAtPoint(patchId, heightData, f32v2(worldPos4));
             }
+            DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COARSE_NAV_COLORS[colorIndex], lifetime, debugId);
             DebugRenderer::drawLineBetweenPoints(worldPos, worldPos2, whiteColor, lifetime, debugId);
             DebugRenderer::drawLineBetweenPoints(worldPos2, worldPos3, whiteColor, lifetime, debugId);
             DebugRenderer::drawLineBetweenPoints(worldPos3, worldPos4, whiteColor, lifetime, debugId);

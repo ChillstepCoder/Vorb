@@ -501,8 +501,8 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
             // With external edges we have to look up the adjacent nav nodes
             std::unordered_map<std::pair<TileContainerID, ui32 /*navNode*/>, TileIndex, EdgeNodeHash> edgeNodes;
             const i32v3 edgeStartPosWorld = container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(edge.startPos));
-            for (ui32 i = 0; i < (ui32)edge.edgeLength; ++i) {
-                const i32v3 edgePos = edgeStartPosWorld + CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)];
+            for (int i = 0; i < (int)edge.edgeLength; ++i) {
+                const i32v3 edgePos = edgeStartPosWorld + CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)] * i;
                 const i32v3 worldPosOuter = edgePos + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
                 TileHandle handle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(worldPosOuter);
                 if (!handle.isValid()) {
