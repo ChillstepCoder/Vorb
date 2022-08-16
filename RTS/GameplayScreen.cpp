@@ -486,9 +486,17 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
             TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld->getNavWorld().debugDrawNavGraphForContainer(*tileHandle.container, 2000);
+            mWorld->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
+        else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
+            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+            mWorld->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+        }
+        else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
+            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+            mWorld->getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
 
         // If we had a result, close window
         if (result) {

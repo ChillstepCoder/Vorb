@@ -256,7 +256,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
                 adjHandle = LiteTileHandle(container->getId(), adjIndex);
             }
             // Get path weight
-            const TileFineNavData& adjNavData = container->getFineNavData()[adjHandle.index];
+            const TileFineNavData& adjNavData = adjHandle.getTileContainer()->getFineNavData()[adjHandle.index];
             pathWeight = adjNavData.pathWeight / 255.0f;
 
             // Compute cost to the adj node

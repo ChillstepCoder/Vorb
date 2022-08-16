@@ -6,6 +6,7 @@
 
 #include "tile/TileContainer.h"
 
+#include "DebugRenderer.h"
 #include "options/DebugOptions.h"
 
 NavThread::NavThread() {
@@ -48,6 +49,24 @@ void NavThread::clearTasks() {
     // Dequeue all tasks
     NavThreadPathArgs args;
     while (mPathTasks.try_dequeue(args));
+}
+
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse, std::function<void()>&& mainProc)
+{
+    if (sDebugOptions.mShowPaths) {
+        DebugRenderer::drawFilledQuad(f32v3(start.getWorldPos3D()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.7f), 1000);
+        DebugRenderer::drawFilledQuad(f32v3(goal.getWorldPos3D()), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.7f), 1000);
+    }
+    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
+}
+
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse)
+{
+    if (sDebugOptions.mShowPaths) {
+        DebugRenderer::drawFilledQuad(f32v3(start.getWorldPos3D()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.7f), 1000);
+        DebugRenderer::drawFilledQuad(f32v3(goal.getWorldPos3D()), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.7f), 1000);
+    }
+    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
 }
 
 void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {

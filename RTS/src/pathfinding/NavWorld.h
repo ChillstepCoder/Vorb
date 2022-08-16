@@ -9,6 +9,7 @@ class TileContainer;
 struct TileFineNavData;
 struct CoarseNavNode;
 struct TileWalls;
+struct TileHandle;
 
 constexpr int MAX_NAV_NODE_COUNT = UINT8_MAX;
 constexpr ui16 INVALID_DJ_NODE_ID = UINT16_MAX;
@@ -55,7 +56,10 @@ public:
     void setFineNavEdgeCartesian(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, TileContainer& tileContainer, const f32 groundZPosition, TileFineNavData& fineNavData);
     void setFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, TileContainer& tileContainer, const f32 groundZPosition, TileFineNavData& fineNavData);
 
-    void debugDrawNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
+    // ========== Debug drawing ==========
+    void debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
+    void debugDrawFineNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
+    void debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetime, int debugId = 0) const;
 
     const CoarseNavGraph* tryGetCoarseNavGraph(TileContainerID containerId) const {
         auto&& it = mNavGraphs.find(containerId);

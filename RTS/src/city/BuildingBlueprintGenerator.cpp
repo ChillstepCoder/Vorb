@@ -1203,24 +1203,6 @@ struct DoorBFSNode {
     ui32 index;
 };
 
-void placeInteriorDoor(BuildingBlueprint& bp, std::vector<bool>& isConnected, RoomNode& room, RoomNode& adjacentRoom, ui32 tileIndex, const ui32 doorTileIndex, const ui32 outerTileIndex, VisualLog* visLog) {
-    if (bp.tiles[outerTileIndex].type <= BlueprintTileType::FLOOR) {
-        isConnected[adjacentRoom.id] = true;
-        room.adjacentRooms[room.numAdjacentRooms++] = RoomGateInfo{ adjacentRoom.id, outerTileIndex };
-        adjacentRoom.adjacentRooms[adjacentRoom.numAdjacentRooms++] = RoomGateInfo{ bp.ownerArray[tileIndex], tileIndex };
-        bp.tiles[doorTileIndex].type = BlueprintTileType::DOOR;
-        // Visual log
-        if (visLog) {
-            const f32v3 pos(doorTileIndex % bp.aabb.dims.x, doorTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, adjacentRoom.floorIndex * bp.floorHeight);
-            visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.8f));
-        }
-    }
-    else if (visLog) {
-        const f32v3 pos(doorTileIndex % bp.aabb.dims.x, doorTileIndex % (bp.aabb.dims.x * bp.aabb.dims.y) / bp.aabb.dims.x, adjacentRoom.floorIndex * bp.floorHeight);
-        visLog->addFilledQuad(pos, f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
-    }
-}
-
 void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, Cartesian dir, ui32 tileIndex, RoomNode& room, const i32v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
     const i32v2& directionOffset = WALL_EXPAND_OFFSETS[e_cast(dir)];
     const i32v2 nextPos = currentPos + directionOffset;
@@ -1240,7 +1222,9 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                 if (canConnectToOutside) {
                     canConnectToOutside = false;
                     TileWalls& walls = bp.walls[tileIndex];
-                    walls.walls[e_cast(dir)].wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
+                    TileWall& wall = walls.walls[e_cast(dir)];
+                    wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
+                    wall.isDoor = true;
                     bp.exteriorDoors[tileIndex] = bp.ownerArray[tileIndex];
                     // Visual log
                     if (visLog) {
@@ -1257,7 +1241,9 @@ void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBluepr
                     if (bp.tiles[nextTileIndex].type == BlueprintTileType::FLOOR) {
 
                         TileWalls& walls = bp.walls[tileIndex];
-                        walls.walls[e_cast(dir)].wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
+                        TileWall& wall = walls.walls[e_cast(dir)];
+                        wall.wallID = bp.tileIDs[e_cast(BlueprintTileType::DOOR)];
+                        wall.isDoor = true;
                         // Clear opposite wall
                         bp.walls[nextTileIndex].walls[e_cast(CARTESIAN_OPPOSITES[e_cast(dir)])].clear();
                         // Clear out any wall on opposite side

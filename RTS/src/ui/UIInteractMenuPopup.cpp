@@ -130,8 +130,16 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
         case UIInteractMenuState::SELECTED_TILE: {
             ImGui::Begin("Tile action", nullptr, WINDOW_FLAGS);
 
-            if (ImGui::Button("Debug Navmesh")) {
+            if (ImGui::Button("Debug Coarse Navmesh")) {
                 resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
+                mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+            }
+            if (ImGui::Button("Debug Fine Navmesh")) {
+                resultFlags |= INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH;
+                mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+            }
+            if (ImGui::Button("Debug Coarse Nav Node")) {
+                resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
                 mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
             }
             if (ImGui::Button("Go Here", sButtonSize)) {
@@ -188,34 +196,9 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
                     if (structure->getType() == StructureType::Building) {
                         nString name = "Building " + std::to_string(i);
                         if (ImGui::Button(name.c_str())) {
-                            mState = UIInteractMenuState::SELECTED_STRUCTURE;
-                            mSelectedStructure = structure;
+                            mWorldObjectQuery.mSelectedStructure = mSelectedStructure = structure;
                             break;
                         }
-                    }
-                }
-            }
-            break;
-        }
-        case UIInteractMenuState::SELECTED_STRUCTURE: {
-            ImGui::Begin("Structure", nullptr, WINDOW_FLAGS);
-            if (mSelectedStructure->getType() == StructureType::Building) {
-                Building* building = static_cast<Building*>(mSelectedStructure);
-                // TODO: Path to room
-                ImGui::Text("Path to room");
-                const std::vector<RoomNode>& roomGraph = building->getRooms();
-
-                if (ImGui::Button("Debug Navmesh")) {
-                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
-                    mSelectedTileHandle = TileHandle(building->getTileContainer(), 0);
-                    break;
-                }
-                for (size_t i = 0; i < roomGraph.size(); ++i) {
-                    const RoomNode& room = roomGraph[i];
-                    if (ImGui::Button((room.roomDef->name + " " + std::to_string(i)).c_str())) {
-                        resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
-                        mSelectedRoomID = room.id;
-                        break;
                     }
                 }
             }
@@ -226,8 +209,8 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
             break;
 
     }
-    static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
-    static_assert(e_cast(UIInteractMenuState::COUNT) == 6, "update");    return resultFlags;
+    static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
+    static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");    return resultFlags;
 }
 
 ui32 UIInteractMenuPopup::updateAndRenderStructureTile() {
@@ -237,8 +220,16 @@ ui32 UIInteractMenuPopup::updateAndRenderStructureTile() {
         resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
         mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
     }
-    else if (ImGui::Button("Debug Navmesh")) {
+    if (ImGui::Button("Debug Coarse Navmesh")) {
         resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
+        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+    }
+    if (ImGui::Button("Debug Fine Navmesh")) {
+        resultFlags |= INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH;
+        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+    }
+    if (ImGui::Button("Debug Coarse Nav node")) {
+        resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
         mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
     }
     DebugRenderer::drawWireQuad(f32v3(mWorldObjectQuery.getTileHandle().getWorldPos3D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));

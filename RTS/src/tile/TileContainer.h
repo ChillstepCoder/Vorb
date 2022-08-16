@@ -14,7 +14,7 @@ struct TileWallContainer {
         wallsThreadSafe = walls;
     }
 };
-static_assert(sizeof(TileWallContainer) == 32, "Keep small");
+static_assert(sizeof(TileWallContainer) == 48, "Keep small");
 
 enum DynamicTileType : ui8 {
     // Walls (Keep first)
@@ -194,17 +194,17 @@ public:
     const Tile& getTileAtNoAssert(TileIndex i) const {
         return mTiles[i];
     }
-    ui32v3 getTileXYZOffsetWithZScale(TileIndex i) const {
+    i32v3 getTileXYZOffsetWithZScale(TileIndex i) const {
         const ui32 layerSize = mDims.x * mDims.y;
-        return ui32v3(i % mDims.x, (i % layerSize) / mDims.x, (i / layerSize) * mFloorHeight);
+        return i32v3(i % mDims.x, (i % layerSize) / mDims.x, (i / layerSize) * mFloorHeight);
     }
-    ui32v3 getTileXYZOffset(TileIndex i) const {
+    i32v3 getTileXYZOffset(TileIndex i) const {
        const ui32 layerSize = mDims.x * mDims.y;
-       return ui32v3(i % mDims.x, (i % layerSize) / mDims.x, i / layerSize);
+       return i32v3(i % mDims.x, (i % layerSize) / mDims.x, i / layerSize);
     }
-    ui32v2 getTileXYOffset(TileIndex i) const {
+    i32v2 getTileXYOffset(TileIndex i) const {
         const ui32 layerSize = mDims.x * mDims.y;
-        return ui32v2(i % mDims.x, (i % layerSize) / mDims.x);
+        return i32v2(i % mDims.x, (i % layerSize) / mDims.x);
     }
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
         return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;

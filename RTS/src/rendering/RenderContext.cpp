@@ -747,7 +747,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
                     const f32v3 containerCenter = container->getWorldPosCenter3D();
                     const f32v3& cameraPos = camera.getPosition();
                     if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
-                        mWorld.getNavWorld().debugDrawNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                        mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                     }
                 }
             }

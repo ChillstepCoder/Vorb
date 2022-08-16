@@ -54,14 +54,16 @@ static_assert(sizeof(TileOrientation) == 1);
 struct TileWall {
     TileID wallID = TILE_ID_NONE;
     TileID paintID = TILE_ID_NONE;
+    bool isDoor = false;
 
     void clear() { wallID = TILE_ID_NONE; paintID = TILE_ID_NONE; }
     bool isValid() const { return wallID != TILE_ID_NONE; }
+    bool canNavThrough() const { return isDoor || wallID == TILE_ID_NONE; }
 };
 
 struct TileWalls {
     TileWalls() : walls{ {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE}, {TILE_ID_NONE, TILE_ID_NONE} } {}
-    static_assert(sizeof(TileWall) == 4, "Make sure constructor still works");
+    static_assert(sizeof(TileWall) == 6, "Make sure constructor still works");
     union {
         TileWall walls[4];
         struct {
@@ -105,6 +107,7 @@ public:
     void updateThreadSafeLayers();
 
     // Only nav thread can access this data
+    ui16 getNavNodeIndex_DEBUG_MAIN_THREAD() const { return navData.coarseNavNodeIndex; }
     ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navData.coarseNavNodeIndex; }
     void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navData.coarseNavNodeIndex = index; }
 

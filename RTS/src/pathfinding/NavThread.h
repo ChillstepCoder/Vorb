@@ -64,12 +64,8 @@ public:
     /// Clears all unprocessed tasks from the task queue
     void clearTasks();
 
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse, std::function<void()>&& mainProc) {
-        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
-    }
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse) {
-        mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
-    }
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse, std::function<void()>&& mainProc);
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse);
 
     void addNavgraphBuildTask(TileContainer& tileContainer);
 
