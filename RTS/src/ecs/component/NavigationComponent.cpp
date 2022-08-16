@@ -212,7 +212,7 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestPathToCoarsePoint(NavigationComponent& navCmp, const TileHandle& start, const TileHandle& goal, World& world) {
+void requestFinePathToPoint(NavigationComponent& navCmp, const TileHandle& start, const TileHandle& goal, World& world) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
@@ -250,15 +250,14 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 
 	const LiteTileHandle* points = navCmp.mCoarsePath->getPoints();
 
-	f32v2 nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v2(0.5f);
+	f32v3 nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
 
 	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
 
-	const f32v2& offset = nextCoarseTilePos - f32v2(pos);
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestPathToCoarsePoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(nextCoarseTilePos.x, nextCoarseTilePos.y, 0.0f)), world);
+		requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(nextCoarseTilePos), world);
 
     }
     else {
@@ -290,8 +289,10 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     // Immediately raycheck each time we get to a new point
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
-                    nextCoarseTilePos = f32v2(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v2(0.5f);
-                    requestPathToCoarsePoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(nextCoarseTilePos.x, nextCoarseTilePos.y, 0.0f)), world);
+                    nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
+					// TODO: REMOVE
+					DebugRenderer::drawFilledQuad(f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.8f), 10000);
+                    requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(nextCoarseTilePos), world);
                 }
 			}
 		}

@@ -361,7 +361,6 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     const WorldGrid& worldGrid = mWorld.getWorldGrid();
     const TileContainer* startContainer = start.container;
    
-
     // We pathfind backwards
     const CoarseNavGraph& startNavGraph = mNavWorld.getCoarseNavGraph(goal.container->getId());
     const CoarseNavNode* startNode = &startNavGraph.getNode(goal.tile->getNavNodeIndex());

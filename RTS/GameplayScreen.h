@@ -44,7 +44,7 @@ private:
 
     void updateTimeScaling(const vui::GameTime& gameTime);
     void updateTilePicking();
-    void tryUpdateAndRenderInteractPopup(const f32v2& playerPos);
+    void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
 	std::unique_ptr<World> mWorld;
 

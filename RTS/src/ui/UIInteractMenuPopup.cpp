@@ -49,7 +49,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
     ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
-    if (mWorldObjectQuery.getStructureTileHandle().isValid()) {
+    if (mWorldObjectQuery.mSelectedStructure) {
         resultFlags = updateAndRenderStructureTile();
     }
     else {
@@ -213,7 +213,7 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
                 for (size_t i = 0; i < roomGraph.size(); ++i) {
                     const RoomNode& room = roomGraph[i];
                     if (ImGui::Button((room.roomDef->name + " " + std::to_string(i)).c_str())) {
-                        resultFlags |= INTERACT_MENU_RESULT_DEBUG_PATH_ROOM;
+                        resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
                         mSelectedRoomID = room.id;
                         break;
                     }
@@ -226,7 +226,7 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
             break;
 
     }
-    static_assert(INTERACT_MENU_RESULT_COUNT == 12, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 6, "update");    return resultFlags;
 }
 
@@ -234,10 +234,14 @@ ui32 UIInteractMenuPopup::updateAndRenderStructureTile() {
     ui32 resultFlags = 0;
     ImGui::Begin("Structure", nullptr, WINDOW_FLAGS);
     if (ImGui::Button("Move Here")) {
-        resultFlags |= INTERACT_MENU_RESULT_DEBUG_PATH_ROOM;
-        mSelectedTileHandle = mWorldObjectQuery.getStructureTileHandle();
+        resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
+        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
     }
-    DebugRenderer::drawWireQuad(f32v3(mWorldObjectQuery.getStructureTileHandle().getWorldPos3D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
+    else if (ImGui::Button("Debug Navmesh")) {
+        resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
+        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+    }
+    DebugRenderer::drawWireQuad(f32v3(mWorldObjectQuery.getTileHandle().getWorldPos3D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     return resultFlags;
 }
 

@@ -5,6 +5,7 @@
 class World;
 class ItemStockpile;
 class Building;
+class Structure;
 class Chunk;
 
 #include "tile/TileHandle.h"
@@ -26,7 +27,6 @@ public:
     Building* getBuilding() const { return mBuildingAtTile; }
     const std::vector<EntityDistSortKey>& getEntities() const { return mEntitiesAtTile; }
     TileHandle getTileHandle() const { return TileHandle(mTileRef.container, mTileRef.index); }
-    TileHandle getStructureTileHandle() const { return TileHandle(mStructureTileRef.container, mStructureTileRef.index); }
     World& getWorld() const { return mWorld; }
     const f32v2& getTilePos() const { return mWorldPos; }
 
@@ -37,5 +37,5 @@ private:
     World& mWorld;
     f32v3 mWorldPos;
     TileRef mTileRef;
-    TileRef mStructureTileRef;
+    Structure* mSelectedStructure = nullptr;
 };

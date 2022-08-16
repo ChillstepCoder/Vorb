@@ -27,18 +27,22 @@ void WorldObjectQuery::refresh() {
         return;
     }
 
-    mTileRef.acquire(handle);
     Chunk& chunk = mWorld.getChunkAtPosition(tilePos2D);
     if (chunk.isDataReady()) {
         StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
         for (int i = 0; i < structures.second; ++i) {
             Structure* structure = structures.first[i];
-            TileHandle handle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(mWorldPos);
-            if (handle.isValid() && structure->isTileOwned(handle.tileIndex)) {
-                mStructureTileRef.acquire(handle);
+            TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(mWorldPos);
+            if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+                mSelectedStructure = structure;
+                mTileRef.acquire(nextHandle);
                 break;
             }
         }
+    }
+    // Fallback to terrain if no structure
+    if (!mTileRef.container) {
+        mTileRef.acquire(handle);
     }
 
     // TODO: Tile flag city?

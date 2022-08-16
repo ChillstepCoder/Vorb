@@ -9,13 +9,13 @@ constexpr int MAX_DEBUG_RENDER_LIFETIME = INT32_MAX;
 class DebugRenderer
 {
 public:
+    // =============== Main thread only ===============
     static void drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawVector(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime = 0, int id = 0);
     static void drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime = 0, int id = 0);
     static void drawLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime = 0, int id = 0);
-    static void drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime = 0, int id = 0);
     static void drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
     static void drawWireQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
     static void drawFilledQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime = 0, int id = 0);
@@ -29,6 +29,9 @@ public:
     static void drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime = 0, int id = 0);
     static void drawPath(const NavPath& path, color4 color, const WorldGrid& worldGrid, int lifeTime = 0, int id = 0);
     static void drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime = 0, int id = 0);
+
+    // =============== Thread safe functions ===============
+    static void drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime = 0, int id = 0);
 
 	// TODO: static void drawText()
 	static void render(const f32v3& cameraPos, const f32m4& viewMatrix);

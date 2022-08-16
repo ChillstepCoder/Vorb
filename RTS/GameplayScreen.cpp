@@ -370,7 +370,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
     const f32v3 playerPos = cmp.getInterpolatedPosition();
 	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
 
-	tryUpdateAndRenderInteractPopup((const f32v2&)playerPos);
+	tryUpdateAndRenderInteractPopup(playerPos);
 
 	mRenderContext.endFrame();
 
@@ -415,7 +415,7 @@ void GameplayScreen::updateTilePicking() {
 }
 
 
-void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
+void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
     // Handle interact menu TODO: Notify to get this out of here
     if (mRightClickInteractPopup) {
         // Render selected
@@ -430,7 +430,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
             if (mSelectedTileHandle.isValid()) {
                 auto&& ecs = mWorld->getECS();
                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-                cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(playerPos.x, playerPos.y, 0.0f)), mSelectedTileHandle);
+                cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPosWITHSTRUCTURES(playerPos), mSelectedTileHandle);
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
@@ -484,39 +484,11 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v2& playerPos) {
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
             assert(false);
         }
-        else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_ROOM) {/*
-            const RoomNode* selectedNode = mRightClickInteractPopup->tryGetSelectedRoom();
-            assert(selectedNode);
-            const Building* building = mRightClickInteractPopup->tryGetSelectedBuilding();
-            assert(building);
-            const i32AABB3& aabb = building->getAABB();
-            i32v2 roomWorldPos = i32v2(selectedNode->offsetFromZero) + i32v2(aabb.x, aabb.y);*/
-            auto&& ecs = mWorld->getECS();
-            NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            if (tileHandle.isValid()) {
-                cmp.setSimpleLinearTargetPoint(tileHandle.getWorldPos3D(), nullptr);
-            }
-
-            //// TODO: Closest entrance?
-            ////RoomNodeID entrance = building->getNavEntrances().begin()->second;
-            //TileIndex id = building->getNavEntrances().begin()->first;
-            //const ui32v3 targetPos = building->getWorldPositionOfTile(id);
-            //// TODO: Path into the actual room
-            //auto&& ecs = mWorld->getECS();
-            //NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            //cmp.requestCoarsePathWithCallback(PathPoint(playerPos), PathPoint(targetPos), [this](bool success) {
-            //    if (success) {
-            //        assert(false);
-            //    }
-            //    assert(false);
-            //});
-        }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
             TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
             mWorld->getNavWorld().debugDrawNavGraphForContainer(*tileHandle.container, 2000);
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 12, "update");
+        static_assert(INTERACT_MENU_RESULT_COUNT == 11, "update");
 
         // If we had a result, close window
         if (result) {

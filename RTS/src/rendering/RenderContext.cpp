@@ -735,16 +735,22 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     }
     // Nav graph (Render is slow so we only build the line meshes when toggle changes)
     constexpr int NAVGRAPH_ID = 44432;
+    constexpr f32 NAVGRAPH_RENDER_DISTANCE = 100.0f; // TODO: Move to debugoptions
     static bool wasRenderingNavGraph = false;
     if (sDebugOptions.mShowNavGraph) {
         if (!wasRenderingNavGraph) {
             ScopedTimer timer("Debug Draw Navgraph");
             DebugRenderer::reserveLines(mWorld.getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
-            mWorld.enumActiveChunks([&camera, this, NAVGRAPH_ID](const Chunk& chunk) {
-                if (chunk.isDataReady() && !chunk.getTileContainer()->isNavMeshing()) {
-                    mWorld.getNavWorld().debugDrawNavGraphForContainer(*chunk.getTileContainer(), MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+            const auto& containers = TileContainerRepository::getTileContainers();
+            for (auto&& container : containers) {
+                if (!container->isNavMeshing()) {
+                    const f32v3 containerCenter = container->getWorldPosCenter3D();
+                    const f32v3& cameraPos = camera.getPosition();
+                    if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
+                        mWorld.getNavWorld().debugDrawNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                    }
                 }
-            });
+            }
             wasRenderingNavGraph = true;
         }
     }
