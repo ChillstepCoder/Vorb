@@ -144,7 +144,7 @@ public:
 
     // =========== Tile mutators ===========
     void setTileAt(TileIndex i, Tile tile);
-    bool canAddTile(TileIndex i, const TileData& tileData) const;
+    bool canAddTileData(TileIndex i, const TileData& tileData) const;
     void addTile(TileIndex i, const TileData& tileData);
     bool tryAddTile(TileIndex i, const TileData& tileData);
     void setTileLayer(TileIndex i, TileLayer layer, TileID id);
@@ -164,15 +164,6 @@ public:
 
     // This needs to be floor(f32v3worldPos)
     TileHandle tryGetTileHandleAtWorldPos(const i32v3& worldPos) const;
-
-    // =========== Generation ===========
-    void setTileFromGeneration(TileIndex i, Tile&& tile) {
-        mTiles[i] = tile;
-        updateTileCollisionAt(i, tile.layers[TILE_LAYER_TOP], false);
-    }
-
-    // =========== Collision ===========
-    void updateTileCollisionAt(TileIndex i, TileID tileId, bool readLocked);
 
     // =========== Tile accessors  ===========
     Tile& getMutableTileAt(TileIndex i) {
@@ -278,6 +269,8 @@ public:
     void removeEntrance(TileIndex pos);
 
 private:
+    void onTileChanged(TileIndex tileIndex, bool isReadLocked);
+
     void addDoor(Cartesian doorSide, TileIndex tileIndex);
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
 

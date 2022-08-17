@@ -101,6 +101,8 @@ public:
 
     bool hasFlagMainThread(TileFlags flag) const { return tileFlags.isBitSet(flag); }
     bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe.isBitSet(flag); }
+    bool hasFlagsMaskAnyMainThread(ui8 mask) const { return tileFlags.isMaskPartiallySet(mask); }
+    bool hasFlagsMaskAnyThreadSafe(ui8 mask) const { return tileFlags.isMaskPartiallySet(mask); }
 
     bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
 
@@ -125,16 +127,14 @@ public:
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
-    bool canAddTile(const TileData& tile) const;
-    void addTile(const TileData& tile, bool isReadLocked);
-    bool tryAddTile(const TileData& tile, bool isReadLocked);
+    bool canAddTileData(const TileData& tile) const;
+    void addTileData(const TileData& tile, bool isReadLocked);
     void setTileLayer(TileLayer layer, TileID id, bool isReadLocked);
     void setTileFlag(TileFlags flag, bool isReadLocked);
     void setTileFlags(TileFlags flags, bool isReadLocked);
     void clearTileFlag(TileFlags flag, bool isReadLocked);
     void clearTileFlags(bool isReadLocked);
     void setGroundZPosition(f32 groundZPosition, bool isReadLocked);
-    void updateCollision(bool isReadLocked);
     bool isUpdateQueued() { return tileFlags.isBitSet(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE); }
 
     // ================================= Data =================================

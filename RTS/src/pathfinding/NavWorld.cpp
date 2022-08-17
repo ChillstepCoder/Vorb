@@ -46,14 +46,14 @@ constexpr CartesianPair CARTESIAN_DIAGONAL_OPPOSITES[8] = {
 
 // toDir = south means we enter from the north
 bool canEnterTileInDirection(const Tile& tile, const TileWalls& walls, Cartesian toDir) {
-    if (!tile.hasFlagThreadSafe(TileFlags::TILE_FLAG_IS_IMPASSABLE)) {
+    if (!tile.hasFlagsMaskAnyThreadSafe(IMPASSABLE_TILE_FLAGS_MASK)) {
         const Cartesian fromDir = CARTESIAN_OPPOSITES[e_cast(toDir)];
         return walls.walls[e_cast(fromDir)].canNavThrough();
     }
     return false;
 }
 bool canEnterTileInDirectionDiagonal(const Tile& tile, const TileWalls& walls, Cartesian8 toDir) {
-    if (!tile.hasFlagThreadSafe(TileFlags::TILE_FLAG_IS_IMPASSABLE)) {
+    if (!tile.hasFlagsMaskAnyThreadSafe(IMPASSABLE_TILE_FLAGS_MASK)) {
         const CartesianPair fromDirs = CARTESIAN_DIAGONAL_OPPOSITES[e_cast(toDir)];
         return (walls.walls[e_cast(fromDirs.first)].canNavThrough() && walls.walls[e_cast(fromDirs.second)].canNavThrough());
     }
@@ -108,10 +108,9 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                 const Tile& tile = tiles[index];
                 const TileWalls& walls = tileWallContainers[index].wallsThreadSafe;
                 // Impassible tiles are not part of navgraph
-               /* if (tile.hasFlagThreadSafe(TileFlags::TILE_FLAG_IS_IMPASSABLE)) {
+                if (tile.hasFlagsMaskAnyThreadSafe(IMPASSABLE_TILE_FLAGS_MASK)) {
                     continue;
-                }*/
-
+                }
 
                 const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
                 bool assigned = false;
