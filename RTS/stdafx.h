@@ -396,6 +396,9 @@ inline bool IsEnabled<0>() {
 }
 
 const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
+const color4 COLOR_RED = color4((ui8)255u, (ui8)0u, (ui8)0u, (ui8)255u);
+const color4 COLOR_GREEN = color4((ui8)0u, (ui8)255u, (ui8)0u, (ui8)255u);
+const color4 COLOR_BLUE = color4((ui8)0u, (ui8)0u, (ui8)255u, (ui8)255u);
 
 // Thread stuff
 const std::thread::id MAIN_THREAD_ID = std::this_thread::get_id();

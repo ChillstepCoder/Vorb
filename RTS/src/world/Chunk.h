@@ -84,7 +84,7 @@ public:
 	~Chunk();
 
     // =========== Main methods  ===========
-	void init(const ChunkID& chunkId, WorldGrid& worldGrid);
+	void init(const ChunkID& chunkId);
 	void allocateTileContainer();
 	void freeTiles();
 	void dispose();
@@ -182,7 +182,6 @@ private:
 	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 
 	ui8 mDataReadyNeighborCount = 0;
-	WorldGrid* mWorldGrid = nullptr;
 
 	TileContainer* mTileContainer = nullptr;
     std::vector<ui8> mGrass; // Grass densities

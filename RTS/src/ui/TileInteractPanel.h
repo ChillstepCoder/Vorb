@@ -35,11 +35,11 @@ enum class UIInteractMenuState {
 };
 
 // Right click interact menu
-class UIInteractMenuPopup
+class TileInteractPanel
 {
 public:
-    UIInteractMenuPopup(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery);
-    ~UIInteractMenuPopup();
+    TileInteractPanel(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery);
+    ~TileInteractPanel();
 
     UIInteractMenuResultFlags updateAndRender();
 

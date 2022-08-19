@@ -230,7 +230,7 @@ void RenderContext::initPostLoad() {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
         mCharacterRenderer = std::make_unique<CharacterRenderer>();
-        mChunkRenderer = std::make_unique<ChunkRenderer>(mWorld.getWorldGrid(), *mMaterialRenderer);
+        mChunkRenderer = std::make_unique<ChunkRenderer>(*mMaterialRenderer);
         mLightRenderer = std::make_unique<LightRenderer>(*mMaterialRenderer);
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mWorld);
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(*mMaterialRenderer, mScreenResolution);

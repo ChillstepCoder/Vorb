@@ -101,8 +101,8 @@ public:
 
     bool hasFlagMainThread(TileFlags flag) const { return tileFlags.isBitSet(flag); }
     bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe.isBitSet(flag); }
-    bool hasFlagsMaskAnyMainThread(ui8 mask) const { return tileFlags.isMaskPartiallySet(mask); }
-    bool hasFlagsMaskAnyThreadSafe(ui8 mask) const { return tileFlags.isMaskPartiallySet(mask); }
+    bool hasFlagsMaskAnyMainThread(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
+    bool hasFlagsMaskAnyThreadSafe(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
 
     bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
 
@@ -163,4 +163,4 @@ private:
     BitFlags<TileFlags> tileFlagsThreadSafe;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 40, "Keep small");
+static_assert(sizeof(Tile) == 44, "Keep small");

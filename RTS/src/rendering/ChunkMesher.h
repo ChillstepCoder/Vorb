@@ -6,6 +6,7 @@ class Chunk;
 class Camera3D;
 class WorldGrid;
 class MeshBuilder;
+class PhysicsWorld;
 struct TileData;
 class Tile;
 struct SpriteData;
@@ -22,15 +23,13 @@ struct StaticLight {
 
 class ChunkMesher {
 public:
-    ChunkMesher(const WorldGrid& worldGrid);
+    ChunkMesher();
     ~ChunkMesher();
 
-    void updateMesh(const Chunk& chunk, const f32v3& cameraPos);
+    // TODO: Actually update the physics mesh
+    void updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos);
 
 private:
-    bool createMeshAsync(const Chunk& chunk);
-
-    // Shared vertex buffer to eliminate allocations
-    const WorldGrid& mWorldGrid;
+    bool createMeshAndPhysicsAsync(const Chunk& chunk);
 };
 

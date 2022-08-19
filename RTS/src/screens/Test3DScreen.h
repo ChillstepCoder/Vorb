@@ -36,7 +36,7 @@ public:
 	void draw(const vui::GameTime& gameTime) override;
 private:
     ResourceManager* mResourceManager = nullptr;
-    std::unique_ptr<World> mWorld;
+    //std::unique_ptr<World> mWorld;
 
 	Camera3D mCamera;
     RenderContext& mRenderContext;

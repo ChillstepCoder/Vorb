@@ -86,6 +86,12 @@ World::~World() {
 	IS_SHUTTING_DOWN = true;
 }
 
+World& World::getInstance()
+{
+    static World instance;
+    return instance;
+}
+
 void World::initPostLoad(ChunkMesher& chunkMesher) {
 	mChunkMesher = &chunkMesher;
 
@@ -584,7 +590,7 @@ void World::onChunkAllNeighborsDataReady(Chunk& chunk) {
     chunk.mTileContainer->setDirtyNav(true);
 	// Update our mesh
     chunk.dirtyMesh();
-    mChunkMesher->updateMesh(chunk, f32v3(mLoadCenter, 0.0f));
+    mChunkMesher->updateMeshAndPhysics(chunk, f32v3(mLoadCenter, 0.0f));
 }
 
 void World::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {

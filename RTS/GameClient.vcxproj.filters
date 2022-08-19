@@ -204,7 +204,7 @@
     <ClCompile Include="src\item\ItemTradeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\UIInteractMenuPopup.cpp">
+    <ClCompile Include="src\ui\TileInteractPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\IntersectionUtil.cpp">
@@ -734,7 +734,7 @@
     <ClInclude Include="src\item\ItemTradeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\UIInteractMenuPopup.h">
+    <ClInclude Include="src\ui\TileInteractPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\IntersectionUtil.h">

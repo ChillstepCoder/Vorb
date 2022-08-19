@@ -19,6 +19,10 @@ TileInspectionPanel::TileInspectionPanel(const f32v2& screenPos, const TileHandl
 
 inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     ImGui::Text("Flags:");
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST);
+    FLAG_DISPLAY(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_INTERACTING);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_STOCKPILE);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IN_CITY);
@@ -28,7 +32,7 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_IMPASSABLE);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
 
-    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 7, "Update");
+    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 11, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
@@ -50,12 +54,15 @@ void TileInspectionPanel::updateAndRender() {
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
     const TileContainer& container = *mTileHandle.container;
-    const i32v2 worldPos = i32v2(container.getTileXYOffset(mTileHandle.tileIndex)) + container.getWorldPos2D();
+    const i32v2 xyOffset = container.getTileXYOffset(mTileHandle.tileIndex);
+    const i32v2 worldPos = i32v2(xyOffset) + container.getWorldPos2D();
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);
     ImGui::Text("Base Z Position: %f", mTileHandle.tile->getGroundZPositionUncompressedMainThread());
     ImGui::Text("ChunkID: %u", ChunkID::fromWorldUI32v2(worldPos));
+    ImGui::Text("Tile Index: %u", mTileHandle.tileIndex);
+    ImGui::Text("Container Offset: <%u,%u>", xyOffset.x, xyOffset.y);
     ImGui::Separator();
     ImGui::Text("Layers:");
     showTileLayerMainThread("  Ground: %u %s", TILE_LAYER_GROUND, mTileHandle);

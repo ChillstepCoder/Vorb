@@ -200,7 +200,7 @@ public:
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
         return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;
     }
-    TileIndex getTileIndexFromXYZOffset(ui32 x, ui32 y, ui32 z) const {
+    TileIndex getTileIndexFromXYZOffset(i32 x, i32 y, i32 z) const {
         return x + y * mDims.x + z * mDims.x * mDims.y;
     }
     TileContainerID getId() const { return mId; }

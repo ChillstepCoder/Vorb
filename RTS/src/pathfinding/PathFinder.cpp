@@ -226,6 +226,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
 
         const ui16 g = nodeLookup.find(handle)->second.g;
         TileContainer* container = handle.getTileContainer();
+        const i32v3& dims = container->getDims();
         const TileFineNavData& fineNavData = container->getFineNavData()[handle.index];
         // Add current node to implicit closed list
 
@@ -236,16 +237,17 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             }
 
             f32 pathWeight;
-            const i32v3& dims = container->getDims();
             const i32v2& adjOffset = NODE_OFFSETS[dir];
-            const i32v3 containerOffset = container->getTileXYZOffset(handle.index);
-            const i32v3 adjPos(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, containerOffset.z);
             
             LiteTileHandle adjHandle;
-            TileIndex adjIndex = container->getTileIndexFromXYZOffset(adjPos);
-            if (adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)) {
+            Cartesian cartesian4 = CARTESIAN8_TO_CARTESIAN[dir];
+            bool isExternal = (cartesian4 != Cartesian::NONE) && (fineNavData.getEdgeType(cartesian4) == TileFineNavEdgeType::EXTERIOR);
+            if (isExternal/* || adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)*/) {
                 // External edge
-                const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(adjPos + container->getWorldPos3D());
+                const f32 zPos = handle.toTileHandle().tile->getGroundZPositionUncompressedThreadSafe();
+                const i32v3 containerOffset = container->getTileXYZOffsetWithZScale(handle.index);
+                const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + zPos));
+                const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(offset + container->getWorldPos3D());
                 if (!externalHandle.isValid()) {
                     continue;
                 }
@@ -253,6 +255,9 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             }
             else {
                 // Internal edge
+                const i32v3 containerOffset = container->getTileXYZOffset(handle.index);
+                const i32v3 adjPos(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, containerOffset.z);
+                TileIndex adjIndex = container->getTileIndexFromXYZOffset(adjPos);
                 adjHandle = LiteTileHandle(container->getId(), adjIndex);
             }
             // Get path weight
@@ -500,18 +505,22 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
         if (edge.isExternalEdge()) {
             // With external edges we have to look up the adjacent nav nodes
             std::unordered_map<std::pair<TileContainerID, ui32 /*navNode*/>, TileIndex, EdgeNodeHash> edgeNodes;
-            const i32v3 edgeStartPosWorld = container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(edge.startPos));
+            i32v3 edgeStartPosWorld = container->getWorldPos3D() + container->getTileXYZOffsetWithZScale(edge.startPos);
             for (int i = 0; i < (int)edge.edgeLength; ++i) {
-                const i32v3 edgePos = edgeStartPosWorld + CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)] * i;
-                const i32v3 worldPosOuter = edgePos + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
-                TileHandle handle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(worldPosOuter);
-                if (!handle.isValid()) {
+                const i32v3& edgeDir = CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)];
+                const i32v3 edgePosWorld = edgeStartPosWorld + edgeDir * i;
+                const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * container->getDims().y) * i;
+                const Tile& innerTile = container->getTileAt(nextIndex);
+                i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
+                worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZPositionUncompressedThreadSafe());
+                TileHandle outerHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(worldPosOuter);
+                if (!outerHandle.isValid()) {
                     continue;
                 }
-                // This will either never happen or might be rare... I think it should never?
-                assert(handle.container != container);
+                // This should be very rare and is a failure case for this edge, TODO: debug log it or something?
+                assert(outerHandle.container != container);
                 // TODO: This always picks last node
-                edgeNodes[std::make_pair(handle.container->getId(), handle.tile->getNavNodeIndex())] = handle.tileIndex;
+                edgeNodes[std::make_pair(outerHandle.container->getId(), outerHandle.tile->getNavNodeIndex())] = outerHandle.tileIndex;
             }
             for (auto&& it : edgeNodes) {
                 //TileContainer* adjContainer = TileContainerRepository::getTileContainer(it.first);

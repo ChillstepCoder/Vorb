@@ -36,7 +36,7 @@
 
 #include "rendering/ChunkRenderer.h"
 
-#include "ui/UIInteractMenuPopup.h"
+#include "ui/TileInteractPanel.h"
 #include "ui/UIContext.h"
 
 #include <SDL.h>
@@ -53,11 +53,11 @@ constexpr f64 TICK_RATE_MS = 40.0;
 GameplayScreen::GameplayScreen(App* const app)
 	: IAppScreen<App>(app),
     mResourceManager(Services::ResourceManager::ref()),
-    mWorld(std::make_unique<World>()),
-    mRenderContext(RenderContext::initInstance(*mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
+    mWorld(World::getInstance()),
+    mRenderContext(RenderContext::initInstance(mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
 {
 
-    UIContext::initInstance(*mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
+    UIContext::initInstance(mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
     // TODO: Config
     sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
@@ -70,10 +70,10 @@ GameplayScreen::GameplayScreen(App* const app)
     }
 
 	// Starting time of day to noon
-	mWorld->setTimeOfDay(12.0f);
+	mWorld.setTimeOfDay(12.0f);
 
     // TODO: FIX EVIL THINGS
-    mCameraController = std::make_unique<CameraController>(m_app->getWindow(), *mWorld);
+    mCameraController = std::make_unique<CameraController>(m_app->getWindow(), mWorld);
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. Engaging units do not need to do any area
 	// checks, simply distance checks to graph neighbors. When initiating combat, area checks can be stopped.
@@ -114,7 +114,7 @@ void GameplayScreen::build() {
 #endif
     {
         ScopedTimer timer("World init");
-        mWorld->initPostLoad(mRenderContext.getChunkRenderer().getMesher());
+        mWorld.initPostLoad(mRenderContext.getChunkRenderer().getMesher());
     }
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
@@ -137,7 +137,7 @@ void GameplayScreen::build() {
 			mRenderContext.selectNextDebugShader();
         }
         else if (event.keyCode == VKEY_L) {
-			auto&& ecs = mWorld->getECS();
+			auto&& ecs = mWorld.getECS();
 			if (ecs.mRegistry.try_get<DynamicLightComponent>(ecs.mPlayerEntity)) {
 				// Remove existing
 				ecs.mRegistry.remove<DynamicLightComponent>(ecs.mPlayerEntity);
@@ -175,7 +175,7 @@ void GameplayScreen::build() {
         if (event.button == vorb::ui::MouseButton::RIGHT) {
             mRightClickTimer.start();
             const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-            PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+            PhysHitResult hitResult = mWorld.getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
             if (hitResult.didHit()) {
                 mRightClickPickPos = hitResult.mPosition;
             }
@@ -190,11 +190,11 @@ void GameplayScreen::build() {
 		mMousePosition.y = (f32)event.y;
 
         // Uncomment for pathfind stress test
-       /* TerrainPickData pickData = mWorld->getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
+       /* TerrainPickData pickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
         if (pickData.hit.didHit()) {
 
-            NavigationComponent& cmp = mWorld->getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            const PhysicsComponent& physCmp = mWorld->getECS().mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+            NavigationComponent& cmp = mWorld.getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
+            const PhysicsComponent& physCmp = mWorld.getECS().mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
             const f32v2& playerXYPos = physCmp.getXYPosition();
             cmp.requestCoarsePath(ui16v2(pickData.hit.position.x, pickData.hit.position.y), playerXYPos);
 
@@ -216,17 +216,17 @@ void GameplayScreen::build() {
 
 			if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
-                auto&& ecs = mWorld->getECS();
+                auto&& ecs = mWorld.getECS();
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
                     const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                    PhysHitResult hitResult = mWorld.getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
 					if (hitResult.didHit()) {
                         phys->teleportToPoint(hitResult.mPosition);
 					}
 				}
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
-            /*    TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+            /*    TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
                 if (handle.isValid()) {
                     Chunk* chunk = handle.getMutableChunk();
                     ui8 height = chunk->getTileAt(handle.index).groundZPosition + 5;
@@ -234,7 +234,7 @@ void GameplayScreen::build() {
                 }*/
 			}
             else if (vui::InputDispatcher::key.isKeyPressed(VKEY_E)) {
-                /*TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
+                /*TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
                 if (handle.isValid()) {
                     Chunk* chunk = handle.getMutableChunk();
                     ui8 height = chunk->getTileAt(handle.index).groundZPosition;
@@ -242,8 +242,8 @@ void GameplayScreen::build() {
                 }*/
             }
             else if (vui::InputDispatcher::key.isKeyPressed(VKEY_C)) {
-                /*TileHandle handle = mWorld->getTileHandleAtWorldPos(worldPos);
-                mWorld->createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));*/
+                /*TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
+                mWorld.createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));*/
             }
 			else {
 				if (mRightClickInteractPopup) {
@@ -257,7 +257,7 @@ void GameplayScreen::build() {
                 mResourceManager.getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");*/
 			}
 			else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
-                /*mWorld->createEntity(worldPos, "villager");*/
+                /*mWorld.createEntity(worldPos, "villager"); */
 			}
             else {
                 constexpr f64 RIGHT_CLICK_INTERACT_MS_THRESHOLD = 160.0;
@@ -266,18 +266,18 @@ void GameplayScreen::build() {
 				}
                 else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                     const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                    PhysHitResult hitResult = mWorld.getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
                     if (hitResult.didHit()) {
                         // For interact must click in about the same spot
                         if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
                             f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                            WorldObjectQuery worldObjectQuery(*mWorld, worldPos);
+                            WorldObjectQuery worldObjectQuery(mWorld, worldPos);
                             if (worldObjectQuery.isValid()) {
                                 // Right click picking
                                 mSelectedTileHandle = worldObjectQuery.getTileHandle();
                                 // Enable context menu
                                 mSelectedScreenPos = screenPos;
-                                mRightClickInteractPopup = std::make_unique<UIInteractMenuPopup>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
+                                mRightClickInteractPopup = std::make_unique<TileInteractPanel>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
                             }
                         }
                     }
@@ -296,9 +296,9 @@ void GameplayScreen::build() {
 
     // Add player
     f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-    mWorld->getWorldGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
-    auto&& ecs = mWorld->getECS();
-    ecs.mPlayerEntity = mWorld->createEntity(playerPos, "player");
+    mWorld.getWorldGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
+    auto&& ecs = mWorld.getECS();
+    ecs.mPlayerEntity = mWorld.createEntity(playerPos, "player");
     assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
 
     mCameraController->setEntityFollow(ecs.mPlayerEntity);
@@ -331,17 +331,17 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     updateTimeScaling(gameTime);
 
     // Update main thread update queues
-    mWorld->updateTaskQueues();
-    mWorld->updateActiveDynamicTiles();
+    mWorld.updateTaskQueues();
+    mWorld.updateActiveDynamicTiles();
 
     // Update the world with fixed timestep
     int ticks = 0;
-    auto&& ecs = mWorld->getECS();
+    auto&& ecs = mWorld.getECS();
 	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
         f32v3 position = playerPhysCmp.getPosition();
-        mWorld->tick(position);
+        mWorld.tick(position);
 
 	}
 
@@ -350,7 +350,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
 
 
 	updateTilePicking();
-    mWorld->frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
+    mWorld.frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
 
     // TODO: Actual usage of deltatime?
     mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
@@ -365,7 +365,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
     sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
     mFps = sFps;
 
-    auto&& ecs = mWorld->getECS();
+    auto&& ecs = mWorld.getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
     const f32v3 playerPos = cmp.getInterpolatedPosition();
 	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
@@ -421,16 +421,14 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         // Render selected
         const f32v3 worldPos = mSelectedTileHandle.getWorldPos3D();
         const ui32v2 worldPosInt = worldPos;
-        DebugRenderer::drawFilledQuad(worldPos - f32v3(0.05f, 0.05f, 0.0f), f32v2(0.1f), color4(1.0f, 1.0f, 0.0f, 0.4f));
-        DebugRenderer::drawWireQuad(glm::floor(worldPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.5f));
 
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             if (mSelectedTileHandle.isValid()) {
-                auto&& ecs = mWorld->getECS();
+                auto&& ecs = mWorld.getECS();
                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-                cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPosWITHSTRUCTURES(playerPos), mSelectedTileHandle);
+                cmp.requestCoarsePath(mWorld.getTileHandleAtWorldPosWITHSTRUCTURES(playerPos), mSelectedTileHandle);
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
@@ -479,22 +477,22 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
             // grass
             WorldObjectQuery& worldObjects = mRightClickInteractPopup->getWorldObjects();
             ItemStockpile* stockPile = worldObjects.getStockpile();
-			mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
+			mWorld.getItemStockpileRegistry().destroyStockpile(stockPile);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
             assert(false);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
             TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
+            mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
             TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+            mWorld.getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
             TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld->getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
+            mWorld.getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
 

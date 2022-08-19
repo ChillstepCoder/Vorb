@@ -24,6 +24,12 @@ struct GridID {
         id.id = id.pos.y * GRIDWIDTH + id.pos.x;
         return id;
     }
+    static GridID fromWorldI32v2(const i32v2& worldPos) {
+        GridID id;
+        id.pos = ui32v2(worldPos.x / CELLWIDTH, worldPos.y / CELLWIDTH);
+        id.id = id.pos.y * GRIDWIDTH + id.pos.x;
+        return id;
+    }
     static GridID fromWorldUI16v2(const ui16v2& worldPos) {
         GridID id;
         id.pos = ui32v2(worldPos.x / CELLWIDTH, worldPos.y / CELLWIDTH);

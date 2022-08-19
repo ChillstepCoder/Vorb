@@ -66,7 +66,7 @@ inline f32v3 BarycentricBlBrTl(f32v2 p) {
 
 WorldGrid::WorldGrid(World& world) : mWorld(world) {
     for (ui32 i = 0; i < numChunks(); ++i) {
-        mChunks[i].init(ChunkID(i), *this);
+        mChunks[i].init(ChunkID(i));
     }
 }
 

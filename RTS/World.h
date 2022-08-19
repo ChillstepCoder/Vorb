@@ -40,9 +40,16 @@ class World
 {
 	friend class EntityComponentSystem;
 	friend class WorldEditor;
-public:
+private:
 	World();
-	~World();
+
+
+public:
+    ~World();
+	World(World const&) = delete;
+	void operator=(World const&) = delete;
+
+	static World& getInstance();
 
 	void initPostLoad(ChunkMesher& chunkMesher);
 	void updateTaskQueues();

@@ -6,6 +6,7 @@
 #include "rendering/mesh/Mesh.h"
 
 #include "resources/TileRepository.h"
+#include "World.h"
 
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
@@ -290,14 +291,87 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
     // TODO: Only dirty nav graph and mesh if we actually updated data
     mRenderData.mDirtyStaticMesh = true;
     mDirtyNav = true;
-}
 
+    // Potentially block or free terrain below
+    // TODO: Proper intersection
+    if (!mIsTerrain) {
+        WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+        const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
+        if (offset.z == 0) {
+            const i32v2 worldPos2D(mRootPos.x + offset.x, mRootPos.y + offset.y);
+            Chunk& chunk = worldGrid.getChunk(ChunkID::fromWorldI32v2(worldPos2D));
+            if (chunk.isDataReady()) {
+                TileContainer* chunkTileContainer = chunk.getTileContainer();
+                assert(chunkTileContainer);
+                TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(worldPos2D.x - chunkTileContainer->getWorldPos2D().x, worldPos2D.y - chunkTileContainer->getWorldPos2D().y, 0);
+                if (tile.isEmptyMainThread()) {
+                    chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
+                }
+                else {
+                    chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
+                }
+            }
+            else {
+                assert(false && "Building on invalid chunk");
+            }
+        }
+    }
+}
+//#include "DebugRenderer.h" // TODO: REMOVE
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
     mRenderData.mDirtyDynamicMesh = true;
+    if (!mIsTerrain) {
+        WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+        const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
+        if (offset.z == 0) {
+            const i32v2 worldPos2D(mRootPos.x + offset.x, mRootPos.y + offset.y);
+
+            //DebugRenderer::drawFilledQuad(f32v3(worldPos2D.x, worldPos2D.y, 5.0f), f32v2(1.0f), COLOR_RED, 10000000);
+            bool isExterior = false;
+            TileFlags forceFlag;
+            switch (doorSide) {
+                case Cartesian::SOUTH:
+                    isExterior = ((offset.y == 0) || !isTileOwned(tileIndex - mDims.x));
+                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH;
+                    break;
+                case Cartesian::WEST:
+                    isExterior = ((offset.x == 0) || !isTileOwned(tileIndex - 1));
+                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST;
+                    break;
+                case Cartesian::EAST:
+                    isExterior = ((offset.x == mDims.x - 1) || !isTileOwned(tileIndex + 1));
+                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST;
+                    break;
+                case Cartesian::NORTH:
+                    isExterior = ((offset.y == mDims.y - 1) || !isTileOwned(tileIndex + mDims.x));
+                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH;
+                    break;
+                default:
+                    break;
+            }
+
+            // Only exterior doors create a forced navmesh connection
+            if (isExterior) {
+                const i32v2 chunkTilePos = CARTESIAN_NORMALS[e_cast(doorSide)] + worldPos2D;
+                Chunk& chunk = worldGrid.getChunk(ChunkID::fromWorldI32v2(chunkTilePos));
+                if (chunk.isDataReady()) {
+                    TileContainer* chunkTileContainer = chunk.getTileContainer();
+                    assert(chunkTileContainer);
+                    TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(chunkTilePos.x - chunkTileContainer->getWorldPos2D().x, chunkTilePos.y - chunkTileContainer->getWorldPos2D().y, 0);
+                    chunkTileContainer->setTileFlag(chunkTileIndex, forceFlag);
+                   // DebugRenderer::drawFilledQuad(f32v3(chunkTileContainer->getTileXYZOffsetWithZScale(chunkTileIndex) + chunkTileContainer->getWorldPos3D()), f32v2(1.0f), COLOR_WHITE, 10000000);
+                }
+                else {
+                    assert(false && "Building on invalid chunk");
+                }
+            }
+        }
+    }
 }
 
 void TileContainer::removeDoor(Cartesian doorSide, TileIndex tileIndex) {
+    assert(false); // Implement removing the navnode edge
     mRenderData.mDirtyDynamicMesh = true;
     for (size_t i = 0; i < mDynamicTiles.size(); ++i) {
         if (mDynamicTiles[i].mTileIndex == tileIndex && mDynamicTiles[i].mType == e_cast(doorSide)) {

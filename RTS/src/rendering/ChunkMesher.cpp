@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
 
+#include "World.h"
 #include "world/Chunk.h"
 #include "resources/TileRepository.h"
 #include "rendering/mesh/Mesh.h"
@@ -153,9 +154,7 @@
 //    }
 //}
 
-ChunkMesher::ChunkMesher(const WorldGrid& worldGrid) :
-    mWorldGrid(worldGrid)
-{
+ChunkMesher::ChunkMesher() {
 
 }
 
@@ -164,14 +163,14 @@ ChunkMesher::~ChunkMesher()
 
 }
 
-void ChunkMesher::updateMesh(const Chunk& chunk, const f32v3& cameraPos) {
+void ChunkMesher::updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos) {
     UNUSED(cameraPos);
     if (chunk.mTileContainer->shouldBuildStaticMesh()) {
-        createMeshAsync(chunk);
+        createMeshAndPhysicsAsync(chunk);
     }
 }
 
-bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
+bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
 
     ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
     TileContainerRenderData& tileRenderData = chunk.getTileContainer()->getRenderData();
@@ -189,8 +188,8 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
     if (!tileRenderData.mStaticMesh) {
         tileRenderData.mStaticMesh = std::make_unique<Mesh>();
     }
-
-    const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
+    WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+    const HeightmapPatchData* heightData = worldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
     
     // TODO: Different way than using two shared ptr? Does it matter?
     std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
@@ -198,6 +197,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
 
     Services::Threadpool::ref().addTask([this, &chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
 
+        WorldGrid& worldGrid = World::getInstance().getWorldGrid();
         quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
         billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
 
@@ -228,7 +228,7 @@ bool ChunkMesher::createMeshAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(groundZPosition, mWorldGrid.computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
+                            f32 zPosition = glm::max(groundZPosition, worldGrid.computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }

@@ -31,9 +31,9 @@ constexpr float FLORA_RENDER_DISTANCE_2 = SQ(320.0f);
 constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
 static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
-ChunkRenderer::ChunkRenderer(const WorldGrid& worldGrid, const MaterialRenderer& materialRenderer) :
+ChunkRenderer::ChunkRenderer(const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer),
-    mMesher(std::make_unique<ChunkMesher>(worldGrid))
+    mMesher(std::make_unique<ChunkMesher>())
 {
 }
 
@@ -77,7 +77,7 @@ void ChunkRenderer::renderBillboards(const World& world, const Camera3D& camera)
     world.enumVisibleChunks([&](const Chunk& chunk) {
         if (chunk.isFinished()) {
 
-            mMesher->updateMesh(chunk, f32v3(world.getLoadCenter(), 0.0f));
+            mMesher->updateMeshAndPhysics(chunk, f32v3(world.getLoadCenter(), 0.0f));
 
             ChunkRenderData& renderData = chunk.mChunkRenderData;
             if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "UIInteractMenuPopup.h"
+#include "TileInteractPanel.h"
 
 #include "World.h"
 #include "ecs/EntityComponentSystem.h"
@@ -27,7 +27,7 @@ constexpr int WINDOW_FLAGS = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoRe
 //    return changed;
 //}
 
-UIInteractMenuPopup::UIInteractMenuPopup(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery) :
+TileInteractPanel::TileInteractPanel(const f32v2& screenPos, SDL_Window* window, WorldObjectQuery&& worldObjectQuery) :
     mScreenPos(screenPos),
     mWindow(window),
     mWorldObjectQuery(std::move(worldObjectQuery))
@@ -35,12 +35,12 @@ UIInteractMenuPopup::UIInteractMenuPopup(const f32v2& screenPos, SDL_Window* win
 
 }
 
-UIInteractMenuPopup::~UIInteractMenuPopup()
+TileInteractPanel::~TileInteractPanel()
 {
 
 }
 
-UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
+UIInteractMenuResultFlags TileInteractPanel::updateAndRender()
 {
     ui32 resultFlags;
     const f32v2 panelDims(sButtonSize.x + 16, INTERACT_MENU_RESULT_COUNT * sButtonSize.y + 45);
@@ -62,7 +62,7 @@ UIInteractMenuResultFlags UIInteractMenuPopup::updateAndRender()
     return static_cast<UIInteractMenuResultFlags>(resultFlags);
 }
 
-ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
+ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     ui32 resultFlags = 0;
     World& world = mWorldObjectQuery.getWorld();
 
@@ -209,11 +209,18 @@ ui32 UIInteractMenuPopup::updateAndRenderTerrainTile() {
             break;
 
     }
+
+    // Debug render
+    TileHandle handle = mWorldObjectQuery.getTileHandle();
+    f32v3 tilePos(f32v3(handle.getWorldPos3D()));
+    tilePos.z += handle.tile->getGroundZPositionUncompressedMainThread();
+    DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
-    static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");    return resultFlags;
+    static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");
+    return resultFlags;
 }
 
-ui32 UIInteractMenuPopup::updateAndRenderStructureTile() {
+ui32 TileInteractPanel::updateAndRenderStructureTile() {
     ui32 resultFlags = 0;
     ImGui::Begin("Structure", nullptr, WINDOW_FLAGS);
     if (ImGui::Button("Move Here")) {
@@ -232,11 +239,18 @@ ui32 UIInteractMenuPopup::updateAndRenderStructureTile() {
         resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
         mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
     }
-    DebugRenderer::drawWireQuad(f32v3(mWorldObjectQuery.getTileHandle().getWorldPos3D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
+    if (ImGui::Button("Inspect", sButtonSize)) {
+        resultFlags |= INTERACT_MENU_RESULT_INSPECT;
+        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+    }
+    TileHandle handle = mWorldObjectQuery.getTileHandle();
+    f32v3 tilePos(f32v3(handle.getWorldPos3D()));
+    tilePos.z += handle.tile->getGroundZPositionUncompressedMainThread();
+    DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     return resultFlags;
 }
 
-const RoomNode* UIInteractMenuPopup::tryGetSelectedRoom() const {
+const RoomNode* TileInteractPanel::tryGetSelectedRoom() const {
     if (!mSelectedStructure || mSelectedRoomID == INVALID_ROOM_ID) {
         return nullptr;
     }
@@ -248,7 +262,7 @@ const RoomNode* UIInteractMenuPopup::tryGetSelectedRoom() const {
     return &roomGraph[mSelectedRoomID];
 }
 
-Building* UIInteractMenuPopup::tryGetSelectedBuilding() const {
+Building* TileInteractPanel::tryGetSelectedBuilding() const {
     if (mSelectedStructure && mSelectedStructure->getType() == StructureType::Building) {
         return static_cast<Building*>(mSelectedStructure);
     }

@@ -13,7 +13,7 @@ class App;
 class CameraController;
 class ResourceManager;
 class RenderContext;
-class UIInteractMenuPopup;
+class TileInteractPanel;
 
 DECL_VUI(class InputDispatcher);
 
@@ -46,7 +46,7 @@ private:
     void updateTilePicking();
     void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
-	std::unique_ptr<World> mWorld;
+	World& mWorld;
 
     // Rendering
     std::unique_ptr<CameraController> mCameraController;
@@ -61,7 +61,7 @@ private:
     // UI
 	TileHandle mSelectedTileHandle;
 	f32v2 mSelectedScreenPos = f32v2(0.0f);
-    std::unique_ptr<UIInteractMenuPopup> mRightClickInteractPopup;
+    std::unique_ptr<TileInteractPanel> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
 	PreciseTimer mRightClickTimer;
 	f32v3 mRightClickPickPos = f32v3(FLT_MAX);

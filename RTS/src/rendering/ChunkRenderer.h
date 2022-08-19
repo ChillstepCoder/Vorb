@@ -17,7 +17,7 @@ class WorldGrid;
 // TODO: IRendererBase?
 class ChunkRenderer {
 public:
-	ChunkRenderer(const WorldGrid& worldGrid, const MaterialRenderer& materialRenderer);
+	ChunkRenderer(const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
     void renderTiles(const World& world, const Camera3D& camera);

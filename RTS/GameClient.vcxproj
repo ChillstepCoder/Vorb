@@ -290,7 +290,7 @@
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
     <ClCompile Include="src\ui\UIContext.cpp" />
-    <ClCompile Include="src\ui\UIInteractMenuPopup.cpp" />
+    <ClCompile Include="src\ui\TileInteractPanel.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
@@ -488,7 +488,7 @@
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\TileInspectionPanel.h" />
     <ClInclude Include="src\ui\UIContext.h" />
-    <ClInclude Include="src\ui\UIInteractMenuPopup.h" />
+    <ClInclude Include="src\ui\TileInteractPanel.h" />
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\BitArray.h" />
     <ClInclude Include="src\util\BitFlags.h" />

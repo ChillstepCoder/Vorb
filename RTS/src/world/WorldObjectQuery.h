@@ -12,7 +12,7 @@ class Chunk;
 #include "actor/ActorTypes.h"
 
 class WorldObjectQuery {
-    friend class UIInteractMenuPopup;
+    friend class TileInteractPanel;
 public:
     WorldObjectQuery(World& world, const f32v3& worldPos);
 
