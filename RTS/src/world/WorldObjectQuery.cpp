@@ -22,7 +22,7 @@ void WorldObjectQuery::refresh() {
     mBuildingAtTile = nullptr;
 
     f32v2 tilePos2D(mWorldPos.x, mWorldPos.y);
-    TileHandle handle = mWorld.getTileHandleAtWorldPos(tilePos2D);
+    TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(tilePos2D);
     if (!handle.isValid()) {
         return;
     }

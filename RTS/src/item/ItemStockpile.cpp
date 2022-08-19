@@ -30,7 +30,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
         std::cout << "  ";
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             const ui32v2 worldPos(x, y);
-            TileRef ref(world.getTileHandleAtWorldPos(worldPos));
+            TileRef ref(world.getTerrainTileHandleAtWorldPos(worldPos));
             bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid

@@ -487,7 +487,7 @@ void WorldEditor::updateCityEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mCityEditState == CityEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
+        TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(worldPos);
         mWorld.createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
     }
 }
@@ -496,7 +496,7 @@ void WorldEditor::updateBuildingEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
+        TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(worldPos);
         ui32v2 createPos(floor(worldPos.x), floor(worldPos.y));
 
         // TODO: Unowned buildings?

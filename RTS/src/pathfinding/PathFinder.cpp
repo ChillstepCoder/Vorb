@@ -247,7 +247,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
                 const f32 zPos = handle.toTileHandle().tile->getGroundZPositionUncompressedThreadSafe();
                 const i32v3 containerOffset = container->getTileXYZOffsetWithZScale(handle.index);
                 const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + zPos));
-                const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(offset + container->getWorldPos3D());
+                const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosThreadSafe(offset + container->getWorldPos3D());
                 if (!externalHandle.isValid()) {
                     continue;
                 }
@@ -513,7 +513,7 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
                 const Tile& innerTile = container->getTileAt(nextIndex);
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
                 worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZPositionUncompressedThreadSafe());
-                TileHandle outerHandle = mWorld.getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(worldPosOuter);
+                TileHandle outerHandle = mWorld.getTileHandleAtWorldPosThreadSafe(worldPosOuter);
                 if (!outerHandle.isValid()) {
                     continue;
                 }

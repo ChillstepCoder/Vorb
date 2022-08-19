@@ -428,7 +428,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
             if (mSelectedTileHandle.isValid()) {
                 auto&& ecs = mWorld.getECS();
                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-                cmp.requestCoarsePath(mWorld.getTileHandleAtWorldPosWITHSTRUCTURES(playerPos), mSelectedTileHandle);
+                cmp.requestCoarsePath(mWorld.getTileHandleAtWorldPos(playerPos), mSelectedTileHandle);
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {

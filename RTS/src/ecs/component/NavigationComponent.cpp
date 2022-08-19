@@ -53,7 +53,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 
 	// TODO: do this conversion in the generator?
 	const LiteTileHandle* points = navCmp.mFinePath->getPoints();
-	const ui32v2& nextTilePos = points[navCmp.mCurrentFinePoint].getWorldPosition();
+	const i32v3 nextTilePos = points[navCmp.mCurrentFinePoint].getWorldPosition();
 	f32v2 nextPoint = f32v2(nextTilePos) + f32v2(0.5f);
 	// Adjust next target point position slightly towards next point to account for circle colliders in our path
 	// so we can adequately steer around them
@@ -64,8 +64,8 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
         nextPoint += glm::normalize(nextNextPoint - nextPoint) + TARGET_EASE;
     }*/
 
-	// Check for stuck on new tile
-	const Tile* targetTile = world.tryGetTileAtWorldPos(nextTilePos);
+	// Check for stuck on new tile/jump
+	const Tile* targetTile = world.getTileHandleAtWorldPos(nextTilePos).tile;
 	if (targetTile) {
         f32 baseZ = targetTile->getGroundZPositionUncompressedMainThread();
 		// TODO: Remove
@@ -257,7 +257,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(nextCoarseTilePos), world);
+		requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPos(pos), world.getTileHandleAtWorldPos(nextCoarseTilePos), world);
 
     }
     else {
@@ -292,7 +292,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
 					// TODO: REMOVE
 					DebugRenderer::drawFilledQuad(f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.8f), 10000);
-                    requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPosWITHSTRUCTURES(pos), world.getTileHandleAtWorldPosWITHSTRUCTURES(nextCoarseTilePos), world);
+                    requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPos(pos), world.getTileHandleAtWorldPos(nextCoarseTilePos), world);
                 }
 			}
 		}

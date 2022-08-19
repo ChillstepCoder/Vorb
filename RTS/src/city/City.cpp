@@ -20,7 +20,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)
 {
 
-    TileHandle root = mWorld.getTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
+    TileHandle root = mWorld.getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
     mChunks.push_back(&mWorld.getWorldGrid().getChunk(root.getChunkIDAtPos()));
     // This belongs to us, don't go away
     // TODO: Need to release later

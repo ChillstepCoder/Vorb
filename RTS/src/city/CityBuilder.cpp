@@ -171,7 +171,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     ui32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
-            TileHandle handle = mWorld.getTileHandleAtWorldPos(xy);
+            TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(xy);
             handle.getMutableContainer()->addTile(handle.tileIndex, TileRepository::getTileData(tileId));
         }
     }

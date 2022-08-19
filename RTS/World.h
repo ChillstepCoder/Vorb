@@ -78,18 +78,12 @@ public:
     Chunk& getChunk(ui32 chunkId);
     const Chunk& getChunk(ui32 chunkId) const;
 
-    TileHandle getTileFromCameraPickVector(const Camera3D& camera, const f32v3& rayDir) const;
-    TileHandle getTileHandleAtWorldPosWITHSTRUCTURESTHREADSAFE(const i32v3& worldPos) const;
-	TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const i32v3& worldPos) const;
-	TileHandle getTileHandleAtWorldPosWITHSTRUCTURES(const f32v3& worldPos) const;
-	TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const { return getTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
-    TileHandle getTileHandleAtWorldPos(const f32v2& worldPos) const;
-    TileHandle getTileHandleAtWorldPos(const ui32v2& worldPos) const;
-    TileHandle getTileHandle(ui32 chunkId, TileIndex tileIndex) const;
-    const Tile& getTileAtWorldPos(const f32v2& worldPos) const;
-    const Tile* tryGetTileAtWorldPos(const f32v2& worldPos) const;
-    const Tile* tryGetTileAtWorldPos(const ui32v2& worldPos) const;
-    const Tile* tryGetTileAtWorldPos(const ui16v2& worldPos) const;
+    TileHandle getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const;
+	TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
+	TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
+	TileHandle getTerrainTileHandleAtWorldPos(const f32v3& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
+    TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
+    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const;
 	StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 

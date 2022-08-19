@@ -76,7 +76,7 @@ void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt
     f32v2 targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
     assert(false); // itemreservation should use TileHandle or most probably, TileRef
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPosWITHSTRUCTURES(myPos), world.getTileHandleAtWorldPosWITHSTRUCTURES(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPos(myPos), world.getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }
@@ -175,7 +175,7 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
 
     // Build tile
     const ui32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
-    TileHandle tileHandle = world.getTileHandleAtWorldPos(worldPos);
+    TileHandle tileHandle = world.getTerrainTileHandleAtWorldPos(worldPos);
     TileContainer& tiles = *tileHandle.getMutableContainer();
     tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
     //// Walls have higher base Z position

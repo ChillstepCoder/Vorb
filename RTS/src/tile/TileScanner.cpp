@@ -43,7 +43,7 @@ std::vector<TileHandle> TileScanner::scanForResource(World& world, TileResource 
     while (openList.size()) {
         BfsNode node = openList.front();
         openList.pop();
-        TileHandle tileHandle = world.getTileHandleAtWorldPos(node.pos);
+        TileHandle tileHandle = world.getTerrainTileHandleAtWorldPos(node.pos);
         if (!tileHandle.isValid()) continue;
 
         // Reserved resources will not be counted
