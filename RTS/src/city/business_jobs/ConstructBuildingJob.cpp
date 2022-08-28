@@ -39,7 +39,7 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint) : mBlue
     mFirstUnfinishedBpIndex = 0;
     assert(mBlueprint.totalTilesToBuild);
 }
-static_assert(e_cast(BlueprintTileType::TYPES) == 6, "Update build logic");
+static_assert(e_cast(BlueprintTileType::TYPES) == 7, "Update build logic");
 
 ConstructBuildingJob::~ConstructBuildingJob() {
 

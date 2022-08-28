@@ -19,8 +19,10 @@ BuildingBlueprint::BuildingBlueprint(
     tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile("bricks1");
     tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile("door");
     tileIDs[e_cast(BlueprintTileType::WALL)] = TileRepository::getTile("wood_wall_gothic");
-    tileIDs[e_cast(BlueprintTileType::STAIRS)] = TILE_ID_NONE;
+    tileIDs[e_cast(BlueprintTileType::STAIRS)] = TileRepository::getTile("stairs_wood");
+    tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)] = TileRepository::getTile("stairs_wood_flat");
     tileIDs[e_cast(BlueprintTileType::AIR)] = TILE_ID_NONE;
-    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
+
+    static_assert(e_cast(BlueprintTileType::TYPES) == 7);
 
 }

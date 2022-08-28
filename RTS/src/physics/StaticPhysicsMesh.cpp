@@ -102,6 +102,28 @@ void StaticPhysicsMesh::addQuadBetweenPoints(const f32v3 vertPoints[4]) {
     verts[3] = vertPoints[3];
 }
 
+void StaticPhysicsMesh::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3)
+{
+    const size_t v = mVerts.size();
+    const size_t ind = mIndices.size();
+    mIndices.resize(ind + 6u);
+    mIndices[ind] = v;
+    mIndices[ind + 1u] = v + 1u;
+    mIndices[ind + 2u] = v + 2u;
+    mIndices[ind + 3u] = v + 2u;
+    mIndices[ind + 4u] = v + 3u;
+    mIndices[ind + 5u] = v;
+
+
+    mVerts.resize(mVerts.size() + 4);
+
+    f32v3* verts = (&mVerts.back() - 3);
+    verts[0] = v0;
+    verts[1] = v1;
+    verts[2] = v2;
+    verts[3] = v3;
+}
+
 void StaticPhysicsMesh::addTriangleBetweenPoints(const f32v3 vertPoints[3]) {
     const size_t v = mVerts.size();
     const size_t ind = mIndices.size();

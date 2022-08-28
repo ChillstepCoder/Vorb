@@ -35,6 +35,7 @@ struct TileData {
     TileResource resource = TileResource::NONE;
     SubTexture texture; // TODO: Model instead also make it a pointer this is huge?
     TileTextureMethod textureMethod;
+    ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
     std::string name;
     std::vector<ItemDrop> itemDrops;
     std::vector<ItemStack> recipe;
@@ -112,6 +113,7 @@ public:
     ui16 getNavNodeIndex_DEBUG_MAIN_THREAD() const { return navData.coarseNavNodeIndex; }
     ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navData.coarseNavNodeIndex; }
     void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navData.coarseNavNodeIndex = index; }
+    bool canNavInDirection(Cartesian8 dir) const;
 
     f32 getGroundZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)groundZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
     f32 getGroundZPositionUncompressedThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return (f32)groundZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
@@ -119,8 +121,8 @@ public:
 	const TileID* getLayersMainThread() const { assert(IS_MAIN_THREAD()); return layers; }
     const TileID* getLayersThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe; }
 
-    const TileOrientation& getOrientationMainThread() const { assert(IS_MAIN_THREAD()); return orientation; }
-    const TileOrientation& getOrientationThreadSafe() const { assert(!IS_MAIN_THREAD()); return orientation; }
+    const Cartesian& getOrientationMainThread(TileLayer layer) const;
+    const Cartesian& getOrientationThreadSafe(TileLayer layer) const;
 
     bool isEmptyMainThread() const { assert(IS_MAIN_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MID] == TILE_ID_NONE && layers[TILE_LAYER_TOP] == TILE_ID_NONE; }
     bool isEmptyThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MID] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_TOP] == TILE_ID_NONE; }
@@ -132,6 +134,7 @@ private:
     void setTileLayer(TileLayer layer, TileID id, bool isReadLocked);
     void setTileFlag(TileFlags flag, bool isReadLocked);
     void setTileFlags(TileFlags flags, bool isReadLocked);
+    void setOrientation(Cartesian dir, TileLayer layer, bool isReadLocked);
     void clearTileFlag(TileFlags flag, bool isReadLocked);
     void clearTileFlags(bool isReadLocked);
     void setGroundZPosition(f32 groundZPosition, bool isReadLocked);
@@ -155,8 +158,8 @@ private:
         TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
     };
     TileNavData navData;
-    TileOrientation orientation;
-    TileOrientation orientationThreadSafe;
+    TileOrientation orientation = {};
+    TileOrientation orientationThreadSafe = {};
     ui16 groundZPositionCompressed;
     ui16 groundZPositionCompressedThreadSafe;
     BitFlags<TileFlags> tileFlags;

@@ -154,6 +154,13 @@ constexpr Cartesian CARTESIAN8_TO_CARTESIAN[8] = {
     Cartesian::NONE, //NORTH_EAST
 };
 
+constexpr Cartesian8 CARTESIAN_TO_CARTESIAN8[4] = {
+    Cartesian8::SOUTH,
+    Cartesian8::WEST,
+    Cartesian8::EAST,
+    Cartesian8::NORTH,
+};
+
 enum AXIS_2D {
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL = 1

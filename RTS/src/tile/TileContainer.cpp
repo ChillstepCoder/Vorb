@@ -200,6 +200,13 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     onTileChanged(i, readLocked);
 }
 
+void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {
+    const bool readLocked = isReadLocked();
+    Tile& tile = mTiles[i];
+    tile.setOrientation(dir, layer, readLocked);
+    onTileChanged(i, readLocked);
+}
+
 void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     const bool readLocked = isReadLocked();
     TileWallContainer& tileWalls = mWalls[index];

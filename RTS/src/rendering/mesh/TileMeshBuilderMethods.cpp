@@ -4,6 +4,7 @@
 #include "rendering/mesh/MeshBuilder.h"
 
 #include "tile/TileHandle.h"
+#include "tile/Stairs.h"
 #include "world/Chunk.h"
 
 #include "physics/StaticPhysicsMesh.h"
@@ -494,6 +495,9 @@ void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, c
                     else if (tileData.shape == TileShape::FLOOR) {
                         TileMeshBuilderMethods::addFloor(meshBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physMesh);
                     }
+                    else if (tileData.shape == TileShape::STAIRS) {
+                        TileMeshBuilderMethods::addStairs(meshBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physMesh);
+                    }
                 }
             }
         }
@@ -582,14 +586,7 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& til
             // todo: FIX
             //int xOff = (ui32)tilePos.x % 8;
             //int yOff = 7 - (ui32)tilePos.y % 8;
-            meshBuilder.addAxisAlignedQuad(
-                tilePos + CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::BOTTOM)],
-                f32v2(1.0f) /*dims*/,
-                CubeFacing::TOP,
-                texture,
-                texture.mUvRect,
-                COLOR_WHITE
-            );
+            addBlockWorldTiling(meshBuilder, tilePos, tileHandle, tileData, physMesh);
             break;
         }
         case TileTextureMethod::FLORA: {
@@ -601,8 +598,6 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& til
 }
 
 void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
-    // Currently only supported for ground layer
-    assert(tileData.layer == TILE_LAYER_GROUND);
 
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
@@ -701,6 +696,31 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f3
     }
 }
 
+void TileMeshBuilderMethods::addBlockWorldTiling(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
+    const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZPositionUncompressedThreadSafe();
+
+    const f32v3 botSW(tilePos);
+    const f32v3 botSE(tilePos.x + 1.0f, tilePos.y, tilePos.z);
+    const f32v3 botNW(tilePos.x, tilePos.y + 1.0f, tilePos.z);
+    const f32v3 botNE(tilePos.x + 1.0f, tilePos.y + 1.0f, tilePos.z);
+    const f32v3 topSW(tilePos.x, tilePos.y, topHeight);
+    const f32v3 topSE(tilePos.x + 1.0f, tilePos.y, topHeight);
+    const f32v3 topNW(tilePos.x, tilePos.y + 1.0f, topHeight);
+    const f32v3 topNE(tilePos.x + 1.0f, tilePos.y + 1.0f, topHeight);
+    meshBuilder.addQuadBetweenPointsWorldUV(topSW, topSE, topNE, topNW, tileData.texture, f32v2(1.0f), COLOR_WHITE, AXIS_Z, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botSW, topSW, topNW, botNW, tileData.texture, f32v2(1.0f), COLOR_WHITE, AXIS_X, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botNE, topNE, topSE, botSE, tileData.texture, f32v2(1.0f), COLOR_WHITE, AXIS_X, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botSW, botSE, topSE, topSW, tileData.texture, f32v2(1.0f), COLOR_WHITE, AXIS_Y, tilePos, false);
+    meshBuilder.addQuadBetweenPointsWorldUV(botNW, topNW, topNE, botNE, tileData.texture, f32v2(1.0f), COLOR_WHITE, AXIS_Y, tilePos, false);
+    if (physMesh) {
+        physMesh->addQuadBetweenPoints(topSW, topSE, topNE, topNW);
+        physMesh->addQuadBetweenPoints(botSW, topSW, topNW, botNW);
+        physMesh->addQuadBetweenPoints(botNE, topNE, topSE, botSE);
+        physMesh->addQuadBetweenPoints(botSW, botSE, topSE, topSW);
+        physMesh->addQuadBetweenPoints(botNW, topNW, topNE, botNE);
+    }
+}
+
 void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
     const SubTexture& texture = tileData.texture;
     const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight + 0.0001f);
@@ -753,6 +773,334 @@ void TileMeshBuilderMethods::addFloorTerrainAligned(MeshBuilder& meshBuilder, f3
     //else {
     //    assert(false);
     //}
+}
+
+const i32v2 STAIR_DIR_OFFSETS[CARTESIAN_COUNT] = {
+    i32v2(0, 1), // SOUTH
+    i32v2(1, 0), // WEST
+    i32v2(0, 0), // EAST
+    i32v2(0, 0), // NORTH
+};
+
+const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
+    f32v2(1, 0.25), // SOUTH
+    f32v2(0.25, 1), // WEST
+    f32v2(0.25, 1), // EAST
+    f32v2(1, 0.25), // NORTH
+};
+
+void TileMeshBuilderMethods::addStairs(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh)
+{
+    const TileContainer& tileContainer = *tileHandle.container;
+    const Tile& tile = *tileHandle.tile;
+    const f32v3 tilePos = tileContainer.getTileXYZOffsetWithZScale(tileHandle.tileIndex);
+    // Place stair steps
+    // TODO: ThreadSafe
+    const f32 heightAdd = tileHandle.tile->getGroundZPositionUncompressedMainThread();
+    const Cartesian dir = tile.getOrientationMainThread((TileLayer)tileData.layer);
+    const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
+    constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
+    const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
+    const f32 stairPieceTopHeight = stairPieceBaseHeight + STEPS_PER_TILE * stepHeight;
+    AXIS_3D sideUvOrient; // For UV mapping
+    AXIS_3D frontUvOrient; // For UV mapping
+
+    //if (stairPiece.isFlatPart) {
+    //    // Flat parts are just a single quad on top
+    //    const f32v3 pointsTop[4] = {
+    //        f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight),
+    //        f32v3(tilePos.x + 1.0f, tilePos.y, stairPieceBaseHeight),
+    //        f32v3(tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceBaseHeight),
+    //        f32v3(tilePos.x, tilePos.y + 1.0f, stairPieceBaseHeight),
+    //    };
+    //    meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, rawWoodTexture, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+    //    building.mPhysicsMesh.addQuadBetweenPoints(pointsTop);
+    //    switch (dir) {
+    //        case Cartesian::SOUTH:
+    //            sideUvOrient = AXIS_X;
+    //            break;
+    //        case Cartesian::WEST:
+    //            sideUvOrient = AXIS_Y;
+    //            break;
+    //        case Cartesian::EAST:
+    //            sideUvOrient = AXIS_Y;
+    //            break;
+    //        case Cartesian::NORTH:
+    //            sideUvOrient = AXIS_X;
+    //            break;
+    //        default:
+    //            assert(false);
+    //            break;
+    //    }
+    //}
+    //else {
+        // Mesh each step and its sides
+    for (i32 step = 0; step < STEPS_PER_TILE; ++step) {
+        const f32 height = stairPieceBaseHeight + (step + 1) * stepHeight + 0.0001f/*epsilon*/;
+        // Top bit
+        const f32v2 stepStride = stepDir * stepWidth;
+        const f32v2 stepOffset = (f32)step * stepStride;
+        f32v2 cornerPos2D(tilePos.x + stepOffset.x, tilePos.y + stepOffset.y);
+        cornerPos2D += f32v2(STAIR_DIR_OFFSETS[e_cast(dir)]) - f32v2(STAIR_DIR_OFFSETS[e_cast(dir)]) * 0.25f;
+
+        const f32v2& stairDims = STAIR_DIR_DIMS[e_cast(dir)];
+        const f32v3 pointsTop[4] = {
+            f32v3(cornerPos2D.x, cornerPos2D.y, height),
+            f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y, height),
+            f32v3(cornerPos2D.x + stairDims.x, cornerPos2D.y + stairDims.y, height),
+            f32v3(cornerPos2D.x, cornerPos2D.y + stairDims.y, height),
+        };
+        // Side bit and ground bit using switch cause I dont feel like figuring out a clever branchless way
+        f32v3 pointsFront[4] = {
+            f32v3(cornerPos2D.x, cornerPos2D.y, height),
+            f32v3(cornerPos2D.x, cornerPos2D.y, height),
+            f32v3(cornerPos2D.x, cornerPos2D.y, height),
+            f32v3(cornerPos2D.x, cornerPos2D.y, height),
+        };
+        // 8 Points since we have two sides
+        f32v3 pointsSide[8] = {}; // TODO: UNZERO
+        //  We have to reduce the base of each next step 
+        switch (dir) {
+            case Cartesian::SOUTH:
+                sideUvOrient = AXIS_X;
+                frontUvOrient = AXIS_Y;
+                pointsFront[0].y += stepWidth;
+                pointsFront[1].y += stepWidth;
+                pointsFront[2].y += stepWidth;
+                pointsFront[3].y += stepWidth;
+
+                pointsFront[2].x += 1.0f;
+                pointsFront[3].x += 1.0f;
+
+                pointsFront[0].z -= stepHeight;
+                pointsFront[3].z -= stepHeight;
+
+                pointsSide[0] = f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight);
+                pointsSide[1] = pointsTop[0];
+                pointsSide[2] = pointsTop[3];
+                pointsSide[3] = pointsFront[0];
+
+                pointsSide[4] = f32v3(tilePos.x + 1.0f, tilePos.y, stairPieceBaseHeight);
+                pointsSide[5] = pointsFront[3];
+                pointsSide[6] = pointsTop[2];
+                pointsSide[7] = pointsTop[1];
+                break;
+            case Cartesian::WEST:
+                sideUvOrient = AXIS_Y;
+                frontUvOrient = AXIS_X;
+                pointsFront[0].x += stepWidth;
+                pointsFront[1].x += stepWidth;
+                pointsFront[2].x += stepWidth;
+                pointsFront[3].x += stepWidth;
+
+                pointsFront[2].y += 1.0f;
+                pointsFront[3].y += 1.0f;
+
+                pointsFront[1].z -= stepHeight;
+                pointsFront[2].z -= stepHeight;
+
+                pointsSide[0] = f32v3(tilePos.x, tilePos.y, stairPieceBaseHeight);
+                pointsSide[1] = pointsFront[1];
+                pointsSide[2] = pointsTop[1];
+                pointsSide[3] = pointsTop[0];
+
+                pointsSide[4] = f32v3(tilePos.x, tilePos.y + 1.0f, stairPieceBaseHeight);
+                pointsSide[5] = pointsTop[3];
+                pointsSide[6] = pointsTop[2];
+                pointsSide[7] = pointsFront[2];
+                break;
+            case Cartesian::EAST:
+                sideUvOrient = AXIS_Y;
+                frontUvOrient = AXIS_X;
+                pointsFront[2].y += 1.0f;
+                pointsFront[3].y += 1.0f;
+
+                pointsFront[0].z -= stepHeight;
+                pointsFront[3].z -= stepHeight;
+
+                pointsSide[0] = f32v3(tilePos.x + 1.0f, tilePos.y, stairPieceBaseHeight);
+                pointsSide[1] = pointsTop[1];
+                pointsSide[2] = pointsTop[0];
+                pointsSide[3] = pointsFront[0];
+
+                pointsSide[4] = f32v3(tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceBaseHeight);
+                pointsSide[5] = pointsFront[3];
+                pointsSide[6] = pointsTop[3];
+                pointsSide[7] = pointsTop[2];
+                break;
+            case Cartesian::NORTH:
+                sideUvOrient = AXIS_X;
+                frontUvOrient = AXIS_Y;
+                pointsFront[2].x += 1.0f;
+                pointsFront[3].x += 1.0f;
+
+                pointsFront[1].z -= stepHeight;
+                pointsFront[2].z -= stepHeight;
+
+                pointsSide[0] = f32v3(tilePos.x, tilePos.y + 1.0f, stairPieceBaseHeight);
+                pointsSide[1] = pointsFront[1];
+                pointsSide[2] = pointsTop[0];
+                pointsSide[3] = pointsTop[3];
+
+                pointsSide[4] = f32v3(tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceBaseHeight);
+                pointsSide[5] = pointsTop[2];
+                pointsSide[6] = pointsTop[1];
+                pointsSide[7] = pointsFront[2];
+                break;
+            default:
+                assert(false);
+                break;
+        }
+        const f32v2 uvScale = f32v2(1.0f);
+        meshBuilder.addQuadBetweenPointsWorldUV(pointsTop, tileData.texture, uvScale, COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+        // The very first step in the entire chain shouldn't have base pieces
+        meshBuilder.addQuadBetweenPointsWorldUV(pointsFront, tileData.texture, uvScale, COLOR_WHITE, frontUvOrient, f32v3(0.0f));
+        meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, tileData.texture, uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+        meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.texture, uvScale, COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+
+    }
+    // Collision for the side and top of a stair
+    f32v3 collisionPointsLeft[3];
+    f32v3 collisionPointsRight[3];
+    f32v3 collisionPointsRamp[4];
+    const f32v3 rampBasePos(tilePos.x, tilePos.y, stairPieceBaseHeight);
+    const f32v3 rampTopPos(tilePos.x, tilePos.y, stairPieceTopHeight);
+    // Winding doesnt matter
+    switch (dir) {
+        case Cartesian::SOUTH:
+            collisionPointsLeft[0] = rampBasePos;
+            collisionPointsLeft[1] = rampTopPos;
+            collisionPointsLeft[2] = rampBasePos + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRamp[0] = collisionPointsLeft[1];
+            collisionPointsRamp[1] = collisionPointsLeft[2];
+            collisionPointsRamp[2] = collisionPointsRight[2];
+            collisionPointsRamp[3] = collisionPointsRight[1];
+            break;
+        case Cartesian::WEST:
+            collisionPointsLeft[0] = rampBasePos;
+            collisionPointsLeft[1] = rampTopPos;
+            collisionPointsLeft[2] = rampBasePos + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRamp[0] = collisionPointsLeft[1];
+            collisionPointsRamp[1] = collisionPointsLeft[2];
+            collisionPointsRamp[2] = collisionPointsRight[2];
+            collisionPointsRamp[3] = collisionPointsRight[1];
+            break;
+        case Cartesian::EAST:
+            collisionPointsLeft[0] = rampBasePos;
+            collisionPointsLeft[1] = rampTopPos + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsLeft[2] = rampBasePos + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsRamp[0] = collisionPointsLeft[0];
+            collisionPointsRamp[1] = collisionPointsLeft[1];
+            collisionPointsRamp[2] = collisionPointsRight[1];
+            collisionPointsRamp[3] = collisionPointsRight[0];
+            break;
+        case Cartesian::NORTH:
+            collisionPointsLeft[0] = rampBasePos + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsLeft[1] = rampTopPos + f32v3(0.0f, 1.0f, 0.0f);
+            collisionPointsLeft[2] = rampBasePos;
+            collisionPointsRight[0] = collisionPointsLeft[0] + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRight[1] = collisionPointsLeft[1] + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRight[2] = collisionPointsLeft[2] + f32v3(1.0f, 0.0f, 0.0f);
+            collisionPointsRamp[0] = collisionPointsLeft[1];
+            collisionPointsRamp[1] = collisionPointsLeft[2];
+            collisionPointsRamp[2] = collisionPointsRight[2];
+            collisionPointsRamp[3] = collisionPointsRight[1];
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    physMesh->addTriangleBetweenPoints(collisionPointsLeft);
+    physMesh->addTriangleBetweenPoints(collisionPointsRight);
+    physMesh->addQuadBetweenPoints(collisionPointsRamp);
+
+    // Endcap quad
+    // TODO: World space mesher util for cartesian quad?
+    // // TODO: Cull this?
+    //if (stairPiece.isLastPiece) {
+    f32v3 pointsEndcap[4];
+    AXIS_3D endcapUvOrient;
+    switch (dir) {
+        case Cartesian::NORTH:
+            endcapUvOrient = AXIS_Y;
+            pointsEndcap[0] = { tilePos.x, tilePos.y + 1.0f, tilePos.z };
+            pointsEndcap[1] = { tilePos.x, tilePos.y + 1.0f, stairPieceTopHeight };
+            pointsEndcap[2] = { tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceTopHeight };
+            pointsEndcap[3] = { tilePos.x + 1.0f, tilePos.y + 1.0f, tilePos.z };
+            break;
+        case Cartesian::SOUTH:
+            endcapUvOrient = AXIS_Y;
+            pointsEndcap[0] = { tilePos.x, tilePos.y, tilePos.z };
+            pointsEndcap[1] = { tilePos.x + 1.0f, tilePos.y, tilePos.z };
+            pointsEndcap[2] = { tilePos.x + 1.0f, tilePos.y, stairPieceTopHeight };
+            pointsEndcap[3] = { tilePos.x, tilePos.y, stairPieceTopHeight };
+            break;
+        case Cartesian::WEST:
+            endcapUvOrient = AXIS_X;
+            pointsEndcap[0] = { tilePos.x, tilePos.y, tilePos.z };
+            pointsEndcap[1] = { tilePos.x, tilePos.y, stairPieceTopHeight };
+            pointsEndcap[2] = { tilePos.x, tilePos.y + 1.0f, stairPieceTopHeight };
+            pointsEndcap[3] = { tilePos.x, tilePos.y + 1.0f, tilePos.z };
+            break;
+        case Cartesian::EAST:
+            endcapUvOrient = AXIS_X;
+            pointsEndcap[0] = { tilePos.x + 1.0f, tilePos.y + 1.0f, tilePos.z };
+            pointsEndcap[1] = { tilePos.x + 1.0f, tilePos.y + 1.0f, stairPieceTopHeight };
+            pointsEndcap[2] = { tilePos.x + 1.0f, tilePos.y, stairPieceTopHeight };
+            pointsEndcap[3] = { tilePos.x + 1.0f, tilePos.y, tilePos.z };
+            break;
+        default:
+            break;
+
+    }
+    meshBuilder.addQuadBetweenPointsWorldUV(pointsEndcap, tileData.texture, f32v2(1.0f), COLOR_WHITE, endcapUvOrient, f32v3(0.0f));
+    physMesh->addQuadBetweenPoints(pointsEndcap);
+       // }
+    //}
+    // Place square walls to the ground
+    f32v3 pointsSide[8] = { tilePos, tilePos, tilePos, tilePos, tilePos, tilePos, tilePos, tilePos };
+    switch (dir) {
+        case Cartesian::NORTH:
+        case Cartesian::SOUTH:
+            pointsSide[1].z = stairPieceBaseHeight;
+            pointsSide[2].z = stairPieceBaseHeight;
+            pointsSide[2].y += 1.0f;
+            pointsSide[3].y += 1.0f;
+
+            pointsSide[4] += f32v3(1.0f, 1.0f, 0.0f);
+            pointsSide[7].x += 1.0f;
+            pointsSide[5] = f32v3(pointsSide[4].x, pointsSide[4].y, stairPieceBaseHeight);
+            pointsSide[6] = f32v3(pointsSide[7].x, pointsSide[7].y, stairPieceBaseHeight);
+            break;
+        case Cartesian::WEST:
+        case Cartesian::EAST:
+            pointsSide[1].x += 1.0f;
+            pointsSide[2].x += 1.0f;
+            pointsSide[2].z = stairPieceBaseHeight;
+            pointsSide[3].z = stairPieceBaseHeight;
+
+            pointsSide[4] += f32v3(1.0f, 1.0f, 0.0f);
+            pointsSide[5].y += 1.0f;
+            pointsSide[6] = f32v3(pointsSide[5].x, pointsSide[5].y, stairPieceBaseHeight);
+            pointsSide[7] = f32v3(pointsSide[4].x, pointsSide[4].y, stairPieceBaseHeight);
+            break;
+        default:
+            break;
+
+    }
+    meshBuilder.addQuadBetweenPointsWorldUV(pointsSide, tileData.texture, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+    physMesh->addQuadBetweenPoints(pointsSide);
+    meshBuilder.addQuadBetweenPointsWorldUV(&(pointsSide[4]), tileData.texture, f32v2(1.0f), COLOR_WHITE, sideUvOrient, f32v3(0.0f));
+    physMesh->addQuadBetweenPoints(&(pointsSide[4]));
 }
 
 void TileMeshBuilderMethods::addWall(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, OPT StaticPhysicsMesh* physMesh) {

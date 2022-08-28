@@ -19,8 +19,9 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Floor", TileShape::FLOOR);
     kt.addValue("Wall", TileShape::WALL);
     kt.addValue("Door", TileShape::DOOR);
+    kt.addValue("Stairs", TileShape::STAIRS);
 }
-static_assert(e_cast(TileShape::COUNT) == 5);
+static_assert(e_cast(TileShape::COUNT) == 6);
 
 KEG_ENUM_DEF(TileResource, TileResource, kt) {
     kt.addValue("none", TileResource::NONE);
@@ -60,6 +61,34 @@ void Tile::setTileFlags(TileFlags flags, bool isReadLocked) {
         tileFlagsThreadSafe = flags;
         tileFlags = flags;
     }
+}
+
+void Tile::setOrientation(Cartesian dir, TileLayer layer, bool isReadLocked)
+{
+    switch (layer) {
+        case TileLayer::Ground: {
+            if (!isReadLocked) {
+                orientationThreadSafe.orientationBase = dir;
+            }
+            orientation.orientationBase = dir;
+            break;
+        }
+        case TileLayer::Mid: {
+            if (!isReadLocked) {
+                orientationThreadSafe.orientationMid = dir;
+            }
+            orientation.orientationMid = dir;
+            break;
+        }
+        case TileLayer::Top: {
+            if (!isReadLocked) {
+                orientationThreadSafe.orientationTop = dir;
+            }
+            orientation.orientationTop = dir;
+            break;
+        }
+    }
+    static_assert(e_cast(TileLayer::COUNT) == 3);
 }
 
 void Tile::clearTileFlag(TileFlags flag, bool isReadLocked) {
@@ -131,6 +160,92 @@ void Tile::updateThreadSafeLayers() {
     tileFlagsThreadSafe = tileFlags;
     memcpy(layersThreadSafe, layers, sizeof(TileID) * TILE_LAYER_COUNT);
     groundZPositionCompressedThreadSafe = groundZPositionCompressed;
+}
+
+// This was painful
+// Describes how we map a cartesian8 to a rotated orientation (South is base case)
+Cartesian8 ORIENTATION_ROTATE_DIR_WEST[8] = {
+    Cartesian8::SOUTH_EAST, //SOUTH_WEST
+    Cartesian8::EAST,  //SOUTH
+    Cartesian8::NORTH_EAST,  //SOUTH_EAST
+    Cartesian8::SOUTH, //WEST
+    Cartesian8::NORTH, //EAST
+    Cartesian8::SOUTH_WEST, //NORTH_WEST
+    Cartesian8::WEST, //NORTH
+    Cartesian8::NORTH_WEST, //NORTH_EAST
+};
+
+Cartesian8 ORIENTATION_ROTATE_DIR_NORTH[8] = {
+    Cartesian8::NORTH_EAST, //SOUTH_WEST
+    Cartesian8::NORTH,  //SOUTH
+    Cartesian8::NORTH_WEST,  //SOUTH_EAST
+    Cartesian8::EAST, //WEST
+    Cartesian8::WEST, //EAST
+    Cartesian8::SOUTH_EAST, //NORTH_WEST
+    Cartesian8::SOUTH, //NORTH
+    Cartesian8::SOUTH_WEST, //NORTH_EAST
+};
+
+Cartesian8 ORIENTATION_ROTATE_DIR_EAST[8] = {
+    Cartesian8::NORTH_WEST, //SOUTH_WEST
+    Cartesian8::WEST,  //SOUTH
+    Cartesian8::SOUTH_WEST,  //SOUTH_EAST
+    Cartesian8::NORTH, //WEST
+    Cartesian8::SOUTH, //EAST
+    Cartesian8::NORTH_EAST, //NORTH_WEST
+    Cartesian8::EAST, //NORTH
+    Cartesian8::SOUTH_EAST, //NORTH_EAST
+};
+
+bool Tile::canNavInDirection(Cartesian8 dir) const {
+    assert(!IS_MAIN_THREAD());
+    if (midLayerThreadSafe == TILE_ID_NONE) return true;
+
+    ui8 navMask = TileRepository::getTileData(midLayerThreadSafe).navMask;
+    // South is base case
+    // Rotate dir based on orientation to match the mask
+    switch (orientationThreadSafe.orientationMid) {
+        case Cartesian::WEST:
+            dir = ORIENTATION_ROTATE_DIR_WEST[e_cast(dir)];
+            break;
+        case Cartesian::EAST:
+            dir = ORIENTATION_ROTATE_DIR_EAST[e_cast(dir)];
+            break;
+        case Cartesian::NORTH:
+            dir = ORIENTATION_ROTATE_DIR_NORTH[e_cast(dir)];
+            break;
+    }
+    return navMask & (1 << (ui8)dir);
+}
+
+const Cartesian& Tile::getOrientationMainThread(TileLayer layer) const {
+    assert(IS_MAIN_THREAD());
+    switch (layer) {
+        case TileLayer::Ground: {
+            return orientation.orientationBase;
+        }
+        case TileLayer::Mid: {
+            return orientation.orientationMid;
+        }
+        case TileLayer::Top: {
+            return orientation.orientationTop;
+        }
+    }
+}
+
+const Cartesian& Tile::getOrientationThreadSafe(TileLayer layer) const {
+    assert(!IS_MAIN_THREAD());
+    switch (layer) {
+        case TileLayer::Ground: {
+            return orientationThreadSafe.orientationBase;
+        }
+        case TileLayer::Mid: {
+            return orientationThreadSafe.orientationMid;
+        }
+        case TileLayer::Top: {
+            return orientationThreadSafe.orientationTop;
+        }
+    }
 }
 
 bool Tile::canAddTileData(const TileData& tile) const {

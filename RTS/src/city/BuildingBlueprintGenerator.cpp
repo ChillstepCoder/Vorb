@@ -1439,16 +1439,16 @@ bool isAtWallCorner(TileIndex index, BuildingBlueprint& bp) {
     const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
     ui32 adjacentWallCount = 0;
-    if (bp.tiles[index - 1].type == BlueprintTileType::WALL) {
+    if (bp.walls[index].west.isValid() || bp.walls[index - 1].east.isValid()) {
         ++adjacentWallCount;
     }
-    if (bp.tiles[index - bp.aabb.dims.x].type == BlueprintTileType::WALL) {
+    if (bp.walls[index].south.isValid() || bp.walls[index - bp.aabb.dims.x].north.isValid()) {
         ++adjacentWallCount;
     }
-    if (bp.tiles[index + 1].type == BlueprintTileType::WALL) {
+    if (bp.walls[index].east.isValid() || bp.walls[index + 1].west.isValid()) {
         ++adjacentWallCount;
     }
-    if (bp.tiles[index + bp.aabb.dims.x].type == BlueprintTileType::WALL) {
+    if (bp.walls[index].north.isValid() || bp.walls[index + bp.aabb.dims.x].south.isValid()) {
         ++adjacentWallCount;
     }
     // TODO: This disallows single block hallways but meh...
@@ -1642,7 +1642,8 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
             continue; // No run found! TODO: Ladder?
         }
         // Add stair pieces
-        room.stairs.reserve(room.stairs.size() + bestRunLength);
+        auto& stairs = bp.stairs.emplace_back();
+        stairs.reserve(stairs.size() + bestRunLength);
         ui32 height = 0;
         Cartesian prevDir = Cartesian::NONE;
         for (ui32 j = 0; j < bestRunLength; ++j) {
@@ -1651,7 +1652,7 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
             if (j > 0) {
                 bp.tiles[tileIndex + bp.aabb.dims.x * bp.aabb.dims.y].type = BlueprintTileType::AIR;
             }
-            StairPiece& stairPiece = room.stairs.emplace_back(StairPiece{});
+            StairPiece& stairPiece = stairs.emplace_back(StairPiece{});
             stairPiece.dir = dirs[bestRunStart + j];
             stairPiece.pos = tileIndex;
             stairPiece.isLastPiece = (j == bestRunLength - 1);
@@ -1682,9 +1683,10 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     bp.tileRecipes[e_cast(BlueprintTileType::FLOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::FLOOR)]).recipe;
     bp.tileRecipes[e_cast(BlueprintTileType::DOOR)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::DOOR)]).recipe;
     bp.tileRecipes[e_cast(BlueprintTileType::WALL)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::WALL)]).recipe;
-    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = nullptr;
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::STAIRS)]).recipe;
+    bp.tileRecipes[e_cast(BlueprintTileType::STAIRS_FLAT)] = &TileRepository::getTileData(bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)]).recipe;
     bp.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
-    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 7);
 
     std::unordered_map<RoomNodeID, ui32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
@@ -1716,9 +1718,10 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
         switch (bp.tiles[i].type) {
             case BlueprintTileType::NONE:
             case BlueprintTileType::AIR:
-            case BlueprintTileType::STAIRS: // TODO: Not stairs
                 bp.tiles[i].isBuilt = true;
                 break;
+            case BlueprintTileType::STAIRS:
+            case BlueprintTileType::STAIRS_FLAT:
             case BlueprintTileType::WALL:
             case BlueprintTileType::FLOOR:
             case BlueprintTileType::DOOR:
@@ -1740,7 +1743,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
                 break;
         }
     }
-    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
+    static_assert(e_cast(BlueprintTileType::TYPES) == 7);
 
     // Set up true AABBs (non offset)
     for (auto&& it : roomBoundsLookup) {

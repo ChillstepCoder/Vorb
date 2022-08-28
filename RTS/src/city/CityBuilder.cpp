@@ -61,16 +61,6 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     PreciseTimer timer;
     const ui32v2& worldPos = bp.aabb.pos;
 
-    static f32 BUILD_HEIGHTS[(int)BlueprintTileType::TYPES] = {
-        0.0f, // NONE
-        0.0f, // FLOOR
-        0.0f, // DOOR
-        1.0f, // WALL
-        0.0f, // STAIRS
-        0.0f, // AIR
-    };
-    static_assert(e_cast(BlueprintTileType::TYPES) == 6);
-
     // For mean height calc
     BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
     for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
@@ -125,18 +115,19 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     }
 
                     tileContainer.setOwnedTile(tileIndex);
-
-                    const TileID tileId = bp.tileIDs[e_cast(type)];
-                    TileIndex index = tileContainer.getTileIndexFromXYZOffset(x, y, z);
-                    if (tileId != TILE_ID_NONE) {
-                        // We dont add to mean height here because tile height is relative to the root of the tile container
-                        const f32 height = (BUILD_HEIGHTS[e_cast(type)] + z) * tileContainer.getFloorHeight();
-                        tileContainer.addTile(index, TileRepository::getTileData(tileId));
-                        //assert(false); // Set building structure pointer
-                        // TODO: always set ground position?
-                        tileContainer.setTileGroundZPosition(index, height);
+                    // Stairs are processed below
+                    if (type != BlueprintTileType::STAIRS) {
+                        const TileID tileId = bp.tileIDs[e_cast(type)];
+                        if (tileId != TILE_ID_NONE) {
+                            // We dont add to mean height here because tile height is relative to the root of the tile container
+                            const f32 height = z * tileContainer.getFloorHeight();
+                            tileContainer.addTile(tileIndex, TileRepository::getTileData(tileId));
+                            //assert(false); // Set building structure pointer
+                            // TODO: always set ground position?
+                            tileContainer.setTileGroundZPosition(tileIndex, height);
+                        }
                     }
-                    tileContainer.setWallsAt(index, bp.walls[index]);
+                    tileContainer.setWallsAt(tileIndex, bp.walls[tileIndex]);
 
                     // TERRAIN
                     //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
@@ -149,6 +140,30 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
             }
         }
     }
+
+    // Copy room data
+    newBuilding->mRooms = std::move(bp.rooms);
+
+    // Set stairs tiles
+    TileID stairsTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS)];
+    TileID stairsFlatTileId = bp.tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)];
+    for (auto& stairsVec : bp.stairs) {
+        for (auto& stairPiece : stairsVec) {
+            const f32v3 tilePos = tileContainer.getTileXYZOffsetWithZScale(stairPiece.pos);
+            // Place stair steps
+            const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
+            const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
+            if (stairPiece.isFlatPart) {
+                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Mid, stairsFlatTileId);
+            }
+            else {
+                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Mid, stairsTileId);
+            }
+            tileContainer.setTileGroundZPosition(stairPiece.pos, tilePos.z + heightAdd);
+            tileContainer.setTileOrientation(stairPiece.pos, stairPiece.dir, TileLayer::Mid);
+        }
+    }
+
     // Notify terrain data change (TODO: More precise, automatic)
     world.dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
@@ -184,7 +199,6 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
 }
 
 void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint, World& world) {
-    building.mRooms = std::move(blueprint.rooms);
     building.mFunction = blueprint.desc.function;
     building.mPlotIndex = blueprint.plotIndex;
     building.mNavEntrances = blueprint.exteriorDoors;

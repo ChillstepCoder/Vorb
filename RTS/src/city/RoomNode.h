@@ -4,26 +4,18 @@ struct RoomDef;
 class Building;
 
 #include "util/GridEdge.h"
+#include "tile/Stairs.h"
 
 struct RoomGateInfo {
     RoomNodeID adjacentRoom;
     ui32 tileIndex;
 };
 
-struct StairPiece {
-    TileIndex pos;
-    ui16 height;
-    bool isFlatPart : 1;
-    bool isLastPiece : 1;
-    bool isBuilt : 1;
-    bool isReserved : 1;
-    Cartesian dir;
-};
+
 
 struct RoomNode {
     std::vector<GridEdge> interiorEdges;
     std::vector<TileIndex> edgeWalk;
-    std::vector<StairPiece> stairs;
     const RoomDef* roomDef = nullptr;
     RoomDefID roomDefId;
     RoomNodeID parentRoom = INVALID_ROOM_ID; // Connected via door or stairs

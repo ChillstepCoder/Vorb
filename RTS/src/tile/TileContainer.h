@@ -153,6 +153,7 @@ public:
     void clearTileFlag(TileIndex i, TileFlags flag);
     void clearTileFlags(TileIndex i);
     void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
+    void setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer);
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
     void setWallsAt(TileIndex index, TileWalls walls);
 

@@ -26,6 +26,7 @@ enum class TileShape {
     FLOOR,
     WALL,
     DOOR,
+    STAIRS,
     // Custom TODO
     COUNT
 };

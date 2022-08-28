@@ -478,6 +478,7 @@
     <ClInclude Include="src\structure\Structure.h" />
     <ClInclude Include="src\structure\StructureManager.h" />
     <ClInclude Include="src\terrain\HeightmapPatch.h" />
+    <ClInclude Include="src\tile\Stairs.h" />
     <ClInclude Include="src\tile\Tile.h" />
     <ClInclude Include="src\tile\TileConst.h" />
     <ClInclude Include="src\tile\TileContainer.h" />

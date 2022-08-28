@@ -4,12 +4,13 @@
 
 enum class BlueprintTileType : ui8 {
     NONE    = 0, // THIS SHOULD ALWAYS BE 0
-    FLOOR = 1, // THIS SHOULD ALWAYS BE 1
+    FLOOR   = 1, // THIS SHOULD ALWAYS BE 1
     DOOR    = 2,
     WALL    = 3,
     STAIRS  = 4,
-    AIR     = 5,
-    TYPES   = 6
+    STAIRS_FLAT = 5,
+    AIR     = 6,
+    TYPES   = 7
 };
 static_assert(int(BlueprintTileType::TYPES) < 1 << 6);
 
@@ -47,6 +48,7 @@ struct BuildingBlueprint {
     std::vector<BlueprintTile> tiles;
     std::vector<ItemStackUnbounded> requiredItemsToBuild;
     std::vector<TileWalls> walls;
+    std::vector<std::vector<StairPiece>> stairs;
     std::map<TileIndex, RoomNodeID> exteriorDoors;
     const std::vector<ItemStack>* tileRecipes[e_cast(BlueprintTileType::TYPES)];
     TileID tileIDs[e_cast(BlueprintTileType::TYPES)];

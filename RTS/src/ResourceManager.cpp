@@ -398,6 +398,11 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
             tileData.recipe[i].id = mItemRepository->getItem(fileData.recipe[i].itemName).getID();
         }
 
+        // Nav bits
+        if (tileData.shape == TileShape::STAIRS) {
+            tileData.navMask = 0b01000010; // SOUTH and NORTH access
+        }
+
         TileID nextId = (TileID)TileRepository::sTileData.size();
         tileData.id = nextId;
         assert(nextId < UINT16_MAX); // Make sure we dont roll over
