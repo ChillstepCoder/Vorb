@@ -196,7 +196,7 @@ void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 
     const ui32v3& dims = tileContainer.getDims();
     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
     const Tile& tile = tileContainer.getTileAt(tileIndex);
-    const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
+    const f32 groundZPosition = tile.getGroundZOffsetMainThread();
     // TODO: Greedy meshing
     const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
     // TODO: Use paint ID
@@ -241,7 +241,7 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
     const ui32v3& dims = tileContainer.getDims();
     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
     const Tile& tile = tileContainer.getTileAt(tileIndex);
-    const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread();
+    const f32 groundZPosition = tile.getGroundZOffsetMainThread();
     // TODO: Greedy meshing
     const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
     // TODO: Use paint ID
@@ -474,7 +474,7 @@ void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, c
         for (ui32 y = 0; y < tileDims.y; ++y) {
             for (ui32 x = 0; x < tileDims.x; ++x, ++index) {
                 const Tile& tile = tileContainer.getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZPositionUncompressedMainThread(); // TODO: Thread safe when async
+                const f32 groundZPosition = tile.getGroundZOffsetMainThread(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersMainThread()[layerIndex];  // TODO: Thread safe when async
                     if (layerTile == TILE_ID_NONE) {
@@ -602,7 +602,7 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f3
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
 
-    const f32 topZPosition = tile.getGroundZPositionUncompressedThreadSafe();
+    const f32 topZPosition = tile.getGroundZOffsetThreadSafe();
     const f32v3 topPos(tilePos.x, tilePos.y, topZPosition);
 
     /*TileHandle neighbors[4];
@@ -697,7 +697,7 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f3
 }
 
 void TileMeshBuilderMethods::addBlockWorldTiling(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
-    const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZPositionUncompressedThreadSafe();
+    const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZOffsetThreadSafe();
 
     const f32v3 botSW(tilePos);
     const f32v3 botSE(tilePos.x + 1.0f, tilePos.y, tilePos.z);
@@ -796,7 +796,7 @@ void TileMeshBuilderMethods::addStairs(MeshBuilder& meshBuilder, f32 floorBaseHe
     const f32v3 tilePos = tileContainer.getTileXYZOffsetWithZScale(tileHandle.tileIndex);
     // Place stair steps
     // TODO: ThreadSafe
-    const f32 heightAdd = tileHandle.tile->getGroundZPositionUncompressedMainThread();
+    const f32 heightAdd = tileHandle.tile->getGroundZOffsetMainThread();
     const Cartesian dir = tile.getOrientationMainThread((TileLayer)tileData.layer);
     const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
     constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;

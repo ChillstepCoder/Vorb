@@ -7,10 +7,6 @@
 // TODO: Do we need rendering here?
 #include "rendering/texture/SubTexture.h"
 
-constexpr inline ui16 compressTileZPosition(f32 zPosition) {
-	return (ui32)((zPosition - MIN_WORLD_HEIGHT) * SCALED_Z_UNITS_PER_TILE);
-}
-
 enum class TileTextureMethod : ui8 {
     SIMPLE,
     CONNECTED,
@@ -27,22 +23,28 @@ KEG_ENUM_DECL(TileTextureMethod);
 struct TileData {
     f32v3 dims = f32v3(1.0f);
     TileID id;
-    ui8 layer = 2;
-    ui8 pathWeight = 255;
-    TileCollider collider;
+   // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
-    TileShape shape = TileShape::BLOCK;
     TileResource resource = TileResource::NONE;
     SubTexture texture; // TODO: Model instead also make it a pointer this is huge?
     TileTextureMethod textureMethod;
+    ui8 layer = 2;
+    TileShape shape = TileShape::BLOCK;
+    ui8 pathWeight = 255;
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
+    union {
+        struct {
+            f32 heightOffsetSouth;
+            f32 heightOffsetEast;
+            f32 heightOffsetWest;
+            f32 heightOffsetNorth;
+        };
+        f32 heightOffsets[4];
+    };
     std::string name;
     std::vector<ItemDrop> itemDrops;
     std::vector<ItemStack> recipe;
 };
-#ifdef DEBUG // Release has different size
-static_assert(sizeof(TileData) == 200, "Keep it small as possible");
-#endif
 
 struct TileOrientation {
     Cartesian orientationBase : 2;
@@ -114,9 +116,10 @@ public:
     ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navData.coarseNavNodeIndex; }
     void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navData.coarseNavNodeIndex = index; }
     bool canNavInDirection(Cartesian8 dir) const;
+    f32 getEdgeHeightOffset(Cartesian dir) const;
 
-    f32 getGroundZPositionUncompressedMainThread() const { assert(IS_MAIN_THREAD()); return (f32)groundZPositionCompressed* UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
-    f32 getGroundZPositionUncompressedThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return (f32)groundZPositionCompressedThreadSafe * UNCOMPRESS_Z_UNITS_PER_TILE_MULT + (f32)MIN_WORLD_HEIGHT; }
+    f32 getGroundZOffsetMainThread() const { assert(IS_MAIN_THREAD()); return groundZOffset; }
+    f32 getGroundZOffsetThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return groundZOffsetThreadSafe; }
 
 	const TileID* getLayersMainThread() const { assert(IS_MAIN_THREAD()); return layers; }
     const TileID* getLayersThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe; }
@@ -160,10 +163,10 @@ private:
     TileNavData navData;
     TileOrientation orientation = {};
     TileOrientation orientationThreadSafe = {};
-    ui16 groundZPositionCompressed;
-    ui16 groundZPositionCompressedThreadSafe;
+    f32 groundZOffset;
+    f32 groundZOffsetThreadSafe;
     BitFlags<TileFlags> tileFlags;
     BitFlags<TileFlags> tileFlagsThreadSafe;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 44, "Keep small");
+static_assert(sizeof(Tile) == 48, "Keep small");

@@ -11,10 +11,20 @@ typedef ui16 CoarseNavNodeIndex;
 
 constexpr int INVALID_NAV_NODE_INDEX = UINT16_MAX;
 
+enum class TileCoarseNavEdgeType : ui8 {
+    NONE = 0,
+    DOWN = 1,
+    UP = 2,
+    EXTERIOR = 3,
+};
+
 struct CoarseNavNodeEdge {
     TileIndex startPos;
     ui16 adjacentNodeIndex;
-    Cartesian dir;
+    struct {
+        Cartesian dir : 4;
+        TileCoarseNavEdgeType edgeType : 4;
+    };
     ui8 edgeLength = 0;
 
     bool isExternalEdge() const { return adjacentNodeIndex == INVALID_NAV_NODE_INDEX; }

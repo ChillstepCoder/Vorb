@@ -377,12 +377,12 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         tileData.textureMethod = fileData.textureMethod;
         tileData.dims = fileData.dims;
         // Collider
-        tileData.collider.shape = fileData.colliderShape;
-        if (fileData.colliderShape != TileCollisionShape::NONE) {
-            // TODO: Doors and shit? Move?
-            tileData.collider.defaultFlags = (TileFlags)0;
-            tileData.collider.dims = fileData.colliderDims;
-        }
+        //tileData.collider.shape = fileData.colliderShape;
+        //if (fileData.colliderShape != TileCollisionShape::NONE) {
+        //    // TODO: Doors and shit? Move?
+        //    tileData.collider.defaultFlags = (TileFlags)0;
+        //    tileData.collider.dims = fileData.colliderDims;
+        //}
 
         // Item drops
         tileData.itemDrops.resize(fileData.itemDrops.size());
@@ -401,6 +401,16 @@ bool ResourceManager::loadTiles(const vio::Path& filePath) {
         // Nav bits
         if (tileData.shape == TileShape::STAIRS) {
             tileData.navMask = 0b01000010; // SOUTH and NORTH access
+            tileData.heightOffsetSouth = STAIR_TILE_HEIGHT + 0.1f;
+            tileData.heightOffsetNorth = 0.0f;
+            tileData.heightOffsetWest = 0.0f;
+            tileData.heightOffsetEast = 0.0f;
+        }
+        else {
+            tileData.heightOffsetSouth = 0.0f;
+            tileData.heightOffsetWest = 0.0f;
+            tileData.heightOffsetEast = 0.0f;
+            tileData.heightOffsetNorth = 0.0f;
         }
 
         TileID nextId = (TileID)TileRepository::sTileData.size();

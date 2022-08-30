@@ -6,12 +6,6 @@ constexpr int TILE_LAYER_MID = 1;
 constexpr int TILE_LAYER_TOP = 2;
 constexpr int TILE_LAYER_COUNT = 3;
 
-constexpr i32 MIN_WORLD_HEIGHT = -300;
-constexpr i32 MAX_WORLD_HEIGHT = 1000;
-constexpr ui32 WORLD_HEIGHT_SPAN = (ui32)(MAX_WORLD_HEIGHT - MIN_WORLD_HEIGHT);
-constexpr ui32 SCALED_Z_UNITS_PER_TILE = UINT16_MAX / WORLD_HEIGHT_SPAN;
-constexpr f32 UNCOMPRESS_Z_UNITS_PER_TILE_MULT = 1.0f / SCALED_Z_UNITS_PER_TILE;
-
 enum class TileLayer {
     Ground = 0,
     Mid = 1,

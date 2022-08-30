@@ -206,7 +206,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
                 //  TODO: Multiple world layers
                 TileIndex index = chunk.getTileContainer()->getTileIndexFromXYZOffset(x, y, 0);
                 const Tile& tile = chunk.getTileContainer()->getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZPositionUncompressedThreadSafe();
+                const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
                     if (layerTile == TILE_ID_NONE) {

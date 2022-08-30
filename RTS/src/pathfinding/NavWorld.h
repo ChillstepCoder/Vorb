@@ -53,7 +53,7 @@ public:
     // TODO: async
     void buildNavGraphForContainer(TileContainer& tileContainer, OUT CoarseNavGraph& navGraph, OUT NavGraphTileDataToCopy& navTileData);
 
-    void setFineNavEdgeCartesian(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, TileContainer& tileContainer, const f32 groundZPosition, TileFineNavData& fineNavData);
+    void setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, TileContainer& tileContainer, const f32 groundZPosition, TileFineNavData& fineNavData, int prevZ);
     void setFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, TileContainer& tileContainer, const f32 groundZPosition, TileFineNavData& fineNavData);
 
     // ========== Debug drawing ==========
@@ -92,7 +92,7 @@ private:
     //void addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
 
     // Return true if a new edge was made
-    bool tryBuildEdge(NavGraphTileDataToCopy& navTileData, const TileWalls& walls, const TileIndex index, const TileIndex prevIndex, const TileIndex outerIndex, TileContainer& tileContainer, const ui16 navNodeIndex, std::vector<TileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge);
+    bool tryBuildEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, TileContainer& tileContainer, const ui16 navNodeIndex, std::vector<TileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge);
 
     // TODO: We need to destroy these on chunk destruct
     std::unordered_map<TileContainerID, CoarseNavGraph> mNavGraphs;

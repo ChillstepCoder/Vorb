@@ -119,8 +119,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
                     if (type != BlueprintTileType::STAIRS) {
                         const TileID tileId = bp.tileIDs[e_cast(type)];
                         if (tileId != TILE_ID_NONE) {
-                            // We dont add to mean height here because tile height is relative to the root of the tile container
-                            const f32 height = z * tileContainer.getFloorHeight();
+                            // We dont add to mean height here because tile height is relative to the floor of this tile layer
+                            const f32 height = 0.0f;
                             tileContainer.addTile(tileIndex, TileRepository::getTileData(tileId));
                             //assert(false); // Set building structure pointer
                             // TODO: always set ground position?

@@ -67,7 +67,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 	// Check for stuck on new tile/jump
 	const Tile* targetTile = world.getTileHandleAtWorldPos(nextTilePos).tile;
 	if (targetTile) {
-        f32 baseZ = targetTile->getGroundZPositionUncompressedMainThread();
+        f32 baseZ = targetTile->getGroundZOffsetMainThread();
 		// TODO: Remove
 		if (sDebugOptions.mShowPaths) {
 			DebugRenderer::drawWireQuad(f32v3(nextTilePos.x, nextTilePos.y, baseZ), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));

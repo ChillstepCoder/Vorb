@@ -96,11 +96,11 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     //}
 
 
-    tile.groundZPositionCompressed = compressTileZPosition(height);
+    tile.groundZOffset = height;
     
     // Set all thread safe data to be copies of base
 
-    tile.groundZPositionCompressedThreadSafe = tile.groundZPositionCompressed;
+    tile.groundZOffsetThreadSafe = tile.groundZOffset;
     tile.groundLayerThreadSafe = tile.groundLayer;
     tile.midLayerThreadSafe = tile.midLayer;
     tile.topLayerThreadSafe = tile.topLayer;
@@ -126,7 +126,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
             f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
-            const f32 baseZPos = tile.getGroundZPositionUncompressedThreadSafe();
+            const f32 baseZPos = tile.getGroundZOffsetThreadSafe();
             if (baseZPos + 1.0f > maxHeight) {
                 maxHeight = baseZPos + 1.0f;
             }

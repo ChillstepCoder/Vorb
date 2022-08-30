@@ -241,10 +241,11 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             
             LiteTileHandle adjHandle;
             Cartesian cartesian4 = CARTESIAN8_TO_CARTESIAN[dir];
-            bool isExternal = (cartesian4 != Cartesian::NONE) && (fineNavData.getEdgeType(cartesian4) == TileFineNavEdgeType::EXTERIOR);
+            const TileFineNavEdgeType edgeType = fineNavData.getEdgeType(cartesian4);
+            bool isExternal = (cartesian4 != Cartesian::NONE) && (edgeType == TileFineNavEdgeType::EXTERIOR);
             if (isExternal/* || adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)*/) {
                 // External edge
-                const f32 zPos = handle.toTileHandle().tile->getGroundZPositionUncompressedThreadSafe();
+                const f32 zPos = handle.toTileHandle().tile->getGroundZOffsetThreadSafe();
                 const i32v3 containerOffset = container->getTileXYZOffsetWithZScale(handle.index);
                 const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + zPos));
                 const TileHandle externalHandle = mWorld.getTileHandleAtWorldPosThreadSafe(offset + container->getWorldPos3D());
@@ -256,7 +257,13 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             else {
                 // Internal edge
                 const i32v3 containerOffset = container->getTileXYZOffset(handle.index);
-                const i32v3 adjPos(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, containerOffset.z);
+                i32v3 adjPos(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, containerOffset.z);
+                if (edgeType == TileFineNavEdgeType::DOWN) {
+                    --adjPos.z;
+                }
+                else if (edgeType == TileFineNavEdgeType::UP) {
+                    ++adjPos.z;
+                }
                 TileIndex adjIndex = container->getTileIndexFromXYZOffset(adjPos);
                 adjHandle = LiteTileHandle(container->getId(), adjIndex);
             }
@@ -512,7 +519,7 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
                 const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * container->getDims().y) * i;
                 const Tile& innerTile = container->getTileAt(nextIndex);
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
-                worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZPositionUncompressedThreadSafe());
+                worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZOffsetThreadSafe());
                 TileHandle outerHandle = mWorld.getTileHandleAtWorldPosThreadSafe(worldPosOuter);
                 if (!outerHandle.isValid()) {
                     continue;
@@ -565,7 +572,13 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
             
             const Cartesian edgeWalkDir = CARTESIAN_COARSE_EDGE_WALK_CARTESIAN[e_cast(edge.dir)];
             const TileIndex midPoint = edge.startPos + internalIndexOffsetsCartesian[e_cast(edgeWalkDir)] * (edge.edgeLength / 2);
-            const TileIndex nextTileIndex = midPoint + internalIndexOffsetsCartesian[e_cast(edge.dir)];
+            TileIndex nextTileIndex = midPoint + internalIndexOffsetsCartesian[e_cast(edge.dir)];
+            if (edge.edgeType == TileCoarseNavEdgeType::DOWN) {
+                nextTileIndex -= container->getDims().x * container->getDims().y;
+            }
+            else if (edge.edgeType == TileCoarseNavEdgeType::UP) {
+                nextTileIndex += container->getDims().x * container->getDims().y;
+            }
             const CoarseAstarNodeID newId = mTotalAstarNodes++;
             CoarseAStarNode& newAstarNode = sCoarseAstarNodes[newId];
             newAstarNode.tileHandle = LiteTileHandle(tileHandle.container->getId(), nextTileIndex);

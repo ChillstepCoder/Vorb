@@ -13,6 +13,7 @@ KEG_ENUM_DEF(TileTextureMethod, TileTextureMethod, kt) {
 }
 static_assert(e_cast(TileTextureMethod::COUNT) == 6);
 
+
 KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Thin", TileShape::THIN);
     kt.addValue("Block", TileShape::BLOCK);
@@ -122,7 +123,7 @@ Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos) {
     groundLayer = ground;
     midLayer = mid;
     topLayer = top;
-    groundZPositionCompressed = compressTileZPosition(zPos);
+    groundZOffset = zPos;
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
@@ -131,7 +132,7 @@ Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : t
     groundLayer = ground;
     midLayer = mid;
     topLayer = top;
-    groundZPositionCompressed = compressTileZPosition(zPos);
+    groundZOffset = zPos;
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
@@ -159,7 +160,7 @@ void Tile::updateThreadSafeLayers() {
 
     tileFlagsThreadSafe = tileFlags;
     memcpy(layersThreadSafe, layers, sizeof(TileID) * TILE_LAYER_COUNT);
-    groundZPositionCompressedThreadSafe = groundZPositionCompressed;
+    groundZOffsetThreadSafe = groundZOffset;
 }
 
 // This was painful
@@ -218,6 +219,26 @@ bool Tile::canNavInDirection(Cartesian8 dir) const {
     return navMask & (1 << (ui8)dir);
 }
 
+f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
+    if (midLayerThreadSafe == TILE_ID_NONE) return 0.0f;
+    const TileData& tileData = TileRepository::getTileData(midLayerThreadSafe);
+    // TODO: Cut out this check
+    Cartesian8 dir8 = CARTESIAN_TO_CARTESIAN8[e_cast(dir)];
+    switch (orientationThreadSafe.orientationMid) {
+        case Cartesian::WEST:
+            dir8 = ORIENTATION_ROTATE_DIR_WEST[e_cast(dir8)];
+            break;
+        case Cartesian::EAST:
+            dir8 = ORIENTATION_ROTATE_DIR_EAST[e_cast(dir8)];
+            break;
+        case Cartesian::NORTH:
+            dir8 = ORIENTATION_ROTATE_DIR_NORTH[e_cast(dir8)];
+            break;
+    }
+    dir = CARTESIAN8_TO_CARTESIAN[e_cast(dir8)];
+    return tileData.heightOffsets[e_cast(dir)];
+}
+
 const Cartesian& Tile::getOrientationMainThread(TileLayer layer) const {
     assert(IS_MAIN_THREAD());
     switch (layer) {
@@ -270,9 +291,9 @@ void Tile::setTileLayer(TileLayer layer, TileID id, bool isReadLocked) {
 }
 
 void Tile::setGroundZPosition(f32 groundZPosition, bool isReadLocked) {
-    groundZPositionCompressed = compressTileZPosition(groundZPosition);
+    groundZOffset = groundZPosition;
     if (!isReadLocked) {
-        groundZPositionCompressedThreadSafe = groundZPositionCompressed;
+        groundZOffsetThreadSafe = groundZOffset;
     }
 }
 //void Tile::setWall(Cartesian cartesianSouthOrWest, TileWall wall, bool isReadLocked) {

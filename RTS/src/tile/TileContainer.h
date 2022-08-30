@@ -63,7 +63,7 @@ struct TileContainerEntrance {
     bool isLocked; // TODO: Access type enum?
 };
 
-enum class TileFineNavEdgeType {
+enum class TileFineNavEdgeType : ui8 {
     NONE = 0,
     DOWN = 1,
     UP = 2,
