@@ -7,12 +7,12 @@
 
 #include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
-#include "World.h"
+#include "world/World.h"
 #include "world/WorldGrid.h"
 
 #include "resources/TileRepository.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/Item.h"
 

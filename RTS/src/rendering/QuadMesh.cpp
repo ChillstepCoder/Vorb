@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "QuadMesh.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SamplerState.h>

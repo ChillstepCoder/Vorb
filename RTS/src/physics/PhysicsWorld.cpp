@@ -17,7 +17,7 @@
 #include "terrain/HeightmapPatch.h"
 #include "options/DebugOptions.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 const btVector3 GRAVITY(0.0f, 0.0f, -10.0f);
 

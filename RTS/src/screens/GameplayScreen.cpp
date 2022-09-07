@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "GameplayScreen.h"
+#include "screens/GameplayScreen.h"
 
 #include "App.h"
 
@@ -11,16 +11,16 @@
 
 #include "pathfinding/NavThread.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include "camera/CameraController.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "resources/TileRepository.h"
 #include "world/WorldObjectQuery.h"
-#include "Utils.h"
+#include "util/Utils.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
@@ -31,8 +31,7 @@
 #include "pathfinding/NavWorld.h"
 #include "rendering/RenderContext.h"
 
-#include "TextureManip.h"
-#include "Random.h"
+#include "math/Random.h"
 
 #include "rendering/ChunkRenderer.h"
 

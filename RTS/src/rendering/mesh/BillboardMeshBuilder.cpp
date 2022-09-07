@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "BillboardMeshBuilder.h"
 
-#include "Random.h"
+#include "math/Random.h"
 #include "MeshBuilder.h"
 
 #include <boost/pool/singleton_pool.hpp>

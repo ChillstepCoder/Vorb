@@ -7,7 +7,7 @@
 #include "resources/TileRepository.h"
 
 #include <Vorb/Timing.h>
-#include "Random.h"
+#include "math/Random.h"
 
 #include "debugging/VisualLogger.h"
 #include "util/GridEdgeFinder.h"
@@ -16,7 +16,7 @@
 
 // For font
 #include "resources/FontRepository.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 const Font* sFontVisLog = nullptr;
 

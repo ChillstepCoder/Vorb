@@ -10,11 +10,11 @@
 #include "rendering/TileVertex.h"
 
 #include "resources/ModelRepository.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include "options/DebugOptions.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 #include "QuadMesh.h"
 #include "camera/Camera3D.h"

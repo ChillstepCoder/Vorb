@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ParticleSystemRenderer.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "particles/ParticleSystem.h"
 #include "particles/ParticleSystemManager.h"
 

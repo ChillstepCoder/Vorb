@@ -3,7 +3,7 @@
 
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "Random.h"
+#include "math/Random.h"
 
 const float GRAVITY_CONSTANT = 0.01f;
 

@@ -2,7 +2,7 @@
 #include "CombatComponent.h"
 #include "PhysicsComponent.h"
 #include "SimpleSpriteComponent.h"
-#include "World.h"
+#include "world/World.h"
 #include "ecs/EntityComponentSystem.h"
 
 namespace Combat {

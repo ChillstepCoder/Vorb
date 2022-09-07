@@ -98,7 +98,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_EULER_DEFAULT_ZYX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -145,13 +145,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\graphics\BlendState.cpp" />
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="DebugRenderer.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="GameplayScreen.cpp" />
-    <ClCompile Include="Noise.cpp" />
     <ClCompile Include="src\ai\tasks\BuildTask.cpp" />
     <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\App.cpp" />
     <ClCompile Include="src\camera\Camera3D.cpp" />
     <ClCompile Include="src\camera\CameraController.cpp" />
     <ClCompile Include="src\city\Building.cpp" />
@@ -171,6 +167,7 @@
     <ClCompile Include="src\crafting\CraftingRepository.cpp" />
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\debugging\DebugMesh.cpp" />
+    <ClCompile Include="src\debugging\DebugRenderer.cpp" />
     <ClCompile Include="src\debugging\PhysicsDebugDrawer.cpp" />
     <ClCompile Include="src\debugging\ValueTweaker.cpp" />
     <ClCompile Include="src\debugging\VisualLogger.cpp" />
@@ -215,6 +212,9 @@
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\math\Noise.cpp" />
+    <ClCompile Include="src\math\Random.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
     <ClCompile Include="src\options\LightingOptions.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
@@ -229,7 +229,6 @@
     <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
-    <ClCompile Include="src\Random.cpp" />
     <ClCompile Include="src\rendering\BuildingMesher.cpp" />
     <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
@@ -268,20 +267,20 @@
     <ClCompile Include="src\rendering\texture\SubTexture.cpp" />
     <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
-    <ClCompile Include="src\ResourceManager.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
+    <ClCompile Include="src\resources\ResourceManager.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\resources\SkillRepository.cpp" />
     <ClCompile Include="src\resources\TextureRepository.cpp" />
     <ClCompile Include="src\resources\TileRepository.cpp" />
+    <ClCompile Include="src\screens\GameplayScreen.cpp" />
     <ClCompile Include="src\screens\Test3DScreen.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\structure\StructureManager.cpp" />
-    <ClCompile Include="src\TextureManip.cpp" />
     <ClCompile Include="src\tile\Tile.cpp" />
     <ClCompile Include="src\tile\TileContainer.cpp" />
     <ClCompile Include="src\tile\TileHandle.cpp" />
@@ -299,24 +298,18 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
+    <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2</AdditionalIncludeDirectories>
-    </ClCompile>
-    <ClCompile Include="World.cpp" />
+    <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
-    <ClInclude Include="App.h" />
-    <ClInclude Include="DebugRenderer.h" />
-    <ClInclude Include="GameplayScreen.h" />
     <ClInclude Include="src\actor\ActorTypes.h" />
     <ClInclude Include="src\ai\tasks\BuildTask.h" />
     <ClInclude Include="src\ai\tasks\GatherTask.h" />
     <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\App.h" />
     <ClInclude Include="src\camera\Camera3D.h" />
     <ClInclude Include="src\camera\CameraController.h" />
     <ClInclude Include="src\camera\CameraMode.h" />
@@ -344,6 +337,7 @@
     <ClInclude Include="src\data_structure\FlatQuadtree.h" />
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
     <ClInclude Include="src\debugging\DebugMesh.h" />
+    <ClInclude Include="src\debugging\DebugRenderer.h" />
     <ClInclude Include="src\debugging\PhysicsDebugDrawer.h" />
     <ClInclude Include="src\debugging\ValueTweaker.h" />
     <ClInclude Include="src\debugging\SimpleMesh.h" />
@@ -402,8 +396,9 @@
     <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
+    <ClInclude Include="src\math\Noise.h" />
+    <ClInclude Include="src\math\Random.h" />
     <ClInclude Include="src\network\Message.h" />
-    <ClInclude Include="src\Noise.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\options\LightingOptions.h" />
     <ClInclude Include="src\particles\ParticleSystem.h" />
@@ -420,7 +415,6 @@
     <ClInclude Include="src\physics\PhysHitResult.h" />
     <ClInclude Include="src\physics\PhysicsWorld.h" />
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
-    <ClInclude Include="src\Random.h" />
     <ClInclude Include="src\rendering\BuildingMesher.h" />
     <ClInclude Include="src\rendering\BuildingRenderer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
@@ -464,15 +458,16 @@
     <ClInclude Include="src\rendering\ShaderLoader.h" />
     <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\rendering\TerrainRenderer.h" />
-    <ClInclude Include="src\ResourceManager.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
+    <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\resources\SkillRepository.h" />
     <ClInclude Include="src\resources\TextureRepository.h" />
     <ClInclude Include="src\resources\TileRepository.h" />
+    <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\Test3DScreen.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\structure\Structure.h" />
@@ -501,6 +496,7 @@
     <ClInclude Include="src\util\StringHash.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
+    <ClInclude Include="src\util\Utils.h" />
     <ClInclude Include="src\weather\CloudManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
@@ -508,13 +504,11 @@
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
+    <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\WorldData.h" />
     <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
-    <ClInclude Include="TextureManip.h" />
-    <ClInclude Include="World.h" />
-    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

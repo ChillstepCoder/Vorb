@@ -3,8 +3,8 @@
 
 #include "ecs/EntityComponentSystem.h"
 
-#include "World.h"
-#include "DebugRenderer.h"
+#include "world/World.h"
+#include "debugging/DebugRenderer.h"
 
 #include <Vorb/ui/InputDispatcher.h>
 #include <glm/gtx/rotate_vector.hpp>

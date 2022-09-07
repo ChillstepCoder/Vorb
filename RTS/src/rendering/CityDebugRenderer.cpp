@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CityDebugRenderer.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include "city/City.h"
 #include "city/CityBuilder.h"

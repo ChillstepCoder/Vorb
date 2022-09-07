@@ -1,8 +1,8 @@
 #include "stdafx.h"
-#include "World.h"
+#include "world/World.h"
 
 #include "ecs/EntityComponentSystem.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "world/ChunkGenerator.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
@@ -28,7 +28,7 @@
 
 #include "ui/UIContext.h"
 
-#include "Utils.h"
+#include "util/Utils.h"
 
 #include "city/City.h"
 #include "camera/Camera3D.h"
@@ -38,7 +38,7 @@
 #include "pathfinding/NavThread.h"
 
 // TODO: remove?
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
 
 #include "tile/TileUtil.h"

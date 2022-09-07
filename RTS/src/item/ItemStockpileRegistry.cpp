@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ItemStockpileRegistry.h"
 
-#include "World.h"
+#include "world/World.h"
 
 
 ItemStockpileRegistry::ItemStockpileRegistry(World& world)

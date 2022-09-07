@@ -19,7 +19,7 @@ public:
     virtual void onExit() override;
     virtual void refreshElapsedTime() override;
 
-    std::unique_ptr<GameplayScreen> mMainMenuScreen;
+    std::unique_ptr<GameplayScreen> mGameplayScreen;
 protected:
     void onUpdateFrame() override;
 

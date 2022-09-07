@@ -6,14 +6,14 @@
 #include "util/IntersectionUtil.h"
 
 #include "camera/Camera3D.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 // TODO: move
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "physics/PhysicsWorld.h"
 
-#include "World.h"
+#include "world/World.h"
 
 #include "util/BitArray.h"
 

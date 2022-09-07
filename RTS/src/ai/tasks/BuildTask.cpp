@@ -7,7 +7,7 @@
 #include "ecs/component/TimedTileInteractComponent.h"
 
 #include "resources/TileRepository.h"
-#include "World.h"
+#include "world/World.h"
 
 #include "city/BuildingBlueprint.h"
 

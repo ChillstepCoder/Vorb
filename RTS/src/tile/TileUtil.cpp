@@ -4,6 +4,6 @@
 #include "resources/TileRepository.h"
 
 #include "tile/TileCollider.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include "options/DebugOptions.h"

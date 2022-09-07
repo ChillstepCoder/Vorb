@@ -2,9 +2,9 @@
 #include "BuildingMesher.h"
 
 #include "city/Building.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
 
 #include "util/IntersectionUtil.h"
@@ -14,7 +14,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 #include "tile/TileHandle.h"
 #include "resources/TileRepository.h"

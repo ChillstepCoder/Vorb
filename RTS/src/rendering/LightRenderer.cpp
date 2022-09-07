@@ -5,7 +5,7 @@
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "camera/Camera3D.h"
 
 static_assert((int)LightShape::Count == 1, "Update this file to handle new light shape");

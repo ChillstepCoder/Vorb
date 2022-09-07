@@ -1,13 +1,13 @@
 #include "stdafx.h"
 #include "RenderContext.h"
-#include "ResourceManager.h"
-#include "World.h"
+#include "resources/ResourceManager.h"
+#include "world/World.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
 #include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
 #include "EntityComponentSystemRenderer.h"
 #include "rendering/BuildingRenderer.h"
@@ -30,7 +30,6 @@
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/mesh/MeshBuilder.h"
-#include "TextureManip.h"
 
 #include "structure/StructureManager.h"
 

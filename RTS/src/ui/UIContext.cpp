@@ -6,7 +6,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "editor/WorldEditor.h"
 
 UIContext* UIContext::sInstance = nullptr;

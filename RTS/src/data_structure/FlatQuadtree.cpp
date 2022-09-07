@@ -3,7 +3,7 @@
 
 #include "camera/Camera3D.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 QuadtreePatch::~QuadtreePatch()
 {

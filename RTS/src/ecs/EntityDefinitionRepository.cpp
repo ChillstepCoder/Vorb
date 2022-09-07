@@ -7,7 +7,7 @@
 
 #include "ecs/component/EntityDefinition.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include <Vorb/io/IOManager.h>
 

@@ -1,14 +1,14 @@
 #include "stdafx.h"
 #include "CityQuartermaster.h"
 #include "city/City.h"
-#include "World.h"
+#include "world/World.h"
 
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 
 #include "city/BuildingBlueprint.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "BuildingDescriptionRepository.h"
 
 CityQuartermaster::CityQuartermaster(City& city) : mCity(city) {

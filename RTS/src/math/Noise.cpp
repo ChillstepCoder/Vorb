@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "Noise.h"
+#include "math/Noise.h"
 
 #include <Vorb/utils.h>
 

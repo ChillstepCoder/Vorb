@@ -2,15 +2,15 @@
 #include "CloudManager.h"
 
 #include "rendering/QuadMesh.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include "rendering/mesh/BillboardMeshBuilder.h"
 
-#include "World.h"
-#include "ResourceManager.h"
+#include "world/World.h"
+#include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 #include "options/DebugOptions.h"
 

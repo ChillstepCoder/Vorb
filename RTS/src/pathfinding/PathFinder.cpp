@@ -1,14 +1,14 @@
 #include "stdafx.h"
 #include "PathFinder.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "resources/TileRepository.h"
 
 #include "pathfinding/NavWorld.h"
 
 #include "options/DebugOptions.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include "city/Building.h"
 

@@ -3,7 +3,7 @@
 
 #include "camera/Camera3D.h"
 #include "options/DebugOptions.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "world/WorldGrid.h"
 #include "rendering/mesh/MeshBuilder.h"
 

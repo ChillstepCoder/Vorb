@@ -5,10 +5,10 @@
 #include "CityPlotter.h"
 #include "BuildingDescriptionRepository.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
-#include "World.h"
-#include "ResourceManager.h"
+#include "world/World.h"
+#include "resources/ResourceManager.h"
 
 
 // TODO: T1 City requires

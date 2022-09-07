@@ -6,7 +6,7 @@
 #include "rendering/mesh/Mesh.h"
 
 #include "resources/TileRepository.h"
-#include "World.h"
+#include "world/World.h"
 
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
@@ -324,7 +324,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
         }
     }
 }
-//#include "DebugRenderer.h" // TODO: REMOVE
+//#include "debugging/DebugRenderer.h" // TODO: REMOVE
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
     mRenderData.mDirtyDynamicMesh = true;

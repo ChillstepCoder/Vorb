@@ -6,7 +6,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include "debugging/DebugMesh.h"
 #include "options/DebugOptions.h"
@@ -16,8 +16,6 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/graphics/GLProgram.h>
-
-#include "util/MathUtil.hpp"
 
 std::vector<std::unique_ptr<VisualLog>> VisualLogger::sVisualLogs;
 std::mutex VisualLogger::sMutex;

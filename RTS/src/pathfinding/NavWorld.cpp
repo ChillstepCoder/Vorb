@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "NavWorld.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "world/Chunk.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 
 #include "debugging/VisualLogger.h"

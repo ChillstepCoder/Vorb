@@ -1,15 +1,15 @@
 #include "stdafx.h"
 #include "WorldEditor.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "world/WorldGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/Chunk.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "options/DebugOptions.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "editor/BrushRepository.h"
 #include "resources/TileRepository.h"
@@ -22,7 +22,7 @@
 #include "physics/PhysicsWorld.h"
 #include "camera/Camera3D.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>

@@ -3,7 +3,7 @@
 
 #include "camera/Camera3D.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 
@@ -13,7 +13,7 @@
 
 #include "options/DebugOptions.h"
 
-//#include "DebugRenderer.h"
+//#include "debugging/DebugRenderer.h"
 
 constexpr int DEPTH_MAP_RESOLUTION = 4096;
 

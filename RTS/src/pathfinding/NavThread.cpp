@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "NavThread.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "NavWorld.h"
 
 #include "tile/TileContainer.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 
 NavThread::NavThread() {

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "DepthOfFieldPostProcess.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 

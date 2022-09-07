@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "EntityComponentSystem.h"
 
-#include "World.h"
+#include "world/World.h"
 
 #include "camera/Camera3D.h"
 

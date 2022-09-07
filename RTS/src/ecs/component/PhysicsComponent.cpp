@@ -4,7 +4,7 @@
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 
-#include "World.h"
+#include "world/World.h"
 #include "ecs/EntityComponentSystem.h"
 
 #include "resources/TileRepository.h"
@@ -42,7 +42,7 @@ f32v2 PhysicsComponent::getInterpolatedDir() const {
     return f32v2(result.getX(), result.getY());
 }
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 f32v3 PhysicsComponent::getPosition() const {
     // TODO: Physics system could cache position
     // TODO: Get origin?

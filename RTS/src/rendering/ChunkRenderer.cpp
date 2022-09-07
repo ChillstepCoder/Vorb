@@ -2,8 +2,8 @@
 #include "ChunkRenderer.h"
 #include "camera/Camera3D.h"
 #include "world/Chunk.h"
-#include "World.h"
-#include "ResourceManager.h"
+#include "world/World.h"
+#include "resources/ResourceManager.h"
 #include "rendering/ChunkMesher.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/TileVertex.h"
@@ -14,7 +14,7 @@
 #include "rendering/ChunkGrassQuadtree.h"
 
 // TODO: Remove
-#include "Utils.h"
+#include "util/Utils.h"
 
 #include "options/DebugOptions.h"
 

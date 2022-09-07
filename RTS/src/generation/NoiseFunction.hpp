@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Noise.h"
+#include "math/Noise.h"
 
 class NoiseFunction {
 public:

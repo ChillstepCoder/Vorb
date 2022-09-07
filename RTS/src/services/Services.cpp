@@ -2,7 +2,7 @@
 #include "Services.h"
 
 #include "pathfinding/NavThread.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 static bool sIsInit = false;
 

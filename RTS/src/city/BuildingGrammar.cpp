@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "BuildingGrammar.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 constexpr ui8 STATE_SEPARATOR_CHAR = '|';
 

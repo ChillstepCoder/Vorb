@@ -4,7 +4,7 @@
 #include "rendering/texture/SubTexture.h"
 
 #include <boost/pool/singleton_pool.hpp>
-#include "Random.h"
+#include "math/Random.h"
 
 #define SUBMESH_INDEX_MAIN -1
 

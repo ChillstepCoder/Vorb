@@ -9,7 +9,7 @@
 
 #include "world/HeightmapTerrainQuadtree.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include "options/DebugOptions.h"
 

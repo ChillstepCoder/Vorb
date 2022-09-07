@@ -4,7 +4,7 @@
 #include "ecs/business/BusinessComponent.h"
 
 #include "city/City.h"
-#include "World.h"
+#include "world/World.h"
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/EmployeeComponent.h"
 

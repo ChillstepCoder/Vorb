@@ -8,12 +8,12 @@
 
 #include "pathfinding/NavThread.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "resources/TileRepository.h"
 
 #include "ecs/EntityComponentSystem.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "rendering/BuildingMesher.h"
 
 #include "structure/StructureManager.h"

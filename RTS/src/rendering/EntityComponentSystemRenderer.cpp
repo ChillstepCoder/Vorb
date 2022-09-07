@@ -5,12 +5,12 @@
 #include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"
 #include "city/CityPlot.h"
-#include "World.h"
+#include "world/World.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/LightRenderer.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 #include "rendering/CityDebugRenderer.h"
 

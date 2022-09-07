@@ -1,9 +1,9 @@
 #include "stdafx.h"
 
 #include "App.h"
-#include "GameplayScreen.h"
+#include "screens/GameplayScreen.h"
 
-#include "Random.h"
+#include "math/Random.h"
 
 #include "rendering/GLExtensions.h"
 
@@ -33,9 +33,9 @@ App::~App() {
 }
 
 void App::addScreens() {
-    mMainMenuScreen = std::make_unique<GameplayScreen>(this);
-	m_screenList.addScreen(mMainMenuScreen.get());
-	m_screenList.setScreen(mMainMenuScreen->getIndex());
+    mGameplayScreen = std::make_unique<GameplayScreen>(this);
+	m_screenList.addScreen(mGameplayScreen.get());
+	m_screenList.setScreen(mGameplayScreen->getIndex());
 }
 
 void setPriorityToMax() {

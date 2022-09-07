@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TileInteractPanel.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
@@ -11,7 +11,7 @@
 
 #include <Vorb/ui/GameWindow.h>
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 
 const ImVec2 sButtonSize(150, 25);

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "resources/TileRepository.h"
 #include "TileScanner.h"
 

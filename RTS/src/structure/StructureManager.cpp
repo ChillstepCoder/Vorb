@@ -3,7 +3,7 @@
 #include "city/Building.h"
 #include "StructureManager.h"
 
-#include "World.h"
+#include "world/World.h"
 
 StructureManager::StructureManager(World& world) : mWorld(world) {
 

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "Random.h"
+#include "math/Random.h"
 
 static ui32 x = 123456789, y = 362436069, z = 521288629;
 bool hasInitCachedRandom = false;

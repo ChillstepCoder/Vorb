@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "ItemStockpile.h"
 
-#include "DebugRenderer.h"
-#include "World.h"
+#include "debugging/DebugRenderer.h"
+#include "world/World.h"
 #include "world/WorldGrid.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
 #include "ecs/EntityComponentSystem.h"

@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include "rendering/MaterialManager.h"
 #include "rendering/ShaderLoader.h"

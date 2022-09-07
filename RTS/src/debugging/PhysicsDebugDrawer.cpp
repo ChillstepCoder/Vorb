@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "PhysicsDebugDrawer.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 const int STATIC_DEBUG_ID = 95326326;
 const int STATIC_DEBUG_LIFETIME = INT32_MAX;

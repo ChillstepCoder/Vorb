@@ -3,7 +3,7 @@
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "MaterialRenderer.h"
 #include "MaterialManager.h"
 

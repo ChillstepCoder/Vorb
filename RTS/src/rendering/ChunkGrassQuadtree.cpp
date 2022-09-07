@@ -11,8 +11,8 @@
 #include "generation/WorldGeneration.h"
 #include <Vorb/graphics/GLProgram.h>
 
-#include "Random.h"
-#include "DebugRenderer.h"
+#include "math/Random.h"
+#include "debugging/DebugRenderer.h"
 
 constexpr int GRASS_LOD_DETAIL[GRASS_QUADTREE_MAX_LOD] = {
     0,

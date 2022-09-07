@@ -8,7 +8,7 @@
 #include "resources/ModelRepository.h"
 #include "resources/SkillRepository.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include <Vorb/graphics/TextureCache.h>
 
 #include <ozz/animation/runtime/animation.h>

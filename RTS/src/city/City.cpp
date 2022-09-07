@@ -9,8 +9,8 @@
 #include "CityQuartermaster.h"
 #include "BuildingDescriptionRepository.h"
 #include "ecs/business/BusinessRepository.h"
-#include "World.h"
-#include "ResourceManager.h"
+#include "world/World.h"
+#include "resources/ResourceManager.h"
 
 #include "ecs/EntityComponentSystem.h"
 

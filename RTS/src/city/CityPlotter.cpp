@@ -3,11 +3,9 @@
 #include "CityPlotter.h"
 #include "city/City.h"
 
-#include "util/MathUtil.hpp"
+#include "world/World.h"
 
-#include "World.h"
-
-#include "Random.h"
+#include "math/Random.h"
 
 CityPlotter::CityPlotter(City& city) :
     mCity(city)

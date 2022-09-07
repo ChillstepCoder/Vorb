@@ -3,7 +3,7 @@
 
 #include "App.h"
 
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include "rendering/TileVertex.h"
 
@@ -12,7 +12,7 @@
 
 #include <Vorb/ui/InputDispatcher.h>
 
-#include "World.h"
+#include "world/World.h"
 
 #if IS_ENABLED(FEATURE_TEST_3D)
 

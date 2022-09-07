@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include <Vorb/MeshGenerators.h>
 #include <Vorb/graphics/RasterizerState.h>

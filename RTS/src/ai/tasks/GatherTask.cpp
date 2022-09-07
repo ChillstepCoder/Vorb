@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GatherTask.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
@@ -10,11 +10,11 @@
 #include "city/CityQuartermaster.h"
 
 #include "ecs/component/InventoryComponent.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 #include "resources/TileRepository.h"
-#include "Random.h"
+#include "math/Random.h"
 
 #include <boost/pool/singleton_pool.hpp>
 

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
 
-#include "World.h"
+#include "world/World.h"
 #include "world/Chunk.h"
 #include "resources/TileRepository.h"
 #include "rendering/mesh/Mesh.h"
@@ -9,7 +9,7 @@
 #include "rendering/mesh/BillboardMeshBuilder.h"
 #include "rendering/mesh/TileMeshBuilderMethods.h"
 #include "rendering/QuadMesh.h"
-#include "Random.h"
+#include "math/Random.h"
 #include "options/DebugOptions.h"
 #include <Vorb/graphics/SamplerState.h>
 
@@ -19,7 +19,7 @@
 #include "generation/WorldGeneration.h"
 
 // TODO THIS IS TMP
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 
 

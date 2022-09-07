@@ -7,15 +7,15 @@
 
 #include "ecs/component/OwnershipComponent.h"
 
-#include "World.h"
-#include "ResourceManager.h"
+#include "world/World.h"
+#include "resources/ResourceManager.h"
 #include "city/BuildingDescriptionRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
 #include "tile/TileScanner.h"
 #include "item/ItemStockpile.h"
 #include "resources/TileRepository.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 
 #include "city/CityPlanner.h"

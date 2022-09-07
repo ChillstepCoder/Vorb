@@ -3,14 +3,14 @@
 
 #include "ecs/EntityComponentSystem.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 #include "options/DebugOptions.h"
 #include "pathfinding/NavThread.h"
 
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "World.h"
+#include "world/World.h"
 
 constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
 constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles

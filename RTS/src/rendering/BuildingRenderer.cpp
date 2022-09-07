@@ -10,11 +10,11 @@
 #include "rendering/MaterialManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/BuildingMesher.h"
-#include "ResourceManager.h"
+#include "resources/ResourceManager.h"
 
 #include "camera/Camera3D.h"
 
-#include "DebugRenderer.h"
+#include "debugging/DebugRenderer.h"
 
 BuildingRenderer::BuildingRenderer(const MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer)

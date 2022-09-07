@@ -2,8 +2,8 @@
 #include "ChunkGenerator.h"
 
 #include "Chunk.h"
-#include "Noise.h"
-#include "Random.h"
+#include "math/Noise.h"
+#include "math/Random.h"
 
 #include "world/WorldData.h"
 #include "world/WorldGrid.h"

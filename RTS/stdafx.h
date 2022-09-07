@@ -424,5 +424,4 @@ typedef GLuint64 TextureHandle;
 // Runs automatically at program startup
 #define RUNTIME_INIT_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()
 
-
 #endif // stdafx_h__RTS
