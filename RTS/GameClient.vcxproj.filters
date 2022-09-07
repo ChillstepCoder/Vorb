@@ -216,9 +216,6 @@
     <ClCompile Include="src\rendering\ItemRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\screens\Test3DScreen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\camera\Camera3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -492,6 +489,9 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\screens\MainMenuScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -756,9 +756,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\ItemRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\screens\Test3DScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\camera\Camera3D.h">
@@ -1107,6 +1104,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\screens\MainMenuScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

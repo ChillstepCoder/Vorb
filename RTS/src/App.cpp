@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "App.h"
+#include "screens/MainMenuScreen.h"
 #include "screens/GameplayScreen.h"
 
 #include "math/Random.h"
@@ -15,6 +16,8 @@
 
 // TODO: Config
 #include "options/DebugOptions.h"
+
+#define SKIP_MAIN_MENU 0
 
 // Use dedicated GPUs
 extern "C"
@@ -33,9 +36,15 @@ App::~App() {
 }
 
 void App::addScreens() {
+    mMainMenuScreen = std::make_unique<MainMenuScreen>(this);
     mGameplayScreen = std::make_unique<GameplayScreen>(this);
+    m_screenList.addScreen(mMainMenuScreen.get());
 	m_screenList.addScreen(mGameplayScreen.get());
+#if SKIP_MAIN_MENU == 1
 	m_screenList.setScreen(mGameplayScreen->getIndex());
+#else
+    m_screenList.setScreen(mMainMenuScreen->getIndex());
+#endif
 }
 
 void setPriorityToMax() {
