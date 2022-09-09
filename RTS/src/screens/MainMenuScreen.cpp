@@ -54,6 +54,8 @@ void MainMenuScreen::update(const vui::GameTime& gameTime)
 
 }
 
+const ImVec2 buttonSize(200, 50);
+
 bool ButtonCenteredOnLine(const char* label, ImVec2 size) {
     ImGuiStyle& style = ImGui::GetStyle();
 
@@ -90,14 +92,37 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     ImGui::Begin("MAIN MENU", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ui32 ID = 10;
 
-    const ImVec2 buttonSize(200, 50);
+    switch (mState) {
+        case MainMenuState::MAIN:
+            drawMainState();
+            break;
+        case MainMenuState::MULTIPLAYER:
+            drawMultiplayerState();
+            break;
+        case MainMenuState::OPTIONS:
+            break;
+        default:
+            break;
+
+    }
+
+    ImGui::End();
+
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    ImGui::EndFrame();
+}
+
+
+void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Singleplayer", buttonSize)) {
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Multiplayer", buttonSize)) {
-
+        mState = MainMenuState::MULTIPLAYER;
     }
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Options", buttonSize)) {
@@ -107,11 +132,19 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     if (ButtonCenteredOnLine("Exit", buttonSize)) {
         m_state = vorb::ui::ScreenState::EXIT_APPLICATION;
     }
+}
 
-    ImGui::End();
+void MainMenuScreen::drawMultiplayerState() {
+    ImGui::Spacing();
+    if (ButtonCenteredOnLine("LAN", buttonSize)) {
 
+    }
+    ImGui::Spacing();
+    if (ButtonCenteredOnLine("Online", buttonSize)) {
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    ImGui::EndFrame();
+    }
+    ImGui::Spacing();
+    if (ButtonCenteredOnLine("Back", buttonSize)) {
+        mState = MainMenuState::MAIN;
+    }
 }

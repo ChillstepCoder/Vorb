@@ -4,6 +4,12 @@
 
 class App;
 
+enum class MainMenuState {
+    MAIN,
+    MULTIPLAYER,
+    OPTIONS,
+};
+
 class MainMenuScreen : public vui::IAppScreen<App>
 {
 public:
@@ -22,5 +28,11 @@ public:
     virtual void update(const vui::GameTime& gameTime) override;
 
     virtual void draw(const vui::GameTime& gameTime) override;
+
+private:
+    void drawMainState();
+    void drawMultiplayerState();
+
+    MainMenuState mState = MainMenuState::MAIN;
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tile/TileConst.h"
+#include "tile/TileResource.h"
 
 typedef ui32 BusinessTypeID;
 #define INVALID_BUSINESS_TYPE_ID UINT32_MAX

@@ -220,3 +220,14 @@ public:
     };
 };
 typedef ColorRGBA8 color4; ///< Shortened name for ColorRGBA8
+
+// TODO: Constexpr?
+const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
+const color4 COLOR_RED = color4((ui8)255u, (ui8)0u, (ui8)0u, (ui8)255u);
+const color4 COLOR_GREEN = color4((ui8)0u, (ui8)255u, (ui8)0u, (ui8)255u);
+const color4 COLOR_BLUE = color4((ui8)0u, (ui8)0u, (ui8)255u, (ui8)255u);
+const color4 COLOR_MAGENTA = color4((ui8)255u, (ui8)0u, (ui8)255u, (ui8)255u);
+const color4 COLOR_CYAN = color4((ui8)0u, (ui8)255u, (ui8)255u, (ui8)255u);
+const color4 COLOR_YELLOW = color4((ui8)255u, (ui8)255u, (ui8)0u, (ui8)255u);
+const color4 COLOR_BLACK = color4((ui8)0u, (ui8)0u, (ui8)0u, (ui8)255u);
+const color4 COLOR_GRAY = color4((ui8)128u, (ui8)128u, (ui8)128u, (ui8)255u);

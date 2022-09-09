@@ -24,12 +24,6 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
 }
 static_assert(e_cast(TileShape::COUNT) == 6);
 
-KEG_ENUM_DEF(TileResource, TileResource, kt) {
-    kt.addValue("none", TileResource::NONE);
-    kt.addValue("wood", TileResource::WOOD);
-    kt.addValue("stone", TileResource::STONE);
-}
-
 KEG_ENUM_DEF(TileCollisionShape, TileCollisionShape, kt) {
     kt.addValue("none", TileCollisionShape::NONE);
     kt.addValue("box", TileCollisionShape::BOX);

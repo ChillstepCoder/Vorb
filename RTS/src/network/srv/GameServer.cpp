@@ -3,16 +3,16 @@
 #include "GameServer.h"
 #include "SrvAdapter.h"
 
+// TODO fix these things, figure out unicode
 void logSrv(const wchar_t* str) {
-    OutputDebugString(str);
+    //OutputDebugString(str);
     wprintf(str);
 }
 
-void logSrv(const char* str) {
-    wchar_t wstr[512];
-    wsprintf(wstr, L"%S", str);
-    OutputDebugString(wstr);
-    wprintf(wstr);
+void logSrv(const std::string& str) {
+    std::wstring wstr;
+    wstr.assign(str.begin(), str.end());
+    wprintf(wstr.data());
 }
 
 
@@ -33,9 +33,9 @@ GameServer::GameServer(const yojimbo::Address& address) :
     // print the port we got in case we used port 0
     char buffer[256];
     mServer.GetAddress().ToString(buffer, sizeof(buffer));
-    wchar_t wbuffer[512];
-    wsprintf(wbuffer, L"Server address is %S", buffer);
-    logSrv(wbuffer);
+    char buffer2[512];
+    sprintf_s(buffer2, "Server address is %S", buffer);
+    logSrv(buffer2);
 
     // ... load game ...
 
@@ -46,7 +46,6 @@ GameServer::~GameServer() {
 }
 
 int GameServer::start() {
-
 
     // Loop
     mRunning = true;
@@ -69,14 +68,14 @@ int GameServer::start() {
 }
 
 void GameServer::clientConnected(int clientIndex) {
-    wchar_t buffer[512];
-    wsprintf(buffer, L"Client %d connected", clientIndex);
+    char buffer[512];
+    sprintf_s(buffer, "Client %d connected", clientIndex);
     logSrv(buffer);
 }
 
 void GameServer::clientDisconnected(int clientIndex) {
-    wchar_t buffer[512];
-    wsprintf(buffer, L"Client %d disconnected", clientIndex);
+    char buffer[512];
+    sprintf_s(buffer, "Client %d disconnected", clientIndex);
     logSrv(buffer);
 }
 
@@ -126,7 +125,7 @@ void GameServer::processMessage(int clientIndex, yojimbo::Message* message) {
 }
 
 void GameServer::processTestMessage(int clientIndex, TestMessage* message) {
-    wchar_t buffer[512];
-    wsprintf(buffer, L"Received test message from client %d %f", clientIndex, message->mData);
+    char buffer[512];
+    sprintf_s(buffer, "Received test message from client %d %f", clientIndex, message->mData);
     logSrv(buffer);
 }

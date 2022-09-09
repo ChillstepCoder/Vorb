@@ -10,7 +10,7 @@
 #include <sstream>
 #include <ws2tcpip.h>
 
-#include "server/GameServer.h"
+#include "network/srv/GameServer.h"
 
 char lineBuffer[200][80] = { ' ' };
 

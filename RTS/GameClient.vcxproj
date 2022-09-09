@@ -105,8 +105,12 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;Bullet3Common_vs2010_x64_debug.lib;Bullet3Dynamics_vs2010_x64_debug.lib;Bullet3Geometry_vs2010_x64_debug.lib;Bullet3Collision_vs2010_x64_debug.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;Bullet3Common_vs2010_x64_debug.lib;Bullet3Dynamics_vs2010_x64_debug.lib;Bullet3Geometry_vs2010_x64_debug.lib;Bullet3Collision_vs2010_x64_debug.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib</AdditionalDependencies>
     </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -212,9 +216,14 @@
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
     <ClCompile Include="src\item\ShieldItem.cpp" />
     <ClCompile Include="src\item\WeaponItem.cpp" />
+    <ClCompile Include="src\logging\ErrorLogging.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\math\Noise.cpp" />
     <ClCompile Include="src\math\Random.cpp" />
+    <ClCompile Include="src\network\cli\CliAdapter.cpp" />
+    <ClCompile Include="src\network\Cli\GameClient.cpp" />
+    <ClCompile Include="src\network\srv\GameServer.cpp" />
+    <ClCompile Include="src\network\srv\SrvAdapter.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
     <ClCompile Include="src\options\LightingOptions.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
@@ -284,6 +293,7 @@
     <ClCompile Include="src\tile\Tile.cpp" />
     <ClCompile Include="src\tile\TileContainer.cpp" />
     <ClCompile Include="src\tile\TileHandle.cpp" />
+    <ClCompile Include="src\tile\TileResource.cpp" />
     <ClCompile Include="src\tile\TileScanner.cpp" />
     <ClCompile Include="src\tile\TileUtil.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
@@ -293,6 +303,7 @@
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
@@ -387,6 +398,7 @@
     <ClInclude Include="src\generation\WorldGeneration.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\Item.h" />
+    <ClInclude Include="src\item\ItemConst.h" />
     <ClInclude Include="src\item\ItemMaterial.h" />
     <ClInclude Include="src\item\ItemRepository.h" />
     <ClInclude Include="src\item\ItemReservation.h" />
@@ -396,9 +408,17 @@
     <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
+    <ClInclude Include="src\logging\ErrorLogging.h" />
+    <ClInclude Include="src\math\ConstVectors.h" />
     <ClInclude Include="src\math\Noise.h" />
     <ClInclude Include="src\math\Random.h" />
+    <ClInclude Include="src\network\cli\CliAdapter.h" />
+    <ClInclude Include="src\network\Cli\GameClient.h" />
+    <ClInclude Include="src\network\GameConnectionConfig.h" />
     <ClInclude Include="src\network\Message.h" />
+    <ClInclude Include="src\network\NetworkConst.h" />
+    <ClInclude Include="src\network\srv\GameServer.h" />
+    <ClInclude Include="src\network\srv\SrvAdapter.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\options\LightingOptions.h" />
     <ClInclude Include="src\particles\ParticleSystem.h" />
@@ -479,6 +499,7 @@
     <ClInclude Include="src\tile\TileContainer.h" />
     <ClInclude Include="src\tile\TileFlags.h" />
     <ClInclude Include="src\tile\TileHandle.h" />
+    <ClInclude Include="src\tile\TileResource.h" />
     <ClInclude Include="src\tile\TileScanner.h" />
     <ClInclude Include="src\tile\TileUtil.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
@@ -488,17 +509,24 @@
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\BitArray.h" />
     <ClInclude Include="src\util\BitFlags.h" />
+    <ClInclude Include="src\util\Cartesian.h" />
+    <ClInclude Include="src\util\CommonUtil.h" />
+    <ClInclude Include="src\util\CubeFacing.h" />
     <ClInclude Include="src\util\GridEdge.h" />
     <ClInclude Include="src\util\GridEdgeFinder.h" />
     <ClInclude Include="src\util\IntersectionHit.h" />
     <ClInclude Include="src\util\IntersectionUtil.h" />
+    <ClInclude Include="src\util\MathDefines.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\StringHash.h" />
+    <ClInclude Include="src\util\ThreadIDs.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\util\Utils.h" />
+    <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudManager.h" />
     <ClInclude Include="src\world\Chunk.h" />
+    <ClInclude Include="src\world\ChunkConst.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\ChunkID.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />

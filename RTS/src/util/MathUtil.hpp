@@ -13,6 +13,13 @@ namespace {
     inline btVector3 f32v3ToBtVector3(const f32v3& v) {
         return btVector3(v.x, v.y, v.z);
     }
+    inline const i8v3 compressNormal(const f32v3& normal) {
+        return {
+            (i8)glm::clamp(normal.x * 127.0f, -127.0f, 127.0f),
+            (i8)glm::clamp(normal.y * 127.0f, -127.0f, 127.0f),
+            (i8)glm::clamp(normal.z * 127.0f, -127.0f, 127.0f)
+        };
+    }
 }
 
 namespace MathUtil {

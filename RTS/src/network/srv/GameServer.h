@@ -1,7 +1,6 @@
 #pragma once
 
-#include <yojimbo/yojimbo.h>
-
+#include "network/GameConnectionConfig.h"
 
 constexpr int DEFAULT_SERVER_PORT = 6669;
 
@@ -10,22 +9,7 @@ class SrvAdapter;
 struct TestMessage;
 
 extern void logSrv(const wchar_t* str);
-extern void logSrv(const char* str);
-
-enum class GameChannel {
-    RELIABLE,
-    UNRELIABLE,
-    COUNT
-};
-
-// the client and server config
-struct GameConnectionConfig : yojimbo::ClientServerConfig {
-    GameConnectionConfig() {
-        numChannels = 2;
-        channel[(int)GameChannel::RELIABLE].type = yojimbo::CHANNEL_TYPE_RELIABLE_ORDERED;
-        channel[(int)GameChannel::UNRELIABLE].type = yojimbo::CHANNEL_TYPE_UNRELIABLE_UNORDERED;
-    }
-};
+extern void logSrv(const std::string& str);
 
 class GameServer {
 public:

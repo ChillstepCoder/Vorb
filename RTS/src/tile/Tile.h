@@ -2,10 +2,49 @@
 
 #include "TileConst.h"
 #include "TileCollider.h"
+#include "TileResource.h"
 #include "item/ItemStack.h"
 
 // TODO: Do we need rendering here?
 #include "rendering/texture/SubTexture.h"
+
+enum class TileLayer {
+    Ground = 0,
+    Mid = 1,
+    Top = 2,
+    COUNT = 3
+};
+static_assert(TILE_LAYER_COUNT == e_cast(TileLayer::COUNT));
+
+enum class TileShape {
+    THIN,  // Trees and flora
+    BLOCK, // Most blocks
+    FLOOR,
+    WALL,
+    DOOR,
+    STAIRS,
+    // Custom TODO
+    COUNT
+};
+KEG_ENUM_DECL(TileShape);
+
+
+struct ItemInputDef {
+    nString itemName;
+    ui32 count;
+};
+KEG_TYPE_DECL(ItemInputDef);
+
+struct ItemDrop {
+    ItemID id;
+    ui32v2 countRange;
+};
+
+struct ItemDropDef {
+    nString itemName;
+    ui32v2 countRange;
+};
+KEG_TYPE_DECL(ItemDropDef);
 
 enum class TileTextureMethod : ui8 {
     SIMPLE,
