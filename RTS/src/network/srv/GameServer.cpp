@@ -16,8 +16,6 @@ void logSrv(const std::string& str) {
 }
 
 
-// TODO: Real private key!
-constexpr uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 constexpr ui32 MAX_PLAYERS = 16;
 
 GameServer::GameServer(const yojimbo::Address& address) :
@@ -48,9 +46,9 @@ GameServer::~GameServer() {
 int GameServer::start() {
 
     // Loop
-    mRunning = true;
     float fixedDt = 1.0f / 60.0f;
     mTime = yojimbo_time();
+    mRunning = true;
 
     while (mRunning) {
         double currentTime = yojimbo_time();

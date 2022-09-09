@@ -19,6 +19,9 @@ public:
     int start();
     void clientConnected(int clientIndex);
     void clientDisconnected(int clientIndex);
+    void shutdown() { mRunning = false; }
+
+    bool isRunning() const { return mRunning; }
 
 private:
     void update();
@@ -30,6 +33,6 @@ private:
     GameConnectionConfig mConnectionConfig;
     std::unique_ptr<SrvAdapter> mAdapter;
     yojimbo::Server mServer;
-    bool mRunning;
+    std::atomic_bool mRunning;
     double mTime;
 };

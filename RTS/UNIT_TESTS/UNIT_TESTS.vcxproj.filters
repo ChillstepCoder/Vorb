@@ -21,6 +21,21 @@
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NETWORK_TESTS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\srv\GameServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\srv\SrvAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\cli\GameClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\network\cli\CliAdapter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
