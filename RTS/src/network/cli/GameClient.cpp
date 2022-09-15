@@ -1,19 +1,25 @@
 #include "stdafx.h"
 #include "GameClient.h"
 
+#include "network/NetworkUtil.h"
+
 #include "network/cli/CliAdapter.h"
 // TODO: use Yojimbo::NetworkSimulator
 
-GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType) {
+constexpr f64 PING_INTERVAL_SEC = 0.1; // 100ms ping interval
+
+GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType), mLastPingTimeS(yojimbo_time()) {
 
     switch (mConnectionType) {
         case ClientConnectionType::STANDALONE:
             break;
         case ClientConnectionType::LAN:
             break;
-        case ClientConnectionType::DEDICATED_SERVER:
-            mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), yojimbo::Address("0.0.0.0"), mConnectionConfig, *mAdapter, 0.0);
+        case ClientConnectionType::DEDICATED_SERVER: {
+            yojimbo::Address externalAddress = NetworkUtil::getExternalIP(0);
+            mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), externalAddress, mConnectionConfig, *mAdapter, 0.0);
             break;
+        }
         default:
             assert(false);
     }
@@ -22,6 +28,9 @@ GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make
 GameClient::~GameClient() {
 
 }
+
+// To enable this we need to use a matcher service on a linux machine
+#define USE_SECURE_CONNECT 0 
 
 void GameClient::connect(const uint8_t privateKey[], const yojimbo::Address& address) {
 
@@ -36,8 +45,32 @@ void GameClient::connect(const uint8_t privateKey[], const yojimbo::Address& add
             // TODO: Client ID should come from a backend
             uint64_t clientId;
             yojimbo::random_bytes((uint8_t*)&clientId, 8);
-            // TODO: Secure connect
-            ((yojimbo::Client*)mClient.get())->InsecureConnect(privateKey, clientId, address);
+
+#if USE_SECURE_CONNECT == 1
+            // See yojimbo::secure_client.cpp
+            yojimbo::Matcher matcher(yojimbo::GetDefaultAllocator());
+
+            if (!matcher.Initialize())
+            {
+                printf("error: failed to initialize network matcher\n");
+                return;
+            }
+
+            matcher.RequestMatch(mConnectionConfig.protocolId, clientId, false);
+            if (matcher.GetMatchStatus() == yojimbo::MATCH_FAILED)
+            {
+                printf("\nRequest match failed. Is the matcher running? Please run \"premake5 matcher\" before you connect a secure client\n");
+                return;
+            }
+
+            uint8_t connectToken[yojimbo::ConnectTokenBytes];
+            matcher.GetConnectToken(connectToken);
+
+            ((yojimbo::Client*)mClient.get())->Connect(clientId, connectToken);//address);
+
+#else
+            ((yojimbo::Client*)mClient.get())->InsecureConnect(DEFAULT_PRIVATE_KEY, clientId, address);
+#endif
             break;
         }
         default:
@@ -55,6 +88,11 @@ void GameClient::update(double dt) {
     mClient->ReceivePackets();
 
     if (mClient->IsConnected()) {
+        f64 mCurrentTime = yojimbo_time();
+        if (mCurrentTime - mLastPingTimeS > PING_INTERVAL_SEC) {
+            sendPingMessage(mCurrentTime);
+        }
+
         processMessages();
 
     }
@@ -67,9 +105,31 @@ void GameClient::processMessages() {
     for (int i = 0; i < mConnectionConfig.numChannels; i++) {
         yojimbo::Message* message = mClient->ReceiveMessage(i);
         while (message != NULL) {
-            //ProcessMessage(message);
+            processMessage(message);
             mClient->ReleaseMessage(message);
             message = mClient->ReceiveMessage(i);
         }
     }
+}
+
+void GameClient::processMessage(yojimbo::Message* message)
+{
+    switch (message->GetType()) {
+        case (int)MessageTypes::PING:
+            processPingMessage((PingMessage*)message);
+            break;
+        default:
+            break;
+    }
+}
+
+void GameClient::sendPingMessage(f64 timestamp) {
+    mLastPingTimeS = timestamp;
+    PingMessage* pingMessage = (PingMessage*)mClient->CreateMessage(e_cast(MessageTypes::PING));
+    pingMessage->mTimeStamp = timestamp;
+    mClient->SendMessage(e_cast(MESSAGE_CHANNELS[pingMessage->GetType()]), pingMessage);
+}
+
+void GameClient::processPingMessage(PingMessage* message) {
+    mCurrentPingMS = (f32)((yojimbo_time() - message->mTimeStamp) * MS_PER_SECOND_D);
 }

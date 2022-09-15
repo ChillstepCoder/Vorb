@@ -7,7 +7,7 @@
 // =           MESSAGE TYPES                    =
 // ==============================================
 enum class MessageTypes {
-    TEST,
+    PING,
     ENTITY_CREATE,
     ENTITY_DESTROY,
     ENTITY_TRANSFORM,
@@ -19,7 +19,7 @@ enum class MessageTypes {
 // =           MESSAGE CHANNELS                 =
 // ==============================================
 constexpr GameChannel MESSAGE_CHANNELS[e_cast(MessageTypes::COUNT)] = {
-    GameChannel::RELIABLE,   // TEST,
+    GameChannel::UNRELIABLE,   // PING,
     GameChannel::RELIABLE,   // ENTITY_CREATE,
     GameChannel::RELIABLE,   // ENTITY_DESTROY,
     GameChannel::UNRELIABLE, // ENTITY_TRANSFORM,
@@ -34,16 +34,17 @@ struct MessageBase : public yojimbo::Message {
 // ==============================================
 // =           MESSAGE DEFINITIONS              =
 // ==============================================
-struct TestMessage : public MessageBase {
+struct PingMessage : public MessageBase {
 
     template <typename Stream> bool Serialize(Stream& stream) {
-        serialize_float(stream, mData);
+        serialize_double(stream, mTimeStamp);
         return true;
     }
 
     YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
 
-    f32 mData = 5.3649f;
+    f64 mTimeStamp;
+    // bool mServerOrigin;
 };
 
 struct EntityCreateMessage : public MessageBase {
@@ -103,7 +104,7 @@ struct EntityTransformMessage : public MessageBase {
 // =           MESSAGE FACTORY                  =
 // ==============================================
 YOJIMBO_MESSAGE_FACTORY_START(GameMessageFactory, (int)MessageTypes::COUNT);
-YOJIMBO_DECLARE_MESSAGE_TYPE((int)MessageTypes::TEST, TestMessage);
+YOJIMBO_DECLARE_MESSAGE_TYPE((int)MessageTypes::PING, PingMessage);
 YOJIMBO_DECLARE_MESSAGE_TYPE((int)MessageTypes::ENTITY_CREATE, EntityTransformMessage);
 YOJIMBO_DECLARE_MESSAGE_TYPE((int)MessageTypes::ENTITY_DESTROY, EntityTransformMessage);
 YOJIMBO_DECLARE_MESSAGE_TYPE((int)MessageTypes::ENTITY_TRANSFORM, EntityTransformMessage);

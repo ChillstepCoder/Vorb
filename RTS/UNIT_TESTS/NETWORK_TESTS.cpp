@@ -31,8 +31,12 @@ namespace UNITTESTS
                 InitializeYojimbo();
 
                 // Start server
-                yojimbo::Address address("127.0.0.1", 4321);
-                GameServer gameServer(address);
+                GameServer gameServer(ServerType::ONLINE);
+                yojimbo::Address address = gameServer.getServerAddress();
+
+                char buffer[256];
+                address.ToString(buffer, 256);
+                Logger::WriteMessage((std::string("Server address: ") + std::string(buffer) + "\n").c_str());
 
                 // Run server loop
                 std::thread serverThread([&]() {
@@ -49,6 +53,11 @@ namespace UNITTESTS
                 std::thread clientThread([address, &quitClient, &clientConnected]() {
                     GameClient client(ClientConnectionType::DEDICATED_SERVER);
                     client.connect(DEFAULT_PRIVATE_KEY, address);
+
+                    char buffer[256];
+                    address.ToString(buffer, 256);
+                    Logger::WriteMessage((std::string("Client address: ") + std::string(buffer) + "\n").c_str());
+
                     auto tStart = std::chrono::high_resolution_clock::now();
                     while (!quitClient) {
                         // Get DT in seconds
@@ -63,9 +72,14 @@ namespace UNITTESTS
                         }
                     }
                     client.disconnect();
+
+
+                    sprintf_s(buffer, "Client Ping %.2f\n", client.getCurrentPingMS());
+                    Logger::WriteMessage(buffer);
                     Logger::WriteMessage("Client shutting down\n");
                 });
                 Sleep(1000);
+
 
                 // End server
                 gameServer.shutdown();

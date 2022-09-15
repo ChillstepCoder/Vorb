@@ -222,6 +222,7 @@
     <ClCompile Include="src\math\Random.cpp" />
     <ClCompile Include="src\network\cli\CliAdapter.cpp" />
     <ClCompile Include="src\network\Cli\GameClient.cpp" />
+    <ClCompile Include="src\network\NetworkUtil.cpp" />
     <ClCompile Include="src\network\srv\GameServer.cpp" />
     <ClCompile Include="src\network\srv\SrvAdapter.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
@@ -417,6 +418,7 @@
     <ClInclude Include="src\network\GameConnectionConfig.h" />
     <ClInclude Include="src\network\Message.h" />
     <ClInclude Include="src\network\NetworkConst.h" />
+    <ClInclude Include="src\network\NetworkUtil.h" />
     <ClInclude Include="src\network\srv\GameServer.h" />
     <ClInclude Include="src\network\srv\SrvAdapter.h" />
     <ClInclude Include="src\options\DebugOptions.h" />

@@ -513,6 +513,9 @@
     <ClCompile Include="src\tile\TileResource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\network\NetworkUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1179,6 +1182,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileResource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\network\NetworkUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

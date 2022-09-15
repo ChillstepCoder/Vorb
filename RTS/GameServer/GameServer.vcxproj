@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\network\NetworkUtil.cpp" />
     <ClCompile Include="..\src\network\srv\GameServer.cpp" />
     <ClCompile Include="..\src\network\srv\SrvAdapter.cpp" />
     <ClCompile Include="main.cpp" />
@@ -27,6 +28,7 @@
     <ClInclude Include="..\src\network\GameConnectionConfig.h" />
     <ClInclude Include="..\src\network\Message.h" />
     <ClInclude Include="..\src\network\NetworkConst.h" />
+    <ClInclude Include="..\src\network\NetworkUtil.h" />
     <ClInclude Include="..\src\network\srv\GameServer.h" />
     <ClInclude Include="..\src\network\srv\SrvAdapter.h" />
   </ItemGroup>

@@ -3,6 +3,9 @@
 #include "GameServer.h"
 #include "SrvAdapter.h"
 
+#include "network/NetworkUtil.h"
+
+
 // TODO fix these things, figure out unicode
 void logSrv(const wchar_t* str) {
     //OutputDebugString(str);
@@ -15,25 +18,30 @@ void logSrv(const std::string& str) {
     wprintf(wstr.data());
 }
 
+#define SERVER_TICK_RATE_HZ 64.0f
 
 constexpr ui32 MAX_PLAYERS = 16;
 
-GameServer::GameServer(const yojimbo::Address& address) :
+GameServer::GameServer(ServerType serverType) :
     mAdapter(std::make_unique<SrvAdapter>(*this)),
-    mServer(yojimbo::GetDefaultAllocator(), DEFAULT_PRIVATE_KEY, address, mConnectionConfig, *mAdapter, 0.0) {
+    mServer(yojimbo::GetDefaultAllocator(), DEFAULT_PRIVATE_KEY, initServerAddress(serverType), mConnectionConfig, *mAdapter, 0.0),
+    mServerType(serverType) {
 
     // start the server
     mServer.Start(MAX_PLAYERS);
     if (!mServer.IsRunning()) {
-        throw std::runtime_error("Could not start server at port " + std::to_string(address.GetPort()));
+        char buffer[256];
+        mServerAddress.ToString(buffer, sizeof(buffer));
+        throw std::runtime_error("Could not start server " + std::string(buffer));
     }
+
+    // Cache this after starting
+    mServerAddress = mServer.GetAddress();
 
     // print the port we got in case we used port 0
     char buffer[256];
-    mServer.GetAddress().ToString(buffer, sizeof(buffer));
-    char buffer2[512];
-    sprintf_s(buffer2, "Server address is %S", buffer);
-    logSrv(buffer2);
+    mServerAddress.ToString(buffer, sizeof(buffer));
+    printf("Server initializing with address %s\n", buffer);
 
     // ... load game ...
 
@@ -46,7 +54,7 @@ GameServer::~GameServer() {
 int GameServer::start() {
 
     // Loop
-    float fixedDt = 1.0f / 60.0f;
+    constexpr float fixedDt = 1.0f / SERVER_TICK_RATE_HZ;
     mTime = yojimbo_time();
     mRunning = true;
 
@@ -114,16 +122,31 @@ void GameServer::processMessages() {
 
 void GameServer::processMessage(int clientIndex, yojimbo::Message* message) {
     switch (message->GetType()) {
-        case (int)MessageTypes::TEST:
-            processTestMessage(clientIndex, (TestMessage*)message);
+        case (int)MessageTypes::PING:
+            processPingMessage(clientIndex, (PingMessage*)message);
             break;
         default:
             break;
     }
 }
 
-void GameServer::processTestMessage(int clientIndex, TestMessage* message) {
-    char buffer[512];
-    sprintf_s(buffer, "Received test message from client %d %f", clientIndex, message->mData);
-    logSrv(buffer);
+void GameServer::processPingMessage(int clientIndex, PingMessage* message) {
+    // Reply with same message so client can compute ping
+    // TODO: Server also compute ping?
+    PingMessage* pingMessage = (PingMessage*)mServer.CreateMessage(clientIndex, e_cast(MessageTypes::PING));
+    pingMessage->mTimeStamp = message->mTimeStamp;
+    mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), pingMessage);
+}
+
+yojimbo::Address GameServer::initServerAddress(ServerType serverType)
+{
+    if (serverType == ServerType::DEV) {
+        return yojimbo::Address("127.0.0.1", DEFAULT_SERVER_PORT);
+    }
+    else if (serverType == ServerType::LAN) {
+        return yojimbo::Address(NetworkUtil::getLocalIP().c_str(), DEFAULT_SERVER_PORT);
+    }
+    else {
+        return NetworkUtil::getExternalIP(DEFAULT_SERVER_PORT);
+    }
 }

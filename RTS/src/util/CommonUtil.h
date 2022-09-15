@@ -26,5 +26,10 @@ inline bool IsEnabled<0>() {
     return false;
 }
 
+constexpr f32 MS_PER_SECOND = 1000.0f;
+constexpr f32 SECONDS_PER_MS = 0.001f;
+constexpr f64 MS_PER_SECOND_D = 1000.0;
+constexpr f64 SECONDS_PER_MS_D = 0.001;
+
 
 #define RUNTIME_INIT_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()
