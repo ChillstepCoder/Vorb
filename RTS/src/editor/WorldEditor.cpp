@@ -438,7 +438,7 @@ void WorldEditor::updateGrassEdit() {
             }
 
             // Notify grass to update
-            for (Chunk* chunk : mWorld.mActiveChunks) {
+            for (Chunk* chunk : mWorld.getActiveChunks()) {
                 if (chunk->mChunkRenderData.mGrassLod) {
                     chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize);
                 }

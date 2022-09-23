@@ -15,9 +15,6 @@ constexpr float SECONDS_PER_DAY = 1440.0f;
 constexpr float HOURS_PER_DAY = 24.0f;
 constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 
-struct b2BodyDef;
-class b2Body;
-class b2World;
 class Camera3D;
 class City;
 class ContactListener;
@@ -51,14 +48,13 @@ public:
 
 	static World& getInstance();
 
-	void initPostLoad(ChunkMesher& chunkMesher);
 	void updateTaskQueues();
 	void updateActiveDynamicTiles();
 
 	void tick(const f32v2& playerPos);
 	void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
-	void lazyInit();
+	void initPostLoad();
 
 	entt::entity createEntity(const f32v3& pos, const nString& typeName);
 	void createCityAt(const ui32v2& worldPos);
@@ -85,7 +81,7 @@ public:
     TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const;
 	StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
-    const f32v2& getLoadCenter() const { return mLoadCenter; }
+    const f32v2& getLoadCenter() const { return mWorldGrid.mLoadCenter; }
 
 	const CoarseNavNode* tryGetNavNodeAtWorldPos(const ui32v2& worldPos) const;
 
@@ -100,8 +96,6 @@ public:
 
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 
-	const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { return mTerrainTrees; }
-
     StructureManager& getStructureManager() { return *mStructureManager; }
     const StructureManager& getStructureManager() const { return *mStructureManager; }
 
@@ -110,7 +104,8 @@ public:
 
 
     size_t getNumVisibleChunks() const { return mVisibleChunks.size(); }
-    size_t getNumActiveChunks() const { return mActiveChunks.size(); }
+    size_t getNumActiveChunks() const { return mWorldGrid.getActiveChunks().size(); }
+	const std::vector<Chunk*>& getActiveChunks() const { return mWorldGrid.getActiveChunks(); }
     void enumVisibleChunks(std::function<void(const Chunk&)> func) const;
     void enumActiveChunks(std::function<void(const Chunk&)> func) const;
 	void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
@@ -134,17 +129,6 @@ private:
 
 	// TODO: Composition? WorldClock? idk
     void updateSun();
-    /// Returns true if should be removed
-	bool updateChunk(Chunk& chunk);
-	void onChunkDataReady(Chunk& chunk);
-	void onChunkAllNeighborsDataReady(Chunk& chunk);
-	void dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id);
-	void tryCreateNeighbors(Chunk& chunk);
-	void tryCreateNeighbor(Chunk& chunk, const ChunkID& id);
-	bool isChunkInLoadDistance(const ChunkID& chunkId, float addOffset = 0.0f);
-
-	void initChunk(Chunk& chunk);
-	void generateChunkAsync(Chunk& chunk);
 
 	// Editor functions
 	void editorInvalidateWorldGen();
@@ -152,9 +136,6 @@ private:
 
     // ECS
     std::unique_ptr<EntityComponentSystem> mEcs;
-
-	// Generation
-    std::unique_ptr<ChunkGenerator> mChunkGenerator;
 
 	// Factories
 	std::unique_ptr<EntityFactory> mEntityFactory;
@@ -177,11 +158,7 @@ private:
 	// Physics
 	std::unique_ptr<PhysicsWorld> mPhysWorld;
 
-	// Meshing
-	ChunkMesher* mChunkMesher = nullptr;
 
-	// Data
-    f32v2 mLoadCenter = f32v2(0.0f);
 	// Sunlight
 	float mSunHeight = 1.0f;
 	f32v3 mSunPosition = f32v3(0.0f, 0.0f, 1.0f);
@@ -189,11 +166,6 @@ private:
 	f32v3 mSunColor = f32v3(1.0f);
 	f32m4 mSkyRotMatrix = f32m4(1.0f);
 
-	bool mNeedsLazyInit = true;
-	bool mDirty = true;
-
 	WorldGrid mWorldGrid;
-    std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mVisibleChunks; // Client only
-	std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
 };

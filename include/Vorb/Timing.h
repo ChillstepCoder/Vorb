@@ -52,7 +52,7 @@ protected:
 // Used to synchronize update rates for objects with time
 class TickingTimer {
 public:
-    TickingTimer(f64 msPerTick, f64 maxMSPerFrame);
+    TickingTimer(f64 msPerTick, f64 maxMSPerFrame = 0.0);
 
     void setMsPerTick(f64 msPerTick) { mMsPerTick = msPerTick; }
     void startFrame();

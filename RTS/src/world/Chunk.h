@@ -74,6 +74,7 @@ class Chunk {
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;
 	friend class ChunkMesher;
+	friend class ChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavWorld;
 	friend class NavThread;

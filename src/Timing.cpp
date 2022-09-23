@@ -142,6 +142,8 @@ f32 FpsLimiter::endFrame() {
 TickingTimer::TickingTimer(f64 msPerTick, f64 maxMSPerFrame) :
     mMsPerTick(msPerTick),
     mMaxMsPerFrame(maxMSPerFrame) {
+    // If unspecified, we will never buffer ticks
+    if (mMaxMsPerFrame <= 0.0) mMaxMsPerFrame = mMsPerTick;
     // This will delay a tick at the start
     mCurrTime = std::chrono::high_resolution_clock::now();
 }

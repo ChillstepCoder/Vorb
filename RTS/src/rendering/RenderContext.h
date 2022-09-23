@@ -20,6 +20,7 @@ class ResourceManager;
 class ShadowRenderer;
 class Skybox;
 class TerrainRenderer;
+class TerrainMeshManager;
 class TextRenderer;
 class UIContext;
 class World;
@@ -57,6 +58,7 @@ public:
     static RenderContext& getInstance();
 
     void initPostLoad();
+    void updateMeshManagers(f32v2 playerPos, bool forceUpdate = false);
 
     void beginFrame(const Camera3D* camera, f32v3 playerPos); // Called automatically by beginFrame
     void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec);
@@ -100,6 +102,9 @@ private:
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
+
+    // Mesh management
+    std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

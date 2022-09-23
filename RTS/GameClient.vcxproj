@@ -259,6 +259,7 @@
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TextMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TileMeshBuilderMethods.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
@@ -308,6 +309,9 @@
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
+    <ClCompile Include="src\world\ChunkGrid.cpp" />
+    <ClCompile Include="src\world\cli\CliWorld.cpp" />
+    <ClCompile Include="src\world\HeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\World.cpp" />
@@ -459,6 +463,7 @@
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\MeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\TextMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TileMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
@@ -530,7 +535,10 @@
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
+    <ClInclude Include="src\world\ChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />
+    <ClInclude Include="src\world\cli\CliWorld.h" />
+    <ClInclude Include="src\world\HeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />

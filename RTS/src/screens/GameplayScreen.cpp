@@ -101,6 +101,9 @@ void GameplayScreen::build() {
     mResourceManager.gatherFiles("data");
 	mResourceManager.loadFiles();
 
+
+    mWorld.initPostLoad();
+
     {
         ScopedTimer timer("Render context init");
         mRenderContext.initPostLoad();
@@ -111,10 +114,6 @@ void GameplayScreen::build() {
         mResourceManager.writeDebugAtlas();
     }
 #endif
-    {
-        ScopedTimer timer("World init");
-        mWorld.initPostLoad(mRenderContext.getChunkRenderer().getMesher());
-    }
 
 	vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
 		// View toggle
@@ -315,6 +314,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
         while (Services::Threadpool::ref().getTasksSizeApprox()) {
             Sleep(1);
             update(gameTime);
+            mRenderContext.updateMeshManagers(mWorld.getLoadCenter(), true /*forceUpdate*/);
         }
         std::cout << "\n DONE\n";
     }

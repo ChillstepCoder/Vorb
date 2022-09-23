@@ -23,13 +23,11 @@ struct StaticLight {
 
 class ChunkMesher {
 public:
-    ChunkMesher();
-    ~ChunkMesher();
 
     // TODO: Actually update the physics mesh
-    void updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos);
+    static void updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos);
 
 private:
-    bool createMeshAndPhysicsAsync(const Chunk& chunk);
+    static bool createMeshAndPhysicsAsync(const Chunk& chunk);
 };
 

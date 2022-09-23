@@ -154,14 +154,6 @@
 //    }
 //}
 
-ChunkMesher::ChunkMesher() {
-
-}
-
-ChunkMesher::~ChunkMesher()
-{
-
-}
 
 void ChunkMesher::updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos) {
     UNUSED(cameraPos);
@@ -195,7 +187,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
     std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
     std::shared_ptr<BillboardMeshBuilder> billboardMeshBuilder = std::make_shared<BillboardMeshBuilder>();
 
-    Services::Threadpool::ref().addTask([this, &chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([&chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
 
         WorldGrid& worldGrid = World::getInstance().getWorldGrid();
         quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
@@ -248,7 +240,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
         chunk.decReadLockNeighbors4();
         chunk.decReadLock();
         chunk.decRefNeighbors4();
-    }, [this, &chunk, quadMeshBuilder, billboardMeshBuilder]() {
+    }, [&chunk, quadMeshBuilder, billboardMeshBuilder]() {
 
         ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
         TileContainerRenderData& tileRenderData = chunk.mTileContainer->getRenderData();

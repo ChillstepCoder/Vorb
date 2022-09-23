@@ -29,7 +29,7 @@ public:
     bool isGenerating() const { return mFlags & HEIGHTMAP_PATCH_FLAG_GENERATING; }
 
     ui32 mFlags = 0u;
-    ui32 mRefCount = 0u;
+    ui32 mRefCount = 0u; // TODO: Atomic?
     HeightmapPatchData* mHeightData = nullptr;
 };
 static_assert(sizeof(HeightmapPatch) == 16, "Keep small");

@@ -30,6 +30,7 @@
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/TerrainMeshManager.h"
 
 #include "structure/StructureManager.h"
 
@@ -201,6 +202,10 @@ RenderContext::RenderContext(const World& world, const f32v2& screenResolution, 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+    // Init mesh managers
+    // TODO: Avoid the const cast???
+    mTerrainMeshManager = std::make_unique<TerrainMeshManager>(const_cast<WorldGrid&>(mWorld.getWorldGrid()));
+
 }
 
 RenderContext::~RenderContext() {
@@ -278,7 +283,16 @@ void RenderContext::initPostLoad() {
 
 }
 
+void RenderContext::updateMeshManagers(f32v2 playerPos, bool forceUpdate /*= false*/)
+{
+    mTerrainMeshManager->update(playerPos, forceUpdate);
+}
+
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
+
+    // Update terrain meshes
+    updateMeshManagers(playerPos);
+
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
     // Misc renderData
@@ -422,7 +436,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Terrain
     if (!sDebugOptions.mDisableTerrain) {
-        mTerrainRenderer->renderTerrain(camera, mWorld.getTerrainQuadtrees());
+        mTerrainRenderer->renderTerrain(camera, mTerrainMeshManager->getTerrainQuadtrees());
     }
 
     if (!sDebugOptions.mHideCharacters) {
@@ -587,7 +601,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // === Transparency ===
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater) {
-        mTerrainRenderer->renderWater(camera, mWorld.getTerrainQuadtrees());
+        mTerrainRenderer->renderWater(camera, mTerrainMeshManager->getTerrainQuadtrees());
     }
 
     // Update active
@@ -760,7 +774,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Terrain LOD debug
     if (sDebugOptions.mDebugTerrainLod) {
-        for (auto&& terrainQuadtree : mWorld.getTerrainQuadtrees()) {
+        for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
             terrainQuadtree.renderDebug(camera);
         }
     }

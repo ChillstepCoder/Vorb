@@ -1289,7 +1289,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
         bfsBackIndex = 1;
 
         const ui32 startIndex = getIndexAtPos(ui32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
-        assert(bp.ownerArray[startIndex] == room.id);
+        assert(bp.ownerArray[startIndex] == room.id); // TODO: This crashes on building 12 or so! We have a bug!
         // Visual log
         if (visLog) {
             visLog->addFilledQuad(f32v3(room.offsetFromZero.x, room.offsetFromZero.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), ROOM_COLORS[room.id % MAX_ROOM_COLORS]);
