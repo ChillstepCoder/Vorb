@@ -2,7 +2,7 @@
 #include "CombatComponent.h"
 #include "PhysicsComponent.h"
 #include "SimpleSpriteComponent.h"
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "ecs/EntityComponentSystem.h"
 
 namespace Combat {
@@ -47,7 +47,7 @@ namespace Combat {
 		return false;
 	}
 
-	bool meleeAttackArc(entt::entity source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, World& world, EntityComponentSystem& ecs) {
+	bool meleeAttackArc(entt::entity source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, EntityComponentSystem& ecs) {
 		//bool wasHit = false;
 		//// TODO: Team filtering?
 		//ActorTypesMask includeMask = ~0;

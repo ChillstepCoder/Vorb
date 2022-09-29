@@ -2,17 +2,16 @@
 #include "ItemStockpile.h"
 
 #include "debugging/DebugRenderer.h"
-#include "world/World.h"
-#include "world/IWorldGrid.h"
+#include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/OwnershipComponent.h"
 
-ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
-    : mWorld(world)
-    , mAABB(aabb)
+ItemStockpile::ItemStockpile(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+    : mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
 
     assert(mAABB.width <= MAX_STOCKPILE_WIDTH && mAABB.depth <= MAX_STOCKPILE_WIDTH);
@@ -22,7 +21,6 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
     mFirstFreeSlot = UINT32_MAX;
 
     f32 maxZPos = FLT_MIN;
-    const IWorldGrid& worldGrid = world.getWorldGrid();
     // Set stockpile flags
 
     ui32 index = 0;
@@ -30,7 +28,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
         std::cout << "  ";
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             const ui32v2 worldPos(x, y);
-            TileRef ref(world.getTerrainTileHandleAtWorldPos(worldPos));
+            TileRef ref(sWorld->getTerrainTileHandleAtWorldPos(worldPos));
             bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid
@@ -41,7 +39,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
                 if (mFirstFreeSlot == UINT32_MAX) mFirstFreeSlot = index;
                 ++mTotalSlots;
                 ref.container->setTileFlag(ref.index, TileFlags::TILE_FLAG_IS_STOCKPILE);
-                f32 height = worldGrid.computeMaxHeightAtTile(worldPos);
+                f32 height = sHeightmapGrid->computeMaxHeightAtTile(worldPos);
                 if (height > maxZPos) maxZPos = height;
             }
             ++index;
@@ -54,7 +52,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
 
     // Ownership
     if (mOwnerEntity != INVALID_ENTITY) {
-        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        OwnershipComponent& ownershipCmp = sWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         ownershipCmp.mOwnedStockpiles.push_back(this);
     }
 }
@@ -73,7 +71,7 @@ ItemStockpile::~ItemStockpile() {
 
     // Clean up ownership
     if (mOwnerEntity != INVALID_ENTITY) {
-        OwnershipComponent& ownershipCmp = mWorld.getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
+        OwnershipComponent& ownershipCmp = sWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         for (size_t i = 0; i < ownershipCmp.mOwnedStockpiles.size(); ++i) {
             if (ownershipCmp.mOwnedStockpiles[i] == this) {
                 ownershipCmp.mOwnedStockpiles[i] = ownershipCmp.mOwnedStockpiles.back();
@@ -86,7 +84,7 @@ ItemStockpile::~ItemStockpile() {
 
 bool ItemStockpile::isVisible() const {
     for (const ChunkID& chunkId : mResidingChunks) {
-        if (mWorld.getWorldGrid().getChunk(chunkId).isVisible()) {
+        if (sWorld->getChunk(chunkId).isVisible()) {
             return true;
         }
     }

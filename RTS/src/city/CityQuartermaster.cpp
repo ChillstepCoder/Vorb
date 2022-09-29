@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "CityQuartermaster.h"
 #include "city/City.h"
-#include "world/World.h"
+#include "world/IWorld.h"
 
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
@@ -45,7 +45,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity) {
 
-    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
+    ItemStockpile* newStockpile = sWorld->getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
     
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
@@ -58,7 +58,7 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::en
 
 bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
 
-    ItemStockpile* newStockpile = mCity.mWorld.getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
+    ItemStockpile* newStockpile = sWorld->getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
 
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {

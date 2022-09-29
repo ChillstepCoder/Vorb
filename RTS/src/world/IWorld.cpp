@@ -11,35 +11,45 @@
 #include "ecs/EntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
 
+#include "item/ItemStockpileRegistry.h"
+#include "structure/StructureManager.h"
+
 #include "options/DebugOptions.h"
 
 #include "city/City.h"
+
+#include <Vorb/math/VectorMath.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/transform.hpp>
+
 IWorld* sWorld = nullptr;
 
-IWorld::IWorld(std::unique_ptr<IChunkGrid>&& chunkGrid, std::unique_ptr<IHeightmapGrid>&& heightmapGrid) : mChunkGrid(std::move(chunkGrid)), mHeightmapGrid(std::move(heightmapGrid))
+IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGrid(chunkGrid), mHeightmapGrid(heightmapGrid)
 {
     assert(mChunkGrid);
     assert(mHeightmapGrid);
 
-    mChunkGrid->init(*mHeightmapGrid);
     assert(!sWorld);
     sWorld = this;
-    sChunkGrid = mChunkGrid.get();
 
     // Cities
     mCities = std::make_unique<CityGraph>();
 
     // Structures
-    mStructureManager = std::make_unique<StructureManager>(*this);
+    mStructureManager = std::make_unique<StructureManager>();
 
     // Stockpiles
-    mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
+    mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();
 
 }
 
 IWorld::~IWorld()
 {
     sWorld = nullptr;
+    delete mChunkGrid;
+    sChunkGrid = nullptr;
+    delete mHeightmapGrid;
+    mHeightmapGrid = nullptr;
 }
 
 
@@ -67,6 +77,44 @@ void IWorld::setTimeOfDay(float time) {
 entt::entity IWorld::createEntity(const f32v3& pos, const nString& typeName) {
 
     return mEntityFactory->createEntity(*mPhysWorld, pos, typeName);
+}
+
+bool IWorld::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
+    TileHandle handle = getTerrainTileHandleAtWorldPos(worldPos);
+    if (handle.isValid()) {
+        return handle.tile->hasHarvestableResource(resource, outLayer);
+    }
+    return false;
+}
+
+//  TODO: No std function?
+void IWorld::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
+{
+    assert(IS_MAIN_THREAD());
+    // TODO: handle this without asserts
+    // Start at bottom left
+    ui32v2 worldPos;
+    ui32 spanX = CHUNK_WIDTH; // Logically these initial values wont actually be used, but need to please compiler
+    ui32 spanY = CHUNK_WIDTH;
+    for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.depth;) {
+        for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.depth;) {
+            TileHandle cornerHandle = getTerrainTileHandleAtWorldPos(worldPos);
+            assert(cornerHandle.container);
+            Chunk& chunk = sWorld->getChunk(ChunkID::fromWorldUI32v2(cornerHandle.getWorldPos2D()));
+            ui32v3 offset = cornerHandle.getContainerOffset();
+            const ui32 distFromRightEdge = CHUNK_WIDTH - offset.x;
+            const ui32 distFromTopEdge = CHUNK_WIDTH - offset.y;
+            spanX = std::min(distFromRightEdge, aabb.width);
+            spanY = std::min(distFromTopEdge, aabb.depth); // TODO: Prob clever way to move this up a loop
+            for (ui32 dy = 0; dy < spanY; ++dy) {
+                for (ui32 dx = 0; dx < spanX; ++dx) {
+                    func(chunk, chunk.getTileContainer()->getTileIndexFromXYZOffset(offset.x + dx, offset.y + dy, 0));
+                }
+            }
+            worldPos.x += spanX;
+        }
+        worldPos.y += spanY;
+    }
 }
 
 Chunk& IWorld::getChunkAtPosition(const f32v2& worldPos) {

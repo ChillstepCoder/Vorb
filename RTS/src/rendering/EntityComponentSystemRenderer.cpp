@@ -5,7 +5,7 @@
 #include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"
 #include "city/CityPlot.h"
-#include "world/World.h"
+#include "world/IWorld.h"
 
 #include "resources/ResourceManager.h"
 #include "rendering/CharacterRenderer.h"
@@ -19,10 +19,8 @@
 #include <Vorb/graphics/TextureCache.h>
 #include <Vorb/graphics/DepthState.h>
 
-EntityComponentSystemRenderer::EntityComponentSystemRenderer(const World& world)
-	: mSpriteBatch(std::make_unique<vg::SpriteBatch>())
-	, mSystem(world.getECS())
-	, mWorld(world) {
+EntityComponentSystemRenderer::EntityComponentSystemRenderer()
+	: mSpriteBatch(std::make_unique<vg::SpriteBatch>()) {
 	// TODO: Render thread assert?
 	vg::TextureCache& textureCache = Services::ResourceManager::ref().getTextureCache();
     mCircleTexture = textureCache.addTexture("data/textures/circle_dir.png");
@@ -34,7 +32,7 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
 
     int i = 0;
 
-    auto& ecs = mWorld.getECS();
+    auto& ecs = sWorld->getECS();
     ecs.mRegistry.view<OwnershipComponent>().each([ &i](auto& cmp) {
 		color4 color((i * 120) % 255, 255 - (i * 60) % 255, (i * 72) % 255, 255);
 		for (CityPlot* plot : cmp.mOwnedPlots) {
@@ -49,8 +47,8 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
 void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 frameAlpha, f32 elapsedSec) {
 	// TODO: This should not be using spritebatch. It should use a custom 
 	// renderer so that it can add screen depth like the world shaders do
-	
-    auto& ecs = mWorld.getECS();
+
+    auto& ecs = sWorld->getECS();
 	ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent, CharacterControlComponent>().each([&](auto& physCmp, auto& modelCmp, auto& motionCmp) {
 		// When in first person dont render player model
 		if (modelCmp.mIsPlayer && sDebugOptions.mCameraMode == CameraMode::FIRST_PERSON) {
@@ -63,7 +61,8 @@ void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& ren
 }
 
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {
-    auto& ecs = mWorld.getECS();
+
+    auto& ecs = sWorld->getECS();
 	// TODO: 3D
 	ecs.mRegistry.view<PhysicsComponent, DynamicLightComponent>().each([&](auto& physCmp, auto& lightCmp) {
 		assert(false);
@@ -76,7 +75,7 @@ void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D&
 void EntityComponentSystemRenderer::renderInteractUI(const Camera3D& camera) const {
     mSpriteBatch->begin();
 
-    auto& ecs = mWorld.getECS();
+    auto& ecs = sWorld->getECS();
 
 	const f32v2 fullSize(1.0f, 0.25f);
 	const f32v2 offset(fullSize.x * -0.5f, 1.0f);

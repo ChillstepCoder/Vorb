@@ -4,7 +4,7 @@
 #include "ecs/business/BusinessComponent.h"
 
 #include "city/City.h"
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/EmployeeComponent.h"
 
@@ -20,7 +20,7 @@ void CityBusinessManager::registerBusiness(entt::entity businessEntity)
 
 bool CityBusinessManager::tryEmploy(entt::entity personToEmploy)
 {
-    entt::registry& registry = mCity.mWorld.getECS().mRegistry;
+    entt::registry& registry = sWorld->getECS().mRegistry;
 
     entt::entity bestBusiness = INVALID_ENTITY;
     ui32 bestScore = 0;

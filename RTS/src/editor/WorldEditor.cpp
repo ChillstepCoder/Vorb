@@ -1,8 +1,8 @@
 #include "stdafx.h"
 #include "WorldEditor.h"
 
-#include "world/World.h"
-#include "world/IWorldGrid.h"
+#include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/Chunk.h"
 #include "rendering/ChunkGrassQuadtree.h"
@@ -427,7 +427,7 @@ void WorldEditor::updateGrassEdit() {
             for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                 for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
                     ChunkID id(worldPos);
-                    const TileContainer& tileContainer = *mWorld.getChunk(id).getTileContainer();
+                    const TileContainer& tileContainer = *sWorld->getChunk(id).getTileContainer();
                     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
                     const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
                     const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
@@ -438,7 +438,7 @@ void WorldEditor::updateGrassEdit() {
             }
 
             // Notify grass to update
-            for (Chunk* chunk : mWorld.getActiveChunks()) {
+            for (Chunk* chunk : sWorld->getActiveChunks()) {
                 if (chunk->mChunkRenderData.mGrassLod) {
                     chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize);
                 }
@@ -453,7 +453,7 @@ void WorldEditor::updateTileEdit() {
     static TileIndex prevTileIndex;
     if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
         ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
-        TileContainer& tileContainer = *mWorld.mWorldGrid.getChunk(chunkID).getTileContainer();
+        TileContainer& tileContainer = *sWorld->getChunk(chunkID).getTileContainer();
         TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)mHitResult.mPosition.x % CHUNK_WIDTH, (ui32)mHitResult.mPosition.y % CHUNK_WIDTH, 0);
         Tile tile;
         const TileData& data = TileRepository::getTileData(mSelectedTile);
@@ -465,7 +465,7 @@ void WorldEditor::updateTileEdit() {
             tileContainer.addTile(tileIndex, data);
 
             if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
-                f32 height = mWorld.mWorldGrid.computeMinHeightAtTile(mHitResult.mPosition) + mGroundTileOffset;
+                f32 height = sHeightmapGrid->computeMinHeightAtTile(mHitResult.mPosition) + mGroundTileOffset;
                 height = round(height);
                 if (height == 0.0f) height = 1.0f;
                 tileContainer.setTileGroundZPosition(tileIndex, height);
@@ -479,7 +479,7 @@ void WorldEditor::updateTileEdit() {
 
 void WorldEditor::updateEntityEdit() {
     if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
-        mWorld.createEntity(mHitResult.mPosition, mSelectedEntity);
+        sWorld->createEntity(mHitResult.mPosition, mSelectedEntity);
     }
 }
 
@@ -487,8 +487,8 @@ void WorldEditor::updateCityEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mCityEditState == CityEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(worldPos);
-        mWorld.createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
+        TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
+        sWorld->getCityGraph().createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
     }
 }
 
@@ -496,7 +496,7 @@ void WorldEditor::updateBuildingEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(worldPos);
+        TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
         ui32v2 createPos(floor(worldPos.x), floor(worldPos.y));
 
         // TODO: Unowned buildings?
@@ -506,12 +506,12 @@ void WorldEditor::updateBuildingEdit() {
         plot.isFree = false;
 
 
-        const f32 meanHeight = round(mWorld.getWorldGrid().computeMeanHeightAtAABB(plot.aabb));
+        const f32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(plot.aabb));
 
         BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
         std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::WEST, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
 
-        CityBuilder::debugBuildInstant(*bp, mWorld);
+        CityBuilder::debugBuildInstant(*bp);
     }
 }
 
@@ -535,12 +535,12 @@ void WorldEditor::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f
         }
         static_assert((int)TerrainEditState::COUNT == 3, "Update for new edit type");
         const f32 adjust = strength * mCurrentBrushSettings->brushStrength;
-        mWorld.mWorldGrid.adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
+        sHeightmapGrid->adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
 
         // Debug render
         f32v2 chunkPos = id.getWorldPos();
         f32v2 dims(0.5f);
-        f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, mWorld.mWorldGrid.getHeightAtVert(id, vertPos) + adjust);
+        f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, sHeightmapGrid->getHeightAtVert(id, vertPos) + adjust);
         DebugRenderer::drawWireQuad(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
     }
 }
@@ -551,10 +551,10 @@ void WorldEditor::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offset
     const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     if (random < strength) {
         if (mGrassEditState == GrassEditState::ADD) {
-            mWorld.mWorldGrid.getChunk(id).setGrassAt(tileIndex, 1);
+            sWorld->getChunk(id).setGrassAt(tileIndex, 1);
         }
         else {
-            mWorld.mWorldGrid.getChunk(id).setGrassAt(tileIndex, 0);
+            sWorld->getChunk(id).setGrassAt(tileIndex, 0);
         }
     }
 }

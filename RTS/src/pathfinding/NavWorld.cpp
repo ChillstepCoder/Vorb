@@ -30,7 +30,7 @@ inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapP
 }
 
 
-NavWorld::NavWorld(World& world) : mWorld(world)
+NavWorld::NavWorld()
 {
 
 }

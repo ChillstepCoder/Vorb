@@ -13,7 +13,7 @@ DECL_VG(class GBuffer);
 class UIContext
 {
 protected:
-    UIContext(World& world, const f32v2& screenResolution, SDL_Window* window);
+    UIContext(const f32v2& screenResolution, SDL_Window* window);
     ~UIContext();
 
 public:

@@ -5,7 +5,6 @@
 #include "city/CityDistrict.h"
 
 class City;
-class World;
 
 constexpr int DISTRICT_GRID_WIDTH = 9;
 constexpr int DISTRICT_GRID_SIZE = DISTRICT_GRID_WIDTH * DISTRICT_GRID_WIDTH;

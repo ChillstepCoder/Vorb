@@ -7,7 +7,7 @@
 
 #include "ecs/component/OwnershipComponent.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "resources/ResourceManager.h"
 #include "city/BuildingDescriptionRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
@@ -66,8 +66,7 @@ void BusinessComponent::addIdleWorker(entt::entity worker) {
     mIdleWorkers.push_back(worker);
 }
 
-BusinessSystem::BusinessSystem(World& world) :
-    mWorld(world)
+BusinessSystem::BusinessSystem()
 {
 }
 
@@ -78,7 +77,7 @@ enum TaskPriorities {
     TASK_PRIORITY_GATHER,
 };
 
-void updateGatherComponent(entt::registry& registry, World& world, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp, OwnershipComponent& ownershipCmp) {
+void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& gatherCmp, BusinessComponent& businessCmp, OwnershipComponent& ownershipCmp) {
     // Gathering currently requires a city
     assert(businessCmp.mCity);
     
@@ -87,7 +86,7 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
     if (gatherCmp.mScannedTiles.empty()) {
         for (auto&& ownedPlot : ownershipCmp.mOwnedPlots) {
             PreciseTimer timer;
-            gatherCmp.mScannedTiles = TileScanner::scanForResource(world, gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
+            gatherCmp.mScannedTiles = TileScanner::scanForResource(gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
             std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
             if (sDebugOptions.mShowPaths) {
                 for (auto&& it : gatherCmp.mScannedTiles) {
@@ -153,7 +152,7 @@ void updateGatherComponent(entt::registry& registry, World& world, BusinessGathe
     }
 }
 
-void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, BusinessComponent& businessCmp, entt::entity entity) {
+void updateBuildComponent(BusinessBuildComponent& buildCmp, BusinessComponent& businessCmp, entt::entity entity) {
     // Gathering currently requires a city
     assert(businessCmp.mCity);
 
@@ -166,7 +165,7 @@ void updateBuildComponent(World& world, BusinessBuildComponent& buildCmp, Busine
    
 }
 
-void updateBusiness(World& world, entt::registry& registry, entt::entity entity, BusinessComponent& cmp) {
+void updateBusiness(entt::registry& registry, entt::entity entity, BusinessComponent& cmp) {
 
     OwnershipComponent& ownershipCmp = registry.get<OwnershipComponent>(entity);
 
@@ -220,12 +219,12 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
     // TODO: More performant to iterate each of these as a list?
     BusinessGatherComponent* gatherCmp = registry.try_get<BusinessGatherComponent>(entity);
     if (gatherCmp) {
-        updateGatherComponent(registry, world, *gatherCmp, cmp, ownershipCmp);
+        updateGatherComponent(registry, *gatherCmp, cmp, ownershipCmp);
     }
 
     BusinessBuildComponent* buildCmp = registry.try_get<BusinessBuildComponent>(entity);
     if (buildCmp) {
-        updateBuildComponent(world, *buildCmp, cmp, entity);
+        updateBuildComponent(*buildCmp, cmp, entity);
     }
 
     BusinessRetailComponent* retailCmp = registry.try_get<BusinessRetailComponent>(entity);
@@ -237,7 +236,7 @@ void updateBusiness(World& world, entt::registry& registry, entt::entity entity,
     for (size_t i = 0; i < cmp.mActiveJobs.size();) {
         IBusinessJob& job = *cmp.mActiveJobs[i];
         // Update jobs and remove complete jobs
-        if (job.tick(world, registry, entity)) {
+        if (job.tick(registry, entity)) {
             cmp.mActiveJobs[i] = std::move(cmp.mActiveJobs.back());
             cmp.mActiveJobs.pop_back();
             // TODO: onComplete()?
@@ -257,7 +256,7 @@ void BusinessSystem::update(entt::registry& registry)
     // Update businesses
     for (auto entity : view) {
         auto& cmp = view.get<BusinessComponent>(entity);
-        updateBusiness(mWorld, registry, entity, cmp);
+        updateBusiness(registry, entity, cmp);
     }
 
 }

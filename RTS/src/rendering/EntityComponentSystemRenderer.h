@@ -10,12 +10,11 @@ class PhysicsSystem;
 class CharacterRenderer;
 class EntityComponentSystem;
 class MaterialRenderer;
-class World;
 class LightRenderer;
 
 class EntityComponentSystemRenderer {
 public:
-	EntityComponentSystemRenderer(const World& world);
+	EntityComponentSystemRenderer();
     void renderBusinessDebug(const Camera3D& camera) const;
 	void renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 frameAlpha, f32 elapsedSec);
 	void renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer);
@@ -25,7 +24,5 @@ private:
 	std::unique_ptr<vg::SpriteBatch> mSpriteBatch;
     vg::Texture mCircleTexture;
     vg::Texture mSquareTexture;
-	const EntityComponentSystem& mSystem;
-	const World& mWorld;
 };
 

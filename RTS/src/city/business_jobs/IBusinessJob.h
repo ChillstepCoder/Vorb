@@ -10,7 +10,7 @@ public:
 
     // ============= Abstract interface =============
     // Return true when task is done
-    virtual bool tick(World & world, entt::registry & registry, entt::entity business) = 0;
+    virtual bool tick(entt::registry & registry, entt::entity business) = 0;
     virtual float getProgress() const = 0;
     virtual IAgentTaskPtr tryMakeTaskForWorker(entt::entity worker) = 0;
 

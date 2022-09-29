@@ -29,7 +29,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     mLoadCenter = loadCenter;
 
     // TODO: This now asserts out of bounds
-    Chunk& playerChunk = sHeightmapGrid->getChunk(loadCenter);
+    Chunk& playerChunk = sChunkGrid->getChunk(loadCenter);
     if (playerChunk.isInvalid()) {
         initChunk(playerChunk);
     }
@@ -67,21 +67,21 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
     mActiveChunks.push_back(&chunk);
     const HeightmapPatchID& id = chunk.getHeightmapPatchID();
 
-    if (mHeightGrid.tryGetHeightDataAt(id)) {
+    if (sHeightmapGrid->tryGetHeightDataAt(id)) {
         chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-        const HeightmapPatchData* heightData = mHeightGrid.aquireHeightData(id);
+        const HeightmapPatchData* heightData = sHeightmapGrid->aquireHeightData(id);
         Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
-            ChunkGenerator::GenerateChunk(chunk, mHeightGrid, heightData);
+            ChunkGenerator::GenerateChunk(chunk, heightData);
             chunk.decRef();
         }, nullptr);
     }
     else {
         chunk.mState.store(e_cast(ChunkState::WAITING_HEIGHT));
-        mHeightGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
+        sHeightmapGrid->requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
             chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-            const HeightmapPatchData* heightData = mHeightGrid.getHeightDataAt(chunk.getHeightmapPatchID());
+            const HeightmapPatchData* heightData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID());
             Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
-                ChunkGenerator::GenerateChunk(chunk, mHeightGrid, heightData);
+                ChunkGenerator::GenerateChunk(chunk, heightData);
                 chunk.decRef();
             }, nullptr);
         });
@@ -130,7 +130,7 @@ bool IChunkGrid::tickChunk(Chunk& chunk) {
             }
             else {
                 if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
-                    chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk, mHeightGrid);
+                    chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk);
                 }
             }
         }

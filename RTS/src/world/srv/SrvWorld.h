@@ -5,8 +5,14 @@
 
 class SrvWorld : public IWorld, public SrvWorldInterface
 {
+    friend class WorldFactory;
+protected:
+    SrvWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
+
 public:
-    SrvWorld();
+
+    void initPostResourcesLoaded() override;
+
     //// Nav graph
     //std::unique_ptr<NavWorld> mNavWorld;
 
@@ -28,5 +34,6 @@ public:
 
     //// Physics
     //std::unique_ptr<PhysicsWorld> mPhysWorld;
+
 
 };

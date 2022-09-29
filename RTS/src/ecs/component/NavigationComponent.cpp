@@ -10,13 +10,13 @@
 
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "world/World.h"
+#include "world/IWorld.h"
 
 constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
 constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles
 //constexpr int QUADRANTS = 5; //bad name
 
-bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos, World& world) {
+bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
   
 	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - *(f32v2*)&pos;
     const float distance2 = glm::length2(offset);
@@ -32,7 +32,7 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	return false;
 }
 
-bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos, World& world) {
+bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 
 	if (!navCmp.mFinePath->finishedGenerating.load()) {
 		return false;
@@ -65,7 +65,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
     }*/
 
 	// Check for stuck on new tile/jump
-	const Tile* targetTile = world.getTileHandleAtWorldPos(nextTilePos).tile;
+	const Tile* targetTile = sWorld->getTileHandleAtWorldPos(nextTilePos).tile;
 	if (targetTile) {
         f32 baseZ = targetTile->getGroundZOffsetMainThread();
 		// TODO: Remove
@@ -212,13 +212,13 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestFinePathToPoint(NavigationComponent& navCmp, const TileHandle& start, const TileHandle& goal, World& world) {
+void requestFinePathToPoint(NavigationComponent& navCmp, const TileHandle& start, const TileHandle& goal) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
 		std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle, &world]() {
-			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), world.getWorldGrid(), 200);
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle]() {
+			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), sWorld->getHeightmapGrid(), 200);
 		});
 	}
 	else {
@@ -226,7 +226,7 @@ void requestFinePathToPoint(NavigationComponent& navCmp, const TileHandle& start
 	}
 }
 
-bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos, World& world) {
+bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 
     if (!navCmp.mCoarsePath->finishedGenerating.load()) {
         return false;
@@ -257,7 +257,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPos(pos), world.getTileHandleAtWorldPos(nextCoarseTilePos), world);
+		requestFinePathToPoint(navCmp, sWorld->getTileHandleAtWorldPos(pos), sWorld->getTileHandleAtWorldPos(nextCoarseTilePos));
 
     }
     else {
@@ -271,7 +271,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 		if (navCmp.mFinePath) {
 			bool requestNextPath = false;
 			assert(navCmp.mFinePath->finishedGenerating.load());
-			if (updateComponentFinePath(entity, navCmp, motionCmp, pos, world)) {
+			if (updateComponentFinePath(entity, navCmp, motionCmp, pos)) {
                 navCmp.mFinePath = nullptr;
 				requestNextPath = true;
 			}
@@ -292,7 +292,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
 					// TODO: REMOVE
 					DebugRenderer::drawFilledQuad(f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.8f), 10000);
-                    requestFinePathToPoint(navCmp, world.getTileHandleAtWorldPos(pos), world.getTileHandleAtWorldPos(nextCoarseTilePos), world);
+                    requestFinePathToPoint(navCmp, sWorld->getTileHandleAtWorldPos(pos), sWorld->getTileHandleAtWorldPos(nextCoarseTilePos));
                 }
 			}
 		}
@@ -302,13 +302,13 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
 	return false;
 }
 
-bool updateComponentCoarsePathBuilding(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos, World& world) {
+bool updateComponentCoarsePathBuilding(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, const f32v3& pos) {
 	assert(false);
 
 	return false;
 }
 
-void NavigationComponentSystem::update(entt::registry& registry, World& world) {
+void NavigationComponentSystem::update(entt::registry& registry) {
 	// Update components
     auto view = registry.view<NavigationComponent, PhysicsComponent, CharacterControlComponent>();
 
@@ -321,23 +321,23 @@ void NavigationComponentSystem::update(entt::registry& registry, World& world) {
 
         switch (navCmp.mNavigationType) {
             case NavigationType::FINE_PATH:
-				if (updateComponentFinePath(entity, navCmp, controlCmp, position, world)) {
+				if (updateComponentFinePath(entity, navCmp, controlCmp, position)) {
 					onPathingFinished(navCmp, controlCmp);
 				}
                 break;
             case NavigationType::COARSE_PATH:
 				// TODO: Are these checks pointless?
-				if (updateComponentCoarsePath(entity, navCmp, controlCmp, position, world)) {
+				if (updateComponentCoarsePath(entity, navCmp, controlCmp, position)) {
 					onPathingFinished(navCmp, controlCmp);
 				}
                 break;
             case NavigationType::SIMPLE_LINEAR:
-                if (updateComponentSimpleLinear(entity, navCmp, controlCmp, position, world)) {
+                if (updateComponentSimpleLinear(entity, navCmp, controlCmp, position)) {
                     onPathingFinished(navCmp, controlCmp);
 				}
                 break;
             case NavigationType::COARSE_BUILDING:
-                if (updateComponentCoarsePathBuilding(entity, navCmp, controlCmp, position, world)) {
+                if (updateComponentCoarsePathBuilding(entity, navCmp, controlCmp, position)) {
                     onPathingFinished(navCmp, controlCmp);
                 }
                 break;

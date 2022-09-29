@@ -10,7 +10,6 @@ class CityResidentManager;
 class CityBusinessManager;
 class CityQuartermaster;
 class BuildingDescriptionRepository;
-class World;
 
 //
 //enum class MarketStallType {
@@ -111,7 +110,7 @@ class City
     friend class CityDebugRenderer;
 
 public:
-    City(const ui32v2& cityCenterWorldPos, World& world);
+    City(const ui32v2& cityCenterWorldPos);
     ~City();
 
     VORB_NON_COPYABLE(City);
@@ -138,8 +137,6 @@ private:
 
     RoadID addRoad(CityRoad& road);
     BuildingID addCompletedBuilding(std::unique_ptr<Building> building);
-
-    World& mWorld;
 
     // TODO: CityGuardManager
     float mCurrentThreatLevel = 0.0f; //[0,100] 0-5 peaceful, 6-15 wary, 16-30 dangerous, 31-50 very dangerous, 51-70 extremely dangerous, 71+ critical danger
@@ -172,6 +169,7 @@ public:
 
     void update();
     City* getClosestCityToPoint(const f32v2& pos) const;
+    void createCityAt(const ui32v2& worldPos);
 
     std::vector<std::unique_ptr<City>> mNodes;
 };

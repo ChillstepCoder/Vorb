@@ -3,7 +3,6 @@
 
 #include "physics/CollisionShapes.h"
 
-class World;
 class EntityComponentSystem;
 class PhysicsWorld;
 class btRigidBody;
@@ -43,6 +42,4 @@ KEG_TYPE_DECL(PhysicsComponentDef);
 class PhysicsSystem {
 public:
 	void update(entt::registry& registry);
-
-	World& mWorld;
 };

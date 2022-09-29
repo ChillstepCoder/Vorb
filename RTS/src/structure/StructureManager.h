@@ -7,8 +7,6 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
-class World;
-
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -20,7 +18,7 @@ typedef std::vector<std::unique_ptr<Structure>> StructureList;
 class StructureManager
 {
 public:
-    StructureManager(World& world);
+    StructureManager();
     ~StructureManager() = default;
 
     Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight);
@@ -30,6 +28,5 @@ public:
 private:
     StructureList mStructures;
     bgi::rtree<std::pair<BBox, StructureID>, bgi::quadratic<16>> mSpatialLookup;
-    World& mWorld;
 };
 

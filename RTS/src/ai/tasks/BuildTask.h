@@ -33,10 +33,10 @@ public:
 
 private:
 
-    void pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent);
-    void pullItemFromStockpile(World& world, entt::registry& registry, entt::entity agent);
-    void pathToBlueprint(World& world, entt::registry& registry, entt::entity agent);
-    void buildTile(World& world, entt::registry& registry, entt::entity agent);
+    void pathToStockpileSlot(entt::registry& registry, entt::entity agent);
+    void pullItemFromStockpile(entt::registry& registry, entt::entity agent);
+    void pathToBlueprint(entt::registry& registry, entt::entity agent);
+    void buildTile(entt::registry& registry, entt::entity agent);
     void failTask();
 
     BuildTaskState mState = BuildTaskState::FULFILL_RESERVATIONS;

@@ -2,7 +2,6 @@
 #include "actor/ActorTypes.h"
 
 class EntityComponentSystem;
-class World;
 
 struct SoldierAIComponent {
 	int mState = 0;
@@ -11,5 +10,5 @@ struct SoldierAIComponent {
 
 class SoldierAIComponentTable {
 public:
-	void update(EntityComponentSystem& ecs, World& world);
+	void update(EntityComponentSystem& ecs);
 };

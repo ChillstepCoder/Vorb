@@ -3,11 +3,9 @@
 #include "item/ItemStockpile.h"
 #include "world/ChunkID.h"    
 
-class World;
-
 class ItemStockpileRegistry {
 public:
-    ItemStockpileRegistry(World& world);
+    ItemStockpileRegistry();
     ~ItemStockpileRegistry();
 
     ItemStockpile* tryCreateStockpileAt(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity);
@@ -21,7 +19,6 @@ private:
     void removeStockpileFromAreaLookup(ItemStockpile& stockpile);
 
     std::vector<std::unique_ptr<ItemStockpile>> mAllStockpiles;
-    World& mWorld;
 
     std::unordered_map<ChunkID, std::vector<ItemStockpile*>> mAreaLookup;
 };

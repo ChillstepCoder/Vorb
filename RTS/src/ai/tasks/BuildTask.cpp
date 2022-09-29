@@ -7,7 +7,7 @@
 #include "ecs/component/TimedTileInteractComponent.h"
 
 #include "resources/TileRepository.h"
-#include "world/World.h"
+#include "world/IWorld.h"
 
 #include "city/BuildingBlueprint.h"
 
@@ -28,7 +28,7 @@ BuildTask::~BuildTask()
 bool BuildTask::tick(entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case BuildTaskState::FULFILL_RESERVATIONS: {
-            pathToStockpileSlot(world, registry, agent);
+            pathToStockpileSlot(registry, agent);
             break;
         }
         case BuildTaskState::PATH_TO_STOCKPILE_SLOT:
@@ -36,10 +36,10 @@ bool BuildTask::tick(entt::registry& registry, entt::entity agent) {
             // Awaiting callback
             break;
         case BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT:
-            pullItemFromStockpile(world, registry, agent);
+            pullItemFromStockpile(registry, agent);
             break;
         case BuildTaskState::BUILD_TILE:
-            buildTile(world, registry, agent);
+            buildTile(registry, agent);
             break;
         case BuildTaskState::SUCCESS:
         case BuildTaskState::FAIL:
@@ -64,7 +64,7 @@ void BuildTask::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent) {
+void BuildTask::pathToStockpileSlot(entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
@@ -76,7 +76,7 @@ void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt
     f32v2 targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
     assert(false); // itemreservation should use TileHandle or most probably, TileRef
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPos(myPos), world.getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }
@@ -88,7 +88,7 @@ void BuildTask::pathToStockpileSlot(World& world, entt::registry& registry, entt
     mState = BuildTaskState::PATH_TO_STOCKPILE_SLOT;
 }
 
-void BuildTask::pullItemFromStockpile(World& world, entt::registry& registry, entt::entity agent) {
+void BuildTask::pullItemFromStockpile(entt::registry& registry, entt::entity agent) {
     // Drop resources into the stockpile
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
@@ -113,15 +113,15 @@ void BuildTask::pullItemFromStockpile(World& world, entt::registry& registry, en
 
     if (mSourceItems.empty()) {
         // We picked up everything, go to the blueprint
-        pathToBlueprint(world, registry, agent);
+        pathToBlueprint(registry, agent);
     }
     else {
         // Need to grab more items
-        pathToStockpileSlot(world, registry, agent);
+        pathToStockpileSlot(registry, agent);
     }
 }
 
-void BuildTask::pathToBlueprint(World& world, entt::registry& registry, entt::entity agent) {
+void BuildTask::pathToBlueprint(entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& navCmp = registry.get_or_emplace<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
@@ -142,7 +142,7 @@ void BuildTask::pathToBlueprint(World& world, entt::registry& registry, entt::en
     mState = BuildTaskState::PATH_TO_BLUEPRINT_TILE;
 }
 
-void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity agent) {
+void BuildTask::buildTile(entt::registry& registry, entt::entity agent) {
     ui16 tileIndex = mTargetTiles.back();
     mTargetTiles.pop_back();
 
@@ -175,7 +175,7 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
 
     // Build tile
     const ui32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
-    TileHandle tileHandle = world.getTerrainTileHandleAtWorldPos(worldPos);
+    TileHandle tileHandle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
     TileContainer& tiles = *tileHandle.getMutableContainer();
     tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
     //// Walls have higher base Z position
@@ -191,7 +191,7 @@ void BuildTask::buildTile(World& world, entt::registry& registry, entt::entity a
         mState = BuildTaskState::SUCCESS;
     }
     else {
-        pathToBlueprint(world, registry, agent);
+        pathToBlueprint(registry, agent);
     }
 }
 

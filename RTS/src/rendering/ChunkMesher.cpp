@@ -13,7 +13,7 @@
 #include "options/DebugOptions.h"
 #include <Vorb/graphics/SamplerState.h>
 
-#include "world/IWorldGrid.h"
+#include "world/IHeightmapGrid.h"
 
 // For grass noise
 #include "generation/WorldGeneration.h"
@@ -180,8 +180,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
     if (!tileRenderData.mStaticMesh) {
         tileRenderData.mStaticMesh = std::make_unique<Mesh>();
     }
-    IWorldGrid& worldGrid = World::getInstance().getWorldGrid();
-    const HeightmapPatchData* heightData = worldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
+    const HeightmapPatchData* heightData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID());
     
     // TODO: Different way than using two shared ptr? Does it matter?
     std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
@@ -189,7 +188,6 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
 
     Services::Threadpool::ref().addTask([&chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
 
-        IWorldGrid& worldGrid = World::getInstance().getWorldGrid();
         quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
         billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
 
@@ -220,7 +218,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
                             continue;
                         }
                         else {
-                            f32 zPosition = glm::max(groundZPosition, worldGrid.computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
+                            f32 zPosition = glm::max(groundZPosition, sHeightmapGrid->computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }

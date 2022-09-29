@@ -7,8 +7,8 @@
 
 #include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
-#include "world/World.h"
-#include "world/IWorldGrid.h"
+#include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 
 #include "resources/TileRepository.h"
 
@@ -170,7 +170,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-            Chunk& bottomChunk = World::getInstance().getWorldGrid().getChunk(ChunkID::fromWorldUI32v2(bottom.getWorldPos2D()));
+            Chunk& bottomChunk = sWorld->getChunk(ChunkID::fromWorldUI32v2(bottom.getWorldPos2D()));
 			neighbors[(int)NeighborIndex8::BOTTOM] = *bottom.tile;
 			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = *bottomLeft.tile;
@@ -188,7 +188,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            Chunk& topChunk = World::getInstance().getWorldGrid().getChunk(ChunkID::fromWorldUI32v2(top.getWorldPos2D()));
+            Chunk& topChunk = sWorld->getChunk(ChunkID::fromWorldUI32v2(top.getWorldPos2D()));
             neighbors[(int)NeighborIndex8::TOP] = *top.tile;
             TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;
@@ -209,19 +209,19 @@ void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]
 }
 
 Chunk& Chunk::getLeftNeighbor() const {
-    return World::getInstance().getWorldGrid().getChunk(mChunkId.id - 1);
+    return sWorld->getChunk(mChunkId.id - 1);
 }
 
 Chunk& Chunk::getTopNeighbor() const {
-    return World::getInstance().getWorldGrid().getChunk(mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
+    return sWorld->getChunk(mChunkId.id + WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 Chunk& Chunk::getRightNeighbor() const {
-    return World::getInstance().getWorldGrid().getChunk(mChunkId.id + 1);
+    return sWorld->getChunk(mChunkId.id + 1);
 }
 
 Chunk& Chunk::getBottomNeighbor() const {
-    return World::getInstance().getWorldGrid().getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
+    return sWorld->getChunk(mChunkId.id - WorldData::WORLD_WIDTH_CHUNKS);
 }
 
 void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
@@ -304,7 +304,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                     Tile& tile = mTileContainer->getMutableTileAt(tileIndex);
                     if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        mTileContainer->setTileGroundZPosition(tileIndex, World::getInstance().getWorldGrid().computeCenterHeightAtTile(f32v2(chunkRelPos) + mWorldPos));
+                        mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + mWorldPos));
                     }
                     else {
                         // What happens here? What happens when we cover up the tile?

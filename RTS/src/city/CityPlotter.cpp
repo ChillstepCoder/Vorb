@@ -3,7 +3,7 @@
 #include "CityPlotter.h"
 #include "city/City.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 
 #include "math/Random.h"
 
@@ -383,7 +383,7 @@ void CityPlotter::generateAlleysForUnroadedPlots(CityDistrict &district) {
 
 bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
     bool wasConflict = false;
-    mCity.mWorld.efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
+    sWorld->efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
         // TODO: Look into forcing branch prediction, we should rarely conflict
         const Tile& tile = chunk.getTileContainer()->getTileAt(tileIndex);
         if (tile.hasFlagMainThread(TileFlags::TILE_FLAG_IN_CITY)) {

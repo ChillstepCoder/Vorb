@@ -1,18 +1,17 @@
 #include "stdafx.h"
 #include "EntityComponentSystem.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 
 #include "camera/Camera3D.h"
 
 const float DEAD_COLOR_MULT = 0.4f;
 
-EntityComponentSystem::EntityComponentSystem(World& world)
-	: mPlayerControlSystem(world)
-	, mPersonAISystem(world)
-	, mBusinessSystem(world)
-	, mTimedTileInteractSystem(world)
-    , mWorld(world) {
+EntityComponentSystem::EntityComponentSystem()
+	: mPlayerControlSystem()
+	, mPersonAISystem()
+	, mBusinessSystem()
+	, mTimedTileInteractSystem() {
 }
 
 void EntityComponentSystem::tick() {
@@ -20,7 +19,7 @@ void EntityComponentSystem::tick() {
     mBusinessSystem.update(mRegistry);
     //mPlayerControlSystem.update(mRegistry, playerCamera);
 	mPersonAISystem.update(mRegistry);
-    mNavigationSystem.update(mRegistry, mWorld);
+    mNavigationSystem.update(mRegistry);
 	mCharacterControlSystem.update(mRegistry);
 	mTimedTileInteractSystem.update(mRegistry);
 	//mCorpseTable.update();

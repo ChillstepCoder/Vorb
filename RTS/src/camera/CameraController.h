@@ -11,8 +11,6 @@ DECL_VUI(struct MouseMotionEvent);
 DECL_VUI(struct MouseButtonEvent);
 DECL_VUI(struct KeyEvent);
 
-class World;
-
 #define TARGET_CAMERA_OFFSET_XY 1.0f
 const f32v2 TARGET_CAMERA_NORMALS_2D[4] = {
     glm::normalize(f32v2(0.0f, -TARGET_CAMERA_OFFSET_XY)), // Cartesian::DOWN
@@ -31,7 +29,7 @@ const f32v3 TARGET_CAMERA_NORMALS_3D[4] = {
 // TODO: Separate camera updator class per type with an abstract base class
 class CameraController {
 public:
-    CameraController(vui::GameWindow& window, const World& world);
+    CameraController(vui::GameWindow& window);
 
     void update(const vui::GameTime& gameTime, f32 frameAlpha);
 
@@ -64,7 +62,6 @@ private:
     CameraMode mCameraMode;
 
     vui::GameWindow& mWindow;
-    const World& mWorld;
     bool mWasMouseHidden = false;
     bool mIsMouseHidden = false;
 

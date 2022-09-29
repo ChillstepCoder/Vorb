@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GatherTask.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "ecs/component/NavigationComponent.h"
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/TimedTileInteractComponent.h"
@@ -42,7 +42,7 @@ GatherTask::~GatherTask() {
 bool GatherTask::tick(entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case GatherTaskState::INIT: {
-            init(world, registry, agent);
+            init(registry, agent);
             break;
         }
         case GatherTaskState::PATH_TO_RESOURCE:
@@ -50,7 +50,7 @@ bool GatherTask::tick(entt::registry& registry, entt::entity agent) {
             break;
         case GatherTaskState::BEGIN_HARVEST:
             // Make sure tile still has the resource
-            if (!beginHarvest(world, registry, agent)) {
+            if (!beginHarvest(registry, agent)) {
                 if (mState == GatherTaskState::FAIL) {
                     return true;
                 }
@@ -59,7 +59,7 @@ bool GatherTask::tick(entt::registry& registry, entt::entity agent) {
         case GatherTaskState::HARVESTING: {
             // Once the component is destroyed, we are done
             if (!registry.try_get<TimedTileInteractComponent>(agent)) {
-                pathToStockpileSlot(world, registry, agent);
+                pathToStockpileSlot(registry, agent);
             }
             break;
         }
@@ -67,7 +67,7 @@ bool GatherTask::tick(entt::registry& registry, entt::entity agent) {
             // Awaiting callback
             break;
         case GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT:
-            addItemToStockpile(world, registry, agent);
+            addItemToStockpile(registry, agent);
             break;
         case GatherTaskState::SUCCESS:
         case GatherTaskState::FAIL:
@@ -91,7 +91,7 @@ void GatherTask::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-void GatherTask::init(World& world, entt::registry& registry, entt::entity agent) {
+void GatherTask::init(entt::registry& registry, entt::entity agent) {
 
     NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
     // If we already have a path, wait for it to finish
@@ -101,12 +101,12 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
 
     // Make sure tile still has the resource
-    if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, nullptr)) {
+    if (!sWorld->tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, nullptr)) {
         failTask();
         return;
     }
 
-    navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPos(physCmp.getPosition()), mTileTarget, [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(physCmp.getPosition()), mTileTarget, [this](bool success) {
         if (success == true) {
             mState = GatherTaskState::BEGIN_HARVEST;
         }
@@ -118,11 +118,11 @@ void GatherTask::init(World& world, entt::registry& registry, entt::entity agent
     mState = GatherTaskState::PATH_TO_RESOURCE;
 }
 
-bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::entity agent)
+bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
 {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
-    if (!world.tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, &layer)) {
+    if (!sWorld->tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, &layer)) {
         failTask();
         return false;
     }
@@ -173,7 +173,7 @@ bool GatherTask::beginHarvest(World& world, entt::registry& registry, entt::enti
 }
 
 // TODO: HaulTask
-void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent) {
+void GatherTask::pathToStockpileSlot(entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
     assert(!navCmp.mCoarsePath);
@@ -185,7 +185,7 @@ void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, ent
     PathPoint targetPos(mItemPromise->getCurrentTargetWorldPosition());
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPos(myPos), world.getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
         if (success) {
             mState = GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT;
         }
@@ -197,7 +197,7 @@ void GatherTask::pathToStockpileSlot(World& world, entt::registry& registry, ent
     mState = GatherTaskState::PATH_TO_STOCKPILE_SLOT;
 }
 
-void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt::entity agent) {
+void GatherTask::addItemToStockpile(entt::registry& registry, entt::entity agent) {
     // Drop resources into the stockpile
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
@@ -233,7 +233,7 @@ void GatherTask::addItemToStockpile(World& world, entt::registry& registry, entt
             mItemPromise = nullptr;
         }
         else {
-            pathToStockpileSlot(world, registry, agent);
+            pathToStockpileSlot(registry, agent);
         }
     }
 }

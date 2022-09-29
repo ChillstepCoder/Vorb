@@ -1,7 +1,5 @@
 #pragma once
 
-
-class World;
 class Mesh;
 struct SubTexture;
 
@@ -23,7 +21,7 @@ class CloudManager
 {
 public:
     friend class CloudRenderer;
-    CloudManager(const World& world);
+    CloudManager();
     ~CloudManager();
 
     void init();
@@ -55,6 +53,5 @@ private:
 
     //mutable std::unique_ptr<TBOBillboardMesh> mCloudMesh;
     //std::vector<Cloud> mClouds;
-    const World& mWorld;
 };
 

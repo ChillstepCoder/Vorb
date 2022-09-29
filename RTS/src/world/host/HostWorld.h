@@ -10,8 +10,11 @@ class ItemStockpileRegistry;
 class CloudManager;
 
 class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterface {
+    friend class WorldFactory;
+protected:
+	HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
+
 public:
-	HostWorld();
 
 	void tick(const f32v2& playerPos, f32 elapsedSec);
 	// IWorld interface

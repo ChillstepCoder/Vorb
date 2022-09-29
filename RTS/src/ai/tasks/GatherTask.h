@@ -36,10 +36,10 @@ public:
 	static void operator delete(void* pointer, size_t size);
 
 protected:
-	void init(World& world, entt::registry& registry, entt::entity agent);
-	bool beginHarvest(World& world, entt::registry& registry, entt::entity agent);
-	void pathToStockpileSlot(World& world, entt::registry& registry, entt::entity agent);
-	void addItemToStockpile(World& world, entt::registry& registry, entt::entity agent);
+	void init(entt::registry& registry, entt::entity agent);
+	bool beginHarvest(entt::registry& registry, entt::entity agent);
+	void pathToStockpileSlot(entt::registry& registry, entt::entity agent);
+	void addItemToStockpile(entt::registry& registry, entt::entity agent);
 	void failTask();
 
     TileHandle mTileTarget;

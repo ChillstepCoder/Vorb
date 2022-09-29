@@ -47,6 +47,8 @@
 
 #include "options/DebugOptions.h"
 
+#include "world/WorldFactory.h"
+
 constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;
 
@@ -55,19 +57,9 @@ constexpr f64 TICK_RATE_MS = 40.0;
 GameplayScreen::GameplayScreen(App* const app)
 	: IAppScreen<App>(app), mResourceManager(Services::ResourceManager::ref()) {
 
-    switch (mClientType) {
-        case ClientType::CLIENT:
-            mWorld = std::make_unique<IWorld>(new CliWorld());
-            break;
-        case ClientType::HOST:
-            mWorld = std::make_unique<IWorld>(new HostWorld());
-            break;
-        default:
-            assert(false);
-            break;
-    }
+    mWorld = &WorldFactory::makeWorld(mClientType);
 
-    mRenderContext = std::make_unique<RenderContext>(RenderContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())));
+    mRenderContext = &RenderContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
     UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
@@ -85,7 +77,7 @@ GameplayScreen::GameplayScreen(App* const app)
 	mWorld->setTimeOfDay(12.0f);
 
     // TODO: FIX EVIL THINGS
-    mCameraController = std::make_unique<CameraController>(m_app->getWindow(), mWorld);
+    mCameraController = std::make_unique<CameraController>(m_app->getWindow());
 
 	// TODO: A battle is just a graph, with connections between units who are engaging. Engaging units do not need to do any area
 	// checks, simply distance checks to graph neighbors. When initiating combat, area checks can be stopped.
@@ -281,7 +273,7 @@ void GameplayScreen::build() {
                         // For interact must click in about the same spot
                         if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
                             f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                            WorldObjectQuery worldObjectQuery(mWorld, worldPos);
+                            WorldObjectQuery worldObjectQuery(worldPos);
                             if (worldObjectQuery.isValid()) {
                                 // Right click picking
                                 mSelectedTileHandle = worldObjectQuery.getTileHandle();
@@ -341,10 +333,10 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     updateTimeScaling(gameTime);
 
     switch (mClientType) {
-        case ClientType::CLIENT:
+        case WorldType::CLIENT:
             updateClient(gameTime);
             break;
-        case ClientType::HOST:
+        case WorldType::HOST:
             updateHost(gameTime);
             break;
         default:
@@ -382,7 +374,7 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime)
 
 void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
 
-    HostWorld* hostWorld = static_cast<HostWorld*>(mWorld.get());
+    HostWorld* hostWorld = static_cast<HostWorld*>(mWorld);
 
     // Update main thread update queues
     hostWorld->onFrameBegin();
@@ -516,27 +508,27 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
             assert(false);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
-            if (mClientType == ClientType::HOST) {
+            if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
             }
             else {
                 assert(false);
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
-            if (mClientType == ClientType::HOST) {
+            if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
             }
             else {
                 assert(false);
             }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
-            if (mClientType == ClientType::HOST) {
+            if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
             }
             else {
                 assert(false);

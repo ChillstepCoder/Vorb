@@ -8,7 +8,6 @@
 #include "PathFinder.h"
 #include "tile/TileHandle.h"
 
-class World;
 class TileContainer;
 class Building;
 
@@ -57,7 +56,7 @@ public:
     NavThread();
     ~NavThread();
 
-    void init(World& world);
+    void init();
 
     void mainThreadUpdate();
 
@@ -78,7 +77,6 @@ private:
     void navThreadFunc();
 
     std::unique_ptr<PathFinder> mPathFinder;
-    World* mWorld = nullptr;
     std::atomic_bool mStop = false;
     std::atomic_bool mRunningPathfind = false;
     std::unique_ptr<std::thread> mThread;

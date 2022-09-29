@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "resources/TileRepository.h"
 #include "TileScanner.h"
 
@@ -26,7 +26,7 @@ struct closedListNode {
     };
 };
 
-std::vector<TileHandle> TileScanner::scanForResource(World& world, TileResource resource, const ui32v2& startWorldPos, ui32 maxDistance, ui32 maxTilesToReturn /* = UINT32_MAX */) {
+std::vector<TileHandle> TileScanner::scanForResource(TileResource resource, const ui32v2& startWorldPos, ui32 maxDistance, ui32 maxTilesToReturn /* = UINT32_MAX */) {
     std::vector<TileHandle> tilesToReturn;
     if (maxTilesToReturn != UINT32_MAX) {
         tilesToReturn.reserve(maxTilesToReturn);
@@ -43,7 +43,7 @@ std::vector<TileHandle> TileScanner::scanForResource(World& world, TileResource 
     while (openList.size()) {
         BfsNode node = openList.front();
         openList.pop();
-        TileHandle tileHandle = world.getTerrainTileHandleAtWorldPos(node.pos);
+        TileHandle tileHandle = sWorld->getTerrainTileHandleAtWorldPos(node.pos);
         if (!tileHandle.isValid()) continue;
 
         // Reserved resources will not be counted

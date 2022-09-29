@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TileInteractPanel.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
@@ -64,7 +64,6 @@ UIInteractMenuResultFlags TileInteractPanel::updateAndRender()
 
 ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     ui32 resultFlags = 0;
-    World& world = mWorldObjectQuery.getWorld();
 
     switch (mState) {
         case UIInteractMenuState::SELECT_OBJECT: {
@@ -76,7 +75,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
 
             // Agents
             for (auto& it : mWorldObjectQuery.getEntities()) {
-                if (CharacterDetailsComponent* cmp = world.getECS().mRegistry.try_get<CharacterDetailsComponent>(it.second)) {
+                if (CharacterDetailsComponent* cmp = sWorld->getECS().mRegistry.try_get<CharacterDetailsComponent>(it.second)) {
                     ++optionCount;
                     nextState = UIInteractMenuState::SELECTED_AGENT;
                     if (ImGui::Button((std::to_string(i++) + " " + cmp->name).c_str(), sButtonSize)) {
@@ -107,7 +106,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             // Structure list
             ++optionCount;
             TileHandle handle = mWorldObjectQuery.getTileHandle();
-            Chunk& chunk = world.getChunk(handle.getChunkIDAtPos());
+            Chunk& chunk = sWorld->getChunk(handle.getChunkIDAtPos());
             StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
             if (structures.second) {
                 nextState = UIInteractMenuState::SELECTED_STRUCTURE_LIST;
@@ -184,7 +183,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
         case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
             TileHandle handle = mWorldObjectQuery.getTileHandle();
-            Chunk& chunk = world.getChunk(handle.getChunkIDAtPos());
+            Chunk& chunk = sWorld->getChunk(handle.getChunkIDAtPos());
             StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
             if (!structures.second) {
                 // If we got here the structure  was deleted while we had it selected

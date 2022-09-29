@@ -74,7 +74,7 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Release;$(LibraryPath)</LibraryPath>
@@ -311,6 +311,7 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
     <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\host\HostWorld.cpp" />
     <ClCompile Include="src\world\IChunkGrid.cpp" />
     <ClCompile Include="src\world\cli\CliWorldInterface.cpp" />
     <ClCompile Include="src\world\cli\CliWorld.cpp" />
@@ -320,7 +321,9 @@
     <ClCompile Include="src\world\Region.cpp" />
     <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
     <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp" />
-    <ClCompile Include="src\world\World.cpp" />
+    <ClCompile Include="src\world\srv\SrvWorld.cpp" />
+    <ClCompile Include="src\world\srv\SrvWorldInterface.cpp" />
+    <ClCompile Include="src\world\WorldFactory.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
@@ -430,6 +433,7 @@
     <ClInclude Include="src\network\NetworkUtil.h" />
     <ClInclude Include="src\network\srv\GameServer.h" />
     <ClInclude Include="src\network\srv\SrvAdapter.h" />
+    <ClInclude Include="src\network\WorldType.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\options\LightingOptions.h" />
     <ClInclude Include="src\particles\ParticleSystem.h" />
@@ -542,6 +546,7 @@
     <ClInclude Include="src\world\ChunkGenerator.h" />
     <ClInclude Include="src\world\cli\CliChunkGrid.h" />
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
+    <ClInclude Include="src\world\host\HostWorld.h" />
     <ClInclude Include="src\world\IChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />
     <ClInclude Include="src\world\cli\CliWorldInterface.h" />
@@ -552,9 +557,11 @@
     <ClInclude Include="src\world\Region.h" />
     <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
     <ClInclude Include="src\world\srv\SrvHeightmapGrid.h" />
+    <ClInclude Include="src\world\srv\SrvWorld.h" />
+    <ClInclude Include="src\world\srv\SrvWorldInterface.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
-    <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\WorldData.h" />
+    <ClInclude Include="src\world\WorldFactory.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>

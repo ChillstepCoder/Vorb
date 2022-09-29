@@ -92,7 +92,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     // Allocate the building
     //PreciseTimer timer;
-    Building* newBuilding = static_cast<Building*>(world.getStructureManager().makeNewStructure(StructureType::Building, aabb, floorHeight));
+    Building* newBuilding = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, aabb, floorHeight));
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
@@ -165,9 +165,9 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     }
 
     // Notify terrain data change (TODO: More precise, automatic)
-    world.dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
+    sWorld->dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
-    finishBuilding(*newBuilding, bp, world);
+    finishBuilding(*newBuilding, bp);
 
     std::cout << "DebugBuildInstant " << timer.stop() << " ms\n";
 
@@ -182,11 +182,10 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     CityRoad& road = *mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
-    IWorldGrid& grid = mWorld.getWorldGrid();
     ui32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
-            TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(xy);
+            TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(xy);
             handle.getMutableContainer()->addTile(handle.tileIndex, TileRepository::getTileData(tileId));
         }
     }

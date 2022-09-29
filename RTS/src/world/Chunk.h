@@ -68,7 +68,7 @@ enum class NeighborIndex8 {
 
 // TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
-	friend class World;
+	friend class IWorld;
 	friend class IWorldGrid;
 	friend class WorldEditor;
 	friend class ChunkGenerator;

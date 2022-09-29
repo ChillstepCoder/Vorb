@@ -9,24 +9,23 @@
 #include "CityQuartermaster.h"
 #include "BuildingDescriptionRepository.h"
 #include "ecs/business/BusinessRepository.h"
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "resources/ResourceManager.h"
 
 #include "ecs/EntityComponentSystem.h"
 
-City::City(const ui32v2& cityCenterWorldPos, World& world)
+City::City(const ui32v2& cityCenterWorldPos)
     : mCityCenterWorldPos(cityCenterWorldPos)
-    , mWorld(world)
     , mCityAABB(mCityCenterWorldPos.x, mCityCenterWorldPos.y, 6, 6)
 {
 
-    TileHandle root = mWorld.getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
-    mChunks.push_back(&mWorld.getWorldGrid().getChunk(root.getChunkIDAtPos()));
+    TileHandle root = sWorld->getTerrainTileHandleAtWorldPos(f32v2(cityCenterWorldPos));
+    mChunks.push_back(&sWorld->getChunk(root.getChunkIDAtPos()));
     // This belongs to us, don't go away
     // TODO: Need to release later
     mChunks.back()->incRef();
 
-    mCityBuilder = std::make_unique<CityBuilder>(*this, mWorld);
+    mCityBuilder = std::make_unique<CityBuilder>(*this);
     mCityPlotter = std::make_unique<CityPlotter>(*this);
     mCityPlanner = std::make_unique<CityPlanner>(*this);
     mCityResidentManager = std::make_unique<CityResidentManager>(*this);
@@ -37,7 +36,7 @@ City::City(const ui32v2& cityCenterWorldPos, World& world)
     //mCityQuartermaster->tryCreateCityStockpileAt(mCityAABB);
 
     // Add test business
-    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, mWorld.getECS().mRegistry, "lumbermill");
+    Services::ResourceManager::ref().getBusinessRepository().createBusinessEntity(this, sWorld->getECS().mRegistry, "lumbermill");
 }
 
 City::~City() {
@@ -221,4 +220,9 @@ City* CityGraph::getClosestCityToPoint(const f32v2& pos) const
         }
     }
     return closest;
+}
+
+void CityGraph::createCityAt(const ui32v2& worldPos) {
+    std::unique_ptr<City> newCity = std::make_unique<City>(worldPos);
+    mNodes.emplace_back(std::move(newCity));
 }

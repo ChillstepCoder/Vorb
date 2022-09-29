@@ -1,11 +1,10 @@
 #include "stdafx.h"
 #include "ItemStockpileRegistry.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 
 
-ItemStockpileRegistry::ItemStockpileRegistry(World& world)
-    : mWorld(world)
+ItemStockpileRegistry::ItemStockpileRegistry()
 {
 
 }
@@ -17,7 +16,7 @@ ItemStockpileRegistry::~ItemStockpileRegistry()
 
 ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity) {
     // Create new stockpile and leave unassigned (city ownership)
-    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(mWorld, aabb, ownershipMask, ownerEntity)).get();
+    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(aabb, ownershipMask, ownerEntity)).get();
     addStockpileToAreaLookup(*newStockpile);
     return newStockpile;
 }

@@ -9,7 +9,6 @@ struct ItemStack;
 class Material;
 class ItemStockpile;
 class Item;
-class IWorldGrid;
 class Camera3D;
 class Mesh;
 struct ItemStockpileRecord;
@@ -20,7 +19,7 @@ struct ItemStockpileRecord;
 class ItemRenderer
 {
 public:
-    ItemRenderer(const IWorldGrid& worldGrid, MaterialRenderer& materialRenderer);
+    ItemRenderer(MaterialRenderer& materialRenderer);
 
     void updateStockpileBillboardMesh(const ItemStockpile& stockpile) const;
     void updateStockpileQuadMesh(const ItemStockpile& stockpile) const;
@@ -32,7 +31,6 @@ private:
     void renderMesh(const ItemStockpile& stockpile, const QuadMesh& itemMesh, const Camera3D& camera) const;
     void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const;
 
-    const IWorldGrid& mWorldGrid;
     MaterialRenderer& mMaterialRenderer;
 
     const Material* mItemBillboardMaterial;

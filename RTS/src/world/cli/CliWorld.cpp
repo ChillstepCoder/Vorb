@@ -4,10 +4,6 @@
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 
-CliWorld::CliWorld() : IWorld(std::make_unique<IChunkGrid>(new CliChunkGrid), std::make_unique<IHeightmapGrid>(new CliHeightmapGrid))
-{
-}
-
 void CliWorld::onFrameBegin()
 {
     throw std::logic_error("The method or operation is not implemented.");

@@ -9,9 +9,8 @@
 
 #include "camera/Camera3D.h"
 
-ItemRenderer::ItemRenderer(const IWorldGrid& worldGrid, MaterialRenderer& materialRenderer) :
-    mMaterialRenderer(materialRenderer)
-    , mWorldGrid(worldGrid) {
+ItemRenderer::ItemRenderer(MaterialRenderer& materialRenderer) :
+    mMaterialRenderer(materialRenderer) {
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mItemMeshMaterial = materialManager.getMaterial("standard_tile");

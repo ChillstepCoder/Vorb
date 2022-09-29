@@ -3,7 +3,7 @@
 
 #include "rendering/QuadMesh.h"
 #include "world/Chunk.h"
-#include "world/IWorldGrid.h"
+#include "world/IHeightmapGrid.h"
 #include "camera/Camera3D.h"
 
 #include "options/DebugOptions.h"
@@ -39,7 +39,7 @@ constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(p
 };
 
 
-ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk, IWorldGrid& worldGrid) : mChunk(chunk), mWorldGrid(worldGrid), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
+ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
     mWorldPos = mChunk.getWorldPos();
     mChunk.incRef();
 }
@@ -93,7 +93,6 @@ void createGrassMesh(
     const Chunk& chunk,
     const ui32v2& tilePosStart,
     ui32 lod,
-    IWorldGrid& worldGrid,
     const HeightmapPatchData* heightData
 ) {
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];
@@ -143,7 +142,7 @@ void createGrassMesh(
                     rsize += -grassNoise * 0.4f;
                     const ui8 variantIndex = (ui8)((grassNoise + 1.0f) * SQ(NUM_GRASS_TYPES)) % NUM_GRASS_TYPES;
                     f32v2 truePos(tileWorldPos.x + xo, tileWorldPos.y + yo);
-                    const f32 zPos = worldGrid.computeHeightAtChunkOffset(heightData->data, chunk.getChunkID(), truePos);
+                    const f32 zPos = sHeightmapGrid->computeHeightAtChunkOffset(heightData->data, chunk.getChunkID(), truePos);
                     grassMesh.addBladeQuad(
                         f32v3(truePos.x, truePos.y, zPos), // TODO: new height
                         f32v2(bladeWidth, rsize),
@@ -170,15 +169,15 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     assert(!patch.isCrossfading() && !patch.isMeshDirty() && patch.isActive());
 
     const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-    if (const HeightmapPatchData* heightData = mWorldGrid.tryGetHeightDataAt(id)) {
+    if (const HeightmapPatchData* heightData = sHeightmapGrid->tryGetHeightDataAt(id)) {
         if (!hasAquired) {
-            mWorldGrid.aquireHeightData(id);
+            sHeightmapGrid->aquireHeightData(id);
         }
         // Instantly generate
         Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
             //PreciseTimer timer;
-            createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
+            createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData);
             mChunk.decRef();
             //std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
         }, [this, &patch, patchIndex]() {
@@ -192,12 +191,12 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
     else {
         assert(!hasAquired);
         // Wait for the terrain generator to generate our chunk
-        mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
-            const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(id);
+        sHeightmapGrid->requestHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id]() {
+            const HeightmapPatchData* heightData = sHeightmapGrid->getHeightDataAt(id);
             Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData](ThreadPoolWorkerData*) {
 
                 //PreciseTimer timer;
-                createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldGrid, heightData);
+                createGrassMesh(*mMeshes[patchIndex], mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData);
                 mChunk.decRef();
                 //std::cout << "GRASS: " << lod << " " << timer.stop() << std::endl;
             }, [this, &patch, patchIndex]() {
@@ -217,7 +216,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
     if (mMeshes[patchIndex]) {
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-        mWorldGrid.releaseHeightDataAt(id);
+        sHeightmapGrid->releaseHeightDataAt(id);
         mMeshes[patchIndex].reset();
     }
 }

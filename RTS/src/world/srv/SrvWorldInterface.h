@@ -18,8 +18,6 @@ public:
     const NavWorld& getNavWorld() const { return *mNavWorld; }
 
 protected:
-    void updateCities();
-
 
     // Stockpiles
     std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;

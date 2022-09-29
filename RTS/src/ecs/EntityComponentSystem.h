@@ -3,11 +3,9 @@
 
 class Camera3D;
 
-class World;
-
 class EntityComponentSystem {
 public:
-	EntityComponentSystem(World& world);
+	EntityComponentSystem();
 
 	void tick();
     void frameUpdate(const Camera3D& playerCamera);
@@ -42,5 +40,4 @@ public:
 
     entt::entity mPlayerEntity = entt::null;
     entt::registry mRegistry;
-	World& mWorld;
 };

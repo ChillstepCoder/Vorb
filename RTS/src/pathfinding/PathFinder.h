@@ -2,7 +2,6 @@
 
 #include "NavPath.h"
 
-class World;
 class NavWorld;
 class TileContainer;
 struct CoarseNavNode;

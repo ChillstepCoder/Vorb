@@ -5,6 +5,7 @@
 
 // TODO: MOVE
 #include "ecs/EntityComponentSystem.h"
+#include "network/WorldType.h"
 
 constexpr f64 MS_PER_GAME_TICK = 40.0;
 constexpr f64 MAX_MS_PER_FRAME = 80.0;
@@ -18,11 +19,6 @@ class TileInteractPanel;
 
 DECL_VUI(class InputDispatcher);
 
-
-enum class ClientType {
-	CLIENT,
-	HOST
-};
 
 class GameplayScreen : public vui::IAppScreen<App>
 {
@@ -43,7 +39,6 @@ public:
 
     virtual void draw(const vui::GameTime& gameTime) override;
 
-
 private:
 
 	void updateClient(const vui::GameTime& gameTime);
@@ -53,12 +48,12 @@ private:
     void updateTilePicking();
     void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
-	std::unique_ptr<IWorld> mWorld;
+	IWorld* mWorld = nullptr;
 
     // Rendering
     std::unique_ptr<CameraController> mCameraController;
 	ResourceManager& mResourceManager;
-	std::unique_ptr<RenderContext> mRenderContext;
+	RenderContext* mRenderContext = nullptr;
     float mFps = 0.0f;
 	
 	// Pathfinding test
@@ -75,7 +70,7 @@ private:
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 
-	ClientType mClientType;
+	WorldType mClientType;
 
 };
 

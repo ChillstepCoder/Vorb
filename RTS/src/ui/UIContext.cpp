@@ -6,12 +6,12 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "editor/WorldEditor.h"
 
 UIContext* UIContext::sInstance = nullptr;
 
-UIContext::UIContext(World& world, const f32v2& screenResolution, SDL_Window* window) : mScreenResolution(screenResolution), mWindow(window) {
+UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScreenResolution(screenResolution), mWindow(window) {
     mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>(screenResolution);
     mEditor = std::make_unique<WorldEditor>(screenResolution);
 }
@@ -54,9 +54,9 @@ void UIContext::closeTileInspectionPanel() {
     mTileInspectionPanel.reset();
 }
 
-UIContext& UIContext::initInstance(World& world, const f32v2& screenResolution, SDL_Window* window) {
+UIContext& UIContext::initInstance(const f32v2& screenResolution, SDL_Window* window) {
     if (!sInstance) {
-        sInstance = new UIContext(world, screenResolution, window);
+        sInstance = new UIContext(screenResolution, window);
     }
     return *sInstance;
 }

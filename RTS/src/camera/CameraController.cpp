@@ -3,7 +3,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "physics/PhysicsWorld.h"
 
 #include "ecs/EntityComponentSystem.h"
@@ -13,7 +13,7 @@
 
 const f32v2 CAMERA_ZOOM_RANGE = f32v2(1.0f, 1024.0f);
 
-CameraController::CameraController(vui::GameWindow& window, const World& world) : mWindow(window), mWorld(world) {
+CameraController::CameraController(vui::GameWindow& window) : mWindow(window) {
 
     mCamera.init((f32)window.getWidth() / window.getHeight());
     setCameraMode(sDebugOptions.mCameraMode);
@@ -62,7 +62,7 @@ void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
 
 void CameraController::setEntityFollow(entt::entity followEntity) {
     if (mEntityFollow == entt::null) {
-        auto& ecs = mWorld.getECS();
+        auto& ecs = sWorld->getECS();
         const auto& physCmp = ecs.mRegistry.get<PhysicsComponent>(followEntity);
         //mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
         mCamera.setPosition(physCmp.getPosition());
@@ -226,7 +226,7 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     mCamera.lookAt(followTargetPos);
 
     // Collision raycast
-    PhysHitResult result = mWorld.getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
+    PhysHitResult result = sWorld->getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
     // DebugRenderer::drawWireQuad(followTargetPos, f32v2(0.2f), COLOR_WHITE);
     if (result.didHit()) {
         mCamera.setPosition(result.mPosition);
@@ -333,7 +333,7 @@ f32v3 CameraController::getFollowTargetPos(f32 frameAlpha) {
         return mCamera.getPosition();
     }
 
-    const EntityComponentSystem& ecs = mWorld.getECS();
+    const EntityComponentSystem& ecs = sWorld->getECS();
     const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(mEntityFollow);
     return physCmp.getInterpolatedPosition();
 }

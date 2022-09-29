@@ -2,7 +2,6 @@
 
 class City;
 class Building;
-class World;
 
 #include "ai/tasks/IAgentTask.h"
 
@@ -52,9 +51,7 @@ struct PersonAIComponent {
 
 class PersonAISystem {
 public:
-    PersonAISystem(World& world);
+    PersonAISystem();
 
     void update(entt::registry& registry);
-
-    World& mWorld;
 };

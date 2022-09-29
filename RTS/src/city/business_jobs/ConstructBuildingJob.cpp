@@ -45,7 +45,7 @@ ConstructBuildingJob::~ConstructBuildingJob() {
 
 }
 
-bool ConstructBuildingJob::tick(World& world, entt::registry& registry, entt::entity business) {
+bool ConstructBuildingJob::tick(entt::registry& registry, entt::entity business) {
 
     if (isDone()) {
         return true;

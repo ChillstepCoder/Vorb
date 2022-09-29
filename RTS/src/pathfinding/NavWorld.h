@@ -47,7 +47,7 @@ struct TileEdgePointer {
 class NavWorld
 {
 public:
-    NavWorld(World& world);
+    NavWorld();
 
     // TODO: async
     void buildNavGraphForContainer(TileContainer& tileContainer, OUT CoarseNavGraph& navGraph, OUT NavGraphTileDataToCopy& navTileData);

@@ -1,13 +1,15 @@
 #pragma once
 
+#include "network/WorldType.h"
+
 class IWorld;
 
 class WorldFactory
 {
 public:
-    static std::unique_ptr<IWorld> makeClientWorld();
-    static std::unique_ptr<IWorld> makeHostWorld();
-    // TODO:
-    //static std::unique_ptr<IWorld> makeServerWorld();
+    static IWorld& makeWorld(WorldType type);
+private:
+    static IWorld& makeClientWorld();
+    static IWorld& makeHostWorld();
+    static IWorld& makeServerWorld();
 };
-

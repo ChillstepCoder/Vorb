@@ -10,10 +10,6 @@
 
 #include "generation/WorldGeneration.h"
 
-HostWorld::HostWorld() : IWorld(std::make_unique<IChunkGrid>(new SrvChunkGrid), std::make_unique<IHeightmapGrid>(new SrvHeightmapGrid)) {
-
-}
-
 void HostWorld::tick(const f32v2& playerPos, f32 elapsedSec) {
     assert(mEcs);
 

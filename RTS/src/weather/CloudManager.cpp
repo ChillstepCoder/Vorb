@@ -6,7 +6,7 @@
 
 #include "rendering/mesh/BillboardMeshBuilder.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
 
@@ -39,7 +39,7 @@ constexpr int CLOUD_DIR_UP    = 1;
 
 #define DEBUG_CLOUD_RENDER 0
 
-CloudManager::CloudManager(const World& world) : mWorld(world)
+CloudManager::CloudManager()
 {
 
 }
@@ -53,7 +53,7 @@ void CloudManager::init() {
 
     PreciseTimer timer;
 
-    const f32v2& loadCenter = mWorld.getLoadCenter();
+    const f32v2& loadCenter = sWorld->getLoadCenter();
     CloudID centerCloudID = CloudID(loadCenter);
     f32v2 centerPos(centerCloudID.pos.x * CLOUD_BATCH_WIDTH, centerCloudID.pos.y * CLOUD_BATCH_WIDTH);
 
@@ -157,7 +157,7 @@ void CloudManager::update() {
 }
 
 void CloudManager::updateGridShift() {
-    const f32v2& loadCenter = mWorld.getLoadCenter();
+    const f32v2& loadCenter = sWorld->getLoadCenter();
     i32v2 centerCloudPos = i32v2(floor(loadCenter.x / CLOUD_BATCH_WIDTH), floor(loadCenter.y / CLOUD_BATCH_WIDTH));
     i32v2 offsetSinceLastTick = centerCloudPos - mLastCenterPosition;
     if (offsetSinceLastTick.x != 0) {

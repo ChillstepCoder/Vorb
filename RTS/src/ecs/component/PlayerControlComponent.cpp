@@ -3,7 +3,7 @@
 
 #include "ecs/EntityComponentSystem.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "debugging/DebugRenderer.h"
 
 #include <Vorb/ui/InputDispatcher.h>
@@ -93,7 +93,7 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
 
 }
 
-PlayerControlSystem::PlayerControlSystem(World& world) : mWorld(world) {
+PlayerControlSystem::PlayerControlSystem() {
 
 }
 

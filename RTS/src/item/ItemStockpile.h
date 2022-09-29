@@ -10,7 +10,6 @@
 constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;
 
 class ItemStockpile;
-class World;
 
 struct ItemStockpileRenderData {
    // std::unique_ptr<TBOBillboardMesh> mBillboardMesh; // TODO: Custom allocator
@@ -50,7 +49,7 @@ class ItemStockpile
     friend class ItemStockpileRegistry;
     friend class RenderContext;
 public:
-    ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
@@ -80,9 +79,8 @@ private:
 
     std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui16 splitQuantity);
 
-    // TODO: MultiAABB
-    World& mWorld;
-
+        
+    // TODO: Multiaabb
     std::vector<ChunkID> mResidingChunks;
     std::vector<ItemStockpileTileStorage> mStorage;
     std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;

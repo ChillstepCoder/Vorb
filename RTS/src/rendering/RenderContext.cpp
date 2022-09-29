@@ -236,10 +236,10 @@ void RenderContext::initPostLoad() {
         mCharacterRenderer = std::make_unique<CharacterRenderer>();
         mChunkRenderer = std::make_unique<ChunkRenderer>(*mMaterialRenderer);
         mLightRenderer = std::make_unique<LightRenderer>(*mMaterialRenderer);
-        mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>(mWorld);
+        mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(*mMaterialRenderer, mScreenResolution);
         mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-        mItemRenderer = std::make_unique<ItemRenderer>(mWorld.getWorldGrid(), *mMaterialRenderer);
+        mItemRenderer = std::make_unique<ItemRenderer>(*mMaterialRenderer);
         mBuildingRenderer = std::make_unique<BuildingRenderer>(*mMaterialRenderer);
         mCloudRenderer = std::make_unique<CloudRenderer>(*mMaterialRenderer, mScreenResolution);
         mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(*mMaterialRenderer, mScreenResolution);
@@ -298,19 +298,19 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     // Misc renderData
     mRenderData.mainCamera = camera;
     mRenderData.cameraZAngle = camera->getZAngle();
-    mRenderData.skyRotMatrix = mWorld.getSkyRotMatrix();
+    mRenderData.skyRotMatrix = sWorld->getSkyRotMatrix();
     // Ubo data
     uboData.Time = sTotalTimeSeconds;
-    uboData.TimeOfDay = mWorld.getTimeOfDay();
+    uboData.TimeOfDay = sWorld->getTimeOfDay();
     uboData.PlayerPosWorld = playerPos;
 
     // Sun
-    const f32v3& sun = mWorld.getSunPosition();
+    const f32v3& sun = sWorld->getSunPosition();
     mShadowRenderer->beginFrame(*camera, sun);
 
     const f32v3 lastSunPosition = mShadowRenderer->getLastUpdatedSunPosition();
-    uboData.SunColor = mWorld.getSunColor();
-    uboData.SunHeight = mWorld.getSunHeight();
+    uboData.SunColor = sWorld->getSunColor();
+    uboData.SunHeight = sWorld->getSunHeight();
     uboData.SunPosition = lastSunPosition;
     uboData.SunPositionCameraRelative = glm::normalize(f32v3(camera->getViewMatrix() * f32v4(lastSunPosition.x, lastSunPosition.y, lastSunPosition.z, 1.0f)));
     uboData.SunRight = glm::normalize(glm::cross(lastSunPosition, f32v3(0.0f, 0.0f, 1.0f)));
@@ -478,7 +478,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(mWorld.getCloudManager(), camera, mShadowRenderer->getMaxDistance());
+                mCloudRenderer->renderCloudShadows(((CliWorldInterface*)sWorld)->getCloudManager(), camera, mShadowRenderer->getMaxDistance());
             }
 
             const CityGraph& cities = sWorld->getCityGraph();
@@ -595,7 +595,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render clouds without shadows
     if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(mWorld.getCloudManager(), &mTransparencyGBuffer, camera);
+        mCloudRenderer->renderClouds(((CliWorldInterface*)sWorld)->getCloudManager(), &mTransparencyGBuffer, camera);
     }
 
     // === Transparency ===
@@ -633,7 +633,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     renderUI(camera);
 
     // Debugging
-    UIContext::getInstance().updateAndRenderUI(mWorld.getECS(), mActiveGBuffer, camera.getAspectRatio());
+    UIContext::getInstance().updateAndRenderUI(sWorld->getECS(), mActiveGBuffer, camera.getAspectRatio());
 
     // Swap
     mPrevGBufferIndex = mActiveGBufferIndex;
@@ -737,7 +737,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Grass LOD debug
     if (sDebugOptions.mDebugGrassLod) {
-        mWorld.enumVisibleChunks([&camera](const Chunk& chunk) {
+        ((CliWorldInterface*)sWorld)->enumVisibleChunks([&camera](const Chunk& chunk) {
             if (chunk.isDataReady()) {
 
                 if (chunk.mChunkRenderData.mGrassLod) {
@@ -753,14 +753,16 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     if (sDebugOptions.mShowNavGraph) {
         if (!wasRenderingNavGraph) {
             ScopedTimer timer("Debug Draw Navgraph");
-            DebugRenderer::reserveLines(mWorld.getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+            DebugRenderer::reserveLines(sWorld->getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = TileContainerRepository::getTileContainers();
             for (auto&& container : containers) {
                 if (!container->isNavMeshing()) {
                     const f32v3 containerCenter = container->getWorldPosCenter3D();
                     const f32v3& cameraPos = camera.getPosition();
                     if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
-                        mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+                        // TODO: make this only work on host world
+                        assert(false);
+                        //mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                     }
                 }
             }
@@ -788,7 +790,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     }
 
     // Physics
-    mWorld.getPhysicsWorld().debugRender();
+    sWorld->getPhysicsWorld().debugRender();
 
     // Debug
     DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());

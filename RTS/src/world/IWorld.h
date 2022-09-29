@@ -15,9 +15,11 @@ class CityGraph;
 // Shared world interface
 class IWorld
 {
-public:
-    IWorld(std::unique_ptr<IChunkGrid>&& chunkGrid, std::unique_ptr<IHeightmapGrid>&& heightmapGrid);
+    friend class WorldFactory;
+protected:
+    IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
     virtual ~IWorld();
+public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
 
@@ -28,6 +30,9 @@ public:
     void tickShared(const f32v2& playerPos, f32 elapsedSec);
     void setTimeOfDay(f32 time);
     entt::entity createEntity(const f32v3& pos, const nString& typeName);
+    // Queries
+    bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
+    void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
 
     // Chunk Accessors
     Chunk& getChunkAtChunkCoords(const ui32v2& worldPos);
@@ -89,8 +94,8 @@ protected:
     void updateCities();
 
     // Server + Client shared data
-    std::unique_ptr<IChunkGrid> mChunkGrid = nullptr;
-    std::unique_ptr<IHeightmapGrid> mHeightmapGrid = nullptr;
+    IChunkGrid* mChunkGrid = nullptr;
+    IHeightmapGrid* mHeightmapGrid = nullptr;
 
     // ECS
     std::unique_ptr<EntityComponentSystem> mEcs;
@@ -113,4 +118,5 @@ protected:
     f32m4 mSkyRotMatrix = f32m4(1.0f);
 };
 
+// TODO: Make const and use const_cast to set it? Singleton?
 extern IWorld* sWorld;

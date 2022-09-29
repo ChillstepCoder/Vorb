@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "NavThread.h"
 
-#include "world/World.h"
+#include "world/srv/SrvWorldInterface.h"
+#include "world/IWorld.h"
 #include "NavWorld.h"
 
 #include "tile/TileContainer.h"
@@ -19,13 +20,13 @@ NavThread::~NavThread() {
     }
 }
 
-void NavThread::init(World& world) {
+void NavThread::init() {
     assert(!mThread); // No double init
-    mWorld = &world;
+    assert(sWorld);
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&NavThread::navThreadFunc, this);
     }
-    mPathFinder = std::make_unique<PathFinder>(world);
+    mPathFinder = std::make_unique<PathFinder>();
 }
 
 void NavThread::mainThreadUpdate() {
@@ -87,7 +88,7 @@ void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
 
         buildArgs.container = tileContainerPtr;
         assert(tileContainerPtr);
-        mWorld->getNavWorld().buildNavGraphForContainer(*tileContainerPtr, buildArgs.navGraph, buildArgs.navTileData);
+        ((SrvWorldInterface*)sWorld)->getNavWorld().buildNavGraphForContainer(*tileContainerPtr, buildArgs.navGraph, buildArgs.navTileData);
         tileContainerPtr->mIsNavmeshing.store(false);
         mNavGraphBuildTasks.enqueue(std::move(buildArgs));
     }, nullptr);
@@ -101,7 +102,7 @@ void NavThread::navThreadFunc() {
 
     NavThreadPathArgs pathArgs;
     NavThreadGraphBuildArgs graphArgs;
-    NavWorld& navWorld = mWorld->getNavWorld();
+    NavWorld& navWorld = ((SrvWorldInterface*)sWorld)->getNavWorld();
     while (!mStop.load()) {
         // TODO: Super tiny chance of race condition here in isRunning(). We could dequeue a single task and be considered not running very briefly even tho we are
         mRunningPathfind = false;

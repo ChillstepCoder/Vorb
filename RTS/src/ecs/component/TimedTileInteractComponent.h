@@ -2,8 +2,6 @@
 
 #include "world/Chunk.h"
 
-class World;
-
 struct TimedTileInteractComponent {
 
     TimedTileInteractComponent(TileHandle interactTile, ui8 tileLayer, ui32 ticksUntilFinished, ui16 repeatCount, std::function<void(bool, TimedTileInteractComponent&)> callback = nullptr);
@@ -22,9 +20,7 @@ struct TimedTileInteractComponent {
 
 class TimedTileInteractSystem {
 public:
-    TimedTileInteractSystem(World& world);
+    TimedTileInteractSystem();
 
     void update(entt::registry& registry);
-
-    World& mWorld;
 };

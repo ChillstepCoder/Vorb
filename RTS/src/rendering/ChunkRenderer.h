@@ -9,7 +9,6 @@ class Camera3D;
 class ChunkMesher;
 class TextureAtlas;
 class MaterialRenderer;
-class World;
 class Material;
 class IWorldGrid;
 

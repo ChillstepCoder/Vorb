@@ -4,7 +4,7 @@
 #include "world/srv/SrvChunkGrid.h"
 #include "world/srv/SrvHeightmapGrid.h"
 
-SrvWorld::SrvWorld() : IWorld(std::make_unique<IChunkGrid>(new SrvChunkGrid), std::make_unique<IHeightmapGrid>(new SrvHeightmapGrid))
+void SrvWorld::initPostResourcesLoaded()
 {
-
+    throw std::logic_error("The method or operation is not implemented.");
 }

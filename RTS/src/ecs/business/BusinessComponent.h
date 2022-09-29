@@ -14,7 +14,6 @@
 
 
 class City;
-class World;
 class ItemStockpile;
 class ConstructBuildingJob;
 struct BuildingBlueprint;
@@ -87,11 +86,10 @@ struct BusinessRetailComponent {
 
 class BusinessSystem {
 public:
-    BusinessSystem(World& world);
+    BusinessSystem();
 
     void update(entt::registry& registry);
     void debugRender(entt::registry& registry);
 
-    World& mWorld;
     int mFramesUntilUpdate = 0;
 };

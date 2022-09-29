@@ -42,7 +42,7 @@ public:
 	ConstructBuildingJob(BuildingBlueprint& blueprint);
 	~ConstructBuildingJob();
 
-	bool tick(World& world, entt::registry& registry, entt::entity business) override;
+	bool tick(entt::registry& registry, entt::entity business) override;
 
 	float getProgress() const override;
 

@@ -3,7 +3,6 @@
 #include "actor/ActorTypes.h"
 #include "pathfinding/PathFinder.h"
 
-class World;
 struct CharacterControlComponent;
 struct TileHandle;
 class TileContainer;
@@ -71,5 +70,5 @@ struct NavigationComponent {
 
 class NavigationComponentSystem {
 public:
-	void update(entt::registry& registry, World& world);
+	void update(entt::registry& registry);
 };
