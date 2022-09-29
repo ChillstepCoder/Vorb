@@ -62,9 +62,6 @@ public:
 
     const vg::Frustum& getFrustum() const { return mFrustum; }
 
-    //. TODO: THis is broken!
-    f32 getScale() const override { return 1.0f; }
-
 protected:
     void updateView();
 

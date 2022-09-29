@@ -106,7 +106,6 @@ btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     startTransform.setOrigin(btVector3(center.x, center.y, center.z));
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
 
-    // TODO: Store this properly instead of leaking it..
     btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
         HEIGHTMAP_VERT_WIDTH_PER_PATCH,
         HEIGHTMAP_VERT_WIDTH_PER_PATCH,
@@ -116,10 +115,23 @@ btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
         AXIS_Z,
         false /*flipQuadEdges*/
     );
+    
+    // Store so we dont leak
+    assert(mHeightShapes.find(patch.mHeightData) == mHeightShapes.end());
+    mHeightShapes[patch.mHeightData] = heightFieldShape;
+
     heightFieldShape->setUseDiamondSubdivision();
     heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));
 
     return createRigidBody(entt::null, 0.0f, startTransform, heightFieldShape).first;
+}
+
+void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
+    auto&& it = mHeightShapes.find(patch.mHeightData);
+    assert(it != mHeightShapes.end());
+    delete it->second;
+    mHeightShapes.erase(it);
+    deleteRigidBody(&patch.mHeightData->mCollider);
 }
 
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {

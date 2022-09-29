@@ -15,6 +15,7 @@ class btVector4;
 class btHeightfieldTerrainShape;
 class DynamicCharacterController;
 class StaticPhysicsMesh;
+struct HeightmapPatchData;
 
 #include "world/TerrainConstants.h"
 
@@ -44,6 +45,7 @@ public:
     void stepSimulation(f32 deltaTime);
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
+    void deleteHeightField(HeightmapPatch& patch);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
     void deleteRigidBody(btRigidBody** rigidBody);
     void addStaticMesh(StaticPhysicsMesh& staticMesh);
@@ -68,7 +70,8 @@ private:
     mutable bool mWasRenderingStatic = false;
     mutable bool mWasRenderingTerrain = false;
 
-    std::unique_ptr<btHeightfieldTerrainShape> mHeightShapes[WORLD_SIZE_HEIGHTMAP_PATCHES];
+    // For cleanup
+    std::map<HeightmapPatchData*, btHeightfieldTerrainShape*> mHeightShapes;
 
 };
 

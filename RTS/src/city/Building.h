@@ -1,7 +1,5 @@
 #pragma once
 
-// TODO: PCH?
-
 #include "CityConst.h"
 #include "city/BuildingGrammar.h"
 #include "item/ItemTradeManager.h"

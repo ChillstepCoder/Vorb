@@ -129,7 +129,8 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 break;
             }
             case MaterialUniform::ZoomScale:
-                glUniform1f(it.second, renderData.mainCamera->getScale());
+                // TODO: remove this
+                glUniform1f(it.second, 1.0f);
                 break;
             case MaterialUniform::CameraZAngle: {
                 const f32 zAngle = atan2f(renderData.mainCamera->getFrontVector().y, renderData.mainCamera->getFrontVector().x) + M_PIF;
