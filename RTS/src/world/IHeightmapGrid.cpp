@@ -245,6 +245,8 @@ void IHeightmapGrid::releaseHeightDataAt(HeightmapPatchID id) {
     assert(patch.isDone() && patch.mRefCount);
     --patch.mRefCount;
     if (patch.mRefCount == 0) {
+        // Remove the collider
+        sWorld->getPhysicsWorld().deleteRigidBody(&patch.mHeightData->mCollider);
         patch.mFlags = 0u;
         delete patch.mHeightData; // TODO: Recycle
         patch.mHeightData = nullptr;

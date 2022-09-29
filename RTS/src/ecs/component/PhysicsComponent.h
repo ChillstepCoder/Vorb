@@ -23,6 +23,7 @@ public:
 
 	void teleportToPoint(f32v3 worldPos);
 
+	// TODO: Delete rigidbody on component destroy
     btRigidBody* mRigidBody = nullptr; // TODO: Pack btRigidBody?
     f32 mZPosOffset = 0.0f; // Used for calculating the position at the bottom of the rigidbody
     BitFlags<PhysicsComponentFlag> mFlags;

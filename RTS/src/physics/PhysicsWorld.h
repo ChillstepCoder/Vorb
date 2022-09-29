@@ -45,6 +45,7 @@ public:
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+    void deleteRigidBody(btRigidBody** rigidBody);
     void addStaticMesh(StaticPhysicsMesh& staticMesh);
 
     void debugRender() const;
