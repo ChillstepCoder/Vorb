@@ -5,10 +5,8 @@
 #include "terrain/HeightmapPatch.h"
 #include "world/TerrainConstants.h"
 
-class World;
 class BitArray;
 class Camera3D;
-class World;
 struct TileHandle;
 
 enum class TerrainHeightSetDirection {
@@ -18,11 +16,11 @@ enum class TerrainHeightSetDirection {
 };
 
 
-class HeightmapGrid
+class IHeightmapGrid
 {
 public:
-    HeightmapGrid(World& world);
-    ~HeightmapGrid();
+    IHeightmapGrid();
+    ~IHeightmapGrid();
 
     void requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
 
@@ -80,6 +78,6 @@ private:
     std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
 
 protected:
-    World& mWorld;
 };
 
+extern IHeightmapGrid* sHeightmapGrid;

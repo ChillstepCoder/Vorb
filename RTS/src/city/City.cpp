@@ -202,3 +202,23 @@ BuildingID City::addCompletedBuilding(std::unique_ptr<Building> building) {
 
     return newBuilding.mId;
 }
+
+void CityGraph::update() {
+    for (auto&& it : mNodes) {
+        it->update();
+    }
+}
+
+City* CityGraph::getClosestCityToPoint(const f32v2& pos) const
+{
+    City* closest = nullptr;
+    f32 closestDist2 = FLT_MAX;
+    for (auto&& city : mNodes) {
+        const f32 dist2 = glm::length2(f32v2(city->getCityCenterWorldPos()) - pos);
+        if (dist2 < closestDist2) {
+            closestDist2 = dist2;
+            closest = city.get();
+        }
+    }
+    return closest;
+}

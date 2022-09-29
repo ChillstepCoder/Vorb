@@ -4,7 +4,7 @@
 
 #include "ecs/EntityComponentSystem.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "city/City.h"
 #include "city/CityBusinessManager.h"
 
@@ -16,11 +16,11 @@ PersonAISystem::PersonAISystem(World& world)
 }
 
 // TODO: Refactor
-inline void updateComponent(World& world, entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
+inline void updateComponent(entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
     if (!ai.mCity) {
-        ai.mCity = world.getClosestCityToPoint(physics.getPosition());
+        ai.mCity = sWorld->getClosestCityToPoint(physics.getPosition());
         // No city? No work!
         if (!ai.mCity) {
             return;
@@ -46,7 +46,7 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
     // TODO: OnInterrupt for each task, to evaluate if we should interrupt based on external changes
     if (employeeCmp) {
         if (employeeCmp->mCurrentTask) {
-            if (employeeCmp->mCurrentTask->tick(world, registry, entity)) {
+            if (employeeCmp->mCurrentTask->tick(registry, entity)) {
                 IAgentTaskPtr& nextTask = employeeCmp->mCurrentTask->getNextTask();
                 // This will free old task shared_ptr
                 employeeCmp->mCurrentTask = std::move(nextTask);
@@ -70,12 +70,11 @@ inline void updateComponent(World& world, entt::registry& registry, entt::entity
     // Needs
 }
 
-void PersonAISystem::update(entt::registry& registry)
-{
+void PersonAISystem::update(entt::registry& registry) {
     auto view = registry.view<PersonAIComponent, PhysicsComponent>();
     for (auto entity : view) {
         PersonAIComponent& ai = view.get<PersonAIComponent>(entity);
         PhysicsComponent& physics = view.get<PhysicsComponent>(entity);
-        updateComponent(mWorld, registry, entity, ai, physics);
+        updateComponent(registry, entity, ai, physics);
     }
 }

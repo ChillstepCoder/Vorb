@@ -25,7 +25,7 @@ BuildTask::~BuildTask()
     // TODO Check if this runs
 }
 
-bool BuildTask::tick(World& world, entt::registry& registry, entt::entity agent) {
+bool BuildTask::tick(entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case BuildTaskState::FULFILL_RESERVATIONS: {
             pathToStockpileSlot(world, registry, agent);

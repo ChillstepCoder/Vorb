@@ -13,7 +13,7 @@
 #include "options/DebugOptions.h"
 #include <Vorb/graphics/SamplerState.h>
 
-#include "world/WorldGrid.h"
+#include "world/IWorldGrid.h"
 
 // For grass noise
 #include "generation/WorldGeneration.h"
@@ -180,7 +180,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
     if (!tileRenderData.mStaticMesh) {
         tileRenderData.mStaticMesh = std::make_unique<Mesh>();
     }
-    WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+    IWorldGrid& worldGrid = World::getInstance().getWorldGrid();
     const HeightmapPatchData* heightData = worldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
     
     // TODO: Different way than using two shared ptr? Does it matter?
@@ -189,7 +189,7 @@ bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
 
     Services::Threadpool::ref().addTask([&chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
 
-        WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+        IWorldGrid& worldGrid = World::getInstance().getWorldGrid();
         quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
         billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
 

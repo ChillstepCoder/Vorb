@@ -4,12 +4,12 @@
 
 #include "world/HeightmapTerrainQuadtree.h"
 
-TerrainMeshManager::TerrainMeshManager(WorldGrid& worldGrid) {
+TerrainMeshManager::TerrainMeshManager() {
     // Init terrain
     mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
     for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
         f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
-        mTerrainTrees[i].init(pos, worldGrid);
+        mTerrainTrees[i].init(pos);
     }
 }
 

@@ -8,7 +8,7 @@
 #include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
 #include "world/World.h"
-#include "world/WorldGrid.h"
+#include "world/IWorldGrid.h"
 
 #include "resources/TileRepository.h"
 

@@ -1,8 +1,10 @@
 #include "stdafx.h"
 #include "PathFinder.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
+#include "world/srv/SrvWorldInterface.h"
 #include "resources/TileRepository.h"
+#include "world/IHeightmapGrid.h"
 
 #include "pathfinding/NavWorld.h"
 
@@ -25,8 +27,8 @@ constexpr ui8 INVALID_PARENT = 0;
 constexpr ui32 MAX_OPEN_LIST_SIZE = MAX_PATH_LENGTH * 8;
 
 constexpr ui32 DEBUG_DURATION = 200;
-inline f32v3 helperGet3DPoint(const WorldGrid& worldGrid, const f32v2& pos2d) {
-    return f32v3(pos2d.x, pos2d.y, worldGrid.tryComputeHeightAtPoint(pos2d));
+inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const f32v2& pos2d) {
+    return f32v3(pos2d.x, pos2d.y, heightGrid.tryComputeHeightAtPoint(pos2d));
 }
 
 struct CoarseAStarNode {
@@ -173,7 +175,7 @@ const i32v2 NODE_CORNER_NEIGHBORS[8] = {
 
 // TODO: https://gamedev.stackexchange.com/questions/94148/pathfinding-tile-based-navigation-mesh
 
-PathFinder::PathFinder(const World& world) : mWorld(world), mNavWorld(world.getNavWorld()) {
+PathFinder::PathFinder() : mNavWorld(((SrvWorldInterface*)sWorld)->getNavWorld()) {
 
 }
 
@@ -189,7 +191,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
     assert(IS_NAV_THREAD());
     // TODO: Profiling
     PreciseTimer timer;
-    const WorldGrid& worldGrid = mWorld.getWorldGrid();
+    const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
 
     // Make sure we can fit in nodes array
     // We pathfind backwards
@@ -370,7 +372,7 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     mOpenList.clear();
     mOpenList.reserve(MAXIMUM_COARSE_NODES);
     
-    const WorldGrid& worldGrid = mWorld.getWorldGrid();
+    const IWorldGrid& worldGrid = mWorld.getWorldGrid();
     const TileContainer* startContainer = start.container;
    
     // We pathfind backwards

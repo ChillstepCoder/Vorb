@@ -30,6 +30,8 @@ constexpr f32 MS_PER_SECOND = 1000.0f;
 constexpr f32 SECONDS_PER_MS = 0.001f;
 constexpr f64 MS_PER_SECOND_D = 1000.0;
 constexpr f64 SECONDS_PER_MS_D = 0.001;
-
+constexpr float SECONDS_PER_DAY = 1440.0f;
+constexpr float HOURS_PER_DAY = 24.0f;
+constexpr float SECONDS_PER_HOUR = SECONDS_PER_DAY / HOURS_PER_DAY;
 
 #define RUNTIME_INIT_FUNC(name) namespace { struct name { name (); } name##_ins; } name::name()

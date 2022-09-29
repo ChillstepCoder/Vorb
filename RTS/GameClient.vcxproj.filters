@@ -114,9 +114,6 @@
     <ClCompile Include="src\world\Region.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\WorldGrid.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\generation\WorldGeneration.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -519,13 +516,31 @@
     <ClCompile Include="src\world\cli\CliWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\ChunkGrid.cpp">
+    <ClCompile Include="src\world\IChunkGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\HeightmapGrid.cpp">
+    <ClCompile Include="src\world\IHeightmapGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\IWorld.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\cli\CliWorldInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\srv\SrvChunkGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\cli\CliChunkGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -642,9 +657,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\WorldGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\NoiseFunction.hpp">
@@ -1202,13 +1214,31 @@
     <ClInclude Include="src\world\cli\CliWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\ChunkGrid.h">
+    <ClInclude Include="src\world\IChunkGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\HeightmapGrid.h">
+    <ClInclude Include="src\world\IHeightmapGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\IWorld.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\cli\CliWorldInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\srv\SrvChunkGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\cli\CliChunkGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\cli\CliHeightmapGrid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\srv\SrvHeightmapGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

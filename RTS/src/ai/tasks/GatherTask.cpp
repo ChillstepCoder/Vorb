@@ -39,7 +39,7 @@ GatherTask::~GatherTask() {
     }
 }
 
-bool GatherTask::tick(World& world, entt::registry& registry, entt::entity agent) {
+bool GatherTask::tick(entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case GatherTaskState::INIT: {
             init(world, registry, agent);

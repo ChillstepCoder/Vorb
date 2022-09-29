@@ -13,12 +13,16 @@ class App;
 class CameraController;
 class ResourceManager;
 class RenderContext;
+class IWorld;
 class TileInteractPanel;
 
 DECL_VUI(class InputDispatcher);
 
-class World;
-class b2World;
+
+enum class ClientType {
+	CLIENT,
+	HOST
+};
 
 class GameplayScreen : public vui::IAppScreen<App>
 {
@@ -42,16 +46,19 @@ public:
 
 private:
 
+	void updateClient(const vui::GameTime& gameTime);
+	void updateHost(const vui::GameTime& gameTime);
+
     void updateTimeScaling(const vui::GameTime& gameTime);
     void updateTilePicking();
     void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
-	World& mWorld;
+	std::unique_ptr<IWorld> mWorld;
 
     // Rendering
     std::unique_ptr<CameraController> mCameraController;
 	ResourceManager& mResourceManager;
-    RenderContext& mRenderContext;
+	std::unique_ptr<RenderContext> mRenderContext;
     float mFps = 0.0f;
 	
 	// Pathfinding test
@@ -67,6 +74,8 @@ private:
 	f32v3 mRightClickPickPos = f32v3(FLT_MAX);
 
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
+
+	ClientType mClientType;
 
 };
 

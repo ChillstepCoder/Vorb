@@ -309,13 +309,18 @@
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\world\ChunkGenerator.cpp" />
-    <ClCompile Include="src\world\ChunkGrid.cpp" />
+    <ClCompile Include="src\world\cli\CliChunkGrid.cpp" />
+    <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\IChunkGrid.cpp" />
+    <ClCompile Include="src\world\cli\CliWorldInterface.cpp" />
     <ClCompile Include="src\world\cli\CliWorld.cpp" />
-    <ClCompile Include="src\world\HeightmapGrid.cpp" />
+    <ClCompile Include="src\world\IHeightmapGrid.cpp" />
     <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
+    <ClCompile Include="src\world\IWorld.cpp" />
     <ClCompile Include="src\world\Region.cpp" />
+    <ClCompile Include="src\world\srv\SrvChunkGrid.cpp" />
+    <ClCompile Include="src\world\srv\SrvHeightmapGrid.cpp" />
     <ClCompile Include="src\world\World.cpp" />
-    <ClCompile Include="src\world\WorldGrid.cpp" />
     <ClCompile Include="src\world\WorldObjectQuery.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
@@ -535,16 +540,21 @@
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
-    <ClInclude Include="src\world\ChunkGrid.h" />
+    <ClInclude Include="src\world\cli\CliChunkGrid.h" />
+    <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
+    <ClInclude Include="src\world\IChunkGrid.h" />
     <ClInclude Include="src\world\ChunkID.h" />
+    <ClInclude Include="src\world\cli\CliWorldInterface.h" />
     <ClInclude Include="src\world\cli\CliWorld.h" />
-    <ClInclude Include="src\world\HeightmapGrid.h" />
+    <ClInclude Include="src\world\IHeightmapGrid.h" />
     <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
+    <ClInclude Include="src\world\IWorld.h" />
     <ClInclude Include="src\world\Region.h" />
+    <ClInclude Include="src\world\srv\SrvChunkGrid.h" />
+    <ClInclude Include="src\world\srv\SrvHeightmapGrid.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
     <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\WorldData.h" />
-    <ClInclude Include="src\world\WorldGrid.h" />
     <ClInclude Include="src\world\WorldObjectQuery.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>

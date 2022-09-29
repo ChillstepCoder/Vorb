@@ -6,6 +6,13 @@
 
 #include "LinearMath/btVector3.h"
 
+inline f32 fastFloorf(f32 x) {
+    return FastConversion<f32, f32>::floor(x);
+}
+inline f32 fastCeilf(f32 x) {
+    return FastConversion<f32, f32>::ceiling(x);
+}
+
 namespace {
     inline f32v3 btVector3ToF32v3(const btVector3& v) {
         return f32v3(v.x(), v.y(), v.z());

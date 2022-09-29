@@ -9,7 +9,7 @@
 
 #include "camera/Camera3D.h"
 
-ItemRenderer::ItemRenderer(const WorldGrid& worldGrid, MaterialRenderer& materialRenderer) :
+ItemRenderer::ItemRenderer(const IWorldGrid& worldGrid, MaterialRenderer& materialRenderer) :
     mMaterialRenderer(materialRenderer)
     , mWorldGrid(worldGrid) {
 

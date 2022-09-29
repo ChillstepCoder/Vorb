@@ -9,10 +9,9 @@
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
 #include "pathfinding/NavPath.h"
-
-#include "world/WorldGrid.h" // For terrain height data
-
+#include "world/IHeightmapGrid.h"
 #include "rendering/RenderStats.h"
+#include "tile/TileHandle.h"
 
 #include "debugging/DebugMesh.h"
 
@@ -190,7 +189,7 @@ void DebugRenderer::drawAABB(const ui32AABB2& aabb, f32 height, color4 color, in
     drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);
 }
 
-void DebugRenderer::drawPath(const NavPath& path, color4 color, const WorldGrid& worldGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawPath(const NavPath& path, color4 color, const IHeightmapGrid& heightGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
     ui32 numPoints = path.getNumPoints();
     const LiteTileHandle* points = path.getPoints();
@@ -207,8 +206,8 @@ void DebugRenderer::drawPath(const NavPath& path, color4 color, const WorldGrid&
         const f32v3 pointB(points[i + 1].getWorldPosition());
 
         lines.emplace_back(
-            f32v3(pointA.x, pointA.y, worldGrid.tryComputeHeightAtPoint(pointA)),
-            f32v3(pointB.x, pointB.y, worldGrid.tryComputeHeightAtPoint(pointB)),
+            f32v3(pointA.x, pointA.y, heightGrid.tryComputeHeightAtPoint(pointA)),
+            f32v3(pointB.x, pointB.y, heightGrid.tryComputeHeightAtPoint(pointB)),
             color
         );
     }

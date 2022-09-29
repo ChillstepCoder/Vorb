@@ -4,7 +4,8 @@
 #include "camera/Camera3D.h"
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
-#include "world/WorldGrid.h"
+#include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 #include "rendering/mesh/MeshBuilder.h"
 
 #include "generation/WorldGeneration.h"
@@ -28,10 +29,9 @@ HeightmapTerrainQuadtree::~HeightmapTerrainQuadtree()
 
 }
 
-void HeightmapTerrainQuadtree::init(const f32v2& worldPosition, WorldGrid& worldGrid)
+void HeightmapTerrainQuadtree::init(const f32v2& worldPosition)
 {
     mWorldPos = worldPosition;
-    mWorldGrid = &worldGrid;
 }
 
 void HeightmapTerrainQuadtree::renderTerrain(const Camera3D& camera, const vg::GLProgram& program) const {
@@ -147,8 +147,7 @@ void createTerrainAndWaterMesh(
     MeshBuilder& waterBuilder,
     const ui32v2& posStart,
     ui32 lod,
-    const f32v2& worldPos,
-    const WorldGrid& worldGrid
+    const f32v2& worldPos
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
@@ -160,7 +159,7 @@ void createTerrainAndWaterMesh(
 
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     for (int y = 0; y < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++y) {
-        worldGrid.copyHeightRowToBuffer(paddedHeightfield[y], intWorldPos, TERRAIN_MESH_PADDED_WIDTH_VERTS);
+        sHeightmapGrid->copyHeightRowToBuffer(paddedHeightfield[y], intWorldPos, TERRAIN_MESH_PADDED_WIDTH_VERTS);
         intWorldPos.y += quadWidth;
     }
 
@@ -205,7 +204,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>(true);
         std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>(true);
 
-        if (hasAquired || mWorldGrid->tryAquirePaddedHeightDataAt(id)) {
+        if (hasAquired || sHeightmapGrid->tryAquirePaddedHeightDataAt(id)) {
             // Instantly generate
             Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder](ThreadPoolWorkerData*) {
                 createMeshes(*terrainBuilder, *waterBuilder, id, patchIndex, lod);
@@ -215,7 +214,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         }
         else {
             // Wait for the terrain generator to generate our chunk
-            mWorldGrid->requestPaddedHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder]() {
+            sHeightmapGrid->requestPaddedHeightDataGenAndAquireAt(id, [this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder]() {
                 Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, id, terrainBuilder, waterBuilder](ThreadPoolWorkerData*) {
                     createMeshes(*terrainBuilder, *waterBuilder, id, patchIndex, lod);
                 }, [this, &patch, patchIndex, terrainBuilder, waterBuilder]() {
@@ -239,7 +238,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
 }
 
 void HeightmapTerrainQuadtree::createMeshes(MeshBuilder& terrainMeshBuilder, MeshBuilder& waterMeshBuilder, const HeightmapPatchID id, ui32 patchIndex, ui32 lod) {
-    createTerrainAndWaterMesh(terrainMeshBuilder, waterMeshBuilder, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos, *mWorldGrid);
+    createTerrainAndWaterMesh(terrainMeshBuilder, waterMeshBuilder, PATCH_POSITIONS.data[patchIndex].xy, lod, mWorldPos);
 }
 
 void HeightmapTerrainQuadtree::finishMeshes(MeshBuilder* terrainMeshBuilder, MeshBuilder* waterMeshBuilder, ui32 patchIndex) {
@@ -259,7 +258,7 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
     // Only highest LOD has reference to heightmap
     if (QUADTREE_LOD_FROM_INDEX[patchIndex] == FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD) {
         const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
-        mWorldGrid->releasePaddedHeightDataAt(id);
+        sHeightmapGrid->releasePaddedHeightDataAt(id);
     }
     mTerrainMeshes[patchIndex].reset();
     mWaterMeshes[patchIndex].reset();

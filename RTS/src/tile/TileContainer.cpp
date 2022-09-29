@@ -6,7 +6,8 @@
 #include "rendering/mesh/Mesh.h"
 
 #include "resources/TileRepository.h"
-#include "world/World.h"
+#include "world/IWorld.h"
+#include "world/IChunkGrid.h"
 
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
@@ -302,11 +303,11 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
     // Potentially block or free terrain below
     // TODO: Proper intersection
     if (!mIsTerrain) {
-        WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+        IChunkGrid& chunkGrid = sWorld->getChunkGrid();
         const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
             const i32v2 worldPos2D(mRootPos.x + offset.x, mRootPos.y + offset.y);
-            Chunk& chunk = worldGrid.getChunk(ChunkID::fromWorldI32v2(worldPos2D));
+            Chunk& chunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(worldPos2D));
             if (chunk.isDataReady()) {
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
                 assert(chunkTileContainer);
@@ -329,7 +330,7 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
     mRenderData.mDirtyDynamicMesh = true;
     if (!mIsTerrain) {
-        WorldGrid& worldGrid = World::getInstance().getWorldGrid();
+        IChunkGrid& chunkGrid = sWorld->getChunkGrid();
         const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
             const i32v2 worldPos2D(mRootPos.x + offset.x, mRootPos.y + offset.y);
@@ -361,7 +362,7 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
             // Only exterior doors create a forced navmesh connection
             if (isExterior) {
                 const i32v2 chunkTilePos = CARTESIAN_NORMALS[e_cast(doorSide)] + worldPos2D;
-                Chunk& chunk = worldGrid.getChunk(ChunkID::fromWorldI32v2(chunkTilePos));
+                Chunk& chunk = chunkGrid.getChunk(ChunkID::fromWorldI32v2(chunkTilePos));
                 if (chunk.isDataReady()) {
                     TileContainer* chunkTileContainer = chunk.getTileContainer();
                     assert(chunkTileContainer);

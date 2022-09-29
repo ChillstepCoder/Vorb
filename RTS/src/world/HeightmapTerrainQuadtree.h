@@ -6,7 +6,6 @@
 #include "rendering/mesh/Mesh.h"
 
 class Camera3D;
-class WorldGrid;
 class MeshBuilder;
 DECL_VG(class GLProgram);
 
@@ -18,7 +17,7 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(HeightmapTerrainQuadtree);
 
-    void init(const f32v2& worldPosition, WorldGrid& worldGrid);
+    void init(const f32v2& worldPosition);
 
     void renderTerrain(const Camera3D& camera, const vg::GLProgram& program) const;
     void renderWater(const Camera3D& camera, const vg::GLProgram& program) const;
@@ -36,5 +35,4 @@ private:
     std::unique_ptr<Mesh> mTerrainMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     std::unique_ptr<Mesh> mWaterMeshes[FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, CHUNK_WIDTH>::NODE_COUNT];
     ui32 mRefCount = 0; // TODO: This is probably unneeded
-    WorldGrid* mWorldGrid = nullptr;
 };

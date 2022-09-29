@@ -15,7 +15,10 @@
 
 #include "camera/CameraController.h"
 
-#include "world/World.h"
+#include "ecs/EntityComponentSystem.h"
+#include "world/cli/CliWorld.h"
+#include "world/host/HostWorld.h"
+#include "world/IHeightmapGrid.h"
 #include "resources/TileRepository.h"
 #include "world/WorldObjectQuery.h"
 #include "util/Utils.h"
@@ -50,13 +53,23 @@ constexpr f64 TICK_RATE_MS = 40.0;
 #define WRITE_DEBUG_ATLAS 0
 
 GameplayScreen::GameplayScreen(App* const app)
-	: IAppScreen<App>(app),
-    mResourceManager(Services::ResourceManager::ref()),
-    mWorld(World::getInstance()),
-    mRenderContext(RenderContext::initInstance(mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())))
-{
+	: IAppScreen<App>(app), mResourceManager(Services::ResourceManager::ref()) {
 
-    UIContext::initInstance(mWorld, f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
+    switch (mClientType) {
+        case ClientType::CLIENT:
+            mWorld = std::make_unique<IWorld>(new CliWorld());
+            break;
+        case ClientType::HOST:
+            mWorld = std::make_unique<IWorld>(new HostWorld());
+            break;
+        default:
+            assert(false);
+            break;
+    }
+
+    mRenderContext = std::make_unique<RenderContext>(RenderContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle())));
+
+    UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 
     // TODO: Config
     sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
@@ -69,7 +82,7 @@ GameplayScreen::GameplayScreen(App* const app)
     }
 
 	// Starting time of day to noon
-	mWorld.setTimeOfDay(12.0f);
+	mWorld->setTimeOfDay(12.0f);
 
     // TODO: FIX EVIL THINGS
     mCameraController = std::make_unique<CameraController>(m_app->getWindow(), mWorld);
@@ -101,12 +114,11 @@ void GameplayScreen::build() {
     mResourceManager.gatherFiles("data");
 	mResourceManager.loadFiles();
 
-
-    mWorld.initPostLoad();
+    mWorld->initPostResourcesLoaded();
 
     {
         ScopedTimer timer("Render context init");
-        mRenderContext.initPostLoad();
+        mRenderContext->initPostLoad();
     }
 #if WRITE_DEBUG_ATLAS == 1
     {
@@ -132,10 +144,10 @@ void GameplayScreen::build() {
 			mResourceManager.reloadMaterials();
         }
         else if (event.keyCode == VKEY_N) {
-			mRenderContext.selectNextDebugShader();
+			mRenderContext->selectNextDebugShader();
         }
         else if (event.keyCode == VKEY_L) {
-			auto&& ecs = mWorld.getECS();
+            EntityComponentSystem& ecs = mWorld->getECS();
 			if (ecs.mRegistry.try_get<DynamicLightComponent>(ecs.mPlayerEntity)) {
 				// Remove existing
 				ecs.mRegistry.remove<DynamicLightComponent>(ecs.mPlayerEntity);
@@ -173,7 +185,7 @@ void GameplayScreen::build() {
         if (event.button == vorb::ui::MouseButton::RIGHT) {
             mRightClickTimer.start();
             const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-            PhysHitResult hitResult = mWorld.getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+            PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
             if (hitResult.didHit()) {
                 mRightClickPickPos = hitResult.mPosition;
             }
@@ -214,10 +226,10 @@ void GameplayScreen::build() {
 
 			if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
-                auto&& ecs = mWorld.getECS();
+                EntityComponentSystem& ecs = mWorld->getECS();
 				if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
                     const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                    PhysHitResult hitResult = mWorld.getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
 					if (hitResult.didHit()) {
                         phys->teleportToPoint(hitResult.mPosition);
 					}
@@ -264,7 +276,7 @@ void GameplayScreen::build() {
 				}
                 else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                     const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                    PhysHitResult hitResult = mWorld.getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
                     if (hitResult.didHit()) {
                         // For interact must click in about the same spot
                         if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
@@ -294,9 +306,9 @@ void GameplayScreen::build() {
 
     // Add player
     f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-    mWorld.getWorldGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
-    auto&& ecs = mWorld.getECS();
-    ecs.mPlayerEntity = mWorld.createEntity(playerPos, "player");
+    mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
+    EntityComponentSystem& ecs = mWorld->getECS();
+    ecs.mPlayerEntity = mWorld->createEntity(playerPos, "player");
     assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
 
     mCameraController->setEntityFollow(ecs.mPlayerEntity);
@@ -314,7 +326,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
         while (Services::Threadpool::ref().getTasksSizeApprox()) {
             Sleep(1);
             update(gameTime);
-            mRenderContext.updateMeshManagers(mWorld.getLoadCenter(), true /*forceUpdate*/);
+            mRenderContext->updateMeshManagers(sWorld->getLoadCenter(), true /*forceUpdate*/);
         }
         std::cout << "\n DONE\n";
     }
@@ -325,35 +337,23 @@ void GameplayScreen::onExit(const vui::GameTime& gameTime) {
 
 void GameplayScreen::update(const vui::GameTime& gameTime) {
 
-	mGameTimer.startFrame();
-
+    mGameTimer.startFrame();
     updateTimeScaling(gameTime);
 
-    // Update main thread update queues
-    mWorld.updateTaskQueues();
-    mWorld.updateActiveDynamicTiles();
-
-    // Update the world with fixed timestep
-    int ticks = 0;
-    auto&& ecs = mWorld.getECS();
-	while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
-
-        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-        f32v3 position = playerPhysCmp.getPosition();
-        mWorld.tick(position);
-
-	}
-
-    // Update editors
-    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
-
-
-	updateTilePicking();
-    mWorld.frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
+    switch (mClientType) {
+        case ClientType::CLIENT:
+            updateClient(gameTime);
+            break;
+        case ClientType::HOST:
+            updateHost(gameTime);
+            break;
+        default:
+            assert(false);
+            break;
+    }
 
     // TODO: Actual usage of deltatime?
     mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
-
 }
 
 void GameplayScreen::draw(const vui::GameTime& gameTime) {
@@ -364,14 +364,48 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
     sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
     mFps = sFps;
 
-    auto&& ecs = mWorld.getECS();
+    EntityComponentSystem& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
     const f32v3 playerPos = cmp.getInterpolatedPosition();
-	mRenderContext.renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
+	mRenderContext->renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
 
 	tryUpdateAndRenderInteractPopup(playerPos);
 
-	mRenderContext.endFrame();
+	mRenderContext->endFrame();
+
+}
+
+void GameplayScreen::updateClient(const vui::GameTime& gameTime)
+{
+    assert(false);
+}
+
+void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
+
+    HostWorld* hostWorld = static_cast<HostWorld*>(mWorld.get());
+
+    // Update main thread update queues
+    hostWorld->onFrameBegin();
+
+    // Update the world with fixed timestep
+    int ticks = 0;
+    auto&& ecs = hostWorld->getECS();
+    f32 TODO_ELAPSED = gameTime.elapsedSec;
+    while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
+
+        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+        f32v3 position = playerPhysCmp.getPosition();
+        hostWorld->tick(position, TODO_ELAPSED);
+        TODO_ELAPSED = 0.0f;// FIX THIS HACK
+
+    }
+
+    // Update editors
+    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
+
+    updateTilePicking();
+
+    hostWorld->frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
 
 }
 
@@ -425,9 +459,9 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             if (mSelectedTileHandle.isValid()) {
-                auto&& ecs = mWorld.getECS();
+                EntityComponentSystem& ecs = mWorld->getECS();
                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-                cmp.requestCoarsePath(mWorld.getTileHandleAtWorldPos(playerPos), mSelectedTileHandle);
+                cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPos(playerPos), mSelectedTileHandle);
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
@@ -476,22 +510,37 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
             // grass
             WorldObjectQuery& worldObjects = mRightClickInteractPopup->getWorldObjects();
             ItemStockpile* stockPile = worldObjects.getStockpile();
-			mWorld.getItemStockpileRegistry().destroyStockpile(stockPile);
+			mWorld->getItemStockpileRegistry().destroyStockpile(stockPile);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_KILL_AGENT) {
             assert(false);
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
-            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
+            if (mClientType == ClientType::HOST) {
+                TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
+            }
+            else {
+                assert(false);
+            }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
-            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld.getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+            if (mClientType == ClientType::HOST) {
+                TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+            }
+            else {
+                assert(false);
+            }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
-            TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-            mWorld.getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
+            if (mClientType == ClientType::HOST) {
+                TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+                static_cast<HostWorld*>(mWorld.get())->getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
+            }
+            else {
+                assert(false);
+            }
         }
         static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
 

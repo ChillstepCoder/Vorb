@@ -1,0 +1,116 @@
+#pragma once
+
+#include "tile/TileHandle.h"
+#include "world/Chunk.h"
+
+class IChunkGrid;
+class IHeightmapGrid;
+class EntityComponentSystem;
+class EntityFactory;
+class PhysicsWorld;
+class StructureManager;
+class ItemStockpileRegistry;
+class CityGraph;
+
+// Shared world interface
+class IWorld
+{
+public:
+    IWorld(std::unique_ptr<IChunkGrid>&& chunkGrid, std::unique_ptr<IHeightmapGrid>&& heightmapGrid);
+    virtual ~IWorld();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
+
+    // Pure virtual interface
+    virtual void initPostResourcesLoaded() = 0;
+
+    // Shared interface
+    void tickShared(const f32v2& playerPos, f32 elapsedSec);
+    void setTimeOfDay(f32 time);
+    entt::entity createEntity(const f32v3& pos, const nString& typeName);
+
+    // Chunk Accessors
+    Chunk& getChunkAtChunkCoords(const ui32v2& worldPos);
+    Chunk& getChunkAtPosition(const f32v2& worldPos);
+    const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
+    Chunk& getChunkAtPosition(const ui32v2& worldPos);
+    const Chunk& getChunkAtPosition(const ui32v2& worldPos) const;
+    Chunk& getChunkAtPosition(const ui16v2& worldPos);
+    const Chunk& getChunkAtPosition(const ui16v2& worldPos) const;
+    Chunk& getChunk(ChunkID chunkId);
+    const Chunk& getChunk(ChunkID chunkId) const;
+    Chunk& getChunk(ui32 chunkId);
+    const Chunk& getChunk(ui32 chunkId) const;
+    size_t getNumActiveChunks() const;
+    const std::vector<Chunk*>& getActiveChunks() const;
+
+    // mutators
+    void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
+
+    // Tile Accessors
+    TileHandle getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const;
+    TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
+    TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
+    TileHandle getTerrainTileHandleAtWorldPos(const f32v3& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
+    TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
+    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const;
+    StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
+
+    void enumActiveChunks(std::function<void(const Chunk&)> func) const;
+
+    // Accessors 
+    IHeightmapGrid& getHeightmapGrid() { return *mHeightmapGrid; }
+    const IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
+    IChunkGrid& getChunkGrid() { return *mChunkGrid; }
+    const IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
+    EntityFactory& getEntityFactory() { return *mEntityFactory; }
+    CityGraph& getCityGraph() { return *mCities; }
+    const CityGraph& getCityGraph() const { return *mCities; }
+    PhysicsWorld& getPhysicsWorld() { return *mPhysWorld; }
+    const PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
+    EntityComponentSystem& getECS() { return *mEcs; }
+    const EntityComponentSystem& getECS() const { return *mEcs; }
+    ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
+    StructureManager& getStructureManager() { return *mStructureManager; }
+    const StructureManager& getStructureManager() const { return *mStructureManager; }
+
+    // [-1.0, 1.0]
+    float getSunHeight() const { return mSunHeight; }
+    const f32v3& getSunPosition() const { return mSunPosition; }
+    float getTimeOfDay() const { return mTimeOfDay; }
+    const f32v3& getSunColor() const { return mSunColor; }
+    const f32m4& getSkyRotMatrix() const { return mSkyRotMatrix; }
+    const f32v2& getLoadCenter() const;
+
+
+protected:
+    void updateTimeOfDay();
+
+    void updateCities();
+
+    // Server + Client shared data
+    std::unique_ptr<IChunkGrid> mChunkGrid = nullptr;
+    std::unique_ptr<IHeightmapGrid> mHeightmapGrid = nullptr;
+
+    // ECS
+    std::unique_ptr<EntityComponentSystem> mEcs;
+    // Factories
+    std::unique_ptr<EntityFactory> mEntityFactory;
+    // Physics
+    std::unique_ptr<PhysicsWorld> mPhysWorld;
+    // Structures
+    std::unique_ptr<StructureManager> mStructureManager;
+    // Stockpiles
+    std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
+    // Cities
+    std::unique_ptr<CityGraph> mCities;
+
+    // Sunlight and time of day
+    float mSunHeight = 1.0f;
+    f32v3 mSunPosition = f32v3(0.0f, 0.0f, 1.0f);
+    float mTimeOfDay = 0.0f; // span of 24:00
+    f32v3 mSunColor = f32v3(1.0f);
+    f32m4 mSkyRotMatrix = f32m4(1.0f);
+};
+
+extern IWorld* sWorld;

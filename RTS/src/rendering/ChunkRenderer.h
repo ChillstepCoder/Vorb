@@ -11,7 +11,7 @@ class TextureAtlas;
 class MaterialRenderer;
 class World;
 class Material;
-class WorldGrid;
+class IWorldGrid;
 
 
 // TODO: IRendererBase?
@@ -20,10 +20,10 @@ public:
 	ChunkRenderer(const MaterialRenderer& materialRenderer);
 	~ChunkRenderer();
 
-    void renderTiles(const World& world, const Camera3D& camera);
-    void renderGrass(const World& world, const Camera3D& camera, const f32v3& playerPos);
-    void renderBillboards(const World& world, const Camera3D& camera);
-    void renderWorldShadows(const World& world, const Camera3D& camera, f32 maxDistance);
+    void renderTiles(const Camera3D& camera);
+    void renderGrass(const Camera3D& camera, const f32v3& playerPos);
+    void renderBillboards(const Camera3D& camera);
+    void renderWorldShadows(const Camera3D& camera, f32 maxDistance);
 
     void InitPostLoad();
 

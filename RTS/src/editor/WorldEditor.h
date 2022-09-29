@@ -1,6 +1,5 @@
 #pragma once
 
-class World;
 class Camera3D;
 
 #include "world/ChunkID.h"
@@ -54,7 +53,7 @@ struct BrushSettings {
 
 class WorldEditor {
 public:
-    WorldEditor(World& world, const f32v2& screenDims);
+    WorldEditor(const f32v2& screenDims);
 
     void update(const Camera3D& camera);
 
@@ -83,7 +82,6 @@ private:
     f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
 
-    World& mWorld;
     f32v2 mScreenDims;
 
     // Edit states

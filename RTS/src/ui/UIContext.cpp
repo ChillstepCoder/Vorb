@@ -13,7 +13,7 @@ UIContext* UIContext::sInstance = nullptr;
 
 UIContext::UIContext(World& world, const f32v2& screenResolution, SDL_Window* window) : mScreenResolution(screenResolution), mWindow(window) {
     mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>(screenResolution);
-    mEditor = std::make_unique<WorldEditor>(world, screenResolution);
+    mEditor = std::make_unique<WorldEditor>(screenResolution);
 }
 
 UIContext::~UIContext() {

@@ -23,7 +23,7 @@ public:
     BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<ui16>&& targetTiles);
     ~BuildTask();
 
-	bool tick(World& world, entt::registry& registry, entt::entity agent) override;
+	bool tick(entt::registry& registry, entt::entity agent) override;
 
     VORB_NON_COPYABLE_BUT_MOVABLE(BuildTask);
 

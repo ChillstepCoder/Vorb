@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include "ChunkGrid.h"
+#include "IChunkGrid.h"
 
-#include "world/WorldGrid.h"
+#include "world/IHeightmapGrid.h"
 #include "world/ChunkGenerator.h"
 
 #include "services/Services.h"
@@ -13,20 +13,23 @@
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/ChunkMesher.h"
 
+IChunkGrid* sChunkGrid = nullptr;
+
 const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
 
-ChunkGrid::ChunkGrid(WorldGrid& worldGrid) : mWorldGrid(worldGrid) {
-
+IChunkGrid::IChunkGrid() {
+    assert(!sChunkGrid);
+    sChunkGrid = this;
     for (ui32 i = 0; i < WorldData::WORLD_SIZE_CHUNKS; ++i) {
         mChunks[i].init(ChunkID(i));
     }
 }
 
-void ChunkGrid::tick(const f32v2& loadCenter) {
+void IChunkGrid::tick(const f32v2& loadCenter) {
     mLoadCenter = loadCenter;
 
     // TODO: This now asserts out of bounds
-    Chunk& playerChunk = mWorldGrid.getChunk(loadCenter);
+    Chunk& playerChunk = sHeightmapGrid->getChunk(loadCenter);
     if (playerChunk.isInvalid()) {
         initChunk(playerChunk);
     }
@@ -34,7 +37,7 @@ void ChunkGrid::tick(const f32v2& loadCenter) {
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
         if (tickChunk(chunk)) {
-            mWorldGrid.releaseHeightDataAt(chunk.getHeightmapPatchID());
+            sHeightmapGrid->releaseHeightDataAt(chunk.getHeightmapPatchID());
             chunk.dispose();
             mActiveChunks[i] = mActiveChunks.back();
             mActiveChunks.pop_back();
@@ -45,7 +48,7 @@ void ChunkGrid::tick(const f32v2& loadCenter) {
 }
 
 
-void ChunkGrid::initChunk(Chunk& chunk)
+void IChunkGrid::initChunk(Chunk& chunk)
 {
     const ChunkID& chunkId = chunk.getChunkID();
     // If this is a sentinel chunk, stop here
@@ -56,7 +59,7 @@ void ChunkGrid::initChunk(Chunk& chunk)
     generateChunkAsync(chunk);
 }
 
-void ChunkGrid::generateChunkAsync(Chunk& chunk) {
+void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 
     chunk.allocateTileContainer();
     chunk.incRef();
@@ -64,21 +67,21 @@ void ChunkGrid::generateChunkAsync(Chunk& chunk) {
     mActiveChunks.push_back(&chunk);
     const HeightmapPatchID& id = chunk.getHeightmapPatchID();
 
-    if (mWorldGrid.tryGetHeightDataAt(id)) {
+    if (mHeightGrid.tryGetHeightDataAt(id)) {
         chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-        const HeightmapPatchData* heightData = mWorldGrid.aquireHeightData(id);
+        const HeightmapPatchData* heightData = mHeightGrid.aquireHeightData(id);
         Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
-            ChunkGenerator::GenerateChunk(chunk, mWorldGrid, heightData);
+            ChunkGenerator::GenerateChunk(chunk, mHeightGrid, heightData);
             chunk.decRef();
         }, nullptr);
     }
     else {
         chunk.mState.store(e_cast(ChunkState::WAITING_HEIGHT));
-        mWorldGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
+        mHeightGrid.requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
             chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-            const HeightmapPatchData* heightData = mWorldGrid.getHeightDataAt(chunk.getHeightmapPatchID());
+            const HeightmapPatchData* heightData = mHeightGrid.getHeightDataAt(chunk.getHeightmapPatchID());
             Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
-                ChunkGenerator::GenerateChunk(chunk, mWorldGrid, heightData);
+                ChunkGenerator::GenerateChunk(chunk, mHeightGrid, heightData);
                 chunk.decRef();
             }, nullptr);
         });
@@ -87,7 +90,7 @@ void ChunkGrid::generateChunkAsync(Chunk& chunk) {
 }
 
 
-bool ChunkGrid::tickChunk(Chunk& chunk) {
+bool IChunkGrid::tickChunk(Chunk& chunk) {
 
     if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
         if (chunk.getTileContainer()->getRefCount()) {
@@ -127,7 +130,7 @@ bool ChunkGrid::tickChunk(Chunk& chunk) {
             }
             else {
                 if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
-                    chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk, mWorldGrid);
+                    chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk, mHeightGrid);
                 }
             }
         }
@@ -141,7 +144,7 @@ bool ChunkGrid::tickChunk(Chunk& chunk) {
 }
 
 
-void ChunkGrid::onChunkDataReady(Chunk& chunk) {
+void IChunkGrid::onChunkDataReady(Chunk& chunk) {
     assert(!chunk.isDataReady());
 
     chunk.setState(ChunkState::FINISHED);
@@ -157,7 +160,7 @@ void ChunkGrid::onChunkDataReady(Chunk& chunk) {
     assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
 }
 
-void ChunkGrid::onChunkAllNeighborsDataReady(Chunk& chunk) {
+void IChunkGrid::onChunkAllNeighborsDataReady(Chunk& chunk) {
     assert(chunk.getBottomNeighbor().isDataReady());
     assert(chunk.getLeftNeighbor().isDataReady());
     assert(chunk.getRightNeighbor().isDataReady());
@@ -170,8 +173,8 @@ void ChunkGrid::onChunkAllNeighborsDataReady(Chunk& chunk) {
     ChunkMesher::updateMeshAndPhysics(chunk, f32v3(mLoadCenter, 0.0f));
 }
 
-void ChunkGrid::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
-    Chunk& neighbor = mWorldGrid.getChunk(id.id);
+void IChunkGrid::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
+    Chunk& neighbor = getChunk(id.id);
     if (neighbor.isDataReady()) {
         // Set up data ready ref counts
         ++neighbor.mDataReadyNeighborCount;
@@ -191,7 +194,7 @@ void ChunkGrid::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
     }
 }
 
-void ChunkGrid::tryCreateNeighbors(Chunk& chunk) {
+void IChunkGrid::tryCreateNeighbors(Chunk& chunk) {
     // Neighbors
     const ChunkID& myId = chunk.getChunkID();
     tryCreateNeighbor(chunk, myId.getLeftID());
@@ -200,15 +203,15 @@ void ChunkGrid::tryCreateNeighbors(Chunk& chunk) {
     tryCreateNeighbor(chunk, myId.getBottomID());
 }
 
-void ChunkGrid::tryCreateNeighbor(Chunk& chunk, const ChunkID& id) {
-    Chunk& neighbor = mWorldGrid.getChunk(id.id);
+void IChunkGrid::tryCreateNeighbor(Chunk& chunk, const ChunkID& id) {
+    Chunk& neighbor = getChunk(id.id);
     if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
         // Create the chunk, but dont update neighbor count until its done
         initChunk(neighbor);
     }
 }
 
-bool ChunkGrid::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 0.0f*/)
+bool IChunkGrid::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 0.0f*/)
 {
     const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
     const f32v2 offset = centerPos - mLoadCenter;

@@ -167,6 +167,11 @@ private:
     ui32 mPopulationCapacityRemaining = 0;
 };
 
-struct CityGraph {
+class CityGraph {
+public:
+
+    void update();
+    City* getClosestCityToPoint(const f32v2& pos) const;
+
     std::vector<std::unique_ptr<City>> mNodes;
 };

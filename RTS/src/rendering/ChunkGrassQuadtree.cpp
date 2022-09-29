@@ -3,7 +3,7 @@
 
 #include "rendering/QuadMesh.h"
 #include "world/Chunk.h"
-#include "world/WorldGrid.h"
+#include "world/IWorldGrid.h"
 #include "camera/Camera3D.h"
 
 #include "options/DebugOptions.h"
@@ -39,7 +39,7 @@ constexpr f32 GRASS_SUBDIVIDE_DISTANCES_SQ[GRASS_QUADTREE_MAX_LOD] = { // sqrt(p
 };
 
 
-ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk, WorldGrid& worldGrid) : mChunk(chunk), mWorldGrid(worldGrid), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
+ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk, IWorldGrid& worldGrid) : mChunk(chunk), mWorldGrid(worldGrid), FlatQuadtree(chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
     mWorldPos = mChunk.getWorldPos();
     mChunk.incRef();
 }
@@ -93,7 +93,7 @@ void createGrassMesh(
     const Chunk& chunk,
     const ui32v2& tilePosStart,
     ui32 lod,
-    WorldGrid& worldGrid,
+    IWorldGrid& worldGrid,
     const HeightmapPatchData* heightData
 ) {
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];

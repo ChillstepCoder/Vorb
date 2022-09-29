@@ -2,7 +2,6 @@
 
 struct SDL_Window;
 class DebugTweakerPanel;
-class World;
 class WorldEditor;
 class Camera3D;
 class TileInspectionPanel;
@@ -28,7 +27,7 @@ public:
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
     void closeTileInspectionPanel();
 
-    static UIContext& initInstance(World& world, const f32v2& screenResolution, SDL_Window* window);
+    static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static UIContext& getInstance();
 
 private:

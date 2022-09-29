@@ -3,7 +3,7 @@
 
 #include "debugging/DebugRenderer.h"
 #include "world/World.h"
-#include "world/WorldGrid.h"
+#include "world/IWorldGrid.h"
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
@@ -22,7 +22,7 @@ ItemStockpile::ItemStockpile(World& world, const ui32AABB2& aabb, OPT bool* owne
     mFirstFreeSlot = UINT32_MAX;
 
     f32 maxZPos = FLT_MIN;
-    const WorldGrid& worldGrid = world.getWorldGrid();
+    const IWorldGrid& worldGrid = world.getWorldGrid();
     // Set stockpile flags
 
     ui32 index = 0;

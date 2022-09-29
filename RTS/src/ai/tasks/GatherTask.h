@@ -27,7 +27,7 @@ public:
 	~GatherTask();
 
 	// Returns True when done
-	bool tick(World& world, entt::registry& registry, entt::entity agent) override;
+	bool tick(entt::registry& registry, entt::entity agent) override;
 
     VORB_NON_COPYABLE_BUT_MOVABLE(GatherTask);
 

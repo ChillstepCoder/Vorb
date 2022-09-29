@@ -23,7 +23,6 @@ class TerrainRenderer;
 class TerrainMeshManager;
 class TextRenderer;
 class UIContext;
-class World;
 
 struct SDL_Window;
 
@@ -47,14 +46,14 @@ struct GlobalRenderData {
 // Singleton
 class RenderContext {
 protected:
-    RenderContext(const World& world, const f32v2& screenResolution, SDL_Window* window);
+    RenderContext(const f32v2& screenResolution, SDL_Window* window);
     ~RenderContext();
 
 public:
     RenderContext(RenderContext& other) = delete;
     void operator=(const RenderContext&) = delete;
 
-    static RenderContext& initInstance(const World& world, const f32v2& screenResolution, SDL_Window* window);
+    static RenderContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static RenderContext& getInstance();
 
     void initPostLoad();
@@ -116,7 +115,6 @@ private:
     vg::GBuffer* mActiveGBuffer = nullptr;
     vg::GBuffer mGBuffers[2];
     vg::GBuffer mTransparencyGBuffer;
-    const World& mWorld;
     std::unique_ptr<QuadMesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
     VGBuffer mGlobalUbo = 0;

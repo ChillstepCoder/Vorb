@@ -2,7 +2,6 @@
 
 class City;
 class CityPlanner;
-class World;
 struct BuildingBlueprint;
 
 #include "Building.h"
@@ -14,22 +13,21 @@ class CityBuilder
 {
     friend class CityDebugRenderer;
 public:
-    CityBuilder(City& city, World& world);
+    CityBuilder(City& city);
 
     void update();
     void addRoadToBuild(RoadID roadId) { mRoadsToBuild.emplace_back(roadId); }
     void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
 
-    static Building* debugBuildInstant(BuildingBlueprint& bp, World& world);
+    static Building* debugBuildInstant(BuildingBlueprint& bp);
     void debugBuildInstant(RoadID roadId);
 
 private:
     void preprocessBlueprint(BuildingBlueprint* blueprint);
-    static void finishBuilding(Building& building, BuildingBlueprint& blueprint, World& world);
+    static void finishBuilding(Building& building, BuildingBlueprint& blueprint);
     bool trySendBuildingJob(BuildingBlueprint* blueprint);
 
     City& mCity;
-    World& mWorld;
     std::list<BuildingBlueprint*> mBlueprintsToBuild;
     std::vector<RoadID> mRoadsToBuild;
 

@@ -2,7 +2,7 @@
 #include "WorldEditor.h"
 
 #include "world/World.h"
-#include "world/WorldGrid.h"
+#include "world/IWorldGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/Chunk.h"
 #include "rendering/ChunkGrassQuadtree.h"
@@ -37,7 +37,7 @@ constexpr f32 MAX_BRUSH_STRENGTH_TERRAIN = 2.0f;
 constexpr f32 MIN_BRUSH_STRENGTH_GRASS = 0.01f;
 constexpr f32 MAX_BRUSH_STRENGTH_GRASS = 1.0f;
 
-WorldEditor::WorldEditor(World& world, const f32v2& screenDims) : mWorld(world), mScreenDims(screenDims) {
+WorldEditor::WorldEditor(const f32v2& screenDims) : mScreenDims(screenDims) {
 
     // Inputs
     vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
@@ -90,7 +90,7 @@ void WorldEditor::update(const Camera3D& camera) {
     const f32v3& pickRay = sDebugOptions.mMousePickRay;
 
     PreciseTimer timer;
-    mHitResult = mWorld.getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + sDebugOptions.mMousePickRay * 10000.0f, PICK_TYPE_ALL);
+    mHitResult = sWorld->getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + sDebugOptions.mMousePickRay * 10000.0f, PICK_TYPE_ALL);
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
         updateTerrainEdit();
@@ -403,7 +403,7 @@ void WorldEditor::updateTerrainEdit() {
             }
 
             // Notify all terrain stuff to update
-            mWorld.dirtyTerrainFromBrush(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
+            sWorld->dirtyTerrainFromBrush(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
             std::cout << "TERRAIN FLOOD MS " << timer.stop() << std::endl;
         }
     }

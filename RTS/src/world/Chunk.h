@@ -27,7 +27,7 @@ typedef BillboardMesh ChunkBillboardMesh;
 
 constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
-class WorldGrid;
+class IWorldGrid;
 
 enum class ChunkState : ui8 {
 	INVALID,
@@ -69,12 +69,12 @@ enum class NeighborIndex8 {
 // TODO: Chunks and structures both have base class "TileContainer" ???
 class Chunk {
 	friend class World;
-	friend class WorldGrid;
+	friend class IWorldGrid;
 	friend class WorldEditor;
 	friend class ChunkGenerator;
 	friend class ChunkRenderer;
 	friend class ChunkMesher;
-	friend class ChunkGrid;
+	friend class IChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavWorld;
 	friend class NavThread;

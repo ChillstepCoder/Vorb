@@ -1,12 +1,10 @@
 #pragma once
 
 class HeightmapTerrainQuadtree;
-class WorldGrid;
-
 class TerrainMeshManager
 {
 public:
-    TerrainMeshManager(WorldGrid& worldGrid);
+    TerrainMeshManager();
     ~TerrainMeshManager();
 
     void update(const f32v2& loadCenter, bool forceUpdate);

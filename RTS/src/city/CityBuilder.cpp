@@ -8,7 +8,8 @@
 
 #include "pathfinding/NavThread.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 #include "resources/TileRepository.h"
 
 #include "ecs/EntityComponentSystem.h"
@@ -21,9 +22,8 @@
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"
 
-CityBuilder::CityBuilder(City& city, World& world)
+CityBuilder::CityBuilder(City& city)
     : mCity(city)
-    , mWorld(world)
 {
 
 }
@@ -56,7 +56,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
     mBlueprintsToBuild.push_back(blueprint);
 }
 
-Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
+Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     PreciseTimer timer;
     const ui32v2& worldPos = bp.aabb.pos;
@@ -78,7 +78,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp, World& world) {
     }
 
     // Clamp building height to 1 meter increments
-    WorldGrid& grid = world.getWorldGrid();
+    IHeightmapGrid& grid = sWorld->getHeightmapGrid();
     const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
 
     ui32 floorHeight = 3;
@@ -182,7 +182,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     CityRoad& road = *mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
-    WorldGrid& grid = mWorld.getWorldGrid();
+    IWorldGrid& grid = mWorld.getWorldGrid();
     ui32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
@@ -198,7 +198,7 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
     }
 }
 
-void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint, World& world) {
+void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint) {
     building.mFunction = blueprint.desc.function;
     building.mPlotIndex = blueprint.plotIndex;
     building.mNavEntrances = blueprint.exteriorDoors;
@@ -209,12 +209,12 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
 
     // TODO: Multithread
-    BuildingMesher::buildMeshAndPhysics(building, world.getPhysicsWorld());
+    BuildingMesher::buildMeshAndPhysics(building, sWorld->getPhysicsWorld());
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {
 
-    auto view = mWorld.getECS().mRegistry.view<BusinessBuildComponent>();
+    auto view = sWorld->getECS().mRegistry.view<BusinessBuildComponent>();
     bool success = false;
     // Find a business who can take on this build job
     for (auto entity : view) {

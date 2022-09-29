@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "RenderContext.h"
 #include "resources/ResourceManager.h"
-#include "world/World.h"
+#include "world/IWorld.h"
+#include "world/cli/CliWorldInterface.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "resources/TileRepository.h"
 #include "pathfinding/NavWorld.h"
@@ -125,8 +126,7 @@ const std::string sPassthroughMaterialNames[] = {
 
 RenderContext* RenderContext::sInstance = nullptr;
 
-RenderContext::RenderContext(const World& world, const f32v2& screenResolution, SDL_Window* window) :
-    mWorld(world),
+RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) :
     mScreenResolution(screenResolution),
     mWindow(window)
 {
@@ -204,7 +204,7 @@ RenderContext::RenderContext(const World& world, const f32v2& screenResolution, 
 
     // Init mesh managers
     // TODO: Avoid the const cast???
-    mTerrainMeshManager = std::make_unique<TerrainMeshManager>(const_cast<WorldGrid&>(mWorld.getWorldGrid()));
+    mTerrainMeshManager = std::make_unique<TerrainMeshManager>();
 
 }
 
@@ -212,9 +212,9 @@ RenderContext::~RenderContext() {
     glDeleteBuffers(1, &mGlobalUbo);
 }
 
-RenderContext& RenderContext::initInstance(const World& world, const f32v2& screenResolution, SDL_Window* window) {
+RenderContext& RenderContext::initInstance(const f32v2& screenResolution, SDL_Window* window) {
     if (!sInstance) {
-        sInstance = new RenderContext(world, screenResolution, window);
+        sInstance = new RenderContext(screenResolution, window);
     }
     return *sInstance;
 }
@@ -392,13 +392,13 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Tiles
-    mChunkRenderer->renderTiles(mWorld, camera);
+    mChunkRenderer->renderTiles(camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
 
     // Render stockpiles
-    for (auto&& stockPilePtr : mWorld.getItemStockpileRegistry().getAllStockpiles()) {
+    for (auto&& stockPilePtr : sWorld->getItemStockpileRegistry().getAllStockpiles()) {
         if (stockPilePtr->isVisible()) {
             mItemRenderer->renderStockpile(*stockPilePtr, camera);
         }
@@ -408,14 +408,14 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render building roofs
     // TODO: Frustum cull
-    const CityGraph& cities = mWorld.getCities();
+    const CityGraph& cities = sWorld->getCityGraph();
     for (auto&& city : cities.mNodes) {
         const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
         for (auto&& building : buildings) {
             mBuildingRenderer->renderBuildingRoof(*building, camera);
         }
     }
-    const StructureManager& structureManager = mWorld.getStructureManager();
+    const StructureManager& structureManager = sWorld->getStructureManager();
     const StructureList& structures = structureManager.getStructures();
     for (auto&& structure : structures) {
         // TODO: List of buildings instead?
@@ -429,9 +429,9 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // === Post AO passes ===
     // Grass + billboards
-    mChunkRenderer->renderBillboards(mWorld, camera);
+    mChunkRenderer->renderBillboards(camera);
     if (!sDebugOptions.mHideGrass) {
-        mChunkRenderer->renderGrass(mWorld, camera, playerPos);
+        mChunkRenderer->renderGrass(camera, playerPos);
     }
 
     // Terrain
@@ -473,7 +473,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            mChunkRenderer->renderWorldShadows(mWorld, camera, mShadowRenderer->getMaxDistance());
+            mChunkRenderer->renderWorldShadows(camera, mShadowRenderer->getMaxDistance());
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
@@ -481,7 +481,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
                 mCloudRenderer->renderCloudShadows(mWorld.getCloudManager(), camera, mShadowRenderer->getMaxDistance());
             }
 
-            const CityGraph& cities = mWorld.getCities();
+            const CityGraph& cities = sWorld->getCityGraph();
             for (auto&& city : cities.mNodes) {
                 const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
                 for (auto& building : buildings) {
@@ -667,7 +667,7 @@ VGTexture RenderContext::getSSAOTexture() const {
 void RenderContext::renderDebug(const Camera3D& camera) {
     // City Debug
     if (sDebugOptions.mCities) {
-        const CityGraph& cities = mWorld.getCities();
+        const CityGraph& cities = sWorld->getCityGraph();
         for (auto&& city : cities.mNodes) {
             mCityDebugRenderer->renderCityPlannerDebug(city->getCityPlanner());
             mCityDebugRenderer->renderCityBuilderDebug(city->getCityBuilder());
@@ -683,7 +683,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        mWorld.enumVisibleChunks([](const Chunk& chunk) {
+        ((CliWorldInterface*)sWorld)->enumVisibleChunks([](const Chunk& chunk) {
             color4 color = COLOR_WHITE;
             switch (chunk.getState()) {
                 case ChunkState::INVALID:

@@ -3,7 +3,6 @@
 #include "world/ChunkID.h"
 #include "CoarseNavGraph.h"
 
-class World;
 class Chunk;
 class TileContainer;
 struct TileFineNavData;
@@ -96,5 +95,4 @@ private:
 
     // TODO: We need to destroy these on chunk destruct
     std::unordered_map<TileContainerID, CoarseNavGraph> mNavGraphs;
-    World& mWorld;
 };

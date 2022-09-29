@@ -4,7 +4,7 @@
 
 class Chunk;
 class Camera3D;
-class WorldGrid;
+class IWorldGrid;
 class MeshBuilder;
 class PhysicsWorld;
 struct TileData;

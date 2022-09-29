@@ -1,30 +1,19 @@
 #pragma once
-class CliWorld
+
+
+#include "world/IWorld.h"
+#include "world/cli/CliWorldInterface.h"
+
+class CliWorld : public IWorld, public CliWorldInterface
 {
-    // Clouds
-   // std::unique_ptr<CloudManager> mCloudManager;
+public:
+    CliWorld();
+
+    void onFrameBegin() override;
+    void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;
+    void initPostResourcesLoaded() override;
+
+private:
 
 };
 
-
-class LocalCliWorld : public CliWorld {
-
-};
-
-class RemoteCliWorld : public CliWorld {
-    //// ECS
-    //std::unique_ptr<EntityComponentSystem> mEcs;
-
-    //// Factories
-    //std::unique_ptr<EntityFactory> mEntityFactory;
-
-    //// Structures
-    //std::unique_ptr<StructureManager> mStructureManager;
-
-    //// Stockpiles
-    //std::unique_ptr<ItemStockpileRegistry> mItemStockpileRegistry;
-
-    //// Physics
-    //std::unique_ptr<PhysicsWorld> mPhysWorld;
-
-};

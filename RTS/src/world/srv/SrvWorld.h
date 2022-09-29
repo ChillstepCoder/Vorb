@@ -1,6 +1,12 @@
 #pragma once
-class SrvWorld
+
+#include "world/IWorld.h"
+#include "world/srv/SrvWorldInterface.h"
+
+class SrvWorld : public IWorld, public SrvWorldInterface
 {
+public:
+    SrvWorld();
     //// Nav graph
     //std::unique_ptr<NavWorld> mNavWorld;
 

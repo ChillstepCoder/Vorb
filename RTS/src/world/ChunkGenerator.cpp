@@ -6,7 +6,7 @@
 #include "math/Random.h"
 
 #include "world/WorldData.h"
-#include "world/WorldGrid.h"
+#include "world/IHeightmapGrid.h"
 #include "world/Region.h"
 #include "resources/TileRepository.h"
 
@@ -109,7 +109,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     return tile;
 }
 
-void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const HeightmapPatchData* heightData) {
+void ChunkGenerator::GenerateChunk(Chunk& chunk, IHeightmapGrid& heightGrid, const HeightmapPatchData* heightData) {
 
     PreciseTimer timer;
 
@@ -123,7 +123,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, WorldGrid& worldGrid, const Hei
     for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
         for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            f32 height = worldGrid.computeCenterHeightAtTile(heightData->data, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
+            f32 height = heightGrid.computeCenterHeightAtTile(heightData->data, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
             const f32 baseZPos = tile.getGroundZOffsetThreadSafe();
