@@ -42,7 +42,7 @@ struct VisualLogRenderStep {
 
 struct VisualLogRenderStepInfo {
 
-    void end() { totalMs = timer.stop(); }
+    void end() { totalMs = (f32)timer.stop(); }
 
     nString stepName;
     ui32 startIndex;

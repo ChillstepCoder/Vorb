@@ -157,6 +157,7 @@ bool TileContainer::tryAddTile(TileIndex i, const TileData& tileData)
     }
     tile.addTileData(tileData, readLocked);
     onTileChanged(i, readLocked);
+    return true;
 }
 
 void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
@@ -257,11 +258,11 @@ void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
 TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) const
 {
     i32v3 offset = worldPos - mRootPos;
-    if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= mDims.x || offset.y >= mDims.y || offset.z >= mDims.z * mFloorHeight) {
+    if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= mDims.x || offset.y >= mDims.y || offset.z >= mDims.z * (i32)mFloorHeight) {
         return TileHandle();
     }
     // Scale to floor height
-    offset.z /= mFloorHeight;
+    offset.z /= (i32)mFloorHeight;
     return TileHandle(this, getTileIndexFromXYZOffset(ui32v3(offset)));
 }
 

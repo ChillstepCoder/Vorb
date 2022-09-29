@@ -27,7 +27,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     tileDims.z /= floorHeight;
     newStructure->mTileContainer = TileContainerRepository::getNewTileContainer(aabb.pos, tileDims, floorHeight, false /*isTerrain*/);
     newStructure->mTileContainer->allocateData();
-    newStructure->mId = mStructures.size();
+    newStructure->mId = (StructureID)mStructures.size();
     // TODO: This structure ID needs a lookup
 
     BBox newBox(BoxPoint(aabb.x, aabb.y), BoxPoint(aabb.x + aabb.width, aabb.y + aabb.depth));

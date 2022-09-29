@@ -88,7 +88,7 @@ struct DebugOptions {
     f32 mWaterSurfaceDistortAmount = 0.27f;
     f32 mWaterSurfaceMoveSpeed = 0.03f;
     f32v2 mWaterFoamDistanceRange = f32v2(0.4f, 1.0f);
-    f32 mWaterSurfaceNoiseCutoff = 0.777;
+    f32 mWaterSurfaceNoiseCutoff = 0.777f;
     f32 mWaterSmoothstepAA = 0.037f;
     f32 mWaterColorNoiseIntensity = 0.085f;
     f32 mWaterDistortTiling = 1.0f;

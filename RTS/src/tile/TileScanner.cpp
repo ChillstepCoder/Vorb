@@ -36,7 +36,7 @@ std::vector<TileHandle> TileScanner::scanForResource(TileResource resource, cons
     // TODO: Custom memory management
     std::set<closedListNode> closedList;
     std::queue<BfsNode> openList;
-    const f32 maxDistSq = SQ(maxDistance);
+    const f32 maxDistSq = (f32)SQ(maxDistance);
     openList.emplace(startWorldPos, 0);
     closedList.emplace(startWorldPos);
 

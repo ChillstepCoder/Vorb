@@ -1002,16 +1002,16 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, Visua
 
         ++ROOM_NODE_COUNT_CACHE[myID];
         // Down
-        const RoomNodeID downID = bp.ownerArray[index - bp.aabb.dims.x];
+        const RoomNodeID downID = bp.ownerArray[(i32)(index - bp.aabb.dims.x)];
         ++ROOM_NODE_COUNT_CACHE[downID];
         // Left
-        const RoomNodeID leftID = bp.ownerArray[index - 1];
+        const RoomNodeID leftID = bp.ownerArray[(i32)(index - 1)];
         ++ROOM_NODE_COUNT_CACHE[leftID];
         // Right
-        const RoomNodeID rightID = bp.ownerArray[index + 1];
+        const RoomNodeID rightID = bp.ownerArray[(i32)(index + 1)];
         ++ROOM_NODE_COUNT_CACHE[rightID];
         // Top
-        const RoomNodeID topID = bp.ownerArray[index + bp.aabb.dims.x];
+        const RoomNodeID topID = bp.ownerArray[(i32)(index + bp.aabb.dims.x)];
         ++ROOM_NODE_COUNT_CACHE[topID];
 
         // If we are surrounded on 3 or more sides
@@ -1403,19 +1403,19 @@ bool tileBlocksDoor(TileIndex index, BuildingBlueprint& bp) {
         }
     }
     // Check South
-    if (isDoor(bp.walls[index - bp.aabb.dims.x].north.wallID)) {
+    if (isDoor(bp.walls[(i32)(index - bp.aabb.dims.x)].north.wallID)) {
         return true;
     }
     // Check west
-    if (isDoor(bp.walls[index - 1].east.wallID)) {
+    if (isDoor(bp.walls[(i32)(index - 1)].east.wallID)) {
         return true;
     }
     // Check East
-    if (isDoor(bp.walls[index + 1].west.wallID)) {
+    if (isDoor(bp.walls[(i32)(index + 1)].west.wallID)) {
         return true;
     }
     // Check North
-    if (isDoor(bp.walls[index + bp.aabb.dims.x].south.wallID)) {
+    if (isDoor(bp.walls[(i32)(index + bp.aabb.dims.x)].south.wallID)) {
         return true;
     }
     return false;
@@ -1436,16 +1436,16 @@ bool isAtWallCorner(TileIndex index, BuildingBlueprint& bp) {
     const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
     i32 adjacentWallCount = 0;
-    if (bp.walls[index].west.isValid() || bp.walls[index - 1].east.isValid()) {
+    if (bp.walls[index].west.isValid() || bp.walls[(i32)(index - 1)].east.isValid()) {
         ++adjacentWallCount;
     }
-    if (bp.walls[index].south.isValid() || bp.walls[index - bp.aabb.dims.x].north.isValid()) {
+    if (bp.walls[index].south.isValid() || bp.walls[(i32)(index - bp.aabb.dims.x)].north.isValid()) {
         ++adjacentWallCount;
     }
-    if (bp.walls[index].east.isValid() || bp.walls[index + 1].west.isValid()) {
+    if (bp.walls[index].east.isValid() || bp.walls[(i32)(index + 1)].west.isValid()) {
         ++adjacentWallCount;
     }
-    if (bp.walls[index].north.isValid() || bp.walls[index + bp.aabb.dims.x].south.isValid()) {
+    if (bp.walls[index].north.isValid() || bp.walls[(i32)(index + bp.aabb.dims.x)].south.isValid()) {
         ++adjacentWallCount;
     }
     // TODO: This disallows single block hallways but meh...
@@ -1552,16 +1552,16 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 }
 
                 Cartesian prevDir = Cartesian::NONE;
-                Cartesian dir;
+                Cartesian dir = Cartesian::NONE;
                 
                 i32 upCount = 0;
                 bool wasFlat = false;
                 i32 j;
                 for (j = 0; j < runLength - 1; ++j) {
                     // Look ahead for direction
-                    const TileIndex index = runs[runStart + j];
+                    const TileIndex index = runs[(i32)(runStart + j)];
                     const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
-                    const i32v2 nextPos = getPosAtIndex(runs[runStart + j + 1], bp.aabb.dims);
+                    const i32v2 nextPos = getPosAtIndex(runs[(i32)(runStart + j + 1)], bp.aabb.dims);
                     if (nextPos.x > pos.x) {
                         dir = Cartesian::EAST;
                         assert(prevDir != Cartesian::WEST);
@@ -1582,7 +1582,7 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                         visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), CARTESIAN_COLORS[e_cast(dir)]);
                     }
                     // Store dir
-                    dirs[runStart + j] = dir;
+                    dirs[(i32)(runStart + j)] = dir;
                     if (prevDir == dir || prevDir == Cartesian::NONE) {
                         ++upCount;
                         // Valid!
@@ -1618,9 +1618,9 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 }
                 // Last one is up always (if not into a wall)
                 if (upCount == STAIRS_UP_COUNT - 1) {
-                    dirs[runStart + j] = dir;
+                    dirs[(i32)(runStart + j)] = dir;
                     // If running into a wall, not done
-                    if (!isRunningIntoWallAtEnd(runs[runStart + j], bp, dir)) {
+                    if (!isRunningIntoWallAtEnd(runs[(i32)(runStart + j)], bp, dir)) {
                         // Check if this is the best
                         if (j < bestRunLength) {
                             bestRunStart = runStart;

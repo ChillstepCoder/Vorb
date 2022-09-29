@@ -209,7 +209,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
         for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {
             for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += CLOUD_GEN_STRIDE) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
-                const f32 n = sWorldGen.mCloudsNoise.compute(trueGenPos.x, trueGenPos.y);
+                const f32 n = sWorldGen.mCloudsNoise.compute((f32)trueGenPos.x, (f32)trueGenPos.y);
                 if (n > 0.3f) {
                     constexpr f32 RAND_OFFSET_FACTOR = 8.0f;
                     constexpr f32 HEIGHT_OFFSET_FACTOR = 8.0f;
@@ -221,11 +221,11 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                     const float stretchr = Random::getThreadSafef((ui32)(-4152.0 + genPos.x - y), (ui32)(24152.0 -genPos.x - genPos.y + x)) * 0.6f;
                     const f32 nSize = n * 12.0f;
                     f32 newSize = size + sr + nSize;
-                    if (Random::getThreadSafe(trueGenPos.x, trueGenPos.y) % 80 == 0) {
+                    if (Random::getThreadSafe((ui32)trueGenPos.x, (ui32)trueGenPos.y) % 80 == 0) {
                         newSize += 30.0f;
                     }
                     newSize *= 1.3f;// TALIA SIZE TESTING
-                    const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute(trueGenPos.x, trueGenPos.y) * 50.0f;
+                    const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute((f32)trueGenPos.x, (f32)trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     // TODO: Fix clouds
                     meshBuilder->addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudSubTexture);

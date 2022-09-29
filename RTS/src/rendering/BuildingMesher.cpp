@@ -217,8 +217,8 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
             const bool isGablePoint = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
             if (isGablePoint) {
                 f32v2 gableTarget;
-                gableTarget.x = (he->prev()->vertex()->point().x() + he->next()->vertex()->point().x()) / 2.0f;
-                gableTarget.y = (he->prev()->vertex()->point().y() + he->next()->vertex()->point().y()) / 2.0f;
+                gableTarget.x = (f32)(he->prev()->vertex()->point().x() + he->next()->vertex()->point().x()) / 2.0f;
+                gableTarget.y = (f32)(he->prev()->vertex()->point().y() + he->next()->vertex()->point().y()) / 2.0f;
                 const f32v2 lookup = f32v2(he->vertex()->point().x(), he->vertex()->point().y());
                 auto&& it = gableTargetPoints.find(lookup);
                 if (it == gableTargetPoints.end()) {
@@ -240,7 +240,7 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
                 // Mark for later extrusions
                 const auto& oppositePoint = he->opposite()->vertex()->point();
                 const auto& thisPoint = he->vertex()->point();
-                const float h = he->vertex()->time() * ROOF_HEIGHT_MULT;
+                const float h = (f32)he->vertex()->time() * ROOF_HEIGHT_MULT;
                 f32v3 extrudePosition(thisPoint.x() - oppositePoint.x(), thisPoint.y() - oppositePoint.y(), h - he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
                 extrudePosition = normalize(extrudePosition) * ROOF_EXTRUDE_DISTANCE + f32v3(thisPoint.x(), thisPoint.y(), 0.0f);
                 contourExtrudePositions[f32v2(thisPoint.x(), thisPoint.y())] = extrudePosition;
@@ -321,7 +321,7 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     MeshBuilder staticMeshBuilder(false);
     constexpr ui32 RESERVE_VERT_COUNT_STATIC = 10000; // Average size
     staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);
-    staticMeshBuilder.reserveIndexCount(RESERVE_VERT_COUNT_STATIC * 1.5f); // 1.5 is approx
+    staticMeshBuilder.reserveIndexCount((ui32)(RESERVE_VERT_COUNT_STATIC * 1.5f)); // 1.5 is approx
 
     const i32AABB3& aabb = building.mAABB;
     BuildingRenderData& renderData = building.mRenderData;
@@ -355,8 +355,8 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
         // TODO: Replace bitarray with bool array
         BitArray roofedTiles;
         roofedTiles.resizeAndZero(building.mAABB.dims.x * building.mAABB.dims.y);
-        for (ui32 y = 0; y < building.mAABB.dims.y; ++y) {
-            for (ui32 x = 0; x < building.mAABB.dims.x; ++x) {
+        for (i32 y = 0; y < building.mAABB.dims.y; ++y) {
+            for (i32 x = 0; x < building.mAABB.dims.x; ++x) {
                 const ui32 floorBitIndex = y * building.mAABB.dims.x + x;
                 const ui32 buildingBitIndex = floor * floorTileCount + floorBitIndex;
                 // If we own this tile, and above us is clear, we are a roofed tile
@@ -411,7 +411,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
     std::vector<SsPtr> skeletons;
 
     BitArray checkedTiles;
-    checkedTiles.resizeAndZero(ownedTiles.getNumBits());
+    checkedTiles.resizeAndZero((ui32)ownedTiles.getNumBits());
 
     // Find first corner
     ui32 index = 0;
@@ -528,7 +528,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                 // We are a gable pivot! Get our new position
                 x = gableIt->second.pos.x;
                 y = gableIt->second.pos.y;
-                t = he->vertex()->time();
+                t = (f32)he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
                 isGable = he->is_bisector() && !he->is_inner_bisector() && he->next()->is_bisector() && !he->next()->is_inner_bisector();
                 // Extrude along the gable direction
@@ -538,9 +538,9 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                 y += extrudeNormal.y;
             }
             else {
-                x = he->vertex()->point().x();
-                y = he->vertex()->point().y();
-                t = he->vertex()->time();
+                x = (f32)he->vertex()->point().x();
+                y = (f32)he->vertex()->point().y();
+                t = (f32)he->vertex()->time();
                 h = t * ROOF_HEIGHT_MULT;
 
                 // Extrude contours
@@ -571,9 +571,9 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
             if (!isContourEdge) {
                 const f32v3 boardStart(x, y, zPos + h + ROOF_THICKNESS);
                 // Check if next point is extruded
-                f32 nextX = he->next()->vertex()->point().x();
-                f32 nextY = he->next()->vertex()->point().y();
-                f32 nextH = he->next()->vertex()->time() * ROOF_HEIGHT_MULT;
+                f32 nextX = (f32)he->next()->vertex()->point().x();
+                f32 nextY = (f32)he->next()->vertex()->point().y();
+                f32 nextH = (f32)he->next()->vertex()->time() * ROOF_HEIGHT_MULT;
                 auto&& extrudeIt = contourExtrudePositions.find(f32v2(nextX, nextY));
                 if (extrudeIt != contourExtrudePositions.end()) {
                     const f32v3& extrudePosition = extrudeIt->second;
@@ -661,8 +661,8 @@ void BuildingMesher::triangulateRoofFacePolygons(bool isGable, MeshBuilder& mesh
         if (convexPoly.size() == 3) {
             // Simple triangles are just directly copied
             for (int i = 0; i < 3; ++i) {
-                points[i].x = convexPoly.vertex(i).x();
-                points[i].y = convexPoly.vertex(i).y();
+                points[i].x = (f32)convexPoly.vertex(i).x();
+                points[i].y = (f32)convexPoly.vertex(i).y();
             }
             // Add to mesh
             addRoofTriangle(meshBuilder, points, building, shinglesTexture, debugColorIndex, zPos);
@@ -673,8 +673,8 @@ void BuildingMesher::triangulateRoofFacePolygons(bool isGable, MeshBuilder& mesh
             triangulation.insert(convexPoly.vertices_begin(), convexPoly.vertices_end());
             for (auto&& it = triangulation.all_faces_begin(); it != triangulation.all_faces_end(); ++it) {
                 for (int i = 0; i < 3; ++i) {
-                    points[i].x = it->vertex(i)->point().x();
-                    points[i].y = it->vertex(i)->point().y();
+                    points[i].x = (f32)it->vertex(i)->point().x();
+                    points[i].y = (f32)it->vertex(i)->point().y();
                 }
                 // Add to mesh
                 addRoofTriangle(meshBuilder, points, building, shinglesTexture, debugColorIndex, zPos);
@@ -866,11 +866,10 @@ void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& mes
     const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = *building.mTileContainer;
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
+    TileIndex index = 0;
     for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
-        const ui32 floorIndex = z * aabb.dims.x * aabb.dims.y;
         for (ui32 y = 0; y < aabb.dims.y; ++y) {
-            for (ui32 x = 0; x < aabb.dims.x; ++x) {
-                const TileIndex index = floorIndex + y * aabb.dims.x + x;
+            for (ui32 x = 0; x < aabb.dims.x; ++x, ++index) {
                 if (ownedTiles.getBit(index)) {
                     // If were at the top or the tile above us is outside the interior, or its interior and a non air tile above us, mesh a ceiling
                     const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
@@ -897,13 +896,10 @@ void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& mes
     const TileContainer& tileContainer = *building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
-    for (ui32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
-        const ui32 floorIndex = z * floorStride;
-        // Loop along the y axis to look for free tiles
-        for (ui32 y = 0; y < aabb.dims.y; ++y) {
-            const ui32 yIndex = floorIndex + y * aabb.dims.x;
-            for (ui32 x = 0; x < aabb.dims.x; ++x) {
-                ui32 index = yIndex + x;
+    TileIndex index = 0;
+    for (i32 z = 0; z < building.mTileContainer->getDims().z; ++z) {
+        for (i32 y = 0; y < aabb.dims.y; ++y) {
+            for (i32 x = 0; x < aabb.dims.x; ++x, ++index) {
                 // Check if we should start supports here, i.e. below us is outside the building
                 if (ownedTiles.getBit(index) && (z == 0 || !ownedTiles.getBit(index - floorStride))) {
                     // Place floor tiles and increment X

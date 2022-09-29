@@ -382,7 +382,7 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     // Update the world with fixed timestep
     int ticks = 0;
     auto&& ecs = hostWorld->getECS();
-    f32 TODO_ELAPSED = gameTime.elapsedSec;
+    f32 TODO_ELAPSED = (f32)gameTime.elapsedSec;
     while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
@@ -397,7 +397,7 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
 
     updateTilePicking();
 
-    hostWorld->frameUpdate(mCameraController->getOwnedCamera(), gameTime.elapsedSec);
+    hostWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 
 }
 

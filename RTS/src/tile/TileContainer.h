@@ -255,7 +255,7 @@ public:
     const i32v3& getWorldPos3D() const { return mRootPos; }
     const f32v3& getWorldPosCenter3D() const { return f32v3(mRootPos) + f32v3(mDims) * 0.5f; }
     const i32v3& getDims() const { return mDims; }
-    f32 getFloorHeight() const { return mFloorHeight; }
+    ui32 getFloorHeight() const { return mFloorHeight; }
 
     ui32 getReadLockCount() const { return mReadLockCount; }
     ui32 getRefCount() const { return mRefCount; }

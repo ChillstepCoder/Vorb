@@ -176,8 +176,8 @@ void createTerrainAndWaterMesh(
     waterBuilder.setBoundingSphere(boundingSphere);
 
     // Build
-    terrainBuilder.setVertsTerrainFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
-    waterBuilder.setVertsWaterFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
+    terrainBuilder.setVertsTerrainFromPaddedHeightfield(posStart, (f32)dims.x, paddedHeightfield);
+    waterBuilder.setVertsWaterFromPaddedHeightfield(posStart, (f32)dims.x, paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex)

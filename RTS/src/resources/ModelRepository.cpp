@@ -27,7 +27,7 @@ ModelRepository::~ModelRepository() {
 // TODO: Cache model files in binary
 bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository) {
     ModelDef& def = mModelDefs.emplace_back();
-    def.mModelId = mModelDefs.size() - 1u;
+    def.mModelId = (ui32)(mModelDefs.size() - 1u);
     PreciseTimer timer;
 
     ModelDefFileData fileData;
@@ -159,7 +159,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
             SkinnedMesh& myMesh = model.mMeshes[m];
             verts.resize(outputMesh.vertex_count());
             assert(outputMesh.parts.size() == 1);
-            for (ui32 i = 0; i < outputMesh.vertex_count(); ++i) {
+            for (int i = 0; i < outputMesh.vertex_count(); ++i) {
                 const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
                 SkinnedModelVertex& myVert = verts[i];
                 memcpy(&myVert.pos, &part.positions[i * 3], sizeof(f32) * 3);
@@ -173,10 +173,10 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                     myVert.color = COLOR_WHITE;
                 }
                 // TODO: Shrink to ui8?
-                ui32 influencesCount = part.influences_count();
-                ui32 j = 0;
-                for (ui32 j = 0; j < influencesCount; ++j) {
-                    myVert.boneIDs[j] = part.joint_indices[i * influencesCount + j];
+                int influencesCount = part.influences_count();
+                int j = 0;
+                for (int j = 0; j < influencesCount; ++j) {
+                    myVert.boneIDs[j] = (ui8)part.joint_indices[i * influencesCount + j];
                 }
 
                 // Zero the weight first since we are re-using vertex buffers
@@ -188,16 +188,16 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                     memcpy(myVert.boneWeights, &part.joint_weights[i * (influencesCount - 1)], sizeof(f32) * (influencesCount - 1));
                 }
             }
-            const ui32 numJoints = outputMesh.num_joints();
+            const int numJoints = outputMesh.num_joints();
             assert(numJoints < 100);
             myMesh.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[numJoints]);
             myMesh.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[numJoints]);
-            for (ui32 i = 0; i < numJoints; ++i) {
-                myMesh.mJointRemaps[i] = outputMesh.joint_remaps[i];
+            for (int i = 0; i < numJoints; ++i) {
+                myMesh.mJointRemaps[i] = (ui8)outputMesh.joint_remaps[i];
                 myMesh.mInverseBindPoses[i] = outputMesh.inverse_bind_poses[i];
             }
             myMesh.mNumJoints = numJoints;
-            myMesh.setData(verts.data(), verts.size(), MeshDrawMode::STATIC);
+            myMesh.setData(verts.data(), (ui32)verts.size(), MeshDrawMode::STATIC);
             myMesh.setIndices(outputMesh.triangle_indices.data(), outputMesh.triangle_index_count());
             std::cout << "COPY " << timer.stop() << " ms" << std::endl; timer.start();
         }
@@ -243,7 +243,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
     // Store lookup
     assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
     mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
-
+    return true;
 }
 
 const ModelDef& ModelRepository::getModelDef(const nString& name) const

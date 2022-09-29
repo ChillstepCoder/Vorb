@@ -392,8 +392,8 @@ void IHeightmapGrid::adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adj
 
 void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     std::set<ui32> dirtyChunks;
-    for (ui32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
-        for (ui32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
+    for (i32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
+        for (i32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
             HeightmapPatchID id(f32v2(x, y));
             dirtyChunks.insert(id.id);
             f32v2 worldPosChunk = id.getWorldPos();
@@ -573,9 +573,8 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
-    for (ui32 y = 0; y < aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < aabb.dims.x; ++x) {
-            const ui32 index = y * aabb.dims.x + x;
+    for (i32 y = 0; y < aabb.dims.y; ++y) {
+        for (i32 x = 0; x < aabb.dims.x; ++x) {
             f32v2 pos(aabb.x + x + 0.5f, aabb.y + y + 0.5f);
             f32 h;
             if (tryComputeHeightAtPoint(pos, &h)) {
