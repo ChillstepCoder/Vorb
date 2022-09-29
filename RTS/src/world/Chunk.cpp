@@ -41,7 +41,7 @@ void Chunk::init(const ChunkID& chunkId) {
 
 void Chunk::allocateTileContainer() {
     // TODO: Not always
-    const ui32v2& worldPosInt2D = mChunkId.getWorldPosInt();
+    const i32v2& worldPosInt2D = mChunkId.getWorldPosInt();
     const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
     mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, true);
     mGrass.resize(CHUNK_SIZE);
@@ -170,7 +170,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-            Chunk& bottomChunk = sWorld->getChunk(ChunkID::fromWorldUI32v2(bottom.getWorldPos2D()));
+            Chunk& bottomChunk = sWorld->getChunk(ChunkID::fromWorldI32v2(bottom.getWorldPos2D()));
 			neighbors[(int)NeighborIndex8::BOTTOM] = *bottom.tile;
 			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = *bottomLeft.tile;
@@ -188,7 +188,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            Chunk& topChunk = sWorld->getChunk(ChunkID::fromWorldUI32v2(top.getWorldPos2D()));
+            Chunk& topChunk = sWorld->getChunk(ChunkID::fromWorldI32v2(top.getWorldPos2D()));
             neighbors[(int)NeighborIndex8::TOP] = *top.tile;
             TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_LEFT] = *topLeft.tile;

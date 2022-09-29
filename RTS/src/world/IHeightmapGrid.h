@@ -38,7 +38,7 @@ public:
     void setHeightAt(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
     void adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust);
     void adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adjust);
-    void flattenAABB(const ui32AABB2& aabb, f32 flattenHeight);
+    void flattenAABB(const i32AABB2& aabb, f32 flattenHeight);
 
     f32 getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const;
     bool tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const;
@@ -50,14 +50,14 @@ public:
     static void computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]);
     static bool areTrianglesFlippedAtTile(const TileHandle& tileHandle);
     f32 computeCenterHeightAtTile(ui32v2 worldTilePos) const;
-    void copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) const;
+    void copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 rowLength) const;
 
     static f32 computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos);
     f32 computeMinHeightAtTile(ui32v2 worldTilePos) const;
     f32 computeMaxHeightAtTile(ui32v2 worldTilePos) const;
 
-    f32 computeMeanHeightAtAABB(const ui32AABB2& aabb) const;
-    f32 computeMeanHeightAtAABB(const ui32AABB2& aabb, const BitArray& checkBits) const;
+    f32 computeMeanHeightAtAABB(const i32AABB2& aabb) const;
+    f32 computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const;
 
 private:
     void generateHeightDataPatch(HeightmapPatch& patch, const f32v2& position);

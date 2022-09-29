@@ -10,7 +10,7 @@
 #include "ecs/EntityComponentSystem.h"
 #include "ecs/component/OwnershipComponent.h"
 
-ItemStockpile::ItemStockpile(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
     : mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
 
@@ -27,7 +27,7 @@ ItemStockpile::ItemStockpile(const ui32AABB2& aabb, OPT bool* ownershipMask, ent
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.depth; ++y) {
         std::cout << "  ";
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
-            const ui32v2 worldPos(x, y);
+            const i32v2 worldPos(x, y);
             TileRef ref(sWorld->getTerrainTileHandleAtWorldPos(worldPos));
             bool c = ownershipMask[index];
             if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)*/) {

@@ -183,7 +183,7 @@ RoadID City::addRoad(CityRoad& road)
     }
 
     // Update tile flags with road info
-    /*ui32v2 worldPos;
+    /*i32v2 worldPos;
     for (worldPos.y = newRoad.aabb.pos.y; worldPos.y < newRoad.aabb.pos.y + newRoad.aabb.dims.y; ++worldPos.y) {
         for (worldPos.x = newRoad.aabb.pos.x; worldPos.x < newRoad.aabb.pos.x + newRoad.aabb.dims.x; ++worldPos.x) {
             TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
@@ -222,7 +222,7 @@ City* CityGraph::getClosestCityToPoint(const f32v2& pos) const
     return closest;
 }
 
-void CityGraph::createCityAt(const ui32v2& worldPos) {
+void CityGraph::createCityAt(const i32v2& worldPos) {
     std::unique_ptr<City> newCity = std::make_unique<City>(worldPos);
     mNodes.emplace_back(std::move(newCity));
 }

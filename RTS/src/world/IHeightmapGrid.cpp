@@ -390,7 +390,7 @@ void IHeightmapGrid::adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adj
     setHeightAt(id, vertIndex, patch.mHeightData->data[vertIndex] + adjust);
 }
 
-void IHeightmapGrid::flattenAABB(const ui32AABB2& aabb, f32 flattenHeight) {
+void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     std::set<ui32> dirtyChunks;
     for (ui32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
         for (ui32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
@@ -455,7 +455,7 @@ f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightD
 
 f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset)
 {
-    const f32v2 offset = chunkOffset + f32v2((chunkId.pos % HEIGHTMAP_PATCH_WIDTH_CHUNKS) * (ui32)CHUNK_WIDTH);
+    const f32v2 offset = chunkOffset + f32v2((chunkId.pos % ui32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (ui32)CHUNK_WIDTH);
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
 
     // Compute normalized offset from bl
@@ -482,7 +482,7 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worl
 
 f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
 
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldUI32v2(worldTilePos));
+    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
@@ -492,15 +492,15 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
     return computeCenterHeightAtTile(patch.mHeightData->data, worldTilePos);
 }
 
-void IHeightmapGrid::copyHeightRowToBuffer(f32* dst, ui32v2 worldPosStart, ui32 rowLength) const {
+void IHeightmapGrid::copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 rowLength) const {
     assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH * 2.0f);
 
     ui32 lengthRemaining = rowLength;
-    ui32v2 worldPos = worldPosStart;
+    i32v2 worldPos = worldPosStart;
     do {
         // Get heightmap position and vertex offset
-        HeightmapPatchID id = HeightmapPatchID::fromWorldUI32v2(worldPos);
-        ui32v2 offset = (worldPos - id.getWorldPosInt()) / HEIGHTMAP_QUAD_SIZE;
+        HeightmapPatchID id = HeightmapPatchID::fromWorldI32v2(worldPos);
+        i32v2 offset = (worldPos - i32v2(id.getWorldPosInt())) / HEIGHTMAP_QUAD_SIZE;
         assert(offset.x < HEIGHTMAP_VERT_WIDTH_PER_PATCH);
         // Get length values
         const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
@@ -546,7 +546,7 @@ f32 IHeightmapGrid::computeMinHeightAtTile(const f32* heightData, ui32v2 worldTi
 
 f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
 
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldUI32v2(worldTilePos));
+    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
@@ -557,7 +557,7 @@ f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
 }
 
 f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
-    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldUI32v2(worldTilePos));
+    HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
     if (!patch.isDone()) {
@@ -569,7 +569,7 @@ f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
     return glm::max(glm::max(glm::max(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
-f32 IHeightmapGrid::computeMeanHeightAtAABB(const ui32AABB2& aabb) const {
+f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
@@ -590,7 +590,7 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const ui32AABB2& aabb) const {
     return  meanHeight / (f32)total;
 }
 
-f32 IHeightmapGrid::computeMeanHeightAtAABB(const ui32AABB2& aabb, const BitArray& checkBits) const {
+f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const {
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;

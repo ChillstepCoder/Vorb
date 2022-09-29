@@ -158,7 +158,7 @@ private:
 
     // City center dims is even so this will be bottom left most center tile
     ui32v2 mCityCenterWorldPos;
-    ui32AABB2 mCityAABB; // x,y,w,h
+    i32AABB2 mCityAABB; // x,y,w,h
 
     ui32 mPopulation = 0;
     ui32 mPopulationCapacityRemaining = 0;
@@ -169,7 +169,7 @@ public:
 
     void update();
     City* getClosestCityToPoint(const f32v2& pos) const;
-    void createCityAt(const ui32v2& worldPos);
+    void createCityAt(const i32v2& worldPos);
 
     std::vector<std::unique_ptr<City>> mNodes;
 };

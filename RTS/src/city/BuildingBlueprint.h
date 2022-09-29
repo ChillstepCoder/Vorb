@@ -25,7 +25,7 @@ static_assert(sizeof(BlueprintTile) == 1, "Keep it small");
 typedef ui32 BuildingBlueprintId;
 #define INVALID_BLUEPRINT_ID UINT32_MAX
 
-enum BuildingBlueprintFlags : ui8 {
+enum class BuildingBlueprintFlags : ui8 {
     BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE = 1 << 0
 };
 
@@ -33,13 +33,13 @@ struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
     ui32v2 getWorldPositionOfTile(ui32 tileIndex) const {
-        return aabb.pos + ui32v2(tileIndex % aabb.dims.x, tileIndex / aabb.dims.x);
+        return aabb.pos + i32v2(tileIndex % aabb.dims.x, tileIndex / aabb.dims.x);
     }
 
     const BuildingDef& desc;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::WEST;
-    ui32AABB2 aabb;
+    i32AABB2 aabb;
     ui32 floorCount = 1u;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
 
@@ -59,7 +59,7 @@ struct BuildingBlueprint {
     entt::entity mOwnerEntity = INVALID_ENTITY;
     bool isGenerating = true;
     bool isBuilding = false;
-    BuildingBlueprintFlags flags = {};
+    BitFlags<BuildingBlueprintFlags> flags;
     f32 zPos = 0.0f;
     ui32 floorHeight = 3;
     // TODO: This is for debug only

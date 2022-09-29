@@ -101,12 +101,12 @@ struct DebugOptions {
     int mLightingPresetSplit = LIGHT_PRESET_CUSTOM;
     bool mLightPresetSplitView = false;
     float mLightPresetSplitAmount = 0.43f;
-    f32 unUchMaxDisplayBrightness = 1.1;
-    f32 unUchContrast = 0.7;
-    f32 unUchLinearSectionStart = 0.06;
-    f32 unUchLinearSectionLength = 0.6;
-    f32 unUchBlack = 1.33;
-    f32 unUchPedestal = 0.0;
+    f32 unUchMaxDisplayBrightness = 1.1f;
+    f32 unUchContrast = 0.7f;
+    f32 unUchLinearSectionStart = 0.06f;
+    f32 unUchLinearSectionLength = 0.6f;
+    f32 unUchBlack = 1.33f;
+    f32 unUchPedestal = 0.0f;
     // Game settings
     f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
     f32 mLoadRange = CHUNK_LOAD_RANGE;

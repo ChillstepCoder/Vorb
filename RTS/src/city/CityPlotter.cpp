@@ -446,9 +446,9 @@ void CityPlotter::addRoad(CityDistrict& district, ui32v2 startPos, ui32v2 endPos
 }
 
 // Returns false if we deleted the plot
-bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AABB2& aabb, OPT CityRoad* road) {
+bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const i32AABB2& aabb, OPT CityRoad* road) {
 
-    const ui32AABB2& plotAABB = mPlots[plotIndex]->aabb;
+    const i32AABB2& plotAABB = mPlots[plotIndex]->aabb;
     const ui32v2 plotBottomLeft = plotAABB.getBottomLeft();
     const ui32v2 plotBottomRight = plotAABB.getBottomRight();
     const ui32v2 plotTopLeft = plotAABB.getTopLeft();
@@ -464,7 +464,7 @@ bool CityPlotter::splitPlotByAABBIntersect(CityPlotIndex plotIndex, const ui32AA
         return true;
     }
 
-    ui32v2 aabbCorners[4];
+    i32v2 aabbCorners[4];
     aabb.getCorners(aabbCorners);
 
     bool intersects[4] = {
@@ -655,7 +655,7 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
     ui32 offset = splitPoint[oppositeAxis] - plotToSplit.aabb[oppositeAxis];
     assert(offset != 0 && offset < plotToSplit.aabb[oppositeAxis] + plotToSplit.aabb[oppositeAxis + 2]);
     // Add new plot
-    ui32AABB2 newAABB = plotToSplit.aabb;
+    i32AABB2 newAABB = plotToSplit.aabb;
     newAABB[oppositeAxis] = plotToSplit.aabb[oppositeAxis] + offset;
     newAABB[oppositeAxis + 2] = plotToSplit.aabb[oppositeAxis + 2] - offset;
     // Shrink old plot
@@ -682,16 +682,16 @@ CityPlotIndex CityPlotter::splitPlotAlongAxis(ui32v2 splitPoint, CityPlotIndex p
     return (CityPlotIndex)(mPlots.size() - 1);
 }
 
-void CityPlotter::tryConnectRoad(CityPlotIndex plotIndex, const ui32AABB2& roadAabb, RoadID roadID) {
+void CityPlotter::tryConnectRoad(CityPlotIndex plotIndex, const i32AABB2& roadAabb, RoadID roadID) {
     if (roadID == INVALID_ROAD_ID) {
         return;
     }
     CityPlot& plot = *mPlots[plotIndex];
-    const ui32AABB2& plotAABB = plot.aabb;
-    ui32v2 plotAABBCorners[4];
+    const i32AABB2& plotAABB = plot.aabb;
+    i32v2 plotAABBCorners[4];
     plotAABB.getCorners(plotAABBCorners);
 
-    ui32v2 roadAABBCorners[4];
+    i32v2 roadAABBCorners[4];
     roadAabb.getCorners(roadAABBCorners);
 
     // Edge kiss hookup roads

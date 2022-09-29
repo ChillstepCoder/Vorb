@@ -25,6 +25,9 @@ IWorld& WorldFactory::makeWorld(WorldType type) {
             break;
 
     }
+    // Failure case
+    assert(false);
+    return *sWorld;
 }
 
 IWorld& WorldFactory::makeClientWorld() {

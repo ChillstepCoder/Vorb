@@ -22,7 +22,7 @@ struct RoomNode {
     RoomNodeID childRooms[MAX_CHILD_ROOMS]; // Connected via door or stairs, max of 4
     RoomGateInfo adjacentRooms[MAX_ADJACENT_ROOMS]; // Like child rooms, connected via door or open wall, but is not necessarily a direct child, also includes exterior doors
     RoomNodeID id = INVALID_ROOM_ID;
-    ui32AABB2 aabb = { 0 };
+    i32AABB2 aabb = { 0 };
     ui16v2 offsetFromZero;
     ui16 size = 0;
     ui16 desiredSize = 0;

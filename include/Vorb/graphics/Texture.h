@@ -30,7 +30,7 @@ namespace vorb {
         /// Wrapper struct for a texture
         class Texture {
         public:
-            Texture() {};
+            Texture() : height(0), width(0) {};
             Texture(VGTexture id,
                     ui32 w,
                     ui32 h,

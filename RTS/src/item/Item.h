@@ -57,6 +57,6 @@ KEG_TYPE_DECL(Item);
 
 struct StoredItemStack {
     ItemStack stack;
-    ui32v2 worldPos = {};
+    i32v2 worldPos = {};
     bool isInContainer = false;
 };

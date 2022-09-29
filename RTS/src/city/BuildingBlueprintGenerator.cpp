@@ -71,7 +71,7 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
 
     // Render all the tiles
     for (int z = 0; z < bp.floorCount; ++z) {
-        const ui32 floorIndex = z * bp.aabb.dims.x * bp.aabb.dims.y;
+        const i32 floorIndex = z * bp.aabb.dims.x * bp.aabb.dims.y;
         for (int y = 0; y < bp.aabb.dims.y; ++y) {
             for (int x = 0; x < bp.aabb.dims.x; ++x) {
                 const TileIndex index = floorIndex + y * bp.aabb.dims.x + x;
@@ -88,7 +88,7 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
 
 }
 
-inline bool boundsCheckTile(const i16v2& pos, const ui32AABB2& aabb) {
+inline bool boundsCheckTile(const i16v2& pos, const i32AABB2& aabb) {
     return pos.x >= 0 && pos.x < aabb.width&& pos.y >= 0 && pos.y < aabb.depth;
 }
 
@@ -98,12 +98,12 @@ bool boundsCheckRoom(i16 pos, i16 dim) {
 }
 
 struct WallInfo {
-    ui32v2 startPos;
-    ui32 length;
+    i32v2 startPos;
+    i32 length;
 };
 
 
-WallInfo getWallInfoFromRoomAABB(Cartesian wallDir, const ui32AABB2& aabb) {
+WallInfo getWallInfoFromRoomAABB(Cartesian wallDir, const i32AABB2& aabb) {
     WallInfo rv;
     switch (wallDir) {
         case Cartesian::SOUTH:
@@ -139,7 +139,7 @@ BuildingBlueprintGenerator::BuildingBlueprintGenerator(BuildingDescriptionReposi
 {
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox)
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintAsyncThenSendToBuilder(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox)
 {
     assert(desc.publicRoomCountRange.y != 0.0f);
     BuildingBlueprintId id = getNextBuildingID();
@@ -163,7 +163,7 @@ std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprint
     return bp;
 }
 
-std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui16v2 plotSize, const ui32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox) {
+std::unique_ptr<BuildingBlueprint> BuildingBlueprintGenerator::generateBlueprintSync(BuildingDescriptionRepository& buildingRepo, const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, i32v2 plotSize, const i32v2& bottomLeftPos, entt::entity ownerEntity, BuildingBlueprintFlags flags, f32 zPosApprox) {
     BuildingBlueprintId id = getNextBuildingID();
     std::unique_ptr<BuildingBlueprint> bp = std::make_unique<BuildingBlueprint>(desc, sizeAlpha, entrySide, plotSize, bottomLeftPos, ownerEntity, flags);
     assert(plotSize.x > 2 && plotSize.y > 2);
@@ -227,7 +227,7 @@ void BuildingBlueprintGenerator::generateBlueprintInternal(BuildingBlueprint* bP
 
 void BuildingBlueprintGenerator::addPublicRoomsToGraph(BuildingBlueprint& bp) {
     // Generate public room structure using grammar
-    ui32 publicRoomCount = bp.desc.publicRoomCountRange.y <= bp.desc.publicRoomCountRange.x ?
+    i32 publicRoomCount = bp.desc.publicRoomCountRange.y <= bp.desc.publicRoomCountRange.x ?
         bp.desc.publicRoomCountRange.x : Random::xorshf96() % (bp.desc.publicRoomCountRange.y - bp.desc.publicRoomCountRange.x) + bp.desc.publicRoomCountRange.x;
     assert(publicRoomCount); // Must have at least one public room
     bp.rooms.resize(publicRoomCount);
@@ -238,11 +238,11 @@ void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp)
 {
     assert(bp.desc.publicRooms.size());
     ui8v2 countLookup[255]; // (current, max)
-    ui32 publicRoomCount = (ui32)bp.desc.publicRooms.size();
-    ui32 availablePublicRooms = 0;
+    i32 publicRoomCount = (i32)bp.desc.publicRooms.size();
+    i32 availablePublicRooms = 0;
 
     { // Pre-pass set up count lookup
-        ui32 roomIndex = 0;
+        i32 roomIndex = 0;
         for (roomIndex = 0; roomIndex < publicRoomCount; ++roomIndex) {
             const PossibleRoom& room = bp.desc.publicRooms[roomIndex];
             countLookup[roomIndex].x = 0;
@@ -253,7 +253,7 @@ void BuildingBlueprintGenerator::assignPublicRooms(BuildingBlueprint& bp)
     assert(availablePublicRooms >= publicRoomCount);
 
     {// Generate rooms in order of priority while breadth first walking the tree
-        ui32 roomIndex = 0;
+        i32 roomIndex = 0;
         for (auto&& node : bp.rooms) {
             // Find a valid public room
             ui8v2* roomCount = &countLookup[roomIndex];
@@ -284,15 +284,15 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprint& bp) {
     const size_t numPublicRooms = bp.rooms.size();
     ui8v2 countLookup[255]; // (current, max)
     assert(numPublicRooms);
-    ui32 privateRoomCount = round(bp.sizeAlpha * (bp.desc.privateRoomCountRange.y - bp.desc.privateRoomCountRange.x) + bp.desc.privateRoomCountRange.x);
+    i32 privateRoomCount = round(bp.sizeAlpha * (bp.desc.privateRoomCountRange.y - bp.desc.privateRoomCountRange.x) + bp.desc.privateRoomCountRange.x);
     if (!privateRoomCount) {
         return;
     }
 
-    ui32 availablePrivateRooms = 0;
+    i32 availablePrivateRooms = 0;
 
     { // Pre-pass set up count lookup
-        ui32 roomIndex = 0;
+        i32 roomIndex = 0;
         for (roomIndex = 0; roomIndex < bp.desc.privateRooms.size(); ++roomIndex) {
             const PossibleRoom& room = bp.desc.privateRooms[roomIndex];
             ui8 roomCount = vmath::roundApprox(vmath::lerp((f32)room.countRange.x, (f32)room.countRange.y, bp.sizeAlpha));
@@ -351,10 +351,10 @@ void BuildingBlueprintGenerator::addStickOnRoomsToGraph()
 
 }
 
-ui16 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
-    ui16 maximumChildDepth = 0;
+i32 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
+    i32 maximumChildDepth = 0;
     for (int i = 0; i < node->numChildren; ++i) {
-        const ui16 depth = getMaximumDepthRecursive(nodes, &nodes[node->childRooms[i]]);
+        const i32 depth = getMaximumDepthRecursive(nodes, &nodes[node->childRooms[i]]);
         if (depth > maximumChildDepth) {
             maximumChildDepth = depth;
         }
@@ -362,7 +362,7 @@ ui16 getMaximumDepthRecursive(std::vector<RoomNode>& nodes, RoomNode* node) {
     return maximumChildDepth + 1;
 }
 
-void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 availableWidthSpan, ui32 maxXOffsetPerLayer, ui32v2 currentOffset, const ui32v2& dims2d, VisualLog* visLog) {
+void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 availableWidthSpan, i32 maxXOffsetPerLayer, i32v2 currentOffset, const i32v2& dims2d, VisualLog* visLog) {
     if (node->numChildren == 0) {
         return;
     }
@@ -370,10 +370,10 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
     std::vector<RoomNode>& nodes = bp.rooms;
 
     // TODO: Worry about even vs odd?
-    const ui16 myDesiredRadius = node->desiredWidth / 2;
+    const i32 myDesiredRadius = node->desiredWidth / 2;
 
     // Determine desired child y span
-    ui16 totalChildSpan = 0;
+    i32 totalChildSpan = 0;
     for (int i = 0; i < node->numChildren; ++i) {
         RoomNode& child = nodes[node->childRooms[i]];
         totalChildSpan += child.desiredWidth;
@@ -422,7 +422,7 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
         f32 childWidthSpan = desiredWidthSpan / numChildrenOnSameFloor;
         f32 widthSegmentSize = childWidthSpan / 2.0f;
         // Start at the top
-        currentOffset.y -= (ui16)(widthSegmentSize * (node->numChildren - 1));
+        currentOffset.y -= (i32)(widthSegmentSize * (node->numChildren - 1));
         for (int i = 0; i < node->numChildren; ++i) {
             RoomNode& child = nodes[node->childRooms[i]];
             // If above, continue since we did this already
@@ -430,9 +430,9 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                 continue;
             }
 
-            const ui16 childDesiredRadius = child.desiredWidth / 2;
+            const i32 childDesiredRadius = child.desiredWidth / 2;
 
-            ui16 xOffset = vmath::min(maxXOffsetPerLayer, (ui32)(myDesiredRadius + childDesiredRadius));
+            i32 xOffset = vmath::min(maxXOffsetPerLayer, (i32)(myDesiredRadius + childDesiredRadius));
             if (xOffset < 1) xOffset = 1;
 
             child.offsetFromZero = currentOffset;
@@ -460,12 +460,12 @@ void BuildingBlueprintGenerator::initRooms(BuildingBlueprint& bp, BuildingDescri
         room.id = (RoomNodeID)i;
 
         const RoomDef& desc = buildingRepo.getRoomDefFromID(room.roomDefId);
-        room.desiredWidth = (ui16)round(lerp((f32)desc.minWidth, (f32)desc.maxWidth, bp.sizeAlpha));
+        room.desiredWidth = (i32)round(lerp((f32)desc.minWidth, (f32)desc.maxWidth, bp.sizeAlpha));
         room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
 }
 
-void applyForceOffset(ui16v2& offset, const f32v2& force, const ui16v2& dims) {
+void applyForceOffset(ui16v2& offset, const f32v2& force, const i32v2& dims) {
     assert(offset.x < 10000 && offset.y < 10000);
     i32v2 newOffset = i32v2(offset) + i32v2(force);
     offset.x = vmath::clamp(newOffset.x, 1, dims.x - 2);
@@ -477,10 +477,10 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     if (visLog) visLog->nextStep("Place rooms");
     // Breadth first search room placement
     RoomNode* root = &bp.rooms[0];
-    ui32 maximumDepth = getMaximumDepthRecursive(bp.rooms, root);
+    i32 maximumDepth = getMaximumDepthRecursive(bp.rooms, root);
 
     // Determine which dims to use for cartesian
-    ui32v2 dims;
+    i32v2 dims;
     switch (bp.entrySide) {
         case Cartesian::SOUTH:
         case Cartesian::NORTH:
@@ -492,10 +492,10 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
             dims = bp.aabb.dims;
             break;
     }
-    const ui32 maxDepthOffsetPerLayer = dims.x / maximumDepth;
+    const i32 maxDepthOffsetPerLayer = dims.x / maximumDepth;
     f32 availableWidthSpan = dims.y;
     // Place the root, +1 so we are less likely to touch the side of the AABB
-    root->offsetFromZero = i32v2(vmath::min(maxDepthOffsetPerLayer / 2, (ui32)root->desiredWidth / 2) + 1, dims.y / 2);
+    root->offsetFromZero = i32v2(vmath::min(maxDepthOffsetPerLayer / 2, (i32)root->desiredWidth / 2) + 1, dims.y / 2);
     if (root->offsetFromZero.x == 0) root->offsetFromZero.x = 1u;
     assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
@@ -509,7 +509,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     switch (bp.entrySide) {
         case Cartesian::SOUTH:
             for (auto&& room : bp.rooms) {
-                ui16 tmp = room.offsetFromZero.x;
+                i32 tmp = room.offsetFromZero.x;
                 room.offsetFromZero.x = room.offsetFromZero.y;
                 room.offsetFromZero.y = bp.aabb.dims.y - tmp - 1;
             }
@@ -529,8 +529,8 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
 
     // Clamp positions to be withing facade
     for (auto&& room : bp.rooms) {
-        room.offsetFromZero.x = vmath::clamp((ui32)room.offsetFromZero.x, (ui32)1u, bp.aabb.dims.x);
-        room.offsetFromZero.y = vmath::clamp((ui32)room.offsetFromZero.y, (ui32)1u, bp.aabb.dims.y);
+        room.offsetFromZero.x = vmath::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)bp.aabb.dims.x);
+        room.offsetFromZero.y = vmath::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)bp.aabb.dims.y);
         assert(room.offsetFromZero.x < 10000 && room.offsetFromZero.y < 10000);
     }
 
@@ -607,25 +607,22 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
 }
 
 // Helper
-inline ui32 getIndexAtPos(ui32v2 pos, ui32v2 dims, ui16 floorIndex) {
-    return (ui32)floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x;
+
+inline TileIndex getIndexAtPos(i32v2 pos, i32v2 dims, i32 floorIndex) {
+    return (TileIndex)(floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x);
 }
 
-inline ui32 getIndexAtPos(i32v2 pos, ui32v2 dims, ui16 floorIndex) {
-    return (ui32)floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x;
+inline TileIndex getIndexAtPos(i16v2 pos, i32v2 dims, i32 floorIndex) {
+    return (TileIndex)(floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x);
 }
 
-inline ui32 getIndexAtPos(i16v2 pos, ui32v2 dims, ui16 floorIndex) {
-    return (ui32)floorIndex * dims.y * dims.x + pos.y * dims.x + pos.x;
+inline TileIndex getIndexAtPos(i32 x, i32 y, i32v2 dims, i32 floorIndex) {
+    return (TileIndex)(floorIndex * dims.y * dims.x + y * dims.x + x);
 }
 
-inline ui32 getIndexAtPos(ui32 x, ui32 y, ui32v2 dims, ui16 floorIndex) {
-    return (ui32)floorIndex * dims.y * dims.x + y * dims.x + x;
-}
-
-inline ui32v2 getPosAtIndex(ui32 tileIndex, ui32v2 dims) {
-    ui32 floorStride = dims.x * dims.y;
-    return ui32v2(tileIndex % dims.x, (tileIndex % floorStride) / dims.x);
+inline i32v2 getPosAtIndex(TileIndex tileIndex, i32v2 dims) {
+    i32 floorStride = dims.x * dims.y;
+    return i32v2(tileIndex % dims.x, (tileIndex % floorStride) / dims.x);
 }
 
 inline f32 getPressureValue(const RoomNode& room) {
@@ -652,7 +649,7 @@ i32v2 WALL_ITERATE_OFFSETS[4] = {
 
 void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room) {
 
-    ui32AABB2& aabb = room.aabb;
+    i32AABB2& aabb = room.aabb;
     i32v2 iterPos;
     i32 length;
     switch (wallDir) {
@@ -687,9 +684,9 @@ void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room) {
 
     // Set new metadata
     const i32v2& iterateOffset = WALL_ITERATE_OFFSETS[e_cast(wallDir)];
-    // ui32 tilesAdded = 0;
+    // i32 tilesAdded = 0;
     for (int j = 0; j < length; ++j) {
-        const ui32 index = getIndexAtPos(iterPos, bp.aabb.dims, room.floorIndex);
+        const i32 index = getIndexAtPos(iterPos, bp.aabb.dims, room.floorIndex);
         RoomNodeID ownerId = bp.ownerArray[index];
         assert(ownerId == INVALID_ROOM_ID);
         //if (ownerId != INVALID_ROOM_ID) {
@@ -706,7 +703,7 @@ void expandWall(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room) {
 
 // Only fills gaps and will not overwrite any existing walls
 void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
-    ui32AABB2& aabb = room.aabb;
+    i32AABB2& aabb = room.aabb;
     i32v2 iterPos;
     i32 length;
     switch (wallDir) {
@@ -741,10 +738,10 @@ void expandWallGapsOnly(Cartesian wallDir, BuildingBlueprint& bp, RoomNode& room
 
     // Set new metadata
     const i32v2& iterateOffset = WALL_ITERATE_OFFSETS[e_cast(wallDir)];
-    ui32 tilesAdded = 0;
+    i32 tilesAdded = 0;
     for (int j = 0; j < length; ++j) {
         // Only if we aren't an overwritten wall
-        const ui32 index = getIndexAtPos(iterPos, bp.aabb.dims, room.floorIndex);
+        const i32 index = getIndexAtPos(iterPos, bp.aabb.dims, room.floorIndex);
         RoomNodeID ownerId = bp.ownerArray[index];
         if (ownerId == INVALID_ROOM_ID) {
             ++tilesAdded;
@@ -768,7 +765,7 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
 
     bool didExpand = false;
 
-    ui32AABB2& aabb = room.aabb;
+    i32AABB2& aabb = room.aabb;
     for (int i = 0; i < 4; ++i) {
         Cartesian wallDir = Cartesian(i);
         f32 currentPressure = getPressureValue(room);
@@ -789,7 +786,7 @@ bool expandRoomSquare(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) 
             bool canExpand = true;
             i16v2 outerPos = nextStart;
             for (int j = 0; j < wallInfo.length; ++j) {
-                const ui32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
+                const i32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
                 RoomNodeID ownerId = bp.ownerArray[index];
                 if (ownerId != INVALID_ROOM_ID) {
                     canExpand = false;
@@ -819,9 +816,9 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
 
     bool didExpand = false;
 
-    ui32AABB2& aabb = room.aabb;
+    i32AABB2& aabb = room.aabb;
     for (int iter = 0; iter < ITER_STEP; ++iter) {
-        ui32 expandCount = 0;
+        i32 expandCount = 0;
         for (int i = 0; i < 4; ++i) {
             Cartesian wallDir = Cartesian(i);
             f32 currentPressure = getPressureValue(room);
@@ -842,7 +839,7 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
                 bool canExpand = false;
                 i16v2 outerPos = nextStart;
                 for (int j = 0; j < wallInfo.length; ++j) {
-                    const ui32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
+                    const i32 index = getIndexAtPos(outerPos, bp.aabb.dims, room.floorIndex);
                     RoomNodeID ownerId = bp.ownerArray[index];
                     if (ownerId == INVALID_ROOM_ID) {
                         // We need at least one gap to expand into
@@ -873,10 +870,10 @@ bool expandRoomGaps(BuildingBlueprint& bp, RoomNode& room, VisualLog* visLog) {
 void BuildingBlueprintGenerator::placeWalls(BuildingBlueprint& bp, VisualLog* visLog) {
     if (visLog) visLog->nextStep("Place walls");
     // First place main segments
-    for (ui32 z = 0; z < bp.floorCount; ++z) {
-        for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-            for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
-                const ui32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+    for (i32 z = 0; z < bp.floorCount; ++z) {
+        for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
+            for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
+                const i32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
                 RoomNodeID roomId = bp.ownerArray[index];
                 if (roomId == INVALID_ROOM_ID) {
                     continue;
@@ -931,7 +928,7 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* v
     // lower parent layout for easier stair placement
     boost::container::static_vector<RoomNode*, 256> roomsOnThisFloorToExpand;
 
-    for (ui32 z = 0; z < bp.floorCount; ++z) {
+    for (i32 z = 0; z < bp.floorCount; ++z) {
         // Collect rooms, direct copy any rooms that are connected to parent via stairs
         roomsOnThisFloorToExpand.clear();
         for (auto&& room : bp.rooms) {
@@ -943,8 +940,8 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* v
                     room.aabb = parent.aabb;
                     // Iterate over every tile on the floor to copy
                     // TODO: AABB iterate instead
-                    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-                        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+                    for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
+                        for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
                             TileIndex myIndex = getIndexAtPos(x, y, bp.aabb.dims, z);
                             TileIndex parentIndex = myIndex - bp.aabb.dims.x * bp.aabb.dims.y;
                             if (bp.ownerArray[parentIndex] == parent.id) {
@@ -990,7 +987,7 @@ void BuildingBlueprintGenerator::expandRooms(BuildingBlueprint& bp, VisualLog* v
 ui8 ROOM_NODE_COUNT_CACHE[0xff + 0x1] = {};
 
 // NOTE: Iteration order is important! We iterate to the right and then upwards
-void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, VisualLog* visLog) {
+void FixupSingleRoomPieces(BuildingBlueprint& bp, i32 x, i32 y, i32 index, VisualLog* visLog) {
 
     bool iterateAgain;
 
@@ -1131,7 +1128,7 @@ void FixupSingleRoomPieces(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, Vi
 }
 
 // Sweeping Cellular Automata
-void CellularAutomataSubStepThickenPassages(BuildingBlueprint& bp, ui16 x, ui16 y, ui16 index, RoomNode& room) {
+void CellularAutomataSubStepThickenPassages(BuildingBlueprint& bp, i32 x, i32 y, i32 index, RoomNode& room) {
 
     // Order matters here, we want to thicken ahead of us and create a wave.
     // With this order, we are allowed to modify Right, up, and ourselves, but not down or left.
@@ -1172,10 +1169,10 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp, VisualLog* v
     if (visLog) visLog->nextStep("Room cleanup");
 
     for (int step = 0; step < CELLULAR_AUTOMATA_ITERATIONS; ++step) {
-        for (ui16 z = 0; z < bp.floorCount; ++z) {
-            for (ui16 y = 1; y < bp.aabb.dims.y - 1; ++y) {
-                for (ui16 x = 1; x < bp.aabb.dims.x - 1; ++x) {
-                    const ui16 index = getIndexAtPos(x, y, bp.aabb.dims, z);
+        for (i32 z = 0; z < bp.floorCount; ++z) {
+            for (i32 y = 1; y < bp.aabb.dims.y - 1; ++y) {
+                for (i32 x = 1; x < bp.aabb.dims.x - 1; ++x) {
+                    const i32 index = getIndexAtPos(x, y, bp.aabb.dims, z);
                     FixupSingleRoomPieces(bp, x, y, index, visLog);
                 }
             }
@@ -1185,7 +1182,7 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprint& bp, VisualLog* v
 
 void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& room)
 {
-    const ui32 index = getIndexAtPos(ui32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
+    const i32 index = getIndexAtPos(i32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
     // Init root node
     room.size = 1;
     bp.tiles[index].type = BlueprintTileType::FLOOR;
@@ -1193,20 +1190,20 @@ void BuildingBlueprintGenerator::initRoomWalls(BuildingBlueprint& bp, RoomNode& 
     assert(room.id != INVALID_ROOM_ID);
 
     // Init aabb
-    ui32AABB2& aabb = room.aabb;
+    i32AABB2& aabb = room.aabb;
     aabb.pos = room.offsetFromZero;
     aabb.width = 1;
     aabb.depth = 1;
 }
 
 struct DoorBFSNode {
-    ui32 index;
+    i32 index;
 };
 
-void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, Cartesian dir, ui32 tileIndex, RoomNode& room, const i32v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
+void doorBfs(std::vector<DoorBFSNode>& bfs, size_t& bfsBackIndex, BuildingBlueprint& bp, Cartesian dir, TileIndex tileIndex, RoomNode& room, const i32v2& currentPos, std::vector<bool>& visited, std::vector<bool>& isConnected, bool& canConnectToOutside, VisualLog* visLog) {
     const i32v2& directionOffset = WALL_EXPAND_OFFSETS[e_cast(dir)];
     const i32v2 nextPos = currentPos + directionOffset;
-    const ui32 nextTileIndex = getIndexAtPos(ui32v2(nextPos), bp.aabb.dims, room.floorIndex);
+    const TileIndex nextTileIndex = getIndexAtPos(i32v2(nextPos), bp.aabb.dims, room.floorIndex);
     if (!visited[nextTileIndex]) {
         RoomNodeID owner = bp.ownerArray[tileIndex];
         RoomNodeID nextOwner = bp.ownerArray[nextTileIndex];
@@ -1288,7 +1285,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
         bfsFrontIndex = 0;
         bfsBackIndex = 1;
 
-        const ui32 startIndex = getIndexAtPos(ui32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
+        const i32 startIndex = getIndexAtPos(i32v2(room.offsetFromZero), bp.aabb.dims, room.floorIndex);
         assert(bp.ownerArray[startIndex] == room.id); // TODO: This crashes on building 12 or so! We have a bug!
         // Visual log
         if (visLog) {
@@ -1296,7 +1293,7 @@ void BuildingBlueprintGenerator::placeDoors(BuildingBlueprint& bp, VisualLog* vi
         }
         visited[startIndex] = true;
         bfs[bfsFrontIndex].index = startIndex;
-        const ui32 floorSize = bp.aabb.dims.x * bp.aabb.dims.y;
+        const i32 floorSize = bp.aabb.dims.x * bp.aabb.dims.y;
         // Do the bfs
         while (bfsFrontIndex != bfsBackIndex) {
             const DoorBFSNode& node = bfs[bfsFrontIndex];
@@ -1340,18 +1337,18 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
     if (visLog) visLog->nextStep("Build interior edges");
     // TODO: Room minimum AABB?
     BitArray bits;
-    const ui32v2 floorDims(bp.aabb.dims.x, bp.aabb.dims.y);
+    const i32v2 floorDims(bp.aabb.dims.x, bp.aabb.dims.y);
     bits.resize(floorDims.x * floorDims.y);
     for (auto&& room : bp.rooms) {
    
-        ui32 tileIndex = room.floorIndex * floorDims.x * floorDims.y;
-        for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-            for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+        TileIndex tileIndex = room.floorIndex * floorDims.x * floorDims.y;
+        for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
+            for (i32 x = 0; x < bp.aabb.dims.x; ++x) {
                 bits.setBitTo(y * floorDims.x + x, bp.ownerArray[tileIndex] == room.id && bp.tiles[tileIndex].type == BlueprintTileType::FLOOR);
                 ++tileIndex;
             }
         }
-        const ui32v2 dims2d(bp.aabb.dims.x, bp.aabb.dims.y);
+        const i32v2 dims2d(bp.aabb.dims.x, bp.aabb.dims.y);
         room.interiorEdges = GridEdgeFinder::getInteriorEdgesFromOwnershipArray(bits, dims2d, visLog, room.floorIndex * bp.floorHeight);
         room.edgeWalk = GridEdgeFinder::getInteriorCounterClockwiseWalkFromGridEdges(room.interiorEdges, dims2d);
     }
@@ -1361,19 +1358,19 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
         for (auto&& room : bp.rooms) {
             for (auto&& edge : room.interiorEdges) {
                 if (edge.edgeDir == Cartesian::SOUTH) {
-                    ui32v2 pos = getPosAtIndex(edge.start, bp.aabb.dims);
+                    i32v2 pos = getPosAtIndex(edge.start, bp.aabb.dims);
                     visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(edge.length, 1.0f), color4(0.0f, 1.0f, 1.0f, 0.9f));
                 }
                 else if (edge.edgeDir == Cartesian::NORTH) {
-                    ui32v2 pos = getPosAtIndex(edge.end, bp.aabb.dims);
+                    i32v2 pos = getPosAtIndex(edge.end, bp.aabb.dims);
                     visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(edge.length, 1.0f), color4(0.0f, 1.0f, 0.0f, 0.9f));
                 }
                 else if (edge.edgeDir == Cartesian::WEST) {
-                    ui32v2 pos = getPosAtIndex(edge.end, bp.aabb.dims);
+                    i32v2 pos = getPosAtIndex(edge.end, bp.aabb.dims);
                     visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f, edge.length), color4(1.0f, 0.0f, 1.0f, 0.9f));
                 }
                 else if (edge.edgeDir == Cartesian::EAST) {
-                    ui32v2 pos = getPosAtIndex(edge.start, bp.aabb.dims);
+                    i32v2 pos = getPosAtIndex(edge.start, bp.aabb.dims);
                     visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f, edge.length), color4(1.0f, 0.0f, 0.0f, 0.9f));
                 }
             }
@@ -1384,7 +1381,7 @@ void BuildingBlueprintGenerator::buildRoomInteriorEdges(BuildingBlueprint& bp, V
         visLog->nextStep("Debug edge walk");
         for (auto&& room : bp.rooms) {
             for (auto&& index : room.edgeWalk) {
-                ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+                i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
                 visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.9f));
             }
         }
@@ -1436,9 +1433,9 @@ bool canPlaceStairsHere(TileIndex index, BuildingBlueprint& bp, RoomNode& child)
 }
 
 bool isAtWallCorner(TileIndex index, BuildingBlueprint& bp) {
-    const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
-    ui32 adjacentWallCount = 0;
+    i32 adjacentWallCount = 0;
     if (bp.walls[index].west.isValid() || bp.walls[index - 1].east.isValid()) {
         ++adjacentWallCount;
     }
@@ -1457,7 +1454,7 @@ bool isAtWallCorner(TileIndex index, BuildingBlueprint& bp) {
 
 bool isRunningIntoWallAtEnd(TileIndex index, BuildingBlueprint& bp, Cartesian dir) {
     i16v2 pos = getPosAtIndex(index, bp.aabb.dims);
-    const ui32 floorIndex = index / (bp.aabb.dims.x * bp.aabb.dims.y);
+    const i32 floorIndex = index / (bp.aabb.dims.x * bp.aabb.dims.y);
     assert(pos.x > 0 && pos.x < bp.aabb.dims.x - 1 && pos.y > 0 && pos.y < bp.aabb.dims.y - 1); // We should have a wall buffer guarenteed
     pos += CARTESIAN_NORMALS[e_cast(dir)];
     return bp.tiles[getIndexAtPos(pos, bp.aabb.dims, floorIndex + 1)].type != BlueprintTileType::FLOOR;
@@ -1492,10 +1489,10 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         assert(child != nullptr);
 
         // Find stairs placement runs
-        ui32 currentRunLength = 0;
-        ui32 i = 0;
+        i32 currentRunLength = 0;
+        i32 i = 0;
         while (true) {
-            const ui32 bitIndex = room.edgeWalk[i];
+            const i32 bitIndex = room.edgeWalk[i];
             const TileIndex index = bitIndex + room.floorIndex * bp.aabb.dims.x * bp.aabb.dims.y;
             // Valid stair placement?
             if (currentRunLength < room.edgeWalk.size() && canPlaceStairsHere(index, bp, *child) &&
@@ -1516,7 +1513,7 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 runs.push_back(index);
                 ++currentRunLength;
                 if (visLog) {
-                    const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+                    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
                     visLog->addFilledQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.25f));
                 }
             }
@@ -1529,7 +1526,7 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 }
                 currentRunLength = 0;
                 if (visLog) {
-                    const ui32v2 pos = getPosAtIndex(index, bp.aabb.dims);
+                    const i32v2 pos = getPosAtIndex(index, bp.aabb.dims);
                     visLog->addWireQuad(f32v3(pos.x, pos.y, room.floorIndex * bp.floorHeight), f32v2(1.0f), color4(0.7f, 0.0f, 0.0f, 0.9f));
                 }
             }
@@ -1542,14 +1539,14 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         }
         assert(currentRunLength == 0);
         // Enumerate runs and find the best/most valid one for stairs
-        const ui32 STAIRS_UP_COUNT = bp.floorHeight + 1;
-        ui32 bestRunStart = UINT32_MAX;
-        ui32 bestRunLength = UINT32_MAX;
+        const i32 STAIRS_UP_COUNT = bp.floorHeight + 1;
+        i32 bestRunStart = UINT32_MAX;
+        i32 bestRunLength = UINT32_MAX;
         if (runs.size()) {
             dirs.resize(runs.size());
             for (size_t i = 0; i < runStarts.size(); ++i) {
-                const ui32 runStart = runStarts[i];
-                const ui32 runLength = runLengths[i];
+                const i32 runStart = runStarts[i];
+                const i32 runLength = runLengths[i];
                 if (runLength < STAIRS_UP_COUNT) {
                     continue;
                 }
@@ -1557,9 +1554,9 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
                 Cartesian prevDir = Cartesian::NONE;
                 Cartesian dir;
                 
-                ui32 upCount = 0;
+                i32 upCount = 0;
                 bool wasFlat = false;
-                ui32 j;
+                i32 j;
                 for (j = 0; j < runLength - 1; ++j) {
                     // Look ahead for direction
                     const TileIndex index = runs[runStart + j];
@@ -1644,9 +1641,9 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         // Add stair pieces
         auto& stairs = bp.stairs.emplace_back();
         stairs.reserve(stairs.size() + bestRunLength);
-        ui32 height = 0;
+        i32 height = 0;
         Cartesian prevDir = Cartesian::NONE;
-        for (ui32 j = 0; j < bestRunLength; ++j) {
+        for (i32 j = 0; j < bestRunLength; ++j) {
             const TileIndex tileIndex = runs[bestRunStart + j];
             bp.tiles[tileIndex].type = BlueprintTileType::STAIRS;
             if (j > 0) {
@@ -1688,17 +1685,17 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     bp.tileRecipes[e_cast(BlueprintTileType::AIR)] = nullptr;
     static_assert(e_cast(BlueprintTileType::TYPES) == 7);
 
-    std::unordered_map<RoomNodeID, ui32v4 /* xspan, yspan */ > roomBoundsLookup;
+    std::unordered_map<RoomNodeID, i32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
 
-    for (ui32 i = 0; i < (ui32)bp.tiles.size(); ++i) {
+    for (i32 i = 0; i < (i32)bp.tiles.size(); ++i) {
         // Compute bounds
         RoomNodeID id = bp.ownerArray[i];
         if (id != INVALID_ROOM_ID) {
-            const ui32v2 pos = getPosAtIndex(i, bp.aabb.dims);
+            const i32v2 pos = getPosAtIndex(i, bp.aabb.dims);
             auto&& it = roomBoundsLookup.find(id);
             if (it == roomBoundsLookup.end()) {
-                roomBoundsLookup[id] = ui32v4(pos.x, pos.x, pos.y, pos.y);
+                roomBoundsLookup[id] = i32v4(pos.x, pos.x, pos.y, pos.y);
             }
             else {
                 // AABB bounds
@@ -1748,7 +1745,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     // Set up true AABBs (non offset)
     for (auto&& it : roomBoundsLookup) {
         RoomNode& room = bp.rooms[it.first];
-        // ui32AABB2 oldAABB = room.aabb;
+        // i32AABB2 oldAABB = room.aabb;
         room.aabb.pos.x = it.second.x + bp.aabb.x;
         room.aabb.dims.x = it.second.y - it.second.x + 1;
         room.aabb.pos.y = it.second.z + bp.aabb.y;
@@ -1757,7 +1754,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     }
 
     for (auto&& it : requiredItems) {
-        bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, it.second });
+        bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, (ui32)it.second });
     }
 }
 

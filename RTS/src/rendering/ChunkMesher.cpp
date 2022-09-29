@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ChunkMesher.h"
 
-#include "world/World.h"
+#include "world/IWorld.h"
 #include "world/Chunk.h"
 #include "resources/TileRepository.h"
 #include "rendering/mesh/Mesh.h"

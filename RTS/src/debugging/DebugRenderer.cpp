@@ -178,7 +178,7 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height
     lines.emplace_back(botRight, botLeft, color);
 }
 
-void DebugRenderer::drawAABB(const ui32AABB2& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawAABB(const i32AABB2& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_MAIN_THREAD());
     f32v2 fPos(aabb.pos);
     f32v2 fDims(aabb.dims);

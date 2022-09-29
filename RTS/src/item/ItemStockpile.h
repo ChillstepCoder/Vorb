@@ -49,7 +49,7 @@ class ItemStockpile
     friend class ItemStockpileRegistry;
     friend class RenderContext;
 public:
-    ItemStockpile(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
@@ -62,7 +62,7 @@ public:
     CALLER_DELETE std::unique_ptr<ItemReservation> tryPromiseItemStack(ItemStack itemStack, ui32 minimumQuantity);
 
     ui32v2 getWorldPositionAtIndex(ui32 index) const;
-    const ui32AABB2& getAABB() const { return mAABB; }
+    const i32AABB2& getAABB() const { return mAABB; }
 
     // Events
     Event<ItemStockpile*> onDestroy;
@@ -86,7 +86,7 @@ private:
     std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;
     std::unordered_set<ItemReservation*> mReservations;
 
-    ui32AABB2 mAABB = ui32AABB2(0);
+    i32AABB2 mAABB = i32AABB2(0);
     f32 mZPos = 0; // TODO: Use this better
     entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile
 

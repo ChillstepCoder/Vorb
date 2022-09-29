@@ -79,7 +79,7 @@ entt::entity IWorld::createEntity(const f32v3& pos, const nString& typeName) {
     return mEntityFactory->createEntity(*mPhysWorld, pos, typeName);
 }
 
-bool IWorld::tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer) {
+bool IWorld::tileHasHarvestableResource(const i32v2& worldPos, TileResource resource, TileLayer* outLayer) {
     TileHandle handle = getTerrainTileHandleAtWorldPos(worldPos);
     if (handle.isValid()) {
         return handle.tile->hasHarvestableResource(resource, outLayer);
@@ -88,22 +88,22 @@ bool IWorld::tileHasHarvestableResource(const ui32v2& worldPos, TileResource res
 }
 
 //  TODO: No std function?
-void IWorld::efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
+void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
 {
     assert(IS_MAIN_THREAD());
     // TODO: handle this without asserts
     // Start at bottom left
-    ui32v2 worldPos;
+    i32v2 worldPos;
     ui32 spanX = CHUNK_WIDTH; // Logically these initial values wont actually be used, but need to please compiler
     ui32 spanY = CHUNK_WIDTH;
     for (worldPos.y = aabb.y; worldPos.y < aabb.y + aabb.depth;) {
         for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.depth;) {
             TileHandle cornerHandle = getTerrainTileHandleAtWorldPos(worldPos);
             assert(cornerHandle.container);
-            Chunk& chunk = sWorld->getChunk(ChunkID::fromWorldUI32v2(cornerHandle.getWorldPos2D()));
+            Chunk& chunk = sWorld->getChunk(ChunkID::fromWorldI32v2(cornerHandle.getWorldPos2D()));
             ui32v3 offset = cornerHandle.getContainerOffset();
-            const ui32 distFromRightEdge = CHUNK_WIDTH - offset.x;
-            const ui32 distFromTopEdge = CHUNK_WIDTH - offset.y;
+            const i32 distFromRightEdge = CHUNK_WIDTH - offset.x;
+            const i32 distFromTopEdge = CHUNK_WIDTH - offset.y;
             spanX = std::min(distFromRightEdge, aabb.width);
             spanY = std::min(distFromTopEdge, aabb.depth); // TODO: Prob clever way to move this up a loop
             for (ui32 dy = 0; dy < spanY; ++dy) {
@@ -125,12 +125,12 @@ const Chunk& IWorld::getChunkAtPosition(const f32v2& worldPos) const {
     return getChunk(ChunkID(worldPos));
 }
 
-Chunk& IWorld::getChunkAtPosition(const ui32v2& worldPos) {
-    return getChunk(ChunkID::fromWorldUI32v2(worldPos));
+Chunk& IWorld::getChunkAtPosition(const i32v2& worldPos) {
+    return getChunk(ChunkID::fromWorldI32v2(worldPos));
 }
 
-const Chunk& IWorld::getChunkAtPosition(const ui32v2& worldPos) const {
-    return getChunk(ChunkID::fromWorldUI32v2(worldPos));
+const Chunk& IWorld::getChunkAtPosition(const i32v2& worldPos) const {
+    return getChunk(ChunkID::fromWorldI32v2(worldPos));
 }
 
 Chunk& IWorld::getChunkAtPosition(const ui16v2& worldPos) {
@@ -170,7 +170,7 @@ const std::vector<Chunk*>& IWorld::getActiveChunks() const {
     return mChunkGrid->getActiveChunks();
 }
 
-Chunk& IWorld::getChunkAtChunkCoords(const ui32v2& worldPos) {
+Chunk& IWorld::getChunkAtChunkCoords(const i32v2& worldPos) {
     return getChunk(ChunkID(worldPos));
 }
 
@@ -182,7 +182,7 @@ void IWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
 
 TileHandle IWorld::getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const {
     assert(!IS_MAIN_THREAD());
-    const Chunk* chunk = &getChunkAtPosition(ui32v2(worldPos));
+    const Chunk* chunk = &getChunkAtPosition(i32v2(worldPos));
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -205,7 +205,7 @@ TileHandle IWorld::getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) cons
 
 TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     assert(IS_MAIN_THREAD());
-    const Chunk* chunk = &getChunkAtPosition(ui32v2(worldPos));
+    const Chunk* chunk = &getChunkAtPosition(i32v2(worldPos));
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -242,7 +242,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     return TileHandle();
 }
 
-TileHandle IWorld::getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const {
+TileHandle IWorld::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     TileHandle handle;
     const Chunk* chunk = &getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
@@ -253,7 +253,7 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const 
     return TileHandle();
 }
 
-StructureArrayPtr IWorld::tryGetStructuresAtWorldPos(const ui32v2& worldPos) const {
+StructureArrayPtr IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
     const Chunk* chunk = &getChunkAtPosition(worldPos);
     if (chunk->isDataReady()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus

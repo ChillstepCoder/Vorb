@@ -230,7 +230,7 @@ ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {
     else {
         assert(mFontData.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);
         // This texture fits in the main submesh
-        const ui8 fontIndex = mFontData.mFontTextures.size();
+        const ui8 fontIndex = (ui8)mFontData.mFontTextures.size();
         mFontData.mFontTextures.emplace_back(texture.mTextureHandleDiffuse);
         mSubtextureLookup[texture.mTextureDiffuse] = fontIndex;
         return fontIndex;
@@ -265,11 +265,11 @@ void TextMeshBuilder::uploadBufferData(SubMeshData& subMesh, const FontMeshData&
     glBindVertexArray(subMesh.mVao);
 
     // IBO
-    subMesh.mIndexCount = data.mGlyphs.size() * 6;
+    subMesh.mIndexCount = (ui32)data.mGlyphs.size() * 6u;
 
     // UBO
     if (subMesh.mUbo) {
-        const ui32 textureBufferSizeBytes = data.mFontTextures.size() * sizeof(ui32v4);
+        const ui32 textureBufferSizeBytes = (ui32)(data.mFontTextures.size() * sizeof(ui32v4));
         // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
         ui32v4 buffer[MAX_SUBTEXTURES_PER_MESH];
         assert(data.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);

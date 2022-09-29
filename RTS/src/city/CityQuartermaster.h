@@ -16,10 +16,10 @@ public:
     void createStockpilesForBlueprint(BuildingBlueprint& bp);
 
     // creates an unowned stockpile, returns false if conflicts with existing stockpile
-    bool tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity);
-    bool tryCreateCityStockpileAt(const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity);
+    bool tryCreateCityStockpileAt(const i32AABB2& aabb, entt::entity ownerEntity);
+    bool tryCreateCityStockpileAt(const i32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity);
 
-    ItemStockpile* tryGetClosestStockpileToPoint(const ui32v2 position);
+    ItemStockpile* tryGetClosestStockpileToPoint(const i32v2 position);
 
     const std::vector<ItemStockpile*>& getStockpiles() const { return mAllStockpiles; }
 

@@ -31,15 +31,15 @@ public:
     void setTimeOfDay(f32 time);
     entt::entity createEntity(const f32v3& pos, const nString& typeName);
     // Queries
-    bool tileHasHarvestableResource(const ui32v2& worldPos, TileResource resource, TileLayer* outLayer);
-    void efficientEnumTileAABB(const ui32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
+    bool tileHasHarvestableResource(const i32v2& worldPos, TileResource resource, TileLayer* outLayer);
+    void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
 
     // Chunk Accessors
-    Chunk& getChunkAtChunkCoords(const ui32v2& worldPos);
+    Chunk& getChunkAtChunkCoords(const i32v2& worldPos);
     Chunk& getChunkAtPosition(const f32v2& worldPos);
     const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
-    Chunk& getChunkAtPosition(const ui32v2& worldPos);
-    const Chunk& getChunkAtPosition(const ui32v2& worldPos) const;
+    Chunk& getChunkAtPosition(const i32v2& worldPos);
+    const Chunk& getChunkAtPosition(const i32v2& worldPos) const;
     Chunk& getChunkAtPosition(const ui16v2& worldPos);
     const Chunk& getChunkAtPosition(const ui16v2& worldPos) const;
     Chunk& getChunk(ChunkID chunkId);
@@ -56,10 +56,10 @@ public:
     TileHandle getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
-    TileHandle getTerrainTileHandleAtWorldPos(const f32v3& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
+    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
     TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
-    TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const;
-    StructureArrayPtr tryGetStructuresAtWorldPos(const ui32v2& worldPos) const;
+    TileHandle getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const;
+    StructureArrayPtr tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
 
     void enumActiveChunks(std::function<void(const Chunk&)> func) const;
 

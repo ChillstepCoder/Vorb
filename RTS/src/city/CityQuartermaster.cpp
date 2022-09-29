@@ -43,7 +43,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
     }
 }
 
-bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::entity ownerEntity) {
+bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::entity ownerEntity) {
 
     ItemStockpile* newStockpile = sWorld->getItemStockpileRegistry().tryCreateStockpileAt(aabb, nullptr, ownerEntity);
     
@@ -56,7 +56,7 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, entt::en
     return false;
 }
 
-bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
+bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, bool* ownershipMask, entt::entity ownerEntity) {
 
     ItemStockpile* newStockpile = sWorld->getItemStockpileRegistry().tryCreateStockpileAt(aabb, ownershipMask, ownerEntity);
 
@@ -69,14 +69,14 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const ui32AABB2& aabb, bool* ow
     return false;
 }
 
-ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const ui32v2 position) {
+ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const i32v2 position) {
     // TODO: Make sure that we can filter out full stockpiles
     ItemStockpile* best = nullptr;
     f32 bestDistance2 = FLT_MAX;
     // TODO: Heuristic
     // Morton order?
     for (auto& stockpile : mAllStockpiles) {
-        ui32v2 offset = stockpile->getAABB().pos - position;
+        i32v2 offset = stockpile->getAABB().pos - position;
         const f32 distance2 = glm::length2(f32v2(offset));
         if (distance2 < bestDistance2) {
             best = stockpile;

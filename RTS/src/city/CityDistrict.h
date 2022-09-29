@@ -6,7 +6,7 @@
 // Which represents the overarching structure of a city
 // TODO: Polygon shape? Merging?
 struct CityDistrict {
-    ui32AABB2 aabb;
+    i32AABB2 aabb;
     DistrictType type;
     CityDistrict* children[4]; // S,W,E,N
     CityDistrict* parent = nullptr;

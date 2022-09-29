@@ -8,7 +8,7 @@ public:
     ItemStockpileRegistry();
     ~ItemStockpileRegistry();
 
-    ItemStockpile* tryCreateStockpileAt(const ui32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity);
+    ItemStockpile* tryCreateStockpileAt(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity);
     void destroyStockpile(ItemStockpile* stockpile);
 
     const std::vector<ItemStockpile*>* tryGetStockpilesAtChunkPosition(ChunkID chunkID) const;

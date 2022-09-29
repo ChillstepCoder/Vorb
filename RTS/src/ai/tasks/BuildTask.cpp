@@ -174,7 +174,7 @@ void BuildTask::buildTile(entt::registry& registry, entt::entity agent) {
     }
 
     // Build tile
-    const ui32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
+    const i32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
     TileHandle tileHandle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
     TileContainer& tiles = *tileHandle.getMutableContainer();
     tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);

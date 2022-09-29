@@ -1,87 +1,5 @@
 #pragma once
 
-struct ui32AABB2 {
-    ui32AABB2() = default;
-    ui32AABB2(ui32 v) : x(v), y(v), width(v), depth(v) {};
-    ui32AABB2(ui32 x, ui32 y, ui32 width, ui32 depth) : x(x), y(y), width(width), depth(depth) {};
-
-    ui32& operator[](int i) { return data[i]; }
-    bool operator==(const ui32AABB2& other) { return data == other.data; }
-
-    const ui32v2& getBottomLeft() const { return pos; }
-    ui32v2 getCenter() const { return pos + dims / 2u; }
-    ui32v2 getTopLeft() const { return pos + ui32v2(0, dims.y); };
-    ui32v2 getTopRight() const { return pos + dims; };
-    ui32v2 getBottomRight() const { return pos + ui32v2(dims.x, 0); };
-    void getCorners(ui32v2 aabbCorners[4]) const {
-        aabbCorners[0] = { x, y };
-        aabbCorners[1] = { x + width, y };
-        aabbCorners[2] = { x, y + depth };
-        aabbCorners[3] = { x + width, y + depth };
-    }
-
-    union {
-        ui32v4 data;
-        struct {
-            union {
-                struct {
-                    ui32 x;
-                    ui32 y;
-                };
-                ui32v2 pos;
-            };
-            union {
-                struct {
-                    ui32 width;
-                    ui32 depth;
-                };
-                ui32v2 dims;
-            };
-        };
-    };
-};
-
-struct ui16AABB2 {
-    ui16AABB2() = default;
-    ui16AABB2(ui16 v) : x(v), y(v), width(v), depth(v) {};
-    ui16AABB2(ui16 x, ui16 y, ui16 width, ui16 depth) : x(x), y(y), width(width), depth(depth) {};
-
-    ui16& operator[](int i) { return data[i]; }
-    bool operator==(const ui16AABB2& other) { return data == other.data; }
-
-    const ui16v2& getBottomLeft() const { return pos; }
-    ui16v2 getCenter() const { return pos + dims / 2ui16; }
-    ui16v2 getTopLeft() const { return pos + ui16v2(0, dims.y); };
-    ui16v2 getTopRight() const { return pos + dims; };
-    ui16v2 getBottomRight() const { return pos + ui16v2(dims.x, 0); };
-    void getCorners(ui16v2 aabbCorners[4]) const {
-        aabbCorners[0] = { x, y };
-        aabbCorners[1] = { x + width, y };
-        aabbCorners[2] = { x, y + depth };
-        aabbCorners[3] = { x + width, y + depth };
-    }
-
-    union {
-        ui16v4 data;
-        struct {
-            union {
-                struct {
-                    ui16 x;
-                    ui16 y;
-                };
-                ui16v2 pos;
-            };
-            union {
-                struct {
-                    ui16 width;
-                    ui16 depth;
-                };
-                ui16v2 dims;
-            };
-        };
-    };
-};
-
 struct i32AABB3 {
     i32AABB3() = default;
     i32AABB3(i32 v) : x(v), y(v), z(v), width(v), depth(v), height(v) {};
@@ -113,6 +31,47 @@ struct i32AABB3 {
                     i32 height;
                 };
                 i32v3 dims;
+            };
+        };
+    };
+};
+
+struct i32AABB2 {
+    i32AABB2() = default;
+    i32AABB2(i32 v) : x(v), y(v), width(v), depth(v) {};
+    i32AABB2(i32 x, i32 y, i32 width, i32 depth) : x(x), y(y), width(width), depth(depth) {};
+
+    i32& operator[](int i) { return data[i]; }
+    bool operator==(const i32AABB2& other) { return data == other.data; }
+
+    const i32v2& getBottomLeft() const { return pos; }
+    i32v2 getCenter() const { return pos + dims / 2i32; }
+    i32v2 getTopLeft() const { return pos + i32v2(0, dims.y); };
+    i32v2 getTopRight() const { return pos + dims; };
+    i32v2 getBottomRight() const { return pos + i32v2(dims.x, 0); };
+    void getCorners(i32v2 aabbCorners[4]) const {
+        aabbCorners[0] = { x, y };
+        aabbCorners[1] = { x + width, y };
+        aabbCorners[2] = { x, y + depth };
+        aabbCorners[3] = { x + width, y + depth };
+    }
+
+    union {
+        i32v4 data;
+        struct {
+            union {
+                struct {
+                    i32 x;
+                    i32 y;
+                };
+                i32v2 pos;
+            };
+            union {
+                struct {
+                    i32 width;
+                    i32 depth;
+                };
+                i32v2 dims;
             };
         };
     };
@@ -167,7 +126,7 @@ inline BoundingSphere boundingSphereFromAABB(const f32AABB3& aabb) {
 }
 
 // c = center, r = halfwidth
-inline bool testAABBAABB_SIMD(const ui32AABB2& a, const ui32AABB2& b) {
+inline bool testAABBAABB_SIMD(const i32AABB2& a, const i32AABB2& b) {
     // SIMD optimized AABB-AABB test
     // Optimized by removing conditional branches
     const i64 cxa = a.x + a.width / 2;
@@ -183,14 +142,14 @@ inline bool testAABBAABB_SIMD(const ui32AABB2& a, const ui32AABB2& b) {
 
 // TODO: Shared
 // TODO: this is confusing, inclusive for stockpile, noninclusive for AABB splits for cities
-inline bool pointIsWithinAABBInclusive(const ui32v2& point, const ui32AABB2& aabb) {
+inline bool pointIsWithinAABBInclusive(const i32v2& point, const i32AABB2& aabb) {
     return point.x >= aabb.x &&
         point.y >= aabb.y &&
         point.x < aabb.x + aabb.width &&
         point.y < aabb.y + aabb.depth;
 }
 
-inline bool pointIsWithinAABB(const ui32v2& point, const ui32AABB2& aabb) {
+inline bool pointIsWithinAABB(const i32v2& point, const i32AABB2& aabb) {
     return point.x > aabb.x &&
         point.y > aabb.y &&
         point.x < aabb.x + aabb.width &&

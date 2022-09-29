@@ -59,7 +59,7 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
 Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
     PreciseTimer timer;
-    const ui32v2& worldPos = bp.aabb.pos;
+    const i32v2& worldPos = bp.aabb.pos;
 
     // For mean height calc
     BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
@@ -96,21 +96,21 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     //std::cout << "New structure in " << timer.stop() << " ms\n";
 
     // === Flatten terrain ===
-    //grid.flattenAABB(ui32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
+    //grid.flattenAABB(i32AABB2(bp.bottomLeftWorldPos.x, bp.bottomLeftWorldPos.y, bp.dims.x, bp.dims.y), meanHeight);
     TileContainer& tileContainer = *newBuilding->mTileContainer;
     tileContainer.allocateOwnedTiles();
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;
-    for (ui32 z = 0; z < bp.floorCount; ++z) {
-        for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-            for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+    for (i32 z = 0; z < bp.floorCount; ++z) {
+        for (i32 y = 0; y < bp.aabb.dims.y; ++y) {
+            for (i32 x = 0; x < bp.aabb.dims.x; ++x, ++tileIndex) {
                 // TODO: Bitindex
                 const BlueprintTileType type = bp.tiles[tileIndex].type;
                 if (type != BlueprintTileType::NONE) {
                     // Flatten heightmap
                     if (z == 0) {
-                        f32v2 tileWorldPos = worldPos + ui32v2(x, y);
+                        f32v2 tileWorldPos = worldPos + i32v2(x, y);
                         grid.setHeightAt(tileWorldPos, meanHeight);
                     }
 
@@ -136,7 +136,6 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     ////assert(false); // Set building structure pointer
                     //container.setTileGroundZPosition(handle.index, height);
                 }
-                ++tileIndex;
             }
         }
     }
@@ -182,7 +181,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
     CityRoad& road = *mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
 
-    ui32v2 xy;
+    i32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(xy);
@@ -192,7 +191,7 @@ void CityBuilder::debugBuildInstant(RoadID roadId)
 }
 
 void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
-    if (blueprint->flags & BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE) {
+    if (blueprint->flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
         mCity.getCityQuartermaster().createStockpilesForBlueprint(*blueprint);
     }
 }

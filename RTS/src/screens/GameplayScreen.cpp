@@ -445,7 +445,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
     if (mRightClickInteractPopup) {
         // Render selected
         const f32v3 worldPos = mSelectedTileHandle.getWorldPos3D();
-        const ui32v2 worldPosInt = worldPos;
+        const i32v2 worldPosInt = worldPos;
 
         const UIInteractMenuResultFlags result = mRightClickInteractPopup->updateAndRender();
         // TODO: Notify

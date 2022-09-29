@@ -22,7 +22,7 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
             assert(false && "Invalid structure type");
     }
     newStructure->mAABB = aabb;
-    ui32v3 tileDims = aabb.dims;
+    i32v3 tileDims = aabb.dims;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
     newStructure->mTileContainer = TileContainerRepository::getNewTileContainer(aabb.pos, tileDims, floorHeight, false /*isTerrain*/);
@@ -37,12 +37,12 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
     mStructures.emplace_back(std::move(newStructure));
 
     // Set up struct pointers on the chunk grid
-    ui32v2 worldXY;
+    i32v2 worldXY;
     for (worldXY.x = aabb.x; worldXY.x < aabb.x + aabb.width; ++worldXY.x) {
         for (worldXY.y = aabb.y; worldXY.y < aabb.y + aabb.depth; ++worldXY.y) {
             Chunk& chunk = sWorld->getChunkAtPosition(worldXY);
             assert(chunk.isDataReady());
-            const ui32v2 xyOffset(worldXY.x - chunk.getChunkID().getWorldPosInt().x, worldXY.y - chunk.getChunkID().getWorldPosInt().y);
+            const i32v2 xyOffset(worldXY.x - chunk.getChunkID().getWorldPosInt().x, worldXY.y - chunk.getChunkID().getWorldPosInt().y);
             chunk.setStructureAt(chunk.getTileContainer()->getTileIndexFromXYZOffset(xyOffset.x, xyOffset.y, 0), rv);
             // Nav is dirty since structure will block
             chunk.getTileContainer()->setDirtyNav(true);

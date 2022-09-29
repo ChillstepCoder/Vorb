@@ -17,7 +17,7 @@ typedef ui32 CityPlotIndex;
 
 struct CityPlot {
     CityPlot();
-    CityPlot(const ui32AABB2& aabb, CityPlotIndex plotIndex, CityDistrict* parentDistrict);
+    CityPlot(const i32AABB2& aabb, CityPlotIndex plotIndex, CityDistrict* parentDistrict);
     ~CityPlot();
 
     void setNeighborRoad(Cartesian dir, RoadID id) {
@@ -36,7 +36,7 @@ struct CityPlot {
         return count;
     }
 
-    ui32AABB2 aabb;
+    i32AABB2 aabb;
     CityPlotIndex plotIndex = INVALID_PLOT_INDEX;
     BuildingID buildingId = INVALID_BUILDING_ID;
     CityDistrict* parentDistrict = nullptr;

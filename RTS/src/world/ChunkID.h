@@ -9,6 +9,8 @@ template<ui32 GRIDWIDTH, ui32 CELLWIDTH>
 struct GridID {
     GridID() : id(GRID_ID_INVALID), pos(GRID_ID_INVALID) {}
     GridID(const GridID& other) { *this = other; }
+    GridID(const i32v2& pos) : pos(pos) { initIdFromPos(); };
+    GridID(i32v2&& pos) : pos(pos) { initIdFromPos(); };
     GridID(const ui32v2& pos) : pos(pos) { initIdFromPos(); };
     GridID(ui32v2&& pos) : pos(pos) { initIdFromPos(); };
     GridID(ui32 xPos, ui32 yPos) : pos(xPos, yPos) { initIdFromPos(); };
@@ -78,7 +80,7 @@ typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
 
 namespace {
     inline HeightmapPatchID heightmapPatchIDFromChunkID(ChunkID id) {
-        return HeightmapPatchID(id.pos / HEIGHTMAP_PATCH_WIDTH_CHUNKS);
+        return HeightmapPatchID(id.pos / (ui32)HEIGHTMAP_PATCH_WIDTH_CHUNKS);
     }
 }
 

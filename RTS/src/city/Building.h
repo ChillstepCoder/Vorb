@@ -58,7 +58,7 @@ private:
     std::vector<RoomNode> mRooms;
     CityPlotIndex mPlotIndex = INVALID_PLOT_INDEX;
     BuildingFunction mFunction = BuildingFunction::NONE;
-    BuildingID mId;
+    BuildingID mId = INVALID_BUILDING_ID;
     BuildingNavGraph mNavGraph;
 
     std::map<TileIndex, RoomNodeID> mNavEntrances;
@@ -79,7 +79,7 @@ enum class RoadType {
 struct CityRoad {
     ui32v2 startPos;
     ui32v2 endPos;
-    ui32AABB2 aabb;
+    i32AABB2 aabb;
     ui32 width;
     ui32 length;
     RoadType type = RoadType::PAVED;

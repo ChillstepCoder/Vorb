@@ -349,12 +349,6 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
 void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec) {
 
-    // TODO: Map texels to pixels?
-    if (camera.getScale() < 1.5f) {
-        // TODO: Remove for 2D
-        //lodState = ChunkRenderLOD::LOD_TEXTURE;
-    }
-
     // TODO: Should this happen here? Maybe assert instead?
     beginFrame(&camera, playerPos);
     checkGlError("RenderContext::Begin Frame");
