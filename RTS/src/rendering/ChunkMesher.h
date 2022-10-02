@@ -22,6 +22,7 @@ struct StaticLight {
 
 class ChunkMesher {
 public:
+    ChunkMesher() = delete;
 
     // TODO: Actually update the physics mesh
     static void updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos);

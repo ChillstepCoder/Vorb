@@ -130,6 +130,10 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mScreenResolution(screenResolution),
     mWindow(window)
 {
+    // We require client interface to function
+    mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
+    assert(mCliWorld);
+
     // If we are in a debug context, initialize debug output
     // This is set via vui::MainGame::initSystems()
     {
@@ -472,7 +476,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(((CliWorldInterface*)sWorld)->getCloudManager(), camera, mShadowRenderer->getMaxDistance());
+                mCloudRenderer->renderCloudShadows(mCliWorld->getCloudManager(), camera, mShadowRenderer->getMaxDistance());
             }
 
             const CityGraph& cities = sWorld->getCityGraph();
@@ -589,7 +593,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render clouds without shadows
     if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(((CliWorldInterface*)sWorld)->getCloudManager(), &mTransparencyGBuffer, camera);
+        mCloudRenderer->renderClouds(mCliWorld->getCloudManager(), &mTransparencyGBuffer, camera);
     }
 
     // === Transparency ===
@@ -677,7 +681,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        ((CliWorldInterface*)sWorld)->enumVisibleChunks([](const Chunk& chunk) {
+        mCliWorld->enumVisibleChunks([](const Chunk& chunk) {
             color4 color = COLOR_WHITE;
             switch (chunk.getState()) {
                 case ChunkState::INVALID:
@@ -731,7 +735,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Grass LOD debug
     if (sDebugOptions.mDebugGrassLod) {
-        ((CliWorldInterface*)sWorld)->enumVisibleChunks([&camera](const Chunk& chunk) {
+        mCliWorld->enumVisibleChunks([&camera](const Chunk& chunk) {
             if (chunk.isDataReady()) {
 
                 if (chunk.mChunkRenderData.mGrassLod) {

@@ -32,7 +32,8 @@ inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapP
 
 NavWorld::NavWorld()
 {
-
+    // TODO: This is arbitrary
+    mNavGraphs.reserve(100);
 }
 
 typedef std::pair<Cartesian, Cartesian> CartesianPair;
@@ -782,4 +783,34 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetim
             DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
         }
     }
+}
+
+const CoarseNavGraph* NavWorld::tryGetCoarseNavGraph(TileContainerID containerId) const {
+    auto&& it = mNavGraphs.find(containerId);
+    if (it == mNavGraphs.end()) return nullptr;
+    return &it->second;
+}
+
+const CoarseNavGraph& NavWorld::getCoarseNavGraph(TileContainerID containerId) const {
+    auto&& it = mNavGraphs.find(containerId);
+    assert(it != mNavGraphs.end());
+    return it->second;
+}
+
+void NavWorld::assignCoarseNavGraph(TileContainerID containerId, CoarseNavGraph&& navGraph) {
+    //mNavGraphs.insert(std::make_pair(containerId, std::move(navGraph)));
+    mNavGraphs[containerId] = std::move(navGraph);
+}
+
+const CoarseNavNode* NavWorld::getCoarseNavNode(CoarseNavNodeIndexPair index) const {
+    return getCoarseNavNode(index.tileContainerID, index.index);
+}
+
+const CoarseNavNode* NavWorld::getCoarseNavNode(TileContainerID containerId, ui16 navNodeIndex) const {
+    // TODO: what if invalid
+    auto&& it = mNavGraphs.find(containerId);
+    assert(it != mNavGraphs.end());
+    const CoarseNavGraph& patch = it->second;
+    assert(navNodeIndex < patch.numNodes);
+    return &patch.nodes[navNodeIndex];
 }

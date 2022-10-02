@@ -23,7 +23,7 @@ struct HeightmapPatchData {
 class HeightmapPatch {
 public:
     HeightmapPatch() = default;
-    ~HeightmapPatch();
+    ~HeightmapPatch() = default;
 
     bool isDone() const { return mFlags & HEIGHTMAP_PATCH_FLAG_DONE; }
     bool isGenerating() const { return mFlags & HEIGHTMAP_PATCH_FLAG_GENERATING; }

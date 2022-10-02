@@ -10,6 +10,7 @@
 
 class TileContainer;
 class Building;
+class NavWorld;
 
 enum class PathRequestType {
     FINE,
@@ -56,7 +57,7 @@ public:
     NavThread();
     ~NavThread();
 
-    void init();
+    void init(const NavWorld& navWorld);
 
     void mainThreadUpdate();
 

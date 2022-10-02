@@ -60,30 +60,12 @@ public:
     void debugDrawFineNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
     void debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetime, int debugId = 0) const;
 
-    const CoarseNavGraph* tryGetCoarseNavGraph(TileContainerID containerId) const {
-        auto&& it = mNavGraphs.find(containerId);
-        if (it == mNavGraphs.end()) return nullptr;
-        return &it->second;
-    }
-    const CoarseNavGraph& getCoarseNavGraph(TileContainerID containerId) const {
-        auto&& it = mNavGraphs.find(containerId);
-        assert(it != mNavGraphs.end());
-        return it->second;
-    }
-    void assignCoarseNavGraph(TileContainerID containerId, CoarseNavGraph&& navGraph) {
-        mNavGraphs[containerId] = std::move(navGraph);
-    }
-    const CoarseNavNode* getCoarseNavNode(CoarseNavNodeIndexPair index) const {
-        return getCoarseNavNode(index.tileContainerID, index.index);
-    }
-    const CoarseNavNode* getCoarseNavNode(TileContainerID containerId, ui16 navNodeIndex) const {
-        // TODO: what if invalid
-        auto&& it = mNavGraphs.find(containerId);
-        assert(it != mNavGraphs.end());
-        const CoarseNavGraph& patch = it->second;
-        assert(navNodeIndex < patch.numNodes);
-        return &patch.nodes[navNodeIndex];
-    }
+    const CoarseNavGraph* tryGetCoarseNavGraph(TileContainerID containerId) const;
+    const CoarseNavGraph& getCoarseNavGraph(TileContainerID containerId) const;
+    void assignCoarseNavGraph(TileContainerID containerId, CoarseNavGraph&& navGraph);
+
+    const CoarseNavNode* getCoarseNavNode(CoarseNavNodeIndexPair index) const;
+    const CoarseNavNode* getCoarseNavNode(TileContainerID containerId, ui16 navNodeIndex) const;
 
 private:
 

@@ -41,6 +41,13 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     // Stockpiles
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();
 
+    // Entities
+    mEcs = std::make_unique<EntityComponentSystem>();
+    mEntityFactory = std::make_unique<EntityFactory>(*mEcs);
+
+    // Physics
+    mPhysWorld = std::make_unique<PhysicsWorld>();
+
 }
 
 IWorld::~IWorld()

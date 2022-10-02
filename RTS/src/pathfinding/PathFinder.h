@@ -37,7 +37,7 @@ typedef std::vector<const CoarseNavNode*> CoarseClosedList;
 // TODO: Also support flow path finding for large group movements, such as for moving in formation
 class PathFinder {
 public:
-    PathFinder();
+    PathFinder(const NavWorld& navWorld);
 
     bool generateFinePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path);
     bool generateCoarsePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path);

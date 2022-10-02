@@ -33,9 +33,10 @@ constexpr float FLORA_UNLOAD_DISTANCE_2 = SQ(340.0f);
 static_assert(FLORA_UNLOAD_DISTANCE_2 > FLORA_RENDER_DISTANCE_2);
 
 ChunkRenderer::ChunkRenderer(const MaterialRenderer& materialRenderer) :
-    mMaterialRenderer(materialRenderer),
-    mMesher(std::make_unique<ChunkMesher>())
+    mMaterialRenderer(materialRenderer)
 {
+    mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
+    assert(mCliWorld);
 }
 
 ChunkRenderer::~ChunkRenderer() {
@@ -47,7 +48,7 @@ void ChunkRenderer::renderTiles(const Camera3D& camera) {
     // Tiles
     mMaterialRenderer.bindMaterialForRender(*mStandardMaterial);
     VGUniform offsetUniform = mStandardMaterial->mProgram.getUniform("unOffset");
-    ((CliWorldInterface*)sWorld)->enumVisibleChunks([&](const Chunk& chunk) {
+    mCliWorld->enumVisibleChunks([&](const Chunk& chunk) {
         ChunkRenderData& renderData = chunk.mChunkRenderData;
         f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
         glUniform3fv(offsetUniform, 1, &offset.x);
@@ -62,7 +63,7 @@ void ChunkRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos)
     VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
     glUniform3fv(mGrassMaterial->mProgram.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(fadeUniform, sDebugOptions.mGrassSettings.fadeDistance);
-    ((CliWorldInterface*)sWorld)->enumVisibleChunks([&](const Chunk& chunk) {
+    mCliWorld->enumVisibleChunks([&](const Chunk& chunk) {
         ChunkRenderData& renderData = chunk.mChunkRenderData;
         f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();
         glUniform3fv(offsetUniform, 1, &offset.x);
@@ -74,10 +75,10 @@ void ChunkRenderer::renderBillboards(const Camera3D& camera)
 {
     mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
     VGUniform offsetUniform = mBillboardMaterial->mProgram.getUniform("unOffset");
-    ((CliWorldInterface*)sWorld)->enumVisibleChunks([&](const Chunk& chunk) {
+    mCliWorld->enumVisibleChunks([&](const Chunk& chunk) {
         if (chunk.isFinished()) {
 
-            mMesher->updateMeshAndPhysics(chunk, f32v3(sWorld->getLoadCenter(), 0.0f));
+            ChunkMesher::updateMeshAndPhysics(chunk, f32v3(sWorld->getLoadCenter(), 0.0f));
 
             ChunkRenderData& renderData = chunk.mChunkRenderData;
             if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
@@ -94,7 +95,7 @@ void ChunkRenderer::renderWorldShadows(const Camera3D& camera, f32 maxDistance) 
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
 
     mMaterialRenderer.bindMaterialForRender(*mShadowMapperMaterial);
-    ((CliWorldInterface*)sWorld)->enumVisibleChunks([&](const Chunk& chunk) {
+    mCliWorld->enumVisibleChunks([&](const Chunk& chunk) {
         if (chunk.isFinished()) {
             if (glm::length2(chunk.getWorldPosCenter3D() - camera.getPosition()) <= maxDistSQ) {
                 f32v3 offset = chunk.getWorldPos3D() - camera.getPosition();

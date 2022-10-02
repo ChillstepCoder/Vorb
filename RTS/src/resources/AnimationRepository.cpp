@@ -10,7 +10,7 @@ AnimationRepository::AnimationRepository() {
 }
 
 AnimationRepository::~AnimationRepository() {
-
+  
 }
 
 bool AnimationRepository::loadAnimFile(const vio::Path& filePath) {

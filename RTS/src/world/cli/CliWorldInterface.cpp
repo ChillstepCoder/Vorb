@@ -9,7 +9,7 @@
 
 CliWorldInterface::CliWorldInterface()
 {
-
+    mCloudManager = std::make_unique<CloudManager>();
 }
 
 CliWorldInterface::~CliWorldInterface()
@@ -18,7 +18,7 @@ CliWorldInterface::~CliWorldInterface()
 }
 
 
-void CliWorldInterface::frameUpdate(const Camera3D& camera, f32 elapsedSec)
+void CliWorldInterface::tickClient()
 {
 
 }

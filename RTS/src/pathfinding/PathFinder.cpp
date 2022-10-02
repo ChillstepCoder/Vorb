@@ -170,12 +170,12 @@ const i32v2 NODE_CORNER_NEIGHBORS[8] = {
    i32v2(0,  0),                         // EAST
    i32v2(Cartesian8::NORTH, Cartesian8::WEST),  // NORTH_WEST
    i32v2(0,  1),                         // NORTH
-   i32v2(Cartesian8::NORTH, Cartesian8::EAST), // NORTH_EAST
+   i32v2(Cartesian8::NORTH, Cartesian8::EAST), // NORTH_EASTf
 };
 
 // TODO: https://gamedev.stackexchange.com/questions/94148/pathfinding-tile-based-navigation-mesh
 
-PathFinder::PathFinder() : mNavWorld(((SrvWorldInterface*)sWorld)->getNavWorld()) {
+PathFinder::PathFinder(const NavWorld& navWorld) : mNavWorld(navWorld) {
 
 }
 

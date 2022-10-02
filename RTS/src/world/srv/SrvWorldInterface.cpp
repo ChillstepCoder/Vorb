@@ -13,7 +13,7 @@ SrvWorldInterface::SrvWorldInterface()
     // Nav graph
     mNavWorld = std::make_unique<NavWorld>();
 
-    Services::NavThread::ref().init();
+    Services::NavThread::ref().init(*mNavWorld);
 }
 
 SrvWorldInterface::~SrvWorldInterface()

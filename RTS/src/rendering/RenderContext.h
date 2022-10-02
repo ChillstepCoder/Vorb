@@ -3,6 +3,7 @@
 class AmbientOcclusionPostProcess;
 class BuildingRenderer;
 class Camera3D;
+class CliWorldInterface;
 class CharacterRenderer;
 class ChunkRenderer;
 class CityDebugRenderer;
@@ -80,6 +81,9 @@ private:
     void buildHorizonMesh();
 
     static RenderContext* sInstance;
+    
+    // Client world
+    CliWorldInterface* mCliWorld = nullptr;
 
     // Data
     GlobalRenderData mRenderData;

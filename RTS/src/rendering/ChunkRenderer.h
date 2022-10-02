@@ -4,9 +4,9 @@
 
 DECL_VG(class SpriteBatch);
 
+class CliWorldInterface;
 class ResourceManager;
 class Camera3D;
-class ChunkMesher;
 class TextureAtlas;
 class MaterialRenderer;
 class Material;
@@ -26,7 +26,6 @@ public:
 
     void InitPostLoad();
 
-    ChunkMesher& getMesher() { return *mMesher; }
 private:
     // Different rendering methods
     void tryRenderStaticMesh(const Chunk& chunk, const Material* material);
@@ -40,6 +39,6 @@ private:
     const Material* mBillboardMaterial = nullptr;
     const Material* mGrassMaterial = nullptr;
 
-    std::unique_ptr<ChunkMesher> mMesher;
+    CliWorldInterface* mCliWorld = nullptr;
 };
 
