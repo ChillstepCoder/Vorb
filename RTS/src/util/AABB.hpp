@@ -129,10 +129,10 @@ inline BoundingSphere boundingSphereFromAABB(const f32AABB3& aabb) {
 inline bool testAABBAABB_SIMD(const i32AABB2& a, const i32AABB2& b) {
     // SIMD optimized AABB-AABB test
     // Optimized by removing conditional branches
-    const i64 cxa = a.x + a.width / 2;
-    const i64 cya = a.y + a.depth / 2;
-    const i64 cxb = b.x + b.width / 2;
-    const i64 cyb = b.y + b.depth / 2;
+    const i64 cxa = (i64)(a.x + a.width / 2);
+    const i64 cya = (i64)(a.y + a.depth / 2);
+    const i64 cxb = (i64)(b.x + b.width / 2);
+    const i64 cyb = (i64)(b.y + b.depth / 2);
     // -1 to check if within
     const bool x = std::fabs((i64)cxa - (i64)cxb) <= (((i64)a.width + (i64)b.width) / 2) - 1;
     const bool y = std::fabs((i64)cya - (i64)cyb) <= (((i64)a.depth + (i64)b.depth) / 2) - 1;

@@ -289,6 +289,7 @@
     <ClCompile Include="src\resources\TileRepository.cpp" />
     <ClCompile Include="src\screens\GameplayScreen.cpp" />
     <ClCompile Include="src\screens\MainMenuScreen.cpp" />
+    <ClCompile Include="src\screens\ScreenState.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\structure\Structure.cpp" />
     <ClCompile Include="src\structure\StructureManager.cpp" />
@@ -505,6 +506,7 @@
     <ClInclude Include="src\resources\TileRepository.h" />
     <ClInclude Include="src\screens\GameplayScreen.h" />
     <ClInclude Include="src\screens\MainMenuScreen.h" />
+    <ClInclude Include="src\screens\ScreenState.h" />
     <ClInclude Include="src\services\Services.h" />
     <ClInclude Include="src\structure\Structure.h" />
     <ClInclude Include="src\structure\StructureManager.h" />

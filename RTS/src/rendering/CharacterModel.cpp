@@ -90,7 +90,7 @@ void AnimTrack::fadeIn(f32 fadeTime) {
         mTime = 0.0f;
     }
 
-    f32 fadeSpeed = glm::min(1.0f / (fadeTime * FADE_SPEED_SCALE), 255.0f);
+    const f32 fadeSpeed = glm::min(1.0f / (fadeTime * FADE_SPEED_SCALE), 255.0f);
     mFadeSpeed = ui8(fadeSpeed);
     assert(mFadeSpeed != 0);
     mFlags.setBits(AnimTrackFlags::IS_FADING_IN, AnimTrackFlags::IS_ACTIVE);

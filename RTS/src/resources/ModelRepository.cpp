@@ -162,12 +162,12 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
             for (int i = 0; i < outputMesh.vertex_count(); ++i) {
                 const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
                 SkinnedModelVertex& myVert = verts[i];
-                memcpy(&myVert.pos, &part.positions[i * 3], sizeof(f32) * 3);
-                memcpy(&myVert.normal, &part.normals[i * 3], sizeof(f32) * 3);
-                memcpy(&myVert.tangent, &part.tangents[i * 3], sizeof(f32) * 3);
-                memcpy(&myVert.uvs, &part.uvs[i * 2], sizeof(f32) * 2);
+                memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
+                memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
+                memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
+                memcpy(&myVert.uvs, &part.uvs[(int)(i * 2)], sizeof(f32) * 2);
                 if (part.colors.size()) {
-                    memcpy(&myVert.color, &part.colors[i * 4], sizeof(uint8_t) * 4);
+                    memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);
                 }
                 else {
                     myVert.color = COLOR_WHITE;
@@ -176,7 +176,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                 int influencesCount = part.influences_count();
                 int j = 0;
                 for (int j = 0; j < influencesCount; ++j) {
-                    myVert.boneIDs[j] = (ui8)part.joint_indices[i * influencesCount + j];
+                    myVert.boneIDs[j] = (ui8)part.joint_indices[(int)(i * influencesCount + j)];
                 }
 
                 // Zero the weight first since we are re-using vertex buffers
@@ -185,7 +185,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                     myVert.boneWeights[0] = 1.0f;
                 }
                 else {
-                    memcpy(myVert.boneWeights, &part.joint_weights[i * (influencesCount - 1)], sizeof(f32) * (influencesCount - 1));
+                    memcpy(myVert.boneWeights, &part.joint_weights[(int)(i * (influencesCount - 1))], sizeof(f32) * f32(influencesCount - 1));
                 }
             }
             const int numJoints = outputMesh.num_joints();

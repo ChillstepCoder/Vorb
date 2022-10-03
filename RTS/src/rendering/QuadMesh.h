@@ -15,6 +15,7 @@ public:
     void setData(const VERTEX* meshData, unsigned vertexCount, MeshDrawMode drawMode);
 };
 
+// TODO: DELETE THIS OR PORT PARTS TO MESH
 class QuadMesh : public IQuadMesh<TileVertex> {
 public:
     QuadMesh() = default;

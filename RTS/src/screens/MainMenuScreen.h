@@ -7,7 +7,12 @@ class App;
 enum class MainMenuState {
     MAIN,
     MULTIPLAYER,
+    JOIN,
+    LAN_JOIN,
+    ONLINE_JOIN,
+    HOST,
     OPTIONS,
+    COUNT
 };
 
 class MainMenuScreen : public vui::IAppScreen<App>
@@ -32,6 +37,10 @@ public:
 private:
     void drawMainState();
     void drawMultiplayerState();
+    void drawJoinState();
+    void drawLanJoinState();
+    void drawOnlineJoinState();
+    void drawHostState();
 
     MainMenuState mState = MainMenuState::MAIN;
 };

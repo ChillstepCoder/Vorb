@@ -9,7 +9,6 @@
 #include "util/TinyThreadsafeVector.hpp"
 
 class Chunk;
-class QuadMesh;
 class Mesh;
 class BillboardMesh;
 class TBOBillboardMesh;
