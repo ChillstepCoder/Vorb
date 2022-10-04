@@ -7,7 +7,6 @@ struct SpriteData;
 #include "definitions/AnimMachineDef.h"
 
 #include "ecs/component/CharacterControlComponent.h"
-
 #include <ozz/animation/runtime/sampling_job.h>
 
 struct ModelDef;

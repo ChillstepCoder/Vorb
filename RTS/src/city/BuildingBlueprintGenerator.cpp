@@ -1540,8 +1540,8 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         assert(currentRunLength == 0);
         // Enumerate runs and find the best/most valid one for stairs
         const i32 STAIRS_UP_COUNT = bp.floorHeight + 1;
-        i32 bestRunStart = UINT32_MAX;
-        i32 bestRunLength = UINT32_MAX;
+        i32 bestRunStart = INT32_MAX;
+        i32 bestRunLength = INT32_MAX;
         if (runs.size()) {
             dirs.resize(runs.size());
             for (size_t i = 0; i < runStarts.size(); ++i) {
@@ -1635,7 +1635,7 @@ bool BuildingBlueprintGenerator::placeStairs(BuildingBlueprint& bp, VisualLog* v
         else {
             continue; // Invalid! TODO: Ladder?
         }
-        if (bestRunStart == UINT32_MAX) {
+        if (bestRunStart == INT32_MAX) {
             continue; // No run found! TODO: Ladder?
         }
         // Add stair pieces
