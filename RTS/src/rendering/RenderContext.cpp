@@ -802,7 +802,7 @@ void RenderContext::renderUI(const Camera3D& camera) {
     if (!sDebugOptions.mShowDevHud) {
         return;
     }
-    mSb->begin();
+    mSb->begin(100);
     char buffer[255];
     f32 scales = 1.0f;
     const float GAP_SIZE = 35.0f * scales;

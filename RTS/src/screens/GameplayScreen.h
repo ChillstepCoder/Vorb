@@ -48,6 +48,8 @@ private:
     void updateTilePicking();
     void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
+	void displayLoadScreen(const nString& text);
+
 	IWorld* mWorld = nullptr;
 
     // Rendering

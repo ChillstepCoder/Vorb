@@ -100,17 +100,18 @@ i32 GameplayScreen::getPreviousScreen() const {
 	return 0;
 }
 
+
 void GameplayScreen::build() {
 
     // Show loading screen
     LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
     loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png", mResourceManager.getTextureCache());
-    loadScreenRenderer.render(&m_app->getWindow());
-
+    displayLoadScreen("Gathering files...");
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 
     mResourceManager.gatherFiles("data");
+    displayLoadScreen("Loading files...");
 	mResourceManager.loadFiles();
 
     mWorld->initPostResourcesLoaded();
@@ -318,6 +319,8 @@ void GameplayScreen::destroy(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
+
+    displayLoadScreen("Preloading...");
     // Hacky load screen
     {
         ScopedTimer timer("Main thread preload hack");
@@ -550,4 +553,10 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
             ImGui::GetIO().WantCaptureMouse = false;
         }
     }
+}
+
+void GameplayScreen::displayLoadScreen(const nString& text) {
+    LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
+    loadScreenRenderer.setText(text);
+    loadScreenRenderer.render(&m_app->getWindow());
 }

@@ -9,6 +9,8 @@
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/TextureCache.h>
+#include <Vorb/graphics/SpriteBatch.h>
+#include <Vorb/graphics/SpriteFont.h>
 #include <Vorb/ui/GameWindow.h>
 
 const cString SIMPLE_VS_SRC = R"(
@@ -22,6 +24,7 @@ void main() {
 )";
 const cString SIMPLE_FS_SRC = R"(
 uniform sampler2D unTexture;
+uniform float unAspectRatio;
 
 in vec2 fUV;
 
@@ -58,11 +61,14 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    const f32v2& screenResolution = context.getScreenResolution();
+    f32 aspectRatio = screenResolution.y / screenResolution.x;
 
     sProgram.use();
-
+    //glUniform1f(*sProgram.tryGetUniform("unAspectRatio"), aspectRatio);
     if (mBackgroundTextures.size()) {
         const int textureIndex = mCurrentBackgroundTexture % mBackgroundTextures.size();
         glActiveTexture(GL_TEXTURE0);
@@ -72,13 +78,25 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     sGlobalFullQuadVBO.draw();
     sProgram.unuse();
 
+    // Spritefont text
+    vg::SpriteFont& spriteFont = context.getSpriteFont();
+    vg::SpriteBatch& spriteBatch = context.getSpriteBatch();
+
+    spriteBatch.begin(30);
+    spriteBatch.drawString(&spriteFont, mText.c_str(), screenResolution * f32v2(0.5f, 0.6f), f32v2(1.0f), COLOR_WHITE, vg::TextAlign::CENTER);
+    spriteBatch.end();
+    spriteBatch.render(screenResolution);
+
     if (windowToSync) {
         windowToSync->sync(16);
     }
 }
 
-void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, vg::TextureCache& textureCache) {
+void LoadScreenRenderer::appendLoadingTexture(const vio::Path& path, vg::TextureCache& textureCache, bool setActive) {
     mBackgroundTextures.push_back(textureCache.addTexture(path).id);
+    if (setActive) {
+        mCurrentBackgroundTexture = mBackgroundTextures.size() - 1;
+    }
 }
 
 void LoadScreenRenderer::setLoadingTexture(int index) {

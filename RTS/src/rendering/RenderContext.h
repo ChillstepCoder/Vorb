@@ -74,6 +74,9 @@ public:
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
     VGTexture getShadowTexture() const;
     VGTexture getSSAOTexture() const;
+    vg::SpriteFont& getSpriteFont() const { return *mSpriteFont; }
+    vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
+    const f32v2& getScreenResolution() const { return mScreenResolution;}
 
 private:
     void renderDebug(const Camera3D& camera);
