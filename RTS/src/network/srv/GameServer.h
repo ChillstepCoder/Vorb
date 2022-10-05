@@ -18,6 +18,8 @@ extern void logSrv(const std::string& str);
 // https://www.amazon.com/Multiplayer-Game-Programming-Architecting-Networked/dp/0134034309/ref=sr_1_1?crid=2DRHA7SW8Y1BD&keywords=multiplayer+game+programming&qid=1663008452&s=books&sprefix=multiplayer+game+programming%2Cstripbooks%2C126&sr=1-1&ufe=app_do%3Aamzn1.fos.18ed3cb5-28d5-4975-8bc7-93deae8f9840
 
 
+#define SERVER_TICK_RATE_HZ 60.0f
+
 enum class ServerType {
     LAN,
     DEV,
@@ -25,11 +27,21 @@ enum class ServerType {
 };
 
 class GameServer {
-public:
+protected:
     GameServer(ServerType serverType);
     ~GameServer();
 
-    int start();
+public:
+    GameServer(GameServer& other) = delete;
+    void operator=(const GameServer&) = delete;
+
+    static GameServer& initInstance(ServerType serverType);
+    static GameServer& getInstance();
+
+    void start();
+    int tryTick();
+    void stop();
+
     void clientConnected(int clientIndex);
     void clientDisconnected(int clientIndex);
     void shutdown() { mRunning = false; }
@@ -55,5 +67,9 @@ private:
 
     ServerType mServerType;
     std::atomic_bool mRunning;
-    double mTime;
+    double mTimeSec;
+    bool mWantsStart = false;
+    TickingTimer mTickTimer = TickingTimer((1.0f / SERVER_TICK_RATE_HZ) * MS_PER_SECOND, 64.0f);
+
+    static GameServer* sInstance;
 };

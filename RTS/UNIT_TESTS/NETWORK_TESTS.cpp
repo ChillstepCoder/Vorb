@@ -27,11 +27,8 @@ namespace UNITTESTS
         TEST_METHOD(GameServerClientConnectDedicated)
         {
             try {
-                // Start network API
-                InitializeYojimbo();
-
                 // Start server
-                GameServer gameServer(ServerType::ONLINE);
+                GameServer& gameServer = GameServer::initInstance(ServerType::ONLINE);
                 yojimbo::Address address = gameServer.getServerAddress();
 
                 char buffer[256];
@@ -41,7 +38,20 @@ namespace UNITTESTS
                 // Run server loop
                 std::thread serverThread([&]() {
                     gameServer.start();
-                    Logger::WriteMessage("Server shutting down\n");
+                    constexpr float fixedDt = 1.0f / SERVER_TICK_RATE_HZ;
+                    float time = yojimbo_time();
+                    while (gameServer.isRunning()) {
+                        double currentTime = yojimbo_time();
+                        if (time <= currentTime) {
+                            gameServer.tryTick();
+                            time += fixedDt;
+                        }
+                        else {
+                            yojimbo_sleep(time - currentTime);
+                        }
+                    }
+
+                    gameServer.stop();
                 });
 
                 // Await startup

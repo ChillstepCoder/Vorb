@@ -15,6 +15,8 @@
 
 #include "camera/CameraController.h"
 
+#include "network/srv/GameServer.h"
+
 #include "ecs/EntityComponentSystem.h"
 #include "world/cli/CliWorld.h"
 #include "world/host/HostWorld.h"
@@ -49,6 +51,8 @@
 #include "options/DebugOptions.h"
 
 #include "world/WorldFactory.h"
+
+#include "screens/ScreenState.h"
 
 constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;
@@ -99,7 +103,6 @@ i32 GameplayScreen::getNextScreen() const {
 i32 GameplayScreen::getPreviousScreen() const {
 	return 0;
 }
-
 
 void GameplayScreen::build() {
 
@@ -320,8 +323,16 @@ void GameplayScreen::destroy(const vui::GameTime& gameTime) {
 
 void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
+    // Initialize hosted server if needed
+    if (!MainMenuScreenState::isSinglePlayer) {
+        if (MainMenuScreenState::isHost) {
+            GameServer::initInstance(MainMenuScreenState::isLan ? ServerType::LAN : ServerType::ONLINE);
+        }
+    }
+
+    // Preload
     displayLoadScreen("Preloading...");
-    // Hacky load screen
+    // Hacky
     {
         ScopedTimer timer("Main thread preload hack");
         update(gameTime);
@@ -330,7 +341,6 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
             update(gameTime);
             mRenderContext->updateMeshManagers(sWorld->getLoadCenter(), true /*forceUpdate*/);
         }
-        std::cout << "\n DONE\n";
     }
 }
 
@@ -389,12 +399,17 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     // Update main thread update queues
     hostWorld->onFrameBegin();
 
+
     // Update the world with fixed timestep
     int ticks = 0;
     auto&& ecs = hostWorld->getECS();
     f32 TODO_ELAPSED = (f32)gameTime.elapsedSec;
     while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
+        // Update game server
+        GameServer::getInstance().tryTick();
+
+        // Update world
         const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
         f32v3 position = playerPhysCmp.getPosition();
         hostWorld->tick(position, TODO_ELAPSED);

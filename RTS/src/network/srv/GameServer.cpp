@@ -18,9 +18,10 @@ void logSrv(const std::string& str) {
     wprintf(wstr.data());
 }
 
-#define SERVER_TICK_RATE_HZ 64.0f
-
 constexpr ui32 MAX_PLAYERS = 16;
+constexpr int MAX_TICKS_IN_FRAME = 2;
+
+GameServer* GameServer::sInstance = nullptr;
 
 GameServer::GameServer(ServerType serverType) :
     mAdapter(std::make_unique<SrvAdapter>(*this)),
@@ -43,34 +44,62 @@ GameServer::GameServer(ServerType serverType) :
     mServerAddress.ToString(buffer, sizeof(buffer));
     printf("Server initializing with address %s\n", buffer);
 
-    // ... load game ...
+}
 
+GameServer& GameServer::initInstance(ServerType serverType) {
+
+    if (!sHasInitYojimbo) {
+        sHasInitYojimbo = true;
+        InitializeYojimbo();
+    }
+
+    assert(!sInstance);
+    sInstance = new GameServer(serverType);
+    return *sInstance;
+}
+
+GameServer& GameServer::getInstance() {
+    return *sInstance;
 }
 
 GameServer::~GameServer() {
     mServer.Stop();
 }
 
-int GameServer::start() {
+void GameServer::start() {
 
     // Loop
-    constexpr float fixedDt = 1.0f / SERVER_TICK_RATE_HZ;
-    mTime = yojimbo_time();
+    mWantsStart = true;
     mRunning = true;
 
-    while (mRunning) {
-        double currentTime = yojimbo_time();
-        if (mTime <= currentTime) {
-            update();
-            mTime += fixedDt;
-        }
-        else {
-            yojimbo_sleep(mTime - currentTime);
-        }
+}
+
+int GameServer::tryTick() {
+
+    // We delay start until the first valid tick to avoid loading backlogs
+    if (mWantsStart) {
+        mWantsStart = false;
+        mTimeSec = yojimbo_time();
     }
 
-    mServer.Stop();
+    constexpr float fixedDtSec = 1.0f / SERVER_TICK_RATE_HZ;
+    mTickTimer.startFrame();
+    int tickCount = 0;
+    while (mTickTimer.tryTick()) {
+        mTimeSec += fixedDtSec;
+        update();
+    }
+    double currentTime = yojimbo_time();
+    if (currentTime - mTimeSec < 1.0) {
+        std::cout << "Massive server time backlog detected!\n";
+        mTimeSec = currentTime; // Fast forward
+        return 1;
+    }
     return 0;
+}
+
+void GameServer::stop() {
+    mServer.Stop();
 }
 
 void GameServer::clientConnected(int clientIndex) {
@@ -94,7 +123,7 @@ void GameServer::update()
     }
 
     // update server and process messages
-    mServer.AdvanceTime(mTime);
+    mServer.AdvanceTime(mTimeSec);
     mServer.ReceivePackets();
     processMessages();
 

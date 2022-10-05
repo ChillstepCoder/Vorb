@@ -7,6 +7,10 @@
 
 #define PROTOCOL_VERSION 0 // Increment this each protocol version to keep client and server in sync
 
+namespace {
+    std::atomic_bool sHasInitYojimbo = false;
+};
+
 // the client and server config
 struct GameConnectionConfig : yojimbo::ClientServerConfig {
     GameConnectionConfig() {
