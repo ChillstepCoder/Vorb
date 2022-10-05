@@ -224,7 +224,7 @@ RenderContext& RenderContext::initInstance(const f32v2& screenResolution, SDL_Wi
 }
 
 RenderContext& RenderContext::getInstance() {
-    // Is this thread safe???
+    assert(sInstance);
     return *sInstance;
 }
 
@@ -386,8 +386,6 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-    // TODO: Replace With BlendState
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Tiles
     mChunkRenderer->renderTiles(camera);

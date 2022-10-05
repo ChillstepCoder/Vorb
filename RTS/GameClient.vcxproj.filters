@@ -555,6 +555,9 @@
     <ClCompile Include="src\screens\ScreenState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\LoadScreenRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1266,6 +1269,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\screens\ScreenState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\LoadScreenRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

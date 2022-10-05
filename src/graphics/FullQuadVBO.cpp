@@ -39,6 +39,7 @@ void vg::FullQuadVBO::dispose() {
 }
 
 void vg::FullQuadVBO::draw() const{
+    assert(m_vao);
     glBindVertexArray(m_vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

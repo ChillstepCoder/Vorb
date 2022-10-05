@@ -251,6 +251,7 @@
     <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
+    <ClCompile Include="src\rendering\LoadScreenRenderer.cpp" />
     <ClCompile Include="src\rendering\Material.cpp" />
     <ClCompile Include="src\rendering\MaterialManager.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
@@ -465,6 +466,7 @@
     <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
+    <ClInclude Include="src\rendering\LoadScreenRenderer.h" />
     <ClInclude Include="src\rendering\Material.h" />
     <ClInclude Include="src\rendering\MaterialManager.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />

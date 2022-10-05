@@ -112,7 +112,7 @@ void ResourceManager::loadFiles() {
             if (vio::containsSubpath(entry, "_brushes")) {
                 mBrushRepository->loadBrush(entry, *mTextureCache);
             }
-            else {
+            else if (!vio::containsSubpath(entry, "_loadscreen")) { // Ignore loadscreen files as we manually load them
                 mTextureRepository->loadTexture(entry);
             }
         }

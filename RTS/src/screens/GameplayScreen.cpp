@@ -33,6 +33,7 @@
 
 #include "pathfinding/NavWorld.h"
 #include "rendering/RenderContext.h"
+#include "rendering/LoadScreenRenderer.h"
 
 #include "math/Random.h"
 
@@ -67,11 +68,11 @@ GameplayScreen::GameplayScreen(App* const app)
     sDebugOptions.mVSYNC = m_app->getWindow().getSwapInterval() == vui::GameSwapInterval::V_SYNC;
 
     // TODO: This is kinda stupid
-    if (WeaponRegistry::s_allWeaponItems.empty()) {
+    /*if (WeaponRegistry::s_allWeaponItems.empty()) {
         ArmorRegistry::loadArmors();
         WeaponRegistry::loadWeapons();
         ShieldRegistry::loadShields();
-    }
+    }*/
 
 	// Starting time of day to noon
 	mWorld->setTimeOfDay(12.0f);
@@ -100,6 +101,12 @@ i32 GameplayScreen::getPreviousScreen() const {
 }
 
 void GameplayScreen::build() {
+
+    // Show loading screen
+    LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
+    loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png", mResourceManager.getTextureCache());
+    loadScreenRenderer.render(&m_app->getWindow());
+
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 

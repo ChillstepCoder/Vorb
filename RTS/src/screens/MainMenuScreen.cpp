@@ -223,10 +223,12 @@ void MainMenuScreen::drawHostState() {
     ImGui::Spacing();
     if (ButtonCenteredOnLine("LAN", buttonSize)) {
         MainMenuScreenState::setHostLan();
+        m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Online", buttonSize)) {
         MainMenuScreenState::setHostOnline();
+        m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Back", buttonSize)) {
