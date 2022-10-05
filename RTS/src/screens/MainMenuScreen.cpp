@@ -11,6 +11,7 @@
 #include <Vorb/graphics/BlendState.h>
 
 #include "screens/ScreenState.h"
+#include "network/cli/GameClient.h"
 
 MainMenuScreen::MainMenuScreen(App* const app) : IAppScreen<App>(app) {
     MainMenuScreenState::initDefaults();
@@ -53,7 +54,10 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime)
 
 void MainMenuScreen::update(const vui::GameTime& gameTime)
 {
-
+    if (mState == MainMenuState::WAITING_JOIN) {
+        // Check client state
+        assert(false);
+    }
 }
 
 const ImVec2 buttonSize(200, 50);
@@ -129,6 +133,13 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 }
 
 
+void MainMenuScreen::attemptConnect(bool lan) {
+    // TODO: Assert well formatted IP
+    mState = MainMenuState::WAITING_JOIN;
+
+    sGameClient = new GameClient(ClientConnectionType::ONLINE);
+}
+
 void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Singleplayer", buttonSize)) {
@@ -199,7 +210,8 @@ void MainMenuScreen::drawOnlineJoinState() {
     char buf[256];
     ImGui::InputText("IP", buf, 256);
     if (ButtonCenteredOnLine("Join", buttonSize)) {
-        assert(false);
+        mTargetHostIP = buf;
+        attemptConnect(false);
     }
     if (ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
@@ -220,4 +232,9 @@ void MainMenuScreen::drawHostState() {
     if (ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
     }
+}
+
+void MainMenuScreen::drawWaitingJoin()
+{
+
 }

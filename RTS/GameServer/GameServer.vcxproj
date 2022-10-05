@@ -136,7 +136,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\dependencies\;$(ProjectDir)..\src;$(ProjectDir)..\..\dependencies;$(ProjectDir)..\..\include;$(SolutionDir)..\RTS\dependencies\entt\src;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;$(ProjectDir);$(ProjectDir)..\;$(SolutionDir)..\RTS\dependencies\bullet\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\dependencies\;$(ProjectDir)..\src;$(ProjectDir)..\..\dependencies;$(ProjectDir)..\..\include;$(SolutionDir)..\RTS\dependencies\entt\src;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;$(ProjectDir);$(ProjectDir)..\;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>

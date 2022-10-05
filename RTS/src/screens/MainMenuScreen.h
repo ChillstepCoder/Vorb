@@ -10,6 +10,7 @@ enum class MainMenuState {
     JOIN,
     LAN_JOIN,
     ONLINE_JOIN,
+    WAITING_JOIN,
     HOST,
     OPTIONS,
     COUNT
@@ -35,13 +36,17 @@ public:
     virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
+    void attemptConnect(bool lan);
+
     void drawMainState();
     void drawMultiplayerState();
     void drawJoinState();
     void drawLanJoinState();
     void drawOnlineJoinState();
     void drawHostState();
+    void drawWaitingJoin();
 
     MainMenuState mState = MainMenuState::MAIN;
+    nString mTargetHostIP;
 };
 

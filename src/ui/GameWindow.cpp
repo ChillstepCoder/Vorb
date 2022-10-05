@@ -366,8 +366,8 @@ void vui::GameWindow::setDefaultSettings(GameDisplayMode* mode) {
     mode->major = 9;
     mode->minor = 0;
 #elif defined(VORB_IMPL_GRAPHICS_OPENGL)
-    mode->major = 3;
-    mode->minor = 2;
+    mode->major = 4;
+    mode->minor = 5;
 #endif
     // TODO(Matthew): Can we auto-detect when we need to select core?
     //                Mac OS X & Linux both require core - e.g. Linux with Intel integrated GPU.

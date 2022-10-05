@@ -4,6 +4,7 @@
 bool MainMenuScreenState::isHost = true;
 bool MainMenuScreenState::isLan = false;
 bool MainMenuScreenState::isSinglePlayer = true;
+nString MainMenuScreenState::hostIP;
 
 void MainMenuScreenState::initDefaults() {
     isHost = true;
@@ -11,9 +12,10 @@ void MainMenuScreenState::initDefaults() {
     isSinglePlayer = true;
 }
 
-void MainMenuScreenState::setJoin() {
+void MainMenuScreenState::setJoin(const nString& hostIp) {
     isHost = false;
     isSinglePlayer = false;
+    MainMenuScreenState::hostIP = hostIP;
 }
 
 void MainMenuScreenState::setHostLan() {

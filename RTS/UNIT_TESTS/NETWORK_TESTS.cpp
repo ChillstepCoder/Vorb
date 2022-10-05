@@ -51,7 +51,7 @@ namespace UNITTESTS
                 std::atomic_bool quitClient = false;
                 std::atomic_bool clientConnected = false;
                 std::thread clientThread([address, &quitClient, &clientConnected]() {
-                    GameClient client(ClientConnectionType::DEDICATED_SERVER);
+                    GameClient client(ClientConnectionType::ONLINE);
                     client.connect(DEFAULT_PRIVATE_KEY, address);
 
                     char buffer[256];

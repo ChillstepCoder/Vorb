@@ -7,11 +7,12 @@
 class MainMenuScreenState {
 public:
     static void initDefaults();
-    static void setJoin();
+    static void setJoin(const nString& hostIp);
     static void setHostLan();
     static void setHostOnline();
 
     static bool isSinglePlayer;
     static bool isHost;
     static bool isLan;
+    static nString hostIP;
 };

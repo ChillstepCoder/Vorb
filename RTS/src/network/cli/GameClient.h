@@ -22,7 +22,7 @@ public:
     bool isConnected() const { return mClient->IsConnected(); }
 
     f32 getCurrentPingMS() const { return mCurrentPingMS; }
-    const yojimbo::Address& getClientAddress() const { assert(mConnectionType == ClientConnectionType::DEDICATED_SERVER); return ((yojimbo::Client*)mClient.get())->GetAddress(); }
+    const yojimbo::Address& getClientAddress() const { assert(mConnectionType == ClientConnectionType::ONLINE); return ((yojimbo::Client*)mClient.get())->GetAddress(); }
 
 private:
     void processMessages();
@@ -39,4 +39,6 @@ private:
     f64 mLastPingTimeS;
     f32 mCurrentPingMS = 666.0f; // Sentinal ping meaning we havent checked ping yet
 };
+
+extern GameClient* sGameClient;
 

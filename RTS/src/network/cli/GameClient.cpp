@@ -8,14 +8,19 @@
 
 constexpr f64 PING_INTERVAL_SEC = 0.1; // 100ms ping interval
 
+GameClient* sGameClient = nullptr;
+
 GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType), mLastPingTimeS(yojimbo_time()) {
+
+    assert(!sGameClient);
+    sGameClient = this;
 
     switch (mConnectionType) {
         case ClientConnectionType::STANDALONE:
             break;
         case ClientConnectionType::LAN:
             break;
-        case ClientConnectionType::DEDICATED_SERVER: {
+        case ClientConnectionType::ONLINE: {
             yojimbo::Address externalAddress = NetworkUtil::getExternalIP(0);
             mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), externalAddress, mConnectionConfig, *mAdapter, 0.0);
             break;
@@ -26,7 +31,7 @@ GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make
 }
 
 GameClient::~GameClient() {
-
+    sGameClient = nullptr;
 }
 
 // To enable this we need to use a matcher service on a linux machine
@@ -41,7 +46,7 @@ void GameClient::connect(const uint8_t privateKey[], const yojimbo::Address& add
         case ClientConnectionType::LAN: {
             break;
         }
-        case ClientConnectionType::DEDICATED_SERVER: {
+        case ClientConnectionType::ONLINE: {
             // TODO: Client ID should come from a backend
             uint64_t clientId;
             yojimbo::random_bytes((uint8_t*)&clientId, 8);

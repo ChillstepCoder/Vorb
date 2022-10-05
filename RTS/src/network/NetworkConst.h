@@ -9,7 +9,7 @@ enum class ClientConnectionType {
     INVALID,
     STANDALONE,
     LAN,
-    DEDICATED_SERVER,
+    ONLINE,
 };
 
 enum class GameChannel : ui8 {
