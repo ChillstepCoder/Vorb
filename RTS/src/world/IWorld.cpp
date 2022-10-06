@@ -72,7 +72,7 @@ void IWorld::setTimeOfDay(float time) {
 
     // Offset debug time
     const f64 timeOffset = time - mTimeOfDay;
-    sDebugOptions.mTimeOffset += timeOffset * SECONDS_PER_HOUR;
+    sDebugOptions.mTimeOffset = timeOffset * SECONDS_PER_HOUR;
 
 }
 

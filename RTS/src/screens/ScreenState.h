@@ -16,3 +16,11 @@ public:
     static bool isLan;
     static nString hostIP;
 };
+
+class GameplayScreenState {
+public:
+    static void initDefaults();
+
+    static bool isQuittingToMenu;
+    static bool isQuittingToDesktop;
+};

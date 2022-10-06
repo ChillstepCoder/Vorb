@@ -57,6 +57,8 @@ public:
     static RenderContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static RenderContext& getInstance();
 
+    void onWorldBegin();
+
     void initPostLoad();
     void updateMeshManagers(f32v2 playerPos, bool forceUpdate = false);
 

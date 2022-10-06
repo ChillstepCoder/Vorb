@@ -130,9 +130,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mScreenResolution(screenResolution),
     mWindow(window)
 {
-    // We require client interface to function
-    mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
-    assert(mCliWorld);
 
     // If we are in a debug context, initialize debug output
     // This is set via vui::MainGame::initSystems()
@@ -228,10 +225,10 @@ RenderContext& RenderContext::getInstance() {
     return *sInstance;
 }
 
-void RenderContext::initPostLoad() {
-
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
+void RenderContext::onWorldBegin() {
+    // We require client interface to function
+    mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
+    assert(mCliWorld);
 
     // Initialize renderer after material assets are loaded
     {
@@ -253,6 +250,19 @@ void RenderContext::initPostLoad() {
         checkGlError("Renderer init");
     }
 
+    {
+        ScopedTimer timer("Chunk renderer init", 2);
+        mChunkRenderer->InitPostLoad();
+        mLightRenderer->InitPostLoad();
+    }
+}
+
+void RenderContext::initPostLoad() {
+
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
+
+
     // Init all passthrough materials
     {
         ScopedTimer timer("Passthrough init", 2);
@@ -267,11 +277,6 @@ void RenderContext::initPostLoad() {
         }
     }
 
-    {
-        ScopedTimer timer("Chunk renderer init", 2);
-        mChunkRenderer->InitPostLoad();
-        mLightRenderer->InitPostLoad();
-    }
 
     mSceneLightingMaterial = materialManager.getMaterial("scene_lighting");
     mCopyDepthMaterial = materialManager.getMaterial("copy_depth");

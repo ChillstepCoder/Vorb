@@ -3,11 +3,14 @@
 
 #include "ui/DebugTweakerPanel.h"
 #include "ui/TileInspectionPanel.h"
+#include "ui/PauseMenuPanel.h"
 
 #include "options/DebugOptions.h"
 
 #include "world/IWorld.h"
 #include "editor/WorldEditor.h"
+
+#include "screens/ScreenState.h"
 
 UIContext* UIContext::sInstance = nullptr;
 
@@ -36,6 +39,25 @@ void UIContext::updateAndRenderUI(EntityComponentSystem& ecs, const vg::GBuffer*
     if (mTileInspectionPanel) {
         mTileInspectionPanel->updateAndRender();
     }
+    if (mPauseMenuPanel) {
+        PauseMenuPanelResult result = mPauseMenuPanel->updateAndRender();
+        switch (result) {
+            case PauseMenuPanelResult::RESUME:
+                break;
+            case PauseMenuPanelResult::EXIT_TO_MENU:
+                GameplayScreenState::isQuittingToMenu = true;
+                break;
+            case PauseMenuPanelResult::EXIT_TO_DESKTOP:
+                GameplayScreenState::isQuittingToDesktop = true;
+                break;
+            default:
+                break;
+
+        }
+        if (result != PauseMenuPanelResult::NONE) {
+            mPauseMenuPanel.reset();
+        }
+    }
 }
 
 void UIContext::renderEditorBrushDecals(const Camera3D& camera) {
@@ -52,6 +74,15 @@ void UIContext::activateTileInspectionPanel(const f32v2& screenPos, const TileHa
 
 void UIContext::closeTileInspectionPanel() {
     mTileInspectionPanel.reset();
+}
+
+void UIContext::toggleMainMenu() {
+    if (mPauseMenuPanel) {
+        mPauseMenuPanel.reset();
+    }
+    else {
+        mPauseMenuPanel = std::make_unique<PauseMenuPanel>();
+    }
 }
 
 UIContext& UIContext::initInstance(const f32v2& screenResolution, SDL_Window* window) {

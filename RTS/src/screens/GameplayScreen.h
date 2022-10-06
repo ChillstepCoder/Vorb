@@ -49,6 +49,7 @@ private:
     void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
 	void displayLoadScreen(const nString& text);
+	void initInputs();
 
 	IWorld* mWorld = nullptr;
 

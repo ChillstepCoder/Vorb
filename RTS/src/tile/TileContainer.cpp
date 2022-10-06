@@ -36,8 +36,8 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
     for (size_t i = 0; i < sTileContainers.size(); ++i) {
         if (sTileContainers[i].get() == container) {
             // container->freeData();
-            sTileContainers[i] = std::move(sTileContainers.back());
-            sTileContainers.pop_back();
+            sTileContainers[i] = std::move(sTileContainers.back()); // TODO: We hit a crash here on destructor
+            sTileContainers.pop_back(); 
             return;
         }
     }

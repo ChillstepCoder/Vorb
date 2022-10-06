@@ -6,6 +6,9 @@ bool MainMenuScreenState::isLan = false;
 bool MainMenuScreenState::isSinglePlayer = true;
 nString MainMenuScreenState::hostIP;
 
+bool GameplayScreenState::isQuittingToMenu = false;
+bool GameplayScreenState::isQuittingToDesktop = false;
+
 void MainMenuScreenState::initDefaults() {
     isHost = true;
     isLan = false;
@@ -28,3 +31,7 @@ void MainMenuScreenState::setHostOnline() {
     isSinglePlayer = false;
 }
 
+void GameplayScreenState::initDefaults() {
+    isQuittingToMenu = false;
+    isQuittingToDesktop = false;
+}

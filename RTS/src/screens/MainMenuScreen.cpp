@@ -3,6 +3,9 @@
 
 #include "App.h"
 
+
+#include "ui/ImguiUtil.hpp"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
@@ -58,18 +61,6 @@ void MainMenuScreen::update(const vui::GameTime& gameTime)
 }
 
 const ImVec2 buttonSize(200, 50);
-
-bool ButtonCenteredOnLine(const char* label, ImVec2 size) {
-    ImGuiStyle& style = ImGui::GetStyle();
-
-    float avail = ImGui::GetContentRegionAvail().x;
-
-    float off = (avail - size.x) * 0.5f;
-    if (off > 0.0f)
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + off);
-
-    return ImGui::Button(label, size);
-}
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
@@ -156,20 +147,20 @@ void MainMenuScreen::attemptConnect(bool lan) {
 
 void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Singleplayer", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Singleplayer", buttonSize)) {
         clearTextInputBuffer();
         m_state = vui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Multiplayer", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Multiplayer", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Options", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Options", buttonSize)) {
 
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Exit", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Exit", buttonSize)) {
         m_state = vui::ScreenState::EXIT_APPLICATION;
     }
 }
@@ -180,17 +171,17 @@ void MainMenuScreen::drawMultiplayerState() {
 
     ImGui::Text("Multiplayer");
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Host game", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Host game", buttonSize)) {
         clearTextInputBuffer();
         mState = MainMenuState::HOST;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Join game", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Join game", buttonSize)) {
         clearTextInputBuffer();
         mState = MainMenuState::JOIN;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::MAIN;
     }
 }
@@ -198,15 +189,15 @@ void MainMenuScreen::drawMultiplayerState() {
 void MainMenuScreen::drawJoinState() {
     ImGui::Text("Join game");
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("LAN", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("LAN", buttonSize)) {
         mState = MainMenuState::LAN_JOIN;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Online", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Online", buttonSize)) {
         mState = MainMenuState::ONLINE_JOIN;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
     }
 }
@@ -215,7 +206,7 @@ void MainMenuScreen::drawLanJoinState() {
     ImGui::Text("Enter Local IP of Host");
     ImGui::Spacing();
     ImGui::InputText("IP", mTextInputBuffer, 256);
-    if (ButtonCenteredOnLine("Join", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Join", buttonSize)) {
         //mTargetHostIP = mTextInputBuffer;
         //attemptConnect(true);
         // TEMPORARY SKIP
@@ -223,7 +214,7 @@ void MainMenuScreen::drawLanJoinState() {
         MainMenuScreenState::setJoin(mTargetHostIP);
         m_state = vui::ScreenState::CHANGE_NEXT;
     }
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
     }
 }
@@ -232,11 +223,11 @@ void MainMenuScreen::drawOnlineJoinState() {
     ImGui::Text("Enter IPv6 of Host");
     ImGui::Spacing();
     ImGui::InputText("IP", mTextInputBuffer, 256);
-    if (ButtonCenteredOnLine("Join", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Join", buttonSize)) {
         mTargetHostIP = mTextInputBuffer;
         attemptConnect(false);
     }
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
     }
 }
@@ -244,17 +235,17 @@ void MainMenuScreen::drawOnlineJoinState() {
 void MainMenuScreen::drawHostState() {
     ImGui::Text("Host game");
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("LAN", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("LAN", buttonSize)) {
         MainMenuScreenState::setHostLan();
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Online", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Online", buttonSize)) {
         MainMenuScreenState::setHostOnline();
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
     }
 }
@@ -264,7 +255,7 @@ void MainMenuScreen::drawWaitingJoinState() {
     sprintf_s(buf, "Joining server: %s", mTargetHostIP.c_str());
     ImGui::Text(buf);
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         GameClient::destroyInstance();
         mState = MainMenuState::JOIN;
     }
@@ -298,7 +289,7 @@ void MainMenuScreen::drawFailedToConnectState() {
     ImGui::Spacing();
     ImGui::Text(mErrorString.c_str());
     ImGui::Spacing();
-    if (ButtonCenteredOnLine("Back", buttonSize)) {
+    if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         clearTextInputBuffer();
         mState = MainMenuState::JOIN;
     }

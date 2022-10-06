@@ -75,7 +75,10 @@ IHeightmapGrid::IHeightmapGrid()
 
 IHeightmapGrid::~IHeightmapGrid()
 {
-
+    // TODO: Unique_ptr?
+    for (int i = 0; i < WORLD_SIZE_HEIGHTMAP_PATCHES; ++i) {
+        delete mHeightData[i].mHeightData;
+    }
 }
 
 void IHeightmapGrid::requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback) {

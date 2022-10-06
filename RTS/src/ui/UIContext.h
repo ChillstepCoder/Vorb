@@ -7,6 +7,7 @@ class Camera3D;
 class TileInspectionPanel;
 struct TileHandle;
 class EntityComponentSystem;
+class PauseMenuPanel;
 
 DECL_VG(class GBuffer);
 
@@ -27,6 +28,8 @@ public:
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
     void closeTileInspectionPanel();
 
+    void toggleMainMenu();
+
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static UIContext& getInstance();
 
@@ -37,6 +40,7 @@ private:
     std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
     std::unique_ptr<WorldEditor> mEditor;
     std::unique_ptr<TileInspectionPanel> mTileInspectionPanel;
+    std::unique_ptr<PauseMenuPanel> mPauseMenuPanel;
 
     SDL_Window* mWindow;
     f32v2 mScreenResolution;
