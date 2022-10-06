@@ -61,7 +61,7 @@ namespace UNITTESTS
                 std::atomic_bool quitClient = false;
                 std::atomic_bool clientConnected = false;
                 std::thread clientThread([address, &quitClient, &clientConnected]() {
-                    GameClient client(ClientConnectionType::ONLINE);
+                    GameClient& client = GameClient::initInstance(ClientConnectionType::ONLINE);
                     client.connect(DEFAULT_PRIVATE_KEY, address);
 
                     char buffer[256];
@@ -82,7 +82,6 @@ namespace UNITTESTS
                         }
                     }
                     client.disconnect();
-
 
                     sprintf_s(buffer, "Client Ping %.2f\n", client.getCurrentPingMS());
                     Logger::WriteMessage(buffer);

@@ -307,6 +307,15 @@ void GameplayScreen::build() {
 	});
 
 
+    
+}
+
+void GameplayScreen::destroy(const vui::GameTime& gameTime) {
+    
+}
+
+void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
+
     // Add player
     f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
     mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
@@ -315,18 +324,12 @@ void GameplayScreen::build() {
     assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
 
     mCameraController->setEntityFollow(ecs.mPlayerEntity);
-}
-
-void GameplayScreen::destroy(const vui::GameTime& gameTime) {
-	
-}
-
-void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
     // Initialize hosted server if needed
     if (!MainMenuScreenState::isSinglePlayer) {
         if (MainMenuScreenState::isHost) {
             GameServer::initInstance(MainMenuScreenState::isLan ? ServerType::LAN : ServerType::ONLINE);
+            mIsSinglePlayer = false;
         }
     }
 
@@ -345,6 +348,8 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
+    assert(false); // Need to join threads before destroying world! Destroy threadpool!
+    WorldFactory::destroyWorld();
 }
 
 void GameplayScreen::update(const vui::GameTime& gameTime) {
@@ -399,7 +404,6 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     // Update main thread update queues
     hostWorld->onFrameBegin();
 
-
     // Update the world with fixed timestep
     int ticks = 0;
     auto&& ecs = hostWorld->getECS();
@@ -407,7 +411,9 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         // Update game server
-        GameServer::getInstance().tryTick();
+        if (!mIsSinglePlayer) {
+            GameServer::getInstance().tryTick();
+        }
 
         // Update world
         const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);

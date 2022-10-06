@@ -30,6 +30,16 @@ IWorld& WorldFactory::makeWorld(WorldType type) {
     return *sWorld;
 }
 
+void WorldFactory::destroyWorld()
+{
+    delete sHeightmapGrid;
+    delete sChunkGrid;
+    delete sWorld;
+    sHeightmapGrid = nullptr;
+    sChunkGrid = nullptr;
+    sWorld = nullptr;
+}
+
 IWorld& WorldFactory::makeClientWorld() {
     sHeightmapGrid = new CliHeightmapGrid();
     sChunkGrid = new CliChunkGrid();

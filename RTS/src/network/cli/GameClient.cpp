@@ -8,12 +8,9 @@
 
 constexpr f64 PING_INTERVAL_SEC = 0.1; // 100ms ping interval
 
-GameClient* sGameClient = nullptr;
+GameClient* GameClient::sInstance = nullptr;
 
 GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType), mLastPingTimeS(yojimbo_time()) {
-
-    assert(!sGameClient);
-    sGameClient = this;
 
     switch (mConnectionType) {
         case ClientConnectionType::STANDALONE:
@@ -30,8 +27,29 @@ GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make
     }
 }
 
+GameClient& GameClient::initInstance(ClientConnectionType connectionType) {
+    if (!sHasInitYojimbo) {
+        sHasInitYojimbo = true;
+        InitializeYojimbo();
+    }
+
+    assert(!sInstance);
+    sInstance = new GameClient(connectionType);
+    return* sInstance;
+}
+
+GameClient& GameClient::getInstance() {
+    return *sInstance;
+}
+
+void GameClient::destroyInstance() {
+    assert(sInstance);
+    delete sInstance;
+    sInstance = nullptr;
+}
+
 GameClient::~GameClient() {
-    sGameClient = nullptr;
+    disconnect();
 }
 
 // To enable this we need to use a matcher service on a linux machine
@@ -87,9 +105,9 @@ void GameClient::disconnect() {
     mClient->Disconnect();
 }
 
-void GameClient::update(double dt) {
+void GameClient::update(double dtSec) {
 
-    mClient->AdvanceTime(mClient->GetTime() + dt);
+    mClient->AdvanceTime(mClient->GetTime() + dtSec);
     mClient->ReceivePackets();
 
     if (mClient->IsConnected()) {

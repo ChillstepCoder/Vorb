@@ -5,7 +5,8 @@ class Camera3D;
 
 class EntityComponentSystem {
 public:
-	EntityComponentSystem();
+    EntityComponentSystem();
+    ~EntityComponentSystem();
 
 	void tick();
     void frameUpdate(const Camera3D& playerCamera);

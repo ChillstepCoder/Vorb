@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Vorb/ui/IGameScreen.h>
+#include <yojimbo/yojimbo.h>
 
 class App;
 
@@ -11,6 +12,7 @@ enum class MainMenuState {
     LAN_JOIN,
     ONLINE_JOIN,
     WAITING_JOIN,
+    FAILED_TO_CONNECT,
     HOST,
     OPTIONS,
     COUNT
@@ -44,9 +46,18 @@ private:
     void drawLanJoinState();
     void drawOnlineJoinState();
     void drawHostState();
-    void drawWaitingJoin();
+    void drawWaitingJoinState();
+    void drawFailedToConnectState();
+    void setNextState(MainMenuState nextState);
+
+    void clearTextInputBuffer();
 
     MainMenuState mState = MainMenuState::MAIN;
     nString mTargetHostIP;
+    nString mErrorString;
+    yojimbo::Address mTargetHostAddress;
+    double mConnectingStart = 0.0;
+    double mConnTimer = 0.0;
+    char mTextInputBuffer[256];
 };
 

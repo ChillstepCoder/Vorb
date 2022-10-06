@@ -2,8 +2,6 @@
 
 #include "network/GameConnectionConfig.h"
 
-constexpr int DEFAULT_SERVER_PORT = 45362;
-
 class SrvAdapter;
 
 struct PingMessage;

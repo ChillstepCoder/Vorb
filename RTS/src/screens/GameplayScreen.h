@@ -73,6 +73,7 @@ private:
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 
 	WorldType mClientType = WorldType::HOST;
+	bool mIsSinglePlayer = true;
 
 };
 

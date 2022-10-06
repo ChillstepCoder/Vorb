@@ -14,6 +14,10 @@ EntityComponentSystem::EntityComponentSystem()
 	, mTimedTileInteractSystem() {
 }
 
+EntityComponentSystem::~EntityComponentSystem() {
+
+}
+
 void EntityComponentSystem::tick() {
 	
     mBusinessSystem.update(mRegistry);

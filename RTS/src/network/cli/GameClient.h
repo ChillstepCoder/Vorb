@@ -11,13 +11,21 @@ namespace yojimbo {
 
 class GameClient
 {
-public:
+protected:
     GameClient(ClientConnectionType connectionType);
     ~GameClient();
 
+public:
+    GameClient(GameClient& other) = delete;
+    void operator=(const GameClient&) = delete;
+
+    static GameClient& initInstance(ClientConnectionType connectionType);
+    static GameClient& getInstance();
+    static void destroyInstance();
+
     void connect(const uint8_t privateKey[], const yojimbo::Address& address);
     void disconnect();
-    void update(double dt);
+    void update(double dtSec);
 
     bool isConnected() const { return mClient->IsConnected(); }
 
@@ -38,7 +46,8 @@ private:
     ClientConnectionType mConnectionType = ClientConnectionType::INVALID;
     f64 mLastPingTimeS;
     f32 mCurrentPingMS = 666.0f; // Sentinal ping meaning we havent checked ping yet
+
+    static GameClient* sInstance;
 };
 
-extern GameClient* sGameClient;
 

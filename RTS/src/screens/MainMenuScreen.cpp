@@ -54,10 +54,7 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime)
 
 void MainMenuScreen::update(const vui::GameTime& gameTime)
 {
-    if (mState == MainMenuState::WAITING_JOIN) {
-        // Check client state
-        assert(false);
-    }
+
 }
 
 const ImVec2 buttonSize(200, 50);
@@ -114,6 +111,12 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
         case MainMenuState::ONLINE_JOIN:
             drawOnlineJoinState();
             break;
+        case MainMenuState::WAITING_JOIN:
+            drawWaitingJoinState();
+            break;
+        case MainMenuState::FAILED_TO_CONNECT:
+            drawFailedToConnectState();
+            break;
         case MainMenuState::HOST:
             drawHostState();
             break;
@@ -123,6 +126,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
             break;
 
     }
+    static_assert(e_cast(MainMenuState::COUNT) == 9);
 
     ImGui::End();
 
@@ -134,15 +138,26 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 
 
 void MainMenuScreen::attemptConnect(bool lan) {
-    // TODO: Assert well formatted IP
-    mState = MainMenuState::WAITING_JOIN;
+    mTargetHostAddress = yojimbo::Address(mTargetHostIP.c_str(), DEFAULT_SERVER_PORT);
 
-    sGameClient = new GameClient(ClientConnectionType::ONLINE);
+    if (!mTargetHostAddress.IsValid()) {
+        mErrorString = "Malformed address, please use correct host IP\n Example ipv4: 14.12.163.924\n Example ipv6: 2101:602:a07e:c230:5bc:d26b:8407:502b";
+        mState = MainMenuState::FAILED_TO_CONNECT;
+        return;
+    }
+    // TODO: Assert well formatted IP
+    std::cout << "Attempting to connect to " << mTargetHostIP << std::endl;
+    mState = MainMenuState::WAITING_JOIN;
+    GameClient& gameClient = GameClient::initInstance(lan ? ClientConnectionType::LAN : ClientConnectionType::ONLINE);
+    gameClient.connect(DEFAULT_PRIVATE_KEY, mTargetHostAddress);
+    mConnectingStart = yojimbo_time();
+    mConnTimer = mConnectingStart;
 }
 
 void MainMenuScreen::drawMainState() {
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Singleplayer", buttonSize)) {
+        clearTextInputBuffer();
         m_state = vui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
@@ -160,13 +175,18 @@ void MainMenuScreen::drawMainState() {
 }
 
 void MainMenuScreen::drawMultiplayerState() {
+    // Just always clear it here
+    clearTextInputBuffer();
+
     ImGui::Text("Multiplayer");
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Host game", buttonSize)) {
+        clearTextInputBuffer();
         mState = MainMenuState::HOST;
     }
     ImGui::Spacing();
     if (ButtonCenteredOnLine("Join game", buttonSize)) {
+        clearTextInputBuffer();
         mState = MainMenuState::JOIN;
     }
     ImGui::Spacing();
@@ -194,10 +214,14 @@ void MainMenuScreen::drawJoinState() {
 void MainMenuScreen::drawLanJoinState() {
     ImGui::Text("Enter Local IP of Host");
     ImGui::Spacing();
-    char buf[256];
-    ImGui::InputText("IP", buf, 256);
+    ImGui::InputText("IP", mTextInputBuffer, 256);
     if (ButtonCenteredOnLine("Join", buttonSize)) {
-        assert(false);
+        //mTargetHostIP = mTextInputBuffer;
+        //attemptConnect(true);
+        // TEMPORARY SKIP
+        GameClient::initInstance(ClientConnectionType::LAN);
+        MainMenuScreenState::setJoin(mTargetHostIP);
+        m_state = vui::ScreenState::CHANGE_NEXT;
     }
     if (ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
@@ -207,10 +231,9 @@ void MainMenuScreen::drawLanJoinState() {
 void MainMenuScreen::drawOnlineJoinState() {
     ImGui::Text("Enter IPv6 of Host");
     ImGui::Spacing();
-    char buf[256];
-    ImGui::InputText("IP", buf, 256);
+    ImGui::InputText("IP", mTextInputBuffer, 256);
     if (ButtonCenteredOnLine("Join", buttonSize)) {
-        mTargetHostIP = buf;
+        mTargetHostIP = mTextInputBuffer;
         attemptConnect(false);
     }
     if (ButtonCenteredOnLine("Back", buttonSize)) {
@@ -236,7 +259,51 @@ void MainMenuScreen::drawHostState() {
     }
 }
 
-void MainMenuScreen::drawWaitingJoin()
-{
+void MainMenuScreen::drawWaitingJoinState() {
+    char buf[256];
+    sprintf_s(buf, "Joining server: %s", mTargetHostIP.c_str());
+    ImGui::Text(buf);
+    ImGui::Spacing();
+    if (ButtonCenteredOnLine("Back", buttonSize)) {
+        GameClient::destroyInstance();
+        mState = MainMenuState::JOIN;
+    }
 
+    double currentTime = yojimbo_time();
+    // Check timeout
+    if (currentTime - mConnectingStart >= YOJIMBO_DEFAULT_TIMEOUT) {
+        mErrorString = "Connection timed out";
+        mState = MainMenuState::FAILED_TO_CONNECT;
+        GameClient::destroyInstance();
+        return;
+    }
+
+    // Update client packets
+    GameClient& client = GameClient::getInstance();
+    double dt = currentTime - mConnTimer;
+    client.update(dt);
+    mConnTimer = currentTime;
+    
+    if (client.isConnected()) {
+        // Join host game
+        MainMenuScreenState::setJoin(mTargetHostIP);
+        m_state = vorb::ui::ScreenState::CHANGE_NEXT;
+    }
+}
+
+void MainMenuScreen::drawFailedToConnectState() {
+    char buf[256];
+    sprintf_s(buf, "FAILED TO JOIN SERVER: %s", mTargetHostIP.c_str());
+    ImGui::Text(buf);
+    ImGui::Spacing();
+    ImGui::Text(mErrorString.c_str());
+    ImGui::Spacing();
+    if (ButtonCenteredOnLine("Back", buttonSize)) {
+        clearTextInputBuffer();
+        mState = MainMenuState::JOIN;
+    }
+}
+
+void MainMenuScreen::clearTextInputBuffer() {
+    mTextInputBuffer[0] = '\0';
 }

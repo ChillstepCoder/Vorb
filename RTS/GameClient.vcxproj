@@ -74,7 +74,7 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Release;$(LibraryPath)</LibraryPath>
