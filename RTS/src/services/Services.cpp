@@ -13,11 +13,7 @@ void Services::init()
 
     std::cout << "Initializing services:\n";
 
-    // - 2 threads for main thread + nav thread
-    const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 2, 1);
-    std::cout << "  Initializing threadpool with " << threadCount << " threads.\n";
-    Threadpool::set(threadCount);
-    NavThread::set();
+    initThreads();
     ResourceManager::set();
 }
 
@@ -29,4 +25,20 @@ void Services::destroy()
     Threadpool::reset();
     NavThread::reset();
     ResourceManager::reset();
+}
+
+void Services::resetThreads()
+{
+    Threadpool::reset();
+    NavThread::reset();
+    initThreads();
+}
+
+void Services::initThreads()
+{
+    // - 2 threads for main thread + nav thread
+    const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 2, 1);
+    std::cout << "  Initializing threadpool with " << threadCount << " threads.\n";
+    Threadpool::set(threadCount);
+    NavThread::set();
 }

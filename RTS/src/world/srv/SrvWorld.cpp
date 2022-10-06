@@ -4,7 +4,7 @@
 #include "world/srv/SrvChunkGrid.h"
 #include "world/srv/SrvHeightmapGrid.h"
 
-void SrvWorld::initPostResourcesLoaded()
+void SrvWorld::onWorldBegin(const f32v2& loadCenter)
 {
     throw std::logic_error("The method or operation is not implemented.");
 }

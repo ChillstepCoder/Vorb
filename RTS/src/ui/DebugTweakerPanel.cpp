@@ -294,6 +294,7 @@ void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GB
     
     if (ImGui::CollapsingHeader("Clouds")) {
         ImGui::PushID(++ID);
+        ImGui::Checkbox("Debug rendering", &sDebugOptions.mDebugClouds);
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableClouds);
         ImGui::SliderInt("Blur Passes", &sDebugOptions.mCloudBlurPasses, 0, 15);
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mCloudBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);

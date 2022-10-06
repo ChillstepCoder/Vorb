@@ -65,7 +65,7 @@ void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     mPhysWorld->stepSimulation(elapsedSec);
 }
 
-void HostWorld::initPostResourcesLoaded() {
-
-    initPostResourcesLoadedClient();
+void HostWorld::onWorldBegin(const f32v2& loadCenter) {
+    onWorldBeginShared(loadCenter);
+    onWorldBeginClient();
 }

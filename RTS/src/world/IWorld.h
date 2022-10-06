@@ -24,7 +24,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(IWorld);
 
     // Pure virtual interface
-    virtual void initPostResourcesLoaded() = 0;
+    virtual void onWorldBegin(const f32v2& loadCenter) = 0;
 
     // Shared interface
     void tickShared(const f32v2& playerPos, f32 elapsedSec);
@@ -89,6 +89,8 @@ public:
 
 
 protected:
+    void onWorldBeginShared(const f32v2& loadCenter);
+
     void updateTimeOfDay();
 
     void updateCities();

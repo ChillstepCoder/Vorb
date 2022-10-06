@@ -57,7 +57,9 @@ void Chunk::freeTiles() {
 }
 
 void Chunk::dispose() {
-    assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
+    if (mTileContainer) {
+        assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
+    }
 
     onDispose(this);
     if (isDataReady()) {

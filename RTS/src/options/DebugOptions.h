@@ -20,6 +20,7 @@ constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 struct DebugOptions {
     f64 mTimeOffset = 0.0f;
     // Clouds
+    bool mDebugClouds = false;
     bool mDisableClouds = false;
     int mCloudBlurPasses = 3;
     float mCloudBlurRadius = 1.25f;

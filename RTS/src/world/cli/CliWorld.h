@@ -15,7 +15,7 @@ public:
     
     void onFrameBegin() override;
     void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;
-    void initPostResourcesLoaded() override;
+    void onWorldBegin(const f32v2& loadCenter) override;
 
 private:
 

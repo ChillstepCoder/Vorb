@@ -27,6 +27,7 @@ const f32 CLOUD_LOAD_RANGE_SQ = SQ(CLOUD_LOAD_RANGE);
 constexpr int CLOUD_GEN_STRIDE = 16;
 constexpr int MAX_CLOUDS_PER_BATCH = SQ(CLOUD_BATCH_WIDTH / CLOUD_GEN_STRIDE);
 static_assert(MAX_CLOUDS_PER_BATCH < UINT16_MAX);
+constexpr int CLOUD_DEBUG_DRAW_TIME = 500;
 
 
 typedef GridID<WORLD_WIDTH_CLOUD_BATCHES, CLOUD_BATCH_WIDTH> CloudID;
@@ -36,8 +37,6 @@ constexpr int CLOUD_DIR_LEFT  = -1;
 constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
-
-#define DEBUG_CLOUD_RENDER 0
 
 CloudManager::CloudManager()
 {
@@ -256,8 +255,8 @@ void CloudManager::spawnNewCloudWaveX(i32 dir) {
     for (auto&& it : mCloudSpawnOffsets) {
         i32v2 pos(mLastCenterPosition.x + -dir * it.x, mLastCenterPosition.y + it.y);
         tryGenerateCloudBatchAt(pos);
-        if (IsEnabled<DEBUG_CLOUD_RENDER>()) {
-            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(0.0f, 1.0f, 0.0f, 0.5f), 1000);
+        if (sDebugOptions.mDebugClouds) {
+            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(0.0f, 1.0f, 0.0f, 0.5f), CLOUD_DEBUG_DRAW_TIME);
         }
     }
 }
@@ -268,8 +267,8 @@ void CloudManager::spawnNewCloudWaveY(i32 dir) {
     for (auto&& it : mCloudSpawnOffsets) {
         i32v2 pos(mLastCenterPosition.x + it.y, mLastCenterPosition.y + -dir * it.x);
         tryGenerateCloudBatchAt(pos);
-        if (IsEnabled<DEBUG_CLOUD_RENDER>()) {
-            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(1.0f, 0.0f, 0.0f, 0.5f), 1000);
+        if (sDebugOptions.mDebugClouds) {
+            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(1.0f, 0.0f, 0.0f, 0.5f), CLOUD_DEBUG_DRAW_TIME);
         }
     }
 }

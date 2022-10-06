@@ -59,6 +59,6 @@ void CliWorldInterface::updateClouds() {
     mCloudManager->update();
 }
 
-void CliWorldInterface::initPostResourcesLoadedClient() {
+void CliWorldInterface::onWorldBeginClient() {
     mCloudManager->init();
 }

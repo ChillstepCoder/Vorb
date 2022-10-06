@@ -10,6 +10,7 @@ class IChunkGrid
 public:
     IChunkGrid();
 
+    void onWorldBegin(const f32v2& loadCenter);
     void tick(const f32v2& loadCenter);
 
     Chunk& getChunk(ui32 i) { return mChunks[i]; }

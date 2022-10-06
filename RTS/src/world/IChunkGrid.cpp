@@ -25,6 +25,10 @@ IChunkGrid::IChunkGrid() {
     }
 }
 
+void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
+    mLoadCenter = loadCenter;
+}
+
 void IChunkGrid::tick(const f32v2& loadCenter) {
     mLoadCenter = loadCenter;
 

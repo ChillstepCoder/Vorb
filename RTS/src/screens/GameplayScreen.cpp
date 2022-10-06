@@ -117,8 +117,6 @@ void GameplayScreen::build() {
     displayLoadScreen("Loading files...");
 	mResourceManager.loadFiles();
 
-    mWorld->initPostResourcesLoaded();
-
     {
         ScopedTimer timer("Render context init");
         mRenderContext->initPostLoad();
@@ -335,6 +333,10 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
     // Preload
     displayLoadScreen("Preloading...");
+
+    // Begin world
+    mWorld->onWorldBegin(playerPos);
+
     // Hacky
     {
         ScopedTimer timer("Main thread preload hack");
@@ -345,11 +347,15 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
             mRenderContext->updateMeshManagers(sWorld->getLoadCenter(), true /*forceUpdate*/);
         }
     }
+
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
-    assert(false); // Need to join threads before destroying world! Destroy threadpool!
+    IS_SHUTTING_DOWN = true;
+    displayLoadScreen("Cleaning up...");
+    Services::resetThreads();
     WorldFactory::destroyWorld();
+    IS_SHUTTING_DOWN = false;
 }
 
 void GameplayScreen::update(const vui::GameTime& gameTime) {

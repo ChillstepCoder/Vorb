@@ -25,7 +25,7 @@ protected:
     void updateChunkVisibility(const Camera3D& camera, const std::vector<Chunk*>& activeChunks);
     void updateParticleSystems(const f32v2& playerPos);
     void updateClouds();
-    void initPostResourcesLoadedClient();
+    void onWorldBeginClient();
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;

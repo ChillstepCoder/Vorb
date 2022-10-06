@@ -52,13 +52,8 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
 
 IWorld::~IWorld()
 {
-    sWorld = nullptr;
-    delete mChunkGrid;
-    sChunkGrid = nullptr;
-    delete mHeightmapGrid;
-    mHeightmapGrid = nullptr;
-}
 
+}
 
 void IWorld::tickShared(const f32v2& playerPos, f32 elapsedSec){
 
@@ -278,6 +273,10 @@ void IWorld::enumActiveChunks(std::function<void(const Chunk&)> func) const {
 
 const f32v2& IWorld::getLoadCenter() const {
     return mChunkGrid->getLoadCenter();
+}
+
+void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
+    mChunkGrid->onWorldBegin(loadCenter);
 }
 
 void IWorld::updateTimeOfDay()

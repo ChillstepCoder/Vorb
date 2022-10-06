@@ -11,7 +11,7 @@ protected:
 
 public:
 
-    void initPostResourcesLoaded() override;
+    void onWorldBegin(const f32v2& loadCenter) override;
 
     //// Nav graph
     //std::unique_ptr<NavWorld> mNavWorld;

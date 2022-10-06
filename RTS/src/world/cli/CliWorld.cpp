@@ -30,7 +30,7 @@ void CliWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec)
     throw std::logic_error("The method or operation is not implemented.");
 }
 
-void CliWorld::initPostResourcesLoaded() {
-
-    initPostResourcesLoadedClient();
+void CliWorld::onWorldBegin(const f32v2& loadCenter) {
+    onWorldBeginShared(loadCenter);
+    onWorldBeginClient();
 }
