@@ -197,6 +197,11 @@ void MainMenuScreen::drawJoinState() {
         mState = MainMenuState::ONLINE_JOIN;
     }
     ImGui::Spacing();
+    if (ImguiUtil::ButtonCenteredOnLine("DEV", buttonSize)) {
+        mTargetHostIP = "127.0.0.1";
+        attemptConnect(true);
+    }
+    ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
     }
@@ -207,12 +212,8 @@ void MainMenuScreen::drawLanJoinState() {
     ImGui::Spacing();
     ImGui::InputText("IP", mTextInputBuffer, 256);
     if (ImguiUtil::ButtonCenteredOnLine("Join", buttonSize)) {
-        //mTargetHostIP = mTextInputBuffer;
-        //attemptConnect(true);
-        // TEMPORARY SKIP
-        GameClient::initInstance(ClientConnectionType::LAN);
-        MainMenuScreenState::setJoin(mTargetHostIP);
-        m_state = vui::ScreenState::CHANGE_NEXT;
+        mTargetHostIP = mTextInputBuffer;
+        attemptConnect(true);
     }
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
@@ -245,6 +246,12 @@ void MainMenuScreen::drawHostState() {
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
+    if (ImguiUtil::ButtonCenteredOnLine("DEV", buttonSize)) {
+        mTargetHostIP = "127.0.0.1";
+        MainMenuScreenState::setHostLan();
+        m_state = vorb::ui::ScreenState::CHANGE_NEXT;
+    }
+    ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::MULTIPLAYER;
     }
@@ -258,6 +265,7 @@ void MainMenuScreen::drawWaitingJoinState() {
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         GameClient::destroyInstance();
         mState = MainMenuState::JOIN;
+        return;
     }
 
     double currentTime = yojimbo_time();
@@ -270,6 +278,7 @@ void MainMenuScreen::drawWaitingJoinState() {
     }
 
     // Update client packets
+    // TODO: We need to make sure our local IP is same protocol as host IP, i.e. ipv4 or ipv6
     GameClient& client = GameClient::getInstance();
     double dt = currentTime - mConnTimer;
     client.update(dt);

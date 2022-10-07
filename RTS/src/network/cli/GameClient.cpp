@@ -14,9 +14,13 @@ GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make
 
     switch (mConnectionType) {
         case ClientConnectionType::STANDALONE:
+            assert(false);
             break;
-        case ClientConnectionType::LAN:
+        case ClientConnectionType::LAN: {
+            yojimbo::Address localAddress(NetworkUtil::getLocalIP().c_str(), DEFAULT_SERVER_PORT);
+            mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), localAddress, mConnectionConfig, *mAdapter, 0.0);
             break;
+        }
         case ClientConnectionType::ONLINE: {
             yojimbo::Address externalAddress = NetworkUtil::getExternalIP(0);
             mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), externalAddress, mConnectionConfig, *mAdapter, 0.0);
@@ -59,11 +63,10 @@ void GameClient::connect(const uint8_t privateKey[], const yojimbo::Address& add
 
     switch (mConnectionType) {
         case ClientConnectionType::STANDALONE: {
+            assert(false);
             break;
         }
-        case ClientConnectionType::LAN: {
-            break;
-        }
+        case ClientConnectionType::LAN:
         case ClientConnectionType::ONLINE: {
             // TODO: Client ID should come from a backend
             uint64_t clientId;

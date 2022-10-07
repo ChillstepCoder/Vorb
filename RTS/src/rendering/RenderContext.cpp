@@ -33,6 +33,9 @@
 #include "rendering/mesh/MeshBuilder.h"
 #include "rendering/mesh/TerrainMeshManager.h"
 
+#include "screens/ScreenState.h"
+#include "network/srv/GameServer.h"
+
 #include "structure/StructureManager.h"
 
 #include "ui/UIContext.h"
@@ -808,7 +811,7 @@ void RenderContext::renderUI(const Camera3D& camera) {
         return;
     }
     mSb->begin(100);
-    char buffer[255];
+    char buffer[256];
     f32 scales = 1.0f;
     const float GAP_SIZE = 35.0f * scales;
     const float START_MULT = 0.75f;
@@ -839,6 +842,24 @@ void RenderContext::renderUI(const Camera3D& camera) {
     sprintf_s(buffer, sizeof(buffer), "Polygons: %u", RenderStats::sPolyCount);
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
+
+    // If we are host, draw our server IP
+    if (!MainMenuScreenState::isSinglePlayer && MainMenuScreenState::isHost) {
+        char buffer2[256];
+        yojimbo::Address address = GameServer::getInstance().getServerAddress();
+        yojimbo::Address addressNoPort;
+        if (address.GetType() == yojimbo::ADDRESS_IPV4) {
+            addressNoPort = yojimbo::Address(address.GetAddress4());
+        }
+        else {
+            addressNoPort = yojimbo::Address(address.GetAddress6());
+
+        }
+        addressNoPort.ToString(buffer2, 256);
+        sprintf_s(buffer, sizeof(buffer), "Host IP: %s", buffer2);
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+    }
 
     /*sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
