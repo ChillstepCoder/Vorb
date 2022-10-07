@@ -16,6 +16,8 @@ constexpr char IPV4_API_WEBSITE[] = "api.ipify.org";
 constexpr char IPV6_API_WEBSITE[] = "api6.ipify.org";
 static char lineBuffer[200][80] = { ' ' };
 
+std::atomic_bool sHasInitYojimbo = false;
+
 namespace NetworkUtil {
 
     nString getLocalIP()

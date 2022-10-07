@@ -86,8 +86,8 @@ int GameServer::tryTick() {
     mTickTimer.startFrame();
     int tickCount = 0;
     while (mTickTimer.tryTick()) {
-        mTimeSec += fixedDtSec;
         update();
+        mTimeSec += fixedDtSec;
     }
     double currentTime = yojimbo_time();
     if (currentTime - mTimeSec < 1.0) {

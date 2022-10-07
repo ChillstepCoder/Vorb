@@ -1,5 +1,7 @@
 #pragma once
 
+extern std::atomic_bool sHasInitYojimbo;
+
 #include <yojimbo/yojimbo.h>
 
 namespace NetworkUtil {
