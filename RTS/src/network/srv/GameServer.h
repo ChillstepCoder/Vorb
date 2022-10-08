@@ -18,11 +18,6 @@ extern void logSrv(const std::string& str);
 
 #define SERVER_TICK_RATE_HZ 60.0f
 
-enum class ServerType {
-    LAN,
-    DEV,
-    ONLINE
-};
 
 class GameServer {
 protected:
@@ -35,6 +30,7 @@ public:
 
     static GameServer& initInstance(ServerType serverType);
     static GameServer& getInstance();
+    static void destroyInstance();
 
     void start();
     int tryTick();

@@ -24,83 +24,95 @@ namespace UNITTESTS
     {
     public:
 
+        void ConnectionTest(ServerType type) {
+            // Start server
+            GameServer& gameServer = GameServer::initInstance(type);
+            yojimbo::Address address = gameServer.getServerAddress();
+
+            char buffer[256];
+            address.ToString(buffer, 256);
+            Logger::WriteMessage((std::string("Server address: ") + std::string(buffer) + "\n").c_str());
+
+            // Run server loop
+            std::thread serverThread([&]() {
+                gameServer.start();
+                constexpr float fixedDt = 1.0f / SERVER_TICK_RATE_HZ;
+                float time = yojimbo_time();
+                while (gameServer.isRunning()) {
+                    double currentTime = yojimbo_time();
+                    if (time <= currentTime) {
+                        gameServer.tryTick();
+                        time += fixedDt;
+                    }
+                    else {
+                        yojimbo_sleep(time - currentTime);
+                    }
+                }
+
+                gameServer.stop();
+            });
+
+            // Await startup
+            while (!gameServer.isRunning());
+            Sleep(1000);
+
+            std::atomic_bool quitClient = false;
+            std::atomic_bool clientConnected = false;
+            std::thread clientThread([type, address, &quitClient, &clientConnected]() {
+                GameClient& client = GameClient::initInstance(type, address);
+                client.connect(DEFAULT_PRIVATE_KEY);
+
+                char buffer[256];
+                client.getClientAddress().ToString(buffer, 256);
+                Logger::WriteMessage((std::string("Client address: ") + std::string(buffer) + "\n").c_str());
+
+                auto tStart = std::chrono::high_resolution_clock::now();
+                while (!quitClient) {
+                    // Get DT in seconds
+                    auto tNow = std::chrono::high_resolution_clock::now();
+                    double dt = std::chrono::duration<double>(tNow - tStart).count();
+                    tStart = tNow;
+                    // Update client
+                    client.update(dt);
+                    // Connection check
+                    if (client.isConnected()) {
+                        clientConnected = true;
+                    }
+                }
+                client.disconnect();
+
+                sprintf_s(buffer, "Client Ping %.2f\n", client.getCurrentPingMS());
+                Logger::WriteMessage(buffer);
+                Logger::WriteMessage("Client shutting down\n");
+            });
+            Sleep(1000);
+
+
+            // End server
+            gameServer.shutdown();
+            quitClient = true;
+            Sleep(200);
+
+            // End thread
+            Logger::WriteMessage("Joining threads\n");
+            serverThread.join();
+            clientThread.join();
+
+            GameServer::destroyInstance();
+            GameClient::destroyInstance();
+
+            Assert::IsTrue(clientConnected, L"Client was unable to establish a connection");
+        }
+
         TEST_METHOD(GameServerClientConnectDedicated)
         {
             try {
-                // Start server
-                GameServer& gameServer = GameServer::initInstance(ServerType::ONLINE);
-                yojimbo::Address address = gameServer.getServerAddress();
-
-                char buffer[256];
-                address.ToString(buffer, 256);
-                Logger::WriteMessage((std::string("Server address: ") + std::string(buffer) + "\n").c_str());
-
-                // Run server loop
-                std::thread serverThread([&]() {
-                    gameServer.start();
-                    constexpr float fixedDt = 1.0f / SERVER_TICK_RATE_HZ;
-                    float time = yojimbo_time();
-                    while (gameServer.isRunning()) {
-                        double currentTime = yojimbo_time();
-                        if (time <= currentTime) {
-                            gameServer.tryTick();
-                            time += fixedDt;
-                        }
-                        else {
-                            yojimbo_sleep(time - currentTime);
-                        }
-                    }
-
-                    gameServer.stop();
-                });
-
-                // Await startup
-                while (!gameServer.isRunning());
-                Sleep(1000);
-
-                std::atomic_bool quitClient = false;
-                std::atomic_bool clientConnected = false;
-                std::thread clientThread([address, &quitClient, &clientConnected]() {
-                    GameClient& client = GameClient::initInstance(ClientConnectionType::ONLINE);
-                    client.connect(DEFAULT_PRIVATE_KEY, address);
-
-                    char buffer[256];
-                    address.ToString(buffer, 256);
-                    Logger::WriteMessage((std::string("Client address: ") + std::string(buffer) + "\n").c_str());
-
-                    auto tStart = std::chrono::high_resolution_clock::now();
-                    while (!quitClient) {
-                        // Get DT in seconds
-                        auto tNow = std::chrono::high_resolution_clock::now();
-                        double dt = std::chrono::duration<double>(tNow - tStart).count();
-                        tStart = tNow;
-                        // Update client
-                        client.update(dt);
-                        // Connection check
-                        if (client.isConnected()) {
-                            clientConnected = true;
-                        }
-                    }
-                    client.disconnect();
-
-                    sprintf_s(buffer, "Client Ping %.2f\n", client.getCurrentPingMS());
-                    Logger::WriteMessage(buffer);
-                    Logger::WriteMessage("Client shutting down\n");
-                });
-                Sleep(1000);
-
-
-                // End server
-                gameServer.shutdown();
-                quitClient = true;
-                Sleep(200);
-
-                // End thread
-                Logger::WriteMessage("Joining threads\n");
-                serverThread.join();
-                clientThread.join();
-
-                Assert::IsTrue(clientConnected, L"Client was unable to establish a connection");
+                Logger::WriteMessage("Testing Online\n");
+                ConnectionTest(ServerType::ONLINE);
+                Logger::WriteMessage("Testing Dev\n");
+                ConnectionTest(ServerType::DEV);
+                Logger::WriteMessage("Testing LAN\n");
+                ConnectionTest(ServerType::LAN);
             }
             catch (int e) {
                 Assert::Fail(L"Server failed to startup with exception");

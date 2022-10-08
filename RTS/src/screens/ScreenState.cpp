@@ -1,34 +1,32 @@
 #include "stdafx.h"
 #include "ScreenState.h"
 
-bool MainMenuScreenState::isHost = true;
-bool MainMenuScreenState::isLan = false;
-bool MainMenuScreenState::isSinglePlayer = true;
+ServerType MainMenuScreenState::serverType = ServerType::NONE;
 nString MainMenuScreenState::hostIP;
 
 bool GameplayScreenState::isQuittingToMenu = false;
 bool GameplayScreenState::isQuittingToDesktop = false;
 
 void MainMenuScreenState::initDefaults() {
-    isHost = true;
-    isLan = false;
-    isSinglePlayer = true;
+    serverType = ServerType::NONE;
 }
 
 void MainMenuScreenState::setJoin(const nString& hostIp) {
-    isHost = false;
-    isSinglePlayer = false;
+    serverType = ServerType::NONE;
     MainMenuScreenState::hostIP = hostIP;
 }
 
 void MainMenuScreenState::setHostLan() {
-    isLan = true;
-    isSinglePlayer = false;
+    serverType = ServerType::LAN;
 }
 
 void MainMenuScreenState::setHostOnline() {
-    isLan = false;
-    isSinglePlayer = false;
+    serverType = ServerType::ONLINE;
+}
+
+void MainMenuScreenState::setHostDev()
+{
+    serverType = ServerType::DEV;
 }
 
 void GameplayScreenState::initDefaults() {

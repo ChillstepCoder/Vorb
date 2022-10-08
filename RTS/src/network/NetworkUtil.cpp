@@ -11,7 +11,6 @@
 #include <sstream>
 #include <ws2tcpip.h>
 
-#define USE_IPV6 1
 constexpr char IPV4_API_WEBSITE[] = "api.ipify.org";
 constexpr char IPV6_API_WEBSITE[] = "api6.ipify.org";
 static char lineBuffer[200][80] = { ' ' };
@@ -128,7 +127,7 @@ namespace NetworkUtil {
         return true;
     }
 
-    yojimbo::Address getExternalIP(uint16_t port) {
+    yojimbo::Address getExternalIP(uint16_t port, bool getIpv6) {
 
         // PUBLIC
         std::locale local;
@@ -138,7 +137,7 @@ namespace NetworkUtil {
         int lineIndex = 0, posIndex = 0;
 
         // We will use this website to find our IPV6
-        if (!getWebsite(USE_IPV6 ? IPV6_API_WEBSITE : IPV4_API_WEBSITE, website_HTML)) {
+        if (!getWebsite(getIpv6 ? IPV6_API_WEBSITE : IPV4_API_WEBSITE, website_HTML)) {
             return yojimbo::Address();
         }
 
@@ -147,44 +146,44 @@ namespace NetworkUtil {
         std::istringstream ss(website_HTML);
         std::string stoken;
 
-#if USE_IPV6
-        while (getline(ss, stoken, '\n')) {
+        if (getIpv6) {
+            while (getline(ss, stoken, '\n')) {
 
 
-            strcpy_s(lineBuffer[lineIndex], stoken.c_str());
-            int dot = 0;
-            for (int ii = 0; ii < strlen(lineBuffer[lineIndex]); ii++) {
+                strcpy_s(lineBuffer[lineIndex], stoken.c_str());
+                int dot = 0;
+                for (int ii = 0; ii < strlen(lineBuffer[lineIndex]); ii++) {
 
-                if (lineBuffer[lineIndex][ii] == ':') dot++;
-                if (dot >= 7) {
-                    dot = 0;
-                    strcpy_s(ip_address, lineBuffer[lineIndex]);
+                    if (lineBuffer[lineIndex][ii] == ':') dot++;
+                    if (dot >= 7) {
+                        dot = 0;
+                        strcpy_s(ip_address, lineBuffer[lineIndex]);
+                    }
                 }
+
+                lineIndex++;
             }
-
-            lineIndex++;
         }
-#else
+        else {
 
-        while (getline(ss, stoken, '\n')) {
+            while (getline(ss, stoken, '\n')) {
 
-            //cout <<"-->"<< stoken.c_str() << '\n';
+                //cout <<"-->"<< stoken.c_str() << '\n';
 
-            strcpy_s(lineBuffer[lineIndex], stoken.c_str());
-            int dot = 0;
-            for (int ii = 0; ii < strlen(lineBuffer[lineIndex]); ii++) {
+                strcpy_s(lineBuffer[lineIndex], stoken.c_str());
+                int dot = 0;
+                for (int ii = 0; ii < strlen(lineBuffer[lineIndex]); ii++) {
 
-                if (lineBuffer[lineIndex][ii] == '.') dot++;
-                if (dot >= 3) {
-                    dot = 0;
-                    strcpy_s(ip_address, lineBuffer[lineIndex]);
+                    if (lineBuffer[lineIndex][ii] == '.') dot++;
+                    if (dot >= 3) {
+                        dot = 0;
+                        strcpy_s(ip_address, lineBuffer[lineIndex]);
+                    }
                 }
+
+                lineIndex++;
             }
-
-            lineIndex++;
         }
-#endif
-
         return yojimbo::Address(ip_address, port);
     }
 

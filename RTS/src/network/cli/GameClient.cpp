@@ -10,19 +10,23 @@ constexpr f64 PING_INTERVAL_SEC = 0.1; // 100ms ping interval
 
 GameClient* GameClient::sInstance = nullptr;
 
-GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType), mLastPingTimeS(yojimbo_time()) {
+GameClient::GameClient(ServerType connectionType, const yojimbo::Address& hostAddress) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType), mHostAddress(hostAddress), mLastPingTimeS(yojimbo_time()) {
 
     switch (mConnectionType) {
-        case ClientConnectionType::STANDALONE:
+        case ServerType::NONE:
             assert(false);
             break;
-        case ClientConnectionType::LAN: {
-            yojimbo::Address localAddress(NetworkUtil::getLocalIP().c_str(), DEFAULT_SERVER_PORT);
+        case ServerType::LAN: {
+            yojimbo::Address localAddress(NetworkUtil::getLocalIP().c_str(), DEFAULT_CLIENT_PORT);
             mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), localAddress, mConnectionConfig, *mAdapter, 0.0);
             break;
         }
-        case ClientConnectionType::ONLINE: {
-            yojimbo::Address externalAddress = NetworkUtil::getExternalIP(0);
+        case ServerType::DEV: {
+            mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), yojimbo::Address("0.0.0.0"), mConnectionConfig, *mAdapter, 0.0);
+            break;
+        }
+        case ServerType::ONLINE: {
+            yojimbo::Address externalAddress = NetworkUtil::getExternalIP(DEFAULT_CLIENT_PORT, hostAddress.GetType() == yojimbo::AddressType::ADDRESS_IPV6);
             mClient = std::make_unique<yojimbo::Client>(yojimbo::GetDefaultAllocator(), externalAddress, mConnectionConfig, *mAdapter, 0.0);
             break;
         }
@@ -31,14 +35,14 @@ GameClient::GameClient(ClientConnectionType connectionType) : mAdapter(std::make
     }
 }
 
-GameClient& GameClient::initInstance(ClientConnectionType connectionType) {
+GameClient& GameClient::initInstance(ServerType connectionType, const yojimbo::Address& hostAddress) {
     if (!sHasInitYojimbo) {
         sHasInitYojimbo = true;
         InitializeYojimbo();
     }
 
     assert(!sInstance);
-    sInstance = new GameClient(connectionType);
+    sInstance = new GameClient(connectionType, hostAddress);
     return* sInstance;
 }
 
@@ -59,15 +63,16 @@ GameClient::~GameClient() {
 // To enable this we need to use a matcher service on a linux machine
 #define USE_SECURE_CONNECT 0 
 
-void GameClient::connect(const uint8_t privateKey[], const yojimbo::Address& address) {
+void GameClient::connect(const uint8_t privateKey[]) {
 
     switch (mConnectionType) {
-        case ClientConnectionType::STANDALONE: {
+        case ServerType::NONE: {
             assert(false);
             break;
         }
-        case ClientConnectionType::LAN:
-        case ClientConnectionType::ONLINE: {
+        case ServerType::DEV:
+        case ServerType::LAN:
+        case ServerType::ONLINE: {
             // TODO: Client ID should come from a backend
             uint64_t clientId;
             yojimbo::random_bytes((uint8_t*)&clientId, 8);
@@ -95,7 +100,7 @@ void GameClient::connect(const uint8_t privateKey[], const yojimbo::Address& add
             ((yojimbo::Client*)mClient.get())->Connect(clientId, connectToken);//address);
 
 #else
-            ((yojimbo::Client*)mClient.get())->InsecureConnect(DEFAULT_PRIVATE_KEY, clientId, address);
+            ((yojimbo::Client*)mClient.get())->InsecureConnect(DEFAULT_PRIVATE_KEY, clientId, mHostAddress);
 #endif
             break;
         }

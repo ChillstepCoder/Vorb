@@ -2,6 +2,7 @@
 
 #include <Vorb/ui/IGameScreen.h>
 #include <yojimbo/yojimbo.h>
+#include "network/NetworkConst.h"
 
 class App;
 
@@ -38,7 +39,7 @@ public:
     virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
-    void attemptConnect(bool lan);
+    void attemptConnect(ServerType serverType);
 
     void drawMainState();
     void drawMultiplayerState();

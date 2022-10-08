@@ -844,7 +844,7 @@ void RenderContext::renderUI(const Camera3D& camera) {
     yOffset += GAP_SIZE;
 
     // If we are host, draw our server IP
-    if (!MainMenuScreenState::isSinglePlayer && MainMenuScreenState::isHost) {
+    if (MainMenuScreenState::serverType != ServerType::NONE) {
         char buffer2[256];
         yojimbo::Address address = GameServer::getInstance().getServerAddress();
         yojimbo::Address addressNoPort;

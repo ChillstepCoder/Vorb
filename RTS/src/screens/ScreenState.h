@@ -3,6 +3,7 @@
 // Static data for inter-screen sharing
 
 #include "network/WorldType.h"
+#include "network/NetworkConst.h"
 
 class MainMenuScreenState {
 public:
@@ -10,10 +11,9 @@ public:
     static void setJoin(const nString& hostIp);
     static void setHostLan();
     static void setHostOnline();
+    static void setHostDev();
 
-    static bool isSinglePlayer;
-    static bool isHost;
-    static bool isLan;
+    static ServerType serverType;
     static nString hostIP;
 };
 

@@ -128,7 +128,7 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
 }
 
 
-void MainMenuScreen::attemptConnect(bool lan) {
+void MainMenuScreen::attemptConnect(ServerType serverType) {
     mTargetHostAddress = yojimbo::Address(mTargetHostIP.c_str(), DEFAULT_SERVER_PORT);
 
     if (!mTargetHostAddress.IsValid()) {
@@ -139,8 +139,8 @@ void MainMenuScreen::attemptConnect(bool lan) {
     // TODO: Assert well formatted IP
     std::cout << "Attempting to connect to " << mTargetHostIP << std::endl;
     mState = MainMenuState::WAITING_JOIN;
-    GameClient& gameClient = GameClient::initInstance(lan ? ClientConnectionType::LAN : ClientConnectionType::ONLINE);
-    gameClient.connect(DEFAULT_PRIVATE_KEY, mTargetHostAddress);
+    GameClient& gameClient = GameClient::initInstance(serverType, mTargetHostAddress);
+    gameClient.connect(DEFAULT_PRIVATE_KEY);
     mConnectingStart = yojimbo_time();
     mConnTimer = mConnectingStart;
 }
@@ -199,7 +199,7 @@ void MainMenuScreen::drawJoinState() {
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("DEV", buttonSize)) {
         mTargetHostIP = "127.0.0.1";
-        attemptConnect(true);
+        attemptConnect(ServerType::DEV);
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
@@ -213,7 +213,7 @@ void MainMenuScreen::drawLanJoinState() {
     ImGui::InputText("IP", mTextInputBuffer, 256);
     if (ImguiUtil::ButtonCenteredOnLine("Join", buttonSize)) {
         mTargetHostIP = mTextInputBuffer;
-        attemptConnect(true);
+        attemptConnect(ServerType::LAN);
     }
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
@@ -226,7 +226,7 @@ void MainMenuScreen::drawOnlineJoinState() {
     ImGui::InputText("IP", mTextInputBuffer, 256);
     if (ImguiUtil::ButtonCenteredOnLine("Join", buttonSize)) {
         mTargetHostIP = mTextInputBuffer;
-        attemptConnect(false);
+        attemptConnect(ServerType::ONLINE);
     }
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
         mState = MainMenuState::JOIN;
@@ -247,8 +247,7 @@ void MainMenuScreen::drawHostState() {
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("DEV", buttonSize)) {
-        mTargetHostIP = "127.0.0.1";
-        MainMenuScreenState::setHostLan();
+        MainMenuScreenState::setHostDev();
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();

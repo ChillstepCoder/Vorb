@@ -15,6 +15,7 @@
 
 #include "camera/CameraController.h"
 
+#include "network/cli/GameClient.h"
 #include "network/srv/GameServer.h"
 
 #include "ecs/EntityComponentSystem.h"
@@ -148,11 +149,9 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     mCameraController->setEntityFollow(ecs.mPlayerEntity);
 
     // Initialize hosted server if needed
-    if (!MainMenuScreenState::isSinglePlayer) {
-        if (MainMenuScreenState::isHost) {
-            GameServer::initInstance(MainMenuScreenState::isLan ? ServerType::LAN : ServerType::ONLINE);
-            mIsSinglePlayer = false;
-        }
+    if (MainMenuScreenState::serverType != ServerType::NONE) {
+        GameServer::initInstance(MainMenuScreenState::serverType);
+        mIsSinglePlayer = false;
     }
 
     // Preload
@@ -240,9 +239,39 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
 }
 
-void GameplayScreen::updateClient(const vui::GameTime& gameTime)
-{
-    assert(false);
+void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
+
+    CliWorld* cliWorld = static_cast<CliWorld*>(mWorld);
+
+    // Update main thread update queues
+    cliWorld->onFrameBegin();
+
+    // Update client
+    GameClient& client = GameClient::getInstance();
+    if (!client.isConnected()) {
+        pError("LOST CONNECTION!");
+        assert(false);
+    }
+    client.update(gameTime.deltaTime);
+
+    // Update client world
+    int ticks = 0;
+    auto&& ecs = cliWorld->getECS();
+    f32 TODO_ELAPSED = (f32)gameTime.elapsedSec;
+    while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
+        // Update world
+        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+        f32v3 position = playerPhysCmp.getPosition();
+        cliWorld->tick(position, TODO_ELAPSED);
+        TODO_ELAPSED = 0.0f;// FIX THIS HACK
+    }
+
+    // Update editors
+    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
+
+    updateTilePicking();
+
+    cliWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 }
 
 void GameplayScreen::updateHost(const vui::GameTime& gameTime) {

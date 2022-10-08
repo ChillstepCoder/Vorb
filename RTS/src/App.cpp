@@ -17,6 +17,9 @@
 // TODO: Config
 #include "options/DebugOptions.h"
 
+// For log level
+#include <yojimbo/yojimbo.h>
+
 #define SKIP_MAIN_MENU 0
 
 // Use dedicated GPUs
@@ -70,6 +73,10 @@ void setPriorityToNormal() {
 }
 
 void App::onInit() {
+
+    // Set log level for yojimbo
+    yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
+
     setPriorityToMax();
 
     sDebugOptions.mScreenResolution = f32v2(m_window.getWidth(), m_window.getHeight());

@@ -12,6 +12,6 @@ namespace NetworkUtil {
     // https://stackoverflow.com/questions/39566240/how-to-get-the-external-ip-address-in-c
     bool getWebsite(const nString& url, OUT nString& websiteHtml);
 
-    yojimbo::Address getExternalIP(uint16_t port);
+    yojimbo::Address getExternalIP(uint16_t port, bool isIpv6);
 
 }

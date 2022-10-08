@@ -20,6 +20,7 @@ void logSrv(const std::string& str) {
 
 constexpr ui32 MAX_PLAYERS = 16;
 constexpr int MAX_TICKS_IN_FRAME = 2;
+constexpr f32 SERVER_BACKLOG_FASTFORWARD_TIME_SEC = 0.6; // Time differential before we just fast forward to make up for it
 
 GameServer* GameServer::sInstance = nullptr;
 
@@ -62,6 +63,13 @@ GameServer& GameServer::getInstance() {
     return *sInstance;
 }
 
+void GameServer::destroyInstance()
+{
+    assert(sInstance);
+    delete sInstance;
+    sInstance = nullptr;
+}
+
 GameServer::~GameServer() {
     mServer.Stop();
 }
@@ -90,8 +98,9 @@ int GameServer::tryTick() {
         mTimeSec += fixedDtSec;
     }
     double currentTime = yojimbo_time();
-    if (currentTime - mTimeSec < 1.0) {
-        std::cout << "Massive server time backlog detected!\n";
+    if (currentTime - mTimeSec >= SERVER_BACKLOG_FASTFORWARD_TIME_SEC) {
+        std::cout << "Massive server time backlog detected! ";
+        std::cout << mTimeSec << " " << currentTime << std::endl;
         mTimeSec = currentTime; // Fast forward
         return 1;
     }
@@ -176,6 +185,6 @@ yojimbo::Address GameServer::initServerAddress(ServerType serverType)
         return yojimbo::Address(NetworkUtil::getLocalIP().c_str(), DEFAULT_SERVER_PORT);
     }
     else {
-        return NetworkUtil::getExternalIP(DEFAULT_SERVER_PORT);
+        return NetworkUtil::getExternalIP(DEFAULT_SERVER_PORT, true /*ipv6*/);
     }
 }
