@@ -1,4 +1,4 @@
-stairs_wood:
+stairs_wd:
   tex: raw_wood_dark
   texture_method: world_tiling
   shape: Stairs
@@ -6,7 +6,7 @@ stairs_wood:
   recipe:
     - item: wood_raw
       count: 5
-stairs_wood_flat:
+stairs_wd_f:
   tex: raw_wood_dark
   texture_method: world_tiling
   layer: 1

@@ -2,6 +2,7 @@
 
 #include "city/CityConst.h"
 #include "city/BuildingGrammar.h"
+#include "util/StrToken.h"
 
 // TODO: Move to data?
 enum class BuildingFunction : ui16 {
@@ -26,15 +27,16 @@ enum class RoomType : ui16 {
 KEG_ENUM_DECL(RoomType);
 
 struct RoomDef {
+    StrToken nameToken;
     RoomDefID id;
     RoomType roomType = RoomType::NONE;
     ui8 minWidth = 2;
     ui8 maxWidth = 12;
     f32 stairsChance = 0.0f;
     bool canStairsConnect = true;
-    nString name;
 };
 KEG_TYPE_DECL(RoomDef);
+
 
 struct PossibleSubRoom {
     RoomDefID id;
@@ -47,6 +49,7 @@ struct PossibleRoom {
     f32 weight;
 };
 struct BuildingDef {
+    StrToken nameToken;
     BuildingTypeID id = UINT16_MAX;
     ui32v2 widthRange = f32v2(10, 30);
     ui32v2 publicRoomCountRange = ui32v2(1, 3);
@@ -59,5 +62,4 @@ struct BuildingDef {
     std::vector<PossibleRoom> publicRooms;
     std::vector<PossibleRoom> privateRooms;
     std::vector<PossibleSubRoom> subRooms;
-    nString name;
 };

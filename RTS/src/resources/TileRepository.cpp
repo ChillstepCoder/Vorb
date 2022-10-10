@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TileRepository.h"
 
-std::unordered_map<std::string, TileID> TileRepository::sTileIdMapping;
+std::unordered_map<StrToken, TileID> TileRepository::sTileIdMapping;
 std::vector<TileData> TileRepository::sTileData;
 
 KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {

@@ -1,4 +1,4 @@
-wood_wall_gothic_thick:
+wd_col_goth:
   layer: 1
   tex: wood_wall_gothic
   col: box
@@ -6,7 +6,7 @@ wood_wall_gothic_thick:
   recipe:
     - item: wood_raw
       count: 5
-wood_wall_gothic:
+wd_wall_goth:
   tex: wood_wall_gothic
   texture_method: vertical
   shape: Wall

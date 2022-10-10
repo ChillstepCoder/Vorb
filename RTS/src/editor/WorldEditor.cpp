@@ -358,7 +358,9 @@ void WorldEditor::renderBuildingEditUI() const {
     for (size_t i = 0; i < buildings.size(); ++i) {
         const BuildingDef& buildingDef = buildings[i];
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(buildingDef.name.c_str(), mSelectedBuilding == (ui32)i)) {
+        char buf[64];
+        buildingDef.nameToken.toString(buf, nullptr);
+        if (ImGui::RadioButton(buf, mSelectedBuilding == (ui32)i)) {
             mSelectedBuilding = (ui32)i;
         }
         ImGui::TableNextColumn();

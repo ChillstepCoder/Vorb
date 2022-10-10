@@ -67,11 +67,16 @@ void BuildingDescriptionRepository::loadRoomDescriptionFile(const vio::Path& fil
         // Load data
         keg::parse((ui8*)&description, value, readContext, &KEG_GLOBAL_TYPE(RoomDef));
 
-        assert(mRoomTypes.find(key) == mRoomTypes.end());
+        if (key.size() >= MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
+            pError("Room description " + filePath.getString() + " key " + key + " was too long, must be <= 12 characters");
+        }
+        StrToken nameToken(key);
+
+        assert(mRoomTypes.find(nameToken) == mRoomTypes.end());
         RoomDefID newID = static_cast<RoomDefID>(mRoomDefs.size());
         description.id = newID;
-        description.name = key;
-        mRoomTypes[key] = newID;
+        description.nameToken = nameToken;
+        mRoomTypes[nameToken] = newID;
         mRoomDefs.emplace_back(std::move(description));
     }))) {
         // Do nothing on success
@@ -87,6 +92,11 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         // Load data
         keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(BuildingDescriptionFileData));
 
+        if (key.size() >= MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
+            pError("Building description " + filePath.getString() + " key " + key + " was too long, must be <= 12 characters");
+        }
+        StrToken nameToken(key);
+
         BuildingDef description;
         description.widthRange = fileData.widthRange;
         description.publicRoomCountRange = fileData.publicRoomCountRange;
@@ -95,12 +105,13 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         description.publicRooms.reserve(fileData.publicRooms.size());
         description.employeeCountRange = fileData.employeeCountRange;
         description.function = fileData.function;
-        description.name = key;
+        description.nameToken = nameToken;
         // TODO: We should get the keys from this somehow
         for (size_t i = 0; i < fileData.publicRooms.size(); ++i) {
             PossibleRoomFileData& roomFileData = fileData.publicRooms[i];
             PossibleRoom newRoom;
-            auto&& it = mRoomTypes.find(roomFileData.name);
+            StrToken token(roomFileData.name);
+            auto&& it = mRoomTypes.find(token);
             assert(it != mRoomTypes.end());
             newRoom.id = it->second;
             newRoom.countRange = roomFileData.countRange;
@@ -111,7 +122,8 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         for (size_t i = 0; i < fileData.privateRooms.size(); ++i) {
             PossibleRoomFileData& roomFileData = fileData.privateRooms[i];
             PossibleRoom newRoom;
-            auto&& it = mRoomTypes.find(roomFileData.name);
+            StrToken token(roomFileData.name);
+            auto&& it = mRoomTypes.find(token);
             assert(it != mRoomTypes.end());
             newRoom.id = it->second;
             newRoom.countRange = roomFileData.countRange;
@@ -122,14 +134,16 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         for (size_t i = 0; i < fileData.subRooms.size(); ++i) {
             PossibleSubRoomFileData& roomFileData = fileData.subRooms[i];
             PossibleSubRoom newRoom;
-            auto&& it = mRoomTypes.find(roomFileData.name);
+            StrToken token(roomFileData.name);
+            auto&& it = mRoomTypes.find(token);
             assert(it != mRoomTypes.end());
             newRoom.id = it->second;
             newRoom.countRange = roomFileData.countRange;
             newRoom.parentRoomIDs.reserve(roomFileData.parentRooms.size());
             for (size_t i = 0; i < roomFileData.parentRooms.size(); ++i) {
                 nString& parentName = roomFileData.parentRooms[i];
-                auto&& it2 = mRoomTypes.find(parentName);
+                StrToken token2(parentName);
+                auto&& it2 = mRoomTypes.find(token2);
                 assert(it2 != mRoomTypes.end());
                 newRoom.parentRoomIDs.emplace_back(it2->second);
             }
@@ -140,7 +154,7 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
         BuildingTypeID newID = static_cast<RoomDefID>(mBuildingDescriptions.size());
 
         description.id = newID;
-        mBuildingTypes[key] = newID;
+        mBuildingTypes[nameToken] = newID;
         mBuildingDescriptions.emplace_back(std::move(description));
     }))) {
         // Failure case
@@ -148,9 +162,9 @@ void BuildingDescriptionRepository::loadBuildingDescriptionFile(const vio::Path&
     }
 }
 
-const BuildingDef& BuildingDescriptionRepository::getBuildingDef(const nString& name) const {
+const BuildingDef& BuildingDescriptionRepository::getBuildingDef(StrToken buildingToken) const {
 
-    auto&& it = mBuildingTypes.find(name);
+    auto&& it = mBuildingTypes.find(buildingToken);
     assert(it != mBuildingTypes.end());
     BuildingTypeID id = it->second;
     return mBuildingDescriptions[id];
@@ -162,12 +176,12 @@ const RoomDef& BuildingDescriptionRepository::getRoomDefFromID(RoomDefID id) con
     return mRoomDefs[id];
 }
 
-const nString* BuildingDescriptionRepository::getNameFromRoomDefID(RoomDefID id) const {
+StrToken BuildingDescriptionRepository::getNameFromRoomDefID(RoomDefID id) const {
 
     for (auto&& it : mRoomTypes) {
         if (it.second == id) {
-            return &it.first;
+            return it.first;
         }
     }
-    return nullptr;
+    return StrToken();
 }

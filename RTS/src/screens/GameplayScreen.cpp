@@ -366,25 +366,25 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
 			// TODO: HANDLE RACE CONDITION
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TILE_ID_NONE));
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TILE_ID_NONE));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
             // grass
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_small")));
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TileRepository::getTile(StrToken("tree_small"))));
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
             // grass
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("grass1"), TILE_ID_NONE, TileRepository::getTile("tree_pine")));
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TileRepository::getTile(StrToken("tree_pine"))));
             }
         }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
             // grass
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, 2u));
+                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("rock1")), TILE_ID_NONE, TILE_ID_NONE, 2u));
             }
         }
         else if (result & INTERACT_MENU_RESULT_INSPECT) {

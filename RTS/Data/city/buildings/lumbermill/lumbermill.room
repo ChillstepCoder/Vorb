@@ -2,11 +2,11 @@ wood_shop:
   min_width: 6
   max_width: 8
   type: shop
-wood_workshop:
+wood_workshp:
   min_width: 8
   max_width: 10
   type: workshop
-lumbermill_stockpile:
+lumber_stock:
   min_width: 10
   max_width: 13
   type: stockpile

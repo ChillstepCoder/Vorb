@@ -11,10 +11,10 @@ lumbermill:
       count_range: [1, 1]
     - name: storage
       count_range: [1, 1]
-    - name: medium_stockpile
+    - name: medium_stock
       count_range: [1, 1]
   private_rooms:
-    - name: lumbermill_stockpile
+    - name: lumber_stock
       count_range: [2, 2]
   function: lumbermill
   employs: [1, 5]

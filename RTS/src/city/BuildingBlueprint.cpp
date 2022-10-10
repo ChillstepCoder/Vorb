@@ -16,11 +16,11 @@ BuildingBlueprint::BuildingBlueprint(
 
     // TODO: Different per building
     tileIDs[e_cast(BlueprintTileType::NONE)] = TILE_ID_NONE;
-    tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile("bricks1");
-    tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile("door");
-    tileIDs[e_cast(BlueprintTileType::WALL)] = TileRepository::getTile("wood_wall_gothic");
-    tileIDs[e_cast(BlueprintTileType::STAIRS)] = TileRepository::getTile("stairs_wood");
-    tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)] = TileRepository::getTile("stairs_wood_flat");
+    tileIDs[e_cast(BlueprintTileType::FLOOR)] = TileRepository::getTile(StrToken("bricks", 1));
+    tileIDs[e_cast(BlueprintTileType::DOOR)] = TileRepository::getTile(StrToken("door"));
+    tileIDs[e_cast(BlueprintTileType::WALL)] = TileRepository::getTile(StrToken("wd_wall_goth"));
+    tileIDs[e_cast(BlueprintTileType::STAIRS)] = TileRepository::getTile(StrToken("stairs_wd"));
+    tileIDs[e_cast(BlueprintTileType::STAIRS_FLAT)] = TileRepository::getTile(StrToken("stairs_wd_f"));
     tileIDs[e_cast(BlueprintTileType::AIR)] = TILE_ID_NONE;
 
     static_assert(e_cast(BlueprintTileType::TYPES) == 7);

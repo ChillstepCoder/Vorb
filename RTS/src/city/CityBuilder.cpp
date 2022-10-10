@@ -175,8 +175,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
 void CityBuilder::debugBuildInstant(RoadID roadId)
 {
-    static TileID bricksId = TileRepository::getTile("bricks1");
-    static TileID grassId = TileRepository::getTile("grass1");
+    static TileID bricksId = TileRepository::getTile(StrToken("bricks1"));
+    static TileID grassId = TileRepository::getTile(StrToken("grass1"));
 
     CityRoad& road = *mCity.mRoads[roadId];
     TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;

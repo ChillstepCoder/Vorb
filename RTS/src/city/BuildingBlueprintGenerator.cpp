@@ -65,7 +65,9 @@ void renderBlueprintDebugVislog(BuildingBlueprint& bp, VisualLog& visLog, color4
         }
 
         // Room name
-        visLog.addText(node.roomDef->name, f32v3(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
+        char buf[64];
+        node.roomDef->nameToken.toString(buf, nullptr);
+        visLog.addText(buf, f32v3(node.offsetFromZero.x + 0.5f, node.offsetFromZero.y + 0.5f, node.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
         ++i;
     }
 
@@ -406,7 +408,9 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                     const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
                     visLog->addLineBetweenPoints(childPos, parentPos, color);
 
-                    visLog->addText(child.roomDef->name, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
+                    char buf[64];
+                    child.roomDef->nameToken.toString(buf, nullptr);
+                    visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
                 }
                 placeChildrenRecursive(bp, &child, dims2d.y, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
                 break;
@@ -444,8 +448,9 @@ void placeChildrenRecursive(BuildingBlueprint& bp, RoomNode* node, f32 available
                 visLog->addWireQuad(childPos, f32v2(1.0f), color);
                 const f32v3 parentPos(node->offsetFromZero.x, node->offsetFromZero.y, node->floorIndex * bp.floorHeight);
                 visLog->addLineBetweenPoints(childPos, parentPos, color);
-
-                visLog->addText(child.roomDef->name, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
+                char buf[64];
+                child.roomDef->nameToken.toString(buf, nullptr);
+                visLog->addText(buf, f32v3(childPos.x + 0.5f, childPos.y + 0.5f, child.floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), color4(color.r, color.g, color.b, 255u));
             }
             assert(child.offsetFromZero.x < 10000 && child.offsetFromZero.y < 10000);
             placeChildrenRecursive(bp, &child, childWidthSpan, maxXOffsetPerLayer, child.offsetFromZero, dims2d, visLog);
@@ -500,8 +505,9 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
     assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
     // We will generate to the right, then will rotate the coordinates around based on the cartesian
-
-    visLog->addText(root->roomDef->name, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
+    char buf[64];
+    root->roomDef->nameToken.toString(buf, nullptr);
+    visLog->addText(buf, f32v3(root->offsetFromZero.x + 0.5f, root->offsetFromZero.y + 0.5f, root->floorIndex * bp.floorHeight), *sFontVisLog, 0.25f, f32v2(0.0f, 0.5f), COLOR_WHITE);
     placeChildrenRecursive(bp, root, availableWidthSpan, maxDepthOffsetPerLayer, root->offsetFromZero, dims, visLog);
 
     // Rotate all coordinates around for Cartesian direction

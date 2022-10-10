@@ -69,12 +69,13 @@ void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) co
     const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
     std::cout << "\nGenerated house:" << bp->rooms.size() << " " << bp->aabb.dims.x << "\n";
     for (auto&& node : bp->rooms) {
-        std::cout << "  node - " << *buildingRepo.getNameFromRoomDefID(node.roomDefId) << " " <<
-            node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
+        char nameBuf[64];
+        buildingRepo.getNameFromRoomDefID(node.roomDefId).toString(nameBuf, nullptr);
+        std::cout << "  node - " << nameBuf << " " << node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
         for (int i = 0; i < node.numChildren; ++i) {
             const int childIndex = (int)node.childRooms[i];
-            std::cout << "    child - " << childIndex << " type - " <<
-                *buildingRepo.getNameFromRoomDefID(bp->rooms[childIndex].roomDefId) << "\n";
+            buildingRepo.getNameFromRoomDefID(bp->rooms[childIndex].roomDefId).toString(nameBuf, nullptr);
+            std::cout << "    child - " << childIndex << " type - " << nameBuf << "\n";
         }
     }
 }
