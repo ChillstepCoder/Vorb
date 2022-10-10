@@ -6,9 +6,9 @@
 constexpr uint8_t DEFAULT_PRIVATE_KEY[yojimbo::KeyBytes] = { 0 };
 constexpr int DEFAULT_SERVER_PORT = 45362;
 constexpr int DEFAULT_CLIENT_PORT = 45361;
-constexpr ui32 MAX_PLAYERS = 16;
+constexpr ui32 MAX_CLIENTS = 16;
 typedef ui16 ClientBits;
-static_assert(MAX_PLAYERS <= 16, "Make sure ClientBits can store max number of clients");
+static_assert(MAX_CLIENTS <= 16, "Make sure ClientBits can store max number of clients");
 
 enum class ServerType {
     NONE,

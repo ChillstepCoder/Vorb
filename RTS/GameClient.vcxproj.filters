@@ -561,6 +561,15 @@
     <ClCompile Include="src\ui\PauseMenuPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ecs\cli\CliEntityComponentSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\StrToken.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1281,6 +1290,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\ImguiUtil.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\cli\CliEntityComponentSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\StrToken.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,6 +4,7 @@ class Camera3D;
 
 #include "world/ChunkID.h"
 #include "physics/PhysHitResult.h"
+#include "util/StrToken.h"
 
 class Brush;
 class BrushRepository;
@@ -102,7 +103,7 @@ private:
     mutable ui32 mSelectedBuilding = 0;
     mutable i32v2 mPlotDims = i32v2(16);
 
-    mutable nString mSelectedEntity = "";
+    mutable StrToken mSelectedEntity;
     PhysHitResult mHitResult;
 };
 

@@ -183,6 +183,7 @@
     <ClCompile Include="src\definitions\SkillDef.cpp" />
     <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
     <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\cli\CliEntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\component\AttributesComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
     <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
@@ -204,6 +205,7 @@
     <ClCompile Include="src\ecs\IEntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
+    <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\WorldEditor.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
@@ -308,6 +310,7 @@
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\StrToken.cpp" />
     <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\weather\CloudManager.cpp" />
     <ClCompile Include="src\world\Chunk.cpp" />
@@ -378,6 +381,7 @@
     <ClInclude Include="src\ecs\business\BusinessComponent.h" />
     <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
     <ClInclude Include="src\ecs\business\BusinessRepository.h" />
+    <ClInclude Include="src\ecs\cli\CliEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\component\AttributesComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
@@ -405,6 +409,7 @@
     <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />
+    <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
     <ClInclude Include="src\editor\WorldEditor.h" />
@@ -542,6 +547,7 @@
     <ClInclude Include="src\util\MathDefines.h" />
     <ClInclude Include="src\util\MathUtil.hpp" />
     <ClInclude Include="src\util\StringHash.h" />
+    <ClInclude Include="src\util\StrToken.h" />
     <ClInclude Include="src\util\ThreadIDs.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />

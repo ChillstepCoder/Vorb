@@ -40,9 +40,6 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     // Stockpiles
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();
 
-    // Entities
-    mEcs = std::make_unique<IEntityComponentSystem>();
-
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>();
 
@@ -74,9 +71,9 @@ void IWorld::setTimeOfDay(float time) {
 
 }
 
-entt::entity IWorld::createEntity(const f32v3& pos, const nString& typeName) {
+entt::entity IWorld::createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate) {
 
-    return mEcs->createEntity(pos, typeName);
+    return mEcs->createEntity(pos, typeToken, shouldReplicate);
 }
 
 bool IWorld::tileHasHarvestableResource(const i32v2& worldPos, TileResource resource, TileLayer* outLayer) {

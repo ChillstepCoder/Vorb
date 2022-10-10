@@ -1,6 +1,7 @@
 #pragma once
 
 #include "component/ComponentTypes.h"
+#include "util/StrToken.h"
 
 DECL_VIO(class IOManager);
 
@@ -10,7 +11,7 @@ DECL_VIO(class IOManager);
 struct EntityDefinition;
 class IEntityComponentSystem;
 class ResourceManager;
-typedef std::unordered_map<nString, std::unique_ptr<EntityDefinition>> EntityDefinitionMap;
+typedef std::unordered_map<StrToken, std::unique_ptr<EntityDefinition>> EntityDefinitionMap;
 
 class EntityDefinitionRepository
 {
@@ -19,7 +20,7 @@ public:
     ~EntityDefinitionRepository();
 
     void loadEntityDefinitionFile(const vio::Path& filePath);
-    const EntityDefinition& getDefinition(const nString& typeName);
+    const EntityDefinition& getDefinition(StrToken typeToken);
 
     const EntityDefinitionMap& getAllEntityDefinitions() const { return mEntityDefinitions; }
 

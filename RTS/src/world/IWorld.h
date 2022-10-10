@@ -2,6 +2,7 @@
 
 #include "tile/TileHandle.h"
 #include "world/Chunk.h"
+#include "util/StrToken.h"
 
 class IChunkGrid;
 class IHeightmapGrid;
@@ -28,7 +29,7 @@ public:
     // Shared interface
     void tickShared(const f32v2& playerPos, f32 elapsedSec);
     void setTimeOfDay(f32 time);
-    entt::entity createEntity(const f32v3& pos, const nString& typeName);
+    entt::entity createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
     // Queries
     bool tileHasHarvestableResource(const i32v2& worldPos, TileResource resource, TileLayer* outLayer);
     void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);

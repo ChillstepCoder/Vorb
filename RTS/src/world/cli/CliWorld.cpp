@@ -4,6 +4,13 @@
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 
+#include "ecs/cli/CliEntityComponentSystem.h"
+
+CliWorld::CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid)
+{
+    mEcs = std::make_unique<CliEntityComponentSystem>();
+}
+
 void CliWorld::tick(const f32v2& playerPos, f32 elapsedSec)
 {
     // TODO: Figure out best order

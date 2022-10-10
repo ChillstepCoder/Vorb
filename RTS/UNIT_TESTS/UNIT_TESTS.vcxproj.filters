@@ -39,12 +39,18 @@
     <ClCompile Include="..\src\network\NetworkUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\util\StrToken.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\network\NetworkUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\util\StrToken.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

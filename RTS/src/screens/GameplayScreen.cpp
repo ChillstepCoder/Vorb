@@ -141,7 +141,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
     mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
     IEntityComponentSystem& ecs = mWorld->getECS();
-    ecs.mPlayerEntity = mWorld->createEntity(playerPos, "player");
+    ecs.mPlayerEntity = mWorld->createEntity(playerPos, StrToken("player"), true);
     assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
 
     // TODO: FIX EVIL THINGS

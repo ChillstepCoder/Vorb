@@ -1,6 +1,7 @@
 #pragma once
 
 #include "network/NetworkConst.h"
+#include "util/StrToken.h"
 
 // ==============================================
 // =           MESSAGE TYPES                    =
@@ -84,6 +85,7 @@ struct EntityCreateMessage : public MessageBase {
         serialize_float(stream, mPosition.y);
         serialize_float(stream, mPosition.z);
         serialize_float(stream, mRotation);
+        serialize_uint64(stream, mEntityToken.mToken);
         return true;
     }
 
@@ -92,6 +94,7 @@ struct EntityCreateMessage : public MessageBase {
     entt::entity entityID;
     f32v3 mPosition = f32v3(0.0f);
     f32 mRotation = 0.0f;
+    StrToken mEntityToken;
 
 };
 

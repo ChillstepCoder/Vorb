@@ -15,7 +15,7 @@
 #include "world/IWorld.h"
 #include "physics/PhysicsWorld.h"
 
-entt::entity EntityFactory::createEntity(const f32v3& position, const nString& typeName) {
+entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeToken) {
     PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
     IEntityComponentSystem& ecs = sWorld->getECS();
 
@@ -23,7 +23,7 @@ entt::entity EntityFactory::createEntity(const f32v3& position, const nString& t
     const entt::entity newEntity = registry.create();
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeName);
+    const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeToken);
     // Char control needs further initialization post physics load
     CharacterControlComponent* charControlCmp = nullptr;
     // Initialize components

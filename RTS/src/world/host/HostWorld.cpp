@@ -5,10 +5,16 @@
 #include "world/srv/SrvHeightmapGrid.h"
 
 #include "ecs/IEntityComponentSystem.h"
+#include "ecs/srv/SrvEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
 #include "pathfinding/NavThread.h"
 
 #include "generation/WorldGeneration.h"
+
+HostWorld::HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid)
+{
+    mEcs = std::make_unique<SrvEntityComponentSystem>();
+}
 
 void HostWorld::tick(const f32v2& playerPos, f32 elapsedSec) {
     assert(mEcs);

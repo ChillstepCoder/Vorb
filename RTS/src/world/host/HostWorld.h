@@ -12,7 +12,7 @@ class CloudManager;
 class HostWorld : public IWorld, public CliWorldInterface, public SrvWorldInterface {
     friend class WorldFactory;
 protected:
-	HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
+	HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 
 public:
 

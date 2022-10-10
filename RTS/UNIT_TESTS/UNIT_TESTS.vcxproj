@@ -164,6 +164,7 @@
     <ClCompile Include="..\src\network\NetworkUtil.cpp" />
     <ClCompile Include="..\src\network\srv\GameServer.cpp" />
     <ClCompile Include="..\src\network\srv\SrvAdapter.cpp" />
+    <ClCompile Include="..\src\util\StrToken.cpp" />
     <ClCompile Include="NETWORK_TESTS.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -175,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\network\NetworkUtil.h" />
+    <ClInclude Include="..\src\util\StrToken.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

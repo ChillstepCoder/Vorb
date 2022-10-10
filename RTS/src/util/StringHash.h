@@ -2,7 +2,7 @@
 
 //https://stackoverflow.com/questions/2111667/compile-time-string-hashing
 
-typedef ui32 stringHash;
+typedef ui32 StringHash;
 
 static constexpr ui32 crc_table[256] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
@@ -68,7 +68,7 @@ struct MM<size, size, dummy> {
     }
 };
 
-// This don't take into account the nul char
+// This doesn't take into account the nul char
 #define STRING_HASH(x) (MM<sizeof(x)-1>::crc32(x))
 
 template<unsigned int crc>

@@ -8,7 +8,7 @@ class CliWorld : public IWorld, public CliWorldInterface
 {
     friend class WorldFactory;
 protected:
-    CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorld(chunkGrid, heightmapGrid) {}
+    CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 
 public:
     void tick(const f32v2& playerPos, f32 elapsedSec);

@@ -310,7 +310,9 @@ void WorldEditor::renderEntityEditUI() const {
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     for (auto&& it : entityDefs) {
         ImGui::TableNextColumn();
-        if (ImGui::RadioButton(it.first.c_str(), mSelectedEntity == it.first)) {
+        char buf[64];
+        it.first.toString(buf, nullptr);
+        if (ImGui::RadioButton(buf, mSelectedEntity == it.first)) {
             mSelectedEntity = it.first;
         }
         ImGui::TableNextColumn();
@@ -478,8 +480,8 @@ void WorldEditor::updateTileEdit() {
 }
 
 void WorldEditor::updateEntityEdit() {
-    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity.empty()) {
-        sWorld->createEntity(mHitResult.mPosition, mSelectedEntity);
+    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity) {
+        sWorld->createEntity(mHitResult.mPosition, mSelectedEntity, true);
     }
 }
 

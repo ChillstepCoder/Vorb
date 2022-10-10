@@ -91,16 +91,22 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         //BuildingDescription description
     }))) {
         //mTemplateEntities[filePath.getFileNameNoExtension()] = templateEntity;
-        mEntityDefinitions[filePath.getFileNameNoExtension()] = std::move(entityDef);
+        nString fileName = filePath.getFileNameNoExtension();
+        if (fileName.size() > MAX_CHARS_IN_STRTOKEN_WITH_INDEX) {
+            pError("Entity file name " + fileName + " is too long. It must be 12 characters + 1 integer at the end, or less.");
+        }
+        else {
+            mEntityDefinitions[StrToken(fileName)] = std::move(entityDef);
+        }
     } else {
         // Failure case
         pError("Failed to parse entity file " + filePath.getString());
     }
 }
 
-const EntityDefinition& EntityDefinitionRepository::getDefinition(const nString& typeName)
+const EntityDefinition& EntityDefinitionRepository::getDefinition(StrToken typeToken)
 {
-    auto&& it = mEntityDefinitions.find(typeName);
+    auto&& it = mEntityDefinitions.find(typeToken);
     assert(it != mEntityDefinitions.end());
     return *it->second;
 }
