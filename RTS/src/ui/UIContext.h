@@ -6,7 +6,7 @@ class WorldEditor;
 class Camera3D;
 class TileInspectionPanel;
 struct TileHandle;
-class EntityComponentSystem;
+class IEntityComponentSystem;
 class PauseMenuPanel;
 
 DECL_VG(class GBuffer);
@@ -22,7 +22,7 @@ public:
     void operator=(const UIContext&) = delete;
     
     void updateEditors(const Camera3D& camera);
-    void updateAndRenderUI(EntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio);
+    void updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio);
     void renderEditorBrushDecals(const Camera3D& camera);
 
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);

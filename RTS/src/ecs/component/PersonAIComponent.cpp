@@ -2,7 +2,7 @@
 #include "PersonAIComponent.h"
 #include "PhysicsComponent.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "world/IWorld.h"
 #include "city/City.h"

@@ -3,7 +3,7 @@
 
 #include "physics/CollisionShapes.h"
 
-class EntityComponentSystem;
+class IEntityComponentSystem;
 class PhysicsWorld;
 class btRigidBody;
 

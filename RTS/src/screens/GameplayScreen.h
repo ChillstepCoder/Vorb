@@ -4,7 +4,7 @@
 #include <Vorb/graphics/Texture.h>
 
 // TODO: MOVE
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "network/WorldType.h"
 
 constexpr f64 MS_PER_GAME_TICK = 40.0;

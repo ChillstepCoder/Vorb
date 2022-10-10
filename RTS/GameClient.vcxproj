@@ -201,7 +201,7 @@
     <ClCompile Include="src\ecs\component\SoldierAIComponent.cpp" />
     <ClCompile Include="src\ecs\component\StatsComponent.cpp" />
     <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
-    <ClCompile Include="src\ecs\EntityComponentSystem.cpp" />
+    <ClCompile Include="src\ecs\IEntityComponentSystem.cpp" />
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp" />
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
@@ -401,7 +401,7 @@
     <ClInclude Include="src\ecs\component\StatsComponent.h" />
     <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
     <ClInclude Include="src\ecs\component\UndeadAIComponent.h" />
-    <ClInclude Include="src\ecs\EntityComponentSystem.h" />
+    <ClInclude Include="src\ecs\IEntityComponentSystem.h" />
     <ClInclude Include="src\ecs\EntityDefinitionRepository.h" />
     <ClInclude Include="src\ecs\factory\EntityFactory.h" />
     <ClInclude Include="src\ecs\factory\EntityType.h" />

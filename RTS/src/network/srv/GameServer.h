@@ -5,6 +5,7 @@
 class SrvAdapter;
 
 struct PingMessage;
+struct ClientJoinMessage;
 
 extern void logSrv(const wchar_t* str);
 extern void logSrv(const std::string& str);
@@ -45,18 +46,24 @@ public:
 
 private:
     void update();
+    void updateConnectedClientBits();
     void processMessages();
     void processMessage(int clientIndex, yojimbo::Message* message);
 
     // TODO: SrvMessage?
     void processPingMessage(int clientIndex, PingMessage* message);
+    void processClientJoinMessage(int clientIndex, ClientJoinMessage* message);
     yojimbo::Address initServerAddress(ServerType serverType);
+
+    void onClientConnected(int clientIndex);
+    void onClientDisconnected(int clientIndex);
 
     // MAINTAIN ORDER
     GameConnectionConfig mConnectionConfig;
     yojimbo::Address mServerAddress;
     std::unique_ptr<SrvAdapter> mAdapter;
     yojimbo::Server mServer;
+    ClientBits mConnectedClientBits = 0;
     // MAINTAIN ORDER
 
     ServerType mServerType;

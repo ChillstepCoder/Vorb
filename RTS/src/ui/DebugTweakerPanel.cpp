@@ -15,7 +15,7 @@
 #include "options/DebugOptions.h"
 
 #include "definitions/ModelDef.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/ValueTweaker.h"
 
@@ -142,7 +142,7 @@ void renderLightingUI(ui32& ID, LightingOptions* options, int presetIndex) {
 
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-void DebugTweakerPanel::updateAndRender(EntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio)
+void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio)
 {
     constexpr float WINDOW_WIDTH = 400.0f;
     const float WINDOW_HEIGHT = mScreenDims.y;

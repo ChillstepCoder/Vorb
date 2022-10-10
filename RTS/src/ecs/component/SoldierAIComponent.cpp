@@ -4,14 +4,14 @@
 #include "CombatComponent.h"
 
 #include "world/IWorld.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 // TODO: Debug render
 const float AGGRO_DISTANCE = 5000.0f;
 const float MIN_DISTANCE = 0.2f; // TODO: Matches NavigationComponent
 const float DISTANCE_THRESHOLD = 0.2f; // TODO: Matches NavigationComponent=
 
-inline void updateComponent(entt::entity entity, SoldierAIComponent& cmp, EntityComponentSystem& ecs) {
+inline void updateComponent(entt::entity entity, SoldierAIComponent& cmp, IEntityComponentSystem& ecs) {
 	//// Check if dead
 	//PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
 	//// TODO: No allocations
@@ -48,7 +48,7 @@ inline void updateComponent(entt::entity entity, SoldierAIComponent& cmp, Entity
 	//}
 }
 
-void SoldierAIComponentTable::update(EntityComponentSystem& ecs) {
+void SoldierAIComponentTable::update(IEntityComponentSystem& ecs) {
 	//// Update components
 	//for (auto&& cmp : *this) {
 	//	if (isValid(cmp)) {

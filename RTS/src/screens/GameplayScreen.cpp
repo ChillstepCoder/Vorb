@@ -18,7 +18,7 @@
 #include "network/cli/GameClient.h"
 #include "network/srv/GameServer.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "world/cli/CliWorld.h"
 #include "world/host/HostWorld.h"
 #include "world/IHeightmapGrid.h"
@@ -140,7 +140,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     // Add player
     f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
     mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
-    EntityComponentSystem& ecs = mWorld->getECS();
+    IEntityComponentSystem& ecs = mWorld->getECS();
     ecs.mPlayerEntity = mWorld->createEntity(playerPos, "player");
     assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
 
@@ -159,7 +159,6 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
     // Starting time of day to noon
     mWorld->setTimeOfDay(12.0f);
-
 
     // Begin world
     mWorld->onWorldBegin(playerPos);
@@ -228,7 +227,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
     sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
     mFps = sFps;
 
-    EntityComponentSystem& ecs = mWorld->getECS();
+    IEntityComponentSystem& ecs = mWorld->getECS();
 	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
     const f32v3 playerPos = cmp.getInterpolatedPosition();
 	mRenderContext->renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
@@ -359,7 +358,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             if (mSelectedTileHandle.isValid()) {
-                EntityComponentSystem& ecs = mWorld->getECS();
+                IEntityComponentSystem& ecs = mWorld->getECS();
                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
                 cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPos(playerPos), mSelectedTileHandle);
             }
@@ -483,7 +482,7 @@ void GameplayScreen::initInputs()
             mRenderContext->selectNextDebugShader();
         }
         else if (event.keyCode == VKEY_L) {
-            EntityComponentSystem& ecs = mWorld->getECS();
+            IEntityComponentSystem& ecs = mWorld->getECS();
             if (ecs.mRegistry.try_get<DynamicLightComponent>(ecs.mPlayerEntity)) {
                 // Remove existing
                 ecs.mRegistry.remove<DynamicLightComponent>(ecs.mPlayerEntity);
@@ -566,7 +565,7 @@ void GameplayScreen::initInputs()
 
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
-                EntityComponentSystem& ecs = mWorld->getECS();
+                IEntityComponentSystem& ecs = mWorld->getECS();
                 if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
                     const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
                     PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);

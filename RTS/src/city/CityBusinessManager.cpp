@@ -5,7 +5,7 @@
 
 #include "city/City.h"
 #include "world/IWorld.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/EmployeeComponent.h"
 
 CityBusinessManager::CityBusinessManager(City& city) : mCity(city)

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "PlayerControlComponent.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "world/IWorld.h"
 #include "debugging/DebugRenderer.h"

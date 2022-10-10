@@ -2,7 +2,7 @@
 #include "EntityFactory.h"
 
 #include "ecs/EntityDefinitionRepository.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/EntityDefinition.h"
 
 #include "resources/ModelRepository.h"
@@ -12,22 +12,14 @@
 #include <Vorb/graphics/TextureCache.h>
 
 #include <ozz/animation/runtime/animation.h>
-
+#include "world/IWorld.h"
 #include "physics/PhysicsWorld.h"
 
-EntityFactory::EntityFactory(EntityComponentSystem& ecs) :
-    mEcs(ecs)
-{
-}
+entt::entity EntityFactory::createEntity(const f32v3& position, const nString& typeName) {
+    PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
+    IEntityComponentSystem& ecs = sWorld->getECS();
 
-EntityFactory::~EntityFactory()
-{
-
-}
-
-entt::entity EntityFactory::createEntity(PhysicsWorld& physWorld, const f32v3& position, const nString& typeName) {
-
-    entt::registry& registry = mEcs.mRegistry;
+    entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();

@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "EntityComponentSystemRenderer.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "ecs/business/BusinessComponent.h"
 #include "ecs/component/OwnershipComponent.h"
 #include "camera/Camera3D.h"

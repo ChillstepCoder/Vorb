@@ -2,22 +2,17 @@
 
 #include "ecs/factory/EntityType.h"
 
-class EntityComponentSystem;
+class IEntityComponentSystem;
 class ResourceManager;
 
 class EntityDefinitionRepository;
-class PhysicsWorld;
 
-
+// Static class used by EntityComponentSystem to add entities
 class EntityFactory
 {
-public:
-    EntityFactory(EntityComponentSystem& ecs);
-    ~EntityFactory();
-
-    entt::entity createEntity(PhysicsWorld& physWorld, const f32v3& position, const nString& typeName);
-
+    friend class SrvEntityComponentSystem;
+    friend class CliEntityComponentSystem;
 private:
-    EntityComponentSystem& mEcs;
+    static entt::entity createEntity(const f32v3& position, const nString& typeName);
 };
 

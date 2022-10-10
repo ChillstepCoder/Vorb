@@ -150,7 +150,7 @@
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\EntityComponentSystem.cpp">
+    <ClCompile Include="src\ecs\IEntityComponentSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ecs\EntityDefinitionRepository.cpp">
@@ -734,7 +734,7 @@
     <ClInclude Include="src\rendering\EntityComponentSystemRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\EntityComponentSystem.h">
+    <ClInclude Include="src\ecs\IEntityComponentSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\EntityDefinitionRepository.h">

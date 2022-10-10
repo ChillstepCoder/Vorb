@@ -12,7 +12,7 @@
 #include "world/IWorld.h"
 #include "resources/ResourceManager.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 City::City(const ui32v2& cityCenterWorldPos)
     : mCityCenterWorldPos(cityCenterWorldPos)

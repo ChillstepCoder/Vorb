@@ -18,7 +18,6 @@ void logSrv(const std::string& str) {
     wprintf(wstr.data());
 }
 
-constexpr ui32 MAX_PLAYERS = 16;
 constexpr int MAX_TICKS_IN_FRAME = 2;
 constexpr f32 SERVER_BACKLOG_FASTFORWARD_TIME_SEC = 0.6; // Time differential before we just fast forward to make up for it
 
@@ -30,7 +29,7 @@ GameServer::GameServer(ServerType serverType) :
     mServerType(serverType) {
 
     // start the server
-    mServer.Start(MAX_PLAYERS);
+    mServer.Start(MAX_CLIENTS);
     if (!mServer.IsRunning()) {
         char buffer[256];
         mServerAddress.ToString(buffer, sizeof(buffer));
@@ -131,6 +130,9 @@ void GameServer::update()
         return;
     }
 
+    // Update our connected clients list
+    updateConnectedClientBits();
+
     // update server and process messages
     mServer.AdvanceTime(mTimeSec);
     mServer.ReceivePackets();
@@ -143,8 +145,28 @@ void GameServer::update()
     mServer.SendPackets();
 }
 
+void GameServer::updateConnectedClientBits() {
+    ui16 connectedClientBits = 0;
+    int numClients = mServer.GetNumConnectedClients();
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
+        // TODO: We can make IsClientConnected more efficient with a custom yojimbo server implementation
+        // that avoids redundant checks
+        const ui16 bit = (ui16)(1 << i);
+        if (mServer.IsClientConnected(i)) {
+            connectedClientBits |= bit;
+            if (mConnectedClientBits & bit == 0) {
+                onClientConnected(i);
+            }
+        }
+        else if (mConnectedClientBits & bit) {
+            onClientDisconnected(i);
+        }
+    }
+    mConnectedClientBits = connectedClientBits;
+}
+
 void GameServer::processMessages() {
-    for (int clientIndex = 0; clientIndex < MAX_PLAYERS; ++clientIndex) {
+    for (int clientIndex = 0; clientIndex < MAX_CLIENTS; ++clientIndex) {
         if (mServer.IsClientConnected(clientIndex)) {
             for (int channelIndex = 0; channelIndex < mConnectionConfig.numChannels; ++channelIndex) {
                 yojimbo::Message* message = mServer.ReceiveMessage(clientIndex, channelIndex);
@@ -163,6 +185,9 @@ void GameServer::processMessage(int clientIndex, yojimbo::Message* message) {
         case (int)MessageTypes::PING:
             processPingMessage(clientIndex, (PingMessage*)message);
             break;
+        case (int)MessageTypes::CLIENT_JOIN:
+            processClientJoinMessage(clientIndex, (ClientJoinMessage*)message);
+            break;
         default:
             break;
     }
@@ -176,6 +201,12 @@ void GameServer::processPingMessage(int clientIndex, PingMessage* message) {
     mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), pingMessage);
 }
 
+void GameServer::processClientJoinMessage(int clientIndex, ClientJoinMessage* message) {
+    // Tell the client where to spawn
+    ClientBeginMessage* beginMessage = (ClientBeginMessage*)mServer.CreateMessage(clientIndex, e_cast(MessageTypes::CLIENT_BEGIN));
+    mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), beginMessage);
+}
+
 yojimbo::Address GameServer::initServerAddress(ServerType serverType)
 {
     if (serverType == ServerType::DEV) {
@@ -187,4 +218,12 @@ yojimbo::Address GameServer::initServerAddress(ServerType serverType)
     else {
         return NetworkUtil::getExternalIP(DEFAULT_SERVER_PORT, true /*ipv6*/);
     }
+}
+
+void GameServer::onClientConnected(int clientIndex) {
+    std::cout << "Client " << clientIndex << " connected\n";
+}
+
+void GameServer::onClientDisconnected(int clientIndex) {
+    std::cout << "Client " << clientIndex << " disconnected\n";
 }

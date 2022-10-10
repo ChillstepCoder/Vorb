@@ -5,8 +5,7 @@
 
 class IChunkGrid;
 class IHeightmapGrid;
-class EntityComponentSystem;
-class EntityFactory;
+class IEntityComponentSystem;
 class PhysicsWorld;
 class StructureManager;
 class ItemStockpileRegistry;
@@ -68,13 +67,12 @@ public:
     const IHeightmapGrid& getHeightmapGrid() const { return *mHeightmapGrid; }
     IChunkGrid& getChunkGrid() { return *mChunkGrid; }
     const IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
-    EntityFactory& getEntityFactory() { return *mEntityFactory; }
     CityGraph& getCityGraph() { return *mCities; }
     const CityGraph& getCityGraph() const { return *mCities; }
     PhysicsWorld& getPhysicsWorld() { return *mPhysWorld; }
     const PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
-    EntityComponentSystem& getECS() { return *mEcs; }
-    const EntityComponentSystem& getECS() const { return *mEcs; }
+    IEntityComponentSystem& getECS() { return *mEcs; }
+    const IEntityComponentSystem& getECS() const { return *mEcs; }
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     StructureManager& getStructureManager() { return *mStructureManager; }
     const StructureManager& getStructureManager() const { return *mStructureManager; }
@@ -100,9 +98,7 @@ protected:
     IHeightmapGrid* mHeightmapGrid = nullptr;
 
     // ECS
-    std::unique_ptr<EntityComponentSystem> mEcs;
-    // Factories
-    std::unique_ptr<EntityFactory> mEntityFactory;
+    std::unique_ptr<IEntityComponentSystem> mEcs;
     // Physics
     std::unique_ptr<PhysicsWorld> mPhysWorld;
     // Structures

@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "NavigationComponent.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/DebugRenderer.h"
 

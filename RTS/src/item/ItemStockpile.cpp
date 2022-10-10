@@ -7,7 +7,7 @@
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/OwnershipComponent.h"
 
 ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)

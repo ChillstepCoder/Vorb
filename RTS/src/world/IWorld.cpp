@@ -7,8 +7,7 @@
 #include "world/IHeightmapGrid.h"
 #include "structure/Structure.h"
 
-#include "ecs/factory/EntityFactory.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
 
 #include "item/ItemStockpileRegistry.h"
@@ -42,8 +41,7 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();
 
     // Entities
-    mEcs = std::make_unique<EntityComponentSystem>();
-    mEntityFactory = std::make_unique<EntityFactory>(*mEcs);
+    mEcs = std::make_unique<IEntityComponentSystem>();
 
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>();
@@ -78,7 +76,7 @@ void IWorld::setTimeOfDay(float time) {
 
 entt::entity IWorld::createEntity(const f32v3& pos, const nString& typeName) {
 
-    return mEntityFactory->createEntity(*mPhysWorld, pos, typeName);
+    return mEcs->createEntity(pos, typeName);
 }
 
 bool IWorld::tileHasHarvestableResource(const i32v2& worldPos, TileResource resource, TileLayer* outLayer) {

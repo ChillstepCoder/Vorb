@@ -8,7 +8,7 @@ DECL_VG(class DepthState)
 class Camera3D;
 class PhysicsSystem;
 class CharacterRenderer;
-class EntityComponentSystem;
+class IEntityComponentSystem;
 class MaterialRenderer;
 class LightRenderer;
 

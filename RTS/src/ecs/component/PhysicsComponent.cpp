@@ -5,7 +5,7 @@
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 
 #include "world/IWorld.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "resources/TileRepository.h"
 

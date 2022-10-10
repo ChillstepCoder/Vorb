@@ -8,7 +8,7 @@ DECL_VIO(class IOManager);
 // https://skypjack.github.io/entt/md_docs_md_entity.html
 
 struct EntityDefinition;
-class EntityComponentSystem;
+class IEntityComponentSystem;
 class ResourceManager;
 typedef std::unordered_map<nString, std::unique_ptr<EntityDefinition>> EntityDefinitionMap;
 

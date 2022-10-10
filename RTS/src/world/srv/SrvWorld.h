@@ -20,9 +20,6 @@ public:
     //// ECS
     //std::unique_ptr<EntityComponentSystem> mEcs;
 
-    //// Factories
-    //std::unique_ptr<EntityFactory> mEntityFactory;
-
     //// Cities
     //std::unique_ptr<CityGraph> mCities;
 

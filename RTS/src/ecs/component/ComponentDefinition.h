@@ -2,7 +2,7 @@
 
 #include "ComponentTypes.h"
 
-// All component includes
+// All serializable component includes
 #include "ecs/component/PlayerControlComponent.h"
 #include "ecs/component/CharacterControlComponent.h"
 #include "ecs/component/CombatComponent.h"

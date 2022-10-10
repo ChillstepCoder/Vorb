@@ -2,7 +2,7 @@
 #include "TileInteractPanel.h"
 
 #include "world/IWorld.h"
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
 #include <Vorb/ui/imgui/imgui.h>

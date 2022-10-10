@@ -29,7 +29,7 @@ void UIContext::updateEditors(const Camera3D& camera) {
     }
 }
 
-void UIContext::updateAndRenderUI(EntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio) {
+void UIContext::updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio) {
     if (sDebugOptions.mShowTweaker) {
         mDebugTweakerPanel->updateAndRender(ecs, activeGBuffer, aspectRatio);
     }

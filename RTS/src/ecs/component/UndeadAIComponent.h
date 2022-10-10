@@ -1,7 +1,7 @@
 #pragma once
 #include "actor/ActorTypes.h"
 
-class EntityComponentSystem;
+class IEntityComponentSystem;
 
 struct UndeadAIComponent {
 	int mState = 0;

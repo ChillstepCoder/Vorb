@@ -6,7 +6,7 @@
 #include "world/IWorld.h"
 #include "physics/PhysicsWorld.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include <Vorb/ui/GameWindow.h>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/GameTime.h>
@@ -333,7 +333,7 @@ f32v3 CameraController::getFollowTargetPos(f32 frameAlpha) {
         return mCamera.getPosition();
     }
 
-    const EntityComponentSystem& ecs = sWorld->getECS();
+    const IEntityComponentSystem& ecs = sWorld->getECS();
     const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(mEntityFollow);
     return physCmp.getInterpolatedPosition();
 }

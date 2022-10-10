@@ -12,7 +12,7 @@
 #include "world/IHeightmapGrid.h"
 #include "resources/TileRepository.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/DebugRenderer.h"
 #include "rendering/BuildingMesher.h"

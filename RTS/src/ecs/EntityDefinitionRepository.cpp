@@ -3,7 +3,7 @@
 
 #include "entt/entity/storage.hpp"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 
 #include "ecs/component/EntityDefinition.h"
 

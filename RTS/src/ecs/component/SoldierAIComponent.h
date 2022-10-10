@@ -1,7 +1,7 @@
 #pragma once
 #include "actor/ActorTypes.h"
 
-class EntityComponentSystem;
+class IEntityComponentSystem;
 
 struct SoldierAIComponent {
 	int mState = 0;
@@ -10,5 +10,5 @@ struct SoldierAIComponent {
 
 class SoldierAIComponentTable {
 public:
-	void update(EntityComponentSystem& ecs);
+	void update(IEntityComponentSystem& ecs);
 };

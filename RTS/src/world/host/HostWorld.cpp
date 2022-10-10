@@ -4,7 +4,7 @@
 #include "world/srv/SrvChunkGrid.h"
 #include "world/srv/SrvHeightmapGrid.h"
 
-#include "ecs/EntityComponentSystem.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
 #include "pathfinding/NavThread.h"
 

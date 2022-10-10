@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "EntityComponentSystem.h"
+#include "IEntityComponentSystem.h"
 
 #include "world/IWorld.h"
 
@@ -7,18 +7,18 @@
 
 const float DEAD_COLOR_MULT = 0.4f;
 
-EntityComponentSystem::EntityComponentSystem()
+IEntityComponentSystem::IEntityComponentSystem()
 	: mPlayerControlSystem()
 	, mPersonAISystem()
 	, mBusinessSystem()
 	, mTimedTileInteractSystem() {
 }
 
-EntityComponentSystem::~EntityComponentSystem() {
+IEntityComponentSystem::~IEntityComponentSystem() {
 
 }
 
-void EntityComponentSystem::tick() {
+void IEntityComponentSystem::tick() {
 	
     mBusinessSystem.update(mRegistry);
     //mPlayerControlSystem.update(mRegistry, playerCamera);
@@ -29,7 +29,7 @@ void EntityComponentSystem::tick() {
 	//mCorpseTable.update();
 }
 
-void EntityComponentSystem::frameUpdate(const Camera3D& playerCamera)
+void IEntityComponentSystem::frameUpdate(const Camera3D& playerCamera)
 {
 	// Client ECS
     mPlayerControlSystem.update(mRegistry, playerCamera);
