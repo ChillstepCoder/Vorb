@@ -93,7 +93,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\dependencies\;$(ProjectDir)..\src;$(ProjectDir)..\..\dependencies;$(ProjectDir)..\..\include;$(SolutionDir)..\RTS\dependencies\entt\src;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;$(ProjectDir);$(ProjectDir)..\;$(SolutionDir)..\RTS\dependencies\bullet\src;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\dependencies\;$(ProjectDir)..\src;$(ProjectDir)..\..\dependencies;$(ProjectDir)..\..\include;$(SolutionDir)..\RTS\dependencies\entt\src;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;$(ProjectDir);$(ProjectDir)..\;$(SolutionDir)..\RTS\dependencies\bullet\src;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UseFullPaths>true</UseFullPaths>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -159,12 +159,48 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\ecs\cli\CliEntityComponentSystem.cpp" />
+    <ClCompile Include="..\src\ecs\component\AttributesComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\CharacterControlComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\CharacterDetailsComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\CombatComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\CorpseComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\DynamicLightComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\EmployeeComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\InventoryComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\NavigationComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\PersonAIComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\PhysicsComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\PlayerControlComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\ProfessionComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\ReplicationComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\SimpleSpriteComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\SkillsComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\SoldierAIComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\StatsComponent.cpp" />
+    <ClCompile Include="..\src\ecs\component\TimedTileInteractComponent.cpp" />
+    <ClCompile Include="..\src\ecs\EntityDefinitionRepository.cpp" />
+    <ClCompile Include="..\src\ecs\IEntityComponentSystem.cpp" />
+    <ClCompile Include="..\src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="..\src\network\cli\CliAdapter.cpp" />
     <ClCompile Include="..\src\network\cli\GameClient.cpp" />
     <ClCompile Include="..\src\network\NetworkUtil.cpp" />
     <ClCompile Include="..\src\network\srv\GameServer.cpp" />
     <ClCompile Include="..\src\network\srv\SrvAdapter.cpp" />
+    <ClCompile Include="..\src\resources\TileRepository.cpp" />
+    <ClCompile Include="..\src\tile\Tile.cpp" />
+    <ClCompile Include="..\src\tile\TileContainer.cpp" />
+    <ClCompile Include="..\src\tile\TileHandle.cpp" />
+    <ClCompile Include="..\src\tile\TileResource.cpp" />
+    <ClCompile Include="..\src\tile\TileScanner.cpp" />
+    <ClCompile Include="..\src\tile\TileUtil.cpp" />
+    <ClCompile Include="..\src\util\BitArray.cpp" />
+    <ClCompile Include="..\src\util\BitFlags.cpp" />
+    <ClCompile Include="..\src\util\GridEdgeFinder.cpp" />
+    <ClCompile Include="..\src\util\IntersectionUtil.cpp" />
     <ClCompile Include="..\src\util\StrToken.cpp" />
+    <ClCompile Include="..\src\util\ThreadIDs.cpp" />
+    <ClCompile Include="..\src\world\IWorld.cpp" />
     <ClCompile Include="NETWORK_TESTS.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -175,8 +211,66 @@
     <ClCompile Include="UNIT_TESTS.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\ecs\cli\CliEntityComponentSystem.h" />
+    <ClInclude Include="..\src\ecs\component\AttributesComponent.h" />
+    <ClInclude Include="..\src\ecs\component\CharacterControlComponent.h" />
+    <ClInclude Include="..\src\ecs\component\CharacterDetailsComponent.h" />
+    <ClInclude Include="..\src\ecs\component\CombatComponent.h" />
+    <ClInclude Include="..\src\ecs\component\ComponentDefinition.h" />
+    <ClInclude Include="..\src\ecs\component\ComponentTypes.h" />
+    <ClInclude Include="..\src\ecs\component\CorpseComponent.h" />
+    <ClInclude Include="..\src\ecs\component\DynamicLightComponent.h" />
+    <ClInclude Include="..\src\ecs\component\EmployeeComponent.h" />
+    <ClInclude Include="..\src\ecs\component\EntityDefinition.h" />
+    <ClInclude Include="..\src\ecs\component\EntityDetailsComponent.h" />
+    <ClInclude Include="..\src\ecs\component\InventoryComponent.h" />
+    <ClInclude Include="..\src\ecs\component\NavigationComponent.h" />
+    <ClInclude Include="..\src\ecs\component\OwnershipComponent.h" />
+    <ClInclude Include="..\src\ecs\component\PersonAIComponent.h" />
+    <ClInclude Include="..\src\ecs\component\PhysicsComponent.h" />
+    <ClInclude Include="..\src\ecs\component\PlayerControlComponent.h" />
+    <ClInclude Include="..\src\ecs\component\ProfessionComponent.h" />
+    <ClInclude Include="..\src\ecs\component\ReplicationComponent.h" />
+    <ClInclude Include="..\src\ecs\component\SimpleSpriteComponent.h" />
+    <ClInclude Include="..\src\ecs\component\SkillsComponent.h" />
+    <ClInclude Include="..\src\ecs\component\SoldierAIComponent.h" />
+    <ClInclude Include="..\src\ecs\component\StatsComponent.h" />
+    <ClInclude Include="..\src\ecs\component\TimedTileInteractComponent.h" />
+    <ClInclude Include="..\src\ecs\component\UndeadAIComponent.h" />
+    <ClInclude Include="..\src\ecs\EntityDefinitionRepository.h" />
+    <ClInclude Include="..\src\ecs\IEntityComponentSystem.h" />
+    <ClInclude Include="..\src\ecs\srv\SrvEntityComponentSystem.h" />
     <ClInclude Include="..\src\network\NetworkUtil.h" />
+    <ClInclude Include="..\src\resources\TileRepository.h" />
+    <ClInclude Include="..\src\tile\Stairs.h" />
+    <ClInclude Include="..\src\tile\Tile.h" />
+    <ClInclude Include="..\src\tile\TileCollider.h" />
+    <ClInclude Include="..\src\tile\TileConst.h" />
+    <ClInclude Include="..\src\tile\TileContainer.h" />
+    <ClInclude Include="..\src\tile\TileFlags.h" />
+    <ClInclude Include="..\src\tile\TileHandle.h" />
+    <ClInclude Include="..\src\tile\TileResource.h" />
+    <ClInclude Include="..\src\tile\TileScanner.h" />
+    <ClInclude Include="..\src\tile\TileUtil.h" />
+    <ClInclude Include="..\src\util\AABB.hpp" />
+    <ClInclude Include="..\src\util\BitArray.h" />
+    <ClInclude Include="..\src\util\BitFlags.h" />
+    <ClInclude Include="..\src\util\Cartesian.h" />
+    <ClInclude Include="..\src\util\CommonUtil.h" />
+    <ClInclude Include="..\src\util\CubeFacing.h" />
+    <ClInclude Include="..\src\util\GridEdge.h" />
+    <ClInclude Include="..\src\util\GridEdgeFinder.h" />
+    <ClInclude Include="..\src\util\IntersectionHit.h" />
+    <ClInclude Include="..\src\util\IntersectionUtil.h" />
+    <ClInclude Include="..\src\util\MathDefines.h" />
+    <ClInclude Include="..\src\util\MathUtil.hpp" />
+    <ClInclude Include="..\src\util\StringHash.h" />
     <ClInclude Include="..\src\util\StrToken.h" />
+    <ClInclude Include="..\src\util\ThreadIDs.h" />
+    <ClInclude Include="..\src\util\TinyThreadsafeVector.hpp" />
+    <ClInclude Include="..\src\util\Tweener.h" />
+    <ClInclude Include="..\src\util\Utils.h" />
+    <ClInclude Include="..\src\util\Winding.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

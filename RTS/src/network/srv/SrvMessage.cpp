@@ -3,9 +3,83 @@
 
 #include "network/srv/GameServer.h"
 
-void SrvMessage::sendEntityCreateMessage(entt::entity srvEntity, const f32v3& startPos, f32 rotation)
-{
+void SrvMessage::sendEntityTransformMessage(int clientIndex, entt::entity srvEntity, const f32v3& pos, f32 rotation) {
+
     GameServer& server = GameServer::getInstance();
-    EntityCreateMessage* message = server.CreateMessage(clientIndex, e_cast(MessageTypes::CLIENT_BEGIN));
-    mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), beginMessage);
+    EntityTransformMessage* message = (EntityTransformMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_TRANSFORM));
+    message->mSrvEntityID = (ui32)srvEntity;
+    message->mPosition = pos;
+    message->mRotation = rotation;
+    server.sendMessage(clientIndex, message);
+}
+
+void SrvMessage::sendEntityCreateMessage(int clientIndex, entt::entity srvEntity, StrToken entityToken, const f32v3& startPos, f32 rotation) {
+
+    GameServer& server = GameServer::getInstance();
+    EntityCreateMessage* message = (EntityCreateMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_CREATE));
+    message->mSrvEntityID = (ui32)srvEntity;
+    message->mPosition = startPos;
+    message->mRotation = rotation;
+    message->mEntityToken = entityToken;
+    server.sendMessage(clientIndex, message);
+}
+
+void SrvMessage::sendEntityCreateMessageToAll(entt::entity srvEntity, StrToken entityToken, const f32v3& startPos, f32 rotation) {
+
+    GameServer& server = GameServer::getInstance();
+    const ClientList& clients = server.getClients();
+    for (int clientIndex : clients) {
+        sendEntityCreateMessage(clientIndex, srvEntity, entityToken, startPos, rotation);
+    }
+}
+
+void SrvMessage::sendEntityDestroyMessageToAll(entt::entity srvEntity) {
+
+    GameServer& server = GameServer::getInstance();
+    const ClientList& clients = server.getClients();
+    for (int clientIndex : clients) {
+        GameServer& server = GameServer::getInstance();
+        EntityDestroyMessage* message = (EntityDestroyMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_DESTROY));
+        message->mSrvEntityID = (ui32)srvEntity;
+        server.sendMessage(clientIndex, message);
+    }
+}
+
+void SrvMessage::sendClientBeginMessageToAll(int playerClientIndex, entt::entity srvPlayerEntity, const f32v3& startPos, f32 rotation) {
+
+    GameServer& server = GameServer::getInstance();
+    const ClientList& clients = server.getClients();
+    for (int clientIndex : clients) {
+        if (clientIndex == playerClientIndex) {
+            // Notify the player that he is to be created, but only if this isn't the host
+            if (clientIndex != CLIENT_INDEX_HOST) {
+                ClientBeginMessage* message = (ClientBeginMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::CLIENT_BEGIN));
+                message->mSrvEntityID = (ui32)srvPlayerEntity;
+                message->mPosition = startPos;
+                message->mRotation = rotation;
+                server.sendMessage(clientIndex, message);
+            }
+        }
+        else {
+            // Replicate the player entity to other clients
+            EntityCreateMessage* message = (EntityCreateMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_CREATE));
+            message->mSrvEntityID = (ui32)srvPlayerEntity;
+            message->mPosition = startPos;
+            message->mRotation = rotation;
+            message->mEntityToken = StrToken("player");
+            server.sendMessage(clientIndex, message);
+        }
+    }
+}
+
+void SrvMessage::sendCharacterStateMessage(int clientIndex, entt::entity srvEntity, const f32v3& pos, const f32v3& velocity, const f32v2& controlDirection, ui32 mDesiredLocomotionMode) {
+
+    GameServer& server = GameServer::getInstance();
+    CharacterStateMessage* message = (CharacterStateMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::CHARACTER_STATE));
+    message->mSrvEntityID = (ui32)srvEntity;
+    message->mPosition = pos;
+    message->mControlDirection = controlDirection;
+    message->mVelocity = velocity;
+    message->mDesiredLocomotionMode = mDesiredLocomotionMode;
+    server.sendMessage(clientIndex, message);
 }

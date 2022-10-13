@@ -223,10 +223,12 @@
     <ClCompile Include="src\math\Noise.cpp" />
     <ClCompile Include="src\math\Random.cpp" />
     <ClCompile Include="src\network\cli\CliAdapter.cpp" />
+    <ClCompile Include="src\network\cli\CliMessage.cpp" />
     <ClCompile Include="src\network\Cli\GameClient.cpp" />
     <ClCompile Include="src\network\NetworkUtil.cpp" />
     <ClCompile Include="src\network\srv\GameServer.cpp" />
     <ClCompile Include="src\network\srv\SrvAdapter.cpp" />
+    <ClCompile Include="src\network\srv\SrvMessage.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
     <ClCompile Include="src\options\LightingOptions.cpp" />
     <ClCompile Include="src\particles\ParticleSystem.cpp" />
@@ -385,6 +387,7 @@
     <ClInclude Include="src\ecs\component\AttributesComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
+    <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
     <ClInclude Include="src\ecs\component\InventoryComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
@@ -434,6 +437,7 @@
     <ClInclude Include="src\math\Noise.h" />
     <ClInclude Include="src\math\Random.h" />
     <ClInclude Include="src\network\cli\CliAdapter.h" />
+    <ClInclude Include="src\network\cli\CliMessage.h" />
     <ClInclude Include="src\network\Cli\GameClient.h" />
     <ClInclude Include="src\network\GameConnectionConfig.h" />
     <ClInclude Include="src\network\Message.h" />
@@ -441,6 +445,7 @@
     <ClInclude Include="src\network\NetworkUtil.h" />
     <ClInclude Include="src\network\srv\GameServer.h" />
     <ClInclude Include="src\network\srv\SrvAdapter.h" />
+    <ClInclude Include="src\network\srv\SrvMessage.h" />
     <ClInclude Include="src\network\WorldType.h" />
     <ClInclude Include="src\options\DebugOptions.h" />
     <ClInclude Include="src\options\LightingOptions.h" />

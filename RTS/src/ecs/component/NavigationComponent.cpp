@@ -216,12 +216,14 @@ void requestFinePathToPoint(NavigationComponent& navCmp, const TileHandle& start
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
-		std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
+        std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
+        assert(Services::isUsingNav());
 		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle]() {
 			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), sWorld->getHeightmapGrid(), 200);
 		});
 	}
-	else {
+    else {
+        assert(Services::isUsingNav());
 		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/);
 	}
 }
@@ -378,6 +380,7 @@ void NavigationComponent::requestFinePathWithCallback(const TileHandle& start, c
     mNavigationType = NavigationType::FINE_PATH;
     mCoarsePath.reset();
     mFinePath = std::shared_ptr<NavPath>(new NavPath());
+	assert(Services::isUsingNav());
     Services::NavThread::ref().addPathfindTask(mFinePath, start, goal, false /*isCoarse*/);
     mCurrentFinePoint = 0;
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
@@ -388,6 +391,7 @@ void NavigationComponent::requestCoarsePathWithCallback(const TileHandle& start,
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
+    assert(Services::isUsingNav());
 	Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/);
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
     mCurrentFinePoint = 0;

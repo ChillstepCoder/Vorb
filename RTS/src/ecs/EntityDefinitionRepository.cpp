@@ -64,9 +64,6 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
             fileData.physics = PhysicsComponentDef(); // Default initialize
             keg::parse((ui8*)&fileData.physics, value, readContext, &KEG_GLOBAL_TYPE(PhysicsComponentDef));
         }
-        else if (key == ComponentTypeStrings[e_cast(ComponentTypes::PlayerControl)]) {
-            entityDef->components.emplace_back(ComponentTypes::PlayerControl);
-        }
         else if (key == ComponentTypeStrings[e_cast(ComponentTypes::Profession)]) {
             entityDef->components.emplace_back(ComponentTypes::Profession);
         }
@@ -86,7 +83,7 @@ void EntityDefinitionRepository::loadEntityDefinitionFile(const vio::Path& fileP
         else {
             pError("Tried to load invalid .entt component type \"" + key + "\"");
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 16, "Parse new component type");
+        static_assert(e_cast(ComponentTypes::COUNT) == 15, "Parse new component type");
         // Load data
         //BuildingDescription description
     }))) {

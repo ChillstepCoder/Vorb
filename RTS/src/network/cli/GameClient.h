@@ -2,6 +2,8 @@
 
 #include "network/NetworkConst.h"
 #include "network/GameConnectionConfig.h"
+#include "network/Message.h"
+
 class CliAdapter;
 struct PingMessage;
 
@@ -27,7 +29,12 @@ public:
     void disconnect();
     void update(double dtSec);
 
+    // Messaging
+    MessageBase* createMessage(int type) { return (MessageBase*)mClient->CreateMessage(type); }
+    void sendMessage(MessageBase* message) { mClient->SendMessage(e_cast(MESSAGE_CHANNELS[message->GetType()]), message); }
+
     bool isConnected() const { return mClient->IsConnected(); }
+    bool isJoined() const { return mIsJoined; }
 
     f32 getCurrentPingMS() const { return mCurrentPingMS; }
     const yojimbo::Address& getClientAddress() const { return ((yojimbo::Client*)mClient.get())->GetAddress(); }
@@ -39,6 +46,12 @@ private:
     // TODO: CliMessage?
     void sendPingMessage(f64 timestamp);
     void processPingMessage(PingMessage* message);
+    void processClientBeginMessage(ClientBeginMessage* message);
+    void processEntityCreateMessage(EntityCreateMessage* message);
+    void processEntityTransformMessage(EntityTransformMessage* message);
+    void processCharacterStateMessage(CharacterStateMessage* message);
+
+    void replicatePlayerState();
 
     GameConnectionConfig mConnectionConfig;
     std::unique_ptr<CliAdapter> mAdapter;
@@ -47,6 +60,7 @@ private:
     yojimbo::Address mHostAddress;
     f64 mLastPingTimeS;
     f32 mCurrentPingMS = 666.0f; // Sentinal ping meaning we havent checked ping yet
+    bool mIsJoined = false;
 
     static GameClient* sInstance;
 };

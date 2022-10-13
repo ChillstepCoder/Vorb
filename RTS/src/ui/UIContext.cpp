@@ -45,10 +45,10 @@ void UIContext::updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer
             case PauseMenuPanelResult::RESUME:
                 break;
             case PauseMenuPanelResult::EXIT_TO_MENU:
-                GameplayScreenState::isQuittingToMenu = true;
+                GameplayScreenGlobalState::isQuittingToMenu = true;
                 break;
             case PauseMenuPanelResult::EXIT_TO_DESKTOP:
-                GameplayScreenState::isQuittingToDesktop = true;
+                GameplayScreenGlobalState::isQuittingToDesktop = true;
                 break;
             default:
                 break;

@@ -1,9 +1,12 @@
 #include "stdafx.h"
 #include "GameClient.h"
 
+#include "world/IWorld.h"
+#include "ecs/cli/CliEntityComponentSystem.h"
 #include "network/NetworkUtil.h"
 
 #include "network/cli/CliAdapter.h"
+#include "network/cli/CliMessage.h"
 // TODO: use Yojimbo::NetworkSimulator
 
 constexpr f64 PING_INTERVAL_SEC = 0.1; // 100ms ping interval
@@ -126,7 +129,11 @@ void GameClient::update(double dtSec) {
 
         processMessages();
 
+        if (isJoined()) {
+            replicatePlayerState();
+        }
     }
+
 
     mClient->SendPackets();
 }
@@ -143,11 +150,23 @@ void GameClient::processMessages() {
     }
 }
 
-void GameClient::processMessage(yojimbo::Message* message)
-{
+void GameClient::processMessage(yojimbo::Message* message) {
+
     switch (message->GetType()) {
         case (int)MessageTypes::PING:
             processPingMessage((PingMessage*)message);
+            break;
+        case (int)MessageTypes::CLIENT_BEGIN:
+            processClientBeginMessage((ClientBeginMessage*)message);
+            break;
+        case (int)MessageTypes::ENTITY_CREATE:
+            processEntityCreateMessage((EntityCreateMessage*)message);
+            break;
+        case (int)MessageTypes::ENTITY_TRANSFORM:
+            processEntityTransformMessage((EntityTransformMessage*)message);
+            break;
+        case (int)MessageTypes::CHARACTER_STATE:
+            processCharacterStateMessage((CharacterStateMessage*)message);
             break;
         default:
             break;
@@ -163,4 +182,49 @@ void GameClient::sendPingMessage(f64 timestamp) {
 
 void GameClient::processPingMessage(PingMessage* message) {
     mCurrentPingMS = (f32)((yojimbo_time() - message->mTimeStamp) * MS_PER_SECOND_D);
+}
+
+void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sWorld->getECS();
+    assert(cliEcs.getLocalPlayer() == entt::null);
+    entt::entity playerEntity = cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, StrToken("player"));
+    cliEcs.setLocalPlayer(playerEntity);
+    mIsJoined = true;
+}
+
+void GameClient::processEntityCreateMessage(EntityCreateMessage* message) {
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sWorld->getECS();
+    cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, message->mEntityToken);
+}
+
+void GameClient::processEntityTransformMessage(EntityTransformMessage* message) {
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sWorld->getECS();
+    entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
+    if (entity != entt::null) {
+        PhysicsComponent& physCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
+        physCmp.setTransform(message->mPosition, message->mRotation);
+    }
+}
+
+void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sWorld->getECS();
+    entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
+    if (entity != entt::null) {
+        PhysicsComponent& physCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
+        CharacterControlComponent& controlCmp = cliEcs.mRegistry.get<CharacterControlComponent>(entity);
+        physCmp.setTransform(message->mPosition, 0.0f);
+        physCmp.setVelocity(message->mVelocity);
+        controlCmp.mControllerDirection = message->mControlDirection;
+        controlCmp.mDesiredMode = (LocomotionMode)message->mDesiredLocomotionMode;
+    }
+}
+
+void GameClient::replicatePlayerState() {
+    CliEntityComponentSystem& cliEcs = (CliEntityComponentSystem&)sWorld->getECS();
+    entt::entity entity = cliEcs.getLocalPlayer();
+    if (entity != entt::null) {
+        PhysicsComponent& physicsCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
+        CharacterControlComponent& controlCmp = cliEcs.mRegistry.get<CharacterControlComponent>(entity);
+        CliMessage::sendPlayerStateMessage(physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerDirection, e_cast(controlCmp.mDesiredMode));
+    }
 }

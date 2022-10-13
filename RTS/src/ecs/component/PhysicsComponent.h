@@ -20,8 +20,13 @@ public:
 	f32v2 getInterpolatedDir() const;
 	f32v3 getPosition() const;
 	f32v3 getInterpolatedPosition() const;
+	f32v3 getLinearVelocity() const;
+	f32 getRotation() const;
 
 	void teleportToPoint(f32v3 worldPos);
+
+	void setTransform(const f32v3& pos, f32 rotation);
+	void setVelocity(const f32v3& vel);
 
 	// TODO: Delete rigidbody on component destroy
     btRigidBody* mRigidBody = nullptr; // TODO: Pack btRigidBody?

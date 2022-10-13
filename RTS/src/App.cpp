@@ -75,13 +75,14 @@ void setPriorityToNormal() {
 void App::onInit() {
 
     // Set log level for yojimbo
-    yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
+    yojimbo_log_level(YOJIMBO_LOG_LEVEL_ERROR);
 
     setPriorityToMax();
 
     sDebugOptions.mScreenResolution = f32v2(m_window.getWidth(), m_window.getHeight());
 
-	Services::init();
+    // Init resources
+    Services::initResources();
     sGlExtensions.init();
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);
@@ -100,6 +101,7 @@ void App::onInit() {
 
 void App::onExit() {
 	Services::destroy();
+    Services::destroyResources();
 }
 
 void App::refreshElapsedTime() {

@@ -17,7 +17,7 @@
 #include "network/cli/GameClient.h"
 
 MainMenuScreen::MainMenuScreen(App* const app) : IAppScreen<App>(app) {
-    MainMenuScreenState::initDefaults();
+    MainMenuScreenGlobalState::initDefaults();
 }
 
 MainMenuScreen::~MainMenuScreen()
@@ -237,17 +237,17 @@ void MainMenuScreen::drawHostState() {
     ImGui::Text("Host game");
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("LAN", buttonSize)) {
-        MainMenuScreenState::setHostLan();
+        MainMenuScreenGlobalState::setHostLan();
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Online", buttonSize)) {
-        MainMenuScreenState::setHostOnline();
+        MainMenuScreenGlobalState::setHostOnline();
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("DEV", buttonSize)) {
-        MainMenuScreenState::setHostDev();
+        MainMenuScreenGlobalState::setHostDev();
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
     ImGui::Spacing();
@@ -285,7 +285,7 @@ void MainMenuScreen::drawWaitingJoinState() {
     
     if (client.isConnected()) {
         // Join host game
-        MainMenuScreenState::setJoin(mTargetHostIP);
+        MainMenuScreenGlobalState::setJoin(mTargetHostIP);
         m_state = vorb::ui::ScreenState::CHANGE_NEXT;
     }
 }

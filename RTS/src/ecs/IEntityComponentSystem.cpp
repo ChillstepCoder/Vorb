@@ -34,3 +34,12 @@ void IEntityComponentSystem::frameUpdate(const Camera3D& playerCamera)
 	// Client ECS
     mPlayerControlSystem.update(mRegistry, playerCamera);
 }
+
+void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
+{
+	if (mPlayerEntity != entt::null) {
+		mRegistry.remove<PlayerControlComponent>(mPlayerEntity);
+	}
+    mRegistry.emplace<PlayerControlComponent>(playerEntity);
+    mPlayerEntity = playerEntity;
+}

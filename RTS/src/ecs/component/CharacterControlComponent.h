@@ -61,11 +61,15 @@ struct CharacterControlComponent {
     // TODO: Use non dynamic allocation which requires stable CharacterControlComponent
     // https://github.com/skypjack/entt/blob/master/docs/md/entity.md#pointer-stability
     class DynamicCharacterController* mController = nullptr;
+    // TODO: Compress to f32
     f32v2 mMoveDirection = f32v2(0.0f);
     f32v2 mControllerDirection = f32v2(1.0f, 0.0f);
-    f32 mSpeedRun = 4.167f; // ~15 kmph
+    f32 mSpeedRun = 4.167f; // ~15 kmph // TODO: AttributesComponent
     LocomotionMode mMode = LocomotionMode::IDLE;
     LocomotionMode mDesiredMode = LocomotionMode::IDLE;
+    // PRECISE TIMER SHOULD BE REPLACED, ITS TOO HEAVYWEIGHT
+    // 
+    // TODO: Can this be stored on a timer manager instead?
     PreciseTimer mLandingTimer; // TODO: This is wrong as it doesn't account tick rate or timestep
 
     // TODO: Mask

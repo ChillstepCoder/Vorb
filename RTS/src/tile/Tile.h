@@ -163,8 +163,8 @@ public:
 	const TileID* getLayersMainThread() const { assert(IS_MAIN_THREAD()); return layers; }
     const TileID* getLayersThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe; }
 
-    const Cartesian& getOrientationMainThread(TileLayer layer) const;
-    const Cartesian& getOrientationThreadSafe(TileLayer layer) const;
+    Cartesian getOrientationMainThread(TileLayer layer) const;
+    Cartesian getOrientationThreadSafe(TileLayer layer) const;
 
     bool isEmptyMainThread() const { assert(IS_MAIN_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MID] == TILE_ID_NONE && layers[TILE_LAYER_TOP] == TILE_ID_NONE; }
     bool isEmptyThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MID] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_TOP] == TILE_ID_NONE; }

@@ -20,6 +20,12 @@ class TileInteractPanel;
 DECL_VUI(class InputDispatcher);
 
 
+enum class GameplayScreenState {
+	INIT,
+	WAITING_JOIN_SERVER,
+	RUNNING,
+};
+
 class GameplayScreen : public vui::IAppScreen<App>
 {
 public:
@@ -40,6 +46,8 @@ public:
     virtual void draw(const vui::GameTime& gameTime) override;
 
 private:
+	void initWorld(const vui::GameTime& gameTime);
+	void initCamera();
 
 	void updateClient(const vui::GameTime& gameTime);
 	void updateHost(const vui::GameTime& gameTime);
@@ -48,7 +56,7 @@ private:
     void updateTilePicking();
     void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
 
-	void displayLoadScreen(const nString& text);
+	void displayLoadScreen(const nString& text, bool syncWindow);
 	void initInputs();
 
 	IWorld* mWorld = nullptr;
@@ -74,7 +82,8 @@ private:
 	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 
 	WorldType mClientType = WorldType::HOST;
-	bool mIsSinglePlayer = true;
+
+	GameplayScreenState mState = GameplayScreenState::INIT;
 
 };
 

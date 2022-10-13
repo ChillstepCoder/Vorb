@@ -61,7 +61,7 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     const f32v2& screenResolution = context.getScreenResolution();
@@ -88,7 +88,7 @@ void LoadScreenRenderer::render(OPT vui::GameWindow* windowToSync) {
     spriteBatch.render(screenResolution);
 
     if (windowToSync) {
-        windowToSync->sync(16);
+        windowToSync->sync(1);
     }
 }
 

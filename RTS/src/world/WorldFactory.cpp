@@ -43,7 +43,7 @@ void WorldFactory::destroyWorld()
 IWorld& WorldFactory::makeClientWorld() {
     sHeightmapGrid = new CliHeightmapGrid();
     sChunkGrid = new CliChunkGrid();
-    sWorld = new HostWorld(sChunkGrid, sHeightmapGrid);
+    sWorld = new CliWorld(sChunkGrid, sHeightmapGrid);
     return *sWorld;
 }
 

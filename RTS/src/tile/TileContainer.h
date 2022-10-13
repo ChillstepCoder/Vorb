@@ -248,7 +248,7 @@ public:
     void setDirtyDynamicMesh(bool dirty) const { mRenderData.mDirtyDynamicMesh = dirty; }
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
     bool isNavMeshing() const { return mIsNavmeshing.load(/*memory order relaxed?*/); }
-    bool shouldBuildNavMesh() const { return isDirtyNav() && !isNavMeshing(); }
+    bool shouldBuildNavMesh() const { return Services::isUsingNav() && isDirtyNav() && !isNavMeshing(); }
 
     // =========== Accessors  ===========
     const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mRootPos); }

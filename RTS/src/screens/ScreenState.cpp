@@ -1,35 +1,39 @@
 #include "stdafx.h"
 #include "ScreenState.h"
 
-ServerType MainMenuScreenState::serverType = ServerType::NONE;
-nString MainMenuScreenState::hostIP;
+ServerType MainMenuScreenGlobalState::serverType = ServerType::NONE;
+nString MainMenuScreenGlobalState::hostIP;
 
-bool GameplayScreenState::isQuittingToMenu = false;
-bool GameplayScreenState::isQuittingToDesktop = false;
+bool GameplayScreenGlobalState::isQuittingToMenu = false;
+bool GameplayScreenGlobalState::isQuittingToDesktop = false;
 
-void MainMenuScreenState::initDefaults() {
+void MainMenuScreenGlobalState::initDefaults() {
     serverType = ServerType::NONE;
+    hostIP = "";
 }
 
-void MainMenuScreenState::setJoin(const nString& hostIp) {
+void MainMenuScreenGlobalState::setJoin(const nString& targetHostIp) {
     serverType = ServerType::NONE;
-    MainMenuScreenState::hostIP = hostIP;
+    MainMenuScreenGlobalState::hostIP = targetHostIp;
 }
 
-void MainMenuScreenState::setHostLan() {
+void MainMenuScreenGlobalState::setHostLan() {
     serverType = ServerType::LAN;
+    hostIP = "";
 }
 
-void MainMenuScreenState::setHostOnline() {
+void MainMenuScreenGlobalState::setHostOnline() {
     serverType = ServerType::ONLINE;
+    hostIP = "";
 }
 
-void MainMenuScreenState::setHostDev()
+void MainMenuScreenGlobalState::setHostDev()
 {
     serverType = ServerType::DEV;
+    hostIP = "";
 }
 
-void GameplayScreenState::initDefaults() {
+void GameplayScreenGlobalState::initDefaults() {
     isQuittingToMenu = false;
     isQuittingToDesktop = false;
 }

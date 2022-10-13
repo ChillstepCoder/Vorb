@@ -58,13 +58,35 @@ f32v3 PhysicsComponent::getInterpolatedPosition() const {
     return rv;
 }
 
-void PhysicsComponent::teleportToPoint(f32v3 worldPos)
-{
+f32v3 PhysicsComponent::getLinearVelocity() const {
+    return btVector3ToF32v3(mRigidBody->getLinearVelocity());
+}
+
+f32 PhysicsComponent::getRotation() const {
+    // TODO: Interpolated or no?
+    f32v2 dir = getDir();
+    return atan2(dir.y, dir.x);
+}
+
+void PhysicsComponent::teleportToPoint(f32v3 worldPos) {
     assert(mRigidBody);
     btTransform worldTransform;
     worldPos.z -= mZPosOffset;
     worldTransform.setOrigin(f32v3ToBtVector3(worldPos));
     worldTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
     mRigidBody->setWorldTransform(worldTransform);
+}
+
+void PhysicsComponent::setTransform(const f32v3& worldPos, f32 rotation) {
+    assert(mRigidBody);
+    btTransform worldTransform;
+    worldTransform.setOrigin(btVector3(worldPos.x, worldPos.y, worldPos.z - mZPosOffset));
+    worldTransform.setRotation(btQuaternion(rotation, 0.0, 0.0));
+    mRigidBody->setWorldTransform(worldTransform);
+}
+
+void PhysicsComponent::setVelocity(const f32v3& vel) {
+    assert(mRigidBody);
+    mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
 }
 

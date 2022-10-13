@@ -399,7 +399,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
     if (ImGui::CollapsingHeader("Animation Debugger")) {
         ImGui::PushID(++ID);
         
-        CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(ecs.mPlayerEntity);
+        CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(ecs.getLocalPlayer());
         ui32 numActive = 0;
         for (int i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
             AnimTrack& track = playerModel.mAnimState.mTracks[i]; // I'm basically God

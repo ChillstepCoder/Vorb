@@ -267,7 +267,7 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
 }
 
 const bool TileContainer::isReadLocked() const {
-    return mReadLockCount.load() > 0 || Services::NavThread::ref().isRunningPathfind();
+    return mReadLockCount.load() > 0 || (Services::isUsingNav() && Services::NavThread::ref().isRunningPathfind());
 }
 
 void TileContainer::addEntrance(TileIndex pos, bool isLocked) {

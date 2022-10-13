@@ -233,7 +233,7 @@ f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
     return tileData.heightOffsets[e_cast(dir)];
 }
 
-const Cartesian& Tile::getOrientationMainThread(TileLayer layer) const {
+Cartesian Tile::getOrientationMainThread(TileLayer layer) const {
     assert(IS_MAIN_THREAD());
     switch (layer) {
         case TileLayer::Ground: {
@@ -248,7 +248,7 @@ const Cartesian& Tile::getOrientationMainThread(TileLayer layer) const {
     }
 }
 
-const Cartesian& Tile::getOrientationThreadSafe(TileLayer layer) const {
+Cartesian Tile::getOrientationThreadSafe(TileLayer layer) const {
     assert(!IS_MAIN_THREAD());
     switch (layer) {
         case TileLayer::Ground: {

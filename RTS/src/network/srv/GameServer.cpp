@@ -5,6 +5,16 @@
 
 #include "network/NetworkUtil.h"
 
+#include "ecs/srv/SrvEntityComponentSystem.h"
+
+#include "world/srv/SrvWorldInterface.h"
+#include "world/IWorld.h"
+
+#include "network/srv/SrvMessage.h"
+
+#include "ecs/component/ReplicationComponent.h"
+#include "ecs/component/EntityDetailsComponent.h"
+
 
 // TODO fix these things, figure out unicode
 void logSrv(const wchar_t* str) {
@@ -43,6 +53,9 @@ GameServer::GameServer(ServerType serverType) :
     char buffer[256];
     mServerAddress.ToString(buffer, sizeof(buffer));
     printf("Server initializing with address %s\n", buffer);
+
+    // TODO: PlayerManager?
+    mClientPlayerEntities.resize(MAX_CLIENTS);
 
 }
 
@@ -122,8 +135,8 @@ void GameServer::clientDisconnected(int clientIndex) {
     logSrv(buffer);
 }
 
-void GameServer::update()
-{
+void GameServer::update() {
+    assert(IS_MAIN_THREAD());
     // stop if server is not running
     if (!mServer.IsRunning()) {
         mRunning = false;
@@ -137,6 +150,9 @@ void GameServer::update()
     mServer.AdvanceTime(mTimeSec);
     mServer.ReceivePackets();
     processMessages();
+
+    // Replication
+    replicateEntities();
 
     // ... process client inputs ...
     // ... update game ...
@@ -154,7 +170,7 @@ void GameServer::updateConnectedClientBits() {
         const ui16 bit = (ui16)(1 << i);
         if (mServer.IsClientConnected(i)) {
             connectedClientBits |= bit;
-            if (mConnectedClientBits & bit == 0) {
+            if ((mConnectedClientBits & bit) == 0) {
                 onClientConnected(i);
             }
         }
@@ -185,8 +201,11 @@ void GameServer::processMessage(int clientIndex, yojimbo::Message* message) {
         case (int)MessageTypes::PING:
             processPingMessage(clientIndex, (PingMessage*)message);
             break;
-        case (int)MessageTypes::CLIENT_JOIN:
-            processClientJoinMessage(clientIndex, (ClientJoinMessage*)message);
+        case (int)MessageTypes::CLIENT_READY_JOIN:
+            processClientReadyJoinMessage(clientIndex);
+            break;
+        case (int)MessageTypes::CLIENT_PLAYER_STATE:
+            processClientPlayerStateMessage(clientIndex, (ClientPlayerStateMessage*)message);
             break;
         default:
             break;
@@ -201,10 +220,38 @@ void GameServer::processPingMessage(int clientIndex, PingMessage* message) {
     mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), pingMessage);
 }
 
-void GameServer::processClientJoinMessage(int clientIndex, ClientJoinMessage* message) {
-    // Tell the client where to spawn
-    ClientBeginMessage* beginMessage = (ClientBeginMessage*)mServer.CreateMessage(clientIndex, e_cast(MessageTypes::CLIENT_BEGIN));
-    mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), beginMessage);
+void GameServer::processClientReadyJoinMessage(int clientIndex) {
+    // If we haven't already processed this message, then begin the clients world and replicate all state
+    for (size_t i = 0; i < mConnectedClients.size(); ++i) {
+        if (mConnectedClients[i] == clientIndex) {
+            // Don't let a client spam us with join requests
+            if (!mConnectedClientFlags[i].isBitSet(ClientFlags::JOINED)) {
+                mConnectedClientFlags[i].setBit(ClientFlags::JOINED);
+
+                // Replicate start game state to new client
+                replicateStartGameStateToClient(clientIndex);
+
+                // Create client entity post state replicate. Ecs will handle the entity replicate and begin message
+                // TODO: Save spawn point
+                f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
+                mClientPlayerEntities[clientIndex] = ((SrvEntityComponentSystem&)sWorld->getECS()).createPlayerEntity(clientIndex, playerPos);
+            }
+            break;
+        }
+    }
+}
+
+void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerStateMessage* message) {
+    SrvEntityComponentSystem& srvEcs = (SrvEntityComponentSystem&)sWorld->getECS();
+    entt::entity entity = mClientPlayerEntities[clientIndex];
+    if (entity != entt::null) {
+        PhysicsComponent& physCmp = srvEcs.mRegistry.get<PhysicsComponent>(entity);
+        CharacterControlComponent& controlCmp = srvEcs.mRegistry.get<CharacterControlComponent>(entity);
+        physCmp.setTransform(message->mPosition, 0.0f);
+        physCmp.setVelocity(message->mVelocity);
+        controlCmp.mControllerDirection = message->mControlDirection;
+        controlCmp.mDesiredMode = (LocomotionMode)message->mDesiredLocomotionMode;
+    }
 }
 
 yojimbo::Address GameServer::initServerAddress(ServerType serverType)
@@ -221,9 +268,52 @@ yojimbo::Address GameServer::initServerAddress(ServerType serverType)
 }
 
 void GameServer::onClientConnected(int clientIndex) {
-    std::cout << "Client " << clientIndex << " connected\n";
+    mConnectedClients.emplace_back(clientIndex);
+    mConnectedClientFlags.emplace_back();
 }
 
 void GameServer::onClientDisconnected(int clientIndex) {
-    std::cout << "Client " << clientIndex << " disconnected\n";
+    for (size_t i = 0; i < mConnectedClients.size(); ++i) {
+        if (mConnectedClients[i] == clientIndex) {
+            mConnectedClientFlags[i] = mConnectedClientFlags.back();
+            mConnectedClients[i] = mConnectedClients.back();
+            mConnectedClientFlags.pop_back();
+            mConnectedClients.pop_back();
+        }
+    }
+}
+
+void GameServer::replicateStartGameStateToClient(int clientIndex) {
+    IWorld& world = *sWorld;
+    SrvEntityComponentSystem& ecs = ((SrvEntityComponentSystem&)world.getECS());
+
+    // Replicate all entites
+    auto view = ecs.mRegistry.view<PhysicsComponent, ReplicationComponent, EntityDetailsComponent>();
+    for (auto entity : view) {
+        PhysicsComponent& physicsCmp = view.get<PhysicsComponent>(entity);
+        EntityDetailsComponent& detailsCmp = view.get<EntityDetailsComponent>(entity);
+        SrvMessage::sendEntityCreateMessage(clientIndex, entity, detailsCmp.mEntityToken, physicsCmp.getPosition(), physicsCmp.getRotation());
+    }
+
+    // TODO: Implement start state for other shit
+}
+
+void GameServer::replicateEntities() {
+    IWorld& world = *sWorld;
+    SrvEntityComponentSystem& ecs = ((SrvEntityComponentSystem&)world.getECS());
+
+    // Replicate all characters
+    auto view = ecs.mRegistry.view<PhysicsComponent, ReplicationComponent, CharacterControlComponent>();
+    for (auto entity : view) {
+        ReplicationComponent& repCmp = view.get<ReplicationComponent>(entity);
+        PhysicsComponent& physicsCmp = view.get<PhysicsComponent>(entity);
+        CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
+
+        for (int clientIndex : mConnectedClients) {
+            if (repCmp.shouldReplicateTo(clientIndex)) {
+                //SrvMessage::sendEntityTransformMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getRotation());
+                SrvMessage::sendCharacterStateMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerDirection, e_cast(controlCmp.mDesiredMode));
+            }
+        }
+    }
 }

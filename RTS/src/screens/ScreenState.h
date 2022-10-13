@@ -5,19 +5,23 @@
 #include "network/WorldType.h"
 #include "network/NetworkConst.h"
 
-class MainMenuScreenState {
+class MainMenuScreenGlobalState {
 public:
     static void initDefaults();
-    static void setJoin(const nString& hostIp);
+    static void setJoin(const nString& targetHostIp);
     static void setHostLan();
     static void setHostOnline();
     static void setHostDev();
+
+    static bool isSinglePlayer() { return hostIP.empty() && serverType == ServerType::NONE; }
+    static bool isHosting() { return hostIP.empty() && serverType != ServerType::NONE; }
+    static bool isClient() { return !hostIP.empty(); }
 
     static ServerType serverType;
     static nString hostIP;
 };
 
-class GameplayScreenState {
+class GameplayScreenGlobalState {
 public:
     static void initDefaults();
 

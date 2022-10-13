@@ -204,7 +204,9 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     assert(building.mRooms.size());
 
     // Navmesh
-    Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
+    if (Services::isUsingNav()) {
+        Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
+    }
 
     // TODO: Multithread
     BuildingMesher::buildMeshAndPhysics(building, sWorld->getPhysicsWorld());

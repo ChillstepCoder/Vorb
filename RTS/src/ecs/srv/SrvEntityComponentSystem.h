@@ -6,10 +6,12 @@ class SrvEntityComponentSystem : public IEntityComponentSystem
 {
 public:
 
+    // Begin IEntityComponentSystem interface
 	entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) override;
-	entt::entity createEntityFromSrv(entt::entity srvEntity, const f32v3& position, StrToken typeToken) override;
-	void destroyEntity(entt::entity entity) override;
-	void destroyEntityFromSrv(entt::entity entity) override { assert(false); }
+    void destroyEntity(entt::entity entity) override;
+    // End IEntityComponentSystem interface
+
+    entt::entity createPlayerEntity(int clientIndex, const f32v3& position);
 
 };
 

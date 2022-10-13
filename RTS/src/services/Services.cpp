@@ -5,25 +5,47 @@
 #include "resources/ResourceManager.h"
 
 static bool sIsInit = false;
+bool Services::sUsingNav = false;
 
-void Services::init()
+void Services::initResources() {
+    ResourceManager::set();
+}
+
+void Services::initHost()
 {
     assert(!sIsInit);
     sIsInit = true;
 
     std::cout << "Initializing services:\n";
 
+    sUsingNav = true;
     initThreads();
-    ResourceManager::set();
+}
+
+void Services::initCli()
+{
+    assert(!sIsInit);
+    sIsInit = true;
+
+    std::cout << "Initializing services:\n";
+
+    sUsingNav = false;
+    initThreads();
 }
 
 void Services::destroy()
 {
-    assert(sIsInit);
-    sIsInit = false;
+    if (sIsInit) {
+        sIsInit = false;
+        sUsingNav = false;
 
-    Threadpool::reset();
-    NavThread::reset();
+        Threadpool::reset();
+        NavThread::reset();
+    }
+}
+
+void Services::destroyResources()
+{
     ResourceManager::reset();
 }
 
@@ -40,5 +62,7 @@ void Services::initThreads()
     const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 2, 1);
     std::cout << "  Initializing threadpool with " << threadCount << " threads.\n";
     Threadpool::set(threadCount);
-    NavThread::set();
+    if (sUsingNav) {
+        NavThread::set();
+    }
 }

@@ -23,7 +23,7 @@
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
-static_assert(e_cast(ComponentTypes::COUNT) == 16, "Update component includes");
+static_assert(e_cast(ComponentTypes::COUNT) == 15, "Update component includes");
 
 struct ComponentDefinition {
     ComponentDefinition(ComponentTypes type) : type(type) {};
@@ -40,4 +40,4 @@ struct ComponentDefinition {
     // TODO: Instead of union, polymorphism? This doesnt work in union due to array destructor
     SkillsComponentFileData      skillsFileData;
 };
-static_assert(e_cast(ComponentTypes::COUNT) == 16, "Set any needed component file data");
+static_assert(e_cast(ComponentTypes::COUNT) == 15, "Set any needed component file data");

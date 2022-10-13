@@ -16,9 +16,11 @@
 #include "camera/CameraController.h"
 
 #include "network/cli/GameClient.h"
+#include "network/cli/CliMessage.h"
 #include "network/srv/GameServer.h"
 
 #include "ecs/IEntityComponentSystem.h"
+#include "ecs/srv/SrvEntityComponentSystem.h"
 #include "world/cli/CliWorld.h"
 #include "world/host/HostWorld.h"
 #include "world/IHeightmapGrid.h"
@@ -103,12 +105,12 @@ void GameplayScreen::build() {
     // Show loading screen
     LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
     loadScreenRenderer.appendLoadingTexture("data/textures/_loadscreen/loading.png", mResourceManager.getTextureCache());
-    displayLoadScreen("Gathering files...");
+    displayLoadScreen("Gathering files...", true);
 
 	const f32v2 screenSize(m_app->getWindow().getWidth(), m_app->getWindow().getHeight());
 
     mResourceManager.gatherFiles("data");
-    displayLoadScreen("Loading files...");
+    displayLoadScreen("Loading files...", true);
 	mResourceManager.loadFiles();
 
     {
@@ -132,35 +134,142 @@ void GameplayScreen::destroy(const vui::GameTime& gameTime) {
 
 void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
-    GameplayScreenState::initDefaults();
+    mState = GameplayScreenState::INIT;
+
+    GameplayScreenGlobalState::initDefaults();
+
+
+    // Initialize hosted server if needed
+    if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
+        GameServer::initInstance(MainMenuScreenGlobalState::serverType);
+    }
+
+    if (MainMenuScreenGlobalState::isClient()) {
+        Services::initCli();
+
+        mState = GameplayScreenState::WAITING_JOIN_SERVER;
+        CliMessage::sendClientReadyJoinMessage();
+        // Send the packet
+        GameClient::getInstance().update(0.0f);
+        mClientType = WorldType::CLIENT;
+    }
+    else {
+        Services::initHost();
+
+        mState = GameplayScreenState::RUNNING;
+        mClientType = WorldType::HOST;
+    }
 
     // Allocate world
     mWorld = &WorldFactory::makeWorld(mClientType);
 
-    // Add player
+    // Always init the world
+    initWorld(gameTime);
+}
+
+void GameplayScreen::onExit(const vui::GameTime& gameTime) {
+    IS_SHUTTING_DOWN = true;
+    displayLoadScreen("Cleaning up...", true);
+    WorldFactory::destroyWorld();
+    Services::destroy();
+    IS_SHUTTING_DOWN = false;
+}
+
+void GameplayScreen::update(const vui::GameTime& gameTime) {
+
+    mGameTimer.startFrame();
+    updateTimeScaling(gameTime);
+
+    // Check quit
+    if (GameplayScreenGlobalState::isQuittingToDesktop) {
+        vui::InputDispatcher::onQuit.trigger();
+        return;
+    }
+    else if (GameplayScreenGlobalState::isQuittingToMenu) {
+        m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
+        return;
+    }
+
+    if (mState == GameplayScreenState::RUNNING) {
+
+        // Update functions
+        switch (mClientType) {
+            case WorldType::CLIENT:
+                updateClient(gameTime);
+                break;
+            case WorldType::HOST:
+                updateHost(gameTime);
+                break;
+            default:
+                assert(false);
+                break;
+        }
+
+        // TODO: Actual usage of deltatime?
+        mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
+    }
+    else if (mState == GameplayScreenState::WAITING_JOIN_SERVER) {
+        // Update client and wait for server response
+        GameClient& client = GameClient::getInstance();
+        if (!client.isConnected()) {
+            pError("LOST CONNECTION!");
+            vui::InputDispatcher::onQuit.trigger();
+            return;
+        }
+        client.update(gameTime.deltaTime);
+        // Once server joins us, we are good to go
+        if (client.isJoined()) {
+            mState = GameplayScreenState::RUNNING;
+            initCamera();
+        }
+    }
+}
+
+void GameplayScreen::draw(const vui::GameTime& gameTime) {
+
+    if (mState == GameplayScreenState::RUNNING) {
+
+        const f32 frameAlpha = mGameTimer.getFrameAlpha();
+
+        // Grab fps
+        sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
+        mFps = sFps;
+
+        IEntityComponentSystem& ecs = mWorld->getECS();
+        PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
+        const f32v3 playerPos = cmp.getInterpolatedPosition();
+        mRenderContext->renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
+
+        tryUpdateAndRenderInteractPopup(playerPos);
+
+        mRenderContext->endFrame();
+    }
+    else if (mState == GameplayScreenState::WAITING_JOIN_SERVER) {
+        displayLoadScreen("Waiting server response...", false);
+    }
+
+}
+
+void GameplayScreen::initWorld(const vui::GameTime& gameTime) {
+
+    // Create player if hosting
     f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-    mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
-    IEntityComponentSystem& ecs = mWorld->getECS();
-    ecs.mPlayerEntity = mWorld->createEntity(playerPos, StrToken("player"), true);
-    assert((ui32)ecs.mPlayerEntity != (ui32)INVALID_ENTITY);
+    if (mClientType == WorldType::HOST) {
+        //mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
+        SrvEntityComponentSystem& ecs = (SrvEntityComponentSystem&)mWorld->getECS();
+        ecs.setLocalPlayer(ecs.createPlayerEntity(CLIENT_INDEX_HOST, playerPos));
 
-    // TODO: FIX EVIL THINGS
-    mCameraController = std::make_unique<CameraController>(m_app->getWindow());
-    mCameraController->setEntityFollow(ecs.mPlayerEntity);
-
-    // Initialize hosted server if needed
-    if (MainMenuScreenState::serverType != ServerType::NONE) {
-        GameServer::initInstance(MainMenuScreenState::serverType);
-        mIsSinglePlayer = false;
+        initCamera();
     }
 
     // Preload
-    displayLoadScreen("Loading...");
+    displayLoadScreen("Loading...", true);
 
     // Starting time of day to noon
     mWorld->setTimeOfDay(12.0f);
 
     // Begin world
+    // TODO: Better pos?
     mWorld->onWorldBegin(playerPos);
 
     // Start world rendering
@@ -176,66 +285,12 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
             mRenderContext->updateMeshManagers(sWorld->getLoadCenter(), true /*forceUpdate*/);
         }
     }
-
 }
 
-void GameplayScreen::onExit(const vui::GameTime& gameTime) {
-    IS_SHUTTING_DOWN = true;
-    displayLoadScreen("Cleaning up...");
-    Services::resetThreads();
-    WorldFactory::destroyWorld();
-    IS_SHUTTING_DOWN = false;
-}
-
-void GameplayScreen::update(const vui::GameTime& gameTime) {
-
-    mGameTimer.startFrame();
-    updateTimeScaling(gameTime);
-
-    // Check quit
-    if (GameplayScreenState::isQuittingToDesktop) {
-        vui::InputDispatcher::onQuit.trigger();
-        return;
-    }
-    else if (GameplayScreenState::isQuittingToMenu) {
-        m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
-        return;
-    }
-
-    // Update functions
-    switch (mClientType) {
-        case WorldType::CLIENT:
-            updateClient(gameTime);
-            break;
-        case WorldType::HOST:
-            updateHost(gameTime);
-            break;
-        default:
-            assert(false);
-            break;
-    }
-
-    // TODO: Actual usage of deltatime?
-    mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
-}
-
-void GameplayScreen::draw(const vui::GameTime& gameTime) {
-
-	const f32 frameAlpha = mGameTimer.getFrameAlpha();
-
-    // Grab fps
-    sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
-    mFps = sFps;
-
-    IEntityComponentSystem& ecs = mWorld->getECS();
-	PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
-    const f32v3 playerPos = cmp.getInterpolatedPosition();
-	mRenderContext->renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
-
-	tryUpdateAndRenderInteractPopup(playerPos);
-
-	mRenderContext->endFrame();
-
+void GameplayScreen::initCamera()
+{
+    mCameraController = std::make_unique<CameraController>(m_app->getWindow());
+    mCameraController->setEntityFollow(mWorld->getECS().getLocalPlayer());
 }
 
 void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
@@ -259,7 +314,7 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
     f32 TODO_ELAPSED = (f32)gameTime.elapsedSec;
     while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
         // Update world
-        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
         f32v3 position = playerPhysCmp.getPosition();
         cliWorld->tick(position, TODO_ELAPSED);
         TODO_ELAPSED = 0.0f;// FIX THIS HACK
@@ -287,12 +342,12 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
 
         // Update game server
-        if (!mIsSinglePlayer) {
+        if (!MainMenuScreenGlobalState::isSinglePlayer()) {
             GameServer::getInstance().tryTick();
         }
 
         // Update world
-        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
         f32v3 position = playerPhysCmp.getPosition();
         hostWorld->tick(position, TODO_ELAPSED);
         TODO_ELAPSED = 0.0f;// FIX THIS HACK
@@ -359,7 +414,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             if (mSelectedTileHandle.isValid()) {
                 IEntityComponentSystem& ecs = mWorld->getECS();
-                NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
+                NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
                 cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPos(playerPos), mSelectedTileHandle);
             }
         }
@@ -452,10 +507,10 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
     }
 }
 
-void GameplayScreen::displayLoadScreen(const nString& text) {
+void GameplayScreen::displayLoadScreen(const nString& text, bool syncWindow) {
     LoadScreenRenderer& loadScreenRenderer = LoadScreenRenderer::getInstance();
     loadScreenRenderer.setText(text);
-    loadScreenRenderer.render(&m_app->getWindow());
+    loadScreenRenderer.render(syncWindow ? &m_app->getWindow() : nullptr);
 }
 
 void GameplayScreen::initInputs()
@@ -483,13 +538,13 @@ void GameplayScreen::initInputs()
         }
         else if (event.keyCode == VKEY_L) {
             IEntityComponentSystem& ecs = mWorld->getECS();
-            if (ecs.mRegistry.try_get<DynamicLightComponent>(ecs.mPlayerEntity)) {
+            if (ecs.mRegistry.try_get<DynamicLightComponent>(ecs.getLocalPlayer())) {
                 // Remove existing
-                ecs.mRegistry.remove<DynamicLightComponent>(ecs.mPlayerEntity);
+                ecs.mRegistry.remove<DynamicLightComponent>(ecs.getLocalPlayer());
             }
             else {
                 // Add new
-                ecs.mRegistry.emplace<DynamicLightComponent>(ecs.mPlayerEntity);
+                ecs.mRegistry.emplace<DynamicLightComponent>(ecs.getLocalPlayer());
             }
         }
         else if (event.keyCode == VKEY_Y) {
@@ -542,8 +597,8 @@ void GameplayScreen::initInputs()
        /* TerrainPickData pickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
         if (pickData.hit.didHit()) {
 
-            NavigationComponent& cmp = mWorld.getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.mPlayerEntity);
-            const PhysicsComponent& physCmp = mWorld.getECS().mRegistry.get<PhysicsComponent>(ecs.mPlayerEntity);
+            NavigationComponent& cmp = mWorld.getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
+            const PhysicsComponent& physCmp = mWorld.getECS().mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
             const f32v2& playerXYPos = physCmp.getXYPosition();
             cmp.requestCoarsePath(ui16v2(pickData.hit.position.x, pickData.hit.position.y), playerXYPos);
 
@@ -566,7 +621,7 @@ void GameplayScreen::initInputs()
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
                 IEntityComponentSystem& ecs = mWorld->getECS();
-                if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.mPlayerEntity)) {
+                if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
                     const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
                     PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
                     if (hitResult.didHit()) {

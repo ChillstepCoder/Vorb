@@ -24,6 +24,7 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
     // Copy components over to new entity
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const EntityDefinition& edef = resourceManager.getEntityDefinitionRepository().getDefinition(typeToken);
+
     // Char control needs further initialization post physics load
     CharacterControlComponent* charControlCmp = nullptr;
     // Initialize components
@@ -91,10 +92,6 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
                 physics.mZPosOffset = -rbp.second;
                 break;
             }
-            case ComponentTypes::PlayerControl: {
-                registry.emplace<PlayerControlComponent>(newEntity);
-                break;
-            }
             case ComponentTypes::Profession: {
                 registry.emplace<ProfessionComponent>(newEntity);
                 break;
@@ -126,7 +123,7 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
                 assert(false); // Missing type
                 break;
         }
-        static_assert(e_cast(ComponentTypes::COUNT) == 16, "Update component construction");
+        static_assert(e_cast(ComponentTypes::COUNT) == 15, "Update component construction");
     }
 
     // Post load
