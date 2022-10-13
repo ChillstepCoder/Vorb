@@ -171,7 +171,14 @@ Chunk& IWorld::getChunkAtChunkCoords(const i32v2& worldPos) {
     return getChunk(ChunkID(worldPos));
 }
 
+// TODO: Remove this
+#include "rendering/RenderContext.h"
+#include "rendering/mesh/TerrainMeshManager.h"
 void IWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+    if (RenderContext::exists()) {
+        RenderContext::getInstance().getTerrainMeshManager().dirtyTerrainFromBrush(pos, brushRadius);
+    }
+
     for (Chunk* chunk : getActiveChunks()) {
         chunk->onTerrainDataChanged(pos, brushRadius);
     }

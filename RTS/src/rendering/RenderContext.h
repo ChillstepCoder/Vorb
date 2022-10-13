@@ -56,6 +56,7 @@ public:
 
     static RenderContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static RenderContext& getInstance();
+    static bool exists() { return sInstance != nullptr; }
 
     void onWorldBegin();
 
@@ -79,6 +80,8 @@ public:
     vg::SpriteFont& getSpriteFont() const { return *mSpriteFont; }
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
     const f32v2& getScreenResolution() const { return mScreenResolution;}
+
+    TerrainMeshManager& getTerrainMeshManager() { return *mTerrainMeshManager; }
 
 private:
     void renderDebug(const Camera3D& camera);

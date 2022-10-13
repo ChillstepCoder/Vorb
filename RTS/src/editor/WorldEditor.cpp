@@ -408,7 +408,6 @@ void WorldEditor::updateTerrainEdit() {
 
             // Notify all terrain stuff to update
             sWorld->dirtyTerrainFromBrush(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
-            std::cout << "TERRAIN FLOOD MS " << timer.stop() << std::endl;
         }
     }
 }
