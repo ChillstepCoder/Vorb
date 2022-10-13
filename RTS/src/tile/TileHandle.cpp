@@ -25,7 +25,7 @@ TileRef::TileRef() {
 
 void TileRef::acquire(TileHandle handle) {
     if (handle.container) {
-        assert(IS_MAIN_THREAD());
+        assert(IS_GAME_THREAD());
         assert(!container);
         container = const_cast<TileContainer*>(handle.container); // FUCK YOU I DO WHAT I WANT;
         index = handle.tileIndex;
@@ -36,7 +36,7 @@ void TileRef::acquire(TileHandle handle) {
 
 void TileRef::acquire(TileContainer* newContainer, TileIndex newIndex) {
     if (newContainer) {
-        assert(IS_MAIN_THREAD());
+        assert(IS_GAME_THREAD());
         assert(!container);
         container = newContainer;
         index = newIndex;

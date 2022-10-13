@@ -42,7 +42,7 @@ KEG_TYPE_DEF_SAME_NAME(ItemDropDef, kt) {
 
 void Tile::setTileFlag(TileFlags flag, bool isReadLocked) {
 
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (!isReadLocked) {
         tileFlagsThreadSafe.setBit(flag);
     }
@@ -51,7 +51,7 @@ void Tile::setTileFlag(TileFlags flag, bool isReadLocked) {
 
 void Tile::setTileFlags(TileFlags flags, bool isReadLocked) {
 
-    assert(IS_MAIN_THREAD()); 
+    assert(IS_GAME_THREAD()); 
     if (!isReadLocked) {
         tileFlagsThreadSafe = flags;
         tileFlags = flags;
@@ -88,7 +88,7 @@ void Tile::setOrientation(Cartesian dir, TileLayer layer, bool isReadLocked)
 
 void Tile::clearTileFlag(TileFlags flag, bool isReadLocked) {
 
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (!isReadLocked) {
         tileFlagsThreadSafe.clearBit(flag);
     }
@@ -97,7 +97,7 @@ void Tile::clearTileFlag(TileFlags flag, bool isReadLocked) {
 
 void Tile::clearTileFlags(bool isReadLocked) {
 
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (isReadLocked) {
         tileFlags.overwriteBits(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     }
@@ -132,7 +132,7 @@ Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : t
 }
 
 bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
         // Harvestble resources only exist on ground floor
         TileID tileId = layers[i];
@@ -193,7 +193,7 @@ Cartesian8 ORIENTATION_ROTATE_DIR_EAST[8] = {
 };
 
 bool Tile::canNavInDirection(Cartesian8 dir) const {
-    assert(!IS_MAIN_THREAD());
+    assert(!IS_GAME_THREAD());
     if (midLayerThreadSafe == TILE_ID_NONE) return true;
 
     ui8 navMask = TileRepository::getTileData(midLayerThreadSafe).navMask;
@@ -234,7 +234,7 @@ f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
 }
 
 Cartesian Tile::getOrientationMainThread(TileLayer layer) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     switch (layer) {
         case TileLayer::Ground: {
             return orientation.orientationBase;
@@ -249,7 +249,7 @@ Cartesian Tile::getOrientationMainThread(TileLayer layer) const {
 }
 
 Cartesian Tile::getOrientationThreadSafe(TileLayer layer) const {
-    assert(!IS_MAIN_THREAD());
+    assert(!IS_GAME_THREAD());
     switch (layer) {
         case TileLayer::Ground: {
             return orientationThreadSafe.orientationBase;
@@ -264,12 +264,12 @@ Cartesian Tile::getOrientationThreadSafe(TileLayer layer) const {
 }
 
 bool Tile::canAddTileData(const TileData& tile) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     return layers[tile.layer] == TILE_ID_NONE;
 }
 
 void Tile::addTileData(const TileData& tile, bool isReadLocked) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (!isReadLocked) {
         layersThreadSafe[tile.layer] = tile.id;
     }
@@ -277,7 +277,7 @@ void Tile::addTileData(const TileData& tile, bool isReadLocked) {
 }
 
 void Tile::setTileLayer(TileLayer layer, TileID id, bool isReadLocked) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (!isReadLocked) {
         layersThreadSafe[e_cast(layer)] = id;
     }
@@ -292,7 +292,7 @@ void Tile::setGroundZPosition(f32 groundZPosition, bool isReadLocked) {
 }
 //void Tile::setWall(Cartesian cartesianSouthOrWest, TileWall wall, bool isReadLocked) {
 //    assert(e_cast(cartesianSouthOrWest) <= 1);
-//    assert(IS_MAIN_THREAD());
+//    assert(IS_GAME_THREAD());
 //    if (isReadLocked) {
 //        tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
 //    }

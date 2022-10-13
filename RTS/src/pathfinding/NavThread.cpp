@@ -71,7 +71,7 @@ void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle
 }
 
 void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     TileContainerID id;
     assert(!tileContainer.mIsNavmeshing.load());
     id = tileContainer.getId();

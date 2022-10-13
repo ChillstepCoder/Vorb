@@ -5,7 +5,7 @@
 
 entt::entity CliEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     assert(!shouldReplicate); // Client interface cannot replicate
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     entt::entity newEntity = EntityFactory::createEntity(position, typeToken);
     return newEntity;
 }

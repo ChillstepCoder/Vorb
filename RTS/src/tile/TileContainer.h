@@ -168,7 +168,7 @@ public:
 
     // =========== Tile accessors  ===========
     Tile& getMutableTileAt(TileIndex i) {
-        assert(IS_MAIN_THREAD());
+        assert(IS_GAME_THREAD());
         assert(i < mTiles.size());
         return mTiles[i];
     }
@@ -222,7 +222,7 @@ public:
     void incReadLock() const { ++mReadLockCount; }
     void decReadLock() const { assert(mReadLockCount.load() > 0);  --mReadLockCount; }
     inline void incRef() const {
-        assert(IS_MAIN_THREAD()); // Only main thread is allowed to incref
+        assert(IS_GAME_THREAD()); // Only main thread is allowed to incref
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
         ++mRefCount;
         if (mRefCount > 400) {

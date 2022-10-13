@@ -130,7 +130,7 @@ void VisualLog::finish() {
 }
 
 void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
 
     // Rebuild if needed
     if (mDirtyRender) {

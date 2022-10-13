@@ -1,8 +1,10 @@
 #pragma once
 
 // Thread stuff
-const std::thread::id MAIN_THREAD_ID = std::this_thread::get_id();
+extern std::thread::id GAME_THREAD_ID;
 extern std::thread::id NAV_THREAD_ID;
+extern std::thread::id RENDER_THREAD_ID;
 
-#define IS_MAIN_THREAD() (std::this_thread::get_id() == MAIN_THREAD_ID)
+#define IS_GAME_THREAD() (std::this_thread::get_id() == GAME_THREAD_ID)
 #define IS_NAV_THREAD() (std::this_thread::get_id() == NAV_THREAD_ID)
+#define IS_RENDER_THREAD() (std::this_thread::get_id() == RENDER_THREAD_ID)

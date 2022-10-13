@@ -157,17 +157,17 @@ public:
     bool canNavInDirection(Cartesian8 dir) const;
     f32 getEdgeHeightOffset(Cartesian dir) const;
 
-    f32 getGroundZOffsetMainThread() const { assert(IS_MAIN_THREAD()); return groundZOffset; }
-    f32 getGroundZOffsetThreadSafe() const { /*assert(!IS_MAIN_THREAD());*/ return groundZOffsetThreadSafe; }
+    f32 getGroundZOffsetMainThread() const { assert(IS_GAME_THREAD()); return groundZOffset; }
+    f32 getGroundZOffsetThreadSafe() const { /*assert(!IS_GAME_THREAD());*/ return groundZOffsetThreadSafe; }
 
-	const TileID* getLayersMainThread() const { assert(IS_MAIN_THREAD()); return layers; }
-    const TileID* getLayersThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe; }
+	const TileID* getLayersMainThread() const { assert(IS_GAME_THREAD()); return layers; }
+    const TileID* getLayersThreadSafe() const { assert(!IS_GAME_THREAD()); return layersThreadSafe; }
 
     Cartesian getOrientationMainThread(TileLayer layer) const;
     Cartesian getOrientationThreadSafe(TileLayer layer) const;
 
-    bool isEmptyMainThread() const { assert(IS_MAIN_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MID] == TILE_ID_NONE && layers[TILE_LAYER_TOP] == TILE_ID_NONE; }
-    bool isEmptyThreadSafe() const { assert(!IS_MAIN_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MID] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_TOP] == TILE_ID_NONE; }
+    bool isEmptyMainThread() const { assert(IS_GAME_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MID] == TILE_ID_NONE && layers[TILE_LAYER_TOP] == TILE_ID_NONE; }
+    bool isEmptyThreadSafe() const { assert(!IS_GAME_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MID] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_TOP] == TILE_ID_NONE; }
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)

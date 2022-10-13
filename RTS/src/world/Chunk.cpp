@@ -264,12 +264,12 @@ void Chunk::removeStructureAt(const TileIndex index, Structure* structure) {
 }
 
 StructureArrayPtr Chunk::getStructuresAt(const TileIndex index) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     return mStructures[index].getMainThreadData();
 }
 
 StructureArrayPtr Chunk::getStructuresAtThreadSafe(const TileIndex index) const {
-    assert(!IS_MAIN_THREAD());
+    assert(!IS_GAME_THREAD());
     return mStructures[index].getWorkerThreadData();
 }
 

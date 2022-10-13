@@ -20,7 +20,7 @@ RUNTIME_INIT_FUNC(reserveTileContainerData) {
 }
 
 TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, bool isTerrain) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
     TileContainer* rv = newContainer.get();
     newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, isTerrain);
@@ -30,7 +30,7 @@ TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPo
 }
 
 void TileContainerRepository::destroyTileContainer(TileContainer* container) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     sTileContainerLookup.erase(container->mId);
     // TODO: Profile linear search
     for (size_t i = 0; i < sTileContainers.size(); ++i) {
@@ -47,7 +47,7 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
 
 
 TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
-    assert(IS_MAIN_THREAD() || IS_NAV_THREAD()); // Nav thread is allowed to access tile containers because the world is write locked during nav
+    assert(IS_GAME_THREAD() || IS_NAV_THREAD()); // Nav thread is allowed to access tile containers because the world is write locked during nav
     auto&& it = sTileContainerLookup.find(id);
     assert(it != sTileContainerLookup.end());
     return it->second;
@@ -94,7 +94,7 @@ void TileContainer::freeData() {
 }
 
 void TileContainer::updateMainThread() {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (mTilesNeedingThreadSafeCopy.size() && mReadLockCount == 0) {
         for (TileIndex& id : mTilesNeedingThreadSafeCopy) {
             mTiles[id].updateThreadSafeLayers();
@@ -271,7 +271,7 @@ const bool TileContainer::isReadLocked() const {
 }
 
 void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     mDirtyNav = true;
     auto&& newEntrance = mEntrances.emplace_back();
     newEntrance.tileIndex = pos;

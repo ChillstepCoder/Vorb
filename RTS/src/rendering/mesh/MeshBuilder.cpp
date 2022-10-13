@@ -702,13 +702,13 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
 
 
 void* MeshBuilder::operator new(size_t count) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void MeshBuilder::operator delete(void* pointer, size_t size) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

@@ -87,7 +87,7 @@ bool IWorld::tileHasHarvestableResource(const i32v2& worldPos, TileResource reso
 //  TODO: No std function?
 void IWorld::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
 {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     // TODO: handle this without asserts
     // Start at bottom left
     i32v2 worldPos;
@@ -185,7 +185,7 @@ void IWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
 }
 
 TileHandle IWorld::getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const {
-    assert(!IS_MAIN_THREAD());
+    assert(!IS_GAME_THREAD());
     const Chunk* chunk = &getChunkAtPosition(i32v2(worldPos));
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
@@ -208,7 +208,7 @@ TileHandle IWorld::getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) cons
 }
 
 TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     const Chunk* chunk = &getChunkAtPosition(i32v2(worldPos));
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus

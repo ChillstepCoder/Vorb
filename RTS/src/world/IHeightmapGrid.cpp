@@ -82,7 +82,7 @@ IHeightmapGrid::~IHeightmapGrid()
 }
 
 void IHeightmapGrid::requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     assert(id.id < WORLD_SIZE_HEIGHTMAP_PATCHES);
     HeightmapPatch& patch = mHeightData[id.id];
     assert(!patch.isDone());
@@ -112,7 +112,7 @@ void IHeightmapGrid::requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::f
 }
 
 void IHeightmapGrid::requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     HeightmapPatchID requiredIds[9];
     computeRequiredPaddedIDs(id, requiredIds);
 
@@ -170,13 +170,13 @@ void IHeightmapGrid::requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, 
 }
 
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     assert(mHeightData[id.id].isDone());
     return mHeightData[id.id].mHeightData;
 }
 
 const HeightmapPatchData* IHeightmapGrid::tryGetHeightDataAt(HeightmapPatchID id) const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     const HeightmapPatch& patch = mHeightData[id.id];
     if (patch.isDone()) {
         return patch.mHeightData;
@@ -185,7 +185,7 @@ const HeightmapPatchData* IHeightmapGrid::tryGetHeightDataAt(HeightmapPatchID id
 }
 
 const HeightmapPatchData* IHeightmapGrid::aquireHeightData(HeightmapPatchID id) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     assert(patch.isDone());
     ++patch.mRefCount;
@@ -193,7 +193,7 @@ const HeightmapPatchData* IHeightmapGrid::aquireHeightData(HeightmapPatchID id) 
 }
 
 bool IHeightmapGrid::tryAquirePaddedHeightDataAt(HeightmapPatchID id) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     HeightmapPatchID requiredIds[9];
     computeRequiredPaddedIDs(id, requiredIds);
     bool failed = false;
@@ -239,7 +239,7 @@ void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const Height
 }
 
 void IHeightmapGrid::releaseHeightDataAt(HeightmapPatchID id) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     // Padded may result in this
     if (id.isInvalid()) {
         return;

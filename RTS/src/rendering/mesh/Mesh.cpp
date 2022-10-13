@@ -94,13 +94,13 @@ void SubMeshData::destroy(bool isUsingSharedIbo) {
 }
 
 void* Mesh::operator new(size_t count) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void Mesh::operator delete(void* pointer, size_t size) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }

@@ -86,12 +86,12 @@ PhysicsWorld::~PhysicsWorld() {
 }
 
 void PhysicsWorld::stepSimulation(f32 elapsedSec) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }
 
 DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     assert(rigidBody->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::CAPSULE_SHAPE_PROXYTYPE);
     DynamicCharacterController* dynamicCharacterController = new DynamicCharacterController(rigidBody, (btCapsuleShape*)rigidBody->getCollisionShape());
     mDynamicsWorld->addAction(dynamicCharacterController);
@@ -100,7 +100,7 @@ DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::en
 
 btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
 {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     btTransform startTransform;
     const f32v3 center = patch.mHeightData->aabb.getCenter();
     startTransform.setOrigin(btVector3(center.x, center.y, center.z));
@@ -135,7 +135,7 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
 }
 
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     btTransform startTransform;
     startTransform.setOrigin(btVector3(position.x, position.y, position.z));
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
@@ -161,14 +161,14 @@ RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& 
 }
 
 void PhysicsWorld::deleteRigidBody(btRigidBody** rigidBody) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     mDynamicsWorld->removeRigidBody(*rigidBody);
     delete *rigidBody;
     *rigidBody = nullptr;
 }
 
 void PhysicsWorld::addStaticMesh(StaticPhysicsMesh& staticMesh) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     if (!staticMesh.mPhysicsMesh) {
         return;
     }
@@ -197,7 +197,7 @@ void PhysicsWorld::addStaticMesh(StaticPhysicsMesh& staticMesh) {
 
 RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
 {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
     
     btVector3 localInertia(0, 0, 0);
@@ -247,7 +247,7 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
 }
 
 void PhysicsWorld::debugRender() const {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     const bool showStatic = sDebugOptions.mShowStaticPhysics;
     const bool showDynamic = sDebugOptions.mShowDynamicPhysics;
     const bool showTerrain = sDebugOptions.mShowTerrainPhysics;
@@ -334,7 +334,7 @@ struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
 
 PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const
 {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     btVector3 start = f32v3ToBtVector3(rayStart);
     btVector3 end = f32v3ToBtVector3(rayEnd);
     // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?

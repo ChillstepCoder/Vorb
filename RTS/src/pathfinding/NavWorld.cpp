@@ -82,7 +82,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
     PreciseTimer timer;
 
     // Nav thread only
-    assert(!IS_MAIN_THREAD());
+    assert(!IS_GAME_THREAD());
 
     //ScopedTimer timer("Built nav graph");
     const i32v3& dims = tileContainer.getDims();

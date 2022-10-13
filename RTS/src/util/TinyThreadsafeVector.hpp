@@ -14,10 +14,10 @@ public:
     void remove(const T& val, bool isReadLocked);
     void copyThreadData(); // Must not be read locked
 
-    std::pair<const T*, ui16> getMainThreadData() const { assert(IS_MAIN_THREAD()); return std::make_pair(mMainThreadData ? mMainThreadData.get() : nullptr, mMainThreadDataSize); }
-    std::pair<const T*, ui16> getWorkerThreadData() const { assert(!IS_MAIN_THREAD()); return std::make_pair(mWorkerThreadData ? mWorkerThreadData.get() : nullptr, mWorkerThreadDataSize); }
-    ui16 getMainThreadDataSize() { assert(IS_MAIN_THREAD()); return mMainThreadDataSize; }
-    ui16 getWorkerThreadDataSize() { assert(!IS_MAIN_THREAD()); return mWorkerThreadDataSize; }
+    std::pair<const T*, ui16> getMainThreadData() const { assert(IS_GAME_THREAD()); return std::make_pair(mMainThreadData ? mMainThreadData.get() : nullptr, mMainThreadDataSize); }
+    std::pair<const T*, ui16> getWorkerThreadData() const { assert(!IS_GAME_THREAD()); return std::make_pair(mWorkerThreadData ? mWorkerThreadData.get() : nullptr, mWorkerThreadDataSize); }
+    ui16 getMainThreadDataSize() { assert(IS_GAME_THREAD()); return mMainThreadDataSize; }
+    ui16 getWorkerThreadDataSize() { assert(!IS_GAME_THREAD()); return mWorkerThreadDataSize; }
 
     void setQueuedWorkerThreadCopy() { mIsQueuedWorkerThreadCopy = true; }
     bool isQueuedWorkerThreadCopy() const { return mIsQueuedWorkerThreadCopy; }
@@ -34,7 +34,7 @@ private:
 
 template <typename T>
 void TinyThreadsafeVector<T>::copyThreadData() {
-    assert(IS_MAIN_THREAD() && mIsQueuedWorkerThreadCopy);
+    assert(IS_GAME_THREAD() && mIsQueuedWorkerThreadCopy);
     mWorkerThreadData = std::unique_ptr<T[]>(new T[mMainThreadDataSize]);
     memcpy(mWorkerThreadData.get(), mMainThreadData.get(), mMainThreadDataSize * sizeof(T));
     mIsQueuedWorkerThreadCopy = false;
@@ -47,7 +47,7 @@ void TinyThreadsafeVector<T>::remove(const T& val, bool isReadLocked) {
 
 template <typename T>
 void TinyThreadsafeVector<T>::add(const T& val, bool isReadLocked) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     addInternal(mMainThreadData, mMainThreadDataSize, val);
     // If not read locked, do the same to the worker thread data
     // if we arent queued to copy later

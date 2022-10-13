@@ -9,7 +9,7 @@
 #include "network/srv/SrvMessage.h"
 
 entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     entt::entity newEntity = EntityFactory::createEntity(position, typeToken);
     if (shouldReplicate && GameServer::exists()) {
         mRegistry.emplace<ReplicationComponent>(newEntity);
@@ -22,7 +22,7 @@ entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrTo
 }
 
 entt::entity SrvEntityComponentSystem::createPlayerEntity(int clientIndex, const f32v3& position) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     entt::entity entity = EntityFactory::createEntity(position, StrToken("player"));
 
     if (GameServer::exists()) {

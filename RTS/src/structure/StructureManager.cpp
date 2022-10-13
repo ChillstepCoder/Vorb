@@ -10,7 +10,7 @@ StructureManager::StructureManager() {
 }
 
 Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     std::unique_ptr<Structure> newStructure;
     switch (type) {
         case StructureType::Building: {

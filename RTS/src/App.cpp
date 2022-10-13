@@ -73,6 +73,9 @@ void setPriorityToNormal() {
 }
 
 void App::onInit() {
+    // Set as render thread
+    RENDER_THREAD_ID = std::this_thread::get_id();
+    GAME_THREAD_ID = std::this_thread::get_id();
 
     // Set log level for yojimbo
     yojimbo_log_level(YOJIMBO_LOG_LEVEL_ERROR);

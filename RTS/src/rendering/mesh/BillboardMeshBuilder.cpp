@@ -186,13 +186,13 @@ void BillboardMeshBuilder::uploadBufferData(SubMeshData& subMesh, const InProgre
 
 
 void* BillboardMeshBuilder::operator new(size_t count) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
 void BillboardMeshBuilder::operator delete(void* pointer, size_t size) {
-    assert(IS_MAIN_THREAD());
+    assert(IS_GAME_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
