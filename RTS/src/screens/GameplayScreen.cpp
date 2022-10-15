@@ -24,15 +24,14 @@
 #include "world/cli/CliWorld.h"
 #include "world/host/HostWorld.h"
 #include "world/IHeightmapGrid.h"
-#include "resources/TileRepository.h"
 #include "world/WorldObjectQuery.h"
 #include "util/Utils.h"
 
 #include "resources/ResourceManager.h"
+#include "resources/TileRepository.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
-#include "particles/ParticleSystemManager.h"
 
 #include "physics/PhysicsWorld.h"
 
@@ -40,14 +39,14 @@
 #include "rendering/RenderContext.h"
 #include "rendering/LoadScreenRenderer.h"
 
+#include "GameThread.h"
+
 #include "math/Random.h"
 
 #include "rendering/ChunkRenderer.h"
 
 #include "ui/TileInteractPanel.h"
 #include "ui/UIContext.h"
-
-#include <SDL.h>
 
 #include <Vorb/ui/imgui/imgui.h>
 
@@ -164,7 +163,18 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     mWorld = &WorldFactory::makeWorld(mClientType);
 
     // Always init the world
-    initWorld(gameTime);
+    displayLoadScreen("Loading...", true);
+
+    // Start world rendering
+    mRenderContext->onWorldBegin();
+
+    // TODO: Remove
+    auto& ecs = mWorld->getECS();
+    ecs.setLocalPlayer(ecs.createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
+    initCamera();
+
+    // Start the game :O
+    GameThread::initInstance(mClientType);
 }
 
 void GameplayScreen::onExit(const vui::GameTime& gameTime) {
@@ -177,7 +187,6 @@ void GameplayScreen::onExit(const vui::GameTime& gameTime) {
 
 void GameplayScreen::update(const vui::GameTime& gameTime) {
 
-    mGameTimer.startFrame();
     updateTimeScaling(gameTime);
 
     // Check quit
@@ -206,7 +215,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
         }
 
         // TODO: Actual usage of deltatime?
-        mCameraController->update(gameTime, mGameTimer.getFrameAlpha());
+        mCameraController->update(gameTime, 0.0f /*todo: framealpha?*/);
     }
     else if (mState == GameplayScreenState::WAITING_JOIN_SERVER) {
         // Update client and wait for server response
@@ -229,7 +238,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
     if (mState == GameplayScreenState::RUNNING) {
 
-        const f32 frameAlpha = mGameTimer.getFrameAlpha();
+        const f32 frameAlpha = 0.0f /*TODO: Framealpha?*/;
 
         // Grab fps
         sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
@@ -252,39 +261,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
 
 void GameplayScreen::initWorld(const vui::GameTime& gameTime) {
 
-    // Create player if hosting
-    f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-    if (mClientType == WorldType::HOST) {
-        //mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
-        SrvEntityComponentSystem& ecs = (SrvEntityComponentSystem&)mWorld->getECS();
-        ecs.setLocalPlayer(ecs.createPlayerEntity(CLIENT_INDEX_HOST, playerPos));
 
-        initCamera();
-    }
-
-    // Preload
-    displayLoadScreen("Loading...", true);
-
-    // Starting time of day to noon
-    mWorld->setTimeOfDay(12.0f);
-
-    // Begin world
-    // TODO: Better pos?
-    mWorld->onWorldBegin(playerPos);
-
-    // Start world rendering
-    mRenderContext->onWorldBegin();
-
-    // Hacky
-    {
-        ScopedTimer timer("Main thread preload hack");
-        update(gameTime);
-        while (Services::Threadpool::ref().getTasksSizeApprox()) {
-            Sleep(1);
-            update(gameTime);
-            mRenderContext->updateMeshManagers(sWorld->getLoadCenter(), true /*forceUpdate*/);
-        }
-    }
 }
 
 void GameplayScreen::initCamera()
@@ -301,23 +278,9 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
     cliWorld->onFrameBegin();
 
     // Update client
-    GameClient& client = GameClient::getInstance();
-    if (!client.isConnected()) {
+    if (!GameClient::getInstance().isConnected()) {
         pError("LOST CONNECTION!");
         assert(false);
-    }
-    client.update(gameTime.deltaTime);
-
-    // Update client world
-    int ticks = 0;
-    auto&& ecs = cliWorld->getECS();
-    f32 TODO_ELAPSED = (f32)gameTime.elapsedSec;
-    while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
-        // Update world
-        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
-        f32v3 position = playerPhysCmp.getPosition();
-        cliWorld->tick(position, TODO_ELAPSED);
-        TODO_ELAPSED = 0.0f;// FIX THIS HACK
     }
 
     // Update editors
@@ -335,25 +298,6 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     // Update main thread update queues
     hostWorld->onFrameBegin();
 
-    // Update the world with fixed timestep
-    int ticks = 0;
-    auto&& ecs = hostWorld->getECS();
-    f32 TODO_ELAPSED = (f32)gameTime.elapsedSec;
-    while (mGameTimer.tryTick() && ticks++ < MAX_TICKS_PER_UPDATE) {
-
-        // Update game server
-        if (!MainMenuScreenGlobalState::isSinglePlayer()) {
-            GameServer::getInstance().tryTick();
-        }
-
-        // Update world
-        const PhysicsComponent& playerPhysCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
-        f32v3 position = playerPhysCmp.getPosition();
-        hostWorld->tick(position, TODO_ELAPSED);
-        TODO_ELAPSED = 0.0f;// FIX THIS HACK
-
-    }
-
     // Update editors
     UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
 
@@ -365,7 +309,7 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
 
 void GameplayScreen::updateTimeScaling(const vui::GameTime& gameTime) {
     // DEBUG Time advance
-    static constexpr float TIME_ADVANCE_MULT = 4.0f;
+    /*static constexpr float TIME_ADVANCE_MULT = 4.0f;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
         if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
             sDebugOptions.mTimeOffset -= gameTime.elapsedSec * 250.0f;
@@ -386,10 +330,11 @@ void GameplayScreen::updateTimeScaling(const vui::GameTime& gameTime) {
     }
     else {
         mGameTimer.setMsPerTick(MS_PER_GAME_TICK);
-    }
+    }*/
 }
 
 void GameplayScreen::updateTilePicking() {
+    assert(mCameraController);
 	const f32 normalizedX = (mMousePosition.x / (f32)m_app->getWindow().getWidth()) * 2.0f - 1.0f;
 	const f32 normalizedY = -((mMousePosition.y / (f32)m_app->getWindow().getHeight()) * 2.0f - 1.0f);
 	f32v4 pickRayClipSpace(normalizedX, normalizedY, -1.0f, 1.0f);

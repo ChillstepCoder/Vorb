@@ -13,6 +13,8 @@ static_assert(MAX_CLIENTS <= 16, "Make sure ClientBits can store max number of c
 typedef i32 ClientIndex;
 constexpr ClientIndex CLIENT_INDEX_HOST = INT32_MAX;
 
+#define SERVER_TICK_RATE_HZ 60.0f
+
 enum class ServerType {
     NONE,
     LAN,

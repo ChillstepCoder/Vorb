@@ -21,7 +21,6 @@ enum class ClientFlags : ui8 {
     JOINED = 1 << 0,
 };
 
-#define SERVER_TICK_RATE_HZ 60.0f
 
 typedef std::vector<int> ClientList;
 typedef std::vector<BitFlags<ClientFlags>> ClientFlagsList;

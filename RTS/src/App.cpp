@@ -50,17 +50,6 @@ void App::addScreens() {
 #endif
 }
 
-void setPriorityToMax() {
-#ifdef VORB_OS_WINDOWS
-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-#else
-    struct sched_param params;
-
-    params.sched_priority = sched_get_priority_max(SCHED_FIFO);
-    pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
-#endif
-}
-
 void setPriorityToNormal() {
 #ifdef VORB_OS_WINDOWS
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
@@ -80,7 +69,7 @@ void App::onInit() {
     // Set log level for yojimbo
     yojimbo_log_level(YOJIMBO_LOG_LEVEL_ERROR);
 
-    setPriorityToMax();
+    setThreadPriorityToMax();
 
     sDebugOptions.mScreenResolution = f32v2(m_window.getWidth(), m_window.getHeight());
 
@@ -94,7 +83,7 @@ void App::onInit() {
 
     // Init events
     vui::InputDispatcher::key.onFocusGained.addFunctor([](Sender) {
-        setPriorityToMax();
+        setThreadPriorityToMax();
     });
     vui::InputDispatcher::key.onFocusLost.addFunctor([](Sender) {
         setPriorityToNormal();

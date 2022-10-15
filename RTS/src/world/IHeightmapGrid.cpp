@@ -223,6 +223,7 @@ bool IHeightmapGrid::tryAquirePaddedHeightDataAt(HeightmapPatchID id) {
 }
 
 void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]) {
+    assert(IS_GAME_THREAD());
     HeightmapPatchID requiredIds[9];
     computeRequiredPaddedIDs(id, requiredIds);
     bool failed = false;

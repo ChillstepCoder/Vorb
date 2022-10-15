@@ -7,6 +7,8 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "network/WorldType.h"
 
+#include <Vorb/Timing.h>
+
 constexpr f64 MS_PER_GAME_TICK = 40.0;
 constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
@@ -78,8 +80,6 @@ private:
 	f32v2 mMousePosition = f32v2(0.0f);
 	PreciseTimer mRightClickTimer;
 	f32v3 mRightClickPickPos = f32v3(FLT_MAX);
-
-	TickingTimer mGameTimer = TickingTimer(MS_PER_GAME_TICK, MAX_MS_PER_FRAME);
 
 	WorldType mClientType = WorldType::HOST;
 

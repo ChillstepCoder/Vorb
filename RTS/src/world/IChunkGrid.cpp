@@ -29,13 +29,13 @@ void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
     mLoadCenter = loadCenter;
 }
 
-void IChunkGrid::tick(const f32v2& loadCenter) {
-    mLoadCenter = loadCenter;
+void IChunkGrid::tick() {
 
-    // TODO: This now asserts out of bounds
-    Chunk& playerChunk = sChunkGrid->getChunk(loadCenter);
-    if (playerChunk.isInvalid()) {
-        initChunk(playerChunk);
+    if (mLoadCenter.x >= 0.0f && mLoadCenter.y >= 0.0f && mLoadCenter.x < WorldData::WORLD_WIDTH_TILES && mLoadCenter.y < WorldData::WORLD_WIDTH_TILES) {
+        Chunk& centerChunk = sChunkGrid->getChunk(mLoadCenter);
+        if (centerChunk.isInvalid()) {
+            initChunk(centerChunk);
+        }
     }
 
     for (size_t i = 0; i < mActiveChunks.size();) {

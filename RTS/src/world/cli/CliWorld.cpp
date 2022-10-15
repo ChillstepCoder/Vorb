@@ -13,24 +13,9 @@ CliWorld::CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWorl
     mEcs = std::make_unique<CliEntityComponentSystem>();
 }
 
-void CliWorld::tick(const f32v2& playerPos, f32 elapsedSec)
-{
-    // TODO: Figure out best order
-    tickShared(playerPos, elapsedSec);
-    tickClient();
+void CliWorld::tick(f32 elapsedSec) {
+    assert(IS_GAME_THREAD());
 
-
-    updateTimeOfDay();
-
-    updateCities();
-
-    updateParticleSystems(playerPos);
-
-    updateClouds();
-}
-
-void CliWorld::onFrameBegin()
-{
     // Update services
     Services::Threadpool::ref().mainThreadUpdate();
 
@@ -38,17 +23,38 @@ void CliWorld::onFrameBegin()
     for (auto&& chunk : getActiveChunks()) {
         chunk->updateMainThread();
     }
+
+    mPhysWorld->stepSimulation(elapsedSec);
+
+    // TODO: Figure out best order
+    tickShared(elapsedSec);
+    tickClient();
+
+    updateTimeOfDay();
+
+    updateCities();
+
+    //updateParticleSystems(playerPos);
+
+    updateClouds();
+
+}
+
+void CliWorld::onFrameBegin() {
+    assert(IS_RENDER_THREAD());
+
 }
 
 void CliWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec)
 {
+    assert(IS_RENDER_THREAD());
     mEcs->frameUpdate(camera);
 
     // Client only, rendering stuff
     updateChunkVisibility(camera, mChunkGrid->getActiveChunks());
 
     // Physworld will handle internal interpolation and timestep itself
-    mPhysWorld->stepSimulation(elapsedSec);
+    //mPhysWorld->stepSimulation(elapsedSec);
 }
 
 void CliWorld::onWorldBegin(const f32v2& loadCenter) {

@@ -20,6 +20,7 @@ namespace WorldData {
     static const f32 REGION_DIAGONAL_RADIUS = sqrtf(SQ(HALF_REGION_WIDTH_TILES) + SQ(HALF_REGION_WIDTH_TILES));
 
     const f32v2 WORLD_CENTER((WORLD_WIDTH_CHUNKS* CHUNK_WIDTH) / 2.0f);
+    const f32v3 DEFAULT_PLAYER_SPAWN(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
 }
 
 

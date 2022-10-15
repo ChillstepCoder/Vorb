@@ -222,14 +222,18 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
 
     const f32v3 lookAtOffset = mCamera.getDirection() * sDebugOptions.mCameraXYDistance * 2.0f * mCameraBoomLengthTweener.getCurr();
     const f32v3 camPos = followTargetPos - lookAtOffset;
-    mCamera.setPosition(camPos);
-    mCamera.lookAt(followTargetPos);
 
     // Collision raycast
-    PhysHitResult result = sWorld->getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
+    PhysHitResult result;
+    bool couldLock = sWorld->getPhysicsWorld().tryPick(followTargetPos, camPos, PICK_TYPE_STATIC, result);
     // DebugRenderer::drawWireQuad(followTargetPos, f32v2(0.2f), COLOR_WHITE);
     if (result.didHit()) {
         mCamera.setPosition(result.mPosition);
+        mCamera.lookAt(followTargetPos);
+    }
+    else if (couldLock) {
+        mCamera.setPosition(camPos);
+        mCamera.lookAt(followTargetPos);
     }
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
@@ -327,6 +331,7 @@ void CameraController::updateMouseButtonUpInputMMO(Sender s, const vui::MouseBut
 }
 
 f32v3 CameraController::getFollowTargetPos(f32 frameAlpha) {
+    UNUSED(frameAlpha);
     // If we have no follow target just return current position
     // TODO: Pretty sure this is wrong
     if (mEntityFollow == entt::null) {

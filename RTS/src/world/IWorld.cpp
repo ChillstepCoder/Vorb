@@ -50,9 +50,17 @@ IWorld::~IWorld()
 
 }
 
-void IWorld::tickShared(const f32v2& playerPos, f32 elapsedSec){
+void IWorld::tickShared(f32 elapsedSec) {
 
-    mChunkGrid->tick(playerPos);
+    // When player exists set as load center
+    // TODO: Handle dedicated server differently
+    entt::entity localPlayer = mEcs->getLocalPlayer();
+    if (localPlayer != entt::null) {
+        PhysicsComponent& physCmp = mEcs->mRegistry.get<PhysicsComponent>(localPlayer);
+        mChunkGrid->setLoadCenter(physCmp.getPosition());
+    }
+
+    mChunkGrid->tick();
 
     // Update ECS
     // TODO: Move out?

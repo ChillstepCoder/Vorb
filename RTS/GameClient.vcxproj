@@ -208,6 +208,7 @@
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\WorldEditor.cpp" />
+    <ClCompile Include="src\GameThread.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
@@ -304,6 +305,7 @@
     <ClCompile Include="src\tile\TileResource.cpp" />
     <ClCompile Include="src\tile\TileScanner.cpp" />
     <ClCompile Include="src\tile\TileUtil.cpp" />
+    <ClCompile Include="src\time\GameTimeManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\PauseMenuPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
@@ -418,6 +420,7 @@
     <ClInclude Include="src\editor\WorldEditor.h" />
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
+    <ClInclude Include="src\GameThread.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGeneration.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
@@ -533,6 +536,7 @@
     <ClInclude Include="src\tile\TileResource.h" />
     <ClInclude Include="src\tile\TileScanner.h" />
     <ClInclude Include="src\tile\TileUtil.h" />
+    <ClInclude Include="src\time\GameTimeManager.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\PauseMenuPanel.h" />

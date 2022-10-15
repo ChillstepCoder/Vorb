@@ -27,7 +27,7 @@ public:
     virtual void onWorldBegin(const f32v2& loadCenter) = 0;
 
     // Shared interface
-    void tickShared(const f32v2& playerPos, f32 elapsedSec);
+    void tickShared(f32 elapsedSec);
     void setTimeOfDay(f32 time);
     entt::entity createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
     // Queries

@@ -297,7 +297,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 }
 
 void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
-
+    UNUSED(frameAlpha);
     // Get physics info
     const f32v2& dir = motionCmp.mControllerDirection;
     const f32v3 position = physCmp.getInterpolatedPosition();

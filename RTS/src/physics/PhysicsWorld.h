@@ -22,6 +22,8 @@ struct HeightmapPatchData;
 #include "physics/PhysHitResult.h"
 #include "physics/CollisionShapes.h"
 
+#include <mutex>
+
 enum class RigidBodyRotationType {
     FULL,
     NO_ROTATE,
@@ -54,6 +56,8 @@ public:
 
     // Picking
     PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const;
+    // Returns false if the physics is currently locked by the game thread
+    bool tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const;
 
 private:
     RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
@@ -69,6 +73,8 @@ private:
     std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;
     mutable bool mWasRenderingStatic = false;
     mutable bool mWasRenderingTerrain = false;
+
+    mutable std::mutex mMutex;
 
     // For cleanup
     std::map<HeightmapPatchData*, btHeightfieldTerrainShape*> mHeightShapes;

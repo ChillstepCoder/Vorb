@@ -16,33 +16,12 @@ HostWorld::HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWo
     mEcs = std::make_unique<SrvEntityComponentSystem>();
 }
 
-void HostWorld::tick(const f32v2& playerPos, f32 elapsedSec) {
+void HostWorld::tick(f32 elapsedSec) {
     assert(mEcs);
-
-    // TODO: Figure out best order
-    tickShared(playerPos, elapsedSec);
-    tickSrv();
-    tickClient();
-
-    if (sWorldGen.mIsDirty) {
-        sWorldGen.mIsDirty = false;
-        std::cout << "NEED TO IMPLEMENT WORLD GENERATION EDITOR REFRESH\n";
-       // debugRefreshWorldGeneration();
-    }
-
-    updateTimeOfDay();
-
-    updateCities();
-
-    updateParticleSystems(playerPos);
-
-    updateClouds();
-
-}
-
-void HostWorld::onFrameBegin() {
+    assert(IS_GAME_THREAD());
 
     // Update services
+    // TODO: Could we use remaining frame time for these?
     Services::Threadpool::ref().mainThreadUpdate();
     Services::NavThread::ref().mainThreadUpdate();
 
@@ -58,9 +37,37 @@ void HostWorld::onFrameBegin() {
     for (auto&& container : tileContainers) {
         container->updateActiveDynamicTiles();
     }
+
+    mPhysWorld->stepSimulation(elapsedSec);
+
+    // TODO: Figure out best order
+    tickShared(elapsedSec);
+    tickSrv();
+    tickClient();
+
+    //if (sWorldGen.mIsDirty) {
+    //    sWorldGen.mIsDirty = false;
+    //    std::cout << "NEED TO IMPLEMENT WORLD GENERATION EDITOR REFRESH\n";
+    //   // debugRefreshWorldGeneration();
+    //}
+
+    updateTimeOfDay();
+
+    updateCities();
+
+    //updateParticleSystems(playerPos);
+
+    updateClouds();
+
+}
+
+void HostWorld::onFrameBegin() {
+    assert(IS_RENDER_THREAD());
+
 }
 
 void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
+    assert(IS_RENDER_THREAD());
 
     mEcs->frameUpdate(camera);
 
@@ -68,7 +75,7 @@ void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     updateChunkVisibility(camera, mChunkGrid->getActiveChunks());
 
     // Physworld will handle internal interpolation and timestep itself
-    mPhysWorld->stepSimulation(elapsedSec);
+    //mPhysWorld->stepSimulation(elapsedSec);
 }
 
 void HostWorld::onWorldBegin(const f32v2& loadCenter) {

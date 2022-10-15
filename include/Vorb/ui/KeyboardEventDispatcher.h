@@ -100,7 +100,7 @@ namespace vorb {
             void addPress(VirtualKey k);
             void release(VirtualKey k);
 
-            bool m_state[NUM_KEY_CODES]; ///< The pressed state each virtual key
+            std::atomic_bool m_state[NUM_KEY_CODES]; ///< The pressed state each virtual key
 
             std::array<std::atomic<i32>, NUM_KEY_CODES> m_presses;
             std::atomic<i32> m_focus = ATOMIC_VAR_INIT(0);

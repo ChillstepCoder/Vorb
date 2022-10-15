@@ -11,7 +11,7 @@ protected:
     CliWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
 
 public:
-    void tick(const f32v2& playerPos, f32 elapsedSec);
+    void tick(f32 elapsedSec);
     
     void onFrameBegin() override;
     void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;

@@ -11,7 +11,7 @@ public:
     IChunkGrid();
 
     void onWorldBegin(const f32v2& loadCenter);
-    void tick(const f32v2& loadCenter);
+    void tick();
 
     Chunk& getChunk(ui32 i) { return mChunks[i]; }
     const Chunk& getChunk(ui32 i) const { return mChunks[i]; }
@@ -21,6 +21,7 @@ public:
     static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
     const std::vector<Chunk*>& getActiveChunks() const { return mActiveChunks; }
 
+    void setLoadCenter(const f32v2& loadCenter) { mLoadCenter = loadCenter; }
     const f32v2& getLoadCenter() const { return mLoadCenter; }
 
 private:

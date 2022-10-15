@@ -90,6 +90,18 @@ extern float sFps;
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.
 extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time of the previous frame.
 
+// Thread
+inline void setThreadPriorityToMax() {
+#ifdef VORB_OS_WINDOWS
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+#else
+    struct sched_param params;
+
+    params.sched_priority = sched_get_priority_max(SCHED_FIFO);
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
+#endif
+}
+
 
 typedef GLuint64 TextureHandle;
 

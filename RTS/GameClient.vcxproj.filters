@@ -576,6 +576,12 @@
     <ClCompile Include="src\network\cli\CliMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\GameThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\time\GameTimeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1314,6 +1320,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\network\cli\CliMessage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GameThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\time\GameTimeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -87,6 +87,7 @@ PhysicsWorld::~PhysicsWorld() {
 
 void PhysicsWorld::stepSimulation(f32 elapsedSec) {
     assert(IS_GAME_THREAD());
+    std::lock_guard<std::mutex> guard(mMutex);
     mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }
 
@@ -334,7 +335,6 @@ struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
 
 PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const
 {
-    assert(IS_GAME_THREAD());
     btVector3 start = f32v3ToBtVector3(rayStart);
     btVector3 end = f32v3ToBtVector3(rayEnd);
     // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
@@ -349,7 +349,13 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
     }
     rayResult.m_collisionFilterMask = collisionMask;
     //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
-    mDynamicsWorld->rayTest(start, end, rayResult);
+    if (IS_GAME_THREAD()) {
+        mDynamicsWorld->rayTest(start, end, rayResult);
+    }
+    else {
+        std::lock_guard<std::mutex> guard(mMutex);
+        mDynamicsWorld->rayTest(start, end, rayResult);
+    }
 
     PhysHitResult rv;
     rv.mTime = rayResult.m_closestHitFraction;
@@ -357,4 +363,34 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
     rv.mCollisionObject = rayResult.m_collisionObject;
     rv.mPosition = rayStart + (rayEnd - rayStart) * rv.mTime;
     return rv;
+}
+
+bool PhysicsWorld::tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const {
+    assert(!IS_GAME_THREAD());
+    btVector3 start = f32v3ToBtVector3(rayStart);
+    btVector3 end = f32v3ToBtVector3(rayEnd);
+    // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
+    CustomRayResult rayResult(start, end);
+    int collisionMask = btBroadphaseProxy::DefaultFilter;
+
+    if (pickTypes & PICK_TYPE_DYNAMIC) {
+        collisionMask |= btBroadphaseProxy::KinematicFilter;
+    }
+    if (pickTypes & PICK_TYPE_STATIC) {
+        collisionMask |= btBroadphaseProxy::StaticFilter;
+    }
+    rayResult.m_collisionFilterMask = collisionMask;
+    //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+    if (mMutex.try_lock()) {
+        mDynamicsWorld->rayTest(start, end, rayResult);
+        mMutex.unlock();
+    } else {
+        return false;
+    }
+
+    result.mTime = rayResult.m_closestHitFraction;
+    result.mNormal = rayResult.mHitNormal;
+    result.mCollisionObject = rayResult.m_collisionObject;
+    result.mPosition = rayStart + (rayEnd - rayStart) * result.mTime;
+    return true;
 }
