@@ -35,6 +35,10 @@ enum class ChunkState : ui8 {
 	FINISHED,
 };
 
+enum class ChunkFlags : ui8 {
+	IN_DESTROY_LIST = 1 << 0,
+};
+
 // TODO: Meshcomponent for cache friendly iterate?
 struct ChunkRenderData {
 	ChunkRenderData() = default;
@@ -93,9 +97,9 @@ public:
 
     // =========== Accessors  ===========
 	const i32v2& getChunkPos() const { return mChunkId.pos; }
-    const f32v2& getWorldPos() const { return mWorldPos; }
-	const f32v3 getWorldPos3D() const { return f32v3(mWorldPos.x, mWorldPos.y, 0.0f); }
-    f32v3 getWorldPosCenter3D() const { return f32v3(mWorldPos.x + HALF_CHUNK_WIDTH, mWorldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
+    const f32v2& getWorldPos() const { return mChunkId.getWorldPos(); }
+	const f32v3 getWorldPos3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x, worldPos.y, 0.0f); }
+    f32v3 getWorldPosCenter3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
 	ChunkState getState() const { return (ChunkState)mState.load(); }
     const ChunkID& getChunkID() const { return mChunkId; }
 	const HeightmapPatchID getHeightmapPatchID() const { return heightmapPatchIDFromChunkID(mChunkId); }
@@ -128,7 +132,6 @@ public:
     // =========== State  ===========
 	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
 	bool isDataReady() const { return mState == e_cast(ChunkState::FINISHED); }
-	bool isFinished() const { return mState == e_cast(ChunkState::FINISHED) && mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT; }
 	bool isVisible() const { return mTileContainer->isVisible(); }
 
 	void setState(ChunkState state) { mState = e_cast(state); }
@@ -168,20 +171,15 @@ public:
     void incReadLockAndRefCount() const { incRef(); mTileContainer->incReadLock();  }
     void decReadLockAndRefCount() const { mTileContainer->decReadLock(); decRef(); }
 
-    // =========== Events ===========
-	Event<Chunk*> onDispose;
-
 private:
     // =========== Read lock ===========
 	bool isReadLocked() const { return mTileContainer->isReadLocked(); }
 
     // =========== Members ===========
 	ChunkID mChunkId;
-	f32v2 mWorldPos = f32v2(0.0f);
-	f32AABB3 mAABB = f32AABB3(0.0f); // TODO: Combine with worldpos?
+	f32AABB3 mAABB = f32AABB3(0.0f);
 	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
-
-	ui8 mDataReadyNeighborCount = 0;
+	BitFlags<ChunkFlags> mFlags;
 
 	TileContainer* mTileContainer = nullptr;
     std::vector<ui8> mGrass; // Grass densities

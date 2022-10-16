@@ -64,6 +64,8 @@ constexpr f64 TICK_RATE_MS = 40.0;
 GameplayScreen::GameplayScreen(App* const app)
 	: IAppScreen<App>(app), mResourceManager(Services::ResourceManager::ref()) {
 
+    // TODO: Toolchain - https://www.youtube.com/watch?v=550brv-VBgE
+    // https://www.youtube.com/c/Progrematic/videos
 
     mRenderContext = &RenderContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
 

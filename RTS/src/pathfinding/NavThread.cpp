@@ -81,7 +81,7 @@ void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
 
     TileContainer* tileContainerPtr = &tileContainer;
 
-    Services::Threadpool::ref().addTask([this, tileContainerPtr](ThreadPoolWorkerData* workderData) {
+    Services::Threadpool::ref().addTask([this, tileContainerPtr](ThreadPoolWorkerData* workerData) {
         NavThreadGraphBuildArgs buildArgs;
         CoarseNavGraph navGraph;
         NavGraphTileDataToCopy navTileData;

@@ -24,13 +24,11 @@ HeightmapTerrainQuadtree::HeightmapTerrainQuadtree() : FlatQuadtree(f32v2(0.0f),
 
 }
 
-HeightmapTerrainQuadtree::~HeightmapTerrainQuadtree()
-{
+HeightmapTerrainQuadtree::~HeightmapTerrainQuadtree() {
 
 }
 
-void HeightmapTerrainQuadtree::init(const f32v2& worldPosition)
-{
+void HeightmapTerrainQuadtree::init(const f32v2& worldPosition) {
     mWorldPos = worldPosition;
 }
 

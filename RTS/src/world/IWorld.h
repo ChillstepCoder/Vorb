@@ -11,6 +11,7 @@ class PhysicsWorld;
 class StructureManager;
 class ItemStockpileRegistry;
 class CityGraph;
+class HeightmapTerrainQuadtree;
 
 // Shared world interface
 class IWorld
@@ -86,17 +87,21 @@ public:
     const f32m4& getSkyRotMatrix() const { return mSkyRotMatrix; }
     const f32v2& getLoadCenter() const;
 
-
 protected:
     void onWorldBeginShared(const f32v2& loadCenter);
+    void refreshWorld();
 
     void updateTimeOfDay();
 
     void updateCities();
 
-    // Server + Client shared data
+    // Server + Client shared world data
+    std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
     IChunkGrid* mChunkGrid = nullptr;
     IHeightmapGrid* mHeightmapGrid = nullptr;
+
+    f32v2 mPrevLoadCenter = f32v2(0);
+    f32v2 mLoadCenter = f32v2(0);
 
     // ECS
     std::unique_ptr<IEntityComponentSystem> mEcs;

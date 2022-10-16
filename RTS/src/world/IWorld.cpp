@@ -3,6 +3,7 @@
 
 #include "pathfinding/NavThread.h"
 
+#include "world/HeightmapTerrainQuadtree.h"
 #include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "structure/Structure.h"
@@ -20,6 +21,9 @@
 #include <Vorb/math/VectorMath.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
+
+// How many tiles the load center has to move before we refresh the world
+constexpr f32 DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH = SQ(4.0f);
 
 IWorld* sWorld = nullptr;
 
@@ -57,7 +61,14 @@ void IWorld::tickShared(f32 elapsedSec) {
     entt::entity localPlayer = mEcs->getLocalPlayer();
     if (localPlayer != entt::null) {
         PhysicsComponent& physCmp = mEcs->mRegistry.get<PhysicsComponent>(localPlayer);
-        mChunkGrid->setLoadCenter(physCmp.getPosition());
+        const f32v3 localPlayerPos = physCmp.getPosition();
+        mLoadCenter = localPlayerPos;
+        mChunkGrid->setLoadCenter(mLoadCenter);
+
+        if (glm::length2(mLoadCenter - mPrevLoadCenter) > DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH) {
+            mPrevLoadCenter = mLoadCenter;
+            refreshWorld();
+        }
     }
 
     mChunkGrid->tick();
@@ -286,7 +297,26 @@ const f32v2& IWorld::getLoadCenter() const {
 }
 
 void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
+    // Init terrain
+    mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
+    for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
+        f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
+        mTerrainTrees[i].init(pos);
+    }
+
+    // Init chunks
     mChunkGrid->onWorldBegin(loadCenter);
+
+    mPrevLoadCenter = mLoadCenter = loadCenter;
+
+    // Refresh all
+    refreshWorld();
+}
+
+void IWorld::refreshWorld() {
+    for (auto&& terrainQuadtree : mTerrainTrees) {
+        terrainQuadtree.update(mLoadCenter);
+    }
 }
 
 void IWorld::updateTimeOfDay()

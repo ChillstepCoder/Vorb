@@ -30,9 +30,9 @@ Chunk::~Chunk() {
 void Chunk::init(const ChunkID& chunkId) {
 	assert(mState == e_cast(ChunkState::INVALID));
 	mChunkId = chunkId;
-    mWorldPos = chunkId.getWorldPos();
-    mAABB.x = mWorldPos.x;
-    mAABB.y = mWorldPos.y;
+    f32v2 worldPos = chunkId.getWorldPos();
+    mAABB.x = worldPos.x;
+    mAABB.y = worldPos.y;
     mAABB.z = -2.0f;
     mAABB.width = CHUNK_WIDTH;
     mAABB.depth = CHUNK_WIDTH;
@@ -61,7 +61,6 @@ void Chunk::dispose() {
         assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
     }
 
-    onDispose(this);
     if (isDataReady()) {
         Chunk& bottomNeighbor = getBottomNeighbor();
         if (bottomNeighbor.isDataReady()) {

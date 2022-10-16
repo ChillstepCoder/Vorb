@@ -13,9 +13,24 @@
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/ChunkMesher.h"
 
+// REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
+// IWORLD
+// 0. Iterate all mLoadingChunks and mActiveChunks, if they are out of range, add them to mDestroyingChunksand clear their world bits
+// 1. Efficient iterate and set bitmask, findand set new bits in rangeand add their chunks to mLoading
+// new 1 bits are added to mLoadingChunks state set to WAITING_HEIGHT or WAITING_GENERATION based on if height already exists
+//
+// If a loading chunk is added to mDestroyingChunks, thats fine, when iterating mDestroying or mLoading we always handle chunk state
+// so we can wait for any threads to finish work before we move
+// 3. Once a chunk finishes loading, it is moved to mActiveChunks
+//
+//Terrain quadtree is purely rendering
+
 IChunkGrid* sChunkGrid = nullptr;
 
-const float CHUNK_UNLOAD_TOLERANCE = -10.0f; // How many extra blocks we add when checking unload distance
+bool isChunkInLoadDistance(const ChunkID& chunkPos, const f32v2& loadCenter) {
+    const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
+    return glm::length2(centerPos - loadCenter) <= sDebugOptions.mLoadRangeSq;
+}
 
 IChunkGrid::IChunkGrid() {
     assert(!sChunkGrid);
@@ -25,18 +40,7 @@ IChunkGrid::IChunkGrid() {
     }
 }
 
-void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
-    mLoadCenter = loadCenter;
-}
-
 void IChunkGrid::tick() {
-
-    if (mLoadCenter.x >= 0.0f && mLoadCenter.y >= 0.0f && mLoadCenter.x < WorldData::WORLD_WIDTH_TILES && mLoadCenter.y < WorldData::WORLD_WIDTH_TILES) {
-        Chunk& centerChunk = sChunkGrid->getChunk(mLoadCenter);
-        if (centerChunk.isInvalid()) {
-            initChunk(centerChunk);
-        }
-    }
 
     for (size_t i = 0; i < mActiveChunks.size();) {
         Chunk& chunk = *mActiveChunks[i];
@@ -51,6 +55,55 @@ void IChunkGrid::tick() {
     }
 }
 
+void IChunkGrid::refresh(const f32v2& loadCenter) {
+    // Remove any loading chunks
+    for (size_t i = 0; i < mLoadingChunks.size();) {
+        Chunk* chunk = mLoadingChunks[i];
+        if (!isChunkInLoadDistance(chunk->getChunkID(), loadCenter)) {
+            if (!chunk->mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
+                chunk->mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
+                mDestroyingChunks.emplace_back(chunk);
+            }
+            mLoadingChunks[i] = mLoadingChunks.back();
+            mLoadingChunks.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
+    // Remove any active chunks
+    for (size_t i = 0; i < mActiveChunks.size(); ++i) {
+        Chunk* chunk = mActiveChunks[i];
+        if (!isChunkInLoadDistance(chunk->getChunkID(), loadCenter)) {
+            if (!chunk->mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
+                chunk->mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
+                mDestroyingChunks.emplace_back(chunk);
+            }
+            mActiveChunks[i] = mActiveChunks.back();
+            mActiveChunks.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
+
+    // Iterate every chunk in range (TODO: Use offset mask for perfect iteration and no distance checks?)
+    // Need OnChunkLoadDistanceChanged to update the static offset mask
+    //ChunkID
+    const f32v2 bottomLeft = loadCenter - f32v2(sDebugOptions.mLoadRange);
+    const f32v2 topRight = loadCenter + f32v2(sDebugOptions.mLoadRange);
+    const ChunkID bottomLeftPos(bottomLeft);
+    const ChunkID topRightPos(topRight);
+    for (ui32 y = bottomLeftPos.pos.y; y < topRightPos.pos.y; ++y) {
+        for (ui32 x = bottomLeftPos.pos.x; x < topRightPos.pos.x; ++x) {
+            ChunkID spot(x, y);
+            if (isChunkInLoadDistance(spot, loadCenter)) {
+                assert(false);
+            }
+        }
+    }
+
+}
 
 void IChunkGrid::initChunk(Chunk& chunk)
 {
@@ -213,12 +266,4 @@ void IChunkGrid::tryCreateNeighbor(Chunk& chunk, const ChunkID& id) {
         // Create the chunk, but dont update neighbor count until its done
         initChunk(neighbor);
     }
-}
-
-bool IChunkGrid::isChunkInLoadDistance(const ChunkID& chunkPos, float addOffset /* = 0.0f*/)
-{
-    const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
-    const f32v2 offset = centerPos - mLoadCenter;
-
-    return glm::length2(offset) <= sDebugOptions.mLoadRangeSq + addOffset;
 }

@@ -56,6 +56,7 @@ public:
 
     static RenderContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static RenderContext& getInstance();
+    static RenderContext* tryGetInstance() { return sInstance; }
     static bool exists() { return sInstance != nullptr; }
 
     void onWorldBegin();
@@ -83,12 +84,17 @@ public:
 
     TerrainMeshManager& getTerrainMeshManager() { return *mTerrainMeshManager; }
 
+    void addRenderThreadProc(std::function<void()>&& f) { mRenderThreadProcs.enqueue(std::move(f)); }
+
 private:
     void renderDebug(const Camera3D& camera);
     void renderUI(const Camera3D& camera);
     void buildHorizonMesh();
 
     static RenderContext* sInstance;
+
+    // Task queue
+    moodycamel::ConcurrentQueue<std::function<void()>> mRenderThreadProcs;
     
     // Client world
     CliWorldInterface* mCliWorld = nullptr;
