@@ -11,8 +11,8 @@ struct PlayerControlComponent {
 class PlayerControlSystem {
 public:
 	PlayerControlSystem();
-	void update(entt::registry& registry, const Camera3D& camera);
+	void update(entt::registry& registry, f32 cameraYaw);
 
 private:
-	void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, const Camera3D& camera);
+	void updateComponent(entt::entity entity, PlayerControlComponent& controlCmp, CharacterControlComponent& motionCmp, entt::registry& registry, f32 cameraYaw);
 };

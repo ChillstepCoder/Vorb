@@ -280,12 +280,14 @@ StructureArrayPtr IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos) cons
 }
 
 void IWorld::enumActiveChunks(std::function<void(const Chunk&)> func) const {
+    assert(IS_GAME_THREAD());
     for (auto&& chunk : getActiveChunks()) {
         func(*chunk);
     }
 }
 
 const f32v2& IWorld::getLoadCenter() const {
+    assert(IS_GAME_THREAD());
     return mLoadCenter;
 }
 

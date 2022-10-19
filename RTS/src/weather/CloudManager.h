@@ -24,11 +24,11 @@ public:
     CloudManager();
     ~CloudManager();
 
-    void init();
-    void tick();
+    void init(const f32v2& loadCenter);
+    void tick(const f32v2& loadCenter);
 
 private:
-    void updateGridShift();
+    void updateGridShift(const f32v2& loadCenter);
     void tryGenerateCloudBatchAt(i32v2 cloudPos);
     void destroyCloudBatch(CloudBatch& batch);
     void spawnNewCloudWaveX(i32 dir);

@@ -10,14 +10,13 @@ public:
     virtual ~IEntityComponentSystem();
 
 	void tick();
-    void frameUpdate(const Camera3D& playerCamera);
 
     // Create an entity, on server it will optionally replicate, on client it cannot replicate
     virtual entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) = 0;
     // Client or server
     virtual void destroyEntity(entt::entity entity) = 0;
 
-    entt::entity getLocalPlayer() const { return mPlayerEntity; }
+    entt::entity getLocalPlayer() const { assert(IS_GAME_THREAD()); return mPlayerEntity; }
     void setLocalPlayer(entt::entity playerEntity);
 
     // TODO: UniquePtr for faster include

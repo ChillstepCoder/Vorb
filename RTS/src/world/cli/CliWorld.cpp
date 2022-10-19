@@ -28,12 +28,13 @@ void CliWorld::tick(f32 elapsedSec) {
 
     // TODO: Figure out best order
     tickShared(elapsedSec);
-    tickClient();
 
     updateTimeOfDay();
 
     updateCities();
 
+    // TickClient always last as it updates render state
+    tickClient(*this);
 }
 
 void CliWorld::onFrameBegin() {
@@ -44,8 +45,6 @@ void CliWorld::onFrameBegin() {
 void CliWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec)
 {
     assert(IS_RENDER_THREAD());
-    mEcs->frameUpdate(camera);
-
     // Physworld will handle internal interpolation and timestep itself
     //mPhysWorld->stepSimulation(elapsedSec);
 }

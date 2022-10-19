@@ -17,6 +17,7 @@ class HeightmapTerrainQuadtree;
 class IWorld
 {
     friend class WorldFactory;
+    friend class CliWorldInterface;
 protected:
     IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid);
     virtual ~IWorld();

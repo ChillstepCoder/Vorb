@@ -43,7 +43,6 @@ void HostWorld::tick(f32 elapsedSec) {
     // TODO: Figure out best order
     tickShared(elapsedSec);
     tickSrv();
-    tickClient();
 
     //if (sWorldGen.mIsDirty) {
     //    sWorldGen.mIsDirty = false;
@@ -55,6 +54,8 @@ void HostWorld::tick(f32 elapsedSec) {
 
     updateCities();
 
+    // TickClient always last as it updates render state
+    tickClient(*this);
 }
 
 void HostWorld::onFrameBegin() {
@@ -64,11 +65,12 @@ void HostWorld::onFrameBegin() {
 
 void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     assert(IS_RENDER_THREAD());
-
-    mEcs->frameUpdate(camera);
 }
 
 void HostWorld::onWorldBegin(const f32v2& loadCenter) {
+    // TODO: Move
+    mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
+
     onWorldBeginShared(loadCenter);
     onWorldBeginClient();
 }

@@ -31,18 +31,18 @@ class CameraController {
 public:
     CameraController(vui::GameWindow& window);
 
-    void update(const vui::GameTime& gameTime, f32 frameAlpha);
+    void update(f32 deltaTime, f32 frameAlpha, const f32v3& ownerEntityPos);
 
 
     Camera3D& getOwnedCamera() { return mCamera; }
-    void setEntityFollow(entt::entity followEntity);
+    const Camera3D& getOwnedCamera() const { return mCamera; }
     void setCameraMode(CameraMode cameraMode);
 private:
     // Mode updates
-    void updateCameraCartesianMode(f32 frameAlpha);
+    void updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos);
     void updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime);
-    void updateCameraMMOMode(f32 frameAlpha);
-    void updateCameraFirstPersonMode(f32 frameAlpha);
+    void updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEntityPos);
+    void updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& ownerEntityPos);
 
     // Delegates
     void updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt);
@@ -54,9 +54,6 @@ private:
     void updateMouseButtonDownInputMMO(Sender s, const vui::MouseButtonEvent& evnt);
     void updateMouseButtonUpInputMMO(Sender s, const vui::MouseButtonEvent& evnt);
 
-    // Helpers
-    f32v3 getFollowTargetPos(f32 frameAlpha);
-
     // Data
     Camera3D mCamera;
     CameraMode mCameraMode;
@@ -65,7 +62,6 @@ private:
     bool mWasMouseHidden = false;
     bool mIsMouseHidden = false;
 
-    entt::entity mEntityFollow = entt::null; // TODO: Need an event for entity destroy
     Cartesian mCameraCartesianDirection = Cartesian::NORTH;
     Tweener<f32v3> mCameraPositionTweener = Tweener<f32v3>(f32v3(0.0f));
     Tweener<f32> mCameraBoomLengthTweener = Tweener<f32>(1.0f);

@@ -168,11 +168,8 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     displayLoadScreen("Loading...", true);
 
     // Start world rendering
-    mRenderContext->onWorldBegin();
+    mRenderContext->onWorldBegin(WorldData::DEFAULT_PLAYER_SPAWN);
 
-    // TODO: Remove
-    auto& ecs = mWorld->getECS();
-    ecs.setLocalPlayer(ecs.createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
     initCamera();
 
     // Start the game :O
@@ -215,9 +212,6 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
                 assert(false);
                 break;
         }
-
-        // TODO: Actual usage of deltatime?
-        mCameraController->update(gameTime, 0.0f /*todo: framealpha?*/);
     }
     else if (mState == GameplayScreenState::WAITING_JOIN_SERVER) {
         // Update client and wait for server response
@@ -249,7 +243,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
         IEntityComponentSystem& ecs = mWorld->getECS();
         PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
         const f32v3 playerPos = cmp.getInterpolatedPosition();
-        mRenderContext->renderFrame(mCameraController->getOwnedCamera(), playerPos, frameAlpha, gameTime.elapsedSec);
+        mRenderContext->renderFrame(*mCameraController, frameAlpha, gameTime.elapsedSec);
 
         tryUpdateAndRenderInteractPopup(playerPos);
 
@@ -266,10 +260,8 @@ void GameplayScreen::initWorld(const vui::GameTime& gameTime) {
 
 }
 
-void GameplayScreen::initCamera()
-{
+void GameplayScreen::initCamera() {
     mCameraController = std::make_unique<CameraController>(m_app->getWindow());
-    mCameraController->setEntityFollow(mWorld->getECS().getLocalPlayer());
 }
 
 void GameplayScreen::updateClient(const vui::GameTime& gameTime) {

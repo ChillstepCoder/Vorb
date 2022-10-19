@@ -11,6 +11,7 @@ class CityDebugRenderer;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
+class CameraController;
 class ICamera;
 class ItemRenderer;
 class LightRenderer;
@@ -28,6 +29,7 @@ class UIContext;
 class Mesh;
 class QuadMesh;
 class TerrainMesh;
+class CloudManager;
 
 struct SDL_Window;
 
@@ -78,12 +80,12 @@ public:
     static RenderContext* tryGetInstance() { return sInstance; }
     static bool exists() { return sInstance != nullptr; }
 
-    void onWorldBegin();
+    void onWorldBegin(const f32v2& worldCenter);
 
     void initPostLoad();
 
     void beginFrame(const Camera3D* camera, f32v3 playerPos); // Called automatically by beginFrame
-    void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec);
+    void renderFrame(CameraController& camera, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 
     void selectNextDebugShader();
@@ -99,6 +101,7 @@ public:
     vg::SpriteFont& getSpriteFont() const { return *mSpriteFont; }
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
     const f32v2& getScreenResolution() const { return mScreenResolution;}
+    const Camera3D* getCamera() const { return mCamera; }
 
     // Meshing
     void addTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.insert(mesh); }
@@ -127,6 +130,7 @@ private:
     GlobalRenderData mRenderData;
     f32v2 mScreenResolution;
     f32v2 mCurrentFramebufferDims;
+    const Camera3D* mCamera = nullptr;
 
     // Renderers
     mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
@@ -143,6 +147,9 @@ private:
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
+
+    // Clouds
+    std::unique_ptr<CloudManager> mCloudManager;
 
     // Mesh management
     std::map<TileContainer*, TileContainerMeshData> mTileContainerMeshData;

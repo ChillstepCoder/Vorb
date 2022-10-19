@@ -3,41 +3,30 @@
 
 #include "camera/Camera3D.h"
 #include "world/Chunk.h"
+#include "world/IWorld.h"
+#include "ecs/IEntityComponentSystem.h"
 #include "resources/ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
 #include "weather/CloudManager.h"
 
 #include "rendering/mesh/TerrainMeshManager.h"
 
-CliWorldInterface::CliWorldInterface()
-{
-    mCloudManager = std::make_unique<CloudManager>();
+#include "rendering/renderstate/RenderStateManager.h"
+
+CliWorldInterface::CliWorldInterface() {
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>();
 }
 
-CliWorldInterface::~CliWorldInterface()
-{
+CliWorldInterface::~CliWorldInterface() {
 
 }
 
 
-void CliWorldInterface::tickClient()
-{
-    // Update weather
-    mCloudManager->tick();
-
+void CliWorldInterface::tickClient(IWorld& world) {
     // Update terrain
     mTerrainMeshManager->tick();
 
-}
-
-void CliWorldInterface::enumVisibleChunks(std::function<void(const Chunk& chunk)> func) const {
-    // TODO: Might be smart to make a variant that doesnt need an std::function for faster iteration/calls since
-    // we call this many times
-    assert(false);
-    /*for (auto&& chunk : mVisibleChunks) {
-        func(*chunk);
-    }*/
+    updateRenderState(world);
 }
 
 void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
@@ -48,9 +37,22 @@ void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
 
 
 void CliWorldInterface::onWorldBeginClient() {
-    mCloudManager->init();
+
 }
 
 void CliWorldInterface::cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
     mTerrainMeshManager->dirtyTerrainFromBrush(pos, brushRadius);
+}
+
+void CliWorldInterface::updateRenderState(IWorld& world) {
+    // Cache things we need to update so we can keep the update section small as possible
+    const f32v3 playerPos = world.mEcs->mRegistry.get<PhysicsComponent>(world.mEcs->getLocalPlayer()).getInterpolatedPosition();
+
+    // Get render state
+    RenderState& renderState = RenderStateManager::getInstance().getRenderStateForUpdate();
+    renderState.mWorldLoadCenter = world.getLoadCenter();
+    renderState.mCameraOwningEntityPos = playerPos;
+
+    // Release the state
+    RenderStateManager::getInstance().finishUpdating();
 }

@@ -74,7 +74,8 @@ void Camera3D::applyRotation(const f32q& rot) {
 
 void Camera3D::applyRotation(const f32 pitch, const f32 yaw) {
     mPitch += pitch;
-    mYaw += yaw;
+    f32 oldYaw = mYaw.load();
+    mYaw = oldYaw + yaw;
 
     mPitch = glm::clamp(mPitch, -M_PI_4F, M_PI_4F);
 

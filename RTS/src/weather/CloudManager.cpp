@@ -57,11 +57,10 @@ CloudManager::~CloudManager()
 
 }
 
-void CloudManager::init() {
+void CloudManager::init(const f32v2& loadCenter) {
 
     PreciseTimer timer;
 
-    const f32v2& loadCenter = sWorld->getLoadCenter();
     CloudID centerCloudID = CloudID(loadCenter);
     f32v2 centerPos(centerCloudID.pos.x * CLOUD_BATCH_WIDTH, centerCloudID.pos.y * CLOUD_BATCH_WIDTH);
 
@@ -106,10 +105,10 @@ void CloudManager::init() {
     std::cout << "Clouds initialized in " << timer.stop() << " ms\n";
 }
 
-void CloudManager::tick() {
+void CloudManager::tick(const f32v2& loadCenter) {
 
     // Handle any new cloud spawns from grid shift
-    updateGridShift();
+    updateGridShift(loadCenter);
 
     // Update clouds
     constexpr ui32 BOUNDS_CHECK_TICK_RATE = 30u;
@@ -164,8 +163,8 @@ void CloudManager::tick() {
     }
 }
 
-void CloudManager::updateGridShift() {
-    const f32v2& loadCenter = sWorld->getLoadCenter();
+void CloudManager::updateGridShift(const f32v2& loadCenter) {
+    assert(IS_RENDER_THREAD());
     i32v2 centerCloudPos = i32v2(floor(loadCenter.x / CLOUD_BATCH_WIDTH), floor(loadCenter.y / CLOUD_BATCH_WIDTH));
     i32v2 offsetSinceLastTick = centerCloudPos - mLastCenterPosition;
     if (offsetSinceLastTick.x != 0) {

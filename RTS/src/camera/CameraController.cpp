@@ -20,15 +20,10 @@ CameraController::CameraController(vui::GameWindow& window) : mWindow(window) {
    
 }
 
-void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
+void CameraController::update(f32 deltaTime, f32 frameAlpha, const f32v3& followEntityPos) {
 
     if (mCameraMode != sDebugOptions.mCameraMode) {
         setCameraMode(sDebugOptions.mCameraMode);
-    }
-
-    // Currently unsupported
-    if (mEntityFollow == entt::null) {
-        return;
     }
 
     // Update any changed options
@@ -38,18 +33,18 @@ void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
 
     switch (mCameraMode) {
         case CameraMode::CARTESIAN:
-            updateCameraCartesianMode(frameAlpha);
+            updateCameraCartesianMode(frameAlpha, followEntityPos);
             break;
         case CameraMode::MMO:
-            updateCameraMMOMode(frameAlpha);
+            updateCameraMMOMode(frameAlpha, followEntityPos);
             break;
         case CameraMode::MOUSELOCK:
             break;
         case CameraMode::FREE_LOOK:
-            updateCameraFreeLookMode(frameAlpha, gameTime.deltaTime);
+            updateCameraFreeLookMode(frameAlpha, deltaTime);
             break;
         case CameraMode::FIRST_PERSON:
-            updateCameraFirstPersonMode(frameAlpha);
+            updateCameraFirstPersonMode(frameAlpha, followEntityPos);
             break;
         default:
             break;
@@ -58,17 +53,6 @@ void CameraController::update(const vui::GameTime& gameTime, f32 frameAlpha) {
 
     // Update camera itself
     mCamera.update();
-}
-
-void CameraController::setEntityFollow(entt::entity followEntity) {
-    if (mEntityFollow == entt::null) {
-        auto& ecs = sWorld->getECS();
-        const auto& physCmp = ecs.mRegistry.get<PhysicsComponent>(followEntity);
-        //mCamera3D->setPosition(f32v3(WorldData::WORLD_CENTER.x, 2.0f, WorldData::WORLD_CENTER.y));
-        mCamera.setPosition(physCmp.getPosition());
-        mCameraPositionTweener = f32v3(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 5.0f);
-    }
-    mEntityFollow = followEntity;
 }
 
 void CameraController::setCameraMode(CameraMode cameraMode) {
@@ -141,16 +125,11 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
 
 }
 
-void CameraController::updateCameraCartesianMode(f32 frameAlpha) {
-
-    // Must have a follow
-    if (mEntityFollow == entt::null) {
-        return;
-    }
+void CameraController::updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos) {
 
     // TODO: Delta time dependent?
 
-    f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
+    f32v3 followTargetPos = ownerEntityPos;
 
     // Camera follow
     constexpr float MAX_SPEED_MPS = 0.3f;
@@ -205,19 +184,14 @@ void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
     }
 }
 
-void CameraController::updateCameraMMOMode(f32 frameAlpha)
+void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEntityPos)
 {
-
-    // Must have a follow
-    if (mEntityFollow == entt::null) {
-        return;
-    }
 
     mCameraBoomLengthTweener.update(1.0f); // TODO: Use deltatime
 
     // TODO: Delta time dependent?
 
-    f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
+    f32v3 followTargetPos = ownerEntityPos;
     followTargetPos.z += sDebugOptions.mCameraZHeight + SQ(mCameraBoomLengthTweener.getCurr() * 0.5f);
 
     const f32v3 lookAtOffset = mCamera.getDirection() * sDebugOptions.mCameraXYDistance * 2.0f * mCameraBoomLengthTweener.getCurr();
@@ -256,8 +230,8 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha)
     mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);*/
 }
 
-void CameraController::updateCameraFirstPersonMode(f32 frameAlpha) {
-    const f32v3 followTargetPos = getFollowTargetPos(frameAlpha);
+void CameraController::updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& ownerEntityPos) {
+    const f32v3 followTargetPos = ownerEntityPos;
     mCamera.setPosition(followTargetPos + f32v3(0.0f, 0.0f, sDebugOptions.mCameraZHeight));
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
@@ -328,17 +302,4 @@ void CameraController::updateMouseButtonUpInputMMO(Sender s, const vui::MouseBut
     if (evnt.button == vorb::ui::MouseButton::RIGHT) {
         mIsMouseHidden = false;
     }
-}
-
-f32v3 CameraController::getFollowTargetPos(f32 frameAlpha) {
-    UNUSED(frameAlpha);
-    // If we have no follow target just return current position
-    // TODO: Pretty sure this is wrong
-    if (mEntityFollow == entt::null) {
-        return mCamera.getPosition();
-    }
-
-    const IEntityComponentSystem& ecs = sWorld->getECS();
-    const PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(mEntityFollow);
-    return physCmp.getInterpolatedPosition();
 }

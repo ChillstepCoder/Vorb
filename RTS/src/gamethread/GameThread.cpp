@@ -123,9 +123,6 @@ void GameThread::updateHost()
 {
     HostWorld* hostWorld = static_cast<HostWorld*>(sWorld);
 
-    // Update main thread update queues
-    hostWorld->onFrameBegin();
-
     if (GameServer::exists()) {
         GameServer::getInstance().tryTick();
     }

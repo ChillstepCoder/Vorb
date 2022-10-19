@@ -73,7 +73,7 @@ protected:
     bool mProjectionChanged = true;
 
     f32 mPitch = 0.0f;
-    f32 mYaw = 0.0f;
+    std::atomic<f32> mYaw = 0.0f; // Atomic because we use it on game thread for player update
     f32v3 mPosition = f32v3(0.0);
     f32v3 mDirection = f32v3(1.0f, 0.0f, 0.0f);
     f32v3 mRight = f32v3(0.0f, 0.0f, 1.0f);

@@ -5,6 +5,9 @@
 
 #include "camera/Camera3D.h"
 
+// TODO: Get rid of this
+#include "rendering/RenderContext.h"
+
 const float DEAD_COLOR_MULT = 0.4f;
 
 IEntityComponentSystem::IEntityComponentSystem()
@@ -26,13 +29,15 @@ void IEntityComponentSystem::tick() {
     mNavigationSystem.update(mRegistry);
 	mCharacterControlSystem.update(mRegistry);
 	mTimedTileInteractSystem.update(mRegistry);
-	//mCorpseTable.update();
-}
-
-void IEntityComponentSystem::frameUpdate(const Camera3D& playerCamera)
-{
-	// Client ECS
-    mPlayerControlSystem.update(mRegistry, playerCamera);
+    //mCorpseTable.update();
+    
+	// TODO: Client ECS
+	if (RenderContext::exists()) {
+		const Camera3D* camera = RenderContext::getInstance().getCamera();
+		if (camera) {
+			mPlayerControlSystem.update(mRegistry, camera->getYaw());
+		}
+	}
 }
 
 void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)

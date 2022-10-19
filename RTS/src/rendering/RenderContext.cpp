@@ -32,6 +32,8 @@
 #include "rendering/MaterialUtils.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/MeshBuilder.h"
+#include "rendering/renderstate/RenderStateManager.h"
+#include "weather/CloudManager.h"
 
 #include "screens/ScreenState.h"
 #include "network/srv/GameServer.h"
@@ -46,8 +48,8 @@
 #include "city/CityQuartermaster.h"
 #include "item/ItemStockpileRegistry.h"
 
-#include "camera/ICamera.h"
 #include "camera/Camera3D.h"
+#include "camera/CameraController.h"
 #include "physics/PhysicsWorld.h"
 
 #include "city/City.h"
@@ -133,6 +135,8 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mScreenResolution(screenResolution),
     mWindow(window)
 {
+    // State init
+    RenderStateManager::initInstance();
 
     // TODO: New depth - https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
 
@@ -212,6 +216,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+    mCloudManager = std::make_unique<CloudManager>();
 }
 
 RenderContext::~RenderContext() {
@@ -231,7 +236,7 @@ RenderContext& RenderContext::getInstance() {
     return *sInstance;
 }
 
-void RenderContext::onWorldBegin() {
+void RenderContext::onWorldBegin(const f32v2& worldCenter) {
     // We require client interface to function
     mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
     assert(mCliWorld);
@@ -261,6 +266,8 @@ void RenderContext::onWorldBegin() {
         mChunkRenderer->InitPostLoad();
         mLightRenderer->InitPostLoad();
     }
+
+    mCloudManager->init(worldCenter);
 }
 
 void RenderContext::initPostLoad() {
@@ -300,6 +307,7 @@ void RenderContext::initPostLoad() {
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
+    mCamera = camera;
     // Update thread msg queue
     updateRenderThreadProcs();
 
@@ -357,13 +365,19 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     glCullFace(GL_BACK);
 }
 
-void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec) {
+void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
 
-    // TODO: Render state based on: https://github.com/RegrowthStudios/SoACode-Public/blob/develop/SoA/MTRenderStateManager.h
+    const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
 
-    // TODO: Should this happen here? Maybe assert instead?
+    // Update camera
+    const f32v3& playerPos = renderState.getCameraOwningEntityPos();
+    cameraController.update(1.0f /*TODO DELTATIME*/, frameAlpha, playerPos);
+    const Camera3D& camera = cameraController.getOwnedCamera();
     beginFrame(&camera, playerPos);
     checkGlError("RenderContext::Begin Frame");
+
+    // Update clouds
+    mCloudManager->tick(renderState.getWorldLoadCenter());
     
     mActiveGBuffer = &mGBuffers[mActiveGBufferIndex];
 
@@ -483,7 +497,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(mCliWorld->getCloudManager(), camera, mShadowRenderer->getMaxDistance());
+                mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance());
             }
 
             const CityGraph& cities = sWorld->getCityGraph();
@@ -600,7 +614,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // Render clouds without shadows
     if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(mCliWorld->getCloudManager(), &mTransparencyGBuffer, camera);
+        mCloudRenderer->renderClouds(*mCloudManager, &mTransparencyGBuffer, camera);
     }
 
     // === Transparency ===
@@ -703,51 +717,51 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     if (sDebugOptions.mChunkBoundaries) {
         // Debug chunk boundaries
-        mCliWorld->enumVisibleChunks([](const Chunk& chunk) {
-            color4 color = COLOR_WHITE;
-            switch (chunk.getState()) {
-                case ChunkState::INVALID:
-                    color = color4(1.0f, 0.0f, 0.0f);
-                    break;
-                case ChunkState::WAITING_HEIGHT:
-                    color = color4(0.0f, 0.0f, 0.0f);
-                    break;
-                case ChunkState::LOADING_TILES:
-                    color = color4(0.0f, 1.0f, 1.0f);
-                    break;
-                case ChunkState::FINISHED:
-                    color = color4(0.0f, 1.0f, 0.0f);
-                    break;
-                default:
-                    break;
-            }
+        //mCliWorld->enumVisibleChunks([](const Chunk& chunk) {
+        //    color4 color = COLOR_WHITE;
+        //    switch (chunk.getState()) {
+        //        case ChunkState::INVALID:
+        //            color = color4(1.0f, 0.0f, 0.0f);
+        //            break;
+        //        case ChunkState::WAITING_HEIGHT:
+        //            color = color4(0.0f, 0.0f, 0.0f);
+        //            break;
+        //        case ChunkState::LOADING_TILES:
+        //            color = color4(0.0f, 1.0f, 1.0f);
+        //            break;
+        //        case ChunkState::FINISHED:
+        //            color = color4(0.0f, 1.0f, 0.0f);
+        //            break;
+        //        default:
+        //            break;
+        //    }
 
-            DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color);
-           
-            // Count refs
-            const int refCount = chunk.getTileContainer()->getRefCount();
-            const int readCount = chunk.getTileContainer()->getReadLockCount();
-            constexpr f32 REF_BOX_WIDTH = 1.0f;
-            constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
-            for (int i = 0; i < refCount; ++i) {
-                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
-            }
-            for (int i = 0; i < readCount; ++i) {
-                DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH, REF_BOX_WIDTH * 2.0f) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(0.0f, 1.0f, 1.0f));
-            }
-        });
+        //    DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color);
+        //   
+        //    // Count refs
+        //    const int refCount = chunk.getTileContainer()->getRefCount();
+        //    const int readCount = chunk.getTileContainer()->getReadLockCount();
+        //    constexpr f32 REF_BOX_WIDTH = 1.0f;
+        //    constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
+        //    for (int i = 0; i < refCount; ++i) {
+        //        DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
+        //    }
+        //    for (int i = 0; i < readCount; ++i) {
+        //        DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH, REF_BOX_WIDTH * 2.0f) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(0.0f, 1.0f, 1.0f));
+        //    }
+        //});
     }
 
     // Grass LOD debug
     if (sDebugOptions.mDebugGrassLod) {
-        mCliWorld->enumVisibleChunks([&camera](const Chunk& chunk) {
+        /*mCliWorld->enumVisibleChunks([&camera](const Chunk& chunk) {
             if (chunk.isDataReady()) {
 
                 if (chunk.mChunkRenderData.mGrassLod) {
                     chunk.mChunkRenderData.mGrassLod->renderDebug(camera);
                 }
             }
-        });
+        });*/
     }
     // Nav graph (Render is slow so we only build the line meshes when toggle changes)
     constexpr int NAVGRAPH_ID = 44432;
