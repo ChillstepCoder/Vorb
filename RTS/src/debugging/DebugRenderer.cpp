@@ -35,7 +35,7 @@ std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, 
 const float rotVal = glm::radians(30.0f);
 void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     const f32v2 end = origin + vec;
     const f32v2 tipRay = -vec * 0.2f;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
@@ -46,7 +46,7 @@ void DebugRenderer::drawVector(const f32v2& origin, const f32v2& vec, color4 col
 
 void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     const f32v3 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
@@ -54,7 +54,7 @@ void DebugRenderer::drawVector(const f32v3& origin, const f32v3& vec, color4 col
 
 void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
 	const f32v2 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
@@ -62,33 +62,33 @@ void DebugRenderer::drawLine(const f32v2& origin, const f32v2& vec, color4 color
 
 void DebugRenderer::drawLine(const f32v3& origin, const f32v3& vec, color4 color, int lifeTime/* = 0*/, int id /*= 0*/)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     const f32v3 end = origin + vec;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
 void DebugRenderer::drawLineBetweenPoints(const f32v2& origin, const f32v2& end, color4 color, int lifeTime/* = 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
 void DebugRenderer::drawLineBetweenPoints(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
 void DebugRenderer::drawLineBetweenPointsThreadSafe(const f32v3& origin, const f32v3& end, const color4& color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(!IS_GAME_THREAD());
+    assert(!IS_RENDER_THREAD());
     std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
     auto&& lines = sNewLinesThreadSafe[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, end, color);
 }
 
 void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     const f32v2 topRight = origin + dims;
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, origin + f32v2(dims.x, 0.0f), color);
@@ -100,7 +100,7 @@ void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 
 
 void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(origin, origin + f32v3(dims.x, 0.0f, 0.0f), color);
@@ -111,19 +111,19 @@ void DebugRenderer::drawWireQuad(const f32v3& origin, const f32v2& dims, color4 
 
 void DebugRenderer::drawFilledQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
 }
 
 void DebugRenderer::drawFilledQuad(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.emplace_back(origin, dims, color);
 }
 
 void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32v3& v2, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.emplace_back(v0, v1, color);
     lines.emplace_back(v1, v2, color);
@@ -131,19 +131,19 @@ void DebugRenderer::drawWireTriangle(const f32v3& v0, const f32v3& v1, const f32
 }
 
 void DebugRenderer::reserveFilledQuads(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& quads = sNewQuads[std::make_pair(lifeTime, id)];
     quads.reserve(quads.size() + count);
 }
 
 void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     lines.reserve(lines.size() + count);
 }
 
 void DebugRenderer::drawAABB(const f32AABB3& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    /* assert(IS_GAME_THREAD());
+    /* assert(IS_RENDER_THREAD());
      const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
      const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
      const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
@@ -154,7 +154,7 @@ void DebugRenderer::drawAABB(const f32AABB3& aabb, f32 height, color4 color, int
 }
 
 void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
     const f32v3 botLeft3D(botLeft.x, botLeft.y, height);
     const f32v3 botRight3D(botRight.x, botRight.y, height);
@@ -167,7 +167,7 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const 
 }
 
 void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     const f32v3 topLeft = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(0.0f, dims.y, height);
     const f32v3 topRight = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(dims.x, dims.y, height);
     const f32v3 botRight = f32v3(botLeft.x, botLeft.y, 0.0f) + f32v3(dims.x, 0.0f, height);
@@ -179,7 +179,7 @@ void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height
 }
 
 void DebugRenderer::drawAABB(const i32AABB2& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     f32v2 fPos(aabb.pos);
     f32v2 fDims(aabb.dims);
     const f32v2& bottomLeft = fPos;
@@ -190,7 +190,7 @@ void DebugRenderer::drawAABB(const i32AABB2& aabb, f32 height, color4 color, int
 }
 
 void DebugRenderer::drawPath(const NavPath& path, color4 color, const IHeightmapGrid& heightGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     ui32 numPoints = path.getNumPoints();
     const LiteTileHandle* points = path.getPoints();
     if (numPoints < 2) {
@@ -214,14 +214,14 @@ void DebugRenderer::drawPath(const NavPath& path, color4 color, const IHeightmap
 }
 
 void DebugRenderer::drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
     auto&& circles = sNewCircles[std::make_pair(lifeTime, id)];
     circles.emplace_back(origin, radius, color);
 }
 
 void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
 
     // Quad meshes
     if (!sGlobalSimpleProgram.isCreated()) {

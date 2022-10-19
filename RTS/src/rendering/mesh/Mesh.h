@@ -42,6 +42,7 @@ public:
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 
+    const f32v3& getPosition() const { return mPosition; }
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
 
     // Override allocation to use boost::singleton_pool
@@ -53,6 +54,7 @@ protected:
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array
     std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
+    f32v3                    mPosition;
     BoundingSphere           mBoundingSphere;  ///< Optional
     BitFlags<MeshFlags>      mFlags;
 };

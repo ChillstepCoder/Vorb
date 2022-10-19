@@ -5,6 +5,8 @@
 #include "terrain/HeightmapPatch.h"
 #include "world/TerrainConstants.h"
 
+#include <mutex>
+
 class BitArray;
 class Camera3D;
 struct TileHandle;
@@ -15,6 +17,25 @@ enum class TerrainHeightSetDirection {
     LOWER
 };
 
+//class HeightmapPatchHandleData {
+//    friend class IHeightmapGrid;
+//public:
+//    HeightmapPatchHandleData();
+//    ~HeightmapPatchHandleData();
+//
+//    VORB_NON_COPYABLE_BUT_MOVABLE(HeightmapPatchHandleData);
+//
+//    void* operator new(size_t count);
+//    void operator delete(void* pointer, size_t size);
+//
+//private:
+//    HeightmapPatch* patch = nullptr;
+//    std::atomic_bool isFinishedGenerating = false;
+//};
+//
+//typedef std::unique_ptr<HeightmapPatchHandleData> HeightmapPatchHandle;
+//
+//typedef void(*HeightmapRequestFunction)(HeightmapPatchHandleData&& handle);
 
 class IHeightmapGrid
 {
@@ -22,17 +43,26 @@ public:
     IHeightmapGrid();
     ~IHeightmapGrid();
 
+    void tick();
+
+    //// NEW INTERFACE
+    //const HeightmapPatchData* tryGetHeightDataMainThread(HeightmapPatchID id) const;
+    //void asyncGetPatchHandle(HeightmapPatchID id, OUT HeightmapPatchHandle& handle);
+    //void releasePatchHandle(HeightmapPatchHandle&& handle);
+
+    // Aquire
     void requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
-
     void requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback);
-
     const HeightmapPatchData* getHeightDataAt(HeightmapPatchID id) const;
     const HeightmapPatchData* tryGetHeightDataAt(HeightmapPatchID id) const;
     const HeightmapPatchData* aquireHeightData(HeightmapPatchID id);
+    const HeightmapPatchData* tryAquireHeightData(HeightmapPatchID id);
     bool tryAquirePaddedHeightDataAt(HeightmapPatchID id);
     void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]);
     void releaseHeightDataAt(HeightmapPatchID id);
     void releasePaddedHeightDataAt(HeightmapPatchID id);
+
+    // Mutators
     void setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
     void setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
     void setHeightAt(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir = TerrainHeightSetDirection::ANY);
@@ -76,6 +106,7 @@ private:
     std::map<ui32, std::list<std::function<void()>>> mPaddedFinishCallbacks; // Runs when generation is finished
     std::map<ui32, ui32> mPaddedGenWaitCount;
     std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
+    std::mutex mMutex;
 
 protected:
 };

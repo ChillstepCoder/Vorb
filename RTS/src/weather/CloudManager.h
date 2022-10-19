@@ -25,7 +25,7 @@ public:
     ~CloudManager();
 
     void init();
-    void update();
+    void tick();
 
 private:
     void updateGridShift();

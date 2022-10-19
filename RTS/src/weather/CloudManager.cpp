@@ -5,6 +5,7 @@
 #include "debugging/DebugRenderer.h"
 
 #include "rendering/mesh/BillboardMeshBuilder.h"
+#include "rendering/RenderThreadTasks.h"
 
 #include "world/IWorld.h"
 #include "resources/ResourceManager.h"
@@ -37,6 +38,14 @@ constexpr int CLOUD_DIR_LEFT  = -1;
 constexpr int CLOUD_DIR_DOWN  = -1;
 constexpr int CLOUD_DIR_RIGHT = 1;
 constexpr int CLOUD_DIR_UP    = 1;
+
+// TODO: Singleton pool?
+struct CloudBatchTaskData {
+    BillboardMeshBuilder meshBuilder;
+    CloudManager* cloudManager;
+    CloudBatch* cloudBatch;
+    ui32 index;
+};
 
 CloudManager::CloudManager()
 {
@@ -97,7 +106,7 @@ void CloudManager::init() {
     std::cout << "Clouds initialized in " << timer.stop() << " ms\n";
 }
 
-void CloudManager::update() {
+void CloudManager::tick() {
 
     // Handle any new cloud spawns from grid shift
     updateGridShift();
@@ -187,24 +196,24 @@ void CloudManager::updateGridShift() {
 }
 
 void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
-    f32v2 pos(cloudPos.x * CLOUD_BATCH_WIDTH, cloudPos.y * CLOUD_BATCH_WIDTH);
+    assert(IS_RENDER_THREAD());
+
+    const f32v2 pos(cloudPos.x * CLOUD_BATCH_WIDTH, cloudPos.y * CLOUD_BATCH_WIDTH);
     const f32 size = 10.0f;
     
-    ui32 index = ++mGeneratingIndexLast;
+    const ui32 index = ++mGeneratingIndexLast;
     CloudBatch& newBatch = mGeneratingBatches[index];
     newBatch.mRootPos = f32v3(pos.x + mDx, pos.y + mDy, 110.0f);
     newBatch.mBoundsRadius = CLOUD_DIAGONAL_RADIUS + 10.0f;
     newBatch.mMesh = std::make_unique<Mesh>();
 
-    f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
+    const f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
 
-    Mesh* mesh = newBatch.mMesh.get();
+    const SubTexture& cloudSubTexture = Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_sil");
 
-    std::shared_ptr<BillboardMeshBuilder> meshBuilder = std::make_shared<BillboardMeshBuilder>();
+    CloudBatchTaskData* data = new CloudBatchTaskData{ {}, this, &newBatch, index };
 
-    SubTexture& cloudSubTexture = Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_sil");
-
-    Services::Threadpool::ref().addTask([size, genPos, this, meshBuilder, cloudSubTexture](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([size, genPos, this, cloudSubTexture, data](ThreadPoolWorkerData*) {
         for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {
             for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += CLOUD_GEN_STRIDE) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
@@ -227,18 +236,25 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute((f32)trueGenPos.x, (f32)trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     // TODO: Fix clouds
-                    meshBuilder->addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudSubTexture);
+                    data->meshBuilder.addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudSubTexture);
                 }
             }
         }
-    }, [&newBatch, index, this, mesh, meshBuilder]() {
-        meshBuilder->finishMesh(*mesh, MeshDrawMode::STATIC);
-        auto&& it = mGeneratingBatches.find(index);
-        if (newBatch.mMesh->isValid()) { // If we actually generated a cloud mesh, store it as active
-            mCloudBatches.emplace_back(std::move(it->second));
-        }
-        mGeneratingBatches.erase(it);
-    });
+
+        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& c, void* vData) {
+            CloudBatchTaskData* data = static_cast<CloudBatchTaskData*>(vData);
+            CloudBatch* batch = data->cloudBatch;
+            CloudManager* manager = data->cloudManager;
+            data->meshBuilder.finishMesh(batch->mMesh, MeshDrawMode::STATIC, f32v3(0.0f));
+            auto&& it = manager->mGeneratingBatches.find(data->index);
+            assert(it != manager->mGeneratingBatches.end());
+            if (batch->mMesh) { // If we actually generated a cloud mesh, store it as active
+                manager->mCloudBatches.emplace_back(std::move(it->second));
+            }
+            manager->mGeneratingBatches.erase(it);
+            delete data;
+        }, data);
+    }, nullptr);
 }
 
 void CloudManager::destroyCloudBatch(CloudBatch& batch)

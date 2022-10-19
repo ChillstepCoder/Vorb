@@ -248,7 +248,6 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
 }
 
 void PhysicsWorld::debugRender() const {
-    assert(IS_GAME_THREAD());
     const bool showStatic = sDebugOptions.mShowStaticPhysics;
     const bool showDynamic = sDebugOptions.mShowDynamicPhysics;
     const bool showTerrain = sDebugOptions.mShowTerrainPhysics;

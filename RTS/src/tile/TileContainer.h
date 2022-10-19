@@ -40,13 +40,7 @@ struct DynamicTile {
 static_assert(sizeof(DynamicTile) == 8, "Keep small");
 
 struct TileContainerRenderData {
-    TileContainerRenderData() = default;
-    ~TileContainerRenderData();
-    std::unique_ptr<Mesh> mStaticMesh = nullptr;
-    std::unique_ptr<Mesh> mDynamicMesh = nullptr;
-    bool mIsBuildingStaticMesh = false; // When true, we are waiting for our mesh to be completed
-    bool mIsVisible = false;
-    bool mDirtyStaticMesh = false;
+    bool mHasMesh = false;
     bool mDirtyDynamicMesh = false;
 
     void reset();
@@ -235,20 +229,20 @@ public:
         --mRefCount;
     }
     void incReadLockAndRef() { incRef(); incReadLock(); }
-    void decReadLockAndRef() {  decReadLock(); decRef(); }
+    void decReadLockAndRef() { decReadLock(); decRef(); }
     const bool isReadLocked() const;
+    ui32 getReadLockCount() const { return mReadLockCount; }
+    ui32 getRefCount() const { return mRefCount; }
 
     // =========== Dirty bits  ===========
-    bool shouldBuildStaticMesh() const { return !isBuildingStaticMesh() && isDirtyStaticMesh(); }
-    bool isBuildingStaticMesh() const { return mRenderData.mIsBuildingStaticMesh; }
-    bool isDirtyStaticMesh() const { return mRenderData.mDirtyStaticMesh; }
     bool isDirtyDynamicMesh() const { return mRenderData.mDirtyDynamicMesh; }
     bool isDirtyNav() const { return mDirtyNav; }
-    void setDirtyStaticMesh(bool dirty) const { mRenderData.mDirtyStaticMesh = dirty; }
     void setDirtyDynamicMesh(bool dirty) const { mRenderData.mDirtyDynamicMesh = dirty; }
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
     bool isNavMeshing() const { return mIsNavmeshing.load(/*memory order relaxed?*/); }
     bool shouldBuildNavMesh() const { return Services::isUsingNav() && isDirtyNav() && !isNavMeshing(); }
+    bool isDirtyData() const { return mDirtyData; }
+    void clearDirtyData() { mDirtyData = false; }
 
     // =========== Accessors  ===========
     const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mRootPos); }
@@ -257,20 +251,19 @@ public:
     const i32v3& getDims() const { return mDims; }
     ui32 getFloorHeight() const { return mFloorHeight; }
 
-    ui32 getReadLockCount() const { return mReadLockCount; }
-    ui32 getRefCount() const { return mRefCount; }
-
     const std::vector<Tile>& getTiles() const { return mTiles; }
     const std::vector<TileWallContainer>& getWalls() const { return mWalls; }
     const std::vector<TileFineNavData>& getFineNavData() const { return mFineNavData; }
 
-    // =========== Rendering  ===========
-    bool isVisible() const { return mRenderData.mIsVisible; }
-    TileContainerRenderData& getRenderData() const { return mRenderData; }
 
+    // Nav
     const std::vector<TileContainerEntrance>& getEntrances() const { return mEntrances; }
     void addEntrance(TileIndex pos, bool isLocked);
     void removeEntrance(TileIndex pos);
+
+
+    // =========== Rendering  ===========
+    TileContainerRenderData& getRenderData() const { return mRenderData; }
 
 private:
     void onTileChanged(TileIndex tileIndex, bool isReadLocked);
@@ -299,6 +292,7 @@ private:
 
     mutable TileContainerRenderData mRenderData;
     std::atomic_bool mIsNavmeshing = false;
+    bool mDirtyData = false;
     mutable bool mDirtyNav = false;
     bool mIsTerrain = false;
 };

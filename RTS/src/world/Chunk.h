@@ -31,7 +31,8 @@ class IWorldGrid;
 enum class ChunkState : ui8 {
 	INVALID,
 	WAITING_HEIGHT,
-	LOADING_TILES,
+	LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
+	TILE_LOAD_FINISHED,
 	FINISHED,
 };
 
@@ -43,7 +44,6 @@ enum class ChunkFlags : ui8 {
 struct ChunkRenderData {
 	ChunkRenderData() = default;
 	~ChunkRenderData();
-    std::unique_ptr<Mesh> mBillboardMesh = nullptr;
 	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
 };
 
@@ -75,7 +75,7 @@ class Chunk {
 	friend class IWorldGrid;
 	friend class WorldEditor;
 	friend class ChunkGenerator;
-	friend class ChunkRenderer;
+	friend class TileContainerRenderer;
 	friend class ChunkMesher;
 	friend class IChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
@@ -123,7 +123,6 @@ public:
 	Chunk& getRightNeighbor() const;
 	Chunk& getBottomNeighbor() const;
 
-
     // =========== Items  ===========
 	std::map<TileIndex, ItemStack>& getItemsOnGround() { return mItemsOnGround; }
 	void dropItemStackOnGround(ItemStack item);
@@ -132,7 +131,6 @@ public:
     // =========== State  ===========
 	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
 	bool isDataReady() const { return mState == e_cast(ChunkState::FINISHED); }
-	bool isVisible() const { return mTileContainer->isVisible(); }
 
 	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
@@ -154,7 +152,6 @@ public:
 
     // =========== Dirtyness  ===========
 	void dirtyNavGraph() { mTileContainer->setDirtyNav(true); }
-	void dirtyMesh() { mTileContainer->setDirtyStaticMesh(true); }
 
 
     // =========== Ref counting  ===========
@@ -162,14 +159,9 @@ public:
 	void decReadLock() const { mTileContainer->decReadLock(); }
 	inline void incRef() const { mTileContainer->incRef(); }
 	inline void decRef() const { mTileContainer->decRef(); }
-	void incRefNeighbors4() const;
-	void decRefNeighbors4() const;
-	void incReadLockNeighbors4() const;
-	void decReadLockNeighbors4() const;
-    void incReadLockAndRefCountNeighbors4AndSelf() const;
-    void decReadLockAndRefCountNeighbors4AndSelf() const;
     void incReadLockAndRefCount() const { incRef(); mTileContainer->incReadLock();  }
     void decReadLockAndRefCount() const { mTileContainer->decReadLock(); decRef(); }
+    ui32 getRefCount() const { return mTileContainer->getRefCount(); }
 
 private:
     // =========== Read lock ===========
@@ -178,7 +170,7 @@ private:
     // =========== Members ===========
 	ChunkID mChunkId;
 	f32AABB3 mAABB = f32AABB3(0.0f);
-	std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
+    std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 	BitFlags<ChunkFlags> mFlags;
 
 	TileContainer* mTileContainer = nullptr;

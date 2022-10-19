@@ -48,7 +48,8 @@ public:
     void addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32v2 uvScale);
 
     // Upload buffers
-    void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
+    void finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
+    void finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
 
     // Override allocation to use boost::singleton_pool
     static void* operator new(size_t count);

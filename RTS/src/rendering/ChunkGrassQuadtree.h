@@ -21,6 +21,7 @@ public:
     void render(const Camera3D& camera, const vg::GLProgram& program) const;
 
     ui32 getRefCount() const { return mRefCount; }
+    const f32v3& getPosition() const;
 
 private:
     void buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex) override;

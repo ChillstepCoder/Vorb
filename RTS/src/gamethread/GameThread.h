@@ -20,8 +20,6 @@ public:
     
     bool isRunning() const { return mIsRunning.load(); }
 
-    void addGameThreadProc(std::function<void()>&& f) { mGameThreadProcs.enqueue(std::move(f)); }
-
 private:
     void mainFunc();
     void update();
@@ -37,8 +35,6 @@ private:
     WorldType mWorldType;
 
     GameTimeManager mTimeManager;
-
-    moodycamel::ConcurrentQueue<std::function<void()>> mGameThreadProcs;
 
     static GameThread* sInstance;
 };

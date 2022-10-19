@@ -12,6 +12,7 @@
 // RENDERING
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/ChunkMesher.h"
+#include "rendering/RenderThreadTasks.h"
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
 // IWORLD
@@ -41,29 +42,65 @@ IChunkGrid::IChunkGrid() {
 }
 
 void IChunkGrid::tick() {
+    assert(IS_GAME_THREAD());
 
-    for (size_t i = 0; i < mActiveChunks.size();) {
-        Chunk& chunk = *mActiveChunks[i];
-        if (tickChunk(chunk)) {
-            sHeightmapGrid->releaseHeightDataAt(chunk.getHeightmapPatchID());
-            chunk.dispose();
-            mActiveChunks[i] = mActiveChunks.back();
-            mActiveChunks.pop_back();
-            continue;
+    // Update all loading chunks
+    for (size_t i = 0; i < mLoadingChunks.size();) {
+        Chunk& chunk = *mLoadingChunks[i];
+        switch (chunk.mState) {
+            case e_cast(ChunkState::WAITING_HEIGHT): {
+                // Poll for generated height
+                if (sHeightmapGrid->tryGetHeightDataAt(chunk.getHeightmapPatchID())) {
+                    beginTileLoadForChunk(chunk);
+                }
+                ++i;
+                break;
+            }
+            case e_cast(ChunkState::LOADING_TILES): {
+                ++i;
+                break;
+            }
+            case e_cast(ChunkState::TILE_LOAD_FINISHED): {
+                mLoadingChunks[i] = mLoadingChunks.back();
+                mLoadingChunks.pop_back();
+                mActiveChunks.emplace_back(&chunk);
+                chunk.mState = e_cast(ChunkState::FINISHED);
+                // TODO: Can remove this
+                assert(chunk.mTileContainer->isDirtyData() && chunk.mTileContainer->isDirtyNav());
+                break;
+            }
+            default:
+                assert(false);
         }
-        ++i;
+    }
+
+    // Tick all active chunks
+    for (Chunk* chunk : mActiveChunks) {
+        tickChunk(*chunk);
+    }
+
+    // Update all destroying chunks
+    for (size_t i = 0; i < mDestroyingChunks.size();) {
+        Chunk& chunk = *mDestroyingChunks[i];
+        if (chunk.getRefCount() == 0) {
+            chunk.dispose();
+            mDestroyingChunks[i] = mDestroyingChunks.back();
+            mDestroyingChunks.pop_back();
+        }
+        else {
+            ++i;
+        }
     }
 }
 
 void IChunkGrid::refresh(const f32v2& loadCenter) {
+    assert(IS_GAME_THREAD());
+
     // Remove any loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
         Chunk* chunk = mLoadingChunks[i];
         if (!isChunkInLoadDistance(chunk->getChunkID(), loadCenter)) {
-            if (!chunk->mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
-                chunk->mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
-                mDestroyingChunks.emplace_back(chunk);
-            }
+            markChunkForDestroy(*chunk);
             mLoadingChunks[i] = mLoadingChunks.back();
             mLoadingChunks.pop_back();
         }
@@ -75,10 +112,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
     for (size_t i = 0; i < mActiveChunks.size(); ++i) {
         Chunk* chunk = mActiveChunks[i];
         if (!isChunkInLoadDistance(chunk->getChunkID(), loadCenter)) {
-            if (!chunk->mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
-                chunk->mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
-                mDestroyingChunks.emplace_back(chunk);
-            }
+            markChunkForDestroy(*chunk);
             mActiveChunks[i] = mActiveChunks.back();
             mActiveChunks.pop_back();
         }
@@ -90,180 +124,139 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
     // Iterate every chunk in range (TODO: Use offset mask for perfect iteration and no distance checks?)
     // Need OnChunkLoadDistanceChanged to update the static offset mask
     //ChunkID
-    const f32v2 bottomLeft = loadCenter - f32v2(sDebugOptions.mLoadRange);
-    const f32v2 topRight = loadCenter + f32v2(sDebugOptions.mLoadRange);
+    f32v2 bottomLeft = loadCenter - f32v2(sDebugOptions.mLoadRange);
+    f32v2 topRight = loadCenter + f32v2(sDebugOptions.mLoadRange);
+    bottomLeft.x = glm::clamp(bottomLeft.x, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
+    bottomLeft.y = glm::clamp(bottomLeft.y, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
+    topRight.x = glm::clamp(topRight.x, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
+    topRight.y = glm::clamp(topRight.y, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
     const ChunkID bottomLeftPos(bottomLeft);
     const ChunkID topRightPos(topRight);
     for (ui32 y = bottomLeftPos.pos.y; y < topRightPos.pos.y; ++y) {
         for (ui32 x = bottomLeftPos.pos.x; x < topRightPos.pos.x; ++x) {
-            ChunkID spot(x, y);
-            if (isChunkInLoadDistance(spot, loadCenter)) {
-                assert(false);
+            ChunkID chunkId(x, y);
+            // If there is no alive chunk here and we are in distance, add new alive chunk
+            if (!mAliveChunkBits.getBit(chunkId.id) && isChunkInLoadDistance(chunkId, loadCenter)) {
+                Chunk& chunk = mChunks[chunkId.id];
+                // Check if we need to remove from destroy list first
+                if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
+                    for (size_t i = 0; i < mDestroyingChunks.size(); ++i) {
+                        if (mDestroyingChunks[i] == &chunk) {
+                            // Pop and swap
+                            mDestroyingChunks[i] = mDestroyingChunks.back();
+                            mDestroyingChunks.pop_back();
+                            chunk.mFlags.clearBit(ChunkFlags::IN_DESTROY_LIST);
+                            break;
+                        }
+                    }
+                    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
+                }
+                mAliveChunkBits.setBit(chunkId.id);
+                // Only begin load if we are flagged as "Invalid" since otherwise we never disposed, and we can just keep our old state
+                if (chunk.mState == e_cast(ChunkState::INVALID)) {
+                    if (sHeightmapGrid->tryAquireHeightData(chunk.getHeightmapPatchID())) {
+                        beginTileLoadForChunk(chunk);
+                    }
+                    else {
+                        beginHeightLoadForChunk(chunk);
+                    }
+                }
+                else if (chunk.mState == e_cast(ChunkState::FINISHED)) {
+                    // If we are already loaded, just insert us back into the active list
+                    mActiveChunks.emplace_back(&chunk);
+                }
+                else {
+                    // Otherwise we are still loading
+                    mLoadingChunks.emplace_back(&chunk);
+                }
             }
         }
     }
-
 }
 
-void IChunkGrid::initChunk(Chunk& chunk)
-{
-    const ChunkID& chunkId = chunk.getChunkID();
-    // If this is a sentinel chunk, stop here
-    if (chunkId.isSentinelID()) {
-        return;
-    }
+void IChunkGrid::markChunkForDestroy(Chunk& chunk) {
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
+    chunk.mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
+    mDestroyingChunks.emplace_back(&chunk);
+    mAliveChunkBits.clearBit(chunk.getChunkID().id);
+    // Release height
+    const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
+    sHeightmapGrid->releaseHeightDataAt(heightId);
+}
 
+void IChunkGrid::beginHeightLoadForChunk(Chunk& chunk) {
+    assert(chunk.mState != e_cast(ChunkState::WAITING_HEIGHT));
+    chunk.mState = e_cast(ChunkState::WAITING_HEIGHT);
+    sHeightmapGrid->requestHeightDataGenAndAquireAt(chunk.getHeightmapPatchID(), nullptr);
+}
+
+void IChunkGrid::beginTileLoadForChunk(Chunk& chunk) {
+    assert(chunk.mState != e_cast(ChunkState::LOADING_TILES));
+    chunk.mState = e_cast(ChunkState::LOADING_TILES);
     generateChunkAsync(chunk);
 }
 
 void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 
-    chunk.allocateTileContainer();
     chunk.incRef();
-    // TODO: should we be inactive?
-    mActiveChunks.push_back(&chunk);
-    const HeightmapPatchID& id = chunk.getHeightmapPatchID();
+    chunk.allocateTileContainer();
 
-    if (sHeightmapGrid->tryGetHeightDataAt(id)) {
-        chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-        const HeightmapPatchData* heightData = sHeightmapGrid->aquireHeightData(id);
-        Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
-            ChunkGenerator::GenerateChunk(chunk, heightData);
-            chunk.decRef();
-        }, nullptr);
+    // Make sure we dont lose height data
+    sHeightmapGrid->aquireHeightData(chunk.getHeightmapPatchID());
+    Services::Threadpool::ref().addTask([&chunk](ThreadPoolWorkerData* workerData) {
+        const HeightmapPatchID& id = chunk.getHeightmapPatchID();
+        ChunkGenerator::GenerateChunk(chunk, sHeightmapGrid->getHeightDataAt(id));
+        sHeightmapGrid->releaseHeightDataAt(id);
+        assert(chunk.getState() == ChunkState::LOADING_TILES);
+        chunk.setState(ChunkState::TILE_LOAD_FINISHED);
+        chunk.decRef();
+    }, nullptr);
+
+}
+
+
+void IChunkGrid::tickChunk(Chunk& chunk) {
+    assert(chunk.isDataReady());
+    TileContainer& tileContainer = *chunk.mTileContainer;
+
+    // If chunk data is dirty
+    // TODO: This is a cache miss, is a dirty lookup worth it?
+    if (tileContainer.isDirtyData()) {
+        tileContainer.clearDirtyData();
+        // TODO: Update collision
+        // 
+        // Update dirty mesh
+        if (RenderThreadTasks* tasks = RenderThreadTasks::tryGetInstance()) {
+            tasks->addTileContainerMeshUpdateTask(&tileContainer);
+        }
+        // TODO: Replicate diff
+    }
+    // TODO: Should this instead be a TileContainerUpdater?
+    if (chunk.mTileContainer->shouldBuildNavMesh()) {
+        Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
     }
     else {
-        chunk.mState.store(e_cast(ChunkState::WAITING_HEIGHT));
-        sHeightmapGrid->requestHeightDataGenAndAquireAt(id, [this, &chunk]() {
-            chunk.mState.store(e_cast(ChunkState::LOADING_TILES));
-            const HeightmapPatchData* heightData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID());
-            Services::Threadpool::ref().addTask([&, heightData](ThreadPoolWorkerData* workerData) {
-                ChunkGenerator::GenerateChunk(chunk, heightData);
-                chunk.decRef();
-            }, nullptr);
-        });
-    }
+        // Update grass
+        //const f32v2 centerPos = chunk.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
+        //const f32v2 offset = centerPos - mLoadCenter;
+        //const f32 distSq = glm::length2(offset);
 
-}
-
-
-bool IChunkGrid::tickChunk(Chunk& chunk) {
-
-    if (!isChunkInLoadDistance(chunk.getWorldPos(), CHUNK_UNLOAD_TOLERANCE)) {
-        if (chunk.getTileContainer()->getRefCount()) {
-            // Waiting on a thread or handle to release us
-            return false;
-        }
-        // Unload
-        return true;
-    }
-
-    if (chunk.isDataReady()) {
-        // Check for new neighbors
-        if (chunk.mDataReadyNeighborCount < CHUNK_NEIGHBOR_COUNT) {
-            tryCreateNeighbors(chunk);
-        }
-        else if (chunk.mTileContainer->shouldBuildNavMesh()) {
-            // Update nav graph when all neighbors are loaded
-            // TODO: Async?
-            Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
-        }
-        else {
-            // Update grass
-            const f32v2 centerPos = chunk.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
-            const f32v2 offset = centerPos - mLoadCenter;
-            const f32 distSq = glm::length2(offset);
-
-            // TODO: CLIENT ONLY
-            if (chunk.mChunkRenderData.mGrassLod) {
-                if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
-                    if (chunk.mChunkRenderData.mGrassLod->getRefCount() == 0) {
-                        chunk.mChunkRenderData.mGrassLod.reset();
-                    }
-                }
-                else {
-                    chunk.mChunkRenderData.mGrassLod->update(mLoadCenter);
-                }
-            }
-            else {
-                if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
-                    chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk);
-                }
-            }
-        }
-    }
-    else if (chunk.getTileContainer()->getRefCount() == 0) {
-        // If we are not in use, we are done generating
-        onChunkDataReady(chunk);
-    }
-
-    return false;
-}
-
-
-void IChunkGrid::onChunkDataReady(Chunk& chunk) {
-    assert(!chunk.isDataReady());
-
-    chunk.setState(ChunkState::FINISHED);
-    // Don't update neighbors until we are data ready
-    assert(chunk.isDataReady());
-    // Neighbors
-    const ChunkID& myId = chunk.getChunkID();
-    dataReadyTryNotifyNeighbor(chunk, myId.getBottomID());
-    dataReadyTryNotifyNeighbor(chunk, myId.getLeftID());
-    dataReadyTryNotifyNeighbor(chunk, myId.getRightID());
-    dataReadyTryNotifyNeighbor(chunk, myId.getTopID());
-
-    assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
-}
-
-void IChunkGrid::onChunkAllNeighborsDataReady(Chunk& chunk) {
-    assert(chunk.getBottomNeighbor().isDataReady());
-    assert(chunk.getLeftNeighbor().isDataReady());
-    assert(chunk.getRightNeighbor().isDataReady());
-    assert(chunk.getTopNeighbor().isDataReady());
-
-    // Dirty our nav graph
-    chunk.mTileContainer->setDirtyNav(true);
-    // Update our mesh
-    chunk.dirtyMesh();
-    ChunkMesher::updateMeshAndPhysics(chunk, f32v3(mLoadCenter, 0.0f));
-}
-
-void IChunkGrid::dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id) {
-    Chunk& neighbor = getChunk(id.id);
-    if (neighbor.isDataReady()) {
-        // Set up data ready ref counts
-        ++neighbor.mDataReadyNeighborCount;
-        assert(neighbor.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
-        ++chunk.mDataReadyNeighborCount;
-        assert(chunk.mDataReadyNeighborCount <= CHUNK_NEIGHBOR_COUNT);
-        if (neighbor.mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT) {
-            onChunkAllNeighborsDataReady(neighbor);
-        }
-        if (chunk.mDataReadyNeighborCount == CHUNK_NEIGHBOR_COUNT) {
-            onChunkAllNeighborsDataReady(chunk);
-        }
-    }
-    else if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
-        // Create the chunk, but dont update neighbor count until its done
-        initChunk(neighbor);
+        //// TODO: CLIENT ONLY
+        //if (chunk.mChunkRenderData.mGrassLod) {
+        //    if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
+        //        if (chunk.mChunkRenderData.mGrassLod->getRefCount() == 0) {
+        //            chunk.mChunkRenderData.mGrassLod.reset();
+        //        }
+        //    }
+        //    else {
+        //        chunk.mChunkRenderData.mGrassLod->update(mLoadCenter);
+        //    }
+        //}
+        //else {
+        //    if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
+        //        chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk);
+        //    }
+        //}
     }
 }
 
-void IChunkGrid::tryCreateNeighbors(Chunk& chunk) {
-    // Neighbors
-    const ChunkID& myId = chunk.getChunkID();
-    tryCreateNeighbor(chunk, myId.getLeftID());
-    tryCreateNeighbor(chunk, myId.getTopID());
-    tryCreateNeighbor(chunk, myId.getRightID());
-    tryCreateNeighbor(chunk, myId.getBottomID());
-}
-
-void IChunkGrid::tryCreateNeighbor(Chunk& chunk, const ChunkID& id) {
-    Chunk& neighbor = getChunk(id.id);
-    if (neighbor.isInvalid() && isChunkInLoadDistance(id)) {
-        // Create the chunk, but dont update neighbor count until its done
-        initChunk(neighbor);
-    }
-}

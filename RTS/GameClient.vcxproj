@@ -208,7 +208,8 @@
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
     <ClCompile Include="src\editor\WorldEditor.cpp" />
-    <ClCompile Include="src\GameThread.cpp" />
+    <ClCompile Include="src\gamethread\GameThread.cpp" />
+    <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
@@ -275,9 +276,10 @@
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
     <ClCompile Include="src\rendering\QuadMesh.cpp" />
     <ClCompile Include="src\rendering\ChunkMesher.cpp" />
-    <ClCompile Include="src\rendering\ChunkRenderer.cpp" />
+    <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
     <ClCompile Include="src\rendering\RenderStats.cpp" />
+    <ClCompile Include="src\rendering\RenderThreadTasks.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
     <ClCompile Include="src\rendering\Skybox.cpp" />
     <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp" />
@@ -420,7 +422,8 @@
     <ClInclude Include="src\editor\WorldEditor.h" />
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
-    <ClInclude Include="src\GameThread.h" />
+    <ClInclude Include="src\gamethread\GameThread.h" />
+    <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGeneration.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
@@ -500,9 +503,10 @@
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\QuadMesh.h" />
     <ClInclude Include="src\rendering\ChunkMesher.h" />
-    <ClInclude Include="src\rendering\ChunkRenderer.h" />
+    <ClInclude Include="src\rendering\TileContainerRenderer.h" />
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
+    <ClInclude Include="src\rendering\RenderThreadTasks.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
     <ClInclude Include="src\rendering\texture\NormalMapGenerator.h" />
     <ClInclude Include="src\rendering\texture\SubTexture.h" />

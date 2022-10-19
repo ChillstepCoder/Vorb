@@ -83,11 +83,12 @@ ItemStockpile::~ItemStockpile() {
 }
 
 bool ItemStockpile::isVisible() const {
-    for (const ChunkID& chunkId : mResidingChunks) {
-        if (sWorld->getChunk(chunkId).isVisible()) {
-            return true;
-        }
-    }
+    assert(false);
+    /* for (const ChunkID& chunkId : mResidingChunks) {
+         if (sWorld->getChunk(chunkId).isVisible()) {
+             return true;
+         }
+     }*/
     return false;
 }
 

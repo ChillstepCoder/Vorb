@@ -5,7 +5,8 @@ class BuildingRenderer;
 class Camera3D;
 class CliWorldInterface;
 class CharacterRenderer;
-class ChunkRenderer;
+class TileContainerRenderer;
+class ChunkGrassQuadtree;
 class CityDebugRenderer;
 class CloudRenderer;
 class DepthOfFieldPostProcess;
@@ -16,14 +17,17 @@ class LightRenderer;
 class Material;
 class MaterialRenderer;
 class ParticleSystemRenderer;
-class QuadMesh;
 class ResourceManager;
 class ShadowRenderer;
 class Skybox;
+class TileContainer;
 class TerrainRenderer;
 class TerrainMeshManager;
 class TextRenderer;
 class UIContext;
+class Mesh;
+class QuadMesh;
+class TerrainMesh;
 
 struct SDL_Window;
 
@@ -44,8 +48,23 @@ struct GlobalRenderData {
     const ICamera* mainCamera = nullptr;
 };
 
+constexpr ui32 INVALID_MESH_INDEX = UINT32_MAX;
+
+// TODO: This is not cache freindly, ideally we just have a massive array of VAOs and loop through them
+struct TileContainerMeshData {
+    TileContainerMeshData() = default;
+    ~TileContainerMeshData();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerMeshData);
+
+    std::unique_ptr<Mesh> mStaticMesh;
+    std::unique_ptr<Mesh> mDynamicMesh;
+    std::unique_ptr<Mesh> mBillboardMesh;
+};
+
 // Singleton
 class RenderContext {
+    friend class RenderThreadTasks;
 protected:
     RenderContext(const f32v2& screenResolution, SDL_Window* window);
     ~RenderContext();
@@ -62,7 +81,6 @@ public:
     void onWorldBegin();
 
     void initPostLoad();
-    void updateMeshManagers(f32v2 playerPos, bool forceUpdate = false);
 
     void beginFrame(const Camera3D* camera, f32v3 playerPos); // Called automatically by beginFrame
     void renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec);
@@ -71,7 +89,7 @@ public:
     void selectNextDebugShader();
 
     const GlobalRenderData& getRenderData() const { return mRenderData; }
-    ChunkRenderer& getChunkRenderer() const { return *mChunkRenderer; }
+    TileContainerRenderer& getChunkRenderer() const { return *mChunkRenderer; }
     MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
     const vg::GBuffer& getPrevFinalGBuffer() const { return mGBuffers[mPrevGBufferIndex]; }
@@ -82,19 +100,25 @@ public:
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
     const f32v2& getScreenResolution() const { return mScreenResolution;}
 
-    TerrainMeshManager& getTerrainMeshManager() { return *mTerrainMeshManager; }
-
-    void addRenderThreadProc(std::function<void()>&& f) { mRenderThreadProcs.enqueue(std::move(f)); }
-
+    // Meshing
+    void addTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.insert(mesh); }
+    void removeTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.erase(mesh); }
+    void addTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.insert(mesh); }
+    void removeTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.erase(mesh); }
 private:
+    void updateRenderThreadProcs();
     void renderDebug(const Camera3D& camera);
     void renderUI(const Camera3D& camera);
     void buildHorizonMesh();
 
-    static RenderContext* sInstance;
+    void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }
+    void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }
+    void addDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.insert(mesh); }
+    void removeDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.erase(mesh); }
+    void addBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.insert(mesh); }
+    void removeBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.erase(mesh); }
 
-    // Task queue
-    moodycamel::ConcurrentQueue<std::function<void()>> mRenderThreadProcs;
+    static RenderContext* sInstance;
     
     // Client world
     CliWorldInterface* mCliWorld = nullptr;
@@ -106,7 +130,7 @@ private:
 
     // Renderers
     mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
-    mutable std::unique_ptr<ChunkRenderer> mChunkRenderer;
+    mutable std::unique_ptr<TileContainerRenderer> mChunkRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
@@ -121,7 +145,14 @@ private:
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
 
     // Mesh management
-    std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;
+    std::map<TileContainer*, TileContainerMeshData> mTileContainerMeshData;
+    std::map<Mesh*, TileContainerMeshData*> mMeshToMeshDataLookup;
+    std::set<const Mesh*> mStaticMeshes;
+    std::set<const Mesh*> mDynamicMeshes;
+    std::set<const Mesh*> mBillboardMeshes;
+    std::set<const ChunkGrassQuadtree*> mGrassQuadtrees;
+    std::set<const TerrainMesh*> mTerrainMeshes;
+    std::set<const TerrainMesh*> mTerrainWaterMeshes;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

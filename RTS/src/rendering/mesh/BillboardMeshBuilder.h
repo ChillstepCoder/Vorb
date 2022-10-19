@@ -22,7 +22,7 @@ public:
     void addBillboard(f32v3 position, const f32v2& xyDims, const SubTexture& texture);
     void reserveBillboardCount(ui32 count);
 
-    void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
+    void finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
 
     // Override allocation to use boost::singleton_pool
     static void* operator new(size_t count);

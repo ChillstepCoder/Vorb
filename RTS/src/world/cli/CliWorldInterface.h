@@ -3,6 +3,7 @@
 class CloudManager;
 class Chunk;
 class Camera3D;
+class TerrainMeshManager;
 
 class CliWorldInterface
 {
@@ -22,13 +23,15 @@ public:
     const CloudManager& getCloudManager() const { return *mCloudManager; }
 
 protected:
-    void updateChunkVisibility(const Camera3D& camera, const std::vector<Chunk*>& activeChunks);
     void updateParticleSystems(const f32v2& playerPos);
-    void updateClouds();
     void onWorldBeginClient();
+    void cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;
+
+    // Terrain
+    std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;
 
     // Sunlight
     float mSunHeight = 1.0f;

@@ -29,7 +29,7 @@ enum QuadtreePatchFlags : ui8 {
     QUADTREE_PATCH_FLAG_MESHING             = 1 << 1,
     QUADTREE_PATCH_FLAG_SIGNALLED_RECOMBINE = 1 << 2,
     QUADTREE_PATCH_FLAG_ACTIVE              = 1 << 3,
-    QUADTREE_PATCH_FLAG_SHOULD_RENDER       = 1 << 4,
+    QUADTREE_PATCH_FLAG_SHOULD_RENDER       = 1 << 4, // TODO: remove this?
     QUADTREE_PATCH_FLAG_HAS_MESH            = 1 << 5,
     QUADTREE_PATCH_FLAG_CROSSFADING_OUT     = 1 << 6,
     QUADTREE_PATCH_FLAG_CROSSFADING_IN      = 1 << 7,
@@ -95,6 +95,8 @@ public:
     // Mark terrain as dirty at the brush position
     void onDataChanged(const f32v2& editPosition, f32 editRadius);
 
+    const f32v2& getWorldPos() const { return mWorldPos; }
+
     // === Public Constants ===
     static constexpr ui32 NODE_COUNT = (MathUtil::intpow<MAX_DEPTH>(4) - 1) / (4 - 1);
     static constexpr ui32 QUADTREE_FADE_LIST_SIZE = (MathUtil::intpow<MAX_DEPTH - 1>(4) - 1) / (4 - 1);
@@ -116,6 +118,8 @@ private:
     void updateMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 patchIndex);
 
 protected:
+    virtual void resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfade) {};
+    virtual void updateCrossfadeRenderForPatch(ui32 patchIndex, f32 crossfade) {};
 
     // === Protected Methods ===
     void onMeshFinished(ui32 patchIndex, bool isMeshValid); // Called by derived class
@@ -125,6 +129,7 @@ protected:
     virtual void freeMeshForPatch(ui32 patchIndex) = 0;
 
     // === Protected Constants ===
+public:
     static constexpr cui32v2 LOD_HALF_DIMS[ABSOLUTE_MAX_QUADTREE_DEPTH] = {
         cui32v2(TOTAL_WIDTH / 2),
         cui32v2((TOTAL_WIDTH >> 1) / 2),
@@ -146,9 +151,8 @@ protected:
         cui32v2(0, 1), // Top left
         cui32v2(1, 1), // Top Right
     };
-
     static constexpr QuadtreePositionTable<MAX_DEPTH, TOTAL_WIDTH, NODE_COUNT> PATCH_POSITIONS = QuadtreePositionTable<MAX_DEPTH, TOTAL_WIDTH, NODE_COUNT>();
-
+protected:
     // === Protected members ===
     f32& mLodDistanceOffset; // Reference to a setting
     ui32 mNumActiveNodes = 0;

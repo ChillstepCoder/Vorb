@@ -154,104 +154,107 @@
 //    }
 //}
 
-
-void ChunkMesher::updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos) {
-    UNUSED(cameraPos);
-    if (chunk.mTileContainer->shouldBuildStaticMesh()) {
-        createMeshAndPhysicsAsync(chunk);
-    }
-}
-
-bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
-
-    ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
-    TileContainerRenderData& tileRenderData = chunk.getTileContainer()->getRenderData();
-    assert(!tileRenderData.mIsBuildingStaticMesh);
-    tileRenderData.mIsBuildingStaticMesh = true;
-
-    // TODO: Move somewhere else?
-    chunk.getTileContainer()->setDirtyStaticMesh(false);
-    chunk.incReadLockAndRefCountNeighbors4AndSelf();
-
-    // TODO: Do we need to do this?
-    if (!chunkRenderData.mBillboardMesh) {
-        chunkRenderData.mBillboardMesh = std::make_unique<Mesh>();
-    }
-    if (!tileRenderData.mStaticMesh) {
-        tileRenderData.mStaticMesh = std::make_unique<Mesh>();
-    }
-    const HeightmapPatchData* heightData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID());
-    
-    // TODO: Different way than using two shared ptr? Does it matter?
-    std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
-    std::shared_ptr<BillboardMeshBuilder> billboardMeshBuilder = std::make_shared<BillboardMeshBuilder>();
-
-    Services::Threadpool::ref().addTask([&chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
-
-        quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
-        billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
-
-        for (int y = 0; y < CHUNK_WIDTH; ++y) {
-            for (int x = 0; x < CHUNK_WIDTH; ++x) {
-                //  TODO: Multiple world layers
-                TileIndex index = chunk.getTileContainer()->getTileIndexFromXYZOffset(x, y, 0);
-                const Tile& tile = chunk.getTileContainer()->getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
-                for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
-                    if (layerTile == TILE_ID_NONE) {
-                        continue;
-                    }
-
-                    const TileData& tileData = TileRepository::getTileData(layerTile);
-                    const SubTexture& texture = tileData.texture;
-
-                    // Tile mesh
-                    // Flora mesh ONLY
-                    if (tileData.shape == TileShape::THIN) {
-                        // Billboards
-                        if (tileData.textureMethod == TileTextureMethod::FLORA) {
-                            /*f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.groundZPosition);
-                            Tile rightTile = chunk.getRightTileHandle(index).tile;
-                            Tile topTile = chunk.getTopTileHandle(index).tile;
-                            addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);*/
-                            continue;
-                        }
-                        else {
-                            f32 zPosition = glm::max(groundZPosition, sHeightmapGrid->computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
-                            f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
-                            billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
-                        }
-                    }
-                    else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(*quadMeshBuilder, f32v3(x, y, 0.0f /*TODO REAL FLOOR HEIGHT*/), TileHandle(chunk.getTileContainer(), index), tileData, nullptr);
-                    }
-                    else if (tileData.shape == TileShape::FLOOR) {
-                            
-                        //TileMeshBuilderMethods::addFloor(*quadMeshBuilder, (TileFloor)floor, f32v2(x, y), heightData, tileData, index, chunk, floor == TILE_FLOOR_GROUND);
-                    }
-                }
-            }
-        }
-
-        // No longer need read access
-        chunk.decReadLockNeighbors4();
-        chunk.decReadLock();
-        chunk.decRefNeighbors4();
-    }, [&chunk, quadMeshBuilder, billboardMeshBuilder]() {
-
-        ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
-        TileContainerRenderData& tileRenderData = chunk.mTileContainer->getRenderData();
-
-        // Upload mesh buffers
-        quadMeshBuilder->finishMesh(*tileRenderData.mStaticMesh, MeshDrawMode::STATIC);
-        billboardMeshBuilder->finishMesh(*chunkRenderData.mBillboardMesh, MeshDrawMode::STATIC);
-
-        // Flag as free
-        tileRenderData.mIsBuildingStaticMesh = false;
-
-        // No longer need to exist
-        chunk.decRef();
-    });
-    return true;
-}
+//
+//void ChunkMesher::updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos) {
+//    UNUSED(cameraPos);
+//    assert(false);
+//    /*if (chunk.mTileContainer->shouldBuildStaticMesh()) {
+//        createMeshAndPhysicsAsync(chunk);
+//    }*/
+//}
+//
+//bool ChunkMesher::createMeshAndPhysicsAsync(const Chunk& chunk) {
+//
+//  //  assert(false);
+//
+//  //  ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
+//  //  TileContainerRenderData& tileRenderData = chunk.getTileContainer()->getRenderData();
+//  // // assert(!tileRenderData.mIsBuildingStaticMesh);
+//  // // tileRenderData.mIsBuildingStaticMesh = true;
+//
+//  //  // TODO: Move somewhere else?
+//  ////  chunk.getTileContainer()->setDirtyStaticMesh(false);
+//  //  chunk.incReadLockAndRefCountNeighbors4AndSelf();
+//
+//  //  // TODO: Do we need to do this?
+//  // /* if (!chunkRenderData.mBillboardMesh) {
+//  //      chunkRenderData.mBillboardMesh = std::make_unique<Mesh>();
+//  //  }
+//  //  if (!tileRenderData.mStaticMesh) {
+//  //      tileRenderData.mStaticMesh = std::make_unique<Mesh>();
+//  //  }*/
+//  //  const HeightmapPatchData* heightData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID());
+//  //  
+//  //  // TODO: Different way than using two shared ptr? Does it matter?
+//  //  std::shared_ptr<MeshBuilder> quadMeshBuilder = std::make_shared<MeshBuilder>(true);
+//  //  std::shared_ptr<BillboardMeshBuilder> billboardMeshBuilder = std::make_shared<BillboardMeshBuilder>();
+//
+//  //  Services::Threadpool::ref().addTask([&chunk, heightData, quadMeshBuilder, billboardMeshBuilder](ThreadPoolWorkerData*) {
+//
+//  //      quadMeshBuilder->reserveVertexCount(CHUNK_SIZE * 4); // Most chunks will have less than 1 quad per tile
+//  //      billboardMeshBuilder->reserveBillboardCount(CHUNK_SIZE / 2); // Most chunks will have less than 0.5 billboards per tile
+//
+//  //      for (int y = 0; y < CHUNK_WIDTH; ++y) {
+//  //          for (int x = 0; x < CHUNK_WIDTH; ++x) {
+//  //              //  TODO: Multiple world layers
+//  //              TileIndex index = chunk.getTileContainer()->getTileIndexFromXYZOffset(x, y, 0);
+//  //              const Tile& tile = chunk.getTileContainer()->getTileAt(index);
+//  //              const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
+//  //              for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
+//  //                  TileID layerTile = tile.getLayersThreadSafe()[layerIndex];
+//  //                  if (layerTile == TILE_ID_NONE) {
+//  //                      continue;
+//  //                  }
+//
+//  //                  const TileData& tileData = TileRepository::getTileData(layerTile);
+//  //                  const SubTexture& texture = tileData.texture;
+//
+//  //                  // Tile mesh
+//  //                  // Flora mesh ONLY
+//  //                  if (tileData.shape == TileShape::THIN) {
+//  //                      // Billboards
+//  //                      if (tileData.textureMethod == TileTextureMethod::FLORA) {
+//  //                          /*f32v3 tilePosition(x + 0.5f, y + 0.5f, tile.groundZPosition);
+//  //                          Tile rightTile = chunk.getRightTileHandle(index).tile;
+//  //                          Tile topTile = chunk.getTopTileHandle(index).tile;
+//  //                          addTileFloraBillboard(billboardMesh, chunk, index, layerIndex, tileData, spriteData, rightTile, topTile);*/
+//  //                          continue;
+//  //                      }
+//  //                      else {
+//  //                          f32 zPosition = glm::max(groundZPosition, sHeightmapGrid->computeCenterHeightAtTile(chunk.getChunkID().getWorldPosInt() + ui32v2(x, y)));
+//  //                          f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
+//  //                          billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
+//  //                      }
+//  //                  }
+//  //                  else if (tileData.shape == TileShape::BLOCK) {
+//  //                      TileMeshBuilderMethods::addBlock(*quadMeshBuilder, f32v3(x, y, 0.0f /*TODO REAL FLOOR HEIGHT*/), TileHandle(chunk.getTileContainer(), index), tileData, nullptr);
+//  //                  }
+//  //                  else if (tileData.shape == TileShape::FLOOR) {
+//  //                          
+//  //                      //TileMeshBuilderMethods::addFloor(*quadMeshBuilder, (TileFloor)floor, f32v2(x, y), heightData, tileData, index, chunk, floor == TILE_FLOOR_GROUND);
+//  //                  }
+//  //              }
+//  //          }
+//  //      }
+//
+//  //      // No longer need read access
+//  //      chunk.decReadLockNeighbors4();
+//  //      chunk.decReadLock();
+//  //      chunk.decRefNeighbors4();
+//  //  }, [&chunk, quadMeshBuilder, billboardMeshBuilder]() {
+//
+//  //      ChunkRenderData& chunkRenderData = chunk.mChunkRenderData;
+//  //      TileContainerRenderData& tileRenderData = chunk.mTileContainer->getRenderData();
+//
+//  //      // Upload mesh buffers
+//  //  //    quadMeshBuilder->finishMesh(*tileRenderData.mStaticMesh, MeshDrawMode::STATIC);
+//  //  //    billboardMeshBuilder->finishMesh(*chunkRenderData.mBillboardMesh, MeshDrawMode::STATIC);
+//
+//  //      // Flag as free
+//  // //     tileRenderData.mIsBuildingStaticMesh = false;
+//
+//  //      // No longer need to exist
+//  //      chunk.decRef();
+//  //  });
+//  //  return true;
+//}

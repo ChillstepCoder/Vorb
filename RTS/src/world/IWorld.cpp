@@ -63,7 +63,6 @@ void IWorld::tickShared(f32 elapsedSec) {
         PhysicsComponent& physCmp = mEcs->mRegistry.get<PhysicsComponent>(localPlayer);
         const f32v3 localPlayerPos = physCmp.getPosition();
         mLoadCenter = localPlayerPos;
-        mChunkGrid->setLoadCenter(mLoadCenter);
 
         if (glm::length2(mLoadCenter - mPrevLoadCenter) > DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH) {
             mPrevLoadCenter = mLoadCenter;
@@ -72,6 +71,8 @@ void IWorld::tickShared(f32 elapsedSec) {
     }
 
     mChunkGrid->tick();
+
+    mHeightmapGrid->tick();
 
     // Update ECS
     // TODO: Move out?
@@ -190,17 +191,9 @@ Chunk& IWorld::getChunkAtChunkCoords(const i32v2& worldPos) {
     return getChunk(ChunkID(worldPos));
 }
 
-// TODO: Remove this
-#include "rendering/RenderContext.h"
-#include "rendering/mesh/TerrainMeshManager.h"
 void IWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-    if (RenderContext::exists()) {
-        RenderContext::getInstance().getTerrainMeshManager().dirtyTerrainFromBrush(pos, brushRadius);
-    }
 
-    for (Chunk* chunk : getActiveChunks()) {
-        chunk->onTerrainDataChanged(pos, brushRadius);
-    }
+
 }
 
 TileHandle IWorld::getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const {
@@ -293,16 +286,10 @@ void IWorld::enumActiveChunks(std::function<void(const Chunk&)> func) const {
 }
 
 const f32v2& IWorld::getLoadCenter() const {
-    return mChunkGrid->getLoadCenter();
+    return mLoadCenter;
 }
 
 void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
-    // Init terrain
-    mTerrainTrees.resize(WORLD_SIZE_TERRAIN_QUADTREES);
-    for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
-        f32v2 pos((i % WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH, (i / WORLD_WIDTH_TERRAIN_QUADTREES) * TERRAIN_QUADTREE_WIDTH);
-        mTerrainTrees[i].init(pos);
-    }
 
     // Init chunks
     mChunkGrid->onWorldBegin(loadCenter);
@@ -314,13 +301,18 @@ void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
 }
 
 void IWorld::refreshWorld() {
-    for (auto&& terrainQuadtree : mTerrainTrees) {
-        terrainQuadtree.update(mLoadCenter);
+    mChunkGrid->refresh(mLoadCenter);
+}
+
+void IWorld::sharedDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+
+    for (Chunk* chunk : getActiveChunks()) {
+        chunk->onTerrainDataChanged(pos, brushRadius);
     }
 }
 
-void IWorld::updateTimeOfDay()
-{
+void IWorld::updateTimeOfDay() {
+
     const float SUNRISE_TIME = 6.0f; // 6am
     const float SUN_HEIGHT_OFFSET = 0.3f; // Smaller exponent means brighter days
     // TODO: Better time manager

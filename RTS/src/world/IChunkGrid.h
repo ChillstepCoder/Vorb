@@ -24,18 +24,18 @@ public:
     void refresh(const f32v2& loadCenter);
 
 private:
-    void initChunk(Chunk& chunk);
+    void markChunkForDestroy(Chunk& chunk);
+    void beginHeightLoadForChunk(Chunk& chunk);
+    void beginTileLoadForChunk(Chunk& chunk);
     void generateChunkAsync(Chunk& chunk);
 
-    bool tickChunk(Chunk& chunk);
+    void tickChunk(Chunk& chunk);
 
-    void onChunkDataReady(Chunk& chunk);
-    void onChunkAllNeighborsDataReady(Chunk& chunk);
-    void dataReadyTryNotifyNeighbor(Chunk& chunk, const ChunkID& id);
-    void tryCreateNeighbors(Chunk& chunk);
-    void tryCreateNeighbor(Chunk& chunk, const ChunkID& id);
-
+    // Virtual interface
+   // virtual void onChunkFinished(Chunk& chunk) = 0;
+    
     Chunk mChunks[WorldData::WORLD_SIZE_CHUNKS];
+    BitArray mAliveChunkBits = BitArray(WorldData::WORLD_SIZE_CHUNKS);
     std::vector<Chunk*> mLoadingChunks;
     std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mDestroyingChunks;

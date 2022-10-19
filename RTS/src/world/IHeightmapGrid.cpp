@@ -17,7 +17,35 @@
 
 #include "util/BitArray.h"
 
+#include "gamethread/GameThreadTasks.h"
+
+#include <boost/pool/singleton_pool.hpp>
+//
+//// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
+//struct patch_handle_pool {};
+//using singleton_handle_pool = boost::singleton_pool<patch_handle_pool, sizeof(HeightmapPatchHandleData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 128u>;
+//
 IHeightmapGrid* sHeightmapGrid = nullptr;
+//
+//
+//HeightmapPatchHandleData::HeightmapPatchHandleData() {
+//
+//}
+//
+//HeightmapPatchHandleData::~HeightmapPatchHandleData() {
+//    // We cannot legally free until finished gen
+//    assert(isFinishedGenerating);
+//}
+//
+//void* HeightmapPatchHandleData::operator new(size_t count) {
+//    UNUSED(count);
+//    return singleton_handle_pool::malloc();
+//}
+//
+//void HeightmapPatchHandleData::operator delete(void* pointer, size_t size) {
+//    UNUSED(size);
+//    return singleton_handle_pool::free(pointer);
+//}
 
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // Compute barycentric coordinates (u, v, w) for
@@ -81,6 +109,43 @@ IHeightmapGrid::~IHeightmapGrid()
     }
 }
 
+void IHeightmapGrid::tick() {
+    assert(IS_GAME_THREAD());
+    // Delete any inactive patches
+    for (size_t i = 0; i < mActiveHeightmapPatches.size();) {
+        HeightmapPatch& patch = mHeightData[mActiveHeightmapPatches[i]];
+        if (patch.mRefCount == 0) {
+            assert(!patch.isGenerating());
+            // Remove the collider
+            sWorld->getPhysicsWorld().deleteHeightField(patch);
+            patch.mFlags = 0u;
+            delete patch.mHeightData; // TODO: Recycle
+            patch.mHeightData = nullptr;
+            // Remove from active list
+            mActiveHeightmapPatches[i] = mActiveHeightmapPatches.back();
+            mActiveHeightmapPatches.pop_back();
+        }
+        else {
+            ++i;
+        }
+    }
+}
+
+//void IHeightmapGrid::asyncGetPatchHandle(HeightmapPatchID id, OUT HeightmapPatchHandle& handle) {
+//    // Handle must be null
+//    assert(!handle);
+//
+//    handle = std::make_unique<HeightmapPatchHandleData>();
+//    GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* handlePtr) {
+//
+//    }
+//}
+//
+//void IHeightmapGrid::releasePatchHandle(HeightmapPatchHandle&& handle)
+//{
+//
+//}
+
 void IHeightmapGrid::requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::function<void()> callback) {
     assert(IS_GAME_THREAD());
     assert(id.id < WORLD_SIZE_HEIGHTMAP_PATCHES);
@@ -103,6 +168,7 @@ void IHeightmapGrid::requestHeightDataGenAndAquireAt(HeightmapPatchID id, std::f
         Services::Threadpool::ref().addTask([this, &patch, position](ThreadPoolWorkerData*) {
             generateHeightDataPatch(patch, position);
         }, [this, id]() {
+            // TODO: Can we just set an atomic instead?
             onPatchFinishedGenerating(id);
         });
     }
@@ -168,10 +234,8 @@ void IHeightmapGrid::requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, 
         mPaddedGenWaitCount[id.id] = totalRequired;
     }
 }
-
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
     assert(IS_GAME_THREAD());
-    assert(mHeightData[id.id].isDone());
     return mHeightData[id.id].mHeightData;
 }
 
@@ -190,6 +254,16 @@ const HeightmapPatchData* IHeightmapGrid::aquireHeightData(HeightmapPatchID id) 
     assert(patch.isDone());
     ++patch.mRefCount;
     return patch.mHeightData;
+}
+
+const HeightmapPatchData* IHeightmapGrid::tryAquireHeightData(HeightmapPatchID id) {
+    assert(IS_GAME_THREAD());
+    HeightmapPatch& patch = mHeightData[id.id];
+    if (patch.isDone()) {
+        ++patch.mRefCount;
+        return patch.mHeightData;
+    }
+    return nullptr;
 }
 
 bool IHeightmapGrid::tryAquirePaddedHeightDataAt(HeightmapPatchID id) {
@@ -248,24 +322,10 @@ void IHeightmapGrid::releaseHeightDataAt(HeightmapPatchID id) {
     HeightmapPatch& patch = mHeightData[id.id];
     assert(patch.isDone() && patch.mRefCount);
     --patch.mRefCount;
-    if (patch.mRefCount == 0) {
-        // Remove the collider
-        sWorld->getPhysicsWorld().deleteHeightField(patch);
-        patch.mFlags = 0u;
-        delete patch.mHeightData; // TODO: Recycle
-        patch.mHeightData = nullptr;
-        // Remove from active list
-        for (size_t i = 0; i < mActiveHeightmapPatches.size(); ++i) {
-            if (mActiveHeightmapPatches[i] == id.id) {
-                mActiveHeightmapPatches[i] = mActiveHeightmapPatches.back();
-                mActiveHeightmapPatches.pop_back();
-                break;
-            }
-        }
-    }
 }
 
 void IHeightmapGrid::releasePaddedHeightDataAt(HeightmapPatchID id) {
+    assert(IS_GAME_THREAD());
     // Release the 9 chunks
     HeightmapPatchID bottomId = id.getBottomID();
     HeightmapPatchID topId = id.getTopID();
@@ -277,11 +337,13 @@ void IHeightmapGrid::releasePaddedHeightDataAt(HeightmapPatchID id) {
 }
 
 void IHeightmapGrid::setHeightAt(ChunkID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
+    assert(IS_GAME_THREAD());
     return setHeightAt(HeightmapPatchID(id.getWorldPos()), vertIndex, height, dir);
 }
 
 void IHeightmapGrid::setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
 
+    assert(IS_GAME_THREAD());
     const HeightmapPatchID id(worldPos);
     const f32v2 offset = worldPos - id.getWorldPos();
     const ui32 vertX = (ui32)offset.x / HEIGHTMAP_QUAD_SIZE;
@@ -335,6 +397,7 @@ void IHeightmapGrid::setHeightAt(f32v2 worldPos, f32 height, TerrainHeightSetDir
 
 void IHeightmapGrid::setHeightAt(HeightmapPatchID patchId, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/)
 {
+    assert(IS_GAME_THREAD());
     setHeightAtInternal(patchId, vertIndex, height, dir);
 
     // Update duplicate verts (TODO: should we do this?)
@@ -386,15 +449,18 @@ void IHeightmapGrid::setHeightAt(HeightmapPatchID patchId, ui32 vertIndex, f32 h
 }
 
 void IHeightmapGrid::adjustHeightAt(ChunkID id, ui32 vertIndex, f32 adjust) {
+    assert(IS_GAME_THREAD());
     return adjustHeightAt(HeightmapPatchID(id.getWorldPos()), vertIndex, adjust);
 }
 
 void IHeightmapGrid::adjustHeightAt(HeightmapPatchID id, ui32 vertIndex, f32 adjust) {
+    assert(IS_GAME_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     setHeightAt(id, vertIndex, patch.mHeightData->data[vertIndex] + adjust);
 }
 
 void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
+    assert(IS_GAME_THREAD());
     std::set<ui32> dirtyChunks;
     for (i32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
         for (i32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
@@ -413,12 +479,14 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
 }
 
 f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, const ui32v2& vertPos) const {
+    assert(IS_GAME_THREAD());
     const HeightmapPatch& patch = mHeightData[id.id];
     if (!patch.isDone()) return 0.0f;
     return patch.mHeightData->data[vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x];
 }
 
 bool IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) const {
+    assert(IS_GAME_THREAD());
     // assert(IS_MAIN_THREAD) // TODO: Uncomment this, im lazy rn
     HeightmapPatchID id(worldPos);
     const HeightmapPatch& patch = mHeightData[id.id];
@@ -433,6 +501,7 @@ bool IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos, f32* h) cons
 
 
 f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
+    assert(IS_GAME_THREAD());
     HeightmapPatchID id(worldPos);
     const HeightmapPatch& patch = mHeightData[id.id];
 
@@ -445,6 +514,7 @@ f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
 
 f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos)
 {
+    assert(IS_GAME_THREAD());
     const f32v2 offset = worldPos - id.getWorldPos();
 
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
@@ -459,6 +529,7 @@ f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightD
 
 f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset)
 {
+    assert(IS_GAME_THREAD());
     const f32v2 offset = chunkOffset + f32v2((chunkId.pos % ui32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (ui32)CHUNK_WIDTH);
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
 
@@ -472,6 +543,7 @@ f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID ch
 
 f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos)
 {
+    assert(IS_GAME_THREAD());
     const f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos) + f32v2(0.5f);
     const ui32v2 heightmapXY = getHeightmapXYfromTilePos(worldTilePos);
 
@@ -485,6 +557,7 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worl
 }
 
 f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
+    assert(IS_GAME_THREAD());
 
     HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
@@ -497,6 +570,7 @@ f32 IHeightmapGrid::computeCenterHeightAtTile(ui32v2 worldTilePos) const {
 }
 
 void IHeightmapGrid::copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 rowLength) const {
+    assert(IS_GAME_THREAD());
     assert(rowLength < HEIGHTMAP_VERT_WIDTH_PER_PATCH * 2.0f);
 
     ui32 lengthRemaining = rowLength;
@@ -521,6 +595,7 @@ void IHeightmapGrid::copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 r
 }
 
 void IHeightmapGrid::computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]) {
+    assert(IS_GAME_THREAD());
 
     constexpr f32 tileWidthHeightmap = 1.0f / HEIGHTMAP_QUAD_SIZE;
 
@@ -538,17 +613,20 @@ void IHeightmapGrid::computeTileCorners(const f32* heightData, ui32v2 worldTileP
 }
 
 bool IHeightmapGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) {
+    assert(IS_GAME_THREAD());
     i32v2 heightmapXY = tileHandle.getWorldPos2D() / (i32)HEIGHTMAP_QUAD_SIZE;
     return (heightmapXY.x + heightmapXY.y) % 2 == 1;
 }
 
 f32 IHeightmapGrid::computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos) {
+    assert(IS_GAME_THREAD());
     f32 corners[4];
     computeTileCorners(heightData, worldTilePos, corners);
     return glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]);
 }
 
 f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
+    assert(IS_GAME_THREAD());
 
     HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
@@ -561,6 +639,7 @@ f32 IHeightmapGrid::computeMinHeightAtTile(ui32v2 worldTilePos) const {
 }
 
 f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
+    assert(IS_GAME_THREAD());
     HeightmapPatchID id = heightmapPatchIDFromChunkID(ChunkID::fromWorldI32v2(worldTilePos));
     const HeightmapPatch& patch = mHeightData[id.id];
 
@@ -574,6 +653,7 @@ f32 IHeightmapGrid::computeMaxHeightAtTile(ui32v2 worldTilePos) const {
 }
 
 f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
+    assert(IS_GAME_THREAD());
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
@@ -594,6 +674,7 @@ f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb) const {
 }
 
 f32 IHeightmapGrid::computeMeanHeightAtAABB(const i32AABB2& aabb, const BitArray& checkBits) const {
+    assert(IS_GAME_THREAD());
     // Compute mean height of height grid
     f32 meanHeight = 0.0f;
     ui32 total = 0;
@@ -645,6 +726,7 @@ void IHeightmapGrid::generateHeightDataPatch(HeightmapPatch& patch, const f32v2&
 
 
 void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
+    assert(IS_GAME_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     mActiveHeightmapPatches.push_back(id.id);
     patch.mFlags = HEIGHTMAP_PATCH_FLAG_DONE;
@@ -694,6 +776,7 @@ void IHeightmapGrid::onPatchFinishedGenerating(HeightmapPatchID id) {
 
 
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
+    assert(IS_GAME_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     if (patch.isDone() && patch.mRefCount) {
         HeightmapPatchData& data = *patch.mHeightData;
@@ -740,6 +823,7 @@ void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT Heightmap
 }
 
 f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY) {
+    assert(IS_GAME_THREAD());
     // Select which triangle we are looking at, taking into account orientation
     if ((heightmapXY.x + heightmapXY.y) % 2 == 0) {
         // This shape
@@ -800,6 +884,7 @@ f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, 
 }
 
 ui32v2 IHeightmapGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
+    assert(IS_GAME_THREAD());
     ui32v2 heightmapXY = worldTilePos;
     // Offset into the heightmap by our chunk position
     heightmapXY = heightmapXY % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);
@@ -807,8 +892,8 @@ ui32v2 IHeightmapGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
     return heightmapXY;
 }
 
-f32v2 IHeightmapGrid::getHeightmapOffsetFromTilePos(ui32v2 worldTilePos)
-{
+f32v2 IHeightmapGrid::getHeightmapOffsetFromTilePos(ui32v2 worldTilePos) {
+    assert(IS_GAME_THREAD());
     ui32v2 offset = worldTilePos;
     // Offset into the heightmap by our chunk position
     offset = offset % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);

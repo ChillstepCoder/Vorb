@@ -25,9 +25,9 @@ public:
     ChunkMesher() = delete;
 
     // TODO: Actually update the physics mesh
-    static void updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos);
+    //static void updateMeshAndPhysics(const Chunk& chunk, const f32v3& cameraPos);
 
 private:
-    static bool createMeshAndPhysicsAsync(const Chunk& chunk);
+   // static bool createMeshAndPhysicsAsync(const Chunk& chunk);
 };
 

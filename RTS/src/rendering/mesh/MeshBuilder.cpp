@@ -635,14 +635,32 @@ void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const 
 
 }
 
-void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
+void MeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
 
     // return blank mesh if we have no geometry
     if (mMainSubMeshData.mVerts.empty()) {
+        mesh.reset();
+        return;
+    }
+
+    // Allocate if needed
+    if (!mesh) {
+        mesh = std::make_unique<Mesh>();
+    }
+
+    finishMesh(*mesh, drawMode, worldPos);
+}
+
+
+void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+    
+    if (mMainSubMeshData.mVerts.empty()) {
+        mesh.destroy();
         return;
     }
 
     // Set bounds
+    mesh.mPosition = worldPos;
     mesh.mBoundingSphere = mBoundingSphere;
 
     // Check if we need to destroy some old submeshes
@@ -699,7 +717,6 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
 
     glBindVertexArray(0);
 }
-
 
 void* MeshBuilder::operator new(size_t count) {
     assert(IS_GAME_THREAD());

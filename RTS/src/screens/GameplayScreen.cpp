@@ -39,11 +39,11 @@
 #include "rendering/RenderContext.h"
 #include "rendering/LoadScreenRenderer.h"
 
-#include "GameThread.h"
+#include "gamethread/GameThread.h"
 
 #include "math/Random.h"
 
-#include "rendering/ChunkRenderer.h"
+#include "rendering/TileContainerRenderer.h"
 
 #include "ui/TileInteractPanel.h"
 #include "ui/UIContext.h"

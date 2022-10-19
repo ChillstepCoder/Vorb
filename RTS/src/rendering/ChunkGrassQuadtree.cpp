@@ -88,6 +88,11 @@ void ChunkGrassQuadtree::render(const Camera3D& camera, const vg::GLProgram& pro
     }
 }
 
+const f32v3& ChunkGrassQuadtree::getPosition() const {
+    assert(false); // Need to store this ourselves, no chunk ref on render thread pls
+    return mChunk.getWorldPos3D();
+}
+
 void createGrassMesh(
     GrassBillboardMesh& grassMesh,
     const Chunk& chunk,

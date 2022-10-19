@@ -98,6 +98,7 @@ private:
     std::unique_ptr<TextureRepository> mTextureRepository;
     std::unique_ptr<FontRepository> mFontRepository;
 
+    // TODO: Replace with std::filesystem?
     std::unique_ptr<vio::IOManager> mIoManager;
 
     bool mHasLoadedResources = false;

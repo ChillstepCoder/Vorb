@@ -1,4 +1,5 @@
 #pragma once
+// TODO: StaticBitARray
 class BitArray
 {
 public:

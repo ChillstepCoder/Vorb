@@ -51,7 +51,7 @@ public:
     const std::vector<Chunk*>& getActiveChunks() const;
 
     // mutators
-    void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
+    virtual void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) = 0;
 
     // Tile Accessors
     TileHandle getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const;
@@ -90,13 +90,13 @@ public:
 protected:
     void onWorldBeginShared(const f32v2& loadCenter);
     void refreshWorld();
+    void sharedDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 
     void updateTimeOfDay();
 
     void updateCities();
 
     // Server + Client shared world data
-    std::vector<HeightmapTerrainQuadtree> mTerrainTrees;
     IChunkGrid* mChunkGrid = nullptr;
     IHeightmapGrid* mHeightmapGrid = nullptr;
 

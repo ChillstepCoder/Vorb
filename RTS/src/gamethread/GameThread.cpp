@@ -10,6 +10,8 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/PhysicsComponent.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 
 
 GameThread* GameThread::sInstance = nullptr;
@@ -31,6 +33,7 @@ GameThread::~GameThread() {
 GameThread& GameThread::initInstance(WorldType worldType) {
     if (!sInstance) {
         sInstance = new GameThread(worldType);
+        GameThreadTasks::initInstance();
     }
     return *sInstance;
 }
@@ -169,19 +172,17 @@ void GameThread::updateTimeOfDay() {
 
 void GameThread::updateProcs()
 {
-    std::function<void()> proc;
-    // TODO: bulk dequeue?
-    constexpr unsigned MAX_MS = 3;
+    constexpr ui32 BULK_DEQUEUE_SIZE = 32;
+    std::pair<GameFunction, void*> procs[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;
     // TODO: Use optik for profiling
-    while (mGameThreadProcs.try_dequeue(proc)) {
-        proc();
-        if (timer.stop() > MAX_MS) {
-            break;
+    if (const size_t count = GameThreadTasks::getInstance().mGameThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            procs[i].first(*this, procs[i].second);
         }
     }
     if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms *** GAME THREAD SPIKE WARNING ***\n";
+        std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
     }
 }
 

@@ -55,10 +55,6 @@ void HostWorld::tick(f32 elapsedSec) {
 
     updateCities();
 
-    //updateParticleSystems(playerPos);
-
-    updateClouds();
-
 }
 
 void HostWorld::onFrameBegin() {
@@ -70,15 +66,14 @@ void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
     assert(IS_RENDER_THREAD());
 
     mEcs->frameUpdate(camera);
-
-    // Client only, rendering stuff
-    updateChunkVisibility(camera, mChunkGrid->getActiveChunks());
-
-    // Physworld will handle internal interpolation and timestep itself
-    //mPhysWorld->stepSimulation(elapsedSec);
 }
 
 void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     onWorldBeginShared(loadCenter);
     onWorldBeginClient();
+}
+
+void HostWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+    cliDirtyTerrainFromBrush(pos, brushRadius);
+    sharedDirtyTerrainFromBrush(pos, brushRadius);
 }

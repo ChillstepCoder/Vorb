@@ -53,6 +53,7 @@ namespace vorb {
 
             /// Adds a task to the task queue
             /// @param task: The task to add
+            /// TODO: Remove mainProc
             void addTask(std::function<void(T*)>&& workerProc, std::function<void()> mainProc) {
                 mTasks.enqueue(std::make_pair(std::move(workerProc), std::move(mainProc)));
             }

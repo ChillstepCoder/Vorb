@@ -308,6 +308,7 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 
 void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld& physWorld) {
     PreciseTimer timer;
+    assert(false); // MULTITHREAD
 
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
@@ -315,7 +316,6 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
         visLog->nextStep("AABB");
         visLog->addWireQuad(f32v3(building.mAABB.pos), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
-    
 
     // TODO: ASYNC
     MeshBuilder staticMeshBuilder(false);
@@ -337,8 +337,8 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, *building.mTileContainer, &building.mPhysicsMesh);
-    TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
+    //TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, *building.mTileContainer, &building.mPhysicsMesh);
+    //TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
 
     renderData.mMeshDirty = false;
     if (!renderData.mMesh) {
@@ -393,7 +393,7 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     // ========================== Room supports ===============================
     meshRoomSupports(building, staticMeshBuilder, rawWoodTexture);
 
-    staticMeshBuilder.finishMesh(*renderData.mMesh, MeshDrawMode::STATIC);
+    staticMeshBuilder.finishMesh(renderData.mMesh, MeshDrawMode::STATIC, building.getAABB().pos);
 
     if (visLog) visLog->finish();
 

@@ -1,0 +1,202 @@
+#include "stdafx.h"
+#include "RenderThreadTasks.h"
+
+#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/RenderContext.h"
+#include "rendering/mesh/TileMeshBuilderMethods.h"
+#include "rendering/mesh/BillboardMeshBuilder.h"
+
+#include "tile/TileContainer.h"
+
+#include <boost/pool/singleton_pool.hpp>
+
+class MeshTaskData {
+public:
+    // TODO: Are we guarenteeing quads?
+    MeshTaskData() : staticMeshBuilder(true), dynamicMeshBuilder(false) {};
+
+    void* operator new(size_t count);
+
+    void operator delete(void* pointer, size_t size);
+
+    TileContainer* container;
+    MeshBuilder staticMeshBuilder;
+    MeshBuilder dynamicMeshBuilder;
+    BillboardMeshBuilder billboardMeshBuilder;
+};
+
+// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
+struct mesh_task_pool {};
+using singleton_task_pool = boost::singleton_pool<mesh_task_pool, sizeof(MeshTaskData), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 256u>;
+
+void* MeshTaskData::operator new(size_t count) {
+    assert(IS_RENDER_THREAD());
+    UNUSED(count);
+    return singleton_task_pool::malloc();
+}
+
+void MeshTaskData::operator delete(void* pointer, size_t size) {
+    assert(IS_RENDER_THREAD());
+    UNUSED(size);
+    return singleton_task_pool::free(pointer);
+}
+
+RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;;
+
+RenderThreadTasks::RenderThreadTasks()
+{
+
+}
+
+RenderThreadTasks::~RenderThreadTasks()
+{
+
+}
+
+
+RenderThreadTasks& RenderThreadTasks::initInstance() {
+    if (!sInstance) {
+        sInstance = new RenderThreadTasks();
+    }
+    return *sInstance;
+}
+
+RenderThreadTasks& RenderThreadTasks::getInstance()
+{
+    assert(sInstance);
+    return *sInstance;
+}
+
+void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerToMesh) {
+    assert(IS_GAME_THREAD());
+    containerToMesh->incRef();
+    TileContainerRenderData& tileRenderData = containerToMesh->getRenderData();
+
+    MeshTaskData* taskData = new MeshTaskData;
+    tileRenderData.mHasMesh = true;
+    Services::Threadpool::ref().addTask([this, taskData](ThreadPoolWorkerData*) {
+        constexpr ui32 RESERVE_VERT_COUNT_STATIC = 512; // Most chunks are less than this
+        TileContainer* containerToMesh = taskData->container;
+        taskData->staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);
+        taskData->billboardMeshBuilder.reserveBillboardCount(CHUNK_SIZE / 2);
+
+        // ========================== Mesh Tiles ===============================
+        TileMeshBuilderMethods::meshTileContainerStatic(taskData->staticMeshBuilder, &taskData->billboardMeshBuilder, *containerToMesh, nullptr /*physicsMesh*/);
+        TileMeshBuilderMethods::meshTileContainerDynamic(taskData->staticMeshBuilder, *containerToMesh);
+
+        // Pass result to the render thread
+        mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* meshTaskData) {
+            MeshTaskData* taskData = static_cast<MeshTaskData*>(meshTaskData);
+            TileContainer* tileContainer = taskData->container;
+            TileContainerRenderData& tileRenderData = tileContainer->getRenderData();
+
+            auto&& it = context.mTileContainerMeshData.find(tileContainer);
+            if (it != context.mTileContainerMeshData.end()) {
+                // Updating an existing mesh
+
+                // No need to dispose previous meshes as the meshbuilder will handle it
+                TileContainerMeshData& meshData = context.mTileContainerMeshData[tileContainer];
+
+                const Mesh* prevStatic = meshData.mStaticMesh.get();
+                assert(!prevStatic || prevStatic->isValid());
+                const Mesh* prevDynamic = meshData.mDynamicMesh.get();
+                assert(!prevDynamic || prevDynamic->isValid());
+                const Mesh* prevBillboard = meshData.mBillboardMesh.get();
+                assert(!prevBillboard || prevBillboard->isValid());
+
+                // Upload mesh buffers
+                taskData->staticMeshBuilder.finishMesh(meshData.mStaticMesh, MeshDrawMode::STATIC, tileContainer->getWorldPos3D());
+                taskData->dynamicMeshBuilder.finishMesh(meshData.mDynamicMesh, MeshDrawMode::DYNAMIC, tileContainer->getWorldPos3D());
+                taskData->billboardMeshBuilder.finishMesh(meshData.mBillboardMesh, MeshDrawMode::STATIC, tileContainer->getWorldPos3D());
+
+                bool hadAny = false;
+                // Static
+                if (meshData.mStaticMesh) {
+                    hadAny = true;
+                    if (!prevStatic) {
+                        // Only add if we arent already in the renderer
+                        context.addStaticMesh(meshData.mStaticMesh.get());
+                    }
+                }
+                else if (prevStatic) {
+                    context.removeStaticMesh(prevStatic);
+                }
+                // Dynamic
+                if (meshData.mDynamicMesh) {
+                    hadAny = true;
+                    if (!prevDynamic) {
+                        // Only add if we arent already in the renderer
+                        context.addDynamicMesh(meshData.mDynamicMesh.get());
+                    }
+                }
+                else if (prevDynamic) {
+                    context.removeDynamicMesh(prevDynamic);
+                }
+                // Billboard
+                if (meshData.mBillboardMesh) {
+                    hadAny = true;
+                    if (!prevBillboard) {
+                        // Only add if we arent already in the renderer
+                        context.addBillboardMesh(meshData.mBillboardMesh.get());
+                    }
+                }
+                else if (prevBillboard) {
+                    context.removeBillboardMesh(prevBillboard);
+                }
+
+                // If we no longer have any valid mesh, remove it from any render list
+                if (!hadAny) {
+                    context.mTileContainerMeshData.erase(tileContainer);
+                }
+            }
+            else {
+                // Creating a new mesh
+                TileContainerMeshData meshData;
+
+                // Upload mesh buffers
+                taskData->staticMeshBuilder.finishMesh(meshData.mStaticMesh, MeshDrawMode::STATIC, tileContainer->getWorldPos3D());
+                taskData->dynamicMeshBuilder.finishMesh(meshData.mDynamicMesh, MeshDrawMode::DYNAMIC, tileContainer->getWorldPos3D());
+
+                // If any mesh is valid, track for draw
+                bool hadAny = false;
+                if (meshData.mStaticMesh->isValid()) {
+                    hadAny = true;
+                    context.addStaticMesh(meshData.mStaticMesh.get());
+                }
+                if (meshData.mDynamicMesh->isValid()) {
+                    hadAny = true;
+                    context.addDynamicMesh(meshData.mDynamicMesh.get());
+                }
+                if (meshData.mBillboardMesh->isValid()) {
+                    hadAny = true;
+                    context.addBillboardMesh(meshData.mBillboardMesh.get());
+                }
+
+                if (hadAny) {
+                    context.mTileContainerMeshData[tileContainer] = std::move(meshData);
+                }
+            }
+
+            // Release
+            tileContainer->decRef();
+
+            delete taskData;
+        }, taskData));
+    }, nullptr);
+}
+
+void RenderThreadTasks::removeTileContainerMesh(TileContainer* container) {
+    assert(IS_GAME_THREAD());
+    TileContainerRenderData& tileRenderData = container->getRenderData();
+    // It is OK for the container to be nulled or re-used after we dangle this pointer, because we are only using it as an ID
+    if (tileRenderData.mHasMesh) {
+        mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* container) {
+            TileContainer* tileContainer = static_cast<TileContainer*>(container);
+            auto&& it = context.mTileContainerMeshData.find(tileContainer);
+            if (it != context.mTileContainerMeshData.end()) {
+                context.mTileContainerMeshData.erase(it);
+            }
+        }, container));
+    }
+    tileRenderData.reset();
+}

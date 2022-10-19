@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "TerrainMeshManager.h"
 
+#include "world/IWorld.h"
 
 #include "world/HeightmapTerrainQuadtree.h"
 
@@ -13,19 +14,15 @@ TerrainMeshManager::TerrainMeshManager() {
     }
 }
 
-TerrainMeshManager::~TerrainMeshManager()
-{
+TerrainMeshManager::~TerrainMeshManager() {
 
 }
 
-void TerrainMeshManager::update(const f32v2& loadCenter, bool forceUpdate)
-{
-    mUpdateTimer.startFrame();
-    // Update terrain on a slow tick interval
-    if (mUpdateTimer.tryTick() || forceUpdate) {
-        for (auto&& terrainQuadtree : mTerrainTrees) {
-            terrainQuadtree.update(loadCenter);
-        }
+void TerrainMeshManager::tick() {
+    assert(IS_GAME_THREAD());
+    const f32v2& loadCenter = sWorld->getLoadCenter();
+    for (auto&& terrainQuadtree : mTerrainTrees) {
+        terrainQuadtree.update(loadCenter);
     }
 }
 

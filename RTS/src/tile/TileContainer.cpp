@@ -57,16 +57,9 @@ std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileCon
     return sTileContainers;
 }
 
-TileContainerRenderData::~TileContainerRenderData()
-{
-
-}
-
 void TileContainerRenderData::reset() {
-    mIsVisible = false;
-    mStaticMesh.reset();
-    mDynamicMesh.reset();
-    mDirtyStaticMesh = false;
+    assert(IS_RENDER_THREAD());
+    mHasMesh = false;
     mDirtyDynamicMesh = false;
 }
 
@@ -101,7 +94,8 @@ void TileContainer::updateMainThread() {
             mWalls[id].copyThreadSafeData();
         }
         mTilesNeedingThreadSafeCopy.clear();
-        mRenderData.mDirtyStaticMesh = true;
+        // Thread data is now updated, mesh and everything are marked dirty
+        mDirtyData = true;
         mDirtyNav = true; // TODO: Make this smarter
     }
 }
@@ -292,14 +286,18 @@ void TileContainer::removeEntrance(TileIndex pos)
 void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
 {
     Tile& tile = mTiles[tileIndex];
-    if (isReadLocked && !tile.isUpdateQueued()) {
-        mTilesNeedingThreadSafeCopy.push_back(tileIndex);
-        tile.tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+    if (isReadLocked) {
+        if (!tile.isUpdateQueued()) {
+            mTilesNeedingThreadSafeCopy.push_back(tileIndex);
+            tile.tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
+        }
+    }
+    else {
+        // When not locked we can immediately mark dirty
+        mDirtyNav = true;
+        mDirtyData = true;
     }
 
-    // TODO: Only dirty nav graph and mesh if we actually updated data
-    mRenderData.mDirtyStaticMesh = true;
-    mDirtyNav = true;
 
     // Potentially block or free terrain below
     // TODO: Proper intersection

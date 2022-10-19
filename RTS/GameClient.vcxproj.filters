@@ -57,7 +57,7 @@
     <ClCompile Include="src\world\Chunk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\ChunkRenderer.cpp">
+    <ClCompile Include="src\rendering\TileContainerRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\ChunkGenerator.cpp">
@@ -576,10 +576,16 @@
     <ClCompile Include="src\network\cli\CliMessage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\GameThread.cpp">
+    <ClCompile Include="src\time\GameTimeManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\time\GameTimeManager.cpp">
+    <ClCompile Include="src\rendering\RenderThreadTasks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gamethread\GameThreadTasks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\gamethread\GameThread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -632,7 +638,7 @@
     <ClInclude Include="src\world\Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\ChunkRenderer.h">
+    <ClInclude Include="src\rendering\TileContainerRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\ChunkGenerator.h">
@@ -1322,10 +1328,16 @@
     <ClInclude Include="src\network\cli\CliMessage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\GameThread.h">
+    <ClInclude Include="src\time\GameTimeManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\time\GameTimeManager.h">
+    <ClInclude Include="src\rendering\RenderThreadTasks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gamethread\GameThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gamethread\GameThreadTasks.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

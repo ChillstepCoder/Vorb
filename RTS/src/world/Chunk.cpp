@@ -4,6 +4,8 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
+// TODO: Can we eliminate this?
+#include "rendering/RenderThreadTasks.h"
 
 #include "pathfinding/NavWorld.h"
 #include "pathfinding/NavThread.h"
@@ -40,7 +42,7 @@ void Chunk::init(const ChunkID& chunkId) {
 }
 
 void Chunk::allocateTileContainer() {
-    // TODO: Not always
+    assert(!mTileContainer);
     const i32v2& worldPosInt2D = mChunkId.getWorldPosInt();
     const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
     mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, true);
@@ -59,38 +61,21 @@ void Chunk::freeTiles() {
 void Chunk::dispose() {
     if (mTileContainer) {
         assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
-    }
-
-    if (isDataReady()) {
-        Chunk& bottomNeighbor = getBottomNeighbor();
-        if (bottomNeighbor.isDataReady()) {
-            --bottomNeighbor.mDataReadyNeighborCount;
-        }
-        Chunk& leftNeighbor = getLeftNeighbor();
-        if (leftNeighbor.isDataReady()) {
-            --leftNeighbor.mDataReadyNeighborCount;
-        }
-        Chunk& rightNeighbor = getRightNeighbor();
-        if (rightNeighbor.isDataReady()) {
-            --rightNeighbor.mDataReadyNeighborCount;
-        }
-        Chunk& topNeighbor = getTopNeighbor();
-        if (topNeighbor.isDataReady()) {
-            --topNeighbor.mDataReadyNeighborCount;
+        if (mTileContainer->getRenderData().mHasMesh && RenderThreadTasks::exists()) {
+            // TODO: can we move this so its an event?
+            RenderThreadTasks::getInstance().removeTileContainerMesh(mTileContainer);
         }
     }
 
     mState = e_cast(ChunkState::INVALID);
-
-    mDataReadyNeighborCount = 0;
-
-    mChunkRenderData.mBillboardMesh.reset();
-    // Make sure no funny business
-    // TOCO: Crashes on shutdown
-    if (mChunkRenderData.mGrassLod) assert(IS_SHUTTING_DOWN || !mChunkRenderData.mGrassLod->getRefCount());
-    mChunkRenderData.mGrassLod.reset();
-
     freeTiles();
+
+    //mChunkRenderData.mBillboardMesh.reset();
+    //// Make sure no funny business
+    //// TOCO: Crashes on shutdown
+    //if (mChunkRenderData.mGrassLod) assert(IS_SHUTTING_DOWN || !mChunkRenderData.mGrassLod->getRefCount());
+    //mChunkRenderData.mGrassLod.reset();
+
 }
 
 void Chunk::updateMainThread() {
@@ -276,17 +261,17 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
     constexpr ui32 DEBUG_DURATION = 100;
     const f32v2 dims = f32v2(CHUNK_WIDTH);
     const f32v2 halfDims = dims * 0.5f;
-    const f32v2 offsetFromCenter = editPosition - (mWorldPos + halfDims);
+    const f32v2 worldPos = getWorldPos();
+    const f32v2 offsetFromCenter = editPosition - (worldPos + halfDims);
     if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
         // This chunk is touched, mark meshes as dirty and pass on
         if (mChunkRenderData.mGrassLod) {
             mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
         }
-        mTileContainer->setDirtyStaticMesh(true);
 
         // Update baseZ position
         const f32v2 startPos = editRadius - f32v2(editRadius);
-        f32v2 offsetFromChunk = startPos - mWorldPos;
+        f32v2 offsetFromChunk = startPos - worldPos;
         f32 rangeX = editRadius * 2.0f;
         f32 rangeY = editRadius * 2.0f;
         if (offsetFromChunk.x < 0.0f) {
@@ -305,7 +290,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                     Tile& tile = mTileContainer->getMutableTileAt(tileIndex);
                     if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + mWorldPos));
+                        mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + worldPos));
                     }
                     else {
                         // What happens here? What happens when we cover up the tile?
@@ -315,54 +300,4 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
         }
     }
 
-}
-
-void Chunk::incRefNeighbors4() const {
-    assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer()->incRef();
-    getLeftNeighbor().getTileContainer()->incRef();
-    getRightNeighbor().getTileContainer()->incRef();
-    getTopNeighbor().getTileContainer()->incRef();
-}
-
-void Chunk::decRefNeighbors4() const {
-    assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer()->decRef();
-    getLeftNeighbor().getTileContainer()->decRef();
-    getRightNeighbor().getTileContainer()->decRef();
-    getTopNeighbor().getTileContainer()->decRef();
-}
-
-void Chunk::incReadLockNeighbors4() const {
-    assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer()->incReadLock();
-    getLeftNeighbor().getTileContainer()->incReadLock();
-    getRightNeighbor().getTileContainer()->incReadLock();
-    getTopNeighbor().getTileContainer()->incReadLock();
-}
-
-void Chunk::decReadLockNeighbors4() const {
-    assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().getTileContainer()->decReadLock();
-    getLeftNeighbor().getTileContainer()->decReadLock();
-    getRightNeighbor().getTileContainer()->decReadLock();
-    getTopNeighbor().getTileContainer()->decReadLock();
-}
-
-void Chunk::incReadLockAndRefCountNeighbors4AndSelf() const {
-    assert(mDataReadyNeighborCount == 4);
-    incReadLockAndRefCount();
-    getBottomNeighbor().incReadLockAndRefCount();
-    getLeftNeighbor().incReadLockAndRefCount();
-    getRightNeighbor().incReadLockAndRefCount();
-    getTopNeighbor().incReadLockAndRefCount();
-}
-
-void Chunk::decReadLockAndRefCountNeighbors4AndSelf() const {
-    assert(mDataReadyNeighborCount == 4);
-    getBottomNeighbor().decReadLockAndRefCount();
-    getLeftNeighbor().decReadLockAndRefCount();
-    getRightNeighbor().decReadLockAndRefCount();
-    getTopNeighbor().decReadLockAndRefCount();
-    decReadLockAndRefCount();
 }

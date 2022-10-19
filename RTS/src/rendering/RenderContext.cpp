@@ -13,7 +13,7 @@
 #include "EntityComponentSystemRenderer.h"
 #include "rendering/BuildingRenderer.h"
 #include "rendering/CharacterRenderer.h"
-#include "rendering/ChunkRenderer.h"
+#include "rendering/TileContainerRenderer.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/CityDebugRenderer.h"
 #include "rendering/CloudRenderer.h"
@@ -30,8 +30,8 @@
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
+#include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/MeshBuilder.h"
-#include "rendering/mesh/TerrainMeshManager.h"
 
 #include "screens/ScreenState.h"
 #include "network/srv/GameServer.h"
@@ -134,6 +134,8 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mWindow(window)
 {
 
+    // TODO: New depth - https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
+
     // If we are in a debug context, initialize debug output
     // This is set via vui::MainGame::initSystems()
     {
@@ -184,6 +186,10 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         mGBuffers[i].setSize(ui32v2(mScreenResolution));
         mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS]);
         if (i != 2) {
+            // TODO: DEPTH_COMPONENT32F instead of DEPTH_COMPONENT32 and then
+            // https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/
+            // reverse https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
+            //glClipControl();
             mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
         }
     }
@@ -206,10 +212,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    // Init mesh managers
-    // TODO: Avoid the const cast???
-    mTerrainMeshManager = std::make_unique<TerrainMeshManager>();
-
 }
 
 RenderContext::~RenderContext() {
@@ -220,6 +222,7 @@ RenderContext& RenderContext::initInstance(const f32v2& screenResolution, SDL_Wi
     if (!sInstance) {
         sInstance = new RenderContext(screenResolution, window);
     }
+    RenderThreadTasks::initInstance();
     return *sInstance;
 }
 
@@ -238,7 +241,7 @@ void RenderContext::onWorldBegin() {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
         mCharacterRenderer = std::make_unique<CharacterRenderer>();
-        mChunkRenderer = std::make_unique<ChunkRenderer>(*mMaterialRenderer);
+        mChunkRenderer = std::make_unique<TileContainerRenderer>(*mMaterialRenderer);
         mLightRenderer = std::make_unique<LightRenderer>(*mMaterialRenderer);
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(*mMaterialRenderer, mScreenResolution);
@@ -295,15 +298,10 @@ void RenderContext::initPostLoad() {
 
 }
 
-void RenderContext::updateMeshManagers(f32v2 playerPos, bool forceUpdate /*= false*/)
-{
-    mTerrainMeshManager->update(playerPos, forceUpdate);
-}
-
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
-    // Update terrain meshes
-    updateMeshManagers(playerPos);
+    // Update thread msg queue
+    updateRenderThreadProcs();
 
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();
@@ -361,6 +359,8 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
 void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 frameAlpha, f32 elapsedSec) {
 
+    // TODO: Render state based on: https://github.com/RegrowthStudios/SoACode-Public/blob/develop/SoA/MTRenderStateManager.h
+
     // TODO: Should this happen here? Maybe assert instead?
     beginFrame(&camera, playerPos);
     checkGlError("RenderContext::Begin Frame");
@@ -396,7 +396,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     }
 
     // Tiles
-    mChunkRenderer->renderTiles(camera);
+    mChunkRenderer->renderTiles(mStaticMeshes, camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
@@ -433,14 +433,15 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
 
     // === Post AO passes ===
     // Grass + billboards
-    mChunkRenderer->renderBillboards(camera);
+
+    mChunkRenderer->renderBillboards(mBillboardMeshes, camera);
     if (!sDebugOptions.mHideGrass) {
-        mChunkRenderer->renderGrass(camera, playerPos);
+        mChunkRenderer->renderGrass(mGrassQuadtrees, camera, playerPos);
     }
 
     // Terrain
     if (!sDebugOptions.mDisableTerrain) {
-        mTerrainRenderer->renderTerrain(camera, mTerrainMeshManager->getTerrainQuadtrees());
+        mTerrainRenderer->renderTerrain(camera, mTerrainMeshes);
     }
 
     if (!sDebugOptions.mHideCharacters) {
@@ -477,7 +478,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            mChunkRenderer->renderWorldShadows(camera, mShadowRenderer->getMaxDistance());
+            mChunkRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance());
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
@@ -605,7 +606,7 @@ void RenderContext::renderFrame(const Camera3D& camera, f32v3 playerPos, f32 fra
     // === Transparency ===
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater) {
-        mTerrainRenderer->renderWater(camera, mTerrainMeshManager->getTerrainQuadtrees());
+        mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes);
     }
 
     // Update active
@@ -668,6 +669,21 @@ VGTexture RenderContext::getSSAOTexture() const {
     return mAmbientOcclusion->getSSAOTexture();
 }
 
+void RenderContext::updateRenderThreadProcs() {
+    constexpr ui32 BULK_DEQUEUE_SIZE = 32;
+    std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
+    PreciseTimer timer;
+    // TODO: Use optik for profiling
+    if (const size_t count = RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            procs[i].first(*this, procs[i].second);
+        }
+    }
+    if (timer.stop() > 20.0f) {
+        std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
+    }
+}
+
 void RenderContext::renderDebug(const Camera3D& camera) {
     // City Debug
     if (sDebugOptions.mCities) {
@@ -707,24 +723,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
             }
 
             DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color);
-            if (chunk.isDataReady()) {
-                color4 neighborColor(1.0f, 0.0f, 0.0f);
-                if (chunk.mDataReadyNeighborCount == 1) {
-                    neighborColor = color4(0.0f, 1.0f, 0.0f);
-                }
-                if (chunk.getBottomNeighbor().isDataReady()) {
-                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, 0.0f), f32v2(0.0f, 6.0f), neighborColor);
-                }
-                if (chunk.getTopNeighbor().isDataReady()) {
-                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH * 0.5f, CHUNK_WIDTH), f32v2(0.0f, -6.0f), neighborColor);
-                }
-                if (chunk.getLeftNeighbor().isDataReady()) {
-                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(0.0f, CHUNK_WIDTH * 0.5f), f32v2(6.0f, 0.0f), neighborColor);
-                }
-                if (chunk.getRightNeighbor().isDataReady()) {
-                    DebugRenderer::drawLine(chunk.getWorldPos() + f32v2(CHUNK_WIDTH, CHUNK_WIDTH * 0.5f), f32v2(-6.0f, 0.0f), neighborColor);
-                }
-            }
+           
             // Count refs
             const int refCount = chunk.getTileContainer()->getRefCount();
             const int readCount = chunk.getTileContainer()->getReadLockCount();
@@ -780,9 +779,10 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
     // Terrain LOD debug
     if (sDebugOptions.mDebugTerrainLod) {
-        for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
+        assert(false);
+        /*for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
             terrainQuadtree.renderDebug(camera);
-        }
+        }*/
     }
 
     // Axis labels
@@ -797,7 +797,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     sWorld->getPhysicsWorld().debugRender();
 
     // Debug
-    DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
+    // DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
     // Visual logger
     if (sDebugOptions.mEnableVisualLogs) {
@@ -931,4 +931,9 @@ void RenderContext::buildHorizonMesh()
         vtr.color = waterColor;
     }
     mHorizonQuad->setData(verts, 4, MeshDrawMode::STATIC);
+}
+
+TileContainerMeshData::~TileContainerMeshData()
+{
+
 }

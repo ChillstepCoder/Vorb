@@ -37,31 +37,37 @@ void BillboardMeshBuilder::reserveBillboardCount(ui32 count) {
     mMainSubMeshData.mSubtextureData.reserve(5); // Arbitrary
 }
 
-void BillboardMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
+void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     // return blank mesh if we have no geometry
     if (mMainSubMeshData.mBillboards.empty()) {
+        mesh.reset();
         return;
     }
+    if (!mesh) {
+        mesh = std::make_unique<Mesh>();
+    }
+
     // Always shared
-    mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+    mesh->mFlags.setBit(MeshFlags::USING_SHARED_IBO);
 
     // Set bounds
-    mesh.mBoundingSphere = mBoundingSphere;
+    mesh->mPosition = worldPos;
+    mesh->mBoundingSphere = mBoundingSphere;
 
     // Allocate correct number of submeshes
-    mesh.mSubMeshes.resize(mSubMeshesData.size());
+    mesh->mSubMeshes.resize(mSubMeshesData.size());
 
     // Allocate all buffers if needed
-    initMeshBuffers(mesh.mMainMesh);
-    for (auto&& subMesh : mesh.mSubMeshes) {
+    initMeshBuffers(mesh->mMainMesh);
+    for (auto&& subMesh : mesh->mSubMeshes) {
         initMeshBuffers(subMesh);
     }
 
     // Upload data
-    uploadBufferData(mesh.mMainMesh, mMainSubMeshData, drawMode);
+    uploadBufferData(mesh->mMainMesh, mMainSubMeshData, drawMode);
     mMainSubMeshData.clear();
-    for (size_t i = 0; i < mesh.mSubMeshes.size(); ++i) {
-        uploadBufferData(mesh.mSubMeshes[i], mSubMeshesData[i], drawMode);
+    for (size_t i = 0; i < mesh->mSubMeshes.size(); ++i) {
+        uploadBufferData(mesh->mSubMeshes[i], mSubMeshesData[i], drawMode);
         mSubMeshesData[i].clear();
     }
 

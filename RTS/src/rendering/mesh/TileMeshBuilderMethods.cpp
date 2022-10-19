@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "TileMeshBuilderMethods.h"
 
+#include "rendering/mesh/BillboardMeshBuilder.h"
 #include "rendering/mesh/MeshBuilder.h"
 
 #include "tile/TileHandle.h"
@@ -9,6 +10,8 @@
 
 #include "physics/StaticPhysicsMesh.h"
 #include "resources/TileRepository.h"
+
+#include "world/IHeightmapGrid.h"
 
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_WIDTH = 6;
 constexpr int TILE_TEX_METHOD_CONNECTED_WALL_HEIGHT = 5;
@@ -466,7 +469,7 @@ void meshWalls(const TileContainer& tileContainer, MeshBuilder& meshBuilder, OPT
     }
 }
 
-void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
     const ui32v3& tileDims = tileContainer.getDims();
     // =============== Mesh tiles ===============
     TileIndex index = 0;
@@ -474,9 +477,9 @@ void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, c
         for (ui32 y = 0; y < tileDims.y; ++y) {
             for (ui32 x = 0; x < tileDims.x; ++x, ++index) {
                 const Tile& tile = tileContainer.getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZOffsetMainThread(); // TODO: Thread safe when async
+                const f32 groundZPosition = tile.getGroundZOffsetThreadSafe(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayersMainThread()[layerIndex];  // TODO: Thread safe when async
+                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];  // TODO: Thread safe when async
                     if (layerTile == TILE_ID_NONE) {
                         continue;
                     }
@@ -487,7 +490,12 @@ void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, c
                     // Tile mesh
                     // Flora mesh ONLY
                     if (tileData.shape == TileShape::THIN) {
-                        assert(false); // Unsupported
+                        // Billboards
+                        if (billboardMeshBuilder) {
+                            f32 zPosition = glm::max(groundZPosition, sHeightmapGrid->computeCenterHeightAtTile(ui32v2(tileContainer.getWorldPos2D()) + ui32v2(x, y)));
+                            f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
+                            billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
+                        }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
                         TileMeshBuilderMethods::addBlock(meshBuilder, f32v3(x, y, z * tileContainer.getFloorHeight()), TileHandle(&tileContainer, index), tileData, physMesh);

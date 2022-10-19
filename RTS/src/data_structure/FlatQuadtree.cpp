@@ -153,6 +153,10 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
                 else {
                     patch.mFlags &= (~QUADTREE_PATCH_IS_CROSSFADING);
                 }
+                resetCrossfadeRenderForPatch(index, 0, currentCrossfade);
+            }
+            else {
+                updateCrossfadeRenderForPatch(index, currentCrossfade);
             }
             ++i;
             continue;
@@ -190,14 +194,17 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
                 // We can recombine
                 patch.mStatus = QUADTREE_PATCH_STATUS_VALID;
                 // Start crossfade
+                assert(index < QUADTREE_FADE_LIST_SIZE);
                 mCrossfadeTable[index] = 0.0f;
                 mCrossfadeActiveTable[mNumCrossfading++] = index;
                 patch.initiateCrossfadeIn(index);
+                resetCrossfadeRenderForPatch(index, 1, 0.0f);
                 ui16 childIndexFirst = getQuadtreeChildIndexFirst(index);
                 ui16 childIndexLast = getQuadtreeChildIndexLast(index);
                 // Crossfade children
                 for (ui16 j = childIndexFirst; j <= childIndexLast; ++j) {
                     mNodes[j].initiateCrossfadeOut(index);
+                    resetCrossfadeRenderForPatch(j, -1, 0.0f);
                 }
                 // Don't move to next
             }
@@ -214,15 +221,19 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
                 // children are finished meshing
                 if (patch.areChildrenDoneMeshing(index, mNodes)) {
                     // Start crossfade
+                    assert(index < QUADTREE_FADE_LIST_SIZE);
                     mCrossfadeTable[index] = 0.0f;
                     mCrossfadeActiveTable[mNumCrossfading++] = index;
                     // Tell children they can draw
                     ui16 childIndexFirst = getQuadtreeChildIndexFirst(index);
                     for (ui16 i = 0; i < 4; ++i) {
-                        QuadtreePatch& child = mNodes[childIndexFirst + i];
-                        child.initiateCrossfadeIn(index);
+                        const ui16 childIndex = childIndexFirst + i;
+                        QuadtreePatch& child = mNodes[childIndex];
+                        child.initiateCrossfadeIn(childIndex);
+                        resetCrossfadeRenderForPatch(childIndex, 1, 0.0f);
                     }
                     patch.initiateCrossfadeOut(index);
+                    resetCrossfadeRenderForPatch(index, -1, 0.0f);
                     continue;
                 }
                 ++i;
@@ -307,9 +318,9 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
     // Update all crossfade, in separate table so we can deterministically bind crossfade for 5 patches at once (parent and children)
     constexpr f32 CROSSFADE_AMMOUNT = 0.05f; // TODO: Frame independent;
     for (ui32 i = 0; i < mNumCrossfading;) {
-        ui16 index = mCrossfadeActiveTable[i];
-        mCrossfadeTable[index] += CROSSFADE_AMMOUNT;
-        if (mCrossfadeTable[index] >= 1.0f) {
+        ui16 crossfadeIndex = mCrossfadeActiveTable[i];
+        mCrossfadeTable[crossfadeIndex] += CROSSFADE_AMMOUNT;
+        if (mCrossfadeTable[crossfadeIndex] >= 1.0f) {
             mCrossfadeActiveTable[i] = mCrossfadeActiveTable[--mNumCrossfading];
         }
         else {
