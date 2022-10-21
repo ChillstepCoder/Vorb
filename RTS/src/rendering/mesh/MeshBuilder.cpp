@@ -636,6 +636,7 @@ void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const 
 }
 
 void MeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+    assert(IS_RENDER_THREAD());
 
     // return blank mesh if we have no geometry
     if (mMainSubMeshData.mVerts.empty()) {

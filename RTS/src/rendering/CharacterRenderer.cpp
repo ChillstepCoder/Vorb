@@ -58,26 +58,26 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const CharacterContr
     if (isTransitioning) {
 
         // Fade out previous state
-        if (cmp.mAnimState.mPrimaryStateTrack != UINT8_MAX) {
-            cmp.mAnimState.mTracks[cmp.mAnimState.mPrimaryStateTrack].fadeOut(FADE_IN_SLOW);
+        if (cmp.mAnimState->mPrimaryStateTrack != UINT8_MAX) {
+            cmp.mAnimState->mTracks[cmp.mAnimState->mPrimaryStateTrack].fadeOut(FADE_IN_SLOW);
         }
 
         // TODO: Array lookup mapping instead of switch?
         switch (motionCmp.mMode) {
             case LocomotionMode::IDLE: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::IDLE, FADE_IN_SLOW);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::IDLE, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::WALK: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::WALK_FRONT, FADE_IN_SLOW);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::WALK_FRONT, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::RUN: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::RUN_FRONT, FADE_IN_SLOW);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::RUN_FRONT, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::SPRINT: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::SPRINT_FRONT, FADE_IN_SLOW);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::SPRINT_FRONT, FADE_IN_SLOW);
                 break;
             }
             case LocomotionMode::DODGE: {
@@ -89,15 +89,15 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const CharacterContr
                 std::cout << "BEGIN JUMP ASSERT FAIL\n";
                 break;
             case LocomotionMode::JUMPING: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::JUMPING, FADE_IN_FAST);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::JUMPING, FADE_IN_FAST);
                 break;
             }
             case LocomotionMode::FALLING: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::FALLING, FADE_IN_MEDIUM);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::FALLING, FADE_IN_MEDIUM);
                 break;
             }
             case LocomotionMode::LANDING: {
-                cmp.mAnimState.fadeInStateTrack(AnimMachineState::LANDING, FADE_IN_FAST);
+                cmp.mAnimState->fadeInStateTrack(AnimMachineState::LANDING, FADE_IN_FAST);
                 break;
             }
             default:
@@ -149,7 +149,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
     ui32 numValidTracks = 0;
     for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        AnimTrack& currentTrack = cmp.mAnimState.mTracks[i];
+        AnimTrack& currentTrack = cmp.mAnimState->mTracks[i];
         // If our weightScale made us inactive, make sure to fully disable
         if (!currentTrack.isActive()) {
             // Always force fadeout
@@ -180,14 +180,14 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
     // One shot animation
     f32 oneShotWeight = 0.0f;
-    AnimTrack& oneShotTrack = cmp.mAnimState.mCurrentOneShotTrack;
+    AnimTrack& oneShotTrack = cmp.mAnimState->mCurrentOneShotTrack;
     if (oneShotTrack.isActive()) {
         oneShotWeight = oneShotTrack.getTotalWeight();
         // Allocate buffers
         locals[numValidTracks].resize(numSoaJoints);
         // Sample animation
         ozz::animation::SamplingJob sampling_job;
-        sampling_job.animation = cmp.mAnimState.mCurrentOneShotAnimation;
+        sampling_job.animation = cmp.mAnimState->mCurrentOneShotAnimation;
         sampling_job.context = oneShotTrack.mContext.get();
         sampling_job.ratio = oneShotTrack.mTime / oneShotTrack.mDuration;
         sampling_job.output = make_span(locals[numValidTracks]);

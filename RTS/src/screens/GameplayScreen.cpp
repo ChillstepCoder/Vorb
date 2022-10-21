@@ -27,6 +27,8 @@
 #include "world/WorldObjectQuery.h"
 #include "util/Utils.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "resources/ResourceManager.h"
 #include "resources/TileRepository.h"
 #include "item/ItemRepository.h"
@@ -240,12 +242,9 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
         sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
         mFps = sFps;
 
-        IEntityComponentSystem& ecs = mWorld->getECS();
-        PhysicsComponent& cmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
-        const f32v3 playerPos = cmp.getInterpolatedPosition();
         mRenderContext->renderFrame(*mCameraController, frameAlpha, gameTime.elapsedSec);
 
-        tryUpdateAndRenderInteractPopup(playerPos);
+        tryUpdateAndRenderInteractPopup();
 
         mRenderContext->endFrame();
     }
@@ -278,7 +277,7 @@ void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
     }
 
     // Update editors
-    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
+    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera(), mMousePickRay);
 
     updateTilePicking();
 
@@ -293,7 +292,7 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
     hostWorld->onFrameBegin();
 
     // Update editors
-    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
+    UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera(), mMousePickRay);
 
     updateTilePicking();
 
@@ -337,11 +336,11 @@ void GameplayScreen::updateTilePicking() {
 	pickRayEyeSpace.w = 0.0f;
 	f32v4 pickRayWorldSpace = glm::inverse(mCameraController->getOwnedCamera().getViewMatrix()) * pickRayEyeSpace;
 	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
-	sDebugOptions.mMousePickRay = glm::normalize(pickRayXYZ);
+	mMousePickRay = glm::normalize(pickRayXYZ);
 }
 
 
-void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
+void GameplayScreen::tryUpdateAndRenderInteractPopup() {
     // Handle interact menu TODO: Notify to get this out of here
     if (mRightClickInteractPopup) {
         // Render selected
@@ -352,9 +351,16 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup(const f32v3& playerPos) {
         // TODO: Notify
         if (result & INTERACT_MENU_RESULT_PATHFIND) {
             if (mSelectedTileHandle.isValid()) {
-                IEntityComponentSystem& ecs = mWorld->getECS();
-                NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                cmp.requestCoarsePath(mWorld->getTileHandleAtWorldPos(playerPos), mSelectedTileHandle);
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandle) {
+                    // TODO: Small race condition here if tile handle changes or chunk is destroyed
+                    TileHandle tileHandle = *static_cast<TileHandle*>(vTileHandle);
+                    if (tileHandle.isValid()) {
+                        IEntityComponentSystem& ecs = sWorld->getECS();
+                        PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
+                        NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
+                        cmp.requestCoarsePath(sWorld->getTileHandleAtWorldPos(physCmp.getPosition()), tileHandle);
+                    }
+                }, &mSelectedTileHandle);
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
@@ -514,11 +520,13 @@ void GameplayScreen::initInputs()
     });
 
     vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
+        // Fix this
         UIContext::getInstance().closeTileInspectionPanel();
         if (event.button == vorb::ui::MouseButton::RIGHT) {
+            assert(IS_GAME_THREAD());
             mRightClickTimer.start();
             const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-            PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+            PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
             if (hitResult.didHit()) {
                 mRightClickPickPos = hitResult.mPosition;
             }
@@ -533,7 +541,7 @@ void GameplayScreen::initInputs()
         mMousePosition.y = (f32)event.y;
 
         // Uncomment for pathfind stress test
-       /* TerrainPickData pickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, sDebugOptions.mMousePickRay);
+       /* TerrainPickData pickData = mWorld.getWorldGrid().pickTerrainFromCameraVector(*mCamera3D, mMousePickRay);
         if (pickData.hit.didHit()) {
 
             NavigationComponent& cmp = mWorld.getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
@@ -559,14 +567,7 @@ void GameplayScreen::initInputs()
 
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
-                IEntityComponentSystem& ecs = mWorld->getECS();
-                if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
-                    const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
-                    if (hitResult.didHit()) {
-                        phys->teleportToPoint(hitResult.mPosition);
-                    }
-                }
+                GameThreadTasks::getInstance().addCameraPickTeleportTask(mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
             }
             else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
                 /*    TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
@@ -608,22 +609,7 @@ void GameplayScreen::initInputs()
                     mRightClickInteractPopup.reset();
                 }
                 else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
-                    const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                    PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + sDebugOptions.mMousePickRay * 3000.0f, PICK_TYPE_ALL);
-                    if (hitResult.didHit()) {
-                        // For interact must click in about the same spot
-                        if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                            f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                            WorldObjectQuery worldObjectQuery(worldPos);
-                            if (worldObjectQuery.isValid()) {
-                                // Right click picking
-                                mSelectedTileHandle = worldObjectQuery.getTileHandle();
-                                // Enable context menu
-                                mSelectedScreenPos = screenPos;
-                                mRightClickInteractPopup = std::make_unique<TileInteractPanel>(screenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(worldObjectQuery));
-                            }
-                        }
-                    }
+                    GameThreadTasks::getInstance().addCameraPickInteractTask(mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
                 }
             }
         }

@@ -35,7 +35,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-    if (height > 0.0f) {
+   // if (height > 0.0f) {
         // Surface
         if (grass && height < MAX_GRASS_HEIGHT) {
             f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
@@ -43,15 +43,14 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
                 *grass = 1;
             }
         }
-        if (height < MAX_TREE_HEIGHT) {
-            f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
+        //if (height < MAX_TREE_HEIGHT) {
+            //f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
-            if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * fadeMult) {
+            if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise/* * fadeMult*/) {
                 tile.topLayer = pineTree;
             }
-        }
-    }
-
+       // }
+   // }
     //if (height > 0.3) {
     //    //tile.groundLayer = rock1;
     //    // Mountains
@@ -109,7 +108,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     return tile;
 }
 
-void ChunkGenerator::GenerateChunk(Chunk& chunk, const HeightmapPatchData* heightData) {
+void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
 
     PreciseTimer timer;
 
@@ -117,20 +116,20 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, const HeightmapPatchData* heigh
     chunk.mTileContainer->allocateData();
     const ChunkID& id = chunk.getChunkID();
 
-    const f32v2& chunkPosWorld = chunk.getWorldPos();
+    const f32v2 chunkPosWorld = chunk.getWorldPos();
     f32 maxHeight = 1.0f;
     auto& tiles = chunk.mTileContainer->mTiles;
     for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
         for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
             const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            f32 height = sHeightmapGrid->computeCenterHeightAtTile(heightData->data, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
+            f32 height = sHeightmapGrid->computeCenterHeightAtTile(heightData, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
             ui8 grass = 0;
             Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
             const f32 baseZPos = tile.getGroundZOffsetThreadSafe();
             if (baseZPos + 1.0f > maxHeight) {
                 maxHeight = baseZPos + 1.0f;
             }
-            TileIndex index = chunk.mTileContainer->getTileIndexFromXYZOffset(x, y, 0);
+            const TileIndex index = chunk.mTileContainer->getTileIndexFromXYZOffset(x, y, 0);
             tiles[index] = std::move(tile);
             chunk.mGrass[index] = grass;
         }

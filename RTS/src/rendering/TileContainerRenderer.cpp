@@ -76,6 +76,7 @@ void TileContainerRenderer::renderBillboards(const std::set<const Mesh*>& meshes
     mMaterialRenderer.bindMaterialForRender(*mBillboardMaterial);
     VGUniform offsetUniform = mBillboardMaterial->mProgram.getUniform("unOffset");
     for (auto&& mesh : meshes) {
+        assert(mesh->isValid());
         f32v3 offset = mesh->getPosition() - camera.getPosition();
         glUniform3fv(offsetUniform, 1, &offset.x);
         mesh->draw();

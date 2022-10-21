@@ -27,6 +27,7 @@ void TerrainMeshManager::tick() {
 }
 
 void TerrainMeshManager::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+    assert(IS_GAME_THREAD());
     // Only update terrain which was impacted by brush
     for (auto&& quadtree : mTerrainTrees) {
         quadtree.onDataChanged(pos, brushRadius);
@@ -34,6 +35,7 @@ void TerrainMeshManager::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius
 }
 
 void TerrainMeshManager::dirtyAllTerrain() {
+    assert(IS_GAME_THREAD());
     // Force all terrain to regenerate
     for (size_t i = 0; i < mTerrainTrees.size(); ++i) {
         mTerrainTrees[i].markDirty();

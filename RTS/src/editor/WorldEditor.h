@@ -56,7 +56,7 @@ class WorldEditor {
 public:
     WorldEditor(const f32v2& screenDims);
 
-    void update(const Camera3D& camera);
+    void update(const Camera3D& camera, const f32v3& pickRay);
 
 	void renderBrushDecals(const Camera3D& camera) const;
     void renderUI() const;

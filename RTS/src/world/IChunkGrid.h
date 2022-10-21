@@ -19,7 +19,9 @@ public:
     const Chunk& getChunk(ChunkID id) const { return mChunks[id.id]; }
 
     static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
+    const std::vector<Chunk*>& getLoadingChunks() const { return mLoadingChunks; }
     const std::vector<Chunk*>& getActiveChunks() const { return mActiveChunks; }
+    const std::vector<Chunk*>& getDestroyingChunks() const { return mDestroyingChunks; }
 
     void refresh(const f32v2& loadCenter);
 

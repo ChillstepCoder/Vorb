@@ -278,7 +278,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
 void HeightmapTerrainQuadtree::createMeshesHighestLOD(TerrainMeshTaskData* taskData) {
 
     f32v2 patchWorldPos = mWorldPos + f32v2(PATCH_POSITIONS.data[taskData->patchIndex].xy);
-    ui32v2 intWorldPos(glm::round(mWorldPos));
+    ui32v2 intWorldPos(glm::round(patchWorldPos));
 
     const ui32 quadWidth = HEIGHTMAP_QUAD_SIZE;
     intWorldPos -= quadWidth; // Padding so we start on the side

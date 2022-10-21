@@ -62,7 +62,7 @@ struct AnimState {
 // TODO: File name
 struct CharacterModelComponent {
     const ModelDef* mModel = nullptr;
-    AnimState mAnimState;
+    std::unique_ptr<AnimState> mAnimState;
     f32 mFootstepAlpha;
     LocomotionMode mPrevLocomotionMode = LocomotionMode::IDLE;
     // TODO: Flags
@@ -73,3 +73,4 @@ struct CharacterModelComponent {
     void updateFootstepAlpha(f32 elapsedSec, LocomotionMode currentLocomotionMode);
     void playOneShotAnimation(const ozz::animation::Animation* animation);
 };
+static_assert(sizeof(CharacterModelComponent) == 24, "Keep small");

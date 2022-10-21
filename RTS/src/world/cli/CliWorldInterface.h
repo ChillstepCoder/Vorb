@@ -6,6 +6,7 @@ class Camera3D;
 class TerrainMeshManager;
 class IEntityComponentSystem;
 class IWorld;
+class RenderState;
 
 class CliWorldInterface
 {
@@ -22,7 +23,9 @@ protected:
     void updateParticleSystems(const f32v2& playerPos);
     void onWorldBeginClient();
     void cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
+
     void updateRenderState(IWorld& world);
+    void updateDebugRenderState(IWorld& world, RenderState& renderState);
 
     // Terrain
     std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;

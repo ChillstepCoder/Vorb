@@ -23,9 +23,9 @@ UIContext::~UIContext() {
 
 }
 
-void UIContext::updateEditors(const Camera3D& camera) {
+void UIContext::updateEditors(const Camera3D& camera, const f32v3& mousePickRay) {
     if (sDebugOptions.mShowEditor) {
-        mEditor->update(camera);
+        mEditor->update(camera, mousePickRay);
     }
 }
 

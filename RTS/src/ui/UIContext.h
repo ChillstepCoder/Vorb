@@ -21,7 +21,7 @@ public:
     UIContext(UIContext& other) = delete;
     void operator=(const UIContext&) = delete;
     
-    void updateEditors(const Camera3D& camera);
+    void updateEditors(const Camera3D& camera, const f32v3& mousePickRay);
     void updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio);
     void renderEditorBrushDecals(const Camera3D& camera);
 

@@ -44,8 +44,6 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
     assert(false); // Not found
 }
 
-
-
 TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
     assert(IS_GAME_THREAD() || IS_NAV_THREAD()); // Nav thread is allowed to access tile containers because the world is write locked during nav
     auto&& it = sTileContainerLookup.find(id);
@@ -58,7 +56,6 @@ std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileCon
 }
 
 void TileContainerRenderData::reset() {
-    assert(IS_RENDER_THREAD());
     mHasMesh = false;
     mDirtyDynamicMesh = false;
 }
@@ -71,14 +68,19 @@ void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 f
     mId = id;
 }
 
+std::mutex testMutex;
+
 void TileContainer::allocateData() {
+    testMutex.lock();
     size_t numTiles = mDims.x * mDims.y * mDims.z;
     mTiles.resize(numTiles);
     mWalls.resize(numTiles);
     mFineNavData.resize(numTiles);
+    testMutex.unlock();
 }
 
 void TileContainer::freeData() {
+    assert(IS_GAME_THREAD());
     std::vector<Tile>().swap(mTiles);
     std::vector<TileWallContainer>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);

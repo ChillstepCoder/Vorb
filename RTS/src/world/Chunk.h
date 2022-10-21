@@ -7,6 +7,7 @@
 #include "item/ItemStack.h"
 #include "util/AABB.hpp"
 #include "util/TinyThreadsafeVector.hpp"
+#include "world/ChunkState.h"
 
 class Chunk;
 class Mesh;
@@ -27,18 +28,6 @@ typedef BillboardMesh ChunkBillboardMesh;
 constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
 class IWorldGrid;
-
-enum class ChunkState : ui8 {
-	INVALID,
-	WAITING_HEIGHT,
-	LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
-	TILE_LOAD_FINISHED,
-	FINISHED,
-};
-
-enum class ChunkFlags : ui8 {
-	IN_DESTROY_LIST = 1 << 0,
-};
 
 // TODO: Meshcomponent for cache friendly iterate?
 struct ChunkRenderData {
@@ -96,8 +85,7 @@ public:
 
 
     // =========== Accessors  ===========
-	const i32v2& getChunkPos() const { return mChunkId.pos; }
-    const f32v2& getWorldPos() const { return mChunkId.getWorldPos(); }
+    const f32v2 getWorldPos() const { return mChunkId.getWorldPos(); }
 	const f32v3 getWorldPos3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x, worldPos.y, 0.0f); }
     f32v3 getWorldPosCenter3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
 	ChunkState getState() const { return (ChunkState)mState.load(); }
@@ -161,7 +149,8 @@ public:
 	inline void decRef() const { mTileContainer->decRef(); }
     void incReadLockAndRefCount() const { incRef(); mTileContainer->incReadLock();  }
     void decReadLockAndRefCount() const { mTileContainer->decReadLock(); decRef(); }
-    ui32 getRefCount() const { return mTileContainer->getRefCount(); }
+    ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
+    ui32 getReadLockCount() const { return mTileContainer ? mTileContainer->getReadLockCount() : 0; }
 
 private:
     // =========== Read lock ===========
@@ -170,6 +159,7 @@ private:
     // =========== Members ===========
 	ChunkID mChunkId;
 	f32AABB3 mAABB = f32AABB3(0.0f);
+	// TODO: Not atomic
     std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 	BitFlags<ChunkFlags> mFlags;
 

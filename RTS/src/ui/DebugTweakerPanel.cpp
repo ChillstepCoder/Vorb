@@ -341,7 +341,10 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
     if (ImGui::CollapsingHeader("Toggles")) {
         ImGui::Checkbox("Pause Frustum Updates", &sDebugOptions.mPauseFrustum);
         ImGui::Checkbox("Show Wireframe", &sDebugOptions.mWireframe);
-        ImGui::Checkbox("Show Chunk Boundaries", &sDebugOptions.mChunkBoundaries);
+        bool chunkBoundaries = sDebugOptions.mChunkBoundaries;
+        if (ImGui::Checkbox("Show Chunk Boundaries", &chunkBoundaries)) {
+            sDebugOptions.mChunkBoundaries = chunkBoundaries;
+        }
         ImGui::Checkbox("Show City Debug", &sDebugOptions.mCities);
         ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
         ImGui::Checkbox("Show Navgraph", &sDebugOptions.mShowNavGraph);
@@ -402,7 +405,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         CharacterModelComponent& playerModel = ecs.mRegistry.get<CharacterModelComponent>(ecs.getLocalPlayer());
         ui32 numActive = 0;
         for (int i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-            AnimTrack& track = playerModel.mAnimState.mTracks[i]; // I'm basically God
+            AnimTrack& track = playerModel.mAnimState->mTracks[i]; // I'm basically God
             const ozz::animation::Animation* anim = playerModel.mModel->mAnimMachine->mAnimsArray[i];
             if (anim) {
                 bool isActive = track.mFlags.isBitSet(AnimTrackFlags::IS_ACTIVE);

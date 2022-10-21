@@ -65,7 +65,7 @@ struct DebugOptions {
     // Toggles
     bool mPauseFrustum = false;
     bool mWireframe = false;
-    bool mChunkBoundaries = false;
+    std::atomic_bool mChunkBoundaries = true;
     bool mCities = false;
     bool mRoofDebug = false;
     bool mShowNavGraph = false;
@@ -130,7 +130,6 @@ struct DebugOptions {
     bool mVSYNC = true;
     // TODO: somewhere else?
     f32v2 mScreenResolution = f32v2(1600.0f, 900.0f); // Currently set in  App::onInit
-    f32v3 mMousePickRay = f32v3(0.0f);
 };
 
 extern DebugOptions sDebugOptions;

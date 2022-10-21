@@ -48,6 +48,7 @@ void Chunk::allocateTileContainer() {
     mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, true);
     mGrass.resize(CHUNK_SIZE);
     mStructures.resize(CHUNK_SIZE);
+    assert(mTileContainer);
 }
 
 void Chunk::freeTiles() {
@@ -61,7 +62,7 @@ void Chunk::freeTiles() {
 void Chunk::dispose() {
     if (mTileContainer) {
         assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
-        if (mTileContainer->getRenderData().mHasMesh && RenderThreadTasks::exists()) {
+        if (RenderThreadTasks::exists() && mTileContainer->getRenderData().mHasMesh) {
             // TODO: can we move this so its an event?
             RenderThreadTasks::getInstance().removeTileContainerMesh(mTileContainer);
         }

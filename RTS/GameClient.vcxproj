@@ -573,6 +573,7 @@
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />
     <ClInclude Include="src\world\ChunkGenerator.h" />
+    <ClInclude Include="src\world\ChunkState.h" />
     <ClInclude Include="src\world\cli\CliChunkGrid.h" />
     <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
     <ClInclude Include="src\world\host\HostWorld.h" />

@@ -61,12 +61,14 @@ void IChunkGrid::tick() {
                 break;
             }
             case e_cast(ChunkState::TILE_LOAD_FINISHED): {
-                mLoadingChunks[i] = mLoadingChunks.back();
-                mLoadingChunks.pop_back();
+                // Now we need mesh and nav
+                chunk.mTileContainer->setDirtyNav(true);
+                chunk.mTileContainer->setDirtyData();
                 mActiveChunks.emplace_back(&chunk);
                 chunk.mState = e_cast(ChunkState::FINISHED);
-                // TODO: Can remove this
-                assert(chunk.mTileContainer->isDirtyData() && chunk.mTileContainer->isDirtyNav());
+
+                mLoadingChunks[i] = mLoadingChunks.back();
+                mLoadingChunks.pop_back();
                 break;
             }
             default:
@@ -132,12 +134,16 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
     topRight.y = glm::clamp(topRight.y, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
     const ChunkID bottomLeftPos(bottomLeft);
     const ChunkID topRightPos(topRight);
+    std::set<ChunkID> ids;
     for (ui32 y = bottomLeftPos.pos.y; y < topRightPos.pos.y; ++y) {
         for (ui32 x = bottomLeftPos.pos.x; x < topRightPos.pos.x; ++x) {
             ChunkID chunkId(x, y);
+            assert(ids.find(chunkId) == ids.end());
+            ids.insert(chunkId);
             // If there is no alive chunk here and we are in distance, add new alive chunk
             if (!mAliveChunkBits.getBit(chunkId.id) && isChunkInLoadDistance(chunkId, loadCenter)) {
                 Chunk& chunk = mChunks[chunkId.id];
+                assert(chunk.getChunkID() == chunkId.id);
                 // Check if we need to remove from destroy list first
                 if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
                     for (size_t i = 0; i < mDestroyingChunks.size(); ++i) {
@@ -160,6 +166,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
                     else {
                         beginHeightLoadForChunk(chunk);
                     }
+                    mLoadingChunks.emplace_back(&chunk);
                 }
                 else if (chunk.mState == e_cast(ChunkState::FINISHED)) {
                     // If we are already loaded, just insert us back into the active list
@@ -196,20 +203,25 @@ void IChunkGrid::beginTileLoadForChunk(Chunk& chunk) {
     generateChunkAsync(chunk);
 }
 
+// TODO: Move threadpool tasks
+
+
 void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 
-    chunk.incRef();
     chunk.allocateTileContainer();
+    chunk.incRef();
 
     // Make sure we dont lose height data
-    sHeightmapGrid->aquireHeightData(chunk.getHeightmapPatchID());
-    Services::Threadpool::ref().addTask([&chunk](ThreadPoolWorkerData* workerData) {
-        const HeightmapPatchID& id = chunk.getHeightmapPatchID();
-        ChunkGenerator::GenerateChunk(chunk, sHeightmapGrid->getHeightDataAt(id));
-        sHeightmapGrid->releaseHeightDataAt(id);
+    // TODO: copy minimum
+    f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
+    const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
+    memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
+    Services::Threadpool::ref().addTask([&chunk, heightData](ThreadPoolWorkerData* workerData) {
+        ChunkGenerator::GenerateChunk(chunk, heightData);
         assert(chunk.getState() == ChunkState::LOADING_TILES);
         chunk.setState(ChunkState::TILE_LOAD_FINISHED);
         chunk.decRef();
+        delete heightData;
     }, nullptr);
 
 }
@@ -223,6 +235,7 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
     // TODO: This is a cache miss, is a dirty lookup worth it?
     if (tileContainer.isDirtyData()) {
         tileContainer.clearDirtyData();
+        assert(chunk.mState == e_cast(ChunkState::FINISHED));
         // TODO: Update collision
         // 
         // Update dirty mesh

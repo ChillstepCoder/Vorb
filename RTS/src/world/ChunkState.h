@@ -1,0 +1,13 @@
+#pragma once
+
+enum class ChunkState : ui8 {
+    INVALID,
+    WAITING_HEIGHT,
+    LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
+    TILE_LOAD_FINISHED,
+    FINISHED,
+};
+
+enum class ChunkFlags : ui8 {
+    IN_DESTROY_LIST = 1 << 0,
+};

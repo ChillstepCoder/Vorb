@@ -70,11 +70,11 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
 	// Update skills
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
 		// TODO: Move this to some kind of combat manager/context
-		CharacterModelComponent& modelCmp = registry.get<CharacterModelComponent>(entity);
-		if (!modelCmp.mAnimState.mCurrentOneShotTrack.isActive()) {
-			SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
-			modelCmp.playOneShotAnimation(skillsCmp.mSkills[0]->mAnim);
-		}
+        CharacterModelComponent& modelCmp = registry.get<CharacterModelComponent>(entity);
+        if (!modelCmp.mAnimState->mCurrentOneShotTrack.isActive()) {
+            SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
+            modelCmp.playOneShotAnimation(skillsCmp.mSkills[0]->mAnim);
+        }
     }
 
 	//  Update movement

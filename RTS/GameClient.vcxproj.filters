@@ -1349,6 +1349,9 @@
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\ChunkState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

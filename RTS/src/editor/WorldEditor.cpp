@@ -86,11 +86,10 @@ WorldEditor::WorldEditor(const f32v2& screenDims) : mScreenDims(screenDims) {
     });
 }
 
-void WorldEditor::update(const Camera3D& camera) {
-    const f32v3& pickRay = sDebugOptions.mMousePickRay;
+void WorldEditor::update(const Camera3D& camera, const f32v3& pickRay) {
 
     PreciseTimer timer;
-    mHitResult = sWorld->getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + sDebugOptions.mMousePickRay * 10000.0f, PICK_TYPE_ALL);
+    mHitResult = sWorld->getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL);
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
         updateTerrainEdit();

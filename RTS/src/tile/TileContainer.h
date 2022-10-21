@@ -40,7 +40,7 @@ struct DynamicTile {
 static_assert(sizeof(DynamicTile) == 8, "Keep small");
 
 struct TileContainerRenderData {
-    bool mHasMesh = false;
+    std::atomic_bool mHasMesh = false;
     bool mDirtyDynamicMesh = false;
 
     void reset();
@@ -242,6 +242,7 @@ public:
     bool isNavMeshing() const { return mIsNavmeshing.load(/*memory order relaxed?*/); }
     bool shouldBuildNavMesh() const { return Services::isUsingNav() && isDirtyNav() && !isNavMeshing(); }
     bool isDirtyData() const { return mDirtyData; }
+    void setDirtyData() { mDirtyData = true; }
     void clearDirtyData() { mDirtyData = false; }
 
     // =========== Accessors  ===========

@@ -38,6 +38,7 @@ void BillboardMeshBuilder::reserveBillboardCount(ui32 count) {
 }
 
 void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+    assert(IS_RENDER_THREAD());
     // return blank mesh if we have no geometry
     if (mMainSubMeshData.mBillboards.empty()) {
         mesh.reset();

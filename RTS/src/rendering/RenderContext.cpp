@@ -35,6 +35,8 @@
 #include "rendering/renderstate/RenderStateManager.h"
 #include "weather/CloudManager.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "screens/ScreenState.h"
 #include "network/srv/GameServer.h"
 
@@ -129,8 +131,23 @@ const std::string sPassthroughMaterialNames[] = {
     "roughness_debug",
 };
 
+void RenderContext::addBillboardMesh(const Mesh* mesh) {
+    assert(IS_RENDER_THREAD());
+    assert(mBillboardMeshes.find(mesh) == mBillboardMeshes.end());
+    mBillboardMeshes.insert(mesh);
+    assert(mesh->isValid());
+}
+
+void RenderContext::removeBillboardMesh(const Mesh* mesh) {
+    assert(IS_RENDER_THREAD());
+    auto&& it = mBillboardMeshes.find(mesh);
+    assert(it != mBillboardMeshes.end());
+    mBillboardMeshes.erase(it);
+}
+
 RenderContext* RenderContext::sInstance = nullptr;
 
+// TODO: Read http://iquilezles.org/articles/
 RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) :
     mScreenResolution(screenResolution),
     mWindow(window)
@@ -459,7 +476,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     if (!sDebugOptions.mHideCharacters) {
-        mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, frameAlpha, elapsedSec);
+       // mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, frameAlpha, elapsedSec);
     }
     if (sDebugOptions.mShowBusinessDebug) {
         mEcsRenderer->renderBusinessDebug(camera);
@@ -646,7 +663,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Debug rendering
-    renderDebug(camera);
+    renderDebug(camera, renderState);
 
     // UI last
     renderUI(camera);
@@ -686,19 +703,23 @@ VGTexture RenderContext::getSSAOTexture() const {
 void RenderContext::updateRenderThreadProcs() {
     constexpr ui32 BULK_DEQUEUE_SIZE = 32;
     std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
+    std::pair<RenderFunction, void*> v;
     PreciseTimer timer;
     // TODO: Use optik for profiling
-    if (const size_t count = RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
+    /*if (const size_t count = RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             procs[i].first(*this, procs[i].second);
         }
+    }*/
+    while (RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue(v)) {
+        v.first(*this, v.second);
     }
     if (timer.stop() > 20.0f) {
         std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
     }
 }
 
-void RenderContext::renderDebug(const Camera3D& camera) {
+void RenderContext::renderDebug(const Camera3D& camera, const RenderState& renderState) {
     // City Debug
     if (sDebugOptions.mCities) {
         const CityGraph& cities = sWorld->getCityGraph();
@@ -716,40 +737,49 @@ void RenderContext::renderDebug(const Camera3D& camera) {
 
 
     if (sDebugOptions.mChunkBoundaries) {
-        // Debug chunk boundaries
-        //mCliWorld->enumVisibleChunks([](const Chunk& chunk) {
-        //    color4 color = COLOR_WHITE;
-        //    switch (chunk.getState()) {
-        //        case ChunkState::INVALID:
-        //            color = color4(1.0f, 0.0f, 0.0f);
-        //            break;
-        //        case ChunkState::WAITING_HEIGHT:
-        //            color = color4(0.0f, 0.0f, 0.0f);
-        //            break;
-        //        case ChunkState::LOADING_TILES:
-        //            color = color4(0.0f, 1.0f, 1.0f);
-        //            break;
-        //        case ChunkState::FINISHED:
-        //            color = color4(0.0f, 1.0f, 0.0f);
-        //            break;
-        //        default:
-        //            break;
-        //    }
+        for (const auto& chunkDebugState : renderState.getDebugChunks()) {
+            color4 color = COLOR_WHITE;
+            if (chunkDebugState.mList == DebugChunkListIndex::DESTROYING) {
+                color = color4(1.0f, 0.0f, 0.0f);
+            }
+            else if (chunkDebugState.mFlags.isBitSet(DebugChunkFlags::IS_NAVMESHING)) {
+                color = color4(1.0f, 0.0f, 1.0f);
+            }
+            else {
+                switch (chunkDebugState.mState) {
+                    case ChunkState::INVALID:
+                        color = color4(0.5f, 0.5f, 0.5f);
+                        break;
+                    case ChunkState::WAITING_HEIGHT:
+                        color = color4(1.0f, 1.0f, 0.0f);
+                        break;
+                    case ChunkState::LOADING_TILES:
+                        color = color4(0.0f, 1.0f, 1.0f);
+                        break;
+                    case ChunkState::TILE_LOAD_FINISHED:
+                        color = color4(0.0f, 0.0f, 1.0f);
+                        break;
+                    case ChunkState::FINISHED:
+                        color = color4(0.0f, 1.0f, 0.0f);
+                        break;
+                    default:
+                        break;
+                }
+            }
 
-        //    DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color);
-        //   
-        //    // Count refs
-        //    const int refCount = chunk.getTileContainer()->getRefCount();
-        //    const int readCount = chunk.getTileContainer()->getReadLockCount();
-        //    constexpr f32 REF_BOX_WIDTH = 1.0f;
-        //    constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
-        //    for (int i = 0; i < refCount; ++i) {
-        //        DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
-        //    }
-        //    for (int i = 0; i < readCount; ++i) {
-        //        DebugRenderer::drawWireQuad(chunk.getWorldPos() + f32v2(REF_BOX_WIDTH, REF_BOX_WIDTH * 2.0f) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(0.0f, 1.0f, 1.0f));
-        //    }
-        //});
+            const f32v2 worldPos = chunkDebugState.mId.getWorldPos();
+            DebugRenderer::drawWireQuad(worldPos, f32v2(CHUNK_WIDTH), color);
+
+            // Count refs
+            constexpr f32 REF_BOX_WIDTH = 1.0f;
+            constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / REF_BOX_WIDTH;
+            for (int i = 0; i < chunkDebugState.mRefCount; ++i) {
+                DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
+            }
+            for (int i = 0; i < chunkDebugState.mReadLockCount; ++i) {
+                DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH, REF_BOX_WIDTH * 2.0f) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(0.0f, 1.0f, 1.0f));
+            }
+        }
     }
 
     // Grass LOD debug
@@ -811,7 +841,7 @@ void RenderContext::renderDebug(const Camera3D& camera) {
     sWorld->getPhysicsWorld().debugRender();
 
     // Debug
-    // DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
+    DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
     // Visual logger
     if (sDebugOptions.mEnableVisualLogs) {
@@ -855,6 +885,14 @@ void RenderContext::renderUI(const Camera3D& camera) {
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
     }
+
+    sprintf_s(buffer, sizeof(buffer), "GameQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "RenderQueue: %d", (int)RenderThreadTasks::getInstance().getQueuedProcsApprox());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
 
     sprintf_s(buffer, sizeof(buffer), "DrawCalls: %u", RenderStats::sDrawCalls);
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);

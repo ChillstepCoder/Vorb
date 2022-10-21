@@ -30,28 +30,29 @@ static_assert(NUM_ANIM_STATE_TRACKS == 14u, "Update any defaults");
 
 void CharacterModelComponent::init(const ModelDef* model) {
     mModel = model;
+
+    mAnimState = std::make_unique<AnimState>();
     for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        AnimTrack& track = mAnimState.mTracks[i];
+        AnimTrack& track = mAnimState->mTracks[i];
         const ozz::animation::Animation* anim = mModel->mAnimMachine->mAnimsArray[i];
         if (anim) {
             track.mDuration = mModel->mAnimMachine->mAnimsArray[i]->duration();
         }
-        mAnimState.mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
+        mAnimState->mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
         // TODO: Better context allocation
         track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
         track.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
     }
     // Init to idle state engaged
-    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
-    mAnimState.mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
+    mAnimState->mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
+    mAnimState->mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
     // Init one shot anim track
-    mAnimState.mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
-    mAnimState.mCurrentOneShotTrack.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
+    mAnimState->mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+    mAnimState->mCurrentOneShotTrack.mContext->Resize(mModel->mRig->mSkeleton.num_joints());
 }
 
 void CharacterModelComponent::setAnimTrackWeight(AnimMachineState currentState, f32 weightScale) {
-
-    AnimTrack& track = mAnimState.mTracks[e_cast(currentState)];
+    AnimTrack& track = mAnimState->mTracks[e_cast(currentState)];
     track.mWeightScale = weightScale;
 }
 
@@ -67,10 +68,10 @@ void CharacterModelComponent::updateFootstepAlpha(f32 elapsedSec, LocomotionMode
 
 void CharacterModelComponent::playOneShotAnimation(const ozz::animation::Animation* animation) {
 
-    mAnimState.mCurrentOneShotTrack.mTime = 0.0f;
-    mAnimState.mCurrentOneShotTrack.mDuration = animation->duration();
-    mAnimState.mCurrentOneShotTrack.fadeIn(0.2);
-    mAnimState.mCurrentOneShotAnimation = animation;
+    mAnimState->mCurrentOneShotTrack.mTime = 0.0f;
+    mAnimState->mCurrentOneShotTrack.mDuration = animation->duration();
+    mAnimState->mCurrentOneShotTrack.fadeIn(0.2);
+    mAnimState->mCurrentOneShotAnimation = animation;
 
 }
 

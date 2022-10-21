@@ -56,7 +56,7 @@ private:
 
     void updateTimeScaling(const vui::GameTime& gameTime);
     void updateTilePicking();
-    void tryUpdateAndRenderInteractPopup(const f32v3& playerPos);
+    void tryUpdateAndRenderInteractPopup();
 
 	void displayLoadScreen(const nString& text, bool syncWindow);
 	void initInputs();
@@ -79,7 +79,8 @@ private:
     std::unique_ptr<TileInteractPanel> mRightClickInteractPopup;
 	f32v2 mMousePosition = f32v2(0.0f);
 	PreciseTimer mRightClickTimer;
-	f32v3 mRightClickPickPos = f32v3(FLT_MAX);
+    f32v3 mRightClickPickPos = f32v3(FLT_MAX);
+    f32v3 mMousePickRay = f32v3(0.0f);
 
 	WorldType mClientType = WorldType::HOST;
 

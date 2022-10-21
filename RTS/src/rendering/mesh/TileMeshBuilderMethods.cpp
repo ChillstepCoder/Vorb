@@ -199,9 +199,9 @@ void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 
     const ui32v3& dims = tileContainer.getDims();
     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
     const Tile& tile = tileContainer.getTileAt(tileIndex);
-    const f32 groundZPosition = tile.getGroundZOffsetMainThread();
+    const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
     // TODO: Greedy meshing
-    const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
+    const TileWalls& walls = tileContainer.getWallsThreadSafe(tileIndex);
     // TODO: Use paint ID
     ui32& prevInnerIndex = prevSouthNorthWallIndices.indices[isNorth * 2];
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isNorth * 2 + 1];
@@ -212,12 +212,12 @@ void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 
         mergeOrMakeWallFace(tileContainer, prevInnerIndex, wallData, groundZPosition, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, 0.0f, isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, true);
         // Outside walls
         if (isNorth) {
-            if (y == dims.y - 1 || tileContainer.getWallsMainThread(tileIndex + dims.x).south.wallID == TILE_ID_NONE) {
+            if (y == dims.y - 1 || tileContainer.getWallsThreadSafe(tileIndex + dims.x).south.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, 1.0f + OUTSIDE_EPSILON, false);
             }
         }
         else {
-            if (y == 0 || tileContainer.getWallsMainThread(tileIndex - dims.x).north.wallID == TILE_ID_NONE) {
+            if (y == 0 || tileContainer.getWallsThreadSafe(tileIndex - dims.x).north.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, -OUTSIDE_EPSILON, false);
             }
         }
@@ -244,9 +244,9 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
     const ui32v3& dims = tileContainer.getDims();
     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
     const Tile& tile = tileContainer.getTileAt(tileIndex);
-    const f32 groundZPosition = tile.getGroundZOffsetMainThread();
+    const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
     // TODO: Greedy meshing
-    const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
+    const TileWalls& walls = tileContainer.getWallsThreadSafe(tileIndex);
     // TODO: Use paint ID
     ui32& prevInnerIndex = prevSouthNorthWallIndices.indices[isEast * 2];
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isEast * 2 + 1];
@@ -257,12 +257,12 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
         mergeOrMakeWallFace(tileContainer, prevInnerIndex, wallData, groundZPosition, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, isEast * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, 0.0f, true);
         // Outside walls
         if (isEast) {
-            if (x == dims.x - 1 || tileContainer.getWallsMainThread(tileIndex + 1).west.wallID == TILE_ID_NONE) {
+            if (x == dims.x - 1 || tileContainer.getWallsThreadSafe(tileIndex + 1).west.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 1.0f + OUTSIDE_EPSILON, 0.0f, false);
             }
         }
         else {
-            if (x == 0 || tileContainer.getWallsMainThread(tileIndex + 1).east.wallID == TILE_ID_NONE) {
+            if (x == 0 || tileContainer.getWallsThreadSafe(tileIndex + 1).east.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, -OUTSIDE_EPSILON, 0.0f, false);
             }
         }
@@ -492,8 +492,7 @@ void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, B
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         if (billboardMeshBuilder) {
-                            f32 zPosition = glm::max(groundZPosition, sHeightmapGrid->computeCenterHeightAtTile(ui32v2(tileContainer.getWorldPos2D()) + ui32v2(x, y)));
-                            f32v3 tilePosition(x + 0.5f, y + 0.5f, zPosition);
+                            f32v3 tilePosition(x + 0.5f, y + 0.5f, z * tileContainer.getFloorHeight() + groundZPosition);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
                         }
                     }

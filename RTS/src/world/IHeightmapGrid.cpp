@@ -236,7 +236,9 @@ void IHeightmapGrid::requestPaddedHeightDataGenAndAquireAt(HeightmapPatchID id, 
 }
 const HeightmapPatchData* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
     assert(IS_GAME_THREAD());
-    return mHeightData[id.id].mHeightData;
+    const HeightmapPatch& patch = mHeightData[id.id];
+    assert(patch.isDone());
+    return patch.mHeightData;
 }
 
 const HeightmapPatchData* IHeightmapGrid::tryGetHeightDataAt(HeightmapPatchID id) const {
@@ -543,7 +545,6 @@ f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID ch
 
 f32 IHeightmapGrid::computeCenterHeightAtTile(const f32* heightData, ui32v2 worldTilePos)
 {
-    assert(IS_GAME_THREAD());
     const f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos) + f32v2(0.5f);
     const ui32v2 heightmapXY = getHeightmapXYfromTilePos(worldTilePos);
 
@@ -584,6 +585,7 @@ void IHeightmapGrid::copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 r
         const ui32 maxLength = HEIGHTMAP_VERT_WIDTH_PER_PATCH - offset.x;
         const ui32 lengthToCopy = glm::min(maxLength, lengthRemaining);
         // Copy data
+
         HeightmapPatchData* data = mHeightData[id.id].mHeightData;
         assert(data);
         memcpy(dst, &data->data[offset.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + offset.x], sizeof(f32) * lengthToCopy);
@@ -823,7 +825,6 @@ void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT Heightmap
 }
 
 f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, const ui32v2& heightmapXY) {
-    assert(IS_GAME_THREAD());
     // Select which triangle we are looking at, taking into account orientation
     if ((heightmapXY.x + heightmapXY.y) % 2 == 0) {
         // This shape
@@ -884,7 +885,6 @@ f32 IHeightmapGrid::interpolateHeightAtOffset(f32v2 dxy, const f32* heightData, 
 }
 
 ui32v2 IHeightmapGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
-    assert(IS_GAME_THREAD());
     ui32v2 heightmapXY = worldTilePos;
     // Offset into the heightmap by our chunk position
     heightmapXY = heightmapXY % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);
@@ -893,7 +893,6 @@ ui32v2 IHeightmapGrid::getHeightmapXYfromTilePos(ui32v2 worldTilePos) {
 }
 
 f32v2 IHeightmapGrid::getHeightmapOffsetFromTilePos(ui32v2 worldTilePos) {
-    assert(IS_GAME_THREAD());
     ui32v2 offset = worldTilePos;
     // Offset into the heightmap by our chunk position
     offset = offset % ((ui32)CHUNK_WIDTH * HEIGHTMAP_PATCH_WIDTH_CHUNKS);

@@ -29,6 +29,7 @@ public:
     // TODO: Add cancel logic for if we destroy the threadpool so we can free data ptr?
     void addGenericTask(RenderFunction func, void* data) { mRenderThreadProcs.enqueue(std::make_pair(func, data)); }
 
+    size_t getQueuedProcsApprox() const { return mRenderThreadProcs.size_approx(); }
 
 private:
     // Task queue

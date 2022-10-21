@@ -313,7 +313,6 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
     //std::cout << " B " << timer.stop() << std::endl;
     for (int tz = 0; tz < dims.z; ++tz) {
         for (int ty = 0; ty < dims.y; ++ty) {
-            const int gridYOffset = ty % GRID_WIDTH;
             for (int tx = 0; tx < dims.x; ++tx) {
                 // Determine if we own this tile
                 const TileIndex index = tileContainer.getTileIndexFromXYZOffset(tx, ty, tz);

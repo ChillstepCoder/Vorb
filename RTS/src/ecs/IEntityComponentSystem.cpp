@@ -22,6 +22,7 @@ IEntityComponentSystem::~IEntityComponentSystem() {
 }
 
 void IEntityComponentSystem::tick() {
+    assert(IS_GAME_THREAD());
 	
     mBusinessSystem.update(mRegistry);
     //mPlayerControlSystem.update(mRegistry, playerCamera);
@@ -42,6 +43,7 @@ void IEntityComponentSystem::tick() {
 
 void IEntityComponentSystem::setLocalPlayer(entt::entity playerEntity)
 {
+    assert(IS_GAME_THREAD());
 	if (mPlayerEntity != entt::null) {
 		mRegistry.remove<PlayerControlComponent>(mPlayerEntity);
 	}

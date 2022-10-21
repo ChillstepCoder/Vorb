@@ -30,6 +30,7 @@ class Mesh;
 class QuadMesh;
 class TerrainMesh;
 class CloudManager;
+class RenderState;
 
 struct SDL_Window;
 
@@ -110,7 +111,7 @@ public:
     void removeTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.erase(mesh); }
 private:
     void updateRenderThreadProcs();
-    void renderDebug(const Camera3D& camera);
+    void renderDebug(const Camera3D& camera, const RenderState& renderState);
     void renderUI(const Camera3D& camera);
     void buildHorizonMesh();
 
@@ -118,8 +119,8 @@ private:
     void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }
     void addDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.insert(mesh); }
     void removeDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.erase(mesh); }
-    void addBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.insert(mesh); }
-    void removeBillboardMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mBillboardMeshes.erase(mesh); }
+    void addBillboardMesh(const Mesh* mesh);
+    void removeBillboardMesh(const Mesh* mesh);
 
     static RenderContext* sInstance;
     
