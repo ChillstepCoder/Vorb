@@ -28,9 +28,11 @@
 
 IChunkGrid* sChunkGrid = nullptr;
 
-bool isChunkInLoadDistance(const ChunkID& chunkPos, const f32v2& loadCenter) {
-    const f32v2 centerPos = chunkPos.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
-    return glm::length2(centerPos - loadCenter) <= sDebugOptions.mLoadRangeSq;
+bool updateChunkLoadDistanceAndCheckIfInRange(Chunk& chunk, const f32v2& loadCenter) {
+    const f32v2 centerPos = chunk.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
+    f32 distSq = glm::length2(centerPos - loadCenter);
+    chunk.setDistanceFromLoadCenterSQ(distSq);
+    return distSq <= sDebugOptions.mLoadRangeSq;
 }
 
 IChunkGrid::IChunkGrid() {
@@ -95,13 +97,18 @@ void IChunkGrid::tick() {
     }
 }
 
+//f32v2 sCompareLoadingChunkLoadCenter;
+//bool compareLoadingChunk(Chunk* a, Chunk* b) { // return type is bool
+//    return a->getDistanceFromLoadCenterSQ() < b->getDistanceFromLoadCenterSQ();
+//}
+
 void IChunkGrid::refresh(const f32v2& loadCenter) {
     assert(IS_GAME_THREAD());
 
     // Remove any loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
         Chunk* chunk = mLoadingChunks[i];
-        if (!isChunkInLoadDistance(chunk->getChunkID(), loadCenter)) {
+        if (!updateChunkLoadDistanceAndCheckIfInRange(*chunk, loadCenter)) {
             markChunkForDestroy(*chunk);
             mLoadingChunks[i] = mLoadingChunks.back();
             mLoadingChunks.pop_back();
@@ -113,7 +120,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
     // Remove any active chunks
     for (size_t i = 0; i < mActiveChunks.size(); ++i) {
         Chunk* chunk = mActiveChunks[i];
-        if (!isChunkInLoadDistance(chunk->getChunkID(), loadCenter)) {
+        if (!updateChunkLoadDistanceAndCheckIfInRange(*chunk, loadCenter)) {
             markChunkForDestroy(*chunk);
             mActiveChunks[i] = mActiveChunks.back();
             mActiveChunks.pop_back();
@@ -135,14 +142,16 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
     const ChunkID bottomLeftPos(bottomLeft);
     const ChunkID topRightPos(topRight);
     std::set<ChunkID> ids;
+
+    // TODO: Spiral iterate, cache.
     for (ui32 y = bottomLeftPos.pos.y; y < topRightPos.pos.y; ++y) {
         for (ui32 x = bottomLeftPos.pos.x; x < topRightPos.pos.x; ++x) {
             ChunkID chunkId(x, y);
             assert(ids.find(chunkId) == ids.end());
             ids.insert(chunkId);
             // If there is no alive chunk here and we are in distance, add new alive chunk
-            if (!mAliveChunkBits.getBit(chunkId.id) && isChunkInLoadDistance(chunkId, loadCenter)) {
-                Chunk& chunk = mChunks[chunkId.id];
+            Chunk& chunk = mChunks[chunkId.id];
+            if (!mAliveChunkBits.getBit(chunkId.id) && updateChunkLoadDistanceAndCheckIfInRange(chunk, loadCenter)) {
                 assert(chunk.getChunkID() == chunkId.id);
                 // Check if we need to remove from destroy list first
                 if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
@@ -246,6 +255,7 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
     }
     // TODO: Should this instead be a TileContainerUpdater?
     if (chunk.mTileContainer->shouldBuildNavMesh()) {
+        
         Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
     }
     else {

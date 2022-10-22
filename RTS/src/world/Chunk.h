@@ -152,6 +152,9 @@ public:
     ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
     ui32 getReadLockCount() const { return mTileContainer ? mTileContainer->getReadLockCount() : 0; }
 
+	f32 getDistanceFromLoadCenterSQ() const { return mDistanceFromLoadCenterSQ; }
+	void setDistanceFromLoadCenterSQ(f32 distSq) { mDistanceFromLoadCenterSQ = distSq; }
+
 private:
     // =========== Read lock ===========
 	bool isReadLocked() const { return mTileContainer->isReadLocked(); }
@@ -159,6 +162,7 @@ private:
     // =========== Members ===========
 	ChunkID mChunkId;
 	f32AABB3 mAABB = f32AABB3(0.0f);
+	f32 mDistanceFromLoadCenterSQ = 0.0f; // Used for sorting
 	// TODO: Not atomic
     std::atomic_uint8_t mState = (ui8)ChunkState::INVALID;
 	BitFlags<ChunkFlags> mFlags;
