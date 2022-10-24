@@ -32,7 +32,7 @@ struct DebugOptions {
     bool mHideGrass = true;
     // Terrain
     f32 mTerrainLodDistanceOffset = 540.0f; // 1500 for ultra
-    bool mDebugTerrainLod = false;
+    bool mDebugTerrainLod = true;
     f32 mTerrainHeightColorMult = 0.22f;
     f32 mTerrainWavyColorMult = 0.167f;
     f32 mTerrainSquaresColorPeriod = 0.187f;
@@ -65,7 +65,7 @@ struct DebugOptions {
     // Toggles
     bool mPauseFrustum = false;
     bool mWireframe = false;
-    std::atomic_bool mChunkBoundaries = true;
+    std::atomic_bool mChunkBoundaries = false;
     bool mCities = false;
     bool mRoofDebug = false;
     bool mShowNavGraph = false;

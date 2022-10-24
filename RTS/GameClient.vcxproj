@@ -275,7 +275,6 @@
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
     <ClCompile Include="src\rendering\QuadMesh.cpp" />
-    <ClCompile Include="src\rendering\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
     <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
@@ -427,6 +426,7 @@
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
     <ClInclude Include="src\generation\WorldGeneration.h" />
+    <ClInclude Include="src\instrumentation\instrumentor.h" />
     <ClInclude Include="src\item\ArmorItem.h" />
     <ClInclude Include="src\item\Item.h" />
     <ClInclude Include="src\item\ItemConst.h" />
@@ -503,7 +503,6 @@
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\QuadMesh.h" />
-    <ClInclude Include="src\rendering\ChunkMesher.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\TileContainerRenderer.h" />

@@ -13,6 +13,12 @@ enum class DebugChunkListIndex : ui8 {
     DESTROYING
 };
 
+struct DebugWireQuadState {
+    const f32v2& origin;
+    const f32v2& dims;
+    color4 color;
+};
+
 struct DebugChunkRenderState {
     ChunkID mId;
     ChunkState mState;
@@ -29,6 +35,7 @@ public:
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
+    const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
 private:
     // ======================== Game State  ========================
     f32v2 mWorldLoadCenter;
@@ -36,5 +43,6 @@ private:
 
     // ======================== Debug state ========================
     std::vector<DebugChunkRenderState> mDebugChunks;
+    std::vector<DebugWireQuadState> mDebugQuads;
 };
 

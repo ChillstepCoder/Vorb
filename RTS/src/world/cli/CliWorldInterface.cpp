@@ -5,6 +5,7 @@
 #include "world/Chunk.h"
 #include "world/IWorld.h"
 #include "world/IChunkGrid.h"
+#include "world/HeightmapTerrainQuadtree.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "resources/ResourceManager.h"
 #include "particles/ParticleSystemManager.h"
@@ -62,6 +63,16 @@ void CliWorldInterface::updateRenderState(IWorld& world) {
 }
 
 void CliWorldInterface::updateDebugRenderState(IWorld& world, RenderState& renderState) {
+    PROFILE_FUNCTION();
+
+    renderState.mDebugQuads.clear();
+    // Terrain debug rendering
+    if (sDebugOptions.mDebugTerrainLod) {
+        for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
+            terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
+        }
+    }
+
     // Chunk debug rendering
     if (sDebugOptions.mChunkBoundaries) {
         const IChunkGrid& chunkGrid = world.getChunkGrid();

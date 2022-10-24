@@ -523,7 +523,6 @@ void GameplayScreen::initInputs()
         // Fix this
         UIContext::getInstance().closeTileInspectionPanel();
         if (event.button == vorb::ui::MouseButton::RIGHT) {
-            assert(IS_GAME_THREAD());
             mRightClickTimer.start();
             const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
             PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);

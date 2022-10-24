@@ -194,6 +194,15 @@ void RenderThreadTasks::removeTileContainerMesh(TileContainer* container) {
                 TileContainer* tileContainer = static_cast<TileContainer*>(container);
                 auto&& it = context.mTileContainerMeshData.find(tileContainer);
                 if (it != context.mTileContainerMeshData.end()) {
+                    if (it->second.mBillboardMesh) {
+                        context.removeBillboardMesh(it->second.mBillboardMesh.get());
+                    }
+                    if (it->second.mStaticMesh) {
+                        context.removeStaticMesh(it->second.mStaticMesh.get());
+                    }
+                    if (it->second.mDynamicMesh) {
+                        context.removeStaticMesh(it->second.mDynamicMesh.get());
+                    }
                     context.mTileContainerMeshData.erase(it);
                 }
             }, container));

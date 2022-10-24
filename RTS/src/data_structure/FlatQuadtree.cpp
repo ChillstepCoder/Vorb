@@ -5,6 +5,8 @@
 
 #include "debugging/DebugRenderer.h"
 
+#include "rendering/renderstate/RenderState.h"
+
 QuadtreePatch::~QuadtreePatch()
 {
 
@@ -72,10 +74,8 @@ void QuadtreePatch::trySignalParentNoLongerDesireRecombine(ui32 myIndex, Quadtre
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
-void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::renderDebug(const Camera3D& camera) const {
-
-    const f32v3& cameraPos = camera.getPosition();
-    const f32v2 cameraPos2Drelative = f32v2(cameraPos.x, cameraPos.y) - mWorldPos;
+void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getDebugQuads(std::vector<DebugWireQuadState>& outQuads) const {
+    assert(IS_GAME_THREAD());
 
     f32v3 mPos3D(mWorldPos.x, mWorldPos.y, 0.0f);
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
@@ -99,16 +99,16 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::renderDebug(const Camera3D& camera) c
         }
 
         ui32v2 posOffset = PATCH_POSITIONS.data[index].xy;
-        DebugRenderer::drawWireQuad(mPos3D + f32v3(posOffset.x, posOffset.y, 0.0f), f32v2((ui32v2&)LOD_DIMS[lod]), color);
+        outQuads.emplace_back(DebugWireQuadState{ mPos3D + f32v3(posOffset.x, posOffset.y, 0.0f), f32v2((ui32v2&)LOD_DIMS[lod]), color });
 
         if (patch.isCrossfading()) {
             const f32v2 halfDims = f32v2((ui32v2&)LOD_DIMS[lod]) * 0.5f;
-            DebugRenderer::drawWireQuad(mPos3D + f32v3(posOffset.x + halfDims.x, posOffset.y + halfDims.y, 0.0f), halfDims, color4(1.0f, 0.0f, 1.0f));
+            outQuads.emplace_back(DebugWireQuadState{ mPos3D + f32v3(posOffset.x + halfDims.x, posOffset.y + halfDims.y, 0.0f), halfDims, color4(1.0f, 0.0f, 1.0f) });
         }
     }
 }
-template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::renderDebug(const Camera3D&) const;
-template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::renderDebug(const Camera3D&) const;
+template void FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>::getDebugQuads(std::vector<DebugWireQuadState>& outQuads) const;
+template void FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::getDebugQuads(std::vector<DebugWireQuadState>& outQuads) const;
 
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>

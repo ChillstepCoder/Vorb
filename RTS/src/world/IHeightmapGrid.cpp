@@ -322,7 +322,7 @@ void IHeightmapGrid::releaseHeightDataAt(HeightmapPatchID id) {
         return;
     }
     HeightmapPatch& patch = mHeightData[id.id];
-    assert(patch.isDone() && patch.mRefCount);
+    assert(patch.mRefCount);
     --patch.mRefCount;
 }
 

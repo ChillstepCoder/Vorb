@@ -11,7 +11,6 @@
 
 // RENDERING
 #include "rendering/ChunkGrassQuadtree.h"
-#include "rendering/ChunkMesher.h"
 #include "rendering/RenderThreadTasks.h"
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
@@ -97,13 +96,14 @@ void IChunkGrid::tick() {
     }
 }
 
-//f32v2 sCompareLoadingChunkLoadCenter;
-//bool compareLoadingChunk(Chunk* a, Chunk* b) { // return type is bool
-//    return a->getDistanceFromLoadCenterSQ() < b->getDistanceFromLoadCenterSQ();
-//}
+bool compareLoadingChunk(Chunk* a, Chunk* b) { // return type is bool
+    return a->getDistanceFromLoadCenterSQ() < b->getDistanceFromLoadCenterSQ();
+}
 
 void IChunkGrid::refresh(const f32v2& loadCenter) {
     assert(IS_GAME_THREAD());
+
+    PROFILE_FUNCTION();
 
     // Remove any loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
@@ -143,6 +143,10 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
     const ChunkID topRightPos(topRight);
     std::set<ChunkID> ids;
 
+    // We will store these and load them after so we can sort any new chunks based on distance
+    std::vector<Chunk*> chunksToBeginLoad;
+    chunksToBeginLoad.reserve(128);
+
     // TODO: Spiral iterate, cache.
     for (ui32 y = bottomLeftPos.pos.y; y < topRightPos.pos.y; ++y) {
         for (ui32 x = bottomLeftPos.pos.x; x < topRightPos.pos.x; ++x) {
@@ -169,12 +173,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
                 mAliveChunkBits.setBit(chunkId.id);
                 // Only begin load if we are flagged as "Invalid" since otherwise we never disposed, and we can just keep our old state
                 if (chunk.mState == e_cast(ChunkState::INVALID)) {
-                    if (sHeightmapGrid->tryAquireHeightData(chunk.getHeightmapPatchID())) {
-                        beginTileLoadForChunk(chunk);
-                    }
-                    else {
-                        beginHeightLoadForChunk(chunk);
-                    }
+                    chunksToBeginLoad.emplace_back(&chunk);
                     mLoadingChunks.emplace_back(&chunk);
                 }
                 else if (chunk.mState == e_cast(ChunkState::FINISHED)) {
@@ -188,6 +187,20 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
             }
         }
     }
+
+    PROFILE_SCOPE("Load chunk sort");
+
+    std::sort(chunksToBeginLoad.begin(), chunksToBeginLoad.end(), compareLoadingChunk);
+
+    // Load any new chunks
+    for (auto& chunk : chunksToBeginLoad) {
+        if (sHeightmapGrid->tryAquireHeightData(chunk->getHeightmapPatchID())) {
+            beginTileLoadForChunk(*chunk);
+        }
+        else {
+            beginHeightLoadForChunk(*chunk);
+        }
+    }
 }
 
 void IChunkGrid::markChunkForDestroy(Chunk& chunk) {
@@ -198,6 +211,7 @@ void IChunkGrid::markChunkForDestroy(Chunk& chunk) {
     // Release height
     const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
     sHeightmapGrid->releaseHeightDataAt(heightId);
+
 }
 
 void IChunkGrid::beginHeightLoadForChunk(Chunk& chunk) {

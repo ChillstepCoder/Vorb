@@ -67,6 +67,8 @@ extern bool IS_SHUTTING_DOWN;
 #include "util/CubeFacing.h"
 #include "util/ThreadIDs.h"
 
+#include "instrumentation/instrumentor.h"
+
 #include "world/ChunkConst.h"
 
 // Corner winding

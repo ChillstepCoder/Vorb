@@ -383,6 +383,7 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 }
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
+    PROFILE_FUNCTION();
 
     const RenderState& renderState = RenderStateManager::getInstance().getRenderStateForRender();
 
@@ -666,7 +667,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     renderDebug(camera, renderState);
 
     // UI last
-    renderUI(camera);
+    renderUI(camera, renderState);
 
     // Debugging
     UIContext::getInstance().updateAndRenderUI(sWorld->getECS(), mActiveGBuffer, camera.getAspectRatio());
@@ -703,16 +704,12 @@ VGTexture RenderContext::getSSAOTexture() const {
 void RenderContext::updateRenderThreadProcs() {
     constexpr ui32 BULK_DEQUEUE_SIZE = 32;
     std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
-    std::pair<RenderFunction, void*> v;
     PreciseTimer timer;
     // TODO: Use optik for profiling
-    /*if (const size_t count = RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
+    if (const size_t count = RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue_bulk(procs, BULK_DEQUEUE_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             procs[i].first(*this, procs[i].second);
         }
-    }*/
-    while (RenderThreadTasks::getInstance().mRenderThreadProcs.try_dequeue(v)) {
-        v.first(*this, v.second);
     }
     if (timer.stop() > 20.0f) {
         std::cout << timer.stop() << " ms *** RENDER SPIKE WARNING ***\n";
@@ -821,12 +818,9 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
         DebugRenderer::clearAllMeshesWithId(NAVGRAPH_ID);
     }
 
-    // Terrain LOD debug
-    if (sDebugOptions.mDebugTerrainLod) {
-        assert(false);
-        /*for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
-            terrainQuadtree.renderDebug(camera);
-        }*/
+    // Debug Shapes
+    for (const auto& quad : renderState.getDebugQuads()) {
+        DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
     }
 
     // Axis labels
@@ -850,7 +844,7 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
 
 }
 
-void RenderContext::renderUI(const Camera3D& camera) {
+void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderState) {
     if (!sDebugOptions.mShowDevHud) {
         return;
     }
@@ -858,7 +852,7 @@ void RenderContext::renderUI(const Camera3D& camera) {
     char buffer[256];
     f32 scales = 1.0f;
     const float GAP_SIZE = 35.0f * scales;
-    const float START_MULT = 0.75f;
+    const float START_MULT = 0.25f;
     float yOffset = 0.0f;
     const f32v2 scale(scales);
     const f32 xPos = 10.0f;
@@ -901,6 +895,12 @@ void RenderContext::renderUI(const Camera3D& camera) {
     sprintf_s(buffer, sizeof(buffer), "Polygons: %u", RenderStats::sPolyCount);
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
+
+    if (sDebugOptions.mChunkBoundaries) {
+        sprintf_s(buffer, sizeof(buffer), "Chunks: %u", renderState.getDebugChunks().size());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+    }
 
     // If we are host, draw our server IP
     if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {

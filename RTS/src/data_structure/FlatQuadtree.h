@@ -1,6 +1,7 @@
 #pragma once
 
 class Camera3D;
+struct DebugWireQuadState;
 DECL_VG(class GLProgram);
 
 #include "data_structure/QuadtreeSettings.h"
@@ -87,7 +88,7 @@ public:
     virtual ~FlatQuadtree() { };
 
     // === Public Methods ===
-    void renderDebug(const Camera3D& camera) const;
+    void getDebugQuads(std::vector<DebugWireQuadState>& outQuads) const;
 
     // TODOL lightupdate, heavyupdate, only heavy when transition to diff cell, heavy determines splitting
     void update(const f32v2& loadCenter);

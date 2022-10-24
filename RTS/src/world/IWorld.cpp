@@ -23,7 +23,7 @@
 #include <glm/gtx/transform.hpp>
 
 // How many tiles the load center has to move before we refresh the world
-constexpr f32 DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH = SQ(4.0f);
+constexpr f32 DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH = SQ(16.0f);
 
 IWorld* sWorld = nullptr;
 

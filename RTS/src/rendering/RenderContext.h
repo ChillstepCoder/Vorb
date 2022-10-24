@@ -112,7 +112,7 @@ public:
 private:
     void updateRenderThreadProcs();
     void renderDebug(const Camera3D& camera, const RenderState& renderState);
-    void renderUI(const Camera3D& camera);
+    void renderUI(const Camera3D& camera, const RenderState& renderState);
     void buildHorizonMesh();
 
     void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }

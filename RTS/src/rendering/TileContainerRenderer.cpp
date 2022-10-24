@@ -5,7 +5,6 @@
 #include "world/IWorld.h"
 #include "world/cli/CliWorldInterface.h"
 #include "resources/ResourceManager.h"
-#include "rendering/ChunkMesher.h"
 #include "rendering/QuadMesh.h"
 #include "rendering/TileVertex.h"
 #include "rendering/ShaderLoader.h"

@@ -62,6 +62,7 @@ void setPriorityToNormal() {
 }
 
 void App::onInit() {
+    PROFILE_BEGIN_SESSION("Main", "profiling.json");
     // Set as render thread
     RENDER_THREAD_ID = std::this_thread::get_id();
 
@@ -87,12 +88,12 @@ void App::onInit() {
     vui::InputDispatcher::key.onFocusLost.addFunctor([](Sender) {
         setPriorityToNormal();
     });
-
 }
 
 void App::onExit() {
 	Services::destroy();
     Services::destroyResources();
+    PROFILE_END_SESSION();
 }
 
 void App::refreshElapsedTime() {

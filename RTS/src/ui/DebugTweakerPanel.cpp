@@ -436,6 +436,11 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::PopID();
     }
 
+    if (ImGui::CollapsingHeader("Profiler")) {
+        std::string text = Instrumentor::get().getMostRecentTimeString();
+        ImGui::Text(text.c_str());
+    }
+
     glGetString(GL_VENDOR);
     if (ImGui::CollapsingHeader("GPU Stats")) {
         const char* vendor = (const char*)glGetString(GL_VENDOR);

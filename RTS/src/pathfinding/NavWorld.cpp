@@ -78,6 +78,7 @@ bool canEnterTileInDirectionDiagonal(const Tile& tile, const TileWalls& walls, C
 // 2. Create nav nodes from distinct disjoint set nodes
 // 3. Create edges between disjoint set nodes and each other, or "External" which means it connects to the outside world
 void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT CoarseNavGraph& navGraph, OUT NavGraphTileDataToCopy& navTileData) {
+    PROFILE_FUNCTION();
 
     PreciseTimer timer;
 
@@ -358,7 +359,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
     }
 
 
-    std::cout << "Nav graph generated in " << timer.stop() << "ms with " << 0 << " total nodes checked" << std::endl;
+    //std::cout << "Nav graph generated in " << timer.stop() << "ms with " << 0 << " total nodes checked" << std::endl;
 
 }
 

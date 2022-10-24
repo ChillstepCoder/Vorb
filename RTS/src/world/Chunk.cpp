@@ -62,12 +62,13 @@ void Chunk::freeTiles() {
 void Chunk::dispose() {
     if (mTileContainer) {
         assert(IS_SHUTTING_DOWN || mTileContainer->getRefCount() == 0);
-        if (RenderThreadTasks::exists() && mTileContainer->getRenderData().mHasMesh) {
+        if (RenderThreadTasks::exists()) {
             // TODO: can we move this so its an event?
             RenderThreadTasks::getInstance().removeTileContainerMesh(mTileContainer);
         }
     }
 
+    mFlags = 0;
     mState = e_cast(ChunkState::INVALID);
     freeTiles();
 

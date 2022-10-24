@@ -63,9 +63,6 @@
     <ClCompile Include="src\world\ChunkGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\ChunkMesher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\ShaderLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -638,16 +635,10 @@
     <ClInclude Include="src\rendering\CharacterModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\Chunk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\rendering\TileContainerRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\ChunkGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\ChunkMesher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\ShaderLoader.h">
@@ -1350,6 +1341,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\ChunkState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\instrumentation\instrumentor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

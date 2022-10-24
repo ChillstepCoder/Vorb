@@ -17,6 +17,8 @@ HostWorld::HostWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : IWo
 }
 
 void HostWorld::tick(f32 elapsedSec) {
+    PROFILE_FUNCTION();
+
     assert(mEcs);
     assert(IS_GAME_THREAD());
 
@@ -68,6 +70,7 @@ void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
 }
 
 void HostWorld::onWorldBegin(const f32v2& loadCenter) {
+    PROFILE_FUNCTION();
     // TODO: Move
     mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
 
@@ -76,6 +79,7 @@ void HostWorld::onWorldBegin(const f32v2& loadCenter) {
 }
 
 void HostWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+    PROFILE_FUNCTION();
     cliDirtyTerrainFromBrush(pos, brushRadius);
     sharedDirtyTerrainFromBrush(pos, brushRadius);
 }
