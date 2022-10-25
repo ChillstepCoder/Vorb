@@ -29,6 +29,7 @@
 
 #include "../Event.hpp"
 
+
 namespace vorb {
     namespace ui {
         namespace impl {
@@ -49,6 +50,7 @@ namespace vorb {
         /// Common mouse event data
         struct MouseEvent {
         public:
+            MouseEvent() = default;
             i32 x; ///< Mouse location on X axis (in pixels)
             i32 y; ///< Mouse location on Y axis (in pixels)
         };
@@ -99,8 +101,20 @@ namespace vorb {
             i32 sy; ///< Total scroll value in Y direction
         };
 
+        enum class MOUSE_EVENT_TYPE {
+            FocusLost,
+            FocusGained,
+            ButtonDown,
+            ButtonUp,
+            Motion,
+            Wheel,
+        };
+
+        // Dispatcher
+        EVENT_DISPATCHER_TYPE(Mouse, MOUSE_EVENT_TYPE, const MouseEvent&);
+
         /// Dispatches mouse events
-        class MouseEventDispatcher {
+        class MouseEventManager {
             friend class InputDispatcher;
             friend class vorb::ui::impl::InputDispatcherEventCatcher;
         public:
@@ -113,13 +127,14 @@ namespace vorb {
             bool isHidden() const;
             bool isButtonPressed(MouseButton button) const;
 
-            Event<const MouseEvent&> onEvent; ///< Signaled when any mouse event happens
-            Event<const MouseEvent&> onFocusLost; ///< Signaled when mouse no longer provides input to application
-            Event<const MouseEvent&> onFocusGained; ///< Signaled when mouse begins to provide input to application
-            Event<const MouseButtonEvent&> onButtonDown; ///< Signaled when a mouse button is pressed down
-            Event<const MouseButtonEvent&> onButtonUp; ///< Signaled when a mouse button is released
-            Event<const MouseMotionEvent&> onMotion; ///< Signaled when the mouse moves
-            Event<const MouseWheelEvent&> onWheel; ///< Signaled when the mouse wheel scrolls
+            // Listeners
+            EVENT_LISTENER_FUNCS(Mouse, FocusGained, MOUSE_EVENT_TYPE::FocusGained, const MouseEvent&);
+            EVENT_LISTENER_FUNCS(Mouse, FocusLost, MOUSE_EVENT_TYPE::FocusLost, const MouseEvent&);
+            EVENT_LISTENER_FUNCS_ADAPTOR(Mouse, ButtonDown, MOUSE_EVENT_TYPE::ButtonDown, const MouseButtonEvent&);
+            EVENT_LISTENER_FUNCS_ADAPTOR(Mouse, ButtonUp, MOUSE_EVENT_TYPE::ButtonUp, const MouseButtonEvent&);
+            EVENT_LISTENER_FUNCS_ADAPTOR(Mouse, Motion, MOUSE_EVENT_TYPE::Motion, const MouseMotionEvent&);
+            EVENT_LISTENER_FUNCS_ADAPTOR(Mouse, Wheel, MOUSE_EVENT_TYPE::Wheel, const MouseWheelEvent&);
+
         private:
             void setPos(i32 x, i32 y);
             void setFocus(bool v);
@@ -137,6 +152,8 @@ namespace vorb {
             std::atomic<i32> m_focus = ATOMIC_VAR_INIT(0); ///< 1 if this mouse if focused over the window
             std::atomic<i32> m_relative = ATOMIC_VAR_INIT(0); ///< 1 if this mouse is set in a "relative" mode
             std::atomic<i32> m_hidden = ATOMIC_VAR_INIT(0); ///< 1 if this mouse is hidden over the window
+
+            EVENT_DISPATCHER(Mouse);
         };
     }
 }

@@ -29,7 +29,7 @@
 #include <SFML/Window/Mouse.hpp>
 #endif
 
-#include "Vorb/ui/KeyboardEventDispatcher.h"
+#include "Vorb/ui/KeyboardEventManager.h"
 
 namespace vorb {
     namespace ui {

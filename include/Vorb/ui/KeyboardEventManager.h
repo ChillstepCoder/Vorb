@@ -28,6 +28,8 @@
 #include "../Event.hpp"
 #include "Keys.inl"
 
+#include "eventpp/eventdispatcher.h"
+
 namespace vorb {
     namespace ui {
         namespace impl {
@@ -78,25 +80,46 @@ namespace vorb {
             wchar_t wtext[16]; ///< Text in wide format
         };
 
+        enum class KEY_EVENT_TYPE : ui8 {
+            KeyDown,
+            KeyUp
+        };
+
+        enum class TEXT_EVENT_TYPE : ui8 {
+            Text
+        }
+        ;
+        enum class KEY_FOCUS_EVENT_TYPE : ui8 {
+            FocusGained,
+            FocusLost,
+        };
+
+
+        EVENT_DISPATCHER_TYPE(KeyFocus, KEY_FOCUS_EVENT_TYPE, void);
+        EVENT_DISPATCHER_TYPE(Key, KEY_EVENT_TYPE, const KeyEvent&);
+        EVENT_DISPATCHER_TYPE(Text, TEXT_EVENT_TYPE, const TextEvent&);
+
         /// Dispatches keyboard events
-        class KeyboardEventDispatcher {
+        class KeyboardEventManager {
             friend class InputDispatcher;
             friend class vorb::ui::impl::InputDispatcherEventCatcher;
         public:
-            KeyboardEventDispatcher();
+            KeyboardEventManager();
 
             i32 getNumPresses(VirtualKey k) const;
             bool hasFocus() const;
 
             bool isKeyPressed(VirtualKey k) const;
+            
+            // Listeners 
+            EVENT_LISTENER_FUNCS_VOID(KeyFocus, FocusGained, KEY_FOCUS_EVENT_TYPE::FocusGained);
+            EVENT_LISTENER_FUNCS_VOID(KeyFocus, FocusLost, KEY_FOCUS_EVENT_TYPE::FocusLost);
+            EVENT_LISTENER_FUNCS(Key, KeyDown, KEY_EVENT_TYPE::KeyDown, const KeyEvent&);
+            EVENT_LISTENER_FUNCS(Key, KeyUp, KEY_EVENT_TYPE::KeyUp, const KeyEvent&);
+            EVENT_LISTENER_FUNCS(Text, Text, TEXT_EVENT_TYPE::Text, const TextEvent&);
 
-            Event<> onEvent; ///< Signaled when any keyboard event happens
-            Event<> onFocusLost; ///< Signaled when keyboard no longer provides input to application
-            Event<> onFocusGained; ///< Signaled when keyboard begins to provide input to application
-            Event<const KeyEvent&> onKeyDown; ///< Signaled when a key is pressed
-            Event<const KeyEvent&> onKeyUp; ///< Signaled when a key is released
-            Event<const TextEvent&> onText; ///< Signaled when text is provided
         private:
+
             void addPress(VirtualKey k);
             void release(VirtualKey k);
 
@@ -104,6 +127,10 @@ namespace vorb {
 
             std::array<std::atomic<i32>, NUM_KEY_CODES> m_presses;
             std::atomic<i32> m_focus = ATOMIC_VAR_INIT(0);
+
+            EVENT_DISPATCHER(KeyFocus);
+            EVENT_DISPATCHER(Key);
+            EVENT_DISPATCHER(Text);
         };
     }
 }

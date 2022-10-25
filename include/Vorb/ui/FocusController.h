@@ -26,39 +26,39 @@
 
 #include <vector>
 #include "../Event.hpp"
-#include "MouseInputDispatcher.h"
+#include "MouseEventManager.h"
 
 namespace vorb {
     namespace ui {
 
-        class FocusObject {
-        public:
-            virtual bool inBounds(f32 mouseX VORB_MAYBE_UNUSED, f32 mouseY VORB_MAYBE_UNUSED) { return true; }
-            /* Events */
-            Event<const MouseButtonEvent&> MouseDown; ///< Occurs when mouse button is pressed over container.
-            Event<const MouseButtonEvent&> MouseUp; ///< Occurs when mouse button is released over container.
-            Event<const MouseMotionEvent&> MouseMove; ///< Occurs when mouse pointer is moved over container.
-            /* Members */
-            f32 depth = 0.0f;
-        };
-        // TODO(Ben): Implement
-        class FocusController {
-        public:
-            FocusController();
-            ~FocusController();
-            void init();
-            void dispose();
+        //class FocusObject {
+        //public:
+        //    virtual bool inBounds(f32 mouseX VORB_MAYBE_UNUSED, f32 mouseY VORB_MAYBE_UNUSED) { return true; }
+        //    /* Events */
+        //    Event<const MouseButtonEvent&> MouseDown; ///< Occurs when mouse button is pressed over container.
+        //    Event<const MouseButtonEvent&> MouseUp; ///< Occurs when mouse button is released over container.
+        //    Event<const MouseMotionEvent&> MouseMove; ///< Occurs when mouse pointer is moved over container.
+        //    /* Members */
+        //    f32 depth = 0.0f;
+        //};
+        //// TODO(Ben): Implement
+        //class FocusController {
+        //public:
+        //    FocusController();
+        //    ~FocusController();
+        //    void init();
+        //    void dispose();
 
-            void addObject(FocusObject* obj);
-            bool removeObject(const FocusObject* obj);
+        //    void addObject(FocusObject* obj);
+        //    bool removeObject(const FocusObject* obj);
 
-        protected:
-            void onMouseDown(Sender s, const MouseButtonEvent& e);
-            void onMouseUp(Sender s, const MouseButtonEvent& e);
-            void onMouseMove(Sender s, const MouseMotionEvent& e);
+        //protected:
+        //    void onMouseDown(Sender s, const MouseButtonEvent& e);
+        //    void onMouseUp(Sender s, const MouseButtonEvent& e);
+        //    void onMouseMove(Sender s, const MouseMotionEvent& e);
 
-            std::vector<FocusObject*> m_objects;
-        };
+        //    std::vector<FocusObject*> m_objects;
+        //};
     }
 }
 namespace vui = vorb::ui;

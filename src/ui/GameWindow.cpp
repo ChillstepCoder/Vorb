@@ -66,22 +66,21 @@ KEG_TYPE_DEF(GameDisplayMode, vui::GameDisplayMode, kt) {
     kt.addValue("GraphicsCore", Value::value(&vui::GameDisplayMode::core));
 }
 
-vui::GameWindow::GameWindow() :
-    onQuit(this) {
+vui::GameWindow::GameWindow() {
     setDefaultSettings(&m_displayMode);
 }
-VORB_MOVABLE_DEF(vui::GameWindow, o) {
-    std::swap(m_glc, o.m_glc);
-    std::swap(m_window, o.m_window);
-    std::swap(m_displayMode, o.m_displayMode);
-    std::swap(m_quitSignal, o.m_quitSignal);
-
-    // Swap events, but keep correct senders
-    std::swap(onQuit, o.onQuit);
-    this->onQuit.setSender(this);
-    o.onQuit.setSender(&o);
-    return *this;
-}
+//VORB_MOVABLE_DEF(vui::GameWindow, o) {
+//    std::swap(m_glc, o.m_glc);
+//    std::swap(m_window, o.m_window);
+//    std::swap(m_displayMode, o.m_displayMode);
+//    std::swap(m_quitSignal, o.m_quitSignal);
+//
+//    // Swap events, but keep correct senders
+//    std::swap(onQuit, o.onQuit);
+//    this->onQuit.setSender(this);
+//    o.onQuit.setSender(&o);
+//    return *this;
+//}
 
 bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/) {
     if (isInitialized()) return false;
@@ -278,9 +277,9 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
 
     // Push input from this window and receive quit signals
     vui::InputDispatcher::init(this);
-    vui::InputDispatcher::window.onClose += makeDelegate(this, &GameWindow::onQuitSignal);
-    vui::InputDispatcher::onQuit += makeDelegate(this, &GameWindow::onQuitSignal);
-    vui::InputDispatcher::window.onResize += makeDelegate(this, &GameWindow::onResize);
+    vui::InputDispatcher::window.addCloseListener([this](const WindowEvent&) { onQuitSignal(); });
+    vui::InputDispatcher::window.addResizeListener([this](const WindowResizeEvent& e) { onResize(e); });
+    vui::InputDispatcher::onQuit.append([this]() { onQuitSignal(); });
     m_quitSignal = false;
 
 #ifdef VORB_IMPL_IMGUI
@@ -308,10 +307,6 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
 }
 void vui::GameWindow::dispose() {
     if (!isInitialized()) return;
-
-    vui::InputDispatcher::onQuit -= makeDelegate(this, &GameWindow::onQuitSignal);
-    vui::InputDispatcher::window.onClose -= makeDelegate(this, &GameWindow::onQuitSignal);
-    vui::InputDispatcher::window.onResize -= makeDelegate(this, &GameWindow::onResize);
     vui::InputDispatcher::dispose();
     saveSettings();
 
@@ -399,7 +394,10 @@ void vui::GameWindow::setScreenSize(i32 w, i32 h, bool overrideCheck /*= false*/
         m_displayMode.screenHeight = h;
 #if defined(VORB_IMPL_UI_SDL)
         SDL_SetWindowSize(VUI_WINDOW_HANDLE(m_window), m_displayMode.screenWidth, m_displayMode.screenHeight);
-        InputDispatcher::window.onResize({(ui32)w, (ui32)h }); // TODO(Ben): This feels so dirty, but is necessary for LUA UI
+        //WindowResizeEvent ev;
+        //ev.w = w;
+        //ev.h = h;
+        //InputDispatcher::window.eventDispatcher.dispatch(WINDOW_EVENT_TYPE::Resize, ev); // TODO(Ben): This feels so dirty, but is necessary for LUA UI
 #elif defined(VORB_IMPL_UI_GLFW)
         glfwSetWindowSize(VUI_WINDOW_HANDLE(m_window), m_displayMode.screenWidth, m_displayMode.screenHeight);
 #elif defined(VORB_IMPL_UI_SFML)
@@ -606,11 +604,11 @@ f32v2 vorb::ui::GameWindow::clampBoxPosToWindow(const f32v2& boxPosTopLeft, cons
     return f32v2(glm::min(boxPosTopLeft.x, (f32)(m_displayMode.screenWidth - boxDims.x)), glm::min(boxPosTopLeft.y, (f32)(m_displayMode.screenHeight - boxDims.y)));
 }
 
-void vorb::ui::GameWindow::onResize(Sender s VORB_UNUSED, const WindowResizeEvent& e) {
+void vorb::ui::GameWindow::onResize(const WindowResizeEvent& e) {
     m_displayMode.screenWidth = e.w;
     m_displayMode.screenHeight = e.h;
 }
 
-void vorb::ui::GameWindow::onQuitSignal(Sender) {
+void vorb::ui::GameWindow::onQuitSignal() {
     m_quitSignal = true;
 }

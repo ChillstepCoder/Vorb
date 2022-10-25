@@ -56,7 +56,7 @@ namespace vorb {
             bool save(const vio::Path& path, const void* inData, const ui32& w,
                       const ui32& h, const ImageIOFormat& format);
 
-            Event<nString> onError;
+            eventpp::CallbackList<void(const nString&)> onError;
         };
 
         /*class ScopedPNGLoader {

@@ -56,7 +56,7 @@ namespace vorb {
             static void parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode,
                                             vio::IOManager& iom);
             
-            static Event<nString> onParseError; ///< Event that fires on a parsing error
+            static eventpp::CallbackList<void(const nString&)> onParseError; ///< Event that fires on a parsing error
         private:
             /// Initializes the semantic map. Call once.
             static void initSemantics();

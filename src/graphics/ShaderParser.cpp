@@ -6,7 +6,7 @@
 #include "Vorb/io/IOManager.h"
 
 // Static definitions
-Event<nString> vg::ShaderParser::onParseError;
+eventpp::CallbackList<void(const nString&)> vg::ShaderParser::onParseError;
 std::map<nString, vg::Semantic> vg::ShaderParser::m_semantics;
 std::set<nString> vg::ShaderParser::m_parsedIncludes;
 bool vg::ShaderParser::isNormalComment = false;

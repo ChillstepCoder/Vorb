@@ -46,7 +46,8 @@ void vui::Viewport::dispose() {
 
 void vui::Viewport::enable() {
     if (!m_flags.isEnabled) {
-        vui::InputDispatcher::window.onResize += makeDelegate(this, &Viewport::onResize);
+        assert(false); // NO LONGER SUPPORTED
+        //vui::InputDispatcher::window.onResize += makeDelegate(this, &Viewport::onResize);
     }
 
     Widget::enable();
@@ -54,7 +55,8 @@ void vui::Viewport::enable() {
 
 void vui::Viewport::disable() {
     if (m_flags.isEnabled) {
-        vui::InputDispatcher::window.onResize -= makeDelegate(this, &Viewport::onResize);
+        assert(false); // NO LONGER SUPPORTED
+        //vui::InputDispatcher::window.onResize -= makeDelegate(this, &Viewport::onResize);
     }
 
     Widget::disable();

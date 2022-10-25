@@ -5,7 +5,7 @@
 #undef min
 #endif // !VORB_USING_PCH
 
-#include "Vorb/ui/MouseInputDispatcher.h"
+#include "Vorb/ui/MouseEventManager.h"
 #include "Vorb/ui/UIRenderer.h"
 #include "Vorb/utils.h"
 

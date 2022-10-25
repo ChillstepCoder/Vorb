@@ -1,8 +1,8 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/ui/script/lua/ValueMediator.h"
 
-#include "Vorb/ui/MouseInputDispatcher.h"
-#include "Vorb/ui/WindowEventDispatcher.h"
+#include "Vorb/ui/MouseEventManager.h"
+#include "Vorb/ui/WindowEventManager.h"
 #include "Vorb/ui/widgets/Widget.h"
 
 /************************************************************************/
@@ -789,7 +789,7 @@ bool vscript::lua::ValueMediator<vui::MouseWheelEvent, void>::tryRetrieve(Handle
 /************************************************************************/
 
 vui::WindowResizeEvent vscript::lua::ValueMediator<vui::WindowResizeEvent, void>::defaultValue() {
-    return vui::WindowResizeEvent{ 0, 0 };
+    return vui::WindowResizeEvent();
 }
 
 i32 vscript::lua::ValueMediator<vui::WindowResizeEvent, void>::getValueCount() {
@@ -853,7 +853,7 @@ bool vscript::lua::ValueMediator<vui::WindowResizeEvent, void>::tryRetrieve(Hand
 /************************************************************************/
 
 vui::WindowFileEvent vscript::lua::ValueMediator<vui::WindowFileEvent, void>::defaultValue() {
-    return vui::WindowFileEvent{ nullptr };
+    return vui::WindowFileEvent();
 }
 
 i32 vscript::lua::ValueMediator<vui::WindowFileEvent, void>::getValueCount() {

@@ -86,7 +86,7 @@ namespace vorb {
         protected:
             ScreenState m_state;
             MainGame* m_game = nullptr;
-            FocusController m_focusController;
+            //FocusController m_focusController;
         private:
             // Location In The ScreenList
             i32 m_index = -1;

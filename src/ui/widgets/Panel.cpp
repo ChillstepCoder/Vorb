@@ -1,6 +1,6 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/ui/widgets/Panel.h"
-#include "Vorb/ui/MouseInputDispatcher.h"
+#include "Vorb/ui/MouseEventManager.h"
 #include "Vorb/ui/UIRenderer.h"
 #include "Vorb/ui/widgets/Viewport.h"
 #include "Vorb/utils.h"

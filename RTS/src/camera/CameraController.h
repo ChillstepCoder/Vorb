@@ -4,6 +4,8 @@
 #include "camera/Camera3D.h"
 #include <util/Tweener.h>
 
+#include <Vorb/ui/InputDispatcher.h>
+
 DECL_VUI(struct GameTime);
 DECL_VUI(class GameWindow);
 DECL_VUI(struct MouseWheelEvent);
@@ -45,14 +47,14 @@ private:
     void updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& ownerEntityPos);
 
     // Delegates
-    void updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt);
-    void updateMouseWheelInputMMOMode(Sender s, const vui::MouseWheelEvent& evnt);
-    void updateMouseMotionInputFreeLookMode(Sender s, const vui::MouseMotionEvent& evnt);
-    void updateMouseMotionInputMMOMode(Sender s, const vui::MouseMotionEvent& evnt);
-    void updateMouseMotionInputFirstPersonMode(Sender s, const vui::MouseMotionEvent& evnt);
-    void updateKeyInputCartesianMode(Sender sender, const vui::KeyEvent& evnt);
-    void updateMouseButtonDownInputMMO(Sender s, const vui::MouseButtonEvent& evnt);
-    void updateMouseButtonUpInputMMO(Sender s, const vui::MouseButtonEvent& evnt);
+    void updateMouseWheelInput(const vui::MouseWheelEvent& evnt);
+    void updateMouseWheelInputMMOMode(const vui::MouseWheelEvent& evnt);
+    void updateMouseMotionInputFreeLookMode(const vui::MouseMotionEvent& evnt);
+    void updateMouseMotionInputMMOMode(const vui::MouseMotionEvent& evnt);
+    void updateMouseMotionInputFirstPersonMode(const vui::MouseMotionEvent& evnt);
+    void updateKeyInputCartesianMode(const vui::KeyEvent& evnt);
+    void updateMouseButtonDownInputMMO(const vui::MouseButtonEvent& evnt);
+    void updateMouseButtonUpInputMMO(const vui::MouseButtonEvent& evnt);
 
     // Data
     Camera3D mCamera;
@@ -68,5 +70,9 @@ private:
     SphericalTweener<f32v3> mCameraDirectionTweener = SphericalTweener<f32v3>(TARGET_CAMERA_NORMALS_3D[e_cast(Cartesian::NORTH)], 0.4f/*speed*/, 0.2f/*acceleration*/);
     f32 mCameraDirectionZOffset = -0.3f;
     i32v2 mLastMousePositionBeforeRelative;
+
+    // Event handles
+    vui::MouseListeners mMouseListeners;
+    vui::KeyListeners mKeyListeners;
 };
 

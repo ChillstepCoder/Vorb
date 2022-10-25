@@ -30,6 +30,8 @@
 #include "GLEnums.h"
 #include "ShaderInterface.h"
 
+typedef eventpp::CallbackList<void(const nString&)> GLProgramErrorCallbackList;
+
 #if defined(VORB_COMPILER_GCC) || defined(VORB_COMPILER_CLANG)
 #undef major
 #undef minor
@@ -187,8 +189,8 @@ namespace vorb {
 
             const UniformMap& getUniforms() const { return m_uniforms; }
 
-            Event<const nString&> onShaderCompilationError; ///< Event signaled during addShader when an error occurs
-            Event<const nString&> onProgramLinkError; ///< Event signaled during link when an error occurs
+            inline static GLProgramErrorCallbackList onShaderCompilationError; ///< Event signaled during addShader when an error occurs
+            inline static GLProgramErrorCallbackList onProgramLinkError; ///< Event signaled during link when an error occurs
         private:
             void linkError(const nString& s);
 
@@ -210,5 +212,6 @@ namespace vorb {
     }
 }
 namespace vg = vorb::graphics;
+static_assert(sizeof(vg::GLProgram) == 160, "Keep small");
 
 #endif // !Vorb_GLProgram_h__

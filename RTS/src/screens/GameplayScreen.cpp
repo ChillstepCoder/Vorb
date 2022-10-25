@@ -192,7 +192,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
 
     // Check quit
     if (GameplayScreenGlobalState::isQuittingToDesktop) {
-        vui::InputDispatcher::onQuit.trigger();
+        vui::InputDispatcher::onQuit();
         return;
     }
     else if (GameplayScreenGlobalState::isQuittingToMenu) {
@@ -220,7 +220,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
         GameClient& client = GameClient::getInstance();
         if (!client.isConnected()) {
             pError("LOST CONNECTION!");
-            vui::InputDispatcher::onQuit.trigger();
+            vui::InputDispatcher::onQuit();
             return;
         }
         client.update(gameTime.deltaTime);
@@ -460,8 +460,10 @@ void GameplayScreen::displayLoadScreen(const nString& text, bool syncWindow) {
 
 void GameplayScreen::initInputs()
 {
+    vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
+    vui::InputDispatcher::mouse.registerMouseListeners(mMouseListeners);
 
-    vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
+    vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& event) {
         // View toggle
         if (event.keyCode == VKEY_B) {
             sDebugOptions.mWireframe = !sDebugOptions.mWireframe;
@@ -519,7 +521,7 @@ void GameplayScreen::initInputs()
         }
     });
 
-    vui::InputDispatcher::mouse.onButtonDown.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
+    vui::InputDispatcher::mouse.addButtonDownListener(mMouseListeners, [this](const vui::MouseButtonEvent& event) {
         // Fix this
         UIContext::getInstance().closeTileInspectionPanel();
         if (event.button == vorb::ui::MouseButton::RIGHT) {
@@ -535,7 +537,7 @@ void GameplayScreen::initInputs()
         }
     });
 
-    vui::InputDispatcher::mouse.onMotion.addFunctor([this](Sender sender, const vui::MouseMotionEvent& event) {
+    vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& event) {
         mMousePosition.x = (f32)event.x;
         mMousePosition.y = (f32)event.y;
 
@@ -545,13 +547,13 @@ void GameplayScreen::initInputs()
 
             NavigationComponent& cmp = mWorld.getECS().mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
             const PhysicsComponent& physCmp = mWorld.getECS().mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
-            const f32v2& playerXYPos = physCmp.getXYPosition();
+            const f32v2& playerXYPos = physCmp.ge0tXYPosition();
             cmp.requestCoarsePath(ui16v2(pickData.hit.position.x, pickData.hit.position.y), playerXYPos);
 
         }*/
     });
 
-    vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
+    vui::InputDispatcher::mouse.addButtonUpListener(mMouseListeners, [this](const vui::MouseButtonEvent& event) {
         constexpr float VEL_MULT = 0.0001f;
         constexpr float VEL_EXP = 0.4f;
         const f32v2 screenPos(event.x, event.y);

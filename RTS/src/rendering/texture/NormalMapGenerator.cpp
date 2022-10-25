@@ -107,14 +107,15 @@ NormalMapGenerator::~NormalMapGenerator() {
 
 }
 
-void onError(Sender s, const nString& n) {
+void onError(const nString& n) {
     pError("Failed to load internal normal map generator shader with error " + n);
 }
 
 void NormalMapGenerator::init() {
     glGenFramebuffers(1, &mFramebufferID);
     mProgram = std::make_unique<vg::GLProgram>();
-    mProgram->onShaderCompilationError += makeDelegate(onError);
+    eventpp::ScopedRemover<GLProgramErrorCallbackList> remover(mProgram->onShaderCompilationError);
+    remover.append([](const nString& s) { onError(s); });
     mProgram->init();
     mProgram->addShader(vg::ShaderType::VERTEX_SHADER, SIMPLE_VERT_SRC);
     mProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, SIMPLE_FRAG_SRC);

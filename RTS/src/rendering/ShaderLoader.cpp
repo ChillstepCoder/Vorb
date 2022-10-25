@@ -10,17 +10,18 @@ std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sGeometryShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sTessControlShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sTessEvalShaderNameToPath;
+typedef eventpp::ScopedRemover<eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const nString&)>> ScopedRemover;
 
 namespace {
-    void printShaderError(Sender s VORB_MAYBE_UNUSED, const nString& n) {
+    void printShaderError(const nString& n) {
         puts("Shader Error: ");
         puts(n.c_str());
     }
-    void printLinkError(Sender s VORB_MAYBE_UNUSED, const nString& n) {
+    void printLinkError(const nString& n) {
         puts("Link Error: ");
         puts(n.c_str());
     }
-    void printFileIOError(Sender s VORB_MAYBE_UNUSED, const nString& n) {
+    void printFileIOError(const nString& n) {
         puts("FIle IO Error: ");
         puts(n.c_str());
     }
@@ -62,9 +63,10 @@ vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, 
 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/, const vio::Path tessControlPath /*= ""*/, const vio::Path tessEvalPath /*= ""*/,
     const cString defines /*= nullptr*/) {
-    vg::ShaderManager::onFileIOFailure += makeDelegate(printFileIOError);
-    vg::ShaderManager::onShaderCompilationError += makeDelegate(printShaderError);
-    vg::ShaderManager::onProgramLinkError += makeDelegate(printLinkError);
+    ScopedRemover events(vg::ShaderManager::errorDispatcher);
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const nString& s) { printFileIOError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const nString& s) { printShaderError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const nString& s) { printLinkError(s); });
     
     assert(!vg::ShaderManager::getProgram(name).isLinked());
 
@@ -95,10 +97,6 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
         if (tmp == 'Z' || tmp == 'z') break;
     }
 
-    vg::ShaderManager::onFileIOFailure -= makeDelegate(printFileIOError);
-    vg::ShaderManager::onShaderCompilationError -= makeDelegate(printShaderError);
-    vg::ShaderManager::onProgramLinkError -= makeDelegate(printLinkError);
-
     if (program.isLinked()) {
         vg::ShaderManager::registerProgram(name, program);
     }
@@ -106,9 +104,10 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
 }
 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
-    vg::ShaderManager::onFileIOFailure += makeDelegate(printFileIOError);
-    vg::ShaderManager::onShaderCompilationError += makeDelegate(printShaderError);
-    vg::ShaderManager::onProgramLinkError += makeDelegate(printLinkError);
+    ScopedRemover events;
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const nString& s) { printFileIOError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const nString& s) { printShaderError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const nString& s) { printLinkError(s); });
 
     assert(!vg::ShaderManager::getProgram(name).isLinked());
 
@@ -122,10 +121,6 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
         std::cin >> tmp;
         if (tmp == 'Z' || tmp == 'z') break;
     }
-
-    vg::ShaderManager::onFileIOFailure -= makeDelegate(printFileIOError);
-    vg::ShaderManager::onShaderCompilationError -= makeDelegate(printShaderError);
-    vg::ShaderManager::onProgramLinkError -= makeDelegate(printLinkError);
 
     if (program.isLinked()) {
         vg::ShaderManager::registerProgram(name, program);

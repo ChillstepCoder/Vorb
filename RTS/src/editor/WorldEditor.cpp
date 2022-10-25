@@ -40,7 +40,7 @@ constexpr f32 MAX_BRUSH_STRENGTH_GRASS = 1.0f;
 WorldEditor::WorldEditor(const f32v2& screenDims) : mScreenDims(screenDims) {
 
     // Inputs
-    vui::InputDispatcher::key.onKeyDown.addFunctor([this](Sender sender, const vui::KeyEvent& event) {
+    vui::InputDispatcher::key.addKeyDownListener([this](const vui::KeyEvent& event) {
 
         if (!sDebugOptions.mShowEditor) return;
 
@@ -72,7 +72,7 @@ WorldEditor::WorldEditor(const f32v2& screenDims) : mScreenDims(screenDims) {
        
     });
 
-    vui::InputDispatcher::mouse.onButtonUp.addFunctor([this](Sender sender, const vui::MouseButtonEvent& event) {
+    vui::InputDispatcher::mouse.addButtonUpListener([this](const vui::MouseButtonEvent& event) {
         if (!sDebugOptions.mShowEditor) return;
 
         if (event.button == vorb::ui::MouseButton::LEFT) {

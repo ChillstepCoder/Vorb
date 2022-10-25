@@ -30,8 +30,15 @@
 
 #include "../io/IOManager.h"
 
+
 namespace vorb {
     namespace graphics {
+
+        enum class SHADER_ERROR_EVENT_TYPE {
+            FileIOFailure,
+            ShaderCompilationError,
+            ProgramLinkError
+        };
 
         class GLProgram;
         typedef std::map<nString, GLProgram> GLProgramMap;
@@ -101,12 +108,10 @@ namespace vorb {
             /// Gets the read only program map of cached programs
             static const GLProgramMap& getProgramCache() { return m_programMap; }
 
-            static Event<const nString&> onFileIOFailure; ///< Event that triggers when IO fails for reading the input files
-            static Event<const nString&> onShaderCompilationError; ///< Event signaled during addShader when an error occurs
-            static Event<const nString&> onProgramLinkError; ///< Event signaled during link when an error occurs
+            static eventpp::EventDispatcher<SHADER_ERROR_EVENT_TYPE, void(const nString&)> errorDispatcher;
         private:
-            static void triggerShaderCompilationError(Sender s, const nString& n); ///< Fires the onShaderCompilationError event
-            static void triggerProgramLinkError(Sender s, const nString& n); ///< Fires the onProgramLinkError event
+            static void triggerShaderCompilationError(const nString& n); ///< Fires the onShaderCompilationError event
+            static void triggerProgramLinkError(const nString& n); ///< Fires the onProgramLinkError event
             static GLProgramMap m_programMap; ///< For globally caching programs
             static GLProgram m_nilProgram;
             static vio::IOManager mIoManager;

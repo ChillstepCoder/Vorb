@@ -15,6 +15,11 @@ const f32v2 CAMERA_ZOOM_RANGE = f32v2(1.0f, 1024.0f);
 
 CameraController::CameraController(vui::GameWindow& window) : mWindow(window) {
 
+    // Init listeners
+    vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
+    vui::InputDispatcher::mouse.registerMouseListeners(mMouseListeners);
+
+
     mCamera.init((f32)window.getWidth() / window.getHeight());
     setCameraMode(sDebugOptions.mCameraMode);
    
@@ -60,60 +65,32 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         return;
     }
 
-    // Update inputs
-    // Remove old inputs
-    switch (mCameraMode) {
-        case CameraMode::CARTESIAN:
-            vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
-            vui::InputDispatcher::key.onKeyDown -= makeDelegate(this, &CameraController::updateKeyInputCartesianMode);
-            break;
-        case CameraMode::MMO:
-            vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInputMMOMode);
-            vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputMMOMode);
-            vui::InputDispatcher::mouse.onButtonDown -= makeDelegate(this, &CameraController::updateMouseButtonDownInputMMO);
-            vui::InputDispatcher::mouse.onButtonUp -= makeDelegate(this, &CameraController::updateMouseButtonUpInputMMO);
-            mWindow.setRelativeMouseMode(false);
-            mIsMouseHidden = false;
-            break;
-        case CameraMode::MOUSELOCK:
-            vui::InputDispatcher::mouse.onWheel -= makeDelegate(this, &CameraController::updateMouseWheelInput);
-            break;
-        case CameraMode::FREE_LOOK:
-            vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputFreeLookMode);
-            break;
-        case CameraMode::FIRST_PERSON:
-            vui::InputDispatcher::mouse.onMotion -= makeDelegate(this, &CameraController::updateMouseMotionInputFirstPersonMode);
-            mWindow.setRelativeMouseMode(false);
-            mIsMouseHidden = false;
-            break;
-        case CameraMode::NONE:
-        default:
-            break;
-    }
-    static_assert(e_cast(CameraMode::COUNT) == 6, "Update any input unregister");
+    // Remove any old listeners
+    mKeyListeners.reset();
+    mMouseListeners.reset();
 
     // Switch our camera mode
     mCameraMode = cameraMode;
     // Add new inputs
     switch (mCameraMode) {
         case CameraMode::CARTESIAN:
-            vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInput);
-            vui::InputDispatcher::key.onKeyDown += makeDelegate(this, &CameraController::updateKeyInputCartesianMode);
+            vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInput(e); });
+            vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& e) { updateKeyInputCartesianMode(e); });
             break;
         case CameraMode::MMO:
-            vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInputMMOMode);
-            vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputMMOMode);
-            vui::InputDispatcher::mouse.onButtonDown += makeDelegate(this, &CameraController::updateMouseButtonDownInputMMO);
-            vui::InputDispatcher::mouse.onButtonUp += makeDelegate(this, &CameraController::updateMouseButtonUpInputMMO);
+            vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInputMMOMode(e); });
+            vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputMMOMode(e); });
+            vui::InputDispatcher::mouse.addButtonDownListener(mMouseListeners, [this](const vui::MouseButtonEvent& e) { updateMouseButtonDownInputMMO(e); });
+            vui::InputDispatcher::mouse.addButtonUpListener(mMouseListeners, [this](const vui::MouseButtonEvent& e) { updateMouseButtonUpInputMMO(e); });
             break;
         case CameraMode::MOUSELOCK:
-            vui::InputDispatcher::mouse.onWheel += makeDelegate(this, &CameraController::updateMouseWheelInput);
+            vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInput(e); });
             break;
         case CameraMode::FREE_LOOK:
-            vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputFreeLookMode);
+            vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputFreeLookMode(e); });
             break;
         case CameraMode::FIRST_PERSON:
-            vui::InputDispatcher::mouse.onMotion += makeDelegate(this, &CameraController::updateMouseMotionInputFirstPersonMode);
+            vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputFirstPersonMode(e); });
             mIsMouseHidden = true;
             mLastMousePositionBeforeRelative = i32v2(mWindow.getWidth() * 0.5f, mWindow.getHeight() * 0.5f);
             break;
@@ -250,36 +227,36 @@ void CameraController::updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& 
     }
 }
 
-void CameraController::updateMouseWheelInput(Sender s, const vui::MouseWheelEvent& evnt) {
+void CameraController::updateMouseWheelInput(const vui::MouseWheelEvent& evnt) {
     mCameraPositionTweener.mTarget.z = glm::clamp(mCameraPositionTweener.mTarget.z + evnt.dy * mCameraPositionTweener.mTarget.z * -0.2f, CAMERA_ZOOM_RANGE.x, CAMERA_ZOOM_RANGE.y);
 }
 
-void CameraController::updateMouseWheelInputMMOMode(Sender s, const vui::MouseWheelEvent& evnt) {
+void CameraController::updateMouseWheelInputMMOMode(const vui::MouseWheelEvent& evnt) {
     mCameraBoomLengthTweener.mTarget = glm::clamp(mCameraBoomLengthTweener.mTarget + (f32)evnt.dy * mCameraBoomLengthTweener.mTarget * -0.2f, 0.5f, 20.0f /*3.0f*/);
 }
 
-void CameraController::updateMouseMotionInputFreeLookMode(Sender s, const vui::MouseMotionEvent& evnt) {
+void CameraController::updateMouseMotionInputFreeLookMode(const vui::MouseMotionEvent& evnt) {
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
         constexpr f32 ROTATE_SPEED = 0.002f;
         mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
     }
 }
 
-void CameraController::updateMouseMotionInputMMOMode(Sender s, const vui::MouseMotionEvent& evnt) {
+void CameraController::updateMouseMotionInputMMOMode(const vui::MouseMotionEvent& evnt) {
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::RIGHT)) {
         constexpr f32 ROTATE_SPEED = 0.002f;
         mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
     }
 }
 
-void CameraController::updateMouseMotionInputFirstPersonMode(Sender s, const vui::MouseMotionEvent& evnt) {
+void CameraController::updateMouseMotionInputFirstPersonMode(const vui::MouseMotionEvent& evnt) {
     if (mIsMouseHidden) {
         constexpr f32 ROTATE_SPEED = 0.002f;
         mCamera.applyRotation(evnt.dy * ROTATE_SPEED, evnt.dx * ROTATE_SPEED);
     }
 }
 
-void CameraController::updateKeyInputCartesianMode(Sender sender, const vui::KeyEvent& evnt) {
+void CameraController::updateKeyInputCartesianMode(const vui::KeyEvent& evnt) {
     if (evnt.keyCode == VKEY_Q) {
         mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][1];
         mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
@@ -290,7 +267,7 @@ void CameraController::updateKeyInputCartesianMode(Sender sender, const vui::Key
     }
 }
 
-void CameraController::updateMouseButtonDownInputMMO(Sender s, const vui::MouseButtonEvent& evnt) {
+void CameraController::updateMouseButtonDownInputMMO(const vui::MouseButtonEvent& evnt) {
     // We cant set SDL mouse mode inside the event handler or it causes bugs
     if (evnt.button == vorb::ui::MouseButton::RIGHT) {
         mIsMouseHidden = true;
@@ -298,7 +275,7 @@ void CameraController::updateMouseButtonDownInputMMO(Sender s, const vui::MouseB
     }
 }
 
-void CameraController::updateMouseButtonUpInputMMO(Sender s, const vui::MouseButtonEvent& evnt) {
+void CameraController::updateMouseButtonUpInputMMO(const vui::MouseButtonEvent& evnt) {
     if (evnt.button == vorb::ui::MouseButton::RIGHT) {
         mIsMouseHidden = false;
     }

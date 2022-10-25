@@ -18,9 +18,11 @@
 // Comment out to remove imgui
 #define VORB_IMPL_IMGUI
 
-#include "KeyboardEventDispatcher.h"
-#include "MouseInputDispatcher.h"
-#include "WindowEventDispatcher.h"
+#include "KeyboardEventManager.h"
+#include "MouseEventManager.h"
+#include "WindowEventManager.h"
+
+#include "../Event.hpp"
 
 namespace vorb {
     namespace ui {
@@ -42,10 +44,10 @@ namespace vorb {
             /// Removes the event listener from SDL
             static void dispose();
 
-            static MouseEventDispatcher mouse; ///< Dispatches mouse events
-            static KeyboardEventDispatcher key; ///< Dispatches keyboard events
-            static WindowEventDispatcher window; ///< Dispatches window events
-            static Event<> onQuit; ///< Signaled when application should quit
+            static MouseEventManager mouse; ///< Dispatches mouse events
+            static KeyboardEventManager key; ///< Dispatches keyboard events
+            static WindowEventManager window; ///< Dispatches window events
+            static eventpp::CallbackList<void()> onQuit;
         private:
             static GameWindow* m_window; ///< Active window
             volatile static bool m_isInit; ///< Keeps track of initialization status

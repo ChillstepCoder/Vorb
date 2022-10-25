@@ -34,6 +34,7 @@ namespace vorb {
 
         // Forward declarations
         struct WindowResizeEvent;
+        struct WindowEvent;
 
         /*! @brief Typeless window handle.
          * <br/>
@@ -207,15 +208,15 @@ namespace vorb {
         
             void sync(ui32 frameTime);
 
-            Event<> onQuit;
+            eventpp::CallbackList<void()> onQuit;
 
             void saveSettings() const;
         private:
             VORB_NON_COPYABLE(GameWindow);
-            VORB_MOVABLE_DECL(GameWindow);
+            //VORB_MOVABLE_DECL(GameWindow);
 
-            void onResize(Sender s, const WindowResizeEvent& e);
-            void onQuitSignal(Sender);
+            void onResize(const WindowResizeEvent& e);
+            void onQuitSignal();
             void pollInput();
 
             // Application Setting Management

@@ -9,6 +9,8 @@
 
 #include <Vorb/Timing.h>
 
+#include <Vorb/ui/KeyboardEventManager.h>
+
 constexpr f64 MS_PER_GAME_TICK = 40.0;
 constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
@@ -85,6 +87,8 @@ private:
 	WorldType mClientType = WorldType::HOST;
 
 	GameplayScreenState mState = GameplayScreenState::INIT;
+	vui::MouseListeners mMouseListeners;
+	vui::KeyListeners mKeyListeners;
 
 };
 

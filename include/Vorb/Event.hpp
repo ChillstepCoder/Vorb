@@ -27,7 +27,74 @@
 #include "Delegate.hpp"
 
 /************************************************************************\
- *                     The Event Implementation                         *
+ *                     EVENTPP NEW                                      *
+\************************************************************************/
+#include "eventpp/callbacklist.h"
+#include "eventpp/eventdispatcher.h"
+#include "eventpp/utilities/scopedremover.h"
+#include "eventpp/utilities/argumentadapter.h"
+
+// Define a listener class which has a single object param
+#define EVENT_DISPATCHER_TYPE(name, eventType, paramType) \
+typedef eventpp::EventDispatcher<eventType, void(paramType)> name##EventDispatcher; \
+typedef eventpp::ScopedRemover<eventpp::EventDispatcher<eventType, void(paramType)>> name##Listeners;
+
+#define EVENT_DISPATCHER(name) \
+name##EventDispatcher m##name##EventDispatcher; \
+public: \
+void register##name##Listeners(name##Listeners& remover) { \
+    remover.setDispatcher(m##name##EventDispatcher); \
+} \
+private:
+
+// Create add/remove functions for a specific event
+#define EVENT_LISTENER_FUNCS(name, eventName, eventType, paramType) \
+[[nodiscard]] vorb::ui::name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
+    return m##name##EventDispatcher.appendListener(eventType, callback); \
+} \
+bool add##eventName##Listener(name##Listeners& remover, const name##EventDispatcher::Callback& callback) { \
+    return remover.appendListener(eventType, callback); \
+} \
+void remove##eventName##Listener(const name##EventDispatcher::Handle& handle) { \
+    m##name##EventDispatcher.removeListener(eventType, handle); \
+} \
+void dispatch##eventName##(paramType p) { \
+    m##name##EventDispatcher.dispatch(eventType, p); \
+}
+
+// Create add/remove functions no param
+#define EVENT_LISTENER_FUNCS_VOID(name, eventName, eventType) \
+[[nodiscard]] vorb::ui::name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
+    return m##name##EventDispatcher.appendListener(eventType, callback); \
+} \
+bool add##eventName##Listener(name##Listeners& remover, const std::function<void()>& callback) { \
+    return remover.appendListener(eventType, eventpp::argumentAdapter<void()>(callback)); \
+} \
+void remove##eventName##Listener(const name##EventDispatcher::Handle& handle) { \
+    m##name##EventDispatcher.removeListener(eventType, handle); \
+} \
+void dispatch##eventName##() { \
+    m##name##EventDispatcher.dispatch(eventType); \
+}
+
+// Create add/remove functions for a specific event
+#define EVENT_LISTENER_FUNCS_ADAPTOR(name, eventName, eventType, paramType) \
+[[nodiscard]] vorb::ui::name##EventDispatcher::Handle add##eventName##Listener(const std::function<void(paramType)>& callback) { \
+    return m##name##EventDispatcher.appendListener(eventType, eventpp::argumentAdapter<void(paramType)>(callback)); \
+} \
+bool add##eventName##Listener(name##Listeners& remover, const std::function<void(paramType)>& callback) { \
+    return remover.appendListener(eventType, eventpp::argumentAdapter<void(paramType)>(callback)); \
+} \
+void remove##eventName##Listener(const name##EventDispatcher::Handle& handle) { \
+    m##name##EventDispatcher.removeListener(eventType, handle); \
+} \
+void dispatch##eventName##(paramType p) { \
+    m##name##EventDispatcher.dispatch(eventType, p); \
+}
+
+
+/************************************************************************\
+ *                     The Event Implementation OLD                      *
 \************************************************************************/
 
 // Sender is the object responsible for handling the event, and is stored simply as a void pointer; making things

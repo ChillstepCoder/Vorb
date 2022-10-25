@@ -14,6 +14,9 @@
  * and provide a common call method.
  */
 
+
+// TODO: Delete?
+
 #pragma once
 
 #ifndef Vorb_Delegate_h__

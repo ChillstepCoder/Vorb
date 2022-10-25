@@ -82,10 +82,11 @@ void App::onInit() {
     vg::ShaderManager::setMaterialRootDirectory(vio::IOManager::getCurrentWorkingDirectory() / vio::Path("data\\materials"));
 
     // Init events
-    vui::InputDispatcher::key.onFocusGained.addFunctor([](Sender) {
+    vui::InputDispatcher::key.addFocusGainedListener([]() {
         setThreadPriorityToMax();
     });
-    vui::InputDispatcher::key.onFocusLost.addFunctor([](Sender) {
+    // TODO: Threadpool/render thread as well?
+    vui::InputDispatcher::key.addFocusLostListener([]() {
         setPriorityToNormal();
     });
 }
