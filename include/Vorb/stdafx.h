@@ -66,6 +66,7 @@
 #include "VorbAssert.hpp"
 #include "types.h"
 #include "math/VorbMath.hpp"
+#include "logging/Logger.h"
 
 /************************************************************************/
 /* Graphics Implementation                                              */

@@ -16,3 +16,7 @@
 [submodule "RTS/dependencies/eventpp"]
 	path = RTS/dependencies/eventpp
 	url = https://github.com/wqking/eventpp.git
+[submodule "RTS/dependencies/spdlog"]
+	path = RTS/dependencies/spdlog
+	url = https://github.com/gabime/spdlog.git
+

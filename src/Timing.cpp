@@ -5,6 +5,7 @@
 
 #ifndef VORB_USING_PCH
 #include "Vorb/compat.h"
+#include "Vorb/logging/Logger.h"
 #endif // !VORB_USING_PCH
 
 //#if defined(VORB_OS_WINDOWS)
@@ -204,5 +205,5 @@ ScopedTimer::ScopedTimer(const char* label, int indentLevel) : PreciseTimer(), m
 }
 
 ScopedTimer::~ScopedTimer() {
-    printf("%*s%s finished in %.3lf ms\n", mIndentLevel, "", mLabel, stop());
+    LOG_TRACE("{:{}} finished in {:.4} ms", mLabel, mIndentLevel, stop());
 }

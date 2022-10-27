@@ -67,15 +67,15 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
 
 void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
     const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
-    std::cout << "\nGenerated house:" << bp->rooms.size() << " " << bp->aabb.dims.x << "\n";
+    LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->aabb.dims.x);
     for (auto&& node : bp->rooms) {
         char nameBuf[64];
         buildingRepo.getNameFromRoomDefID(node.roomDefId).toString(nameBuf, nullptr);
-        std::cout << "  node - " << nameBuf << " " << node.offsetFromZero.x << " " << node.offsetFromZero.y << "\n";
+        LOG_DEBUG("   node {} {} {}", nameBuf, node.offsetFromZero.x, node.offsetFromZero.y);
         for (int i = 0; i < node.numChildren; ++i) {
             const int childIndex = (int)node.childRooms[i];
             buildingRepo.getNameFromRoomDefID(bp->rooms[childIndex].roomDefId).toString(nameBuf, nullptr);
-            std::cout << "    child - " << childIndex << " type - " << nameBuf << "\n";
+            LOG_DEBUG("    child - {} type - {}", childIndex, nameBuf);
         }
     }
 }

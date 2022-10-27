@@ -29,6 +29,8 @@
 #include "Vorb/io/IOManager.h"
 #include "Vorb/ui/InputDispatcher.h"
 
+#include <Vorb/logging/Logger.h>
+
 #include <thread>
 
 #if defined(VORB_IMPL_GRAPHICS_OPENGL)
@@ -119,7 +121,7 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
 
     // Create The Window
     if (m_window == nullptr) {
-        printf("Window Creation Failed\r\n");
+        VORB_LOG_CRITICAL("Window Creation Failed");
         return false;
     }
 
@@ -226,9 +228,9 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
     // Check for a valid context
     if (m_glc == nullptr) {
         #if defined(VORB_IMPL_UI_SDL)
-            printf("%s", SDL_GetError());
+            VORB_LOG_CRITICAL("{}", SDL_GetError());
         #else
-            printf("Could Not Create OpenGL Context");
+            VORB_LOG_CRITICAL("Could Not Create OpenGL Context");
         #endif
         std::cout << "Enter any key to exit...\n";
         int c;
@@ -239,7 +241,7 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
 #if defined(VORB_IMPL_GRAPHICS_OPENGL)
     // Initialize GLEW
     if (glewInit() != GLEW_OK) {
-        printf("Glew failed to initialize. Your graphics card is probably WAY too old. Or you forgot to extract the .zip. It might be time for an upgrade :)");
+        VORB_LOG_CRITICAL("Glew failed to initialize. Your graphics card is probably WAY too old. Try updating drivers?");
         return false;
     }
 
@@ -297,7 +299,7 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
     // Make sure we are using the right gl version (4.5)
     const ui32 minor = getGLMinorVersion();
     const ui32 major = getGLMajorVersion();
-    printf("Initializing opengl for imgui with minor %u and major %u", minor, major);
+    VORB_LOG_INFO("Initializing opengl for imgui with minor {} and major {}", minor, major);
     assert(minor == 5 && major == 4 && "App.config needs opengl set to 4.5\n");
     ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(m_window), m_glc);
     ImGui_ImplOpenGL3_Init(glsl_version);

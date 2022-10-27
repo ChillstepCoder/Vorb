@@ -86,7 +86,8 @@ extern bool IS_SHUTTING_DOWN;
 // **************** FPS *****************
 extern float sFps;
 
-// **************** ERRORS *****************
+// **************** LOGGING *****************
+#include <Vorb/logging/Logger.h>
 #include "logging/ErrorLogging.h"
 
 extern UNIT_SPACE(SECONDS) f64 sTotalTimeSeconds; ///< Total time since the update/draw loop started.

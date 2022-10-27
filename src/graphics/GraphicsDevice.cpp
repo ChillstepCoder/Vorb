@@ -1,6 +1,8 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/graphics/GraphicsDevice.h"
 
+#include <Vorb/logging/Logger.h>
+
 #ifndef VORB_USING_PCH
 #include <GL/glew.h>
 
@@ -72,22 +74,20 @@ void vg::GraphicsDevice::refreshInformation() {
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &_props.maxArrayTextureLayers);
 
 #ifdef DEBUG
-    printf("Graphics Device Information Refreshed:\n");
+    VORB_LOG_INFO("Graphics Device Information:");
 
-    printf("\n=== OpenGL Implementation ===\n");
-    printf("Vendor:                   %s\n", _props.glVendor);
-    printf("GL Version:               %s\n", _props.glVersion);
-    printf("GL Version (Strict):      %d.%d\n", _props.glVersionMajor, _props.glVersionMinor);
-    printf("GLSL Version:             %s\n", _props.glslVersion);
-
-    printf("\n=== Vertex Properties ===\n");
-    printf("Max Vertex Attributes:    %d\n", _props.maxVertexAttributes);
-
-    printf("\n=== Texture Properties ===\n");
-    printf("Max Frag Texture Units:   %d\n", _props.maxTextureUnits);
-    printf("Max Texture Size:         %d\n", _props.maxTextureSize);
-    printf("Max 3D Texture Size:      %d\n", _props.max3DTextureSize);
-    printf("Max Array Texture Layers: %d\n", _props.maxArrayTextureLayers);
+    VORB_LOG_INFO("=== OpenGL Implementation ===");
+    VORB_LOG_INFO("Vendor:                   %s", _props.glVendor);
+    VORB_LOG_INFO("GL Version:               %s", _props.glVersion);
+    VORB_LOG_INFO("GL Version (Strict):      %d.%d", _props.glVersionMajor, _props.glVersionMinor);
+    VORB_LOG_INFO("GLSL Version:             %s", _props.glslVersion);
+    VORB_LOG_INFO("=== Vertex Properties ===");
+    VORB_LOG_INFO("Max Vertex Attributes:    %d", _props.maxVertexAttributes);
+    VORB_LOG_INFO("=== Texture Properties ===");
+    VORB_LOG_INFO("Max Frag Texture Units:   %d", _props.maxTextureUnits);
+    VORB_LOG_INFO("Max Texture Size:         %d", _props.maxTextureSize);
+    VORB_LOG_INFO("Max 3D Texture Size:      %d", _props.max3DTextureSize);
+    VORB_LOG_INFO("Max Array Texture Layers: %d", _props.maxArrayTextureLayers);
 #endif // DEBUG
 }
 

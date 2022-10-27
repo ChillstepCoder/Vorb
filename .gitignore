@@ -24,6 +24,7 @@ RTS/dependencies/lzma/
 RTS/dependencies/boost/
 RTS/dependencies/lib/
 RTS/dependencies/*.h
+RTS/PACKAGE
 
 # Roslyn cache directories
 *.ide/

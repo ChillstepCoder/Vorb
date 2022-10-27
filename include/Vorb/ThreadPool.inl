@@ -1,4 +1,6 @@
 
+#include <Vorb/logging/Logger.h>
+
 template<typename T>
 vorb::core::ThreadPool<T>::ThreadPool(ui32 size) {
     /// Allocate all threads
@@ -52,7 +54,7 @@ void vorb::core::ThreadPool<T>::mainThreadUpdate() {
     }
     //std::cout << "Main thread processed " << i << " tasks in " << timer.stop() << " ms\n";
     if (timer.stop() > 20.0f) {
-        std::cout << timer.stop() << " ms ***THREADPOOL SPIKE WARNING***\n";
+        LOG_WARN("{} ms ***THREADPOOL SPIKE WARNING***", timer.stop());
     }
 }
 

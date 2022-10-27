@@ -30,6 +30,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
     PreciseTimer timer;
 
+    LOG_TRACE("Loading FBX {}", filePath.getCString());
+
     ModelDefFileData fileData;
     if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(ModelDefFileData))) {
         pError("Failed to load model file " + filePath.getString());
@@ -47,7 +49,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
     assert(rootDir.isDirectory());
 
     vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName;
-    std::cout << "PARSE " << timer.stop() << " ms" << std::endl; timer.start();
+    LOG_TRACE("  Parsed in {} ms", timer.stop());
+    timer.start();
 
     // Load ozz Skeleton
     assert(fileData.mRigName.size());
@@ -71,8 +74,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
         pError("Failed to import fbx scene: " + filePath.getString());
         return false;
     }
-
-    std::cout << "IMPORT " << timer.stop() << " ms" << std::endl; timer.start();
+    LOG_TRACE("  Import in {} ms", timer.stop());
+    timer.start();
 
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
@@ -117,15 +120,15 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                 pError("Failed to read skinning data: " + filePath.getString());
                 return false;
             }
-
-            std::cout << "BUILD SKIN " << timer.stop() << " ms" << std::endl; timer.start();
+            LOG_TRACE("  Build skin in {} ms", timer.stop());
+            timer.start();
             // Limiting number of joint influences per vertex.
             if (!LimitInfluences(outputMesh, MAX_BONES_PER_VERTEX)) {
                 pError("Failed to limit number of joint influences: " + filePath.getString());
                 return false;
             }
-
-            std::cout << "LIMIT INFLUENCES " << timer.stop() << " ms" << std::endl; timer.start();
+            LOG_TRACE("  Limit influences in {} ms", timer.stop());
+            timer.start();
             // Remap joint indices. The mesh might not use all skeleton joints, so
             // this function remaps joint indices to the subset of used joints. It
             // also reoders inverse bin pose matrices.
@@ -134,7 +137,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                 return false;
             }
 
-            std::cout << "REMAP INDICES " << timer.stop() << " ms" << std::endl; timer.start();
+            LOG_TRACE("  Remap indices in {} ms", timer.stop());
+            timer.start();
             // Split the mesh if option is true (default)
             //if (OPTIONS_split) {
             //    ozz::sample::Mesh partitioned_meshes;
@@ -151,7 +155,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
                 pError("Failed to strip weights: " + filePath.getString());
                 return false;
             }
-            std::cout << "STRIP WEIGHTS " << timer.stop() << " ms" << std::endl; timer.start();
+            LOG_TRACE("  Strip weights in {} ms", timer.stop());
+            timer.start();
 
             assert(outputMesh.max_influences_count() <= MAX_BONES_PER_VERTEX);
 
@@ -199,7 +204,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
             myMesh.mNumJoints = numJoints;
             myMesh.setData(verts.data(), (ui32)verts.size(), MeshDrawMode::STATIC);
             myMesh.setIndices(outputMesh.triangle_indices.data(), outputMesh.triangle_index_count());
-            std::cout << "COPY " << timer.stop() << " ms" << std::endl; timer.start();
+            LOG_TRACE("  Copy data in {} ms", timer.stop());
+            timer.start();
         }
     }
 

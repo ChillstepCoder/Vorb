@@ -1,6 +1,7 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/ui/MainGame.h"
 
+#include <Vorb/logging/Logger.h>
 #include <Vorb/math/VorbMath.hpp>
 
 #include <thread>
@@ -80,6 +81,10 @@ bool vui::MainGame::init() {
     return true;
 }
 bool vui::MainGame::initSystems() {
+    // Initialize logger
+    // TODO: Config logging level
+    vorb::Logger::init(LoggingLevel::Trace);
+
     // Create The Window
     if (!m_window.init(true, IS_DEBUG_OPENGL_CONTEXT)) return false;
     sMainGameWindowHandle = &m_window;

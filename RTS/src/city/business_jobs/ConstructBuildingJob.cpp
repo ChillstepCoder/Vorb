@@ -154,7 +154,6 @@ void ConstructBuildingJob::tryReserveItems(JobRequiredItems& item, OwnershipComp
     for (auto&& stockpile : ownerCmp.mOwnedStockpiles) {
         std::unique_ptr<ItemReservation> reservation = stockpile->tryReserveItemStack(itemsRequired, 1);
         if (reservation) {
-            std::cout << "RESERVE " << reservation->getRemainingQuantity() << " " << mTotalResourcesReserved << std::endl;
             mTotalResourcesReserved += reservation->getRemainingQuantity();
             item.quantityReserved += reservation->getRemainingQuantity();
             itemsRequired.quantity -= reservation->getRemainingQuantity();

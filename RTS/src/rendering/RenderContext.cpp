@@ -163,7 +163,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         int flags;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
         if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
-            std::cout << "DEBUG CONTEXT DETECTED. INITIALIZING OUTPUT\n";
+            LOG_DEBUG("Debug gl context detected, initializing debug output");
             glEnable(GL_DEBUG_OUTPUT);
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
             glDebugMessageCallback(glDebugOutput, nullptr);
