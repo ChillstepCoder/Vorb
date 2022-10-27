@@ -98,7 +98,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
     mHasGathered = true;
 
-    std::cout << "Gathered files in " << timer.stop() << " ms" << std::endl;
+    LOG_TRACE("Gathered files in {:.4} ms", timer.stop());
 }
 
 void ResourceManager::loadFiles() {
@@ -236,8 +236,7 @@ void ResourceManager::loadFiles() {
     }
 
     mHasLoadedResources = true;
-
-    std::cout << "Loaded resources in " << totalTimer.stop() << " ms" << std::endl;
+    LOG_TRACE("Loaded resources in {:.4} ms");
 }
 
 const SubTexture& ResourceManager::getTexture(const nString& textureName) const {
@@ -249,7 +248,7 @@ vg::TextureCache& ResourceManager::getTextureCache() {
 }
 
 void ResourceManager::reloadMaterials() {
-    std::cout << "RELOADING MATERIALS...\n";
+    LOG_DEBUG("Reloading materials...");
 
     ShaderLoader::clearAllCachedPrograms();
     vg::ShaderManager::disposeAllPrograms();
@@ -257,7 +256,7 @@ void ResourceManager::reloadMaterials() {
         mMaterialManager->loadMaterial(entry);
     };
 
-    std::cout << "...DONE\n";
+    LOG_DEBUG("...done");
 }
 
 void ResourceManager::generateNormalMaps() {

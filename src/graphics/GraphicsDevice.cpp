@@ -76,18 +76,18 @@ void vg::GraphicsDevice::refreshInformation() {
 #ifdef DEBUG
     VORB_LOG_INFO("Graphics Device Information:");
 
-    VORB_LOG_INFO("=== OpenGL Implementation ===");
-    VORB_LOG_INFO("Vendor:                   %s", _props.glVendor);
-    VORB_LOG_INFO("GL Version:               %s", _props.glVersion);
-    VORB_LOG_INFO("GL Version (Strict):      %d.%d", _props.glVersionMajor, _props.glVersionMinor);
-    VORB_LOG_INFO("GLSL Version:             %s", _props.glslVersion);
+    VORB_LOG_INFO("=== OpenGL Implementation ===\n");
+    VORB_LOG_INFO("Vendor:                   {}", _props.glVendor);
+    VORB_LOG_INFO("GL Version:               {}", _props.glVersion);
+    VORB_LOG_INFO("GL Version (Strict):      {}.{}", _props.glVersionMajor, _props.glVersionMinor);
+    VORB_LOG_INFO("GLSL Version:             {}\n", _props.glslVersion);
     VORB_LOG_INFO("=== Vertex Properties ===");
-    VORB_LOG_INFO("Max Vertex Attributes:    %d", _props.maxVertexAttributes);
+    VORB_LOG_INFO("Max Vertex Attributes:    {}\n", _props.maxVertexAttributes);
     VORB_LOG_INFO("=== Texture Properties ===");
-    VORB_LOG_INFO("Max Frag Texture Units:   %d", _props.maxTextureUnits);
-    VORB_LOG_INFO("Max Texture Size:         %d", _props.maxTextureSize);
-    VORB_LOG_INFO("Max 3D Texture Size:      %d", _props.max3DTextureSize);
-    VORB_LOG_INFO("Max Array Texture Layers: %d", _props.maxArrayTextureLayers);
+    VORB_LOG_INFO("Max Frag Texture Units:   {}", _props.maxTextureUnits);
+    VORB_LOG_INFO("Max Texture Size:         {}", _props.maxTextureSize);
+    VORB_LOG_INFO("Max 3D Texture Size:      {}", _props.max3DTextureSize);
+    VORB_LOG_INFO("Max Array Texture Layers: {}", _props.maxArrayTextureLayers);
 #endif // DEBUG
 }
 
