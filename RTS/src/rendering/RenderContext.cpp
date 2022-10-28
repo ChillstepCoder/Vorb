@@ -819,7 +819,8 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
     }
 
     // Debug Shapes
-    for (const auto& quad : renderState.getDebugQuads()) {
+    const std::vector<DebugWireQuadState>& debugQuads = renderState.getDebugQuads();
+    for (const DebugWireQuadState& quad : debugQuads) {
         DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
     }
 

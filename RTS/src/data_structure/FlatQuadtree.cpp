@@ -229,7 +229,7 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
                     for (ui16 i = 0; i < 4; ++i) {
                         const ui16 childIndex = childIndexFirst + i;
                         QuadtreePatch& child = mNodes[childIndex];
-                        child.initiateCrossfadeIn(childIndex);
+                        child.initiateCrossfadeIn(index);
                         resetCrossfadeRenderForPatch(childIndex, 1, 0.0f);
                     }
                     patch.initiateCrossfadeOut(index);

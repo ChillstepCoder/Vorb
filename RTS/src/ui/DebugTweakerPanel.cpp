@@ -437,6 +437,9 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
     }
 
     if (ImGui::CollapsingHeader("Profiler")) {
+        if (ImGui::Button("Reset Times")) {
+            Instrumentor::get().resetTimes();
+        }
         std::string text = Instrumentor::get().getMostRecentTimeString();
         ImGui::Text(text.c_str());
     }

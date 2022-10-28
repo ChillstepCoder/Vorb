@@ -40,6 +40,7 @@ struct TerrainMeshGenTaskData {
     MeshBuilder waterBuilder;
     HeightmapTerrainQuadtree* owner;
     ui32 patchIndex;
+    bool isAnyMeshValid;
 };
 
 struct TerrainMeshFreeTask {
@@ -259,14 +260,14 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
             // To render thread for upload
             RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
                 TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
-                taskData->owner->finishMeshes(taskData->terrainBuilder, taskData->waterBuilder, taskData->patchIndex);
+                HeightmapTerrainQuadtree* owner = taskData->owner;
+                owner->finishMeshes(taskData->terrainBuilder, taskData->waterBuilder, taskData->patchIndex);
+                taskData->isAnyMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
 
                 // Back to the main thread to update state
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
                     TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
-                    HeightmapTerrainQuadtree* owner = taskData->owner;
-                    const bool isMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
-                    taskData->owner->onMeshFinished(taskData->patchIndex, isMeshValid);
+                    taskData->owner->onMeshFinished(taskData->patchIndex, taskData->isAnyMeshValid);
                     // Free resources
                     delete taskData;
                 }, taskData);

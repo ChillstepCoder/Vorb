@@ -80,6 +80,14 @@ public:
         return out.str();
     }
 
+    void resetTimes() {
+        std::lock_guard lock(mMutex);
+        for (auto& it : mMostRecentTimes) {
+            it.second.runningAverage = 0.0f;
+            it.second.max = 0.0f;
+        }
+    }
+
     void beginSession(const std::string& name, const std::string& filepath = "results.json")
     {
 #if DUMP_FILE == 1

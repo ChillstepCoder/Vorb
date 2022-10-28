@@ -14,10 +14,11 @@ enum class DebugChunkListIndex : ui8 {
 };
 
 struct DebugWireQuadState {
-    const f32v2& origin;
-    const f32v2& dims;
+    f32v2 origin;
+    f32v2 dims;
     color4 color;
 };
+static_assert(sizeof(DebugWireQuadState) == 20);
 
 struct DebugChunkRenderState {
     ChunkID mId;
@@ -38,6 +39,7 @@ static_assert(sizeof(CharacterRenderState) == 20, "Keep small");
 
 class RenderState {
     friend class CliWorldInterface;
+    friend class RenderStateManager;
 public:
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }
