@@ -4,6 +4,8 @@
 
 #include <ozz/animation/runtime/skeleton.h>
 
+typedef ui32 ModelID;
+
 struct RigDef;
 struct AnimMachineDef;
 
@@ -18,6 +20,6 @@ struct ModelDef {
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
     SkinnedModel3D mModel;
-    ui32 mModelId;
+    ModelID mModelId;
 };
 

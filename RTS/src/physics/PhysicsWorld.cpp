@@ -248,6 +248,8 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
 }
 
 void PhysicsWorld::debugRender() const {
+    assert(IS_RENDER_THREAD());
+
     const bool showStatic = sDebugOptions.mShowStaticPhysics;
     const bool showDynamic = sDebugOptions.mShowDynamicPhysics;
     const bool showTerrain = sDebugOptions.mShowTerrainPhysics;
@@ -262,8 +264,10 @@ void PhysicsWorld::debugRender() const {
     }
 
     if (renderStaticPass) {
-            // Draw static and dynamic
+        // Draw static and dynamic
         ScopedTimer timer("Static debug");
+        // TODO: We might still have race condition with adding rigidbodies
+        std::lock_guard lock(mMutex);
         if (showTerrain) mDebugDrawer->reserveStaticLines(2000000);
 
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
@@ -291,6 +295,7 @@ void PhysicsWorld::debugRender() const {
         }
     }
     else if (showDynamic) {
+        std::lock_guard lock(mMutex);
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
             btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
             btRigidBody* body = btRigidBody::upcast(obj);
@@ -302,6 +307,7 @@ void PhysicsWorld::debugRender() const {
     }
 
     if (sDebugOptions.mShowPhysicsActions) {
+        std::lock_guard lock(mMutex);
         // Draw actions
         const auto& actions = mDynamicsWorld->getActions();
         for (int i = 0; i < actions.size(); ++i) {

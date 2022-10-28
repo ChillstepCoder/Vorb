@@ -24,7 +24,6 @@ CliWorldInterface::~CliWorldInterface() {
 
 }
 
-
 void CliWorldInterface::tickClient(IWorld& world) {
     // Update terrain
     mTerrainMeshManager->tick();
@@ -56,10 +55,26 @@ void CliWorldInterface::updateRenderState(IWorld& world) {
     renderState.mWorldLoadCenter = world.getLoadCenter();
     renderState.mCameraOwningEntityPos = playerPos;
 
+    updateEntitiesRenderState(world, renderState);
     updateDebugRenderState(world, renderState);
 
     // Release render state
     RenderStateManager::getInstance().finishUpdating();
+}
+
+void CliWorldInterface::updateEntitiesRenderState(IWorld& world, RenderState& renderState) {
+
+    IEntityComponentSystem& ecs = *world.mEcs;
+    entt::registry& registry = ecs.mRegistry;
+    auto view = registry.view<PhysicsComponent, CharacterModelComponent>();
+
+    renderState.mCharacters.clear();
+
+    // Construct fresh list of all entities
+    for (auto entity : view) {
+        PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
+        renderState.mCharacters.emplace_back(CharacterRenderState{entity, physCmp.getPosition(), physCmp.getRotation()});
+    };
 }
 
 void CliWorldInterface::updateDebugRenderState(IWorld& world, RenderState& renderState) {

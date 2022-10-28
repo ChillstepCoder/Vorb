@@ -6,8 +6,6 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
 
-typedef ui32 ModelID;
-
 class RigRepository;
 class AnimMachineRepository;
 
@@ -19,7 +17,7 @@ public:
 
     bool loadModelFile(const vio::Path& filePath, const AnimMachineRepository& animMachineRepository);
 
-    const ModelDef& getModelDef(ui32 modelId) const { return mModelDefs[modelId]; }
+    const ModelDef& getModelDef(ModelID modelId) const { return mModelDefs[modelId]; }
     const ModelDef& getModelDef(const nString& name) const;
 
 private:
@@ -27,7 +25,7 @@ private:
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;
     vg::TextureCache& mTextureCache;
-    std::unordered_map<nString, ui32> mModelIdLookup;
+    std::unordered_map<nString, ModelID> mModelIdLookup;
     std::vector<ModelDef> mModelDefs;
 };
 

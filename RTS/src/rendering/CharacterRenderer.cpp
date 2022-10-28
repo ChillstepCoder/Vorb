@@ -296,7 +296,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
 }
 
-void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
+void CharacterRenderer::renderModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
     UNUSED(frameAlpha);
     // Get physics info
     const f32v2& dir = motionCmp.mControllerDirection;
@@ -374,14 +374,6 @@ void CharacterRenderer::addModel(const Camera3D& camera, CharacterModelComponent
             mesh.draw(mMaterial->mProgram);
         }
     }
-}
-
-void CharacterRenderer::renderBatch(const Camera3D& camera, const MaterialRenderer& materialRenderer) {
-    /* mMesh->finishMesh(MeshDrawMode::STREAM);
-     materialRenderer.bindMaterialForRender(*mMaterial);
-     f32v3 offset = -camera.getPosition();
-     glUniform3fv(mMaterial->mProgram.getUniform("unOffset"), 1, &offset.x);
-     mMesh->draw(mMaterial->mProgram);*/
 }
 
 // Prevent rounding errors, 0.0001 is half a pixel

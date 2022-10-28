@@ -58,9 +58,8 @@ static_assert(e_cast(LocomotionMode::COUNT) == 9, "Update above tables");
 
 
 struct CharacterControlComponent {
-    // TODO: Use non dynamic allocation which requires stable CharacterControlComponent
-    // https://github.com/skypjack/entt/blob/master/docs/md/entity.md#pointer-stability
     class DynamicCharacterController* mController = nullptr;
+    PreciseTimer mLandingTimer; // TODO: This is wrong as it doesn't account tick rate or timestep
     // TODO: Compress to f32
     f32v2 mMoveDirection = f32v2(0.0f);
     f32v2 mControllerDirection = f32v2(1.0f, 0.0f);
@@ -69,8 +68,6 @@ struct CharacterControlComponent {
     LocomotionMode mDesiredMode = LocomotionMode::IDLE;
     // PRECISE TIMER SHOULD BE REPLACED, ITS TOO HEAVYWEIGHT
     // 
-    // TODO: Can this be stored on a timer manager instead?
-    PreciseTimer mLandingTimer; // TODO: This is wrong as it doesn't account tick rate or timestep
 
     // TODO: Mask
     bool isInAirState() const { return mMode == LocomotionMode::BEGIN_JUMP || mMode == LocomotionMode::JUMPING || mMode == LocomotionMode::FALLING; }

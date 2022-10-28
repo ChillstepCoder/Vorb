@@ -29,6 +29,13 @@ struct DebugChunkRenderState {
 };
 static_assert(sizeof(DebugChunkRenderState) == 20);
 
+struct CharacterRenderState {
+    entt::entity mEntityID;
+    f32v3 mPos;
+    f32 mRotation;
+};
+static_assert(sizeof(CharacterRenderState) == 20, "Keep small");
+
 class RenderState {
     friend class CliWorldInterface;
 public:
@@ -40,6 +47,7 @@ private:
     // ======================== Game State  ========================
     f32v2 mWorldLoadCenter;
     f32v3 mCameraOwningEntityPos;
+    std::vector<CharacterRenderState> mCharacters;
 
     // ======================== Debug state ========================
     std::vector<DebugChunkRenderState> mDebugChunks;

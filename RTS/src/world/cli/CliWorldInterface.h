@@ -25,6 +25,7 @@ protected:
     void cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 
     void updateRenderState(IWorld& world);
+    void updateEntitiesRenderState(IWorld& world, RenderState& renderState);
     void updateDebugRenderState(IWorld& world, RenderState& renderState);
 
     // Terrain
