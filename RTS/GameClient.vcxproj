@@ -350,6 +350,7 @@
     <ClInclude Include="src\camera\CameraController.h" />
     <ClInclude Include="src\camera\CameraMode.h" />
     <ClInclude Include="src\camera\ICamera.h" />
+    <ClInclude Include="src\character\CharacterConst.h" />
     <ClInclude Include="src\city\Building.h" />
     <ClInclude Include="src\city\BuildingBlueprint.h" />
     <ClInclude Include="src\city\BuildingBlueprintGenerator.h" />
@@ -497,12 +498,15 @@
     <ClInclude Include="src\rendering\mesh\TextMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TileMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
+    <ClInclude Include="src\rendering\model\AnimationConst.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
+    <ClInclude Include="src\rendering\model\ModelConst.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\QuadMesh.h" />
+    <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\TileContainerRenderer.h" />

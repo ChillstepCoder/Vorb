@@ -16,26 +16,26 @@ KEG_TYPE_DEF_SAME_NAME(CharacterControlComponentDef, kt) {
 inline void updateComponent(CharacterControlComponent& motionCmp, PhysicsComponent& physCmp) {
     DynamicCharacterController& controller = *motionCmp.mController;
     // Transitions
-    if (motionCmp.mDesiredMode == LocomotionMode::BEGIN_JUMP && controller.canJump()) {
-        motionCmp.mDesiredMode = LocomotionMode::JUMPING;
-        motionCmp.mMode = LocomotionMode::JUMPING;
+    if (motionCmp.mDesiredMode == CharacterLocomotionMode::BEGIN_JUMP && controller.canJump()) {
+        motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
+        motionCmp.mMode = CharacterLocomotionMode::JUMPING;
         controller.jump();
     }
     else if (motionCmp.isInAirState()) {
         if (controller.canJump()) {
             // Transition back to grounded
-            motionCmp.mMode = LocomotionMode::LANDING;
+            motionCmp.mMode = CharacterLocomotionMode::LANDING;
             motionCmp.mLandingTimer.start();
         }
-        else if (motionCmp.mMode == LocomotionMode::JUMPING) {
+        else if (motionCmp.mMode == CharacterLocomotionMode::JUMPING) {
             if (physCmp.mRigidBody->getLinearVelocity().getZ() <= 0.0f) {
-                motionCmp.mMode = LocomotionMode::FALLING;
+                motionCmp.mMode = CharacterLocomotionMode::FALLING;
             }
         }
     }
 
     if (motionCmp.mMode != motionCmp.mDesiredMode) {
-        if (motionCmp.mMode == LocomotionMode::LANDING) {
+        if (motionCmp.mMode == CharacterLocomotionMode::LANDING) {
             constexpr f32 LANDING_ANIM_DURATION_MS = 200.0f;
             if (motionCmp.mLandingTimer.stop() >= LANDING_ANIM_DURATION_MS) {
                 motionCmp.mMode = motionCmp.mDesiredMode;

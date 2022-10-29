@@ -16,7 +16,6 @@ class EntityComponentSystemRenderer {
 public:
 	EntityComponentSystemRenderer();
     void renderBusinessDebug(const Camera3D& camera) const;
-	void renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 frameAlpha, f32 elapsedSec);
 	void renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer);
 	void renderInteractUI(const Camera3D& camera) const;
 

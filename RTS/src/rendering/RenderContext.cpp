@@ -477,7 +477,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     if (!sDebugOptions.mHideCharacters) {
-       // mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, frameAlpha, elapsedSec);
+        mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha, *mMaterialRenderer);
     }
     if (sDebugOptions.mShowBusinessDebug) {
         mEcsRenderer->renderBusinessDebug(camera);
@@ -699,6 +699,14 @@ VGTexture RenderContext::getShadowTexture() const {
 
 VGTexture RenderContext::getSSAOTexture() const {
     return mAmbientOcclusion->getSSAOTexture();
+}
+
+void RenderContext::addCharacterModel(entt::entity entityId, ui32 modelId) {
+    mCharacterRenderer->addCharacterModel(entityId, modelId);
+}
+
+void RenderContext::removeCharacterModel(entt::entity entityId) {
+    mCharacterRenderer->removeCharacterModel(entityId);
 }
 
 void RenderContext::updateRenderThreadProcs() {

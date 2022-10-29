@@ -66,6 +66,9 @@ void GameThread::mainFunc() {
         f64 sleepSec = 0.0;
         if (mTimeManager.tryTick(&sleepSec)) {
             update();
+            // Force a thread switch if anyone is waiting
+            // // TODO: Profile if this matters
+            // yojimbo_sleep(0);
         }
         else {
             // Try updating queues with sleepSec as a time budget?

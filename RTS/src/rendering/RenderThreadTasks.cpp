@@ -16,7 +16,6 @@ public:
     MeshTaskData(TileContainer* container) : container(container), staticMeshBuilder(true), dynamicMeshBuilder(false) {};
 
     void* operator new(size_t count);
-
     void operator delete(void* pointer, size_t size);
 
     TileContainer* container;
@@ -27,17 +26,31 @@ public:
 
 // TODO: We should make sure we dont build this on dedicated server as it initializes some memory
 struct mesh_task_pool {};
-using singleton_task_pool = boost::singleton_pool<mesh_task_pool, sizeof(MeshTaskData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 256u>;
+using mesh_singleton_task_pool = boost::singleton_pool<mesh_task_pool, sizeof(MeshTaskData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 256u>;
 
 void* MeshTaskData::operator new(size_t count) {
     UNUSED(count);
-    return singleton_task_pool::malloc();
+    return mesh_singleton_task_pool::malloc();
 }
 
 void MeshTaskData::operator delete(void* pointer, size_t size) {
     UNUSED(size);
-    return singleton_task_pool::free(pointer);
+    return mesh_singleton_task_pool::free(pointer);
 }
+
+class CharacterModelTaskData {
+public:
+    void* operator new(size_t count);
+    void operator delete(void* pointer, size_t size);
+
+    entt::entity entityId;
+    ui32 modelId;
+};
+static_assert(sizeof(CharacterModelTaskData) == 8);
+
+// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
+struct character_task_pool {};
+using character_singleton_task_pool = boost::singleton_pool<character_task_pool, sizeof(CharacterModelTaskData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 128u>;
 
 RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;;
 
@@ -218,4 +231,39 @@ void RenderThreadTasks::removeTileContainerMesh(TileContainer* container) {
         }
         tileRenderData.reset();
     }
+}
+
+void RenderThreadTasks::addCharacterModel(entt::entity characterEntity, ui32 modelId) {
+    assert(IS_GAME_THREAD());
+    CharacterModelTaskData* taskData = new CharacterModelTaskData();
+    taskData->entityId = characterEntity;
+    taskData->modelId = modelId;
+    
+    // TODO: maybe this should be its own queue?
+    mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
+        CharacterModelTaskData* taskData = static_cast<CharacterModelTaskData*>(data);
+        context.addCharacterModel(taskData->entityId, taskData->modelId);
+        delete taskData;
+    }, taskData));
+}
+
+void RenderThreadTasks::removeCharacterModel(entt::entity characterEntity) {
+    assert(IS_GAME_THREAD());
+    // TODO: maybe this should be its own queue?
+    mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
+        entt::entity entityId = entt::entity(reinterpret_cast<entt::id_type>(data));
+        context.removeCharacterModel(entityId);
+    }, (void*)characterEntity));
+}
+
+void RenderThreadTasks::playOneShotAnimation(entt::entity characterEntity, ui32 animationId) {
+    std::pair<ui32, ui32> animationTask{ e_cast(characterEntity), animationId };
+    static_assert(sizeof(std::pair<ui32, ui32>) == sizeof(void*));
+    LOG_CRITICAL("Animation task game side: {} {}", animationTask.first, animationTask.second);
+    mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
+        std::pair<ui32, ui32> animationTask = *((std::pair<ui32, ui32>*)&data);
+        LOG_CRITICAL("  Animation task render side: {} {}", animationTask.first, animationTask.second);
+        // TODO: FINISH THIS
+        assert(false);
+    }, (void*)(*((void**)&animationTask)))); // Black magic casting TODO: Cleaner?
 }

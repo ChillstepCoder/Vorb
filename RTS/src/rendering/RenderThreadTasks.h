@@ -1,6 +1,7 @@
 #pragma once
 
 class TileContainer;
+struct ModelDef;
 
 typedef void(*RenderFunction)(class RenderContext& context, void*);
 
@@ -26,6 +27,9 @@ public:
     // Tasks
     void addTileContainerMeshUpdateTask(TileContainer* containerToMesh);
     void removeTileContainerMesh(TileContainer* container);
+    void addCharacterModel(entt::entity characterEntity, ui32 modelId);
+    void removeCharacterModel(entt::entity characterEntity);
+    void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);
     // TODO: Add cancel logic for if we destroy the threadpool so we can free data ptr?
     void addGenericTask(RenderFunction func, void* data) { mRenderThreadProcs.enqueue(std::make_pair(func, data)); }
 

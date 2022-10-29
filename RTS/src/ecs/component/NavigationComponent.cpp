@@ -21,12 +21,12 @@ bool updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCm
 	const f32v2& offset = f32v2(navCmp.mSimpleTargetPoint) - *(f32v2*)&pos;
     const float distance2 = glm::length2(offset);
     if (distance2 <= SQ(MIN_DISTANCE)) {
-		motionCmp.mDesiredMode = LocomotionMode::IDLE;
+		motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
         return true;
     }
 
 	// TODO: Allow variable pathing urgency
-    motionCmp.mDesiredMode = LocomotionMode::SPRINT;
+    motionCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
 
 	motionCmp.mMoveDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
 	return false;
@@ -74,7 +74,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 		}
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
             // Climb
-			motionCmp.mDesiredMode = LocomotionMode::JUMPING;
+			motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
         }
 	}
 
@@ -100,7 +100,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 
 	motionCmp.mMoveDirection = (offset / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
     // TODO: Allow variable pathing urgency
-    motionCmp.mDesiredMode = LocomotionMode::SPRINT;
+    motionCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
 	    
 	// Steer around obstacles and corners
 	// Raycast forward to find a collision intersect
@@ -202,7 +202,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 
 void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp) {
 	// Target reached
-	motionCmp.mDesiredMode = LocomotionMode::IDLE;
+	motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
 	navCmp.mFinePath = nullptr;
 	navCmp.mCoarsePath = nullptr;
 	if (navCmp.mFinishedCallback) {
@@ -401,7 +401,7 @@ void NavigationComponent::requestCoarsePathWithCallback(const TileHandle& start,
 
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
-    motionCmp.mDesiredMode = LocomotionMode::IDLE;
+    motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
     mFlags |= NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH;
 	mFinePath.reset();
 	if (mFinishedCallback) {

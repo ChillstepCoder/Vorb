@@ -1349,6 +1349,18 @@
     <ClInclude Include="src\world\Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\character\CharacterConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\ModelConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\AnimationConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

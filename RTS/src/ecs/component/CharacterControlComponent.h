@@ -1,24 +1,13 @@
 #pragma once
 
-enum class LocomotionMode : ui8 {
-    IDLE,
-    WALK,
-    RUN,
-    SPRINT,
-    DODGE,
-    BEGIN_JUMP,
-    JUMPING,
-    FALLING,
-    LANDING,
-    COUNT
-};
+#include "character/CharacterConst.h"
 
 struct CharacterControlComponentDef {
     float mSpeed = 0.3f;
 };
 KEG_TYPE_DECL(CharacterControlComponentDef);
 
-constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(LocomotionMode::COUNT)] = {
+constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(CharacterLocomotionMode::COUNT)] = {
     0.0f, // IDLE
     0.2f, // WALK
     0.6f, // RUN
@@ -30,7 +19,7 @@ constexpr f32 LOCOMOTION_MODE_SPEED_MULTS[e_cast(LocomotionMode::COUNT)] = {
     0.8f, // LANDING
 };
 
-constexpr f32 LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(LocomotionMode::COUNT)] = {
+constexpr f32 LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(CharacterLocomotionMode::COUNT)] = {
     0.0f, // IDLE
     0.6f, // WALK
     1.0f, // RUN
@@ -43,7 +32,7 @@ constexpr f32 LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(LocomotionMode::COUNT)] 
 };
 
 // TODO: Pull from the anim machine
-constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(LocomotionMode::COUNT)] = {
+constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(CharacterLocomotionMode::COUNT)] = {
     0.9f, // IDLE
     0.9f, // WALK
     0.6f, // RUN
@@ -54,7 +43,7 @@ constexpr f32 FOOTSTEP_CYCLE_DURATION_SEC[e_cast(LocomotionMode::COUNT)] = {
     0.6f, // FALLING
     0.6f, // LANDING
 };
-static_assert(e_cast(LocomotionMode::COUNT) == 9, "Update above tables");
+static_assert(e_cast(CharacterLocomotionMode::COUNT) == 9, "Update above tables");
 
 
 struct CharacterControlComponent {
@@ -64,13 +53,11 @@ struct CharacterControlComponent {
     f32v2 mMoveDirection = f32v2(0.0f);
     f32v2 mControllerDirection = f32v2(1.0f, 0.0f);
     f32 mSpeedRun = 4.167f; // ~15 kmph // TODO: AttributesComponent
-    LocomotionMode mMode = LocomotionMode::IDLE;
-    LocomotionMode mDesiredMode = LocomotionMode::IDLE;
-    // PRECISE TIMER SHOULD BE REPLACED, ITS TOO HEAVYWEIGHT
-    // 
+    CharacterLocomotionMode mMode = CharacterLocomotionMode::IDLE;
+    CharacterLocomotionMode mDesiredMode = CharacterLocomotionMode::IDLE;
 
     // TODO: Mask
-    bool isInAirState() const { return mMode == LocomotionMode::BEGIN_JUMP || mMode == LocomotionMode::JUMPING || mMode == LocomotionMode::FALLING; }
+    bool isInAirState() const { return mMode == CharacterLocomotionMode::BEGIN_JUMP || mMode == CharacterLocomotionMode::JUMPING || mMode == CharacterLocomotionMode::FALLING; }
 
     f32 getCurrentSpeed() const { return mSpeedRun * LOCOMOTION_MODE_SPEED_MULTS[e_cast(mMode)]; }
     f32 getCurrentAcceleration() const { return LOCOMOTION_MODE_ACCELERATION_MULTS[e_cast(mMode)]; }

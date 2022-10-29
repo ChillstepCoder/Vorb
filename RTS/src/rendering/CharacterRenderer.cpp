@@ -8,6 +8,7 @@
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/TileVertex.h"
+#include "rendering/renderstate/CharacterRenderState.h"
 
 #include "resources/ModelRepository.h"
 #include "resources/ResourceManager.h"
@@ -28,76 +29,122 @@
 #include "ozz/animation/runtime/sampling_job.h"
 #include "ozz/animation/runtime/blending_job.h"
 
-//void renderPart(vg::SpriteBatch& sb, const vg::Texture& body, const f32v2& pos, f32 zPos, const f32v2& offset, const f32v2& additionalOffset, f32v4& uvRect, float size, float depth, float alpha) {
-//	//f32v2 sizeVec(size);
-//	//f32v2 newPos = pos + offset - sizeVec.x * 0.5f;
-//	//sb.draw(body.id, &uvRect, nullptr, newPos, -additionalOffset, sizeVec, 0.0f /*rotation*/, color4(1.0f, 1.0f, 1.0f, alpha), depth + zPos);
-//
-//    BillboardVertex verts[4];
-//}
+constexpr ui16 DEFAULT_ANIM_TRACK_FLAGS[NUM_ANIM_STATE_TRACKS] = {
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_LEFT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_RIGHT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_FRONT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// WALK_BACK
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_LEFT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_RIGHT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_FRONT
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// RUN_BACK
+    e_cast(AnimTrackFlags::IS_SYNCED_TO_FEET) | e_cast(AnimTrackFlags::IS_LOOPING),// SPRINT_FRONT
+    e_cast(AnimTrackFlags::IS_ACTIVE) | e_cast(AnimTrackFlags::IS_LOOPING),// IDLE
+    e_cast(AnimTrackFlags::IS_LOOPING), // IDLE_COMBAT
+    e_cast(AnimTrackFlags::IS_LOOPING), // FALLING
+    e_cast(AnimTrackFlags::HOLD_END_POSE) | e_cast(AnimTrackFlags::IS_LOOPING),// JUMP
+    0u, // LAND
+};
+static_assert(NUM_ANIM_STATE_TRACKS == 14u, "Update any defaults");
 
 CharacterRenderer::CharacterRenderer() :
     mMaterial(Services::ResourceManager::ref().getMaterialManager().getMaterial("character")) {
+    mEntityCharacterModels.reserve(256);
 }
 
 CharacterRenderer::~CharacterRenderer() {
 
 }
 
-void updateAnimationStates(const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, CharacterModelComponent& cmp, f32 elapsedSec) {
+void CharacterRenderer::addCharacterModel(entt::entity entityId, ui32 modelId) {
+    assert(mEntityCharacterModels.find(entityId) == mEntityCharacterModels.end());
+    assert(modelId != INVALID_MODEL_ID);
+    std::unique_ptr<AnimState> animState = std::make_unique<AnimState>();
+    const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId);
+    animState->mModelID = modelId;
+    for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
+        AnimTrack& track = animState->mTracks[i];
+        const ozz::animation::Animation* anim = modelDef.mAnimMachine->mAnimsArray[i];
+        if (anim) {
+            track.mDuration = modelDef.mAnimMachine->mAnimsArray[i]->duration();
+        }
+        animState->mTracks[i].mFlags.setBits((AnimTrackFlags)DEFAULT_ANIM_TRACK_FLAGS[i]);
+        // TODO: Better context allocation
+        track.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+        track.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
+    }
+    // Init to idle state engaged
+    animState->mTracks[e_cast(AnimMachineState::IDLE)].mWeightScale = 1.0f;
+    animState->mTracks[e_cast(AnimMachineState::IDLE)].mWeight = MAX_ANIM_FADE_WEIGHT;
+    // Init one shot anim track
+    animState->mCurrentOneShotTrack.mContext = std::make_unique<ozz::animation::SamplingJob::Context>();
+    animState->mCurrentOneShotTrack.mContext->Resize(modelDef.mRig->mSkeleton.num_joints());
+    mEntityCharacterModels[entityId] = std::move(animState);
+}
+
+void CharacterRenderer::removeCharacterModel(entt::entity entityId) {
+    auto&& it = mEntityCharacterModels.find(entityId);
+    assert(it != mEntityCharacterModels.end());
+    it->second.reset();
+    mEntityCharacterModels.erase(it);
+}
+
+void updateAnimationStates(AnimState& animState, CharacterLocomotionMode locomotionMode, f32 elapsedSec) {
 
     // Update feel
-    cmp.updateFootstepAlpha(elapsedSec, motionCmp.mMode);
+    animState.updateFootstepAlpha(elapsedSec, locomotionMode);
 
     constexpr f32 FADE_IN_SLOW = 0.3f;
     constexpr f32 FADE_IN_MEDIUM = 0.2f;
     constexpr f32 FADE_IN_FAST = 0.1f;
-    const bool isTransitioning = (motionCmp.mMode != cmp.mPrevLocomotionMode);
+
+    const bool isTransitioning = (locomotionMode != animState.mPrevLocomotionMode);
+    animState.mPrevLocomotionMode = locomotionMode;
 
     // Update transition
     if (isTransitioning) {
 
         // Fade out previous state
-        if (cmp.mAnimState->mPrimaryStateTrack != UINT8_MAX) {
-            cmp.mAnimState->mTracks[cmp.mAnimState->mPrimaryStateTrack].fadeOut(FADE_IN_SLOW);
+        if (animState.mPrimaryStateTrack != UINT8_MAX) {
+            animState.mTracks[animState.mPrimaryStateTrack].fadeOut(FADE_IN_SLOW);
         }
 
         // TODO: Array lookup mapping instead of switch?
-        switch (motionCmp.mMode) {
-            case LocomotionMode::IDLE: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::IDLE, FADE_IN_SLOW);
+        switch (locomotionMode) {
+            case CharacterLocomotionMode::IDLE: {
+                animState.fadeInStateTrack(AnimMachineState::IDLE, FADE_IN_SLOW);
                 break;
             }
-            case LocomotionMode::WALK: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::WALK_FRONT, FADE_IN_SLOW);
+            case CharacterLocomotionMode::WALK: {
+                animState.fadeInStateTrack(AnimMachineState::WALK_FRONT, FADE_IN_SLOW);
                 break;
             }
-            case LocomotionMode::RUN: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::RUN_FRONT, FADE_IN_SLOW);
+            case CharacterLocomotionMode::RUN: {
+                animState.fadeInStateTrack(AnimMachineState::RUN_FRONT, FADE_IN_SLOW);
                 break;
             }
-            case LocomotionMode::SPRINT: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::SPRINT_FRONT, FADE_IN_SLOW);
+            case CharacterLocomotionMode::SPRINT: {
+                animState.fadeInStateTrack(AnimMachineState::SPRINT_FRONT, FADE_IN_SLOW);
                 break;
             }
-            case LocomotionMode::DODGE: {
+            case CharacterLocomotionMode::DODGE: {
 
                 break;
             }
-            case LocomotionMode::BEGIN_JUMP:
+            case CharacterLocomotionMode::BEGIN_JUMP:
                 //assert(false && "We should never try to play Begin Jump anim");
                 std::cout << "BEGIN JUMP ASSERT FAIL\n";
                 break;
-            case LocomotionMode::JUMPING: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::JUMPING, FADE_IN_FAST);
+            case CharacterLocomotionMode::JUMPING: {
+                animState.fadeInStateTrack(AnimMachineState::JUMPING, FADE_IN_FAST);
                 break;
             }
-            case LocomotionMode::FALLING: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::FALLING, FADE_IN_MEDIUM);
+            case CharacterLocomotionMode::FALLING: {
+                animState.fadeInStateTrack(AnimMachineState::FALLING, FADE_IN_MEDIUM);
                 break;
             }
-            case LocomotionMode::LANDING: {
-                cmp.mAnimState->fadeInStateTrack(AnimMachineState::LANDING, FADE_IN_FAST);
+            case CharacterLocomotionMode::LANDING: {
+                animState.fadeInStateTrack(AnimMachineState::LANDING, FADE_IN_FAST);
                 break;
             }
             default:
@@ -106,16 +153,14 @@ void updateAnimationStates(const PhysicsComponent& physCmp, const CharacterContr
 
         }
     }
-    static_assert(e_cast(LocomotionMode::COUNT) == 9, "Update anim mapping");
+    static_assert(e_cast(CharacterLocomotionMode::COUNT) == 9, "Update anim mapping");
 
-    // Any transitions are now over
-    cmp.mPrevLocomotionMode = motionCmp.mMode;
 }
 
-bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& cmp, const CharacterControlComponent& motionCmp, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
+bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMode, const ModelDef& modelDef, ozz::vector<ozz::math::Float4x4>& models, f32 elapsedSec) {
 
     // Speed blend, run/walk/sprint
-    updateAnimationStates(physCmp, motionCmp, cmp, elapsedSec);
+    updateAnimationStates(animState, locomotionMode, elapsedSec);
 
     // Buffer of local transforms as sampled from animation_.
     // TODO: Stack allocate these with joint limits and stop using make_span? Or if too large, shared heap memory
@@ -123,11 +168,9 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
     f32 blendWeights[NUM_ANIM_STATE_TRACKS + 1];
     ozz::vector<ozz::math::SoaTransform> blendedLocals;
 
-    assert(cmp.mModel);
-    assert(cmp.mModel->mAnimMachine);
-    assert(cmp.mModel->mRig);
+    assert(modelDef.mAnimMachine);
+    assert(modelDef.mRig);
 
-    const ModelDef& modelDef = *cmp.mModel;
     const AnimMachineDef& machine = *modelDef.mAnimMachine;
     const RigDef& rig = *modelDef.mRig;
 
@@ -149,7 +192,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
     ui32 numValidTracks = 0;
     for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
-        AnimTrack& currentTrack = cmp.mAnimState->mTracks[i];
+        AnimTrack& currentTrack = animState.mTracks[i];
         // If our weightScale made us inactive, make sure to fully disable
         if (!currentTrack.isActive()) {
             // Always force fadeout
@@ -175,19 +218,19 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
         }
 
         // Increment timers
-        currentTrack.update(elapsedSec, cmp.mFootstepAlpha);
+        currentTrack.update(elapsedSec, animState.mFootstepAlpha);
     }
 
     // One shot animation
     f32 oneShotWeight = 0.0f;
-    AnimTrack& oneShotTrack = cmp.mAnimState->mCurrentOneShotTrack;
+    AnimTrack& oneShotTrack = animState.mCurrentOneShotTrack;
     if (oneShotTrack.isActive()) {
         oneShotWeight = oneShotTrack.getTotalWeight();
         // Allocate buffers
         locals[numValidTracks].resize(numSoaJoints);
         // Sample animation
         ozz::animation::SamplingJob sampling_job;
-        sampling_job.animation = cmp.mAnimState->mCurrentOneShotAnimation;
+        sampling_job.animation = animState.mCurrentOneShotAnimation;
         sampling_job.context = oneShotTrack.mContext.get();
         sampling_job.ratio = oneShotTrack.mTime / oneShotTrack.mDuration;
         sampling_job.output = make_span(locals[numValidTracks]);
@@ -198,7 +241,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
         }
 
         // Increment timers
-        oneShotTrack.update(elapsedSec, cmp.mFootstepAlpha);
+        oneShotTrack.update(elapsedSec, animState.mFootstepAlpha);
     }
 
     // Converts from local space to model space matrices.
@@ -246,7 +289,7 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
                 // The final layer is the one shot layer, flag it upper body only if we are in motion
                 // TODO: Need to fade this in as well to prevent pop?
-                if (motionCmp.mMode != LocomotionMode::IDLE) {
+                if (locomotionMode != CharacterLocomotionMode::IDLE) {
                     layers[totalLayers].joint_weights = make_span(rig.mUpperBodyJointWeights);
                 }
             }
@@ -296,13 +339,10 @@ bool updateAnimation(const PhysicsComponent& physCmp, CharacterModelComponent& c
 
 }
 
-void CharacterRenderer::renderModel(const Camera3D& camera, CharacterModelComponent& cmp, const PhysicsComponent& physCmp, const CharacterControlComponent& motionCmp, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
+void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
     UNUSED(frameAlpha);
-    // Get physics info
-    const f32v2& dir = motionCmp.mControllerDirection;
-    const f32v3 position = physCmp.getInterpolatedPosition();
-    const f32 angle = atan2(dir.y, dir.x);
 
+    // TODO: UBO
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
     VGUniform diffuseTextureUniform = mMaterial->mProgram.getUniform("unDiffuse");
@@ -311,67 +351,78 @@ void CharacterRenderer::renderModel(const Camera3D& camera, CharacterModelCompon
     VGUniform scaleUniform = mMaterial->mProgram.getUniform("unScale");
     VGUniform boneUniform = mMaterial->mProgram.getUniform("unBoneTransforms[0]");
 
-    const ModelDef& modelDef = *cmp.mModel;
-    ui32 nextTextureIndex = 0;
-    materialRenderer.bindMaterialForRender(*mMaterial, &nextTextureIndex);
-    glUniform1i(diffuseTextureUniform, nextTextureIndex);
-    glUniform1i(normalTextureUniform, nextTextureIndex + 1);
-    glUniform1i(specularTextureUniform, nextTextureIndex + 2);
-    glUniform1f(scaleUniform, 1.0f);
+    for (const auto& character : characters) {
+        // Get physics info
+        const f32v2 dir(sin(character.mRotation), cos(character.mRotation));
+        const f32v3& position = character.mPos;
+        const f32 angle = atan2(dir.y, dir.x);
 
-    // TODO: Optimize
-    f32m4 transform(1.0f);
-    transform = glm::rotate(transform, angle + DEG_TO_RAD(90.0f), f32v3(0.0f, 0.0f, 1.0f));
-    transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+        auto&& it = mEntityCharacterModels.find(character.mEntityID);
+        if (it != mEntityCharacterModels.end()) {
+            AnimState& animState = *it->second;
+            const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(animState.mModelID);
+            ui32 nextTextureIndex = 0;
+            materialRenderer.bindMaterialForRender(*mMaterial, &nextTextureIndex);
+            glUniform1i(diffuseTextureUniform, nextTextureIndex);
+            glUniform1i(normalTextureUniform, nextTextureIndex + 1);
+            glUniform1i(specularTextureUniform, nextTextureIndex + 2);
+            glUniform1f(scaleUniform, 1.0f);
 
-    const f32v3 offset = position - camera.getPosition();
-    glUniform3fv(offsetUniform, 1, &offset.x);
-    glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
+            // TODO: Optimize
+            f32m4 transform(1.0f);
+            transform = glm::rotate(transform, angle + DEG_TO_RAD(90.0f), f32v3(0.0f, 0.0f, 1.0f));
+            transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
 
-    // Buffer of model space matrices.
-    ozz::vector<ozz::math::Float4x4> models;
-    // Buffer of skinning matrices, result of the joint multiplication of the
-    // inverse bind pose with the model space matrix.
-    ozz::vector<ozz::math::Float4x4> skinningMatrices;
-    // Allocates skinning matrices.
-    skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
+            const f32v3 offset = position - camera.getPosition();
+            glUniform3fv(offsetUniform, 1, &offset.x);
+            glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
-    if (updateAnimation(physCmp, cmp, motionCmp, models, elapsedSec)) {
-        // Draw animated
-        for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
-            const auto& mesh = modelDef.mModel.getMeshes()[i];
-            const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
-            for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
-                skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];
+            // Buffer of model space matrices.
+            ozz::vector<ozz::math::Float4x4> models;
+            // Buffer of skinning matrices, result of the joint multiplication of the
+            // inverse bind pose with the model space matrix.
+            ozz::vector<ozz::math::Float4x4> skinningMatrices;
+            // Allocates skinning matrices.
+            skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
+
+            if (updateAnimation(animState, character.mLocomotionMode, modelDef, models, elapsedSec)) {
+                // Draw animated
+                for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+                    const auto& mesh = modelDef.mModel.getMeshes()[i];
+                    const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
+                    for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
+                        skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];
+                    }
+                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
+                    glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
+                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
+                    glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
+                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
+                    glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
+                    glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
+
+                    mesh.draw(mMaterial->mProgram);
+                }
             }
-            glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
-            glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
-            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
-            glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
-            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
-            glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
-            glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
+            else {
+                // INVALID ANIMATION
+                // Draw T pose
+                for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+                    const auto& mesh = modelDef.mModel.getMeshes()[i];
+                    for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
+                        skinningMatrices[i] = ozz::math::Float4x4::identity();
+                    }
+                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
+                    glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
+                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
+                    glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
+                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
+                    glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
+                    glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
 
-            mesh.draw(mMaterial->mProgram);
-        }
-    }
-    else {
-        // INVALID ANIMATION
-        // Draw T pose
-        for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
-            const auto& mesh = modelDef.mModel.getMeshes()[i];
-            for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
-                skinningMatrices[i] = ozz::math::Float4x4::identity();
+                    mesh.draw(mMaterial->mProgram);
+                }
             }
-            glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
-            glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
-            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
-            glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
-            glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
-            glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
-            glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
-
-            mesh.draw(mMaterial->mProgram);
         }
     }
 }

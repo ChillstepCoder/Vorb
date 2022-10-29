@@ -250,7 +250,7 @@ void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerSt
         physCmp.setTransform(message->mPosition, 0.0f);
         physCmp.setVelocity(message->mVelocity);
         controlCmp.mControllerDirection = message->mControlDirection;
-        controlCmp.mDesiredMode = (LocomotionMode)message->mDesiredLocomotionMode;
+        controlCmp.mDesiredMode = (CharacterLocomotionMode)message->mDesiredLocomotionMode;
     }
 }
 

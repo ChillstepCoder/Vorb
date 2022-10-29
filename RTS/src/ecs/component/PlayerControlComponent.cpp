@@ -55,16 +55,16 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
     // Inputs for states, but only while we are on ground
     if (!motionCmp.isInAirState()) {
         if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-            motionCmp.mDesiredMode = LocomotionMode::BEGIN_JUMP;
+            motionCmp.mDesiredMode = CharacterLocomotionMode::BEGIN_JUMP;
         }
         else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-            motionCmp.mDesiredMode = LocomotionMode::SPRINT;
+            motionCmp.mDesiredMode = CharacterLocomotionMode::SPRINT;
         }
         else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
-            motionCmp.mDesiredMode = LocomotionMode::WALK;
+            motionCmp.mDesiredMode = CharacterLocomotionMode::WALK;
         }
         else {
-            motionCmp.mDesiredMode = LocomotionMode::RUN;
+            motionCmp.mDesiredMode = CharacterLocomotionMode::RUN;
         }
     }
 	// Update skills
@@ -87,8 +87,8 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
         // Remove any navigation component if we are applying movement input
         registry.remove<NavigationComponent>(entity);
 	}
-	else if (!motionCmp.isInAirState() && motionCmp.mDesiredMode != LocomotionMode::BEGIN_JUMP) {
-        motionCmp.mDesiredMode = LocomotionMode::IDLE;
+	else if (!motionCmp.isInAirState() && motionCmp.mDesiredMode != CharacterLocomotionMode::BEGIN_JUMP) {
+        motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;
 	}
 
 }

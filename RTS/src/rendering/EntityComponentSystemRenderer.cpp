@@ -44,22 +44,6 @@ void EntityComponentSystemRenderer::renderBusinessDebug(const Camera3D& camera) 
   //  });
 }
 
-void EntityComponentSystemRenderer::renderCharacterModels(CharacterRenderer& renderer, MaterialRenderer& materialRenderer, const Camera3D& camera, f32 frameAlpha, f32 elapsedSec) {
-	// TODO: This should not be using spritebatch. It should use a custom 
-	// renderer so that it can add screen depth like the world shaders do
-
- //   auto& ecs = sWorld->getECS();
-	//ecs.mRegistry.view<PhysicsComponent, CharacterModelComponent, CharacterControlComponent>().each([&](auto& physCmp, auto& modelCmp, auto& motionCmp) {
-	//	// When in first person dont render player model
-	//	if (modelCmp.mIsPlayer && sDebugOptions.mCameraMode == CameraMode::FIRST_PERSON) {
-	//		return;
- //       }
- //       // TODO: Common?
-	//	renderer.addModel(camera, modelCmp, physCmp, motionCmp, elapsedSec, frameAlpha, materialRenderer);
-	//});
-	//renderer.renderBatch(camera, materialRenderer);
-}
-
 void EntityComponentSystemRenderer::renderDynamicLightComponents(const Camera3D& camera, const LightRenderer& lightRenderer) {
 
     auto& ecs = sWorld->getECS();

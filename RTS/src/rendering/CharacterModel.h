@@ -8,6 +8,7 @@ struct SpriteData;
 
 #include "ecs/component/CharacterControlComponent.h"
 #include <ozz/animation/runtime/sampling_job.h>
+#include "rendering/model/ModelConst.h"
 
 struct ModelDef;
 struct RigDef;
@@ -48,29 +49,26 @@ struct AnimTrack {
 };
 static_assert(sizeof(AnimTrack) == 24, "Keep small");
 
-constexpr ui32 NUM_ANIM_STATE_TRACKS = e_cast(AnimMachineState::COUNT);
 struct AnimState {
-
     void fadeInStateTrack(AnimMachineState state, f32 fadeDuration);
+    void setAnimTrackWeight(AnimMachineState currentState, f32 weightScale);
+    void updateFootstepAlpha(f32 elapsedSec, CharacterLocomotionMode currentLocomotionMode);
+    void playOneShotAnimation(const ozz::animation::Animation* animation);
+
+    void* operator new(size_t count);
+    void operator delete(void* pointer, size_t size);
 
     AnimTrack mTracks[NUM_ANIM_STATE_TRACKS];
     AnimTrack mCurrentOneShotTrack;
-    ui8 mPrimaryStateTrack = UINT8_MAX;
     const ozz::animation::Animation* mCurrentOneShotAnimation = nullptr;
+    ModelID mModelID = INVALID_MODEL_ID;
+    f32 mFootstepAlpha;
+    ui8 mPrimaryStateTrack = UINT8_MAX;
+    CharacterLocomotionMode mPrevLocomotionMode = CharacterLocomotionMode::IDLE;
 };
 
 // TODO: File name
 struct CharacterModelComponent {
-    const ModelDef* mModel = nullptr;
-    std::unique_ptr<AnimState> mAnimState;
-    f32 mFootstepAlpha;
-    LocomotionMode mPrevLocomotionMode = LocomotionMode::IDLE;
-    // TODO: Flags
-    bool mIsPlayer = true;
-
-    void init(const ModelDef* model);
-    void setAnimTrackWeight(AnimMachineState currentState, f32 weightScale);
-    void updateFootstepAlpha(f32 elapsedSec, LocomotionMode currentLocomotionMode);
-    void playOneShotAnimation(const ozz::animation::Animation* animation);
+    ModelID modelId = INVALID_MODEL_ID;
 };
-static_assert(sizeof(CharacterModelComponent) == 24, "Keep small");
+static_assert(sizeof(CharacterModelComponent) == 4, "Keep small");

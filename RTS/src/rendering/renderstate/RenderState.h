@@ -3,6 +3,9 @@
 #include "world/ChunkState.h"
 #include "world/ChunkID.h"
 
+#include "character/CharacterConst.h"
+#include "rendering/renderstate/CharacterRenderState.h"
+
 enum class DebugChunkFlags : ui8 {
     IS_NAVMESHING = 1 << 0,
 };
@@ -30,13 +33,6 @@ struct DebugChunkRenderState {
 };
 static_assert(sizeof(DebugChunkRenderState) == 20);
 
-struct CharacterRenderState {
-    entt::entity mEntityID;
-    f32v3 mPos;
-    f32 mRotation;
-};
-static_assert(sizeof(CharacterRenderState) == 20, "Keep small");
-
 class RenderState {
     friend class CliWorldInterface;
     friend class RenderStateManager;
@@ -45,6 +41,7 @@ public:
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
+    const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
 private:
     // ======================== Game State  ========================
     f32v2 mWorldLoadCenter;

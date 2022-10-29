@@ -15,13 +15,26 @@
 #include "rendering/mesh/TerrainMeshManager.h"
 
 #include "rendering/renderstate/RenderStateManager.h"
+#include "rendering/RenderThreadTasks.h"
+
+void onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
+    ModelID modelId = registry.get<CharacterModelComponent>(entity).modelId;
+    LOG_DEBUG("Added model ID {} for entity ", modelId, entity);
+    RenderThreadTasks::getInstance().addCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
+}
+
+void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
+    LOG_DEBUG("Destroying model for entity {}", entity);
+    RenderThreadTasks::getInstance().removeCharacterModel(entity);
+}
 
 CliWorldInterface::CliWorldInterface() {
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>();
 }
 
 CliWorldInterface::~CliWorldInterface() {
-
+    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
+    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
 }
 
 void CliWorldInterface::tickClient(IWorld& world) {
@@ -37,9 +50,10 @@ void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
     Services::ResourceManager::ref().getParticleSystemManager().update(playerPos);
 }
 
-
 void CliWorldInterface::onWorldBeginClient() {
-
+    // When character models are added, we should let the render thread know
+    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
+    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
 }
 
 void CliWorldInterface::cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
@@ -66,14 +80,15 @@ void CliWorldInterface::updateEntitiesRenderState(IWorld& world, RenderState& re
 
     IEntityComponentSystem& ecs = *world.mEcs;
     entt::registry& registry = ecs.mRegistry;
-    auto view = registry.view<PhysicsComponent, CharacterModelComponent>();
+    auto view = registry.view<PhysicsComponent, CharacterControlComponent, CharacterModelComponent>();
 
     renderState.mCharacters.clear();
 
     // Construct fresh list of all entities
     for (auto entity : view) {
         PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
-        renderState.mCharacters.emplace_back(CharacterRenderState{entity, physCmp.getPosition(), physCmp.getRotation()});
+        CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
+        renderState.mCharacters.emplace_back(CharacterRenderState{entity, physCmp.getPosition(), physCmp.getRotation(), controlCmp.mMode});
     };
 }
 

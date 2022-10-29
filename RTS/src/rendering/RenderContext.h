@@ -109,6 +109,10 @@ public:
     void removeTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.erase(mesh); }
     void addTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.insert(mesh); }
     void removeTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.erase(mesh); }
+
+    // Character models
+    void addCharacterModel(entt::entity entityId, ui32 modelId);
+    void removeCharacterModel(entt::entity entityId);
 private:
     void updateRenderThreadProcs();
     void renderDebug(const Camera3D& camera, const RenderState& renderState);
