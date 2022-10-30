@@ -5,6 +5,7 @@
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/TileMeshBuilderMethods.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"
+#include "rendering/CharacterRenderer.h"
 
 #include "tile/TileContainer.h"
 
@@ -242,7 +243,7 @@ void RenderThreadTasks::addCharacterModel(entt::entity characterEntity, ui32 mod
     // TODO: maybe this should be its own queue?
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
         CharacterModelTaskData* taskData = static_cast<CharacterModelTaskData*>(data);
-        context.addCharacterModel(taskData->entityId, taskData->modelId);
+        context.getCharacterRenderer().addCharacterModel(taskData->entityId, taskData->modelId);
         delete taskData;
     }, taskData));
 }
@@ -252,7 +253,7 @@ void RenderThreadTasks::removeCharacterModel(entt::entity characterEntity) {
     // TODO: maybe this should be its own queue?
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
         entt::entity entityId = entt::entity(reinterpret_cast<entt::id_type>(data));
-        context.removeCharacterModel(entityId);
+        context.getCharacterRenderer().removeCharacterModel(entityId);
     }, (void*)characterEntity));
 }
 
@@ -263,7 +264,6 @@ void RenderThreadTasks::playOneShotAnimation(entt::entity characterEntity, ui32 
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
         std::pair<ui32, ui32> animationTask = *((std::pair<ui32, ui32>*)&data);
         LOG_CRITICAL("  Animation task render side: {} {}", animationTask.first, animationTask.second);
-        // TODO: FINISH THIS
-        assert(false);
+        context.getCharacterRenderer().playOneShotAnimation(entt::entity(animationTask.first), animationTask.second);
     }, (void*)(*((void**)&animationTask)))); // Black magic casting TODO: Cleaner?
 }

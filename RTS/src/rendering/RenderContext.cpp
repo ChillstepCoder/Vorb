@@ -701,14 +701,6 @@ VGTexture RenderContext::getSSAOTexture() const {
     return mAmbientOcclusion->getSSAOTexture();
 }
 
-void RenderContext::addCharacterModel(entt::entity entityId, ui32 modelId) {
-    mCharacterRenderer->addCharacterModel(entityId, modelId);
-}
-
-void RenderContext::removeCharacterModel(entt::entity entityId) {
-    mCharacterRenderer->removeCharacterModel(entityId);
-}
-
 void RenderContext::updateRenderThreadProcs() {
     constexpr ui32 BULK_DEQUEUE_SIZE = 32;
     std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];

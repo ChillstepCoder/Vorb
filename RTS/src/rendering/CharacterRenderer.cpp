@@ -11,6 +11,7 @@
 #include "rendering/renderstate/CharacterRenderState.h"
 
 #include "resources/ModelRepository.h"
+#include "resources/AnimationRepository.h"
 #include "resources/ResourceManager.h"
 
 #include "options/DebugOptions.h"
@@ -87,6 +88,16 @@ void CharacterRenderer::removeCharacterModel(entt::entity entityId) {
     assert(it != mEntityCharacterModels.end());
     it->second.reset();
     mEntityCharacterModels.erase(it);
+}
+
+void CharacterRenderer::playOneShotAnimation(entt::entity entityId, ui32 animationId) {
+    auto&& it = mEntityCharacterModels.find(entityId);
+    // TODO: Ensure
+    assert(it != mEntityCharacterModels.end());
+    if (it != mEntityCharacterModels.end()) {
+        const ozz::animation::Animation& anim = Services::ResourceManager::ref().getAnimationRepository().getAnimation(animationId);
+        it->second->playOneShotAnimation(&anim);
+    }
 }
 
 void updateAnimationStates(AnimState& animState, CharacterLocomotionMode locomotionMode, f32 elapsedSec) {
