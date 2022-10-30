@@ -34,9 +34,11 @@ constexpr f32 MICROSEC_TO_MILLISEC = 0.001f;
 
 struct ProfileResult
 {
-    std::string Name;
+    const char* Name;
     long long Start, End;
     uint32_t ThreadID;
+    unsigned NestedDepth;
+    const char* Parent;
 };
 
 struct InstrumentationSession
@@ -45,9 +47,23 @@ struct InstrumentationSession
 };
 
 struct InstrumentTimeInfo {
+    const char* parent;
     long long runningAverage;
     long long max;
+    unsigned depth;
 };
+
+struct InstrumentorDebugStrings {
+    nString name;
+    nString avg;
+    nString max;
+};
+
+struct InstrumentorDebugOutputData {
+    std::map<std::thread::id, std::vector<InstrumentorDebugStrings>> data;
+};
+
+typedef std::unordered_map<std::thread::id, std::map<const char*, InstrumentTimeInfo>> DebugInstrumentationDataMap;
 
 class Instrumentor
 {
@@ -58,35 +74,21 @@ private:
 #endif
     int m_ProfileCount;
     std::mutex mMutex;
-    std::map<std::string, InstrumentTimeInfo> mMostRecentTimes;
+    // TODO: Hashed string
+    DebugInstrumentationDataMap mMostRecentTimes;
+
 public:
+    // Nested depth of this threads debug execution
+    inline static thread_local std::vector<const char*> sTimerStack;
+
     Instrumentor()
         : m_CurrentSession(nullptr), m_ProfileCount(0)
     {
     }
 
-    std::string getMostRecentTimeString() {
-        std::ostringstream out;
-        out.precision(1);
+    void getDebugOutputData(InstrumentorDebugOutputData& outData);
 
-        {
-            std::lock_guard lock(mMutex);
-            for (auto& it : mMostRecentTimes) {
-                out << it.first << "\n avg: "
-                    << std::setw(5) << std::fixed << it.second.runningAverage * MICROSEC_TO_MILLISEC << "ms\n" << " max: "
-                    << std::setw(5) << std::fixed << it.second.max * MICROSEC_TO_MILLISEC << "ms\n";
-            }
-        }
-        return out.str();
-    }
-
-    void resetTimes() {
-        std::lock_guard lock(mMutex);
-        for (auto& it : mMostRecentTimes) {
-            it.second.runningAverage = 0.0f;
-            it.second.max = 0.0f;
-        }
-    }
+    void resetTimes();
 
     void beginSession(const std::string& name, const std::string& filepath = "results.json")
     {
@@ -108,45 +110,7 @@ public:
         m_CurrentSession = nullptr;
     }
 
-    void writeProfile(const ProfileResult& result)
-    {
-        const long long dur = result.End - result.Start;
-
-        // Rolling average
-        std::lock_guard lock(mMutex);
-        auto&& it = mMostRecentTimes.find(result.Name);
-        if (it == mMostRecentTimes.end()) {
-            mMostRecentTimes.insert(std::make_pair(result.Name, InstrumentTimeInfo{ dur, dur }));
-        }
-        else {
-            it->second.runningAverage = (long long)((it->second.runningAverage + dur) * 0.5f);
-            it->second.max = std::max(it->second.max, dur);
-        }
-        
-        // TODO: f you build up the json by sending sending everything to a local stringstream first,
-        // and then send the stringstream to the output file stream in one go at the end of WriteProfile(),
-        // then there is no need for a mutex.  
-        // A single call to operator << will not get interrupted by another thread.
-#if DUMP_FILE == 1
-        if (m_ProfileCount++ > 0)
-            m_OutputStream << ",";
-
-        std::string name = result.Name;
-        std::replace(name.begin(), name.end(), '"', '\'');
-
-        m_OutputStream << "{";
-        m_OutputStream << "\"cat\":\"function\",";
-        m_OutputStream << "\"dur\":" << dur << ',';
-        m_OutputStream << "\"name\":\"" << name << "\",";
-        m_OutputStream << "\"ph\":\"X\",";
-        m_OutputStream << "\"pid\":0,";
-        m_OutputStream << "\"tid\":" << result.ThreadID << ",";
-        m_OutputStream << "\"ts\":" << result.Start;
-        m_OutputStream << "}";
-
-        m_OutputStream.flush();
-#endif
-    }
+    void writeProfile(const ProfileResult& result);
 
 #if DUMP_FILE == 1
     void writeHeader()
@@ -175,6 +139,7 @@ public:
     InstrumentationTimer(const char* name)
         : m_Name(name), m_Stopped(false)
     {
+        Instrumentor::sTimerStack.emplace_back(name);
         m_StartTimepoint = std::chrono::high_resolution_clock::now();
     }
 
@@ -192,8 +157,9 @@ public:
         long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
 
         uint32_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
-        Instrumentor::get().writeProfile({ m_Name, start, end, threadID });
-
+        Instrumentor::sTimerStack.pop_back();
+        size_t stackSize = Instrumentor::sTimerStack.size();
+        Instrumentor::get().writeProfile({ m_Name, start, end, threadID, (unsigned)stackSize, stackSize ? Instrumentor::sTimerStack.back() : nullptr});
         m_Stopped = true;
     }
 private:

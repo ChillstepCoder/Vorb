@@ -211,6 +211,7 @@
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
+    <ClCompile Include="src\instrumentation\instrumentor.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
     <ClCompile Include="src\item\Item.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />

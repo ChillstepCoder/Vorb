@@ -440,8 +440,20 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         if (ImGui::Button("Reset Times")) {
             Instrumentor::get().resetTimes();
         }
-        std::string text = Instrumentor::get().getMostRecentTimeString();
-        ImGui::Text(text.c_str());
+        InstrumentorDebugOutputData timeStrings;
+        Instrumentor::get().getDebugOutputData(timeStrings);
+        for (auto&& str : timeStrings.data) {
+            if (ImGui::CollapsingHeader(std::to_string(std::hash<std::thread::id>{}(str.first)).c_str())) {
+                for (InstrumentorDebugStrings& debugStr : str.second) {
+                    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), debugStr.name.c_str());
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 50, 255, 255));
+                    ImGui::Text(debugStr.avg.c_str());
+                    ImGui::Text(debugStr.max.c_str());
+                    ImGui::PopStyleColor();
+                }
+            }
+        }
     }
 
     glGetString(GL_VENDOR);
