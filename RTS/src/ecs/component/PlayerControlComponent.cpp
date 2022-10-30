@@ -12,6 +12,8 @@
 #include "camera/Camera3D.h"
 #include "options/DebugOptions.h"
 
+#include "rendering/RenderThreadTasks.h"
+
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
 
@@ -69,12 +71,11 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
     }
 	// Update skills
     if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
-		// TODO: Move this to some kind of combat manager/context
-        CharacterModelComponent& modelCmp = registry.get<CharacterModelComponent>(entity);
-        if (!modelCmp.mAnimState->mCurrentOneShotTrack.isActive()) {
-            SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
-            modelCmp.playOneShotAnimation(skillsCmp.mSkills[0]->mAnim);
-        }
+        // TODO: Move this to some kind of combat manager/context
+        SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
+        // TODO: Better
+        const SkillDef& skillToUse = *skillsCmp.mSkills[0];
+        RenderThreadTasks::getInstance().playOneShotAnimation(entity, skillToUse.mAnimID);
     }
 
 	//  Update movement

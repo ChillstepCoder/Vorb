@@ -30,7 +30,8 @@ TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPo
 }
 
 void TileContainerRepository::destroyTileContainer(TileContainer* container) {
-    assert(IS_GAME_THREAD());
+    // TODO: Maybe just dont destroy this on the game thread
+    assert(IS_GAME_THREAD() || IS_SHUTTING_DOWN);
     sTileContainerLookup.erase(container->mId);
     // TODO: Profile linear search
     for (size_t i = 0; i < sTileContainers.size(); ++i) {

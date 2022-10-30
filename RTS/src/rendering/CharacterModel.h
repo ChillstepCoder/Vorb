@@ -69,6 +69,8 @@ struct AnimState {
 
 // TODO: File name
 struct CharacterModelComponent {
+    CharacterModelComponent(ModelID modelId) : modelId(modelId) {}
+
     ModelID modelId = INVALID_MODEL_ID;
 };
 static_assert(sizeof(CharacterModelComponent) == 4, "Keep small");

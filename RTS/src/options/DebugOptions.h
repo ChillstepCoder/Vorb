@@ -18,118 +18,119 @@ constexpr f32 DEFAULT_GRASS_DISTANCE = 220.0f;
 constexpr f32 DEFAULT_TERRAIN_DISTANCE = 220.0f;
 
 struct DebugOptions {
-    f64 mTimeOffset = 0.0f;
+    DebugOptions();
+    f64 mTimeOffset;
     // Clouds
-    bool mDebugClouds = false;
-    bool mDisableClouds = false;
-    int mCloudBlurPasses = 3;
-    float mCloudBlurRadius = 1.25f;
-    float mCloudAmbient = 0.5f;
-    float mCloudSpeed = 0.05f;
+    bool mDebugClouds;
+    bool mDisableClouds;
+    int mCloudBlurPasses;
+    float mCloudBlurRadius;
+    float mCloudAmbient;
+    float mCloudSpeed;
     // Grass
-    QuadtreeSettings mGrassSettings = { DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f };
-    bool mDebugGrassLod = false;
-    bool mHideGrass = true;
+    QuadtreeSettings mGrassSettings;
+    bool mDebugGrassLod;
+    bool mHideGrass;
     // Terrain
-    f32 mTerrainLodDistanceOffset = 540.0f; // 1500 for ultra
-    bool mDebugTerrainLod = true;
-    f32 mTerrainHeightColorMult = 0.22f;
-    f32 mTerrainWavyColorMult = 0.167f;
-    f32 mTerrainSquaresColorPeriod = 0.187f;
-    f32 mTerrainSquaresIntensity = 0.0f;
-    f32 mTerrainBlendMult = 0.037f;
-    bool mDisableTerrain = false;
+    f32 mTerrainLodDistanceOffset; // 1500 for ultra
+    bool mDebugTerrainLod;
+    f32 mTerrainHeightColorMult;
+    f32 mTerrainWavyColorMult;
+    f32 mTerrainSquaresColorPeriod;
+    f32 mTerrainSquaresIntensity;
+    f32 mTerrainBlendMult;
+    bool mDisableTerrain;
     // DOF
-    float mDepthOfFieldBlurRadius = 0.6f;
-    int mDepthOfFieldBlurPasses = 1;
-    f32v2 mDepthOfFieldRangeNear = f32v2(0.0f, 2.0f);
-    f32v2 mDepthOfFieldRangeFar = f32v2(10.0f, 1000.0f);
-    float mDepthOfFieldExponent = 1.0f;
-    bool mDepthOfFieldDebugRender = false;
+    float mDepthOfFieldBlurRadius;
+    int mDepthOfFieldBlurPasses;
+    f32v2 mDepthOfFieldRangeNear;
+    f32v2 mDepthOfFieldRangeFar;
+    float mDepthOfFieldExponent;
+    bool mDepthOfFieldDebugRender;
     // Ambient occlusion
-    bool mSSAODisabled = true;
-    float mSSAORadius = 1.0f;
-    float mSSAOBias = 0.008f;
-    float mSSAOBlurRadius = 0.77f;
-    int mSSAOBlurPasses = 2;
-    float mSSAORangeCheckMult = 0.5f;
-    f32v3 mSSAOColor = f32v3(14.0f / 255.0f, 0.0f / 255.0f, 25.0f / 255.0f);
+    bool mSSAODisabled;
+    float mSSAORadius;
+    float mSSAOBias;
+    float mSSAOBlurRadius;
+    int mSSAOBlurPasses;
+    float mSSAORangeCheckMult;
+    f32v3 mSSAOColor;
     // Shadows
-    float mShadowZMult = 6.0f;//2.50f;
-    float mShadowNearSize = 17.0f;
-    f32v3 mShadowColor = f32v3(204.0f / 255.0f, 230.0f / 255.0f, 243.0f / 255.0f);
-    f32 mShadowUpdateRateSeconds = 0.022f;
-    int mShadowBlurPasses = 3; // 2
-    float mShadowBlurRadius = 0.45f; //1.5f;
-    bool mDisableShadows = false;
+    float mShadowZMult;
+    float mShadowNearSize;
+    f32v3 mShadowColor;
+    f32 mShadowUpdateRateSeconds;
+    int mShadowBlurPasses; // 2
+    float mShadowBlurRadius;
+    bool mDisableShadows;
     // Toggles
-    bool mPauseFrustum = false;
-    bool mWireframe = false;
-    std::atomic_bool mChunkBoundaries = false;
-    bool mCities = false;
-    bool mRoofDebug = false;
-    bool mShowNavGraph = false;
-    bool mShowNavGraphUpdates = false;
-    bool mHideCharacters = false;
-    bool mShowTerrainPhysics = false;
-    bool mShowStaticPhysics = false;
-    bool mShowDynamicPhysics = false;
-    bool mShowPhysicsActions = true;
-    bool mShowBusinessDebug = true;
-    bool mShowTweaker = false;
-    bool mShowEditor = false;
-    bool mShowPaths = true;
-    bool mShowEntityQueries = false;
-    bool mEnableVisualLogs = true;
-    bool mShowDevHud = true;
+    bool mPauseFrustum;
+    bool mWireframe;
+    std::atomic_bool mChunkBoundaries;
+    bool mCities;
+    bool mRoofDebug;
+    bool mShowNavGraph;
+    bool mShowNavGraphUpdates;
+    bool mHideCharacters;
+    bool mShowTerrainPhysics;
+    bool mShowStaticPhysics;
+    bool mShowDynamicPhysics;
+    bool mShowPhysicsActions;
+    bool mShowBusinessDebug;
+    bool mShowTweaker;
+    bool mShowEditor;
+    bool mShowPaths;
+    bool mShowEntityQueries;
+    bool mEnableVisualLogs;
+    bool mShowDevHud;
     // Water
-    f32v4 mShallowWaterColor = f32v4(159.0f / 255.0f, 194.0f / 255.0f, 206.0f / 255.0f, 185.0f / 255.0f);
-    f32v4 mDeepWaterColor = f32v4(57.0f / 255.0f, 83.0f / 255.0f, 122.0f / 255.0f, 191.0f / 255.0f);
-    f32v4 mWaterFoamColor = f32v4(111.0f / 255.0f, 148.0f / 255.0f, 205.0f / 255.0f, 255.0f / 255.0f);
-    f32 mWaterSurfaceDistortAmount = 0.27f;
-    f32 mWaterSurfaceMoveSpeed = 0.03f;
-    f32v2 mWaterFoamDistanceRange = f32v2(0.4f, 1.0f);
-    f32 mWaterSurfaceNoiseCutoff = 0.777f;
-    f32 mWaterSmoothstepAA = 0.037f;
-    f32 mWaterColorNoiseIntensity = 0.085f;
-    f32 mWaterDistortTiling = 1.0f;
-    f32 mWaterNoiseTiling = 1.0f;
-    bool mDisableWater = false;
+    f32v4 mShallowWaterColor;
+    f32v4 mDeepWaterColor;
+    f32v4 mWaterFoamColor;
+    f32 mWaterSurfaceDistortAmount;
+    f32 mWaterSurfaceMoveSpeed;
+    f32v2 mWaterFoamDistanceRange;
+    f32 mWaterSurfaceNoiseCutoff;
+    f32 mWaterSmoothstepAA;
+    f32 mWaterColorNoiseIntensity;
+    f32 mWaterDistortTiling;
+    f32 mWaterNoiseTiling;
+    bool mDisableWater;
     // Lighting
-    LightingOptions* mLightingOptions = &sLightingPresets[LIGHT_PRESET_UCHIMURA];
-    LightingOptions* mLightingOptionsSplit = &sLightingPresets[LIGHT_PRESET_CUSTOM];
-    int mLightingPreset = LIGHT_PRESET_UCHIMURA;
-    int mLightingPresetSplit = LIGHT_PRESET_CUSTOM;
-    bool mLightPresetSplitView = false;
-    float mLightPresetSplitAmount = 0.43f;
-    f32 unUchMaxDisplayBrightness = 1.1f;
-    f32 unUchContrast = 0.7f;
-    f32 unUchLinearSectionStart = 0.06f;
-    f32 unUchLinearSectionLength = 0.6f;
-    f32 unUchBlack = 1.33f;
-    f32 unUchPedestal = 0.0f;
+    LightingOptions* mLightingOptions;
+    LightingOptions* mLightingOptionsSplit;
+    int mLightingPreset;
+    int mLightingPresetSplit;
+    bool mLightPresetSplitView;
+    float mLightPresetSplitAmount;
+    f32 unUchMaxDisplayBrightness;
+    f32 unUchContrast;
+    f32 unUchLinearSectionStart;
+    f32 unUchLinearSectionLength;
+    f32 unUchBlack;
+    f32 unUchPedestal;
     // Game settings
-    f32 mLoadRangeSq = SQ(CHUNK_LOAD_RANGE);
-    f32 mLoadRange = CHUNK_LOAD_RANGE;
+    f32 mLoadRangeSq;
+    f32 mLoadRange;
     // Camera settings
-    f32 mFoV = 75.0f;
-    f32 mZFar = 200000.0f;
-    f32 mCameraZHeight = 1.5f;
-    f32 mCameraXYDistance = 1.0f;
-    CameraMode mCameraMode = CameraMode::MMO;
+    f32 mFoV;
+    f32 mZFar;
+    f32 mCameraZHeight;
+    f32 mCameraXYDistance;
+    CameraMode mCameraMode;
     // Shader debug
-    f32v3 mDebugColor01 = f32v3(0.0f, 0.0f, 1.0f);
-    f32v3 mDebugColor02 = f32v3(0.0f, 1.0f, 0.0f);
-    f32 mDebugFloat01 = 0.0f;
-    f32 mDebugFloat02 = 0.0f;
-    f32 mDebugFloat03 = 0.0f;
-    f32 mDebugFloat04 = 0.0f;
+    f32v3 mDebugColor01;
+    f32v3 mDebugColor02;
+    f32 mDebugFloat01;
+    f32 mDebugFloat02;
+    f32 mDebugFloat03;
+    f32 mDebugFloat04;
 
     // TODO: FILE CONFIG
-    bool mUseCompressedAtlas = false;
-    bool mVSYNC = true;
+    bool mUseCompressedAtlas;
+    bool mVSYNC;
     // TODO: somewhere else?
-    f32v2 mScreenResolution = f32v2(1600.0f, 900.0f); // Currently set in  App::onInit
+    f32v2 mScreenResolution; // Currently set in  App::onInit
 };
 
 extern DebugOptions sDebugOptions;

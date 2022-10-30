@@ -55,6 +55,16 @@ using character_singleton_task_pool = boost::singleton_pool<character_task_pool,
 
 RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;;
 
+void* CharacterModelTaskData::operator new(size_t count) {
+    UNUSED(count);
+    return character_singleton_task_pool::malloc();
+}
+
+void CharacterModelTaskData::operator delete(void* pointer, size_t size) {
+    UNUSED(size);
+    return character_singleton_task_pool::free(pointer);
+}
+
 RenderThreadTasks::RenderThreadTasks()
 {
 

@@ -32,9 +32,9 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
     for (auto&& cdef : edef.components) {
         switch (cdef.type) {
             case ComponentTypes::CharacterModel: {
-                auto& modelCmp = registry.emplace<CharacterModelComponent>(newEntity);
                 // TODO: Select correct model
-                modelCmp.init(&resourceManager.getModelRepository().getModelDef(0));
+                LOG_CRITICAL("TODO: EntityFactory::createEntity needs to set the correct modelId");
+                registry.emplace<CharacterModelComponent>(newEntity, 0);
                 break;
             }
             case ComponentTypes::CharacterControl: {

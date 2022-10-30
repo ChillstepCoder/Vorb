@@ -45,9 +45,10 @@ void MainMenuScreen::destroy(const vui::GameTime& gameTime)
 
 }
 
-void MainMenuScreen::onEntry(const vui::GameTime& gameTime)
-{
-
+void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
+    LOG_CRITICAL("===Diplaying TODO Messages===");
+    LOG_CRITICAL("  TODO: Conan package manager");
+    LOG_CRITICAL("  TODO: Update cmake");
 }
 
 void MainMenuScreen::onExit(const vui::GameTime& gameTime)

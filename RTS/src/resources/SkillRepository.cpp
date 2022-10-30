@@ -28,8 +28,7 @@ bool SkillRepository::loadSkillFile(const vio::Path& filePath, const AnimationRe
         def.mFlags.setBit(SkillDefFlags::INSTANT);
     }
     else {
-        // Get animation reference
-        def.mAnim = &animRepo.getAnimation(fileData.mAnimName);
+        def.mAnimID = animRepo.getAnimationID(fileData.mAnimName);
     }
 
     def.mDuration = fileData.mDuration;

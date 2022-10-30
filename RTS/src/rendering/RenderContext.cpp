@@ -324,6 +324,8 @@ void RenderContext::initPostLoad() {
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
+    PROFILE_FUNCTION();
+
     mCamera = camera;
     // Update thread msg queue
     updateRenderThreadProcs();
@@ -702,6 +704,7 @@ VGTexture RenderContext::getSSAOTexture() const {
 }
 
 void RenderContext::updateRenderThreadProcs() {
+    PROFILE_FUNCTION();
     constexpr ui32 BULK_DEQUEUE_SIZE = 32;
     std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;

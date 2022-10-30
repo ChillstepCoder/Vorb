@@ -51,3 +51,9 @@ const ozz::animation::Animation* AnimationRepository::tryGetAnimation(const nStr
     }
     return &mAnimations[it->second];
 }
+
+const AnimationID& AnimationRepository::getAnimationID(const nString& name) const {
+    auto&& it = mAnimIdLookups.find(name);
+    assert(it != mAnimIdLookups.end());
+    return it->second;
+}

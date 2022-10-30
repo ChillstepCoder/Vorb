@@ -19,12 +19,12 @@
 
 void onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
     ModelID modelId = registry.get<CharacterModelComponent>(entity).modelId;
-    LOG_DEBUG("Added model ID {} for entity ", modelId, entity);
+    LOG_DEBUG("Added model ID {} for entity {}", modelId, e_cast(entity));
     RenderThreadTasks::getInstance().addCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
 }
 
 void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
-    LOG_DEBUG("Destroying model for entity {}", entity);
+    LOG_DEBUG("Destroying model for entity {}", e_cast(entity));
     RenderThreadTasks::getInstance().removeCharacterModel(entity);
 }
 
@@ -34,7 +34,7 @@ CliWorldInterface::CliWorldInterface() {
 
 CliWorldInterface::~CliWorldInterface() {
     sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
-    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().disconnect<&onCharacterModelConstruct>();
+    sWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().disconnect<&onCharacterModelDestroy>();
 }
 
 void CliWorldInterface::tickClient(IWorld& world) {
@@ -53,7 +53,7 @@ void CliWorldInterface::updateParticleSystems(const f32v2& playerPos) {
 void CliWorldInterface::onWorldBeginClient() {
     // When character models are added, we should let the render thread know
     sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
-    sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
+    sWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
 }
 
 void CliWorldInterface::cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {

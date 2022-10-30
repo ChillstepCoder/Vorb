@@ -98,7 +98,7 @@ void GameThread::update() {
 }
 
 void GameThread::updateClient() {
-
+    PROFILE_FUNCTION();
     CliWorld* cliWorld = static_cast<CliWorld*>(sWorld);
 
     // Update main thread update queues
@@ -122,8 +122,8 @@ void GameThread::updateClient() {
     //cliWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 }
 
-void GameThread::updateHost()
-{
+void GameThread::updateHost() {
+    PROFILE_FUNCTION();
     HostWorld* hostWorld = static_cast<HostWorld*>(sWorld);
 
     if (GameServer::exists()) {
@@ -172,6 +172,7 @@ void GameThread::updateTimeOfDay() {
 
 void GameThread::updateProcs()
 {
+    PROFILE_FUNCTION();
     constexpr ui32 BULK_DEQUEUE_SIZE = 32;
     std::pair<GameFunction, void*> procs[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;

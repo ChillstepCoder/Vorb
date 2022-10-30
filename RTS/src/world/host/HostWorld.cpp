@@ -71,11 +71,12 @@ void HostWorld::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
 
 void HostWorld::onWorldBegin(const f32v2& loadCenter) {
     PROFILE_FUNCTION();
-    // TODO: Move
-    mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
 
     onWorldBeginShared(loadCenter);
     onWorldBeginClient();
+
+    // TODO: Move
+    mEcs->setLocalPlayer(mEcs->createEntity(WorldData::DEFAULT_PLAYER_SPAWN, StrToken("player"), true));
 }
 
 void HostWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {

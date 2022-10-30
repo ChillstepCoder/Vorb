@@ -11,9 +11,10 @@ public:
 
     bool loadAnimFile(const vio::Path& filePath);
 
-    const ozz::animation::Animation& getAnimation(AnimationID animId) const { return mAnimations[animId]; }
-    const ozz::animation::Animation& getAnimation(const nString& name) const;
-    const ozz::animation::Animation* tryGetAnimation(const nString& name) const;
+    const Animation& getAnimation(AnimationID animId) const { return mAnimations[animId]; }
+    const Animation& getAnimation(const nString& name) const;
+    const Animation* tryGetAnimation(const nString& name) const;
+    const AnimationID& getAnimationID(const nString& name) const;
 
 private:
     std::unordered_map<nString, AnimationID> mAnimIdLookups;

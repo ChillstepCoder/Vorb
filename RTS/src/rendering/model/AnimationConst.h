@@ -1,5 +1,15 @@
 #pragma once
 
+// Forward declare animations
+namespace ozz {
+    namespace animation {
+        class Animation;
+    };
+};
+
+using Animation = ozz::animation::Animation;
+typedef ui32 AnimationID;
+
 // Make sure this matches AnimMachineDef
 enum class AnimMachineState : ui16 {
     WALK_LEFT,
@@ -39,5 +49,3 @@ constexpr const char* AnimMachineStateNames[e_cast(AnimMachineState::COUNT)] = {
 };
 
 static_assert(e_cast(AnimMachineState::COUNT) == 14, "Update debug strings");
-
-typedef ui32 AnimationID;
