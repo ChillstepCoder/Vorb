@@ -9,8 +9,7 @@
 
 #include "camera/Camera3D.h"
 
-ItemRenderer::ItemRenderer(MaterialRenderer& materialRenderer) :
-    mMaterialRenderer(materialRenderer) {
+ItemRenderer::ItemRenderer() {
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mItemMeshMaterial = materialManager.getMaterial("standard_tile");
@@ -138,7 +137,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMe
     const f32v3 offset = stockpilePos - camera.getPosition();
 
     // TODO: Reduce swaps
-    mMaterialRenderer.bindMaterialForRender(*mItemBillboardMaterial, nullptr);
+    MaterialRenderer::bindMaterialForRender(*mItemBillboardMaterial, nullptr);
     glUniform3fv(offsetUniform, 1, &offset.x);
     itemMesh.draw();
 }
@@ -149,7 +148,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const QuadMesh& it
     const f32v3 offset = stockpilePos - camera.getPosition();
 
     // TODO: Reduce swaps
-    mMaterialRenderer.bindMaterialForRender(*mItemMeshMaterial, nullptr);
+    MaterialRenderer::bindMaterialForRender(*mItemMeshMaterial, nullptr);
     glUniform3fv(offsetUniform, 1, &offset.x);
     itemMesh.draw(mItemMeshMaterial->mProgram);
 }

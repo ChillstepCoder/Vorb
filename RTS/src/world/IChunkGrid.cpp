@@ -188,9 +188,12 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
         }
     }
 
-    PROFILE_SCOPE("Load chunk sort");
+    {
+        PROFILE_SCOPE("Load chunk sort");
 
-    std::sort(chunksToBeginLoad.begin(), chunksToBeginLoad.end(), compareLoadingChunk);
+        // TODO: we could use a circular iteration above to avoid this sort
+        std::sort(chunksToBeginLoad.begin(), chunksToBeginLoad.end(), compareLoadingChunk);
+    }
 
     // Load any new chunks
     for (auto& chunk : chunksToBeginLoad) {
@@ -205,6 +208,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
 
 void IChunkGrid::markChunkForDestroy(Chunk& chunk) {
     assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
+    assert(chunk.getState() >= ChunkState::WAITING_HEIGHT); // Make sure we actually aquired height
     chunk.mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
     mDestroyingChunks.emplace_back(&chunk);
     mAliveChunkBits.clearBit(chunk.getChunkID().id);

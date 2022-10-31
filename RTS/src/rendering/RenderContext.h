@@ -9,6 +9,7 @@ class TileContainerRenderer;
 class ChunkGrassQuadtree;
 class CityDebugRenderer;
 class CloudRenderer;
+class GrassRenderer;
 class DepthOfFieldPostProcess;
 class EntityComponentSystemRenderer;
 class CameraController;
@@ -92,8 +93,7 @@ public:
     void selectNextDebugShader();
 
     const GlobalRenderData& getRenderData() const { return mRenderData; }
-    TileContainerRenderer& getChunkRenderer() const { return *mChunkRenderer; }
-    MaterialRenderer& getMaterialRenderer() const { return *mMaterialRenderer; }
+    TileContainerRenderer& getChunkRenderer() const { return *mTileContainerRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
     const vg::GBuffer& getPrevFinalGBuffer() const { return mGBuffers[mPrevGBufferIndex]; }
     const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
@@ -137,8 +137,7 @@ private:
     const Camera3D* mCamera = nullptr;
 
     // Renderers
-    mutable std::unique_ptr<MaterialRenderer> mMaterialRenderer;
-    mutable std::unique_ptr<TileContainerRenderer> mChunkRenderer;
+    mutable std::unique_ptr<TileContainerRenderer> mTileContainerRenderer;
     mutable std::unique_ptr<LightRenderer> mLightRenderer;
     mutable std::unique_ptr<EntityComponentSystemRenderer> mEcsRenderer;
     mutable std::unique_ptr<ParticleSystemRenderer> mParticleSystemRenderer;
@@ -151,6 +150,7 @@ private:
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
+    mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;

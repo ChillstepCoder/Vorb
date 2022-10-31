@@ -58,10 +58,10 @@ void Skybox::init(const Material* material) {
 
 }
 
-void Skybox::render(const MaterialRenderer& materialRenderer) {
+void Skybox::render() {
     assert(mMaterial);
     vg::DepthState::READ.set();
-    materialRenderer.renderMesh(*mSkyboxMesh, *mMaterial);
+    MaterialRenderer::renderMesh(*mSkyboxMesh, *mMaterial);
 
     vg::DepthState::restorePrevious();
 }

@@ -1,6 +1,5 @@
 #pragma once
 
-class RenderContext;
 class Material;
 class MeshBase;
 class Mesh;
@@ -9,20 +8,16 @@ class Mesh;
 
 class MaterialRenderer {
 public:
+    MaterialRenderer() = delete;
 
-    MaterialRenderer(const RenderContext& renderContext);
-    ~MaterialRenderer();
+    static void renderFullScreenQuad(const Material& material);
+    static void renderMesh(const MeshBase& mesh, const Material& material);
+    static void renderMesh(const Mesh& mesh, const Material& material);
+    static void renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect);
+    static void renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect);
 
-    void renderFullScreenQuad(const Material& material) const;
-    void renderMesh(const MeshBase& mesh, const Material& material) const;
-    void renderMesh(const Mesh& mesh, const Material& material) const;
-    void renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect);
-    void renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect);
-
-    void bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex = nullptr) const;
+    static void bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex = nullptr);
 
 private:
-    void uploadUniforms(const Material& material, OUT ui32& nextAvailableTextureIndex) const;
-    // TODO: Subsections, like a UI render
-    const RenderContext& mRenderContext;
+    static void uploadUniforms(const Material& material, OUT ui32& nextAvailableTextureIndex);
 };

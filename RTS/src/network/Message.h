@@ -142,8 +142,7 @@ struct CharacterStateMessage : public MessageBase {
     template <typename Stream> bool Serialize(Stream& stream) {
         // TODO: Allow server to serialize without checks?
         serialize_uint32(stream, mSrvEntityID);
-        serialize_float(stream, mControlDirection.x);
-        serialize_float(stream, mControlDirection.y);
+        serialize_float(stream, mControlAngle);
         serialize_float(stream, mPosition.x);
         serialize_float(stream, mPosition.y);
         serialize_float(stream, mPosition.z);
@@ -158,7 +157,7 @@ struct CharacterStateMessage : public MessageBase {
 
     // TODO: Quantize
     ui32 mSrvEntityID;
-    f32v2 mControlDirection = f32v2(0.0f);
+    f32 mControlAngle = 0.0f;
     f32v3 mPosition = f32v3(0.0f);
     f32v3 mVelocity = f32v3(0.0f);
     ui32 mDesiredLocomotionMode = 0; // TODO: investigate byte packing
@@ -168,8 +167,7 @@ struct ClientPlayerStateMessage : public MessageBase {
 
     template <typename Stream> bool Serialize(Stream& stream) {
         // TODO: Allow server to serialize without checks?
-        serialize_float(stream, mControlDirection.x);
-        serialize_float(stream, mControlDirection.y);
+        serialize_float(stream, mControlAngle);
         serialize_float(stream, mPosition.x);
         serialize_float(stream, mPosition.y);
         serialize_float(stream, mPosition.z);
@@ -183,7 +181,7 @@ struct ClientPlayerStateMessage : public MessageBase {
     YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
 
     // TODO: Quantize
-    f32v2 mControlDirection = f32v2(0.0f);
+    f32 mControlAngle = 0.0f;
     f32v3 mPosition = f32v3(0.0f);
     f32v3 mVelocity = f32v3(0.0f);
     ui32 mDesiredLocomotionMode = 0; // TODO: investigate byte packing

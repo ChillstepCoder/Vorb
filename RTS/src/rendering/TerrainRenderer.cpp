@@ -15,7 +15,7 @@
 
 #include "options/DebugOptions.h"
 
-TerrainRenderer::TerrainRenderer(const MaterialRenderer& materialRenderer) : mMaterialRenderer(materialRenderer)
+TerrainRenderer::TerrainRenderer()
 {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mTerrainMaterial = materialManager.getMaterial("terrain");
@@ -23,7 +23,7 @@ TerrainRenderer::TerrainRenderer(const MaterialRenderer& materialRenderer) : mMa
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const TerrainMesh*>& terrainMeshes) {
-    mMaterialRenderer.bindMaterialForRender(*mTerrainMaterial);
+    MaterialRenderer::bindMaterialForRender(*mTerrainMaterial);
     // Terrain uniforms
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unWavyMult"), sDebugOptions.mTerrainWavyColorMult);
@@ -69,7 +69,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const T
 {
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();
-    mMaterialRenderer.bindMaterialForRender(*mWaterMaterial);
+    MaterialRenderer::bindMaterialForRender(*mWaterMaterial);
     // TODO: UBO?
     // Water uniforms
     glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);

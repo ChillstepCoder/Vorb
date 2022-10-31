@@ -1,7 +1,6 @@
 #pragma once
 #include "rendering/CharacterModel.h"
 
-class MaterialRenderer;
 class PhysicsComponent;
 class Material;
 struct CharacterModelComponent;
@@ -17,7 +16,7 @@ public:
     void addCharacterModel(entt::entity entityId, ui32 modelId);
     void removeCharacterModel(entt::entity entityId);
     void playOneShotAnimation(entt::entity entityId, ui32 animationId);
-    void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer);
+    void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha);
 private:
 
     const Material* mMaterial;

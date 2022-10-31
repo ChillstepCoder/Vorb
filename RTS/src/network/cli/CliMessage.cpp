@@ -9,11 +9,11 @@ void CliMessage::sendClientReadyJoinMessage() {
     client.sendMessage(joinMsg);
 }
 
-void CliMessage::sendPlayerStateMessage(const f32v3& pos, const f32v3& velocity, const f32v2& controlDirection, ui32 mDesiredLocomotionMode) {
+void CliMessage::sendPlayerStateMessage(const f32v3& pos, const f32v3& velocity, f32 controlAngle, ui32 mDesiredLocomotionMode) {
     GameClient& client = GameClient::getInstance();
     ClientPlayerStateMessage* message = (ClientPlayerStateMessage*)client.createMessage(e_cast(MessageTypes::CLIENT_PLAYER_STATE));
     message->mPosition = pos;
-    message->mControlDirection = controlDirection;
+    message->mControlAngle = controlAngle;
     message->mVelocity = velocity;
     message->mDesiredLocomotionMode = mDesiredLocomotionMode;
     client.sendMessage(message);

@@ -1,7 +1,6 @@
 #pragma once
 
 class Camera3D;
-class MaterialRenderer;
 class ParticleSystem;
 struct ParticleSystemData;
 
@@ -10,7 +9,7 @@ struct ParticleSystemData;
 class ParticleSystemRenderer
 {
 public:
-    ParticleSystemRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
+    ParticleSystemRenderer(const f32v2& gbufferDims);
     ~ParticleSystemRenderer();
 
     void renderParticleSystems(const Camera3D& camera, vg::GBuffer* activeGbuffer, bool renderLitSystems);
@@ -18,8 +17,6 @@ private:
     void renderParticleSystem(const Camera3D& camera, const ParticleSystem& particleSystem);
     vg::GBuffer getOrCreateFramebufferForParticleSystem(const nString& name);
     void renderPostProcess(const ParticleSystemData& particleSystemData, vg::GBuffer& gBuffer);
-
-    const MaterialRenderer& mMaterialRenderer;
 
     // For use in multipass
     std::map<nString, vg::GBuffer> mGBuffers;

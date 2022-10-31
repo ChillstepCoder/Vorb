@@ -29,6 +29,7 @@ void HostWorld::tick(f32 elapsedSec) {
 
     // Update any pending updates if pathfinding is idle
     if (!Services::NavThread::ref().isRunningPathfind()) {
+        PROFILE_SCOPE("Update chunks");
         for (auto&& chunk : getActiveChunks()) {
             chunk->updateMainThread();
         }

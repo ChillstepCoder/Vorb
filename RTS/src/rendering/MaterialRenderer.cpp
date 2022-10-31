@@ -12,40 +12,27 @@
 
 #include "options/DebugOptions.h"
 
-MaterialRenderer::MaterialRenderer(const RenderContext& renderContext) :
-    mRenderContext(renderContext)
-{
-}
-
-MaterialRenderer::~MaterialRenderer()
-{
-
-}
-
-void MaterialRenderer::renderFullScreenQuad(const Material& material) const {
+void MaterialRenderer::renderFullScreenQuad(const Material& material) {
 
     bindMaterialForRender(material, nullptr);
 
     sGlobalFullQuadVBO.draw();
 }
 
-void MaterialRenderer::renderMesh(const MeshBase& mesh, const Material& material) const
-{
+void MaterialRenderer::renderMesh(const MeshBase& mesh, const Material& material) {
     // TODO: Here we are rebinding to make sure nobody fucked with our textures, but would be nice to avoid re-binds when iterating chunks?
     bindMaterialForRender(material, nullptr);
 
     mesh.draw(material.mProgram);
 }
 
-void MaterialRenderer::renderMesh(const Mesh& mesh, const Material& material) const
-{
+void MaterialRenderer::renderMesh(const Mesh& mesh, const Material& material) {
     bindMaterialForRender(material, nullptr);
 
     mesh.draw();
 }
 
-void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect)
-{
+void MaterialRenderer::renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect) {
     assert(texture);
     ui32 textureIndex;
     bindMaterialForRender(material, &textureIndex);
@@ -78,7 +65,7 @@ void MaterialRenderer::renderMaterialToQuadWithTextureBindless(const Material& m
     sGlobalFullQuadVBO.draw();
 }
 
-void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) const {
+void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32* nextAvailableTextureIndex /* =nullptr */) {
     ui32 availableTextureIndex = 0;
     material.use(availableTextureIndex);
     uploadUniforms(material, availableTextureIndex);
@@ -88,43 +75,44 @@ void MaterialRenderer::bindMaterialForRender(const Material& material, OUT ui32*
 }
 
 // TODO: Batch upload uniforms so we dont do it multiple times redundantly
-void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAvailableTextureIndex) const {
-    const GlobalRenderData& renderData = mRenderContext.getRenderData();
+void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAvailableTextureIndex) {
+    RenderContext& renderContext = RenderContext::getInstance();
+    const GlobalRenderData& renderData = renderContext.getRenderData();
     // Bind uniforms
     for (auto&& it : material.mUniforms) {
         switch (it.first) {
             case MaterialUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getGeometryTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getGeometryTexture());
                 break;
             case MaterialUniform::FboDepth:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getDepthTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getDepthTexture());
                 break;
             case MaterialUniform::FboNormals:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getNormalTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getNormalTexture());
                 break;
             case MaterialUniform::FboRoughness:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getActiveGBuffer().getRoughnessTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getRoughnessTexture());
                 break;
             case MaterialUniform::PrevFbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevFinalGBuffer().getGeometryTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getGeometryTexture());
                 break;
             case MaterialUniform::PrevFboDepth:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getPrevFinalGBuffer().getDepthTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getDepthTexture());
                 break;
             case MaterialUniform::PixelDims: {
-                const f32v2 pixelDims = 1.0f / mRenderContext.getCurrentFramebufferDims();
+                const f32v2 pixelDims = 1.0f / renderContext.getCurrentFramebufferDims();
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
@@ -141,7 +129,7 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
                 glUniformMatrix4fv(it.second, 1, false, &renderData.skyRotMatrix[0][0]);
                 break;
             case MaterialUniform::ScreenResolution: {
-                const f32v2& pixelDims = mRenderContext.getCurrentFramebufferDims();
+                const f32v2& pixelDims = renderContext.getCurrentFramebufferDims();
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }
@@ -162,12 +150,12 @@ void MaterialRenderer::uploadUniforms(const Material& material, OUT ui32& nextAv
             case MaterialUniform::ShadowTexture:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getShadowTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getShadowTexture());
                 break;
             case MaterialUniform::SSAOTexture:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, mRenderContext.getSSAOTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getSSAOTexture());
                 break;
             case MaterialUniform::SSAOColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mSSAOColor[0]);

@@ -65,6 +65,7 @@ void App::onInit() {
     PROFILE_BEGIN_SESSION("Main", "profiling.json");
     // Set as render thread
     RENDER_THREAD_ID = std::this_thread::get_id();
+    setThreadName("Render");
 
     // Set log level for yojimbo
     yojimbo_log_level(YOJIMBO_LOG_LEVEL_ERROR);
@@ -105,6 +106,7 @@ void App::refreshElapsedTime() {
 }
 
 void App::onUpdateFrame() {
+    PROFILE_FUNCTION();
     MainGame::onUpdateFrame();
     // Update window settings
     getWindow().setSwapInterval(sDebugOptions.mVSYNC ? vorb::ui::GameSwapInterval::V_SYNC : vorb::ui::GameSwapInterval::UNLIMITED_FPS);

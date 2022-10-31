@@ -9,7 +9,6 @@ class Camera3D;
 class PhysicsSystem;
 class CharacterRenderer;
 class IEntityComponentSystem;
-class MaterialRenderer;
 class LightRenderer;
 
 class EntityComponentSystemRenderer {

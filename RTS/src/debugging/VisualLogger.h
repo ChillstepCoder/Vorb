@@ -3,8 +3,6 @@
 #include "rendering/mesh/Mesh.h"
 #include "debugging/SimpleMesh.h"
 
-class MaterialRenderer;
-
 class Font;
 
 struct SimpleLine {
@@ -81,7 +79,7 @@ public:
 
     void finish();
 
-    void render(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer);
+    void render(const f32v3& cameraPos, const f32m4& viewMatrix);
 
 private:
     void buildMesh();
@@ -114,7 +112,7 @@ public:
     static VisualLog* tryGetNewVisualLog(const nString& name);
     static void renderImgui();
 
-    static void renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer);
+    static void renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix);
     
     static std::vector<std::unique_ptr<VisualLog>> sVisualLogs;
 

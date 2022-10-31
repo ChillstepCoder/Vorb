@@ -88,7 +88,7 @@ void CliWorldInterface::updateEntitiesRenderState(IWorld& world, RenderState& re
     for (auto entity : view) {
         PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
         CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
-        renderState.mCharacters.emplace_back(CharacterRenderState{entity, physCmp.getPosition(), physCmp.getRotation(), controlCmp.mMode});
+        renderState.mCharacters.emplace_back(CharacterRenderState{entity, physCmp.getPosition(), controlCmp.mControllerAngle, controlCmp.mMode});
     };
 }
 

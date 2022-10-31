@@ -2,7 +2,6 @@
 
 class CloudManager;
 class ResourceManager;
-class MaterialRenderer;
 class Material;
 class Camera3D;
 
@@ -12,7 +11,7 @@ class Camera3D;
 class CloudRenderer
 {
 public:
-    CloudRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
+    CloudRenderer(const f32v2& gbufferDims);
 
     void renderClouds(const CloudManager& cloudManager, vg::GBuffer* activeGbuffer, const Camera3D& camera);
     void renderCloudShadows(const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance);
@@ -20,8 +19,6 @@ public:
 private:
     void blurNormals();
     void renderFboToScreen();
-
-    const MaterialRenderer& mMaterialRenderer;
 
     vg::GBuffer mGBuffers[2];
     f32v2 mGbufferDims;

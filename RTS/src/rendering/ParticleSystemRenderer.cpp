@@ -10,8 +10,7 @@
 
 #include <Vorb/graphics/FullQuadVBO.h>
 
-ParticleSystemRenderer::ParticleSystemRenderer(const MaterialRenderer& materialRenderer, const f32v2 & gbufferDims) :
-    mMaterialRenderer(materialRenderer),
+ParticleSystemRenderer::ParticleSystemRenderer(const f32v2 & gbufferDims) :
     mGbufferDims(gbufferDims) {
 }
 
@@ -114,7 +113,7 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera3D& camera, const 
     }
 
     assert(material);
-    mMaterialRenderer.bindMaterialForRender(*material);
+    MaterialRenderer::bindMaterialForRender(*material);
 
     material->mProgram.enableVertexAttribArrays();
     glDrawArrays(GL_POINTS, 0, (unsigned)particleSystem.mParticles.size());
@@ -149,7 +148,7 @@ void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particl
     const Material* material = Services::ResourceManager::ref().getMaterialManager().getMaterial(particleSystemData.postMaterialName);
     assert(material);
 
-    mMaterialRenderer.bindMaterialForRender(*material);
+    MaterialRenderer::bindMaterialForRender(*material);
 
     if (const VGUniform* inputUniform = material->mProgram.tryGetUniform("ParticleFbo")) {
         gBuffer.bindGeometryTexture(0);

@@ -344,6 +344,7 @@ void IWorld::updateTimeOfDay() {
 }
 
 void IWorld::updateCities() {
+    PROFILE_FUNCTION();
     // TODO: Amortized
     mCities->update();
 }

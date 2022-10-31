@@ -11,8 +11,8 @@
 
 #include "options/DebugOptions.h"
 
-DepthOfFieldPostProcess::DepthOfFieldPostProcess(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mMaterialRenderer(materialRenderer), mGbufferDims(gbufferDims)
+DepthOfFieldPostProcess::DepthOfFieldPostProcess(const f32v2& gbufferDims) :
+    mGbufferDims(gbufferDims)
 {
     vg::GBufferAttachment attachment;
     // Color
@@ -39,7 +39,7 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
     assert(prevGBuffer);
 
     ui32 nextTexture;
-    mMaterialRenderer.bindMaterialForRender(*mMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTexture);
     glUniform2fv(mMaterial->getUniform("unBlurRangeNear"), 1, &sDebugOptions.mDepthOfFieldRangeNear.x);
     glUniform2fv(mMaterial->getUniform("unBlurRangeFar"), 1, &sDebugOptions.mDepthOfFieldRangeFar.x);
     glUniform1f(mMaterial->getUniform("unBlurExponent"), sDebugOptions.mDepthOfFieldExponent);

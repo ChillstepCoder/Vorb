@@ -129,8 +129,8 @@ constexpr int MAX_MIP_LEVELS = 9; // TODO: Make this dynamic?
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps
 // https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
 
-ShadowRenderer::ShadowRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mMaterialRenderer(materialRenderer), mGBufferDims(gbufferDims)
+ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
+    mGBufferDims(gbufferDims)
 {
 
     {// Shadow map gbuffers
@@ -384,7 +384,7 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
 
     mShadowMipGBuffer.useGeometry();
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer.getGeometryTexture(), 0);
-    mMaterialRenderer.bindMaterialForRender(*mShadowVarianceMaterial);
+    MaterialRenderer::bindMaterialForRender(*mShadowVarianceMaterial);
 
     glUniform3fv(glGetUniformLocation(mShadowVarianceMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
 
@@ -400,7 +400,7 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
     { // Apply shadows
         mShadowBlurGBuffers[0].useGeometry();
         ui32 nextTextureIndex = 0;
-        mMaterialRenderer.bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
+        MaterialRenderer::bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
         mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
         vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
@@ -450,7 +450,7 @@ void ShadowRenderer::generateMipmaps() {
 
     ui32 nextTextureIndex = 0;
 
-    mMaterialRenderer.bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
+    MaterialRenderer::bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
     VGUniform inputUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unInputTexture");
     VGUniform levelUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unPreviousLevel");
     mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex);
@@ -479,7 +479,7 @@ void ShadowRenderer::generateMipmaps() {
 void ShadowRenderer::blurShadowMap()
 {
     ui32 nextTexture = 0;
-    mMaterialRenderer.bindMaterialForRender(*mBlurMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);

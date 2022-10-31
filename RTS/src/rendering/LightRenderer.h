@@ -1,7 +1,6 @@
 #pragma once
 #include "LightData.h"
 
-class MaterialRenderer;
 class Material;
 class Camera3D;
 
@@ -11,17 +10,14 @@ class Camera3D;
 class LightRenderer
 {
 public:
-    LightRenderer(const MaterialRenderer& materialRenderer);
+    LightRenderer();
     ~LightRenderer();
 
     void RenderLight(const f32v2& position, const LightData& lightData, const Camera3D& camera) const;
 
-    void InitPostLoad();
-
 private:
     void InitSharedMesh();
 
-    const MaterialRenderer& mMaterialRenderer;
     const Material* mPointLightMaterial = nullptr;
 
     // TODO: UBO per light?

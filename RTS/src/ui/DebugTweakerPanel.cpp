@@ -158,6 +158,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.1f")) {
             sDebugOptions.mLoadRangeSq = SQ(sDebugOptions.mLoadRange);
         }
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Grass")) {
@@ -170,6 +171,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::Checkbox("Show LOD", &sDebugOptions.mDebugGrassLod);
         ImGui::Checkbox("Disable", &sDebugOptions.mHideGrass);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Terrain")) {
@@ -196,6 +198,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mForestNoise, ID);
         ImGui::EndChild();
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Water")) {
@@ -213,6 +216,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("Noise Tiling", &sDebugOptions.mWaterNoiseTiling, 0.0f, 16.0f);
         ImGui::DragFloatRange2("Foam Dist Range", &sDebugOptions.mWaterFoamDistanceRange.x, &sDebugOptions.mWaterFoamDistanceRange.y, 0.01f, 0.0f, 2.0f);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Lighting")) {
@@ -255,6 +259,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         }
         
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Tonemap Uchimura")) {
@@ -264,6 +269,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("Linear Section Length", &sDebugOptions.unUchLinearSectionLength, 0.0f, 1.0f);
         ImGui::SliderFloat("Black", &sDebugOptions.unUchBlack, 0.0f, 2.0f);
         ImGui::SliderFloat("Pedestal", &sDebugOptions.unUchPedestal, 0.0f, 1.0f);
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Camera Settings")) {
@@ -290,6 +296,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         }
         static_assert(e_cast(CameraMode::COUNT) == 6, "Update options");
         ImGui::PopID();
+        ImGui::Separator();
     }
     
     if (ImGui::CollapsingHeader("Clouds")) {
@@ -301,6 +308,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f, "%.3f");
         ImGui::SliderFloat("Speed", &sDebugOptions.mCloudSpeed, 0.0f, 50.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Depth of Field")) {
@@ -312,6 +320,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::DragFloatRange2("Blur Range Far", &sDebugOptions.mDepthOfFieldRangeFar.x, &sDebugOptions.mDepthOfFieldRangeFar.y, 1.0f, 0.0f, 8000.0f, "%.3f", (const char*)0, ImGuiSliderFlags_Logarithmic);
         ImGui::Checkbox("DebugRender", &sDebugOptions.mDepthOfFieldDebugRender);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Ambient Occlusion")) {
@@ -324,6 +333,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("Range Check Mult", &sDebugOptions.mSSAORangeCheckMult, 0.01f, 1.5f);
         ImGui::ColorPicker3("Color", &sDebugOptions.mSSAOColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Shadows")) {
@@ -336,6 +346,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mShadowBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Toggles")) {
@@ -360,7 +371,8 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::Checkbox("Terrain Physics (Toggle to refresh)", &sDebugOptions.mShowTerrainPhysics);
         ImGui::Checkbox("Dynamic Physics", &sDebugOptions.mShowDynamicPhysics);
         ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
-        
+
+        ImGui::Separator();
     }
     if (activeGBuffer) {
         if (ImGui::CollapsingHeader("GBuffer")) {
@@ -375,6 +387,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
             ImGui::Image((ImTextureID)activeGBuffer->getRoughnessTexture(), dims, uv0, uv1);
             ImGui::Text("Depth");
             ImGui::Image((ImTextureID)activeGBuffer->getDepthTexture(), dims, uv0, uv1);
+            ImGui::Separator();
         }
     }
 
@@ -387,16 +400,19 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("DebugFloat3", &sDebugOptions.mDebugFloat03, 0.0f, 1.0f);
         ImGui::SliderFloat("DebugFloat4", &sDebugOptions.mDebugFloat04, 0.0f, 1.0f);
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Visual Logs")) {
         VisualLogger::renderImgui();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Value Tweaker")) {
         ImGui::PushID(++ID);
         renderTweakerImgui();
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Animation Debugger")) {
@@ -434,6 +450,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         /*ImGui::Text((nString("Total Active Anims: ") + std::to_string(numActive)).c_str());
         ImGui::SliderFloat((nString("Footstep alpha ")).c_str(), &playerModel.mFootstepAlpha, 0.0f, 1.0f);*/
         ImGui::PopID();
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Profiler")) {
@@ -442,8 +459,12 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         }
         InstrumentorDebugOutputData timeStrings;
         Instrumentor::get().getDebugOutputData(timeStrings);
+        std::map<nString, std::vector<InstrumentorDebugStrings>> sortedStrings;
         for (auto&& str : timeStrings.data) {
-            if (ImGui::CollapsingHeader(std::to_string(std::hash<std::thread::id>{}(str.first)).c_str())) {
+            sortedStrings[getThreadName(str.first)] = std::move(str.second);
+        }
+        for (auto&& str : sortedStrings) {
+            if (ImGui::CollapsingHeader(str.first.c_str())) {
                 for (InstrumentorDebugStrings& debugStr : str.second) {
                     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), debugStr.name.c_str());
 
@@ -454,6 +475,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
                 }
             }
         }
+        ImGui::Separator();
     }
 
     glGetString(GL_VENDOR);
@@ -482,6 +504,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         for (auto&& extension : sGlExtensions.sExtensions) {
             ImGui::Text(extension.c_str());
         }
+        ImGui::Separator();
     }
 
     // Uncomment to learn imgui

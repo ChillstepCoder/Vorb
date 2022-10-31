@@ -16,8 +16,8 @@
 // Match shader
 const int KERNEL_SIZE = 32;
 
-AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mMaterialRenderer(materialRenderer), mGbufferDims(gbufferDims)
+AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const f32v2& gbufferDims) :
+    mGbufferDims(gbufferDims)
 {
     vg::GBufferAttachment attachment;
     // Color
@@ -91,7 +91,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     mGBuffers[0].useGeometry();
 
     ui32 nextTexture;
-    mMaterialRenderer.bindMaterialForRender(*mMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTexture);
     vg::BlendState& PREV_BLEND = vg::BlendState::PREV;
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::REPLACE);
@@ -123,7 +123,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     glClear(GL_COLOR_BUFFER_BIT);*/
 
     // Blur it
-    mMaterialRenderer.bindMaterialForRender(*mBlurMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
     mGBuffers[0].bindGeometryTexture(nextTexture);
@@ -149,7 +149,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 
     // Apply to gbuffer
     activeGBuffer->useGeometry();
-    mMaterialRenderer.bindMaterialForRender(*mApplyMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mApplyMaterial, &nextTexture);
     sGlobalFullQuadVBO.draw();
 
     vg::DepthState::restorePrevious();

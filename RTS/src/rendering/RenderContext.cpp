@@ -13,6 +13,7 @@
 #include "EntityComponentSystemRenderer.h"
 #include "rendering/BuildingRenderer.h"
 #include "rendering/CharacterRenderer.h"
+#include "rendering/renderer/GrassRenderer.h"
 #include "rendering/TileContainerRenderer.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/CityDebugRenderer.h"
@@ -263,35 +264,29 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         // Init renderers
         ScopedTimer timer("renderer allocations", 2);
         mCharacterRenderer = std::make_unique<CharacterRenderer>();
-        mChunkRenderer = std::make_unique<TileContainerRenderer>(*mMaterialRenderer);
-        mLightRenderer = std::make_unique<LightRenderer>(*mMaterialRenderer);
+        mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
+        mLightRenderer = std::make_unique<LightRenderer>();
         mEcsRenderer = std::make_unique<EntityComponentSystemRenderer>();
-        mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(*mMaterialRenderer, mScreenResolution);
+        mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mScreenResolution);
         mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
-        mItemRenderer = std::make_unique<ItemRenderer>(*mMaterialRenderer);
-        mBuildingRenderer = std::make_unique<BuildingRenderer>(*mMaterialRenderer);
-        mCloudRenderer = std::make_unique<CloudRenderer>(*mMaterialRenderer, mScreenResolution);
-        mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(*mMaterialRenderer, mScreenResolution);
-        mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(*mMaterialRenderer, mScreenResolution);
-        mShadowRenderer = std::make_unique<ShadowRenderer>(*mMaterialRenderer, mScreenResolution);
-        mTerrainRenderer = std::make_unique<TerrainRenderer>(*mMaterialRenderer);
+        mItemRenderer = std::make_unique<ItemRenderer>();
+        mBuildingRenderer = std::make_unique<BuildingRenderer>();
+        mCloudRenderer = std::make_unique<CloudRenderer>(mScreenResolution);
+        mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mScreenResolution);
+        mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mScreenResolution);
+        mShadowRenderer = std::make_unique<ShadowRenderer>(mScreenResolution);
+        mTerrainRenderer = std::make_unique<TerrainRenderer>();
+        mGrassRenderer = std::make_unique<GrassRenderer>();
         checkGlError("Renderer init");
     }
 
-    {
-        ScopedTimer timer("Chunk renderer init", 2);
-        mChunkRenderer->InitPostLoad();
-        mLightRenderer->InitPostLoad();
-    }
-
+ 
     mCloudManager->init(worldCenter);
 }
 
 void RenderContext::initPostLoad() {
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mMaterialRenderer = std::make_unique<MaterialRenderer>(*this);
-
 
     // Init all passthrough materials
     {
@@ -430,7 +425,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Tiles
-    mChunkRenderer->renderTiles(mStaticMeshes, camera);
+    mTileContainerRenderer->renderTiles(mStaticMeshes, camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
@@ -468,9 +463,10 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // === Post AO passes ===
     // Grass + billboards
 
-    mChunkRenderer->renderBillboards(mBillboardMeshes, camera);
+    mTileContainerRenderer->renderBillboards(mBillboardMeshes, camera);
     if (!sDebugOptions.mHideGrass) {
-        mChunkRenderer->renderGrass(mGrassQuadtrees, camera, playerPos);
+        mGrassRenderer->renderGrass(mGrassQuadtrees, camera, playerPos);
+        //mTileContainerRenderer->renderGrass(mGrassQuadtrees, camera, playerPos);
     }
 
     // Terrain
@@ -479,7 +475,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     if (!sDebugOptions.mHideCharacters) {
-        mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha, *mMaterialRenderer);
+        mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha);
     }
     if (sDebugOptions.mShowBusinessDebug) {
         mEcsRenderer->renderBusinessDebug(camera);
@@ -496,7 +492,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Sky
     glEnable(GL_DEPTH_CLAMP);
     glDisable(GL_CULL_FACE); // TODO: Fix geometry so we dont have to disable cull face
-    mSkyBox->render(*mMaterialRenderer);
+    mSkyBox->render();
     glEnable(GL_CULL_FACE);
     glDisable(GL_DEPTH_CLAMP);
 
@@ -512,7 +508,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            mChunkRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance());
+            mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance());
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
@@ -583,7 +579,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
-    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, *mMaterialRenderer, camera, 0.20f, frameAlpha);
+    //mEcsRenderer->renderCharacterModels(*mCharacterRenderer, camera, 0.20f, frameAlpha);
         // Depth debug
     if (mPassthroughRenderMode == 1) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -591,7 +587,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         assert(postMat);
 
         // TODO: Swap chain for this to work
-        mMaterialRenderer->renderFullScreenQuad(*postMat);
+        MaterialRenderer::renderFullScreenQuad(*postMat);
     }
 
 
@@ -628,7 +624,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mActiveGBuffer->getDepthTexture(), 0);
 
     // Final Lighting
-    mMaterialRenderer->bindMaterialForRender(*mSceneLightingMaterial);
+    MaterialRenderer::bindMaterialForRender(*mSceneLightingMaterial);
     MaterialUtils::uploadLightingUniforms(*mSceneLightingMaterial);
     sGlobalFullQuadVBO.draw();
 
@@ -652,7 +648,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Final render to screen
     mActiveGBuffer->unuse();
-    mMaterialRenderer->renderFullScreenQuad(*mPassthroughMaterial);
+    MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
 
    
     // Final Pass through process
@@ -662,7 +658,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         assert(postMat);
 
         // TODO: Swap chain for this to work
-        mMaterialRenderer->renderFullScreenQuad(*postMat);
+        MaterialRenderer::renderFullScreenQuad(*postMat);
     }
 
     // Debug rendering
@@ -843,7 +839,7 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
 
     // Visual logger
     if (sDebugOptions.mEnableVisualLogs) {
-        VisualLogger::renderActiveLogs(camera.getPosition(), camera.getVPMatrix(), *mMaterialRenderer);
+        VisualLogger::renderActiveLogs(camera.getPosition(), camera.getVPMatrix());
     }
 
 }

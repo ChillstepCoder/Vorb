@@ -59,7 +59,7 @@ CloudManager::~CloudManager()
 
 void CloudManager::init(const f32v2& loadCenter) {
 
-    PreciseTimer timer;
+    ScopedTimer timer("Cloud init");
 
     CloudID centerCloudID = CloudID(loadCenter);
     f32v2 centerPos(centerCloudID.pos.x * CLOUD_BATCH_WIDTH, centerCloudID.pos.y * CLOUD_BATCH_WIDTH);
@@ -102,7 +102,6 @@ void CloudManager::init(const f32v2& loadCenter) {
         mCloudBoundsCheckMap[it.y] = it.x;
     }
 
-    std::cout << "Clouds initialized in " << timer.stop() << " ms\n";
 }
 
 void CloudManager::tick(const f32v2& loadCenter) {

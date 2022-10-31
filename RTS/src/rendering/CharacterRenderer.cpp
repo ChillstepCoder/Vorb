@@ -350,7 +350,7 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
 
 }
 
-void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, const MaterialRenderer& materialRenderer) {
+void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha) {
     UNUSED(frameAlpha);
 
     // TODO: UBO
@@ -364,16 +364,16 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
     for (const auto& character : characters) {
         // Get physics info
-        const f32v2 dir(sin(character.mRotation), cos(character.mRotation));
         const f32v3& position = character.mPos;
-        const f32 angle = atan2(dir.y, dir.x);
+        const f32 angle = character.mRotation;
+        LOG_CRITICAL("angle {}", angle);
 
         auto&& it = mEntityCharacterModels.find(character.mEntityID);
         if (it != mEntityCharacterModels.end()) {
             AnimState& animState = *it->second;
             const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(animState.mModelID);
             ui32 nextTextureIndex = 0;
-            materialRenderer.bindMaterialForRender(*mMaterial, &nextTextureIndex);
+            MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTextureIndex);
             glUniform1i(diffuseTextureUniform, nextTextureIndex);
             glUniform1i(normalTextureUniform, nextTextureIndex + 1);
             glUniform1i(specularTextureUniform, nextTextureIndex + 2);
@@ -381,7 +381,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
             // TODO: Optimize
             f32m4 transform(1.0f);
-            transform = glm::rotate(transform, angle + DEG_TO_RAD(90.0f), f32v3(0.0f, 0.0f, 1.0f));
+            transform = glm::rotate(transform, DEG_TO_RAD(180.0f) -angle, f32v3(0.0f, 0.0f, 1.0f));
             transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
 
             const f32v3 offset = position - camera.getPosition();

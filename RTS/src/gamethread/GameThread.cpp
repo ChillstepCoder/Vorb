@@ -49,7 +49,9 @@ void GameThread::destroyInstance() {
 }
 
 void GameThread::mainFunc() {
+
     GAME_THREAD_ID = std::this_thread::get_id();
+    setThreadName("Game");
 
     setThreadPriorityToMax();
     initWorld();
@@ -62,6 +64,7 @@ void GameThread::mainFunc() {
     // World can begin
     mIsRunning = true;
     while (!mStop.load()) {
+        PROFILE_SCOPE("GameLoop");
         // Fixed timestep
         f64 sleepSec = 0.0;
         if (mTimeManager.tryTick(&sleepSec)) {

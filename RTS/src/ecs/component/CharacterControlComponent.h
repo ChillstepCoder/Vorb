@@ -51,7 +51,7 @@ struct CharacterControlComponent {
     PreciseTimer mLandingTimer; // TODO: This is wrong as it doesn't account tick rate or timestep
     // TODO: Compress to f32
     f32v2 mMoveDirection = f32v2(0.0f);
-    f32v2 mControllerDirection = f32v2(1.0f, 0.0f);
+    f32 mControllerAngle = 0.0f;
     f32 mSpeedRun = 4.167f; // ~15 kmph // TODO: AttributesComponent
     CharacterLocomotionMode mMode = CharacterLocomotionMode::IDLE;
     CharacterLocomotionMode mDesiredMode = CharacterLocomotionMode::IDLE;

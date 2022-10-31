@@ -129,7 +129,7 @@ void VisualLog::finish() {
     mDirtyRender = true;
 }
 
-void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer) {
+void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
     assert(IS_GAME_THREAD());
 
     // Rebuild if needed
@@ -180,7 +180,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix, const Ma
         glDisable(GL_CULL_FACE);
         const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
         const Material* material = materialManager.getMaterial("text_billboard");
-        materialRenderer.bindMaterialForRender(*material);
+        MaterialRenderer::bindMaterialForRender(*material);
         f32v3 offset = mRootPos - cameraPos;
         glUniform3fv(material->getUniform("unOffset"), 1, &offset.x);
         mTextMesh.draw();
@@ -462,12 +462,12 @@ void VisualLogger::renderImgui() {
     ImGui::Separator();
 }
 
-void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix, const MaterialRenderer& materialRenderer) {
+void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
 
     std::unique_lock<std::mutex> lock(sMutex);
     for (auto&& log : sVisualLogs) {
         if (log->mShouldRender) {
-            log->render(cameraPos, viewMatrix, materialRenderer);
+            log->render(cameraPos, viewMatrix);
         }
     }
 }

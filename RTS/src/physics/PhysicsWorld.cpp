@@ -87,6 +87,7 @@ PhysicsWorld::~PhysicsWorld() {
 
 void PhysicsWorld::stepSimulation(f32 elapsedSec) {
     assert(IS_GAME_THREAD());
+    PROFILE_FUNCTION();
     std::lock_guard<std::mutex> guard(mMutex);
     mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }

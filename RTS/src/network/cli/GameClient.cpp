@@ -214,7 +214,7 @@ void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
         CharacterControlComponent& controlCmp = cliEcs.mRegistry.get<CharacterControlComponent>(entity);
         physCmp.setTransform(message->mPosition, 0.0f);
         physCmp.setVelocity(message->mVelocity);
-        controlCmp.mControllerDirection = message->mControlDirection;
+        controlCmp.mControllerAngle = message->mControlAngle;
         controlCmp.mDesiredMode = (CharacterLocomotionMode)message->mDesiredLocomotionMode;
     }
 }
@@ -225,6 +225,6 @@ void GameClient::replicatePlayerState() {
     if (entity != entt::null) {
         PhysicsComponent& physicsCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
         CharacterControlComponent& controlCmp = cliEcs.mRegistry.get<CharacterControlComponent>(entity);
-        CliMessage::sendPlayerStateMessage(physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerDirection, e_cast(controlCmp.mDesiredMode));
+        CliMessage::sendPlayerStateMessage(physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngle, e_cast(controlCmp.mDesiredMode));
     }
 }

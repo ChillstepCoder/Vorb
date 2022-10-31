@@ -15,9 +15,7 @@
 
 #include "options/DebugOptions.h"
 
-CloudRenderer::CloudRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims) :
-    mMaterialRenderer(materialRenderer),
-    mGbufferDims(gbufferDims)
+CloudRenderer::CloudRenderer(const f32v2& gbufferDims) : mGbufferDims(gbufferDims)
 {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mCloudMaterial = materialManager.getMaterial("cloud");
@@ -53,7 +51,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer->getDepthTexture(), 0);
 
     vg::BlendState::set(vg::BlendStateType::ALPHA);
-    mMaterialRenderer.bindMaterialForRender(*mCloudMaterial);
+    MaterialRenderer::bindMaterialForRender(*mCloudMaterial);
 
     glUniform1f(glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     const GLuint rootPosUniform = glGetUniformLocation(mCloudMaterial->mProgram.getID(), "UnRootPos");
@@ -81,7 +79,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
 }
 
 void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
-    mMaterialRenderer.bindMaterialForRender(*mCloudShadowMaterial);
+    MaterialRenderer::bindMaterialForRender(*mCloudShadowMaterial);
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
     glUniform1f(glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnYOffset"), 0.0f); // No billboard offset
     const GLuint rootPosUniform = glGetUniformLocation(mCloudShadowMaterial->mProgram.getID(), "UnRootPos");
@@ -96,7 +94,7 @@ void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const C
 void CloudRenderer::blurNormals() {
 
     ui32 nextTexture = 0;
-    mMaterialRenderer.bindMaterialForRender(*mBlurMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
 
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
@@ -125,7 +123,7 @@ void CloudRenderer::renderFboToScreen()
 {
 
     ui32 nextTexture = 0;
-    mMaterialRenderer.bindMaterialForRender(*mPostMaterial, &nextTexture);
+    MaterialRenderer::bindMaterialForRender(*mPostMaterial, &nextTexture);
     MaterialUtils::uploadLightingUniforms(*mPostMaterial);
     if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
         mGBuffers[0].bindGeometryTexture(nextTexture);

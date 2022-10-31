@@ -11,9 +11,11 @@
 static_assert((int)LightShape::Count == 1, "Update this file to handle new light shape");
 static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle new attenuation type");
 
-LightRenderer::LightRenderer(const MaterialRenderer& materialRenderer) :
-    mMaterialRenderer(materialRenderer)
-{
+LightRenderer::LightRenderer() {
+    mPointLightMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterial("point_light");
+    assert(mPointLightMaterial);
+
+    InitSharedMesh();
 }
 
 LightRenderer::~LightRenderer() {
@@ -25,7 +27,7 @@ LightRenderer::~LightRenderer() {
 
 void LightRenderer::RenderLight(const f32v2& position, const LightData& lightData, const Camera3D& camera) const {
 
-    mMaterialRenderer.bindMaterialForRender(*mPointLightMaterial);
+    MaterialRenderer::bindMaterialForRender(*mPointLightMaterial);
 
     // Upload light uniforms
     glUniform1f(mPointLightMaterial->mProgram.getUniform("InnerRadius"), lightData.mInnerRadiusCoef);
@@ -40,14 +42,6 @@ void LightRenderer::RenderLight(const f32v2& position, const LightData& lightDat
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-}
-
-void LightRenderer::InitPostLoad()
-{
-    mPointLightMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterial("point_light");
-    assert(mPointLightMaterial);
-
-    InitSharedMesh();
 }
 
 void LightRenderer::InitSharedMesh()

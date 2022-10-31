@@ -11,7 +11,7 @@ public:
     ~Skybox();
 
     void init(const Material* material);
-    void render(const MaterialRenderer& materialRenderer);
+    void render();
 
 private:
     std::unique_ptr<QuadMesh> mSkyboxMesh;

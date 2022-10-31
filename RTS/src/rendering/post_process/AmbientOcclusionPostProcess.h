@@ -1,13 +1,12 @@
 #pragma once
 
-class MaterialRenderer;
 class Material;
 
 #include <Vorb/graphics/GBuffer.h>
 
 class AmbientOcclusionPostProcess {
 public:
-    AmbientOcclusionPostProcess(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
+    AmbientOcclusionPostProcess(const f32v2& gbufferDims);
 
     // Returns target gbuffer
     void render(vg::GBuffer* activeGBuffer);
@@ -15,7 +14,6 @@ public:
     VGTexture getSSAOTexture() const;
 
 private:
-    const MaterialRenderer& mMaterialRenderer;
 
     // TODO: Maybe shared g buffer? :thinkies:
     vg::GBuffer mGBuffers[2];

@@ -1,7 +1,6 @@
 #pragma once
 
 class Camera3D;
-class MaterialRenderer;
 class Material;
 
 #include <Vorb/graphics/GBuffer.h>
@@ -14,7 +13,7 @@ constexpr int SHADOW_FRUSTUM_CORNER_COUNT = 8;
 class ShadowRenderer
 {
 public:
-    ShadowRenderer(const MaterialRenderer& materialRenderer, const f32v2& gbufferDims);
+    ShadowRenderer(const f32v2& gbufferDims);
 
     void beginFrame(const Camera3D& camera, const f32v3& sunPositionWorld);
 
@@ -37,7 +36,6 @@ private:
     void generateMipmaps();
     void blurShadowMap();
 
-    const MaterialRenderer& mMaterialRenderer;
     const Material* mShadowMapperMaterial = nullptr;
     const Material* mShadowVarianceMaterial = nullptr;
     const Material* mShadowApplyMaterial = nullptr;

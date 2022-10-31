@@ -72,13 +72,13 @@ void SrvMessage::sendClientBeginMessageToAll(int playerClientIndex, entt::entity
     }
 }
 
-void SrvMessage::sendCharacterStateMessage(int clientIndex, entt::entity srvEntity, const f32v3& pos, const f32v3& velocity, const f32v2& controlDirection, ui32 mDesiredLocomotionMode) {
+void SrvMessage::sendCharacterStateMessage(int clientIndex, entt::entity srvEntity, const f32v3& pos, const f32v3& velocity, f32 controlAngle, ui32 mDesiredLocomotionMode) {
 
     GameServer& server = GameServer::getInstance();
     CharacterStateMessage* message = (CharacterStateMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::CHARACTER_STATE));
     message->mSrvEntityID = (ui32)srvEntity;
     message->mPosition = pos;
-    message->mControlDirection = controlDirection;
+    message->mControlAngle = controlAngle;
     message->mVelocity = velocity;
     message->mDesiredLocomotionMode = mDesiredLocomotionMode;
     server.sendMessage(clientIndex, message);
