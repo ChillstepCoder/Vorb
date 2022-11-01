@@ -18,9 +18,6 @@
 #include "item/ItemRepository.h"
 #include "item/Item.h"
 
-ChunkRenderData::~ChunkRenderData() {
-    // Empty
-}
 
 Chunk::Chunk() {
 }
@@ -266,10 +263,8 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
     const f32v2 worldPos = getWorldPos();
     const f32v2 offsetFromCenter = editPosition - (worldPos + halfDims);
     if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
-        // This chunk is touched, mark meshes as dirty and pass on
-        if (mChunkRenderData.mGrassLod) {
-            mChunkRenderData.mGrassLod->onDataChanged(editPosition, editRadius);
-        }
+
+        // TODO: dirty grass
 
         // Update baseZ position
         const f32v2 startPos = editRadius - f32v2(editRadius);

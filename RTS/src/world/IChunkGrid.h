@@ -2,6 +2,17 @@
 
 #include "world/Chunk.h"
 
+#include <Vorb/Event.hpp>
+
+enum class CHUNK_EVENT_TYPE {
+    Create,
+    Ready,
+    Destroy
+};
+
+
+EVENT_DISPATCHER_TYPE(Chunk, CHUNK_EVENT_TYPE, const Chunk&);
+
 class IWorldGrid;
 
 class IChunkGrid
@@ -25,6 +36,13 @@ public:
 
     void refresh(const f32v2& loadCenter);
 
+    // Events
+    /*bool addCreateListener(ChunkListeners& remover, const ChunkEventDispatcher::Callback& callback) {
+        return remover.appendListener(CHUNK_EVENT_TYPE::Create, callback);
+    }*/
+    EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, const Chunk&);
+    EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, const Chunk&);
+
 private:
     void markChunkForDestroy(Chunk& chunk);
     void beginHeightLoadForChunk(Chunk& chunk);
@@ -41,6 +59,8 @@ private:
     std::vector<Chunk*> mLoadingChunks;
     std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mDestroyingChunks;
+
+    EVENT_DISPATCHER(Chunk);
 };
 
 extern IChunkGrid* sChunkGrid;

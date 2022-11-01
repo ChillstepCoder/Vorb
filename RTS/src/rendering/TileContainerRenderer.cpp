@@ -47,7 +47,7 @@ TileContainerRenderer::~TileContainerRenderer() {
 	
 }
 
-void TileContainerRenderer::renderTiles(const std::set<const Mesh*>& meshes, const Camera3D& camera) {
+void TileContainerRenderer::renderStaticMeshes(const std::set<const Mesh*>& meshes, const Camera3D& camera) {
     // Tiles
     // TODO: Move this to MaterialRenderer::renderMeshes();
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);

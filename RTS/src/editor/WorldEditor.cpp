@@ -19,6 +19,8 @@
 #include "city/CityBuilder.h"
 #include "city/BuildingDescriptionRepository.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 #include "physics/PhysicsWorld.h"
 #include "camera/Camera3D.h"
 
@@ -439,12 +441,12 @@ void WorldEditor::updateGrassEdit() {
                 }
             }
 
-            // Notify grass to update
-            for (Chunk* chunk : sWorld->getActiveChunks()) {
-                if (chunk->mChunkRenderData.mGrassLod) {
-                    chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize);
-                }
-            }
+            //// TODO: Notify grass to update
+            //for (Chunk* chunk : sWorld->getActiveChunks()) {
+            //    if (chunk->mChunkRenderData.mGrassLod) {
+            //        chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize);
+            //    }
+            //}
         }
     }
 }
@@ -498,22 +500,26 @@ void WorldEditor::updateBuildingEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
         ui32v2 createPos(floor(worldPos.x), floor(worldPos.y));
 
-        // TODO: Unowned buildings?
-        CityPlot plot;
-        plot.aabb.pos = createPos;
-        plot.aabb.dims = mPlotDims;
-        plot.isFree = false;
+        struct BuildingEditCreateTask {
+            i32AABB2 aabb;
+            ui32 selectedBuildingId;
+        };
+        BuildingEditCreateTask* task = new BuildingEditCreateTask;
+        task->aabb.pos = createPos;
+        task->aabb.dims = mPlotDims;
+        task->selectedBuildingId = mSelectedBuilding;
 
+        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+            BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
+            const f32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(task->aabb));
+            BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
+            std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, task->aabb.pos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
+            CityBuilder::debugBuildInstant(*bp);
+        }, task);
 
-        const f32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(plot.aabb));
-
-        BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
-        std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(mSelectedBuilding), 1.0f /*?*/, Cartesian::WEST, mPlotDims, createPos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
-
-        CityBuilder::debugBuildInstant(*bp);
+      
     }
 }
 

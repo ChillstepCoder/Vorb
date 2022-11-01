@@ -1,14 +1,14 @@
 #pragma once
 
 class Material;
-class ChunkGrassQuadtree;
+class GrassMesh;
 class Camera3D;
 
 class GrassRenderer
 {
 public:
     GrassRenderer();
-    void renderGrass(const std::set<const ChunkGrassQuadtree*>& grassQuadtrees, const Camera3D& camera, const f32v3& playerPos);
+    void renderGrass(const Camera3D& camera, const f32v3& playerPos, const std::set<const GrassMesh*>& grassMeshes);
 
 private:
     const Material* mGrassMaterial = nullptr;

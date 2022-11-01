@@ -3,5 +3,9 @@
 
 class CliChunkGrid : public IChunkGrid
 {
+public:
+
+private:
+
 };
 

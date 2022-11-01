@@ -166,13 +166,12 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEnt
 
     mCameraBoomLengthTweener.update(1.0f); // TODO: Use deltatime
 
-    f32 tmp = 4.0f;
     // TODO: Delta time dependent?
 
     f32v3 followTargetPos = ownerEntityPos;
-    followTargetPos.z += sDebugOptions.mCameraZHeight + SQ(tmp * 0.5f);
+    followTargetPos.z += sDebugOptions.mCameraZHeight + SQ(mCameraBoomLengthTweener.getCurr() * 0.5f);
 
-    const f32v3 lookAtOffset = mCamera.getDirection() * sDebugOptions.mCameraXYDistance * 2.0f * tmp;
+    const f32v3 lookAtOffset = mCamera.getDirection() * sDebugOptions.mCameraXYDistance * 2.0f * mCameraBoomLengthTweener.getCurr();
     const f32v3 camPos = followTargetPos - lookAtOffset;
 
     // Collision raycast

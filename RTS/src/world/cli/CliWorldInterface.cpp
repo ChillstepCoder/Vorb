@@ -12,7 +12,10 @@
 #include "weather/CloudManager.h"
 #include "options/DebugOptions.h"
 
+#include "rendering/ChunkGrassQuadtree.h"
+
 #include "rendering/mesh/TerrainMeshManager.h"
+#include "rendering/mesh/GrassMeshManager.h"
 
 #include "rendering/renderstate/RenderStateManager.h"
 #include "rendering/RenderThreadTasks.h"
@@ -30,6 +33,7 @@ void onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
 
 CliWorldInterface::CliWorldInterface() {
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>();
+    mGrassMeshManager = std::make_unique<GrassMeshManager>();
 }
 
 CliWorldInterface::~CliWorldInterface() {
@@ -38,8 +42,9 @@ CliWorldInterface::~CliWorldInterface() {
 }
 
 void CliWorldInterface::tickClient(IWorld& world) {
-    // Update terrain
+
     mTerrainMeshManager->tick();
+    mGrassMeshManager->tick();
 
     updateRenderState(world);
 }
@@ -54,6 +59,13 @@ void CliWorldInterface::onWorldBeginClient() {
     // When character models are added, we should let the render thread know
     sWorld->getECS().mRegistry.on_construct<CharacterModelComponent>().connect<&onCharacterModelConstruct>();
     sWorld->getECS().mRegistry.on_destroy<CharacterModelComponent>().connect<&onCharacterModelDestroy>();
+
+    sWorld->getChunkGrid().addReadyListener([this](const Chunk& chunk) {
+        mGrassMeshManager->addGrassForChunk(chunk);
+    });
+    sWorld->getChunkGrid().addDestroyListener([this](const Chunk& chunk) {
+        mGrassMeshManager->removeGrassForChunk(chunk);
+    });
 }
 
 void CliWorldInterface::cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
@@ -100,6 +112,15 @@ void CliWorldInterface::updateDebugRenderState(IWorld& world, RenderState& rende
     if (sDebugOptions.mDebugTerrainLod) {
         for (auto&& terrainQuadtree : mTerrainMeshManager->getTerrainQuadtrees()) {
             terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
+        }
+    }
+
+    // Grass debug rendering
+    if (sDebugOptions.mDebugGrassLod) {
+        for (auto&& it : mGrassMeshManager->getGrassQuadtrees()) {
+            if (it.second) {
+                it.second->getDebugQuads(renderState.mDebugQuads);
+            }
         }
     }
 

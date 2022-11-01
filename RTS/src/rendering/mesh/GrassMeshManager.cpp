@@ -1,0 +1,65 @@
+#include "stdafx.h"
+#include "GrassMeshManager.h"
+
+#include "rendering/ChunkGrassQuadtree.h"
+
+#include "world/IWorld.h"
+#include "world/Chunk.h"
+
+#include "options/DebugOptions.h"
+
+GrassMeshManager::GrassMeshManager() {
+  
+}
+
+GrassMeshManager::~GrassMeshManager() {
+
+}
+
+void GrassMeshManager::tick() {
+    assert(IS_GAME_THREAD());
+    PROFILE_FUNCTION();
+
+    const f32v2& loadCenter = sWorld->getLoadCenter();
+
+    // Update grass
+    for (auto&& it : mChunkGrassQuadtrees) {
+        const Chunk& chunk = *it.first;
+        
+        const f32 distSq = glm::length2(chunk.getWorldPosCenter2D() - loadCenter);//chunk.getDistanceFromLoadCenterSQ(); // TODO: Why doesnt this work?
+
+        std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = it.second;
+        if (grassQuadtree) {
+            grassQuadtree->update(loadCenter);
+            if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
+                if (grassQuadtree->getRefCount() == 0) {
+                    grassQuadtree.reset();
+                }
+            }
+            else {
+                grassQuadtree->update(loadCenter);
+            }
+        }
+        else if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
+            grassQuadtree = std::make_unique<ChunkGrassQuadtree>(chunk);
+        }
+    }
+}
+
+void GrassMeshManager::addGrassForChunk(const Chunk& chunk) {
+    assert(IS_GAME_THREAD());
+    auto&& it = mChunkGrassQuadtrees.find(&chunk);
+    if (it == mChunkGrassQuadtrees.end()) {
+        mChunkGrassQuadtrees[&chunk] = nullptr;
+    }
+}
+
+void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
+    assert(IS_GAME_THREAD());
+    //auto&& it = mChunkGrassQuadtrees.find(&chunk);
+    //if (it != mChunkGrassQuadtrees.end()) {
+    //    // If we hit this, it means that we didnt reset it in tick above before removing..
+    //    assert(it->second == nullptr);
+    //    mChunkGrassQuadtrees.erase(it);
+    //}
+}

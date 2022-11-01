@@ -35,7 +35,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
         worldPos.y - WorldData::WORLD_CENTER.y
     );
 
-   // if (height > 0.0f) {
+    if (height > 0.0f) {
         // Surface
         if (grass && height < MAX_GRASS_HEIGHT) {
             f32 fadeMult = glm::min((MAX_GRASS_HEIGHT - height) * 0.1f, 1.0f);
@@ -43,14 +43,14 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
                 *grass = 1;
             }
         }
-        //if (height < MAX_TREE_HEIGHT) {
+        if (height < MAX_TREE_HEIGHT) {
             //f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise/* * fadeMult*/) {
                 tile.topLayer = pineTree;
             }
-       // }
-   // }
+        }
+    }
     //if (height > 0.3) {
     //    //tile.groundLayer = rock1;
     //    // Mountains

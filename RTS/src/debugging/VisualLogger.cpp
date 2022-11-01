@@ -354,7 +354,7 @@ VisualLog* VisualLogger::tryGetNewVisualLog(const nString& name) {
         return nullptr;
     }
 
-    std::unique_lock<std::mutex> lock(sMutex);
+    std::lock_guard<std::mutex> lock(sMutex);
     VisualLog& newLog = *sVisualLogs.emplace_back(std::make_unique<VisualLog>(name));
     return &newLog;
 }
@@ -368,7 +368,7 @@ void VisualLogger::renderImgui() {
 
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
 
-    std::unique_lock<std::mutex> lock(sMutex);
+    std::lock_guard<std::mutex> lock(sMutex);
     for (size_t i = 0; i < sVisualLogs.size(); ++i) {
         ImGui::PushID(999 + i);
         const VisualLog& log = *sVisualLogs[i];
@@ -464,7 +464,7 @@ void VisualLogger::renderImgui() {
 
 void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
 
-    std::unique_lock<std::mutex> lock(sMutex);
+    std::lock_guard<std::mutex> lock(sMutex);
     for (auto&& log : sVisualLogs) {
         if (log->mShouldRender) {
             log->render(cameraPos, viewMatrix);

@@ -37,18 +37,15 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const
 
     // TODO: Where is this getting unset?
     glEnable(GL_CULL_FACE);
-    //for (auto&& terrainQuadtree : terrainQuadtrees) {
-    //    terrainQuadtree.renderTerrain(camera, mTerrainMaterial->mProgram);
-    //}
 
     for (auto&& terrainMesh : terrainMeshes) {
         const Mesh& mesh = terrainMesh->mMesh;
         f32v3 offset = mesh.getPosition() - camera.getPosition();
         glUniform3fv(offsetUniform, 1, &offset.x);
 
-        ui32 lod = QUADTREE_LOD_FROM_INDEX[terrainMesh->mIndex];
-        f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
-        f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
+        const ui32 lod = QUADTREE_LOD_FROM_INDEX[terrainMesh->mIndex];
+        /*  f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
+          f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/
         int crossfadeDir = terrainMesh->mCrossfadeDir.load();
         if (crossfadeDir != 0) {
             glUniform1f(crossfadeAlphaUniform, terrainMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
@@ -83,8 +80,20 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const T
     glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
     glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
     glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
+    VGUniform offsetUniform = mWaterMaterial->mProgram.getUniform("unOffset");
     MaterialUtils::uploadLightingUniforms(*mWaterMaterial);
-    /* for (auto&& terrainQuadtree : terrainQuadtrees) {
-         terrainQuadtree.renderWater(camera, mWaterMaterial->mProgram);
-     }*/
+    for (auto&& waterMesh : waterMeshes) {
+        const Mesh& mesh = waterMesh->mMesh;
+        f32v3 offset = mesh.getPosition() - camera.getPosition();;
+        glUniform3fv(offsetUniform, 1, &offset.x);
+
+        const ui32 lod = QUADTREE_LOD_FROM_INDEX[waterMesh->mIndex];
+        /* f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
+         f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/
+        int crossfadeDir = waterMesh->mCrossfadeDir.load();
+        const BoundingSphere& bounds = mesh.getBoundingSphere();
+        if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
+            mesh.draw();
+        }
+    }
 }

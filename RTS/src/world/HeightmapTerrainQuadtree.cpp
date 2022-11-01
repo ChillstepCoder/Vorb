@@ -62,66 +62,6 @@ void HeightmapTerrainQuadtree::init(const f32v2& worldPosition) {
     mWorldPos = worldPosition;
 }
 
-void HeightmapTerrainQuadtree::renderTerrain(const Camera3D& camera, const vg::GLProgram& program) const {
-    VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha"); // TODO: Cache?
-    VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
-    f32v3 pos3D(mWorldPos.x, mWorldPos.y, 0.0f);
-    VGUniform offsetUniform = program.getUniform("unOffset");
-    f32v3 offset = pos3D - camera.getPosition();
-    glUniform3fv(offsetUniform, 1, &offset.x);
-
-    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
-        ui32 index = mActiveNodes[i];
-        const QuadtreePatch& patch = mNodes[index];
-
-        if (patch.canRender()) {
-            auto& mesh = mTerrainMeshes[index];
-            ui32 lod = QUADTREE_LOD_FROM_INDEX[index];
-            f32v2 centerPos = f32v2(PATCH_POSITIONS.data[index].xy) + f32v2(LOD_HALF_DIMS[lod].xy);
-            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
-            if (patch.isCrossfading()) {
-                glUniform1f(crossfadeAlphaUniform, mCrossfadeTable[patch.mCrossFadeTableIndex] * 0.5f /* Constant that was selected via trial and error*/);
-                glUniform1f(crossfadeDirectionUniform, patch.mFlags & QUADTREE_PATCH_FLAG_CROSSFADING_IN ? 1.0f : 0.0f);
-            }
-            else {
-                glUniform1f(crossfadeAlphaUniform, 0.0f);
-                glUniform1f(crossfadeDirectionUniform, 0.0f);
-            }
-            const BoundingSphere& bounds = mesh->mMesh.getBoundingSphere();
-            if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-                mesh->mMesh.draw();
-            }
-        }
-    }
-}
-
-void HeightmapTerrainQuadtree::renderWater(const Camera3D& camera, const vg::GLProgram& program) const {
-    f32v3 pos3D(mWorldPos.x, mWorldPos.y, 0.0f);
-    VGUniform offsetUniform = program.getUniform("unOffset");
-    f32v3 offset = pos3D - camera.getPosition();
-    glUniform3fv(offsetUniform, 1, &offset.x);
-
-    for (ui32 i = 0; i < mNumActiveNodes; ++i) {
-        ui32 index = mActiveNodes[i];
-        const QuadtreePatch& patch = mNodes[index];
-
-        if (patch.canRender()) {
-            auto& mesh = mWaterMeshes[index];
-            ui32 lod = QUADTREE_LOD_FROM_INDEX[index];
-            f32v2 centerPos = f32v2(PATCH_POSITIONS.data[index].xy) + f32v2(LOD_HALF_DIMS[lod].xy);
-            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
-            if (patch.isCrossfading() && (patch.mFlags & QUADTREE_PATCH_FLAG_CROSSFADING_OUT)) {
-                // We simply dont crossfade water, always render the in crossfade only
-                continue;
-            }
-            const BoundingSphere& bounds = mesh->mMesh.getBoundingSphere();
-            if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-                mesh->mMesh.draw();
-            }
-        }
-    }
-}
-
 void HeightmapTerrainQuadtree::markDirty() {
     for (ui32 i = 0; i < mNumActiveNodes; ++i) {
         ui32 index = mActiveNodes[i];
@@ -331,7 +271,7 @@ void HeightmapTerrainQuadtree::finishMeshes(MeshBuilder& terrainBuilder, MeshBui
 
     if (mWaterMeshes[patchIndex]->mMesh.isValid()) {
         if (!hadTerrain) {
-            RenderContext::getInstance().addTerrainWaterMesh(mTerrainMeshes[patchIndex].get());
+            RenderContext::getInstance().addTerrainWaterMesh(mWaterMeshes[patchIndex].get());
         }
     }
     else if (hadTerrain) {
@@ -354,7 +294,7 @@ void HeightmapTerrainQuadtree::freeMeshForPatch(ui32 patchIndex)
             RenderContext::getInstance().removeTerrainMesh(taskData->terrainMesh.get());
         }
         if (taskData->waterMesh) {
-            RenderContext::getInstance().removeTerrainMesh(taskData->waterMesh.get());
+            RenderContext::getInstance().removeTerrainWaterMesh(taskData->waterMesh.get());
         }
         delete taskData;
     }, freeTask);

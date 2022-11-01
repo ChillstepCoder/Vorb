@@ -15,7 +15,7 @@ DebugOptions::DebugOptions() :
     // Grass
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mDebugGrassLod(false),
-    mHideGrass(true),
+    mHideGrass(false),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra
     mDebugTerrainLod(false),

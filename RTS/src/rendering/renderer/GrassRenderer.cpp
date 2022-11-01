@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "GrassRenderer.h"
 
+#include "rendering/QuadMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialManager.h"
@@ -15,16 +16,36 @@ GrassRenderer::GrassRenderer()
     mGrassMaterial = materialManager.getMaterial("grass");
 }
 
-void GrassRenderer::renderGrass(const std::set<const ChunkGrassQuadtree*>& grassQuadtrees, const Camera3D& camera, const f32v3& playerPos) {
+void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const std::set<const GrassMesh*>& grassMeshes) {
 
     MaterialRenderer::bindMaterialForRender(*mGrassMaterial);
-    VGUniform offsetUniform = mGrassMaterial->mProgram.getUniform("unOffset");
-    VGUniform fadeUniform = mGrassMaterial->mProgram.getUniform("unFadeDistance");
-    glUniform3fv(mGrassMaterial->mProgram.getUniform("unPlayerPos"), 1, &playerPos.x);
+    const vg::GLProgram& program = mGrassMaterial->mProgram;
+    VGUniform offsetUniform = program.getUniform("unOffset");
+    VGUniform fadeUniform = program.getUniform("unFadeDistance");
+    VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
+    VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
+    glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
     glUniform1f(fadeUniform, sDebugOptions.mGrassSettings.fadeDistance);
-    for (auto&& quadTree : grassQuadtrees) {
-        f32v3 offset = quadTree->getPosition() - camera.getPosition();
+    for (auto&& grassMesh : grassMeshes) {
+        const GrassBillboardMesh& mesh = grassMesh->mMesh;
+        f32v3 offset = grassMesh->mPosition - camera.getPosition();
         glUniform3fv(offsetUniform, 1, &offset.x);
-        quadTree->render(camera, mGrassMaterial);
+
+        ui32 lod = QUADTREE_LOD_FROM_INDEX[grassMesh->mIndex];
+        f32v2 centerPos = f32v2(ChunkGrassQuadtree::PATCH_POSITIONS.data[grassMesh->mIndex].xy) + f32v2(ChunkGrassQuadtree::LOD_HALF_DIMS[lod].xy);
+        f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);
+        int crossfadeDir = grassMesh->mCrossfadeDir.load();
+        if (crossfadeDir != 0) {
+            glUniform1f(crossfadeAlphaUniform, grassMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
+            glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
+        }
+        else {
+            glUniform1f(crossfadeAlphaUniform, 0.0f);
+            glUniform1f(crossfadeDirectionUniform, 0.0f);
+        }
+        const BoundingSphere& bounds = mesh.getBoundingSphere();
+        if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
+            mesh.draw(program); // TODO: Stop passing program;
+        }
     };
 }

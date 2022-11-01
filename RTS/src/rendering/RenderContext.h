@@ -30,6 +30,7 @@ class UIContext;
 class Mesh;
 class QuadMesh;
 class TerrainMesh;
+class GrassMesh;
 class CloudManager;
 class RenderState;
 
@@ -109,6 +110,8 @@ public:
     void removeTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.erase(mesh); }
     void addTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.insert(mesh); }
     void removeTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.erase(mesh); }
+    void addGrassMesh(const GrassMesh* mesh) { assert(IS_RENDER_THREAD()); mGrassMeshes.insert(mesh); }
+    void removeGrassMesh(const GrassMesh* mesh) { assert(IS_RENDER_THREAD()); mGrassMeshes.erase(mesh); }
 
     // Character models
     CharacterRenderer& getCharacterRenderer() { return *mCharacterRenderer; }
@@ -158,10 +161,11 @@ private:
     // Mesh management
     std::map<TileContainer*, TileContainerMeshData> mTileContainerMeshData;
     std::map<Mesh*, TileContainerMeshData*> mMeshToMeshDataLookup;
+    // TODO: Profile vector instead (linear removal vs logn but better iteration performance)
     std::set<const Mesh*> mStaticMeshes;
     std::set<const Mesh*> mDynamicMeshes;
     std::set<const Mesh*> mBillboardMeshes;
-    std::set<const ChunkGrassQuadtree*> mGrassQuadtrees;
+    std::set<const GrassMesh*> mGrassMeshes;
     std::set<const TerrainMesh*> mTerrainMeshes;
     std::set<const TerrainMesh*> mTerrainWaterMeshes;
 

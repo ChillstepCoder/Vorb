@@ -4,6 +4,7 @@ class CloudManager;
 class Chunk;
 class Camera3D;
 class TerrainMeshManager;
+class GrassMeshManager;
 class IEntityComponentSystem;
 class IWorld;
 class RenderState;
@@ -30,6 +31,8 @@ protected:
 
     // Terrain
     std::unique_ptr<TerrainMeshManager> mTerrainMeshManager;
+    // Grass
+    std::unique_ptr<GrassMeshManager> mGrassMeshManager;
 
     // Sunlight
     float mSunHeight = 1.0f;

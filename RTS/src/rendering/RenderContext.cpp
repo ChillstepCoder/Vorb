@@ -425,7 +425,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Tiles
-    mTileContainerRenderer->renderTiles(mStaticMeshes, camera);
+    mTileContainerRenderer->renderStaticMeshes(mStaticMeshes, camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
@@ -441,21 +441,21 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Render building roofs
     // TODO: Frustum cull
-    const CityGraph& cities = sWorld->getCityGraph();
-    for (auto&& city : cities.mNodes) {
-        const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
-        for (auto&& building : buildings) {
-            mBuildingRenderer->renderBuildingRoof(*building, camera);
-        }
-    }
-    const StructureManager& structureManager = sWorld->getStructureManager();
-    const StructureList& structures = structureManager.getStructures();
-    for (auto&& structure : structures) {
-        // TODO: List of buildings instead?
-        if (structure->getType() == StructureType::Building) {
-            mBuildingRenderer->renderBuildingRoof((Building&)*structure, camera);
-        }
-    }
+    //const CityGraph& cities = sWorld->getCityGraph();
+    //for (auto&& city : cities.mNodes) {
+    //    const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
+    //    for (auto&& building : buildings) {
+    //        //mBuildingRenderer->renderBuildingRoof(*building, camera);
+    //    }
+    //}
+    //const StructureManager& structureManager = sWorld->getStructureManager();
+    //const StructureList& structures = structureManager.getStructures();
+    //for (auto&& structure : structures) {
+    //    // TODO: List of buildings instead?
+    //    if (structure->getType() == StructureType::Building) {
+    //        //mBuildingRenderer->renderBuildingRoof((Building&)*structure, camera);
+    //    }
+    //}
 
     // Ambient occlusion
     mAmbientOcclusion->render(mActiveGBuffer);
@@ -465,8 +465,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     mTileContainerRenderer->renderBillboards(mBillboardMeshes, camera);
     if (!sDebugOptions.mHideGrass) {
-        mGrassRenderer->renderGrass(mGrassQuadtrees, camera, playerPos);
-        //mTileContainerRenderer->renderGrass(mGrassQuadtrees, camera, playerPos);
+        mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
     }
 
     // Terrain
@@ -516,19 +515,19 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
                 mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance());
             }
 
-            const CityGraph& cities = sWorld->getCityGraph();
-            for (auto&& city : cities.mNodes) {
-                const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
-                for (auto& building : buildings) {
-                    mBuildingRenderer->renderBuildingShadows(*building, camera);
-                }
-            }
-            for (auto&& structure : structures) {
-                // TODO: List of buildings instead?
-                if (structure->getType() == StructureType::Building) {
-                    mBuildingRenderer->renderBuildingShadows((Building&)*structure, camera);
-                }
-            }
+            //const CityGraph& cities = sWorld->getCityGraph();
+            //for (auto&& city : cities.mNodes) {
+            //    const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
+            //    for (auto& building : buildings) {
+            //        mBuildingRenderer->renderBuildingShadows(*building, camera);
+            //    }
+            //}
+            //for (auto&& structure : structures) {
+            //    // TODO: List of buildings instead?
+            //    if (structure->getType() == StructureType::Building) {
+            //        mBuildingRenderer->renderBuildingShadows((Building&)*structure, camera);
+            //    }
+            //}
 
             glDisable(GL_DEPTH_CLAMP);
         }
@@ -778,17 +777,6 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
         }
     }
 
-    // Grass LOD debug
-    if (sDebugOptions.mDebugGrassLod) {
-        /*mCliWorld->enumVisibleChunks([&camera](const Chunk& chunk) {
-            if (chunk.isDataReady()) {
-
-                if (chunk.mChunkRenderData.mGrassLod) {
-                    chunk.mChunkRenderData.mGrassLod->renderDebug(camera);
-                }
-            }
-        });*/
-    }
     // Nav graph (Render is slow so we only build the line meshes when toggle changes)
     constexpr int NAVGRAPH_ID = 44432;
     constexpr f32 NAVGRAPH_RENDER_DISTANCE = 100.0f; // TODO: Move to debugoptions

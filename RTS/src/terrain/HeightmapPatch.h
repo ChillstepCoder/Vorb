@@ -3,7 +3,7 @@
 #include "world/TerrainConstants.h"
 #include "world/ChunkID.h"
 
-#include <mutex>
+#include <shared_mutex>
 
 class btRigidBody;
 
@@ -20,6 +20,7 @@ struct HeightmapPatchData {
     f32AABB3 aabb;
     HeightmapPatchID id;
     btRigidBody* mCollider = nullptr;
+    mutable std::shared_mutex mMutex;
 };
 
 class HeightmapPatch {
@@ -31,7 +32,7 @@ public:
     bool isGenerating() const { return mFlags & HEIGHTMAP_PATCH_FLAG_GENERATING; }
 
     ui32 mFlags = 0u;
-    ui32 mRefCount = 0u;
+    std::atomic<ui32> mRefCount = 0u;
     HeightmapPatchData* mHeightData = nullptr;
 };
 static_assert(sizeof(HeightmapPatch) == 16, "Keep small");

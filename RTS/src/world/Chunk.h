@@ -29,13 +29,6 @@ constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
 class IWorldGrid;
 
-// TODO: Meshcomponent for cache friendly iterate?
-struct ChunkRenderData {
-	ChunkRenderData() = default;
-	~ChunkRenderData();
-	std::unique_ptr<ChunkGrassQuadtree> mGrassLod = nullptr;
-};
-
 typedef TinyThreadsafeVector<Structure*> ChunkStructureVector;
 typedef std::pair<Structure*const *, ui16> StructureArrayPtr;
 
@@ -86,7 +79,8 @@ public:
 
     // =========== Accessors  ===========
     const f32v2 getWorldPos() const { return mChunkId.getWorldPos(); }
-	const f32v3 getWorldPos3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x, worldPos.y, 0.0f); }
+    const f32v3 getWorldPos3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x, worldPos.y, 0.0f); }
+    f32v2 getWorldPosCenter2D() const { const f32v2& worldPos = getWorldPos(); return f32v2(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH); }
     f32v3 getWorldPosCenter3D() const { const f32v2& worldPos = getWorldPos(); return f32v3(worldPos.x + HALF_CHUNK_WIDTH, worldPos.y + HALF_CHUNK_WIDTH, 0.0f); }
 	ChunkState getState() const { return (ChunkState)mState.load(); }
     const ChunkID& getChunkID() const { return mChunkId; }
@@ -173,8 +167,6 @@ private:
 	std::vector<TileIndex> mStructuresNeedingThreadSafeCopy;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
 
-	// For use by ChunkRenderer
-	mutable ChunkRenderData mChunkRenderData; // TODO: Make this a unique_ptr? Most chunks will keep these pointers invalid
 
 };
 #ifdef DEBUG // Release has different size

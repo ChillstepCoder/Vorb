@@ -23,7 +23,7 @@ public:
 
     Structure* makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight);
 
-    const StructureList& getStructures() const { return mStructures; }
+    const StructureList& getStructures() const { assert(!IS_RENDER_THREAD()); return mStructures; }
 
 private:
     StructureList mStructures;

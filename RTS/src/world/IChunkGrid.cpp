@@ -10,7 +10,6 @@
 #include "options/DebugOptions.h"
 
 // RENDERING
-#include "rendering/ChunkGrassQuadtree.h"
 #include "rendering/RenderThreadTasks.h"
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
@@ -67,6 +66,7 @@ void IChunkGrid::tick() {
                 chunk.mTileContainer->setDirtyData();
                 mActiveChunks.emplace_back(&chunk);
                 chunk.mState = e_cast(ChunkState::FINISHED);
+                dispatchReady(chunk);
 
                 mLoadingChunks[i] = mLoadingChunks.back();
                 mLoadingChunks.pop_back();
@@ -86,6 +86,7 @@ void IChunkGrid::tick() {
     for (size_t i = 0; i < mDestroyingChunks.size();) {
         Chunk& chunk = *mDestroyingChunks[i];
         if (chunk.getRefCount() == 0) {
+            dispatchDestroy(chunk);
             chunk.dispose();
             mDestroyingChunks[i] = mDestroyingChunks.back();
             mDestroyingChunks.pop_back();
@@ -260,6 +261,7 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
 
     // If chunk data is dirty
     // TODO: This is a cache miss, is a dirty lookup worth it?
+    // TODO: CliTickChunk
     if (tileContainer.isDirtyData()) {
         tileContainer.clearDirtyData();
         assert(chunk.mState == e_cast(ChunkState::FINISHED));
@@ -275,29 +277,6 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
     if (chunk.mTileContainer->shouldBuildNavMesh()) {
         
         Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
-    }
-    else {
-        // Update grass
-        //const f32v2 centerPos = chunk.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
-        //const f32v2 offset = centerPos - mLoadCenter;
-        //const f32 distSq = glm::length2(offset);
-
-        //// TODO: CLIENT ONLY
-        //if (chunk.mChunkRenderData.mGrassLod) {
-        //    if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
-        //        if (chunk.mChunkRenderData.mGrassLod->getRefCount() == 0) {
-        //            chunk.mChunkRenderData.mGrassLod.reset();
-        //        }
-        //    }
-        //    else {
-        //        chunk.mChunkRenderData.mGrassLod->update(mLoadCenter);
-        //    }
-        //}
-        //else {
-        //    if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
-        //        chunk.mChunkRenderData.mGrassLod = std::make_unique<ChunkGrassQuadtree>(chunk);
-        //    }
-        //}
     }
 }
 

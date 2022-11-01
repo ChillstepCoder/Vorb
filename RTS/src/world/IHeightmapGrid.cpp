@@ -111,7 +111,9 @@ IHeightmapGrid::~IHeightmapGrid()
 
 void IHeightmapGrid::tick() {
     assert(IS_GAME_THREAD());
+    PROFILE_FUNCTION();
     // Delete any inactive patches
+    // std::lock_guard lock(mMutex);
     for (size_t i = 0; i < mActiveHeightmapPatches.size();) {
         HeightmapPatch& patch = mHeightData[mActiveHeightmapPatches[i]];
         if (patch.mRefCount == 0) {
@@ -267,6 +269,17 @@ const HeightmapPatchData* IHeightmapGrid::tryAquireHeightData(HeightmapPatchID i
     }
     return nullptr;
 }
+
+//const HeightmapPatchData* IHeightmapGrid::tryAquireHeightDataThreadSafe(HeightmapPatchID id) {
+//    assert(!IS_GAME_THREAD());
+//    std::lock_guard lock(mMutex);
+//    HeightmapPatch& patch = mHeightData[id.id];
+//    if (patch.isDone()) {
+//        ++patch.mRefCount;
+//        return patch.mHeightData;
+//    }
+//    return nullptr;
+//}
 
 bool IHeightmapGrid::tryAquirePaddedHeightDataAt(HeightmapPatchID id) {
     assert(IS_GAME_THREAD());
@@ -516,7 +529,6 @@ f32 IHeightmapGrid::tryComputeHeightAtPoint(const f32v2& worldPos) const {
 
 f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightData, const f32v2& worldPos)
 {
-    assert(IS_GAME_THREAD());
     const f32v2 offset = worldPos - id.getWorldPos();
 
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
@@ -531,7 +543,6 @@ f32 IHeightmapGrid::computeHeightAtPoint(HeightmapPatchID id, const f32* heightD
 
 f32 IHeightmapGrid::computeHeightAtChunkOffset(const f32* heightData, ChunkID chunkId, const f32v2& chunkOffset)
 {
-    assert(IS_GAME_THREAD());
     const f32v2 offset = chunkOffset + f32v2((chunkId.pos % ui32v2(HEIGHTMAP_PATCH_WIDTH_CHUNKS)) * (ui32)CHUNK_WIDTH);
     const ui32v2 heightmapXY = ui32v2(ui32(offset.x / HEIGHTMAP_QUAD_SIZE), ui32(offset.y / HEIGHTMAP_QUAD_SIZE));
 
@@ -781,6 +792,7 @@ void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, ui32 vertIndex, f3
     assert(IS_GAME_THREAD());
     HeightmapPatch& patch = mHeightData[id.id];
     if (patch.isDone() && patch.mRefCount) {
+        std::lock_guard lock(patch.mHeightData->mMutex);
         HeightmapPatchData& data = *patch.mHeightData;
         switch (dir) {
             case TerrainHeightSetDirection::ANY:

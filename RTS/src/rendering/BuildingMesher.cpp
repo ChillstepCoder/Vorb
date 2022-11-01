@@ -307,8 +307,7 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 }
 
 void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld& physWorld) {
-    PreciseTimer timer;
-    assert(false); // MULTITHREAD
+    PROFILE_FUNCTION();
 
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
@@ -337,8 +336,8 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    //TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, *building.mTileContainer, &building.mPhysicsMesh);
-    //TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
+    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, nullptr, *building.mTileContainer, &building.mPhysicsMesh);
+    TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
 
     renderData.mMeshDirty = false;
     if (!renderData.mMesh) {
@@ -401,7 +400,6 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     building.mPhysicsMesh.finish();
     physWorld.addStaticMesh(building.mPhysicsMesh);
 
-    //std::cout << "BUILT ROOF MESH IN " << timer.stop() << " ms\n";
 }
 
 std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog) {

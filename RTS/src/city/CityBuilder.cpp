@@ -57,6 +57,8 @@ void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint)
 }
 
 Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
+    PROFILE_FUNCTION();
+    assert(IS_GAME_THREAD());
 
     PreciseTimer timer;
     const i32v2& worldPos = bp.aabb.pos;
@@ -167,8 +169,6 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     sWorld->dirtyTerrainFromBrush(f32v2(newBuilding->mAABB.getCenter()), glm::length(f32v2(newBuilding->mAABB.dims)) * 0.5f);
     
     finishBuilding(*newBuilding, bp);
-
-    std::cout << "DebugBuildInstant " << timer.stop() << " ms\n";
 
     return newBuilding;
 }

@@ -366,7 +366,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
         // Get physics info
         const f32v3& position = character.mPos;
         const f32 angle = character.mRotation;
-        LOG_CRITICAL("angle {}", angle);
 
         auto&& it = mEntityCharacterModels.find(character.mEntityID);
         if (it != mEntityCharacterModels.end()) {

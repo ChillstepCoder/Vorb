@@ -18,7 +18,7 @@ public:
 	TileContainerRenderer();
 	~TileContainerRenderer();
 
-    void renderTiles(const std::set<const Mesh*>& meshes, const Camera3D& camera);
+    void renderStaticMeshes(const std::set<const Mesh*>& meshes, const Camera3D& camera);
     void renderBillboards(const std::set<const Mesh*>& meshes, const Camera3D& camera);
     void renderWorldShadows(const std::set<const Mesh*>& meshes, const Camera3D& camera, f32 maxDistance);
 

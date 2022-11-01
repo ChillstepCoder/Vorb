@@ -57,6 +57,7 @@ public:
     const HeightmapPatchData* tryGetHeightDataAt(HeightmapPatchID id) const;
     const HeightmapPatchData* aquireHeightData(HeightmapPatchID id);
     const HeightmapPatchData* tryAquireHeightData(HeightmapPatchID id);
+    //const HeightmapPatchData* tryAquireHeightDataThreadSafe(HeightmapPatchID id);
     bool tryAquirePaddedHeightDataAt(HeightmapPatchID id);
     void getPaddedHeightDataAt(HeightmapPatchID id, OUT const HeightmapPatchData* paddedHeightData[9]);
     void releaseHeightDataAt(HeightmapPatchID id);
@@ -106,7 +107,7 @@ private:
     std::map<ui32, std::list<std::function<void()>>> mPaddedFinishCallbacks; // Runs when generation is finished
     std::map<ui32, ui32> mPaddedGenWaitCount;
     std::map<ui32, std::vector<HeightmapPatchID>> mPaddedGenListeners; // A list of listeners waiting for generation of a heightmap id
-    std::mutex mMutex;
+    //std::mutex mMutex;
 
 protected:
 };

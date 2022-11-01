@@ -265,6 +265,7 @@
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
@@ -494,6 +495,7 @@
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\MeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />
@@ -512,6 +514,7 @@
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
+    <ClInclude Include="src\rendering\tasks\MeshTask.inl" />
     <ClInclude Include="src\rendering\TileContainerRenderer.h" />
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
