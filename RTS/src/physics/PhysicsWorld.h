@@ -16,6 +16,7 @@ class btHeightfieldTerrainShape;
 class DynamicCharacterController;
 class StaticPhysicsMeshBuilder;
 struct HeightmapPatchData;
+struct StaticPhysicsMesh;
 
 #include "world/TerrainConstants.h"
 

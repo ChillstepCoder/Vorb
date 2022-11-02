@@ -10,6 +10,8 @@
 
 #include <cassert>
 
+#include "physics/PhysicsConst.h"
+
 namespace {
 	class FindGround : public btCollisionWorld::ContactResultCallback {
 	public:
@@ -57,7 +59,7 @@ void DynamicCharacterController::setupBody()
 	assert(mRigidBody);
 	mRigidBody->setSleepingThresholds(0.0, 0.0);
 	mRigidBody->setAngularFactor(0.0);
-	mGravity = mRigidBody->getGravity();
+	mGravity = GRAVITY;
 }
 
 void DynamicCharacterController::updateAction(btCollisionWorld* collisionWorld,

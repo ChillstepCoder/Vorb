@@ -11,6 +11,7 @@ class StaticPhysicsMeshBuilder
 {
     friend class PhysicsWorld;
 public:
+    StaticPhysicsMeshBuilder() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(StaticPhysicsMeshBuilder);
 
     void setRootPos(const f32v3& rootPos) { mRootPos = rootPos; }

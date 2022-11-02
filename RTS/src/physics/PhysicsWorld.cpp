@@ -19,8 +19,7 @@
 #include "options/DebugOptions.h"
 
 #include "debugging/DebugRenderer.h"
-
-const btVector3 GRAVITY(0.0f, 0.0f, -10.0f);
+#include "physics/PhysicsConst.h"
 
 const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);

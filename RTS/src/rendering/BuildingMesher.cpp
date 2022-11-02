@@ -312,15 +312,15 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 
 void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building, PhysicsWorld& physWorld) {
 
-    Services::Threadpool::ref().addTask([&building, &physWorld](ThreadPoolWorkerData*) {
-        MeshBuilder staticMeshBuilder(false);
-        buildMeshAndPhysicsInternal(building, physWorld, staticMeshBuilder);
+    /* Services::Threadpool::ref().addTask([&building, &physWorld](ThreadPoolWorkerData*) {
+         MeshBuilder staticMeshBuilder(false);
+         buildMeshAndPhysicsInternal(building, physWorld, staticMeshBuilder);
 
-        RenderThreadTasks::addGenericTask([](RenderContext& context, void*)) {
-            staticMeshBuilder.finishMesh(building.mRenderData.mMesh, MeshDrawMode::STATIC, building.getAABB().pos);
-        }
+         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void*)) {
+             staticMeshBuilder.finishMesh(building.mRenderData.mMesh, MeshDrawMode::STATIC, building.getAABB().pos);
+         }
 
-    }, nullptr);
+     }, nullptr);*/
 }
 
 void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, PhysicsWorld& physWorld, MeshBuilder& staticMeshBuilder) {

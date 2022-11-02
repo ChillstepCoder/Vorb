@@ -185,8 +185,9 @@ void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerT
 
 void RenderThreadTasks::removeTileContainerMesh(TileContainer* container) {
     TileContainerRenderData& tileRenderData = container->getRenderData();
+    assert(IS_GAME_THREAD());
     if (tileRenderData.mHasMesh) {
-        if (IS_GAME_THREAD()) {
+       // if (IS_GAME_THREAD()) {
             // It is OK for the container to be nulled or re-used after we dangle this pointer, because we are only using it as an ID
             mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* container) {
                 TileContainer* tileContainer = static_cast<TileContainer*>(container);
@@ -204,7 +205,7 @@ void RenderThreadTasks::removeTileContainerMesh(TileContainer* container) {
                     context.mTileContainerMeshData.erase(it);
                 }
             }, container));
-        }
+            /*}
         else {
             assert(IS_RENDER_THREAD());
             TileContainer* tileContainer = static_cast<TileContainer*>(container);
@@ -213,7 +214,7 @@ void RenderThreadTasks::removeTileContainerMesh(TileContainer* container) {
             if (it != context.mTileContainerMeshData.end()) {
                 context.mTileContainerMeshData.erase(it);
             }
-        }
+        }*/
         tileRenderData.reset();
     }
 }

@@ -473,6 +473,7 @@
     <ClInclude Include="src\physics\CollisionShapes.h" />
     <ClInclude Include="src\physics\DynamicCharacterController.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
+    <ClInclude Include="src\physics\PhysicsConst.h" />
     <ClInclude Include="src\physics\PhysicsWorld.h" />
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />

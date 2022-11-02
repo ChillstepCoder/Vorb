@@ -160,7 +160,6 @@ private:
 
     // Mesh management
     std::map<TileContainer*, TileContainerMeshData> mTileContainerMeshData;
-    std::map<Mesh*, TileContainerMeshData*> mMeshToMeshDataLookup;
     // TODO: Profile vector instead (linear removal vs logn but better iteration performance)
     std::set<const Mesh*> mStaticMeshes;
     std::set<const Mesh*> mDynamicMeshes;

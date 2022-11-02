@@ -27,6 +27,8 @@ public:
     MeshBuilder(bool useSharedIndexBuffer);
     ~MeshBuilder();
 
+    VORB_NON_COPYABLE_BUT_MOVABLE(MeshBuilder);
+
     static void initStaticIBOs();
 
     void reserveVertexCount(ui32 count);

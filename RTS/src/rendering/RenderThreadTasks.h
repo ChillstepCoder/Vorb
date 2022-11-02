@@ -30,6 +30,7 @@ public:
     void addCharacterModel(entt::entity characterEntity, ui32 modelId);
     void removeCharacterModel(entt::entity characterEntity);
     void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);
+    //void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder&& meshBuilder, Mesh* mesh);
     // TODO: Add cancel logic for if we destroy the threadpool so we can free data ptr?
     void addGenericTask(RenderFunction func, void* data) { mRenderThreadProcs.enqueue(std::make_pair(func, data)); }
 
