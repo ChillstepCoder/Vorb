@@ -12,32 +12,9 @@
 #include <boost/pool/singleton_pool.hpp>
 
 #include "tasks/MeshTask.inl"
+#include "tasks/CharacterModelTask.inl"
 
-class CharacterModelTaskData {
-public:
-    void* operator new(size_t count);
-    void operator delete(void* pointer, size_t size);
-
-    entt::entity entityId;
-    ui32 modelId;
-};
-static_assert(sizeof(CharacterModelTaskData) == 8);
-
-// TODO: We should make sure we dont build this on dedicated server as it initializes some memory
-struct character_task_pool {};
-using character_singleton_task_pool = boost::singleton_pool<character_task_pool, sizeof(CharacterModelTaskData), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 128u>;
-
-RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;;
-
-void* CharacterModelTaskData::operator new(size_t count) {
-    UNUSED(count);
-    return character_singleton_task_pool::malloc();
-}
-
-void CharacterModelTaskData::operator delete(void* pointer, size_t size) {
-    UNUSED(size);
-    return character_singleton_task_pool::free(pointer);
-}
+RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;
 
 RenderThreadTasks::RenderThreadTasks()
 {
@@ -66,11 +43,12 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
 void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerToMesh) {
     assert(IS_GAME_THREAD());
     containerToMesh->incRef();
-    TileContainerRenderData& tileRenderData = containerToMesh->getRenderData();
 
-    MeshTaskData* taskData = new MeshTaskData(containerToMesh);
+    TileContainerRenderData& tileRenderData = containerToMesh->getRenderData();
     tileRenderData.mHasMesh = true;
-    Services::Threadpool::ref().addTask([this, taskData](ThreadPoolWorkerData*) {
+
+    Services::Threadpool::ref().addTask([this, containerToMesh](ThreadPoolWorkerData*) {
+        MeshTaskData* taskData = new MeshTaskData(containerToMesh);
         constexpr ui32 RESERVE_VERT_COUNT_STATIC = 512; // Most chunks are less than this
         TileContainer* containerToMesh = taskData->container;
         taskData->staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);

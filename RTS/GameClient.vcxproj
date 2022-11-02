@@ -241,7 +241,6 @@
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
-    <ClCompile Include="src\pathfinding\BuildingNavGraph.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
     <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
@@ -469,7 +468,6 @@
     <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\NavWorld.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
-    <ClInclude Include="src\pathfinding\BuildingNavGraph.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
     <ClInclude Include="src\physics\DynamicCharacterController.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
@@ -609,6 +607,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
+    <None Include="src\rendering\tasks\CharacterModelTask.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

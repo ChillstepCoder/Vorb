@@ -340,7 +340,6 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Physi
     staticMeshBuilder.reserveIndexCount((ui32)(RESERVE_VERT_COUNT_STATIC * 1.5f)); // 1.5 is approx
 
     const i32AABB3& aabb = building.mAABB;
-    BuildingRenderData& renderData = building.mRenderData;
     const TileContainer& tileContainer = *building.mTileContainer;
     const BitArray& ownedTiles = tileContainer.getOwnedTiles();
 
@@ -356,14 +355,7 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Physi
     TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, nullptr, *building.mTileContainer, &physicsBuilder);
     TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
 
-    renderData.mMeshDirty = false;
-    if (!renderData.mMesh) {
-        renderData.mMesh = std::make_unique<Mesh>();
-    }
-
     // ========================== Straight Skeleton ===============================
-    
-
     const ui32 floorCount = tileContainer.getDims().z;
     const ui32 floorTileCount = building.mAABB.dims.y * building.mAABB.dims.x;
     for (ui32 floor = 0; floor < floorCount; ++floor) {
@@ -384,7 +376,6 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Physi
         }
 
         // Generate a list of straight skeletons
-
         if (visLog) visLog->nextStep("Detect walls " + std::to_string(floor));
         std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, zPos, visLog);
         std::vector<RoofContourEdgeInfo> contourEdges;

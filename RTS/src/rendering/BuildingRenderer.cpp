@@ -35,12 +35,12 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
     // bindMaterialForRender(material, nullptr);
     // mesh.draw(material.mProgram);
     // TODO: Fix invalid meshes
-    if (building.mRenderData.mMesh->isValid()) {
+   /* if (building.mRenderData.mMesh->isValid()) {
         MaterialRenderer::bindMaterialForRender(*mRoofMaterial);
         f32v3 offset = f32v3(building.mAABB.pos) - camera.getPosition();
         glUniform3fv(mRoofMaterial->getUniform("unOffset"), 1, &offset.x);
         building.mRenderData.mMesh->draw();
-    }
+    }*/
     //if (building.mRenderData.mRoofMesh->isValid()) {
     //    MaterialRenderer::renderMesh(*building.mRenderData.mRoofMesh, *mRoofBaseMaterial);
     //}
@@ -48,10 +48,10 @@ void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera
 
 void BuildingRenderer::renderBuildingShadows(const Building& building, const Camera3D& camera) {
     // TODO: Fix invalid meshes
-    if (building.mRenderData.mMesh->isValid()) {
+   /* if (building.mRenderData.mMesh->isValid()) {
         MaterialRenderer::bindMaterialForRender(*mRoofShadowMaterial);
         f32v3 offset = f32v3(building.mAABB.pos) - camera.getPosition();
         glUniform3fv(mRoofShadowMaterial->getUniform("unOffset"), 1, &offset.x);
         building.mRenderData.mMesh->draw();
-    }
+    }*/
 }

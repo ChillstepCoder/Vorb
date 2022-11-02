@@ -450,9 +450,6 @@
     <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\pathfinding\BuildingNavGraph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\pathfinding\NavWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1163,9 +1160,6 @@
     <ClInclude Include="src\physics\PhysHitResult.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\pathfinding\BuildingNavGraph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\pathfinding\NavWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1391,5 +1385,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
+    <None Include="src\rendering\tasks\CharacterModelTask.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
