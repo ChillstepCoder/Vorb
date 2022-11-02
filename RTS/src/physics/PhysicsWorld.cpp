@@ -13,6 +13,7 @@
 #include "physics/DynamicCharacterController.h"
 #include "physics/CollisionShapes.h"
 #include "physics/StaticPhysicsMesh.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
 
 #include "terrain/HeightmapPatch.h"
 #include "options/DebugOptions.h"
@@ -88,7 +89,26 @@ PhysicsWorld::~PhysicsWorld() {
 void PhysicsWorld::stepSimulation(f32 elapsedSec) {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
-    std::lock_guard<std::mutex> guard(mMutex);
+    constexpr int BULK_DEQUEUE_SIZE = 64;
+    btRigidBody* rigidBodies[BULK_DEQUEUE_SIZE];
+
+    // Add new rigid bodies
+    if (size_t count = mRigidBodiesToAdd.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
+        std::lock_guard guard(mMutex);
+        for (size_t i = 0; i < count; ++i) {
+            mDynamicsWorld->addRigidBody(rigidBodies[i]);
+        }
+    }
+    // Delete expired rigid bodies
+    if (size_t count = mRigidBodiesToDelete.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
+        std::lock_guard guard(mMutex);
+        for (size_t i = 0; i < count; ++i) {
+            mDynamicsWorld->removeRigidBody(rigidBodies[i]);
+            delete rigidBodies[i];
+        }
+    }
+
+    std::lock_guard guard(mMutex);
     mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }
 
@@ -137,7 +157,6 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
 }
 
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
-    assert(IS_GAME_THREAD());
     btTransform startTransform;
     startTransform.setOrigin(btVector3(position.x, position.y, position.z));
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
@@ -163,42 +182,38 @@ RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& 
 }
 
 void PhysicsWorld::deleteRigidBody(btRigidBody** rigidBody) {
-    assert(IS_GAME_THREAD());
-    mDynamicsWorld->removeRigidBody(*rigidBody);
-    delete *rigidBody;
+    mRigidBodiesToDelete.enqueue(*rigidBody);
     *rigidBody = nullptr;
 }
 
-void PhysicsWorld::addStaticMesh(StaticPhysicsMesh& staticMesh) {
-    assert(IS_GAME_THREAD());
-    if (!staticMesh.mPhysicsMesh) {
+void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh) {
+    PROFILE_FUNCTION();
+    if (!outMesh.mPhysicsMesh) {
         return;
     }
-    ScopedTimer timer("Build btBvh Mesh");
 
     btIndexedMesh indexedMesh;
     indexedMesh.m_vertexType = PHY_FLOAT;
     indexedMesh.m_vertexStride = sizeof(f32v3);
-    indexedMesh.m_numVertices = staticMesh.mVerts.size();
-    indexedMesh.m_vertexBase = (unsigned char*)staticMesh.mVerts.data();
-    indexedMesh.m_triangleIndexBase = (unsigned char*)staticMesh.mIndices.data();
+    indexedMesh.m_numVertices = meshBuilder.mVerts.size();
+    indexedMesh.m_vertexBase = (unsigned char*)meshBuilder.mVerts.data();
+    indexedMesh.m_triangleIndexBase = (unsigned char*)meshBuilder.mIndices.data();
     indexedMesh.m_triangleIndexStride = 3 * sizeof(ui32);
-    indexedMesh.m_numTriangles = staticMesh.mIndices.size() / 3;
-    staticMesh.mPhysicsMesh->addIndexedMesh(indexedMesh, PHY_ScalarType::PHY_INTEGER);
+    indexedMesh.m_numTriangles = meshBuilder.mIndices.size() / 3;
+    outMesh.mPhysicsMesh->addIndexedMesh(indexedMesh, PHY_ScalarType::PHY_INTEGER);
 
-    assert(!staticMesh.mRigidBody);
+    assert(!outMesh.mRigidBody);
     btTransform startTransform;
-    startTransform.setOrigin(f32v3ToBtVector3(staticMesh.getRootPos()));
+    startTransform.setOrigin(f32v3ToBtVector3(meshBuilder.getRootPos()));
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
     // TODO: House owner entity
-    staticMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(staticMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
-    staticMesh.mRigidBody = createRigidBody(entt::null, 0.0f, startTransform, staticMesh.mShape.get()).first;
-    staticMesh.mIndices.clear();
-    staticMesh.mVerts.clear();
+    outMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(outMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
+    outMesh.mRigidBody = createRigidBody(entt::null, 0.0f, startTransform, outMesh.mShape.get()).first;
 }
 
 RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
 {
+    PROFILE_FUNCTION();
     assert(IS_GAME_THREAD());
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
     
@@ -227,7 +242,8 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
         assert((size_t)ownerEntity <= INT32_MAX && "Entity ID overflow in createRigidBody");
         body->setUserIndex((int)ownerEntity); // TODO: ENTT?
     }
-    mDynamicsWorld->addRigidBody(body);
+
+    mRigidBodiesToAdd.enqueue(body);
 
     RigidBodyPair rv;
     rv.first = body;
@@ -268,7 +284,7 @@ void PhysicsWorld::debugRender() const {
         // Draw static and dynamic
         ScopedTimer timer("Static debug");
         // TODO: We might still have race condition with adding rigidbodies
-        std::lock_guard lock(mMutex);
+        std::shared_lock lock(mMutex);
         if (showTerrain) mDebugDrawer->reserveStaticLines(2000000);
 
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
@@ -296,7 +312,7 @@ void PhysicsWorld::debugRender() const {
         }
     }
     else if (showDynamic) {
-        std::lock_guard lock(mMutex);
+        std::shared_lock lock(mMutex);
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
             btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
             btRigidBody* body = btRigidBody::upcast(obj);
@@ -359,7 +375,7 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
         mDynamicsWorld->rayTest(start, end, rayResult);
     }
     else {
-        std::lock_guard<std::mutex> guard(mMutex);
+        std::shared_lock guard(mMutex);
         mDynamicsWorld->rayTest(start, end, rayResult);
     }
 
@@ -387,9 +403,9 @@ bool PhysicsWorld::tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes
     }
     rayResult.m_collisionFilterMask = collisionMask;
     //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
-    if (mMutex.try_lock()) {
+    if (mMutex.try_lock_shared()) {
         mDynamicsWorld->rayTest(start, end, rayResult);
-        mMutex.unlock();
+        mMutex.unlock_shared();
     } else {
         return false;
     }

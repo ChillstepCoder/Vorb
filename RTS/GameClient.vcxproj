@@ -246,6 +246,7 @@
     <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
+    <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\BuildingMesher.cpp" />
     <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
@@ -474,6 +475,7 @@
     <ClInclude Include="src\physics\PhysHitResult.h" />
     <ClInclude Include="src\physics\PhysicsWorld.h" />
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
+    <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
     <ClInclude Include="src\rendering\BuildingMesher.h" />
     <ClInclude Include="src\rendering\BuildingRenderer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />

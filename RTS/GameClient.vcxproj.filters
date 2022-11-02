@@ -447,7 +447,7 @@
     <ClCompile Include="src\physics\CollisionShapes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\physics\StaticPhysicsMesh.cpp">
+    <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\pathfinding\BuildingNavGraph.cpp">
@@ -595,6 +595,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\physics\StaticPhysicsMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1154,7 +1157,7 @@
     <ClInclude Include="src\physics\CollisionShapes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\physics\StaticPhysicsMesh.h">
+    <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\PhysHitResult.h">
@@ -1377,6 +1380,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\tasks\MeshTask.inl">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\StaticPhysicsMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

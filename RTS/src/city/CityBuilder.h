@@ -20,7 +20,7 @@ public:
     void addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint);
 
     static Building* debugBuildInstant(BuildingBlueprint& bp);
-    void debugBuildInstant(RoadID roadId);
+    void debugBuildRoadInstant(RoadID roadId);
 
 private:
     void preprocessBlueprint(BuildingBlueprint* blueprint);

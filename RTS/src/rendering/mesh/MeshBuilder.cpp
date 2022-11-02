@@ -654,7 +654,7 @@ void MeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode,
 
 
 void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
-    
+    assert(IS_RENDER_THREAD());
     if (mMainSubMeshData.mVerts.empty()) {
         mesh.destroy();
         return;

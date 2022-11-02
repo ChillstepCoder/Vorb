@@ -8,7 +8,7 @@
 #include "tile/Stairs.h"
 #include "world/Chunk.h"
 
-#include "physics/StaticPhysicsMesh.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
 #include "resources/TileRepository.h"
 
 #include "world/IHeightmapGrid.h"
@@ -285,7 +285,7 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
     }
 }
 
-void meshWalls(const TileContainer& tileContainer, MeshBuilder& meshBuilder, OPT StaticPhysicsMesh* physMesh) {
+void meshWalls(const TileContainer& tileContainer, MeshBuilder& meshBuilder, OPT StaticPhysicsMeshBuilder* physMesh) {
     // =============== Greedy mesh walls ===============
     // TileID prevSouthWall; Pull ahead greedy meshing like in SoA
 
@@ -469,7 +469,7 @@ void meshWalls(const TileContainer& tileContainer, MeshBuilder& meshBuilder, OPT
     }
 }
 
-void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::meshTileContainerStatic(MeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMeshBuilder* physMesh) {
     const ui32v3& tileDims = tileContainer.getDims();
     // =============== Mesh tiles ===============
     TileIndex index = 0;
@@ -567,7 +567,7 @@ void TileMeshBuilderMethods::meshTileContainerDynamic(MeshBuilder& meshBuilder, 
     }
 }
 
-void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh) {
     const SubTexture& texture = tileData.texture;
     switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
@@ -604,7 +604,7 @@ void TileMeshBuilderMethods::addBlock(MeshBuilder& meshBuilder, const f32v3& til
     static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
-void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh) {
 
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
@@ -703,7 +703,7 @@ void TileMeshBuilderMethods::addBlockVertical(MeshBuilder& meshBuilder, const f3
     }
 }
 
-void TileMeshBuilderMethods::addBlockWorldTiling(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::addBlockWorldTiling(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh) {
     const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZOffsetThreadSafe();
 
     const f32v3 botSW(tilePos);
@@ -728,7 +728,7 @@ void TileMeshBuilderMethods::addBlockWorldTiling(MeshBuilder& meshBuilder, const
     }
 }
 
-void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh) {
     const SubTexture& texture = tileData.texture;
     const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight + 0.0001f);
     // Render top
@@ -796,7 +796,7 @@ const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
     f32v2(1, 0.25), // NORTH
 };
 
-void TileMeshBuilderMethods::addStairs(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMesh* physMesh)
+void TileMeshBuilderMethods::addStairs(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh)
 {
     const TileContainer& tileContainer = *tileHandle.container;
     const Tile& tile = *tileHandle.tile;
@@ -1110,7 +1110,7 @@ void TileMeshBuilderMethods::addStairs(MeshBuilder& meshBuilder, f32 floorBaseHe
     physMesh->addQuadBetweenPoints(&(pointsSide[4]));
 }
 
-void TileMeshBuilderMethods::addWall(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, OPT StaticPhysicsMesh* physMesh) {
+void TileMeshBuilderMethods::addWall(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, OPT StaticPhysicsMeshBuilder* physMesh) {
     constexpr f32 WALL_THICKNESS = 0.05f;
     assert(false);
     //f32v3 rootPos = tilePos

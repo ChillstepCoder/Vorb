@@ -24,6 +24,9 @@
 
 #include "physics/PhysicsWorld.h"
 
+#include "rendering/RenderThreadTasks.h"
+#include "gamethread/GameThreadTasks.h"
+
 constexpr f32 ROOF_THICKNESS = 0.04f;
 constexpr f32 ROOF_EXTRUDE_DISTANCE = 0.45f;
 constexpr f32 ROOF_HEIGHT_MULT = 0.5f; // 0.3
@@ -306,8 +309,24 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
     return Random::getThreadSafef((ui64)f32v3hash()(x) + additional);
 }
 
-void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld& physWorld) {
+
+void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building, PhysicsWorld& physWorld) {
+
+    Services::Threadpool::ref().addTask([&building, &physWorld](ThreadPoolWorkerData*) {
+        MeshBuilder staticMeshBuilder(false);
+        buildMeshAndPhysicsInternal(building, physWorld, staticMeshBuilder);
+
+        RenderThreadTasks::addGenericTask([](RenderContext& context, void*)) {
+            staticMeshBuilder.finishMesh(building.mRenderData.mMesh, MeshDrawMode::STATIC, building.getAABB().pos);
+        }
+
+    }, nullptr);
+}
+
+void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, PhysicsWorld& physWorld, MeshBuilder& staticMeshBuilder) {
     PROFILE_FUNCTION();
+
+    StaticPhysicsMeshBuilder physicsBuilder;
 
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
@@ -316,8 +335,6 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
         visLog->addWireQuad(f32v3(building.mAABB.pos), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
 
-    // TODO: ASYNC
-    MeshBuilder staticMeshBuilder(false);
     constexpr ui32 RESERVE_VERT_COUNT_STATIC = 10000; // Average size
     staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);
     staticMeshBuilder.reserveIndexCount((ui32)(RESERVE_VERT_COUNT_STATIC * 1.5f)); // 1.5 is approx
@@ -336,7 +353,7 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, nullptr, *building.mTileContainer, &building.mPhysicsMesh);
+    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, nullptr, *building.mTileContainer, &physicsBuilder);
     TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
 
     renderData.mMeshDirty = false;
@@ -392,14 +409,11 @@ void BuildingMesher::buildMeshAndPhysics(const Building& building, PhysicsWorld&
     // ========================== Room supports ===============================
     meshRoomSupports(building, staticMeshBuilder, rawWoodTexture);
 
-    staticMeshBuilder.finishMesh(renderData.mMesh, MeshDrawMode::STATIC, building.getAABB().pos);
+
+    physicsBuilder.setRootPos(f32v3(building.mAABB.pos));
+    physicsBuilder.finish(physWorld, building.getTileContainer()->getStaticPhysicsMesh());
 
     if (visLog) visLog->finish();
-
-    building.mPhysicsMesh.setRootPos(f32v3(building.mAABB.pos));
-    building.mPhysicsMesh.finish();
-    physWorld.addStaticMesh(building.mPhysicsMesh);
-
 }
 
 std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog) {

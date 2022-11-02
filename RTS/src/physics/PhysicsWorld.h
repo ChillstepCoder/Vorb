@@ -14,7 +14,7 @@ class btTransform;
 class btVector4;
 class btHeightfieldTerrainShape;
 class DynamicCharacterController;
-class StaticPhysicsMesh;
+class StaticPhysicsMeshBuilder;
 struct HeightmapPatchData;
 
 #include "world/TerrainConstants.h"
@@ -22,7 +22,7 @@ struct HeightmapPatchData;
 #include "physics/PhysHitResult.h"
 #include "physics/CollisionShapes.h"
 
-#include <mutex>
+#include <shared_mutex>
 
 enum class RigidBodyRotationType {
     FULL,
@@ -45,12 +45,13 @@ public:
     ~PhysicsWorld();
 
     void stepSimulation(f32 deltaTime);
+
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
     void deleteHeightField(HeightmapPatch& patch);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
     void deleteRigidBody(btRigidBody** rigidBody);
-    void addStaticMesh(StaticPhysicsMesh& staticMesh);
+    void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh);
 
     void debugRender() const;
 
@@ -74,10 +75,13 @@ private:
     mutable bool mWasRenderingStatic = false;
     mutable bool mWasRenderingTerrain = false;
 
-    mutable std::mutex mMutex;
+    mutable std::shared_mutex mMutex;
 
     // For cleanup
     std::map<HeightmapPatchData*, btHeightfieldTerrainShape*> mHeightShapes;
+
+    moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToAdd;
+    moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToDelete;
 
 };
 

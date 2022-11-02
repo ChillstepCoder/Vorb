@@ -13,7 +13,7 @@
 
 #include "structure/Structure.h"
 
-#include "physics/StaticPhysicsMesh.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
 
 #include "pathfinding/BuildingNavGraph.h"
 
@@ -66,7 +66,6 @@ private:
     entt::entity mOwnerEntity = INVALID_ENTITY;
 
     mutable BuildingRenderData mRenderData;
-    mutable StaticPhysicsMesh mPhysicsMesh;
     // TODO: Move to Business?
     //ItemTradeManager mTradeManager; // TODO: This is a large copy and we pass building by value
 };

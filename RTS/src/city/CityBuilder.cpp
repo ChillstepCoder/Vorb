@@ -43,7 +43,7 @@ void CityBuilder::update() {
    
     // FILO queue right now
     while (mRoadsToBuild.size()) {
-        debugBuildInstant(mRoadsToBuild.back());
+        debugBuildRoadInstant(mRoadsToBuild.back());
         mRoadsToBuild.pop_back();
     }
 }
@@ -173,7 +173,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     return newBuilding;
 }
 
-void CityBuilder::debugBuildInstant(RoadID roadId)
+void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 {
     static TileID bricksId = TileRepository::getTile(StrToken("bricks1"));
     static TileID grassId = TileRepository::getTile(StrToken("grass1"));
@@ -208,7 +208,6 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
         Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
     }
 
-    // TODO: Multithread
     BuildingMesher::buildMeshAndPhysics(building, sWorld->getPhysicsWorld());
 }
 
