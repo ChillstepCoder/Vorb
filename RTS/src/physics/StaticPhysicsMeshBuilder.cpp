@@ -140,7 +140,6 @@ void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld, OUT StaticPhys
         }
         return;
     }
-    outMesh.mPhysicsMesh = std::make_unique<btTriangleIndexVertexArray>();
     // This is thread safe
     physicsWorld.addStaticMeshFromBuilder(*this, outMesh);
 }

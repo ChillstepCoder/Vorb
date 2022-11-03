@@ -3,7 +3,7 @@
 class btTriangleIndexVertexArray;
 class btRigidBody;
 class btBvhTriangleMeshShape;
-class btIndexedMesh;
+struct btIndexedMesh;
 class PhysicsWorld;
 struct StaticPhysicsMesh;
 

@@ -67,7 +67,7 @@ void TileContainerRenderData::reset() {
 TileContainer::~TileContainer() {
     if (mStaticPhysics.mRigidBody) {
         // TODO: can we move this so its an event?
-        sWorld->getPhysicsWorld().deleteRigidBody(mStaticPhysics.mRigidBody);
+        sWorld->getPhysicsWorld().deleteStaticPhysicsMesh(std::move(mStaticPhysics));
     }
 
     if (RenderThreadTasks::exists()) {

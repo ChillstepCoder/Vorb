@@ -89,21 +89,34 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
     constexpr int BULK_DEQUEUE_SIZE = 64;
-    btRigidBody* rigidBodies[BULK_DEQUEUE_SIZE];
+    {
+        btRigidBody* rigidBodies[BULK_DEQUEUE_SIZE];
 
-    // Add new rigid bodies
-    if (size_t count = mRigidBodiesToAdd.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
-        std::lock_guard guard(mMutex);
-        for (size_t i = 0; i < count; ++i) {
-            mDynamicsWorld->addRigidBody(rigidBodies[i]);
+        // Add new rigid bodies
+        if (size_t count = mRigidBodiesToAdd.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
+            std::lock_guard guard(mMutex);
+            for (size_t i = 0; i < count; ++i) {
+                mDynamicsWorld->addRigidBody(rigidBodies[i]);
+            }
+        }
+        // Delete expired rigid bodies
+        if (size_t count = mRigidBodiesToDelete.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
+            std::lock_guard guard(mMutex);
+            for (size_t i = 0; i < count; ++i) {
+                mDynamicsWorld->removeRigidBody(rigidBodies[i]);
+                delete rigidBodies[i];
+            }
         }
     }
-    // Delete expired rigid bodies
-    if (size_t count = mRigidBodiesToDelete.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
-        std::lock_guard guard(mMutex);
-        for (size_t i = 0; i < count; ++i) {
-            mDynamicsWorld->removeRigidBody(rigidBodies[i]);
-            delete rigidBodies[i];
+    {
+        // Static physics meshes have other RAII associated data that we must free after deleting their rigid bodies
+        StaticPhysicsMesh staticPhysicsMeshes[BULK_DEQUEUE_SIZE];
+        if (size_t count = mStaticPhysicsMeshesToDelete.try_dequeue_bulk(staticPhysicsMeshes, BULK_DEQUEUE_SIZE)) {
+            std::lock_guard guard(mMutex);
+            for (size_t i = 0; i < count; ++i) {
+                mDynamicsWorld->removeRigidBody(staticPhysicsMeshes[i].mRigidBody);
+                delete staticPhysicsMeshes[i].mRigidBody;
+            }
         }
     }
 
@@ -185,20 +198,28 @@ void PhysicsWorld::deleteRigidBody(btRigidBody* rigidBody) {
     mRigidBodiesToDelete.enqueue(rigidBody);
 }
 
+void PhysicsWorld::deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh)
+{
+    mStaticPhysicsMeshesToDelete.enqueue(std::move(physicsMesh));
+}
+
 void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh) {
     PROFILE_FUNCTION();
-    if (!outMesh.mPhysicsMesh) {
-        return;
-    }
+    std::lock_guard lock(mMutex);
+    outMesh.mPhysicsMesh = std::make_unique<btTriangleIndexVertexArray>();
+    // Cache the vertex and index data because bullet uses our memory rather than a copy
+    // TODO: Compress this? Because its a vector it may have extra capacity
+    outMesh.mVerts = std::move(meshBuilder.mVerts);
+    outMesh.mIndices = std::move(meshBuilder.mIndices);
 
     btIndexedMesh indexedMesh;
     indexedMesh.m_vertexType = PHY_FLOAT;
     indexedMesh.m_vertexStride = sizeof(f32v3);
-    indexedMesh.m_numVertices = meshBuilder.mVerts.size();
-    indexedMesh.m_vertexBase = (unsigned char*)meshBuilder.mVerts.data();
-    indexedMesh.m_triangleIndexBase = (unsigned char*)meshBuilder.mIndices.data();
+    indexedMesh.m_numVertices = outMesh.mVerts.size();
+    indexedMesh.m_vertexBase = (unsigned char*)outMesh.mVerts.data();
+    indexedMesh.m_triangleIndexBase = (unsigned char*)outMesh.mIndices.data();
     indexedMesh.m_triangleIndexStride = 3 * sizeof(ui32);
-    indexedMesh.m_numTriangles = meshBuilder.mIndices.size() / 3;
+    indexedMesh.m_numTriangles = outMesh.mIndices.size() / 3;
     outMesh.mPhysicsMesh->addIndexedMesh(indexedMesh, PHY_ScalarType::PHY_INTEGER);
 
     assert(!outMesh.mRigidBody);
@@ -241,7 +262,8 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
         body->setUserIndex((int)ownerEntity); // TODO: ENTT?
     }
 
-    mRigidBodiesToAdd.enqueue(body);
+    mDynamicsWorld->addRigidBody(body);
+    //mRigidBodiesToAdd.enqueue(body);
 
     RigidBodyPair rv;
     rv.first = body;

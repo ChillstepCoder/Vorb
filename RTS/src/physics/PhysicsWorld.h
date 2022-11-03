@@ -16,12 +16,12 @@ class btHeightfieldTerrainShape;
 class DynamicCharacterController;
 class StaticPhysicsMeshBuilder;
 struct HeightmapPatchData;
-struct StaticPhysicsMesh;
 
 #include "world/TerrainConstants.h"
 
 #include "physics/PhysHitResult.h"
 #include "physics/CollisionShapes.h"
+#include "physics/StaticPhysicsMesh.h"
 
 #include <shared_mutex>
 
@@ -52,6 +52,7 @@ public:
     void deleteHeightField(HeightmapPatch& patch);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
     void deleteRigidBody(btRigidBody* rigidBody);
+    void deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh);
     void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh);
 
     void debugRender() const;
@@ -83,6 +84,7 @@ private:
 
     moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToAdd;
     moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToDelete;
+    moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
 
 };
 
