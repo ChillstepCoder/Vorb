@@ -5,7 +5,12 @@
 class MeshTaskData {
 public:
     // TODO: Are we guarenteeing quads?
-    MeshTaskData(TileContainer* container) : container(container), staticMeshBuilder(true), dynamicMeshBuilder(false) {};
+    MeshTaskData(TileContainer* container, MeshBuilder&& staticMeshBuilder, MeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder) :
+        container(container),
+        staticMeshBuilder(std::move(staticMeshBuilder)),
+        dynamicMeshBuilder(std::move(dynamicMeshBuilder)),
+        billboardMeshBuilder(std::move(billboardMeshBuilder))
+    {};
 
     void* operator new(size_t count);
     void operator delete(void* pointer, size_t size);

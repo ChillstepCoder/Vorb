@@ -18,6 +18,7 @@ class BillboardMeshBuilder
 public:
     BillboardMeshBuilder();
     ~BillboardMeshBuilder();
+    VORB_NON_COPYABLE_BUT_MOVABLE(BillboardMeshBuilder);
 
     void addBillboard(f32v3 position, const f32v2& xyDims, const SubTexture& texture);
     void reserveBillboardCount(ui32 count);

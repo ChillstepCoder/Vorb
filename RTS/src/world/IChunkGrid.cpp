@@ -3,6 +3,7 @@
 
 #include "world/IHeightmapGrid.h"
 #include "world/ChunkGenerator.h"
+#include "world/IWorld.h"
 
 #include "services/Services.h"
 #include "pathfinding/NavThread.h"
@@ -10,7 +11,7 @@
 #include "options/DebugOptions.h"
 
 // RENDERING
-#include "rendering/RenderThreadTasks.h"
+#include "rendering/mesh/ChunkMesher.h"
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
 // IWORLD
@@ -268,9 +269,7 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
         // TODO: Update collision
         // 
         // Update dirty mesh
-        if (RenderThreadTasks* tasks = RenderThreadTasks::tryGetInstance()) {
-            tasks->addTileContainerMeshUpdateTask(&tileContainer);
-        }
+        ChunkMesher::buildMeshAndPhysicsAsync(chunk, sWorld->getPhysicsWorld());
         // TODO: Replicate diff
     }
     // TODO: Should this instead be a TileContainerUpdater?

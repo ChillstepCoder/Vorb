@@ -125,7 +125,7 @@ public:
     friend class NavWorld;
     friend class PathFinder;
     TileContainer() = default;
-    ~TileContainer() = default;
+    ~TileContainer();
     VORB_NON_COPYABLE_BUT_MOVABLE(TileContainer);
 
 private:

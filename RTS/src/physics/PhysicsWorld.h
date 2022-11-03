@@ -51,7 +51,7 @@ public:
     btRigidBody* addHeightField(const HeightmapPatch& patch);
     void deleteHeightField(HeightmapPatch& patch);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale = f32v3(1.0f), RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
-    void deleteRigidBody(btRigidBody** rigidBody);
+    void deleteRigidBody(btRigidBody* rigidBody);
     void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh);
 
     void debugRender() const;

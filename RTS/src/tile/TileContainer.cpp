@@ -4,10 +4,13 @@
 #include "pathfinding/NavThread.h"
 
 #include "rendering/mesh/Mesh.h"
+#include "rendering/RenderThreadTasks.h"
 
 #include "resources/TileRepository.h"
 #include "world/IWorld.h"
 #include "world/IChunkGrid.h"
+
+#include "physics/PhysicsWorld.h"
 
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
@@ -59,6 +62,18 @@ std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileCon
 void TileContainerRenderData::reset() {
     mHasMesh = false;
     mDirtyDynamicMesh = false;
+}
+
+TileContainer::~TileContainer() {
+    if (mStaticPhysics.mRigidBody) {
+        // TODO: can we move this so its an event?
+        sWorld->getPhysicsWorld().deleteRigidBody(mStaticPhysics.mRigidBody);
+    }
+
+    if (RenderThreadTasks::exists()) {
+        // TODO: can we move this so its an event?
+        RenderThreadTasks::getInstance().removeTileContainerMesh(this);
+    }
 }
 
 void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain) {

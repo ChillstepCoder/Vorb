@@ -25,6 +25,7 @@ typedef Triangulation::Point             TriangulationPoint;
 class ResourceManager;
 class Building;
 class MeshBuilder;
+class BillboardMeshBuilder;
 class PhysicsWorld;
 
 struct RoofContourEdgeInfo {
@@ -38,10 +39,10 @@ struct RoofContourEdgeInfo {
 class BuildingMesher
 {
 public:
-    static void buildMeshAndPhysicsAsync(const Building& building, PhysicsWorld& physWorld);
+    static void buildMeshAndPhysicsAsync(const Building& building);
 
 private:
-    static void buildMeshAndPhysicsInternal(const Building& building, PhysicsWorld& physWorld, MeshBuilder& staticMeshBuilder);
+    static void buildMeshAndPhysicsInternal(const Building& building, MeshBuilder& staticMeshBuilder, MeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder);
     static std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog);
     static void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog);
     static void triangulateRoofFacePolygons(bool isGable, MeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos);

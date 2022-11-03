@@ -9,8 +9,11 @@
 
 #include "util/IntersectionUtil.h"
 
+#include "world/IWorld.h"
+
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/BillboardMeshBuilder.h"
 
 #include "options/DebugOptions.h"
 
@@ -310,22 +313,22 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 }
 
 
-void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building, PhysicsWorld& physWorld) {
+void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
+    building.mTileContainer->incReadLockAndRef();
+    Services::Threadpool::ref().addTask([&building](ThreadPoolWorkerData*) {
+        MeshBuilder staticMeshBuilder(false);
+        MeshBuilder dynamicMeshBuilder(false);
+        BillboardMeshBuilder billboardMeshBuilder;
+        buildMeshAndPhysicsInternal(building, staticMeshBuilder, dynamicMeshBuilder, billboardMeshBuilder);
 
-    /* Services::Threadpool::ref().addTask([&building, &physWorld](ThreadPoolWorkerData*) {
-         MeshBuilder staticMeshBuilder(false);
-         buildMeshAndPhysicsInternal(building, physWorld, staticMeshBuilder);
-
-         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void*)) {
-             staticMeshBuilder.finishMesh(building.mRenderData.mMesh, MeshDrawMode::STATIC, building.getAABB().pos);
-         }
-
-     }, nullptr);*/
+        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(building.mTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
+    }, nullptr);
 }
 
-void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, PhysicsWorld& physWorld, MeshBuilder& staticMeshBuilder) {
+void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, MeshBuilder& staticMeshBuilder, MeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder) {
     PROFILE_FUNCTION();
 
+    PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
     StaticPhysicsMeshBuilder physicsBuilder;
 
     // Debug log
@@ -352,8 +355,8 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Physi
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, nullptr, *building.mTileContainer, &physicsBuilder);
-    TileMeshBuilderMethods::meshTileContainerDynamic(staticMeshBuilder, *building.mTileContainer);
+    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, *building.mTileContainer, &physicsBuilder);
+    TileMeshBuilderMethods::meshTileContainerDynamic(dynamicMeshBuilder, *building.mTileContainer);
 
     // ========================== Straight Skeleton ===============================
     const ui32 floorCount = tileContainer.getDims().z;
@@ -878,7 +881,7 @@ void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& mes
                     const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
                     if (z == tileContainer.getDims().z - 1 || // If were at the top
                         !ownedTiles.getBit(aboveIndex) || // Or tile above us is an exterior tile
-                        !tileContainer.getTileAt(aboveIndex).isEmptyMainThread()) { // Or its an interior tile and not empty
+                        !tileContainer.getTileAt(aboveIndex).isEmptyThreadSafe()) { // Or its an interior tile and not empty
                         // Mesh ceiling
                         f32v3 startPos(x, y, tileContainer.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
                         meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);

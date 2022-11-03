@@ -152,7 +152,8 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
     assert(it != mHeightShapes.end());
     delete it->second;
     mHeightShapes.erase(it);
-    deleteRigidBody(&patch.mHeightData->mCollider);
+    deleteRigidBody(patch.mHeightData->mCollider);
+    patch.mHeightData->mCollider = nullptr;
 }
 
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
@@ -180,9 +181,8 @@ RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& 
     return rv;
 }
 
-void PhysicsWorld::deleteRigidBody(btRigidBody** rigidBody) {
-    mRigidBodiesToDelete.enqueue(*rigidBody);
-    *rigidBody = nullptr;
+void PhysicsWorld::deleteRigidBody(btRigidBody* rigidBody) {
+    mRigidBodiesToDelete.enqueue(rigidBody);
 }
 
 void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh) {
@@ -213,7 +213,6 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
 RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
 {
     PROFILE_FUNCTION();
-    assert(IS_GAME_THREAD());
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
     
     btVector3 localInertia(0, 0, 0);

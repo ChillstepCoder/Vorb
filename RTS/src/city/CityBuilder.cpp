@@ -208,8 +208,7 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
         Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
     }
 
-    assert(false);
-    //BuildingMesher::buildMeshAndPhysics(building, sWorld->getPhysicsWorld());
+    BuildingMesher::buildMeshAndPhysicsAsync(building);
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {

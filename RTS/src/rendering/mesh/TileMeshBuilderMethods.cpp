@@ -521,7 +521,7 @@ void TileMeshBuilderMethods::meshTileContainerDynamic(MeshBuilder& meshBuilder, 
         if (dynamicTile.mType <= DynamicTileType::WALL_TERM) {
             Cartesian dir = Cartesian(dynamicTile.mType);
             static_assert(e_cast(DynamicTileType::WALL_SOUTH) == 0 && e_cast(DynamicTileType::WALL_TERM) == 3);
-            const TileWall& wall = tileContainer.getWallsMainThread(tileIndex).walls[e_cast(dir)];
+            const TileWall& wall = tileContainer.getWallsThreadSafe(tileIndex).walls[e_cast(dir)];
             assert(wall.wallID != TILE_ID_NONE);
             // Check if is door
             const TileData& tileData = TileRepository::getTileData(wall.wallID);
@@ -803,8 +803,8 @@ void TileMeshBuilderMethods::addStairs(MeshBuilder& meshBuilder, f32 floorBaseHe
     const f32v3 tilePos = tileContainer.getTileXYZOffsetWithZScale(tileHandle.tileIndex);
     // Place stair steps
     // TODO: ThreadSafe
-    const f32 heightAdd = tileHandle.tile->getGroundZOffsetMainThread();
-    const Cartesian dir = tile.getOrientationMainThread((TileLayer)tileData.layer);
+    const f32 heightAdd = tileHandle.tile->getGroundZOffsetThreadSafe();
+    const Cartesian dir = tile.getOrientationThreadSafe((TileLayer)tileData.layer);
     const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
     constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
     const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
