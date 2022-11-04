@@ -272,6 +272,7 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TextMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TileMeshBuilderMethods.cpp" />
+    <ClCompile Include="src\rendering\model\InstancedModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
@@ -506,6 +507,7 @@
     <ClInclude Include="src\rendering\mesh\TileMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
+    <ClInclude Include="src\rendering\model\InstancedModelRenderer.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
@@ -556,6 +558,7 @@
     <ClInclude Include="src\tile\TileScanner.h" />
     <ClInclude Include="src\tile\TileUtil.h" />
     <ClInclude Include="src\time\GameTimeManager.h" />
+    <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\PauseMenuPanel.h" />

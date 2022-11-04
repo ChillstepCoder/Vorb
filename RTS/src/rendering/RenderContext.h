@@ -178,7 +178,7 @@ private:
     vg::GBuffer* mActiveGBuffer = nullptr;
     vg::GBuffer mGBuffers[2];
     vg::GBuffer mTransparencyGBuffer;
-    std::unique_ptr<QuadMesh> mHorizonQuad;
+    std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
     VGBuffer mGlobalUbo = 0;
 

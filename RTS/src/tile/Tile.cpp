@@ -21,8 +21,9 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
     kt.addValue("Wall", TileShape::WALL);
     kt.addValue("Door", TileShape::DOOR);
     kt.addValue("Stairs", TileShape::STAIRS);
+    kt.addValue("Model", TileShape::MODEL);
 }
-static_assert(e_cast(TileShape::COUNT) == 6);
+static_assert(e_cast(TileShape::COUNT) == 7);
 
 KEG_ENUM_DEF(TileCollisionShape, TileCollisionShape, kt) {
     kt.addValue("none", TileCollisionShape::NONE);

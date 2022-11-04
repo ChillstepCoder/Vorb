@@ -134,17 +134,6 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Load Tiles (Must be done after item and recipes)
-    // Assuming single tile per file, definitely less than actual but, good enough. 10 is arbitrary
-    {
-        ScopedTimer timer("Tile load");
-        TileRepository::sTileData.reserve(mTileFiles.size() + 10);
-        for (auto&& entry : mTileFiles) {
-            // TODO: Tilemanager?
-            loadTiles(entry);
-        }
-    }
-
     // Load Materials
     {
         ScopedTimer timer("Material load");
@@ -184,6 +173,17 @@ void ResourceManager::loadFiles() {
             mModelRepository->loadModelFile(entry, *mAnimMachineRepository);
         }
     }
+
+    // Load Tiles (Must be done after texture, item and recipes, models)
+    {
+        ScopedTimer timer("Tile load");
+        TileRepository::sTileData.reserve(mTileFiles.size() + 10);
+        for (auto&& entry : mTileFiles) {
+            // TODO: Tilemanager?
+            TileRepository::loadTileFile(*mIoManager, entry, *mTextureRepository, *mItemRepository, *mModelRepository);
+        }
+    }
+
 
     // Load skills
     {
@@ -353,73 +353,4 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             mFontFiles.emplace_back(entry);
         }
     }
-}
-
-bool ResourceManager::loadTiles(const vio::Path& filePath) {
-    // TODO: Non arbitrary?
-    // Read file
-    return mIoManager->parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
-        keg::ReadContext& readContext = *((keg::ReadContext*)s);
-
-        TileData tileData;
-        TileFileData fileData;
-
-        // Load data
-        keg::parse((ui8*)&fileData, value, readContext, &KEG_GLOBAL_TYPE(TileFileData));
-        tileData.name = key;
-
-        // Copy all data
-        tileData.layer = fileData.layer;
-        tileData.pathWeight = fileData.pathWeight;
-        tileData.resource = fileData.resource;
-        tileData.shape = fileData.tileShape;
-        tileData.textureMethod = fileData.textureMethod;
-        tileData.dims = fileData.dims;
-        // Collider
-        //tileData.collider.shape = fileData.colliderShape;
-        //if (fileData.colliderShape != TileCollisionShape::NONE) {
-        //    // TODO: Doors and shit? Move?
-        //    tileData.collider.defaultFlags = (TileFlags)0;
-        //    tileData.collider.dims = fileData.colliderDims;
-        //}
-
-        // Item drops
-        tileData.itemDrops.resize(fileData.itemDrops.size());
-        for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
-            tileData.itemDrops[i].countRange = fileData.itemDrops[i].countRange;
-            tileData.itemDrops[i].id = mItemRepository->getItem(fileData.itemDrops[i].itemName).getID();
-        }
-
-        // Recipes
-        tileData.recipe.resize(fileData.recipe.size());
-        for (size_t i = 0; i < tileData.recipe.size(); ++i) {
-            tileData.recipe[i].quantity = fileData.recipe[i].count;
-            tileData.recipe[i].id = mItemRepository->getItem(fileData.recipe[i].itemName).getID();
-        }
-
-        // Nav bits
-        if (tileData.shape == TileShape::STAIRS) {
-            tileData.navMask = 0b01000010; // SOUTH and NORTH access
-            tileData.heightOffsetSouth = STAIR_TILE_HEIGHT + 0.1f;
-            tileData.heightOffsetNorth = 0.0f;
-            tileData.heightOffsetWest = 0.0f;
-            tileData.heightOffsetEast = 0.0f;
-        }
-        else {
-            tileData.heightOffsetSouth = 0.0f;
-            tileData.heightOffsetWest = 0.0f;
-            tileData.heightOffsetEast = 0.0f;
-            tileData.heightOffsetNorth = 0.0f;
-        }
-
-        TileID nextId = (TileID)TileRepository::sTileData.size();
-        tileData.id = nextId;
-        assert(nextId < UINT16_MAX); // Make sure we dont roll over
-        assert(TileRepository::sTileIdMapping.find(key) == TileRepository::sTileIdMapping.end()); // Duplicate name
-        // TODO: error handling  for missing  sprite
-        tileData.texture = getTexture(fileData.textureName);
-        TileRepository::sTileIdMapping[key] = nextId;
-        // TODO: Serialize the string > ID mapping
-        TileRepository::sTileData.emplace_back(std::move(tileData));
-    }));
 }

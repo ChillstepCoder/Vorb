@@ -27,8 +27,7 @@ public:
 
 private:
     void renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const;
-    void renderMesh(const ItemStockpile& stockpile, const QuadMesh& itemMesh, const Camera3D& camera) const;
-    void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const;
+    void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const;
 
     const Material* mItemBillboardMaterial;
     const Material* mItemMeshMaterial;

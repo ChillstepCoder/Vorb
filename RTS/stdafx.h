@@ -52,6 +52,9 @@
 #include <entt/entt.hpp>
 constexpr entt::entity INVALID_ENTITY = (entt::null);
 
+// Types
+#include "types/IdTypes.h"
+
 // Services
 #include "services/Services.h"
 

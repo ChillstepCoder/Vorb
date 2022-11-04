@@ -21,4 +21,3 @@ struct ModelDef {
     SkinnedModel3D mModel;
     ModelID mModelId;
 };
-

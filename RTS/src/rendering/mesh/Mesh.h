@@ -34,11 +34,11 @@ class Mesh
     friend class TextMeshBuilder;
 public:
     Mesh();
-    virtual ~Mesh();
+    ~Mesh();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Mesh);
 
-    virtual void draw() const;
+    void draw() const;
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 

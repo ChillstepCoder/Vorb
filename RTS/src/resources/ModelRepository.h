@@ -19,6 +19,7 @@ public:
 
     const ModelDef& getModelDef(ModelID modelId) const { return mModelDefs[modelId]; }
     const ModelDef& getModelDef(const nString& name) const;
+    ModelID getModelID(const nString& name) const;
 
 private:
 

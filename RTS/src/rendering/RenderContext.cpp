@@ -424,7 +424,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    // Tiles
+    // Static meshes
+    // TODO: FPU Frustum culling: https://subscription.packtpub.com/book/game-development/9781838986193/10/ch10lvl1sec10/doing-frustum-culling-on-the-gpu-with-compute-shaders
     mTileContainerRenderer->renderStaticMeshes(mStaticMeshes, camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
@@ -928,49 +929,11 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
 
 void RenderContext::buildHorizonMesh()
 {
-    mHorizonQuad = std::make_unique<QuadMesh>();
-    TileVertex verts[4];
+    mHorizonQuad = std::make_unique<Mesh>();
+    MeshBuilder meshBuilder(true);
     constexpr float QUAD_WIDTH = 140000.0f;
-    constexpr float Z_POS = -6.0f;
-    const color4 waterColor(0, 0, 255, 255);
-
-    { // Bottom Left
-        TileVertex& vbl = verts[0];
-        vbl.pos.x = -QUAD_WIDTH + WorldData::WORLD_CENTER.x;
-        vbl.pos.y = -QUAD_WIDTH + WorldData::WORLD_CENTER.y;
-        vbl.pos.z = Z_POS;
-        vbl.uvs.x = 0.0f;
-        vbl.uvs.y = 0.0f;
-        vbl.color = waterColor;
-    }
-    { // Bottom Right
-        TileVertex& vbr = verts[1];
-        vbr.pos.x = QUAD_WIDTH + WorldData::WORLD_CENTER.x;
-        vbr.pos.y = -QUAD_WIDTH + WorldData::WORLD_CENTER.y;
-        vbr.pos.z = Z_POS;
-        vbr.uvs.x = 0.0f;
-        vbr.uvs.y = 0.0f;
-        vbr.color = waterColor;
-    }
-    { // Top Left
-        TileVertex& vtl = verts[2];
-        vtl.pos.x = -QUAD_WIDTH + WorldData::WORLD_CENTER.x;
-        vtl.pos.y = QUAD_WIDTH + WorldData::WORLD_CENTER.y;
-        vtl.pos.z = Z_POS;
-        vtl.uvs.x = 0.0f;
-        vtl.uvs.y = 0.0f;
-        vtl.color = waterColor;
-    }
-    { // Top Right
-        TileVertex& vtr = verts[3];
-        vtr.pos.x = QUAD_WIDTH + WorldData::WORLD_CENTER.x;
-        vtr.pos.y = QUAD_WIDTH + WorldData::WORLD_CENTER.y;
-        vtr.pos.z = Z_POS;
-        vtr.uvs.x = 0.0f;
-        vtr.uvs.y = 0.0f;
-        vtr.color = waterColor;
-    }
-    mHorizonQuad->setData(verts, 4, MeshDrawMode::STATIC);
+    meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, SubTexture{}, f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+    meshBuilder.finishMesh(mHorizonQuad, MeshDrawMode::STATIC, f32v3(0.0f));
 }
 
 TileContainerMeshData::~TileContainerMeshData()

@@ -13,7 +13,7 @@ class ItemStockpile;
 
 struct ItemStockpileRenderData {
    // std::unique_ptr<TBOBillboardMesh> mBillboardMesh; // TODO: Custom allocator
-    std::unique_ptr<QuadMesh> mQuadMesh; // TODO: Custom allocator
+    //std::unique_ptr<QuadMesh> mQuadMesh; // TODO: Custom allocator
     bool mBillboardMeshDirty = false;
     bool mQuadMeshDirty = false;
 };

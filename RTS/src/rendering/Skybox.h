@@ -3,6 +3,7 @@
 class QuadMesh;
 class ICamera;
 class MaterialRenderer;
+class Mesh;
 class Material;
 
 class Skybox {
@@ -14,7 +15,7 @@ public:
     void render();
 
 private:
-    std::unique_ptr<QuadMesh> mSkyboxMesh;
+    std::unique_ptr<Mesh> mSkyboxMesh;
     const Material* mMaterial = nullptr;
 };
 

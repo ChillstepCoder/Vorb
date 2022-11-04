@@ -96,7 +96,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
 
     // Copy all meshes
     SkinnedModel3D& model = def.mModel;
-    model.mMeshes = std::unique_ptr<SkinnedMesh[]>(new SkinnedMesh[numMeshes]);
+    model.mSkinnedMeshes = std::unique_ptr<SkinnedMesh[]>(new SkinnedMesh[numMeshes]);
     model.mNumMeshes = numMeshes;
     /* ozz::vector<ozz::sample::Mesh> meshes;
      meshes.resize(numMeshes);*/
@@ -161,7 +161,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
             assert(outputMesh.max_influences_count() <= MAX_BONES_PER_VERTEX);
 
 
-            SkinnedMesh& myMesh = model.mMeshes[m];
+            SkinnedMesh& myMesh = model.mSkinnedMeshes[m];
             verts.resize(outputMesh.vertex_count());
             assert(outputMesh.parts.size() == 1);
             for (int i = 0; i < outputMesh.vertex_count(); ++i) {
@@ -219,7 +219,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
         if (diffusePath.isValid()) {
             vg::Texture tex = mTextureCache.addTexture(diffusePath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
             for (int i = 0; i < numMeshes; ++i) {
-                model.mMeshes[i].setDiffuseTexture(tex.id);
+                model.mSkinnedMeshes[i].setDiffuseTexture(tex.id);
             }
         }
 
@@ -227,7 +227,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
         if (normalPath.isValid()) {
             vg::Texture tex = mTextureCache.addTexture(normalPath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
             for (int i = 0; i < numMeshes; ++i) {
-                model.mMeshes[i].setNormalTexture(tex.id);
+                model.mSkinnedMeshes[i].setNormalTexture(tex.id);
             }
         }
 
@@ -235,7 +235,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const AnimMachine
         if (specularPath.isValid()) {
             vg::Texture tex = mTextureCache.addTexture(specularPath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
             for (int i = 0; i < numMeshes; ++i) {
-                model.mMeshes[i].setSpecularTexture(tex.id);
+                model.mSkinnedMeshes[i].setSpecularTexture(tex.id);
             }
         }
     }
@@ -257,4 +257,13 @@ const ModelDef& ModelRepository::getModelDef(const nString& name) const
     auto&& it = mModelIdLookup.find(name);
     assert(it != mModelIdLookup.end());
     return mModelDefs[it->second];
+}
+
+ModelID ModelRepository::getModelID(const nString& name) const {
+    auto&& it = mModelIdLookup.find(name);
+    if (it == mModelIdLookup.end()) {
+        LOG_CRITICAL("Model {} not found", name);
+        return INVALID_MODEL_ID;
+    }
+    return it->second;
 }

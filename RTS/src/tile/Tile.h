@@ -23,8 +23,10 @@ enum class TileShape {
     WALL,
     DOOR,
     STAIRS,
+    MODEL,
     // Custom TODO
-    COUNT
+    COUNT,
+    NONE = COUNT
 };
 KEG_ENUM_DECL(TileShape);
 
@@ -67,6 +69,7 @@ struct TileData {
     TileResource resource = TileResource::NONE;
     SubTexture texture; // TODO: Model instead also make it a pointer this is huge?
     TileTextureMethod textureMethod;
+    ModelID modelId = INVALID_MODEL_ID;
     ui8 layer = 2;
     TileShape shape = TileShape::BLOCK;
     ui8 pathWeight = 255;

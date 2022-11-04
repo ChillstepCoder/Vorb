@@ -64,42 +64,42 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
 }
 
 void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const {
+    assert(false);
+    //ItemStockpileRenderData& renderData = stockpile.mRenderData;
+    //// TODO: Multithread?
+    //if (!renderData.mQuadMesh) {
+    //    renderData.mQuadMesh = std::make_unique<QuadMesh>();
+    //}
+    //QuadMesh& mesh = *renderData.mQuadMesh;
 
-    ItemStockpileRenderData& renderData = stockpile.mRenderData;
-    // TODO: Multithread?
-    if (!renderData.mQuadMesh) {
-        renderData.mQuadMesh = std::make_unique<QuadMesh>();
-    }
-    QuadMesh& mesh = *renderData.mQuadMesh;
+    //mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
 
-    mesh.reserveQuadCount(stockpile.mTotalItems); // TODO: This is potentially way out of wack depending on number of quads/billboards
+    //for (auto& it : stockpile.mItemContents) {
+    //    ItemID itemID = it.first;
+    //    const ItemStockpileRecord& record = it.second;
 
-    for (auto& it : stockpile.mItemContents) {
-        ItemID itemID = it.first;
-        const ItemStockpileRecord& record = it.second;
+    //    ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+    //    const Item& item = itemRepo.getItem(itemID);
+    //    // Only points are billboards
+    //    switch (item.mShape) {
+    //        case ItemStorageShape::POINT:
+    //            continue; // These are billboards
+    //        case ItemStorageShape::PLANK:
+    //            addItemStackPlanks(record, item, stockpile, mesh);
+    //            break;
+    //        case ItemStorageShape::LOG:
+    //            break;
+    //        case ItemStorageShape::INGOT:
+    //            break;
+    //        default:
+    //            break;
+    //    }
+    //    static_assert(e_cast(ItemStorageShape::COUNT) == 4, "Update for new mesh type");
+    //}
 
-        ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
-        const Item& item = itemRepo.getItem(itemID);
-        // Only points are billboards
-        switch (item.mShape) {
-            case ItemStorageShape::POINT:
-                continue; // These are billboards
-            case ItemStorageShape::PLANK:
-                addItemStackPlanks(record, item, stockpile, mesh);
-                break;
-            case ItemStorageShape::LOG:
-                break;
-            case ItemStorageShape::INGOT:
-                break;
-            default:
-                break;
-        }
-        static_assert(e_cast(ItemStorageShape::COUNT) == 4, "Update for new mesh type");
-    }
+    //mesh.finishMesh(MeshDrawMode::DYNAMIC);
 
-    mesh.finishMesh(MeshDrawMode::DYNAMIC);
-
-    renderData.mQuadMeshDirty = false;
+    //renderData.mQuadMeshDirty = false;
 }
 
 void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
@@ -112,23 +112,24 @@ void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemSt
 
 void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3D& camera) const
 {
-    ItemStockpileRenderData& renderData = stockpile.mRenderData;
+    assert(false);
+    //ItemStockpileRenderData& renderData = stockpile.mRenderData;
 
-    // TODO: Multithreaded?
-    if (renderData.mBillboardMeshDirty) {
-        updateStockpileBillboardMesh(stockpile);
-    }
-
-    if (renderData.mQuadMeshDirty) {
-        updateStockpileQuadMesh(stockpile);
-    }
-
-    //if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
-    //    renderMesh(stockpile, *renderData.mBillboardMesh, camera);
+    //// TODO: Multithreaded?
+    //if (renderData.mBillboardMeshDirty) {
+    //    updateStockpileBillboardMesh(stockpile);
     //}
-    if (renderData.mQuadMesh && renderData.mQuadMesh->isValid()) {
-        renderMesh(stockpile, *renderData.mQuadMesh, camera);
-    }
+
+    //if (renderData.mQuadMeshDirty) {
+    //    updateStockpileQuadMesh(stockpile);
+    //}
+
+    ////if (renderData.mBillboardMesh && renderData.mBillboardMesh->isValid()) {
+    ////    renderMesh(stockpile, *renderData.mBillboardMesh, camera);
+    ////}
+    //if (renderData.mQuadMesh && renderData.mQuadMesh->isValid()) {
+    //    renderMesh(stockpile, *renderData.mQuadMesh, camera);
+    //}
 }
 
 void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const {
@@ -142,45 +143,35 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMe
     itemMesh.draw();
 }
 
-void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const QuadMesh& itemMesh, const Camera3D& camera) const {
-    VGUniform offsetUniform = mItemMeshMaterial->mProgram.getUniform("unOffset");
-    const f32v3 stockpilePos(stockpile.mAABB.pos.x, stockpile.mAABB.pos.y, 0.0f);
-    const f32v3 offset = stockpilePos - camera.getPosition();
 
-    // TODO: Reduce swaps
-    MaterialRenderer::bindMaterialForRender(*mItemMeshMaterial, nullptr);
-    glUniform3fv(offsetUniform, 1, &offset.x);
-    itemMesh.draw(mItemMeshMaterial->mProgram);
-}
+void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const {
+    assert(false);
+    //const SubTexture& texture = item.mTexture;
 
-void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, QuadMesh& mesh) const {
+    //const ui32v3& stackDims = item.mStackDims;
+    //const ui32 stackLayer = stackDims.x * stackDims.y;
+    //f32v3 spacingRatio = f32v3(1.0f / stackDims.x, 1.0f / stackDims.y, 1.0f / stackDims.z);
 
-    const SubTexture& texture = item.mTexture;
-
-    const ui32v3& stackDims = item.mStackDims;
-    const ui32 stackLayer = stackDims.x * stackDims.y;
-    f32v3 spacingRatio = f32v3(1.0f / stackDims.x, 1.0f / stackDims.y, 1.0f / stackDims.z);
-
-    for (ui32 index : record.stackLocations) {
-        const ItemStack& stack = stockpile.mStorage[index].stack;
-        // TODO: Z
-        ui32v2 pos2d = ui32v2(index % stockpile.mAABB.width, index / stockpile.mAABB.width);
-        f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
-        for (ui32 i = 0; i < stack.quantity; ++i) {
-            f32v3 boxPos = pos;
-            // TODO: Not just 5 by 5
-            constexpr ui32 w = 5;
-            boxPos.x += (i % stackDims.x) * spacingRatio.x;
-            boxPos.y += ((i % stackLayer) / stackDims.x) * spacingRatio.y;
-            boxPos.z += (i / stackLayer) * spacingRatio.z;
-            // TODO: Bottom
-            // TODO: Cull edges, merging
-            for (int j = e_cast(CubeFacing::LEFT); j <= e_cast(CubeFacing::TOP); ++j) {
-                const f32v2& axis = CUBE_FACING_AXIS[j];
-                const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
-                mesh.addAxisAlignedQuad(boxPos + CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, 0, texture.mUvRect, COLOR_WHITE, false);
-            }
-        }
-    }
+    //for (ui32 index : record.stackLocations) {
+    //    const ItemStack& stack = stockpile.mStorage[index].stack;
+    //    // TODO: Z
+    //    ui32v2 pos2d = ui32v2(index % stockpile.mAABB.width, index / stockpile.mAABB.width);
+    //    f32v3 pos = f32v3(pos2d.x, pos2d.y, stockpile.mZPos);
+    //    for (ui32 i = 0; i < stack.quantity; ++i) {
+    //        f32v3 boxPos = pos;
+    //        // TODO: Not just 5 by 5
+    //        constexpr ui32 w = 5;
+    //        boxPos.x += (i % stackDims.x) * spacingRatio.x;
+    //        boxPos.y += ((i % stackLayer) / stackDims.x) * spacingRatio.y;
+    //        boxPos.z += (i / stackLayer) * spacingRatio.z;
+    //        // TODO: Bottom
+    //        // TODO: Cull edges, merging
+    //        for (int j = e_cast(CubeFacing::LEFT); j <= e_cast(CubeFacing::TOP); ++j) {
+    //            const f32v2& axis = CUBE_FACING_AXIS[j];
+    //            const f32v2 dims(spacingRatio[axis.x], spacingRatio[axis.y]);
+    //            mesh.addAxisAlignedQuad(boxPos + CUBE_FACING_GEOMETRY_OFFSETS[j] * spacingRatio, dims, f32v2(0.0f, 0.0f), (CubeFacing)j, 0, texture.mUvRect, COLOR_WHITE, false);
+    //        }
+    //    }
+    //}
 
 }

@@ -33,7 +33,7 @@ DebugOptions::DebugOptions() :
     mDepthOfFieldExponent(1.0f),
     mDepthOfFieldDebugRender(false),
     // Ambient occlusion
-     mSSAODisabled(true),
+    mSSAODisabled(true),
     mSSAORadius(1.0f),
     mSSAOBias(0.008f),
     mSSAOBlurRadius(0.77f),
@@ -47,7 +47,7 @@ DebugOptions::DebugOptions() :
     mShadowUpdateRateSeconds(0.022f),
     mShadowBlurPasses(3), // 2
     mShadowBlurRadius(0.45f), //1.5f),
-    mDisableShadows(false),
+    mDisableShadows(true),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),
