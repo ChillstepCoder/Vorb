@@ -141,6 +141,8 @@ void TileContainer::setTileAt(TileIndex i, Tile tile) {
     Tile& oldTile = mTiles[i];
     
     TileFlags newFlags = TileFlags(oldTile.tileFlags.getBits() | tile.tileFlags.getBits());
+    tile.groundZOffset = oldTile.groundZOffset;
+    tile.navData = oldTile.navData;
     oldTile = tile;
     oldTile.setTileFlags(newFlags, readLocked); // Union tile flags
     onTileChanged(i, readLocked);
@@ -311,9 +313,11 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
         }
     }
     else {
-        // When not locked we can immediately mark dirty
+        // When not locked we can immediately mark dirty and copy
         mDirtyNav = true;
         mDirtyData = true;
+        tile.updateThreadSafeLayers();
+        mWalls[tileIndex].copyThreadSafeData();
     }
 
 

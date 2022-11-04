@@ -1,6 +1,7 @@
 #pragma once
 
 struct LiteTileHandle;
+class IHeightmapGrid;
 
 struct PathPoint {
     PathPoint() = default;
@@ -76,6 +77,8 @@ public:
 
     const LiteTileHandle* getPoints() const { return points; }
     ui32 getNumPoints() const { return numPoints; }
+
+    std::vector<f32v3> convertToWorldPoints(const IHeightmapGrid& heightGrid) const;
 
 private:
     LiteTileHandle* points = nullptr; // Raw pointer

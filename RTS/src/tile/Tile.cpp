@@ -149,7 +149,6 @@ bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) co
 }
 
 void Tile::updateThreadSafeLayers() {
-    assert(tileFlags.isBitSet(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE));
     tileFlags.clearBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
 
     tileFlagsThreadSafe = tileFlags;

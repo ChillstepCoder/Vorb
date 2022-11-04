@@ -9,6 +9,7 @@
 #include "util/TinyThreadsafeVector.hpp"
 #include "world/ChunkState.h"
 
+
 class Chunk;
 class Mesh;
 class BillboardMesh;
@@ -30,7 +31,6 @@ constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 class IWorldGrid;
 
 typedef TinyThreadsafeVector<Structure*> ChunkStructureVector;
-typedef std::pair<Structure*const *, ui16> StructureArrayPtr;
 
 enum class NeighborIndex4 {
 	BOTTOM = 0,

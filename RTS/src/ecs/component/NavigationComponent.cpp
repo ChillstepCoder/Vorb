@@ -8,6 +8,8 @@
 #include "options/DebugOptions.h"
 #include "pathfinding/NavThread.h"
 
+#include "rendering/RenderThreadTasks.h"
+
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "world/IWorld.h"
@@ -68,10 +70,6 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 	const Tile* targetTile = sWorld->getTileHandleAtWorldPos(nextTilePos).tile;
 	if (targetTile) {
         f32 baseZ = targetTile->getGroundZOffsetMainThread();
-		// TODO: Remove
-		if (sDebugOptions.mShowPaths) {
-			DebugRenderer::drawWireQuad(f32v3(nextTilePos.x, nextTilePos.y, baseZ), f32v2(1.0f), color4(1.0f, 0.0f, 0.0f, 1.0f));
-		}
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
             // Climb
 			motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;
@@ -219,7 +217,14 @@ void requestFinePathToPoint(NavigationComponent& navCmp, const TileHandle& start
         std::shared_ptr<NavPath> pathHandle = navCmp.mPendingFinePath;
         assert(Services::isUsingNav());
 		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, [pathHandle]() {
-			DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), sWorld->getHeightmapGrid(), 200);
+
+			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(sWorld->getHeightmapGrid())));
+
+			RenderThreadTasks::getInstance().addGenericTask([](RenderContext&, void* vPathHandle) {
+				std::vector<f32v3>* pathHandle = static_cast<std::vector<f32v3>*>(vPathHandle);
+				DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), 200);
+				delete pathHandle;
+			}, pointsHandle);
 		});
 	}
     else {
@@ -292,8 +297,6 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
                     nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
-					// TODO: REMOVE
-					DebugRenderer::drawFilledQuad(f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.8f), 10000);
                     requestFinePathToPoint(navCmp, sWorld->getTileHandleAtWorldPos(pos), sWorld->getTileHandleAtWorldPos(nextCoarseTilePos));
                 }
 			}

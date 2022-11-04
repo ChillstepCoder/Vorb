@@ -8,8 +8,6 @@
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
-#include "pathfinding/NavPath.h"
-#include "world/IHeightmapGrid.h"
 #include "rendering/RenderStats.h"
 #include "tile/TileHandle.h"
 
@@ -189,25 +187,23 @@ void DebugRenderer::drawAABB(const i32AABB2& aabb, f32 height, color4 color, int
     drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);
 }
 
-void DebugRenderer::drawPath(const NavPath& path, color4 color, const IHeightmapGrid& heightGrid, int lifeTime /*= 0*/, int id /*= 0*/) {
+void DebugRenderer::drawPath(const std::vector<f32v3>& path, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_RENDER_THREAD());
-    ui32 numPoints = path.getNumPoints();
-    const LiteTileHandle* points = path.getPoints();
-    if (numPoints < 2) {
+    if (path.size() < 2) {
         return;
     }
-    OVERFLOW_ASSERT_UI32(numPoints);
+    OVERFLOW_ASSERT_UI32(path.size());
 
     auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
-    lines.reserve(lines.size() + numPoints);
+    lines.reserve(lines.size() + path.size());
 
-    for (ui32 i = 0; i < numPoints - 1; ++i) {
-        const f32v3 pointA(points[i].getWorldPosition());
-        const f32v3 pointB(points[i + 1].getWorldPosition());
+    for (ui32 i = 0; i < path.size() - 1; ++i) {
+        const f32v3& pointA(path[i]);
+        const f32v3& pointB(path[i + 1]);
 
         lines.emplace_back(
-            f32v3(pointA.x, pointA.y, heightGrid.tryComputeHeightAtPoint(pointA)),
-            f32v3(pointB.x, pointB.y, heightGrid.tryComputeHeightAtPoint(pointB)),
+            pointA,
+            pointB,
             color
         );
     }

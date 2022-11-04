@@ -1,10 +1,9 @@
 #pragma once
 struct b2AABB;
-class NavPath;
 
-class IHeightmapGrid;
 
 constexpr int MAX_DEBUG_RENDER_LIFETIME = INT32_MAX;
+
 
 class DebugRenderer
 {
@@ -27,7 +26,7 @@ public:
 	static void drawAABB(const f32AABB3& aabb, f32 height, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime = 0, int id = 0);
     static void drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime = 0, int id = 0);
-    static void drawPath(const NavPath& path, color4 color, const IHeightmapGrid& heightGrid, int lifeTime = 0, int id = 0);
+    static void drawPath(const std::vector<f32v3>& path, color4 color, int lifeTime = 0, int id = 0);
     static void drawCircle(const f32v3& origin, f32 radius, color4 color, int lifeTime = 0, int id = 0);
 
     // =============== Thread safe functions ===============

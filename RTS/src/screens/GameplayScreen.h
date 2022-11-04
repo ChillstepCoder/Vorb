@@ -11,6 +11,8 @@
 
 #include <Vorb/ui/KeyboardEventManager.h>
 
+#include "world/WorldObjectQuery.h"
+
 constexpr f64 MS_PER_GAME_TICK = 40.0;
 constexpr f64 MAX_MS_PER_FRAME = 80.0;
 
@@ -55,6 +57,7 @@ private:
 
 	void updateClient(const vui::GameTime& gameTime);
 	void updateHost(const vui::GameTime& gameTime);
+	void updateScreen();
 
     void updateTimeScaling(const vui::GameTime& gameTime);
     void updateTilePicking();
@@ -83,6 +86,8 @@ private:
 	PreciseTimer mRightClickTimer;
     f32v3 mRightClickPickPos = f32v3(FLT_MAX);
     f32v3 mMousePickRay = f32v3(0.0f);
+	WorldObjectQuery mWorldObjectQuery;
+	bool mIsQuerying = false;
 
 	WorldType mClientType = WorldType::HOST;
 

@@ -527,7 +527,12 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
                     continue;
                 }
                 // This should be very rare and is a failure case for this edge, TODO: debug log it or something?
-                assert(outerHandle.container != container);
+                if (outerHandle.container != container) {
+                    LOG_CRITICAL("outerHandle.container != container in PathFinder::coarseAStarEdgePropagate. Adding red debug draw line to world at edge");
+                    DebugRenderer::drawLineBetweenPointsThreadSafe(edgePosWorld, worldPosOuter, COLOR_RED, 200000);
+                    __debugbreak();
+                    continue;
+                }
                 // TODO: This always picks last node
                 edgeNodes[std::make_pair(outerHandle.container->getId(), outerHandle.tile->getNavNodeIndex())] = outerHandle.tileIndex;
             }

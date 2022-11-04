@@ -35,6 +35,7 @@
 #include "item/ItemStockpile.h"
 #include "item/ItemStockpileRegistry.h"
 
+#include "physics/PhysHitResult.h"
 #include "physics/PhysicsWorld.h"
 
 #include "pathfinding/NavWorld.h"
@@ -189,6 +190,7 @@ void GameplayScreen::onExit(const vui::GameTime& gameTime) {
 void GameplayScreen::update(const vui::GameTime& gameTime) {
 
     updateTimeScaling(gameTime);
+    updateScreen();
 
     // Check quit
     if (GameplayScreenGlobalState::isQuittingToDesktop) {
@@ -300,6 +302,16 @@ void GameplayScreen::updateHost(const vui::GameTime& gameTime) {
 
 }
 
+void GameplayScreen::updateScreen() {
+    if (mIsQuerying && mWorldObjectQuery.isValid()) {
+        // Right click picking
+        mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+        // Enable context menu
+        mRightClickInteractPopup = std::make_unique<TileInteractPanel>(mSelectedScreenPos, static_cast<SDL_Window*>(m_app->getWindow().getHandle()), std::move(mWorldObjectQuery));
+        mIsQuerying = false;
+    }
+}
+
 void GameplayScreen::updateTimeScaling(const vui::GameTime& gameTime) {
     // DEBUG Time advance
     /*static constexpr float TIME_ADVANCE_MULT = 4.0f;
@@ -364,27 +376,43 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
             }
         }
         else if (result & INTERACT_MENU_RESULT_CLEAR_TILE) {
-			// TODO: HANDLE RACE CONDITION
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TILE_ID_NONE));
+                TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TILE_ID_NONE));
+                    delete tileHandlePtr;
+                }, tileHandlePtr);
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE) {
-            // grass
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TileRepository::getTile(StrToken("tree_small"))));
+                TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TileRepository::getTile(StrToken("tree_small"))));
+                    delete tileHandlePtr;
+                }, tileHandlePtr);
             }
         }
         else if (result & INTERACT_MENU_RESULT_PLANT_TREE_2) {
-            // grass
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TileRepository::getTile(StrToken("tree_pine"))));
+                TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TileRepository::getTile(StrToken("tree_pine"))));
+                    delete tileHandlePtr;
+                }, tileHandlePtr);
             }
         }
         else if (result & INTERACT_MENU_RESULT_BUILD_WALL) {
-            // grass
             if (mSelectedTileHandle.isValid()) {
-                mSelectedTileHandle.getMutableContainer()->setTileAt(mSelectedTileHandle.tileIndex, Tile(TileRepository::getTile(StrToken("rock1")), TILE_ID_NONE, TILE_ID_NONE, 2u));
+                TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                    TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TileRepository::getTile(StrToken("rock1")), TILE_ID_NONE, TILE_ID_NONE, 2u));
+                    delete tileHandlePtr;
+                }, tileHandlePtr);
             }
         }
         else if (result & INTERACT_MENU_RESULT_INSPECT) {
@@ -417,7 +445,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAVMESH) {
             if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavGraphForContainer(*tileHandle.container, nullptr, 2000);
             }
             else {
                 assert(false);
@@ -426,7 +454,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
             if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, nullptr, 2000);
             }
             else {
                 assert(false);
@@ -435,7 +463,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_NAV_NODE) {
             if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavNode(tileHandle, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawCoarseNavNode(tileHandle, nullptr, 2000);
             }
             else {
                 assert(false);
@@ -558,37 +586,11 @@ void GameplayScreen::initInputs()
         constexpr float VEL_EXP = 0.4f;
         const f32v2 screenPos(event.x, event.y);
 
-        entt::entity newActor = INVALID_ENTITY;
         if (event.button == vui::MouseButton::LEFT) {
-            /*newActor = mUndeadActorFactory->createActor(
-                mTestClick,
-                vio::Path("data/textures/circle_dir.png"),
-                vio::Path("")
-            );*/
 
             if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
                 // Teleport
                 GameThreadTasks::getInstance().addCameraPickTeleportTask(mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
-            }
-            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_Q)) {
-                /*    TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
-                    if (handle.isValid()) {
-                        Chunk* chunk = handle.getMutableChunk();
-                        ui8 height = chunk->getTileAt(handle.index).groundZPosition + 5;
-                        chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
-                    }*/
-            }
-            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_E)) {
-                /*TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
-                if (handle.isValid()) {
-                    Chunk* chunk = handle.getMutableChunk();
-                    ui8 height = chunk->getTileAt(handle.index).groundZPosition;
-                    chunk->setTileAt(handle.index, Tile(TileRepository::getTile("rock1"), TILE_ID_NONE, TILE_ID_NONE, height));
-                }*/
-            }
-            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_C)) {
-                /*TileHandle handle = mWorld.getTileHandleAtWorldPos(worldPos);
-                mWorld.createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));*/
             }
             else {
                 if (mRightClickInteractPopup) {
@@ -597,29 +599,25 @@ void GameplayScreen::initInputs()
             }
         }
         else if (event.button == vui::MouseButton::RIGHT) {
-            if (vui::InputDispatcher::key.isKeyPressed(VKEY_P)) {
-                /*const f32v3 pos(worldPos.x, worldPos.y, 0.5f);
-                mResourceManager.getParticleSystemManager().createParticleSystem(pos, f32v3(1.0f, 0.0f, 0.0f), "blood");*/
+            constexpr f64 RIGHT_CLICK_INTERACT_MS_THRESHOLD = 160.0;
+            if (mRightClickInteractPopup) {
+                mRightClickInteractPopup.reset();
             }
-            else if (vui::InputDispatcher::key.isKeyPressed(VKEY_G)) {
-                /*mWorld.createEntity(worldPos, "villager"); */
-            }
-            else {
-                constexpr f64 RIGHT_CLICK_INTERACT_MS_THRESHOLD = 160.0;
-                if (mRightClickInteractPopup) {
-                    mRightClickInteractPopup.reset();
-                }
-                else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
-                    GameThreadTasks::getInstance().addCameraPickInteractTask(mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
+            else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
+                const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
+                PhysHitResult hitResult = sWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                if (hitResult.didHit()) {
+                    mSelectedScreenPos = screenPos;
+                    // For interact must click in about the same spot
+                    if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
+                        f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
+                        if (mWorldObjectQuery.tryQuery(worldPos)) {
+                            mIsQuerying = true;
+                        }
+                    }
                 }
             }
         }
 
-        // Apply velocity
-        if (newActor != INVALID_ENTITY) {
-            /*auto& physcomp = mecs->getphysicscomponentfromentity(newactor);
-            velocity = velocity;
-            physcomp.mbody->applyforce(reinterpret_cast<b2vec2&>(velocity), physcomp.mbody->getworldcenter(), true);*/
-        }
     });
 }

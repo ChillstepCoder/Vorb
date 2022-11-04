@@ -2,6 +2,7 @@
 #include "NavPath.h"
 
 #include "tile/TileHandle.h"
+#include "world/IHeightmapGrid.h"
 
 #include <boost/pool/singleton_pool.hpp>
 
@@ -31,4 +32,17 @@ void* NavPath::operator new(size_t count) {
 void NavPath::operator delete(void* pointer, size_t size) {
     UNUSED(size);
     return singleton_path_pool::free(pointer);
+}
+
+std::vector<f32v3> NavPath::convertToWorldPoints(const IHeightmapGrid& heightGrid) const
+{
+    if (!points) return std::vector<f32v3>();
+    // These two threads have will lock the world state so we are safe to read
+    assert(IS_GAME_THREAD() || IS_NAV_THREAD());
+    std::vector<f32v3> rv(numPoints);
+    for (ui32 i = 0; i < numPoints; ++i) {
+        i32v2 worldPosI = points[i].getWorldPosition();
+        rv[i] = f32v3(worldPosI.x, worldPosI.y, heightGrid.tryComputeHeightAtPoint(worldPosI));
+    }
+    return rv;
 }

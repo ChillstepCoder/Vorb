@@ -49,7 +49,7 @@ UIInteractMenuResultFlags TileInteractPanel::updateAndRender()
     ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
-    if (mWorldObjectQuery.mSelectedStructure) {
+    if (mWorldObjectQuery.getSelectedStructure()) {
         resultFlags = updateAndRenderStructureTile();
     }
     else {
@@ -105,9 +105,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
 
             // Structure list
             ++optionCount;
-            TileHandle handle = mWorldObjectQuery.getTileHandle();
-            Chunk& chunk = sWorld->getChunk(handle.getChunkIDAtPos());
-            StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
+            StructureArrayPtr& structures = mWorldObjectQuery.getStructures();
             if (structures.second) {
                 nextState = UIInteractMenuState::SELECTED_STRUCTURE_LIST;
                 if (ImGui::Button("Structures")) {
@@ -182,9 +180,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
         }
         case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
-            TileHandle handle = mWorldObjectQuery.getTileHandle();
-            Chunk& chunk = sWorld->getChunk(handle.getChunkIDAtPos());
-            StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
+            StructureArrayPtr& structures = mWorldObjectQuery.getStructures();
             if (!structures.second) {
                 // If we got here the structure  was deleted while we had it selected
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
@@ -195,7 +191,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
                     if (structure->getType() == StructureType::Building) {
                         nString name = "Building " + std::to_string(i);
                         if (ImGui::Button(name.c_str())) {
-                            mWorldObjectQuery.mSelectedStructure = mSelectedStructure = structure;
+                            mWorldObjectQuery.setSelectedStructure(mSelectedStructure = structure);
                             break;
                         }
                     }
@@ -212,7 +208,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     // Debug render
     TileHandle handle = mWorldObjectQuery.getTileHandle();
     f32v3 tilePos(f32v3(handle.getWorldPos3D()));
-    tilePos.z += handle.tile->getGroundZOffsetMainThread();
+    tilePos.z += handle.tile->getGroundZOffsetThreadSafe();
     DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");
@@ -244,7 +240,7 @@ ui32 TileInteractPanel::updateAndRenderStructureTile() {
     }
     TileHandle handle = mWorldObjectQuery.getTileHandle();
     f32v3 tilePos(f32v3(handle.getWorldPos3D()));
-    tilePos.z += handle.tile->getGroundZOffsetMainThread();
+    tilePos.z += handle.tile->getGroundZOffsetThreadSafe();
     DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     return resultFlags;
 }
