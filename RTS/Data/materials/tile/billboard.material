@@ -1,3 +1,0 @@
-billboard:
-  vert: billboard.vert
-  frag: standard_tile.frag

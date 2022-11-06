@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GrassRenderer.h"
 
-#include "rendering/QuadMesh.h"
+#include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialManager.h"
@@ -21,11 +21,12 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
     MaterialRenderer::bindMaterialForRender(*mGrassMaterial);
     const vg::GLProgram& program = mGrassMaterial->mProgram;
     VGUniform offsetUniform = program.getUniform("unOffset");
-    VGUniform fadeUniform = program.getUniform("unFadeDistance");
     VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
+    VGUniform tboSizeTypeUniform = program.getUniform("UnTboSizeType");
+    VGUniform tboPositionUniform = program.getUniform("UnTboPosition");
     glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x);
-    glUniform1f(fadeUniform, sDebugOptions.mGrassSettings.fadeDistance);
+    glUniform1f(program.getUniform("unFadeDistance"), sDebugOptions.mGrassSettings.fadeDistance);
     for (auto&& grassMesh : grassMeshes) {
         const GrassBillboardMesh& mesh = grassMesh->mMesh;
         f32v3 offset = grassMesh->mPosition - camera.getPosition();
@@ -43,9 +44,8 @@ void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, 
             glUniform1f(crossfadeAlphaUniform, 0.0f);
             glUniform1f(crossfadeDirectionUniform, 0.0f);
         }
-        const BoundingSphere& bounds = mesh.getBoundingSphere();
-        if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
-            mesh.draw(program); // TODO: Stop passing program;
+        if (camera.sphereIsVisible(mesh.getBoundingSphere())) {
+            mesh.draw(tboSizeTypeUniform, tboPositionUniform);
         }
     };
 }

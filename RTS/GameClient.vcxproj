@@ -247,7 +247,6 @@
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\BuildingMesher.cpp" />
-    <ClCompile Include="src\rendering\BuildingRenderer.cpp" />
     <ClCompile Include="src\rendering\CharacterModel.cpp" />
     <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
     <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
@@ -278,7 +277,7 @@
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
-    <ClCompile Include="src\rendering\QuadMesh.cpp" />
+    <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
     <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
@@ -478,7 +477,6 @@
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
     <ClInclude Include="src\rendering\BuildingMesher.h" />
-    <ClInclude Include="src\rendering\BuildingRenderer.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />
     <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
@@ -514,7 +512,7 @@
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
-    <ClInclude Include="src\rendering\QuadMesh.h" />
+    <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />

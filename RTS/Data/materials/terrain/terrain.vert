@@ -1,6 +1,5 @@
+#include "../TextureUbo.glsl"
 #include "../GlobalUbo.glsl"
-
-uniform vec3 unOffset;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec3 vNormal;
@@ -14,7 +13,7 @@ const vec3 TANGENT = vec3(0.0, 1.0, 0.0);
 
 void main() {
     vec4 vertexPos = vPosition;
-    vec4 worldPos = vertexPos + vec4(unOffset, 0.0);
+    vec4 worldPos = vertexPos + vec4(unPosition - CameraPos, 0.0);
 	
 	vec3 normal = vNormal; // Prenormalized on CPU
 	vec3 binormal = cross(normal, TANGENT);

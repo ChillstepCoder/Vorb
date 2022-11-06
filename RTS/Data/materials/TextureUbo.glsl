@@ -3,5 +3,6 @@
 
 layout(bindless_sampler) uniform;
 layout (std140, binding = 1) uniform TextureUbo {
+    vec3 unPosition;
     uvec4 Textures[256];
 };

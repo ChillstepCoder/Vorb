@@ -38,6 +38,10 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, *chunkTileContainer, nullptr /*physicsMesh*/);
         TileMeshBuilderMethods::meshTileContainerDynamic(dynamicMeshBuilder, *chunkTileContainer);
 
+        staticMeshBuilder.computeBoundingSphere();
+        dynamicMeshBuilder.computeBoundingSphere();
+        billboardMeshBuilder.computeBoundingSphere();
+
         RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(chunkTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
     }, nullptr);
 }

@@ -76,7 +76,7 @@ public:
     // Doesn't dispose program
     void dispose();
 
-    const VGUniform& getUniform(const char* name) const {
+    VGUniform getUniform(const char* name) const {
         return mProgram.getUniform(name);
     }
     const VGUniform* tryGetUniform(const char* name) const {

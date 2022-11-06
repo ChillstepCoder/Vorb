@@ -25,6 +25,7 @@ struct BillboardTypeData {
 };
 
 layout (std140, binding = 1) uniform BillboardTypes {
+  vec3 unPosition;
   BillboardTypeData typeData[256];
 };
 

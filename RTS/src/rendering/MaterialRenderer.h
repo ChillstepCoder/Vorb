@@ -11,7 +11,6 @@ public:
     MaterialRenderer() = delete;
 
     static void renderFullScreenQuad(const Material& material);
-    static void renderMesh(const MeshBase& mesh, const Material& material);
     static void renderMesh(const Mesh& mesh, const Material& material);
     static void renderMaterialToQuadWithTexture(const Material& material, VGTexture texture, const f32v4& worldSpaceRect);
     static void renderMaterialToQuadWithTextureBindless(const Material& material, VGTexture texture, ui32 textureIndex, const f32v4& worldSpaceRect);

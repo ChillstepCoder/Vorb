@@ -5,9 +5,7 @@
 #include "world/IWorld.h"
 #include "world/cli/CliWorldInterface.h"
 #include "resources/ResourceManager.h"
-#include "rendering/QuadMesh.h"
-#include "rendering/TileVertex.h"
-#include "rendering/ShaderLoader.h"
+#include "rendering/mesh/Mesh.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/RenderContext.h"
@@ -51,12 +49,10 @@ void TileContainerRenderer::renderStaticMeshes(const std::set<const Mesh*>& mesh
     // Tiles
     // TODO: Move this to MaterialRenderer::renderMeshes();
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
-    VGUniform offsetUniform = mStandardMaterial->mProgram.getUniform("unOffset");
     for (auto&& mesh : meshes) {
-        // TODO: Do this in the shader?
-        f32v3 offset = mesh->getPosition() - camera.getPosition();
-        glUniform3fv(offsetUniform, 1, &offset.x);
-        mesh->draw();
+        if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
+            mesh->draw();
+        }
     }
 }
 
@@ -64,12 +60,11 @@ void TileContainerRenderer::renderBillboards(const std::set<const Mesh*>& meshes
 
     // TODO: Move this to MaterialRenderer::renderMeshes();
     MaterialRenderer::bindMaterialForRender(*mBillboardMaterial);
-    VGUniform offsetUniform = mBillboardMaterial->mProgram.getUniform("unOffset");
     for (auto&& mesh : meshes) {
-        assert(mesh->isValid());
-        f32v3 offset = mesh->getPosition() - camera.getPosition();
-        glUniform3fv(offsetUniform, 1, &offset.x);
-        mesh->draw();
+        if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
+            assert(mesh->isValid());
+            mesh->draw();
+        }
     };
 }
 

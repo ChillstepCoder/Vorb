@@ -37,6 +37,42 @@ void BillboardMeshBuilder::reserveBillboardCount(ui32 count) {
     mMainSubMeshData.mSubtextureData.reserve(5); // Arbitrary
 }
 
+void BillboardMeshBuilder::computeBoundingSphere() {
+    PROFILE_FUNCTION();
+
+    f32v2 minMax[3] = { {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN} };
+
+    for (auto& v : mMainSubMeshData.mBillboards) {
+        const f32v3& pos = v.mPos;
+        for (int i = 0; i < 3; ++i) {
+            if (pos[i] < minMax[i].x) {
+                minMax[i].x = pos[i];
+            }
+            if (pos[i] > minMax[i].y) {
+                minMax[i].y = pos[i];
+            }
+        }
+    }
+    for (auto& subMesh : mSubMeshesData) {
+        for (auto& v : subMesh.mBillboards) {
+            const f32v3& pos = v.mPos;
+            for (int i = 0; i < 3; ++i) {
+                if (pos[i] < minMax[i].x) {
+                    minMax[i].x = pos[i];
+                }
+                if (pos[i] > minMax[i].y) {
+                    minMax[i].y = pos[i];
+                }
+            }
+        }
+    }
+    mBoundingSphere.center = f32v3((minMax[0].x + minMax[0].y) * 0.5f, (minMax[1].x + minMax[1].y) * 0.5f, (minMax[2].x + minMax[2].y) * 0.5f);
+    const f32 halfLargestWidth = 0.5f * std::max(std::max(minMax[0].y - minMax[0].x, minMax[1].y - minMax[1].x), minMax[2].y - minMax[1].y);
+    const f32 halfLargestWidthSq = SQ(halfLargestWidth);
+    // TODO: This isnt quite accurate it assumes a cube instead of a rectangle, but ehh good enough for now
+    mBoundingSphere.radius = sqrt(halfLargestWidthSq + halfLargestWidthSq);
+}
+
 void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
     // return blank mesh if we have no geometry
@@ -54,6 +90,7 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode 
     // Set bounds
     mesh->mPosition = worldPos;
     mesh->mBoundingSphere = mBoundingSphere;
+    mesh->mBoundingSphere.center += worldPos;
 
     // Allocate correct number of submeshes
     mesh->mSubMeshes.resize(mSubMeshesData.size());
@@ -65,10 +102,10 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode 
     }
 
     // Upload data
-    uploadBufferData(mesh->mMainMesh, mMainSubMeshData, drawMode);
+    uploadBufferData(mesh->mMainMesh, worldPos, mMainSubMeshData, drawMode);
     mMainSubMeshData.clear();
     for (size_t i = 0; i < mesh->mSubMeshes.size(); ++i) {
-        uploadBufferData(mesh->mSubMeshes[i], mSubMeshesData[i], drawMode);
+        uploadBufferData(mesh->mSubMeshes[i], worldPos, mSubMeshesData[i], drawMode);
         mSubMeshesData[i].clear();
     }
 
@@ -158,7 +195,7 @@ struct AlignedUboData {
     ui32v4 textures;    
 };
 
-void BillboardMeshBuilder::uploadBufferData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode)
+void BillboardMeshBuilder::uploadBufferData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode)
 {
     glBindVertexArray(subMesh.mVao);
 
@@ -166,24 +203,28 @@ void BillboardMeshBuilder::uploadBufferData(SubMeshData& subMesh, const InProgre
     subMesh.mIndexCount = data.mBillboards.size() * 6;
 
     // UBO
-    if (subMesh.mUbo) {
-        const ui32 textureBufferSizeBytes = data.mSubtextureData.size() * sizeof(AlignedUboData);
-        // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
-        AlignedUboData buffer[MAX_SUBTEXTURES_PER_MESH];
-        for (ui32 i = 0; i < data.mSubtextureData.size(); ++i) {
-            const SubtextureUniformData& subtextureData = data.mSubtextureData[i];
-            buffer[i].uvs = subtextureData.uvRect;
-            buffer[i].textures.x = subtextureData.textureDiffuse & 0xffffffff;
-            buffer[i].textures.y = subtextureData.textureDiffuse >> 32;
-            buffer[i].textures.z = subtextureData.textureNormal & 0xffffffff;
-            buffer[i].textures.w = subtextureData.textureNormal >> 32;
-        }
-        // Allocate orphaned
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, e_cast(drawMode));
-        // Set data
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, buffer);
+    assert(subMesh.mUbo);
+    const ui32 uboSizeBytes = sizeof(f32v4) + data.mSubtextureData.size() * sizeof(AlignedUboData);
+    // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
+    // Front of the array is a vec4 (vec3 position)
+    constexpr size_t BUFFER_SIZE = sizeof(f32v4) + MAX_SUBTEXTURES_PER_MESH * sizeof(AlignedUboData);
+    ui8 byteBuffer[BUFFER_SIZE];
+    // Set position
+    *(f32v3*)byteBuffer = position;
+    AlignedUboData* buffer = (AlignedUboData*)(byteBuffer + sizeof(f32v4));
+    for (ui32 i = 0; i < data.mSubtextureData.size(); ++i) {
+        const SubtextureUniformData& subtextureData = data.mSubtextureData[i];
+        buffer[i].uvs = subtextureData.uvRect;
+        buffer[i].textures.x = subtextureData.textureDiffuse & 0xffffffff;
+        buffer[i].textures.y = subtextureData.textureDiffuse >> 32;
+        buffer[i].textures.z = subtextureData.textureNormal & 0xffffffff;
+        buffer[i].textures.w = subtextureData.textureNormal >> 32;
     }
+    // Allocate orphaned
+    glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+    glBufferData(GL_UNIFORM_BUFFER, uboSizeBytes, nullptr, e_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, uboSizeBytes, byteBuffer);
 
     // SSBO
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);

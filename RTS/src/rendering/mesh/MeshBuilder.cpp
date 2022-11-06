@@ -635,6 +635,44 @@ void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const 
 
 }
 
+// This also computes an AABB but we dont store it
+void MeshBuilder::computeBoundingSphere() {
+    PROFILE_FUNCTION();
+    mDidComputeBoundingSphere = true;
+
+    f32v2 minMax[3] = { {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN} };
+
+    for (auto& v : mMainSubMeshData.mVerts) {
+        const f32v3& pos = v.mStandard.pos;
+        for (int i = 0; i < 3; ++i) {
+            if (pos[i] < minMax[i].x) {
+                minMax[i].x = pos[i];
+            }
+            if (pos[i] > minMax[i].y) {
+                minMax[i].y = pos[i];
+            }
+        }
+    }
+    for (auto& subMesh : mSubMeshesData) {
+        for (auto& v : mMainSubMeshData.mVerts) {
+            const f32v3& pos = v.mStandard.pos;
+            for (int i = 0; i < 3; ++i) {
+                if (pos[i] < minMax[i].x) {
+                    minMax[i].x = pos[i];
+                }
+                if (pos[i] > minMax[i].y) {
+                    minMax[i].y = pos[i];
+                }
+            }
+        }
+    }
+    mBoundingSphere.center = f32v3((minMax[0].x + minMax[0].y) * 0.5f, (minMax[1].x + minMax[1].y) * 0.5f, (minMax[2].x + minMax[2].y) * 0.5f);
+    const f32 halfLargestWidth = 0.5f * std::max(std::max(minMax[0].y - minMax[0].x, minMax[1].y - minMax[1].x), minMax[2].y - minMax[1].y);
+    const f32 halfLargestWidthSq = SQ(halfLargestWidth);
+    // TODO: This isnt quite accurate it assumes a cube instead of a rectangle, but ehh good enough for now
+    mBoundingSphere.radius = sqrt(halfLargestWidthSq + halfLargestWidthSq);
+}
+
 void MeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
 
@@ -663,6 +701,9 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& wor
     // Set bounds
     mesh.mPosition = worldPos;
     mesh.mBoundingSphere = mBoundingSphere;
+    if (mDidComputeBoundingSphere) {
+        mesh.mBoundingSphere.center += worldPos;
+    }
 
     // Check if we need to destroy some old submeshes
     const bool wasUsingSharedIbo = mesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO);
@@ -673,8 +714,6 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& wor
     }
     // Allocate correct number of submeshes
     mesh.mSubMeshes.resize(mSubMeshesData.size());
-
-    const bool usingTextureUbo = mMainSubMeshData.mTextures.size() > 0u;
 
     // Hook in shared IBOs if needed
     bool usingSharedIbo = false;
@@ -697,16 +736,16 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& wor
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
     // Allocate all buffers if needed
-    initMeshBuffers(mesh.mMainMesh, usingTextureUbo, !usingSharedIbo);
+    initMeshBuffers(mesh.mMainMesh, !usingSharedIbo);
     for (auto&& subMesh : mesh.mSubMeshes) {
-        initMeshBuffers(subMesh, usingTextureUbo, !usingSharedIbo);
+        initMeshBuffers(subMesh, !usingSharedIbo);
     }
 
     // Upload data
-    uploadMeshData(mesh.mMainMesh, mMainSubMeshData, drawMode);
+    uploadMeshData(mesh.mMainMesh, worldPos, mMainSubMeshData, drawMode);
     mMainSubMeshData.clear();
     for (size_t i = 0; i < mesh.mSubMeshes.size(); ++i) {
-        uploadMeshData(mesh.mSubMeshes[i], mSubMeshesData[i], drawMode);
+        uploadMeshData(mesh.mSubMeshes[i], worldPos, mSubMeshesData[i], drawMode);
         mSubMeshesData[i].clear();
     }
 
@@ -799,7 +838,7 @@ void MeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffe
     mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
 }
 
-void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool allocateIbo) {
+void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateIbo) {
     // VAO
     if (subMesh.mVao == 0) {
         glGenVertexArrays(1, &subMesh.mVao);
@@ -810,14 +849,8 @@ void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool a
         glGenBuffers(1, &subMesh.mVbo);
     }
     // UBO
-    if (allocateUbo) {
-        if (subMesh.mUbo == 0) {
-            glGenBuffers(1, &subMesh.mUbo);
-        }
-    }
-    else if (subMesh.mUbo) {
-        glDeleteBuffers(1, &subMesh.mUbo);
-        subMesh.mUbo = 0;
+    if (subMesh.mUbo == 0) {
+        glGenBuffers(1, &subMesh.mUbo);
     }
     // IBO
     if (allocateIbo && subMesh.mIbo == 0) {
@@ -837,7 +870,7 @@ void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool a
     checkGlError("MeshBuilder::initMeshBuffers");
 }
 
-void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode) {
+void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode) {
     glBindVertexArray(subMesh.mVao);
     
     const size_t vertexCount = data.mVerts.size();
@@ -876,21 +909,25 @@ void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshDa
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, data.mVerts.data());
 
     // UBO
-    if (subMesh.mUbo) {
-        const ui32 textureBufferSizeBytes = data.mTextures.size() * sizeof(TextureHandle);
-        // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
-        ui32v2 buffer[MAX_TEXTURES_PER_MESH * 2];
-        for (ui32 i = 0; i < data.mTextures.size(); ++i) {
-            TextureHandle handle = data.mTextures[i];
-            buffer[i].x = handle & 0xffffffff;
-            buffer[i].y = handle >> 32;
-        }
-        // Allocate orphaned
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, e_cast(drawMode));
-        // Set data
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, buffer);
+    assert(subMesh.mUbo);
+    const ui32 uboSizeBytes = sizeof(f32v4) + data.mTextures.size() * sizeof(TextureHandle);
+    // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
+    // With position in front
+    constexpr size_t BUFFER_SIZE = sizeof(f32v4) + MAX_TEXTURES_PER_MESH * 2 * sizeof(ui32v2);
+    ui8 byteBuffer[BUFFER_SIZE];
+    *(f32v3*)byteBuffer = position;
+    ui32v2* buffer = (ui32v2*)(byteBuffer + sizeof(f32v4));
+    for (ui32 i = 0; i < data.mTextures.size(); ++i) {
+        TextureHandle handle = data.mTextures[i];
+        buffer[i].x = handle & 0xffffffff;
+        buffer[i].y = handle >> 32;
     }
+    // Allocate orphaned
+    glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+    glBufferData(GL_UNIFORM_BUFFER, uboSizeBytes, nullptr, e_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, uboSizeBytes, byteBuffer);
+
     checkGlError("MeshBuilder::uploadMeshData");
 
     bindVertexAttribs(subMesh);

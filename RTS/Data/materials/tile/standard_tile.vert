@@ -1,17 +1,17 @@
+#include "../TextureUbo.glsl"
 #include "../GlobalUbo.glsl"
 
-uniform vec3 unOffset;
 
-in vec4 vPosition;
-in vec2 vUV;
-in vec4 vTint;
-in float vAtlasPage;
-in vec3 vNormal;
-in vec2 vTangent;
-in float vWindInfluence;
+layout(location = 0) in vec4 vPosition;
+layout(location = 1) in vec2 vUV;
+layout(location = 2) in int vTextureIndex;
+layout(location = 3) in vec4 vTint;
+layout(location = 4) in vec3 vNormal;
+layout(location = 5) in vec2 vTangent;
+layout(location = 6) in float vWindInfluence;
 
 out vec2 fUV;
-flat out float fAtlasPage;
+flat out int fTextureIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
@@ -21,8 +21,8 @@ out float fRoughness;
 void main() {
     fTint = vTint;
     fUV = vUV;
-    fAtlasPage = vAtlasPage;
-    vec4 worldPos = vPosition + vec4(unOffset, 0.0);
+    fTextureIndex = vTextureIndex;
+    vec4 worldPos = vPosition + vec4(unPosition - CameraPos, 0.0);
     worldPos.x += getWindAtPosition(Time, vPosition) * vWindInfluence;
 	
 	vec3 normal = normalize(vNormal);

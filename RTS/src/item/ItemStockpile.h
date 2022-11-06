@@ -2,7 +2,6 @@
 
 #include "Item.h"
 
-#include "rendering/QuadMesh.h"
 #include "world/ChunkID.h"
 #include "util/BitArray.h"
 #include "ItemReservation.h"

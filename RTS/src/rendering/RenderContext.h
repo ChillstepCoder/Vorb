@@ -147,7 +147,6 @@ private:
     mutable std::unique_ptr<CityDebugRenderer> mCityDebugRenderer;
     mutable std::unique_ptr<ItemRenderer> mItemRenderer;
     mutable std::unique_ptr<CharacterRenderer> mCharacterRenderer;
-    mutable std::unique_ptr<BuildingRenderer> mBuildingRenderer;
     mutable std::unique_ptr<CloudRenderer> mCloudRenderer;
     mutable std::unique_ptr<DepthOfFieldPostProcess> mDepthOfField;
     mutable std::unique_ptr<AmbientOcclusionPostProcess> mAmbientOcclusion;

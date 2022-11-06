@@ -1,8 +1,6 @@
 #include "BillboardSSBO.glsl"
 #include "GlobalUbo.glsl"
 
-uniform vec3 unOffset;
-
 out vec2 fUV;
 flat out int fTextureIndex;
 out vec4 fTint;
@@ -52,7 +50,7 @@ void main() {
 	vertexPosition.z += xzOffsetUncompressed.y;
 	vertexPosition.xyz += CameraRight * xzOffsetUncompressed.x;
 	
-	vec4 worldPos = vertexPosition + vec4(unOffset, 0.0);
+	vec4 worldPos = vertexPosition + vec4(unPosition - CameraPos, 0.0);
     
 	vec4 glPos = VP * worldPos;
 	vec4 screenCamera = VP * vec4(CameraFront, 0.0);

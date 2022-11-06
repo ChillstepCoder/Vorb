@@ -33,16 +33,12 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const
 
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeDirection");
-    VGUniform offsetUniform = mTerrainMaterial->mProgram.getUniform("unOffset");
 
     // TODO: Where is this getting unset?
     glEnable(GL_CULL_FACE);
 
     for (auto&& terrainMesh : terrainMeshes) {
         const Mesh& mesh = terrainMesh->mMesh;
-        f32v3 offset = mesh.getPosition() - camera.getPosition();
-        glUniform3fv(offsetUniform, 1, &offset.x);
-
         const ui32 lod = QUADTREE_LOD_FROM_INDEX[terrainMesh->mIndex];
         /*  f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
           f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/

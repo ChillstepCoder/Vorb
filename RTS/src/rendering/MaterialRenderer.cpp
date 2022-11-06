@@ -2,7 +2,6 @@
 #include "MaterialRenderer.h"
 
 #include "Material.h"
-#include "rendering/QuadMesh.h"
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/Mesh.h"
 #include "camera/ICamera.h"
@@ -17,13 +16,6 @@ void MaterialRenderer::renderFullScreenQuad(const Material& material) {
     bindMaterialForRender(material, nullptr);
 
     sGlobalFullQuadVBO.draw();
-}
-
-void MaterialRenderer::renderMesh(const MeshBase& mesh, const Material& material) {
-    // TODO: Here we are rebinding to make sure nobody fucked with our textures, but would be nice to avoid re-binds when iterating chunks?
-    bindMaterialForRender(material, nullptr);
-
-    mesh.draw(material.mProgram);
 }
 
 void MaterialRenderer::renderMesh(const Mesh& mesh, const Material& material) {

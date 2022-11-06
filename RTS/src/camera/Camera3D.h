@@ -19,6 +19,7 @@ public:
 
     // Frustum wrappers
     bool pointInFrustum(const f32v3& pos) const { return mFrustum.pointInFrustum(pos - mPosition); }
+    bool sphereIsVisible(const BoundingSphere& bounds) const { return mFrustum.sphereInFrustum(bounds.center - mPosition, bounds.radius); }
     bool sphereIsVisible(const f32v3& pos, float radius) const override { return mFrustum.sphereInFrustum(pos - mPosition, radius); }
 
     // Setters

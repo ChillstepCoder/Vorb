@@ -1,6 +1,5 @@
 #pragma once
 
-#include "QuadMesh.h"
 #include "rendering/TileVertex.h"
 
 class ItemRepository;

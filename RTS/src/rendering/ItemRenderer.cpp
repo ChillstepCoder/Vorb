@@ -6,14 +6,14 @@
 #include "resources/ResourceManager.h"
 #include "MaterialRenderer.h"
 #include "MaterialManager.h"
-
+#include "rendering/mesh/Mesh.h"
 #include "camera/Camera3D.h"
 
 ItemRenderer::ItemRenderer() {
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mItemMeshMaterial = materialManager.getMaterial("standard_tile");
-    mItemBillboardMaterial = materialManager.getMaterial("billboard");
+  //  mItemBillboardMaterial = materialManager.getMaterial("billboard");
 
 }
 

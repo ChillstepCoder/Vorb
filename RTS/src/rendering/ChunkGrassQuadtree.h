@@ -2,7 +2,7 @@
 
 #include "data_structure/FlatQuadtree.h"
 // TODO: I dont like this include for GrassBillboardMesh
-#include "rendering/QuadMesh.h"
+#include "rendering/GrassBillboardMesh.h"
 
 class GrassBillboardMesh;
 class Chunk;

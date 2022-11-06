@@ -11,7 +11,7 @@
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
 #include "EntityComponentSystemRenderer.h"
-#include "rendering/BuildingRenderer.h"
+#include "rendering/MeshBase.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/renderer/GrassRenderer.h"
 #include "rendering/TileContainerRenderer.h"
@@ -25,7 +25,6 @@
 #include "rendering/MaterialManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/ParticleSystemRenderer.h"
-#include "rendering/QuadMesh.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/RenderStats.h"
@@ -270,7 +269,6 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         mParticleSystemRenderer = std::make_unique<ParticleSystemRenderer>(mScreenResolution);
         mCityDebugRenderer = std::make_unique<CityDebugRenderer>();
         mItemRenderer = std::make_unique<ItemRenderer>();
-        mBuildingRenderer = std::make_unique<BuildingRenderer>();
         mCloudRenderer = std::make_unique<CloudRenderer>(mScreenResolution);
         mDepthOfField = std::make_unique<DepthOfFieldPostProcess>(mScreenResolution);
         mAmbientOcclusion = std::make_unique<AmbientOcclusionPostProcess>(mScreenResolution);

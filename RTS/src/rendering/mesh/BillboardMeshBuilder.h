@@ -23,6 +23,7 @@ public:
     void addBillboard(f32v3 position, const f32v2& xyDims, const SubTexture& texture);
     void reserveBillboardCount(ui32 count);
 
+    void computeBoundingSphere();
     void finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
 
     // Override allocation to use boost::singleton_pool
@@ -52,7 +53,7 @@ private:
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* subtextureIndex);
     void initMeshBuffers(SubMeshData& subMesh);
-    void uploadBufferData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);
+    void uploadBufferData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode);
 
     // Map subtexture IDs to submeshes 
     std::unordered_map<SubTextureID, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/> > mSubtextureLookup;

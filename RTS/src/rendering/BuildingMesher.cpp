@@ -319,7 +319,13 @@ void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
         MeshBuilder staticMeshBuilder(false);
         MeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
+
         buildMeshAndPhysicsInternal(building, staticMeshBuilder, dynamicMeshBuilder, billboardMeshBuilder);
+
+        staticMeshBuilder.computeBoundingSphere();
+        dynamicMeshBuilder.computeBoundingSphere();
+        billboardMeshBuilder.computeBoundingSphere();
+
 
         RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(building.mTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
     }, nullptr);

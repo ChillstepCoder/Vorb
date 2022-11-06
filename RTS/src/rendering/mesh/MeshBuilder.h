@@ -49,9 +49,13 @@ public:
     void addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv = false);
     void addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32v2 uvScale);
 
+    // Compute sphere from vertex data
+    void computeBoundingSphere();
+
     // Upload buffers
     void finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
     void finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
+
 
     // Override allocation to use boost::singleton_pool
     static void* operator new(size_t count);
@@ -73,8 +77,8 @@ private:
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex);
     void setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo);
-    void initMeshBuffers(SubMeshData& subMesh, bool allocateUbo, bool allocateIbo);
-    void uploadMeshData(SubMeshData& subMesh, const InProgressSubMeshData& data, MeshDrawMode drawMode);
+    void initMeshBuffers(SubMeshData& subMesh, bool allocateIbo);
+    void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode);
     void bindVertexAttribs(SubMeshData& subMesh);
 
     // TODO: Try both multi-context opengl and pool_allocator
@@ -84,7 +88,9 @@ private:
     BoundingSphere                     mBoundingSphere;
     BitFlags<PolyTypeFlags>            mPolyTypeFlags;
     bool                               mUsingSharedIndexBuffer;
+    bool                               mDidComputeBoundingSphere = false;
 
+public:
     // Shared index buffers
     static VGBuffer sQuadIbo;
     static VGBuffer sTerrainIbo;
