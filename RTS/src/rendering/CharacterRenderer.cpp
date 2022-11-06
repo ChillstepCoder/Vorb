@@ -195,9 +195,10 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
 
     // TODO: cache
     ui8 num_skinning_matrices = 0;
-    for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
+    const SkinnedModel3D& skinnedModel = modelDef.getSkinnedModel();
+    for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
         num_skinning_matrices =
-            std::max(num_skinning_matrices, modelDef.mModel.getMeshes()[i].getNumJoints());
+            std::max(num_skinning_matrices, skinnedModel.getMeshes()[i].getNumJoints());
     }
 
     ui32 numValidTracks = 0;
@@ -392,12 +393,13 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             // inverse bind pose with the model space matrix.
             ozz::vector<ozz::math::Float4x4> skinningMatrices;
             // Allocates skinning matrices.
-            skinningMatrices.resize(modelDef.mModel.getNumSkinningMatrices());
+            const SkinnedModel3D& skinnedModel = modelDef.getSkinnedModel();
+            skinningMatrices.resize(skinnedModel.getNumSkinningMatrices());
 
             if (updateAnimation(animState, character.mLocomotionMode, modelDef, models, elapsedSec)) {
                 // Draw animated
-                for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
-                    const auto& mesh = modelDef.mModel.getMeshes()[i];
+                for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
+                    const auto& mesh = skinnedModel.getMeshes()[i];
                     const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
                     for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
                         skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];
@@ -416,8 +418,8 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             else {
                 // INVALID ANIMATION
                 // Draw T pose
-                for (ui32 i = 0; i < modelDef.mModel.getNumMeshes(); ++i) {
-                    const auto& mesh = modelDef.mModel.getMeshes()[i];
+                for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
+                    const auto& mesh = skinnedModel.getMeshes()[i];
                     for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
                         skinningMatrices[i] = ozz::math::Float4x4::identity();
                     }

@@ -2,13 +2,23 @@
 
 #include "rendering/TriangleMesh.h"
 
-class Model3D {
-    friend class ModelRepository;
-public:
-
+enum class Model3DType {
+    STATIC,
+    SKINNED
 };
 
-class SkinnedModel3D : public Model3D {
+class StaticModel3D {
+    friend class ModelRepository;
+public:
+    const Mesh* getMeshes() const { return mMeshes.get(); }
+    ui32 getNumMeshes() const { return mNumMeshes; }
+
+private:
+    std::unique_ptr<Mesh[]> mMeshes;
+    ui32 mNumMeshes = 0;
+};
+
+class SkinnedModel3D {
     friend class ModelRepository;
 public:
     const SkinnedMesh* getMeshes() const { return mSkinnedMeshes.get(); }

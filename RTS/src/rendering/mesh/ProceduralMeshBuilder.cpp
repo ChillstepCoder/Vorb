@@ -707,13 +707,7 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
 
     // Check if we need to destroy some old submeshes
     const bool wasUsingSharedIbo = mesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO);
-    if (mesh.mSubMeshes.size() > mSubMeshesData.size()) {
-        for (size_t i = mSubMeshesData.size(); i < mesh.mSubMeshes.size(); ++i) {
-            mesh.mSubMeshes[i].destroy(wasUsingSharedIbo);
-        }
-    }
-    // Allocate correct number of submeshes
-    mesh.mSubMeshes.resize(mSubMeshesData.size());
+    mesh.mMainMesh.allocateSubmeshCount(mSubMeshesData.size(), wasUsingSharedIbo);
 
     // Hook in shared IBOs if needed
     bool usingSharedIbo = false;
@@ -736,17 +730,21 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
     // Allocate all buffers if needed
-    initMeshBuffers(mesh.mMainMesh, !usingSharedIbo);
-    for (auto&& subMesh : mesh.mSubMeshes) {
-        initMeshBuffers(subMesh, !usingSharedIbo);
-    }
+    SubMeshData* subMesh = &mesh.mMainMesh;
+    do {
+        initMeshBuffers(*subMesh, !usingSharedIbo);
+        subMesh = subMesh->mNextSubmesh;
+    } while (subMesh != nullptr);
 
     // Upload data
     uploadMeshData(mesh.mMainMesh, worldPos, mMainSubMeshData, drawMode);
     mMainSubMeshData.clear();
-    for (size_t i = 0; i < mesh.mSubMeshes.size(); ++i) {
-        uploadMeshData(mesh.mSubMeshes[i], worldPos, mSubMeshesData[i], drawMode);
+    subMesh = mesh.mMainMesh.mNextSubmesh;
+    int i = 0;
+    while (subMesh != nullptr) {
+        uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], drawMode);
         mSubMeshesData[i].clear();
+        ++i;
     }
 
     // Cleanup
@@ -823,18 +821,15 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
 }
 
 void ProceduralMeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo) {
-    // Delete old IBO if needed
-    if (mesh.mMainMesh.mIbo != 0 && !wasUsingSharedIbo) {
-        glDeleteBuffers(1, &mesh.mMainMesh.mIbo);
-    }
-    mesh.mMainMesh.mIbo = sharedIbo;
-    for (auto&& subMesh : mesh.mSubMeshes) {
+    SubMeshData* subMesh = &mesh.mMainMesh;
+    do {
         // Delete old IBO if needed
-        if (subMesh.mIbo != 0 && !wasUsingSharedIbo) {
-            glDeleteBuffers(1, &subMesh.mIbo);
+        if (subMesh->mIbo != 0 && !wasUsingSharedIbo) {
+            glDeleteBuffers(1, &subMesh->mIbo);
         }
-        subMesh.mIbo = sharedIbo;
-    }
+        subMesh->mIbo = sharedIbo;
+        subMesh = subMesh->mNextSubmesh;
+    } while (subMesh != nullptr);
     mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
 }
 

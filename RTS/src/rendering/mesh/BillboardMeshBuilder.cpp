@@ -93,20 +93,34 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode 
     mesh->mBoundingSphere.center += worldPos;
 
     // Allocate correct number of submeshes
-    mesh->mSubMeshes.resize(mSubMeshesData.size());
+    if (mSubMeshesData.size()) {
+        mesh->mMainMesh.mNextSubmesh = new SubMeshData;
+        SubMeshData* subMesh = mesh->mMainMesh.mNextSubmesh;
+        for (int i = 1; i < mSubMeshesData.size(); ++i) {
+            subMesh->mNextSubmesh = new SubMeshData;
+            subMesh = subMesh->mNextSubmesh;
+        }
+    }
+    else {
+        mesh->mMainMesh.mNextSubmesh = nullptr;
+    }
 
     // Allocate all buffers if needed
-    initMeshBuffers(mesh->mMainMesh);
-    for (auto&& subMesh : mesh->mSubMeshes) {
-        initMeshBuffers(subMesh);
-    }
+    SubMeshData* subMesh = &mesh->mMainMesh;
+    do {
+        initMeshBuffers(*subMesh);
+        subMesh = subMesh->mNextSubmesh;
+    } while (subMesh != nullptr);
 
     // Upload data
     uploadBufferData(mesh->mMainMesh, worldPos, mMainSubMeshData, drawMode);
     mMainSubMeshData.clear();
-    for (size_t i = 0; i < mesh->mSubMeshes.size(); ++i) {
-        uploadBufferData(mesh->mSubMeshes[i], worldPos, mSubMeshesData[i], drawMode);
-        mSubMeshesData[i].clear();
+    subMesh = mesh->mMainMesh.mNextSubmesh;
+    int i = 0;
+    while (subMesh != nullptr) {
+        uploadBufferData(*subMesh, worldPos, mSubMeshesData[i], drawMode);
+        subMesh = subMesh->mNextSubmesh;
+        ++i;
     }
 
     // Cleanup

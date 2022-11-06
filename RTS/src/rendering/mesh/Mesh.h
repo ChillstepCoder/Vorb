@@ -25,7 +25,12 @@ struct SubMeshData {
     VGBuffer  mSSBO = 0;
     ui32 mIndexCount = 0; ///< Current capacity of mIbo
     ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT // TODO: DELETE
+    SubMeshData* mNextSubmesh = nullptr; // We store these as a linked list, this is not a true parent
 
+    void* operator new(size_t count);
+    void operator delete(void* pointer, size_t size);
+
+    void allocateSubmeshCount(size_t count, bool wasUsingSharedIbo);
     void destroy(bool isUsingSharedIbo);
 };
 
@@ -54,12 +59,14 @@ public:
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t size);
 
-protected:
-    SubMeshData              mMainMesh;
-    // TODO: Pool allocate?
-    // TODO: We dont need dynamic vector, just use a C array
-    std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
+protected:    
     f32v3                    mPosition;
     BoundingSphere           mBoundingSphere;  ///< Optional
     BitFlags<MeshFlags>      mFlags;
+    SubMeshData              mMainMesh;
+    // TODO: Pool allocate?
+    // TODO: We dont need dynamic vector, just use a C array
+   // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
+
 };
+static_assert(sizeof(Mesh) == 72);

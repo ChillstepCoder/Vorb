@@ -20,9 +20,9 @@ inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
 
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct alignas(32) ModelVertex {
+struct alignas(32) StaticModelVertex {
 public:
-    ModelVertex() {};
+    StaticModelVertex() {};
 
     f32v3 pos;
     ui32 normalPacked;
@@ -30,7 +30,7 @@ public:
     f32v2 uvs;
     color4 color;
 };
-static_assert(sizeof(ModelVertex) == 32, "32 byte alignment needed");
+static_assert(sizeof(StaticModelVertex) == 32, "32 byte alignment needed");
 
 // TODO: Reduce to 64 https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 struct alignas(32) SkinnedModelVertex {

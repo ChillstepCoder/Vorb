@@ -8,6 +8,59 @@
 struct mesh_pool {};
 using singleton_task_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
 
+struct submesh_pool {};
+using singleton_submesh_pool = boost::singleton_pool<submesh_pool, sizeof(SubMeshData), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 16u>;
+
+void* SubMeshData::operator new(size_t count) {
+    UNUSED(count);
+    assert(IS_RENDER_THREAD());
+    return singleton_submesh_pool::malloc();
+}
+
+void SubMeshData::operator delete(void* pointer, size_t size) {
+    UNUSED(size);
+    assert(IS_RENDER_THREAD());
+    return singleton_submesh_pool::free(pointer);
+}
+
+void SubMeshData::allocateSubmeshCount(size_t count, bool wasUsingSharedIbo)
+{
+    SubMeshData* subMesh = mNextSubmesh;
+    int i = 0;
+    bool didDelete = false;
+    // Delete old submeshes
+    while (subMesh != nullptr) {
+        if (i++ >= count) {
+            SubMeshData* prevSubMesh = subMesh;
+            subMesh = prevSubMesh->mNextSubmesh;
+            prevSubMesh->destroy(wasUsingSharedIbo);
+            delete prevSubMesh;
+            didDelete = true;
+        }
+    }
+    // Allocate new submeshes
+    if (i < count) {
+        mNextSubmesh = new SubMeshData;
+        subMesh = mNextSubmesh;
+        while (++i < count) {
+            subMesh->mNextSubmesh = new SubMeshData;
+            subMesh = subMesh->mNextSubmesh;
+        }
+        subMesh->mNextSubmesh = nullptr;
+    } else if (i == 0) {
+        mNextSubmesh = nullptr;
+    }
+    else if (didDelete) {
+        // Append the nullptr tail
+        subMesh = mNextSubmesh;
+        int i = 0;
+        while (++i < count) {
+            subMesh = mNextSubmesh;
+        }
+        subMesh->mNextSubmesh = nullptr;
+    }
+}
+
 Mesh::Mesh() {
 
 }
@@ -30,14 +83,16 @@ void Mesh::draw() const {
     if (mMainMesh.mSSBO) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, mMainMesh.mSSBO);
     }
+    const SubMeshData* currentSubmesh = &mMainMesh;
     glDrawElements(GL_TRIANGLES, mMainMesh.mIndexCount, mMainMesh.mIndexType, (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mMainMesh.mIndexCount / 3);
-
+    currentSubmesh = currentSubmesh->mNextSubmesh;
     // Draw any submeshes
-    for (auto&& submesh : mSubMeshes) {
-        glBindVertexArray(submesh.mVao);
-        glDrawElements(GL_TRIANGLES, submesh.mIndexCount, submesh.mIndexType, (const GLvoid*)(0) /* offset */);
-        RenderStats::recordDrawCall(mMainMesh.mIndexCount / 3);
+    while (currentSubmesh != nullptr) {
+        glBindVertexArray(currentSubmesh->mVao);
+        glDrawElements(GL_TRIANGLES, currentSubmesh->mIndexCount, currentSubmesh->mIndexType, (const GLvoid*)(0) /* offset */);
+        RenderStats::recordDrawCall(currentSubmesh->mIndexCount / 3);
+        currentSubmesh = currentSubmesh->mNextSubmesh;
     }
 
     glBindVertexArray(0);
@@ -47,29 +102,14 @@ void Mesh::destroy() {
     if (mMainMesh.mVao) {
         const bool isUsingShared = mFlags.isBitSet(MeshFlags::USING_SHARED_IBO);
         // When using shared IBO we don't delete the IBO, which is the last buffer
-        if (!isUsingShared){
-            glDeleteBuffers(1, &mMainMesh.mIbo);
-        }
-        mMainMesh.mIbo = 0;
-        if (mMainMesh.mUbo) {
-            glDeleteBuffers(1, &mMainMesh.mUbo);
-            mMainMesh.mUbo = 0;
-        }
-        if (mMainMesh.mSSBO) {
-            glDeleteBuffers(1, &mMainMesh.mSSBO);
-            mMainMesh.mSSBO = 0;
-        }
-        if (mMainMesh.mVbo) {
-            glDeleteBuffers(1, &mMainMesh.mVbo);
-            mMainMesh.mVbo = 0;
-        }
-        glDeleteVertexArrays(1, &mMainMesh.mVao);
-        mMainMesh.mVao = 0;
-        mMainMesh.mIndexCount = 0;
-        for (auto&& subMesh : mSubMeshes) {
-            subMesh.destroy(isUsingShared);
-        }
-        mSubMeshes.clear();
+   
+        SubMeshData* subMesh = &mMainMesh;
+        do {
+            SubMeshData* prevSubMesh = subMesh;
+            subMesh = prevSubMesh->mNextSubmesh;
+            prevSubMesh->destroy(isUsingShared);
+            delete prevSubMesh;
+        } while (subMesh != nullptr);
     }
 }
 

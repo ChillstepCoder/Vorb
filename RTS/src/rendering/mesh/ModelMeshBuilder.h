@@ -20,10 +20,16 @@ enum class ModelMeshVertexType : ui8 {
 class ModelMeshBuilder
 {
 public:
-    bool buildStaticMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode);
+    bool buildStaticMesh(
+        Mesh& outMesh,
+        int meshIndex,
+        const vio::Path& filePath,
+        OzzFbxSceneLoader& sceneLoader,
+        MeshDrawMode drawMode
+    );
     bool buildSkinnedMesh(
         SkinnedMesh& outMesh,
-        FbxMesh* fbxMesh,
+        int meshIndex,
         const ozz::animation::Skeleton& skeleton,
         const vio::Path& filePath,
         OzzFbxSceneLoader& sceneLoader,
@@ -31,6 +37,9 @@ public:
     );
 
 private:
-    std::vector<SkinnedModelVertex> mVerts;
+    void uploadStaticMeshData(Mesh& outMesh);
+
+    std::vector<StaticModelVertex> mStaticVerts;
+    std::vector<SkinnedModelVertex> mSkinnedVerts;
 };
 
