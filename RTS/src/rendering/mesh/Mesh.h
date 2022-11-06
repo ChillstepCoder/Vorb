@@ -5,6 +5,8 @@
 // Profile how often we use this...
 constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE * 6;
 
+typedef i32 SubmeshIndex;
+
 enum class MeshDrawMode {
     DYNAMIC = GL_DYNAMIC_DRAW,
     STREAM = GL_STREAM_DRAW,
@@ -29,7 +31,7 @@ struct SubMeshData {
 
 class Mesh
 {
-    friend class MeshBuilder;
+    friend class ProceduralMeshBuilder;
     friend class BillboardMeshBuilder;
     friend class TextMeshBuilder;
 public:
@@ -38,6 +40,9 @@ public:
 
     VORB_NON_COPYABLE_BUT_MOVABLE(Mesh);
 
+    // TODO: Have each renderer implement its own "draw" method
+    //   Renderer knows what type of mesh this is  so we can avoid
+    //   branching and assert on internal state such as ubo
     void draw() const;
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }

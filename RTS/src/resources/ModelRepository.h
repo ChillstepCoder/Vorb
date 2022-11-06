@@ -22,6 +22,8 @@ public:
     ModelID getModelID(const nString& name) const;
 
 private:
+    bool loadSkinnedModel(ModelDefFileData& fileData, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir);
+    bool loadStaticModel(ModelDefFileData& fileData, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir);
 
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;

@@ -3,7 +3,7 @@
 
 #include "services/Services.h"
 
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/TileMeshBuilderMethods.h"
@@ -23,8 +23,8 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
 
     Services::Threadpool::ref().addTask([chunkTileContainer](ThreadPoolWorkerData*) {
 
-        MeshBuilder staticMeshBuilder(true);
-        MeshBuilder dynamicMeshBuilder(false);
+        ProceduralMeshBuilder staticMeshBuilder(true);
+        ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
 
         StaticPhysicsMesh& physicsMesh = chunkTileContainer->getStaticPhysicsMesh();

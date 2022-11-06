@@ -2,7 +2,7 @@
 #include "Skybox.h"
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "camera/ICamera.h"
 #include "rendering/MaterialRenderer.h"
 
@@ -18,7 +18,7 @@ void Skybox::init(const Material* material) {
     constexpr float RADIUS = 100000.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
     mMaterial = material;
-    MeshBuilder meshBuilder(true);
+    ProceduralMeshBuilder meshBuilder(true);
     // Bottom left
 
   /*  LEFT,

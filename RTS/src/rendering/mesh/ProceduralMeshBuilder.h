@@ -6,7 +6,6 @@
 
 struct SubTexture;
 
-typedef i32 SubmeshIndex;
 
 // Keep track of all they types of indices so we can decide to share if needed
 enum class PolyTypeFlags : ui8 {
@@ -18,16 +17,16 @@ enum class PolyTypeFlags : ui8 {
     COUNT = 5, // KEEP UPDATED
 };
 
-class MeshBuilder
+class ProceduralMeshBuilder
 {
     // For access to shared IBOs
     friend class BillboardMeshBuilder;
     friend class TextMeshBuilder;
 public:
-    MeshBuilder(bool useSharedIndexBuffer);
-    ~MeshBuilder();
+    ProceduralMeshBuilder(bool useSharedIndexBuffer);
+    ~ProceduralMeshBuilder();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(MeshBuilder);
+    VORB_NON_COPYABLE_BUT_MOVABLE(ProceduralMeshBuilder);
 
     static void initStaticIBOs();
 

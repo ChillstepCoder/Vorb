@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "CloudManager.h"
 
-#include "rendering/QuadMesh.h"
 #include "debugging/DebugRenderer.h"
 
 #include "rendering/mesh/BillboardMeshBuilder.h"

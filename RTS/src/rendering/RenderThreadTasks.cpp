@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "RenderThreadTasks.h"
 
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/TileMeshBuilderMethods.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"
@@ -40,7 +40,7 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
     return *sInstance;
 }
 
-void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerToMesh, MeshBuilder&& staticMeshBuilder, MeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder) {
+void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerToMesh, ProceduralMeshBuilder&& staticMeshBuilder, ProceduralMeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder) {
 
     MeshTaskData* taskData = new MeshTaskData(containerToMesh, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
 

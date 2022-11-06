@@ -2,7 +2,6 @@
 #include "Chunk.h"
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/QuadMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 // TODO: Can we eliminate this?
 #include "rendering/RenderThreadTasks.h"

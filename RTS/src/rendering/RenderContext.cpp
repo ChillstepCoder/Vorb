@@ -31,7 +31,7 @@
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/RenderThreadTasks.h"
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/renderstate/RenderStateManager.h"
 #include "weather/CloudManager.h"
 
@@ -172,7 +172,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     }
 
     // Mesh init
-    MeshBuilder::initStaticIBOs();
+    ProceduralMeshBuilder::initStaticIBOs();
     MeshBase::initStaticIBO();
     checkGlError("Meshbase init");
 
@@ -928,7 +928,7 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
 void RenderContext::buildHorizonMesh()
 {
     mHorizonQuad = std::make_unique<Mesh>();
-    MeshBuilder meshBuilder(true);
+    ProceduralMeshBuilder meshBuilder(true);
     constexpr float QUAD_WIDTH = 140000.0f;
     meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, SubTexture{}, f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
     meshBuilder.finishMesh(mHorizonQuad, MeshDrawMode::STATIC, f32v3(0.0f));

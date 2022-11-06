@@ -18,7 +18,6 @@
 
 #include "math/Random.h"
 
-#include "QuadMesh.h"
 #include "camera/Camera3D.h"
 
 #include "definitions/RigDef.h"

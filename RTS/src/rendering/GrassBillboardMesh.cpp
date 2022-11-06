@@ -10,7 +10,7 @@
 
 #include "rendering/RenderStats.h"
 
-#include "mesh/MeshBuilder.h"
+#include "mesh/ProceduralMeshBuilder.h"
 
 // Must match glsl
 constexpr ui32 MAX_UNIFORM_ARRAY_SIZE = 256; // TODO: Query hardware + defines? Need to assert if uniform buffer size < 16kb
@@ -131,7 +131,7 @@ void GrassBillboardMesh::initBuffers() {
         glGenBuffers(1, &mVboPosition);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0); // Hack, no data at all, the shader generates vertex positions
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MeshBuilder::sQuadIbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
 
         glGenTextures(1, &mTboInstanceData);
         glGenTextures(1, &mTboPositionData);

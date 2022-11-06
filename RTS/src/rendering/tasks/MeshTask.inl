@@ -5,7 +5,7 @@
 class MeshTaskData {
 public:
     // TODO: Are we guarenteeing quads?
-    MeshTaskData(TileContainer* container, MeshBuilder&& staticMeshBuilder, MeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder) :
+    MeshTaskData(TileContainer* container, ProceduralMeshBuilder&& staticMeshBuilder, ProceduralMeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder) :
         container(container),
         staticMeshBuilder(std::move(staticMeshBuilder)),
         dynamicMeshBuilder(std::move(dynamicMeshBuilder)),
@@ -16,8 +16,8 @@ public:
     void operator delete(void* pointer, size_t size);
 
     TileContainer* container;
-    MeshBuilder staticMeshBuilder;
-    MeshBuilder dynamicMeshBuilder;
+    ProceduralMeshBuilder staticMeshBuilder;
+    ProceduralMeshBuilder dynamicMeshBuilder;
     BillboardMeshBuilder billboardMeshBuilder;
 };
 

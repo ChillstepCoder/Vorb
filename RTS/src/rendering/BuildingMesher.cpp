@@ -12,7 +12,7 @@
 #include "world/IWorld.h"
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"
 
 #include "options/DebugOptions.h"
@@ -316,8 +316,8 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
     building.mTileContainer->incReadLockAndRef();
     Services::Threadpool::ref().addTask([&building](ThreadPoolWorkerData*) {
-        MeshBuilder staticMeshBuilder(false);
-        MeshBuilder dynamicMeshBuilder(false);
+        ProceduralMeshBuilder staticMeshBuilder(false);
+        ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
 
         buildMeshAndPhysicsInternal(building, staticMeshBuilder, dynamicMeshBuilder, billboardMeshBuilder);
@@ -331,7 +331,7 @@ void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
     }, nullptr);
 }
 
-void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, MeshBuilder& staticMeshBuilder, MeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder) {
+void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, ProceduralMeshBuilder& staticMeshBuilder, ProceduralMeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder) {
     PROFILE_FUNCTION();
 
     PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
@@ -510,7 +510,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
 }
 
 
-void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, MeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog) {
+void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
     std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
@@ -646,7 +646,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
     }
 }
 
-void BuildingMesher::triangulateRoofFacePolygons(bool isGable, MeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos) {
+void BuildingMesher::triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos) {
     // Triangulation only works on convex polygons so we will partition the potentially concave poly into
     // separate convex polygons
     // https://stackoverflow.com/questions/1832430/c-cgal-2d-delauny-triangulation-concave-shapes
@@ -696,7 +696,7 @@ void BuildingMesher::triangulateRoofFacePolygons(bool isGable, MeshBuilder& mesh
 }
 
 void BuildingMesher::addRoofTriangle(
-    MeshBuilder& meshBuilder,
+    ProceduralMeshBuilder& meshBuilder,
     const f32v2 points[3],
     const Building& building,
     const SubTexture& texture,
@@ -778,7 +778,7 @@ void BuildingMesher::addRoofTriangle(
     }
 }
 
-void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, MeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog) {
+void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const SubTexture& shinglesTexture, const SubTexture& rawWoodTexture, f32 zPos, VisualLog* visLog) {
     for (auto&& edge : contourEdges) {
         if (edge.v1 == edge.parent1 && edge.v2 == edge.parent2) {
             // Ignore cases where we meld into the wall due to collision
@@ -873,7 +873,7 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
     }
 }
 
-void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+void BuildingMesher::meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
     constexpr f32 CEILING_THICKNESS = 0.05f;
     const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = *building.mTileContainer;
@@ -903,7 +903,7 @@ void BuildingMesher::meshRoomCeilings(const Building& building, MeshBuilder& mes
     }
 }
 
-void BuildingMesher::meshRoomSupports(const Building& building, MeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
+void BuildingMesher::meshRoomSupports(const Building& building, ProceduralMeshBuilder& meshBuilder, const SubTexture& rawWoodTexture) {
     const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = *building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;

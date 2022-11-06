@@ -369,7 +369,7 @@
     <ClCompile Include="src\rendering\mesh\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\MeshBuilder.cpp">
+    <ClCompile Include="src\rendering\mesh\ProceduralMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resources\TextureRepository.cpp">
@@ -598,6 +598,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\model\InstancedModelRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\ModelMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1052,7 +1055,7 @@
     <ClInclude Include="src\rendering\mesh\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\MeshBuilder.h">
+    <ClInclude Include="src\rendering\mesh\ProceduralMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\Vertex.h">
@@ -1389,6 +1392,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\InstancedModelRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\ModelVertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\ModelMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,6 +4,7 @@
 #include "MeshBase.h"
 
 #include "rendering/TileVertex.h"
+#include "model/ModelVertex.h"
 
 #include <ozz/base/maths/simd_math.h>
 
@@ -34,7 +35,9 @@ private:
     std::vector<TriangleVertex> mVertexData; // TODO: Recycle?
 };
 
+// TODO: Better?
 class SkinnedMesh : public ITriangleMesh<SkinnedModelVertex> {
+    friend class ModelMeshBuilder;
     friend class ModelRepository; // For loading
 public:
     SkinnedMesh() = default;

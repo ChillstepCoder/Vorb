@@ -2,7 +2,7 @@
 #include "TextMeshBuilder.h"
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 
 
 TextMeshBuilder::TextMeshBuilder() {
@@ -256,7 +256,7 @@ void TextMeshBuilder::initMeshBuffers(SubMeshData& subMesh) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
     }
     // IBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MeshBuilder::sQuadIbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
 
     checkGlError("TextMeshBuilder::initMeshBuffers");
 }

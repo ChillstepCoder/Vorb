@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "MeshBuilder.h"
+#include "ProceduralMeshBuilder.h"
 
 #include "rendering/texture/SubTexture.h"
 
@@ -13,10 +13,10 @@ constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
 constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
 
 struct mesh_builder_pool {};
-using singleton_task_pool = boost::singleton_pool<mesh_builder_pool, sizeof(MeshBuilder), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 128u>;
+using singleton_task_pool = boost::singleton_pool<mesh_builder_pool, sizeof(ProceduralMeshBuilder), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 128u>;
 
-VGBuffer MeshBuilder::sQuadIbo = 0;
-VGBuffer MeshBuilder::sTerrainIbo = 0;
+VGBuffer ProceduralMeshBuilder::sQuadIbo = 0;
+VGBuffer ProceduralMeshBuilder::sTerrainIbo = 0;
 
 const f32v2 CUBE_FACING_AXIS_DIRECTIONS[e_cast(CubeFacing::COUNT)] = {
     f32v2(-1, 1), // LEFT
@@ -36,16 +36,16 @@ const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
 };
 
 
-MeshBuilder::MeshBuilder(bool useSharedIndexBuffer) : mUsingSharedIndexBuffer(useSharedIndexBuffer) {
+ProceduralMeshBuilder::ProceduralMeshBuilder(bool useSharedIndexBuffer) : mUsingSharedIndexBuffer(useSharedIndexBuffer) {
 
 }
 
-MeshBuilder::~MeshBuilder() {
+ProceduralMeshBuilder::~ProceduralMeshBuilder() {
 
 }
 
 
-void MeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
+void ProceduralMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS]) {
     assert(mUsingSharedIndexBuffer); // Shared only
     
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
@@ -121,7 +121,7 @@ void MeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& cornerPos, f
     }
 }
 
-void MeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS])
+void ProceduralMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32 totalWidth, const f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS])
 {
     assert(mUsingSharedIndexBuffer); // Shared only
 
@@ -142,7 +142,7 @@ void MeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& cornerPos, f32
     }
 }
 
-void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color) {
+void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color) {
     
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
@@ -241,7 +241,7 @@ void MeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, Cu
     }
 }
 
-void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const SubTexture& texture, color4 color, bool flipTriangleDir)
+void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const SubTexture& texture, color4 color, bool flipTriangleDir)
 {
     constexpr f32 EPSILON = 0.01f;
     InProgressSubMeshData* submesh;
@@ -375,7 +375,7 @@ void MeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4
     }
 }
 
-void MeshBuilder::addTriangle(StandardVertex verts[3], const SubTexture& texture, bool calculateNormals) {
+void ProceduralMeshBuilder::addTriangle(StandardVertex verts[3], const SubTexture& texture, bool calculateNormals) {
     static_assert(sizeof(StandardVertex) == sizeof(Vertex32));
 
     assert(!calculateNormals); // Unsupported so far
@@ -405,11 +405,11 @@ void MeshBuilder::addTriangle(StandardVertex verts[3], const SubTexture& texture
     indexData[i + 2u] = v + 2u;
 }
 
-void MeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, f32v2 uvScale, color4 color) {
+void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const SubTexture& texture, f32v2 uvScale, color4 color) {
     addQuadBetweenPoints(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], texture, uvScale, color);
 }
 
-void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color) {
+void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color) {
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
@@ -489,11 +489,11 @@ void MeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f
     }
 }
 
-void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
     addQuadBetweenPointsWorldUV(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], texture, uvScale, color, uvOrient, worldUVRoot, flipUv);
 }
 
-void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
+void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
     InProgressSubMeshData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
@@ -596,7 +596,7 @@ void MeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, 
     }
 }
 
-void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32v2 uvScale) {
+void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const f32v2& halfDims, const SubTexture& texture, f32v2 uvScale) {
     f32v3 offset = p2 - p1;
     f32v3 tangent = glm::cross(offset, f32v3(0.0f, 0.0f, 1.0f));
     // If vertical board, new tangent
@@ -636,7 +636,7 @@ void MeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& p2, const 
 }
 
 // This also computes an AABB but we dont store it
-void MeshBuilder::computeBoundingSphere() {
+void ProceduralMeshBuilder::computeBoundingSphere() {
     PROFILE_FUNCTION();
     mDidComputeBoundingSphere = true;
 
@@ -673,7 +673,7 @@ void MeshBuilder::computeBoundingSphere() {
     mBoundingSphere.radius = sqrt(halfLargestWidthSq + halfLargestWidthSq);
 }
 
-void MeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
 
     // return blank mesh if we have no geometry
@@ -691,7 +691,7 @@ void MeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode,
 }
 
 
-void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
     if (mMainSubMeshData.mVerts.empty()) {
         mesh.destroy();
@@ -758,19 +758,19 @@ void MeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& wor
     glBindVertexArray(0);
 }
 
-void* MeshBuilder::operator new(size_t count) {
+void* ProceduralMeshBuilder::operator new(size_t count) {
     assert(IS_GAME_THREAD());
     UNUSED(count);
     return singleton_task_pool::malloc();
 }
 
-void MeshBuilder::operator delete(void* pointer, size_t size) {
+void ProceduralMeshBuilder::operator delete(void* pointer, size_t size) {
     assert(IS_GAME_THREAD());
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
 
-void MeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
+void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
     auto&& it = mTextureToSubmesh.find(texture.mTextureDiffuse);
     if (it != mTextureToSubmesh.end()) {
         i32 submeshIndex = it->second.first;
@@ -822,7 +822,7 @@ void MeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InPro
     *textureIndex = *textureIndex / 2;
 }
 
-void MeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo) {
+void ProceduralMeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo) {
     // Delete old IBO if needed
     if (mesh.mMainMesh.mIbo != 0 && !wasUsingSharedIbo) {
         glDeleteBuffers(1, &mesh.mMainMesh.mIbo);
@@ -838,7 +838,7 @@ void MeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffe
     mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
 }
 
-void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateIbo) {
+void ProceduralMeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateIbo) {
     // VAO
     if (subMesh.mVao == 0) {
         glGenVertexArrays(1, &subMesh.mVao);
@@ -870,7 +870,7 @@ void MeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateIbo) {
     checkGlError("MeshBuilder::initMeshBuffers");
 }
 
-void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode) {
+void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode) {
     glBindVertexArray(subMesh.mVao);
     
     const size_t vertexCount = data.mVerts.size();
@@ -933,7 +933,7 @@ void MeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, co
     bindVertexAttribs(subMesh);
 }
 
-void MeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
+void ProceduralMeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
 {
     if (mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN)) {
         // Terrain verts
@@ -967,7 +967,7 @@ void MeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
     }
 }
 
-void MeshBuilder::initStaticIBOs() {
+void ProceduralMeshBuilder::initStaticIBOs() {
 
     // ========================================
     // =              QUADS                   =
@@ -1081,11 +1081,11 @@ void MeshBuilder::initStaticIBOs() {
     checkGlError("TerrainMesh::initGlobalIBO");
 }
 
-void MeshBuilder::reserveVertexCount(ui32 count) {
+void ProceduralMeshBuilder::reserveVertexCount(ui32 count) {
     mMainSubMeshData.mVerts.reserve(count);
     mMainSubMeshData.mTextures.reserve(5); // Arbitrary
 }
 
-void MeshBuilder::reserveIndexCount(ui32 count) {
+void ProceduralMeshBuilder::reserveIndexCount(ui32 count) {
     mMainSubMeshData.mIndices.reserve(count);
 }

@@ -6,7 +6,7 @@
 #include "debugging/DebugRenderer.h"
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
-#include "rendering/mesh/MeshBuilder.h"
+#include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
 
@@ -26,8 +26,8 @@ constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[TERRAIN_QUADTREE_MAX_LOD] = { // sq
 struct TerrainMeshTaskData {
     TerrainMeshTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : terrainBuilder(true), waterBuilder(true), owner(owner), patchIndex(patchIndex) {}
 
-    MeshBuilder terrainBuilder;
-    MeshBuilder waterBuilder;
+    ProceduralMeshBuilder terrainBuilder;
+    ProceduralMeshBuilder waterBuilder;
     HeightmapTerrainQuadtree* owner;
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     ui32 patchIndex;
@@ -36,8 +36,8 @@ struct TerrainMeshTaskData {
 struct TerrainMeshGenTaskData {
     TerrainMeshGenTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : terrainBuilder(true), waterBuilder(true), owner(owner), patchIndex(patchIndex) {}
 
-    MeshBuilder terrainBuilder;
-    MeshBuilder waterBuilder;
+    ProceduralMeshBuilder terrainBuilder;
+    ProceduralMeshBuilder waterBuilder;
     HeightmapTerrainQuadtree* owner;
     ui32 patchIndex;
     bool isAnyMeshValid;
@@ -72,8 +72,8 @@ void HeightmapTerrainQuadtree::markDirty() {
 
 
 void createTerrainAndWaterMeshFromGen(
-    MeshBuilder& terrainBuilder,
-    MeshBuilder& waterBuilder,
+    ProceduralMeshBuilder& terrainBuilder,
+    ProceduralMeshBuilder& waterBuilder,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos
@@ -112,8 +112,8 @@ void createTerrainAndWaterMeshFromGen(
 };
 
 void createTerrainAndWaterMesh(
-    MeshBuilder& terrainBuilder,
-    MeshBuilder& waterBuilder,
+    ProceduralMeshBuilder& terrainBuilder,
+    ProceduralMeshBuilder& waterBuilder,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
@@ -175,8 +175,8 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         TerrainMeshTaskData* taskData = new TerrainMeshTaskData(this, patchIndex);
 
         // TODO: Can we malloc these together?
-        std::shared_ptr<MeshBuilder> terrainBuilder = std::make_shared<MeshBuilder>(true);
-        std::shared_ptr<MeshBuilder> waterBuilder = std::make_shared<MeshBuilder>(true);
+        std::shared_ptr<ProceduralMeshBuilder> terrainBuilder = std::make_shared<ProceduralMeshBuilder>(true);
+        std::shared_ptr<ProceduralMeshBuilder> waterBuilder = std::make_shared<ProceduralMeshBuilder>(true);
 
         if (hasAquired || sHeightmapGrid->tryAquirePaddedHeightDataAt(id)) {
             createMeshesHighestLOD(taskData);
@@ -251,7 +251,7 @@ void HeightmapTerrainQuadtree::createMeshesHighestLOD(TerrainMeshTaskData* taskD
 
 }
 
-void HeightmapTerrainQuadtree::finishMeshes(MeshBuilder& terrainBuilder, MeshBuilder& waterBuilder, ui32 patchIndex) {
+void HeightmapTerrainQuadtree::finishMeshes(ProceduralMeshBuilder& terrainBuilder, ProceduralMeshBuilder& waterBuilder, ui32 patchIndex) {
     const f32v3& worldPos = f32v3(mWorldPos.x, mWorldPos.y, 0.0f);
     const bool hadTerrain = mTerrainMeshes[patchIndex]->mMesh.isValid();
     const bool hadWater = mWaterMeshes[patchIndex]->mMesh.isValid();

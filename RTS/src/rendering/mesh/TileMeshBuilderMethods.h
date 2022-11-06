@@ -3,7 +3,7 @@
 #include "tile/Tile.h"
 
 class BillboardMeshBuilder;
-class MeshBuilder;
+class ProceduralMeshBuilder;
 class Chunk;
 
 struct HeightmapPatchData;
@@ -12,14 +12,14 @@ class StaticPhysicsMeshBuilder;
 class TileContainer;
 
 namespace TileMeshBuilderMethods {
-    void meshTileContainerStatic(MeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMeshBuilder* physMesh);
-    void meshTileContainerDynamic(MeshBuilder& meshBuilder, const TileContainer& tileContainer);
+    void meshTileContainerStatic(ProceduralMeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMeshBuilder* physMesh);
+    void meshTileContainerDynamic(ProceduralMeshBuilder& meshBuilder, const TileContainer& tileContainer);
 
-    void addBlock(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
-    void addBlockVertical(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
-    void addBlockWorldTiling(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
-    void addFloor(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
-    void addFloorTerrainAligned(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData);
-    void addStairs(MeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
-    void addWall(MeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, OPT StaticPhysicsMeshBuilder* physMesh);
+    void addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
+    void addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
+    void addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
+    void addFloor(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
+    void addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData);
+    void addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);
+    void addWall(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, OPT StaticPhysicsMeshBuilder* physMesh);
 };

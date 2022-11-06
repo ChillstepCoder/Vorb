@@ -1,7 +1,7 @@
 #pragma once
 
 class TileContainer;
-class MeshBuilder;
+class ProceduralMeshBuilder;
 class BillboardMeshBuilder;
 struct ModelDef;
 
@@ -27,7 +27,7 @@ public:
     static bool exists() { return sInstance != nullptr; }
 
     // Tasks
-    void addTileContainerMeshUpdateTask(TileContainer* containerToMesh, MeshBuilder&& staticMeshBuilder, MeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder);
+    void addTileContainerMeshUpdateTask(TileContainer* containerToMesh, ProceduralMeshBuilder&& staticMeshBuilder, ProceduralMeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder);
     void removeTileContainerMesh(TileContainer* container);
     void addCharacterModel(entt::entity characterEntity, ui32 modelId);
     void removeCharacterModel(entt::entity characterEntity);

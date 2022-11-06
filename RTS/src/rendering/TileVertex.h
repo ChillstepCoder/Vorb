@@ -7,45 +7,6 @@ enum class ShadowState : ui8 {
     RIGHT //  Top right vertex on thick objects
 };
 
-struct alignas(32) TileVertex {
-public:
-    TileVertex() {};
-    TileVertex(const f32v3& pos, const f32v2& uvs, const color4& color, ui16 atlasPage) :
-        pos(pos), uvs(uvs), color(color), atlasPage(atlasPage) {
-    }
-
-    f32v3 pos;
-    f32v2 uvs;
-    color4 color;
-    ui16 atlasPage;
-    i8v3 normal;
-    i8v2 tangent; // for normal mapping
-    ui8 windInfluence = 0;
-    // TODO: Roughness :/
-};
-// Need power of 2 alignment
-static_assert(sizeof(TileVertex) == 32, "32 byte alignment needed");
-
-// https://gamedev.net/forums/topic/663329-particles-batching-vs-instancing/5196688/
-constexpr float BILLBOARD_VERTEX_XZOFFSET_COMPRESSION_RATIO = 100.0f;
-struct  alignas(32) BillboardVertex {
-public:
-    BillboardVertex() {};
-    BillboardVertex(const f32v3& pos, const i16v2& xzOffset, const f32v2& uvs, const color4& color, ui16 atlasPage) :
-        rootPos(pos), xzOffset(xzOffset), uvs(uvs), color(color), atlasPage(atlasPage) {
-    }
-
-    f32v3 rootPos;
-    i16v2 xzOffset;
-    f32v2 uvs; //TODO: ui16v2?
-    color4 color;
-    ui16 atlasPage;
-    ui8 windInfluence = 0;
-    ui8 roughness;
-};
-// Need power of 2 alignment
-static_assert(sizeof(BillboardVertex) == 32, "32 byte alignment needed");
-
 struct alignas(32) TriangleVertex {
 public:
     TriangleVertex() {};
@@ -65,20 +26,4 @@ public:
 // Need power of 2 alignment
 static_assert(sizeof(TriangleVertex) == 64, "32 byte alignment needed");
 
-constexpr int MAX_BONES_PER_VERTEX = 4;
 
-// TODO: Reduce to 64 https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct alignas(32) SkinnedModelVertex {
-public:
-    SkinnedModelVertex() {};
-
-    f32v3 pos;
-    f32v3 normal;
-    f32v3 tangent; // TODO: This can be i8v3 which will compress to 64 bits per vertex
-    f32v2 uvs;
-    color4 color;
-    // TODO: ui16 weights?
-    f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
-    ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
-};
-static_assert(sizeof(SkinnedModelVertex) == 96, "32 byte alignment needed");

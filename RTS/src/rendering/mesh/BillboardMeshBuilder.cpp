@@ -2,7 +2,7 @@
 #include "BillboardMeshBuilder.h"
 
 #include "math/Random.h"
-#include "MeshBuilder.h"
+#include "ProceduralMeshBuilder.h"
 
 #include <boost/pool/singleton_pool.hpp>
 
@@ -184,7 +184,7 @@ void BillboardMeshBuilder::initMeshBuffers(SubMeshData& subMesh)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
     }
     // IBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MeshBuilder::sQuadIbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
 
     checkGlError("BillboardMeshBuilder::initMeshBuffers");
 }
