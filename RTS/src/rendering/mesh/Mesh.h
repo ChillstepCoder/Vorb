@@ -24,7 +24,7 @@ struct SubMeshData {
     VGBuffer  mIbo = 0;
     VGBuffer  mSSBO = 0;
     ui32 mIndexCount = 0; ///< Current capacity of mIbo
-    ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT // TODO: DELETE
+    ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
     SubMeshData* mNextSubmesh = nullptr; // We store these as a linked list, this is not a true parent
 
     void* operator new(size_t count);
@@ -39,6 +39,7 @@ class Mesh
     friend class ProceduralMeshBuilder;
     friend class BillboardMeshBuilder;
     friend class TextMeshBuilder;
+    friend class ModelMeshBuilder;
 public:
     Mesh();
     ~Mesh();

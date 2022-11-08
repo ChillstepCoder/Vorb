@@ -1,9 +1,12 @@
 #pragma once
 
+#include "rendering/model/ModelVertex.h"
+
 enum class VertexVariantType {
     STANDARD,
     TERRAIN,
-    WATER
+    WATER,
+    MODEL
 };
 
 struct alignas(32) StandardVertex {
@@ -34,6 +37,7 @@ struct alignas(32) Vertex32 {
         StandardVertex mStandard;
         TerrainVertex mTerrain;
         WaterVertex mWater;
+        StaticModelVertex mModel;
     };
 };
 

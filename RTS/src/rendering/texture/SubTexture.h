@@ -1,5 +1,6 @@
 #pragma once
 
+constexpr ui32 MAX_TEXTURES_PER_MESH = 500; // Must be even
 
 typedef ui32 SubTextureID;
 

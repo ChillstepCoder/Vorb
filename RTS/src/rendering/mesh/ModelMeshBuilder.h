@@ -37,7 +37,9 @@ public:
     );
 
 private:
-    void uploadStaticMeshData(Mesh& outMesh);
+    void initStaticMeshBuffers(SubMeshData& subMesh);
+    void uploadStaticMeshData(SubMeshData& subMesh, std::vector<TextureHandle>& textures, const uint16_t* indices, int indexCount, MeshDrawMode drawMode);
+    void bindStaticVertexAttribs(SubMeshData& subMesh);
 
     std::vector<StaticModelVertex> mStaticVerts;
     std::vector<SkinnedModelVertex> mSkinnedVerts;

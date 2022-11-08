@@ -27,8 +27,9 @@ public:
     f32v3 pos;
     ui32 normalPacked;
     ui32 tangentPacked;
-    f32v2 uvs;
+    ui16v2 uvsPacked;
     color4 color;
+    ui8 textureIndex;
 };
 static_assert(sizeof(StaticModelVertex) == 32, "32 byte alignment needed");
 
