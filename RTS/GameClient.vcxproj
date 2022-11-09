@@ -267,6 +267,7 @@
     <ClCompile Include="src\rendering\mesh\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshBuilderCommon.cpp" />
     <ClCompile Include="src\rendering\mesh\ModelMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\ProceduralMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
@@ -500,6 +501,7 @@
     <ClInclude Include="src\rendering\mesh\ChunkMesher.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
+    <ClInclude Include="src\rendering\mesh\MeshBuilderCommon.h" />
     <ClInclude Include="src\rendering\mesh\ModelMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\ProceduralMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />

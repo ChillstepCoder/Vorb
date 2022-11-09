@@ -61,7 +61,7 @@ public:
     static void operator delete(void* pointer, size_t size);
 
 protected:    
-    f32v3                    mPosition;
+    f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
     BitFlags<MeshFlags>      mFlags;
     SubMeshData              mMainMesh;

@@ -24,7 +24,7 @@ public:
 
 private:
     bool loadSkinnedModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir);
-    bool loadStaticModel(ModelDefFileData& fileData, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir);
+    bool loadStaticModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir);
 
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;

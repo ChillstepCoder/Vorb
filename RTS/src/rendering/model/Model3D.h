@@ -9,13 +9,14 @@ enum class Model3DType {
 
 class StaticModel3D {
     friend class ModelRepository;
+    friend class ModelMeshBuilder;
 public:
-    const Mesh* getMeshes() const { return mMeshes.get(); }
+    const Mesh* getMesh() const { return mMesh.get(); }
     ui32 getNumMeshes() const { return mNumMeshes; }
 
 private:
-    std::unique_ptr<Mesh[]> mMeshes;
-    ui32 mNumMeshes = 0;
+    std::unique_ptr<Mesh> mMesh;
+    ui32 mNumMeshes = 0; // TODO: Remove? This is just a submesh chain
 };
 
 class SkinnedModel3D {

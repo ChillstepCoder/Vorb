@@ -9,6 +9,7 @@ enum class SubTextureFlags : ui8 {
     RAND_FLIP = 1 << 1,
 };
 
+// TODO: Combine specular into the alpha channel of normal
 struct SubTexture {
     TextureHandle mTextureHandleDiffuse;
     TextureHandle mTextureHandleNormal;

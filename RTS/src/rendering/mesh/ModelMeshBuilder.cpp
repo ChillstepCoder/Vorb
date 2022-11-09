@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ModelMeshBuilder.h"
 
+#include "rendering/mesh/MeshBuilderCommon.h"
 #include "rendering/texture/SubTexture.h"
 
 #include "rendering/model/Model3D.h"
@@ -15,113 +16,78 @@
 
 #include "fbx/ozzFbxToMesh.hpp"
 
-bool ModelMeshBuilder::buildStaticMesh(
-    Mesh& outMesh,
-    int meshIndex,
+bool ModelMeshBuilder::buildStaticMeshesForModel(
+    StaticModel3D& model,
     const vio::Path& filePath,
+    const vio::Path& rootDir,
     OzzFbxSceneLoader& sceneLoader,
-    MeshDrawMode drawMode
+    MeshDrawMode drawMode,
+    const TextureRepository& textureRepo
 ) {
-    //FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(meshIndex);
+    const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
+    if (numMeshes == 0) {
+        pError("No mesh to process in this file: " + filePath.getString());
+        return false;
+    }
 
-    //PreciseTimer timer;
-    //// Allocates output mesh.
-    //ozzfbx::Mesh outputMesh;
-    //outputMesh.parts.resize(1);
+    model.mMesh = std::make_unique<Mesh>();
+    model.mNumMeshes = numMeshes;
 
-    //ControlPointsRemap remap;
-    //if (!BuildVertices(fbxMesh, sceneLoader.converter(), &remap, &outputMesh)) {
-    //    pError("Failed to read vertices: " + filePath.getString());
-    //    return false;
-    //}
+    // TODO: All textures
+    const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
+    const SubTexture& texture = textureRepo.getTexture(modelFileNameNoExtension);
 
-    //// Finds skinning informations
-    ////if (fbxMesh->GetDeformerCount(FbxDeformer::eSkin) > 0) {
-    ////    if (!BuildSkin(fbxMesh, sceneLoader.converter(), remap, skeleton, &outputMesh)) {
-    ////        pError("Failed to read skinning data: " + filePath.getString());
-    ////        return false;
-    ////    }
-    ////    LOG_TRACE("  Build skin in {} ms", timer.stop());
-    ////    timer.start();
-    ////    // Limiting number of joint influences per vertex.
-    ////    if (!LimitInfluences(outputMesh, MAX_BONES_PER_VERTEX)) {
-    ////        pError("Failed to limit number of joint influences: " + filePath.getString());
-    ////        return false;
-    ////    }
-    ////    LOG_TRACE("  Limit influences in {} ms", timer.stop());
-    ////    timer.start();
-    ////    // Remap joint indices. The mesh might not use all skeleton joints, so
-    ////    // this function remaps joint indices to the subset of used joints. It
-    ////    // also reoders inverse bin pose matrices.
-    ////    if (!RemapIndices(&outputMesh)) {
-    ////        pError("Failed to remap joint indices: " + filePath.getString());
-    ////        return false;
-    ////    }
+    SubMeshData* meshData = &model.mMesh->mMainMesh;
+    meshData->allocateSubmeshCount(numMeshes - 1, false);
 
-    ////    LOG_TRACE("  Remap indices in {} ms", timer.stop());
-    ////    timer.start();
-    ////    // Split the mesh if option is true (default)
-    ////    //if (OPTIONS_split) {
-    ////    //    ozz::sample::Mesh partitioned_meshes;
-    ////    //    if (!SplitParts(output_mesh, &partitioned_meshes)) {
-    ////    //        ozz::log::Err() << "Failed to partitioned meshes." << std::endl;
-    ////    //        return EXIT_FAILURE;
-    ////    //    }
+    for (int m = 0; m < numMeshes; ++m) {
+        assert(meshData);
 
-    ////    //    // Copy partitioned mesh back to the output.
-    ////    //    output_mesh = partitioned_meshes;
-    ////    //}
+        FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
 
-    ////    if (!StripWeights(&outputMesh)) {
-    ////        pError("Failed to strip weights: " + filePath.getString());
-    ////        return false;
-    ////    }
-    ////    LOG_TRACE("  Strip weights in {} ms", timer.stop());
-    ////    timer.start();
+        PreciseTimer timer;
+        // Allocates output mesh.
+        ozzfbx::Mesh outputMesh;
+        outputMesh.parts.resize(1);
 
-    ////    assert(outputMesh.max_influences_count() <= MAX_BONES_PER_VERTEX);
-    ////}
-    //mStaticVerts.resize(outputMesh.vertex_count());
-    //assert(outputMesh.parts.size() == 1);
-    //LOG_CRITICAL(" NEED TO FIX normals ModelMeshBuilder::buildStaticMesh");
-    //for (int i = 0; i < outputMesh.vertex_count(); ++i) {
-    //    const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-    //    StaticModelVertex& myVert = mStaticVerts[i];
-    //    memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
-    //        
-    //    // TODO: https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
-    //    // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
-    //    myVert.normalPacked = {};
-    //    myVert.tangentPacked = {};
-    //    //memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
-    //    //memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
-    //    f32v2 uvs;
-    //    memcpy(&uvs, &part.uvs[(int)(i * 2)], sizeof(f32) * 2);
-    //    assert(uvs.x >= 0.0f && uvs.y >= 0.0f && uvs.x <= 1.0f && uvs.y <= 1.0f);
-    //    myVert.uvsPacked = ui16v2(uvs.x * UINT16_MAX, uvs.y * UINT16_MAX);
-    //    if (part.colors.size()) {
-    //        memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);
-    //    }
-    //    else {
-    //        myVert.color = COLOR_WHITE;
-    //    }
-    //}
+        ControlPointsRemap remap;
+        // TODO: Non OZZ version so we dont have an intermediate conversion
+        if (!BuildVertices(fbxMesh, sceneLoader.converter(), &remap, &outputMesh)) {
+            pError("Failed to read vertices: " + filePath.getString());
+            return false;
+         }
 
-    //// Allocate all buffers if needed
-    //SubMeshData* subMesh = &outMesh.mMainMesh;
-    //do {
-    //    initStaticMeshBuffers(*subMesh);
-    //    subMesh = subMesh->mNextSubmesh;
-    //} while (subMesh != nullptr);
+        // TODO: https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
+        // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
+        mStaticVerts.resize(outputMesh.vertex_count());
+        assert(outputMesh.parts.size() == 1);
+        for (int i = 0; i < outputMesh.vertex_count(); ++i) {
+            const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
+            StaticModelVertex& myVert = mStaticVerts[i];
+            memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
+           // memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
+           // memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
+           // memcpy(&myVert.uvs, &part.uvs[(int)(i * 2)], sizeof(f32) * 2);
+            if (part.colors.size()) {
+                memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);
+            }
+            else {
+                myVert.color = COLOR_WHITE;
+            }
+        }
+        
+        initStaticMeshBuffers(*meshData);
+        uploadStaticMeshData(*meshData, outputMesh.triangle_indices.data(), outputMesh.triangle_index_count(), MeshDrawMode::STATIC);
+        mStaticVerts.clear();
+        LOG_TRACE("  Copy data in {} ms", timer.stop());
+        timer.start();
 
-    //uploadStaticMeshData(outMesh.mMainMesh, outputMesh.triangle_indices.data(), outputMesh.triangle_index_count(), drawMode);
+        // Next submesh
+        meshData = meshData->mNextSubmesh;
+    }
 
-    ////mSkinnedVerts.clear();
-    //LOG_TRACE("  Copy data in {} ms", timer.stop());
-    //timer.start();
-
-    //glBindVertexArray(0);
-    return false;
+    glBindVertexArray(0);
+    return true;
 }
 
 bool ModelMeshBuilder::buildSkinnedMeshesForModel(
@@ -261,17 +227,15 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
 
     const SubTexture& texture = textureRepo.getTexture(modelFileNameNoExtension);
-    VGTexture tex = texture.mTextureDiffuse;
     for (int i = 0; i < numMeshes; ++i) {
-        model.mSkinnedMeshes[i].setDiffuseTexture(tex);
+        model.mSkinnedMeshes[i].setDiffuseTexture(texture.mTextureDiffuse);
     }
-    tex = texture.mTextureNormal;
     for (int i = 0; i < numMeshes; ++i) {
-        model.mSkinnedMeshes[i].setNormalTexture(tex);
+        model.mSkinnedMeshes[i].setNormalTexture(texture.mTextureNormal);
     }
 
     // TODO: Store this
-    tex = textureRepo.getTexture(modelFileNameNoExtension + ".spec").mTextureDiffuse;
+    VGTexture tex = textureRepo.getTexture(modelFileNameNoExtension + ".spec").mTextureDiffuse;
     for (int i = 0; i < numMeshes; ++i) {
         model.mSkinnedMeshes[i].setSpecularTexture(tex);
     }
@@ -283,6 +247,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     model.mNumSkinningMatrices = numSkinningMatrices;
 
     glBindVertexArray(0);
+    return true;
 }
 
 void ModelMeshBuilder::initStaticMeshBuffers(SubMeshData& subMesh) {
@@ -307,8 +272,7 @@ void ModelMeshBuilder::initStaticMeshBuffers(SubMeshData& subMesh) {
     checkGlError("MeshBuilder::initStaticMeshBuffers");
 }
 
-void ModelMeshBuilder::uploadStaticMeshData(SubMeshData& subMesh, const uint16_t* indices, int indexCount, MeshDrawMode drawMode)
-{
+void ModelMeshBuilder::uploadStaticMeshData(SubMeshData& subMesh, const uint16_t* indices, int indexCount, MeshDrawMode drawMode) {
     //glBindVertexArray(subMesh.mVao);
 
     //// IBO

@@ -53,7 +53,7 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const TextureRepo
         return loadSkinnedModel(fileData, textureRepository, animMachineRepository, filePath, modelPath, rootDir);
     }
     else {
-        return loadStaticModel(fileData, filePath, modelPath, rootDir);
+        //return loadStaticModel(fileData, textureRepository, filePath, modelPath, rootDir);
     }
     return false;
 }
@@ -88,9 +88,7 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
     LOG_TRACE("  Import in {} ms", timer.stop());
     timer.start();
 
-    // Copy all meshes
     SkinnedModel3D& model = def.getSkinnedModel();
-   
     ModelMeshBuilder meshBuilder;
     meshBuilder.buildSkinnedMeshesForModel(model, def.mRig->mSkeleton, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, textureRepository);
 
@@ -101,83 +99,33 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
     return true;
 }
 
-bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
-    //ModelDef& def = mModelDefs.emplace_back();
-    //def.mModelType = Model3DType::STATIC;
-    //def.mModelId = (ui32)(mModelDefs.size() - 1u);
+bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+    ModelDef& def = mModelDefs.emplace_back();
+    def.mModelType = Model3DType::STATIC;
+    def.mModelId = (ui32)(mModelDefs.size() - 1u);
 
-    //PreciseTimer timer;
-    //nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
+    PreciseTimer timer;
 
-    //// Import Fbx content.
-    //ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
-    //ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
-    //ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)modelPath.getCString(), "", fbxManager, settings);
-    //if (!sceneLoader.scene()) {
-    //    pError("Failed to import fbx scene: " + filePath.getString());
-    //    return false;
-    //}
-    //LOG_TRACE("  Import in {} ms", timer.stop());
-    //timer.start();
+    // Import Fbx content.
+    ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
+    ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
+    ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)modelPath.getCString(), "", fbxManager, settings);
+    if (!sceneLoader.scene()) {
+        pError("Failed to import fbx scene: " + filePath.getString());
+        return false;
+    }
+    LOG_TRACE("  Import in {} ms", timer.stop());
+    timer.start();
 
-    //const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
-    //if (numMeshes == 0) {
-    //    pError("No mesh to process in this file: " + filePath.getString());
-    //    return false;
-    //}
+    StaticModel3D& model = def.getStaticModel();
+    ModelMeshBuilder meshBuilder;
+    meshBuilder.buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, textureRepository);
 
-    //// Copy all meshes
-    //StaticModel3D& model = def.getStaticModel();
-    //model.mMeshes = std::unique_ptr<Mesh[]>(new Mesh[numMeshes]);
-    //model.mNumMeshes = numMeshes;
-
-    //ModelMeshBuilder meshBuilder;
-    //for (int m = 0; m < numMeshes; ++m) {
-    //    meshBuilder.buildStaticMesh(
-    //        model.mMeshes[m],
-    //        m,
-    //        filePath,
-    //        sceneLoader,
-    //        MeshDrawMode::STATIC
-    //    );
-    //}
-
-    //// Find and load textures
-    //// Right now, textures are shared with every mesh in the scene
-    //vio::Path textureDir = rootDir + vio::Path("\\") + vio::Path(modelFileNameNoExtension) + vio::Path(".fbm");
-    //if (textureDir.isDirectory()) {
-    //    vio::Path textureNameRoot = textureDir + vio::Path("\\") + vio::Path(modelFileNameNoExtension) + vio::Path("_");
-
-    //    vio::Path diffusePath = textureNameRoot + vio::Path("diffuse.png");
-    //    if (diffusePath.isValid()) {
-    //        vg::Texture tex = mTextureCache.addTexture(diffusePath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
-    //        for (int i = 0; i < numMeshes; ++i) {
-    //            model.mMeshes[i].setDiffuseTexture(tex.id);
-    //        }
-    //    }
-
-    //    vio::Path normalPath = textureNameRoot + vio::Path("normal.png");
-    //    if (normalPath.isValid()) {
-    //        vg::Texture tex = mTextureCache.addTexture(normalPath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
-    //        for (int i = 0; i < numMeshes; ++i) {
-    //            model.mSkinnedMeshes[i].setNormalTexture(tex.id);
-    //        }
-    //    }
-
-    //    vio::Path specularPath = textureNameRoot + vio::Path("specular.png");
-    //    if (specularPath.isValid()) {
-    //        vg::Texture tex = mTextureCache.addTexture(specularPath, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, true);
-    //        for (int i = 0; i < numMeshes; ++i) {
-    //            model.mSkinnedMeshes[i].setSpecularTexture(tex.id);
-    //        }
-    //    }
-    //}
-
-    //// Store lookup
-    //assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
-    //mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
-    //return true;
-    return false;
+    // Store lookup
+    const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
+    assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
+    mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
+    return true;
 }
 
 const ModelDef& ModelRepository::getModelDef(const nString& name) const

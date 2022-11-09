@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Vertex.h"
-#include "Mesh.h"
+#include "rendering/mesh/MeshBuilderCommon.h"
 #include "world/TerrainConstants.h"
 
 struct SubTexture;
@@ -61,29 +60,17 @@ public:
     static void operator delete(void* pointer, size_t size);
 
 private:
-    struct InProgressSubMeshData {
-        void clear() {
-            mVerts.clear();
-            mIndices.clear();
-            mTextures.clear();
-        }
 
-        // TODO: Pool allocators or reserve?
-        std::vector<Vertex32> mVerts;
-        std::vector<ui32> mIndices;
-        std::vector<TextureHandle> mTextures;
-    };
-
-    void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex);
+    void getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex);
     void setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo);
     void initMeshBuffers(SubMeshData& subMesh, bool allocateIbo);
-    void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode);
+    void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode);
     void bindVertexAttribs(SubMeshData& subMesh);
 
     // TODO: Try both multi-context opengl and pool_allocator
     std::unordered_map<VGTexture, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/>> mTextureToSubmesh;
-    InProgressSubMeshData              mMainSubMeshData;
-    std::vector<InProgressSubMeshData> mSubMeshesData;
+    SubMeshBufferData              mMainSubMeshData;
+    std::vector<SubMeshBufferData> mSubMeshesData;
     BoundingSphere                     mBoundingSphere;
     BitFlags<PolyTypeFlags>            mPolyTypeFlags;
     bool                               mUsingSharedIndexBuffer;

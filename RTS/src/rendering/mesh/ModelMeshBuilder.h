@@ -9,6 +9,7 @@
 struct SubTexture;
 class SkinnedMesh; // TODO: Just mesh?
 class SkinnedModel3D;
+class StaticModel3D;
 class TextureRepository;
 typedef ozz::animation::offline::fbx::FbxSceneLoader OzzFbxSceneLoader;
 
@@ -21,12 +22,14 @@ enum class ModelMeshVertexType : ui8 {
 class ModelMeshBuilder
 {
 public:
-    bool buildStaticMesh(
-        Mesh& outMesh,
-        int meshIndex,
+    // TODO: Instead optional skeleton and modelDef?
+    bool buildStaticMeshesForModel(
+        StaticModel3D& model,
         const vio::Path& filePath,
+        const vio::Path& rootDir,
         OzzFbxSceneLoader& sceneLoader,
-        MeshDrawMode drawMode
+        MeshDrawMode drawMode,
+        const TextureRepository& textureRepo
     );
     bool buildSkinnedMeshesForModel(
         SkinnedModel3D& model,

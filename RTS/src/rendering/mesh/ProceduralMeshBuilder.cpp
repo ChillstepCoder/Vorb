@@ -143,7 +143,7 @@ void ProceduralMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& corn
 
 void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis, const SubTexture& texture, const f32v4& uvRect, color4 color) {
     
-    InProgressSubMeshData* submesh;
+    SubMeshBufferData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
 
@@ -243,7 +243,7 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& 
 void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const SubTexture& texture, color4 color, bool flipTriangleDir)
 {
     constexpr f32 EPSILON = 0.01f;
-    InProgressSubMeshData* submesh;
+    SubMeshBufferData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
 
@@ -380,7 +380,7 @@ void ProceduralMeshBuilder::addTriangle(StandardVertex verts[3], const SubTextur
     assert(!calculateNormals); // Unsupported so far
     assert(!mUsingSharedIndexBuffer); // Non shared IBO only
 
-    InProgressSubMeshData* submesh;
+    SubMeshBufferData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
 
@@ -409,7 +409,7 @@ void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], cons
 }
 
 void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color) {
-    InProgressSubMeshData* submesh;
+    SubMeshBufferData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
 
@@ -493,7 +493,7 @@ void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4
 }
 
 void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const SubTexture& texture, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv /*= false*/) {
-    InProgressSubMeshData* submesh;
+    SubMeshBufferData* submesh;
     ui8 textureIndex;
     getSubmeshAndTextureIndex(texture, &submesh, &textureIndex);
 
@@ -767,7 +767,7 @@ void ProceduralMeshBuilder::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* textureIndex) {
+void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex) {
     auto&& it = mTextureToSubmesh.find(texture.mTextureDiffuse);
     if (it != mTextureToSubmesh.end()) {
         i32 submeshIndex = it->second.first;
@@ -792,7 +792,7 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
             // Our main mesh has too many textures already, find a valid submesh for it
             bool foundSubmesh = false;
             for (size_t i = 0; i < mSubMeshesData.size(); ++i) {
-                InProgressSubMeshData& data = mSubMeshesData[i];
+                SubMeshBufferData& data = mSubMeshesData[i];
                 if (data.mTextures.size() < MAX_TEXTURES_PER_MESH) {
                     // This texture fits in the main submesh
                     *textureIndex = data.mTextures.size();
@@ -806,7 +806,7 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
             }
             // No valid submesh, make a new submesh
             if (!foundSubmesh) {
-                InProgressSubMeshData& data = mSubMeshesData.emplace_back();
+                SubMeshBufferData& data = mSubMeshesData.emplace_back();
                 *textureIndex = 0;
                 data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
                 data.mTextures.emplace_back(texture.mTextureHandleNormal);
@@ -836,35 +836,29 @@ void ProceduralMeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateI
     // VAO
     if (subMesh.mVao == 0) {
         glGenVertexArrays(1, &subMesh.mVao);
-    }
-    // VBO
-    glBindVertexArray(subMesh.mVao);
-    if (subMesh.mVbo == 0) {
+        glBindVertexArray(subMesh.mVao);
         glGenBuffers(1, &subMesh.mVbo);
-    }
-    // UBO
-    if (subMesh.mUbo == 0) {
+        glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
         glGenBuffers(1, &subMesh.mUbo);
+        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
+    }
+    else {
+        glBindVertexArray(subMesh.mVao);
     }
     // IBO
     if (allocateIbo && subMesh.mIbo == 0) {
         glGenBuffers(1, &subMesh.mIbo);
         // We dont need to delete IBO if non allocating, since
         // we will have already done so in finishMesh
+        // TODO: Verify this is true still
     }
-
-    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-    // texture UBOs go at index 1 since globalUBO is index 0
-    if (subMesh.mUbo) {
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
-    }
 
     checkGlError("MeshBuilder::initMeshBuffers");
 }
 
-void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode) {
+void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode) {
     glBindVertexArray(subMesh.mVao);
     
     const size_t vertexCount = data.mVerts.size();
