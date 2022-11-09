@@ -192,7 +192,7 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& 
         StandardVertex& vbl = verts[0];
         vbl.pos = tilePosition;
         vbl.uvs.x = uvs.x;
-        vbl.uvs.y = uvs.y + uvs.w;
+        vbl.uvs.y = uvs.y;
         vbl.color = color;
         vbl.textureIndex = textureIndex;
         vbl.normal = normal;
@@ -202,7 +202,7 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& 
         StandardVertex& vbr = verts[1];
         vbr.pos = tilePosition;
         vbr.uvs.x = uvs.x + uvs.z;
-        vbr.uvs.y = uvs.y + uvs.w;
+        vbr.uvs.y = uvs.y;
         vbr.color = color;
         vbr.textureIndex = textureIndex;
         vbr.pos[xyAxis.x] += (xyDims.x) * xyAxisDirection.x;
@@ -213,7 +213,7 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& 
         StandardVertex& vtr = verts[2];
         vtr.pos = tilePosition;
         vtr.uvs.x = uvs.x + uvs.z;
-        vtr.uvs.y = uvs.y;
+        vtr.uvs.y = uvs.y + uvs.w;
         vtr.color = color;
         vtr.textureIndex = textureIndex;
         vtr.pos[xyAxis.x] += (xyDims.x) * xyAxisDirection.x;
@@ -225,7 +225,7 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 tilePosition, const f32v2& 
         StandardVertex& vtl = verts[3];
         vtl.pos = tilePosition;
         vtl.uvs.x = uvs.x;
-        vtl.uvs.y = uvs.y;
+        vtl.uvs.y = uvs.y + uvs.w;
         vtl.color = color;
         vtl.textureIndex = textureIndex;
         vtl.pos[xyAxis.y] += (xyDims.y) * xyAxisDirection.y;
@@ -292,7 +292,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vbr = verts[0];
             vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1] + EPSILON);
             vbr.uvs.x = uvs.x + uvs.z;
-            vbr.uvs.y = uvs.y + uvs.w;
+            vbr.uvs.y = uvs.y;
             vbr.color = color;
             vbr.textureIndex = textureIndex;
             vbr.normal = normal;
@@ -302,7 +302,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vtr = verts[1];
             vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3] + EPSILON);
             vtr.uvs.x = uvs.x + uvs.z;
-            vtr.uvs.y = uvs.y;
+            vtr.uvs.y = uvs.y + uvs.w;
             vtr.color = color;
             vtr.textureIndex = textureIndex;
             vtr.normal = normal;
@@ -312,7 +312,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vtl = verts[2];
             vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2] + EPSILON);
             vtl.uvs.x = uvs.x;
-            vtl.uvs.y = uvs.y;
+            vtl.uvs.y = uvs.y + uvs.w;
             vtl.color = color;
             vtl.textureIndex = textureIndex;
             vtl.normal = normal;
@@ -322,7 +322,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vbl = verts[3];
             vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0] + EPSILON);
             vbl.uvs.x = uvs.x;
-            vbl.uvs.y = uvs.y + uvs.w;
+            vbl.uvs.y = uvs.y;
             vbl.color = color;
             vbl.textureIndex = textureIndex;
             vbl.normal = normal;
@@ -335,7 +335,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vbl = verts[0];
             vbl.pos = f32v3(tilePosition.x, tilePosition.y, terrainCorners[0] + EPSILON);
             vbl.uvs.x = uvs.x;
-            vbl.uvs.y = uvs.y + uvs.w;
+            vbl.uvs.y = uvs.y;
             vbl.color = color;
             vbl.textureIndex = textureIndex;
             vbl.normal = normal;
@@ -345,7 +345,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vbr = verts[1];
             vbr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y, terrainCorners[1] + EPSILON);
             vbr.uvs.x = uvs.x + uvs.z;
-            vbr.uvs.y = uvs.y + uvs.w;
+            vbr.uvs.y = uvs.y;
             vbr.color = color;
             vbr.textureIndex = textureIndex;
             vbr.normal = normal;
@@ -355,7 +355,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vtr = verts[2];
             vtr.pos = f32v3(tilePosition.x + 1.0f, tilePosition.y + 1.0f, terrainCorners[3] + EPSILON);
             vtr.uvs.x = uvs.x + uvs.z;
-            vtr.uvs.y = uvs.y;
+            vtr.uvs.y = uvs.y + uvs.w;
             vtr.color = color;
             vtr.textureIndex = textureIndex;
             vtr.normal = normal;
@@ -365,7 +365,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
             StandardVertex& vtl = verts[3];
             vtl.pos = f32v3(tilePosition.x, tilePosition.y + 1.0f, terrainCorners[2] + EPSILON);
             vtl.uvs.x = uvs.x;
-            vtl.uvs.y = uvs.y;
+            vtl.uvs.y = uvs.y + uvs.w;
             vtl.color = color;
             vtl.textureIndex = textureIndex;
             vtl.normal = normal;

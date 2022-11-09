@@ -445,19 +445,20 @@ void meshWalls(const TileContainer& tileContainer, ProceduralMeshBuilder& meshBu
             // Main faces
             const TileData& tileData = TileRepository::getTileData(wall.tileId);
             const SubTexture& texture = tileData.texture;
-            meshBuilder.addQuadBetweenPoints(wallPoints, texture, f32v2(1.0f, -1.0f / 3.0f), COLOR_WHITE);
+            constexpr f32 UVSCALE_Y = 1.0f / 3.0f;
+            meshBuilder.addQuadBetweenPoints(wallPoints, texture, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE);
             if (physMesh) {
                 physMesh->addQuadBetweenPoints(wallPoints);
             }
             if (endcapStart) {
-                meshBuilder.addQuadBetweenPoints(encapPointsStart, texture, f32v2(1.0f, -1.0f / 3.0f), COLOR_WHITE);
+                meshBuilder.addQuadBetweenPoints(encapPointsStart, texture, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE);
                 // The collision is thin enough here we just dont really need it
                 /*if (physMesh) {
                     physMesh->addQuadBetweenPoints(encapPointsStart);
                 }*/
             }
             if (endcapEnd) {
-                meshBuilder.addQuadBetweenPoints(encapPointsEnd, texture, f32v2(1.0f, -1.0f / 3.0f), COLOR_WHITE);
+                meshBuilder.addQuadBetweenPoints(encapPointsEnd, texture, f32v2(1.0f, UVSCALE_Y), COLOR_WHITE);
                 // The collision is thin enough here we just dont really need it
                 /*if (physMesh) {
                     physMesh->addQuadBetweenPoints(encapPointsStart);

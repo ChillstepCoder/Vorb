@@ -20,6 +20,7 @@ private:
 
 class SkinnedModel3D {
     friend class ModelRepository;
+    friend class ModelMeshBuilder;
 public:
     const SkinnedMesh* getMeshes() const { return mSkinnedMeshes.get(); }
     ui32 getNumMeshes() const { return mNumMeshes; }

@@ -111,19 +111,19 @@ void main() {
     
     switch (index) {
         case 0:
-            fColor.rgb += texture(SkyboxRight, vec2(uv.y, uv.x)).rgb;
+            fColor.rgb += texture(SkyboxRight, vec2(uv.y, 1.0 - uv.x)).rgb;
             break;
         case 1:
-            fColor.rgb += texture(SkyboxLeft, vec2(-uv.y, uv.x)).rgb;
+            fColor.rgb += texture(SkyboxLeft, vec2(-uv.y, 1.0 - uv.x)).rgb;
             break;
         case 2:
-            fColor.rgb += texture(SkyboxFront, vec2(-uv.x, uv.y)).rgb;
+            fColor.rgb += texture(SkyboxFront, vec2(-uv.x, 1.0 - uv.y)).rgb;
             break;
         case 3:
-            fColor.rgb += texture(SkyboxBack, vec2(uv.x, uv.y)).rgb;
+            fColor.rgb += texture(SkyboxBack, vec2(uv.x, 1.0 - uv.y)).rgb;
             break;
         case 4:
-           fColor.rgb += texture(SkyboxUp, vec2(uv.y, uv.x)).rgb;
+           fColor.rgb += texture(SkyboxUp, vec2(uv.y, 1.0 - uv.x)).rgb;
            break;
         case 5:
            fColor.rgb = vec3(0.0);

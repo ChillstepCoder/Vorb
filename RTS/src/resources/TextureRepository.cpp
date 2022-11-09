@@ -20,6 +20,7 @@ KEG_TYPE_DEF(SubtextureMetaData, SubtextureMetaData, kt) {
 KEG_TYPE_DEF(TextureMetaData, TextureMetaData, kt) {
     kt.addValue("sampler_state", keg::Value::custom(offsetof(TextureMetaData, samplerState), "SamplerStateType", true));
     kt.addValue("textures", keg::Value::array(offsetof(TextureMetaData, subTextures), keg::Value::custom(0, "SubtextureMetaData", false)));
+    kt.addValue("flipv", keg::Value::basic(offsetof(TextureMetaData, flipV), keg::BasicType::BOOL));
 }
 
 TextureRepository::TextureRepository(vg::TextureCache& textureCache, vio::IOManager& ioManager) : mTextureCache(textureCache), mIoManager(ioManager) {
@@ -39,14 +40,14 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
     TextureMetaData metaData = getFileMetadata(filePath);
 
     // Load and add texture to cache
-    vg::Texture texture = mTextureCache.addTexture(filePath, textureName, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
+    vg::Texture texture = mTextureCache.addTexture(filePath, textureName, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)], vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, !metaData.flipV);
 
     // Check if there is an acompanying normal file
     VGTexture normalTexture;
     vio::Path normalTexturePath = getStringNoExtension(filePath) + ".norm.png";
     if (mIoManager.fileExists(normalTexturePath)) {
         // Read the normals
-        vg::Texture normalTextureFull = mTextureCache.addTexture(normalTexturePath, vio::getLeafNameFromFilePathNoExtension(normalTexturePath), vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
+        vg::Texture normalTextureFull = mTextureCache.addTexture(normalTexturePath, vio::getLeafNameFromFilePathNoExtension(normalTexturePath), vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)], vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, !metaData.flipV);
         assert(normalTextureFull.dims == texture.dims);
         normalTexture = normalTextureFull.id;
     }
@@ -149,7 +150,7 @@ TextureMetaData TextureRepository::getFileMetadata(const vio::Path& imageFilePat
 }
 
 
-SubTexture& TextureRepository::getTexture(const nString& textureName) {
+const SubTexture& TextureRepository::getTexture(const nString& textureName) const {
     auto&& it = mTextureIdLookup.find(textureName);
     if (it == mTextureIdLookup.end()) {
         pError("Failed to find texture - " + textureName);

@@ -20,6 +20,7 @@ KEG_TYPE_DECL(SubtextureMetaData);
 struct TextureMetaData {
     Array<SubtextureMetaData> subTextures;
     vg::SamplerStateType samplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
+    bool flipV = false;
 };
 KEG_TYPE_DECL(TextureMetaData);
 
@@ -29,7 +30,7 @@ public:
     ~TextureRepository();
 
     bool loadTexture(const vio::Path& filePath);
-    SubTexture& getTexture(const nString& textureName);
+    const SubTexture& getTexture(const nString& textureName) const;
 
 private:
     SubTexture& newSubTexture(const nString& name, VGTexture diffuse, TextureHandle diffuseHandle, VGTexture normal, TextureHandle normalHandle, const f32v4& uvRect, bool randFlip);

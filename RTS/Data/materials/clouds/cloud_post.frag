@@ -31,7 +31,6 @@ void main() {
     
     // Get alpha
 	vec2 tex = vec2(0.0, max(computeDiffuse(norm, SunPosition), 0.001));
-	tex.y = 1.0 - tex.y;
 	fColor.a = texture(unCloudColor, tex).a * baseAlpha;
 	
     // =========START TOON SHADING==========

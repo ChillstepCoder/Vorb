@@ -128,10 +128,10 @@ ui32v2 AXIS_UV_LOOKUP_FROM_CARTESIAN[4] = {
     ui32v2(AXIS_X, AXIS_Y), // Cartesian::UP
 };
 f32 AXIS_V_DIR_FROM_CARTESIAN[4] = {
-    -1.0f, // Cartesian::DOWN
-    -1.0f, // Cartesian::LEFT
-    1.0f, // Cartesian::RIGHT
-    1.0f, // Cartesian::UP
+    1.0f, // Cartesian::DOWN
+    1.0f, // Cartesian::LEFT
+    -1.0f, // Cartesian::RIGHT
+    -1.0f, // Cartesian::UP
 };
 
 //http://wscg.zcu.cz/wscg2003/Papers_2003/G67.pdf
