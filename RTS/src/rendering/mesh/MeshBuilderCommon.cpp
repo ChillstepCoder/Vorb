@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "MeshBuilderCommon.h"
 
+
+#include "rendering/texture/SubTexture.h"
+
 //glGenVertexArrays(1, &subMesh.mVao);
 //glBindVertexArray(subMesh.mVao);
 //// UBO
@@ -63,4 +66,62 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
 
     checkGlError("MeshBuilderCommon::initMeshBuffers");
+}
+
+void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, MeshDrawMode drawMode) {
+    subMesh.mIndexCount = indices.size();
+    const ui32 indexBufferSizeBytes = subMesh.mIndexCount * sizeof(ui32);
+    assert(subMesh.mIbo);
+    assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
+    // Allocate orphaned
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, indices.data());
+}
+
+void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, MeshDrawMode drawMode) {
+    subMesh.mIndexCount = indexCount;
+    subMesh.mIndexType = GL_UNSIGNED_SHORT;
+    const ui32 indexBufferSizeBytes = indexCount * sizeof(ui16);
+    assert(subMesh.mIbo);
+    assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
+    // Allocate orphaned
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, indices);
+}
+
+void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, MeshDrawMode drawMode) {
+    const unsigned bufferSizeBytes = vertices.size() * sizeof(Vertex32);
+    // VBO
+    // Allocate orphaned
+    assert(subMesh.mVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
+    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, vertices.data());
+}
+
+void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, MeshDrawMode drawMode) {
+    // UBO
+    const ui32 uboSizeBytes = sizeof(f32v4) + textures.size() * sizeof(TextureHandle);
+    // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
+    // With position in front
+    constexpr size_t BUFFER_SIZE = sizeof(f32v4) + MAX_TEXTURES_PER_MESH * 2 * sizeof(ui32v2);
+    ui8 byteBuffer[BUFFER_SIZE];
+    *(f32v3*)byteBuffer = pos;
+    ui32v2* buffer = (ui32v2*)(byteBuffer + sizeof(f32v4));
+    for (ui32 i = 0; i < textures.size(); ++i) {
+        TextureHandle handle = textures[i];
+        buffer[i].x = handle & 0xffffffff;
+        buffer[i].y = handle >> 32;
+    }
+    assert(subMesh.mUbo);
+    // Allocate orphaned
+    glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+    glBufferData(GL_UNIFORM_BUFFER, uboSizeBytes, nullptr, e_cast(drawMode));
+    // Set data
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, uboSizeBytes, byteBuffer);
 }

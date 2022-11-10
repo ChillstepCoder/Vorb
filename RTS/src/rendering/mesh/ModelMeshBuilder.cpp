@@ -33,9 +33,13 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     model.mMesh = std::make_unique<Mesh>();
     model.mNumMeshes = numMeshes;
 
-    // TODO: All textures
+    // TODO: Per submesh textures
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
     const SubTexture& texture = textureRepo.getTexture(modelFileNameNoExtension);
+    std::vector<TextureHandle> textures;
+    textures.resize(2);
+    textures[0] = texture.mTextureHandleDiffuse;
+    textures[1] = texture.mTextureHandleNormal;
 
     SubMeshData* meshData = &model.mMesh->mMainMesh;
     meshData->allocateSubmeshCount(numMeshes - 1);
@@ -63,7 +67,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         assert(outputMesh.parts.size() == 1);
         for (int i = 0; i < outputMesh.vertex_count(); ++i) {
             const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-            StaticModelVertex& myVert = mStaticVerts[i];
+            StaticModelVertex& myVert = mStaticVerts[i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
            // memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
            // memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
@@ -75,11 +79,15 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
                 myVert.color = COLOR_WHITE;
             }
         }
+
+        // Upload mesh data
+        MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
+        MeshBuilderCommon::uploadIndexData(*meshData, outputMesh.triangle_indices.data(), outputMesh.triangle_index_count(), drawMode);
+        MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, drawMode);
+        MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, drawMode);
         
-        initStaticMeshBuffers(*meshData);
-        uploadStaticMeshData(*meshData, outputMesh.triangle_indices.data(), outputMesh.triangle_index_count(), MeshDrawMode::STATIC);
         mStaticVerts.clear();
-        LOG_TRACE("  Copy data in {} ms", timer.stop());
+        LOG_TRACE("  Upload data in {} ms", timer.stop());
         timer.start();
 
         // Next submesh
@@ -248,77 +256,6 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 
     glBindVertexArray(0);
     return true;
-}
-
-void ModelMeshBuilder::initStaticMeshBuffers(SubMeshData& subMesh) {
-    // VAO
-    if (subMesh.mVao == 0) {
-        glGenVertexArrays(1, &subMesh.mVao);
-        glBindVertexArray(subMesh.mVao);
-        glGenBuffers(1, &subMesh.mVbo);
-        glGenBuffers(1, &subMesh.mUbo);
-        glGenBuffers(1, &subMesh.mIbo);
-    }
-    else {
-        glBindVertexArray(subMesh.mVao);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-
-    glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
-
-    checkGlError("MeshBuilder::initStaticMeshBuffers");
-}
-
-void ModelMeshBuilder::uploadStaticMeshData(SubMeshData& subMesh, const uint16_t* indices, int indexCount, MeshDrawMode drawMode) {
-    //glBindVertexArray(subMesh.mVao);
-
-    //// IBO
-    //// Non shared IBO
-    //// TODO: Support ui16 compression
-    //subMesh.mIndexCount = indexCount;
-    //subMesh.mIndexType = GL_UNSIGNED_SHORT;
-    //const ui32 indexBufferSizeBytes = indexCount * sizeof(uint16_t);
-    //// Allocate orphaned
-    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
-    //// Set data
-    //glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, indices);
-
-    //// VBO
-    //const size_t vertexCount = mStaticVerts.size();
-    //const unsigned bufferSizeBytes = vertexCount * sizeof(StaticModelVertex);
-    //// Allocate orphaned
-    //glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
-    //glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
-    //// Set data
-    //glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, mStaticVerts.data());
-
-    //// UBO
-    //assert(subMesh.mUbo);
-    //const ui32 uboSizeBytes = sizeof(f32v4) + mTextures.size() * sizeof(TextureHandle);
-    //// Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
-    //// With position in front
-    //constexpr size_t BUFFER_SIZE = sizeof(f32v4) + MAX_TEXTURES_PER_MESH * 2 * sizeof(ui32v2);
-    //ui8 byteBuffer[BUFFER_SIZE];
-    //*(f32v3*)byteBuffer = f32v3(0.0f); // Zero position for now?
-    //ui32v2* buffer = (ui32v2*)(byteBuffer + sizeof(f32v4));
-    //for (ui32 i = 0; i < mTextures.size(); ++i) {
-    //    TextureHandle handle = mTextures[i];
-    //    buffer[i].x = handle & 0xffffffff;
-    //    buffer[i].y = handle >> 32;
-    //}
-    //// Allocate orphaned
-    //glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-    //glBufferData(GL_UNIFORM_BUFFER, uboSizeBytes, nullptr, e_cast(drawMode));
-    //// Set data
-    //glBufferSubData(GL_UNIFORM_BUFFER, 0, uboSizeBytes, byteBuffer);
-
-    //checkGlError("MeshBuilder::uploadMeshData");
-
-    //bindStaticVertexAttribs(subMesh);
 }
 
 void ModelMeshBuilder::bindStaticVertexAttribs(SubMeshData& subMesh)

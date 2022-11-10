@@ -17,28 +17,44 @@ struct alignas(32) StandardVertex {
     i8v2 tangent;
     color4 color;
     ui8 roughness;
+
+    static void bindVertexAttribs();
 };
 
 struct alignas(32) TerrainVertex {
     f32v3 pos;
     f32v3 normal;
+
+    static void bindVertexAttribs();
 };
 
 struct alignas(32) WaterVertex {
     f32v3 pos;
     f32 depth;
+
+    static void bindVertexAttribs();
 };
 
 // Vertex variant
 struct alignas(32) Vertex32 {
     Vertex32() {};
 
-    union { // VertexVariantType::STANDARD
-        StandardVertex mStandard;
-        TerrainVertex mTerrain;
-        WaterVertex mWater;
-        StaticModelVertex mModel;
+    union { 
+        StandardVertex mStandard; // VertexVariantType::STANDARD
+        TerrainVertex mTerrain; // VertexVariantType::TERRAIN
+        WaterVertex mWater; // VertexVariantType::WATER
+        StaticModelVertex mStaticModel; // VertexVariantType::MODEL
     };
 };
 
 static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
+
+struct alignas(32) Vertex96 {
+    Vertex96() {};
+
+    union {
+        SkinnedModelVertex mSkinnedModelVertex;
+    };
+};
+
+static_assert(sizeof(Vertex96) == 96, "96 byte alignment needed");

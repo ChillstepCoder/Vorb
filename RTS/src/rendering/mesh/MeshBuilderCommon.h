@@ -25,7 +25,15 @@ enum class MeshBuilderBufferFlags : ui8 {
 class MeshBuilderCommon
 {
 public:
+    MeshBuilderCommon() = delete;
+    // Will create buffers and bind VAO
     static void initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags = {});
-    static void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode);
+    // Requires VAO still bound
+    static void uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, MeshDrawMode drawMode);
+    static void uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, MeshDrawMode drawMode);
+
+    static void uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, MeshDrawMode drawMode);
+    static void uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, MeshDrawMode drawMode);
+
 };
 

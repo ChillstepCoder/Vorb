@@ -273,6 +273,7 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TextMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\TileMeshBuilderMethods.cpp" />
+    <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
     <ClCompile Include="src\rendering\model\InstancedModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />

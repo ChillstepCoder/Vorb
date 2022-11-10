@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rendering/mesh/Vertex.h"
 #include "rendering/model/ModelVertex.h"
 #include "Mesh.h"
 // TODO: Why is FbxMesh ambiguous if we forward declare instead?
@@ -42,11 +43,9 @@ public:
     );
 
 private:
-    void initStaticMeshBuffers(SubMeshData& subMesh);
-    void uploadStaticMeshData(SubMeshData& subMesh, const uint16_t* indices, int indexCount, MeshDrawMode drawMode);
     void bindStaticVertexAttribs(SubMeshData& subMesh);
 
-    std::vector<StaticModelVertex> mStaticVerts;
+    std::vector<Vertex32> mStaticVerts;
     std::vector<SkinnedModelVertex> mSkinnedVerts;
 };
 

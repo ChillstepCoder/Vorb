@@ -109,6 +109,7 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode 
 }
 
 void BillboardMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* subtextureIndex) {
+
     auto&& it = mSubtextureLookup.find(texture.mId);
     if (it != mSubtextureLookup.end()) {
         i32 submeshIndex = it->second.first;
@@ -119,7 +120,9 @@ void BillboardMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, 
         InProgressSubMeshData& lastData = mSubMeshesData.back();
         if (lastData.mSubtextureData.size() < MAX_SUBTEXTURES_PER_MESH) {
             // This texture fits in the main submesh
-            *subtextureIndex = lastData.mSubtextureData.size();
+            size_t nextSubtextureIndex = lastData.mSubtextureData.size();
+            assert(nextSubtextureIndex <= UINT8_MAX);
+            *subtextureIndex = ui8(nextSubtextureIndex);
             lastData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
             mSubtextureLookup[texture.mId] = std::make_pair(mSubMeshesData.size() - 1, *subtextureIndex);
             *submesh = &lastData;

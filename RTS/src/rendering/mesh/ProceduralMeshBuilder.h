@@ -61,7 +61,6 @@ public:
 private:
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex);
-    void initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo);
     void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode);
     void bindVertexAttribs(SubMeshData& subMesh);
 

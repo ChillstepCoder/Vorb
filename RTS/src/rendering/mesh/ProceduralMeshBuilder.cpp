@@ -712,7 +712,7 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
     }
     static_assert(e_cast(PolyTypeFlags::COUNT) == 5, "Update any new shared IBO");
 
-    // Make sure we didn't fuck up and say shared when it wasnt
+    // Make sure we didn't fuck up and say shared when it wasn't
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
     // Allocate all buffers if needed
@@ -764,7 +764,9 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
         SubMeshBufferData& lastSubmesh = mSubMeshesData.back();
         if (lastSubmesh.mTextures.size() < MAX_TEXTURES_PER_MESH) {
             // This texture fits in the back submesh
-            *textureIndex = mSubMeshesData.back().mTextures.size();
+            size_t nextSubtextureIndex = lastSubmesh.mTextures.size() / 2;
+            assert(nextSubtextureIndex <= UINT8_MAX);
+            *textureIndex = ui8(nextSubtextureIndex);
             lastSubmesh.mTextures.emplace_back(texture.mTextureHandleDiffuse);
             lastSubmesh.mTextures.emplace_back(texture.mTextureHandleNormal);
             mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
@@ -780,18 +782,14 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
             *submesh = &data;
         }
     }
-    // Ignoring normals when applying to the mesh verts
-    *textureIndex = *textureIndex / 2;
 }
 
 void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode) {
     glBindVertexArray(subMesh.mVao);
-    
-    const size_t vertexCount = data.mVerts.size();
 
-    // IBO
+    // Shared IBO
     if (subMesh.mIbo == sQuadIbo) {
-        subMesh.mIndexCount = (vertexCount / 4u) * 6u;
+        subMesh.mIndexCount = (data.mVerts.size() / 4u) * 6u;
         assert(subMesh.mIndexCount < MAX_QUAD_MESH_INDICES);
     }
     else if (subMesh.mIbo == sTerrainIbo) {
@@ -805,42 +803,12 @@ void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& po
     else {
         // Non shared IBO
         // TODO: Support ui16 compression
-        subMesh.mIndexCount = data.mIndices.size();
-        const ui32 indexBufferSizeBytes = subMesh.mIndexCount * sizeof(ui32);
-        // Allocate orphaned
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
-        // Set data
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, data.mIndices.data());
+        MeshBuilderCommon::uploadIndexData(subMesh, data.mIndices, drawMode);
     }
-    const unsigned bufferSizeBytes = vertexCount * sizeof(Vertex32);
 
-    // VBO
-    // Allocate orphaned
-    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, data.mVerts.data());
+    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts, drawMode);
 
-    // UBO
-    assert(subMesh.mUbo);
-    const ui32 uboSizeBytes = sizeof(f32v4) + data.mTextures.size() * sizeof(TextureHandle);
-    // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
-    // With position in front
-    constexpr size_t BUFFER_SIZE = sizeof(f32v4) + MAX_TEXTURES_PER_MESH * 2 * sizeof(ui32v2);
-    ui8 byteBuffer[BUFFER_SIZE];
-    *(f32v3*)byteBuffer = position;
-    ui32v2* buffer = (ui32v2*)(byteBuffer + sizeof(f32v4));
-    for (ui32 i = 0; i < data.mTextures.size(); ++i) {
-        TextureHandle handle = data.mTextures[i];
-        buffer[i].x = handle & 0xffffffff;
-        buffer[i].y = handle >> 32;
-    }
-    // Allocate orphaned
-    glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-    glBufferData(GL_UNIFORM_BUFFER, uboSizeBytes, nullptr, e_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, uboSizeBytes, byteBuffer);
+    MeshBuilderCommon::uploadStandardTextureUboData(subMesh, position, data.mTextures, drawMode);
 
     checkGlError("MeshBuilder::uploadMeshData");
 
@@ -850,34 +818,13 @@ void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& po
 void ProceduralMeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
 {
     if (mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN)) {
-        // Terrain verts
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0 /*index*/, 3 /*size*/, GL_FLOAT, false, sizeof(TerrainVertex), (void*)offsetof(TerrainVertex, pos));
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1 /*index*/, 3 /*size*/, GL_FLOAT, false, sizeof(TerrainVertex), (void*)offsetof(TerrainVertex, normal));
+        TerrainVertex::bindVertexAttribs();
     }
     else if (mPolyTypeFlags.isBitSet(PolyTypeFlags::WATER)) {
-        // Water verts
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0 /*index*/, 3 /*size*/, GL_FLOAT, false, sizeof(WaterVertex), (void*)offsetof(WaterVertex, pos));
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1 /*index*/, 1 /*size*/, GL_FLOAT, false, sizeof(WaterVertex), (void*)offsetof(WaterVertex, depth));
+        WaterVertex::bindVertexAttribs();
     }
     else {
-        // Standard verts
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0 /*index*/, 3 /*size*/, GL_FLOAT, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, pos));
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1 /*index*/, 2 /*size*/, GL_FLOAT, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, uvs));
-        glEnableVertexAttribArray(2);
-        glVertexAttribIPointer(2 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, sizeof(StandardVertex), (void*)offsetof(StandardVertex, textureIndex));
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StandardVertex), (void*)offsetof(StandardVertex, color));
-        glEnableVertexAttribArray(4);
-        glVertexAttribPointer(4 /*index*/, 3 /*size*/, GL_BYTE, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, normal));
-        glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5 /*index*/, 2 /*size*/, GL_BYTE, false, sizeof(StandardVertex), (void*)offsetof(StandardVertex, tangent));
-        //glVertexAttribPointer(6 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StandardVertex), (void*)offsetof(StandardVertex, windInfluence));
+        StandardVertex::bindVertexAttribs();
     }
 }
 
