@@ -9,11 +9,10 @@
 struct billboard_mesh_builder_pool {};
 using singleton_task_pool = boost::singleton_pool<billboard_mesh_builder_pool, sizeof(BillboardMeshBuilder), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 128u>;
 
-#define SUBMESH_INDEX_MAIN -1
 constexpr ui32 MAX_SUBTEXTURES_PER_MESH = 255;
 
 BillboardMeshBuilder::BillboardMeshBuilder() {
-
+    mSubMeshesData.resize(1);
 }
 
 BillboardMeshBuilder::~BillboardMeshBuilder() {
@@ -32,9 +31,8 @@ void BillboardMeshBuilder::addBillboard(f32v3 position, const f32v2& xyDims, con
 }
 
 void BillboardMeshBuilder::reserveBillboardCount(ui32 count) {
-
-    mMainSubMeshData.mBillboards.reserve(count);
-    mMainSubMeshData.mSubtextureData.reserve(5); // Arbitrary
+    mSubMeshesData.back().mBillboards.reserve(count);
+    mSubMeshesData.back().mSubtextureData.reserve(5); // Arbitrary
 }
 
 void BillboardMeshBuilder::computeBoundingSphere() {
@@ -42,17 +40,6 @@ void BillboardMeshBuilder::computeBoundingSphere() {
 
     f32v2 minMax[3] = { {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN} };
 
-    for (auto& v : mMainSubMeshData.mBillboards) {
-        const f32v3& pos = v.mPos;
-        for (int i = 0; i < 3; ++i) {
-            if (pos[i] < minMax[i].x) {
-                minMax[i].x = pos[i];
-            }
-            if (pos[i] > minMax[i].y) {
-                minMax[i].y = pos[i];
-            }
-        }
-    }
     for (auto& subMesh : mSubMeshesData) {
         for (auto& v : subMesh.mBillboards) {
             const f32v3& pos = v.mPos;
@@ -76,7 +63,7 @@ void BillboardMeshBuilder::computeBoundingSphere() {
 void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
     // return blank mesh if we have no geometry
-    if (mMainSubMeshData.mBillboards.empty()) {
+    if (mSubMeshesData.size() == 1 && mSubMeshesData.back().mBillboards.empty()) {
         mesh.reset();
         return;
     }
@@ -84,44 +71,31 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode 
         mesh = std::make_unique<Mesh>();
     }
 
-    // Always shared
-    mesh->mFlags.setBit(MeshFlags::USING_SHARED_IBO);
-
     // Set bounds
     mesh->mPosition = worldPos;
     mesh->mBoundingSphere = mBoundingSphere;
     mesh->mBoundingSphere.center += worldPos;
 
-    // Allocate correct number of submeshes
-    if (mSubMeshesData.size()) {
-        mesh->mMainMesh.mNextSubmesh = new SubMeshData;
-        SubMeshData* subMesh = mesh->mMainMesh.mNextSubmesh;
-        for (int i = 1; i < mSubMeshesData.size(); ++i) {
-            subMesh->mNextSubmesh = new SubMeshData;
-            subMesh = subMesh->mNextSubmesh;
-        }
-    }
-    else {
-        mesh->mMainMesh.mNextSubmesh = nullptr;
-    }
+    // Allocate correct number of submeshes, -1 for main mesh which already exists
+    mesh->mMainMesh.allocateSubmeshCount(mSubMeshesData.size() - 1);
 
     // Allocate all buffers if needed
     SubMeshData* subMesh = &mesh->mMainMesh;
     do {
+        subMesh->mIbo = ProceduralMeshBuilder::sQuadIbo;
         initMeshBuffers(*subMesh);
         subMesh = subMesh->mNextSubmesh;
     } while (subMesh != nullptr);
 
     // Upload data
-    uploadBufferData(mesh->mMainMesh, worldPos, mMainSubMeshData, drawMode);
-    mMainSubMeshData.clear();
-    subMesh = mesh->mMainMesh.mNextSubmesh;
+    subMesh = &mesh->mMainMesh;
     int i = 0;
-    while (subMesh != nullptr) {
+    do {
         uploadBufferData(*subMesh, worldPos, mSubMeshesData[i], drawMode);
         subMesh = subMesh->mNextSubmesh;
+        mSubMeshesData[i].mBillboards.clear();
         ++i;
-    }
+    } while (subMesh != nullptr);
 
     // Cleanup
     // TODO: Do we need this really?
@@ -136,44 +110,24 @@ void BillboardMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, 
     if (it != mSubtextureLookup.end()) {
         i32 submeshIndex = it->second.first;
         *subtextureIndex = it->second.second;
-        if (submeshIndex == SUBMESH_INDEX_MAIN) {
-            *submesh = &mMainSubMeshData;
-        }
-        else {
-            *submesh = &mSubMeshesData[submeshIndex];
-        }
+        *submesh = &mSubMeshesData[submeshIndex];
     }
     else {
-        if (mMainSubMeshData.mSubtextureData.size() < MAX_SUBTEXTURES_PER_MESH) {
+        InProgressSubMeshData& lastData = mSubMeshesData.back();
+        if (lastData.mSubtextureData.size() < MAX_SUBTEXTURES_PER_MESH) {
             // This texture fits in the main submesh
-            *subtextureIndex = mMainSubMeshData.mSubtextureData.size();
-            mMainSubMeshData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
-            mSubtextureLookup[texture.mId] = std::make_pair(SUBMESH_INDEX_MAIN, *subtextureIndex);
-            *submesh = &mMainSubMeshData;
+            *subtextureIndex = lastData.mSubtextureData.size();
+            lastData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
+            mSubtextureLookup[texture.mId] = std::make_pair(mSubMeshesData.size() - 1, *subtextureIndex);
+            *submesh = &lastData;
         }
         else {
-            // Our main mesh has too many textures already, find a valid submesh for it
-            bool foundSubmesh = false;
-            for (size_t i = 0; i < mSubMeshesData.size(); ++i) {
-                InProgressSubMeshData& data = mSubMeshesData[i];
-                if (data.mSubtextureData.size() < MAX_SUBTEXTURES_PER_MESH) {
-                    // This texture fits in the main submesh
-                    *subtextureIndex = data.mSubtextureData.size();
-                    mMainSubMeshData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
-                    mSubtextureLookup[texture.mId] = std::make_pair(i, *subtextureIndex);
-                    foundSubmesh = true;
-                    *submesh = &data;
-                    break;
-                }
-            }
-            // No valid submesh, make a new submesh
-            if (!foundSubmesh) {
-                InProgressSubMeshData& data = mSubMeshesData.emplace_back();
-                *subtextureIndex = 0;
-                mMainSubMeshData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
-                mSubtextureLookup[texture.mId] = std::make_pair(mSubMeshesData.size() - 1, *subtextureIndex);
-                *submesh = &data;
-            }
+            // Our main mesh has too many textures already, make a new submesh
+            InProgressSubMeshData& data = mSubMeshesData.emplace_back();
+            *subtextureIndex = 0;
+            data.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
+            mSubtextureLookup[texture.mId] = std::make_pair(mSubMeshesData.size() - 1, *subtextureIndex);
+            *submesh = &data;
         }
     }
 }
@@ -194,6 +148,7 @@ void BillboardMeshBuilder::initMeshBuffers(SubMeshData& subMesh)
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
         // IBO
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
+        subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
     }
     else {
         glBindVertexArray(subMesh.mVao);

@@ -38,7 +38,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     const SubTexture& texture = textureRepo.getTexture(modelFileNameNoExtension);
 
     SubMeshData* meshData = &model.mMesh->mMainMesh;
-    meshData->allocateSubmeshCount(numMeshes - 1, false);
+    meshData->allocateSubmeshCount(numMeshes - 1);
 
     for (int m = 0; m < numMeshes; ++m) {
         assert(meshData);

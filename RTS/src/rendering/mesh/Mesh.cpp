@@ -23,7 +23,7 @@ void SubMeshData::operator delete(void* pointer, size_t size) {
     return singleton_submesh_pool::free(pointer);
 }
 
-void SubMeshData::allocateSubmeshCount(size_t count, bool wasUsingSharedIbo)
+void SubMeshData::allocateSubmeshCount(size_t count)
 {
     SubMeshData* subMesh = mNextSubmesh;
     int i = 0;
@@ -33,7 +33,7 @@ void SubMeshData::allocateSubmeshCount(size_t count, bool wasUsingSharedIbo)
         if (i++ >= count) {
             SubMeshData* prevSubMesh = subMesh;
             subMesh = prevSubMesh->mNextSubmesh;
-            prevSubMesh->destroy(wasUsingSharedIbo);
+            prevSubMesh->destroy();
             delete prevSubMesh;
             didDelete = true;
         }
@@ -100,36 +100,33 @@ void Mesh::draw() const {
 
 void Mesh::destroy() {
     if (mMainMesh.mVao) {
-        const bool isUsingShared = mFlags.isBitSet(MeshFlags::USING_SHARED_IBO);
-        // When using shared IBO we don't delete the IBO, which is the last buffer
-   
         SubMeshData* subMesh = &mMainMesh;
         do {
             SubMeshData* prevSubMesh = subMesh;
             subMesh = prevSubMesh->mNextSubmesh;
-            prevSubMesh->destroy(isUsingShared);
+            prevSubMesh->destroy();
             delete prevSubMesh;
         } while (subMesh != nullptr);
     }
 }
 
-void SubMeshData::destroy(bool isUsingSharedIbo) {
+void SubMeshData::destroy() {
     if (mVao) {
-        if (mVbo) {
-            glDeleteBuffers(1, &mVbo);
-        }
+        // glDeleteBuffers silently ignores 0
+        glDeleteBuffers(1, &mUbo);
+        mUbo = 0;
+        glDeleteBuffers(1, &mVbo);
+        mVbo = 0;
         // When using shared IBO we don't delete the IBO, which is the last buffer
-        if (!isUsingSharedIbo) {
+        if (!mFlags.isBitSet(MeshFlags::USING_SHARED_IBO)) {
             glDeleteBuffers(1, &mIbo);
         }
-        if (mUbo) {
-            glDeleteBuffers(1, &mUbo);
-        }
-        if (mSSBO) {
-            glDeleteBuffers(1, &mSSBO);
-        }
+        mIbo = 0;
+        glDeleteBuffers(1, &mSSBO);
+        mSSBO = 0;
         glDeleteVertexArrays(1, &mVao);
         mVao = 0;
+        mFlags.clearBits();
     }
 }
 

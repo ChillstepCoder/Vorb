@@ -202,7 +202,7 @@ void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
         return;
     }
     // Always shared
-    mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+    mesh.mMainMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
 
     // Set bounds
     mesh.mBoundingSphere = mBoundingSphere;

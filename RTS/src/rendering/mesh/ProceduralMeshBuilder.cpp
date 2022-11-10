@@ -6,8 +6,6 @@
 #include <boost/pool/singleton_pool.hpp>
 #include "math/Random.h"
 
-#define SUBMESH_INDEX_MAIN -1
-
 constexpr ui32 WATER_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6;
 constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN_MESH_WIDTH_QUADS * 4 * 6;
 
@@ -36,7 +34,7 @@ const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
 
 
 ProceduralMeshBuilder::ProceduralMeshBuilder(bool useSharedIndexBuffer) : mUsingSharedIndexBuffer(useSharedIndexBuffer) {
-
+    mSubMeshesData.resize(1);
 }
 
 ProceduralMeshBuilder::~ProceduralMeshBuilder() {
@@ -48,7 +46,7 @@ void ProceduralMeshBuilder::setVertsTerrainFromPaddedHeightfield(const f32v2& co
     assert(mUsingSharedIndexBuffer); // Shared only
     
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
-    std::vector<Vertex32>& terrainVerts = mMainSubMeshData.mVerts;
+    std::vector<Vertex32>& terrainVerts = mSubMeshesData.back().mVerts;
     terrainVerts.resize(TERRAIN_MESH_SIZE_VERTS);
 
     // We are a terrain mesh
@@ -124,7 +122,7 @@ void ProceduralMeshBuilder::setVertsWaterFromPaddedHeightfield(const f32v2& corn
 {
     assert(mUsingSharedIndexBuffer); // Shared only
 
-    std::vector<Vertex32>& waterVerts = mMainSubMeshData.mVerts;
+    std::vector<Vertex32>& waterVerts = mSubMeshesData.back().mVerts;
     const f32 quadWidth = totalWidth / TERRAIN_MESH_WIDTH_QUADS;
     waterVerts.resize(TERRAIN_MESH_SIZE_VERTS);
     mPolyTypeFlags.setBit(PolyTypeFlags::WATER);
@@ -641,19 +639,8 @@ void ProceduralMeshBuilder::computeBoundingSphere() {
 
     f32v2 minMax[3] = { {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN}, {FLT_MAX, FLT_MIN} };
 
-    for (auto& v : mMainSubMeshData.mVerts) {
-        const f32v3& pos = v.mStandard.pos;
-        for (int i = 0; i < 3; ++i) {
-            if (pos[i] < minMax[i].x) {
-                minMax[i].x = pos[i];
-            }
-            if (pos[i] > minMax[i].y) {
-                minMax[i].y = pos[i];
-            }
-        }
-    }
     for (auto& subMesh : mSubMeshesData) {
-        for (auto& v : mMainSubMeshData.mVerts) {
+        for (auto& v : subMesh.mVerts) {
             const f32v3& pos = v.mStandard.pos;
             for (int i = 0; i < 3; ++i) {
                 if (pos[i] < minMax[i].x) {
@@ -676,7 +663,7 @@ void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode
     assert(IS_RENDER_THREAD());
 
     // return blank mesh if we have no geometry
-    if (mMainSubMeshData.mVerts.empty()) {
+    if (mSubMeshesData.size() == 1 && mSubMeshesData.back().mVerts.empty()) {
         mesh.reset();
         return;
     }
@@ -692,7 +679,7 @@ void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode
 
 void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
-    if (mMainSubMeshData.mVerts.empty()) {
+    if (mSubMeshesData.size() == 1 && mSubMeshesData.back().mVerts.empty()) {
         mesh.destroy();
         return;
     }
@@ -704,20 +691,20 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
         mesh.mBoundingSphere.center += worldPos;
     }
 
-    // Check if we need to destroy some old submeshes
-    const bool wasUsingSharedIbo = mesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO);
-    mesh.mMainMesh.allocateSubmeshCount(mSubMeshesData.size(), wasUsingSharedIbo);
+    // -1 Because main already exists
+    mesh.mMainMesh.allocateSubmeshCount(mSubMeshesData.size() - 1);
 
     // Hook in shared IBOs if needed
     bool usingSharedIbo = false;
     const ui8 polyTypeBits = mPolyTypeFlags.getBits();
+    VGBuffer* sharedIbo = nullptr;
     if (polyTypeBits == e_cast(PolyTypeFlags::QUADS)) {
         usingSharedIbo = true;
-        setSharedIbo(mesh, wasUsingSharedIbo, sQuadIbo);
+        sharedIbo = &sQuadIbo;
     }
     else if ((polyTypeBits == e_cast(PolyTypeFlags::TERRAIN)) || (polyTypeBits == e_cast(PolyTypeFlags::WATER))) {
         usingSharedIbo = true;
-        setSharedIbo(mesh, wasUsingSharedIbo, sTerrainIbo);
+        sharedIbo = &sTerrainIbo;
     }
     else {
         // Make sure we don't have terrain mixed with something else
@@ -731,20 +718,19 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
     // Allocate all buffers if needed
     SubMeshData* subMesh = &mesh.mMainMesh;
     do {
-        initMeshBuffers(*subMesh, !usingSharedIbo);
+        initMeshBuffers(*subMesh, sharedIbo);
         subMesh = subMesh->mNextSubmesh;
     } while (subMesh != nullptr);
 
     // Upload data
-    uploadMeshData(mesh.mMainMesh, worldPos, mMainSubMeshData, drawMode);
-    mMainSubMeshData.clear();
-    subMesh = mesh.mMainMesh.mNextSubmesh;
+    subMesh = &mesh.mMainMesh;
     int i = 0;
-    while (subMesh != nullptr) {
+    do {
         uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], drawMode);
         mSubMeshesData[i].clear();
+        subMesh = subMesh->mNextSubmesh;
         ++i;
-    }
+    } while (subMesh != nullptr);
 
     // Cleanup
     // TODO: Do we need this really?
@@ -772,67 +758,34 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
     if (it != mTextureToSubmesh.end()) {
         i32 submeshIndex = it->second.first;
         *textureIndex = it->second.second;
-        if (submeshIndex == SUBMESH_INDEX_MAIN) {
-            *submesh = &mMainSubMeshData;
-        }
-        else {
-            *submesh = &mSubMeshesData[submeshIndex];
-        }
+        *submesh = &mSubMeshesData[submeshIndex];
     }
     else {
-        if (mMainSubMeshData.mTextures.size() < MAX_TEXTURES_PER_MESH) {
-            // This texture fits in the main submesh
-            *textureIndex = mMainSubMeshData.mTextures.size();
-            mMainSubMeshData.mTextures.emplace_back(texture.mTextureHandleDiffuse);
-            mMainSubMeshData.mTextures.emplace_back(texture.mTextureHandleNormal);
-            mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(SUBMESH_INDEX_MAIN, *textureIndex);
-            *submesh = &mMainSubMeshData;
+        SubMeshBufferData& lastSubmesh = mSubMeshesData.back();
+        if (lastSubmesh.mTextures.size() < MAX_TEXTURES_PER_MESH) {
+            // This texture fits in the back submesh
+            *textureIndex = mSubMeshesData.back().mTextures.size();
+            lastSubmesh.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+            lastSubmesh.mTextures.emplace_back(texture.mTextureHandleNormal);
+            mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
+            *submesh = &lastSubmesh;
         }
         else {
-            // Our main mesh has too many textures already, find a valid submesh for it
-            bool foundSubmesh = false;
-            for (size_t i = 0; i < mSubMeshesData.size(); ++i) {
-                SubMeshBufferData& data = mSubMeshesData[i];
-                if (data.mTextures.size() < MAX_TEXTURES_PER_MESH) {
-                    // This texture fits in the main submesh
-                    *textureIndex = data.mTextures.size();
-                    data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
-                    data.mTextures.emplace_back(texture.mTextureHandleNormal);
-                    mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(i, *textureIndex);
-                    foundSubmesh = true;
-                    *submesh = &data;
-                    break;
-                }
-            }
-            // No valid submesh, make a new submesh
-            if (!foundSubmesh) {
-                SubMeshBufferData& data = mSubMeshesData.emplace_back();
-                *textureIndex = 0;
-                data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
-                data.mTextures.emplace_back(texture.mTextureHandleNormal);
-                mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
-                *submesh = &data;
-            }
+            // Our last mesh has too many textures already, add a new submesh
+            SubMeshBufferData& data = mSubMeshesData.emplace_back();
+            *textureIndex = 0;
+            data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+            data.mTextures.emplace_back(texture.mTextureHandleNormal);
+            mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
+            *submesh = &data;
         }
     }
     // Ignoring normals when applying to the mesh verts
     *textureIndex = *textureIndex / 2;
 }
 
-void ProceduralMeshBuilder::setSharedIbo(Mesh& mesh, const bool wasUsingSharedIbo, VGBuffer sharedIbo) {
-    SubMeshData* subMesh = &mesh.mMainMesh;
-    do {
-        // Delete old IBO if needed
-        if (subMesh->mIbo != 0 && !wasUsingSharedIbo) {
-            glDeleteBuffers(1, &subMesh->mIbo);
-        }
-        subMesh->mIbo = sharedIbo;
-        subMesh = subMesh->mNextSubmesh;
-    } while (subMesh != nullptr);
-    mesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
-}
 
-void ProceduralMeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateIbo) {
+void ProceduralMeshBuilder::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo) {
     // VAO
     if (subMesh.mVao == 0) {
         glGenVertexArrays(1, &subMesh.mVao);
@@ -847,11 +800,17 @@ void ProceduralMeshBuilder::initMeshBuffers(SubMeshData& subMesh, bool allocateI
         glBindVertexArray(subMesh.mVao);
     }
     // IBO
-    if (allocateIbo && subMesh.mIbo == 0) {
+    if (sharedIbo) {
+        // Delete old IBO if needed
+        if (subMesh.mIbo && !subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO)) {
+            glDeleteBuffers(1, &subMesh.mIbo);
+        }
+        subMesh.mIbo = *sharedIbo;
+        subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+    }
+    else if (subMesh.mIbo == 0) {
         glGenBuffers(1, &subMesh.mIbo);
-        // We dont need to delete IBO if non allocating, since
-        // we will have already done so in finishMesh
-        // TODO: Verify this is true still
+        subMesh.mFlags.clearBit(MeshFlags::USING_SHARED_IBO);
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
 
@@ -1070,10 +1029,10 @@ void ProceduralMeshBuilder::initStaticIBOs() {
 }
 
 void ProceduralMeshBuilder::reserveVertexCount(ui32 count) {
-    mMainSubMeshData.mVerts.reserve(count);
-    mMainSubMeshData.mTextures.reserve(5); // Arbitrary
+    mSubMeshesData.back().mVerts.reserve(count);
+    mSubMeshesData.back().mTextures.reserve(5); // Arbitrary
 }
 
 void ProceduralMeshBuilder::reserveIndexCount(ui32 count) {
-    mMainSubMeshData.mIndices.reserve(count);
+    mSubMeshesData.back().mIndices.reserve(count);
 }

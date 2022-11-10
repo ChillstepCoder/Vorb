@@ -25,13 +25,14 @@ struct SubMeshData {
     VGBuffer  mSSBO = 0;
     ui32 mIndexCount = 0; ///< Current capacity of mIbo
     ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
+    BitFlags<MeshFlags> mFlags;
     SubMeshData* mNextSubmesh = nullptr; // We store these as a linked list, this is not a true parent
 
     void* operator new(size_t count);
     void operator delete(void* pointer, size_t size);
 
-    void allocateSubmeshCount(size_t count, bool wasUsingSharedIbo);
-    void destroy(bool isUsingSharedIbo);
+    void allocateSubmeshCount(size_t count);
+    void destroy();
 };
 
 class Mesh
@@ -63,7 +64,6 @@ public:
 protected:    
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
-    BitFlags<MeshFlags>      mFlags;
     SubMeshData              mMainMesh;
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array

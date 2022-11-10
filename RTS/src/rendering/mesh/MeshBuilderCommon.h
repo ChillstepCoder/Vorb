@@ -20,6 +20,7 @@ struct SubMeshBufferData {
 class MeshBuilderCommon
 {
 public:
-
+    static void initMeshBuffers(SubMeshData& subMesh, bool allocateIbo);
+    static void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode);
 };
 

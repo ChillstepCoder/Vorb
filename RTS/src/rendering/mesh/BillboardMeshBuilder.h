@@ -57,7 +57,6 @@ private:
 
     // Map subtexture IDs to submeshes 
     std::unordered_map<SubTextureID, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/> > mSubtextureLookup;
-    InProgressSubMeshData              mMainSubMeshData;
     std::vector<InProgressSubMeshData> mSubMeshesData;
     BoundingSphere                     mBoundingSphere;
 };
