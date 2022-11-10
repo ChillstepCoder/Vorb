@@ -6,8 +6,11 @@ class BitFlags
     static_assert(std::is_unsigned<typename std::underlying_type<T>::type>()); // Bits are unsigned
 public:
     BitFlags() {};
-    BitFlags(T startBit) : mBits(e_cast(startBit)) {};
     BitFlags(typename std::underlying_type<T>::type startBits) : mBits(startBits) {};
+    BitFlags(T b1) : mBits(e_cast(b1)) {};
+    BitFlags(T b1, T b2) : mBits(e_cast(b1) | e_cast(b2)) {};
+    BitFlags(T b1, T b2, T b3) : mBits(e_cast(b1) | e_cast(b2) | e_cast(b3)) {};
+    BitFlags(T b1, T b2, T b3, T b4) : mBits(e_cast(b1) | e_cast(b2) | e_cast(b3) | e_cast(b4)) {};
 
     // ============== Mutators ==============
 

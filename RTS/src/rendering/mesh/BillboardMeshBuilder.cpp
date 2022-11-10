@@ -82,8 +82,11 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode 
     // Allocate all buffers if needed
     SubMeshData* subMesh = &mesh->mMainMesh;
     do {
-        subMesh->mIbo = ProceduralMeshBuilder::sQuadIbo;
-        initMeshBuffers(*subMesh);
+        MeshBuilderCommon::initMeshBuffers(
+            *subMesh,
+            &ProceduralMeshBuilder::sQuadIbo,
+            BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::NO_VBO, MeshBuilderBufferFlags::SSBO)
+        );
         subMesh = subMesh->mNextSubmesh;
     } while (subMesh != nullptr);
 
@@ -130,31 +133,6 @@ void BillboardMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, 
             *submesh = &data;
         }
     }
-}
-
-void BillboardMeshBuilder::initMeshBuffers(SubMeshData& subMesh)
-{
-    // VAO
-    if (subMesh.mVao == 0) {
-        glGenVertexArrays(1, &subMesh.mVao);
-        glBindVertexArray(subMesh.mVao);
-        // UBO
-        glGenBuffers(1, &subMesh.mUbo);
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
-        // SSBO
-        glGenBuffers(1, &subMesh.mSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
-        // IBO
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
-        subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
-    }
-    else {
-        glBindVertexArray(subMesh.mVao);
-    }
-
-    checkGlError("BillboardMeshBuilder::initMeshBuffers");
 }
 
 // TODO: Just build this natively? Why do a copy?

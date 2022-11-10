@@ -16,11 +16,16 @@ struct SubMeshBufferData {
     std::vector<TextureHandle> mTextures;
 };
 
+enum class MeshBuilderBufferFlags : ui8 {
+    NO_VBO = BIT(0),
+    SSBO = BIT(1),
+};
+
 // Static common utils
 class MeshBuilderCommon
 {
 public:
-    static void initMeshBuffers(SubMeshData& subMesh, bool allocateIbo);
+    static void initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags = {});
     static void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode);
 };
 

@@ -52,7 +52,6 @@ private:
     };
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* subtextureIndex);
-    void initMeshBuffers(SubMeshData& subMesh);
     void uploadBufferData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode);
 
     // Map subtexture IDs to submeshes 

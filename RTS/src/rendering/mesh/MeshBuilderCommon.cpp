@@ -1,29 +1,66 @@
 #include "stdafx.h"
 #include "MeshBuilderCommon.h"
 
-void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, bool allocateIbo)
-{
+//glGenVertexArrays(1, &subMesh.mVao);
+//glBindVertexArray(subMesh.mVao);
+//// UBO
+//glGenBuffers(1, &subMesh.mUbo);
+//glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
+//glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
+//// SSBO
+//glGenBuffers(1, &subMesh.mSSBO);
+//glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
+//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
+//// IBO
+//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
+//subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+
+void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
     // VAO
     if (subMesh.mVao == 0) {
         glGenVertexArrays(1, &subMesh.mVao);
         glBindVertexArray(subMesh.mVao);
-        glGenBuffers(1, &subMesh.mVbo);
-        glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
+
+        // Ubo
         glGenBuffers(1, &subMesh.mUbo);
         glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
         glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
+
+        // VBO
+        if (!flags.isBitSet(MeshBuilderBufferFlags::NO_VBO)) {
+            glGenBuffers(1, &subMesh.mVbo);
+            glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
+        }
+        else {
+            assert(!subMesh.mVbo);
+        }
+        // SSBO
+        if (flags.isBitSet(MeshBuilderBufferFlags::SSBO)) {
+            glGenBuffers(1, &subMesh.mSSBO);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
+        }
+        else {
+            assert(!subMesh.mSSBO);
+        }
     }
     else {
         glBindVertexArray(subMesh.mVao);
     }
     // IBO
-    if (allocateIbo && subMesh.mIbo == 0) {
+    if (sharedIbo) {
+        // Delete old IBO if needed
+        if (subMesh.mIbo && !subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO)) {
+            glDeleteBuffers(1, &subMesh.mIbo);
+        }
+        subMesh.mIbo = *sharedIbo;
+        subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+    }
+    else if (subMesh.mIbo == 0) {
         glGenBuffers(1, &subMesh.mIbo);
-        // We dont need to delete IBO if non allocating, since
-        // we will have already done so in finishMesh
-        // TODO: Verify this is true still
+        subMesh.mFlags.clearBit(MeshFlags::USING_SHARED_IBO);
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
 
-    checkGlError("MeshBuilder::initMeshBuffers");
+    checkGlError("MeshBuilderCommon::initMeshBuffers");
 }

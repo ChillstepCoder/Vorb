@@ -87,14 +87,14 @@ void SkinnedMesh::draw(const vg::GLProgram& program) const { // Make sure we hav
 
     glBindVertexArray(mVao);
     bindVertexAttribs(program);
+    // TODO: Stop using this shit
     glBindBuffer(GL_ARRAY_BUFFER, mVbo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIbo);
     glDrawElements(GL_TRIANGLES, mIndexCount, GL_UNSIGNED_SHORT, nullptr);
     RenderStats::recordDrawCall(mIndexCount / 3);
     glBindVertexArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 }
 
 void SkinnedMesh::finishMesh(MeshDrawMode drawMode) {

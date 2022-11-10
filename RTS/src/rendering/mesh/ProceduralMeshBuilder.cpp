@@ -718,7 +718,7 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
     // Allocate all buffers if needed
     SubMeshData* subMesh = &mesh.mMainMesh;
     do {
-        initMeshBuffers(*subMesh, sharedIbo);
+        MeshBuilderCommon::initMeshBuffers(*subMesh, sharedIbo);
         subMesh = subMesh->mNextSubmesh;
     } while (subMesh != nullptr);
 
@@ -782,39 +782,6 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
     }
     // Ignoring normals when applying to the mesh verts
     *textureIndex = *textureIndex / 2;
-}
-
-
-void ProceduralMeshBuilder::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo) {
-    // VAO
-    if (subMesh.mVao == 0) {
-        glGenVertexArrays(1, &subMesh.mVao);
-        glBindVertexArray(subMesh.mVao);
-        glGenBuffers(1, &subMesh.mVbo);
-        glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
-        glGenBuffers(1, &subMesh.mUbo);
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
-    }
-    else {
-        glBindVertexArray(subMesh.mVao);
-    }
-    // IBO
-    if (sharedIbo) {
-        // Delete old IBO if needed
-        if (subMesh.mIbo && !subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO)) {
-            glDeleteBuffers(1, &subMesh.mIbo);
-        }
-        subMesh.mIbo = *sharedIbo;
-        subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
-    }
-    else if (subMesh.mIbo == 0) {
-        glGenBuffers(1, &subMesh.mIbo);
-        subMesh.mFlags.clearBit(MeshFlags::USING_SHARED_IBO);
-    }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-
-    checkGlError("MeshBuilder::initMeshBuffers");
 }
 
 void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode) {
