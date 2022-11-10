@@ -32,7 +32,8 @@ public:
     static void uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, MeshDrawMode drawMode);
     static void uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, MeshDrawMode drawMode);
 
-    static void uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, MeshDrawMode drawMode);
+    template<typename VERTEX>
+    static void uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, MeshDrawMode drawMode);
     static void uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, MeshDrawMode drawMode);
 
 };

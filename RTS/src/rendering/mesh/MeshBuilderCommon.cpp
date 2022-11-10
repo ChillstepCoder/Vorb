@@ -93,16 +93,18 @@ void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indice
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, indices);
 }
 
-void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, MeshDrawMode drawMode) {
-    const unsigned bufferSizeBytes = vertices.size() * sizeof(Vertex32);
-    // VBO
-    // Allocate orphaned
+template<typename VERTEX>
+void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, MeshDrawMode drawMode) {
+    const unsigned bufferSizeBytes = vertices.size() * sizeof(VERTEX);
+    // VBO Allocate orphaned
     assert(subMesh.mVbo);
     glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
     glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
     // Set data
     glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, vertices.data());
 }
+template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, MeshDrawMode drawMode);
+template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex96>& vertices, MeshDrawMode drawMode);
 
 void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, MeshDrawMode drawMode) {
     // UBO
