@@ -3,6 +3,7 @@
 
 #include "rendering/mesh/BillboardMeshBuilder.h"
 #include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/model/InstancedStaticModelGatherer.h"
 
 #include "tile/TileHandle.h"
 #include "tile/Stairs.h"
@@ -470,8 +471,15 @@ void meshWalls(const TileContainer& tileContainer, ProceduralMeshBuilder& meshBu
     }
 }
 
-void TileMeshBuilderMethods::meshTileContainerStatic(ProceduralMeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMeshBuilder* physMesh) {
+void TileMeshBuilderMethods::meshTileContainerStatic(
+    ProceduralMeshBuilder& meshBuilder,
+    BillboardMeshBuilder* billboardMeshBuilder,
+    InstancedStaticModelGatherer& modelGatherer,
+    const TileContainer& tileContainer,
+    OPT StaticPhysicsMeshBuilder* physMesh
+) {
     const ui32v3& tileDims = tileContainer.getDims();
+    const f32v3 tileContainerWorldPos = tileContainer.getWorldPos3D();
     // =============== Mesh tiles ===============
     TileIndex index = 0;
     for (ui32 z = 0; z < tileDims.z; ++z) {
@@ -507,7 +515,8 @@ void TileMeshBuilderMethods::meshTileContainerStatic(ProceduralMeshBuilder& mesh
                         TileMeshBuilderMethods::addStairs(meshBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physMesh);
                     }
                     else if (tileData.shape == TileShape::MODEL) {
-                        LOG_CRITICAL("MODEL ADD");
+                        f32v3 tilePosition(x + 0.5f, y + 0.5f, z * tileContainer.getFloorHeight() + groundZPosition);
+                        modelGatherer.addInstance(tileData.modelId, tilePosition + tileContainerWorldPos, 0.0f);
                     }
                 }
             }

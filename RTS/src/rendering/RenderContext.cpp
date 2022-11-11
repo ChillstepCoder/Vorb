@@ -705,9 +705,12 @@ VGTexture RenderContext::getSSAOTexture() const {
     return mAmbientOcclusion->getSSAOTexture();
 }
 
-void RenderContext::addStaticModelInstance(ModelID id, const f32v3& pos, f32 rotation)
-{
+void RenderContext::addStaticModelInstance(ModelID id, const f32v3& pos, f32 rotation) {
     mStaticModelRenderer->addInstance(id, pos, rotation);
+}
+
+void RenderContext::addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
+    mStaticModelRenderer->addInstancesFromGatherer(gatherer);
 }
 
 void RenderContext::updateRenderThreadProcs() {

@@ -4,6 +4,7 @@ class TileContainer;
 class ProceduralMeshBuilder;
 class BillboardMeshBuilder;
 struct ModelDef;
+class InstancedStaticModelGatherer;
 
 typedef void(*RenderFunction)(class RenderContext& context, void*);
 
@@ -27,7 +28,13 @@ public:
     static bool exists() { return sInstance != nullptr; }
 
     // Tasks
-    void addTileContainerMeshUpdateTask(TileContainer* containerToMesh, ProceduralMeshBuilder&& staticMeshBuilder, ProceduralMeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder);
+    void addTileContainerMeshUpdateTask(
+        TileContainer* containerToMesh,
+        ProceduralMeshBuilder&& staticMeshBuilder,
+        ProceduralMeshBuilder&& dynamicMeshBuilder,
+        BillboardMeshBuilder&& billboardMeshBuilder,
+        InstancedStaticModelGatherer&& modelGatherer
+    );
     void removeTileContainerMesh(TileContainer* container);
     void addCharacterModel(entt::entity characterEntity, ui32 modelId);
     void removeCharacterModel(entt::entity characterEntity);

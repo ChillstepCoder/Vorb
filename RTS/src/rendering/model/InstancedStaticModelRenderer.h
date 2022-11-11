@@ -1,11 +1,10 @@
 #pragma once
 
-class Camera3D;
+#include "rendering/model/StaticModelInstance.h"
 
-struct StaticModelInstance {
-    f32v3 pos;
-    f32 rotation;
-};
+class Camera3D;
+class InstancedStaticModelGatherer;
+class Material;
 
 class InstancedStaticModelRenderer
 {
@@ -14,8 +13,10 @@ public:
 
     void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
     void renderModels(const Camera3D& camera);
-
+    void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
 private:
     std::map<ModelID, std::vector<StaticModelInstance>> mInstances;
+
+    const Material* mStandardMaterial = nullptr;
 };
 

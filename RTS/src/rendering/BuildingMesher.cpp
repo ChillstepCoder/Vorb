@@ -14,6 +14,7 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"
+#include "rendering/model/InstancedStaticModelGatherer.h"
 
 #include "options/DebugOptions.h"
 
@@ -319,19 +320,20 @@ void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
         ProceduralMeshBuilder staticMeshBuilder(false);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
+        InstancedStaticModelGatherer modelGatherer;
 
-        buildMeshAndPhysicsInternal(building, staticMeshBuilder, dynamicMeshBuilder, billboardMeshBuilder);
+        buildMeshAndPhysicsInternal(building, staticMeshBuilder, dynamicMeshBuilder, billboardMeshBuilder, modelGatherer);
 
         staticMeshBuilder.computeBoundingSphere();
         dynamicMeshBuilder.computeBoundingSphere();
         billboardMeshBuilder.computeBoundingSphere();
 
 
-        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(building.mTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
+        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(building.mTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder), std::move(modelGatherer));
     }, nullptr);
 }
 
-void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, ProceduralMeshBuilder& staticMeshBuilder, ProceduralMeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder) {
+void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, ProceduralMeshBuilder& staticMeshBuilder, ProceduralMeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder, InstancedStaticModelGatherer& modelGatherer) {
     PROFILE_FUNCTION();
 
     PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
@@ -361,7 +363,7 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Proce
     sRoofFacePoints.reserve(100);
 
     // ========================== Mesh Tiles ===============================
-    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, *building.mTileContainer, &physicsBuilder);
+    TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, modelGatherer, *building.mTileContainer, &physicsBuilder);
     TileMeshBuilderMethods::meshTileContainerDynamic(dynamicMeshBuilder, *building.mTileContainer);
 
     // ========================== Straight Skeleton ===============================

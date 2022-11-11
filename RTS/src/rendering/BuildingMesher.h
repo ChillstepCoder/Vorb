@@ -12,6 +12,7 @@
 #include <CGAL/Partition_traits_2.h>
 
 class VisualLog;
+class InstancedStaticModelGatherer;
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef K::Point_2                   CgalPoint;
@@ -42,7 +43,7 @@ public:
     static void buildMeshAndPhysicsAsync(const Building& building);
 
 private:
-    static void buildMeshAndPhysicsInternal(const Building& building, ProceduralMeshBuilder& staticMeshBuilder, ProceduralMeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder);
+    static void buildMeshAndPhysicsInternal(const Building& building, ProceduralMeshBuilder& staticMeshBuilder, ProceduralMeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder, InstancedStaticModelGatherer& modelGatherer);
     static std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& ownedTiles, const Building& building, f32 zPos, VisualLog* visLog);
     static void buildMeshFromStraightSkeleton(SsPtr iss, const Building& building, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const SubTexture& rawWoodTexture, const SubTexture& shinglesTexture, ui32 floor, f32 zPos, VisualLog* visLog);
     static void triangulateRoofFacePolygons(bool isGable, ProceduralMeshBuilder& meshBuilder, const Building& building, const SubTexture& shinglesTexture, ui32 debugColorIndex, f32 zPos);

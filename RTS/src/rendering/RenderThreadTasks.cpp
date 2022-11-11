@@ -6,6 +6,7 @@
 #include "rendering/mesh/TileMeshBuilderMethods.h"
 #include "rendering/mesh/BillboardMeshBuilder.h"
 #include "rendering/CharacterRenderer.h"
+#include "rendering/model/InstancedStaticModelGatherer.h"
 
 #include "tile/TileContainer.h"
 
@@ -40,9 +41,22 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
     return *sInstance;
 }
 
-void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerToMesh, ProceduralMeshBuilder&& staticMeshBuilder, ProceduralMeshBuilder&& dynamicMeshBuilder, BillboardMeshBuilder&& billboardMeshBuilder) {
+void RenderThreadTasks::addTileContainerMeshUpdateTask(
+    TileContainer* containerToMesh,
+    ProceduralMeshBuilder&& staticMeshBuilder,
+    ProceduralMeshBuilder&& dynamicMeshBuilder,
+    BillboardMeshBuilder&& billboardMeshBuilder,
+    InstancedStaticModelGatherer&& modelGatherer
+) {
 
-    MeshTaskData* taskData = new MeshTaskData(containerToMesh, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
+    MeshTaskData* taskData = 
+        new MeshTaskData(
+            containerToMesh,
+            std::move(staticMeshBuilder), 
+            std::move(dynamicMeshBuilder),
+            std::move(billboardMeshBuilder),
+            std::move(modelGatherer)
+        );
 
     // Pass result to the render thread
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* meshTaskData) {
@@ -104,6 +118,9 @@ void RenderThreadTasks::addTileContainerMeshUpdateTask(TileContainer* containerT
             else if (prevBillboard) {
                 context.removeBillboardMesh(prevBillboard);
             }
+
+            // Model instances
+            context.addStaticModelInstancesFromGatherer(taskData->modelGatherer);
 
             // If we no longer have any valid mesh, remove it from any render list
             if (!hadAny) {

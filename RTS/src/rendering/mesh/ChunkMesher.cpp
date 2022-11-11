@@ -8,6 +8,7 @@
 #include "rendering/RenderContext.h"
 #include "rendering/mesh/TileMeshBuilderMethods.h"
 #include "rendering/RenderThreadTasks.h"
+#include "rendering/model/InstancedStaticModelGatherer.h"
 
 #include "world/Chunk.h"
 
@@ -28,6 +29,7 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         ProceduralMeshBuilder staticMeshBuilder(true);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
+        InstancedStaticModelGatherer modelGatherer;
 
         StaticPhysicsMesh& physicsMesh = chunkTileContainer->getStaticPhysicsMesh();
 
@@ -37,13 +39,13 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         billboardMeshBuilder.reserveBillboardCount(CHUNK_SIZE / 2);
 
         // ========================== Mesh Tiles ===============================
-        TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, *chunkTileContainer, nullptr /*physicsMesh*/);
+        TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, modelGatherer, *chunkTileContainer, nullptr /*physicsMesh*/);
         TileMeshBuilderMethods::meshTileContainerDynamic(dynamicMeshBuilder, *chunkTileContainer);
 
         staticMeshBuilder.computeBoundingSphere();
         dynamicMeshBuilder.computeBoundingSphere();
         billboardMeshBuilder.computeBoundingSphere();
 
-        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(chunkTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder));
+        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(chunkTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder), std::move(modelGatherer));
     }, nullptr);
 }

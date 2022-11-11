@@ -10,9 +10,16 @@ struct HeightmapPatchData;
 struct TileHandle;
 class StaticPhysicsMeshBuilder;
 class TileContainer;
+class InstancedStaticModelGatherer;
 
 namespace TileMeshBuilderMethods {
-    void meshTileContainerStatic(ProceduralMeshBuilder& meshBuilder, BillboardMeshBuilder* billboardMeshBuilder, const TileContainer& tileContainer, OPT StaticPhysicsMeshBuilder* physMesh);
+    void meshTileContainerStatic(
+        ProceduralMeshBuilder& meshBuilder,
+        BillboardMeshBuilder* billboardMeshBuilder,
+        InstancedStaticModelGatherer& modelGatherer,
+        const TileContainer& tileContainer,
+        OPT StaticPhysicsMeshBuilder* physMesh
+    );
     void meshTileContainerDynamic(ProceduralMeshBuilder& meshBuilder, const TileContainer& tileContainer);
 
     void addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh);

@@ -33,6 +33,7 @@ class TerrainMesh;
 class GrassMesh;
 class CloudManager;
 class RenderState;
+class InstancedStaticModelGatherer;
 class InstancedStaticModelRenderer;
 
 struct SDL_Window;
@@ -116,6 +117,7 @@ public:
     
     // Static models
     void addStaticModelInstance(ModelID id, const f32v3& pos, f32 rotation);
+    void addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
 
     // Character models
     CharacterRenderer& getCharacterRenderer() { return *mCharacterRenderer; }
