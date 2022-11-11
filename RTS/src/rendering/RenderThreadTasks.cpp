@@ -119,9 +119,6 @@ void RenderThreadTasks::addTileContainerMeshUpdateTask(
                 context.removeBillboardMesh(prevBillboard);
             }
 
-            // Model instances
-            context.addStaticModelInstancesFromGatherer(taskData->modelGatherer);
-
             // If we no longer have any valid mesh, remove it from any render list
             if (!hadAny) {
                 context.mTileContainerMeshData.erase(tileContainer);
@@ -155,6 +152,9 @@ void RenderThreadTasks::addTileContainerMeshUpdateTask(
                 context.mTileContainerMeshData[tileContainer] = std::move(meshData);
             }
         }
+
+        // Model instances
+        context.addStaticModelInstancesFromGatherer(taskData->modelGatherer);
 
         // Release
         tileContainer->decReadLockAndRef();

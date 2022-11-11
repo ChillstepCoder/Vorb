@@ -52,6 +52,7 @@ void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
     LOG_CRITICAL("  TODO: Conan package manager");
     LOG_CRITICAL("  TODO: Update cmake");
     LOG_CRITICAL("  TODO: Custom allocator for std::string/nString");
+    // TODO: Spatial hash grid? https://github.com/simondevyoutube/Quick_3D_MMORPG/blob/main/client/shared/spatial-hash-grid.mjs
 }
 
 void MainMenuScreen::onExit(const vui::GameTime& gameTime)

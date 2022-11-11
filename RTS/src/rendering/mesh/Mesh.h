@@ -51,6 +51,7 @@ public:
     //   Renderer knows what type of mesh this is  so we can avoid
     //   branching and assert on internal state such as ubo
     void draw() const;
+    void drawInstanced(GLsizei instanceCount) const;
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 

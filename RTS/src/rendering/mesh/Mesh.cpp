@@ -75,7 +75,6 @@ void Mesh::draw() const {
 
     // Draw main mesh
     glBindVertexArray(mMainMesh.mVao);
-    // TODO: Why do we have to do this every call
     // texture UBOs go at index 1 since globalUBO is index 0
     if (mMainMesh.mUbo) {
         glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, mMainMesh.mUbo);
@@ -91,6 +90,34 @@ void Mesh::draw() const {
     while (currentSubmesh != nullptr) {
         glBindVertexArray(currentSubmesh->mVao);
         glDrawElements(GL_TRIANGLES, currentSubmesh->mIndexCount, currentSubmesh->mIndexType, (const GLvoid*)(0) /* offset */);
+        RenderStats::recordDrawCall(currentSubmesh->mIndexCount / 3);
+        currentSubmesh = currentSubmesh->mNextSubmesh;
+    }
+
+    glBindVertexArray(0);
+}
+
+void Mesh::drawInstanced(GLsizei instanceCount) const {
+    assert(mMainMesh.mVao);
+    assert(mMainMesh.mIndexCount);
+
+    // Draw main mesh
+    glBindVertexArray(mMainMesh.mVao);
+    // texture UBOs go at index 1 since globalUBO is index 0
+    if (mMainMesh.mUbo) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, mMainMesh.mUbo);
+    }
+    if (mMainMesh.mSSBO) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, mMainMesh.mSSBO);
+    }
+    const SubMeshData* currentSubmesh = &mMainMesh;
+    glDrawElementsInstanced(GL_TRIANGLES, mMainMesh.mIndexCount, mMainMesh.mIndexType, (const GLvoid*)(0) /* offset */, instanceCount);
+    RenderStats::recordDrawCall(mMainMesh.mIndexCount / 3);
+    currentSubmesh = currentSubmesh->mNextSubmesh;
+    // Draw any submeshes
+    while (currentSubmesh != nullptr) {
+        glBindVertexArray(currentSubmesh->mVao);
+        glDrawElementsInstanced(GL_TRIANGLES, currentSubmesh->mIndexCount, currentSubmesh->mIndexType, (const GLvoid*)(0) /* offset */, instanceCount);
         RenderStats::recordDrawCall(currentSubmesh->mIndexCount / 3);
         currentSubmesh = currentSubmesh->mNextSubmesh;
     }

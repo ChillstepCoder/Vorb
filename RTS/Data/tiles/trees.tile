@@ -11,6 +11,7 @@ tree_small:
       count: [3, 6]
 tree_pine:
   tex: tree_pine
+#  model: tree
   col: circle
   dims: [4.0, 4.0, 4.0]
   col_dims: [0.1, 0.5, 4.0]
