@@ -506,6 +506,9 @@ void TileMeshBuilderMethods::meshTileContainerStatic(ProceduralMeshBuilder& mesh
                     else if (tileData.shape == TileShape::STAIRS) {
                         TileMeshBuilderMethods::addStairs(meshBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physMesh);
                     }
+                    else if (tileData.shape == TileShape::MODEL) {
+                        LOG_CRITICAL("MODEL ADD");
+                    }
                 }
             }
         }

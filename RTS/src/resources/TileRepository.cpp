@@ -67,18 +67,17 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         }
 
 
-
         TileID nextId = (TileID)sTileData.size();
         tileData.id = nextId;
         assert(nextId < UINT16_MAX); // Make sure we dont roll over
         assert(sTileIdMapping.find(key) == sTileIdMapping.end()); // Duplicate name
         // TODO: error handling  for missing  sprite
-        tileData.texture = textureRepository.getTexture(fileData.textureName);
         if (fileData.modelName.size()) {
             tileData.modelId = modelRepository.getModelID(fileData.modelName);
             tileData.shape = TileShape::MODEL;
         }
         else {
+            tileData.texture = textureRepository.getTexture(fileData.textureName);
             tileData.shape = fileData.tileShape;
         }
 

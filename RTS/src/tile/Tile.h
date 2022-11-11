@@ -67,7 +67,7 @@ struct TileData {
    // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
     TileResource resource = TileResource::NONE;
-    SubTexture texture; // TODO: Model instead also make it a pointer this is huge?
+    SubTexture texture; // TODO: We dont use this when we have a model, make this a pointer? Its big
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
     ui8 layer = 2;

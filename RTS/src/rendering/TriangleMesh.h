@@ -8,7 +8,7 @@
 
 #include <ozz/base/maths/simd_math.h>
 
-#include "rendering/mesh/Mesh.h"
+//#include "rendering/mesh/Mesh.h"
 
 template <typename VERTEX>
 class ITriangleMesh : public MeshBase {

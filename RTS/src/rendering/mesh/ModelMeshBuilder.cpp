@@ -31,7 +31,6 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     }
 
     model.mMesh = std::make_unique<Mesh>();
-    model.mNumMeshes = numMeshes;
 
     // TODO: Per submesh textures
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
@@ -85,6 +84,8 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         MeshBuilderCommon::uploadIndexData(*meshData, outputMesh.triangle_indices.data(), outputMesh.triangle_index_count(), drawMode);
         MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, drawMode);
         MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, drawMode);
+        StaticModelVertex::bindVertexAttribs();
+        checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
         
         mStaticVerts.clear();
         LOG_TRACE("  Upload data in {} ms", timer.stop());
@@ -256,23 +257,4 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 
     glBindVertexArray(0);
     return true;
-}
-
-void ModelMeshBuilder::bindStaticVertexAttribs(SubMeshData& subMesh)
-{
-    // Standard verts
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0 /*index*/, 3 /*size*/, GL_FLOAT, false, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, pos));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1 /*index*/, 2 /*size*/, GL_UNSIGNED_SHORT, false, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, uvsPacked));
-    glEnableVertexAttribArray(2);
-    glVertexAttribIPointer(2 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, textureIndex));
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, color));
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4 /*index*/, 3 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));
-    glEnableVertexAttribArray(5);
-    assert(false && "Check that size in the shader is 3, in standard_tile it is 2");
-    //glVertexAttribPointer(4 /*index*/, 3 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));
-    glVertexAttribPointer(5 /*index*/, 3 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, tangentPacked));
 }

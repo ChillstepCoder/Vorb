@@ -33,6 +33,7 @@ class TerrainMesh;
 class GrassMesh;
 class CloudManager;
 class RenderState;
+class InstancedStaticModelRenderer;
 
 struct SDL_Window;
 
@@ -112,6 +113,9 @@ public:
     void removeTerrainWaterMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainWaterMeshes.erase(mesh); }
     void addGrassMesh(const GrassMesh* mesh) { assert(IS_RENDER_THREAD()); mGrassMeshes.insert(mesh); }
     void removeGrassMesh(const GrassMesh* mesh) { assert(IS_RENDER_THREAD()); mGrassMeshes.erase(mesh); }
+    
+    // Static models
+    void addStaticModelInstance(ModelID id, const f32v3& pos, f32 rotation);
 
     // Character models
     CharacterRenderer& getCharacterRenderer() { return *mCharacterRenderer; }
@@ -153,6 +157,7 @@ private:
     mutable std::unique_ptr<ShadowRenderer> mShadowRenderer;
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
     mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
+    mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;

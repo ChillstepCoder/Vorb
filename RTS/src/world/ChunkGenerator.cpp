@@ -27,7 +27,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
 
     constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
-    constexpr f32 MAX_TREE_HEIGHT = 30.0f;
+    constexpr f32 MAX_TREE_HEIGHT = 100.0f;
 
     Tile tile(TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE);
     f32v2 offsetToCenter(
@@ -44,9 +44,10 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             }
         }
         if (height < MAX_TREE_HEIGHT) {
-            //f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.1f, 1.0f);
+            f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.01f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
-            if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise/* * fadeMult*/) {
+            constexpr f32 TREE_DENSITY = 0.1f;
+            if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
                 tile.topLayer = pineTree;
             }
         }

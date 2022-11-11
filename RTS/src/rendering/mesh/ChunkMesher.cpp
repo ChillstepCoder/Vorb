@@ -23,6 +23,8 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
 
     Services::Threadpool::ref().addTask([chunkTileContainer](ThreadPoolWorkerData*) {
 
+        PROFILE_SCOPE("ChunkMesh build");
+
         ProceduralMeshBuilder staticMeshBuilder(true);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;

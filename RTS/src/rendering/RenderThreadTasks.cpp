@@ -208,10 +208,8 @@ void RenderThreadTasks::removeCharacterModel(entt::entity characterEntity) {
 void RenderThreadTasks::playOneShotAnimation(entt::entity characterEntity, ui32 animationId) {
     std::pair<ui32, ui32> animationTask{ e_cast(characterEntity), animationId };
     static_assert(sizeof(std::pair<ui32, ui32>) == sizeof(void*));
-    LOG_CRITICAL("Animation task game side: {} {}", animationTask.first, animationTask.second);
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
         std::pair<ui32, ui32> animationTask = *((std::pair<ui32, ui32>*)&data);
-        LOG_CRITICAL("  Animation task render side: {} {}", animationTask.first, animationTask.second);
         context.getCharacterRenderer().playOneShotAnimation(entt::entity(animationTask.first), animationTask.second);
     }, (void*)(*((void**)&animationTask)))); // Black magic casting TODO: Cleaner?
 }

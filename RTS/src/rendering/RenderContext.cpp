@@ -33,6 +33,7 @@
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/renderstate/RenderStateManager.h"
+#include "rendering/model/InstancedStaticModelRenderer.h"
 #include "weather/CloudManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -278,6 +279,7 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         mShadowRenderer = std::make_unique<ShadowRenderer>(mScreenResolution);
         mTerrainRenderer = std::make_unique<TerrainRenderer>();
         mGrassRenderer = std::make_unique<GrassRenderer>();
+        mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
         checkGlError("Renderer init");
     }
 
@@ -428,6 +430,9 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Static meshes
     // TODO: FPU Frustum culling: https://subscription.packtpub.com/book/game-development/9781838986193/10/ch10lvl1sec10/doing-frustum-culling-on-the-gpu-with-compute-shaders
     mTileContainerRenderer->renderStaticMeshes(mStaticMeshes, camera);
+
+    // Instanced models
+    mStaticModelRenderer->renderModels(camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
@@ -698,6 +703,11 @@ VGTexture RenderContext::getShadowTexture() const {
 
 VGTexture RenderContext::getSSAOTexture() const {
     return mAmbientOcclusion->getSSAOTexture();
+}
+
+void RenderContext::addStaticModelInstance(ModelID id, const f32v3& pos, f32 rotation)
+{
+    mStaticModelRenderer->addInstance(id, pos, rotation);
 }
 
 void RenderContext::updateRenderThreadProcs() {

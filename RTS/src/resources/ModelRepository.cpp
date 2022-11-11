@@ -53,12 +53,14 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const TextureRepo
         return loadSkinnedModel(fileData, textureRepository, animMachineRepository, filePath, modelPath, rootDir);
     }
     else {
-        //return loadStaticModel(fileData, textureRepository, filePath, modelPath, rootDir);
+        return loadStaticModel(fileData, textureRepository, filePath, modelPath, rootDir);
     }
     return false;
 }
 
 bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+
+    PROFILE_FUNCTION();
 
     ModelDef& def = mModelDefs.emplace_back();
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
@@ -100,6 +102,9 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
 }
 
 bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+
+    PROFILE_FUNCTION();
+
     ModelDef& def = mModelDefs.emplace_back();
     def.mModelType = Model3DType::STATIC;
     def.mModelId = (ui32)(mModelDefs.size() - 1u);

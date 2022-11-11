@@ -43,7 +43,6 @@ public:
     );
 
 private:
-    void bindStaticVertexAttribs(SubMeshData& subMesh);
 
     std::vector<Vertex32> mStaticVerts;
     std::vector<SkinnedModelVertex> mSkinnedVerts;

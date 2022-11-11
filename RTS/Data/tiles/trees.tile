@@ -1,5 +1,6 @@
 tree_small:
-  tex: tree_small
+#  tex: tree_small
+  model: tree
   col: circle
   dims: [4.0, 4.0, 4.0]
   col_dims: [0.1, 0.5, 4.0]
