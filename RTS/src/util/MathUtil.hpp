@@ -4,6 +4,8 @@
 #define RAD_TO_DEG(x) ((x) * 180.0f / M_PIf)
 #define SQ(x) ((x) * (x))
 
+constexpr f32 MATH_EPSILON = 0.00001f;
+
 #include "LinearMath/btVector3.h"
 
 inline f32 fastFloorf(f32 x) {

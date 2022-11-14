@@ -42,9 +42,12 @@ public:
         const TextureRepository& textureRepo
     );
 
+    static void updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo);
+
 private:
 
     std::vector<Vertex32> mStaticVerts;
     std::vector<SkinnedModelVertex> mSkinnedVerts;
+    std::vector<uint16_t> mIndices;
 };
 

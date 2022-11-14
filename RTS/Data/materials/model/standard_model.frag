@@ -15,13 +15,11 @@ void main() {
     oColor = texture(sampler2D(Textures[fTextureIndex].xy), fUV) * fTint;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
-    oColor = oColor * 0.00001 + vec4(1.0, 0.0, 1.0, 0.0);
+    oColor = oColor;
 	
-    //if (oColor.a < 0.85) {
-    //    discard;
-    //}
-	oColor.a = 1.0;
-	
+    if (oColor.a < 0.85) {
+        discard;
+    }
 	
 	// Normal is always the next page
 	vec3 normal = texture(sampler2D(Textures[fTextureIndex].zw), fUV).rgb;

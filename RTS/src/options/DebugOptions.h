@@ -83,6 +83,7 @@ struct DebugOptions {
     bool mShowEntityQueries;
     bool mEnableVisualLogs;
     bool mShowDevHud;
+    bool mHideModels;
     // Water
     f32v4 mShallowWaterColor;
     f32v4 mDeepWaterColor;

@@ -24,7 +24,7 @@ constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUT
 Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
 
     // TODO: This seems wrong
-    static TileID pineTree = TileRepository::getTile(StrToken("tree_pine"));
+    static TileID pineTree = TileRepository::getTile(StrToken("tree_small"));
 
     constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
     constexpr f32 MAX_TREE_HEIGHT = 100.0f;

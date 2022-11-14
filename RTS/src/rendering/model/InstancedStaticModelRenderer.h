@@ -21,8 +21,10 @@ public:
     void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
     void renderModels(const Camera3D& camera);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
+    ui32 getNumModels() const;
 private:
     std::map<ModelID, StaticModelInstanceData> mInstances;
+    std::vector<StaticModelInstance> mInstancesToRender;
 
     const Material* mStandardMaterial = nullptr;
 };

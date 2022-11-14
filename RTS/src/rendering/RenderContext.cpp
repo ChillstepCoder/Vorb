@@ -899,6 +899,10 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
+    sprintf_s(buffer, sizeof(buffer), "Models: %u", mStaticModelRenderer->getNumModels());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
     if (sDebugOptions.mChunkBoundaries) {
         sprintf_s(buffer, sizeof(buffer), "Chunks: %u", renderState.getDebugChunks().size());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);

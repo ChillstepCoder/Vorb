@@ -111,7 +111,7 @@ void Camera3D::lookAt(const f32v3& pos) {
     mDirection = glm::normalize(pos - mPosition);
     mRight = glm::normalize(glm::cross(mDirection, UP_ABSOLUTE));
     mUp = glm::normalize(glm::cross(mRight, mDirection));
-    assert(mRight.z == 0.0f);
+    assert(abs(mRight.z) <= MATH_EPSILON);
 
     mPitch = asin(-mDirection.z);
     mYaw = atan2(mDirection.x, mDirection.y);

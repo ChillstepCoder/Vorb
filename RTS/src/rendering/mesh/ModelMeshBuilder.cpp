@@ -3,6 +3,7 @@
 
 #include "rendering/mesh/MeshBuilderCommon.h"
 #include "rendering/texture/SubTexture.h"
+#include "rendering/model/StaticModelInstance.h"
 
 #include "rendering/model/Model3D.h"
 #include "rendering/mesh/Mesh.h"
@@ -15,6 +16,8 @@
 #include "resources/TextureRepository.h"
 
 #include "fbx/ozzFbxToMesh.hpp"
+#include <fbxsdk/core/base/fbxstring.h>
+#include <fbxsdk/scene/geometry/fbxlayer.h>
 
 bool ModelMeshBuilder::buildStaticMeshesForModel(
     StaticModel3D& model,
@@ -30,23 +33,36 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         return false;
     }
 
+    // Read read material textures matched to material names
+    std::vector<TextureHandle> textures;
+    const int materialCount = sceneLoader.scene()->GetMaterialCount();
+    textures.resize(materialCount * 2);
+    for (int i = 0; i < materialCount; ++i) {
+        FbxSurfaceMaterial* material = sceneLoader.scene()->GetMaterial(i);
+
+        const nString materialName = material->GetName();
+        const SubTexture& texture = textureRepo.getTexture(materialName);
+        textures[i * 2] = texture.mTextureHandleDiffuse;
+        textures[i * 2 + 1] = texture.mTextureHandleNormal;
+
+        LOG_DEBUG("Material {} name {} ", i, materialName);
+        for (FbxProperty matProp = material->GetFirstProperty(); matProp.IsValid(); matProp = material->GetNextProperty(matProp)) {
+            LOG_DEBUG("  Property {}",  matProp.GetName().Buffer());
+        }
+    }
+
     model.mMesh = std::make_unique<Mesh>();
 
     // TODO: Per submesh textures
-    const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
-    const SubTexture& texture = textureRepo.getTexture(modelFileNameNoExtension);
-    std::vector<TextureHandle> textures;
-    textures.resize(2);
-    textures[0] = texture.mTextureHandleDiffuse;
-    textures[1] = texture.mTextureHandleNormal;
 
-    SubMeshData* meshData = &model.mMesh->mMainMesh;
-    meshData->allocateSubmeshCount(numMeshes - 1);
-
+    mStaticVerts.clear();
+    // Combine all submeshes into one mesh
     for (int m = 0; m < numMeshes; ++m) {
-        assert(meshData);
 
         FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
+        FbxLayerElementArrayTemplate<int>* pLockableArray;
+        fbxMesh->GetMaterialIndices(&pLockableArray);
+        LOG_DEBUG("    Material sttuff {} {}", pLockableArray->GetCount(), pLockableArray->GetFirst());
 
         PreciseTimer timer;
         // Allocates output mesh.
@@ -62,15 +78,22 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
 
         // TODO: https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
         // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
-        mStaticVerts.resize(outputMesh.vertex_count());
+        const size_t prevSize = mStaticVerts.size();
+        mStaticVerts.resize(mStaticVerts.size() + outputMesh.vertex_count());
         assert(outputMesh.parts.size() == 1);
         for (int i = 0; i < outputMesh.vertex_count(); ++i) {
             const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-            StaticModelVertex& myVert = mStaticVerts[i].mStaticModel;
+            StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
+            myVert.textureIndex = m; // TODO: Smarter
+            f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
+            assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
+            myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
+            myVert.uvsPacked.y = (ui16)(uvsFloat.y * UINT16_MAX);
            // memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
            // memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
            // memcpy(&myVert.uvs, &part.uvs[(int)(i * 2)], sizeof(f32) * 2);
+            // TODO: Check materials for this mesh! See if each mesh has its own material data we can leverage
             if (part.colors.size()) {
                 memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);
             }
@@ -78,22 +101,30 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
                 myVert.color = COLOR_WHITE;
             }
         }
-
-        // Upload mesh data
-        MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
-        MeshBuilderCommon::uploadIndexData(*meshData, outputMesh.triangle_indices.data(), outputMesh.triangle_index_count(), drawMode);
-        MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, drawMode);
-        MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, drawMode);
-        StaticModelVertex::bindVertexAttribs();
-        checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
+        // Copy indices
+        size_t start = mIndices.size();
+        mIndices.resize(mIndices.size() + outputMesh.triangle_indices.size());
         
-        mStaticVerts.clear();
-        LOG_TRACE("  Upload data in {} ms", timer.stop());
-        timer.start();
+        for (int i = 0; i < outputMesh.triangle_index_count(); ++i) {
+            mIndices[start + i] = outputMesh.triangle_indices[i] + prevSize; // Copy index data and shift index
+        }
+      
 
-        // Next submesh
-        meshData = meshData->mNextSubmesh;
+        timer.start();
     }
+
+    // Upload mesh data
+    SubMeshData* meshData = &model.mMesh->mMainMesh;
+
+    PreciseTimer uploadTimer;
+    MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
+    MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), drawMode);
+    MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, drawMode);
+    MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, drawMode);
+    StaticModelVertex::bindVertexAttribs();
+    checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
+
+    LOG_TRACE("  Upload data in {} ms", uploadTimer.stop());
 
     glBindVertexArray(0);
     return true;
@@ -257,4 +288,17 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 
     glBindVertexArray(0);
     return true;
+}
+
+void ModelMeshBuilder::updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo) {
+    const SubMeshData* meshData = &mesh.mMainMesh;
+    do {
+        glBindVertexArray(meshData->mVao);
+        glBindBuffer(GL_ARRAY_BUFFER, instanceDataVbo);
+        glEnableVertexAttribArray(7);
+        glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(StaticModelInstance), (void*)offsetof(StaticModelInstance, pos));
+        glVertexAttribDivisor(7, 1);
+        meshData = meshData->mNextSubmesh;
+    } while (meshData != nullptr);
+    glBindVertexArray(0);
 }

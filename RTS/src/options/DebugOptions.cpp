@@ -3,6 +3,9 @@
 
 DebugOptions sDebugOptions;
 
+// Lower for faster loading in test
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.15f;
+
 DebugOptions::DebugOptions() :
     mTimeOffset(0.0f),
     // Clouds
@@ -15,7 +18,7 @@ DebugOptions::DebugOptions() :
     // Grass
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mDebugGrassLod(false),
-    mHideGrass(false),
+    mHideGrass(true),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra
     mDebugTerrainLod(false),
@@ -68,6 +71,7 @@ DebugOptions::DebugOptions() :
     mShowEntityQueries(false),
     mEnableVisualLogs(true),
     mShowDevHud(true),
+    mHideModels(false),
     // Water
     mShallowWaterColor(159.0f / 255.0f, 194.0f / 255.0f, 206.0f / 255.0f, 185.0f / 255.0f),
     mDeepWaterColor(57.0f / 255.0f, 83.0f / 255.0f, 122.0f / 255.0f, 191.0f / 255.0f),
@@ -95,8 +99,8 @@ DebugOptions::DebugOptions() :
     unUchBlack(1.33f),
     unUchPedestal(0.0f),
     // Game settings
-    mLoadRangeSq(SQ(CHUNK_LOAD_RANGE)),
-    mLoadRange(CHUNK_LOAD_RANGE),
+    mLoadRangeSq(SQ(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT)),
+    mLoadRange(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT),
     // Camera settings
     mFoV(75.0f),
     mZFar(200000.0f),

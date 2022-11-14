@@ -364,6 +364,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
+        ImGui::Checkbox("Hide Models", &sDebugOptions.mHideModels);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
         ImGui::Separator();
         ImGui::Text("Physics Debug");
