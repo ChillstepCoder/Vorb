@@ -25,7 +25,8 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     const vio::Path& rootDir,
     OzzFbxSceneLoader& sceneLoader,
     MeshDrawMode drawMode,
-    const TextureRepository& textureRepo
+    const TextureRepository& textureRepo,
+    float modelScale
 ) {
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
@@ -85,6 +86,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
             const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
             StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
+            myVert.pos *= modelScale;
             myVert.textureIndex = m; // TODO: Smarter
             f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
             assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);

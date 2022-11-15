@@ -124,7 +124,7 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureR
 
     StaticModel3D& model = def.getStaticModel();
     ModelMeshBuilder meshBuilder;
-    meshBuilder.buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, textureRepository);
+    meshBuilder.buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, textureRepository, fileData.mScale);
 
     // Store lookup
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();

@@ -12,6 +12,7 @@ struct ModelDefFileData {
     nString mModelName;
     nString mRigName;
     nString mMachineName;
+    f32 mScale = 1.0f;
 };
 KEG_TYPE_DECL(ModelDefFileData);
 

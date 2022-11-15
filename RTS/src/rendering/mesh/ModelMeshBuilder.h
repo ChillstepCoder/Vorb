@@ -30,7 +30,8 @@ public:
         const vio::Path& rootDir,
         OzzFbxSceneLoader& sceneLoader,
         MeshDrawMode drawMode,
-        const TextureRepository& textureRepo
+        const TextureRepository& textureRepo,
+        float modelScale
     );
     bool buildSkinnedMeshesForModel(
         SkinnedModel3D& model,

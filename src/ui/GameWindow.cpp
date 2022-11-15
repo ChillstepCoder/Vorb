@@ -300,7 +300,7 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
     const ui32 minor = getGLMinorVersion();
     const ui32 major = getGLMajorVersion();
     VORB_LOG_INFO("Initializing opengl for imgui with minor {} and major {}", minor, major);
-    assert(minor == 5 && major == 4 && "App.config needs opengl set to 4.5\n");
+    assert(minor == 6 && major == 4 && "App.config needs opengl set to 4.6\n");
     ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(m_window), m_glc);
     ImGui_ImplOpenGL3_Init(glsl_version);
 #endif
@@ -364,7 +364,7 @@ void vui::GameWindow::setDefaultSettings(GameDisplayMode* mode) {
     mode->minor = 0;
 #elif defined(VORB_IMPL_GRAPHICS_OPENGL)
     mode->major = 4;
-    mode->minor = 5;
+    mode->minor = 6;
 #endif
     // TODO(Matthew): Can we auto-detect when we need to select core?
     //                Mac OS X & Linux both require core - e.g. Linux with Intel integrated GPU.
