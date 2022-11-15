@@ -188,9 +188,9 @@ private:
     // ================================= Data =================================
     union { // These can safely be modified at any time and will only be accessed by the main thread
         struct {
-            TileID groundLayer; // Walls, floors, foundation     // ALWAYS BOX COLLISION
+            TileID groundLayer; // floors, foundation     // ALWAYS BOX COLLISION
             TileID midLayer;    // Rugs, things on top of furniture, flora  // NO COLLIDE ONLY
-            TileID topLayer;    // Furniture, props, walls trees // ALLOWS CUSTOM COLLISION
+            TileID topLayer;    // Furniture, props, walls, trees // ALLOWS CUSTOM COLLISION
         };
         TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
     };

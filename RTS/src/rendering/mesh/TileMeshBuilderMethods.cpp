@@ -489,7 +489,8 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                 const f32 groundZPosition = tile.getGroundZOffsetThreadSafe(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayersThreadSafe()[layerIndex];  // TODO: Thread safe when async
-                    if (layerTile == TILE_ID_NONE) {
+                    // Blocked or invalid tiles have no render
+                    if (isTileBlockedOrNone(layerTile)) {
                         continue;
                     }
 

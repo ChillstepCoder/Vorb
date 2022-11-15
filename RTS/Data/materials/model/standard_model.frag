@@ -17,7 +17,7 @@ void main() {
 	// TODO: Noise on this edge so that its fuzzy average
     oColor = oColor;
 	
-    if (oColor.a < 0.85) {
+    if (oColor.a < 0.01) {
         discard;
     }
 	

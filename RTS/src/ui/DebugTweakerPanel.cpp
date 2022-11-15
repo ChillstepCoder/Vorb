@@ -97,7 +97,7 @@ void renderLightingUI(ui32& ID, LightingOptions* options, int presetIndex) {
     ImGui::SliderFloat("Gamma", &options->mGamma, 0.0f, 4.0f);
     ImGui::SliderFloat("Exposure", &options->mExposure, 0.0f, 4.0f);
     ImGui::SliderFloat("Haze Exponent", &options->mHazeExponent, 0.0f, 2.0f);
-    ImGui::SliderFloat("Haze Divisor", &options->mHazeDivisor, 1000.0f, 15000.0f);
+    ImGui::SliderFloat("Haze Divisor", &options->mHazeDivisor, 10.0f, 15000.0f);
     ImGui::SliderFloat("Ambient Light", &options->mAmbient, 0.0f, 1.0f);
     ImGui::SliderFloat("Sun Intensity", &options->mSunIntensity, 0.0f, 3.0f);
     switch (options->mToneMapOperator) {

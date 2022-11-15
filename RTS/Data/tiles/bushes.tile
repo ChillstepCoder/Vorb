@@ -1,0 +1,6 @@
+bush_med:
+#  tex: tree_small
+  model: bush
+  col: circle
+  dims: [1.0, 1.0, 1.0]
+  col_dims: [0.1, 0.5, 4.0]

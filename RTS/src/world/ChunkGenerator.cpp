@@ -21,10 +21,15 @@ constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH * 4;
 #endif
 constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUTION;
 
+void TryGenerateLargeObjectAtPoint(const f32v2& worldPos, ui32 index, f32 minHeights[CHUNK_SIZE], std::vector<Tile>& tiles) {
+
+}
+
 Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
 
     // TODO: This seems wrong
     static TileID pineTree = TileRepository::getTile(StrToken("tree_small"));
+    static TileID bush = TileRepository::getTile(StrToken("bush_med"));
 
     constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
     constexpr f32 MAX_TREE_HEIGHT = 100.0f;
@@ -47,8 +52,14 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             f32 fadeMult = glm::min((MAX_TREE_HEIGHT - height) * 0.01f, 1.0f);
             f32 treeNoise = sWorldGen.mForestNoise.compute(worldPos.x, worldPos.y);
             constexpr f32 TREE_DENSITY = 0.1f;
+            constexpr f32 BUSH_DENSITY = 0.01f;
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
                 tile.topLayer = pineTree;
+                *grass = 0;
+            }
+            else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {
+                tile.topLayer = bush;
+                *grass = 0;
             }
         }
     }
@@ -109,35 +120,50 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     return tile;
 }
 
+// Pass 1 - Height
+// Pass 2 - Large Objects (Trees, boulders) 
+// Pass 3 - Small Objects
 void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
 
-    PreciseTimer timer;
+    PROFILE_FUNCTION();
 
     // Allocate tiles if needed
     chunk.mTileContainer->allocateData();
     const ChunkID& id = chunk.getChunkID();
 
+    // Cache all min heights
+    f32 minHeights[CHUNK_SIZE];
+    for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
+        const ui32 x = i & TILE_INDEX_X_MASK;
+        const ui32 y = i >> TILE_INDEX_Y_SHIFT;
+        minHeights[i] = sHeightmapGrid->computeMinHeightAtTile(heightData, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
+    }
+
+    // Large objects
+    /*for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
+        TryGenerateLargeObjectAtPoint()
+    }*/
+
+    // Small objects
+
     const f32v2 chunkPosWorld = chunk.getWorldPos();
     f32 maxHeight = 1.0f;
     auto& tiles = chunk.mTileContainer->mTiles;
-    for (ui32 y = 0; y < CHUNK_WIDTH; ++y) {
-        for (ui32 x = 0; x < CHUNK_WIDTH; ++x) {
-            const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
-            f32 height = sHeightmapGrid->computeCenterHeightAtTile(heightData, chunk.mTileContainer->getWorldPos2D() + i32v2(x, y));
-            ui8 grass = 0;
-            Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
-            const f32 baseZPos = tile.getGroundZOffsetThreadSafe();
-            if (baseZPos + 1.0f > maxHeight) {
-                maxHeight = baseZPos + 1.0f;
-            }
-            const TileIndex index = chunk.mTileContainer->getTileIndexFromXYZOffset(x, y, 0);
-            tiles[index] = std::move(tile);
-            chunk.mGrass[index] = grass;
+    for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
+        const ui32 x = i & TILE_INDEX_X_MASK;
+        const ui32 y = i >> TILE_INDEX_Y_SHIFT;
+        const f32v2 tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
+        const f32 height = minHeights[y * CHUNK_WIDTH + x];
+        ui8 grass = 0;
+        Tile tile = GenerateTileAtPos(tilePosWorld, height, &grass);
+        const f32 baseZPos = tile.getGroundZOffsetThreadSafe();
+        if (baseZPos + 1.0f > maxHeight) {
+            maxHeight = baseZPos + 1.0f;
         }
+        tiles[i] = std::move(tile);
+        chunk.mGrass[i] = grass;
     }
     // TODO: uhhhh?
     // TODO: use heightData.bounding sphere?
     chunk.mAABB.height = maxHeight + 1.0f - chunk.mAABB.z; // Subtracting Z because we want to add the depth underground to the total height
-
-    //std::cout << "Chunk generated in " << timer.stop() << " ms\n";
 }

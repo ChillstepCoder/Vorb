@@ -608,8 +608,6 @@ void IHeightmapGrid::copyHeightRowToBuffer(f32* dst, i32v2 worldPosStart, ui32 r
 }
 
 void IHeightmapGrid::computeTileCorners(const f32* heightData, ui32v2 worldTilePos, OUT f32 corners[4]) {
-    assert(IS_GAME_THREAD());
-
     constexpr f32 tileWidthHeightmap = 1.0f / HEIGHTMAP_QUAD_SIZE;
 
     f32v2 offset = getHeightmapOffsetFromTilePos(worldTilePos);
@@ -632,7 +630,6 @@ bool IHeightmapGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) {
 }
 
 f32 IHeightmapGrid::computeMinHeightAtTile(const f32* heightData, ui32v2 worldTilePos) {
-    assert(IS_GAME_THREAD());
     f32 corners[4];
     computeTileCorners(heightData, worldTilePos, corners);
     return glm::min(glm::min(glm::min(corners[0], corners[1]), corners[2]), corners[3]);
