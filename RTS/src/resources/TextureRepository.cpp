@@ -42,6 +42,8 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
     // Load and add texture to cache
     vg::Texture texture = mTextureCache.addTexture(filePath, textureName, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)], vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, !metaData.flipV);
 
+    // Check if there is an acompanying stencil file
+
     // Check if there is an acompanying normal file
     VGTexture normalTexture;
     vio::Path normalTexturePath = getStringNoExtension(filePath) + ".norm.png";
@@ -56,9 +58,8 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
         normalTexture = mNormalMapGenerator->generateNormalTexture(texture.id, texture.dims, vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)]);
     }
 
-
     assert(texture.id && normalTexture);
-     // Generate handle
+     // Generate bindless handle
     TextureHandle handleDiffuse = glGetTextureHandleARB(texture.id);
     TextureHandle handleNormal = glGetTextureHandleARB(normalTexture);
     assert(handleDiffuse && handleNormal);
