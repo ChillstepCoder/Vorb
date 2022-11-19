@@ -280,6 +280,7 @@
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
+    <ClCompile Include="src\rendering\post_process\ShadowLodDetail.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
@@ -520,6 +521,7 @@
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
+    <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />

@@ -20,6 +20,7 @@ public:
 
     void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
     void renderModels(const Camera3D& camera);
+    void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     ui32 getNumModels() const;
 private:
@@ -27,5 +28,6 @@ private:
     std::vector<StaticModelInstance> mInstancesToRender;
 
     const Material* mStandardMaterial = nullptr;
+    const Material* mShadowMapperMaterial = nullptr;
 };
 

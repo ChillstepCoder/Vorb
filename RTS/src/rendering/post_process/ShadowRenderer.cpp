@@ -418,8 +418,8 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
     return activeGBuffer;
 }
 
-const f32 ShadowRenderer::getMaxDistance() const {
-    return mPlaneDistances[MAX_SHADOW_CASCADE_LEVELS-1];
+const f32 ShadowRenderer::getMaxDistance(ShadowLodDetail detail) const {
+    return Shadows::getMaxDistance(mPlaneDistances, detail);
 }
 
 VGTexture ShadowRenderer::getShadowTexture() const {

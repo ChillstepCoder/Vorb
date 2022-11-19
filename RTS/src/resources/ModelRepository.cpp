@@ -65,6 +65,7 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
     ModelDef& def = mModelDefs.emplace_back();
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
     def.mModelType = Model3DType::SKINNED;
+    def.mShadowDetail = fileData.mShadowDetail;
 
     PreciseTimer timer;
     def.mRig = &mRigRepository.getRigDef(fileData.mRigName);
@@ -108,6 +109,7 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureR
     ModelDef& def = mModelDefs.emplace_back();
     def.mModelType = Model3DType::STATIC;
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
+    def.mShadowDetail = fileData.mShadowDetail;
 
     PreciseTimer timer;
 

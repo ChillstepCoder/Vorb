@@ -5,7 +5,7 @@
 #include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/GLProgram.h>
 
-const char* SIMPLE_VERT_SRC = R"(
+const char* NORMAL_VERT_SRC = R"(
 in vec2 vPosition; // Position in screen space
 uniform vec4 unUvRect;
 out vec2 fUV;
@@ -16,7 +16,7 @@ void main() {
 }
 )";
 
-const char* SIMPLE_FRAG_SRC = R"(
+const char* NORMAL_FRAG_SRC = R"(
 uniform sampler2D unTexture;
 uniform vec2 unPixelDims;
 uniform vec4 unUvRect;
@@ -99,6 +99,32 @@ void main() {
 }
 )";
 
+const char* STENCIL_VERT_SRC = R"(
+in vec2 vPosition; // Position in screen space
+uniform vec4 unUvRect;
+out vec2 fUV;
+void main() {
+    vec2 subUV = (vPosition + 1.0) / 2.0;
+    fUV = unUvRect.xy + unUvRect.zw * subUV;
+    gl_Position = vec4(fUV * 2.0 - 1.0, 0, 1);
+}
+)";
+
+const char* STENCIL_FRAG_SRC = R"(
+uniform sampler2D unDiffuse;
+uniform sampler2D unStencil;
+uniform vec2 unPixelDims;
+uniform vec4 unUvRect;
+in vec2 fUV;
+out vec4 fColor;
+
+void main() {
+    float stencil = texture(unStencil, fUV).r;
+    fColor.rgb = texture(unDiffuse, fUV).rgb;
+    fColor.a = stencil;
+}
+)";
+
 NormalMapGenerator::NormalMapGenerator() {
 
 }
@@ -113,18 +139,29 @@ void onError(const nString& n) {
 
 void NormalMapGenerator::init() {
     glGenFramebuffers(1, &mFramebufferID);
-    mProgram = std::make_unique<vg::GLProgram>();
-    eventpp::ScopedRemover<GLProgramErrorCallbackList> remover(mProgram->onShaderCompilationError);
-    remover.append([](const nString& s) { onError(s); });
-    mProgram->init();
-    mProgram->addShader(vg::ShaderType::VERTEX_SHADER, SIMPLE_VERT_SRC);
-    mProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, SIMPLE_FRAG_SRC);
-    mProgram->link();
-    mProgram->initUniforms();
+    mNormalProgram = std::make_unique<vg::GLProgram>();
+    mStencilProgram = std::make_unique<vg::GLProgram>();
+    eventpp::ScopedRemover<GLProgramErrorCallbackList> remover1(mNormalProgram->onShaderCompilationError);
+    eventpp::ScopedRemover<GLProgramErrorCallbackList> remover2(mNormalProgram->onShaderCompilationError);
+    remover1.append([](const nString& s) { onError(s); });
+    remover2.append([](const nString& s) { onError(s); });
+    // Normals
+    mNormalProgram->init();
+    mNormalProgram->addShader(vg::ShaderType::VERTEX_SHADER, NORMAL_VERT_SRC);
+    mNormalProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, NORMAL_FRAG_SRC);
+    mNormalProgram->link();
+    mNormalProgram->initUniforms();
 
-    mUvRectUniform = mProgram->getUniform("unUvRect");
-    mTextureUniform = mProgram->getUniform("unTexture");
-    mPixelDimsUniform = mProgram->getUniform("unPixelDims");
+    mUvRectUniform = mNormalProgram->getUniform("unUvRect");
+    mTextureUniform = mNormalProgram->getUniform("unTexture");
+    mPixelDimsUniform = mNormalProgram->getUniform("unPixelDims");
+
+    // Stencil
+   /* mStencilProgram->init();
+    mStencilProgram->addShader(vg::ShaderType::VERTEX_SHADER, STENCIL_VERT_SRC);
+    mStencilProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, NORMAL_FRAG_SRC);
+    mStencilProgram->link();
+    mStencilProgram->initUniforms();*/
 
     checkGlError("NormalMapGenerator::init");
 }
@@ -151,7 +188,7 @@ VGTexture NormalMapGenerator::generateNormalTexture(VGTexture input, const ui32v
    glBindTexture(GL_TEXTURE_2D, input);
    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, normalTexture, 0);
 
-   mProgram->use();
+   mNormalProgram->use();
    glUniform4f(mUvRectUniform, 0.0f, 0.0f, 1.0f, 1.0f);
    glUniform1i(mTextureUniform, 0);
    glUniform2f(mPixelDimsUniform, 1.0f / dims.x, 1.0f / dims.y);

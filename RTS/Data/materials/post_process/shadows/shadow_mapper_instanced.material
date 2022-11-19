@@ -1,0 +1,4 @@
+shadow_mapper_instanced:
+  vert: shadow_mapper_instanced.vert
+  frag: shadow_mapper.frag
+  geom: shadow_mapper.geom

@@ -15,7 +15,8 @@ private:
     VGUniform mUvRectUniform;
     VGUniform mTextureUniform;
     VGUniform mPixelDimsUniform;
-    std::unique_ptr<vg::GLProgram> mProgram;
+    std::unique_ptr<vg::GLProgram> mNormalProgram;
+    std::unique_ptr<vg::GLProgram> mStencilProgram;
     VGFramebuffer mFramebufferID;
 };
 

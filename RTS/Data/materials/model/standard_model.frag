@@ -26,9 +26,9 @@ void main() {
 	normal = normal * 2.0 - 1.0;
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
-	oNormal.a = oColor.a;
 	oRoughness.r = fRoughness;
 	oRoughness.a = 1.0;
     
     oColor.a = 1.0;
+	oNormal.a = oColor.a;
 }

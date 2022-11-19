@@ -2,6 +2,7 @@
 
 #include "rendering/model/Model3D.h"
 #include "rendering/model/ModelConst.h"
+#include "rendering/post_process/ShadowLodDetail.h"
 
 #include <ozz/animation/runtime/skeleton.h>
 
@@ -13,6 +14,7 @@ struct ModelDefFileData {
     nString mRigName;
     nString mMachineName;
     f32 mScale = 1.0f;
+    ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
 };
 KEG_TYPE_DECL(ModelDefFileData);
 
@@ -33,4 +35,5 @@ private:
 public:
     Model3DType mModelType;
     ModelID mModelId;
+    ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
 };

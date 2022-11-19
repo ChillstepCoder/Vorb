@@ -41,12 +41,22 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
 
     // Load and add texture to cache
     vg::Texture texture = mTextureCache.addTexture(filePath, textureName, vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)], vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, !metaData.flipV);
+    const nString pathNoExtension = getStringNoExtension(filePath);
 
     // Check if there is an acompanying stencil file
+    //VGTexture stencilTexture;
+    //vio::Path stencilTexturePath = pathNoExtension + ".sten.png";
+    //if (mIoManager.fileExists(stencilTexturePath)) {
+    //    vg::Texture stencilTexture = mTextureCache.addTexture(stencilTexturePath, vio::getLeafNameFromFilePathNoExtension(stencilTexturePath), vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)], vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, !metaData.flipV);
+    //
+
+
+    //    mTextureCache.freeTexture(stencilTexturePath);
+    //}
 
     // Check if there is an acompanying normal file
     VGTexture normalTexture;
-    vio::Path normalTexturePath = getStringNoExtension(filePath) + ".norm.png";
+    vio::Path normalTexturePath = pathNoExtension + ".norm.png";
     if (mIoManager.fileExists(normalTexturePath)) {
         // Read the normals
         vg::Texture normalTextureFull = mTextureCache.addTexture(normalTexturePath, vio::getLeafNameFromFilePathNoExtension(normalTexturePath), vg::TextureTarget::TEXTURE_2D, &vg::sSamplerStates.STATE_ARRAY[e_cast(metaData.samplerState)], vg::TextureInternalFormat::RGBA8, vg::TextureFormat::RGBA, INT_MAX, !metaData.flipV);

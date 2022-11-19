@@ -514,12 +514,15 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
             vg::DepthState::FULL.set();
             // Render all shadow casters
             //glCullFace(GL_FRONT);
-            mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance());
+            mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+
+            // Instanced models
+            mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
 
             //glCullFace(GL_BACK);
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance());
+                mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
             }
 
             //const CityGraph& cities = sWorld->getCityGraph();

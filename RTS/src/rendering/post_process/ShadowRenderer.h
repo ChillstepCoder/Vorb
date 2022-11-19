@@ -4,8 +4,9 @@ class Camera3D;
 class Material;
 
 #include <Vorb/graphics/GBuffer.h>
+#include "rendering/post_process/ShadowLodDetail.h"
 
-constexpr int MAX_SHADOW_CASCADE_LEVELS = 4;
+
 constexpr int SHADOW_FRUSTUM_CORNER_COUNT = 8;
 
 // Cascading shadow maps
@@ -25,11 +26,13 @@ public:
     const f32m4* getShadowFrustumMatrices() const { return mLightVP; }
     const f32* getShadowCascadePlaneDistances() const { return mPlaneDistances; }
     const VGTexture getShadowMap() const { return mShadowMapGBuffer.getGeometryTexture(); }
-    const f32 getMaxDistance() const;
+    const f32 getMaxDistance(ShadowLodDetail detail) const;
     const f32v3& getLastUpdatedSunPosition() const { return mLastUpdatedSunPosition; }
 
     bool shouldUpdateShadowsThisFrame() const { return mShouldUpdateShadowsThisFrame; }
     VGTexture getShadowTexture() const;
+
+    const f32* getShadowPlaneDistances() const { return mPlaneDistances; }
 
 private:
     void updateFrustumCorners(const f32m4& projection, const f32m4& view);

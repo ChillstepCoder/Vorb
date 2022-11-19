@@ -40,12 +40,14 @@ void StaticModelVertex::bindVertexAttribs() {
     glVertexAttribPointer(1 /*index*/, 2 /*size*/, GL_UNSIGNED_SHORT, true, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, uvsPacked));
     glEnableVertexAttribArray(2);
     glVertexAttribIPointer(2 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, textureIndex));
-    //glEnableVertexAttribArray(3);
-    //glVertexAttribPointer(3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, color));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, color));
     
-    // TODO: figure out 4 component GL_INT_2_10_10_10_REV!!!  https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
-   // glEnableVertexAttribArray(4);
-   // glVertexAttribPointer(4 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));
+    // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, tangentPacked));
    // glEnableVertexAttribArray(5);
     //assert(false && "Check that size in the shader is 3, in standard_tile it is 2");
     //glVertexAttribPointer(4 /*index*/, 3 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));

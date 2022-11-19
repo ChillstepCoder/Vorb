@@ -92,9 +92,12 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
             assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
             myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
             myVert.uvsPacked.y = (ui16)(uvsFloat.y * UINT16_MAX);
+            const f32v3* normals = (const f32v3*)(&part.normals[(int)(i * 3)]);
+            myVert.normalPacked = Pack_INT_2_10_10_10_REV(normals->x, normals->y, normals->z, 0.0f);
+            const f32v3* tangents = (const f32v3*)(&part.tangents[(int)(i * 3)]);
+            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(tangents->x, tangents->y, tangents->z, 0.0f);
            // memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
            // memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
-           // memcpy(&myVert.uvs, &part.uvs[(int)(i * 2)], sizeof(f32) * 2);
             // TODO: Check materials for this mesh! See if each mesh has its own material data we can leverage
             if (part.colors.size()) {
                 memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);

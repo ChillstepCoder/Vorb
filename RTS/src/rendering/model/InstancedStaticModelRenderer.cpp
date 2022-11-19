@@ -7,7 +7,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialManager.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
-
+#include "rendering/post_process/ShadowLodDetail.h"
 #include "rendering/mesh/ModelMeshBuilder.h"
 #include "options/DebugOptions.h"
 
@@ -16,6 +16,7 @@
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mStandardMaterial = materialManager.getMaterial("standard_model");
+    mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper_instanced");
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
@@ -67,14 +68,62 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
             //instanceData.mDirty = false;
         //}
 
-
             mesh.drawInstanced(mInstancesToRender.size());
         }
     }
     // TODO: Material specific
     glEnable(GL_CULL_FACE);
-
     checkGlError("InstancedStaticModelRenderer::renderModels");
+}
+
+void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, const f32* shadowDistances)
+{
+    // TODO: Material specific
+    glDisable(GL_CULL_FACE);
+
+    PROFILE_FUNCTION();
+
+    MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
+    for (auto& it : mInstances) {
+        mInstancesToRender.clear();
+        ModelID modelId = it.first;
+        const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId);
+        const StaticModel3D& model = modelDef.getStaticModel();
+        const f32 maxDist = Shadows::getMaxDistance(shadowDistances, modelDef.mShadowDetail);
+        const f32 maxDistSQ = SQ(maxDist);
+        const Mesh& mesh = *model.getMesh();
+        StaticModelInstanceData& instanceData = it.second;
+        // TODO: Dont re-do culling for shadows
+        for (const StaticModelInstance& instance : instanceData.mInstances) {
+            if (camera.sphereIsVisible(instance.pos, 10.0f)) {
+                f32v3 offset = instance.pos - camera.getPosition();
+                if (glm::length2(offset) <= maxDistSQ) {
+                    mInstancesToRender.push_back(instance);
+                }
+            }
+        }
+
+        if (mInstancesToRender.size()) {
+            //if (instanceData.mDirty) {
+            if (instanceData.mInstanceVbo == 0) {
+                glGenBuffers(1, &instanceData.mInstanceVbo);
+            }
+            glBindBuffer(GL_ARRAY_BUFFER, instanceData.mInstanceVbo);
+            GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * mInstancesToRender.size();
+            glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_DYNAMIC_DRAW);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, &mInstancesToRender[0]);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            ModelMeshBuilder::updateInstanceDataForStaticModel(mesh, instanceData.mInstanceVbo);
+            //instanceData.mDirty = false;
+        //}
+
+            mesh.drawInstanced(mInstancesToRender.size());
+        }
+    }
+
+    // TODO: Material specific
+    glEnable(GL_CULL_FACE);
+    checkGlError("InstancedStaticModelRenderer::renderModelShadows");
 }
 
 void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {

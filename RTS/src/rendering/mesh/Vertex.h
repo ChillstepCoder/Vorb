@@ -19,9 +19,9 @@ inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
     const uint32_t ws = w < 0;
     uint32_t vi =
         ws << 31 | ((uint32_t)(w + (ws << 1)) & 1) << 30 |
-        zs << 29 | ((uint32_t)(z * 511 + (zs << 9)) & 511) << 20 |
-        ys << 19 | ((uint32_t)(y * 511 + (ys << 9)) & 511) << 10 |
-        xs << 9 | ((uint32_t)(x * 511 + (xs << 9)) & 511);
+        zs << 29 | ((uint32_t)(z * 0x1ff + (zs << 9)) & 0x1ff) << 20 |
+        ys << 19 | ((uint32_t)(y * 0x1ff + (ys << 9)) & 0x1ff) << 10 |
+        xs << 9 | ((uint32_t)(x * 0x1ff + (xs << 9)) & 0x1ff);
     return vi;
 }
 

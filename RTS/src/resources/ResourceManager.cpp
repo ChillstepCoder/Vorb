@@ -285,10 +285,13 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             gatherRecursive(entry);
         }
         else if (fileHasExtension(entry, ".png")) {
-            // Ignore .norm files they will be grabbed
+            // Ignore .norm and .sten files they will be grabbed
             // automatically if needed
+            // TODO: Can we do this single pass?
             const nString& str = entry.getString();
-            if (str.size() <= sizeof(".norm.png") || (strcmp(&str[str.size() - 9], ".norm.png") != 0)) {
+            if ((str.size() <= sizeof(".norm.png")) ||
+                (strcmp(&str[str.size() - 9], ".norm.png") != 0) &&
+                (strcmp(&str[str.size() - 9], ".sten.png") != 0)) {
                 mTextureFiles.emplace_back(entry);
             }
         }
