@@ -36,4 +36,5 @@ public:
     Model3DType mModelType;
     ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
+    const char* mName = nullptr;
 };

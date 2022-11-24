@@ -1,22 +1,20 @@
 #include "stdafx.h"
 #include "UIContext.h"
 
-#include "ui/DebugTweakerPanel.h"
 #include "ui/TileInspectionPanel.h"
 #include "ui/PauseMenuPanel.h"
 
 #include "options/DebugOptions.h"
 
 #include "world/IWorld.h"
-#include "editor/WorldEditor.h"
+#include "ui/editor/EditorRoot.h"
 
 #include "screens/ScreenState.h"
 
 UIContext* UIContext::sInstance = nullptr;
 
 UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScreenResolution(screenResolution), mWindow(window) {
-    mDebugTweakerPanel = std::make_unique<DebugTweakerPanel>(screenResolution);
-    mEditor = std::make_unique<WorldEditor>(screenResolution);
+    mEditorRoot = std::make_unique<EditorRoot>();
 }
 
 UIContext::~UIContext() {
@@ -24,21 +22,17 @@ UIContext::~UIContext() {
 }
 
 void UIContext::updateEditors(const Camera3D& camera, const f32v3& mousePickRay) {
-    if (sDebugOptions.mShowEditor) {
-        mEditor->update(camera, mousePickRay);
-    }
+    mEditorRoot->updateEditors(camera, mousePickRay);
 }
 
-void UIContext::updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio) {
-    if (sDebugOptions.mShowTweaker) {
-        mDebugTweakerPanel->updateAndRender(ecs, activeGBuffer, aspectRatio);
-    }
-    if (sDebugOptions.mShowEditor) {
-        mEditor->renderUI();
-    }
+void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
+    
+    mEditorRoot->updateAndRenderUI(activeGBuffer);
+    
     if (mTileInspectionPanel) {
         mTileInspectionPanel->updateAndRender();
     }
+
     if (mPauseMenuPanel) {
         PauseMenuPanelResult result = mPauseMenuPanel->updateAndRender();
         switch (result) {
@@ -61,9 +55,7 @@ void UIContext::updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer
 }
 
 void UIContext::renderEditorBrushDecals(const Camera3D& camera) {
-    if (sDebugOptions.mShowEditor) {
-        mEditor->renderBrushDecals(camera);
-    }
+    mEditorRoot->renderEditorBrushDecals(camera);
 }
 
 void UIContext::activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle) {

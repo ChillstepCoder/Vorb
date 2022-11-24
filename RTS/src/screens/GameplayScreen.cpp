@@ -522,12 +522,6 @@ void GameplayScreen::initInputs()
                 ecs.mRegistry.emplace<DynamicLightComponent>(ecs.getLocalPlayer());
             }
         }
-        else if (event.keyCode == VKEY_Y) {
-            sDebugOptions.mShowTweaker = !sDebugOptions.mShowTweaker;
-        }
-        else if (event.keyCode == VKEY_T) {
-            sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
-        }
         else if (event.keyCode == VKEY_U) {
             if (sDebugOptions.mCameraMode == CameraMode::MMO) {
                 sDebugOptions.mCameraMode = CameraMode::FIRST_PERSON;
@@ -553,14 +547,16 @@ void GameplayScreen::initInputs()
         // Fix this
         UIContext::getInstance().closeTileInspectionPanel();
         if (event.button == vorb::ui::MouseButton::RIGHT) {
-            mRightClickTimer.start();
-            const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-            PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
-            if (hitResult.didHit()) {
-                mRightClickPickPos = hitResult.mPosition;
-            }
-            else {
-                mRightClickPickPos = f32v3(FLT_MAX);
+            if (mCameraController) {
+                mRightClickTimer.start();
+                const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
+                PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                if (hitResult.didHit()) {
+                    mRightClickPickPos = hitResult.mPosition;
+                }
+                else {
+                    mRightClickPickPos = f32v3(FLT_MAX);
+                }
             }
         }
     });

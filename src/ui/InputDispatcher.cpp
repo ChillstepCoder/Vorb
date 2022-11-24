@@ -221,6 +221,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
             case SDL_WINDOWEVENT_RESIZED:
                 ie.windowResize.w = e->window.data1;
                 ie.windowResize.h = e->window.data2;
+                vui::InputDispatcher::window.mCurrentDims = ui32v2(ie.windowResize.w, ie.windowResize.h);
                 vui::InputDispatcher::window.dispatchResize(ie.windowResize);
                 break;
             case SDL_WINDOWEVENT_ENTER:

@@ -99,6 +99,8 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
     assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
     mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
+    // TODO: Don't use extra lookup to copy the name?
+    def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
     return true;
 }
 
@@ -132,6 +134,8 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureR
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
     assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
     mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
+    // TODO: Don't use extra lookup to copy the name?
+    def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
     return true;
 }
 

@@ -207,7 +207,7 @@
     <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
     <ClCompile Include="src\ecs\srv\SrvEntityComponentSystem.cpp" />
     <ClCompile Include="src\editor\BrushRepository.cpp" />
-    <ClCompile Include="src\editor\WorldEditor.cpp" />
+    <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\WorldGeneration.cpp" />
@@ -318,6 +318,9 @@
     <ClCompile Include="src\tile\TileUtil.cpp" />
     <ClCompile Include="src\time\GameTimeManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
+    <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
+    <ClCompile Include="src\ui\editor\ModelEditorPanel.cpp" />
+    <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
     <ClCompile Include="src\ui\PauseMenuPanel.cpp" />
     <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
     <ClCompile Include="src\ui\UIContext.cpp" />
@@ -429,7 +432,7 @@
     <ClInclude Include="src\ecs\srv\SrvEntityComponentSystem.h" />
     <ClInclude Include="src\editor\BrushRepository.h" />
     <ClInclude Include="src\editor\ImguiViews.hpp" />
-    <ClInclude Include="src\editor\WorldEditor.h" />
+    <ClInclude Include="src\editor\WorldEditorPanel.h" />
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\gamethread\GameThread.h" />
@@ -569,6 +572,9 @@
     <ClInclude Include="src\time\GameTimeManager.h" />
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
+    <ClInclude Include="src\ui\editor\EditorRoot.h" />
+    <ClInclude Include="src\ui\editor\ModelEditorPanel.h" />
+    <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />
     <ClInclude Include="src\ui\PauseMenuPanel.h" />
     <ClInclude Include="src\ui\TileInspectionPanel.h" />

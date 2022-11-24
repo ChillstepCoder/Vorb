@@ -77,7 +77,6 @@ struct DebugOptions {
     bool mShowDynamicPhysics;
     bool mShowPhysicsActions;
     bool mShowBusinessDebug;
-    bool mShowTweaker;
     bool mShowEditor;
     bool mShowPaths;
     bool mShowEntityQueries;

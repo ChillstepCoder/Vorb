@@ -1,0 +1,3 @@
+editor_model:
+  vert: editor_model.vert
+  frag: standard_model.frag

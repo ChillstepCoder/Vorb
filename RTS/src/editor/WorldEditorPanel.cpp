@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "WorldEditor.h"
+#include "WorldEditorPanel.h"
 
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
@@ -39,7 +39,7 @@ constexpr f32 MAX_BRUSH_STRENGTH_TERRAIN = 2.0f;
 constexpr f32 MIN_BRUSH_STRENGTH_GRASS = 0.01f;
 constexpr f32 MAX_BRUSH_STRENGTH_GRASS = 1.0f;
 
-WorldEditor::WorldEditor(const f32v2& screenDims) : mScreenDims(screenDims) {
+WorldEditorPanel::WorldEditorPanel() {
 
     // Inputs
     vui::InputDispatcher::key.addKeyDownListener([this](const vui::KeyEvent& event) {
@@ -88,9 +88,9 @@ WorldEditor::WorldEditor(const f32v2& screenDims) : mScreenDims(screenDims) {
     });
 }
 
-void WorldEditor::update(const Camera3D& camera, const f32v3& pickRay) {
+void WorldEditorPanel::update(const Camera3D& camera, const f32v3& pickRay) {
+    PROFILE_FUNCTION();
 
-    PreciseTimer timer;
     mHitResult = sWorld->getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL);
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
@@ -109,7 +109,7 @@ void WorldEditor::update(const Camera3D& camera, const f32v3& pickRay) {
     static_assert((int)WorldEditorEditMode::COUNT == 6);
 }
 
-void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
+void WorldEditorPanel::renderBrushDecals (const Camera3D& camera) const {
     if (!mHitResult.didHit()) {
         return;
     }
@@ -127,16 +127,11 @@ void WorldEditor::renderBrushDecals (const Camera3D& camera) const {
 }
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-void WorldEditor::renderUI() const {
+void WorldEditorPanel::renderUI(f32 ySize) const {
     const BrushRepository& brushRepo = Services::ResourceManager::ref().getBrushRepository();
 
-    constexpr float WINDOW_WIDTH = 400.0f;
-    const float WINDOW_HEIGHT = mScreenDims.y;
-    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-    ImGui::SetNextWindowSize(ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT));
-    const ImVec2 buttonSize(WINDOW_WIDTH, 25);
-
-    ImGui::Begin("World Editor", &sDebugOptions.mShowEditor, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+    ImGui::BeginChild("World Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+    ImGui::Text("World Editor");
     ui32 ID = 10;
 
     renderModeButtons();
@@ -168,12 +163,12 @@ void WorldEditor::renderUI() const {
     ImGui::NewLine();
     tryRenderBrushSelect(brushRepo);
 
-    ImGui::End();
+    ImGui::EndChild();
     checkGlError("WorldEditor::renderUI()");
 }
 
 
-void WorldEditor::renderModeButtons() const {
+void WorldEditorPanel::renderModeButtons() const {
     
     // Helper for selected button styling
 #define PUSH_SELECTED_STYLE() \
@@ -235,7 +230,7 @@ void WorldEditor::renderModeButtons() const {
     static_assert((int)WorldEditorEditMode::COUNT == 6);
 }
 
-void WorldEditor::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
+void WorldEditorPanel::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
     if (mCurrentBrushSettings) {
         if (ImGui::CollapsingHeader("Brushes", nullptr, ImGuiTreeNodeFlags_DefaultOpen)) {
             const std::vector<Brush>& brushes = brushRepo.getBrushes();
@@ -258,7 +253,7 @@ void WorldEditor::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
     }
 }
 
-void WorldEditor::renderTerrainEditUI() const {
+void WorldEditorPanel::renderTerrainEditUI() const {
     ImGui::Text("Edit mode");
     if (ImGui::RadioButton("Lower", mTerrainEditState == TerrainEditState::LOWER_TERRAIN)) {
         mTerrainEditState = TerrainEditState::LOWER_TERRAIN;
@@ -274,7 +269,7 @@ void WorldEditor::renderTerrainEditUI() const {
 }
 
 
-void WorldEditor::renderGrassEditUI() const {
+void WorldEditorPanel::renderGrassEditUI() const {
     ImGui::Text("Edit mode");
     if (ImGui::RadioButton("Add", mGrassEditState == GrassEditState::ADD)) {
         mGrassEditState = GrassEditState::ADD;
@@ -286,7 +281,7 @@ void WorldEditor::renderGrassEditUI() const {
     ImGui::SliderFloat("Brush Strength", &mGrassBrushSettings.brushStrength, MIN_BRUSH_STRENGTH_GRASS, MAX_BRUSH_STRENGTH_GRASS, "%.3f", ImGuiSliderFlags_Logarithmic);
 }
 
-void WorldEditor::renderTileEditUI() const {
+void WorldEditorPanel::renderTileEditUI() const {
     //ImGui::SliderInt("Floor", &mSelectedFloor, 0, TILE_FLOOR_COUNT - 1);
     ImGui::SliderFloat("Ground tile Z offset", &mGroundTileOffset, 0.0f, 10.0f, "%.2f");
     ImGui::Text("Tile select");
@@ -304,7 +299,7 @@ void WorldEditor::renderTileEditUI() const {
     ImGui::EndTable();
 }
 
-void WorldEditor::renderEntityEditUI() const {
+void WorldEditorPanel::renderEntityEditUI() const {
     ImGui::Text("Select entity");
     const EntityDefinitionMap& entityDefs = Services::ResourceManager::ref().getEntityDefinitionRepository().getAllEntityDefinitions();
     const std::vector<TileData>& allData = TileRepository::getAllTileData();
@@ -322,7 +317,7 @@ void WorldEditor::renderEntityEditUI() const {
     ImGui::EndTable();
 }
 
-void WorldEditor::renderCityEditUI() const {
+void WorldEditorPanel::renderCityEditUI() const {
     ImGui::Text("Edit mode");
     if (ImGui::RadioButton("None", mCityEditState == CityEditState::NONE)) {
         mCityEditState = CityEditState::NONE;
@@ -336,7 +331,7 @@ void WorldEditor::renderCityEditUI() const {
     ImGui::Checkbox("Show Roof Debug", &sDebugOptions.mRoofDebug);
 }
 
-void WorldEditor::renderBuildingEditUI() const {
+void WorldEditorPanel::renderBuildingEditUI() const {
     ImGui::Text("Edit mode");
     if (ImGui::RadioButton("None", mBuildingEditState == BuildingEditState::NONE)) {
         mBuildingEditState = BuildingEditState::NONE;
@@ -375,7 +370,7 @@ void WorldEditor::renderBuildingEditUI() const {
     ImGui::DragInt2("Plot Dims (x,y)", &mPlotDims.x, 0.5f, selectedDef.widthRange.x, selectedDef.widthRange.y);
 }
 
-void WorldEditor::updateTerrainEdit() {
+void WorldEditorPanel::updateTerrainEdit() {
 
     if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
         return;
@@ -413,7 +408,7 @@ void WorldEditor::updateTerrainEdit() {
     }
 }
 
-void WorldEditor::updateGrassEdit() {
+void WorldEditorPanel::updateGrassEdit() {
 
     if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
         return;
@@ -451,7 +446,7 @@ void WorldEditor::updateGrassEdit() {
     }
 }
 
-void WorldEditor::updateTileEdit() {
+void WorldEditorPanel::updateTileEdit() {
 
     static ChunkID prevChunkID;
     static TileIndex prevTileIndex;
@@ -481,13 +476,13 @@ void WorldEditor::updateTileEdit() {
     }
 }
 
-void WorldEditor::updateEntityEdit() {
+void WorldEditorPanel::updateEntityEdit() {
     if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity) {
         sWorld->createEntity(mHitResult.mPosition, mSelectedEntity, true);
     }
 }
 
-void WorldEditor::updateCityEdit() {
+void WorldEditorPanel::updateCityEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mCityEditState == CityEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
@@ -496,7 +491,7 @@ void WorldEditor::updateCityEdit() {
     }
 }
 
-void WorldEditor::updateBuildingEdit() {
+void WorldEditorPanel::updateBuildingEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mBuildingEditState == BuildingEditState::CREATE) {
         f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
@@ -523,7 +518,7 @@ void WorldEditor::updateBuildingEdit() {
     }
 }
 
-void WorldEditor::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
+void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
     
     // Read brush data
     f32 strength = getBrushStrengthAtPoint(offsetToVertex);
@@ -553,7 +548,7 @@ void WorldEditor::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f
     }
 }
 
-void WorldEditor::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile) {
+void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile) {
 
     f32 strength = getBrushStrengthAtPoint(offsetToTile) * mCurrentBrushSettings->brushStrength;
     const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
@@ -567,7 +562,7 @@ void WorldEditor::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offset
     }
 }
 
-f32 WorldEditor::getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint)
+f32 WorldEditorPanel::getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint)
 {
     f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(mCurrentBrushSettings->brushSize)) / f32v2(mCurrentBrushSettings->brushSize * 2.0f);
     if (offsetToCornerNormalized.x < 0.0f || offsetToCornerNormalized.y < 0.0f) {
@@ -581,7 +576,7 @@ f32 WorldEditor::getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint)
     return (f32)brushIntensity / 255.0f;
 }
 
-void WorldEditor::setEditMode(WorldEditorEditMode mode) const {
+void WorldEditorPanel::setEditMode(WorldEditorEditMode mode) const {
     mEditMode = mode;
     switch (mEditMode) {
         case WorldEditorEditMode::TERRAIN:

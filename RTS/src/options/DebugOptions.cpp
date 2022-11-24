@@ -50,7 +50,7 @@ DebugOptions::DebugOptions() :
     mShadowUpdateRateSeconds(0.022f),
     mShadowBlurPasses(3), // 2
     mShadowBlurRadius(0.45f), //1.5f),
-    mDisableShadows(false),
+    mDisableShadows(true),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),
@@ -65,7 +65,6 @@ DebugOptions::DebugOptions() :
     mShowDynamicPhysics(false),
     mShowPhysicsActions(true),
     mShowBusinessDebug(true),
-    mShowTweaker(false),
     mShowEditor(false),
     mShowPaths(true),
     mShowEntityQueries(false),

@@ -4,7 +4,8 @@
 
 enum class Model3DType {
     STATIC,
-    SKINNED
+    SKINNED,
+    COUNT
 };
 
 class StaticModel3D {

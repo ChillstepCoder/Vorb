@@ -45,6 +45,7 @@ namespace vorb {
 
         /// Dispatches window events
         class WindowEventManager {
+            friend class GameWindow;
             friend class InputDispatcher;
             friend class impl::InputDispatcherEventCatcher;
         public:
@@ -53,7 +54,10 @@ namespace vorb {
             EVENT_LISTENER_FUNCS_ADAPTOR(Window, Resize, WINDOW_EVENT_TYPE::Resize, const WindowResizeEvent&);
             EVENT_LISTENER_FUNCS_ADAPTOR(Window, File, WINDOW_EVENT_TYPE::File, const WindowFileEvent&);
 
+            const ui32v2& getCurrentWindowDims() const { return mCurrentDims; }
+            f32 getCurrentAspectRatio() const { return (f32)mCurrentDims.x / (f32)mCurrentDims.y; }
         private:
+            ui32v2 mCurrentDims = ui32v2(0);
             EVENT_DISPATCHER(Window);
         };
     }

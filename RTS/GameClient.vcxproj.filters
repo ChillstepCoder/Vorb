@@ -276,7 +276,7 @@
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\editor\WorldEditor.cpp">
+    <ClCompile Include="src\editor\WorldEditorPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\UIContext.cpp">
@@ -613,6 +613,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\post_process\ShadowLodDetail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\editor\EditorRoot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\editor\TileEditorPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\editor\ModelEditorPanel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -959,7 +968,7 @@
     <ClInclude Include="src\world\TerrainConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\editor\WorldEditor.h">
+    <ClInclude Include="src\editor\WorldEditorPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\UIContext.h">
@@ -1422,6 +1431,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\editor\EditorRoot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\editor\TileEditorPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\editor\ModelEditorPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

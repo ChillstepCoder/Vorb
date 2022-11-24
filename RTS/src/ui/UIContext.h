@@ -1,13 +1,11 @@
 #pragma once
 
 struct SDL_Window;
-class DebugTweakerPanel;
-class WorldEditor;
 class Camera3D;
 class TileInspectionPanel;
 struct TileHandle;
-class IEntityComponentSystem;
 class PauseMenuPanel;
+class EditorRoot;
 
 DECL_VG(class GBuffer);
 
@@ -22,7 +20,7 @@ public:
     void operator=(const UIContext&) = delete;
     
     void updateEditors(const Camera3D& camera, const f32v3& mousePickRay);
-    void updateAndRenderUI(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio);
+    void updateAndRenderUI(const vg::GBuffer* activeGBuffer);
     void renderEditorBrushDecals(const Camera3D& camera);
 
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
@@ -37,8 +35,7 @@ private:
 
     static UIContext* sInstance;
 
-    std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
-    std::unique_ptr<WorldEditor> mEditor;
+    std::unique_ptr<EditorRoot> mEditorRoot;
     std::unique_ptr<TileInspectionPanel> mTileInspectionPanel;
     std::unique_ptr<PauseMenuPanel> mPauseMenuPanel;
 

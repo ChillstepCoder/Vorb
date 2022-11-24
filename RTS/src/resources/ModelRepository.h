@@ -12,6 +12,7 @@ class AnimMachineRepository;
 
 class ModelRepository
 {
+    friend class TileEditorPanel; // TODO: ModelEditorPanel only?
 public:
     ModelRepository(vio::IOManager& ioManager, const RigRepository& rigRepository);
     ~ModelRepository();
@@ -28,7 +29,7 @@ private:
 
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;
-    std::unordered_map<nString, ModelID> mModelIdLookup;
+    std::map<nString, ModelID> mModelIdLookup;
     std::vector<ModelDef> mModelDefs;
 };
 

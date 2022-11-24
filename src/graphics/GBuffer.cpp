@@ -124,13 +124,9 @@ vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*=
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // TODO(Cristian): Change The Memory Usage Of The GPU
-
     return *this;
 }
 void vg::GBuffer::dispose() {
-    // TODO(Cristian): Change The Memory Usage Of The GPU
-
     if (m_fboGeom) {
         glDeleteFramebuffers(1, &m_fboGeom);
         m_fboGeom = 0;
@@ -149,10 +145,14 @@ void vg::GBuffer::dispose() {
     }
 }
 
-void vg::GBuffer::useGeometry() {
+void vg::GBuffer::useGeometry() const {
     assert(m_fboGeom);
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
     glViewport(0, 0, m_size.x, m_size.y);
+}
+
+vorb::graphics::GBuffer::~GBuffer() {
+    dispose();
 }
 
 void vorb::graphics::GBuffer::initMipLevelsGeom(const vg::GBufferAttachment& geomAttachment, int maxDepth /*= 0xff*/)

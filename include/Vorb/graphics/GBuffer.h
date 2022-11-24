@@ -74,6 +74,7 @@ namespace vorb {
             GBuffer(ui32v2 s) : GBuffer(s.x, s.y) {
                 // Empty
             }
+            ~GBuffer();
 
             /// Create the value-based render targets
             /// @return Self
@@ -94,7 +95,7 @@ namespace vorb {
             void dispose();
 
             /// Set up the geometry targets to be active
-            void useGeometry();
+            void useGeometry() const;
 
             static void unuse();
 

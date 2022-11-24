@@ -52,14 +52,14 @@ struct BrushSettings {
     f32 brushStrength;
 };
 
-class WorldEditor {
+class WorldEditorPanel {
 public:
-    WorldEditor(const f32v2& screenDims);
+    WorldEditorPanel();
 
     void update(const Camera3D& camera, const f32v3& pickRay);
 
 	void renderBrushDecals(const Camera3D& camera) const;
-    void renderUI() const;
+    void renderUI(f32 ySize) const;
 
 private:
     void renderModeButtons() const;
@@ -82,8 +82,6 @@ private:
     void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile);
     f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
-
-    f32v2 mScreenDims;
 
     // Edit states
     mutable WorldEditorEditMode mEditMode = WorldEditorEditMode::TERRAIN;

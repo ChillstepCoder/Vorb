@@ -6,6 +6,8 @@
 
 #include "debugging/VisualLogger.h"
 
+#include "world/IWorld.h"
+
 #include <Vorb/ui/imgui/imgui.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
@@ -18,6 +20,8 @@
 #include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/ValueTweaker.h"
+
+#include <Vorb/graphics/GBuffer.h>
 
 // TODO: Use
 void setDefaultTheme() {
@@ -88,10 +92,6 @@ void setDefaultTheme() {
     io.FontGlobalScale = 1.6f;
 }
 
-DebugTweakerPanel::DebugTweakerPanel(const f32v2& screenDims) : mScreenDims(screenDims)
-{
-}
-
 void renderLightingUI(ui32& ID, LightingOptions* options, int presetIndex) {
     ImGui::PushID(++ID);
     ImGui::SliderFloat("Gamma", &options->mGamma, 0.0f, 4.0f);
@@ -142,15 +142,12 @@ void renderLightingUI(ui32& ID, LightingOptions* options, int presetIndex) {
 
 // Use the manual it rocks
 // https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::GBuffer* activeGBuffer, float aspectRatio)
+void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float ySize, float aspectRatio)
 {
-    constexpr float WINDOW_WIDTH = 400.0f;
-    const float WINDOW_HEIGHT = mScreenDims.y;
-    ImGui::SetNextWindowPos(ImVec2(mScreenDims.x - WINDOW_WIDTH, 0.0f));
-    ImGui::SetNextWindowSize(ImVec2(WINDOW_WIDTH, WINDOW_HEIGHT));
-    const ImVec2 buttonSize(WINDOW_WIDTH, 25);
+    IEntityComponentSystem& ecs = sWorld->getECS();
 
-    ImGui::Begin("Value Tweaker", &sDebugOptions.mShowTweaker, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+    ImGui::BeginChild("Value Tweaker", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+    ImGui::Text("Value Tweaker");
     ui32 ID = 10;
 
     if (ImGui::CollapsingHeader("Game Settings")) {
@@ -188,7 +185,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         ImGui::SliderFloat("Blend Mult", &sDebugOptions.mTerrainBlendMult, 0.0f, 1.0f);
         ImGui::Separator();
         ImGui::NewLine();
-        ImGui::BeginChild("Terrain Funcs", ImVec2(WINDOW_WIDTH, 350.0f));
+        ImGui::BeginChild("Terrain Funcs", ImVec2(0.0f, 0.0f));
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mBaseNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsNoise, ID);
         sWorldGen.mIsDirty |= ImguiView::Noise::view(sWorldGen.mMountainsDistNoise, ID);
@@ -379,7 +376,7 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
         if (ImGui::CollapsingHeader("GBuffer")) {
             const ImVec2 uv0(0, 1);
             const ImVec2 uv1(1, 0);
-            const ImVec2 dims(WINDOW_WIDTH, WINDOW_WIDTH / aspectRatio);
+            const ImVec2 dims(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x / aspectRatio);
             ImGui::Text("Geometry");
             ImGui::Image((ImTextureID)activeGBuffer->getGeometryTexture(), dims, uv0, uv1);
             ImGui::Text("Normals");
@@ -512,5 +509,5 @@ void DebugTweakerPanel::updateAndRender(IEntityComponentSystem& ecs, const vg::G
     //bool show = true;
     //ImGui::ShowDemoWindow(&show);
 
-    ImGui::End();
+    ImGui::EndChild();
 }

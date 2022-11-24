@@ -45,7 +45,7 @@
 
 #include "ui/UIContext.h"
 
-#include "editor/WorldEditor.h"
+#include "editor/WorldEditorPanel.h"
 
 // TODO: Move to renderer?
 #include "city/CityQuartermaster.h"
@@ -677,7 +677,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     renderUI(camera, renderState);
 
     // Debugging
-    UIContext::getInstance().updateAndRenderUI(sWorld->getECS(), mActiveGBuffer, camera.getAspectRatio());
+    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer);
 
     // Swap
     mPrevGBufferIndex = mActiveGBufferIndex;

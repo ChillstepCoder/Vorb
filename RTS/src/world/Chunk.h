@@ -55,7 +55,7 @@ enum class NeighborIndex8 {
 class Chunk {
 	friend class IWorld;
 	friend class IWorldGrid;
-	friend class WorldEditor;
+	friend class WorldEditorPanel;
 	friend class ChunkGenerator;
 	friend class TileContainerRenderer;
 	friend class ChunkMesher;

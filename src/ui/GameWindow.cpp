@@ -281,6 +281,7 @@ bool vui::GameWindow::init(bool isResizable /*= true*/, bool isDebug /*= false*/
     vui::InputDispatcher::init(this);
     vui::InputDispatcher::window.addCloseListener([this](const WindowEvent&) { onQuitSignal(); });
     vui::InputDispatcher::window.addResizeListener([this](const WindowResizeEvent& e) { onResize(e); });
+    vui::InputDispatcher::window.mCurrentDims = ui32v2(getWidth(), getHeight());
     vui::InputDispatcher::onQuit.append([this]() { onQuitSignal(); });
     m_quitSignal = false;
 
