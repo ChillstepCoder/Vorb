@@ -3,14 +3,14 @@
 
 constexpr int MAX_SHADOW_CASCADE_LEVELS = 4;
 enum class ShadowLodDetail {
-    None = -1,
+    None,
     Low,
     Medium,
     High,
     Highest
 };
 KEG_ENUM_DECL(ShadowLodDetail);
-static_assert(e_cast(ShadowLodDetail::Highest) == MAX_SHADOW_CASCADE_LEVELS - 1);
+static_assert(e_cast(ShadowLodDetail::Highest) == MAX_SHADOW_CASCADE_LEVELS);
 
 
 namespace Shadows {
@@ -18,6 +18,6 @@ namespace Shadows {
         if (detail == ShadowLodDetail::None) {
             return 0.0f;
         }
-        return planeDistances[e_cast(detail)];
+        return planeDistances[e_cast(detail) - 1];
     }
 };

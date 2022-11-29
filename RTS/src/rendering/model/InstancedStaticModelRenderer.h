@@ -25,7 +25,7 @@ public:
     ui32 getNumModels() const;
 private:
     std::map<ModelID, StaticModelInstanceData> mInstances;
-    std::vector<StaticModelInstance> mInstancesToRender;
+    std::vector<StaticModelInstance> mInstancesToRender[4]; // TODO: NO!
 
     const Material* mStandardMaterial = nullptr;
     const Material* mShadowMapperMaterial = nullptr;

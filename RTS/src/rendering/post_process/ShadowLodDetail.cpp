@@ -8,4 +8,4 @@ KEG_ENUM_DEF(ShadowLodDetail, ShadowLodDetail, kt) {
     kt.addValue("high", ShadowLodDetail::High);
     kt.addValue("highest", ShadowLodDetail::Highest);
 }
-static_assert(e_cast(ShadowLodDetail::Highest) == 3, "Update keg definition");
+static_assert(e_cast(ShadowLodDetail::Highest) == 4, "Update keg definition");

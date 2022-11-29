@@ -1,5 +1,5 @@
 #include "TextureUbo.glsl"
-uniform sampler2DArray Atlas;
+
 
 in vec2 fUV;
 flat in int fTextureIndex;

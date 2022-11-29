@@ -265,7 +265,7 @@ void TextMeshBuilder::uploadBufferData(SubMeshData& subMesh, const FontMeshData&
     glBindVertexArray(subMesh.mVao);
 
     // IBO
-    subMesh.mIndexCount = (ui32)data.mGlyphs.size() * 6u;
+    subMesh.mLODData.mTotalIndexCount = (ui32)data.mGlyphs.size() * 6u;
 
     // UBO
     if (subMesh.mUbo) {

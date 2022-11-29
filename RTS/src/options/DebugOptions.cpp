@@ -4,7 +4,7 @@
 DebugOptions sDebugOptions;
 
 // Lower for faster loading in test
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.15f;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.3f;
 
 DebugOptions::DebugOptions() :
     mTimeOffset(0.0f),
@@ -71,6 +71,7 @@ DebugOptions::DebugOptions() :
     mEnableVisualLogs(true),
     mShowDevHud(true),
     mHideModels(false),
+    mDisableLOD(false),
     // Water
     mShallowWaterColor(159.0f / 255.0f, 194.0f / 255.0f, 206.0f / 255.0f, 185.0f / 255.0f),
     mDeepWaterColor(57.0f / 255.0f, 83.0f / 255.0f, 122.0f / 255.0f, 191.0f / 255.0f),
@@ -100,6 +101,7 @@ DebugOptions::DebugOptions() :
     // Game settings
     mLoadRangeSq(SQ(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT)),
     mLoadRange(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT),
+    mLodDistances{65.0f, 125.0f, 500.0f},
     // Camera settings
     mFoV(75.0f),
     mZFar(200000.0f),

@@ -789,15 +789,15 @@ void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& po
 
     // Shared IBO
     if (subMesh.mIbo == sQuadIbo) {
-        subMesh.mIndexCount = (data.mVerts.size() / 4u) * 6u;
-        assert(subMesh.mIndexCount < MAX_QUAD_MESH_INDICES);
+        subMesh.mLODData.mTotalIndexCount = (data.mVerts.size() / 4u) * 6u;
+        assert(subMesh.mLODData.mTotalIndexCount < MAX_QUAD_MESH_INDICES);
     }
     else if (subMesh.mIbo == sTerrainIbo) {
         if (mPolyTypeFlags.isBitSet(PolyTypeFlags::WATER)) {
-            subMesh.mIndexCount = WATER_MESH_INDICES;
+            subMesh.mLODData.mTotalIndexCount = WATER_MESH_INDICES;
         }
         else {
-            subMesh.mIndexCount = TERRAIN_MESH_INDICES;
+            subMesh.mLODData.mTotalIndexCount = TERRAIN_MESH_INDICES;
         }
     }
     else {

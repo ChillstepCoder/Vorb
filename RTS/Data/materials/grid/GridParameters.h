@@ -2,7 +2,7 @@
 float gridSize = 100.0;
 
 // size of one cell
-float gridCellSize = 0.025;
+float gridCellSize = 0.1;
 
 // color of thin lines
 vec4 gridColorThin = vec4(0.5, 0.5, 0.5, 1.0);

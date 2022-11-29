@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "MeshBuilderCommon.h"
 
+#include <meshoptimizer.h>
 
 #include "rendering/texture/SubTexture.h"
 
@@ -68,9 +69,81 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
     checkGlError("MeshBuilderCommon::initMeshBuffers");
 }
 
+template<typename VERTEX>
+void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices) {
+    static_assert(sizeof(unsigned int) == sizeof(ui32));
+    std::vector<ui32> indicesUi32;
+    indicesUi32.resize(indices.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+        indicesUi32[i] = (ui32)indices[i];
+    }
+
+    optimizeMeshAndGenerateLODs(subMesh, indicesUi32, vertices);
+
+    indices.resize(indicesUi32.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+        indices[i] = (ui16)indicesUi32[i];
+    }
+}
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex96>& vertices);
+
+template<typename VERTEX>
+void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
+    PROFILE_FUNCTION();
+    assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
+
+    static_assert(sizeof(unsigned int) == sizeof(ui32));
+
+    std::vector<ui32> remap(indices.size());
+    const size_t vertexCount = meshopt_generateVertexRemap(remap.data(), indices.data(), indices.size(), vertices.data(), vertices.size(), sizeof(VERTEX));
+
+    std::vector<ui32> remappedIndices(indices.size());
+    std::vector<VERTEX> remappedVertices(vertexCount);
+
+    meshopt_remapIndexBuffer(remappedIndices.data(), indices.data(), indices.size(), remap.data());
+    meshopt_remapVertexBuffer(remappedVertices.data(), vertices.data(), vertices.size(), sizeof(VERTEX), remap.data());
+
+    meshopt_optimizeVertexCache(remappedIndices.data(), remappedIndices.data(), indices.size(), vertexCount);
+    // TODO: THIS ASSUMES POSITION IS ALWAYS THE FIRST FIELD! It better be :P
+    meshopt_optimizeOverdraw(remappedIndices.data(), remappedIndices.data(), indices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), 1.05f);
+    meshopt_optimizeVertexFetch(remappedVertices.data(), remappedIndices.data(), indices.size(), remappedVertices.data(), vertexCount, sizeof(VERTEX));
+
+    const float threshold = 0.2f;
+
+    constexpr float targetErrors[3]{
+        0.01f,
+        0.02f,
+        0.04f
+    };
+
+    // Level of detail
+    MeshLODData& lodData = subMesh.mLODData;
+    lodData.mLODStarts[0] = 0;
+    size_t prevSize = remappedIndices.size();
+    size_t prevStart = 0;
+    for (int i = 1; i < 4; ++i) {
+        const float targetError = targetErrors[i - 1];
+        size_t prevTotalSize = remappedIndices.size();
+        const size_t target_index_count = size_t(prevSize * threshold);
+        lodData.mLODStarts[i] = prevTotalSize;
+        size_t maxLODSize = prevSize;
+        remappedIndices.resize(prevTotalSize + maxLODSize);
+        prevSize = meshopt_simplify(&remappedIndices[prevTotalSize], &remappedIndices[prevStart], prevSize, (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), target_index_count, targetError);
+        prevStart = prevTotalSize;
+        remappedIndices.resize(prevTotalSize + prevSize);
+    }
+    lodData.mTotalIndexCount = remappedIndices.size();
+
+    indices.swap(remappedIndices);
+    vertices.swap(remappedVertices);
+}
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex96>& vertices);
+
 void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, MeshDrawMode drawMode) {
-    subMesh.mIndexCount = indices.size();
-    const ui32 indexBufferSizeBytes = subMesh.mIndexCount * sizeof(ui32);
+    subMesh.mLODData.mTotalIndexCount = indices.size();
+    const ui32 indexBufferSizeBytes = subMesh.mLODData.mTotalIndexCount * sizeof(ui32);
     assert(subMesh.mIbo);
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
     // Allocate orphaned
@@ -81,7 +154,7 @@ void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<
 }
 
 void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, MeshDrawMode drawMode) {
-    subMesh.mIndexCount = indexCount;
+    subMesh.mLODData.mTotalIndexCount = indexCount;
     subMesh.mIndexType = GL_UNSIGNED_SHORT;
     const ui32 indexBufferSizeBytes = indexCount * sizeof(ui16);
     assert(subMesh.mIbo);

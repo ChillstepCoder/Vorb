@@ -91,7 +91,18 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
             ImGui::Begin("pr", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
             rightPanelWidth = ImGui::GetCurrentWindowRead()->Size.x;
 
-            TileEditorPanelResult result = mTileEditorPanel->updateAndRender(ImGui::GetContentRegionAvail().y);
+            TileEditorPanelResult result;
+            static f32 ySize1 = ImGui::GetContentRegionAvail().y * 0.5f;
+            static f32 ySize2 = ySize1;
+            // With model editor open we render details panel
+            if (mShowModelEditor) {
+                Splitter(false, 10.0f, &ySize1, &ySize2, 8, 8, ImGui::GetContentRegionAvail().x);
+                result = mTileEditorPanel->updateAndRender(ySize1);
+                mModelEditorPanel->updateAndRenderControls(ySize2);
+            }
+            else {
+                result = mTileEditorPanel->updateAndRender(ImGui::GetContentRegionAvail().y);
+            }
 
             ImGui::End();
 

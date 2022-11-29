@@ -149,7 +149,7 @@ void BillboardMeshBuilder::uploadBufferData(SubMeshData& subMesh, const f32v3& p
     glBindVertexArray(subMesh.mVao);
 
     // IBO
-    subMesh.mIndexCount = data.mBillboards.size() * 6;
+    subMesh.mLODData.mTotalIndexCount = data.mBillboards.size() * 6;
 
     // UBO
     assert(subMesh.mUbo);

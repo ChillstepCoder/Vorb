@@ -123,6 +123,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
 
     PreciseTimer uploadTimer;
     MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
+    MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mStaticVerts);
     MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), drawMode);
     MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, drawMode);
     MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, drawMode);

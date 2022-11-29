@@ -47,6 +47,11 @@ namespace keg {
         nString getValue(const void* data) {
             return _fGetter(data, this);
         }
+        template<typename T>
+        nString getValueFromKey(const T key) {
+            auto kv = _valuesRev.find(static_cast<EnumType>(key));
+            return kv != _valuesRev.end() ? kv->second : "";
+        }
 
         // Value Traversal
         std::map<nString, EnumType>::const_iterator getIter() const {

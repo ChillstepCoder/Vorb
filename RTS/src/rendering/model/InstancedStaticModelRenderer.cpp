@@ -42,7 +42,9 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
 
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
     for (auto& it : mInstances) {
-        mInstancesToRender.clear();
+        for (int i = 0; i < 4; ++i) {
+            mInstancesToRender[i].clear();
+        }
         ModelID modelId = it.first;
         const StaticModel3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).getStaticModel();
         const Mesh& mesh = *model.getMesh();
@@ -50,25 +52,35 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
         // TODO: Culling
         for (const StaticModelInstance& instance : instanceData.mInstances) {
             if (camera.sphereIsVisible(instance.pos, 10.0f)) {
-                mInstancesToRender.push_back(instance);
+                f32 distance2 = glm::length2(instance.pos - camera.getPosition());
+                if (distance2 < SQ(sDebugOptions.mLodDistances[0]) || sDebugOptions.mDisableLOD) {
+                    mInstancesToRender[0].push_back(instance);
+                } else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
+                    mInstancesToRender[1].push_back(instance);
+                }
+                else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
+                    mInstancesToRender[2].push_back(instance);
+                }
+                else {
+                    mInstancesToRender[3].push_back(instance);
+                }
             }
         }
 
-        if (mInstancesToRender.size()) {
-            //if (instanceData.mDirty) {
-            if (instanceData.mInstanceVbo == 0) {
-                glGenBuffers(1, &instanceData.mInstanceVbo);
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, instanceData.mInstanceVbo);
-            GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * mInstancesToRender.size();
-            glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_DYNAMIC_DRAW);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, &mInstancesToRender[0]);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            ModelMeshBuilder::updateInstanceDataForStaticModel(mesh, instanceData.mInstanceVbo);
-            //instanceData.mDirty = false;
-        //}
+        for (int i = 0; i < 4; ++i) {
+            if (mInstancesToRender[i].size()) {
+                if (instanceData.mInstanceVbo == 0) {
+                    glGenBuffers(1, &instanceData.mInstanceVbo);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, instanceData.mInstanceVbo);
+                GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * mInstancesToRender[i].size();
+                glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, &mInstancesToRender[i][0]);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                ModelMeshBuilder::updateInstanceDataForStaticModel(mesh, instanceData.mInstanceVbo);
 
-            mesh.drawInstanced(mInstancesToRender.size());
+                mesh.drawInstanced(MeshLODLevel(i), mInstancesToRender[i].size());
+            }
         }
     }
     // TODO: Material specific
@@ -85,7 +97,9 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
     for (auto& it : mInstances) {
-        mInstancesToRender.clear();
+        for (int i = 0; i < 4; ++i) {
+            mInstancesToRender[i].clear();
+        }
         ModelID modelId = it.first;
         const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId);
         const StaticModel3D& model = modelDef.getStaticModel();
@@ -97,27 +111,38 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
         for (const StaticModelInstance& instance : instanceData.mInstances) {
             if (camera.sphereIsVisible(instance.pos, 10.0f)) {
                 f32v3 offset = instance.pos - camera.getPosition();
-                if (glm::length2(offset) <= maxDistSQ) {
-                    mInstancesToRender.push_back(instance);
+                f32 distance2 = glm::length2(offset);
+                if (distance2 <= maxDistSQ) {
+                    if (distance2 < SQ(sDebugOptions.mLodDistances[0]) || sDebugOptions.mDisableLOD) {
+                        mInstancesToRender[0].push_back(instance);
+                    }
+                    else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
+                        mInstancesToRender[1].push_back(instance);
+                    }
+                    else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
+                        mInstancesToRender[2].push_back(instance);
+                    }
+                    else {
+                        mInstancesToRender[3].push_back(instance);
+                    }
                 }
             }
         }
 
-        if (mInstancesToRender.size()) {
-            //if (instanceData.mDirty) {
-            if (instanceData.mInstanceVbo == 0) {
-                glGenBuffers(1, &instanceData.mInstanceVbo);
-            }
-            glBindBuffer(GL_ARRAY_BUFFER, instanceData.mInstanceVbo);
-            GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * mInstancesToRender.size();
-            glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_DYNAMIC_DRAW);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, &mInstancesToRender[0]);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            ModelMeshBuilder::updateInstanceDataForStaticModel(mesh, instanceData.mInstanceVbo);
-            //instanceData.mDirty = false;
-        //}
+        for (int i = 0; i < 4; ++i) {
+            if (mInstancesToRender[i].size()) {
+                if (instanceData.mInstanceVbo == 0) {
+                    glGenBuffers(1, &instanceData.mInstanceVbo);
+                }
+                glBindBuffer(GL_ARRAY_BUFFER, instanceData.mInstanceVbo);
+                GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * mInstancesToRender[i].size();
+                glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, &mInstancesToRender[i][0]);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                ModelMeshBuilder::updateInstanceDataForStaticModel(mesh, instanceData.mInstanceVbo);
 
-            mesh.drawInstanced(mInstancesToRender.size());
+                mesh.drawInstanced(MeshLODLevel(i), mInstancesToRender[i].size());
+            }
         }
     }
 

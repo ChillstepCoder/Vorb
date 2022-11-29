@@ -3,6 +3,13 @@
 struct ModelDef;
 DECL_VG(class GBuffer);
 
+enum class ModelEditorPanelDrawMode {
+    Default,
+    Wireframe,
+    Normals,
+    COUNT
+};
+
 class ModelEditorPanel
 {
 public:
@@ -10,16 +17,21 @@ public:
     ~ModelEditorPanel();
 
     bool updateAndRender(const vg::GBuffer* activeGBuffer);
+    void updateAndRenderControls(f32 ySize);
 
     void setModel(ModelDef& model) { mCurrentModel = &model; }
 
 private:
-    void updateCamera(f32v2 mouseDelta);
+    void updateCamera(f32 aspectRatio);
     void initGBuffer(f32v2 imageDims);
-    void renderModelToTexture(f32 aspectRatio);
+    void renderModelToTexture();
+    void renderGrid();
 
-    f32v3 mCamPos = f32v3(4.0f, 0.0f, 4.0f);
     ModelDef* mCurrentModel = nullptr;
     std::unique_ptr<vg::GBuffer> mModelGBuffer = nullptr;
+    bool mDirtyModelData = false;
+    int mLod = 0;
+
+    ModelEditorPanelDrawMode mDrawMode = ModelEditorPanelDrawMode::Default;
 };
 

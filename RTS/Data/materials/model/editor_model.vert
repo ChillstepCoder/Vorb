@@ -2,7 +2,6 @@
 #include "../GlobalUbo.glsl"
 #include "../util/wind.glsl"
 
-uniform vec3 unCameraPos;
 uniform mat4 unVP;
 
 layout(location = 0) in vec4 vPosition;
@@ -33,8 +32,5 @@ void main() {
 	fTBN = mat3(tangent, binormal, normal);
 	
 	fRoughness = 0.2;
-    // TODO: unPosition?
-    vec4 worldPos = vPosition + vec4(-unCameraPos, 0.0);
-    //worldPos.x += getWindAtPosition(Time, vPosition) * 1.0;
-    gl_Position = unVP * worldPos;
+    gl_Position = unVP * vPosition;
 }

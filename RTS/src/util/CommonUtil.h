@@ -6,6 +6,13 @@ constexpr auto e_cast(E e) -> typename std::underlying_type<E>::type {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+#define KEG_ENUM_STR(e, v) kes_##e##.getValueFromKey(v).c_str()
+
+template<typename E>
+constexpr auto keg_enum_str(E e) -> const char * {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
 // Unused Parameter
 #define UNUSED(x) (void)(x)
 

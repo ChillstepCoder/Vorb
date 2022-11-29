@@ -361,7 +361,6 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
-        ImGui::Checkbox("Hide Models", &sDebugOptions.mHideModels);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
         ImGui::Separator();
         ImGui::Text("Physics Debug");
@@ -371,6 +370,14 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
 
         ImGui::Separator();
+    }
+
+
+    if (ImGui::CollapsingHeader("Models")) {
+        ImGui::Checkbox("Hide Models", &sDebugOptions.mHideModels);
+        ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
+        ImGui::SliderFloat3("LOD Distances", sDebugOptions.mLodDistances, 0.0f, 1000.0f);
+
     }
     if (activeGBuffer) {
         if (ImGui::CollapsingHeader("GBuffer")) {

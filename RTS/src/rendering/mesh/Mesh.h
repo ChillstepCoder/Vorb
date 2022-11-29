@@ -7,6 +7,34 @@ constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE *
 
 typedef i32 SubmeshIndex;
 
+enum class MeshLODLevel {
+    Highest,
+    Medium,
+    Low,
+    Lowest,
+    COUNT
+};
+
+struct MeshLODDrawInfo {
+    ui32 startIndex;
+    ui32 indexCount;
+};
+
+struct MeshLODData {
+    // TODO: High start is always 0 so why store it
+    ui32 mLODStarts[e_cast(MeshLODLevel::COUNT)] = {};
+    ui32 mTotalIndexCount = 0;
+
+    MeshLODDrawInfo getDrawInfoForLOD(MeshLODLevel lod) const {
+        const ui32 start = mLODStarts[e_cast(lod)];
+        // TODO: Remove branching?
+        if (lod == MeshLODLevel::Lowest) {
+            return MeshLODDrawInfo{ start, mTotalIndexCount - start };
+        }
+        return MeshLODDrawInfo{ start, mLODStarts[e_cast(lod) + 1] - start };
+    }
+};
+
 enum class MeshDrawMode {
     DYNAMIC = GL_DYNAMIC_DRAW,
     STREAM = GL_STREAM_DRAW,
@@ -23,7 +51,7 @@ struct SubMeshData {
     VGBuffer  mUbo = 0;
     VGBuffer  mIbo = 0;
     VGBuffer  mSSBO = 0;
-    ui32 mIndexCount = 0; ///< Current capacity of mIbo
+    MeshLODData mLODData;
     ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
     BitFlags<MeshFlags> mFlags;
     SubMeshData* mNextSubmesh = nullptr; // We store these as a linked list, this is not a true parent
@@ -52,7 +80,9 @@ public:
     //   Renderer knows what type of mesh this is  so we can avoid
     //   branching and assert on internal state such as ubo
     void draw() const;
+    void draw(MeshLODLevel lod) const;
     void drawInstanced(GLsizei instanceCount) const;
+    void drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const;
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 
@@ -72,4 +102,4 @@ public:
    // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
 
 };
-static_assert(sizeof(Mesh) == 72);
+static_assert(sizeof(Mesh) == 88);

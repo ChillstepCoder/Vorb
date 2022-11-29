@@ -1,15 +1,16 @@
-﻿#include "GridParameters.h"
-#include "GridCalculation.h"
+﻿
+uniform mat4 unVP;
+layout(location=0) out vec2 uv;
 
-layout (location=0) out vec2 uv;
+#include "GridParameters.h"
+
 
 void main()
 {
-	mat4 MVP = proj * view;
 
 	int idx = indices[gl_VertexID];
 	vec3 position = pos[idx] * gridSize;
 
-	gl_Position = MVP * vec4(position, 1.0);
-	uv = position.xz;
+	gl_Position = unVP * vec4(position, 1.0);
+	uv = position.xy;
 }

@@ -83,6 +83,7 @@ struct DebugOptions {
     bool mEnableVisualLogs;
     bool mShowDevHud;
     bool mHideModels;
+    bool mDisableLOD;
     // Water
     f32v4 mShallowWaterColor;
     f32v4 mDeepWaterColor;
@@ -112,6 +113,7 @@ struct DebugOptions {
     // Game settings
     f32 mLoadRangeSq;
     f32 mLoadRange;
+    f32 mLodDistances[3];
     // Camera settings
     f32 mFoV;
     f32 mZFar;
