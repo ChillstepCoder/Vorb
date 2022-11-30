@@ -75,7 +75,7 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
     static_assert(sizeof(unsigned int) == sizeof(ui32));
 
     std::vector<ui32> remap(indices.size());
-    const size_t vertexCount = meshopt_generateVertexRemap(remap.data(), indices.data(), indices.size(), vertices.data(), vertices.size(), sizeof(VERTEX));
+    size_t vertexCount = meshopt_generateVertexRemap(remap.data(), indices.data(), indices.size(), vertices.data(), vertices.size(), sizeof(VERTEX));
 
     std::vector<ui32> remappedIndices(indices.size());
     std::vector<VERTEX> remappedVertices(vertexCount);
@@ -83,15 +83,47 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
     meshopt_remapIndexBuffer(remappedIndices.data(), indices.data(), indices.size(), remap.data());
     meshopt_remapVertexBuffer(remappedVertices.data(), vertices.data(), vertices.size(), sizeof(VERTEX), remap.data());
 
-    meshopt_optimizeVertexCache(remappedIndices.data(), remappedIndices.data(), indices.size(), vertexCount);
-    // TODO: THIS ASSUMES POSITION IS ALWAYS THE FIRST FIELD! It better be :P
-    meshopt_optimizeOverdraw(remappedIndices.data(), remappedIndices.data(), indices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), 1.05f);
-    meshopt_optimizeVertexFetch(remappedVertices.data(), remappedIndices.data(), indices.size(), remappedVertices.data(), vertexCount, sizeof(VERTEX));
+    // Optimize initial mesh to get rid of mostly useless polygons
+    constexpr float threshold = 0.2f;
+    {
+        std::vector<ui32> optimizedIndices;
+        optimizedIndices.resize(remappedIndices.size());
+        constexpr f32 targetError = 0.0006f;
+        const size_t targetIndexCount = size_t(remappedIndices.size() * threshold);
+        ui32 newSize = meshopt_simplify(&optimizedIndices[0], &remappedIndices[0], remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), targetIndexCount, targetError);
+        optimizedIndices.resize(newSize);
+        remappedIndices.swap(optimizedIndices);
+    }
 
-    const float threshold = 0.2f;
+    // Re-remap to delete unused vertices
+    {
+        remap.resize(remappedIndices.size());
+        vertexCount = meshopt_generateVertexRemap(remap.data(), remappedIndices.data(), remappedIndices.size(), remappedVertices.data(), remappedVertices.size(), sizeof(VERTEX));
+
+        std::vector<ui32> remappedIndices2(remappedIndices.size());
+        std::vector<VERTEX> remappedVertices2(vertexCount);
+
+        meshopt_remapIndexBuffer(remappedIndices2.data(), remappedIndices.data(), remappedIndices.size(), remap.data());
+        meshopt_remapVertexBuffer(remappedVertices2.data(), remappedVertices.data(), remappedVertices.size(), sizeof(VERTEX), remap.data());
+
+        remappedIndices.swap(remappedIndices2);
+        remappedVertices.swap(remappedVertices2);
+    }
+
+
+    meshopt_optimizeVertexCache(remappedIndices.data(), remappedIndices.data(), remappedIndices.size(), vertexCount);
+    // TODO: THIS ASSUMES POSITION IS ALWAYS THE FIRST FIELD! It better be :P
+    meshopt_optimizeOverdraw(remappedIndices.data(), remappedIndices.data(), remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), 1.05f);
+    meshopt_optimizeVertexFetch(remappedVertices.data(), remappedIndices.data(), remappedIndices.size(), remappedVertices.data(), vertexCount, sizeof(VERTEX));
+     // TODO: Test compression - https://github.com/zeux/meshoptimizer
+
+     /*TODO: https://github.com/zeux/meshoptimizer When a sequence of LOD meshes is generated that all use the original vertex buffer, care must be taken to order vertices optimally to not penalize mobile 
+      GPU architectures that are only capable of transforming a sequential vertex buffer range.It's recommended in this case to first optimize each LOD for vertex cache, then assemble all LODs in one large
+      index buffer starting from the coarsest LOD (the one with fewest triangles), and call meshopt_optimizeVertexFetch on the final large index buffer. This will make sure that coarser LODs require a smaller
+      vertex range and are efficient wrt vertex fetch and transform. */
 
     constexpr float targetErrors[3]{
-        0.01f,
+        0.01f, //0.0006f,
         0.02f,
         0.04f
     };
@@ -104,13 +136,15 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
     for (int i = 1; i < 4; ++i) {
         const float targetError = targetErrors[i - 1];
         size_t prevTotalSize = remappedIndices.size();
-        const size_t target_index_count = size_t(prevSize * threshold);
+        const size_t targetIndexCount = size_t(prevSize * threshold);
         lodData.mLODStarts[i] = prevTotalSize;
         size_t maxLODSize = prevSize;
         remappedIndices.resize(prevTotalSize + maxLODSize);
-        prevSize = meshopt_simplify(&remappedIndices[prevTotalSize], &remappedIndices[prevStart], prevSize, (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), target_index_count, targetError);
+        prevSize = meshopt_simplify(&remappedIndices[prevTotalSize], &remappedIndices[prevStart], prevSize, (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), targetIndexCount, targetError);
         prevStart = prevTotalSize;
         remappedIndices.resize(prevTotalSize + prevSize);
+
+        // TODO: Optimize vertex cache, overdraw, vertex fetch per LOD?
     }
     lodData.mTotalIndexCount = remappedIndices.size();
 
