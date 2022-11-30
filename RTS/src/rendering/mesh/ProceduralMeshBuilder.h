@@ -51,8 +51,8 @@ public:
     void computeBoundingSphere();
 
     // Upload buffers
-    void finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
-    void finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
+    void finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& worldPos);
+    void finishMesh(Mesh& mesh, const f32v3& worldPos);
 
     // Override allocation to use boost::singleton_pool
     static void* operator new(size_t count);
@@ -61,7 +61,7 @@ public:
 private:
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex);
-    void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode);
+    void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags);
     void bindVertexAttribs(SubMeshData& subMesh);
 
     // TODO: Try both multi-context opengl and pool_allocator

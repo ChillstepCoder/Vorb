@@ -659,7 +659,7 @@ void ProceduralMeshBuilder::computeBoundingSphere() {
     mBoundingSphere.radius = sqrt(halfLargestWidthSq + halfLargestWidthSq);
 }
 
-void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh,  const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
 
     // return blank mesh if we have no geometry
@@ -673,11 +673,11 @@ void ProceduralMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode
         mesh = std::make_unique<Mesh>();
     }
 
-    finishMesh(*mesh, drawMode, worldPos);
+    finishMesh(*mesh,  worldPos);
 }
 
 
-void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const f32v3& worldPos) {
+void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     assert(IS_RENDER_THREAD());
     if (mSubMeshesData.size() == 1 && mSubMeshesData.back().mVerts.empty()) {
         mesh.destroy();
@@ -726,7 +726,7 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
     subMesh = &mesh.mMainMesh;
     int i = 0;
     do {
-        uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], drawMode);
+        uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], 0);
         mSubMeshesData[i].clear();
         subMesh = subMesh->mNextSubmesh;
         ++i;
@@ -738,7 +738,6 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode, const 
     mTextureToSubmesh.clear();
     mPolyTypeFlags.clearBits();
 
-    glBindVertexArray(0);
 }
 
 void* ProceduralMeshBuilder::operator new(size_t count) {
@@ -784,8 +783,7 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
     }
 }
 
-void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, MeshDrawMode drawMode) {
-    glBindVertexArray(subMesh.mVao);
+void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags) {
 
     // Shared IBO
     if (subMesh.mIbo == sQuadIbo) {
@@ -803,12 +801,12 @@ void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& po
     else {
         // Non shared IBO
         // TODO: Support ui16 compression
-        MeshBuilderCommon::uploadIndexData(subMesh, data.mIndices, drawMode);
+        MeshBuilderCommon::uploadIndexData(subMesh, data.mIndices, flags);
     }
 
-    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts, drawMode);
+    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts, flags);
 
-    MeshBuilderCommon::uploadStandardTextureUboData(subMesh, position, data.mTextures, drawMode);
+    MeshBuilderCommon::uploadStandardTextureUboData(subMesh, position, data.mTextures, flags);
 
     checkGlError("MeshBuilder::uploadMeshData");
 
@@ -818,13 +816,13 @@ void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& po
 void ProceduralMeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
 {
     if (mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN)) {
-        TerrainVertex::bindVertexAttribs();
+        TerrainVertex::bindVertexAttribs(subMesh.mVao);
     }
     else if (mPolyTypeFlags.isBitSet(PolyTypeFlags::WATER)) {
-        WaterVertex::bindVertexAttribs();
+        WaterVertex::bindVertexAttribs(subMesh.mVao);
     }
     else {
-        StandardVertex::bindVertexAttribs();
+        StandardVertex::bindVertexAttribs(subMesh.mVao);
     }
 }
 
@@ -848,10 +846,8 @@ void ProceduralMeshBuilder::initStaticIBOs() {
         quadIndices[i++] = v;
     }
 
-    glGenBuffers(1, &sQuadIbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sQuadIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, MAX_QUAD_MESH_INDICES * sizeof(ui32), quadIndices.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glCreateBuffers(1, &sQuadIbo);
+    glNamedBufferStorage(sQuadIbo, MAX_QUAD_MESH_INDICES * sizeof(ui32), quadIndices.data(), 0);
 
     // ========================================
     // =              TERRAIN                 =
@@ -935,10 +931,8 @@ void ProceduralMeshBuilder::initStaticIBOs() {
 
     assert(index == TERRAIN_MESH_INDICES);
 
-    glGenBuffers(1, &sTerrainIbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sTerrainIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, TERRAIN_MESH_INDICES * sizeof(ui32), indices.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glCreateBuffers(1, &sTerrainIbo);
+    glNamedBufferStorage(sTerrainIbo, TERRAIN_MESH_INDICES * sizeof(ui32), indices.data(), 0);
     checkGlError("TerrainMesh::initGlobalIBO");
 }
 

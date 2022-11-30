@@ -255,8 +255,8 @@ void HeightmapTerrainQuadtree::finishMeshes(ProceduralMeshBuilder& terrainBuilde
     const f32v3& worldPos = f32v3(mWorldPos.x, mWorldPos.y, 0.0f);
     const bool hadTerrain = mTerrainMeshes[patchIndex]->mMesh.isValid();
     const bool hadWater = mWaterMeshes[patchIndex]->mMesh.isValid();
-    terrainBuilder.finishMesh(mTerrainMeshes[patchIndex]->mMesh, MeshDrawMode::STATIC, worldPos);
-    waterBuilder.finishMesh(mWaterMeshes[patchIndex]->mMesh, MeshDrawMode::STATIC, worldPos);
+    terrainBuilder.finishMesh(mTerrainMeshes[patchIndex]->mMesh, worldPos);
+    waterBuilder.finishMesh(mWaterMeshes[patchIndex]->mMesh, worldPos);
     // TODO: if this can happen, we need to store a "has acquired" bit since right now we are using existence of a mesh to determine if we acquired
     assert(mTerrainMeshes[patchIndex] || mWaterMeshes[patchIndex]);
 

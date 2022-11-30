@@ -35,7 +35,7 @@ struct alignas(32) StaticModelVertex {
     color4 color;
     ui8 textureIndex;
 
-    static void bindVertexAttribs();
+    static void bindVertexAttribs(VGBuffer vao);
 };
 static_assert(sizeof(StaticModelVertex) == 32, "32 byte alignment needed");
 
@@ -48,21 +48,21 @@ struct alignas(32) StandardVertex {
     color4 color;
     ui8 roughness;
 
-    static void bindVertexAttribs();
+    static void bindVertexAttribs(VGBuffer vao);
 };
 
 struct alignas(32) TerrainVertex {
     f32v3 pos;
     f32v3 normal;
 
-    static void bindVertexAttribs();
+    static void bindVertexAttribs(VGBuffer vao);
 };
 
 struct alignas(32) WaterVertex {
     f32v3 pos;
     f32 depth;
 
-    static void bindVertexAttribs();
+    static void bindVertexAttribs(VGBuffer vao);
 };
 
 // Vertex variant

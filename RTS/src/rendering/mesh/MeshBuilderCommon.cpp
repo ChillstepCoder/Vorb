@@ -5,51 +5,30 @@
 
 #include "rendering/texture/SubTexture.h"
 
-//glGenVertexArrays(1, &subMesh.mVao);
-//glBindVertexArray(subMesh.mVao);
-//// UBO
-//glGenBuffers(1, &subMesh.mUbo);
-//glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-//glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
-//// SSBO
-//glGenBuffers(1, &subMesh.mSSBO);
-//glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
-//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
-//// IBO
-//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
-//subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+// DAS Reference : https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
 void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
     // VAO
     if (subMesh.mVao == 0) {
-        glGenVertexArrays(1, &subMesh.mVao);
-        glBindVertexArray(subMesh.mVao);
+        glCreateVertexArrays(1, &subMesh.mVao);
 
         // Ubo
-        glGenBuffers(1, &subMesh.mUbo);
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
+        glCreateBuffers(1, &subMesh.mUbo);
 
         // VBO
         if (!flags.isBitSet(MeshBuilderBufferFlags::NO_VBO)) {
-            glGenBuffers(1, &subMesh.mVbo);
-            glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
+            glCreateBuffers(1, &subMesh.mVbo);
         }
         else {
             assert(!subMesh.mVbo);
         }
         // SSBO
         if (flags.isBitSet(MeshBuilderBufferFlags::SSBO)) {
-            glGenBuffers(1, &subMesh.mSSBO);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
+            glCreateBuffers(1, &subMesh.mSSBO);
         }
         else {
             assert(!subMesh.mSSBO);
         }
-    }
-    else {
-        glBindVertexArray(subMesh.mVao);
     }
     // IBO
     if (sharedIbo) {
@@ -59,12 +38,12 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
         }
         subMesh.mIbo = *sharedIbo;
         subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
+        glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
     }
     else if (subMesh.mIbo == 0) {
-        glGenBuffers(1, &subMesh.mIbo);
+        glCreateBuffers(1, &subMesh.mIbo);
         subMesh.mFlags.clearBit(MeshFlags::USING_SHARED_IBO);
     }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
 
     checkGlError("MeshBuilderCommon::initMeshBuffers");
 }
@@ -141,45 +120,38 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex96>& vertices);
 
-void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, MeshDrawMode drawMode) {
+void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indices.size();
     const ui32 indexBufferSizeBytes = subMesh.mLODData.mTotalIndexCount * sizeof(ui32);
     assert(subMesh.mIbo);
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
-    // Allocate orphaned
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, indices.data());
+
+    glNamedBufferStorage(subMesh.mIbo, indexBufferSizeBytes, indices.data(), flags);
+    glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
 }
 
-void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, MeshDrawMode drawMode) {
+void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indexCount;
     subMesh.mIndexType = GL_UNSIGNED_SHORT;
     const ui32 indexBufferSizeBytes = indexCount * sizeof(ui16);
     assert(subMesh.mIbo);
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
-    // Allocate orphaned
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.mIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBufferSizeBytes, nullptr, e_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexBufferSizeBytes, indices);
+
+    glNamedBufferStorage(subMesh.mIbo, indexBufferSizeBytes, indices, flags);
+    glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
 }
 
 template<typename VERTEX>
-void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, MeshDrawMode drawMode) {
+void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags) {
     const unsigned bufferSizeBytes = vertices.size() * sizeof(VERTEX);
-    // VBO Allocate orphaned
     assert(subMesh.mVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, subMesh.mVbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferSizeBytes, nullptr, e_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_ARRAY_BUFFER, 0, bufferSizeBytes, vertices.data());
+    glNamedBufferStorage(subMesh.mVbo, bufferSizeBytes, vertices.data(), flags);
+    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo, 0, sizeof(VERTEX));
 }
-template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, MeshDrawMode drawMode);
-template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex96>& vertices, MeshDrawMode drawMode);
+template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
+template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex96>& vertices, GLbitfield flags);
 
-void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, MeshDrawMode drawMode) {
+void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
     // UBO
     const ui32 uboSizeBytes = sizeof(f32v4) + textures.size() * sizeof(TextureHandle);
     // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
@@ -194,9 +166,6 @@ void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const
         buffer[i].y = handle >> 32;
     }
     assert(subMesh.mUbo);
-    // Allocate orphaned
-    glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-    glBufferData(GL_UNIFORM_BUFFER, uboSizeBytes, nullptr, e_cast(drawMode));
-    // Set data
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, uboSizeBytes, byteBuffer);
+
+    glNamedBufferStorage(subMesh.mUbo, uboSizeBytes, byteBuffer, flags);
 }

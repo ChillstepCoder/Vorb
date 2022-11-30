@@ -33,12 +33,12 @@ public:
     template<typename VERTEX>
     static void optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices);
     // Requires VAO still bound
-    static void uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, MeshDrawMode drawMode);
-    static void uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, MeshDrawMode drawMode);
+    static void uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags);
+    static void uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags);
 
     template<typename VERTEX>
-    static void uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, MeshDrawMode drawMode);
-    static void uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, MeshDrawMode drawMode);
+    static void uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags);
+    static void uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags);
 
 };
 

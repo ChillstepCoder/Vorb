@@ -231,11 +231,9 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     }
 
     // UBO
-    glGenBuffers(1, &mGlobalUbo);
-    glBindBuffer(GL_UNIFORM_BUFFER, mGlobalUbo);
-    glBufferData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), NULL, GL_STATIC_DRAW);
+    glCreateBuffers(1, &mGlobalUbo);
+    glNamedBufferStorage(mGlobalUbo, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), nullptr, GL_DYNAMIC_STORAGE_BIT);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     mCloudManager = std::make_unique<CloudManager>();
 }
@@ -365,12 +363,10 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
     mRenderData.shadowFrustumMatricesCount = MAX_SHADOW_CASCADE_LEVELS;
 
     // Update ubo
-    glBindBuffer(GL_UNIFORM_BUFFER, mGlobalUbo);
     // Camera matrices
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, CAMERA_MATRICES_BYTE_SIZE, &camera->getViewMatrix()[0][0]);
+    glNamedBufferSubData(mGlobalUbo, 0, CAMERA_MATRICES_BYTE_SIZE, &camera->getViewMatrix()[0][0]);
     // Rest of the UBO
-    glBufferSubData(GL_UNIFORM_BUFFER, CAMERA_MATRICES_BYTE_SIZE, sizeof(GlobalUboData), &uboData);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glNamedBufferSubData(mGlobalUbo, CAMERA_MATRICES_BYTE_SIZE, sizeof(GlobalUboData), &uboData);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -954,7 +950,7 @@ void RenderContext::buildHorizonMesh()
     ProceduralMeshBuilder meshBuilder(true);
     constexpr float QUAD_WIDTH = 140000.0f;
     meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, SubTexture{}, f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
-    meshBuilder.finishMesh(mHorizonQuad, MeshDrawMode::STATIC, f32v3(0.0f));
+    meshBuilder.finishMesh(mHorizonQuad, f32v3(0.0f));
 }
 
 TileContainerMeshData::~TileContainerMeshData()

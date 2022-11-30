@@ -39,7 +39,7 @@ void Skybox::init(const Material* material) {
     meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, 0.0f, DIAMETER), dims, CubeFacing::TOP, dummyTexture, uvRect, COLOR_WHITE);
     meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::BOTTOM, dummyTexture, uvRect, COLOR_WHITE);
     mSkyboxMesh = std::make_unique<Mesh>();
-    meshBuilder.finishMesh(mSkyboxMesh, MeshDrawMode::STATIC, f32v3(0.0f));
+    meshBuilder.finishMesh(mSkyboxMesh, f32v3(0.0f));
     //TileVertex verts[NUM_VERTS];
     //TileVertex* v = verts;
 

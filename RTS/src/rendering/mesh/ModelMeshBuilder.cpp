@@ -121,18 +121,18 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     // Upload mesh data
     SubMeshData* meshData = &model.mMesh->mMainMesh;
 
+    // TODO: Support submeshes?
     PreciseTimer uploadTimer;
     MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
     MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mStaticVerts);
-    MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), drawMode);
-    MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, drawMode);
-    MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, drawMode);
-    StaticModelVertex::bindVertexAttribs();
+    MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
+    MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, 0);
+    MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
+    StaticModelVertex::bindVertexAttribs(meshData->mVao);
     checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
 
     LOG_TRACE("  Upload data in {} ms", uploadTimer.stop());
 
-    glBindVertexArray(0);
     return true;
 }
 
@@ -299,12 +299,12 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 void ModelMeshBuilder::updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo) {
     const SubMeshData* meshData = &mesh.mMainMesh;
     do {
-        glBindVertexArray(meshData->mVao);
-        glBindBuffer(GL_ARRAY_BUFFER, instanceDataVbo);
-        glEnableVertexAttribArray(7);
-        glVertexAttribPointer(7, 3, GL_FLOAT, GL_FALSE, sizeof(StaticModelInstance), (void*)offsetof(StaticModelInstance, pos));
-        glVertexAttribDivisor(7, 1);
+        glVertexArrayVertexBuffer(meshData->mVao, 1, instanceDataVbo, 0, sizeof(StaticModelInstance));
+        glEnableVertexArrayAttrib(meshData->mVao, 7);
+        glVertexArrayAttribFormat(meshData->mVao, 7, 3, GL_FLOAT, GL_FALSE, offsetof(StaticModelInstance, pos));
+        glVertexArrayAttribBinding(meshData->mVao, 7, 1);
+        glVertexArrayBindingDivisor(meshData->mVao, 1, 1);
+
         meshData = meshData->mNextSubmesh;
     } while (meshData != nullptr);
-    glBindVertexArray(0);
 }
