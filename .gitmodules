@@ -19,4 +19,7 @@
 [submodule "RTS/dependencies/spdlog"]
 	path = RTS/dependencies/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "RTS/dependencies/meshoptimizer"]
+	path = RTS/dependencies/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git
 
