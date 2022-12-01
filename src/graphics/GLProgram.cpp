@@ -57,6 +57,7 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
     // Check for preexisting stages
     switch (data.stage) {
         case ShaderType::VERTEX_SHADER:
+        case ShaderType::COMPUTE_SHADER:
             if (m_idVS != 0) {
                 onShaderCompilationError("Attempting to add another vertex shader");
                 return false;
@@ -126,6 +127,7 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
     // Add shader to stage
     switch (data.stage) {
         case ShaderType::VERTEX_SHADER:
+        case ShaderType::COMPUTE_SHADER:
             m_idVS = idS;
             break;
         case ShaderType::FRAGMENT_SHADER:
@@ -211,7 +213,7 @@ bool vg::GLProgram::link() {
     }
 
     // Check for available shaders
-    if (!m_idVS || !m_idFS) {
+    if (!m_idVS) {
         linkError("Insufficient stages for a program link");
         return false;
     }
@@ -224,7 +226,7 @@ bool vg::GLProgram::link() {
         glAttachShader(m_id, m_idTCS);
         glAttachShader(m_id, m_idTES);
     }
-    glAttachShader(m_id, m_idFS);
+    if (m_idFS) glAttachShader(m_id, m_idFS);
     glLinkProgram(m_id);
 
     // Detach and delete shaders
@@ -243,11 +245,13 @@ bool vg::GLProgram::link() {
         glDeleteShader(m_idTES);
         m_idTES = 0;
     }
-    glDetachShader(m_id, m_idFS);
+    if (m_idFS) {
+        glDetachShader(m_id, m_idFS);
+        glDeleteShader(m_idFS);
+        m_idFS = 0;
+    }
     glDeleteShader(m_idVS);
-    glDeleteShader(m_idFS);
     m_idVS = 0;
-    m_idFS = 0;
 
     // Check the link status
     i32 status;

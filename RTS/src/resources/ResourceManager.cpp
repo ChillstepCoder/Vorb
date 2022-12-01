@@ -142,6 +142,14 @@ void ResourceManager::loadFiles() {
         };
     }
 
+    // Load Compute
+    {
+        ScopedTimer timer("Compute load");
+        for (auto&& entry : mComputeFiles) {
+            mMaterialManager->loadComputeShader(entry);
+        };
+    }
+
     // Load Animations
     {
         ScopedTimer timer("Animation load");
@@ -306,6 +314,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".material")) {
             mMaterialFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".comp")) {
+            mComputeFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".vert")) {
             ShaderLoader::registerVertexShaderPath(entry.getLeaf(), entry);

@@ -9,16 +9,13 @@ layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec2 vTangent;
 //layout(location = 6) in float vWindInfluence;
-layout(location = 7) in vec3 iPosition;
+layout(location = 7) in mat4 vModelMatrix;
 
 out vec2 fUV;
 flat out int fTextureIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
-
-
-
 
 void main() {
     fTint = vTint;
@@ -32,8 +29,10 @@ void main() {
 	fTBN = mat3(tangent, binormal, normal);
 	
 	fRoughness = 0.2;
-
-    vec4 worldPos = vPosition + vec4(iPosition - CameraPos, 0.0);
+    
+    //mat4 MVP = VP * iModels[gl_InstanceID];
+    
+    vec4 worldPos = (vModelMatrix * vPosition) - vec4(CameraPos, 0.0);
     //worldPos.x += getWindAtPosition(Time, vPosition) * 1.0;
     gl_Position = VP * worldPos;
 }

@@ -81,6 +81,13 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
     return true;
 }
 
+bool MaterialManager::loadComputeShader(const vio::Path& filePath) {
+    nString name = filePath.getFileNameNoExtension();
+    vg::GLProgram newProgram = ShaderLoader::createComputeProgramFromFile(name, filePath);
+    mComputeShaders[name] = std::move(newProgram);
+    return true;
+}
+
 const Material* MaterialManager::getMaterial(MaterialID id) const {
     return mMaterials.at(id).get();
 }
@@ -91,6 +98,16 @@ const Material* MaterialManager::getMaterial(const nString& strId) const {
         return mMaterials[it->second].get();
     }
     LOG_CRITICAL("Failed to find material {}", strId);
+    assert(false);
+    return nullptr;
+}
+
+const vg::GLProgram* MaterialManager::getComputeShader(const nString& strId) const {
+    auto&& it = mComputeShaders.find(strId);
+    if (it != mComputeShaders.end()) {
+        return &it->second;
+    }
+    LOG_CRITICAL("Failed to find compute shader {}", strId);
     assert(false);
     return nullptr;
 }

@@ -16,8 +16,45 @@ void vorb::graphics::ShaderManager::setMaterialRootDirectory(const vio::Path& ro
     mIoManager.setSearchDirectory(rootDir);
 }
 
-vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString compSrc, const cString defines) {
+    std::vector<nString> attributeNames;
+    std::vector<VGSemantic> semantics;
+    nString parsedCompSrc;
 
+    // Allocate program object
+    GLProgram program(true);
+    eventpp::ScopedRemover<GLProgramErrorCallbackList> shaderCompEvent(vg::GLProgram::onShaderCompilationError);
+    eventpp::ScopedRemover<GLProgramErrorCallbackList> linkEvent(vg::GLProgram::onProgramLinkError);
+    shaderCompEvent.append([](const nString& s) { triggerShaderCompilationError(s); });
+    linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
+
+    // Parse vertex shader code
+    ShaderParser::parseVertexShader(compSrc, parsedCompSrc, attributeNames, semantics, mIoManager);
+
+    // Create vertex shader
+    ShaderSource srcCompute;
+    srcCompute.stage = vg::ShaderType::COMPUTE_SHADER;
+    if (defines) srcCompute.sources.push_back(defines);
+    srcCompute.sources.push_back(parsedCompSrc.c_str());
+    if (!program.addShader(srcCompute)) {
+        program.dispose();
+        return m_nilProgram;
+    }
+
+    // Set the attributes
+    program.setAttributes(attributeNames, semantics);
+    // Link the program
+    if (!program.link()) {
+        program.dispose();
+        return m_nilProgram;
+    }
+    // Set uniforms
+    program.initUniforms();
+
+    return program;
+}
+
+vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
 
     std::vector<nString> attributeNames;
     std::vector<VGSemantic> semantics;
@@ -218,6 +255,27 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     return program;
 }
 
+
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& compPath, const cString defines /*= nullptr*/)
+{
+    vio::Path compSearchDir;
+
+    // Set search dir to same dir as the files
+    compSearchDir = compPath;
+    compSearchDir--;
+
+    nString compSrc;
+
+    // Load in the files with error checking
+    mIoManager.setLocalDirectory(compSearchDir);
+    if (!mIoManager.readFileToString(compPath, compSrc)) {
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + compPath.getString());
+        return m_nilProgram;
+    }
+
+    return createProgram(compSrc.c_str(), defines);
+}
+
 vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const cString defines) {
     vio::Path vertSearchDir;
     vio::Path fragSearchDir;
@@ -285,7 +343,6 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(
 
     return createProgram(vertSrc.c_str(), fragSrc.c_str(), geomSrc.c_str(), defines);
 }
-
 
 vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath, const cString defines /*= nullptr*/)
 {

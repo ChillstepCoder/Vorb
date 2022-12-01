@@ -5,11 +5,17 @@
 class Camera3D;
 class InstancedStaticModelGatherer;
 class Material;
+class GLIndirectBuffer;
 
 struct StaticModelInstanceData {
+    StaticModelInstanceData() = default;
+    ~StaticModelInstanceData();
+
     std::vector<StaticModelInstance> mInstances;
-    VGBuffer mInstanceVbo = 0;
-    bool mDirty = false;
+    std::unique_ptr<GLIndirectBuffer> mDrawCommands;
+    VGBuffer mTransformsVbo = 0;
+    ui32 mTransformsVboSizeBytes = 0;
+    bool mDirtyDrawCommands = false;
 };
 
 class InstancedStaticModelRenderer
@@ -25,7 +31,6 @@ public:
     ui32 getNumModels() const;
 private:
     std::map<ModelID, StaticModelInstanceData> mInstances;
-    std::vector<StaticModelInstance> mInstancesToRender[4]; // TODO: NO!
 
     const Material* mStandardMaterial = nullptr;
     const Material* mShadowMapperMaterial = nullptr;

@@ -159,6 +159,29 @@ void Mesh::drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const {
     glBindVertexArray(0);
 }
 
+void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) const
+{
+    assert(mMainMesh.mVao);
+    assert(mMainMesh.mLODData.mTotalIndexCount);
+
+    const SubMeshData* currentSubmesh = &mMainMesh;
+    // Draw any submeshes
+    do {
+        glBindVertexArray(currentSubmesh->mVao);
+        if (currentSubmesh->mUbo) {
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, currentSubmesh->mUbo);
+        }
+        if (currentSubmesh->mSSBO) {
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, currentSubmesh->mSSBO);
+        }
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
+        glMultiDrawElementsIndirect(GL_TRIANGLES, currentSubmesh->mIndexType, nullptr, (GLsizei)numDrawCommands, 0);
+        currentSubmesh = currentSubmesh->mNextSubmesh;
+    } while (currentSubmesh != nullptr);
+
+    glBindVertexArray(0);
+}
+
 void Mesh::destroy() {
     if (mMainMesh.mVao) {
         SubMeshData* subMesh = &mMainMesh;

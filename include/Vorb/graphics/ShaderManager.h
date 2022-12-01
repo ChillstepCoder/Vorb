@@ -57,6 +57,10 @@ namespace vorb {
             /// @param fragIOM: Optional IOManager for frag #include lookups
             /// @param defines: #defines for the program
             /// @return the created program.
+            /// 
+            static GLProgram createProgram(
+                const cString compSrc, const cString defines
+            );
             static GLProgram createProgram(
                 const cString vertSrc, const cString fragSrc, const cString defines
             );
@@ -73,6 +77,7 @@ namespace vorb {
             /// @param iom: Optional IOManager for loading
             /// @param defines: #defines for the program
             /// @return the created program.
+            static GLProgram createProgramFromFile(const vio::Path& compPath, const cString defines = nullptr);
             static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const cString defines = nullptr);
             static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath, const cString defines = nullptr);
             static GLProgram createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath, const cString defines = nullptr);

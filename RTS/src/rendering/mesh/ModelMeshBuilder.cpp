@@ -301,7 +301,7 @@ void ModelMeshBuilder::updateInstanceDataForStaticModel(const Mesh& mesh, VGBuff
     do {
         glVertexArrayVertexBuffer(meshData->mVao, 1, instanceDataVbo, 0, sizeof(StaticModelInstance));
         glEnableVertexArrayAttrib(meshData->mVao, 7);
-        glVertexArrayAttribFormat(meshData->mVao, 7, 3, GL_FLOAT, GL_FALSE, offsetof(StaticModelInstance, pos));
+        //glVertexArrayAttribFormat(meshData->mVao, 7, 3, GL_FLOAT, GL_FALSE, offsetof(StaticModelInstance, pos));
         glVertexArrayAttribBinding(meshData->mVao, 7, 1);
         glVertexArrayBindingDivisor(meshData->mVao, 1, 1);
 

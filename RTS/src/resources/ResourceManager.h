@@ -65,6 +65,7 @@ private:
     // TODO: ResourceLoader?
     std::vector<vio::Path> mTextureFiles;
     std::vector<vio::Path> mMaterialFiles;
+    std::vector<vio::Path> mComputeFiles;
     std::vector<vio::Path> mTileFiles;
     std::vector<vio::Path> mParticleSystemFiles;
     std::vector<vio::Path> mRoomFiles;

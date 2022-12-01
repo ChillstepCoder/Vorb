@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rendering/gl/GLObjects.h"
+
 // Enough for a full chunk of grass + padding
 // TODO: How much do we really save doing this?
 // Profile how often we use this...
@@ -83,6 +85,7 @@ public:
     void draw(MeshLODLevel lod) const;
     void drawInstanced(GLsizei instanceCount) const;
     void drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const;
+    void drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) const;
     void destroy();
     bool isValid() const { return mMainMesh.mVao != 0; }
 

@@ -27,6 +27,7 @@ public:
     /// Gets a previously created program by name
     static vg::GLProgram getProgram(const nString& name);
 
+
     /// Gets or creates a program from two shader paths
     // TODO: c_strings for less heap alloc
     static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName = "", const nString tessControlShaderName = "", const nString tessEvalShaderName = "");
@@ -39,6 +40,8 @@ public:
     /// Creates a program using passed code, and does error checking
     /// Does not register with global cache
     static CALLER_DELETE vg::GLProgram createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines = nullptr);
+
+    static CALLER_DELETE vg::GLProgram createComputeProgramFromFile(const nString& name, const vio::Path& path);
 
     static void registerVertexShaderPath(const nString& name, const vio::Path& path) {
         sVertexShaderNameToPath[name] = path;

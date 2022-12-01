@@ -128,6 +128,32 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
     return program;
 }
 
+CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nString& name, const vio::Path& path)
+{
+    ScopedRemover events(vg::ShaderManager::errorDispatcher);
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const nString& s) { printFileIOError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const nString& s) { printShaderError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const nString& s) { printLinkError(s); });
+
+    assert(!vg::ShaderManager::getProgram(name).isLinked());
+
+    vg::GLProgram program;
+    while (true) {
+        program = vg::ShaderManager::createProgramFromFile(path);
+        if (program.isLinked()) break;
+        program.dispose();
+        printf("Enter any key to try recompiling with Compute Shader: %s\nEnter Z to abort.\n", path.getCString());
+        char tmp;
+        std::cin >> tmp;
+        if (tmp == 'Z' || tmp == 'z') break;
+    }
+
+    if (program.isLinked()) {
+        vg::ShaderManager::registerProgram(name, program);
+    }
+    return program;
+}
+
 void ShaderLoader::clearAllCachedPrograms() {
     sProgramCache.clear();
 }
