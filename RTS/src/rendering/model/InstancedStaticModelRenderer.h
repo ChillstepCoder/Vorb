@@ -7,6 +7,8 @@ class InstancedStaticModelGatherer;
 class Material;
 class GLIndirectBuffer;
 
+DECL_VG(class GLProgram);
+
 struct StaticModelInstanceData {
     StaticModelInstanceData() = default;
     ~StaticModelInstanceData();
@@ -14,6 +16,7 @@ struct StaticModelInstanceData {
     std::vector<StaticModelInstance> mInstances;
     std::unique_ptr<GLIndirectBuffer> mDrawCommands;
     VGBuffer mTransformsVbo = 0;
+    VGBuffer mBoundingSpheresBuffer = 0;
     ui32 mTransformsVboSizeBytes = 0;
     bool mDirtyDrawCommands = false;
 };
@@ -31,8 +34,10 @@ public:
     ui32 getNumModels() const;
 private:
     std::map<ModelID, StaticModelInstanceData> mInstances;
+    GLBuffer mGpuCullingUniformBuffer;
 
     const Material* mStandardMaterial = nullptr;
     const Material* mShadowMapperMaterial = nullptr;
+    const vg::GLProgram* mCullingComputeShader = nullptr;
 };
 

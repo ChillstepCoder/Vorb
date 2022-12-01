@@ -376,6 +376,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     if (ImGui::CollapsingHeader("Models")) {
         ImGui::Checkbox("Hide Models", &sDebugOptions.mHideModels);
         ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
+        ImGui::Checkbox("CPU Culling", &sDebugOptions.mDisableGPUCulling);
         ImGui::SliderFloat3("LOD Distances", sDebugOptions.mLodDistances, 0.0f, 1000.0f);
 
     }

@@ -263,6 +263,9 @@ void ResourceManager::reloadMaterials() {
     for (auto&& entry : mMaterialFiles) {
         mMaterialManager->loadMaterial(entry);
     };
+    for (auto&& entry : mComputeFiles) {
+        mMaterialManager->loadComputeShader(entry);
+    };
 
     LOG_DEBUG("...done");
 }

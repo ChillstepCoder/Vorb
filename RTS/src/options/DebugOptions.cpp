@@ -4,7 +4,7 @@
 DebugOptions sDebugOptions;
 
 // Lower for faster loading in test
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.3f;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 1.0f;
 
 DebugOptions::DebugOptions() :
     mTimeOffset(0.0f),
@@ -72,6 +72,7 @@ DebugOptions::DebugOptions() :
     mShowDevHud(true),
     mHideModels(false),
     mDisableLOD(false),
+    mDisableGPUCulling(false),
     // Water
     mShallowWaterColor(159.0f / 255.0f, 194.0f / 255.0f, 206.0f / 255.0f, 185.0f / 255.0f),
     mDeepWaterColor(57.0f / 255.0f, 83.0f / 255.0f, 122.0f / 255.0f, 191.0f / 255.0f),

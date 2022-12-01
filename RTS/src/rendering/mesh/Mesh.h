@@ -1,7 +1,5 @@
 #pragma once
 
-#include "rendering/gl/GLObjects.h"
-
 // Enough for a full chunk of grass + padding
 // TODO: How much do we really save doing this?
 // Profile how often we use this...

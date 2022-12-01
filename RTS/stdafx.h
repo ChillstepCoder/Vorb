@@ -110,6 +110,9 @@ inline void setThreadPriorityToMax() {
 #endif
 }
 
+// **************** NEW GRAPHICS API *****************
+#include "rendering/gl/GLObjects.h"
+
 
 typedef GLuint64 TextureHandle;
 

@@ -13,20 +13,31 @@
 
 #include "camera/Camera3D.h"
 
+struct GpuCullUniformData {
+    f32v4 cameraPos;
+    f32v4 frustumPlanes[4];
+    MeshLODDrawInfo lodDrawInfos[4];
+    float lodDistancesSQ[4];
+    ui32 numShapesToCull;
+};
+static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
+
 StaticModelInstanceData::~StaticModelInstanceData()
 {
 
 }
 
-InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
+InstancedStaticModelRenderer::InstancedStaticModelRenderer() : mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT) {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mStandardMaterial = materialManager.getMaterial("standard_model");
     mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper_instanced");
+    mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
     for (auto& it : mInstances) {
         glDeleteBuffers(1, &it.second.mTransformsVbo);
+        glDeleteBuffers(1, &it.second.mBoundingSpheresBuffer);
     }
 }
 
@@ -45,7 +56,9 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
 
     PROFILE_FUNCTION();
 
-    MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
+    // Only do this once per frame because its expensive
+    bool didUpdateACommandBuffer = false;
+    
     for (auto& it : mInstances) {
         StaticModelInstanceData& instanceData = it.second;
         // TODO: Move this to onRemove
@@ -67,87 +80,162 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
         }
 
         if (instanceData.mDirtyDrawCommands) {
-            instanceData.mDirtyDrawCommands = false;
-            // Rebuild command buffer
-            instanceData.mDrawCommands = std::make_unique<GLIndirectBuffer>(instanceData.mInstances.size());
-            for (size_t i = 0; i < instanceData.mDrawCommands->drawCommands_.size(); ++i) {
-                DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->drawCommands_[i];
-                cmd.count_ = 0;
-                cmd.firstIndex_ = 0;
-                cmd.baseVertex_ = 0;
-                cmd.baseInstance_ = i;
-            }
-
-            // Allocate VBO
-            GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * instanceData.mInstances.size();
-            if (instanceData.mTransformsVbo == 0) {
-                glCreateBuffers(1, &instanceData.mTransformsVbo);
-                glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
-                glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 8);
-                glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 9);
-                glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 10);
-                glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
-                glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
-                glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
-                glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
-                glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, 1);
-                glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, 1);
-                glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, 1);
-                glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, 1);
-                glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, 1, 1);
-                glNamedBufferStorage(instanceData.mTransformsVbo, bufferSizeBytes, instanceData.mInstances.data(), 0);
-                glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstance));
-                instanceData.mTransformsVboSizeBytes = bufferSizeBytes;
-            }
-            else if (bufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
-                // Grow to new size
-                glDeleteBuffers(1, &instanceData.mTransformsVbo);
-                glCreateBuffers(1, &instanceData.mTransformsVbo);
-                glNamedBufferStorage(instanceData.mTransformsVbo, bufferSizeBytes, instanceData.mInstances.data(), 0);
-                glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstance));
-                instanceData.mTransformsVboSizeBytes = bufferSizeBytes;
+            if (didUpdateACommandBuffer) {
+                // If we dont have a valid command buffer yet, just skip this draw
+                if (!instanceData.mDrawCommands) {
+                    continue;
+                }
             }
             else {
-                glNamedBufferSubData(instanceData.mTransformsVbo, 0, bufferSizeBytes, instanceData.mInstances.data());
+                didUpdateACommandBuffer = !sDebugOptions.mDisableGPUCulling; // disabled when cpu culling
+                PROFILE_SCOPE("Rebuild Indirect Buffer");
+                instanceData.mDirtyDrawCommands = false;
+                // Rebuild command buffer
+                {
+                    PROFILE_SCOPE("Indirect Buffer");
+                    instanceData.mDrawCommands = std::make_unique<GLIndirectBuffer>(instanceData.mInstances.size());
+                    for (size_t i = 0; i < instanceData.mDrawCommands->mDrawCommands.size(); ++i) {
+                        DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->mDrawCommands[i];
+                        cmd.count_ = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(0)).indexCount; // TODO: FIX
+                        cmd.firstIndex_ = 0;
+                        cmd.baseVertex_ = 0;
+                        cmd.baseInstance_ = i;
+                    }
+                }
+
+                // Allocate VBO
+                {
+                    PROFILE_SCOPE("VBO");
+                    GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * instanceData.mInstances.size();
+                    if (instanceData.mTransformsVbo == 0) {
+                        glCreateBuffers(1, &instanceData.mTransformsVbo);
+                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
+                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 8);
+                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 9);
+                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 10);
+                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
+                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
+                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
+                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
+                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, 1);
+                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, 1);
+                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, 1);
+                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, 1);
+                        glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, 1, 1);
+                        glNamedBufferStorage(instanceData.mTransformsVbo, bufferSizeBytes, instanceData.mInstances.data(), 0);
+                        glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstance));
+                        instanceData.mTransformsVboSizeBytes = bufferSizeBytes;
+                    }
+                    else if (bufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
+                        // Grow to new size
+                        glDeleteBuffers(1, &instanceData.mTransformsVbo);
+                        glCreateBuffers(1, &instanceData.mTransformsVbo);
+                        glNamedBufferStorage(instanceData.mTransformsVbo, bufferSizeBytes, instanceData.mInstances.data(), 0);
+                        glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstance));
+                        instanceData.mTransformsVboSizeBytes = bufferSizeBytes;
+                    }
+                    else {
+                        glNamedBufferSubData(instanceData.mTransformsVbo, 0, bufferSizeBytes, instanceData.mInstances.data());
+                    }
+                    instanceData.mDrawCommands->uploadIndirectBuffer();
+                }
+
+                // TODO: Real
+                PROFILE_SCOPE("Bounding spheres");
+                std::vector<BoundingSphere> boundingSpheres;
+                boundingSpheres.resize(instanceData.mInstances.size());
+                for (size_t i = 0; i < boundingSpheres.size(); ++i) {
+                    boundingSpheres[i].center = reinterpret_cast<const f32v3&>(instanceData.mInstances[i].matrix[3]);
+                    boundingSpheres[i].radius = 10.0f;
+                }
+                // Update bounding spheres
+                glDeleteBuffers(1, &instanceData.mBoundingSpheresBuffer);
+                glCreateBuffers(1, &instanceData.mBoundingSpheresBuffer);
+                glNamedBufferStorage(instanceData.mBoundingSpheresBuffer, sizeof(BoundingSphere) * boundingSpheres.size(), boundingSpheres.data(), 0);
             }
         }
 
         GLIndirectBuffer& drawCommands = *instanceData.mDrawCommands;
+        const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
 
-        // TODO: Culling
-        assert(drawCommands.drawCommands_.size() == instanceData.mInstances.size());
 
-        for (size_t i = 0; i < instanceData.mInstances.size(); ++i) {
-            DrawElementsIndirectCommand& cmd = drawCommands.drawCommands_[i];
-            StaticModelInstance& instance = instanceData.mInstances[i];
-            // Columns are first
-            const f32v3& pos = reinterpret_cast<const f32v3&>(instance.matrix[3]);
-            if (camera.sphereIsVisible(pos, 10.0f)) {
-                cmd.instanceCount_ = 1;
-                MeshLODDrawInfo drawInfo;
-                f32 distance2 = glm::length2(pos - camera.getPosition());
-                if (distance2 < SQ(sDebugOptions.mLodDistances[0]) || sDebugOptions.mDisableLOD) {
-                    drawInfo = drawInfos[0];
-                }
-                else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
-                    drawInfo = drawInfos[1];
-                }
-                else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
-                    drawInfo = drawInfos[2];
-                }
-                else {
-                    drawInfo = drawInfos[3];
-                }
-                cmd.count_ = drawInfo.indexCount;
-                cmd.firstIndex_ = drawInfo.startIndex;
+        if (sDebugOptions.mDisableGPUCulling == false) {
+            PROFILE_SCOPE("GPU Culling");
+            // GPU Culling
+            GpuCullUniformData uniformData;
+            const f32v3& camPos = camera.getPosition();
+            uniformData.cameraPos = f32v4(camPos.x, camPos.y, camPos.z, 1.0f);
+            uniformData.numShapesToCull = drawCommandsSize;
+            if (sDebugOptions.mDisableLOD) {
+                uniformData.lodDistancesSQ[0] = FLT_MAX;
             }
             else {
-                cmd.instanceCount_ = 0;
+                for (int i = 0; i < 3; ++i) {
+                    uniformData.lodDistancesSQ[i] = SQ(sDebugOptions.mLodDistances[i]);
+                }
             }
-        }
+            for (int i = 0; i < 4; ++i) {
+                uniformData.frustumPlanes[i] = camera.getFrustum().getPlane(i).vec4Data;
+                uniformData.lodDrawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
+            }
+            mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
 
-        drawCommands.uploadIndirectBuffer();
-        mesh.drawIndirect(drawCommands.drawCommands_.size(), &drawCommands);
+            mCullingComputeShader->use();
+            glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, mGpuCullingUniformBuffer.getHandle());
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mBoundingSpheresBuffer);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, drawCommands.getHandle());
+            //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, numVisibleMeshesBuffer.getHandle());
+            if (drawCommandsSize % 64 == 0) {
+                glDispatchCompute((GLuint)drawCommandsSize / 64, 1, 1);
+            }
+            else {
+                glDispatchCompute(1 + (GLuint)drawCommandsSize / 64, 1, 1);
+            }
+            glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+            const GLsync fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+            MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
+            mesh.drawIndirect(drawCommandsSize, &drawCommands);
+        }
+        else {
+            assert(drawCommandsSize == instanceData.mInstances.size());
+            PROFILE_SCOPE("CPU Culling");
+            // CPU Culling
+            for (size_t i = 0; i < instanceData.mInstances.size(); ++i) {
+                DrawElementsIndirectCommand& cmd = drawCommands.mDrawCommands[i];
+                StaticModelInstance& instance = instanceData.mInstances[i];
+                // Columns are first
+                const f32v3& pos = reinterpret_cast<const f32v3&>(instance.matrix[3]);
+                if (camera.sphereIsVisible(pos, 10.0f)) {
+                    cmd.instanceCount_ = 1;
+                    MeshLODDrawInfo drawInfo;
+                    f32 distance2 = glm::length2(pos - camera.getPosition());
+                    if (distance2 < SQ(sDebugOptions.mLodDistances[0]) || sDebugOptions.mDisableLOD) {
+                        drawInfo = drawInfos[0];
+                    }
+                    else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
+                        drawInfo = drawInfos[1];
+                    }
+                    else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
+                        drawInfo = drawInfos[2];
+                    }
+                    else {
+                        drawInfo = drawInfos[3];
+                    }
+                    cmd.count_ = drawInfo.indexCount;
+                    cmd.firstIndex_ = drawInfo.startIndex;
+                }
+                else {
+                    cmd.instanceCount_ = 0;
+                }
+            }
+
+            drawCommands.uploadIndirectBuffer();
+
+            MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
+            mesh.drawIndirect(drawCommands.mDrawCommands.size(), &drawCommands);
+        }
     }
     // TODO: Material specific
     glEnable(GL_CULL_FACE);

@@ -178,7 +178,7 @@ namespace vorb {
             void disableVertexAttribArrays() const;
 
             /// Tell the GPU to use the program
-            void use();
+            void use() const;
             /// Will unuse whatever program is currently in use
             static void unuse();
 

@@ -12,42 +12,41 @@ struct DrawElementsIndirectCommand
 class GLBuffer
 {
 public:
+    VORB_NON_COPYABLE_BUT_MOVABLE(GLBuffer);
+
+    GLBuffer() = default;
     GLBuffer(GLsizeiptr size, const void* data, GLbitfield flags);
     ~GLBuffer();
 
-    GLuint getHandle() const { return handle_; }
+    void allocate(GLsizeiptr size, const void* data, GLbitfield flags);
+    void updateSubData(GLintptr offset, GLsizeiptr size, const void* data) {
+        assert(mHandle);
+        glNamedBufferSubData(mHandle, offset, size, data);
+    }
+
+    void destroy();
+
+    GLuint getHandle() const { return mHandle; }
 
 private:
-    GLuint handle_;
+    GLuint mHandle = 0;
 };
 
 class GLIndirectBuffer final
 {
 public:
+    VORB_NON_COPYABLE_BUT_MOVABLE(GLIndirectBuffer);
+
     explicit GLIndirectBuffer(size_t maxDrawCommands)
-        : bufferIndirect_(sizeof(DrawElementsIndirectCommand)* maxDrawCommands, nullptr, GL_DYNAMIC_STORAGE_BIT)
-        , drawCommands_(maxDrawCommands)
+        : mIndirectBuffer(sizeof(DrawElementsIndirectCommand)* maxDrawCommands, nullptr, GL_DYNAMIC_STORAGE_BIT)
+        , mDrawCommands(maxDrawCommands)
     {}
 
-    GLuint getHandle() const { return bufferIndirect_.getHandle(); }
-    void uploadIndirectBuffer()
-    {
-        glNamedBufferSubData(bufferIndirect_.getHandle(), 0, sizeof(DrawElementsIndirectCommand) * drawCommands_.size(), drawCommands_.data());
-    }
+    GLuint getHandle() const { return mIndirectBuffer.getHandle(); }
+    void uploadIndirectBuffer();
 
-    void selectTo(GLIndirectBuffer& buf, const std::function<bool(const DrawElementsIndirectCommand&)>& pred)
-    {
-        buf.drawCommands_.clear();
-        for (const auto& c : drawCommands_)
-        {
-            if (pred(c))
-                buf.drawCommands_.push_back(c);
-        }
-        buf.uploadIndirectBuffer();
-    }
-
-    std::vector<DrawElementsIndirectCommand> drawCommands_;
+    std::vector<DrawElementsIndirectCommand> mDrawCommands;
 
 private:
-    GLBuffer bufferIndirect_;
+    GLBuffer mIndirectBuffer;
 };

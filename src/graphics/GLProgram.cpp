@@ -333,7 +333,7 @@ void vg::GLProgram::disableVertexAttribArrays() const {
     }
 }
 
-void vg::GLProgram::use() {
+void vg::GLProgram::use() const {
     if (!isInUse()) {
         m_programInUse = m_id;
         glUseProgram(m_id);

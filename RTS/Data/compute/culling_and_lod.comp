@@ -1,25 +1,24 @@
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-layout(std140, binding = 0) uniform PerFrameData
+layout(std140, binding = 1) uniform PerFrameData
 {
-	mat4 view;
-	mat4 proj;
-	mat4 light;
 	vec4 cameraPos;
-	vec4 frustumPlanes[6];
-	vec4 frustumCorners[8];
+	vec4 frustumPlanes[4]; // Ignoring near and far plane
+    uvec4 lodDrawInfos[2]; // 4 pairs of <firstIndex, count> representing the 4 LOD levels, packed into uvec4 cause std140 is lame
+    vec3 lodDistancesSQ;
 	uint numShapesToCull;
 };
 
-struct AABB
+struct BoundingSphere
 {
-	float pt[6];
+	float center[3];
+    float radius;
 };
 
-layout(std430, binding = 1) buffer BoundingBoxes
+layout(std430, binding = 2) buffer BoundingSpheres
 {
-	AABB in_AABBs[];
+	BoundingSphere inBoundingSpheres[];
 };
 
 struct DrawCommand
@@ -31,63 +30,62 @@ struct DrawCommand
 	uint baseInstance;
 };
 
-layout(std430, binding = 2) buffer DrawCommands
+layout(std430, binding = 3) buffer DrawCommands
 {
-	DrawCommand in_DrawCommands[];
+	DrawCommand inDrawCommands[];
 };
 
-layout(std430, binding = 3) buffer NumVisibleMeshes
+//layout(std430, binding = 4) buffer NumVisibleMeshes
+//{
+//	uint numVisibleMeshes;
+//};
+
+float planeDistance(vec4 plane, vec3 point) {
+    return plane.w + dot(plane.xyz, point);
+}
+
+uint sphereCheckAndUpdateLOD()
 {
-	uint numVisibleMeshes;
-};
+    const uint idx = gl_GlobalInvocationID.x;
+	BoundingSphere sphere = inBoundingSpheres[inDrawCommands[idx].baseInstance];
+    
+    // Sphere Check
+    // IGNORING FAR AND NEAR CLIPPING PLANE
+    vec3 offset = vec3(sphere.center[0], sphere.center[1], sphere.center[2]) - cameraPos.xyz;
+    // Frustum assumes camera always at 0 so we simply use an offset
+	for (int p = 0; p < 4; ++p) { 
+        if (planeDistance(frustumPlanes[p], offset) <= -sphere.radius) {
+            return 0;
+        }
+    }
+    
+    // Update LOD
+    float distance2 = dot(offset, offset);
+    if (distance2 < lodDistancesSQ[0]) {
+        inDrawCommands[idx].firstIndex = lodDrawInfos[0].x;
+        inDrawCommands[idx].count = lodDrawInfos[0].y;
+    } else if (distance2 < lodDistancesSQ[1]) {
+        inDrawCommands[idx].firstIndex = lodDrawInfos[0].z;
+        inDrawCommands[idx].count = lodDrawInfos[0].w;
+    } else if (distance2 < lodDistancesSQ[2]) {
+        inDrawCommands[idx].firstIndex = lodDrawInfos[1].x;
+        inDrawCommands[idx].count = lodDrawInfos[1].y;
+    } else {
+        inDrawCommands[idx].firstIndex = lodDrawInfos[1].z;
+        inDrawCommands[idx].count = lodDrawInfos[1].w;
+    }
 
-#define Box_min_x box.pt[0]
-#define Box_min_y box.pt[1]
-#define Box_min_z box.pt[2]
-#define Box_max_x box.pt[3]
-#define Box_max_y box.pt[4]
-#define Box_max_z box.pt[5]
-
-bool isAABBinFrustum(AABB box)
-{
-	for (int i = 0; i < 6; i++) {
-		int r = 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_min_x, Box_min_y, Box_min_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_max_x, Box_min_y, Box_min_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_min_x, Box_max_y, Box_min_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_max_x, Box_max_y, Box_min_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_min_x, Box_min_y, Box_max_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_max_x, Box_min_y, Box_max_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_min_x, Box_max_y, Box_max_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		r += ( dot( frustumPlanes[i], vec4(Box_max_x, Box_max_y, Box_max_z, 1.0f) ) < 0.0 ) ? 1 : 0;
-		if ( r == 8 ) return false;
-	}
-
-	int r = 0;
-	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].x > Box_max_x) ? 1 : 0 ); if ( r == 8 ) return false;
-	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].x < Box_min_x) ? 1 : 0 ); if ( r == 8 ) return false;
-	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].y > Box_max_y) ? 1 : 0 ); if ( r == 8 ) return false;
-	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].y < Box_min_y) ? 1 : 0 ); if ( r == 8 ) return false;
-	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].z > Box_max_z) ? 1 : 0 ); if ( r == 8 ) return false;
-	r = 0; for ( int i = 0; i < 8; i++ ) r += ( (frustumCorners[i].z < Box_min_z) ? 1 : 0 ); if ( r == 8 ) return false;
-
-	return true;
+    return 1;
 }
 
 void main()
 {
 	const uint idx = gl_GlobalInvocationID.x;
 
-	// skip items beyond sceneData.shapes_.size()
 	if (idx < numShapesToCull)
 	{
-		AABB box = in_AABBs[in_DrawCommands[idx].baseInstance >> 16];
-		uint numInstances = isAABBinFrustum(box) ? 1 : 0;
-		in_DrawCommands[idx].instanceCount = numInstances;
-		atomicAdd(numVisibleMeshes, numInstances);
-	}
-	else
-	{
-		in_DrawCommands[idx].instanceCount = 1;
+		uint numInstances = sphereCheckAndUpdateLOD();
+		inDrawCommands[idx].instanceCount = numInstances;
+		//atomicAdd(numVisibleMeshes, numInstances);
 	}
 }

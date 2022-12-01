@@ -39,8 +39,13 @@ namespace vorb {
                 void setCoefficients(f32 a, f32 b, f32 c, f32 d);
                 f32 distance(const f32v3 &p) const;
 
-                f32v3 normal;
-                f32 d;
+                union {
+                    struct {
+                        f32v3 normal;
+                        f32 d;
+                    };
+                    f32v4 vec4Data;
+                };
             };
 
             /// Sets internal camera properties. Needed for update()
@@ -64,6 +69,8 @@ namespace vorb {
             /// @param radius: Radius of the sphere
             /// @return true if it is in the frustum
             bool sphereInFrustum(const f32v3& pos, f32 radius) const;
+
+            const Plane& getPlane(int index) const { return m_planes[index]; }
 
         private:
 
