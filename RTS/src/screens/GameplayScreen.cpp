@@ -525,9 +525,11 @@ void GameplayScreen::initInputs()
         else if (event.keyCode == VKEY_U) {
             if (sDebugOptions.mCameraMode == CameraMode::MMO) {
                 sDebugOptions.mCameraMode = CameraMode::FIRST_PERSON;
+                GameThreadTasks::getInstance().addHideLocalPlayerModelTask(true);
             }
             else {
                 sDebugOptions.mCameraMode = CameraMode::MMO;
+                GameThreadTasks::getInstance().addHideLocalPlayerModelTask(false);
             }
         }
         else if (event.keyCode == VKEY_F) {

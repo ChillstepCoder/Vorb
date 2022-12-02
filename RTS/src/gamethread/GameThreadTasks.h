@@ -21,6 +21,7 @@ public:
     // Tasks
     void addGenericTask(GameFunction func, void* data) { mGameThreadProcs.enqueue(std::make_pair(func, data)); }
     void addCameraPickTeleportTask(const f32v3& camPos, const f32v3& camDir);
+    void addHideLocalPlayerModelTask(bool hide);
 
     size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx(); }
 

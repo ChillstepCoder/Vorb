@@ -55,6 +55,7 @@ struct CharacterControlComponent {
     f32 mSpeedRun = 4.167f; // ~15 kmph // TODO: AttributesComponent
     CharacterLocomotionMode mMode = CharacterLocomotionMode::IDLE;
     CharacterLocomotionMode mDesiredMode = CharacterLocomotionMode::IDLE;
+    bool mHideModel = false;// TODO: Flags
 
     // TODO: Mask
     bool isInAirState() const { return mMode == CharacterLocomotionMode::BEGIN_JUMP || mMode == CharacterLocomotionMode::JUMPING || mMode == CharacterLocomotionMode::FALLING; }

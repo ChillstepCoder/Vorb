@@ -10,15 +10,9 @@ layout(std140, binding = 1) uniform PerFrameData
 	uint numShapesToCull;
 };
 
-struct BoundingSphere
+layout(std430, binding = 2) buffer ModelMatrices
 {
-	float center[3];
-    float radius;
-};
-
-layout(std430, binding = 2) buffer BoundingSpheres
-{
-	BoundingSphere inBoundingSpheres[];
+	mat4 inModelMatrices[];
 };
 
 struct DrawCommand
@@ -30,49 +24,37 @@ struct DrawCommand
 	uint baseInstance;
 };
 
-layout(std430, binding = 3) buffer DrawCommands
+layout(std430, binding = 3) buffer InDrawCommands
 {
 	DrawCommand inDrawCommands[];
 };
 
+
+
+// Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
 //layout(std430, binding = 4) buffer NumVisibleMeshes
 //{
 //	uint numVisibleMeshes;
+//};
+//layout(std430, binding = 5) buffer OutDrawCommands
+//{
+//	DrawCommand outDrawCommands[];
 //};
 
 float planeDistance(vec4 plane, vec3 point) {
     return plane.w + dot(plane.xyz, point);
 }
 
-uint sphereCheckAndUpdateLOD()
+uint sphereCheckAndUpdateLOD(vec3 offset)
 {
-    const uint idx = gl_GlobalInvocationID.x;
-	BoundingSphere sphere = inBoundingSpheres[inDrawCommands[idx].baseInstance];
-    
     // Sphere Check
     // IGNORING FAR AND NEAR CLIPPING PLANE
-    vec3 offset = vec3(sphere.center[0], sphere.center[1], sphere.center[2]) - cameraPos.xyz;
     // Frustum assumes camera always at 0 so we simply use an offset
+    float sphereRadius = 10.0;
 	for (int p = 0; p < 4; ++p) { 
-        if (planeDistance(frustumPlanes[p], offset) <= -sphere.radius) {
+        if (planeDistance(frustumPlanes[p], offset) <= -sphereRadius) {
             return 0;
         }
-    }
-    
-    // Update LOD
-    float distance2 = dot(offset, offset);
-    if (distance2 < lodDistancesSQ[0]) {
-        inDrawCommands[idx].firstIndex = lodDrawInfos[0].x;
-        inDrawCommands[idx].count = lodDrawInfos[0].y;
-    } else if (distance2 < lodDistancesSQ[1]) {
-        inDrawCommands[idx].firstIndex = lodDrawInfos[0].z;
-        inDrawCommands[idx].count = lodDrawInfos[0].w;
-    } else if (distance2 < lodDistancesSQ[2]) {
-        inDrawCommands[idx].firstIndex = lodDrawInfos[1].x;
-        inDrawCommands[idx].count = lodDrawInfos[1].y;
-    } else {
-        inDrawCommands[idx].firstIndex = lodDrawInfos[1].z;
-        inDrawCommands[idx].count = lodDrawInfos[1].w;
     }
 
     return 1;
@@ -81,11 +63,62 @@ uint sphereCheckAndUpdateLOD()
 void main()
 {
 	const uint idx = gl_GlobalInvocationID.x;
-
-	if (idx < numShapesToCull)
-	{
-		uint numInstances = sphereCheckAndUpdateLOD();
-		inDrawCommands[idx].instanceCount = numInstances;
-		//atomicAdd(numVisibleMeshes, numInstances);
-	}
+    if (idx < numShapesToCull) {
+        // Extract position from the model matrix
+        const mat4 modelMatrix = inModelMatrices[idx];
+        vec3 offset = vec3(modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]) - cameraPos.xyz;
+        uint numInstances = sphereCheckAndUpdateLOD(offset);
+        inDrawCommands[idx].instanceCount = numInstances;
+        if (numInstances == 1) {
+            // Update LOD
+            float distance2 = dot(offset, offset);
+            if (distance2 < lodDistancesSQ[0]) {
+                inDrawCommands[idx].firstIndex = lodDrawInfos[0].x;
+                inDrawCommands[idx].count = lodDrawInfos[0].y;
+            } else if (distance2 < lodDistancesSQ[1]) {
+                inDrawCommands[idx].firstIndex = lodDrawInfos[0].z;
+                inDrawCommands[idx].count = lodDrawInfos[0].w;
+            } else if (distance2 < lodDistancesSQ[2]) {
+                inDrawCommands[idx].firstIndex = lodDrawInfos[1].x;
+                inDrawCommands[idx].count = lodDrawInfos[1].y;
+            } else {
+                inDrawCommands[idx].firstIndex = lodDrawInfos[1].z;
+                inDrawCommands[idx].count = lodDrawInfos[1].w;
+            }
+        }
+    }
 }
+
+// TODO: Investigate why, hardware? Driver? - Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
+//void main()
+//{
+//	const uint idx = gl_GlobalInvocationID.x;
+//    if (idx < numShapesToCull) {
+//        // Extract position from the model matrix
+//        const mat4 modelMatrix = inModelMatrices[idx];
+//        vec3 offset = vec3(modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]) - cameraPos.xyz;
+//        uint numInstances = sphereCheckAndUpdateLOD(offset);
+//        if (numInstances == 1) {
+//        
+//            uint commandIndex = atomicAdd(numVisibleMeshes, numInstances); // This drops us to 88fps
+//            inDrawCommands[commandIndex].instanceCount = 1;
+//            inDrawCommands[commandIndex].baseInstance = inDrawCommands[idx].baseInstance;
+//            // Update LOD
+//            float distance2 = dot(offset, offset);
+//            if (distance2 < lodDistancesSQ[0]) {
+//                inDrawCommands[commandIndex].firstIndex = lodDrawInfos[0].x;
+//               inDrawCommands[commandIndex].count = lodDrawInfos[0].y;
+//            } else if (distance2 < lodDistancesSQ[1]) {
+//                outDrawCommands[commandIndex].firstIndex = lodDrawInfos[0].z;
+//                outDrawCommands[commandIndex].count = lodDrawInfos[0].w;
+//            } else if (distance2 < lodDistancesSQ[2]) {
+//                outDrawCommands[commandIndex].firstIndex = lodDrawInfos[1].x;
+//                outDrawCommands[commandIndex].count = lodDrawInfos[1].y;
+//            } else {
+//                outDrawCommands[commandIndex].firstIndex = lodDrawInfos[1].z;
+//                outDrawCommands[commandIndex].count = lodDrawInfos[1].w;
+//            }
+//        }
+//    }
+//}
+

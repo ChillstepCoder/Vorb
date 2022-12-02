@@ -18,7 +18,8 @@ namespace TileMeshBuilderMethods {
         BillboardMeshBuilder* billboardMeshBuilder,
         InstancedStaticModelGatherer& modelGatherer,
         const TileContainer& tileContainer,
-        OPT StaticPhysicsMeshBuilder* physMesh
+        OPT StaticPhysicsMeshBuilder* physMesh,
+        OPT const f32* heightData = nullptr
     );
     void meshTileContainerDynamic(ProceduralMeshBuilder& meshBuilder, const TileContainer& tileContainer);
 

@@ -1,9 +1,9 @@
 // Input
-layout(location = 0) in vec3 vPosition; // Position in world space
-layout(location = 7) in vec3 iPosition;
+layout(location = 0) in vec4 vPosition; // Position in world space
+layout(location = 7) in mat4 vModelMatrix;
 
 #include "../../GlobalUbo.glsl"
 
 void main() {
-  gl_Position = vec4(vPosition + (iPosition - CameraPos), 1.0);
+  gl_Position = (vModelMatrix * vPosition) - vec4(CameraPos, 0.0);
 }

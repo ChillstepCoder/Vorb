@@ -7,6 +7,7 @@
 
 #include "tile/TileHandle.h"
 #include "tile/Stairs.h"
+#include "math/Random.h"
 #include "world/Chunk.h"
 
 #include "physics/StaticPhysicsMeshBuilder.h"
@@ -476,7 +477,8 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
     BillboardMeshBuilder* billboardMeshBuilder,
     InstancedStaticModelGatherer& modelGatherer,
     const TileContainer& tileContainer,
-    OPT StaticPhysicsMeshBuilder* physMesh
+    OPT StaticPhysicsMeshBuilder* physMesh,
+    OPT const f32* heightData
 ) {
     const ui32v3& tileDims = tileContainer.getDims();
     const f32v3 tileContainerWorldPos = tileContainer.getWorldPos3D();
@@ -517,7 +519,14 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                     }
                     else if (tileData.shape == TileShape::MODEL) {
                         f32v3 tilePosition(x + 0.5f, y + 0.5f, z * tileContainer.getFloorHeight() + groundZPosition);
-                        modelGatherer.addInstance(tileData.modelId, tilePosition + tileContainerWorldPos, 0.0f);
+                        f32v3 worldPos = tilePosition + tileContainerWorldPos;
+                        if (heightData) {
+                            //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
+                            modelGatherer.addInstance(tileData.modelId, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
+                        }
+                        else {
+                            modelGatherer.addInstance(tileData.modelId, worldPos, Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
+                        }
                     }
                 }
             }

@@ -6,7 +6,7 @@ class PhysicsWorld;
 class ChunkMesher
 {
 public:
-    static void buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& physWorld);
+    static void buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& physWorld, const f32* heightData);
 
 };
 

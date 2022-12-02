@@ -5,6 +5,8 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
 
+#include "options/DebugOptions.h"
+
 struct CameraPickTeleportData {
     f32v3 camPos;
     f32v3 camDir;
@@ -45,4 +47,12 @@ void GameThreadTasks::addCameraPickTeleportTask(const f32v3& camPos, const f32v3
         }
         delete data;
     }, teleportData));
+}
+
+void GameThreadTasks::addHideLocalPlayerModelTask(bool hide) {
+    mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
+        bool hidePlayerModel = (bool)vData;
+        IEntityComponentSystem& ecs = sWorld->getECS();
+        ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mHideModel = hidePlayerModel;
+    }, (void*)hide));
 }

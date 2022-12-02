@@ -14,7 +14,7 @@
 
 #include "tile/TileContainer.h"
 
-void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& physWorld) {
+void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& physWorld, const f32* heightData) {
     TileContainer* chunkTileContainer = chunk.mTileContainer;
     // Always incref, will be decrefed in the task
     chunkTileContainer->incReadLockAndRef();
@@ -22,7 +22,7 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
     TileContainerRenderData& tileRenderData = chunkTileContainer->getRenderData();
     tileRenderData.mHasMesh = true;
 
-    Services::Threadpool::ref().addTask([chunkTileContainer](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([chunkTileContainer, heightData](ThreadPoolWorkerData*) {
 
         PROFILE_SCOPE("ChunkMesh build");
 
@@ -39,7 +39,7 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         billboardMeshBuilder.reserveBillboardCount(CHUNK_SIZE / 2);
 
         // ========================== Mesh Tiles ===============================
-        TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, modelGatherer, *chunkTileContainer, nullptr /*physicsMesh*/);
+        TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, modelGatherer, *chunkTileContainer, nullptr /*physicsMesh*/, heightData);
         TileMeshBuilderMethods::meshTileContainerDynamic(dynamicMeshBuilder, *chunkTileContainer);
 
         staticMeshBuilder.computeBoundingSphere();

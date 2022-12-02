@@ -4,7 +4,7 @@
 DebugOptions sDebugOptions;
 
 // Lower for faster loading in test
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 1.0f;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.5f;
 
 DebugOptions::DebugOptions() :
     mTimeOffset(0.0f),
@@ -18,7 +18,7 @@ DebugOptions::DebugOptions() :
     // Grass
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mDebugGrassLod(false),
-    mHideGrass(true),
+    mHideGrass(false),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra
     mDebugTerrainLod(false),
@@ -49,8 +49,8 @@ DebugOptions::DebugOptions() :
     mShadowColor(204.0f / 255.0f, 230.0f / 255.0f, 243.0f / 255.0f),
     mShadowUpdateRateSeconds(0.022f),
     mShadowBlurPasses(3), // 2
-    mShadowBlurRadius(0.45f), //1.5f),
-    mDisableShadows(true),
+    mShadowBlurRadius(0.4f),  // (0.045f) //1.5f),
+    mDisableShadows(false),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),

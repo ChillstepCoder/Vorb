@@ -322,6 +322,9 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
     PROFILE_FUNCTION();
 
+    // Allow model renderer to build indirect buffers
+    mStaticModelRenderer->frameUpdate(*camera);
+
     mCamera = camera;
     // Update thread msg queue
     updateRenderThreadProcs();
@@ -376,6 +379,7 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+
 }
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
@@ -424,8 +428,11 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Static meshes
-    // TODO: FPU Frustum culling: https://subscription.packtpub.com/book/game-development/9781838986193/10/ch10lvl1sec10/doing-frustum-culling-on-the-gpu-with-compute-shaders
     mTileContainerRenderer->renderStaticMeshes(mStaticMeshes, camera);
+
+    if (!sDebugOptions.mHideCharacters) {
+        mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha);
+    }
 
     // Instanced models
     mStaticModelRenderer->renderModels(camera);
@@ -476,9 +483,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         mTerrainRenderer->renderTerrain(camera, mTerrainMeshes);
     }
 
-    if (!sDebugOptions.mHideCharacters) {
-        mCharacterRenderer->renderCharacters(camera, renderState.getCharacterRenderState(), elapsedSec, frameAlpha);
-    }
     if (sDebugOptions.mShowBusinessDebug) {
         mEcsRenderer->renderBusinessDebug(camera);
     }
@@ -852,9 +856,9 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
     }
     mSb->begin(100);
     char buffer[256];
-    f32 scales = 1.0f;
+    f32 scales = 0.6f;
     const float GAP_SIZE = 35.0f * scales;
-    const float START_MULT = 0.25f;
+    const float START_MULT = 0.1f;
     float yOffset = 0.0f;
     const f32v2 scale(scales);
     const f32 xPos = 10.0f;

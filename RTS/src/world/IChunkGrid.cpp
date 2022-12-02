@@ -269,7 +269,11 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
         // TODO: Update collision
         // 
         // Update dirty mesh
-        ChunkMesher::buildMeshAndPhysicsAsync(chunk, sWorld->getPhysicsWorld());
+        // TODO: copy minimum
+        f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
+        const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
+        memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
+        ChunkMesher::buildMeshAndPhysicsAsync(chunk, sWorld->getPhysicsWorld(), heightData);
         // TODO: Replicate diff
     }
     // TODO: Should this instead be a TileContainerUpdater?
