@@ -47,6 +47,14 @@ void register##name##Listeners(name##Listeners& remover) { \
 } \
 private:
 
+#define STATIC_EVENT_DISPATCHER(name) \
+inline static name##EventDispatcher s##name##EventDispatcher; \
+public: \
+static void register##name##Listeners(name##Listeners& remover) { \
+    remover.setDispatcher(s##name##EventDispatcher); \
+} \
+private:
+
 // Create add/remove functions for a specific event
 #define EVENT_LISTENER_FUNCS(name, eventName, eventType, paramType) \
 [[nodiscard]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
@@ -90,6 +98,21 @@ void remove##eventName##Listener(const name##EventDispatcher::Handle& handle) { 
 } \
 void dispatch##eventName##(paramType p) { \
     m##name##EventDispatcher.dispatch(eventType, p); \
+}
+
+// Create add/remove functions for a specific event
+#define STATIC_EVENT_LISTENER_FUNCS(name, eventName, eventType, paramType) \
+static [[nodiscard]] name##EventDispatcher::Handle add##eventName##Listener(const name##EventDispatcher::Callback& callback) { \
+    return s##name##EventDispatcher.appendListener(eventType, callback); \
+} \
+static bool add##eventName##Listener(name##Listeners& remover, const name##EventDispatcher::Callback& callback) { \
+    return remover.appendListener(eventType, callback); \
+} \
+static void remove##eventName##Listener(const name##EventDispatcher::Handle& handle) { \
+    s##name##EventDispatcher.removeListener(eventType, handle); \
+} \
+static void dispatch##eventName##(paramType p) { \
+    s##name##EventDispatcher.dispatch(eventType, p); \
 }
 
 

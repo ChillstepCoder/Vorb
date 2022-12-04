@@ -151,6 +151,8 @@ void RenderContext::removeBillboardMesh(const Mesh* mesh) {
 
 RenderContext* RenderContext::sInstance = nullptr;
 
+static TileContainerEventDispatcher::Handle sTileContainerDestroyHandle;
+
 // TODO: Read http://iquilezles.org/articles/
 RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) :
     mScreenResolution(screenResolution),
@@ -158,6 +160,13 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 {
     // State init
     RenderStateManager::initInstance();
+
+    sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainer& container) {
+        assert(IS_GAME_THREAD());
+        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vContainerId) {
+            context.mStaticModelRenderer->removeInstancesFromContainer((TileContainerID)vContainerId);
+        }, (void*)container.getId());
+    });
 
     // TODO: New depth - https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
 
@@ -322,12 +331,13 @@ void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
 
     PROFILE_FUNCTION();
 
-    // Allow model renderer to build indirect buffers
-    mStaticModelRenderer->frameUpdate(*camera);
 
     mCamera = camera;
     // Update thread msg queue
     updateRenderThreadProcs();
+
+    // Allow model renderer to build indirect buffers
+    mStaticModelRenderer->frameUpdate(*camera);
 
     GlobalUboData& uboData = mRenderData.globalUboData;
     RenderStats::clear();

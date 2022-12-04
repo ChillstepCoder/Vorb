@@ -9,6 +9,10 @@
 class btRigidBody;
 class Mesh;
 
+enum class TILE_CONTAINER_EVENT_TYPE {
+    Destroy
+};
+
 struct TileWallContainer {
     TileWalls walls; // Cartesian
     TileWalls wallsThreadSafe; // Cartesian
@@ -101,6 +105,8 @@ struct TileFineNavData {
 };
 static_assert(sizeof(TileFineNavData) == 3, "Keep tiny");
 
+EVENT_DISPATCHER_TYPE(TileContainer, TILE_CONTAINER_EVENT_TYPE, const TileContainer&);
+
 class TileContainer;
 // Static class
 class TileContainerRepository {
@@ -111,6 +117,10 @@ public:
     static TileContainer* getTileContainer(TileContainerID id);
 
     static std::vector<std::unique_ptr<TileContainer>>& getTileContainers();
+
+    STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TILE_CONTAINER_EVENT_TYPE::Destroy, const TileContainer&);
+
+    STATIC_EVENT_DISPATCHER(TileContainer);
 };
 
 // TODO: Memory recycler?

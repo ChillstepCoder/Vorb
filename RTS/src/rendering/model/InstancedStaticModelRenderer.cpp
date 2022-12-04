@@ -329,6 +329,11 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
     }
 }
 
+void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID containerId)
+{
+
+}
+
 ui32 InstancedStaticModelRenderer::getNumModels() const {
     ui32 numModels = 0;
     for (auto& it : mInstances) {

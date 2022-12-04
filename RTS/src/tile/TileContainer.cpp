@@ -40,12 +40,12 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
     for (size_t i = 0; i < sTileContainers.size(); ++i) {
         if (sTileContainers[i].get() == container) {
             // container->freeData();
+            TileContainerRepository::dispatchDestroy(*container);
             sTileContainers[i] = std::move(sTileContainers.back()); // TODO: We hit a crash here on destructor
             sTileContainers.pop_back(); 
             return;
         }
     }
-    assert(false); // Not found
 }
 
 TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {

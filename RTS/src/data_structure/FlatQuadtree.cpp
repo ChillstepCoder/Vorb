@@ -316,10 +316,10 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter)
     }
 
     // Update all crossfade, in separate table so we can deterministically bind crossfade for 5 patches at once (parent and children)
-    constexpr f32 CROSSFADE_AMMOUNT = 0.05f; // TODO: Frame independent;
+    constexpr f32 CROSSFADE_AMMOUNT = 0.05f;
     for (ui32 i = 0; i < mNumCrossfading;) {
         ui16 crossfadeIndex = mCrossfadeActiveTable[i];
-        mCrossfadeTable[crossfadeIndex] += CROSSFADE_AMMOUNT;
+        mCrossfadeTable[crossfadeIndex] += CROSSFADE_AMMOUNT/* * deltaTime*/;
         if (mCrossfadeTable[crossfadeIndex] >= 1.0f) {
             mCrossfadeActiveTable[i] = mCrossfadeActiveTable[--mNumCrossfading];
         }

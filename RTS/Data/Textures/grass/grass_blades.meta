@@ -1,0 +1,5 @@
+textures:
+  - name: grass_blades
+    uv_rect: [0.0, 0.0, 1.0, 1.0]
+    rand_flip: true
+    sampler_state: LINEAR_CLAMP_MIPMAP

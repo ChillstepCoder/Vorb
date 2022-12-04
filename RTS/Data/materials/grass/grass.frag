@@ -37,7 +37,7 @@ void main() {
 	oColor.a = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), oColor.a);
 	oColor.a = clamp(oColor.a, 0.0, 1.0);
 	
-	if (oColor.a <= 0.5) {
+	if (oColor.a < 0.01) {
         discard;
     }
     oColor.a = 1.0;

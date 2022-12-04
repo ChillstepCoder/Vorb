@@ -29,7 +29,7 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         ProceduralMeshBuilder staticMeshBuilder(true);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
-        InstancedStaticModelGatherer modelGatherer;
+        InstancedStaticModelGatherer modelGatherer(chunkTileContainer->getId());
 
         StaticPhysicsMesh& physicsMesh = chunkTileContainer->getStaticPhysicsMesh();
 
