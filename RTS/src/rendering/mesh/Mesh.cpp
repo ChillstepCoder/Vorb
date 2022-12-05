@@ -199,8 +199,7 @@ void SubMeshData::destroy() {
         // glDeleteBuffers silently ignores 0
         glDeleteBuffers(1, &mUbo);
         mUbo = 0;
-        glDeleteBuffers(1, &mVbo);
-        mVbo = 0;
+        mVbo.destroy();
         // When using shared IBO we don't delete the IBO, which is the last buffer
         if (!mFlags.isBitSet(MeshFlags::USING_SHARED_IBO)) {
             glDeleteBuffers(1, &mIbo);

@@ -55,15 +55,15 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
             constexpr f32 TREE_DENSITY = 0.1f;
             constexpr f32 BUSH_DENSITY = 0.01f;
             if (Random::getThreadSafef(worldPos.y, worldPos.x) < treeNoise * TREE_DENSITY * fadeMult) {
-                tile.topLayer = pineTree;
+                tile.mainLayer = pineTree;
                 *grass = 0;
             }
             else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {
-                tile.topLayer = bushMed;
+                tile.mainLayer = bushMed;
                 *grass = 0;
             }
             else if (Random::getThreadSafef(worldPos.x * 4021.0f, worldPos.y * 22.0f) < BUSH_DENSITY * 1.3f) {
-                tile.topLayer = bushSmall;
+                tile.mainLayer = bushSmall;
                 *grass = 0;
             }
         }
@@ -118,8 +118,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
 
     tile.groundZOffsetThreadSafe = tile.groundZOffset;
     tile.groundLayerThreadSafe = tile.groundLayer;
-    tile.midLayerThreadSafe = tile.midLayer;
-    tile.topLayerThreadSafe = tile.topLayer;
+    tile.mainLayerThreadSafe = tile.mainLayer;
     tile.tileFlagsThreadSafe = tile.tileFlags;
 
     return tile;

@@ -716,17 +716,13 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
     // Allocate all buffers if needed
+    // and upload data
     SubMeshData* subMesh = &mesh.mMainMesh;
-    do {
-        MeshBuilderCommon::initMeshBuffers(*subMesh, sharedIbo);
-        subMesh = subMesh->mNextSubmesh;
-    } while (subMesh != nullptr);
-
-    // Upload data
-    subMesh = &mesh.mMainMesh;
     int i = 0;
     do {
-        uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], 0);
+        MeshBuilderCommon::initMeshBuffers(*subMesh, sharedIbo);
+        assert(sharedIbo); // If not shared, wheres our elements?
+        uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], GL_DYNAMIC_STORAGE_BIT);
         mSubMeshesData[i].clear();
         subMesh = subMesh->mNextSubmesh;
         ++i;

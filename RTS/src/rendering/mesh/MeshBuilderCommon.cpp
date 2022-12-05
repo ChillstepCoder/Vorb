@@ -14,14 +14,7 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
 
         // Ubo
         glCreateBuffers(1, &subMesh.mUbo);
-
-        // VBO
-        if (!flags.isBitSet(MeshBuilderBufferFlags::NO_VBO)) {
-            glCreateBuffers(1, &subMesh.mVbo);
-        }
-        else {
-            assert(!subMesh.mVbo);
-        }
+       
         // SSBO
         if (flags.isBitSet(MeshBuilderBufferFlags::SSBO)) {
             glCreateBuffers(1, &subMesh.mSSBO);
@@ -30,6 +23,7 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
             assert(!subMesh.mSSBO);
         }
     }
+
     // IBO
     if (sharedIbo) {
         // Delete old IBO if needed
@@ -178,9 +172,8 @@ void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indice
 template<typename VERTEX>
 void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags) {
     const unsigned bufferSizeBytes = vertices.size() * sizeof(VERTEX);
-    assert(subMesh.mVbo);
-    glNamedBufferStorage(subMesh.mVbo, bufferSizeBytes, vertices.data(), flags);
-    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo, 0, sizeof(VERTEX));
+    subMesh.mVbo.allocate(bufferSizeBytes, vertices.data(), flags);
+    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(VERTEX));
 }
 template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
 template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex96>& vertices, GLbitfield flags);

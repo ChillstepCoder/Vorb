@@ -10,9 +10,8 @@
 
 enum class TileLayer {
     Ground = 0,
-    Mid = 1,
-    Top = 2,
-    COUNT = 3
+    Main = 1,
+    COUNT = 2
 };
 static_assert(TILE_LAYER_COUNT == e_cast(TileLayer::COUNT));
 
@@ -66,6 +65,8 @@ struct TileData {
     TileID id;
    // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
+    TileCollisionShape collisionShape = TileCollisionShape::NONE;
+    f32v3 collisionDims = f32v3(0.0f);
     TileResource resource = TileResource::NONE;
     SubTexture texture; // TODO: We dont use this when we have a model, make this a pointer? Its big
     TileTextureMethod textureMethod;
@@ -90,9 +91,8 @@ struct TileData {
 
 struct TileOrientation {
     Cartesian orientationBase : 2;
-    Cartesian orientationMid : 2;
-    Cartesian orientationTop : 2;
-    //Cartesian PADDING : 2; // Use this for something?
+    Cartesian orientationMain : 2;
+    //Cartesian PADDING : 4; // Use this for something?
 };
 static_assert(sizeof(TileOrientation) == 1);
 
@@ -140,9 +140,9 @@ class Tile {
     friend class ChunkGenerator;
 public:
 	Tile() {};
-    Tile(TileID ground, TileID mid, TileID top);
-    Tile(TileID ground, TileID mid, TileID top, f32 zPos);
-    Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags);
+    Tile(TileID ground, TileID mid);
+    Tile(TileID ground, TileID mid, f32 zPos);
+    Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags);
 
     bool hasFlagMainThread(TileFlags flag) const { return tileFlags.isBitSet(flag); }
     bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe.isBitSet(flag); }
@@ -169,8 +169,8 @@ public:
     Cartesian getOrientationMainThread(TileLayer layer) const;
     Cartesian getOrientationThreadSafe(TileLayer layer) const;
 
-    bool isEmptyMainThread() const { assert(IS_GAME_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MID] == TILE_ID_NONE && layers[TILE_LAYER_TOP] == TILE_ID_NONE; }
-    bool isEmptyThreadSafe() const { assert(!IS_GAME_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MID] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_TOP] == TILE_ID_NONE; }
+    bool isEmptyMainThread() const { assert(IS_GAME_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MAIN] == TILE_ID_NONE; }
+    bool isEmptyThreadSafe() const { assert(!IS_GAME_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MAIN] == TILE_ID_NONE; }
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
@@ -189,21 +189,19 @@ private:
     union { // These can safely be modified at any time and will only be accessed by the main thread
         struct {
             TileID groundLayer; // floors, foundation     // ALWAYS BOX COLLISION
-            TileID midLayer;    // Rugs, things on top of furniture, flora  // NO COLLIDE ONLY
-            TileID topLayer;    // Furniture, props, walls, trees // ALLOWS CUSTOM COLLISION
+            TileID mainLayer;
         };
-        TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
+        TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
     };
     union { // These can only be modified when there is no read lock or active nav tasks, these are read by worker threads
         struct {
             TileID groundLayerThreadSafe;
-            TileID midLayerThreadSafe;
-            TileID topLayerThreadSafe;
+            TileID mainLayerThreadSafe;
         };
-        TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE, TILE_ID_NONE };
+        TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
     };
     TileNavData navData;
-    TileOrientation orientation = {};
+    TileOrientation orientation = {}; // TODO: Combine these?
     TileOrientation orientationThreadSafe = {};
     f32 groundZOffset;
     f32 groundZOffsetThreadSafe;
@@ -211,4 +209,4 @@ private:
     BitFlags<TileFlags> tileFlagsThreadSafe;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 48, "Keep small");
+static_assert(sizeof(Tile) == 44, "Keep small");

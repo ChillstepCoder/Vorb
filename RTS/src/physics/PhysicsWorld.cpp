@@ -255,7 +255,7 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
     }
 
     if (ownerEntity == entt::null) {
-        body->setUserIndex(INT_MAX);
+        body->setUserIndex(INT32_MAX);
     }
     else {
         assert((size_t)ownerEntity <= INT32_MAX && "Entity ID overflow in createRigidBody");

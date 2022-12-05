@@ -155,13 +155,13 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
             const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
             const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
             if (stairPiece.isFlatPart) {
-                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Mid, stairsFlatTileId);
+                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Main, stairsFlatTileId);
             }
             else {
-                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Mid, stairsTileId);
+                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Main, stairsTileId);
             }
             tileContainer.setTileGroundZPosition(stairPiece.pos, tilePos.z + heightAdd);
-            tileContainer.setTileOrientation(stairPiece.pos, stairPiece.dir, TileLayer::Mid);
+            tileContainer.setTileOrientation(stairPiece.pos, stairPiece.dir, TileLayer::Main);
         }
     }
 

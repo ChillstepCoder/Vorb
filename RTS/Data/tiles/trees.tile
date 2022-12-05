@@ -1,9 +1,8 @@
 tree_small:
 #  tex: tree_small
   model: tree
-  col: circle
-  dims: [4.0, 4.0, 4.0]
-  col_dims: [0.1, 0.5, 4.0]
+  col: cylinder
+  col_dims: [2.0, 2.0, 8.0]
   shape: Thin
   resource: wood
   drops:
@@ -12,9 +11,8 @@ tree_small:
 tree_pine:
   tex: tree_pine
 #  model: tree
-  col: circle
-  dims: [4.0, 4.0, 4.0]
-  col_dims: [0.1, 0.5, 4.0]
+  col: cylinder
+  col_dims: [2.0, 2.0, 8.0]
   shape: Thin
   resource: wood
   drops:

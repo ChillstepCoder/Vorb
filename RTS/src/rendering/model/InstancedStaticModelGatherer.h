@@ -11,6 +11,7 @@ public:
     void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
     void addInstance(ModelID modelId, const f32v3& position, const f32v3& normal, f32 rotation);
 private:
+    // TODO: Store tileIndex or position
     std::map<ModelID, std::vector<StaticModelInstance>> mInstances;
     TileContainerID mContainerID;
 };

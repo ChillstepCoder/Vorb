@@ -7,9 +7,10 @@
 enum class TileCollisionShape : ui8 {
     NONE,
     BOX,
-    CIRCLE,
+    CYLINDER,
     COUNT
 };
+KEG_ENUM_DECL(TileCollisionShape);
 //
 //typedef ui16 TileColliderID;
 //constexpr TileColliderID INVALID_COLLIDER_ID = UINT16_MAX;

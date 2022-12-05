@@ -50,7 +50,7 @@ DebugOptions::DebugOptions() :
     mShadowUpdateRateSeconds(0.022f),
     mShadowBlurPasses(3), // 2
     mShadowBlurRadius(0.4f),  // (0.045f) //1.5f),
-    mDisableShadows(false),
+    mDisableShadows(true),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),

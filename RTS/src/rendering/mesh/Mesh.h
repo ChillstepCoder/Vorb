@@ -47,7 +47,7 @@ enum class MeshFlags : ui8 {
 
 struct SubMeshData {
     VGBuffer  mVao = 0;
-    VGBuffer  mVbo = 0;
+    GLBuffer  mVbo;
     VGBuffer  mUbo = 0;
     VGBuffer  mIbo = 0;
     VGBuffer  mSSBO = 0;
@@ -103,4 +103,4 @@ public:
    // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
 
 };
-static_assert(sizeof(Mesh) == 88);
+static_assert(sizeof(Mesh) == 96);

@@ -52,6 +52,7 @@ InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
 }
 
 void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
+    assert(IS_RENDER_THREAD());
     if (sDebugOptions.mHideModels)
         return;
 
@@ -80,7 +81,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             drawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
         }
 
-        if (instanceData.mDirtyDrawCommands) {
+        if (instanceData.mFirstDirtyInstance != UINT32_MAX) {
             if (didUpdateACommandBuffer) {
                 // If we dont have a valid command buffer yet, just skip this draw
                 if (!instanceData.mDrawCommands) {
@@ -90,7 +91,8 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             else {
                 didUpdateACommandBuffer = !sDebugOptions.mDisableGPUCulling; // disabled when cpu culling
                 PROFILE_SCOPE("Rebuild Indirect Buffer");
-                instanceData.mDirtyDrawCommands = false;
+                // TODO: Don't rebuild entire buffer?
+                instanceData.mFirstDirtyInstance = UINT32_MAX;
                 // Rebuild command buffer
                 {
                     PROFILE_SCOPE("Indirect Buffer");
@@ -232,12 +234,19 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 }
 
 void InstancedStaticModelRenderer::addInstance(ModelID modelId, const f32v3& position, f32 rotation) {
+    assert(IS_RENDER_THREAD());
     StaticModelInstanceData& instanceData = mInstances[modelId];
     instanceData.mInstances.emplace_back(StaticModelInstance{ glm::translate(glm::mat4(1.0f), position) });
-    instanceData.mDirtyDrawCommands = true;
+    assert(false); // TODO: Support this
+   // instanceData.mDirtyDrawCommands = true;
+}
+
+void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID containerId, const f32v3& position) {
+    assert(IS_RENDER_THREAD());
 }
 
 void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
+    assert(IS_RENDER_THREAD());
     if (sDebugOptions.mHideModels)
         return;
 
@@ -287,6 +296,7 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
 }
 
 void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, const f32* shadowDistances) {
+    assert(IS_RENDER_THREAD());
     // TODO: Material specific
     glDisable(GL_CULL_FACE);
 
@@ -320,21 +330,43 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
 }
 
 void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
+    assert(IS_RENDER_THREAD());
+    if (gatherer.mInstances.empty()) {
+        return;
+    }
+    // Gatherer should only be used once for init, and future updates should be done per tile
+    assert(mTileContainerModels.find(gatherer.mContainerID) == mTileContainerModels.end());
+    InstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
     for (auto&& it : gatherer.mInstances) {
+        // Insert all instance transforms ordered into the transforms array
         const std::vector<StaticModelInstance>& sourceInstances = it.second;
         StaticModelInstanceData& instanceData = mInstances[it.first];
-        instanceData.mInstances.reserve(instanceData.mInstances.size() + sourceInstances.size());
-        instanceData.mInstances.insert(instanceData.mInstances.end(), sourceInstances.begin(), sourceInstances.end());
-        instanceData.mDirtyDrawCommands = true;
+        const size_t startIndex = instanceData.mInstances.size();
+        // Track where our buffer is dirty
+        if (startIndex < instanceData.mFirstDirtyInstance) {
+            instanceData.mFirstDirtyInstance = startIndex;
+        }
+        instanceData.mInstances.resize(startIndex + sourceInstances.size());
+        // Store per tile references
+        for (size_t i = 0; i < sourceInstances.size(); ++i) {
+            size_t instanceIndex = startIndex + i;
+            const StaticModelInstance& modelInstance = sourceInstances[i];
+            instanceData.mInstances[instanceIndex] = modelInstance;
+            const f32v3& pos = reinterpret_cast<const f32v3&>(modelInstance.matrix[3]);
+            assert(tileContainerModels.find(pos) == tileContainerModels.end());
+            tileContainerModels[pos] = { it.first, (ui32)instanceIndex };
+        }
     }
 }
 
 void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID containerId)
 {
-
+    assert(IS_RENDER_THREAD());
+    assert(false);
 }
 
 ui32 InstancedStaticModelRenderer::getNumModels() const {
+    assert(IS_RENDER_THREAD());
     ui32 numModels = 0;
     for (auto& it : mInstances) {
         numModels += it.second.mInstances.size();

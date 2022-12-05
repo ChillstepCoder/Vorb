@@ -59,6 +59,9 @@
 
 #include "screens/ScreenState.h"
 
+// For getUserIndex
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+
 constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;
 
@@ -390,7 +393,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TILE_ID_NONE, TileRepository::getTile(StrToken("tree_small"))));
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TileRepository::getTile(StrToken("tree_small"))));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -400,7 +403,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TILE_ID_NONE, TileRepository::getTile(StrToken("bush_med"))));
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TileRepository::getTile(StrToken("bush_med"))));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -410,7 +413,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TileRepository::getTile(StrToken("rock1")), TILE_ID_NONE, TILE_ID_NONE, 2u));
+                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TileRepository::getTile(StrToken("rock1")), 2u));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -607,10 +610,15 @@ void GameplayScreen::initInputs()
                 if (hitResult.didHit()) {
                     mSelectedScreenPos = screenPos;
                     // For interact must click in about the same spot
-                    if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                        f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                        if (mWorldObjectQuery.tryQuery(worldPos)) {
-                            mIsQuerying = true;
+                    if (hitResult.mCollisionObject->getUserIndex() != -1) {
+                        LOG_CRITICAL("WOOOOO");
+                    }
+                    else {
+                        if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
+                            f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
+                            if (mWorldObjectQuery.tryQuery(worldPos)) {
+                                mIsQuerying = true;
+                            }
                         }
                     }
                 }

@@ -40,17 +40,13 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
 
         // Copy all data
         tileData.layer = fileData.layer;
+        assert(tileData.layer < TILE_LAYER_COUNT);
         tileData.pathWeight = fileData.pathWeight;
         tileData.resource = fileData.resource;
         tileData.textureMethod = fileData.textureMethod;
         tileData.dims = fileData.dims;
-        // Collider
-        //tileData.collider.shape = fileData.colliderShape;
-        //if (fileData.colliderShape != TileCollisionShape::NONE) {
-        //    // TODO: Doors and shit? Move?
-        //    tileData.collider.defaultFlags = (TileFlags)0;
-        //    tileData.collider.dims = fileData.colliderDims;
-        //}
+        tileData.collisionDims = fileData.colliderDims;
+        tileData.collisionShape = fileData.colliderShape;
 
         // Item drops
         tileData.itemDrops.resize(fileData.itemDrops.size());

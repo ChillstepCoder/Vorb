@@ -28,8 +28,9 @@ static_assert(e_cast(TileShape::COUNT) == 7);
 KEG_ENUM_DEF(TileCollisionShape, TileCollisionShape, kt) {
     kt.addValue("none", TileCollisionShape::NONE);
     kt.addValue("box", TileCollisionShape::BOX);
-    kt.addValue("circle", TileCollisionShape::CIRCLE);
+    kt.addValue("cylinder", TileCollisionShape::CYLINDER);
 }
+static_assert(e_cast(TileCollisionShape::COUNT) == 3, "Update keg def");
 
 KEG_TYPE_DEF_SAME_NAME(ItemInputDef, kt) {
     kt.addValue("item", keg::Value::basic(offsetof(ItemInputDef, itemName), keg::BasicType::STRING));
@@ -69,22 +70,15 @@ void Tile::setOrientation(Cartesian dir, TileLayer layer, bool isReadLocked)
             orientation.orientationBase = dir;
             break;
         }
-        case TileLayer::Mid: {
+        case TileLayer::Main: {
             if (!isReadLocked) {
-                orientationThreadSafe.orientationMid = dir;
+                orientationThreadSafe.orientationMain = dir;
             }
-            orientation.orientationMid = dir;
-            break;
-        }
-        case TileLayer::Top: {
-            if (!isReadLocked) {
-                orientationThreadSafe.orientationTop = dir;
-            }
-            orientation.orientationTop = dir;
+            orientation.orientationMain = dir;
             break;
         }
     }
-    static_assert(e_cast(TileLayer::COUNT) == 3);
+    static_assert(e_cast(TileLayer::COUNT) == 2);
 }
 
 void Tile::clearTileFlag(TileFlags flag, bool isReadLocked) {
@@ -108,25 +102,22 @@ void Tile::clearTileFlags(bool isReadLocked) {
     }
 }
 
-Tile::Tile(TileID ground, TileID mid, TileID top) {
+Tile::Tile(TileID ground, TileID mid) {
     groundLayer = ground;
-    midLayer = mid;
-    topLayer = top;
+    mainLayer = mid;
 }
 
-Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos) {
+Tile::Tile(TileID ground, TileID mid, f32 zPos) {
     groundLayer = ground;
-    midLayer = mid;
-    topLayer = top;
+    mainLayer = mid;
     groundZOffset = zPos;
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
 
-Tile::Tile(TileID ground, TileID mid, TileID top, f32 zPos, TileFlags flags) : tileFlags(flags), tileFlagsThreadSafe(flags) {
+Tile::Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags) : tileFlags(flags), tileFlagsThreadSafe(flags) {
     groundLayer = ground;
-    midLayer = mid;
-    topLayer = top;
+    mainLayer = mid;
     groundZOffset = zPos;
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
@@ -194,12 +185,12 @@ Cartesian8 ORIENTATION_ROTATE_DIR_EAST[8] = {
 
 bool Tile::canNavInDirection(Cartesian8 dir) const {
     assert(!IS_GAME_THREAD());
-    if (midLayerThreadSafe == TILE_ID_NONE) return true;
+    if (mainLayerThreadSafe == TILE_ID_NONE) return true;
 
-    ui8 navMask = TileRepository::getTileData(midLayerThreadSafe).navMask;
+    ui8 navMask = TileRepository::getTileData(mainLayerThreadSafe).navMask;
     // South is base case
     // Rotate dir based on orientation to match the mask
-    switch (orientationThreadSafe.orientationMid) {
+    switch (orientationThreadSafe.orientationMain) {
         case Cartesian::WEST:
             dir = ORIENTATION_ROTATE_DIR_WEST[e_cast(dir)];
             break;
@@ -214,11 +205,11 @@ bool Tile::canNavInDirection(Cartesian8 dir) const {
 }
 
 f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
-    if (midLayerThreadSafe == TILE_ID_NONE) return 0.0f;
-    const TileData& tileData = TileRepository::getTileData(midLayerThreadSafe);
+    if (mainLayerThreadSafe == TILE_ID_NONE) return 0.0f;
+    const TileData& tileData = TileRepository::getTileData(mainLayerThreadSafe);
     // TODO: Cut out this check
     Cartesian8 dir8 = CARTESIAN_TO_CARTESIAN8[e_cast(dir)];
-    switch (orientationThreadSafe.orientationMid) {
+    switch (orientationThreadSafe.orientationMain) {
         case Cartesian::WEST:
             dir8 = ORIENTATION_ROTATE_DIR_WEST[e_cast(dir8)];
             break;
@@ -239,11 +230,8 @@ Cartesian Tile::getOrientationMainThread(TileLayer layer) const {
         case TileLayer::Ground: {
             return orientation.orientationBase;
         }
-        case TileLayer::Mid: {
-            return orientation.orientationMid;
-        }
-        case TileLayer::Top: {
-            return orientation.orientationTop;
+        case TileLayer::Main: {
+            return orientation.orientationMain;
         }
     }
 }
@@ -254,11 +242,8 @@ Cartesian Tile::getOrientationThreadSafe(TileLayer layer) const {
         case TileLayer::Ground: {
             return orientationThreadSafe.orientationBase;
         }
-        case TileLayer::Mid: {
-            return orientationThreadSafe.orientationMid;
-        }
-        case TileLayer::Top: {
-            return orientationThreadSafe.orientationTop;
+        case TileLayer::Main: {
+            return orientationThreadSafe.orientationMain;
         }
     }
 }

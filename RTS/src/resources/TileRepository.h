@@ -17,7 +17,7 @@ struct TileFileData {
     TileTextureMethod textureMethod = TileTextureMethod::SIMPLE;
     TileResource resource = TileResource::NONE;
     ui8 pathWeight = 255;
-    ui8 layer = 2;
+    ui8 layer = 1;
     nString textureName;
     nString modelName;
     Array<ItemDropDef> itemDrops;

@@ -19,17 +19,17 @@ public:
     ~GLBuffer();
 
     void allocate(GLsizeiptr size, const void* data, GLbitfield flags);
-    void updateSubData(GLintptr offset, GLsizeiptr size, const void* data) {
-        assert(mHandle);
-        glNamedBufferSubData(mHandle, offset, size, data);
-    }
-
+    void updateSubData(GLintptr offset, GLsizeiptr size, const void* data);
     void destroy();
 
     GLuint getHandle() const { return mHandle; }
+    ui32 getCapacity() const { return mCapacity; }
+    GLbitfield getFlags() const { return mFlags; }
 
 private:
     GLuint mHandle = 0;
+    ui32 mCapacity = 0;
+    GLbitfield mFlags = 0;
 };
 
 class GLIndirectBuffer final

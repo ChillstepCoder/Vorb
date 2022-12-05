@@ -40,17 +40,13 @@ constexpr f32 UV_EPSILON = 0.0001f;
 constexpr f32 UV_EPSILON_2 = 2.0f * UV_EPSILON;
 static constexpr float EPSILON = 0.005f;
 
-void GrassBillboardMesh::reserveQuadCount(size_t count)
-{
+void GrassBillboardMesh::reserveQuadCount(size_t count) {
     mInstanceData.reserve(count);
     mPositionData.reserve(count);
 }
 
-void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, ui8 grassType)
-{
-    assert(xyDims.x <= 1.0f && xyDims.y <= 1.0f);
-
-    mInstanceData.emplace_back(ui8v2(xyDims.x * 255.0f, xyDims.y * 255.0f), grassType);
+void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims, ui8 grassType) {
+    mInstanceData.emplace_back(ui8v2(glm::min(xyDims.x, 1.0f) * 255.0f, glm::min(xyDims.y, 1.0f) * 255.0f), grassType);
     mPositionData.emplace_back(position);
 }
 

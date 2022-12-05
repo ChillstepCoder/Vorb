@@ -21,6 +21,5 @@ inline bool isTileBlocked(TileID tile) { return tile >= TILE_ID_BLOCKED && tile 
 inline bool isTileBlockedOrNone(TileID tile) { return tile >= TILE_ID_BLOCKED; }
 
 constexpr int TILE_LAYER_GROUND = 0;
-constexpr int TILE_LAYER_MID = 1;
-constexpr int TILE_LAYER_TOP = 2;
-constexpr int TILE_LAYER_COUNT = 3;
+constexpr int TILE_LAYER_MAIN = 1;
+constexpr int TILE_LAYER_COUNT = 2;

@@ -5,14 +5,24 @@
 // TODO: Allow chunks to reference each of their tiles part of a mesh buffer. Allow removing and compacting the mesh buffer instead of full rebuild
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
 //   Queue tile mesh updates, then do them all in a single pass then do a compaction pass on the buffer
-struct InstanceDataBlock {
-    // TODO: Pooled allocator
-    std::vector<StaticModelInstance> data;
-    ui32 commandBufferStartIndex;
-    ui32 commandBufferLengthBytes;
+struct TileModelInstance {
+    ModelID mModelID = 0;
+    ui32 mInstanceIndex = 0; // Index into the transforms array
 };
+static_assert(sizeof(TileModelInstance) == 8, "Keep tiny");
 
-typedef std::map<ModelID, InstanceDataBlock*> InstanceDataMap;
+// Allows us to look up the specific model at a position
+struct cmpf32v3 {
+    bool operator()(const f32v3& a, const f32v3& b) const {
+        if (a.x < b.x) return true;
+        if (a.x > b.x) return false;
+        if (a.y < b.y) return true;
+        if (a.y > b.y) return false;
+        if (a.z < b.z) return true;
+        return false;
+    }
+};
+typedef std::map<f32v3 /*Position offset*/, TileModelInstance, cmpf32v3> InstanceDataMap;
 
 class Camera3D;
 class InstancedStaticModelGatherer;
@@ -28,12 +38,11 @@ struct StaticModelInstanceData {
     ~StaticModelInstanceData();
 
     // TODO: Optimize allocation
-    std::vector<std::unique_ptr<InstanceDataBlock>> mInstances;
-    ui32 firstDirtyBlockIndex = ; //TODO
+    std::vector<StaticModelInstance> mInstances;
     std::unique_ptr<GLIndirectBuffer> mDrawCommands;
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
-    bool mDirtyDrawCommands = false;
+    ui32 mFirstDirtyInstance = UINT32_MAX;
 
     // TODO: Investigate why, hardware? Driver? - Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
     // std::unique_ptr<GLIndirectBuffer> mOutDrawCommands;
@@ -51,6 +60,7 @@ public:
     void frameUpdate(const Camera3D& camera);
 
     void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
+    void removeInstanceAtPosition(TileContainerID containerId, const f32v3& position);
     void renderModels(const Camera3D& camera);
     void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
@@ -58,7 +68,7 @@ public:
     ui32 getNumModels() const;
 private:
     std::map<ModelID, StaticModelInstanceData> mInstances;
-    std::map<TileContainerID, InstanceDataMap> mModelsPerTileContainer;
+    std::map<TileContainerID, InstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 
     const Material* mStandardMaterial = nullptr;

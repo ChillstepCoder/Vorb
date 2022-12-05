@@ -313,3 +313,4 @@ private:
 
     mutable TileContainerRenderData mRenderData;
 };
+// SIZER(TileContainer); // 424
