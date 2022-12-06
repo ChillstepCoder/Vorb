@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/Material.h"
+#include "rendering/MaterialShader.h"
 
 class TextureRepository;
 typedef int MaterialID;
@@ -14,14 +14,14 @@ public:
     MaterialManager(vio::IOManager& ioManager, TextureRepository& textureRepository, vg::TextureCache& textureCache);
     ~MaterialManager();
 
-    bool loadMaterial(const vio::Path& filePath);
+    bool loadMaterialShader(const vio::Path& filePath);
     bool loadComputeShader(const vio::Path& filePath);
-    const Material* getMaterial(MaterialID id) const;
-    const Material* getMaterial(const nString& strId) const;
+    const MaterialShader* getMaterial(MaterialID id) const;
+    const MaterialShader* getMaterial(const nString& strId) const;
     const vg::GLProgram* getComputeShader(const nString& strId) const;
 
 private:
-    std::vector<std::unique_ptr<Material>> mMaterials;
+    std::vector<std::unique_ptr<MaterialShader>> mMaterials;
     std::unordered_map<nString, MaterialID> mNameToMaterialIDMap;
     std::map<nString, vg::GLProgram> mComputeShaders;
     vio::IOManager& mIoManager;

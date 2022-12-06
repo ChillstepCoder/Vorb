@@ -1,10 +1,12 @@
 #pragma once
 
+#include "rendering/material/Material.h"
+
 #include <Vorb/graphics/GLProgram.h>
 
 DECL_VG(class Texture);
 
-enum class MaterialUniform {
+enum class MaterialShaderUniform {
     INVALID,
     Fbo0,
     FboDepth,
@@ -33,7 +35,7 @@ enum class MaterialUniform {
     COUNT
 };
 
-extern MaterialUniform lookupMaterialUniform(const nString& str);
+extern MaterialShaderUniform lookupMaterialUniform(const nString& str);
 
 struct MaterialAtlasTextureInputData {
     nString textureName;
@@ -48,7 +50,7 @@ struct MaterialTextureInputData {
 };
 KEG_TYPE_DECL(MaterialTextureInputData);
 
-struct MaterialData {
+struct MaterialShaderData {
     Array<MaterialTextureInputData> textures;
     nString vertexShaderName;
     nString fragmentShaderName;
@@ -56,7 +58,7 @@ struct MaterialData {
     nString tessControlShaderName;
     nString tessEvalShaderName;
 };
-KEG_TYPE_DECL(MaterialData);
+KEG_TYPE_DECL(MaterialShaderData);
 
 struct MaterialAtlasTextureInput {
     f32v4 uvRect;
@@ -69,7 +71,7 @@ struct MaterialTextureInput {
     VGUniform textureUniform;
 };
 
-class Material {
+class MaterialShader {
 public:
 
     void use(OUT ui32& nextAvailableTextureIndex) const;
@@ -83,7 +85,7 @@ public:
         return mProgram.tryGetUniform(name);
     }
 
-    std::vector<std::pair<MaterialUniform, VGUniform> > mUniforms;
+    std::vector<std::pair<MaterialShaderUniform, VGUniform> > mUniforms;
     std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;
     std::vector<MaterialTextureInput> mInputTextures;
     mutable vg::GLProgram mProgram; //  TODO: Handle

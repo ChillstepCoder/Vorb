@@ -16,7 +16,7 @@ class CameraController;
 class ICamera;
 class ItemRenderer;
 class LightRenderer;
-class Material;
+class MaterialShader;
 class MaterialRenderer;
 class ParticleSystemRenderer;
 class ResourceManager;
@@ -189,9 +189,9 @@ private:
     VGBuffer mGlobalUbo = 0;
 
     int mPassthroughRenderMode = 0;
-    std::vector<const Material*> mPassthroughMaterials;
-    const Material* mPassthroughMaterial = nullptr;
-    const Material* mSceneLightingMaterial = nullptr;
-    const Material* mCopyDepthMaterial = nullptr;
+    std::vector<const MaterialShader*> mPassthroughMaterials;
+    const MaterialShader* mPassthroughMaterial = nullptr;
+    const MaterialShader* mSceneLightingMaterial = nullptr;
+    const MaterialShader* mCopyDepthMaterial = nullptr;
 };
 

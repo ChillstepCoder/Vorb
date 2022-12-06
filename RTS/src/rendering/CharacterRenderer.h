@@ -2,7 +2,7 @@
 #include "rendering/CharacterModel.h"
 
 class PhysicsComponent;
-class Material;
+class MaterialShader;
 struct CharacterModelComponent;
 struct CharacterControlComponent;
 class Camera3D;
@@ -20,7 +20,7 @@ public:
     void renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha);
 private:
 
-    const Material* mMaterial;
+    const MaterialShader* mMaterial;
     std::unordered_map<entt::entity, std::unique_ptr<AnimState>> mEntityCharacterModels;
 };
 

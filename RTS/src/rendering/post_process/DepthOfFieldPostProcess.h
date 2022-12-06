@@ -1,7 +1,7 @@
 #pragma once
 
 class ResourceManager;
-class Material;
+class MaterialShader;
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -18,6 +18,6 @@ private:
     vg::GBuffer mGBuffers[2];
     f32v2 mGbufferDims;
 
-    const Material* mMaterial = nullptr;
+    const MaterialShader* mMaterial = nullptr;
 };
 

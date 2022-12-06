@@ -1,7 +1,7 @@
 #pragma once
 
 class Camera3D;
-class Material;
+class MaterialShader;
 
 #include <Vorb/graphics/GBuffer.h>
 #include "rendering/post_process/ShadowLodDetail.h"
@@ -39,11 +39,11 @@ private:
     void generateMipmaps();
     void blurShadowMap();
 
-    const Material* mShadowMapperMaterial = nullptr;
-    const Material* mShadowVarianceMaterial = nullptr;
-    const Material* mShadowApplyMaterial = nullptr;
-    const Material* mShadowMipMaterial = nullptr;
-    const Material* mBlurMaterial = nullptr;
+    const MaterialShader* mShadowMapperMaterial = nullptr;
+    const MaterialShader* mShadowVarianceMaterial = nullptr;
+    const MaterialShader* mShadowApplyMaterial = nullptr;
+    const MaterialShader* mShadowMipMaterial = nullptr;
+    const MaterialShader* mBlurMaterial = nullptr;
     vg::GBuffer mShadowMipGBuffer; // TODO: Can we combine this with the blur gbuffer?
     vg::GBuffer mShadowBlurGBuffers[2];
     vg::GBuffer mShadowMapGBuffer;

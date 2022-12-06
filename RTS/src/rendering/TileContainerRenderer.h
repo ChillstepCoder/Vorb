@@ -6,7 +6,7 @@ DECL_VG(class SpriteBatch);
 class CliWorldInterface;
 class ResourceManager;
 class Camera3D;
-class Material;
+class MaterialShader;
 class TileContainer;
 class Mesh;
 class ChunkGrassQuadtree;
@@ -24,10 +24,10 @@ public:
 
 private:
 
-    const Material* mShadowMapperMaterial = nullptr;
-    const Material* mShadowMapperMaterialBillboard = nullptr;
-    const Material* mStandardMaterial = nullptr;
-    const Material* mBillboardMaterial = nullptr;
+    const MaterialShader* mShadowMapperMaterial = nullptr;
+    const MaterialShader* mShadowMapperMaterialBillboard = nullptr;
+    const MaterialShader* mStandardMaterial = nullptr;
+    const MaterialShader* mBillboardMaterial = nullptr;
 
     // TODO: Unused?
     CliWorldInterface* mCliWorld = nullptr;

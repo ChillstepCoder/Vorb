@@ -2,7 +2,7 @@
 
 class CloudManager;
 class ResourceManager;
-class Material;
+class MaterialShader;
 class Camera3D;
 
 #include <Vorb/graphics/GBuffer.h>
@@ -23,9 +23,9 @@ private:
     vg::GBuffer mGBuffers[2];
     f32v2 mGbufferDims;
 
-    const Material* mCloudMaterial = nullptr;
-    const Material* mPostMaterial = nullptr;
-    const Material* mBlurMaterial = nullptr;
-    const Material* mCloudShadowMaterial = nullptr;
+    const MaterialShader* mCloudMaterial = nullptr;
+    const MaterialShader* mPostMaterial = nullptr;
+    const MaterialShader* mBlurMaterial = nullptr;
+    const MaterialShader* mCloudShadowMaterial = nullptr;
 };
 

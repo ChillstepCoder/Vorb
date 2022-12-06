@@ -78,7 +78,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
 
     // Make sure we clear all vectors each gather
     mTextureFiles.clear();
-    mMaterialFiles.clear();
+    mMaterialShaderFiles.clear();
     mTileFiles.clear();
     mParticleSystemFiles.clear();
     mRoomFiles.clear();
@@ -137,8 +137,8 @@ void ResourceManager::loadFiles() {
     // Load Materials
     {
         ScopedTimer timer("Material load");
-        for (auto&& entry : mMaterialFiles) {
-            mMaterialManager->loadMaterial(entry);
+        for (auto&& entry : mMaterialShaderFiles) {
+            mMaterialManager->loadMaterialShader(entry);
         };
     }
 
@@ -260,8 +260,8 @@ void ResourceManager::reloadMaterials() {
 
     ShaderLoader::clearAllCachedPrograms();
     vg::ShaderManager::disposeAllPrograms();
-    for (auto&& entry : mMaterialFiles) {
-        mMaterialManager->loadMaterial(entry);
+    for (auto&& entry : mMaterialShaderFiles) {
+        mMaterialManager->loadMaterialShader(entry);
     };
     for (auto&& entry : mComputeFiles) {
         mMaterialManager->loadComputeShader(entry);
@@ -315,8 +315,8 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         else if (fileHasExtension(entry, ".tile")) {
             mTileFiles.emplace_back(entry);
         }
-        else if (fileHasExtension(entry, ".material")) {
-            mMaterialFiles.emplace_back(entry);
+        else if (fileHasExtension(entry, ".prog")) {
+            mMaterialShaderFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".comp")) {
             mComputeFiles.emplace_back(entry);

@@ -1,6 +1,6 @@
 #pragma once
 
-class Material;
+class MaterialShader;
 
 #include <Vorb/graphics/GBuffer.h>
 
@@ -22,7 +22,7 @@ private:
     VGTexture mNoiseTexture;
     std::vector<f32v3> mSsaoKernel;
 
-    const Material* mMaterial = nullptr;
-    const Material* mApplyMaterial = nullptr;
-    const Material* mBlurMaterial = nullptr;
+    const MaterialShader* mMaterial = nullptr;
+    const MaterialShader* mApplyMaterial = nullptr;
+    const MaterialShader* mBlurMaterial = nullptr;
 };

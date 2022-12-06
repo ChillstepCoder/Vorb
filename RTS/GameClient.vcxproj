@@ -260,7 +260,7 @@
     <ClCompile Include="src\rendering\LightData.cpp" />
     <ClCompile Include="src\rendering\LightRenderer.cpp" />
     <ClCompile Include="src\rendering\LoadScreenRenderer.cpp" />
-    <ClCompile Include="src\rendering\Material.cpp" />
+    <ClCompile Include="src\rendering\MaterialShader.cpp" />
     <ClCompile Include="src\rendering\MaterialManager.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
@@ -502,10 +502,11 @@
     <ClInclude Include="src\rendering\LightData.h" />
     <ClInclude Include="src\rendering\LightRenderer.h" />
     <ClInclude Include="src\rendering\LoadScreenRenderer.h" />
-    <ClInclude Include="src\rendering\Material.h" />
+    <ClInclude Include="src\rendering\MaterialShader.h" />
     <ClInclude Include="src\rendering\MaterialManager.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MaterialUtils.h" />
+    <ClInclude Include="src\rendering\material\Material.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\ChunkMesher.h" />

@@ -4,7 +4,7 @@
 
 class ItemRepository;
 struct ItemStack;
-class Material;
+class MaterialShader;
 class ItemStockpile;
 class Item;
 class Camera3D;
@@ -28,6 +28,6 @@ private:
     void renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const;
     void addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const;
 
-    const Material* mItemBillboardMaterial;
-    const Material* mItemMeshMaterial;
+    const MaterialShader* mItemBillboardMaterial;
+    const MaterialShader* mItemMeshMaterial;
 };

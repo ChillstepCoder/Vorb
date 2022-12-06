@@ -1,7 +1,7 @@
 #pragma once
-class Material;
+class MaterialShader;
 
 namespace MaterialUtils {
-    void uploadLightingUniforms(const Material& material);
+    void uploadLightingUniforms(const MaterialShader& material);
 };
 

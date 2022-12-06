@@ -179,7 +179,7 @@ void ModelEditorPanel::renderModelToTexture() {
 
     // Render model
     if (mCurrentModel->mModelType == Model3DType::STATIC) {
-        const Material* staticModelMaterial = nullptr;
+        const MaterialShader* staticModelMaterial = nullptr;
 
         switch (mDrawMode) {
             case ModelEditorPanelDrawMode::Default:
@@ -213,7 +213,7 @@ void ModelEditorPanel::renderGrid()
     vg::DepthState::NONE.set();
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const Material* gridMaterial = resourceManager.getMaterialManager().getMaterial("grid");
+    const MaterialShader* gridMaterial = resourceManager.getMaterialManager().getMaterial("grid");
     VGUniform unVP = gridMaterial->getUniform("unVP");
     MaterialRenderer::bindMaterialForRender(*gridMaterial);
     glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));

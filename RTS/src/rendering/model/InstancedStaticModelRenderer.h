@@ -26,7 +26,7 @@ typedef std::map<f32v3 /*Position offset*/, TileModelInstance, cmpf32v3> Instanc
 
 class Camera3D;
 class InstancedStaticModelGatherer;
-class Material;
+class MaterialShader;
 class GLIndirectBuffer;
 
 DECL_VG(class GLProgram);
@@ -71,8 +71,8 @@ private:
     std::map<TileContainerID, InstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 
-    const Material* mStandardMaterial = nullptr;
-    const Material* mShadowMapperMaterial = nullptr;
+    const MaterialShader* mStandardMaterial = nullptr;
+    const MaterialShader* mShadowMapperMaterial = nullptr;
     const vg::GLProgram* mCullingComputeShader = nullptr;
 };
 

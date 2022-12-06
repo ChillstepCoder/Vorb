@@ -80,7 +80,7 @@ void App::onInit() {
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);
 
-    vg::ShaderManager::setMaterialRootDirectory(vio::IOManager::getCurrentWorkingDirectory() / vio::Path("data\\materials"));
+    vg::ShaderManager::setShaderRootDirectory(vio::IOManager::getCurrentWorkingDirectory() / vio::Path("data\\shaders"));
 
     // Init events
     vui::InputDispatcher::key.addFocusGainedListener([]() {

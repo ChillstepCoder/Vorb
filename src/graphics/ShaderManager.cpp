@@ -12,7 +12,7 @@ vg::GLProgram vg::ShaderManager::m_nilProgram;
 vio::IOManager vg::ShaderManager::mIoManager;
 
 
-void vorb::graphics::ShaderManager::setMaterialRootDirectory(const vio::Path& rootDir) {
+void vorb::graphics::ShaderManager::setShaderRootDirectory(const vio::Path& rootDir) {
     mIoManager.setSearchDirectory(rootDir);
 }
 

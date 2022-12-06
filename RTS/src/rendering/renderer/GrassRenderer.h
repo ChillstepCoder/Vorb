@@ -1,6 +1,6 @@
 #pragma once
 
-class Material;
+class MaterialShader;
 class GrassMesh;
 class Camera3D;
 
@@ -11,6 +11,6 @@ public:
     void renderGrass(const Camera3D& camera, const f32v3& playerPos, const std::set<const GrassMesh*>& grassMeshes);
 
 private:
-    const Material* mGrassMaterial = nullptr;
+    const MaterialShader* mGrassMaterial = nullptr;
 };
 

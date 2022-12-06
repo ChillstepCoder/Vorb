@@ -13,7 +13,7 @@ Skybox::~Skybox() {
 
 }
 
-void Skybox::init(const Material* material) {
+void Skybox::init(const MaterialShader* material) {
     constexpr unsigned NUM_VERTS = 4 * 6;
     constexpr float RADIUS = 100000.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;

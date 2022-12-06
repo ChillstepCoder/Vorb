@@ -2,9 +2,9 @@
 #include "MaterialUtils.h"
 
 #include "options/DebugOptions.h"
-#include "Material.h"
+#include "MaterialShader.h"
 
-void MaterialUtils::uploadLightingUniforms(const Material& material) {
+void MaterialUtils::uploadLightingUniforms(const MaterialShader& material) {
     LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
     LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
     glUniform2f(material.getUniform("unGamma"), optionsLeft.mGamma, optionsRight.mGamma);

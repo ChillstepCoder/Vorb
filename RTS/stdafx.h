@@ -113,6 +113,11 @@ inline void setThreadPriorityToMax() {
 // **************** NEW GRAPHICS API *****************
 #include "rendering/gl/GLObjects.h"
 
+#ifdef __GNUC__
+#define PACKED_STRUCT __attribute__((packed,aligned(1)))
+#else
+#define PACKED_STRUCT
+#endif
 
 typedef GLuint64 TextureHandle;
 

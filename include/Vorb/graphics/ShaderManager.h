@@ -46,7 +46,7 @@ namespace vorb {
         /// Static class that handles caching, creation, and destruction of GLPrograms
         class ShaderManager {
         public:
-            static void setMaterialRootDirectory(const vio::Path& rootDir);
+            static void setShaderRootDirectory(const vio::Path& rootDir);
 
             /// TODO(Ben): Add overloads for tesselation, geometry, ect.
             /// Creates a GLProgram from source code.

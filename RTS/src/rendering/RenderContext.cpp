@@ -302,7 +302,7 @@ void RenderContext::initPostLoad() {
     {
         ScopedTimer timer("Passthrough init", 2);
         for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-            const Material* material = materialManager.getMaterial(sPassthroughMaterialNames[i]);
+            const MaterialShader* material = materialManager.getMaterial(sPassthroughMaterialNames[i]);
             if (material) {
                 mPassthroughMaterials.emplace_back(material);
             }
@@ -602,7 +602,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         // Depth debug
     if (mPassthroughRenderMode == 1) {
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
         assert(postMat);
 
         // TODO: Swap chain for this to work
@@ -673,7 +673,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Final Pass through process
     // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
     if (mPassthroughRenderMode > 1) {
-        const Material* postMat = mPassthroughMaterials[mPassthroughRenderMode];
+        const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
         assert(postMat);
 
         // TODO: Swap chain for this to work

@@ -17,7 +17,7 @@ MaterialManager::~MaterialManager() {
 
 }
 
-bool MaterialManager::loadMaterial(const vio::Path& filePath) {
+bool MaterialManager::loadMaterialShader(const vio::Path& filePath) {
     // Read file
     nString data;
     mIoManager.readFileToString(filePath, data);
@@ -34,12 +34,12 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
     }
 
     auto f = makeFunctor([&](Sender, const nString& key, keg::Node value) {
-        MaterialData materialData;
-        keg::Error error = keg::parse((ui8*)&materialData, value, context, &KEG_GLOBAL_TYPE(MaterialData));
+        MaterialShaderData materialData;
+        keg::Error error = keg::parse((ui8*)&materialData, value, context, &KEG_GLOBAL_TYPE(MaterialShaderData));
         assert(error == keg::Error::NONE);
 
         // Check if material already exists and replace if so
-        Material* newMaterial;
+        MaterialShader* newMaterial;
         auto&& it = mNameToMaterialIDMap.find(key);
         if (it != mNameToMaterialIDMap.end()) {
             newMaterial = mMaterials[it->second].get();
@@ -48,7 +48,7 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
         else {
             // Store material
             MaterialID newId = (MaterialID)mMaterials.size();
-            newMaterial = mMaterials.emplace_back(std::make_unique<Material>()).get();
+            newMaterial = mMaterials.emplace_back(std::make_unique<MaterialShader>()).get();
             mNameToMaterialIDMap[key] = newId;
         }
 
@@ -68,8 +68,8 @@ bool MaterialManager::loadMaterial(const vio::Path& filePath) {
 
         // Get uniforms from shader
         for (auto&& uniform : newMaterial->mProgram.getUniforms()) {
-            MaterialUniform matUniform = lookupMaterialUniform(uniform.first);
-            if (matUniform != MaterialUniform::INVALID) {
+            MaterialShaderUniform matUniform = lookupMaterialUniform(uniform.first);
+            if (matUniform != MaterialShaderUniform::INVALID) {
                 newMaterial->mUniforms.emplace_back(lookupMaterialUniform(uniform.first), uniform.second);
             }
         }
@@ -88,11 +88,11 @@ bool MaterialManager::loadComputeShader(const vio::Path& filePath) {
     return true;
 }
 
-const Material* MaterialManager::getMaterial(MaterialID id) const {
+const MaterialShader* MaterialManager::getMaterial(MaterialID id) const {
     return mMaterials.at(id).get();
 }
 
-const Material* MaterialManager::getMaterial(const nString& strId) const {
+const MaterialShader* MaterialManager::getMaterial(const nString& strId) const {
     auto&& it = mNameToMaterialIDMap.find(strId);
     if (it != mNameToMaterialIDMap.end()) {
         return mMaterials[it->second].get();

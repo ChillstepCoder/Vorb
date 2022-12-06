@@ -1,7 +1,7 @@
 #pragma once
 #include "LightData.h"
 
-class Material;
+class MaterialShader;
 class Camera3D;
 
 
@@ -18,7 +18,7 @@ public:
 private:
     void InitSharedMesh();
 
-    const Material* mPointLightMaterial = nullptr;
+    const MaterialShader* mPointLightMaterial = nullptr;
 
     // TODO: UBO per light?
 
