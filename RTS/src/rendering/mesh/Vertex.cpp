@@ -27,7 +27,6 @@ void StandardVertex::bindVertexAttribs(VGBuffer vao) {
     glEnableVertexArrayAttrib(vao, 5);
     glVertexArrayAttribFormat(vao, 5 /*index*/, 2 /*size*/, GL_BYTE, false, offsetof(StandardVertex, tangent));
     glVertexArrayAttribBinding(vao, 5, 0);
-    //glVertexArrayAttribFormat(vao, 6 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, true, sizeof(StandardVertex), (void*)offsetof(StandardVertex, windInfluence));
 }
 
 void TerrainVertex::bindVertexAttribs(VGBuffer vao) {
@@ -66,7 +65,7 @@ void StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribBinding(vao, 1, 0);
 
     glEnableVertexArrayAttrib(vao, 2);
-    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_INT, offsetof(StaticModelVertex, materialIndex));
+    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_SHORT, offsetof(StaticModelVertex, materialIndex));
     glVertexArrayAttribBinding(vao, 2, 0);
 
     glEnableVertexArrayAttrib(vao, 3);

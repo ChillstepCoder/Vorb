@@ -107,6 +107,7 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
     if (mCurrentModel) {
         ImGui::Text("Name: %s", mCurrentModel->mName);
         if (ImGui::BeginCombo("Shadow detail", KEG_ENUM_STR(ShadowLodDetail, mCurrentModel->mShadowDetail))) {
+
             for (int i = e_cast(ShadowLodDetail::None); i <= e_cast(ShadowLodDetail::Highest); ++i) {
                 bool isSelected = e_cast(mCurrentModel->mShadowDetail) == i;
                 ImGui::Selectable(KEG_ENUM_STR(ShadowLodDetail, i), &isSelected);
@@ -122,6 +123,12 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
             ImGui::EndCombo();
         }
         ImGui::SliderInt("LOD", &mLod, e_cast(MeshLODLevel::Highest), e_cast(MeshLODLevel::Lowest));
+        // TODO: Tooltip button utility
+        ImGui::SameLine(); ImGui::Button("?");
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip("LOD is auto generated");
+        }
         if (mCurrentModel->mModelType == Model3DType::STATIC) {
             StaticModel3D& mModel = mCurrentModel->getStaticModel();
             ui32 indexCountTotal = 0;

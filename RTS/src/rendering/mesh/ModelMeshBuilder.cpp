@@ -77,8 +77,6 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
             return false;
          }
 
-        // TODO: https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
-        // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
         const size_t prevSize = mStaticVerts.size();
         mStaticVerts.resize(mStaticVerts.size() + outputMesh.vertex_count());
         assert(outputMesh.parts.size() == 1);

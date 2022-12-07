@@ -10,6 +10,7 @@ enum class VertexVariantType {
 };
 
 // For packing signed normals in to a single 32 byte value
+// https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
 // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
 inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
 {
@@ -25,7 +26,6 @@ inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
     return vi;
 }
 
-
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 struct alignas(32) StaticModelVertex {
     f32v3 pos;
@@ -33,7 +33,7 @@ struct alignas(32) StaticModelVertex {
     ui32 tangentPacked;
     ui16v2 uvsPacked;
     color4 color;
-    ui32 materialIndex;
+    ui16 materialIndex;
 
     static void bindVertexAttribs(VGBuffer vao);
 };
@@ -46,10 +46,10 @@ struct alignas(32) StandardVertex {
     i8v3 normal; // https://stackoverflow.com/questions/5255806/how-to-calculate-tangent-and-binormal
     i8v2 tangent;
     color4 color;
-    ui8 roughness;
 
     static void bindVertexAttribs(VGBuffer vao);
 };
+static_assert(sizeof(StandardVertex) == 32, "32 byte alignment needed");
 
 struct alignas(32) TerrainVertex {
     f32v3 pos;
@@ -57,6 +57,7 @@ struct alignas(32) TerrainVertex {
 
     static void bindVertexAttribs(VGBuffer vao);
 };
+static_assert(sizeof(TerrainVertex) == 32, "32 byte alignment needed");
 
 struct alignas(32) WaterVertex {
     f32v3 pos;
@@ -64,6 +65,7 @@ struct alignas(32) WaterVertex {
 
     static void bindVertexAttribs(VGBuffer vao);
 };
+static_assert(sizeof(WaterVertex) == 32, "32 byte alignment needed");
 
 // Vertex variant
 struct alignas(32) Vertex32 {
@@ -76,7 +78,6 @@ struct alignas(32) Vertex32 {
         StaticModelVertex mStaticModel; // VertexVariantType::MODEL
     };
 };
-
 static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
 
 struct alignas(32) Vertex96 {
@@ -86,5 +87,4 @@ struct alignas(32) Vertex96 {
         SkinnedModelVertex mSkinnedModelVertex;
     };
 };
-
 static_assert(sizeof(Vertex96) == 96, "96 byte alignment needed");
