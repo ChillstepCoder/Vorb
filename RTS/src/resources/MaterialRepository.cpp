@@ -136,5 +136,8 @@ const MaterialData& MaterialRepository::getMaterial(MaterialID materialId) const
 
 void MaterialRepository::uploadMaterialData() {
     mMaterialDataBuffer.allocate(sizeof(MaterialData) * mMaterials.size(), mMaterials.data(), 0);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, mMaterialDataBuffer.getHandle());
+}
+
+void MaterialRepository::bindMaterialBuffer() const {
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_GLOBAL_MATERIAL_SSBO, mMaterialDataBuffer.getHandle());
 }

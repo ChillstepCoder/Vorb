@@ -5,7 +5,7 @@
 
 #include "resources/ResourceManager.h"
 //#include "resources/ModelRepository.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 

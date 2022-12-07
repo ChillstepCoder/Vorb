@@ -1,0 +1,3 @@
+albedo: LEAF.png
+normal: GENERATE
+sampler_state: LINEAR_CLAMP_MIPMAP

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "RenderContext.h"
 #include "resources/ResourceManager.h"
+#include "resources/MaterialRepository.h"
 #include "world/IWorld.h"
 #include "world/cli/CliWorldInterface.h"
 #include "world/HeightmapTerrainQuadtree.h"
@@ -22,7 +23,7 @@
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/ItemRenderer.h"
 #include "rendering/LightRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/Skybox.h"
@@ -242,7 +243,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // UBO
     glCreateBuffers(1, &mGlobalUbo);
     glNamedBufferStorage(mGlobalUbo, CAMERA_MATRICES_BYTE_SIZE + sizeof(GlobalUboData), nullptr, GL_DYNAMIC_STORAGE_BIT);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, mGlobalUbo);
+    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_GLOBAL_UBO, mGlobalUbo);
 
     mCloudManager = std::make_unique<CloudManager>();
 }
@@ -296,7 +297,7 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
 
 void RenderContext::initPostLoad() {
 
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
 
     // Init all passthrough materials
     {
@@ -324,7 +325,6 @@ void RenderContext::initPostLoad() {
         mSkyBox = std::make_unique<Skybox>();
         mSkyBox->init(materialManager.getMaterialShader("sky"));
     }
-
 }
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {
@@ -445,6 +445,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Instanced models
+    Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
     mStaticModelRenderer->renderModels(camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
@@ -527,6 +528,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
             mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
 
             // Instanced models
+            Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
             mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
 
             //glCullFace(GL_BACK);

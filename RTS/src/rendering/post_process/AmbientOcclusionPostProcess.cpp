@@ -3,7 +3,7 @@
 
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
@@ -31,7 +31,7 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const f32v2& gbufferDim
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mMaterial = materialManager.getMaterialShader("ssao");
     mApplyMaterial = materialManager.getMaterialShader("ssao_apply");
     mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_r");

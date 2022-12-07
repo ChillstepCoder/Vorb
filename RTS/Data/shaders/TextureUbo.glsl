@@ -4,7 +4,7 @@
 // This must not be modified, it is bound to code layout
 
 layout(bindless_sampler) uniform;
-layout (std140, binding = 1) uniform TextureUbo {
+layout (std140, binding = 2) uniform TextureUbo {
     vec3 unPosition;
     uvec4 Textures[256];
 };

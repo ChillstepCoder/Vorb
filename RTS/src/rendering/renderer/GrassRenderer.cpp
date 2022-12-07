@@ -4,7 +4,7 @@
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "resources/ResourceManager.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
 
 #include "options/DebugOptions.h"
@@ -12,7 +12,7 @@
 
 GrassRenderer::GrassRenderer()
 {
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mGrassMaterial = materialManager.getMaterialShader("grass");
 }
 

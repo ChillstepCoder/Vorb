@@ -5,13 +5,13 @@
 
 #include "resources/ResourceManager.h"
 #include "MaterialRenderer.h"
-#include "MaterialManager.h"
+#include "MaterialShaderManager.h"
 #include "rendering/mesh/Mesh.h"
 #include "camera/Camera3D.h"
 
 ItemRenderer::ItemRenderer() {
 
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mItemMeshMaterial = materialManager.getMaterialShader("standard_tile");
   //  mItemBillboardMaterial = materialManager.getMaterial("billboard");
 

@@ -1,5 +1,11 @@
 #pragma once
 
+
+constexpr GLuint BUFFER_BASE_GLOBAL_UBO = 0; // Always bound
+constexpr GLuint BUFFER_BASE_GLOBAL_MATERIAL_SSBO = 1; // Always bound
+constexpr GLuint BUFFER_BASE_MESH_UBO = 2;
+constexpr GLuint BUFFER_BASE_MESH_SSBO = 3;
+
 struct DrawElementsIndirectCommand
 {
     GLuint count_;

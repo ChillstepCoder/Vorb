@@ -85,6 +85,9 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
         textureId = mTextures.size();
         textureData = &mTextures.emplace_back();
     }
+    // Track relative to path as well in case we care
+    mTextureAssetPaths[filePath.getString()] = textureId;
+
     textureData->texture = std::move(texture);
     textureData->textureId = textureId;
     textureData->texturePath = filePath;
@@ -98,6 +101,13 @@ const TextureData& TextureRepository::getTextureNew(const nString& textureName) 
     auto&& it = mTextureIdLookup.find(textureName);
     assert(it != mTextureIdLookup.end());
     return mTextures[it->second];
+}
+
+void TextureRepository::setTextureAssetPaths(const std::vector<vio::Path>& paths) {
+    mTextureAssetPaths.clear();
+    for (auto& path : paths) {
+        mTextureAssetPaths[path.getString()] = INVALID_TEXTURE_ID;
+    }
 }
 
 bool TextureRepository::loadSubTextureOLD(const vio::Path& filePath) {

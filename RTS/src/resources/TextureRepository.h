@@ -42,6 +42,7 @@ public:
 
     const TextureData* loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV);
     const TextureData& getTextureNew(const nString& textureName) const;
+    void setTextureAssetPaths(const std::vector<vio::Path>& paths);
 
     bool loadSubTextureOLD(const vio::Path& filePath);
     const SubTexture& getSubTextureOLD(const nString& textureName) const;
@@ -63,6 +64,7 @@ private:
     // NEW
     std::vector<TextureData> mTextures;
     std::map<nString, TextureID> mTextureIdLookup;
+    std::map<nString, TextureID> mTextureAssetPaths;
 
     // OLD
     std::vector<SubTexture> mSubTextures;

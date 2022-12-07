@@ -19,10 +19,10 @@ struct GlyphData {
    vec2 xyOffset;
 };
 
-layout (std140, binding = 1) uniform BillboardTypes {
+layout (std140, binding = 2) uniform BillboardTypes {
   uvec4 fontTextures[256];
 };
 
-layout(std430, binding = 2) buffer BillboardSSBO {
+layout(std430, binding = 3) buffer BillboardSSBO {
     GlyphData glyphData[];
 };

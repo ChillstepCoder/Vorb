@@ -6,7 +6,7 @@
 #include "camera/Camera3D.h"
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/MaterialUtils.h"
 #include <Vorb/graphics/BlendState.h>
@@ -17,7 +17,7 @@
 
 CloudRenderer::CloudRenderer(const f32v2& gbufferDims) : mGbufferDims(gbufferDims)
 {
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mCloudMaterial = materialManager.getMaterialShader("cloud");
     mPostMaterial = materialManager.getMaterialShader("cloud_post");
     mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_rgb");

@@ -4,7 +4,7 @@
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/CharacterControlComponent.h"
 
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include "rendering/MaterialRenderer.h"
 #include "rendering/TileVertex.h"

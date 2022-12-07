@@ -1,14 +1,6 @@
 
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
-layout(std140, binding = 1) uniform PerFrameData
-{
-	vec4 cameraPos;
-	vec4 frustumPlanes[4]; // Ignoring near and far plane
-    uvec4 lodDrawInfos[2]; // 4 pairs of <firstIndex, count> representing the 4 LOD levels, packed into uvec4 cause std140 is lame
-    vec3 lodDistancesSQ;
-	uint numShapesToCull;
-};
 
 layout(std430, binding = 2) buffer ModelMatrices
 {
@@ -29,7 +21,14 @@ layout(std430, binding = 3) buffer InDrawCommands
 	DrawCommand inDrawCommands[];
 };
 
-
+layout(std140, binding = 4) uniform PerFrameData
+{
+	vec4 cameraPos;
+	vec4 frustumPlanes[4]; // Ignoring near and far plane
+    uvec4 lodDrawInfos[2]; // 4 pairs of <firstIndex, count> representing the 4 LOD levels, packed into uvec4 cause std140 is lame
+    vec3 lodDistancesSQ;
+	uint numShapesToCull;
+};
 
 // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
 //layout(std430, binding = 4) buffer NumVisibleMeshes

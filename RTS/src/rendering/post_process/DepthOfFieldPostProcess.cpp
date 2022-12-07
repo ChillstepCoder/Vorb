@@ -3,7 +3,7 @@
 
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>

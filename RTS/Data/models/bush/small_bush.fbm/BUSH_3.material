@@ -1,0 +1,3 @@
+albedo: BUSH_3.png
+normal: GENERATE
+sampler_state: LINEAR_CLAMP_MIPMAP

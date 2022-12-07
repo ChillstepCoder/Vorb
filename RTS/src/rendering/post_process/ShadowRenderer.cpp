@@ -5,7 +5,7 @@
 
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/SamplerState.h>
@@ -188,7 +188,7 @@ ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
     }
 
     // Materials
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");
     mShadowVarianceMaterial = materialManager.getMaterialShader("shadow_variance");
     mShadowApplyMaterial = materialManager.getMaterialShader("shadow_apply");

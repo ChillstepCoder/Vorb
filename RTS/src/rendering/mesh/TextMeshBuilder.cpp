@@ -247,13 +247,13 @@ void TextMeshBuilder::initMeshBuffers(SubMeshData& subMesh) {
     if (subMesh.mUbo == 0) {
         glGenBuffers(1, &subMesh.mUbo);
         glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, subMesh.mUbo);
+        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, subMesh.mUbo);
     }
     // SSBO
     if (subMesh.mSSBO == 0) {
         glGenBuffers(1, &subMesh.mSSBO);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, subMesh.mSSBO);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, subMesh.mSSBO);
     }
     // IBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);

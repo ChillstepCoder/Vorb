@@ -24,11 +24,11 @@ struct BillboardTypeData {
     uvec4 texture;
 };
 
-layout (std140, binding = 1) uniform BillboardTypes {
+layout (std140, binding = 2) uniform BillboardTypes {
   vec3 unPosition;
   BillboardTypeData typeData[256];
 };
 
-layout(std430, binding = 2) buffer BillboardSSBO {
+layout(std430, binding = 3) buffer BillboardSSBO {
     BillboardData billboardData[];
 };

@@ -1,0 +1,3 @@
+albedo: Tree_Material_Base.png
+normal: Tree_Material_Base.norm.png
+sampler_state: LINEAR_CLAMP_MIPMAP

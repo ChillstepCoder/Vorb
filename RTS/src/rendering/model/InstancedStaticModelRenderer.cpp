@@ -5,7 +5,7 @@
 #include "resources/ModelRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 #include "rendering/mesh/ModelMeshBuilder.h"
@@ -39,7 +39,7 @@ StaticModelInstanceData::~StaticModelInstanceData()
 
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT) {
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mStandardMaterial = materialManager.getMaterialShader("standard_model");
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper_instanced");
     mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
@@ -170,9 +170,9 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
             mCullingComputeShader->use();
             glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, mGpuCullingUniformBuffer.getHandle());
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mTransformsVbo);
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inDrawCommands.getHandle());
+            glBindBufferBase(GL_UNIFORM_BUFFER, 4, mGpuCullingUniformBuffer.getHandle());
             //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
             //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
             if (drawCommandsSize % WORK_GROUP_SIZE == 0) {

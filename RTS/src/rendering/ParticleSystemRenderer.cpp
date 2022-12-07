@@ -6,7 +6,7 @@
 #include "particles/ParticleSystemManager.h"
 
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include <Vorb/graphics/FullQuadVBO.h>
 

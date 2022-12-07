@@ -72,7 +72,7 @@
     <ClCompile Include="src\rendering\MaterialShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\MaterialManager.cpp">
+    <ClCompile Include="src\rendering\MaterialShaderManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\MaterialRenderer.cpp">
@@ -698,7 +698,7 @@
     <ClInclude Include="src\rendering\MaterialShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\MaterialManager.h">
+    <ClInclude Include="src\rendering\MaterialShaderManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\MaterialRenderer.h">

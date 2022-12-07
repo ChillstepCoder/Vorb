@@ -77,10 +77,10 @@ void Mesh::draw() const {
     do {
         glBindVertexArray(currentSubmesh->mVao);
         if (currentSubmesh->mUbo) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, currentSubmesh->mUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, currentSubmesh->mUbo);
         }
         if (currentSubmesh->mSSBO) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, currentSubmesh->mSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, currentSubmesh->mSSBO);
         }
         glDrawElements(GL_TRIANGLES, currentSubmesh->mLODData.mTotalIndexCount, currentSubmesh->mIndexType, (const GLvoid*)(0) /* offset */);
         RenderStats::recordDrawCall(currentSubmesh->mLODData.mTotalIndexCount / 3);
@@ -100,10 +100,10 @@ void Mesh::draw(MeshLODLevel lod) const
         MeshLODDrawInfo drawInfo = currentSubmesh->mLODData.getDrawInfoForLOD(lod);
         glBindVertexArray(currentSubmesh->mVao);
         if (currentSubmesh->mUbo) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, currentSubmesh->mUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, currentSubmesh->mUbo);
         }
         if (currentSubmesh->mSSBO) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, currentSubmesh->mSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, currentSubmesh->mSSBO);
         }
 
         glDrawElements(GL_TRIANGLES, drawInfo.indexCount, currentSubmesh->mIndexType, (const GLvoid*)(drawInfo.startIndex * (currentSubmesh->mIndexType == GL_UNSIGNED_INT ? sizeof(ui32) : sizeof(ui16))) /* offset */);
@@ -123,10 +123,10 @@ void Mesh::drawInstanced(GLsizei instanceCount) const {
      do {
         glBindVertexArray(currentSubmesh->mVao);
         if (currentSubmesh->mUbo) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, currentSubmesh->mUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, currentSubmesh->mUbo);
         }
         if (currentSubmesh->mSSBO) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, currentSubmesh->mSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, currentSubmesh->mSSBO);
         }
         glDrawElementsInstanced(GL_TRIANGLES, currentSubmesh->mLODData.mTotalIndexCount, currentSubmesh->mIndexType, (const GLvoid*)(0) /* offset */, instanceCount);
         RenderStats::recordDrawCall(currentSubmesh->mLODData.mTotalIndexCount / 3);
@@ -146,10 +146,10 @@ void Mesh::drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const {
         MeshLODDrawInfo drawInfo = currentSubmesh->mLODData.getDrawInfoForLOD(lod);
         glBindVertexArray(currentSubmesh->mVao);
         if (currentSubmesh->mUbo) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, currentSubmesh->mUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, currentSubmesh->mUbo);
         }
         if (currentSubmesh->mSSBO) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, currentSubmesh->mSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, currentSubmesh->mSSBO);
         }
         glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, currentSubmesh->mIndexType, (const GLvoid*)(drawInfo.startIndex * (currentSubmesh->mIndexType == GL_UNSIGNED_INT ? sizeof(ui32) : sizeof(ui16))) /* offset */, instanceCount);
         RenderStats::recordDrawCall(drawInfo.indexCount / 3);
@@ -169,10 +169,10 @@ void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) 
     do {
         glBindVertexArray(currentSubmesh->mVao);
         if (currentSubmesh->mUbo) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1 /*index*/, currentSubmesh->mUbo);
+            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, currentSubmesh->mUbo);
         }
         if (currentSubmesh->mSSBO) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2 /*index*/, currentSubmesh->mSSBO);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, currentSubmesh->mSSBO);
         }
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
         glMultiDrawElementsIndirect(GL_TRIANGLES, currentSubmesh->mIndexType, nullptr, (GLsizei)numDrawCommands, 0);

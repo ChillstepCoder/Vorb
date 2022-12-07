@@ -8,10 +8,10 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class GLProgram);
 
-class MaterialManager {
+class MaterialShaderManager {
 public:
-    MaterialManager(vio::IOManager& ioManager, TextureRepository& textureRepository, vg::TextureCache& textureCache);
-    ~MaterialManager();
+    MaterialShaderManager(vio::IOManager& ioManager, TextureRepository& textureRepository, vg::TextureCache& textureCache);
+    ~MaterialShaderManager();
 
     bool loadMaterialShader(const vio::Path& filePath);
     bool loadComputeShader(const vio::Path& filePath);

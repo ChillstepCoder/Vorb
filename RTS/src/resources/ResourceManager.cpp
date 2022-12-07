@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "resources/ResourceManager.h"
 
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/ShaderLoader.h"
 #include "particles/ParticleSystemManager.h"
 #include "city/Building.h"
@@ -45,7 +45,7 @@ ResourceManager::ResourceManager() {
     mTextureCache->init(mIoManager.get());
 
     mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
-    mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mTextureRepository, *mTextureCache);
+    mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository, *mTextureCache);
     mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
@@ -81,6 +81,7 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     // Make sure we clear all vectors each gather
     mTextureFiles.clear();
     mMaterialShaderFiles.clear();
+    mMaterialFiles.clear();
     mTileFiles.clear();
     mParticleSystemFiles.clear();
     mRoomFiles.clear();
@@ -118,6 +119,8 @@ void ResourceManager::loadFiles() {
                 mTextureRepository->loadSubTextureOLD(entry);
             }
         }
+        // New
+        mTextureRepository->setTextureAssetPaths(mTextureFiles);
     }
 
     // Load item definitions
@@ -158,6 +161,7 @@ void ResourceManager::loadFiles() {
         for (auto&& entry : mMaterialFiles) {
             mMaterialRepository->loadMaterial(entry, *mTextureRepository);
         };
+        mMaterialRepository->uploadMaterialData();
     }
 
     // Load Animations
@@ -327,6 +331,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
         }
         else if (fileHasExtension(entry, ".prog")) {
             mMaterialShaderFiles.emplace_back(entry);
+        }
+        else if (fileHasExtension(entry, ".material")) {
+            mMaterialFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".comp")) {
             mComputeFiles.emplace_back(entry);

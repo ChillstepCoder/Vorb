@@ -2,7 +2,7 @@
 #include "TerrainRenderer.h"
 
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialUtils.h"
 
 #include <Vorb/graphics/GBuffer.h>
@@ -17,7 +17,7 @@
 
 TerrainRenderer::TerrainRenderer()
 {
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mTerrainMaterial = materialManager.getMaterialShader("terrain");
     mWaterMaterial = materialManager.getMaterialShader("water");
 }

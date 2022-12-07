@@ -19,6 +19,7 @@ inline void reallocateBuffer(GLuint handle, GLsizeiptr size, const void* data, G
 }
 
 void GLBuffer::allocate(GLsizeiptr size, const void* data, GLbitfield flags) {
+    assert(size);
     if (mHandle == 0) {
         // Brand new buffer
         glCreateBuffers(1, &mHandle);

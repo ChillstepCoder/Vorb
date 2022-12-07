@@ -7,7 +7,7 @@
 #include "resources/ResourceManager.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "rendering/RenderContext.h"
 #include "rendering/ChunkGrassQuadtree.h"
 
@@ -34,7 +34,7 @@ TileContainerRenderer::TileContainerRenderer()
     mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
     assert(mCliWorld);
 
-    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
     mStandardMaterial = materialManager.getMaterialShader("standard_tile");
     mBillboardMaterial = materialManager.getMaterialShader("billboard_ssbo");
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");

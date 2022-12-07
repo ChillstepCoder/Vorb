@@ -13,7 +13,7 @@ layout(location = 5) in vec2 vTangent;
 //layout(location = 6) in float vWindInfluence;
 
 out vec2 fUV;
-flat out int fMaterialIndex;
+flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;

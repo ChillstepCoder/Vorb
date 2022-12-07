@@ -4,7 +4,7 @@
 #include "rendering/RenderStats.h"
 #include "rendering/mesh/TextMeshBuilder.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include "resources/ResourceManager.h"
 
@@ -178,7 +178,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
     // Render text
     if (mTextMesh.isValid()) {
         glDisable(GL_CULL_FACE);
-        const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+        const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
         const MaterialShader* material = materialManager.getMaterialShader("text_billboard");
         MaterialRenderer::bindMaterialForRender(*material);
         f32v3 offset = mRootPos - cameraPos;

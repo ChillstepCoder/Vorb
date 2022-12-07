@@ -4,7 +4,7 @@
 #include <glm/mat3x3.hpp>
 
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialManager.h"
+#include "rendering/MaterialShaderManager.h"
 #include "resources/ResourceManager.h"
 #include "camera/Camera3D.h"
 

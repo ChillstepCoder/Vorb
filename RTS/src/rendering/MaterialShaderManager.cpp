@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "MaterialManager.h"
+#include "MaterialShaderManager.h"
 
 #include "resources/TextureRepository.h"
 #include "ShaderLoader.h"
@@ -8,16 +8,16 @@
 #include <Vorb/graphics/TextureCache.h> //TODO: Remove
 #include <Vorb/graphics/GLProgram.h>
 
-MaterialManager::MaterialManager(vio::IOManager& ioManager, TextureRepository& textureRepository, vg::TextureCache& textureCache) :
+MaterialShaderManager::MaterialShaderManager(vio::IOManager& ioManager, TextureRepository& textureRepository, vg::TextureCache& textureCache) :
     mIoManager(ioManager), mTextureRepository(textureRepository), mTextureCache(textureCache) {
 
 }
 
-MaterialManager::~MaterialManager() {
+MaterialShaderManager::~MaterialShaderManager() {
 
 }
 
-bool MaterialManager::loadMaterialShader(const vio::Path& filePath) {
+bool MaterialShaderManager::loadMaterialShader(const vio::Path& filePath) {
     // Read file
     nString data;
     mIoManager.readFileToString(filePath, data);
@@ -81,14 +81,14 @@ bool MaterialManager::loadMaterialShader(const vio::Path& filePath) {
     return true;
 }
 
-bool MaterialManager::loadComputeShader(const vio::Path& filePath) {
+bool MaterialShaderManager::loadComputeShader(const vio::Path& filePath) {
     nString name = filePath.getFileNameNoExtension();
     vg::GLProgram newProgram = ShaderLoader::createComputeProgramFromFile(name, filePath);
     mComputeShaders[name] = std::move(newProgram);
     return true;
 }
 
-const MaterialShader* MaterialManager::getMaterialShader(const nString& strId) const {
+const MaterialShader* MaterialShaderManager::getMaterialShader(const nString& strId) const {
     auto&& it = mNameToMaterialShaderMap.find(strId);
     if (it != mNameToMaterialShaderMap.end()) {
         return mMaterialShaders[it->second].get();
@@ -98,7 +98,7 @@ const MaterialShader* MaterialManager::getMaterialShader(const nString& strId) c
     return nullptr;
 }
 
-const vg::GLProgram* MaterialManager::getComputeShader(const nString& strId) const {
+const vg::GLProgram* MaterialShaderManager::getComputeShader(const nString& strId) const {
     auto&& it = mComputeShaders.find(strId);
     if (it != mComputeShaders.end()) {
         return &it->second;

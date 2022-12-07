@@ -18,6 +18,7 @@ public:
     const MaterialData& getMaterial(MaterialID materialId) const;
     const MaterialData& getMaterial(const nString& materialName) const;
     void uploadMaterialData();
+    void bindMaterialBuffer() const;
 
 private:
 

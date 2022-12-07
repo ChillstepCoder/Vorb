@@ -3,6 +3,7 @@
 #include <Vorb/graphics/GLEnums.h>
 
 typedef ui32 TextureID;
+constexpr ui32 INVALID_TEXTURE_ID = UINT32_MAX;
 
 // Represents a managed RAII opengl texture with a bindless handle
 class GLTexture
