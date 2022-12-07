@@ -2,7 +2,7 @@
 
 
 in vec2 fUV;
-flat in int fTextureIndex;
+flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
 in float fRoughness;
@@ -12,7 +12,7 @@ layout (location = 1) out vec4 oNormal;
 layout (location = 2) out vec4 oRoughness;
 
 void main() {
-    oColor = texture(sampler2D(Textures[fTextureIndex].xy), fUV) * fTint;
+    oColor = texture(sampler2D(Textures[fMaterialIndex].xy), fUV) * fTint;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
     oColor = oColor;
@@ -22,7 +22,7 @@ void main() {
     }
 	
 	// Normal is always the next page
-	vec3 normal = texture(sampler2D(Textures[fTextureIndex].zw), fUV).rgb;
+	vec3 normal = texture(sampler2D(Textures[fMaterialIndex].zw), fUV).rgb;
 	normal = normal * 2.0 - 1.0;
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;

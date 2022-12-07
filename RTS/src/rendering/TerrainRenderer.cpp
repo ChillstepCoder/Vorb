@@ -18,8 +18,8 @@
 TerrainRenderer::TerrainRenderer()
 {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mTerrainMaterial = materialManager.getMaterial("terrain");
-    mWaterMaterial = materialManager.getMaterial("water");
+    mTerrainMaterial = materialManager.getMaterialShader("terrain");
+    mWaterMaterial = materialManager.getMaterialShader("water");
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const TerrainMesh*>& terrainMeshes) {

@@ -3,7 +3,6 @@
 #include "rendering/MaterialShader.h"
 
 class TextureRepository;
-typedef int MaterialID;
 DECL_VIO(class Path);
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
@@ -16,14 +15,14 @@ public:
 
     bool loadMaterialShader(const vio::Path& filePath);
     bool loadComputeShader(const vio::Path& filePath);
-    const MaterialShader* getMaterial(MaterialID id) const;
-    const MaterialShader* getMaterial(const nString& strId) const;
+    const MaterialShader* getMaterialShader(const nString& strId) const;
     const vg::GLProgram* getComputeShader(const nString& strId) const;
 
 private:
-    std::vector<std::unique_ptr<MaterialShader>> mMaterials;
-    std::unordered_map<nString, MaterialID> mNameToMaterialIDMap;
+    std::vector<std::unique_ptr<MaterialShader>> mMaterialShaders;
+    std::unordered_map<nString, ui32> mNameToMaterialShaderMap;
     std::map<nString, vg::GLProgram> mComputeShaders;
+
     vio::IOManager& mIoManager;
     vg::TextureCache& mTextureCache;
     TextureRepository& mTextureRepository;

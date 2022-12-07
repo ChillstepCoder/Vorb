@@ -44,7 +44,7 @@ void ItemRepository::loadItemFile(const vio::Path& filePath, TextureRepository& 
         newItem.mShape = def.shape;
         newItem.mId = mItems.size() - 1;
         newItem.mName = key;
-        newItem.mTexture = textureRepo.getTexture(def.textureName);
+        newItem.mTexture = textureRepo.getSubTextureOLD(def.textureName);
         newItem.mValue = def.value;
         newItem.mWeight = def.weight;
         newItem.mStackSize = def.stackSize;

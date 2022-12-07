@@ -749,7 +749,7 @@ void ProceduralMeshBuilder::operator delete(void* pointer, size_t size) {
 }
 
 void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex) {
-    auto&& it = mTextureToSubmesh.find(texture.mTextureDiffuse);
+    auto&& it = mTextureToSubmesh.find(texture.mTextureAlbedo);
     if (it != mTextureToSubmesh.end()) {
         i32 submeshIndex = it->second.first;
         *textureIndex = it->second.second;
@@ -762,18 +762,18 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
             size_t nextSubtextureIndex = lastSubmesh.mTextures.size() / 2;
             assert(nextSubtextureIndex <= UINT8_MAX);
             *textureIndex = ui8(nextSubtextureIndex);
-            lastSubmesh.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+            lastSubmesh.mTextures.emplace_back(texture.mTextureHandleAlbedo);
             lastSubmesh.mTextures.emplace_back(texture.mTextureHandleNormal);
-            mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
+            mTextureToSubmesh[texture.mTextureAlbedo] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
             *submesh = &lastSubmesh;
         }
         else {
             // Our last mesh has too many textures already, add a new submesh
             SubMeshBufferData& data = mSubMeshesData.emplace_back();
             *textureIndex = 0;
-            data.mTextures.emplace_back(texture.mTextureHandleDiffuse);
+            data.mTextures.emplace_back(texture.mTextureHandleAlbedo);
             data.mTextures.emplace_back(texture.mTextureHandleNormal);
-            mTextureToSubmesh[texture.mTextureDiffuse] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
+            mTextureToSubmesh[texture.mTextureAlbedo] = std::make_pair(mSubMeshesData.size() - 1, *textureIndex);
             *submesh = &data;
         }
     }

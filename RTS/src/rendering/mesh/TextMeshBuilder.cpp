@@ -222,7 +222,7 @@ void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
 }
 
 ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {
-    auto&& it = mSubtextureLookup.find(texture.mTextureDiffuse);
+    auto&& it = mSubtextureLookup.find(texture.mTextureAlbedo);
     if (it != mSubtextureLookup.end()) {
       // TODO: UNEEDED
         return it->second;
@@ -231,8 +231,8 @@ ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {
         assert(mFontData.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);
         // This texture fits in the main submesh
         const ui8 fontIndex = (ui8)mFontData.mFontTextures.size();
-        mFontData.mFontTextures.emplace_back(texture.mTextureHandleDiffuse);
-        mSubtextureLookup[texture.mTextureDiffuse] = fontIndex;
+        mFontData.mFontTextures.emplace_back(texture.mTextureHandleAlbedo);
+        mSubtextureLookup[texture.mTextureAlbedo] = fontIndex;
         return fontIndex;
     }
 }

@@ -18,10 +18,10 @@
 CloudRenderer::CloudRenderer(const f32v2& gbufferDims) : mGbufferDims(gbufferDims)
 {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mCloudMaterial = materialManager.getMaterial("cloud");
-    mPostMaterial = materialManager.getMaterial("cloud_post");
-    mBlurMaterial = materialManager.getMaterial("gaussian_blur_rgb");
-    mCloudShadowMaterial = materialManager.getMaterial("cloud_shadow_mapper");
+    mCloudMaterial = materialManager.getMaterialShader("cloud");
+    mPostMaterial = materialManager.getMaterialShader("cloud_post");
+    mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_rgb");
+    mCloudShadowMaterial = materialManager.getMaterialShader("cloud_shadow_mapper");
 
     vg::GBufferAttachment mainAttachment;
     // Color

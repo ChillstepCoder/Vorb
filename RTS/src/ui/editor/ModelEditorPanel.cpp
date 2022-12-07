@@ -183,13 +183,13 @@ void ModelEditorPanel::renderModelToTexture() {
 
         switch (mDrawMode) {
             case ModelEditorPanelDrawMode::Default:
-                staticModelMaterial = resourceManager.getMaterialManager().getMaterial("editor_model");
+                staticModelMaterial = resourceManager.getMaterialManager().getMaterialShader("editor_model");
                 break;
             case ModelEditorPanelDrawMode::Wireframe:
-                staticModelMaterial = resourceManager.getMaterialManager().getMaterial("mesh_wireframe");
+                staticModelMaterial = resourceManager.getMaterialManager().getMaterialShader("mesh_wireframe");
                 break;
             case ModelEditorPanelDrawMode::Normals:
-                staticModelMaterial = resourceManager.getMaterialManager().getMaterial("mesh_normals");
+                staticModelMaterial = resourceManager.getMaterialManager().getMaterialShader("mesh_normals");
                 break;
             default:
                 assert(false);
@@ -213,7 +213,7 @@ void ModelEditorPanel::renderGrid()
     vg::DepthState::NONE.set();
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialShader* gridMaterial = resourceManager.getMaterialManager().getMaterial("grid");
+    const MaterialShader* gridMaterial = resourceManager.getMaterialManager().getMaterialShader("grid");
     VGUniform unVP = gridMaterial->getUniform("unVP");
     MaterialRenderer::bindMaterialForRender(*gridMaterial);
     glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));

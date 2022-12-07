@@ -37,6 +37,7 @@ DECL_VIO(class IOManager)
 
 namespace vorb {
     namespace graphics {
+
         class TextureCache {
             using TexturePathMap = std::unordered_map<vio::Path, Texture>;
             using PathIDMap      = std::unordered_map<ui32, vio::Path>;

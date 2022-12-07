@@ -48,7 +48,8 @@ namespace vorb {
 		   // static void initPredefined();
 		
 		    // Target Is Of The Family GL_TEXTURE_2D/3D/etc. For Use On A Texture
-		    void set(ui32 textureTarget) const;
+		    void setForTarget(ui32 textureTarget) const;
+		    void setForTexture(VGTexture texture) const;
 		    // Unit Is In The Range [0 - GraphicsDeviceProperties::maxTextureUnits)
 		   // void setObject(ui32 textureUnit) const;
 		

@@ -7,6 +7,7 @@ class BrushRepository;
 class TextureAtlas;
 class TextureRepository;
 class MaterialManager;
+class MaterialRepository;
 class ParticleSystemManager;
 class BuildingDescriptionRepository;
 class EntityDefinitionRepository;
@@ -37,6 +38,7 @@ public:
     // TODO: Replace?
     vg::TextureCache& getTextureCache();
     const MaterialManager& getMaterialManager() const { return *mMaterialManager; }
+    const MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
@@ -83,6 +85,7 @@ private:
     std::vector<vio::Path> mFontFiles;
 
     std::unique_ptr<MaterialManager> mMaterialManager;
+    std::unique_ptr<MaterialRepository> mMaterialRepository;
     std::unique_ptr<ParticleSystemManager> mParticleSystemManager;
     std::unique_ptr<BuildingDescriptionRepository> mBuildingRepository;
     std::unique_ptr<EntityDefinitionRepository> mEntityDefinitionRepository;

@@ -179,7 +179,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
     if (mTextMesh.isValid()) {
         glDisable(GL_CULL_FACE);
         const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-        const MaterialShader* material = materialManager.getMaterial("text_billboard");
+        const MaterialShader* material = materialManager.getMaterialShader("text_billboard");
         MaterialRenderer::bindMaterialForRender(*material);
         f32v3 offset = mRootPos - cameraPos;
         glUniform3fv(material->getUniform("unOffset"), 1, &offset.x);

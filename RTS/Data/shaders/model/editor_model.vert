@@ -6,14 +6,14 @@ uniform mat4 unVP;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in int vTextureIndex;
+layout(location = 2) in int vMaterialIndex;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec2 vTangent;
 //layout(location = 6) in float vWindInfluence;
 
 out vec2 fUV;
-flat out int fTextureIndex;
+flat out int fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
@@ -24,7 +24,7 @@ out float fRoughness;
 void main() {
     fTint = vTint;
     fUV = vUV;
-    fTextureIndex = vTextureIndex;
+    fMaterialIndex = vMaterialIndex;
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vec3(vTangent, 0));

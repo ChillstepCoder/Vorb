@@ -12,7 +12,7 @@ static_assert((int)LightShape::Count == 1, "Update this file to handle new light
 static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle new attenuation type");
 
 LightRenderer::LightRenderer() {
-    mPointLightMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterial("point_light");
+    mPointLightMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterialShader("point_light");
     assert(mPointLightMaterial);
 
     InitSharedMesh();

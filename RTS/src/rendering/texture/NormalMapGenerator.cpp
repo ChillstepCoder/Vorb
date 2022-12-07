@@ -168,24 +168,20 @@ void NormalMapGenerator::init() {
 
 VGTexture NormalMapGenerator::generateNormalTexture(VGTexture input, const ui32v2& dims, const vg::SamplerState& samplerState)
 {
-   // Ensure texture writes have finished
-   glTextureBarrier();
    glBindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
    glViewport(0, 0, dims.x, dims.y);
 
    glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
    VGTexture normalTexture;
-   glGenTextures(1, &normalTexture);
-   glBindTexture(GL_TEXTURE_2D, normalTexture);
-   samplerState.set(GL_TEXTURE_2D);
+   glCreateTextures(GL_TEXTURE_2D, 1, &normalTexture);
 
    ui32 mipLevels = static_cast<ui32>(std::floor(std::log2(std::max(dims.x, dims.y)))) + 1;
-   // TODO: Combine specular into the alpha channel
-   glTexStorage2D(GL_TEXTURE_2D, mipLevels, GL_RGBA8, dims.x, dims.y);
+   // TODO: Combine specular into the alpha channel?
+   // TODO: Remove alpha channel?
+   glTextureStorage2D(normalTexture, mipLevels, GL_RGBA8, dims.x, dims.y);
 
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, input);
+   glBindTextureUnit(0, input);
    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, normalTexture, 0);
 
    mNormalProgram->use();
@@ -196,10 +192,9 @@ VGTexture NormalMapGenerator::generateNormalTexture(VGTexture input, const ui32v
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+   glGenerateTextureMipmap(normalTexture);
    // Ensure texture writes have finished
-   glBindTexture(GL_TEXTURE_2D, normalTexture);
-   glGenerateMipmap(GL_TEXTURE_2D);
-   glTextureBarrier();
+   //glTextureBarrier(); We dont need this
    checkGlError("Generate Normal Maps End");
 
    return normalTexture;

@@ -93,7 +93,7 @@ void vg::SpriteBatch::init() {
         glBindTexture(GL_TEXTURE_2D, m_texPixel);
         ui32 pix = 0xffffffffu;
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pix);
-        vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D);
+        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
@@ -311,7 +311,7 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
     for (auto& b : m_batches) {
 
         glBindTexture(GL_TEXTURE_2D, b.textureID);
-        ss->set(GL_TEXTURE_2D);
+        ss->setForTarget(GL_TEXTURE_2D);
 
         glDrawElements(GL_TRIANGLES, b.indices, GL_UNSIGNED_INT, (const GLvoid*)(b.indexOffset * sizeof(ui32)));
     }

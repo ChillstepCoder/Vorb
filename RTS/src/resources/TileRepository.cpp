@@ -73,7 +73,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             tileData.shape = TileShape::MODEL;
         }
         else {
-            tileData.texture = textureRepository.getTexture(fileData.textureName);
+            tileData.texture = textureRepository.getSubTextureOLD(fileData.textureName);
             tileData.shape = fileData.tileShape;
         }
 

@@ -11,9 +11,9 @@ enum class SubTextureFlags : ui8 {
 
 // TODO: Combine specular into the alpha channel of normal
 struct SubTexture {
-    TextureHandle mTextureHandleDiffuse;
+    TextureHandle mTextureHandleAlbedo;
     TextureHandle mTextureHandleNormal;
-    VGTexture mTextureDiffuse;
+    VGTexture mTextureAlbedo;
     VGTexture mTextureNormal;
     f32v4 mUvRect;
     SubTextureID mId;

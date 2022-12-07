@@ -26,7 +26,7 @@ DepthOfFieldPostProcess::DepthOfFieldPostProcess(const f32v2& gbufferDims) :
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
-    mMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterial("depth_of_field");
+    mMaterial = Services::ResourceManager::ref().getMaterialManager().getMaterialShader("depth_of_field");
 
     checkGlError("init DepthOfFieldPostProcess");
 }

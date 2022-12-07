@@ -123,7 +123,7 @@ void BillboardMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, 
             size_t nextSubtextureIndex = lastData.mSubtextureData.size();
             assert(nextSubtextureIndex <= UINT8_MAX);
             *subtextureIndex = ui8(nextSubtextureIndex);
-            lastData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
+            lastData.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleAlbedo, texture.mTextureHandleNormal });
             mSubtextureLookup[texture.mId] = std::make_pair(mSubMeshesData.size() - 1, *subtextureIndex);
             *submesh = &lastData;
         }
@@ -131,7 +131,7 @@ void BillboardMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture, 
             // Our main mesh has too many textures already, make a new submesh
             InProgressSubMeshData& data = mSubMeshesData.emplace_back();
             *subtextureIndex = 0;
-            data.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleDiffuse, texture.mTextureHandleNormal });
+            data.mSubtextureData.emplace_back(SubtextureUniformData{ texture.mUvRect, texture.mTextureHandleAlbedo, texture.mTextureHandleNormal });
             mSubtextureLookup[texture.mId] = std::make_pair(mSubMeshesData.size() - 1, *subtextureIndex);
             *submesh = &data;
         }

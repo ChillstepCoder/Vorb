@@ -49,7 +49,7 @@ void vg::GpuMemory::uploadTexture(VGTexture texture,
             break;
     }
     // Setup Texture Sampling Parameters
-    samplingParameters->set((VGEnum)textureTarget);
+    samplingParameters->setForTarget((VGEnum)textureTarget);
 
     // Get the number of mipmaps for this image
     mipmapLevels = MIN(mipmapLevels, maxMipmapLevels);

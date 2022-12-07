@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/material/Material.h"
+#include "rendering/material/MaterialData.h"
 
 #include <Vorb/graphics/GLProgram.h>
 

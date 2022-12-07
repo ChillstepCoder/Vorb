@@ -12,7 +12,7 @@
 ItemRenderer::ItemRenderer() {
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mItemMeshMaterial = materialManager.getMaterial("standard_tile");
+    mItemMeshMaterial = materialManager.getMaterialShader("standard_tile");
   //  mItemBillboardMaterial = materialManager.getMaterial("billboard");
 
 }

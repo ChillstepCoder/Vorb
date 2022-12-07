@@ -33,7 +33,7 @@ struct alignas(32) StaticModelVertex {
     ui32 tangentPacked;
     ui16v2 uvsPacked;
     color4 color;
-    ui8 textureIndex;
+    ui32 materialIndex;
 
     static void bindVertexAttribs(VGBuffer vao);
 };

@@ -146,7 +146,7 @@ ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
         mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
         constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
         glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
-        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D_ARRAY);
+        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D_ARRAY);
         GLint maxAnisotropy = 0;
         glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
         glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
@@ -181,7 +181,7 @@ ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
             mShadowBlurGBuffers[i].setSize(ui32v2(mGBufferDims));
             mShadowBlurGBuffers[i].init(attachment, nullptr, nullptr);
             mShadowBlurGBuffers[i].bindGeometryTexture(0);
-            vg::sSamplerStates.LINEAR_CLAMP.set(GL_TEXTURE_2D);
+            vg::sSamplerStates.LINEAR_CLAMP.setForTarget(GL_TEXTURE_2D);
         }
 
         checkGlError("Shadow FBO 2 init");
@@ -189,11 +189,11 @@ ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
 
     // Materials
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper");
-    mShadowVarianceMaterial = materialManager.getMaterial("shadow_variance");
-    mShadowApplyMaterial = materialManager.getMaterial("shadow_apply");
-    mBlurMaterial = materialManager.getMaterial("gaussian_blur_shadows");
-    mShadowMipMaterial = materialManager.getMaterial("shadow_mipmap");
+    mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");
+    mShadowVarianceMaterial = materialManager.getMaterialShader("shadow_variance");
+    mShadowApplyMaterial = materialManager.getMaterialShader("shadow_apply");
+    mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_shadows");
+    mShadowMipMaterial = materialManager.getMaterialShader("shadow_mipmap");
 
 }
 
@@ -403,7 +403,7 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
         MaterialRenderer::bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
         mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
-        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
+        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D);
         glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
 
         VGUniform mipCountUniform = glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unMipCount");
@@ -454,7 +454,7 @@ void ShadowRenderer::generateMipmaps() {
     VGUniform inputUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unInputTexture");
     VGUniform levelUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unPreviousLevel");
     mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex);
-    vg::sSamplerStates.LINEAR_CLAMP.set(GL_TEXTURE_2D);
+    vg::sSamplerStates.LINEAR_CLAMP.setForTarget(GL_TEXTURE_2D);
     glUniform1i(inputUniform, nextTextureIndex);
 
     ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();

@@ -206,7 +206,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
 
     const f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
 
-    const SubTexture& cloudSubTexture = Services::ResourceManager::ref().getTextureRepository().getTexture("cloud_sil");
+    const SubTexture& cloudSubTexture = Services::ResourceManager::ref().getTextureRepository().getSubTextureOLD("cloud_sil");
 
     CloudBatchTaskData* data = new CloudBatchTaskData{ {}, this, &newBatch, index };
 

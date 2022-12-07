@@ -13,7 +13,7 @@
 GrassRenderer::GrassRenderer()
 {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mGrassMaterial = materialManager.getMaterial("grass");
+    mGrassMaterial = materialManager.getMaterialShader("grass");
 }
 
 void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const std::set<const GrassMesh*>& grassMeshes) {

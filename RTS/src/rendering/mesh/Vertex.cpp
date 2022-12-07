@@ -66,7 +66,7 @@ void StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribBinding(vao, 1, 0);
 
     glEnableVertexArrayAttrib(vao, 2);
-    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, offsetof(StaticModelVertex, textureIndex));
+    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_INT, offsetof(StaticModelVertex, materialIndex));
     glVertexArrayAttribBinding(vao, 2, 0);
 
     glEnableVertexArrayAttrib(vao, 3);

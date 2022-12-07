@@ -32,7 +32,75 @@ TextureRepository::~TextureRepository() {
 
 }
 
-bool TextureRepository::loadTexture(const vio::Path& filePath) {
+const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV) {
+    // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
+    nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
+
+    // Check if the texture is already cached.
+    /*Texture texture = findTexture(textureName);
+    if (texture.id) return texture;*/
+    GLTexture texture;
+
+    switch (type)
+    {
+        case vg::TextureTarget::TEXTURE_2D:
+        {
+
+            // Get absolute path of texture.
+            vio::Path texPath;
+            mIoManager.resolvePath(filePath, texPath);
+
+            // Load the pixel data.
+            vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
+            if (!rs.data) return nullptr;
+
+            // Upload the texture through GpuMemory.
+            texture = uploadTexture(&rs,
+                ui32v2(rs.width, rs.height),
+                vg::TexturePixelType::UNSIGNED_BYTE,
+                type,
+                samplerState,
+                vg::TextureInternalFormat::RGBA,
+                vg::TextureFormat::RGBA,
+                INT_MAX /*mipmap levels*/);
+
+        }
+        default:
+            assert(false && "Only texture_2d is supported currently");
+    }
+
+    assert(texture.isValid());
+
+    TextureData* textureData;
+    TextureID textureId;
+    auto&& it = mTextureIdLookup.find(textureName);
+    if (it != mTextureIdLookup.end()) {
+        // Replace existing
+        LOG_WARN("Replacing existing texture {}", filePath.getString());
+        textureId = it->second;
+        textureData = &mTextures[textureId];
+        textureData->texture.destroy();
+    }
+    else {
+        textureId = mTextures.size();
+        textureData = &mTextures.emplace_back();
+    }
+    textureData->texture = std::move(texture);
+    textureData->textureId = textureId;
+    textureData->texturePath = filePath;
+    textureData->samplerState = samplerState;
+    textureData->flipV = flipV;
+    return textureData;
+    // TODO: dirty buffer bit?
+}
+
+const TextureData& TextureRepository::getTextureNew(const nString& textureName) const {
+    auto&& it = mTextureIdLookup.find(textureName);
+    assert(it != mTextureIdLookup.end());
+    return mTextures[it->second];
+}
+
+bool TextureRepository::loadSubTextureOLD(const vio::Path& filePath) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
     nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
 
@@ -107,18 +175,60 @@ bool TextureRepository::loadTexture(const vio::Path& filePath) {
     return true;
 }
 
+GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::TexturePixelType texturePixelType, vg::TextureTarget textureTarget, const vg::SamplerState* samplingParameters, vg::TextureInternalFormat internalFormat, vg::TextureFormat textureFormat, i32 mipmapLevels) {
+    VGTexture handle;
+    glCreateTextures((VGEnum)textureTarget, 1, &handle);
+    { // Determine The Maximum Number Of Mipmap Levels Available
+        i32 maxMipmapLevels = 0;
+        i32 size = (i32)glm::min(dims.x, dims.y);
+        while (size > 1) {
+            maxMipmapLevels++;
+            size >>= 1;
+        }
+
+        // Get the number of mipmaps for this image
+        mipmapLevels = MIN(mipmapLevels, maxMipmapLevels);
+    }
+
+    // "Bind" the newly created texture : all future texture functions will modify this texture
+    switch (textureTarget) {
+        case vg::TextureTarget::TEXTURE_1D:
+        case vg::TextureTarget::PROXY_TEXTURE_1D:
+            glTextureStorage1D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x);
+            glTextureSubImage1D(handle, 0, 0, dims.x, (VGEnum)textureFormat, (VGEnum)texturePixelType, data);
+            break;
+        default:
+            glTextureStorage2D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x, dims.y);
+            glTextureSubImage2D(handle, 0, 0, 0, dims.x, dims.y, (VGEnum)textureFormat, (VGEnum)texturePixelType, data);
+            break;
+    }
+    // Setup Texture Sampling Parameters
+    assert(samplingParameters);
+    samplingParameters->setForTexture(handle);
+
+    // Create Mipmaps If Necessary
+    if (mipmapLevels > 0) {
+        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
+        glGenerateTextureMipmap(handle);
+    }
+
+    return GLTexture(handle, textureTarget, dims);
+}
+
 SubTexture& TextureRepository::newSubTexture(const nString& name, VGTexture diffuse, TextureHandle diffuseHandle, VGTexture normal, TextureHandle normalHandle, const f32v4& uvRect, bool randFlip) {
     SubTexture& newTexture = mSubTextures.emplace_back();
     newTexture.mId = mSubTextures.size() - 1;
     newTexture.mUvRect = uvRect;
-    newTexture.mTextureDiffuse = diffuse;
-    newTexture.mTextureHandleDiffuse = diffuseHandle;
+    newTexture.mTextureAlbedo = diffuse;
+    newTexture.mTextureHandleAlbedo = diffuseHandle;
     newTexture.mTextureNormal = normal;
     newTexture.mTextureHandleNormal = normalHandle;
     if (randFlip) newTexture.mFlags.setBit(SubTextureFlags::RAND_FLIP);
 
-    assert(mTextureIdLookup.find(name) == mTextureIdLookup.end() && "Duplicate texture name detected");
-    mTextureIdLookup[name] = newTexture.mId;
+    assert(mSubTextureIdLookup.find(name) == mSubTextureIdLookup.end() && "Duplicate texture name detected");
+    mSubTextureIdLookup[name] = newTexture.mId;
 
     return newTexture;
 }
@@ -161,9 +271,9 @@ TextureMetaData TextureRepository::getFileMetadata(const vio::Path& imageFilePat
 }
 
 
-const SubTexture& TextureRepository::getTexture(const nString& textureName) const {
-    auto&& it = mTextureIdLookup.find(textureName);
-    if (it == mTextureIdLookup.end()) {
+const SubTexture& TextureRepository::getSubTextureOLD(const nString& textureName) const {
+    auto&& it = mSubTextureIdLookup.find(textureName);
+    if (it == mSubTextureIdLookup.end()) {
         pError("Failed to find texture - " + textureName);
         assert(false && "Texture lookup error");
     }

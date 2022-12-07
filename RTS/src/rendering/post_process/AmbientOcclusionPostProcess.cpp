@@ -32,9 +32,9 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const f32v2& gbufferDim
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mMaterial = materialManager.getMaterial("ssao");
-    mApplyMaterial = materialManager.getMaterial("ssao_apply");
-    mBlurMaterial = materialManager.getMaterial("gaussian_blur_r");
+    mMaterial = materialManager.getMaterialShader("ssao");
+    mApplyMaterial = materialManager.getMaterialShader("ssao_apply");
+    mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_r");
 
     //https://learnopengl.com/Advanced-Lighting/SSAO
     // Build kernel

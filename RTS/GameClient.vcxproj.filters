@@ -630,6 +630,12 @@
     <ClCompile Include="src\rendering\gl\GLObjects.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\MaterialRepository.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\texture\GLTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1454,7 +1460,13 @@
     <ClInclude Include="src\rendering\gl\GLObjects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\material\Material.h">
+    <ClInclude Include="src\rendering\material\MaterialData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\MaterialRepository.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\texture\GLTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

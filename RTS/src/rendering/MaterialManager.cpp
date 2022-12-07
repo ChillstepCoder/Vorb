@@ -40,16 +40,16 @@ bool MaterialManager::loadMaterialShader(const vio::Path& filePath) {
 
         // Check if material already exists and replace if so
         MaterialShader* newMaterial;
-        auto&& it = mNameToMaterialIDMap.find(key);
-        if (it != mNameToMaterialIDMap.end()) {
-            newMaterial = mMaterials[it->second].get();
+        auto&& it = mNameToMaterialShaderMap.find(key);
+        if (it != mNameToMaterialShaderMap.end()) {
+            newMaterial = mMaterialShaders[it->second].get();
             newMaterial->dispose();
         }
         else {
             // Store material
-            MaterialID newId = (MaterialID)mMaterials.size();
-            newMaterial = mMaterials.emplace_back(std::make_unique<MaterialShader>()).get();
-            mNameToMaterialIDMap[key] = newId;
+            ui32 newId = (ui32)mMaterialShaders.size();
+            newMaterial = mMaterialShaders.emplace_back(std::make_unique<MaterialShader>()).get();
+            mNameToMaterialShaderMap[key] = newId;
         }
 
         // Get shader
@@ -88,14 +88,10 @@ bool MaterialManager::loadComputeShader(const vio::Path& filePath) {
     return true;
 }
 
-const MaterialShader* MaterialManager::getMaterial(MaterialID id) const {
-    return mMaterials.at(id).get();
-}
-
-const MaterialShader* MaterialManager::getMaterial(const nString& strId) const {
-    auto&& it = mNameToMaterialIDMap.find(strId);
-    if (it != mNameToMaterialIDMap.end()) {
-        return mMaterials[it->second].get();
+const MaterialShader* MaterialManager::getMaterialShader(const nString& strId) const {
+    auto&& it = mNameToMaterialShaderMap.find(strId);
+    if (it != mNameToMaterialShaderMap.end()) {
+        return mMaterialShaders[it->second].get();
     }
     LOG_CRITICAL("Failed to find material {}", strId);
     assert(false);

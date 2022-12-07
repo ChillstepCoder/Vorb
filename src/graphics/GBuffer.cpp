@@ -17,7 +17,7 @@ void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::G
       //  else {
             glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)attachment.format, _size.x, _size.y, 0, (VGEnum)attachment.pixelFormat, (VGEnum)attachment.pixelType, nullptr);
      //   }
-        vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D);
+        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
     }
     else {
         glBindTexture(GL_TEXTURE_2D_ARRAY, texID);
@@ -27,7 +27,7 @@ void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::G
         else {
             glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (VGEnum)attachment.format, _size.x, _size.y, layerCount, 0, (VGEnum)attachment.pixelFormat, (VGEnum)attachment.pixelType, nullptr);
         }
-        vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
+        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D_ARRAY);
     }
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment.number, texID, 0);
     checkError();
@@ -82,7 +82,7 @@ vg::GBuffer& vg::GBuffer::initDepth(TextureInternalFormat depthFormat /*= Textur
     if (layerCount <= 1) {
         glBindTexture(GL_TEXTURE_2D, m_texDepth);
         glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, nullptr);
-        vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D);
+        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
 
         glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_texDepth, 0);
@@ -96,7 +96,7 @@ vg::GBuffer& vg::GBuffer::initDepth(TextureInternalFormat depthFormat /*= Textur
     else {
         glBindTexture(GL_TEXTURE_2D_ARRAY, m_texDepth);
         glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (VGEnum)depthFormat, m_size.x, m_size.y, layerCount, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, nullptr);
-        vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D_ARRAY);
+        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D_ARRAY);
 
         glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_texDepth, 0);
@@ -115,7 +115,7 @@ vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*=
     glGenTextures(1, &m_texDepth);
     glBindTexture(GL_TEXTURE_2D, m_texDepth);
     glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_STENCIL, (VGEnum)vg::TexturePixelType::UNSIGNED_INT_24_8, nullptr);
-    vg::sSamplerStates.POINT_CLAMP.set(GL_TEXTURE_2D);
+    vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
     glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, m_texDepth, 0);

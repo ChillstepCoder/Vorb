@@ -1,4 +1,6 @@
-#extension GL_ARB_bindless_texture : enable
+#extension GL_ARB_bindless_texture : require
+#extension GL_ARB_gpu_shader_int64 : enable
+
 // This must not be modified, it is bound to code layout
 
 layout(bindless_sampler) uniform;

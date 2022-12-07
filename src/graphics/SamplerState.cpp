@@ -63,7 +63,7 @@ vg::SamplerState::SamplerState(ui32 texMinFilter, ui32 texMagFilter, ui32 texWra
 //    SamplerStates::LINEAR_CLAMP_MIPMAP.initObject();
 //}
 
-void vg::SamplerState::set(ui32 textureTarget) const {
+void vg::SamplerState::setForTarget(ui32 textureTarget) const {
     glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
     glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
     glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S,     static_cast<GLenum>(m_wrapS));
@@ -75,3 +75,10 @@ void vg::SamplerState::set(ui32 textureTarget) const {
 //    glBindSampler(textureUnit, m_id);
 //}
 
+void vg::SamplerState::setForTexture(VGTexture texture) const {
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
+    glTextureParameteri(texture, GL_TEXTURE_WRAP_S, static_cast<GLenum>(m_wrapS));
+    glTextureParameteri(texture, GL_TEXTURE_WRAP_T, static_cast<GLenum>(m_wrapT));
+    glTextureParameteri(texture, GL_TEXTURE_WRAP_R, static_cast<GLenum>(m_wrapR));
+}

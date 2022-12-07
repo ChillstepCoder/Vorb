@@ -42,8 +42,8 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         FbxSurfaceMaterial* material = sceneLoader.scene()->GetMaterial(i);
 
         const nString materialName = material->GetName();
-        const SubTexture& texture = textureRepo.getTexture(materialName);
-        textures[i * 2] = texture.mTextureHandleDiffuse;
+        const SubTexture& texture = textureRepo.getSubTextureOLD(materialName);
+        textures[i * 2] = texture.mTextureHandleAlbedo;
         textures[i * 2 + 1] = texture.mTextureHandleNormal;
 
         LOG_DEBUG("Material {} name {} ", i, materialName);
@@ -87,7 +87,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
             StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
             myVert.pos *= modelScale;
-            myVert.textureIndex = m; // TODO: Smarter
+            myVert.materialIndex = m; // TODO: Smarter
             f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
             assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
             myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
@@ -272,16 +272,16 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     // TODO: Allow different textures per submesh?
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
 
-    const SubTexture& texture = textureRepo.getTexture(modelFileNameNoExtension);
+    const SubTexture& texture = textureRepo.getSubTextureOLD(modelFileNameNoExtension);
     for (int i = 0; i < numMeshes; ++i) {
-        model.mSkinnedMeshes[i].setDiffuseTexture(texture.mTextureDiffuse);
+        model.mSkinnedMeshes[i].setDiffuseTexture(texture.mTextureAlbedo);
     }
     for (int i = 0; i < numMeshes; ++i) {
         model.mSkinnedMeshes[i].setNormalTexture(texture.mTextureNormal);
     }
 
     // TODO: Store this
-    VGTexture tex = textureRepo.getTexture(modelFileNameNoExtension + ".spec").mTextureDiffuse;
+    VGTexture tex = textureRepo.getSubTextureOLD(modelFileNameNoExtension + ".spec").mTextureAlbedo;
     for (int i = 0; i < numMeshes; ++i) {
         model.mSkinnedMeshes[i].setSpecularTexture(tex);
     }

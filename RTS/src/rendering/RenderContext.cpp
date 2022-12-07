@@ -302,7 +302,7 @@ void RenderContext::initPostLoad() {
     {
         ScopedTimer timer("Passthrough init", 2);
         for (int i = 0; i < std::size(sPassthroughMaterialNames); ++i) {
-            const MaterialShader* material = materialManager.getMaterial(sPassthroughMaterialNames[i]);
+            const MaterialShader* material = materialManager.getMaterialShader(sPassthroughMaterialNames[i]);
             if (material) {
                 mPassthroughMaterials.emplace_back(material);
             }
@@ -313,16 +313,16 @@ void RenderContext::initPostLoad() {
     }
 
 
-    mSceneLightingMaterial = materialManager.getMaterial("scene_lighting");
-    mCopyDepthMaterial = materialManager.getMaterial("copy_depth");
-    mPassthroughMaterial = materialManager.getMaterial("pass_through");
+    mSceneLightingMaterial = materialManager.getMaterialShader("scene_lighting");
+    mCopyDepthMaterial = materialManager.getMaterialShader("copy_depth");
+    mPassthroughMaterial = materialManager.getMaterialShader("pass_through");
 
     {
         
         ScopedTimer timer("Skybox init", 2);
         buildHorizonMesh();
         mSkyBox = std::make_unique<Skybox>();
-        mSkyBox->init(materialManager.getMaterial("sky"));
+        mSkyBox->init(materialManager.getMaterialShader("sky"));
     }
 
 }

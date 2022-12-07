@@ -40,8 +40,8 @@ StaticModelInstanceData::~StaticModelInstanceData()
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT) {
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mStandardMaterial = materialManager.getMaterial("standard_model");
-    mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper_instanced");
+    mStandardMaterial = materialManager.getMaterialShader("standard_model");
+    mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper_instanced");
     mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
 }
 

@@ -287,6 +287,7 @@
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
+    <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
     <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
     <ClCompile Include="src\rendering\RenderStats.cpp" />
@@ -300,6 +301,7 @@
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
     <ClCompile Include="src\resources\FontRepository.cpp" />
+    <ClCompile Include="src\resources\MaterialRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\ResourceManager.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
@@ -506,7 +508,7 @@
     <ClInclude Include="src\rendering\MaterialManager.h" />
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MaterialUtils.h" />
-    <ClInclude Include="src\rendering\material\Material.h" />
+    <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\ChunkMesher.h" />
@@ -537,6 +539,7 @@
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\tasks\MeshTask.inl" />
+    <ClInclude Include="src\rendering\texture\GLTexture.h" />
     <ClInclude Include="src\rendering\TileContainerRenderer.h" />
     <ClInclude Include="src\rendering\RenderCommon.h" />
     <ClInclude Include="src\rendering\RenderStats.h" />
@@ -552,6 +555,7 @@
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />
     <ClInclude Include="src\resources\FontRepository.h" />
+    <ClInclude Include="src\resources\MaterialRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
     <ClInclude Include="src\resources\RigRepository.h" />

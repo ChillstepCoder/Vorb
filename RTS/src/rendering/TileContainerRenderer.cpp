@@ -35,10 +35,10 @@ TileContainerRenderer::TileContainerRenderer()
     assert(mCliWorld);
 
     const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
-    mStandardMaterial = materialManager.getMaterial("standard_tile");
-    mBillboardMaterial = materialManager.getMaterial("billboard_ssbo");
-    mShadowMapperMaterial = materialManager.getMaterial("shadow_mapper");
-    mShadowMapperMaterialBillboard = materialManager.getMaterial("shadow_mapper");
+    mStandardMaterial = materialManager.getMaterialShader("standard_tile");
+    mBillboardMaterial = materialManager.getMaterialShader("billboard_ssbo");
+    mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");
+    mShadowMapperMaterialBillboard = materialManager.getMaterialShader("shadow_mapper");
 }
 
 TileContainerRenderer::~TileContainerRenderer() {

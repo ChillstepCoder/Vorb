@@ -103,8 +103,8 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
     }
 
     // Create The Texture
-    glGenTextures(1, &font.mTexture.mTextureDiffuse);
-    glBindTexture(GL_TEXTURE_2D, font.mTexture.mTextureDiffuse);
+    glGenTextures(1, &font.mTexture.mTextureAlbedo);
+    glBindTexture(GL_TEXTURE_2D, font.mTexture.mTextureAlbedo);
     glTexStorage2D(GL_TEXTURE_2D, maxMipmapLevels, GL_RGBA8, bestWidth, bestHeight);
 
     // Now Draw All The Glyphs
@@ -175,19 +175,19 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
 
 
     // Sampler state and mipmap
-    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.set(GL_TEXTURE_2D);
+    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D);
     glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
     glTexParameteri((VGEnum)GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, maxMipmapLevels);
     glTexParameteri((VGEnum)GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxMipmapLevels);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Make resident handle
-    font.mTexture.mTextureHandleDiffuse = glGetTextureHandleARB(font.mTexture.mTextureDiffuse);
-    assert(font.mTexture.mTextureHandleDiffuse);
-    glMakeTextureHandleResidentARB(font.mTexture.mTextureHandleDiffuse);
+    font.mTexture.mTextureHandleAlbedo = glGetTextureHandleARB(font.mTexture.mTextureAlbedo);
+    assert(font.mTexture.mTextureHandleAlbedo);
+    glMakeTextureHandleResidentARB(font.mTexture.mTextureHandleAlbedo);
     // We dont have normals
-    font.mTexture.mTextureNormal = font.mTexture.mTextureDiffuse;
-    font.mTexture.mTextureHandleNormal = font.mTexture.mTextureHandleDiffuse;
+    font.mTexture.mTextureNormal = font.mTexture.mTextureAlbedo;
+    font.mTexture.mTextureHandleNormal = font.mTexture.mTextureHandleAlbedo;
     font.mTexture.mUvRect = f32v4(0.0f, 0.0f, 1.0f, 1.0f);
 
 

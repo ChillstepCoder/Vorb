@@ -1,6 +1,7 @@
 #pragma once
 
 constexpr const TextureHandle INVALID_TEXTURE = 0xFFFFFFFF;
+typedef int MaterialID;
 
 enum MaterialFlags
 {
@@ -9,22 +10,22 @@ enum MaterialFlags
     MaterialFlags_Transparent = BIT(2),
 };
 
-struct PACKED_STRUCT Material final
-{
+struct PACKED_STRUCT MaterialData final {
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     // UV anisotropic roughness (isotropic lighting models use only the first value). ZW values are ignored
     f32v4 roughness = { 1.0f, 1.0f, 0.0f, 0.0f };
-    f32 transparencyFactor = 1.0f;
-    f32 alphaTest = 0.0f;
+
+    f32 transparencyFactor = 1.0f; // UNUSED
+    f32 alphaTest = 0.01f;
     f32 metallicFactor = 0.0f;
+
     ui32 flags = MaterialFlags_CastShadow | MaterialFlags_ReceiveShadow;
     // maps
-    TextureHandle ambientOcclusionMap = INVALID_TEXTURE;
     TextureHandle albedoMap = INVALID_TEXTURE;
+    TextureHandle normalMap = INVALID_TEXTURE;
+    TextureHandle ambientOcclusionMap = INVALID_TEXTURE;
     /// Occlusion (R), Roughness (G), Metallic (B) https://github.com/KhronosGroup/glTF/issues/857
     TextureHandle metallicRoughnessMap = INVALID_TEXTURE;
-    TextureHandle normalMap = INVALID_TEXTURE;
 };
-
-static_assert(sizeof(Material) % 16 == 0, "MaterialDescription should be padded to 16 bytes");
+static_assert(sizeof(MaterialData) % 16 == 0, "MaterialData should be padded to 16 bytes");

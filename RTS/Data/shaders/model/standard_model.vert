@@ -4,7 +4,7 @@
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in int vTextureIndex;
+layout(location = 2) in uint vMaterialIndex;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec2 vTangent;
@@ -12,7 +12,7 @@ layout(location = 5) in vec2 vTangent;
 layout(location = 7) in mat4 vModelMatrix;
 
 out vec2 fUV;
-flat out int fTextureIndex;
+flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
@@ -20,7 +20,7 @@ out float fRoughness;
 void main() {
     fTint = vTint;
     fUV = vUV;
-    fTextureIndex = vTextureIndex;
+    fMaterialIndex = vMaterialIndex;
     //worldPos.x += getWindAtPosition(Time, vPosition) * vWindInfluence;
 	
 	vec3 normal = normalize(vNormal);

@@ -10,6 +10,7 @@
 #include "item/ItemRepository.h"
 #include "crafting/CraftingRepository.h"
 #include "ecs/business/BusinessRepository.h"
+#include "resources/MaterialRepository.h"
 #include "resources/ModelRepository.h"
 #include "resources/AnimationRepository.h"
 #include "resources/RigRepository.h"
@@ -45,6 +46,7 @@ ResourceManager::ResourceManager() {
 
     mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
     mMaterialManager = std::make_unique<MaterialManager>(*mIoManager, *mTextureRepository, *mTextureCache);
+    mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
     mEntityDefinitionRepository = std::make_unique<EntityDefinitionRepository>(*mIoManager);
@@ -112,8 +114,8 @@ void ResourceManager::loadFiles() {
             if (vio::containsSubpath(entry, "_brushes")) {
                 mBrushRepository->loadBrush(entry, *mTextureCache);
             }
-            else if (!vio::containsSubpath(entry, "_loadscreen")) { // Ignore loadscreen files as we manually load them
-                mTextureRepository->loadTexture(entry);
+            else if (!vio::containsSubpath(entry, "_loadscreen") && !vio::containsSubpath(entry, "materials")) { // Ignore loadscreen files as we manually load them
+                mTextureRepository->loadSubTextureOLD(entry);
             }
         }
     }
@@ -134,9 +136,9 @@ void ResourceManager::loadFiles() {
         }
     }
 
-    // Load Materials
+    // Load Material Shaders
     {
-        ScopedTimer timer("Material load");
+        ScopedTimer timer("Material Shader load");
         for (auto&& entry : mMaterialShaderFiles) {
             mMaterialManager->loadMaterialShader(entry);
         };
@@ -147,6 +149,14 @@ void ResourceManager::loadFiles() {
         ScopedTimer timer("Compute load");
         for (auto&& entry : mComputeFiles) {
             mMaterialManager->loadComputeShader(entry);
+        };
+    }
+
+    // Load Materials
+    {
+        ScopedTimer timer("Material load");
+        for (auto&& entry : mMaterialFiles) {
+            mMaterialRepository->loadMaterial(entry, *mTextureRepository);
         };
     }
 
@@ -248,7 +258,7 @@ void ResourceManager::loadFiles() {
 }
 
 const SubTexture& ResourceManager::getTexture(const nString& textureName) const {
-    return mTextureRepository->getTexture(textureName);
+    return mTextureRepository->getSubTextureOLD(textureName);
 }
 
 vg::TextureCache& ResourceManager::getTextureCache() {
