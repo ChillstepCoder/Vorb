@@ -240,12 +240,6 @@
     <ClCompile Include="src\rendering\BuildingMesher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\MeshBase.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\TriangleMesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\CloudRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -930,12 +924,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\BuildingMesher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\MeshBase.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\TriangleMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\CloudRenderer.h">

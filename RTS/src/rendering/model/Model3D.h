@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/TriangleMesh.h"
+#include "rendering/mesh/Mesh.h"
 
 enum class Model3DType {
     STATIC,

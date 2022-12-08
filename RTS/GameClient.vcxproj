@@ -264,7 +264,6 @@
     <ClCompile Include="src\rendering\MaterialShaderManager.cpp" />
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
-    <ClCompile Include="src\rendering\MeshBase.cpp" />
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
@@ -296,7 +295,6 @@
     <ClCompile Include="src\rendering\Skybox.cpp" />
     <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp" />
     <ClCompile Include="src\rendering\texture\SubTexture.cpp" />
-    <ClCompile Include="src\rendering\TriangleMesh.cpp" />
     <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
@@ -509,7 +507,6 @@
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\material\MaterialData.h" />
-    <ClInclude Include="src\rendering\MeshBase.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\ChunkMesher.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
@@ -549,7 +546,6 @@
     <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />
-    <ClInclude Include="src\rendering\TriangleMesh.h" />
     <ClInclude Include="src\rendering\TerrainRenderer.h" />
     <ClInclude Include="src\resources\AnimationRepository.h" />
     <ClInclude Include="src\resources\AnimMachineRepository.h" />

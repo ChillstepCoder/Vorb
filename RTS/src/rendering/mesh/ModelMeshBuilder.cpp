@@ -7,7 +7,6 @@
 
 #include "rendering/model/Model3D.h"
 #include "rendering/mesh/Mesh.h"
-#include "rendering/TriangleMesh.h"
 
 #include <ozz/base/io/archive.h>
 #include <ozz/base/io/stream.h>

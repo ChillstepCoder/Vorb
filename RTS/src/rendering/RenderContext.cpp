@@ -12,7 +12,6 @@
 #include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
 #include "EntityComponentSystemRenderer.h"
-#include "rendering/MeshBase.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/renderer/GrassRenderer.h"
 #include "rendering/TileContainerRenderer.h"
@@ -187,7 +186,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 
     // Mesh init
     ProceduralMeshBuilder::initStaticIBOs();
-    MeshBase::initStaticIBO();
     checkGlError("Meshbase init");
 
     // int UI resources
