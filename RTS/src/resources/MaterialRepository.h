@@ -17,6 +17,7 @@ public:
     bool loadMaterial(const vio::Path& filePath, TextureRepository& textureRepository);
     const MaterialData& getMaterial(MaterialID materialId) const;
     const MaterialData& getMaterial(const nString& materialName) const;
+    MaterialID getMaterialId(const nString& materialName) const;
     void uploadMaterialData();
     void bindMaterialBuffer() const;
 

@@ -73,20 +73,13 @@ void MaterialShader::use(OUT ui32& nextAvailableTextureIndex) const {
 
     mProgram.use();
 
-    for (auto&& atlasTextureInput : mInputAtlasTextures) {
-        glUniform4fv(atlasTextureInput.uvRectUniform, 1, &atlasTextureInput.uvRect[0]);
-        glUniform1fv(atlasTextureInput.pageUniform, 1, &atlasTextureInput.page);
-    }
-
     for (auto&& textureInput : mInputTextures) {
-        glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+        glBindTextureUnit(nextAvailableTextureIndex, textureInput.texture);
         glUniform1i(textureInput.textureUniform, nextAvailableTextureIndex++);
-        glBindTexture(GL_TEXTURE_2D, textureInput.texture);
     }
 }
 
 void MaterialShader::dispose() {
     mUniforms.clear();
-    mInputAtlasTextures.clear();
     mInputTextures.clear();
 }

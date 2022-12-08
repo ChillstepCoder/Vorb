@@ -218,6 +218,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
 
     if (ImGui::CollapsingHeader("Lighting")) {
         ImGui::PushID(++ID);
+        f64v2 range(0.0, 1600.0);
+        ImGui::SliderScalar("Time of Day", ImGuiDataType_Double, &sDebugOptions.mTimeOffset, &range.x, &range.y);
         ImGui::Checkbox("Split View", &sDebugOptions.mLightPresetSplitView);
         if (sDebugOptions.mLightPresetSplitView) {
             ImGui::SliderFloat("Split Line", &sDebugOptions.mLightPresetSplitAmount, 0.0f, 1.0f);

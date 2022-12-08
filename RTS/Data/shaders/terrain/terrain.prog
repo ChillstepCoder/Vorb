@@ -8,5 +8,5 @@ terrain:
       uniform: GrassTexture
     - name: mountain
       uniform: StoneTexture
-    - name: mountain_nrm
+    - name: mountain.norm
       uniform: StoneNormal

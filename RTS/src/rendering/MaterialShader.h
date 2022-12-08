@@ -60,12 +60,6 @@ struct MaterialShaderData {
 };
 KEG_TYPE_DECL(MaterialShaderData);
 
-struct MaterialAtlasTextureInput {
-    f32v4 uvRect;
-    f32 page;
-    VGUniform uvRectUniform;
-    VGUniform pageUniform;
-};
 struct MaterialTextureInput {
     VGTexture texture;
     VGUniform textureUniform;
@@ -86,7 +80,6 @@ public:
     }
 
     std::vector<std::pair<MaterialShaderUniform, VGUniform> > mUniforms;
-    std::vector<MaterialAtlasTextureInput> mInputAtlasTextures;
     std::vector<MaterialTextureInput> mInputTextures;
     mutable vg::GLProgram mProgram; //  TODO: Handle
 };

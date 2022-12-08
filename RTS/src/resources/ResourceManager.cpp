@@ -45,7 +45,7 @@ ResourceManager::ResourceManager() {
     mTextureCache->init(mIoManager.get());
 
     mTextureRepository = std::make_unique<TextureRepository>(*mTextureCache, *mIoManager);
-    mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository, *mTextureCache);
+    mMaterialManager = std::make_unique<MaterialShaderManager>(*mIoManager, *mTextureRepository);
     mMaterialRepository = std::make_unique<MaterialRepository>(*mIoManager);
     mParticleSystemManager = std::make_unique<ParticleSystemManager>(*mIoManager);
     mBuildingRepository = std::make_unique<BuildingDescriptionRepository>(*mIoManager);
@@ -115,12 +115,21 @@ void ResourceManager::loadFiles() {
             if (vio::containsSubpath(entry, "_brushes")) {
                 mBrushRepository->loadBrush(entry, *mTextureCache);
             }
-            else if (!vio::containsSubpath(entry, "_loadscreen") && !vio::containsSubpath(entry, "materials")) { // Ignore loadscreen files as we manually load them
+            else if (!vio::containsSubpath(entry, "_loadscreen")/* && !vio::containsSubpath(entry, "materials")*/) { // Ignore loadscreen files as we manually load them
                 mTextureRepository->loadSubTextureOLD(entry);
             }
         }
         // New
         mTextureRepository->setTextureAssetPaths(mTextureFiles);
+    }
+
+    // Load Materials
+    {
+        ScopedTimer timer("Material load");
+        for (auto&& entry : mMaterialFiles) {
+            mMaterialRepository->loadMaterial(entry, *mTextureRepository);
+        };
+        mMaterialRepository->uploadMaterialData();
     }
 
     // Load item definitions
@@ -155,14 +164,6 @@ void ResourceManager::loadFiles() {
         };
     }
 
-    // Load Materials
-    {
-        ScopedTimer timer("Material load");
-        for (auto&& entry : mMaterialFiles) {
-            mMaterialRepository->loadMaterial(entry, *mTextureRepository);
-        };
-        mMaterialRepository->uploadMaterialData();
-    }
 
     // Load Animations
     {
@@ -192,7 +193,7 @@ void ResourceManager::loadFiles() {
     {
         ScopedTimer timer("Model load");
         for (auto&& entry : mModelFiles) {
-            mModelRepository->loadModelFile(entry, *mTextureRepository, *mAnimMachineRepository);
+            mModelRepository->loadModelFile(entry, *mMaterialRepository, *mAnimMachineRepository);
         }
     }
 

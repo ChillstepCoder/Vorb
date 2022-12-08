@@ -1,6 +1,6 @@
 #pragma once
 
-constexpr const TextureHandle INVALID_TEXTURE = 0xFFFFFFFF;
+constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
 typedef int MaterialID;
 
 enum MaterialFlags
@@ -22,10 +22,10 @@ struct PACKED_STRUCT MaterialData final {
 
     ui32 flags = MaterialFlags_CastShadow | MaterialFlags_ReceiveShadow;
     // maps
-    TextureHandle albedoMap = INVALID_TEXTURE;
-    TextureHandle normalMap = INVALID_TEXTURE;
-    TextureHandle ambientOcclusionMap = INVALID_TEXTURE;
+    TextureHandle albedoMap = INVALID_TEXTURE_HANDLE;
+    TextureHandle normalMap = INVALID_TEXTURE_HANDLE;
+    TextureHandle ambientOcclusionMap = INVALID_TEXTURE_HANDLE;
     /// Occlusion (R), Roughness (G), Metallic (B) https://github.com/KhronosGroup/glTF/issues/857
-    TextureHandle metallicRoughnessMap = INVALID_TEXTURE;
+    TextureHandle metallicRoughnessMap = INVALID_TEXTURE_HANDLE;
 };
 static_assert(sizeof(MaterialData) % 16 == 0, "MaterialData should be padded to 16 bytes");

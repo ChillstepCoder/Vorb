@@ -14,13 +14,21 @@ struct MaterialData
 
 	uint  flags;
 
-	uint64_t ambientOcclusionMap;
 	uint64_t albedoMap;
-	uint64_t metallicRoughnessMap;
 	uint64_t normalMap;
+	uint64_t ambientOcclusionMap;
+	uint64_t metallicRoughnessMap;
 };
 
 layout(std430, binding = 1) restrict readonly buffer Materials
 {
 	MaterialData inMaterials[];
 };
+
+vec4 sampleMaterialAlbedo(MaterialData mtl, vec2 uv) {
+    return texture( sampler2D(unpackUint2x32(mtl.albedoMap)), uv);
+}
+
+vec3 sampleMaterialNormal(MaterialData mtl, vec2 uv) {
+    return texture( sampler2D(unpackUint2x32(mtl.normalMap)), uv).xyz;
+}

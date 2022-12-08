@@ -10,7 +10,7 @@ struct GrassBillboardInstanceData {
     GrassBillboardInstanceData(ui8v2&& dims, ui8 grassType) : dims(dims), grassType(grassType) {};
     ui8v2 dims;
     ui8 grassType;
-    ui8 pad;
+    ui8 pad; // TODO: GrassMaterial?
 };
 static_assert(sizeof(GrassBillboardInstanceData) == 4);
 

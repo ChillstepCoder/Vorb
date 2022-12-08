@@ -65,7 +65,6 @@ void CloudManager::init(const f32v2& loadCenter) {
 
     // Initial variables
     mLastCenterPosition = i32v2(centerCloudID.pos.x, centerCloudID.pos.y);
-    mCloudTexture = &Services::ResourceManager::ref().getTexture("cloud");
 
     std::map<ui32 /*ycoord*/, CloudID /*leftMost*/> spawnLookup;
 

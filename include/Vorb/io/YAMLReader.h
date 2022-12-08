@@ -32,6 +32,7 @@ namespace keg {
     /// Reads YAML data
     class YAMLReader {
     public:
+        ~YAMLReader() { dispose(); }
         /// Point this reader to a string of data
         /// @param data: Data string in YAML format
         void init(const cString data);

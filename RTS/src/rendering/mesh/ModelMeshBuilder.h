@@ -11,7 +11,7 @@ struct SubTexture;
 class SkinnedMesh; // TODO: Just mesh?
 class SkinnedModel3D;
 class StaticModel3D;
-class TextureRepository;
+class MaterialRepository;
 typedef ozz::animation::offline::fbx::FbxSceneLoader OzzFbxSceneLoader;
 
 // Keep track of all they types of indices so we can decide to share if needed
@@ -30,7 +30,7 @@ public:
         const vio::Path& rootDir,
         OzzFbxSceneLoader& sceneLoader,
         MeshDrawMode drawMode,
-        const TextureRepository& textureRepo,
+        const MaterialRepository& materialRepo,
         float modelScale
     );
     bool buildSkinnedMeshesForModel(
@@ -40,7 +40,7 @@ public:
         const vio::Path& rootDir,
         OzzFbxSceneLoader& sceneLoader,
         MeshDrawMode drawMode,
-        const TextureRepository& textureRepo
+        const MaterialRepository& materialRepo
     );
 
     static void updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo);

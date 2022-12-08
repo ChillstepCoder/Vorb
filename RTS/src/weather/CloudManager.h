@@ -34,7 +34,6 @@ private:
     void spawnNewCloudWaveX(i32 dir);
     void spawnNewCloudWaveY(i32 dir);
 
-    const SubTexture* mCloudTexture; // TODO: Mesher?
     std::vector<CloudBatch> mCloudBatches;
     std::map<ui32, CloudBatch> mGeneratingBatches; // Use this so we dont need synchronization
     std::vector<i32v2> mCloudSpawnOffsets;

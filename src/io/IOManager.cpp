@@ -250,12 +250,12 @@ bool vio::IOManager::directoryExists(const Path& path) const {
 vio::Path vio::IOManager::m_pathExec = "";
 vio::Path vio::IOManager::m_pathCWD = "";
 
-bool vorb::io::IOManager::parseFileAsKegObject(OUT ui8* dest, const vio::Path& filePath, keg::Type* type) const {
+bool vorb::io::IOManager::parseFileAsKegObject(OUT ui8* dest, const vio::Path& filePath, keg::Type* type, bool allowEmpty/* = false*/) const {
 
     // Read file
     nString data;
     readFileToString(filePath, data);
-    if (data.empty()) return false;
+    if (data.size() <= 1) return allowEmpty;
 
     // Convert to YAML
     keg::ReadContext context;

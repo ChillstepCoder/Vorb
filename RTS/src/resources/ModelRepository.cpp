@@ -25,7 +25,7 @@ ModelRepository::~ModelRepository() {
 }
 
 // TODO: Cache model files in binary
-bool ModelRepository::loadModelFile(const vio::Path& filePath, const TextureRepository& textureRepository, const AnimMachineRepository& animMachineRepository) {
+bool ModelRepository::loadModelFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository) {
 
     PROFILE_FUNCTION();
 
@@ -50,15 +50,15 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const TextureRepo
 
     if (fileData.mRigName.size()) {
         // Load ozz Skeleton if we use it
-        return loadSkinnedModel(fileData, textureRepository, animMachineRepository, filePath, modelPath, rootDir);
+        return loadSkinnedModel(fileData, materialRepository, animMachineRepository, filePath, modelPath, rootDir);
     }
     else {
-        return loadStaticModel(fileData, textureRepository, filePath, modelPath, rootDir);
+        return loadStaticModel(fileData, materialRepository, filePath, modelPath, rootDir);
     }
     return false;
 }
 
-bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
 
     PROFILE_FUNCTION();
 
@@ -93,7 +93,7 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
 
     SkinnedModel3D& model = def.getSkinnedModel();
     ModelMeshBuilder meshBuilder;
-    meshBuilder.buildSkinnedMeshesForModel(model, def.mRig->mSkeleton, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, textureRepository);
+    meshBuilder.buildSkinnedMeshesForModel(model, def.mRig->mSkeleton, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, materialRepository);
 
     // Store lookup
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
@@ -104,7 +104,7 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Texture
     return true;
 }
 
-bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureRepository& textureRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
 
     PROFILE_FUNCTION();
 
@@ -128,7 +128,7 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const TextureR
 
     StaticModel3D& model = def.getStaticModel();
     ModelMeshBuilder meshBuilder;
-    meshBuilder.buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, textureRepository, fileData.mScale);
+    meshBuilder.buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, materialRepository, fileData.mScale);
 
     // Store lookup
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();

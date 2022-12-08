@@ -1,6 +1,5 @@
 #include "../GlobalUbo.glsl"
 
-uniform sampler2DArray Atlas;
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
 uniform float unFadeDistance = 1000.0;
@@ -10,7 +9,6 @@ uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 in vec3 fPosition;
 in vec2 fUV;
 flat in float fAtlasPage;
-in mat3 fTBN;
 in float fDistance;
 
 layout (location = 0) out vec4 oColor;
@@ -41,9 +39,8 @@ void main() {
         discard;
     }
     oColor.a = 1.0;
-	
-	vec3 normal = normalize(fTBN * vec3(0.0, 0.0, 1.0));
-	oNormal.rgb = (normal + 1.0) * 0.5;
+    
+	oNormal.rgb = vec3(0.0, 0.0, 1.0);
 	oNormal.a = oColor.a;
 	oRoughness.r = 0.75;
 	oRoughness.a = 1.0;

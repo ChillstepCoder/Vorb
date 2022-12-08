@@ -59,25 +59,28 @@ MaterialRepository::~MaterialRepository()
 
 }
 
+
 bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureRepository& textureRepository) {
     MaterialFileData fileData;
-    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(MaterialFileData))) {
+    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, filePath, &KEG_GLOBAL_TYPE(MaterialFileData), true /*allowEmpty*/)) {
         LOG_CRITICAL("Failed to parse material {}", filePath.getString());
         return false;
     }
 
     const MaterialID materialId = mMaterials.size();
     assert(materialId < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
-    MaterialData materialData = mMaterials.emplace_back();
+    MaterialData& materialData = mMaterials.emplace_back();
     const nString materialName = filePath.getFileNameNoExtension();
+    vio::Path folderPath = filePath;
+    --folderPath;
 
     // Albedo
     if (fileData.albedoTexture.empty()) {
-        LOG_CRITICAL("Failed to load material {} due to empty albedo", filePath.getString());
-        return false;
+        // Fall back to using the file name as the albedo, so we can just specify an empty .material file
+        fileData.albedoTexture = filePath.getFileNameNoExtension() + ".png";
     }
     const vg::SamplerState* samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(fileData.samplerState)];
-    const TextureData* albedoTextureData = textureRepository.loadTextureNew(fileData.albedoTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
+    const TextureData* albedoTextureData = textureRepository.loadTextureNew(folderPath / fileData.albedoTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
     if (!albedoTextureData) {
         LOG_CRITICAL("Failed to load albedo texture {} for material {}", fileData.albedoTexture, filePath.getString());
         return false;
@@ -85,19 +88,27 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     materialData.albedoMap = albedoTextureData->texture.getHandleBindless();
 
     // Normal
-    if (fileData.normalTexture.size()) {
-        // Generated vs loaded normals
-        if (fileData.normalTexture == GENERATE_TEXT) {
-            VGTexture normalTexture = mNormalMapGenerator->generateNormalTexture(albedoTextureData->texture.getHandle(), albedoTextureData->texture.getDims(), *samplerState);
-            mGeneratedNormalTextures[materialName].init(normalTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
+    if (fileData.normalTexture.empty()) {
+        // Fall back to using the file name as the normal, so we can just specify an empty .material file
+        vio::Path implicitPath = filePath.getFileNameNoExtension() + ".norm.png";
+        if (mIoManager.fileExists(folderPath / implicitPath)) {
+            fileData.normalTexture = implicitPath.getString();
         }
-        else {
-            const TextureData* normalTextureData = textureRepository.loadTextureNew(fileData.normalTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
-            if (!normalTextureData) {
-                LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
-                return false;
-            }
+    }
+    // Generated vs loaded normals
+    if (fileData.normalTexture == GENERATE_TEXT) {
+        VGTexture normalTexture = mNormalMapGenerator->generateNormalTexture(albedoTextureData->texture.getHandle(), albedoTextureData->texture.getDims(), *samplerState);
+        GLTexture& normalGLTexture = mGeneratedNormalTextures[materialName];
+        normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
+        materialData.normalMap = normalGLTexture.getHandleBindless();
+    }
+    else if (fileData.normalTexture.size()) {
+        const TextureData* normalTextureData = textureRepository.loadTextureNew(folderPath / fileData.normalTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
+        if (!normalTextureData) {
+            LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
+            return false;
         }
+        materialData.normalMap = normalTextureData->texture.getHandleBindless();
     }
 
     // Ambient Occlusion
@@ -121,6 +132,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     materialData.flags = (MaterialFlags_CastShadow * (int)fileData.castsShadow) | (MaterialFlags_ReceiveShadow * (int)fileData.receivesShadow);
 
     mMaterialIDLookup[materialName] = materialId;
+    return true;
 }
 
 const MaterialData& MaterialRepository::getMaterial(const nString& materialName) const {
@@ -132,6 +144,12 @@ const MaterialData& MaterialRepository::getMaterial(const nString& materialName)
 const MaterialData& MaterialRepository::getMaterial(MaterialID materialId) const {
     assert(materialId < mMaterials.size());
     return mMaterials[materialId];
+}
+
+MaterialID MaterialRepository::getMaterialId(const nString& materialName) const {
+    auto&& it = mMaterialIDLookup.find(materialName);
+    assert(it != mMaterialIDLookup.end());
+    return it->second;
 }
 
 void MaterialRepository::uploadMaterialData() {

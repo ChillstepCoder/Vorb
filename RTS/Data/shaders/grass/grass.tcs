@@ -10,7 +10,6 @@ in float fHeight[];
 flat in vec3 fWorldRoot[];
 in vec2 fUV[];
 flat in float fAtlasPage[];
-in mat3 fTBN[];
 in float fDistance[];
 
 // attributes of the output CPs
@@ -19,7 +18,6 @@ out float tHeight[];
 flat out vec3 tWorldRoot[];
 out vec2 tUV[];
 flat out float tAtlasPage[];
-out mat3 tTBN[];
 out float tDistance[];
 
 float GetTessLevel(float Distance0, float Distance1) {
@@ -47,7 +45,6 @@ void main()
     tWorldRoot[gl_InvocationID] = fWorldRoot[gl_InvocationID];
     tUV[gl_InvocationID] = fUV[gl_InvocationID];
     tAtlasPage[gl_InvocationID] = fAtlasPage[gl_InvocationID];
-    tTBN[gl_InvocationID] = fTBN[gl_InvocationID];
     tDistance[gl_InvocationID] = fDistance[gl_InvocationID];
     
     // Calculate the distance from the camera to the three control points

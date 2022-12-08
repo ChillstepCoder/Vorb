@@ -12,8 +12,7 @@
 #include <ozz/base/io/archive.h>
 #include <ozz/base/io/stream.h>
 
-// TODO: Replace with texturerepo
-#include "resources/TextureRepository.h"
+#include "resources/MaterialRepository.h"
 
 #include "fbx/ozzFbxToMesh.hpp"
 #include <fbxsdk/core/base/fbxstring.h>
@@ -25,7 +24,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     const vio::Path& rootDir,
     OzzFbxSceneLoader& sceneLoader,
     MeshDrawMode drawMode,
-    const TextureRepository& textureRepo,
+    const MaterialRepository& materialRepo,
     float modelScale
 ) {
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
@@ -35,19 +34,17 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     }
 
     // Read read material textures matched to material names
-    std::vector<TextureHandle> textures;
+    std::vector<MaterialID> materialIds;
     const int materialCount = sceneLoader.scene()->GetMaterialCount();
-    textures.resize(materialCount * 2);
+    materialIds.resize(materialCount);
     for (int i = 0; i < materialCount; ++i) {
-        FbxSurfaceMaterial* material = sceneLoader.scene()->GetMaterial(i);
+        FbxSurfaceMaterial* fbxMaterial = sceneLoader.scene()->GetMaterial(i);
 
-        const nString materialName = material->GetName();
-        const SubTexture& texture = textureRepo.getSubTextureOLD(materialName);
-        textures[i * 2] = texture.mTextureHandleAlbedo;
-        textures[i * 2 + 1] = texture.mTextureHandleNormal;
+        const nString materialName = fbxMaterial->GetName();
+        materialIds[i] = materialRepo.getMaterialId(materialName);
 
         LOG_DEBUG("Material {} name {} ", i, materialName);
-        for (FbxProperty matProp = material->GetFirstProperty(); matProp.IsValid(); matProp = material->GetNextProperty(matProp)) {
+        for (FbxProperty matProp = fbxMaterial->GetFirstProperty(); matProp.IsValid(); matProp = fbxMaterial->GetNextProperty(matProp)) {
             LOG_DEBUG("  Property {}",  matProp.GetName().Buffer());
         }
     }
@@ -85,7 +82,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
             StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
             myVert.pos *= modelScale;
-            myVert.materialIndex = m; // TODO: Smarter
+            myVert.materialIndex = materialIds[m]; // TODO: Smarter
             f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
             assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
             myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
@@ -125,7 +122,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mStaticVerts);
     MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
     MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, 0);
-    MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
+    //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
     StaticModelVertex::bindVertexAttribs(meshData->mVao);
     checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
 
@@ -141,7 +138,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     const vio::Path& rootDir,
     OzzFbxSceneLoader& sceneLoader,
     MeshDrawMode drawMode,
-    const TextureRepository& textureRepo
+    const MaterialRepository& materialRepo
 ) {
 
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
@@ -270,19 +267,20 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     // TODO: Allow different textures per submesh?
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
 
-    const SubTexture& texture = textureRepo.getSubTextureOLD(modelFileNameNoExtension);
-    for (int i = 0; i < numMeshes; ++i) {
-        model.mSkinnedMeshes[i].setDiffuseTexture(texture.mTextureAlbedo);
-    }
-    for (int i = 0; i < numMeshes; ++i) {
-        model.mSkinnedMeshes[i].setNormalTexture(texture.mTextureNormal);
-    }
+    // TODO: FIX
+    //const SubTexture& texture = textureRepo.getSubTextureOLD(modelFileNameNoExtension);
+    //for (int i = 0; i < numMeshes; ++i) {
+    //    model.mSkinnedMeshes[i].setDiffuseTexture(texture.mTextureAlbedo);
+    //}
+    //for (int i = 0; i < numMeshes; ++i) {
+    //    model.mSkinnedMeshes[i].setNormalTexture(texture.mTextureNormal);
+    //}
 
-    // TODO: Store this
-    VGTexture tex = textureRepo.getSubTextureOLD(modelFileNameNoExtension + ".spec").mTextureAlbedo;
-    for (int i = 0; i < numMeshes; ++i) {
-        model.mSkinnedMeshes[i].setSpecularTexture(tex);
-    }
+    //// TODO: Store this
+    //VGTexture tex = textureRepo.getSubTextureOLD(modelFileNameNoExtension + ".spec").mTextureAlbedo;
+    //for (int i = 0; i < numMeshes; ++i) {
+    //    model.mSkinnedMeshes[i].setSpecularTexture(tex);
+    //}
 
     ui8 numSkinningMatrices = 0;
     for (ui32 i = 0; i < model.getNumMeshes(); ++i) {

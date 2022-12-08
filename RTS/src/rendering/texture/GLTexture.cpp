@@ -2,9 +2,32 @@
 #include "GLTexture.h"
 
 
-GLTexture::GLTexture(CALLEE_DELETE GLuint handle, vg::TextureTarget type, const ui32v2& dims) : mHandle(handle), mType(type), mDims(dims) {
+GLTexture::GLTexture(GLuint handle, vg::TextureTarget type, const ui32v2& dims) : mHandle(handle), mType(type), mDims(dims) {
     mHandleBindless = glGetTextureHandleARB(handle);
     glMakeTextureHandleResidentARB(mHandleBindless);
+}
+
+GLTexture::GLTexture(GLTexture&& o) :
+    mType(o.mType),
+    mHandle(o.mHandle),
+    mHandleBindless(o.mHandleBindless),
+    mDims(o.mDims)
+{
+    o.mHandle = 0;
+    o.mHandleBindless = 0;
+}
+
+
+GLTexture& GLTexture::operator=(GLTexture&& o)
+{
+    mType = o.mType;
+    mHandle = o.mHandle;
+    mHandleBindless = o.mHandleBindless;
+    mDims = o.mDims;
+
+    o.mHandle = 0;
+    o.mHandleBindless = 0;
+    return *this;
 }
 
 GLTexture::~GLTexture() {

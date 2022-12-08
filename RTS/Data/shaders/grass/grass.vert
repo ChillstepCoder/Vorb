@@ -11,7 +11,6 @@ flat out vec3 fWorldRoot;
 out float fHeight;
 out vec2 fUV;
 flat out float fAtlasPage;
-out mat3 fTBN;
 out float fDistance;
 
 const vec2 VertexData[4] = {
@@ -83,7 +82,4 @@ void main() {
 	// Grass blade uvs
 	fUV = UVS[gl_VertexID % 4 + (4 * (bladeIndex % 2))];
     fUV.x += bladeType * 0.25;
-
-	// Hardcoded for facing up
-	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
 }

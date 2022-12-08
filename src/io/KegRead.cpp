@@ -62,7 +62,6 @@ namespace keg {
         // Parse
         type = getCorrectType(baseNode, context, type);
         Error err = parse((ui8*)dest, baseNode, context, type);
-        context.reader.dispose();
         return err;
     }
     Error parse(void* dest, const cString data, const nString& typeName, Environment* env /*= nullptr*/) {

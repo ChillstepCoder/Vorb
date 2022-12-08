@@ -51,22 +51,22 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
             mIoManager.resolvePath(filePath, texPath);
 
             // Load the pixel data.
-            vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, flipV));
+            vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/));
             if (!rs.data) return nullptr;
 
             // Upload the texture through GpuMemory.
-            texture = uploadTexture(&rs,
+            texture = uploadTexture(rs.bytesUI8,
                 ui32v2(rs.width, rs.height),
                 vg::TexturePixelType::UNSIGNED_BYTE,
                 type,
                 samplerState,
-                vg::TextureInternalFormat::RGBA,
+                vg::TextureInternalFormat::RGBA8,
                 vg::TextureFormat::RGBA,
                 INT_MAX /*mipmap levels*/);
-
+            break;
         }
         default:
-            assert(false && "Only texture_2d is supported currently");
+            assert(false && "Only TEXTURE_2D is supported currently");
     }
 
     assert(texture.isValid());
@@ -84,6 +84,7 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
     else {
         textureId = mTextures.size();
         textureData = &mTextures.emplace_back();
+        mTextureIdLookup[textureName] = textureId;
     }
     // Track relative to path as well in case we care
     mTextureAssetPaths[filePath.getString()] = textureId;
@@ -99,7 +100,10 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
 
 const TextureData& TextureRepository::getTextureNew(const nString& textureName) const {
     auto&& it = mTextureIdLookup.find(textureName);
-    assert(it != mTextureIdLookup.end());
+    if (it == mTextureIdLookup.end()) {
+        LOG_CRITICAL("Failed to find texture {} make sure there is a .material for it", textureName);
+        assert(false);
+    }
     return mTextures[it->second];
 }
 
@@ -207,11 +211,15 @@ GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::Te
             glTextureStorage1D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x);
             glTextureSubImage1D(handle, 0, 0, dims.x, (VGEnum)textureFormat, (VGEnum)texturePixelType, data);
             break;
-        default:
+        case vg::TextureTarget::TEXTURE_2D:
             glTextureStorage2D(handle, mipmapLevels, (VGEnum)internalFormat, dims.x, dims.y);
             glTextureSubImage2D(handle, 0, 0, 0, dims.x, dims.y, (VGEnum)textureFormat, (VGEnum)texturePixelType, data);
             break;
+        default:
+            assert(false);
+            break;
     }
+    checkGlError("TextureRepository::uploadTexture");
     // Setup Texture Sampling Parameters
     assert(samplingParameters);
     samplingParameters->setForTexture(handle);

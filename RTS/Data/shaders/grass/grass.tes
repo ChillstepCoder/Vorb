@@ -13,13 +13,11 @@ in float tHeight[];
 flat in vec3 tWorldRoot[];
 in vec2 tUV[];
 flat in float tAtlasPage[];
-in mat3 tTBN[];
 in float tDistance[];
 
 out vec3 fPosition;
 out vec2 fUV;
 flat out float fAtlasPage;
-out mat3 fTBN;
 out float fDistance;
 
 float interpolate1D(float v0, float v1, float v2)
@@ -45,7 +43,6 @@ void main()
     float height = interpolate1D(tHeight[0], tHeight[1], tHeight[2]);
     fUV = interpolate2D(tUV[0], tUV[1], tUV[2]);
     fAtlasPage = tAtlasPage[0];
-    fTBN = tTBN[0];
     fDistance = tDistance[0];
     
     // Collision with player

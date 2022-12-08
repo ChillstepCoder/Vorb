@@ -9,7 +9,11 @@ constexpr ui32 INVALID_TEXTURE_ID = UINT32_MAX;
 class GLTexture
 {
 public:
-    VORB_NON_COPYABLE_BUT_MOVABLE(GLTexture);
+    GLTexture(const GLTexture& o) = delete;
+    GLTexture& operator=(const GLTexture& o) = delete;
+    GLTexture(GLTexture&& o);
+    GLTexture& operator=(GLTexture && o);
+
     GLTexture() = default;
     GLTexture(GLuint handle, vg::TextureTarget type, const ui32v2& dims);
     ~GLTexture();

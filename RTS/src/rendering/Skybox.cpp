@@ -31,7 +31,7 @@ void Skybox::init(const MaterialShader* material) {
     const f32v2 dims(DIAMETER);
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
     f32v3 bottomLeft(-RADIUS);
-    const SubTexture& dummyTexture = Services::ResourceManager::ref().getTexture("graycloud_bk");
+    const SubTexture dummyTexture = {};
     meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::LEFT, dummyTexture, uvRect, COLOR_WHITE);
     meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::FRONT, dummyTexture, uvRect, COLOR_WHITE);
     meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(DIAMETER, 0.0f, 0.0f), dims, CubeFacing::RIGHT, dummyTexture, uvRect, COLOR_WHITE);
