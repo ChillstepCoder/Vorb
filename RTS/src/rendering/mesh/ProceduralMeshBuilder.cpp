@@ -720,7 +720,8 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     SubMeshData* subMesh = &mesh.mMainMesh;
     int i = 0;
     do {
-        MeshBuilderCommon::initMeshBuffers(*subMesh, sharedIbo);
+        // TODO: NO UBO
+        MeshBuilderCommon::initMeshBuffers(*subMesh, sharedIbo, BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::UBO));
         assert(sharedIbo); // If not shared, wheres our elements?
         uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], GL_DYNAMIC_STORAGE_BIT);
         mSubMeshesData[i].clear();

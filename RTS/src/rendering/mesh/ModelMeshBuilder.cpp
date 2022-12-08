@@ -43,10 +43,10 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         const nString materialName = fbxMaterial->GetName();
         materialIds[i] = materialRepo.getMaterialId(materialName);
 
-        LOG_DEBUG("Material {} name {} ", i, materialName);
-        for (FbxProperty matProp = fbxMaterial->GetFirstProperty(); matProp.IsValid(); matProp = fbxMaterial->GetNextProperty(matProp)) {
-            LOG_DEBUG("  Property {}",  matProp.GetName().Buffer());
-        }
+        /* LOG_DEBUG("Material {} name {} ", i, materialName);
+         for (FbxProperty matProp = fbxMaterial->GetFirstProperty(); matProp.IsValid(); matProp = fbxMaterial->GetNextProperty(matProp)) {
+             LOG_DEBUG("  Property {}",  matProp.GetName().Buffer());
+         }*/
     }
 
     model.mMesh = std::make_unique<Mesh>();
@@ -82,7 +82,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
             StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
             myVert.pos *= modelScale;
-            myVert.materialIndex = materialIds[m]; // TODO: Smarter
+            myVert.materialId = materialIds[m]; // TODO: Smarter
             f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
             assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
             myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
@@ -116,7 +116,6 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     // Upload mesh data
     SubMeshData* meshData = &model.mMesh->mMainMesh;
 
-    // TODO: Support submeshes?
     PreciseTimer uploadTimer;
     MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
     MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mStaticVerts);
@@ -147,14 +146,26 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
         return false;
     }
 
-    model.mSkinnedMeshes = std::unique_ptr<SkinnedMesh[]>(new SkinnedMesh[numMeshes]);
+    model.mSkinnedMeshes = std::unique_ptr<Mesh[]>(new Mesh[numMeshes]);
     model.mNumMeshes = numMeshes;
+    // Read read material textures matched to material names
+    std::vector<MaterialID> materialIds;
+    const int materialCount = sceneLoader.scene()->GetMaterialCount();
+    materialIds.resize(materialCount);
+    for (int i = 0; i < materialCount; ++i) {
+        FbxSurfaceMaterial* fbxMaterial = sceneLoader.scene()->GetMaterial(i);
+
+        const nString materialName = fbxMaterial->GetName();
+        materialIds[i] = materialRepo.getMaterialId(materialName);
+    }
 
     for (int m = 0; m < numMeshes; ++m) {
+        // This is not correct lol
+        const MaterialID materialId = glm::min((MaterialID)m, (MaterialID)(materialIds.size() - 1));
 
         FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
 
-        SkinnedMesh& outMesh = model.mSkinnedMeshes[m];
+        Mesh& outMesh = model.mSkinnedMeshes[m];
 
         PreciseTimer timer;
         // Allocates output mesh.
@@ -217,11 +228,19 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             assert(outputMesh.parts.size() == 1);
             for (int i = 0; i < outputMesh.vertex_count(); ++i) {
                 const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-                SkinnedModelVertex& myVert = mSkinnedVerts[i];
+                SkinnedModelVertex& myVert = mSkinnedVerts[i].mSkinnedModelVertex;
                 memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
-                memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
-                memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
-                memcpy(&myVert.uvs, &part.uvs[(int)(i * 2)], sizeof(f32) * 2);
+
+                myVert.materialId = materialIds[materialId];
+                f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
+                assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
+                myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
+                myVert.uvsPacked.y = (ui16)(uvsFloat.y * UINT16_MAX);
+                const f32v3* normals = (const f32v3*)(&part.normals[(int)(i * 3)]);
+                myVert.normalPacked = Pack_INT_2_10_10_10_REV(normals->x, normals->y, normals->z, 0.0f);
+                const f32v3* tangents = (const f32v3*)(&part.tangents[(int)(i * 3)]);
+                myVert.tangentPacked = Pack_INT_2_10_10_10_REV(tangents->x, tangents->y, tangents->z, 0.0f);
+
                 if (part.colors.size()) {
                     memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);
                 }
@@ -246,18 +265,36 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             }
             const int numJoints = outputMesh.num_joints();
             assert(numJoints < 100);
-            outMesh.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[numJoints]);
-            outMesh.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[numJoints]);
+            outMesh.mSkeletonData = std::make_unique<MeshSkeletonData>();
+            outMesh.mSkeletonData->mJointRemaps = std::unique_ptr<ui8[]>(new ui8[numJoints]);
+            outMesh.mSkeletonData->mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[numJoints]);
             for (int i = 0; i < numJoints; ++i) {
-                outMesh.mJointRemaps[i] = (ui8)outputMesh.joint_remaps[i];
-                outMesh.mInverseBindPoses[i] = outputMesh.inverse_bind_poses[i];
+                outMesh.mSkeletonData->mJointRemaps[i] = (ui8)outputMesh.joint_remaps[i];
+                outMesh.mSkeletonData->mInverseBindPoses[i] = outputMesh.inverse_bind_poses[i];
             }
-            outMesh.mNumJoints = numJoints;
-            outMesh.setData(mSkinnedVerts.data(), (ui32)mSkinnedVerts.size(), MeshDrawMode::STATIC);
-            outMesh.setIndices(outputMesh.triangle_indices.data(), outputMesh.triangle_index_count());
+            outMesh.mSkeletonData->mNumJoints = numJoints;
+
+            // Get indices
+            mIndices.resize(outputMesh.triangle_indices.size());
+            for (int i = 0; i < outputMesh.triangle_index_count(); ++i) {
+                mIndices[i] = outputMesh.triangle_indices[i];
+            }
+
+            // Upload mesh data
+            SubMeshData* meshData = &model.mSkinnedMeshes[m].mMainMesh;
+
+            PreciseTimer uploadTimer;
+            MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
+            MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mSkinnedVerts);
+            MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
+            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts, 0);
+            //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
+            SkinnedModelVertex::bindVertexAttribs(meshData->mVao);
+            checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
+
+            LOG_TRACE("  Upload data in {} ms", uploadTimer.stop());
+
             mSkinnedVerts.clear();
-            LOG_TRACE("  Copy data in {} ms", timer.stop());
-            timer.start();
         }
     }
 
@@ -284,7 +321,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 
     ui8 numSkinningMatrices = 0;
     for (ui32 i = 0; i < model.getNumMeshes(); ++i) {
-        numSkinningMatrices = std::max(numSkinningMatrices, model.getMeshes()[i].getNumJoints());
+        numSkinningMatrices = std::max(numSkinningMatrices, model.getMeshes()[i].tryGetSkeleton()->mNumJoints);
     }
     model.mNumSkinningMatrices = numSkinningMatrices;
 

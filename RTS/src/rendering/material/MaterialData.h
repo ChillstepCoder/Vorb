@@ -1,7 +1,6 @@
 #pragma once
 
 constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
-typedef int MaterialID;
 
 enum MaterialFlags
 {

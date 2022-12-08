@@ -1,13 +1,15 @@
+#include "MaterialData.glsl"
 #include "BillboardSSBO.glsl"
 
 in vec2 fUV;
-flat in int fTextureIndex;
+flat in uint fMaterialIndex;
 
 out vec4 fColor;
 
 void main()
 {
-  if (texture(sampler2D(typeData[fTextureIndex].texture.xy), fUV).a < 0.99) {
+  MaterialData mtl = inMaterials[fMaterialIndex];
+  if (sampleMaterialAlbedo(mtl, fUV).a < 0.99) {
     discard;
   }
   float depth = gl_FragCoord.z;

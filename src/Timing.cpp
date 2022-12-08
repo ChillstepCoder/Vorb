@@ -205,5 +205,5 @@ ScopedTimer::ScopedTimer(const char* label, int indentLevel) : PreciseTimer(), m
 }
 
 ScopedTimer::~ScopedTimer() {
-    LOG_TRACE("{:{}} finished in {:.4} ms", mLabel, mIndentLevel, stop());
+    LOG_TRACE("{:{}} finished in {:.6} ms", mLabel, mIndentLevel, stop());
 }

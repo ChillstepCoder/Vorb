@@ -19,6 +19,7 @@ struct SubMeshBufferData {
 enum class MeshBuilderBufferFlags : ui8 {
     NO_VBO = BIT(0),
     SSBO = BIT(1),
+    UBO = BIT(2),
 };
 
 // Static common utils

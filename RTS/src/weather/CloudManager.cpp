@@ -8,7 +8,7 @@
 
 #include "world/IWorld.h"
 #include "resources/ResourceManager.h"
-#include "resources/TextureRepository.h"
+#include "resources/MaterialRepository.h"
 
 #include "math/Random.h"
 
@@ -205,11 +205,11 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
 
     const f64v2 genPos(pos.x - mDxTotal + mDx, pos.y - mDyTotal + mDy);
 
-    const SubTexture& cloudSubTexture = Services::ResourceManager::ref().getTextureRepository().getSubTextureOLD("cloud_sil");
+    const MaterialID& cloudMaterialId = Services::ResourceManager::ref().getMaterialRepository().getMaterialId("cloud_sil");
 
     CloudBatchTaskData* data = new CloudBatchTaskData{ {}, this, &newBatch, index };
 
-    Services::Threadpool::ref().addTask([size, genPos, this, cloudSubTexture, data](ThreadPoolWorkerData*) {
+    Services::Threadpool::ref().addTask([size, genPos, this, cloudMaterialId, data](ThreadPoolWorkerData*) {
         for (int y = -CLOUD_BATCH_WIDTH / 2; y <= CLOUD_BATCH_WIDTH / 2; y += CLOUD_GEN_STRIDE) {
             for (int x = -CLOUD_BATCH_WIDTH / 2; x <= CLOUD_BATCH_WIDTH / 2; x += CLOUD_GEN_STRIDE) {
                 const f64v2 trueGenPos((f64)genPos.x + x, (f64)genPos.y + y);
@@ -232,7 +232,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
                     const f32 heightOffset = sWorldGen.mCloudHeightNoise.compute((f32)trueGenPos.x, (f32)trueGenPos.y) * 50.0f;
                     const f32v3 quadPos(x + xr, y + yr, zr + sr * 0.5f + nSize + heightOffset);
                     // TODO: Fix clouds
-                    data->meshBuilder.addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudSubTexture);
+                    data->meshBuilder.addBillboard(quadPos, f32v2(newSize * 1.952f, (newSize) * (1.0f - stretchr) * 1.472f), cloudMaterialId, true /*randFlip*/);
                 }
             }
         }
@@ -241,7 +241,7 @@ void CloudManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
             CloudBatchTaskData* data = static_cast<CloudBatchTaskData*>(vData);
             CloudBatch* batch = data->cloudBatch;
             CloudManager* manager = data->cloudManager;
-            data->meshBuilder.finishMesh(batch->mMesh, MeshDrawMode::STATIC, f32v3(0.0f));
+            data->meshBuilder.finishMesh(batch->mMesh, f32v3(0.0f), 0 /*bufferFlags*/);
             auto&& it = manager->mGeneratingBatches.find(data->index);
             assert(it != manager->mGeneratingBatches.end());
             if (batch->mMesh) { // If we actually generated a cloud mesh, store it as active

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rendering/mesh/Vertex.h"
-#include "rendering/model/ModelVertex.h"
 #include "Mesh.h"
 // TODO: Why is FbxMesh ambiguous if we forward declare instead?
 #include <ozz/animation/runtime/skeleton.h>
@@ -48,7 +47,7 @@ public:
 private:
 
     std::vector<Vertex32> mStaticVerts;
-    std::vector<SkinnedModelVertex> mSkinnedVerts;
+    std::vector<Vertex64> mSkinnedVerts;
     std::vector<uint16_t> mIndices;
 };
 

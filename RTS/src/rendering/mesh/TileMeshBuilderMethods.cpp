@@ -497,7 +497,6 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                     }
 
                     const TileData& tileData = TileRepository::getTileData(layerTile);
-                    const SubTexture& texture = tileData.texture;
 
                     // Tile mesh
                     // Flora mesh ONLY
@@ -505,7 +504,7 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                         // Billboards
                         if (billboardMeshBuilder) {
                             f32v3 tilePosition(x + 0.5f, y + 0.5f, z * tileContainer.getFloorHeight() + groundZPosition);
-                            billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, texture);
+                            billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, tileData.materialId, true);
                         }
                     }
                     else if (tileData.shape == TileShape::BLOCK) {

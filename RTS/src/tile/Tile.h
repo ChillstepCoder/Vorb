@@ -69,6 +69,7 @@ struct TileData {
     f32v3 collisionDims = f32v3(0.0f);
     TileResource resource = TileResource::NONE;
     SubTexture texture; // TODO: We dont use this when we have a model, make this a pointer? Its big
+    MaterialID materialId;
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
     ui8 layer = 2;

@@ -5,58 +5,37 @@
 
 #include <boost/container_hash/hash.hpp>
 
-// TBO Billboards
-struct SubtextureUniformData {
-    f32v4 uvRect; //TODO: ui16v2?
-    TextureHandle textureDiffuse;
-    TextureHandle textureNormal;
-     // TODO: Color?
-};
-
 class BillboardMeshBuilder
 {
 public:
-    BillboardMeshBuilder();
-    ~BillboardMeshBuilder();
+    BillboardMeshBuilder() = default;
+    ~BillboardMeshBuilder() = default;
     VORB_NON_COPYABLE_BUT_MOVABLE(BillboardMeshBuilder);
 
-    void addBillboard(f32v3 position, const f32v2& xyDims, const SubTexture& texture);
+    void addBillboard(const f32v3& position, const f32v2& xyDims, ui16 materialId, bool randFlip);
     void reserveBillboardCount(ui32 count);
 
     void computeBoundingSphere();
-    void finishMesh(std::unique_ptr<Mesh>& mesh, MeshDrawMode drawMode, const f32v3& worldPos);
+    void finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& worldPos, GLbitfield bufferFlags);
 
     // Override allocation to use boost::singleton_pool
     static void* operator new(size_t count);
     static void operator delete(void* pointer, size_t size);
 private:
 
-    struct BillboardData {
+    // TODO: This doesnt need to be 32! We can compress it! (Actually due to std430 it is, unless we make them array of scalars?)
+    struct PACKED_STRUCT BillboardData {
         f32v3 mPos;
-        int mTexture;
+        f32 mXFlip; // TODO: ui8?
         f32v2 mDims;
-        f32 mXFlip;
+        ui32 mMaterialId;
         f32 PADDING;
     };
     static_assert(sizeof(BillboardData) == 32);
 
-    struct InProgressSubMeshData {
-        void clear() {
-            mBillboards.clear();
-            mSubtextureData.clear();
-        }
+    void uploadBufferData(SubMeshData& subMesh, const f32v3& position, GLbitfield bufferFlags);
 
-        // TODO: Reserve? Pool allocators?
-        std::vector<BillboardData> mBillboards;
-        std::vector<SubtextureUniformData> mSubtextureData;
-    };
-
-    void getSubmeshAndTextureIndex(const SubTexture& texture, OUT InProgressSubMeshData** submesh, OUT ui8* subtextureIndex);
-    void uploadBufferData(SubMeshData& subMesh, const f32v3& position, const InProgressSubMeshData& data, MeshDrawMode drawMode);
-
-    // Map subtexture IDs to submeshes 
-    std::unordered_map<SubTextureID, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/> > mSubtextureLookup;
-    std::vector<InProgressSubMeshData> mSubMeshesData;
+    std::vector<BillboardData>         mBillboards;
     BoundingSphere                     mBoundingSphere;
 };
 

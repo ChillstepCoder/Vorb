@@ -79,7 +79,7 @@ void RenderThreadTasks::addTileContainerMeshUpdateTask(
             // Upload mesh buffers
             taskData->staticMeshBuilder.finishMesh(meshData.mStaticMesh, tileContainer->getWorldPos3D());
             taskData->dynamicMeshBuilder.finishMesh(meshData.mDynamicMesh, tileContainer->getWorldPos3D());
-            taskData->billboardMeshBuilder.finishMesh(meshData.mBillboardMesh, MeshDrawMode::STATIC, tileContainer->getWorldPos3D());
+            taskData->billboardMeshBuilder.finishMesh(meshData.mBillboardMesh, tileContainer->getWorldPos3D(), 0 /*bufferFlags*/);
 
             bool hadAny = false;
             // Static
@@ -131,7 +131,7 @@ void RenderThreadTasks::addTileContainerMeshUpdateTask(
             // Upload mesh buffers
             taskData->staticMeshBuilder.finishMesh(meshData.mStaticMesh, tileContainer->getWorldPos3D());
             taskData->dynamicMeshBuilder.finishMesh(meshData.mDynamicMesh, tileContainer->getWorldPos3D());
-            taskData->billboardMeshBuilder.finishMesh(meshData.mBillboardMesh, MeshDrawMode::STATIC, tileContainer->getWorldPos3D());
+            taskData->billboardMeshBuilder.finishMesh(meshData.mBillboardMesh, tileContainer->getWorldPos3D(), 0 /*bufferFlags*/);
 
             // If any mesh is valid, track for draw
             bool hadAny = false;

@@ -120,6 +120,7 @@ inline void setThreadPriorityToMax() {
 #endif
 
 typedef GLuint64 TextureHandle;
+typedef ui16 MaterialID;
 
 // DEBUGGING GRAPHICS
 // We get texture warnings if we bind a null texture. TODO: Why? (Used to bind 0 in shadow mapping)

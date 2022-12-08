@@ -67,8 +67,8 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         return false;
     }
 
+    assert(mMaterials.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
     const MaterialID materialId = mMaterials.size();
-    assert(materialId < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
     MaterialData& materialData = mMaterials.emplace_back();
     const nString materialName = filePath.getFileNameNoExtension();
     vio::Path folderPath = filePath;

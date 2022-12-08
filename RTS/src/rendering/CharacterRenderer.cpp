@@ -198,7 +198,7 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
     const SkinnedModel3D& skinnedModel = modelDef.getSkinnedModel();
     for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
         num_skinning_matrices =
-            std::max(num_skinning_matrices, skinnedModel.getMeshes()[i].getNumJoints());
+            std::max(num_skinning_matrices, skinnedModel.getMeshes()[i].tryGetSkeleton()->mNumJoints);
     }
 
     ui32 numValidTracks = 0;
@@ -354,11 +354,9 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     UNUSED(frameAlpha);
 
     // TODO: UBO
+    MaterialRenderer::bindMaterialForRender(*mMaterial);
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
-    VGUniform diffuseTextureUniform = mMaterial->mProgram.getUniform("unDiffuse");
-    VGUniform normalTextureUniform = mMaterial->mProgram.getUniform("unNormal");
-    VGUniform specularTextureUniform = mMaterial->mProgram.getUniform("unSpecular");
     VGUniform scaleUniform = mMaterial->mProgram.getUniform("unScale");
     VGUniform boneUniform = mMaterial->mProgram.getUniform("unBoneTransforms[0]");
 
@@ -371,11 +369,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
         if (it != mEntityCharacterModels.end()) {
             AnimState& animState = *it->second;
             const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(animState.mModelID);
-            ui32 nextTextureIndex = 0;
-            MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTextureIndex);
-            glUniform1i(diffuseTextureUniform, nextTextureIndex);
-            glUniform1i(normalTextureUniform, nextTextureIndex + 1);
-            glUniform1i(specularTextureUniform, nextTextureIndex + 2);
             glUniform1f(scaleUniform, 1.0f);
 
             // TODO: Optimize
@@ -400,19 +393,15 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 // Draw animated
                 for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
                     const auto& mesh = skinnedModel.getMeshes()[i];
-                    const ozz::math::Float4x4* bindPoses = mesh.getInverseBindPoses();
-                    for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
-                        skinningMatrices[i] = models[mesh.getJointRemaps()[i]] * bindPoses[i];
+                    const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
+                    const ozz::math::Float4x4* bindPoses = skelData->mInverseBindPoses.get();
+                    for (size_t i = 0; i < skelData->mNumJoints; ++i) {
+                        skinningMatrices[i] = models[skelData->mJointRemaps[i]] * bindPoses[i];
                     }
-                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
-                    glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
-                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
-                    glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
-                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
-                    glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
-                    glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
+                    glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
 
-                    mesh.draw(mMaterial->mProgram);
+                    // TODO: Indirect?
+                    mesh.draw();
                 }
             }
             else {
@@ -420,18 +409,13 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 // Draw T pose
                 for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
                     const auto& mesh = skinnedModel.getMeshes()[i];
-                    for (size_t i = 0; i < mesh.getNumJoints(); ++i) {
+                    const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
+                    for (size_t i = 0; i < skelData->mNumJoints; ++i) {
                         skinningMatrices[i] = ozz::math::Float4x4::identity();
                     }
-                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex);
-                    glBindTexture(GL_TEXTURE_2D, mesh.getDiffuseTexture());
-                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 1);
-                    glBindTexture(GL_TEXTURE_2D, mesh.getNormalTexture());
-                    glActiveTexture(GL_TEXTURE0 + nextTextureIndex + 2);
-                    glBindTexture(GL_TEXTURE_2D, mesh.getSpecularTexture());
-                    glUniformMatrix4fv(boneUniform, mesh.getNumJoints(), false, (const GLfloat*)&skinningMatrices[0].cols);
+                    glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
 
-                    mesh.draw(mMaterial->mProgram);
+                    mesh.draw();
                 }
             }
         }

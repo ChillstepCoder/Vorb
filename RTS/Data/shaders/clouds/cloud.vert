@@ -6,7 +6,7 @@ uniform vec3 UnRootPos;
 // TODO: Don't use the altas, shrink the coordinates
 out vec2 fUV;
 out vec2 fPosition;
-flat out int fTextureIndex;
+flat out uint fMaterialIndex;
 out vec4 fTint;
 out float fRoughness;
 out mat3 fTBN;
@@ -18,10 +18,9 @@ BillboardData getBillboardData() {
   return billboardData[(gl_VertexID / 4)];
 }
 
-vec2 getUvsFromTextureIndex(int textureIndex, float xFlip) {
+vec2 getUvs(float xFlip) {
     vec2 uvMult = (VertexData[gl_VertexID % 4] + 1.0) * 0.5;
-	vec4 vUV = vec4(0.0, 0.0, 1.0, 1.0);
-	vec4 uvAdjusted = vUV;
+	vec4 uvAdjusted = vec4(0.0, 0.0, 1.0, 1.0);
     // Flip if needed
     uvAdjusted.x -= step(0.0, xFlip) * uvAdjusted.z;
     uvAdjusted.z *= -xFlip;
@@ -64,11 +63,11 @@ void main() {
     BillboardData data = getBillboardData();
     
 	// Compute uvs
-    fUV = getUvsFromTextureIndex(data.texture, data.xFlip);
+    fUV = getUvs(data.xFlip);
 
 	vec4 vPosition = vec4(data.position, 1.0);
 	vec2 vDims = data.dims;
-    fTextureIndex = data.texture;
+    fMaterialIndex = data.material;
 	
 	
 	// Compute position

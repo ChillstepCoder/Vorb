@@ -13,7 +13,9 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
         glCreateVertexArrays(1, &subMesh.mVao);
 
         // Ubo
-        glCreateBuffers(1, &subMesh.mUbo);
+        if (flags.isBitSet(MeshBuilderBufferFlags::UBO)) {
+            glCreateBuffers(1, &subMesh.mUbo);
+        }
        
         // SSBO
         if (flags.isBitSet(MeshBuilderBufferFlags::SSBO)) {
@@ -59,7 +61,7 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
     }
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex96>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
 
 template<typename VERTEX>
 void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
@@ -146,7 +148,7 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
     vertices.swap(remappedVertices);
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex96>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
 
 void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indices.size();
@@ -176,7 +178,7 @@ void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector
     glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(VERTEX));
 }
 template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
-template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex96>& vertices, GLbitfield flags);
+template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex64>& vertices, GLbitfield flags);
 
 void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
     // UBO

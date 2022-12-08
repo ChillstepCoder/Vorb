@@ -103,7 +103,7 @@ void NavThread::navThreadFunc() {
     NavThreadPathArgs pathArgs;
     NavThreadGraphBuildArgs graphArgs;
     SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(sWorld);
-    // TODO: This happened
+    // TODO: This assert happened twice
     assert(srvWorld);
     NavWorld& navWorld = srvWorld->getNavWorld();
     while (!mStop.load()) {

@@ -1,8 +1,10 @@
 #include "BillboardSSBO.glsl"
 #include "GlobalUbo.glsl"
 
+uniform vec3 unPosition;
+
 out vec2 fUV;
-flat out int fTextureIndex;
+flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
@@ -12,10 +14,9 @@ BillboardData getBillboardData() {
   return billboardData[(gl_VertexID / 4)];
 }
 
-vec2 getUvsFromTextureIndex(int textureIndex, float xFlip) {
+vec2 getUvs(float xFlip) {
     vec2 uvMult = (VertexData[gl_VertexID % 4] + 1.0) * 0.5;
-	vec4 vUV = typeData[textureIndex].uvs;
-	vec4 uvAdjusted = vUV;
+	vec4 uvAdjusted = vec4(0.0, 0.0, 1.0, 1.0);
     // Flip if needed
     uvAdjusted.x -= step(0.0, xFlip) * uvAdjusted.z;
     uvAdjusted.z *= -xFlip;
@@ -37,8 +38,8 @@ void main() {
 	vec2 vDims = data.dims;
 	
 	// Compute uvs
-    fUV = getUvsFromTextureIndex(data.texture, data.xFlip);
-    fTextureIndex = data.texture;
+    fUV = getUvs(data.xFlip);
+    fMaterialIndex = data.material;
 	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();

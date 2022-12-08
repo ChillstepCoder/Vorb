@@ -1,16 +1,18 @@
 #include "../GlobalUbo.glsl"
 
 // Input
-in vec4 vPosition; // Position in screen space
-in vec4 vTint;
-in vec3 vNormal;
-in vec3 vTangent;
-in vec2 vUV;
-in ivec4 vBoneIds;
-in vec4 vBoneWeights;
+layout(location = 0) in vec4 vPosition;
+layout(location = 1) in vec2 vUV;
+layout(location = 2) in uint vMaterialIndex;
+layout(location = 3) in vec4 vTint;
+layout(location = 4) in vec3 vNormal;
+layout(location = 5) in vec2 vTangent;
+layout(location = 6) in vec4 vBoneWeights;
+layout(location = 7) in ivec4 vBoneIds;
 
 out vec4 fTint;
 out vec2 fUV;
+flat out uint fMaterialIndex;
 out mat3 fTBN;
 out vec3 fNormal;
 
@@ -23,6 +25,7 @@ uniform mat4 unBoneTransforms[MAX_BONES];
 void main() {
   fTint = vTint;
   fUV = vUV;
+  fMaterialIndex = vMaterialIndex;
   
   mat4 boneTransform = unBoneTransforms[vBoneIds[0]] * vBoneWeights[0];
   boneTransform += unBoneTransforms[vBoneIds[1]] * vBoneWeights[1];
@@ -36,10 +39,15 @@ void main() {
   vec4 worldPos = transformedPos + vec4(unOffset, 0.0);
   gl_Position = VP * worldPos;
   
-  vec3 normal = (unModelTransform * vec4(vNormal, 1.0)).rgb;
-  vec3 tangent = (unModelTransform * vec4(vTangent, 1.0)).rgb;
+  
+  vec3 normal = normalize(vNormal);
+  vec3 tangent = normalize(vec3(vTangent, 0));
+  vec3 binormal = cross(normal, tangent);
+  normal = (unModelTransform * vec4(normal, 1.0)).rgb;
+  tangent = (unModelTransform * vec4(tangent, 1.0)).rgb;
   //vec3 bitangent = (unModelTransform * vec4(vBitangent, 1.0)).rgb;
   
+
   vec3 bitangent = cross(normal, tangent);
   fTBN = mat3(tangent, bitangent, normal);
 }

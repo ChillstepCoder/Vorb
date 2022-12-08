@@ -8,7 +8,6 @@
 #include "resources/RigRepository.h"
 #include "resources/AnimMachineRepository.h"
 #include "rendering/model/Model3D.h"
-#include "rendering/model/ModelVertex.h"
 #include "rendering/mesh/ModelMeshBuilder.h"
 
 #include <ozz/base/io/archive.h>

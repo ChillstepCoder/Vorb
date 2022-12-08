@@ -4,9 +4,8 @@
 #include "MeshBase.h"
 
 #include "rendering/TileVertex.h"
-#include "model/ModelVertex.h"
+#include "mesh/Vertex.h"
 
-#include <ozz/base/maths/simd_math.h>
 
 //#include "rendering/mesh/Mesh.h"
 
@@ -35,42 +34,6 @@ private:
     void bindVertexAttribs(const vg::GLProgram& program) const override;                
 
     std::vector<TriangleVertex> mVertexData; // TODO: Recycle?
-};
-
-// TODO: Better?
-class SkinnedMesh : public ITriangleMesh<SkinnedModelVertex> {
-    friend class ModelMeshBuilder;
-    friend class ModelRepository; // For loading
-public:
-    SkinnedMesh() = default;
-    VORB_NON_COPYABLE_BUT_MOVABLE(SkinnedMesh);
-
-    void setIndices(const uint16_t* indices, int indexCount);
-    void draw(const vg::GLProgram& program) const override;
-    void finishMesh(MeshDrawMode drawMode) override;
-
-    void setDiffuseTexture(VGTexture texture) { mDiffuseTexture = texture; }
-    void setNormalTexture(VGTexture texture) { mNormalTexture = texture; }
-    void setSpecularTexture(VGTexture texture) { mSpecularTexture = texture; }
-    VGTexture getDiffuseTexture() const { return mDiffuseTexture; }
-    VGTexture getNormalTexture() const { return mNormalTexture; }
-    VGTexture getSpecularTexture() const { return mSpecularTexture; }
-
-    const ui8 getNumJoints() const { return mNumJoints; }
-    const ui8* getJointRemaps() const { return mJointRemaps.get(); }
-    const ozz::math::Float4x4* getInverseBindPoses() const { return mInverseBindPoses.get(); }
-
-private:
-    void bindVertexAttribs(const vg::GLProgram& program) const override;
-
-    VGIndexBuffer mIbo = 0;
-    VGTexture mDiffuseTexture = 0;
-    VGTexture mNormalTexture = 0;
-    VGTexture mSpecularTexture = 0;
-    // TODO: memory pool?
-    std::unique_ptr<ui8[]> mJointRemaps; // Maps specific joint(bone) indices to inverse bind poses
-    std::unique_ptr<ozz::math::Float4x4[]> mInverseBindPoses;
-    ui8 mNumJoints = 0;
 };
 
 // Templated Mesh implementation

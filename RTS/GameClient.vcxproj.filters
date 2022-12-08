@@ -1424,9 +1424,6 @@
     <ClInclude Include="src\types\IdTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\ModelVertex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\rendering\mesh\ModelMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>

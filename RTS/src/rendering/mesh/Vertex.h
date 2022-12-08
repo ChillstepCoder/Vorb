@@ -1,7 +1,5 @@
 #pragma once
 
-#include "rendering/model/ModelVertex.h"
-
 enum class VertexVariantType {
     STANDARD,
     TERRAIN,
@@ -33,7 +31,7 @@ struct alignas(32) StaticModelVertex {
     ui32 tangentPacked;
     ui16v2 uvsPacked;
     color4 color;
-    ui16 materialIndex;
+    ui16 materialId;
 
     static void bindVertexAttribs(VGBuffer vao);
 };
@@ -80,11 +78,33 @@ struct alignas(32) Vertex32 {
 };
 static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
 
-struct alignas(32) Vertex96 {
-    Vertex96() {};
+constexpr int MAX_BONES_PER_VERTEX = 4;
+
+// TODO: Reduce to 64 https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
+struct alignas(32) SkinnedModelVertex {
+public:
+    SkinnedModelVertex() {};
+
+    f32v3 pos;
+    ui32 normalPacked;
+    ui32 tangentPacked;
+    ui16v2 uvsPacked;
+    color4 color;
+    ui16 materialId;
+    // TODO: ui16 weights?
+    f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
+    ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
+
+
+    static void bindVertexAttribs(VGBuffer vao);
+};
+static_assert(sizeof(SkinnedModelVertex) == 64, "32 byte alignment needed");
+
+struct alignas(32) Vertex64 {
+    Vertex64() {};
 
     union {
         SkinnedModelVertex mSkinnedModelVertex;
     };
 };
-static_assert(sizeof(Vertex96) == 96, "96 byte alignment needed");
+static_assert(sizeof(Vertex64) == 64, "32 byte alignment needed");

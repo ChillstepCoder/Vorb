@@ -10,10 +10,9 @@ BillboardData getBillboardData() {
   return billboardData[(gl_VertexID / 4)];
 }
 
-vec2 getUvsFromTextureIndex(int textureIndex) {
+vec2 getUvs() {
     vec2 uvMult = (VertexData[gl_VertexID % 4] + 1.0) * 0.5;
-	vec4 vUV = typeData[textureIndex].uvs;
-	vec4 uvAdjusted = vUV;
+	vec4 uvAdjusted = vec4(0.0, 0.0, 1.0, 1.0);
     // TODO: Why?
 	uvAdjusted.w = -uvAdjusted.w;
 	uvAdjusted.y -= uvAdjusted.w;
@@ -30,17 +29,17 @@ vec2 getVertexOffsets() {
 uniform vec3 UnRootPos;
 
 out vec2 gUV;
-flat out int gTextureIndex;
+flat out uint gMaterialIndex;
 
 void main() {
   BillboardData data = getBillboardData();
 
   // Compute uvs
-  gUV = getUvsFromTextureIndex(data.texture);
+  gUV = getUvs();
 
   vec4 vPosition = vec4(data.position, 1.0);
   vec2 vDims = data.dims;
-  gTextureIndex = data.texture;
+  gMaterialIndex = data.material;
 
   vec2 vertexOffsets = getVertexOffsets();
   vec2 xzOffsetUncompressed = vertexOffsets * vDims; // Matches C++ compression ratio

@@ -1,5 +1,8 @@
 #pragma once
 
+
+#include <ozz/base/maths/simd_math.h>
+
 // Enough for a full chunk of grass + padding
 // TODO: How much do we really save doing this?
 // Profile how often we use this...
@@ -63,6 +66,13 @@ struct SubMeshData {
     void destroy();
 };
 
+struct MeshSkeletonData {
+    std::unique_ptr<ui8[]> mJointRemaps; // Maps specific joint(bone) indices to inverse bind poses
+    std::unique_ptr<ozz::math::Float4x4[]> mInverseBindPoses;
+    ui8 mNumJoints = 0;
+};
+
+
 // TODO: Indirect https://cpp-rendering.io/indirect-rendering/
 class Mesh
 {
@@ -89,6 +99,7 @@ public:
 
     const f32v3& getPosition() const { return mPosition; }
     const BoundingSphere& getBoundingSphere() const { return mBoundingSphere; }
+    MeshSkeletonData* tryGetSkeleton() const { return mSkeletonData.get(); }
 
     // Override allocation to use boost::singleton_pool
     static void* operator new(size_t count);
@@ -98,9 +109,10 @@ public:
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
     SubMeshData              mMainMesh;
+    std::unique_ptr<MeshSkeletonData> mSkeletonData;
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array
    // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
 
 };
-static_assert(sizeof(Mesh) == 96);
+static_assert(sizeof(Mesh) == 104);

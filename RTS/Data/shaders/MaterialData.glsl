@@ -2,8 +2,7 @@
 #extension GL_ARB_gpu_shader_int64 : enable
 
 // This must not be modified, it is bound to code layout
-struct MaterialData
-{
+struct MaterialData {
 	vec4 emissiveColor;
 	vec4 albedoColor;
 	vec4 roughness;
@@ -20,8 +19,7 @@ struct MaterialData
 	uint64_t metallicRoughnessMap;
 };
 
-layout(std430, binding = 1) restrict readonly buffer Materials
-{
+layout(std430, binding = 1) restrict readonly buffer Materials {
 	MaterialData inMaterials[];
 };
 
