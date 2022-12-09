@@ -176,7 +176,6 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
 
     // Sampler state and mipmap
     vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D);
-    glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
     glTexParameteri((VGEnum)GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, maxMipmapLevels);
     glTexParameteri((VGEnum)GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxMipmapLevels);
     glGenerateMipmap(GL_TEXTURE_2D);

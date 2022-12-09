@@ -1,8 +1,8 @@
 #include "../GlobalUbo.glsl"
 
 // Input
-in vec4 vPosition; // Position in screen space
-in vec4 vTint;
+layout(location = 0) in vec4 vPosition; // Position in screen space
+layout(location = 1) in vec4 vTint;
 
 out vec4 fTint;
 

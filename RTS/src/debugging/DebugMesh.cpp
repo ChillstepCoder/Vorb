@@ -10,8 +10,8 @@ namespace {
 uniform mat4 unWVP;
 uniform vec3 CameraPos;
 // Input
-in vec4 vPosition; // Position in object space
-in vec4 vColor;
+layout(location = 0) in vec4 vPosition; // Position in object space
+layout(location = 1) in vec4 vColor;
 out vec4 fColor;
 void main() {
   fColor = vColor;
@@ -32,10 +32,10 @@ void main() {
 uniform mat4 unWVP;
 uniform vec3 CameraPos;
 // Input
-in vec4 vPosition; // Position in object space
-in vec4 vColor;
-in float vRadius;
-in vec2 vOffset;
+layout(location = 0) in vec4 vPosition; // Position in object space
+layout(location = 1) in vec4 vColor;
+layout(location = 2) in float vRadius;
+layout(location = 3) in vec2 vOffset;
 out vec4 fColor;
 out float fRadius;
 out vec2 fOffset;

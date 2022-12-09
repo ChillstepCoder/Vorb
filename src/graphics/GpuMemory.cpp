@@ -56,10 +56,10 @@ void vg::GpuMemory::uploadTexture(VGTexture texture,
 
     // Create Mipmaps If Necessary
     if (mipmapLevels > 0) {
-        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+       // glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
         glTexParameteri((VGEnum)textureTarget, GL_TEXTURE_MAX_LOD, mipmapLevels);
         glTexParameteri((VGEnum)textureTarget, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
-        glEnable((VGEnum)textureTarget);
+        //glEnable((VGEnum)textureTarget);
         glGenerateMipmap((VGEnum)textureTarget);
     }
 

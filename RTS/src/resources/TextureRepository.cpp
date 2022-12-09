@@ -226,7 +226,6 @@ GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::Te
 
     // Create Mipmaps If Necessary
     if (mipmapLevels > 0) {
-        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
         glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
         glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
         glGenerateTextureMipmap(handle);
