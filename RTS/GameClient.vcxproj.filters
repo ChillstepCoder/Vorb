@@ -1424,7 +1424,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\StaticModelInstance.h">
+    <ClInclude Include="src\rendering\model\StaticModelInstanceTransform.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h">

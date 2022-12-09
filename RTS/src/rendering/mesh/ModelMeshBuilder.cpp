@@ -3,7 +3,7 @@
 
 #include "rendering/mesh/MeshBuilderCommon.h"
 #include "rendering/texture/SubTexture.h"
-#include "rendering/model/StaticModelInstance.h"
+#include "rendering/model/StaticModelInstanceTransform.h"
 
 #include "rendering/model/Model3D.h"
 #include "rendering/mesh/Mesh.h"
@@ -331,7 +331,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 void ModelMeshBuilder::updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo) {
     const SubMeshData* meshData = &mesh.mMainMesh;
     do {
-        glVertexArrayVertexBuffer(meshData->mVao, 1, instanceDataVbo, 0, sizeof(StaticModelInstance));
+        glVertexArrayVertexBuffer(meshData->mVao, 1, instanceDataVbo, 0, sizeof(StaticModelInstanceTransform));
         glEnableVertexArrayAttrib(meshData->mVao, 7);
         //glVertexArrayAttribFormat(meshData->mVao, 7, 3, GL_FLOAT, GL_FALSE, offsetof(StaticModelInstance, pos));
         glVertexArrayAttribBinding(meshData->mVao, 7, 1);

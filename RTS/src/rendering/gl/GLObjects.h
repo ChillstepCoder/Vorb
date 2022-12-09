@@ -18,11 +18,13 @@ struct DrawElementsIndirectCommand
 class GLBuffer
 {
 public:
-    VORB_NON_COPYABLE_BUT_MOVABLE(GLBuffer);
+    VORB_NON_COPYABLE(GLBuffer);
 
     GLBuffer() = default;
     GLBuffer(GLsizeiptr size, const void* data, GLbitfield flags);
     ~GLBuffer();
+    GLBuffer(GLBuffer&& o) = delete;
+    GLBuffer& operator=(GLBuffer&& o) = delete;
 
     void allocate(GLsizeiptr size, const void* data, GLbitfield flags);
     void updateSubData(GLintptr offset, GLsizeiptr size, const void* data);
@@ -41,7 +43,9 @@ private:
 class GLIndirectBuffer final
 {
 public:
-    VORB_NON_COPYABLE_BUT_MOVABLE(GLIndirectBuffer);
+    VORB_NON_COPYABLE(GLIndirectBuffer);
+    GLIndirectBuffer(GLIndirectBuffer&& o) = delete;
+    GLIndirectBuffer& operator=(GLIndirectBuffer&& o) = delete;
 
     explicit GLIndirectBuffer(size_t maxDrawCommands)
         : mIndirectBuffer(sizeof(DrawElementsIndirectCommand)* maxDrawCommands, nullptr, GL_DYNAMIC_STORAGE_BIT)
@@ -55,4 +59,5 @@ public:
 
 private:
     GLBuffer mIndirectBuffer;
+    ui32 TMPlastUploadedSize = 0;
 };

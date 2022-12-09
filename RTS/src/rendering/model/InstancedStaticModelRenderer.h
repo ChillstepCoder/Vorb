@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/model/StaticModelInstance.h"
+#include "rendering/model/StaticModelInstanceTransform.h"
 
 // TODO: Allow chunks to reference each of their tiles part of a mesh buffer. Allow removing and compacting the mesh buffer instead of full rebuild
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
@@ -38,7 +38,8 @@ struct StaticModelInstanceData {
     ~StaticModelInstanceData();
 
     // TODO: Optimize allocation
-    std::vector<StaticModelInstance> mInstances;
+    std::vector<StaticModelInstanceTransform> mInstanceTransforms;
+    std::vector<TileContainerID> mInstanceOwners;
     std::unique_ptr<GLIndirectBuffer> mDrawCommands;
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;

@@ -97,7 +97,11 @@ void ResourceManager::gatherFiles(const vio::Path& folderPath) {
     mSkillFiles.clear();
     mFontFiles.clear();
 
-    gatherRecursive(folderPath);
+    vio::Path absolutePath;
+    if (!mIoManager->resolvePath(folderPath, absolutePath)) {
+        pError("Could not resolve /data/ folder. Try verifying game files");
+    }
+    gatherRecursive(absolutePath);
 
     mHasGathered = true;
 
@@ -294,8 +298,8 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
 {
     vio::Directory directory;
     if (!folderPath.asDirectory(&directory)) {
-        // TODO: Better error messaging
-        assert(false);
+        LOG_CRITICAL("{} Could not be resolved, resource manager cannot find resources", folderPath.getString());
+        pError("Could not resolve data root path");
     }
 
     vio::DirectoryEntries entries;

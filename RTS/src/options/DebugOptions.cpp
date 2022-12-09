@@ -10,7 +10,7 @@ DebugOptions::DebugOptions() :
     mTimeOffset(0.0f),
     // Clouds
     mDebugClouds(false),
-    mDisableClouds(false),
+    mDisableClouds(true),
     mCloudBlurPasses(3),
     mCloudBlurRadius(1.25f),
     mCloudAmbient(0.5f),
@@ -18,7 +18,7 @@ DebugOptions::DebugOptions() :
     // Grass
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mDebugGrassLod(false),
-    mHideGrass(false),
+    mHideGrass(true),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra
     mDebugTerrainLod(false),
@@ -27,7 +27,7 @@ DebugOptions::DebugOptions() :
     mTerrainSquaresColorPeriod(0.187f),
     mTerrainSquaresIntensity(0.0f),
     mTerrainBlendMult(0.037f),
-    mDisableTerrain(false),
+    mDisableTerrain(true),
     // DOF
     mDepthOfFieldBlurRadius(0.6f),
     mDepthOfFieldBlurPasses(1),
@@ -59,7 +59,7 @@ DebugOptions::DebugOptions() :
     mRoofDebug(false),
     mShowNavGraph(false),
     mShowNavGraphUpdates(false),
-    mHideCharacters(false),
+    mHideCharacters(true),
     mShowTerrainPhysics(false),
     mShowStaticPhysics(false),
     mShowDynamicPhysics(false),
@@ -85,7 +85,7 @@ DebugOptions::DebugOptions() :
     mWaterColorNoiseIntensity(0.085f),
     mWaterDistortTiling(1.0f),
     mWaterNoiseTiling(1.0f),
-     mDisableWater(false),
+     mDisableWater(true),
     // Lighting
     mLightingOptions(&sLightingPresets[LIGHT_PRESET_UCHIMURA]),
     mLightingOptionsSplit(&sLightingPresets[LIGHT_PRESET_CUSTOM]),

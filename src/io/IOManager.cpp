@@ -8,6 +8,7 @@
 #include <Vorb/io/Keg.h>
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
+#include <Vorb/logging/Logger.h>
 
 vio::IOManager::IOManager() {
 }
@@ -40,9 +41,15 @@ void vio::IOManager::getDirectoryEntries(const Path& dirPath, DirectoryEntries& 
 vio::FileStream vio::IOManager::openFile(const Path& path, const FileOpenFlags& flags) const {
     Path filePath;
     if ((flags & FileOpenFlags::CREATE) != FileOpenFlags::NONE) {
-        if (!assurePath(path, filePath, IOManagerDirectory::SEARCH, true)) return FileStream();
+        if (!assurePath(path, filePath, IOManagerDirectory::SEARCH, true)) {
+            VORB_LOG_WARN("IOManager could not open file for create {}", path.getString());
+            return FileStream();
+        }
     } else {
-        if (!resolvePath(path, filePath)) return FileStream();
+        if (!resolvePath(path, filePath)) {
+            VORB_LOG_WARN("IOManager could not open file {}", path.getString());
+            return FileStream();
+        }
     }
 
     File f;
@@ -87,7 +94,8 @@ bool vio::IOManager::resolvePath(const Path& path, Path& resultAbsolutePath) con
         if (path.isValid()) {
             resultAbsolutePath = path;
             return true;
-        } else {
+        }
+        else {
             return false;
         }
     }
@@ -150,6 +158,7 @@ bool vio::IOManager::assurePath(const Path& path, OUT Path& resultAbsolutePath, 
                 resultAbsolutePath = path;
                 return true;
             }
+            VORB_LOG_WARN("IOManager could not assure invalid file {}\nCWD {}\nSD{}\nPL{}", path.getString(), m_pathCWD.getString(), m_pathSearch.getString(), m_pathLocal.getString());
             return false;
         }
     }
@@ -219,6 +228,7 @@ bool vio::IOManager::assurePath(const Path& path, OUT Path& resultAbsolutePath, 
         return true;
     }
 
+    VORB_LOG_WARN("IOManager could not assure file {}\nCWD {}\nSD{}\nPL{}", path.getString(), m_pathCWD.getString(), m_pathSearch.getString(), m_pathLocal.getString());
     return false;
 }
 

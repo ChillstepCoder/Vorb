@@ -52,6 +52,7 @@ public:
     SkillRepository& getSkillRepository() const { return *mSkillRepository; }
     TextureRepository& getTextureRepository() const { return *mTextureRepository; }
     FontRepository& getFontRepository() const { return *mFontRepository; }
+    vio::IOManager& getIoManager() const { return *mIoManager; }
 
     // Hot reload
     void reloadMaterials();

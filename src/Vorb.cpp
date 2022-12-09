@@ -22,6 +22,7 @@
 #include "Vorb/utils.h"
 #include "Vorb/VorbLibs.h"
 #include "Vorb/Event.hpp"
+#include "Vorb/logging/Logger.h"
 
 void doNothing(void*) { 
     // Empty
@@ -81,10 +82,18 @@ namespace vorb {
         if (!path.isValid()) path = "."; // No other option
         vio::IOManager::setExecutableDirectory(path.asCanonical());
 
-        // Set the current working directory
-        path = fs::current_path().string();
-        if (!path.isValid()) path = "."; // No other option
-        if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+
+        if (IsDebuggerPresent()) {
+            VORB_LOG_DEBUG("Debugger detected, setting CWD to current_path");
+            // Set the current working directory
+            path = fs::current_path().string();
+            if (!path.isValid()) path = "."; // No other option
+            if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        }
+        else {
+            // No debugger means we are running a packaged build, so CWD should be same as 
+            if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        }
 
 #ifdef DEBUG
         printf("Executable Directory:\n    %s\n", vio::IOManager::getExecutableDirectory().getCString());
@@ -167,6 +176,10 @@ namespace vorb {
 
 vorb::InitParam vorb::init(const InitParam& p) {
 #define HAS(v, b) ((v & b) != InitParam::NONE)
+
+    // Initialize logger
+    // TODO: Config logging level
+    vorb::Logger::init(LoggingLevel::Trace);
 
     vorb::InitParam succeeded = InitParam::NONE;
     if (HAS(p, InitParam::SOUND)) succeeded |= initSound();

@@ -69,6 +69,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_sdl.h>
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
+#include <Vorb/io/IOManager.h>
+
 #include "options/DebugOptions.h"
 
 // Opengl debugging
@@ -192,7 +194,12 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     mSb         = std::make_unique<vg::SpriteBatch>();
     mSpriteFont = std::make_unique<vg::SpriteFont>();
     mSb->init();
-    mSpriteFont->init("data/fonts/titilium_semibold.ttf", 32);
+
+    vio::Path fontPath;
+    if (!Services::ResourceManager::ref().getIoManager().resolvePath(vio::Path("data/fonts/titilium_semibold.ttf"), fontPath)) {
+        pError("Unable to resolve titilium_semibold.ttf font path, try verifying game files");
+    }
+    mSpriteFont->init(fontPath.getCString(), 32);
     checkGlError("SB init");
 
     sGlobalFullQuadVBO.init();

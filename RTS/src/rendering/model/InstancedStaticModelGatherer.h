@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/model/StaticModelInstance.h"
+#include "rendering/model/StaticModelInstanceTransform.h"
 
 class InstancedStaticModelGatherer {
     friend class InstancedStaticModelRenderer;
@@ -12,7 +12,7 @@ public:
     void addInstance(ModelID modelId, const f32v3& position, const f32v3& normal, f32 rotation);
 private:
     // TODO: Store tileIndex or position
-    std::map<ModelID, std::vector<StaticModelInstance>> mInstances;
+    std::map<ModelID, std::vector<StaticModelInstanceTransform>> mInstances;
     TileContainerID mContainerID;
 };
 

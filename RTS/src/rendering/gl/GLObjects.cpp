@@ -16,6 +16,7 @@ inline void reallocateBuffer(GLuint handle, GLsizeiptr size, const void* data, G
     glDeleteBuffers(1, &handle);
     glCreateBuffers(1, &handle);
     glNamedBufferStorage(handle, size, data, flags);
+    LOG_INFO("  Reallocate GLBuffer {} {}", handle, size);
 }
 
 void GLBuffer::allocate(GLsizeiptr size, const void* data, GLbitfield flags) {
@@ -24,6 +25,7 @@ void GLBuffer::allocate(GLsizeiptr size, const void* data, GLbitfield flags) {
         // Brand new buffer
         glCreateBuffers(1, &mHandle);
         glNamedBufferStorage(mHandle, size, data, flags);
+        LOG_INFO("  Allocate GLBuffer {} {}", mHandle, size);
     }
     else if (flags != mFlags) {
         // New flags always re-upload
@@ -63,4 +65,5 @@ void GLBuffer::destroy() {
 
 void GLIndirectBuffer::uploadIndirectBuffer() {
     mIndirectBuffer.updateSubData(0, sizeof(DrawElementsIndirectCommand) * mDrawCommands.size(), mDrawCommands.data());
+    TMPlastUploadedSize = mDrawCommands.size();
 }

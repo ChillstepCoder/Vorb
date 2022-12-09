@@ -16,6 +16,15 @@
 constexpr int WORK_GROUP_SIZE = 64;
 // TODO: Read about advanced gpu driven rendering https://advances.realtimerendering.com/s2015/aaltonenhaar_siggraph2015_combined_final_footer_220dpi.pdf
 
+// Must be done or we will corrupt gpu memory :P
+size_t roundToWorkGroupSize(size_t in) {
+    size_t remainder = in % WORK_GROUP_SIZE;
+    if (remainder == 0) {
+        return in;
+    }
+    return in + (WORK_GROUP_SIZE - remainder);
+}
+
 struct GpuCullUniformData {
     f32v4 cameraPos;
     f32v4 frustumPlanes[4];
@@ -58,13 +67,10 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
     PROFILE_FUNCTION();
 
-    // Only do this once per frame because its expensive
-    bool didUpdateACommandBuffer = false;
-
     for (auto& it : mInstances) {
         StaticModelInstanceData& instanceData = it.second;
         // TODO: Move this to onRemove
-        if (!instanceData.mInstances.size()) {
+        if (!instanceData.mInstanceTransforms.size()) {
             instanceData.mDrawCommands.reset();
             if (instanceData.mTransformsVbo) {
                 glDeleteBuffers(1, &instanceData.mTransformsVbo);
@@ -82,64 +88,69 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
         }
 
         if (instanceData.mFirstDirtyInstance != UINT32_MAX) {
-            if (didUpdateACommandBuffer) {
-                // If we dont have a valid command buffer yet, just skip this draw
-                if (!instanceData.mDrawCommands) {
-                    continue;
+            PROFILE_SCOPE("Rebuild Indirect Buffer");
+            const size_t workGroupRoundedSize = roundToWorkGroupSize(instanceData.mInstanceTransforms.size());
+            // Rebuild command buffer
+            {
+                PROFILE_SCOPE("Indirect Buffer");
+                instanceData.mDrawCommands = std::make_unique<GLIndirectBuffer>(workGroupRoundedSize);
+                for (size_t i = 0; i < instanceData.mDrawCommands->mDrawCommands.size(); ++i) {
+                    DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->mDrawCommands[i];
+                    cmd.baseInstance_ = i;
                 }
+                instanceData.mDrawCommands->uploadIndirectBuffer();
             }
-            else {
-                didUpdateACommandBuffer = !sDebugOptions.mDisableGPUCulling; // disabled when cpu culling
-                PROFILE_SCOPE("Rebuild Indirect Buffer");
-                // TODO: Don't rebuild entire buffer?
-                instanceData.mFirstDirtyInstance = UINT32_MAX;
-                // Rebuild command buffer
-                {
-                    PROFILE_SCOPE("Indirect Buffer");
-                    instanceData.mDrawCommands = std::make_unique<GLIndirectBuffer>(instanceData.mInstances.size());
-                    for (size_t i = 0; i < instanceData.mDrawCommands->mDrawCommands.size(); ++i) {
-                        DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->mDrawCommands[i];
-                        cmd.baseInstance_ = i;
-                    }
-                }
 
-                // Allocate VBO
-                {
-                    PROFILE_SCOPE("VBO");
-                    GLsizei bufferSizeBytes = sizeof(StaticModelInstance) * instanceData.mInstances.size();
-                    if (instanceData.mTransformsVbo == 0) {
-                        glCreateBuffers(1, &instanceData.mTransformsVbo);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 8);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 9);
-                        glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 10);
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
-                        glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, 1);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, 1);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, 1);
-                        glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, 1);
-                        glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, 1, 1);
-                        glNamedBufferStorage(instanceData.mTransformsVbo, bufferSizeBytes, instanceData.mInstances.data(), 0);
-                        glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstance));
-                        instanceData.mTransformsVboSizeBytes = bufferSizeBytes;
-                    }
-                    else if (bufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
-                        // Grow to new size
-                        glDeleteBuffers(1, &instanceData.mTransformsVbo);
-                        glCreateBuffers(1, &instanceData.mTransformsVbo);
-                        glNamedBufferStorage(instanceData.mTransformsVbo, bufferSizeBytes, instanceData.mInstances.data(), 0);
-                        glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstance));
-                        instanceData.mTransformsVboSizeBytes = bufferSizeBytes;
-                    }
-                    else {
-                        glNamedBufferSubData(instanceData.mTransformsVbo, 0, bufferSizeBytes, instanceData.mInstances.data());
-                    }
-                    instanceData.mDrawCommands->uploadIndirectBuffer();
+            // Allocate VBO
+            {
+                PROFILE_SCOPE("VBO");
+                // GPU buffer is larger to accomidate the work group size, or we get corruption
+                const GLsizei gpuBufferSizeBytes = sizeof(StaticModelInstanceTransform) * workGroupRoundedSize;
+                const GLsizei cpuBufferSizeBytes = sizeof(StaticModelInstanceTransform) * instanceData.mInstanceTransforms.size();
+                if (instanceData.mTransformsVbo == 0) {
+                    LOG_INFO("NEW");
+                    glCreateBuffers(1, &instanceData.mTransformsVbo);
+                    glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
+                    glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 8);
+                    glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 9);
+                    glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 10);
+                    glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
+                    glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
+                    glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
+                    glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, 1);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, 1);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, 1);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, 1);
+                    glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, 1, 1);
+                    glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
+                    glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstanceTransform));
+                    instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                }
+                else if (gpuBufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
+                    LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
+                    // Grow to new size
+                    glDeleteBuffers(1, &instanceData.mTransformsVbo);
+                    glCreateBuffers(1, &instanceData.mTransformsVbo);
+                    glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                    glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
+                    glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstanceTransform));
+                    instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                }
+                else {
+                    LOG_INFO("SHRINK {} {}  {} {}", instanceData.mFirstDirtyInstance, instanceData.mInstanceTransforms.size(), cpuBufferSizeBytes, gpuBufferSizeBytes);
+                    // Only upload data after the first dirty instance, which should amortize things a bit
+                    /*glNamedBufferSubData(
+                        instanceData.mTransformsVbo,
+                        instanceData.mFirstDirtyInstance * sizeof(StaticModelInstanceTransform),
+                        cpuBufferSizeBytes - instanceData.mFirstDirtyInstance * sizeof(StaticModelInstanceTransform),
+                        instanceData.mInstanceTransforms.data() + instanceData.mFirstDirtyInstance
+                    );*/
                 }
             }
+
+            instanceData.mFirstDirtyInstance = UINT32_MAX;
         }
 
         GLIndirectBuffer& inDrawCommands = *instanceData.mDrawCommands;
@@ -176,9 +187,11 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
             //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
             if (drawCommandsSize % WORK_GROUP_SIZE == 0) {
+                assert(roundToWorkGroupSize(instanceData.mInstanceTransforms.size()) == ((GLuint)drawCommandsSize / WORK_GROUP_SIZE) * WORK_GROUP_SIZE);
                 glDispatchCompute((GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
             }
             else {
+                assert(roundToWorkGroupSize(instanceData.mInstanceTransforms.size()) == (1 + (GLuint)drawCommandsSize / WORK_GROUP_SIZE) * WORK_GROUP_SIZE);
                 glDispatchCompute(1 + (GLuint)drawCommandsSize / WORK_GROUP_SIZE, 1, 1);
             }
             glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT); // GL_ATOMIC_COUNTER_BARRIER_BIT
@@ -186,12 +199,12 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
         }
         else {
-            assert(drawCommandsSize == instanceData.mInstances.size());
+            assert(drawCommandsSize == instanceData.mInstanceTransforms.size());
             PROFILE_SCOPE("CPU Culling");
             // CPU Culling
-            for (size_t i = 0; i < instanceData.mInstances.size(); ++i) {
+            for (size_t i = 0; i < instanceData.mInstanceTransforms.size(); ++i) {
                 DrawElementsIndirectCommand& cmd = inDrawCommands.mDrawCommands[i];
-                StaticModelInstance& instance = instanceData.mInstances[i];
+                StaticModelInstanceTransform& instance = instanceData.mInstanceTransforms[i];
                 // Columns are first
                 const f32v3& pos = reinterpret_cast<const f32v3&>(instance.matrix[3]);
                 if (camera.sphereIsVisible(pos, 10.0f)) {
@@ -236,7 +249,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 void InstancedStaticModelRenderer::addInstance(ModelID modelId, const f32v3& position, f32 rotation) {
     assert(IS_RENDER_THREAD());
     StaticModelInstanceData& instanceData = mInstances[modelId];
-    instanceData.mInstances.emplace_back(StaticModelInstance{ glm::translate(glm::mat4(1.0f), position) });
+    instanceData.mInstanceTransforms.emplace_back(StaticModelInstanceTransform{ glm::translate(glm::mat4(1.0f), position) });
     assert(false); // TODO: Support this
    // instanceData.mDirtyDrawCommands = true;
 }
@@ -287,7 +300,8 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
 
         //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
         //assert(totalCommands == drawCommands.mDrawCommands.size());
-        mesh.drawIndirect(drawCommands.mDrawCommands.size(), &drawCommands);
+        assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
+        mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
     }
     
     // TODO: Material specific
@@ -339,19 +353,21 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
     InstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
     for (auto&& it : gatherer.mInstances) {
         // Insert all instance transforms ordered into the transforms array
-        const std::vector<StaticModelInstance>& sourceInstances = it.second;
+        const std::vector<StaticModelInstanceTransform>& sourceInstances = it.second;
         StaticModelInstanceData& instanceData = mInstances[it.first];
-        const size_t startIndex = instanceData.mInstances.size();
+        const size_t startIndex = instanceData.mInstanceTransforms.size();
         // Track where our buffer is dirty
         if (startIndex < instanceData.mFirstDirtyInstance) {
             instanceData.mFirstDirtyInstance = startIndex;
         }
-        instanceData.mInstances.resize(startIndex + sourceInstances.size());
+        instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
+        instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             size_t instanceIndex = startIndex + i;
-            const StaticModelInstance& modelInstance = sourceInstances[i];
-            instanceData.mInstances[instanceIndex] = modelInstance;
+            const StaticModelInstanceTransform& modelInstance = sourceInstances[i];
+            instanceData.mInstanceTransforms[instanceIndex] = modelInstance;
+            instanceData.mInstanceOwners[instanceIndex] = gatherer.mContainerID;
             const f32v3& pos = reinterpret_cast<const f32v3&>(modelInstance.matrix[3]);
             assert(tileContainerModels.find(pos) == tileContainerModels.end());
             tileContainerModels[pos] = { it.first, (ui32)instanceIndex };
@@ -359,17 +375,49 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
     }
 }
 
-void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID containerId)
-{
+void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID containerId) {
+    // TODO: There is a race condition if the tile container is being meshed. Make sure we only destroy tile containers once they are done
+    // being meshed?
     assert(IS_RENDER_THREAD());
-    assert(false);
+    auto&& it = mTileContainerModels.find(containerId);
+    if (it == mTileContainerModels.end()) {
+        return;
+    }
+    InstanceDataMap& tileContainerModels = it->second;
+    for (auto& it : tileContainerModels) {
+        TileModelInstance& instance = it.second;
+        StaticModelInstanceData& instanceData = mInstances[instance.mModelID];
+        const ui32 instanceIndex = instance.mInstanceIndex;
+        if (instanceIndex < instanceData.mFirstDirtyInstance) {
+            instanceData.mFirstDirtyInstance = instanceIndex;
+        }
+
+        // Tell back owner about new position by grabbing transform position to look up
+        const f32v3& pos = reinterpret_cast<const f32v3&>(instanceData.mInstanceTransforms.back().matrix[3]);
+        TileContainerID backOwner = instanceData.mInstanceOwners.back();
+        auto&& it2 = mTileContainerModels.find(backOwner);
+        assert(it2 != mTileContainerModels.end());
+        InstanceDataMap& backTileContainerModels = it2->second;
+        auto&& backRef = backTileContainerModels.find(pos);
+        assert(backRef != backTileContainerModels.end());
+        backRef->second.mInstanceIndex = instanceIndex;
+
+        // Replace this instance with back instance
+        instanceData.mInstanceTransforms[instanceIndex] = std::move(instanceData.mInstanceTransforms.back());
+        instanceData.mInstanceTransforms.pop_back();
+        instanceData.mInstanceOwners[instanceIndex] = backOwner;
+        instanceData.mInstanceOwners.pop_back();
+
+    }
+    mTileContainerModels.erase(it);
+
 }
 
 ui32 InstancedStaticModelRenderer::getNumModels() const {
     assert(IS_RENDER_THREAD());
     ui32 numModels = 0;
     for (auto& it : mInstances) {
-        numModels += it.second.mInstances.size();
+        numModels += it.second.mInstanceTransforms.size();
     }
     return numModels;
 }

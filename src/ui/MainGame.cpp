@@ -81,9 +81,6 @@ bool vui::MainGame::init() {
     return true;
 }
 bool vui::MainGame::initSystems() {
-    // Initialize logger
-    // TODO: Config logging level
-    vorb::Logger::init(LoggingLevel::Trace);
 
     // Create The Window
     if (!m_window.init(true, IS_DEBUG_OPENGL_CONTEXT)) return false;
