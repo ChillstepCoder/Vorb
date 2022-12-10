@@ -17,6 +17,8 @@
 
 #include <Vorb/graphics/GLProgram.h>
 
+#include "rendering/gl/GL.h"
+
 std::vector<std::unique_ptr<VisualLog>> VisualLogger::sVisualLogs;
 std::mutex VisualLogger::sMutex;
 
@@ -26,11 +28,11 @@ VisualLog::VisualLog(const nString& name) : mName(name) {
 
 VisualLog::~VisualLog() {
     if (mLinesMesh.vbo) {
-        glDeleteBuffers(1, &mLinesMesh.vbo);
+        GL.glDeleteBuffers(1, &mLinesMesh.vbo);
         mLinesMesh.vbo = 0;
     }
     if (mQuadsMesh.vbo) {
-        glDeleteBuffers(1, &mQuadsMesh.vbo);
+        GL.glDeleteBuffers(1, &mQuadsMesh.vbo);
         mQuadsMesh.vbo = 0;
     }
 }

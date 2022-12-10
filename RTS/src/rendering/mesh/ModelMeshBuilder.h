@@ -42,8 +42,6 @@ public:
         const MaterialRepository& materialRepo
     );
 
-    static void updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo);
-
 private:
 
     std::vector<Vertex32> mStaticVerts;

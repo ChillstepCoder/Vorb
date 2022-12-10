@@ -20,6 +20,9 @@
 // For log level
 #include <yojimbo/yojimbo.h>
 
+#include "rendering/gl/GL.h"
+#define VERBOSE_GL_LOG 0
+
 #define SKIP_MAIN_MENU 0
 
 // Use dedicated GPUs
@@ -62,6 +65,8 @@ void setPriorityToNormal() {
 }
 
 void App::onInit() {
+
+
     PROFILE_BEGIN_SESSION("Main", "profiling.json");
     // Set as render thread
     RENDER_THREAD_ID = std::this_thread::get_id();
@@ -77,6 +82,12 @@ void App::onInit() {
     // Init resources
     Services::initResources();
     sGlExtensions.init();
+
+    // Initialize GL api
+    GetAPI4(&GL, [](const char* func) -> void* { return (void*)wglGetProcAddress(func); });
+#if VERBOSE_GL_LOG == 1
+    InjectAPITracer4(&GL);
+#endif
 
     Random::initCachedRandom(CACHED_RANDOM_SIZE);
 

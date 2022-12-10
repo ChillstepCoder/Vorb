@@ -66,20 +66,11 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& 
     mesh->mPosition = worldPos;
     mesh->mBoundingSphere = mBoundingSphere;
     mesh->mBoundingSphere.center += worldPos;
-
-    // Allocate correct number of submeshes, -1 for main mesh which already exists
-    mesh->mMainMesh.allocateSubmeshCount(0);
-
-    // Allocate all buffers if needed
-    SubMeshData* subMesh = &mesh->mMainMesh;
-    do {
-        MeshBuilderCommon::initMeshBuffers(
-            *subMesh,
-            &ProceduralMeshBuilder::sQuadIbo,
-            BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::NO_VBO, MeshBuilderBufferFlags::SSBO)
-        );
-        subMesh = subMesh->mNextSubmesh;
-    } while (subMesh != nullptr);
+    MeshBuilderCommon::initMeshBuffers(
+        mesh->mMainMesh,
+        &ProceduralMeshBuilder::sQuadIbo,
+        BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::NO_VBO, MeshBuilderBufferFlags::SSBO)
+    );
 
     // Upload data
     uploadBufferData(mesh->mMainMesh, worldPos, bufferFlags);

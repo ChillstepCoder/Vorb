@@ -5,21 +5,23 @@
 
 #include "rendering/texture/SubTexture.h"
 
+#include "rendering/gl/GL.h"
+
 // DAS Reference : https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
 void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
     // VAO
     if (subMesh.mVao == 0) {
-        glCreateVertexArrays(1, &subMesh.mVao);
+        GL.glCreateVertexArrays(1, &subMesh.mVao);
 
         // Ubo
         if (flags.isBitSet(MeshBuilderBufferFlags::UBO)) {
-            glCreateBuffers(1, &subMesh.mUbo);
+            GL.glCreateBuffers(1, &subMesh.mUbo);
         }
        
         // SSBO
         if (flags.isBitSet(MeshBuilderBufferFlags::SSBO)) {
-            glCreateBuffers(1, &subMesh.mSSBO);
+            GL.glCreateBuffers(1, &subMesh.mSSBO);
         }
         else {
             assert(!subMesh.mSSBO);
@@ -30,14 +32,14 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
     if (sharedIbo) {
         // Delete old IBO if needed
         if (subMesh.mIbo && !subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO)) {
-            glDeleteBuffers(1, &subMesh.mIbo);
+            GL.glDeleteBuffers(1, &subMesh.mIbo);
         }
         subMesh.mIbo = *sharedIbo;
         subMesh.mFlags.setBit(MeshFlags::USING_SHARED_IBO);
         glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
     }
     else if (subMesh.mIbo == 0) {
-        glCreateBuffers(1, &subMesh.mIbo);
+        GL.glCreateBuffers(1, &subMesh.mIbo);
         subMesh.mFlags.clearBit(MeshFlags::USING_SHARED_IBO);
     }
 

@@ -57,12 +57,7 @@ struct SubMeshData {
     MeshLODData mLODData;
     ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
     BitFlags<MeshFlags> mFlags;
-    SubMeshData* mNextSubmesh = nullptr; // We store these as a linked list, this is not a true parent
 
-    void* operator new(size_t count);
-    void operator delete(void* pointer, size_t size);
-
-    void allocateSubmeshCount(size_t count);
     void destroy();
 };
 
@@ -115,4 +110,4 @@ public:
    // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller
 
 };
-static_assert(sizeof(Mesh) == 104);
+//static_assert(sizeof(Mesh) == 104);

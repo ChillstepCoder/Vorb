@@ -40,7 +40,7 @@ void main() {
     }
     oColor.a = 1.0;
     
-	oNormal.rgb = vec3(0.0, 0.0, 1.0);
+	oNormal.rgb = vec3(0.5, 0.5, 1.0);
 	oNormal.a = oColor.a;
 	oRoughness.r = 0.75;
 	oRoughness.a = 1.0;

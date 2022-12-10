@@ -68,7 +68,7 @@ public:
     void removeInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
 private:
-    std::map<ModelID, StaticModelInstanceData> mInstances;
+    std::map<ModelID, StaticModelInstanceData> mModelsToInstances;
     std::map<TileContainerID, InstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 

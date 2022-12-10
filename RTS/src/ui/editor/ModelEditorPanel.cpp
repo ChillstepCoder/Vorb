@@ -26,12 +26,12 @@ static SimpleCamera camera(positioner);
 
 ModelEditorPanel::ModelEditorPanel()
 {
-
+    glCreateVertexArrays(1, &mGridVao);
 }
 
 ModelEditorPanel::~ModelEditorPanel()
 {
-
+    glDeleteVertexArrays(1, &mGridVao);
 }
 
 bool ModelEditorPanel::updateAndRender(const vg::GBuffer* activeGBuffer) {
@@ -131,13 +131,7 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
         }
         if (mCurrentModel->mModelType == Model3DType::STATIC) {
             StaticModel3D& mModel = mCurrentModel->getStaticModel();
-            ui32 indexCountTotal = 0;
-            const SubMeshData* submeshData = &mModel.getMesh()->mMainMesh;
-            do {
-                indexCountTotal += submeshData->mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount;
-                submeshData = submeshData->mNextSubmesh;
-            } while (submeshData != nullptr);
-            ImGui::Text("Polygons %d", indexCountTotal / 3);
+            ImGui::Text("Polygons %d", mModel.getMesh()->mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3);
         }
     }
 
@@ -224,7 +218,10 @@ void ModelEditorPanel::renderGrid()
     VGUniform unVP = gridMaterial->getUniform("unVP");
     MaterialRenderer::bindMaterialForRender(*gridMaterial);
     glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));
+
+    glBindVertexArray(mGridVao);
     glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
+    glBindVertexArray(0);
 
     vg::DepthState::restorePrevious();
 }

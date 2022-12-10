@@ -27,6 +27,7 @@ private:
     void renderModelToTexture();
     void renderGrid();
 
+    VGVertexArray mGridVao = 0;
     ModelDef* mCurrentModel = nullptr;
     std::unique_ptr<vg::GBuffer> mModelGBuffer = nullptr;
     bool mDirtyModelData = false;

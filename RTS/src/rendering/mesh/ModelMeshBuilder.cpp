@@ -327,16 +327,3 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     glBindVertexArray(0);
     return true;
 }
-
-void ModelMeshBuilder::updateInstanceDataForStaticModel(const Mesh& mesh, VGBuffer instanceDataVbo) {
-    const SubMeshData* meshData = &mesh.mMainMesh;
-    do {
-        glVertexArrayVertexBuffer(meshData->mVao, 1, instanceDataVbo, 0, sizeof(StaticModelInstanceTransform));
-        glEnableVertexArrayAttrib(meshData->mVao, 7);
-        //glVertexArrayAttribFormat(meshData->mVao, 7, 3, GL_FLOAT, GL_FALSE, offsetof(StaticModelInstance, pos));
-        glVertexArrayAttribBinding(meshData->mVao, 7, 1);
-        glVertexArrayBindingDivisor(meshData->mVao, 1, 1);
-
-        meshData = meshData->mNextSubmesh;
-    } while (meshData != nullptr);
-}

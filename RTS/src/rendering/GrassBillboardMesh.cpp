@@ -12,6 +12,8 @@
 
 #include "mesh/ProceduralMeshBuilder.h"
 
+#include "rendering/gl/GL.h"
+
 // Must match glsl
 constexpr ui32 MAX_UNIFORM_ARRAY_SIZE = 256; // TODO: Query hardware + defines? Need to assert if uniform buffer size < 16kb
 
@@ -105,9 +107,9 @@ void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
 void GrassBillboardMesh::destroy()
 {
     if (mVao != 0) {
-        glDeleteBuffers(1, &mVboInstanceData);
+        GL.glDeleteBuffers(1, &mVboInstanceData);
         mVboInstanceData = 0;
-        glDeleteBuffers(1, &mVboPosition);
+        GL.glDeleteBuffers(1, &mVboPosition);
         mVboPosition = 0;
         glDeleteVertexArrays(1, &mVao);
         mVao = 0;

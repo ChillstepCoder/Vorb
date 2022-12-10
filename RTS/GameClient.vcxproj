@@ -255,6 +255,8 @@
     <ClCompile Include="src\rendering\CloudRenderer.cpp" />
     <ClCompile Include="src\rendering\EntityComponentSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\GLExtensions.cpp" />
+    <ClCompile Include="src\rendering\gl\GL.cpp" />
+    <ClCompile Include="src\rendering\gl\GLAPITrace.cpp" />
     <ClCompile Include="src\rendering\gl\GLObjects.cpp" />
     <ClCompile Include="src\rendering\ItemRenderer.cpp" />
     <ClCompile Include="src\rendering\LightData.cpp" />
@@ -497,6 +499,9 @@
     <ClInclude Include="src\rendering\font\Font.h" />
     <ClInclude Include="src\rendering\GLExtensions.h" />
     <ClInclude Include="src\rendering\GlobalUboData.h" />
+    <ClInclude Include="src\rendering\gl\GL.h" />
+    <ClInclude Include="src\rendering\gl\GLAPI.h" />
+    <ClInclude Include="src\rendering\gl\GLAPITrace.h" />
     <ClInclude Include="src\rendering\gl\GLObjects.h" />
     <ClInclude Include="src\rendering\ItemRenderer.h" />
     <ClInclude Include="src\rendering\LightData.h" />

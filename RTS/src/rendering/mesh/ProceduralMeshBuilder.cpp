@@ -691,9 +691,6 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
         mesh.mBoundingSphere.center += worldPos;
     }
 
-    // -1 Because main already exists
-    mesh.mMainMesh.allocateSubmeshCount(mSubMeshesData.size() - 1);
-
     // Hook in shared IBOs if needed
     bool usingSharedIbo = false;
     const ui8 polyTypeBits = mPolyTypeFlags.getBits();
@@ -715,19 +712,10 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     // Make sure we didn't fuck up and say shared when it wasn't
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
-    // Allocate all buffers if needed
-    // and upload data
-    SubMeshData* subMesh = &mesh.mMainMesh;
-    int i = 0;
-    do {
-        // TODO: NO UBO
-        MeshBuilderCommon::initMeshBuffers(*subMesh, sharedIbo, BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::UBO));
-        assert(sharedIbo); // If not shared, wheres our elements?
-        uploadMeshData(*subMesh, worldPos, mSubMeshesData[i], GL_DYNAMIC_STORAGE_BIT);
-        mSubMeshesData[i].clear();
-        subMesh = subMesh->mNextSubmesh;
-        ++i;
-    } while (subMesh != nullptr);
+    // TODO: NO UBO
+    MeshBuilderCommon::initMeshBuffers(mesh.mMainMesh, sharedIbo, BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::UBO));
+    assert(sharedIbo); // If not shared, wheres our elements?
+    uploadMeshData(mesh.mMainMesh, worldPos, mSubMeshesData[0], GL_DYNAMIC_STORAGE_BIT);
 
     // Cleanup
     // TODO: Do we need this really?

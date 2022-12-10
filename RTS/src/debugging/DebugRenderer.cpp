@@ -13,28 +13,30 @@
 
 #include "debugging/DebugMesh.h"
 
+#include "rendering/gl/GL.h"
+
 void bindSimpleMeshVertexAttribs(VGVertexArray vao) {
-    glEnableVertexArrayAttrib(vao, 0);
-    glVertexArrayAttribFormat(vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshVertex, position));
-    glVertexArrayAttribBinding(vao, 0, 0);
-    glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(SimpleMeshVertex, color));
-    glVertexArrayAttribBinding(vao, 1, 0);
+    GL.glEnableVertexArrayAttrib(vao, 0);
+    GL.glVertexArrayAttribFormat(vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshVertex, position));
+    GL.glVertexArrayAttribBinding(vao, 0, 0);
+    GL.glEnableVertexArrayAttrib(vao, 1);
+    GL.glVertexArrayAttribFormat(vao, 1 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(SimpleMeshVertex, color));
+    GL.glVertexArrayAttribBinding(vao, 1, 0);
 }
 
 void bindCircleMeshVertexAttribs(VGVertexArray vao) {
-    glEnableVertexArrayAttrib(vao, 0);
-    glVertexArrayAttribFormat(vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshCircleVertex, position));
-    glVertexArrayAttribBinding(vao, 0, 0);
-    glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(SimpleMeshCircleVertex, color));
-    glVertexArrayAttribBinding(vao, 1, 0);
-    glEnableVertexArrayAttrib(vao, 2);
-    glVertexArrayAttribFormat(vao, 2 /*index*/, 1 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshCircleVertex, radius));
-    glVertexArrayAttribBinding(vao, 2, 0);
-    glEnableVertexArrayAttrib(vao, 3);
-    glVertexArrayAttribFormat(vao, 3 /*index*/, 2 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshCircleVertex, offset));
-    glVertexArrayAttribBinding(vao, 3, 0);
+    GL.glEnableVertexArrayAttrib(vao, 0);
+    GL.glVertexArrayAttribFormat(vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshCircleVertex, position));
+    GL.glVertexArrayAttribBinding(vao, 0, 0);
+    GL.glEnableVertexArrayAttrib(vao, 1);
+    GL.glVertexArrayAttribFormat(vao, 1 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(SimpleMeshCircleVertex, color));
+    GL.glVertexArrayAttribBinding(vao, 1, 0);
+    GL.glEnableVertexArrayAttrib(vao, 2);
+    GL.glVertexArrayAttribFormat(vao, 2 /*index*/, 1 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshCircleVertex, radius));
+    GL.glVertexArrayAttribBinding(vao, 2, 0);
+    GL.glEnableVertexArrayAttrib(vao, 3);
+    GL.glVertexArrayAttribFormat(vao, 3 /*index*/, 2 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshCircleVertex, offset));
+    GL.glVertexArrayAttribBinding(vao, 3, 0);
 }
 
 
@@ -247,8 +249,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
     // context in
     for (auto&& lineIt : sNewLines) {
         SimpleMesh newMesh;
-        glCreateVertexArrays(1, &newMesh.vao);
-        glCreateBuffers(1, &newMesh.vbo);
+        GL.glCreateVertexArrays(1, &newMesh.vao);
+        GL.glCreateBuffers(1, &newMesh.vbo);
         auto&& lines = lineIt.second;
 
         newMesh.lifetime = lineIt.first.first;
@@ -267,8 +269,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
             lineVertices[index + 1].color = l.color;
             index += 2;
         }
-        glNamedBufferStorage(newMesh.vbo, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data(), 0);
-        glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
+        GL.glNamedBufferStorage(newMesh.vbo, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data(), 0);
+        GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
         bindSimpleMeshVertexAttribs(newMesh.vao);
 
         sDebugMeshes.emplace_back(std::move(newMesh));
@@ -281,8 +283,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         // context in
         for (auto&& lineIt : sNewLinesThreadSafe) {
             SimpleMesh newMesh;
-            glCreateVertexArrays(1, &newMesh.vao);
-            glCreateBuffers(1, &newMesh.vbo);
+            GL.glCreateVertexArrays(1, &newMesh.vao);
+            GL.glCreateBuffers(1, &newMesh.vbo);
             auto&& lines = lineIt.second;
 
             newMesh.lifetime = lineIt.first.first;
@@ -301,8 +303,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
                 lineVertices[index + 1].color = l.color;
                 index += 2;
             }
-            glNamedBufferStorage(newMesh.vbo, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data(), 0);
-            glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
+            GL.glNamedBufferStorage(newMesh.vbo, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data(), 0);
+            GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
             bindSimpleMeshVertexAttribs(newMesh.vao);
 
             sDebugMeshes.emplace_back(std::move(newMesh));
@@ -312,8 +314,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 
     for (auto&& quadIt : sNewQuads) {
         SimpleMesh newMesh;
-        glCreateVertexArrays(1, &newMesh.vao);
-        glCreateBuffers(1, &newMesh.vbo);
+        GL.glCreateVertexArrays(1, &newMesh.vao);
+        GL.glCreateBuffers(1, &newMesh.vbo);
         auto&& quads = quadIt.second;
 
         newMesh.lifetime = quadIt.first.first;
@@ -337,8 +339,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
             quadVertices[index + 3].color = q.color;
             index += 4;
         }
-        glNamedBufferStorage(newMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data(), GL_DYNAMIC_DRAW);
-        glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
+        GL.glNamedBufferStorage(newMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data(), GL_DYNAMIC_DRAW);
+        GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
         bindSimpleMeshVertexAttribs(newMesh.vao);
         sDebugMeshes.emplace_back(std::move(newMesh));
     }
@@ -351,11 +353,11 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         initGlobalSimpleProgram();
     }
     sGlobalSimpleProgram.use();
-    glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
-    glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+    GL.glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+    GL.glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
     for (size_t i = 0; i < sDebugMeshes.size();) {
         auto&& mesh = sDebugMeshes[i];
-        glBindVertexArray(mesh.vao);
+        GL.glBindVertexArray(mesh.vao);
         if (mesh.type == DebugMeshType::LINES) {
             glLineWidth(1.0f);
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);
@@ -368,8 +370,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         }
 
         if (mesh.lifetime <= 0) {
-            glDeleteBuffers(1, &mesh.vbo);
-            glDeleteVertexArrays(1, &mesh.vao);
+            GL.glDeleteBuffers(1, &mesh.vbo);
+            GL.glDeleteVertexArrays(1, &mesh.vao);
             sDebugMeshes[i] = sDebugMeshes.back();
             sDebugMeshes.pop_back();
         }
@@ -383,8 +385,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 
     for (auto&& circleIt : sNewCircles) {
         SimpleMesh newMesh;
-        glCreateVertexArrays(1, &newMesh.vao);
-        glCreateBuffers(1, &newMesh.vbo);
+        GL.glCreateVertexArrays(1, &newMesh.vao);
+        GL.glCreateBuffers(1, &newMesh.vbo);
         auto&& circles = circleIt.second;
 
         newMesh.lifetime = circleIt.first.first;
@@ -416,8 +418,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
             circleVertices[index + 3].offset = f32v2(-c.radius, c.radius);
             index += 4;
         }
-        glNamedBufferStorage(newMesh.vbo, circleVertices.size() * sizeof(SimpleMeshCircleVertex), circleVertices.data(), 0);
-        glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshCircleVertex));
+        GL.glNamedBufferStorage(newMesh.vbo, circleVertices.size() * sizeof(SimpleMeshCircleVertex), circleVertices.data(), 0);
+        GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshCircleVertex));
         bindCircleMeshVertexAttribs(newMesh.vao);
         sDebugCircleMeshes.emplace_back(std::move(newMesh));
     }
@@ -430,19 +432,19 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         initGlobalCircleProgram();
     }
     sGlobalCircleProgram.use();
-    glUniformMatrix4fv(sGlobalCircleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
-    glUniform3fv(sGlobalCircleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+    GL.glUniformMatrix4fv(sGlobalCircleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
+    GL.glUniform3fv(sGlobalCircleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
     for (size_t i = 0; i < sDebugCircleMeshes.size();) {
         auto&& mesh = sDebugCircleMeshes[i];
 
-        glBindVertexArray(mesh.vao);
+        GL.glBindVertexArray(mesh.vao);
        
         glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
         RenderStats::recordDrawCall(mesh.numVerts / 2);
 
         if (mesh.lifetime <= 0) {
-            glDeleteBuffers(1, &mesh.vbo);
-            glDeleteVertexArrays(1, &mesh.vao);
+            GL.glDeleteBuffers(1, &mesh.vbo);
+            GL.glDeleteVertexArrays(1, &mesh.vao);
             mesh.vbo = 0;
             sDebugCircleMeshes[i] = sDebugCircleMeshes.back();
             sDebugCircleMeshes.pop_back();
@@ -454,7 +456,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
     }
 
     sGlobalCircleProgram.unuse();
-    glBindVertexArray(0);
+    GL.glBindVertexArray(0);
 }
 
 void DebugRenderer::clearAllMeshesWithId(int id)
@@ -462,8 +464,8 @@ void DebugRenderer::clearAllMeshesWithId(int id)
     for (size_t i = 0; i < sDebugMeshes.size();) {
         auto&& mesh = sDebugMeshes[i];
         if (mesh.id == id) {
-            glDeleteBuffers(1, &mesh.vbo);
-            glDeleteVertexArrays(1, &mesh.vao);
+            GL.glDeleteBuffers(1, &mesh.vbo);
+            GL.glDeleteVertexArrays(1, &mesh.vao);
             sDebugMeshes[i] = sDebugMeshes.back();
             sDebugMeshes.pop_back();
         }
@@ -474,8 +476,8 @@ void DebugRenderer::clearAllMeshesWithId(int id)
     for (size_t i = 0; i < sDebugCircleMeshes.size();) {
         auto&& mesh = sDebugCircleMeshes[i];
         if (mesh.id == id) {
-            glDeleteBuffers(1, &mesh.vbo);
-            glDeleteVertexArrays(1, &mesh.vao);
+            GL.glDeleteBuffers(1, &mesh.vbo);
+            GL.glDeleteVertexArrays(1, &mesh.vao);
             sDebugCircleMeshes[i] = sDebugCircleMeshes.back();
             sDebugCircleMeshes.pop_back();
         }
@@ -488,12 +490,12 @@ void DebugRenderer::clearAllMeshesWithId(int id)
 void DebugRenderer::clearAll()
 {
     for (auto&& mesh : sDebugMeshes) {
-        glDeleteBuffers(1, &mesh.vbo);
-        glDeleteVertexArrays(1, &mesh.vao);
+        GL.glDeleteBuffers(1, &mesh.vbo);
+        GL.glDeleteVertexArrays(1, &mesh.vao);
     }
     for (auto&& mesh : sDebugCircleMeshes) {
-        glDeleteBuffers(1, &mesh.vbo);
-        glDeleteVertexArrays(1, &mesh.vao);
+        GL.glDeleteBuffers(1, &mesh.vbo);
+        GL.glDeleteVertexArrays(1, &mesh.vao);
     }
     sDebugMeshes.clear();
     sDebugCircleMeshes.clear();
