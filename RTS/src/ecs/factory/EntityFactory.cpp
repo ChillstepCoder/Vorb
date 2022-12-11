@@ -88,7 +88,7 @@ entt::entity EntityFactory::createEntity(const f32v3& position, StrToken typeTok
                 else if (cdef.physics.disableXyRot) {
                     rotType = RigidBodyRotationType::NO_ROTATE_XY;
                 }
-                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.massKg, cdef.physics.colliderScale, rotType);
+                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.physics.colliderShape, cdef.physics.halfExtents, cdef.physics.massKg, rotType);
                 physics.mRigidBody = rbp.first;
                 physics.mZPosOffset = -rbp.second;
                 break;

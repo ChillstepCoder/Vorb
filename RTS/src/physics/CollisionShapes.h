@@ -2,6 +2,9 @@
 
 enum class CollisionShapes {
     CAPSULE,
+    CYLINDER,
+    BOX,
+    SPHERE,
     COUNT,
     NONE = COUNT
 };

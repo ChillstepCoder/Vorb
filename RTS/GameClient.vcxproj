@@ -242,6 +242,7 @@
     <ClCompile Include="src\pathfinding\NavPath.cpp" />
     <ClCompile Include="src\pathfinding\NavThread.cpp" />
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
+    <ClCompile Include="src\physics\CollisionShapeRepository.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
     <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
@@ -482,6 +483,7 @@
     <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\NavWorld.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
+    <ClInclude Include="src\physics\CollisionShapeRepository.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
     <ClInclude Include="src\physics\DynamicCharacterController.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
@@ -606,6 +608,7 @@
     <ClInclude Include="src\util\ThreadIDs.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
+    <ClInclude Include="src\util\TypeHash.h" />
     <ClInclude Include="src\util\Utils.h" />
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudManager.h" />

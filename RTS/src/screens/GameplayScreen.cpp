@@ -610,7 +610,7 @@ void GameplayScreen::initInputs()
                 if (hitResult.didHit()) {
                     mSelectedScreenPos = screenPos;
                     // For interact must click in about the same spot
-                    if (hitResult.mCollisionObject->getUserIndex() != -1) {
+                    if (hitResult.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
                         LOG_CRITICAL("WOOOOO");
                     }
                     else {

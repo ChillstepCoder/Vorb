@@ -120,7 +120,7 @@ void ResourceManager::loadFiles() {
                 mBrushRepository->loadBrush(entry, *mTextureCache);
             }
             else if (!vio::containsSubpath(entry, "_loadscreen")/* && !vio::containsSubpath(entry, "materials")*/) { // Ignore loadscreen files as we manually load them
-                mTextureRepository->loadSubTextureOLD(entry);
+            //    mTextureRepository->loadSubTextureOLD(entry);
             }
         }
         // New

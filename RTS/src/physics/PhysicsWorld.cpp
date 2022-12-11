@@ -3,7 +3,7 @@
 
 #include "btBulletDynamicsCommon.h"
 #include "btBulletCollisionCommon.h"
-#include "BulletCollision/CollisionShapes/btCapsuleShape.h"
+//#include "BulletCollision/CollisionShapes/btCapsuleShape.h"
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 //#include "BulletCollision/CollisionDispatch/btGhostObject.h"
@@ -42,12 +42,12 @@ PhysicsWorld::PhysicsWorld() {
     mDynamicsWorld->setDebugDrawer(mDebugDrawer.get()); // TODO: Don't do this on release builds?
 
     // ========================= Create all shapes =========================
-    mShapes.resize(e_cast(CollisionShapes::COUNT));
-    {
-        mShapes[e_cast(CollisionShapes::CAPSULE)] = new btCapsuleShapeZ(0.24f /*radius*/, 1.1f /*height*/);
-    }
+    //mShapes.resize(e_cast(CollisionShapes::COUNT));
+    //{
+    //    mShapes[e_cast(CollisionShapes::CAPSULE)] = new btCapsuleShapeZ(0.24f /*radius*/, 1.1f /*height*/);
+    //}
 
-    static_assert(e_cast(CollisionShapes::COUNT) == 1, "Update new shapes");
+    //static_assert(e_cast(CollisionShapes::COUNT) == 1, "Update new shapes");
 }
 
 PhysicsWorld::~PhysicsWorld() {
@@ -169,12 +169,12 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
     patch.mHeightData->mCollider = nullptr;
 }
 
-RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shape, f32 mass, f32v3 scale /*= f32v3(1.0f)*/, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
+RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
     btTransform startTransform;
     startTransform.setOrigin(btVector3(position.x, position.y, position.z));
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
-    assert(shape != CollisionShapes::NONE);
-    btCollisionShape* collisionShape = (btCollisionShape*)mShapes[e_cast(shape)];
+
+    btCollisionShape* collisionShape = mShapeRepository.getOrAddCollisionShape(shapeType, halfExtents);
     RigidBodyPair rv = createRigidBody(ownerEntity, mass, startTransform, collisionShape);
 
     // Disable rotation optionally
@@ -255,10 +255,10 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
     }
 
     if (ownerEntity == entt::null) {
-        body->setUserIndex(INT32_MAX);
+        body->setUserIndex(INVALID_PHYSICS_USER_INDEX);
     }
     else {
-        assert((size_t)ownerEntity <= INT32_MAX && "Entity ID overflow in createRigidBody");
+        assert((size_t)ownerEntity <= INVALID_PHYSICS_USER_INDEX && "Entity ID overflow in createRigidBody");
         body->setUserIndex((int)ownerEntity); // TODO: ENTT?
     }
 

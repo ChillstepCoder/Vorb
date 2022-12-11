@@ -38,10 +38,10 @@ static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");
 
 struct PhysicsComponentDef {
 	CollisionShapes colliderShape = CollisionShapes::CAPSULE;
-    f32v3 colliderScale = f32v3(1.0f);
+    f32v3 halfExtents = f32v3(1.0f);
 	bool disableXyRot = false;
 	bool disableXyzRot = false;
-	float massKg = 0.0f;
+	float massKg = 0.0f; // By default is static
 };
 KEG_TYPE_DECL(PhysicsComponentDef);
 
