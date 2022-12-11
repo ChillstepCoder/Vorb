@@ -12,17 +12,7 @@ struct TileModelInstance {
 static_assert(sizeof(TileModelInstance) == 8, "Keep tiny");
 
 // Allows us to look up the specific model at a position
-struct cmpf32v3 {
-    bool operator()(const f32v3& a, const f32v3& b) const {
-        if (a.x < b.x) return true;
-        if (a.x > b.x) return false;
-        if (a.y < b.y) return true;
-        if (a.y > b.y) return false;
-        if (a.z < b.z) return true;
-        return false;
-    }
-};
-typedef std::map<f32v3 /*Position offset*/, TileModelInstance, cmpf32v3> InstanceDataMap;
+typedef std::map<f32v3 /*Position offset*/, TileModelInstance, f32v3cmp> InstanceDataMap;
 
 class Camera3D;
 class InstancedStaticModelGatherer;

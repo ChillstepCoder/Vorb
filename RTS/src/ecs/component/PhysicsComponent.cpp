@@ -20,7 +20,7 @@ static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
 KEG_TYPE_DEF_SAME_NAME(PhysicsComponentDef, kt) {
     kt.addValue("shape", keg::Value::custom(offsetof(PhysicsComponentDef, colliderShape), "CollisionShapes", true));
     kt.addValue("mass", keg::Value::basic(offsetof(PhysicsComponentDef, massKg), keg::BasicType::F32));
-    kt.addValue("half_extents", keg::Value::basic(offsetof(PhysicsComponentDef, halfExtents), keg::BasicType::F32_V3));
+    kt.addValue("half_dims", keg::Value::basic(offsetof(PhysicsComponentDef, halfExtents), keg::BasicType::F32_V3));
     kt.addValue("disable_xy_rot", keg::Value::basic(offsetof(PhysicsComponentDef, disableXyRot), keg::BasicType::BOOL));
     kt.addValue("disable_xyz_rot", keg::Value::basic(offsetof(PhysicsComponentDef, disableXyzRot), keg::BasicType::BOOL));
 }

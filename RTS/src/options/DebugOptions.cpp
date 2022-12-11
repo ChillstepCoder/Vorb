@@ -63,7 +63,7 @@ DebugOptions::DebugOptions() :
     mShowTerrainPhysics(false),
     mShowStaticPhysics(false),
     mShowDynamicPhysics(false),
-    mShowPhysicsActions(true),
+    mShowPhysicsActions(false),
     mShowBusinessDebug(true),
     mShowEditor(false),
     mShowPaths(true),

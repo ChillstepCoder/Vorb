@@ -1,5 +1,7 @@
 #pragma once
 
+#include "physics/TrackedStaticRigidBodyGatherer.h"
+
 class btTriangleIndexVertexArray;
 class btRigidBody;
 class btBvhTriangleMeshShape;
@@ -11,7 +13,8 @@ class StaticPhysicsMeshBuilder
 {
     friend class PhysicsWorld;
 public:
-    StaticPhysicsMeshBuilder() = default;
+    StaticPhysicsMeshBuilder(TileContainerID tileContainerOwner) : mTrackedRigidBodyGatherer(tileContainerOwner) {};
+    ~StaticPhysicsMeshBuilder();
     VORB_NON_COPYABLE_BUT_MOVABLE(StaticPhysicsMeshBuilder);
 
     void setRootPos(const f32v3& rootPos) { mRootPos = rootPos; }
@@ -22,10 +25,12 @@ public:
     void addQuadBetweenPoints(const f32v3 vertPoints[4]);
     void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3);
     void addTriangleBetweenPoints(const f32v3 vertPoints[3]);
+    void addTrackedStaticRigidBody(TileIndex ownerTilePosition, const f32v3& pos, CollisionShapeID shapeId) { mTrackedRigidBodyGatherer.addRigidBody(ownerTilePosition, pos, shapeId); }
 
-    void finish(PhysicsWorld& physicsWorld, OUT StaticPhysicsMesh& outMesh);
+    void finish(PhysicsWorld& physicsWorld);
 
 private:
+    TrackedStaticRigidBodyGatherer mTrackedRigidBodyGatherer;
     f32v3 mRootPos = f32v3(0.0f);
     std::vector<f32v3> mVerts;
     std::vector<ui32> mIndices;

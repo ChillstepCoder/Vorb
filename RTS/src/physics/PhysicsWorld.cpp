@@ -7,6 +7,10 @@
 #include "BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 //#include "BulletCollision/CollisionDispatch/btGhostObject.h"
+#include "BulletCollision/BroadphaseCollision/btAxisSweep3.h"
+
+#include "world/IWorld.h"
+#include "tile/TileContainer.h"
 
 #include "debugging/PhysicsDebugDrawer.h"
 
@@ -25,7 +29,10 @@ const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);
 const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
 
-PhysicsWorld::PhysicsWorld() {
+
+TileContainerEventDispatcher::Handle sTileContainerDestroyHandle;
+
+PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository) {
     /// collision configuration contains default setup for memory , collision setup . Advanced users can create their own configuration .
     mCollisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
     /// use the default collision dispatcher . For parallel processing you can use a diffent dispatcher(see Extras / BulletMultiThreaded)
@@ -41,16 +48,19 @@ PhysicsWorld::PhysicsWorld() {
     mDynamicsWorld->setGravity(GRAVITY);
     mDynamicsWorld->setDebugDrawer(mDebugDrawer.get()); // TODO: Don't do this on release builds?
 
-    // ========================= Create all shapes =========================
-    //mShapes.resize(e_cast(CollisionShapes::COUNT));
-    //{
-    //    mShapes[e_cast(CollisionShapes::CAPSULE)] = new btCapsuleShapeZ(0.24f /*radius*/, 1.1f /*height*/);
-    //}
-
-    //static_assert(e_cast(CollisionShapes::COUNT) == 1, "Update new shapes");
+    // Listen for tile containers to be destroyed
+    assert(!sTileContainerDestroyHandle);
+    sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainer& container) {
+        assert(IS_GAME_THREAD());
+        sWorld->getPhysicsWorld().deletePhysicsForTileContainer(container.getId());
+    });
 }
 
+
 PhysicsWorld::~PhysicsWorld() {
+
+    sTileContainerDestroyHandle.reset();
+
     //cleanup in the reverse order of creation/initialization
 
     //remove the rigidbodies from the dynamics world and delete them
@@ -114,8 +124,8 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
         if (size_t count = mStaticPhysicsMeshesToDelete.try_dequeue_bulk(staticPhysicsMeshes, BULK_DEQUEUE_SIZE)) {
             std::lock_guard guard(mMutex);
             for (size_t i = 0; i < count; ++i) {
-                mDynamicsWorld->removeRigidBody(staticPhysicsMeshes[i].mRigidBody);
-                delete staticPhysicsMeshes[i].mRigidBody;
+                mDynamicsWorld->removeCollisionObject(staticPhysicsMeshes[i].mCollisionObject);
+                delete staticPhysicsMeshes[i].mCollisionObject;
             }
         }
     }
@@ -170,11 +180,15 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
 }
 
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
+    CollisionShapeID shapeId = mShapeRepository.getOrAddCollisionShape(shapeType, halfExtents);
+    return addRigidBody(ownerEntity, position, mShapeRepository.getShape(shapeId), mass, rotationType);
+}
+
+RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
     btTransform startTransform;
     startTransform.setOrigin(btVector3(position.x, position.y, position.z));
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
 
-    btCollisionShape* collisionShape = mShapeRepository.getOrAddCollisionShape(shapeType, halfExtents);
     RigidBodyPair rv = createRigidBody(ownerEntity, mass, startTransform, collisionShape);
 
     // Disable rotation optionally
@@ -194,42 +208,108 @@ RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& 
     return rv;
 }
 
+
+void PhysicsWorld::addTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape) {
+    SpatialRigidBodyLookup& lookup = mTileContainerPhysicsData[containerOwner].mSpatialRigidBodyLookup;
+#ifdef DEBUG
+    const auto&& it = lookup.find(position);
+    assert(it == lookup.end());
+#endif
+    lookup[position] = createStaticCollisionObject(containerOwner, ownerTilePosition, position, collisionShape);
+}
+
+void PhysicsWorld::removeTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, const f32v3& position) {
+    assert(IS_GAME_THREAD());
+    auto&& it = mTileContainerPhysicsData.find(containerOwner);
+    assert(it != mTileContainerPhysicsData.end());
+
+    SpatialRigidBodyLookup& lookup = it->second.mSpatialRigidBodyLookup;
+    auto&& it2 = lookup.find(position);
+    assert(it2 != lookup.end());
+
+    mDynamicsWorld->removeCollisionObject(it2->second);
+    delete it2->second;
+    lookup.erase(it2);
+}
+
+void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
+{
+    auto&& it = mTileContainerPhysicsData.find(container);
+    if (it != mTileContainerPhysicsData.end()) {
+        deleteStaticPhysicsMesh(std::move(it->second.mStaticMesh));
+        for (auto& collisionObjectPair : it->second.mSpatialRigidBodyLookup) {
+            mDynamicsWorld->removeCollisionObject(collisionObjectPair.second);
+            delete collisionObjectPair.second;
+        }
+        mTileContainerPhysicsData.erase(it);
+    }
+}
+
 void PhysicsWorld::deleteRigidBody(btRigidBody* rigidBody) {
     mRigidBodiesToDelete.enqueue(rigidBody);
 }
 
-void PhysicsWorld::deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh)
-{
-    mStaticPhysicsMeshesToDelete.enqueue(std::move(physicsMesh));
+void PhysicsWorld::deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh) {
+    if (physicsMesh.isValid()) {
+        mStaticPhysicsMeshesToDelete.enqueue(std::move(physicsMesh));
+    }
 }
 
-void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh) {
+void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
     PROFILE_FUNCTION();
+    assert(IS_GAME_THREAD());
+    const TileContainerID tileContainerId = meshBuilder.mTrackedRigidBodyGatherer.mContainerId;
+
     std::lock_guard lock(mMutex);
-    outMesh.mPhysicsMesh = std::make_unique<btTriangleIndexVertexArray>();
+    TileContainerPhysicsData& physicsData = mTileContainerPhysicsData[tileContainerId];
+    StaticPhysicsMesh& staticMesh = physicsData.mStaticMesh;
+    assert(!staticMesh.isValid());
+    staticMesh.mPhysicsMesh = std::make_unique<btTriangleIndexVertexArray>();
     // Cache the vertex and index data because bullet uses our memory rather than a copy
     // TODO: Compress this? Because its a vector it may have extra capacity
-    outMesh.mVerts = std::move(meshBuilder.mVerts);
-    outMesh.mIndices = std::move(meshBuilder.mIndices);
+    staticMesh.mVerts = std::move(meshBuilder.mVerts);
+    staticMesh.mIndices = std::move(meshBuilder.mIndices);
 
-    btIndexedMesh indexedMesh;
-    indexedMesh.m_vertexType = PHY_FLOAT;
-    indexedMesh.m_vertexStride = sizeof(f32v3);
-    indexedMesh.m_numVertices = outMesh.mVerts.size();
-    indexedMesh.m_vertexBase = (unsigned char*)outMesh.mVerts.data();
-    indexedMesh.m_triangleIndexBase = (unsigned char*)outMesh.mIndices.data();
-    indexedMesh.m_triangleIndexStride = 3 * sizeof(ui32);
-    indexedMesh.m_numTriangles = outMesh.mIndices.size() / 3;
-    outMesh.mPhysicsMesh->addIndexedMesh(indexedMesh, PHY_ScalarType::PHY_INTEGER);
+    if (staticMesh.mVerts.size()) {
+        btIndexedMesh indexedMesh;
+        indexedMesh.m_vertexType = PHY_FLOAT;
+        indexedMesh.m_vertexStride = sizeof(f32v3);
+        indexedMesh.m_numVertices = staticMesh.mVerts.size();
+        indexedMesh.m_vertexBase = (unsigned char*)staticMesh.mVerts.data();
+        indexedMesh.m_triangleIndexBase = (unsigned char*)staticMesh.mIndices.data();
+        indexedMesh.m_triangleIndexStride = 3 * sizeof(ui32);
+        indexedMesh.m_numTriangles = staticMesh.mIndices.size() / 3;
+        staticMesh.mPhysicsMesh->addIndexedMesh(indexedMesh, PHY_ScalarType::PHY_INTEGER);
 
-    assert(!outMesh.mRigidBody);
-    btTransform startTransform;
-    startTransform.setOrigin(f32v3ToBtVector3(meshBuilder.getRootPos()));
-    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
-    // TODO: House owner entity
-    outMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(outMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
-    outMesh.mRigidBody = createRigidBody(entt::null, 0.0f, startTransform, outMesh.mShape.get()).first;
+        assert(!staticMesh.mCollisionObject);
+        btTransform startTransform;
+        startTransform.setOrigin(f32v3ToBtVector3(meshBuilder.getRootPos()));
+        startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+        // TODO: House owner entity
+        staticMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(staticMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
+        staticMesh.mCollisionObject = createStaticCollisionObject(tileContainerId, INT32_MAX, meshBuilder.getRootPos(), staticMesh.mShape.get());
+    }
+
+    // Add all tracked bodies
+    addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, physicsData.mSpatialRigidBodyLookup);
 }
+
+
+void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialRigidBodyLookup& lookup) {
+    assert(IS_GAME_THREAD());
+    if (gatherer.mRigidBodiesToAdd.empty()) {
+        return;
+    }
+
+    for (auto& it : gatherer.mRigidBodiesToAdd) {
+#ifdef DEBUG
+        const auto&& it2 = lookup.find(it.position);
+        assert(it2 == lookup.end());
+#endif
+        lookup[it.position] = createStaticCollisionObject(gatherer.mContainerId, it.ownerTilePosition, it.position, mShapeRepository.getShape(it.shapeId));
+    }
+}
+
 
 RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
 {
@@ -262,30 +342,66 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
         body->setUserIndex((int)ownerEntity); // TODO: ENTT?
     }
 
+    assert(IS_GAME_THREAD());
     mDynamicsWorld->addRigidBody(body);
     //mRigidBodiesToAdd.enqueue(body);
 
     RigidBodyPair rv;
     rv.first = body;
+    rv.second = getShapeHalfHeight(shape);
+
+    return rv;
+}
+
+btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape) {
+    btTransform startTransform;
+    const f32 halfHeight = getShapeHalfHeight(shape);
+    startTransform.setOrigin(btVector3(position.x, position.y, position.z + halfHeight)); // TODO: not always offset up?
+    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+    PROFILE_FUNCTION();
+    btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
+
+    btVector3 localInertia(0, 0, 0);
+    btCollisionObject* object = new btRigidBody(0.0f, 0, shape, localInertia);
+    object->setWorldTransform(startTransform);
+
+    assert(ownerTileContainer < INVALID_PHYSICS_USER_INDEX && "Tile container ID overflow in createRigidBody");
+    object->setUserIndex2(ownerTileContainer);
+
+    assert(ownerTilePosition < INVALID_PHYSICS_USER_INDEX && "Tile index overflow in createRigidBody");
+    object->setUserIndex3(ownerTilePosition);
+
+    assert(IS_GAME_THREAD());
+    mDynamicsWorld->addCollisionObject(object);
+    //mRigidBodiesToAdd.enqueue(body);
+   
+    return object;
+}
+
+f32 PhysicsWorld::getShapeHalfHeight(btCollisionShape* shape) const {
     // Get shape half height
     switch (shape->getShapeType()) {
         case BroadphaseNativeTypes::CAPSULE_SHAPE_PROXYTYPE:
-            rv.second = ((btCapsuleShape*)shape)->getHalfHeight() + ((btCapsuleShape*)shape)->getRadius();
-            break;
+            return ((btCapsuleShape*)shape)->getHalfHeight() + ((btCapsuleShape*)shape)->getRadius();
+        case BroadphaseNativeTypes::CYLINDER_SHAPE_PROXYTYPE:
+            return ((btCylinderShape*)shape)->getHalfExtentsWithoutMargin().z();
+        case BroadphaseNativeTypes::BOX_SHAPE_PROXYTYPE:
+            return ((btBoxShape*)shape)->getHalfExtentsWithoutMargin().z();
+        case BroadphaseNativeTypes::SPHERE_SHAPE_PROXYTYPE:
+            return ((btSphereShape*)shape)->getRadius();
         case BroadphaseNativeTypes::TRIANGLE_MESH_SHAPE_PROXYTYPE:
         case BroadphaseNativeTypes::TERRAIN_SHAPE_PROXYTYPE:
-            rv.second = 0.0f;
-            break;
+            return 0.0f;
         default:
-            rv.second = 0.0f;
             pError("Need to implement new shape type!");
             assert(false && "Need to implement new shape type!");
     }
-    return rv;
+    return 0.0f;
 }
 
 void PhysicsWorld::debugRender() const {
     assert(IS_RENDER_THREAD());
+    PROFILE_SCOPE();
 
     const bool showStatic = sDebugOptions.mShowStaticPhysics;
     const bool showDynamic = sDebugOptions.mShowDynamicPhysics;

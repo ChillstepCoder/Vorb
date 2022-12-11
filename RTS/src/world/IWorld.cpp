@@ -22,6 +22,8 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include "resources/ResourceManager.h"
+
 // How many tiles the load center has to move before we refresh the world
 constexpr f32 DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH = SQ(16.0f);
 
@@ -45,7 +47,7 @@ IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGri
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>();
 
     // Physics
-    mPhysWorld = std::make_unique<PhysicsWorld>();
+    mPhysWorld = std::make_unique<PhysicsWorld>(Services::ResourceManager::ref().getCollisionShapeRepository());
 
 }
 

@@ -1,9 +1,10 @@
 #pragma once
 
 #include "TileConst.h"
-#include "TileCollider.h"
 #include "TileResource.h"
+#include "tile/TileFlags.h"
 #include "item/ItemStack.h"
+#include "physics/CollisionShapes.h"
 
 // TODO: Do we need rendering here?
 #include "rendering/texture/SubTexture.h"
@@ -65,8 +66,7 @@ struct TileData {
     TileID id;
    // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
-    TileCollisionShape collisionShape = TileCollisionShape::NONE;
-    f32v3 collisionDims = f32v3(0.0f);
+    CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
     TileResource resource = TileResource::NONE;
     SubTexture texture; // TODO: We dont use this when we have a model, make this a pointer? Its big
     MaterialID materialId;

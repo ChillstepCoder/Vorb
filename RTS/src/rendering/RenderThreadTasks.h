@@ -28,7 +28,7 @@ public:
     static bool exists() { return sInstance != nullptr; }
 
     // Tasks
-    void addTileContainerMeshUpdateTask(
+    void addTileContainerMeshInitTask(
         TileContainer* containerToMesh,
         ProceduralMeshBuilder&& staticMeshBuilder,
         ProceduralMeshBuilder&& dynamicMeshBuilder,

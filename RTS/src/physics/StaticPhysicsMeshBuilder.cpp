@@ -24,6 +24,9 @@ const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v2(1, 1)   // BOTTOM
 };
 
+StaticPhysicsMeshBuilder::~StaticPhysicsMeshBuilder() {
+
+}
 
 void StaticPhysicsMeshBuilder::reserveQuadCount(ui32 count)
 {
@@ -133,13 +136,7 @@ void StaticPhysicsMeshBuilder::addTriangleBetweenPoints(const f32v3 vertPoints[3
     verts[2] = vertPoints[2];
 }
 
-void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld, OUT StaticPhysicsMesh& outMesh) {
-    if (!mVerts.size()) {
-        if (outMesh.mPhysicsMesh) {
-            outMesh.mPhysicsMesh.reset();
-        }
-        return;
-    }
+void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld) {
     // This is thread safe
-    physicsWorld.addStaticMeshFromBuilder(*this, outMesh);
+    physicsWorld.addStaticMeshFromBuilder(*this);
 }

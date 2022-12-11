@@ -8,12 +8,13 @@ DECL_VIO(class IOManager);
 class TextureRepository;
 class ItemRepository;
 class ModelRepository;
+class CollisionShapeRepository;
 
 struct TileFileData {
     f32v3 dims = f32v3(1.0f, 1.0f, 1.0f);
-    f32v3 colliderDims = f32v3(0.5f, 0.5f, 1.0f);
+    f32v3 colliderHalfExtents = f32v3(0.5f, 0.5f, 1.0f);
+    CollisionShapes colliderShape = CollisionShapes::NONE;
     TileShape tileShape = TileShape::BLOCK;
-    TileCollisionShape colliderShape = TileCollisionShape::NONE;
     TileTextureMethod textureMethod = TileTextureMethod::SIMPLE;
     TileResource resource = TileResource::NONE;
     ui8 pathWeight = 255;
@@ -44,7 +45,7 @@ public:
 
     static const std::vector<TileData>& getAllTileData() { return sTileData;  }
 
-    static bool loadTileFile(vio::IOManager& ioManager, const vio::Path& path, TextureRepository& textureRepository, ItemRepository& itemRepository, ModelRepository& modelRepository);
+    static bool loadTileFile(vio::IOManager& ioManager, const vio::Path& path, TextureRepository& textureRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository);
 
 private:
     static std::unordered_map<StrToken, TileID> sTileIdMapping;

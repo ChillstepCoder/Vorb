@@ -19,6 +19,7 @@
 #include "resources/TextureRepository.h"
 #include "resources/TileRepository.h"
 #include "resources/FontRepository.h"
+#include "physics/CollisionShapeRepository.h"
 #include "editor/BrushRepository.h"
 
 #include <Vorb/io/IOManager.h>
@@ -60,6 +61,7 @@ ResourceManager::ResourceManager() {
     mBrushRepository = std::make_unique<BrushRepository>(*mIoManager);
     mSkillRepository = std::make_unique<SkillRepository>(*mIoManager);
     mFontRepository = std::make_unique<FontRepository>();
+    mCollisionShapeRepository = std::make_unique<CollisionShapeRepository>();
 }
 
 ResourceManager::~ResourceManager() {
@@ -207,7 +209,7 @@ void ResourceManager::loadFiles() {
         TileRepository::sTileData.reserve(mTileFiles.size() + 10);
         for (auto&& entry : mTileFiles) {
             // TODO: Tilemanager?
-            TileRepository::loadTileFile(*mIoManager, entry, *mTextureRepository, *mItemRepository, *mModelRepository);
+            TileRepository::loadTileFile(*mIoManager, entry, *mTextureRepository, *mItemRepository, *mModelRepository, *mCollisionShapeRepository);
         }
     }
 

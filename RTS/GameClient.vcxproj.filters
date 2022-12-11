@@ -1478,6 +1478,9 @@
     <ClInclude Include="src\util\TypeHash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

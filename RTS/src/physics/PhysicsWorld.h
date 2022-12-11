@@ -25,6 +25,7 @@ constexpr int INVALID_PHYSICS_USER_INDEX = INT32_MAX;
 #include "physics/CollisionShapes.h"
 #include "physics/StaticPhysicsMesh.h"
 #include "physics/CollisionShapeRepository.h"
+#include "physics/TrackedStaticRigidBodyGatherer.h"
 
 #include <shared_mutex>
 
@@ -35,6 +36,7 @@ enum class RigidBodyRotationType {
 };
 
 typedef std::pair<btRigidBody*, f32/*colliderHalfHeight*/> RigidBodyPair;
+typedef std::map<f32v3, btCollisionObject*, f32v3cmp> SpatialRigidBodyLookup;
 
 enum PickTypes {
     PICK_TYPE_STATIC = 1 << 0,
@@ -42,10 +44,15 @@ enum PickTypes {
     PICK_TYPE_ALL = PICK_TYPE_STATIC | PICK_TYPE_DYNAMIC
 };
 
+struct TileContainerPhysicsData {
+    SpatialRigidBodyLookup mSpatialRigidBodyLookup;
+    StaticPhysicsMesh mStaticMesh; // TODO: hmmm
+};
+
 class PhysicsWorld
 {
 public:
-    PhysicsWorld();
+    PhysicsWorld(CollisionShapeRepository& shapeRepository);
     ~PhysicsWorld();
 
     void stepSimulation(f32 deltaTime);
@@ -53,10 +60,17 @@ public:
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btRigidBody* addHeightField(const HeightmapPatch& patch);
     void deleteHeightField(HeightmapPatch& patch);
+
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+    RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
+
+    void addTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape);
+    void removeTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, const f32v3& position);
+    void deletePhysicsForTileContainer(TileContainerID container);
+
     void deleteRigidBody(btRigidBody* rigidBody);
     void deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh);
-    void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder, OUT StaticPhysicsMesh& outMesh);
+    void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
 
     void debugRender() const;
 
@@ -68,7 +82,10 @@ public:
     CollisionShapeRepository& getShapeRepository() { return mShapeRepository; }
 
 private:
+    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialRigidBodyLookup& lookup);
     RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
+    btCollisionObject* createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape);
+    f32 getShapeHalfHeight(btCollisionShape* shape) const;
 
     std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfiguration;
     std::unique_ptr<btCollisionDispatcher> mDispatcher;
@@ -76,7 +93,7 @@ private:
     std::unique_ptr<btSequentialImpulseConstraintSolver> mSolver;
     std::unique_ptr<btDiscreteDynamicsWorld> mDynamicsWorld;
 
-    CollisionShapeRepository mShapeRepository;
+    CollisionShapeRepository& mShapeRepository;
 
     std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;
     mutable bool mWasRenderingStatic = false;
@@ -90,6 +107,8 @@ private:
     moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToAdd;
     moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToDelete;
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
+
+    std::map<TileContainerID, TileContainerPhysicsData> mTileContainerPhysicsData; // Model colliders and such
 
 };
 

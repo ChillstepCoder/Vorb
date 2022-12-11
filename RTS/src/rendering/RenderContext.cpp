@@ -687,6 +687,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         MaterialRenderer::renderFullScreenQuad(*postMat);
     }
 
+
     // Debug rendering
     renderDebug(camera, renderState);
 
@@ -750,6 +751,7 @@ void RenderContext::updateRenderThreadProcs() {
 }
 
 void RenderContext::renderDebug(const Camera3D& camera, const RenderState& renderState) {
+    PROFILE_FUNCTION();
     // City Debug
     if (sDebugOptions.mCities) {
         const CityGraph& cities = sWorld->getCityGraph();

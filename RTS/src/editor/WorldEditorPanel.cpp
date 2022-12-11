@@ -91,7 +91,10 @@ WorldEditorPanel::WorldEditorPanel() {
 void WorldEditorPanel::update(const Camera3D& camera, const f32v3& pickRay) {
     PROFILE_FUNCTION();
 
-    mHitResult = sWorld->getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL);
+    {
+        PROFILE_SCOPE("Tile picking");
+        mHitResult = sWorld->getPhysicsWorld().pick(camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL);
+    }
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {
         updateTerrainEdit();

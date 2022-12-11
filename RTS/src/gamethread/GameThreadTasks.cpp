@@ -4,6 +4,7 @@
 #include "world/IWorld.h"
 #include "ecs/IEntityComponentSystem.h"
 #include "physics/PhysicsWorld.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
 
 #include "options/DebugOptions.h"
 
@@ -55,4 +56,12 @@ void GameThreadTasks::addHideLocalPlayerModelTask(bool hide) {
         IEntityComponentSystem& ecs = sWorld->getECS();
         ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mHideModel = hidePlayerModel;
     }, (void*)hide));
+}
+
+void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(TileContainerID containerId, StaticPhysicsMeshBuilder&& meshBuilder) {
+    StaticPhysicsMeshBuilder* builderPtr = new StaticPhysicsMeshBuilder(std::move(meshBuilder));
+    mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
+        StaticPhysicsMeshBuilder* builder = static_cast<StaticPhysicsMeshBuilder*>(vData);
+        builder->finish(sWorld->getPhysicsWorld());
+    }, (void*)builderPtr));
 }

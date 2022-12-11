@@ -1,5 +1,7 @@
 #pragma once
 
+class StaticPhysicsMeshBuilder;
+
 typedef void(*GameFunction)(class GameThread& gameThread, void*);
 
 class GameThreadTasks
@@ -22,6 +24,7 @@ public:
     void addGenericTask(GameFunction func, void* data) { mGameThreadProcs.enqueue(std::make_pair(func, data)); }
     void addCameraPickTeleportTask(const f32v3& camPos, const f32v3& camDir);
     void addHideLocalPlayerModelTask(bool hide);
+    void addTileContainerStaticPhysicsMeshInitTask(TileContainerID containerId, StaticPhysicsMeshBuilder&& meshBuilder);
 
     size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx(); }
 

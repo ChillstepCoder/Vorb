@@ -25,13 +25,6 @@ KEG_ENUM_DEF(TileShape, TileShape, kt) {
 }
 static_assert(e_cast(TileShape::COUNT) == 7);
 
-KEG_ENUM_DEF(TileCollisionShape, TileCollisionShape, kt) {
-    kt.addValue("none", TileCollisionShape::NONE);
-    kt.addValue("box", TileCollisionShape::BOX);
-    kt.addValue("cylinder", TileCollisionShape::CYLINDER);
-}
-static_assert(e_cast(TileCollisionShape::COUNT) == 3, "Update keg def");
-
 KEG_TYPE_DEF_SAME_NAME(ItemInputDef, kt) {
     kt.addValue("item", keg::Value::basic(offsetof(ItemInputDef, itemName), keg::BasicType::STRING));
     kt.addValue("count", keg::Value::basic(offsetof(ItemInputDef, count), keg::BasicType::UI32));

@@ -20,6 +20,7 @@ class RigRepository;
 class AnimMachineRepository;
 class SkillRepository;
 class FontRepository;
+class CollisionShapeRepository;
 struct SubTexture;
 
 // Loads and manages textures, tiles, and other resources
@@ -52,6 +53,7 @@ public:
     SkillRepository& getSkillRepository() const { return *mSkillRepository; }
     TextureRepository& getTextureRepository() const { return *mTextureRepository; }
     FontRepository& getFontRepository() const { return *mFontRepository; }
+    CollisionShapeRepository& getCollisionShapeRepository() const { return *mCollisionShapeRepository; }
     vio::IOManager& getIoManager() const { return *mIoManager; }
 
     // Hot reload
@@ -102,6 +104,7 @@ private:
     std::unique_ptr<vg::TextureCache> mTextureCache;
     std::unique_ptr<TextureRepository> mTextureRepository;
     std::unique_ptr<FontRepository> mFontRepository;
+    std::unique_ptr<CollisionShapeRepository> mCollisionShapeRepository;
 
     // TODO: Replace with std::filesystem?
     std::unique_ptr<vio::IOManager> mIoManager;

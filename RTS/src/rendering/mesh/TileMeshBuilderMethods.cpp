@@ -526,8 +526,8 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                         else {
                             modelGatherer.addInstance(tileData.modelId, worldPos, Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
                         }
-                        if (tileData.collisionShape != TileCollisionShape::NONE) {
-
+                        if (physMesh && tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                            physMesh->addTrackedStaticRigidBody(index, worldPos, tileData.collisionShapeID);
                         }
                     }
                 }

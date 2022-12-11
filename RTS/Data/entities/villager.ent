@@ -4,7 +4,7 @@ character:
   speed: 4.0
 physics:
   shape: capsule
-  half_extents: [0.24, 0.24, 0.55]
+  half_dims: [0.24, 0.24, 0.55]
   disable_xy_rot: true
   mass: 70
 inventory:

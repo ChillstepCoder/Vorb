@@ -41,7 +41,7 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
     return *sInstance;
 }
 
-void RenderThreadTasks::addTileContainerMeshUpdateTask(
+void RenderThreadTasks::addTileContainerMeshInitTask(
     TileContainer* containerToMesh,
     ProceduralMeshBuilder&& staticMeshBuilder,
     ProceduralMeshBuilder&& dynamicMeshBuilder,

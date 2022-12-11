@@ -27,6 +27,10 @@ TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPo
     std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
     TileContainer* rv = newContainer.get();
     newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, isTerrain);
+    // Clamp to int to prevent issues with PhysicsWorld storing these as signed integers
+    if (sTileContainerIdGen > INT32_MAX) {
+        sTileContainerIdGen = 0;
+    }
     sTileContainerLookup[newContainer->mId] = rv;
     sTileContainers.push_back(std::move(newContainer));
     return rv;
@@ -65,10 +69,6 @@ void TileContainerRenderData::reset() {
 }
 
 TileContainer::~TileContainer() {
-    if (mStaticPhysics.mRigidBody) {
-        // TODO: can we move this so its an event?
-        sWorld->getPhysicsWorld().deleteStaticPhysicsMesh(std::move(mStaticPhysics));
-    }
 
     if (RenderThreadTasks::exists()) {
         // TODO: can we move this so its an event?

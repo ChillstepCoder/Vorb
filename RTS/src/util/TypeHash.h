@@ -38,3 +38,14 @@ public:
         return seed;
     }
 };
+
+struct f32v3cmp {
+    bool operator()(const f32v3& a, const f32v3& b) const {
+        if (a.x < b.x) return true;
+        if (a.x > b.x) return false;
+        if (a.y < b.y) return true;
+        if (a.y > b.y) return false;
+        if (a.z < b.z) return true;
+        return false;
+    }
+};

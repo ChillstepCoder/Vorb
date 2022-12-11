@@ -264,7 +264,6 @@ public:
     const f32v3 getWorldPosCenter3D() const { return f32v3(mRootPos) + f32v3(mDims) * 0.5f; }
     const i32v3& getDims() const { return mDims; }
     ui32 getFloorHeight() const { return mFloorHeight; }
-    StaticPhysicsMesh& getStaticPhysicsMesh() const { return mStaticPhysics; }
 
     const std::vector<Tile>& getTiles() const { return mTiles; }
     const std::vector<TileWallContainer>& getWalls() const { return mWalls; }
@@ -298,7 +297,6 @@ private:
     std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     std::vector<TileContainerEntrance> mEntrances;
     std::vector<TileContainerEntrance> mEntrancesThreadSafeCopy;
-    mutable StaticPhysicsMesh mStaticPhysics;
     TileContainerID mId;
     i32v3 mDims;
     i32v3 mRootPos;

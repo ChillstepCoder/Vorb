@@ -10,6 +10,9 @@
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 
+#include "gamethread/GameThreadTasks.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
+
 #include "world/Chunk.h"
 
 #include "tile/TileContainer.h"
@@ -30,8 +33,7 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
         InstancedStaticModelGatherer modelGatherer(chunkTileContainer->getId());
-
-        StaticPhysicsMesh& physicsMesh = chunkTileContainer->getStaticPhysicsMesh();
+        StaticPhysicsMeshBuilder physicsBuilder(chunkTileContainer->getId());
 
         // TODO: Memory pool for this data?
         constexpr ui32 RESERVE_VERT_COUNT_STATIC = 512; // Most chunks are less than this
@@ -39,13 +41,14 @@ void ChunkMesher::buildMeshAndPhysicsAsync(const Chunk& chunk, PhysicsWorld& phy
         billboardMeshBuilder.reserveBillboardCount(CHUNK_SIZE / 2);
 
         // ========================== Mesh Tiles ===============================
-        TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, modelGatherer, *chunkTileContainer, nullptr /*physicsMesh*/, heightData);
+        TileMeshBuilderMethods::meshTileContainerStatic(staticMeshBuilder, &billboardMeshBuilder, modelGatherer, *chunkTileContainer, &physicsBuilder, heightData);
         TileMeshBuilderMethods::meshTileContainerDynamic(dynamicMeshBuilder, *chunkTileContainer);
 
         staticMeshBuilder.computeBoundingSphere();
         dynamicMeshBuilder.computeBoundingSphere();
         billboardMeshBuilder.computeBoundingSphere();
 
-        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(chunkTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder), std::move(modelGatherer));
+        RenderThreadTasks::getInstance().addTileContainerMeshInitTask(chunkTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder), std::move(modelGatherer));
+        GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshInitTask(chunkTileContainer->getId(), std::move(physicsBuilder));
     }, nullptr);
 }

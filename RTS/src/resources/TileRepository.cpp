@@ -7,6 +7,7 @@
 #include "tile/Stairs.h"
 #include "item/ItemRepository.h"
 #include "resources/ModelRepository.h"
+#include "physics/CollisionShapeRepository.h"
 
 std::unordered_map<StrToken, TileID> TileRepository::sTileIdMapping;
 std::vector<TileData> TileRepository::sTileData;
@@ -14,19 +15,19 @@ std::vector<TileData> TileRepository::sTileData;
 KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("tex", keg::Value::basic(offsetof(TileFileData, textureName), keg::BasicType::STRING));
     kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
-    kt.addValue("col", keg::Value::custom(offsetof(TileFileData, colliderShape), "TileCollisionShape", true));
     kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
     kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
     kt.addValue("path_weight", keg::Value::basic(offsetof(TileFileData, pathWeight), keg::BasicType::UI8));
     kt.addValue("layer", keg::Value::basic(offsetof(TileFileData, layer), keg::BasicType::UI8));
-    kt.addValue("col_dims", keg::Value::basic(offsetof(TileFileData, colliderDims.x), keg::BasicType::F32_V3));
+    kt.addValue("col_shape", keg::Value::custom(offsetof(TileFileData, colliderShape), "CollisionShapes", true));
+    kt.addValue("col_half_dims", keg::Value::basic(offsetof(TileFileData, colliderHalfExtents.x), keg::BasicType::F32_V3));
     kt.addValue("shape", keg::Value::custom(offsetof(TileFileData, tileShape), "TileShape", true));
     kt.addValue("resource", keg::Value::custom(offsetof(TileFileData, resource), "TileResource", true));
     kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
     kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
 }
 
-bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, TextureRepository& textureRepository, ItemRepository& itemRepository, ModelRepository& modelRepository) {
+bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, TextureRepository& textureRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository) {
     // Read file
     return ioManager.parseFileAsKegObjectMap(path, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
@@ -45,8 +46,9 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         tileData.resource = fileData.resource;
         tileData.textureMethod = fileData.textureMethod;
         tileData.dims = fileData.dims;
-        tileData.collisionDims = fileData.colliderDims;
-        tileData.collisionShape = fileData.colliderShape;
+        if (fileData.colliderShape != CollisionShapes::NONE) {
+            tileData.collisionShapeID = shapeRepository.getOrAddCollisionShape(fileData.colliderShape, fileData.colliderHalfExtents);
+        }
 
         // Item drops
         tileData.itemDrops.resize(fileData.itemDrops.size());
@@ -61,7 +63,6 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             tileData.recipe[i].quantity = fileData.recipe[i].count;
             tileData.recipe[i].id = itemRepository.getItem(fileData.recipe[i].itemName).getID();
         }
-
 
         TileID nextId = (TileID)sTileData.size();
         tileData.id = nextId;

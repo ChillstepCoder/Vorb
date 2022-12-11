@@ -491,6 +491,7 @@
     <ClInclude Include="src\physics\PhysicsWorld.h" />
     <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
+    <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
     <ClInclude Include="src\rendering\BuildingMesher.h" />
     <ClInclude Include="src\rendering\CharacterModel.h" />
     <ClInclude Include="src\rendering\CharacterRenderer.h" />

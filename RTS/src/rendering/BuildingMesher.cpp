@@ -294,15 +294,19 @@ void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
         billboardMeshBuilder.computeBoundingSphere();
 
 
-        RenderThreadTasks::getInstance().addTileContainerMeshUpdateTask(building.mTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder), std::move(modelGatherer));
+        RenderThreadTasks::getInstance().addTileContainerMeshInitTask(building.mTileContainer, std::move(staticMeshBuilder), std::move(dynamicMeshBuilder), std::move(billboardMeshBuilder), std::move(modelGatherer));
     }, nullptr);
 }
 
 void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, ProceduralMeshBuilder& staticMeshBuilder, ProceduralMeshBuilder& dynamicMeshBuilder, BillboardMeshBuilder& billboardMeshBuilder, InstancedStaticModelGatherer& modelGatherer) {
     PROFILE_FUNCTION();
 
+    const i32AABB3& aabb = building.mAABB;
+    const TileContainer& tileContainer = *building.mTileContainer;
+    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
+
     PhysicsWorld& physWorld = sWorld->getPhysicsWorld();
-    StaticPhysicsMeshBuilder physicsBuilder;
+    StaticPhysicsMeshBuilder physicsBuilder(tileContainer.getId());
 
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
@@ -315,9 +319,6 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Proce
     staticMeshBuilder.reserveVertexCount(RESERVE_VERT_COUNT_STATIC);
     staticMeshBuilder.reserveIndexCount((ui32)(RESERVE_VERT_COUNT_STATIC * 1.5f)); // 1.5 is approx
 
-    const i32AABB3& aabb = building.mAABB;
-    const TileContainer& tileContainer = *building.mTileContainer;
-    const BitArray& ownedTiles = tileContainer.getOwnedTiles();
 
     // Textures
     const SubTexture& shinglesTexture = Services::ResourceManager::ref().getTexture("roof");
@@ -378,7 +379,8 @@ void BuildingMesher::buildMeshAndPhysicsInternal(const Building& building, Proce
 
 
     physicsBuilder.setRootPos(f32v3(building.mAABB.pos));
-    physicsBuilder.finish(physWorld, building.getTileContainer()->getStaticPhysicsMesh());
+    assert(false); // TODO: GameThreadTasks::addPphysciscsthingy
+    //physicsBuilder.finish(physWorld, building.getTileContainer()->getStaticPhysicsMesh());
 
     if (visLog) visLog->finish();
 }

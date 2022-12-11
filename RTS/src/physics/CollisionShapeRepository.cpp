@@ -10,7 +10,8 @@ CollisionShapeRepository::~CollisionShapeRepository()
 {
 }
 
-btCollisionShape* CollisionShapeRepository::getOrAddCollisionShape(CollisionShapes shapeType, const f32v3& halfExtents) {
+CollisionShapeID CollisionShapeRepository::getOrAddCollisionShape(CollisionShapes shapeType, const f32v3& halfExtents) {
+    assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     switch (shapeType) {
         case CollisionShapes::CAPSULE:
             return getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.z);
@@ -26,62 +27,66 @@ btCollisionShape* CollisionShapeRepository::getOrAddCollisionShape(CollisionShap
 
     }
     static_assert(e_cast(CollisionShapes::COUNT) == 4, "Handle new shapes");
-    return nullptr;
+    return INVALID_COLLISION_SHAPE_ID;
 }
 
-btCollisionShape* CollisionShapeRepository::getOrAddCapsuleCollisionShape(f32 radius, f32 halfHeight) {
+CollisionShapeID CollisionShapeRepository::getOrAddCapsuleCollisionShape(f32 radius, f32 halfHeight) {
+    assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     // Find existing
     const f32v2 key(radius, halfHeight);
     auto&& it = mCapsuleShapes.find(key);
     if (it != mCapsuleShapes.end()) {
-        return it->second.get();
+        return it->second;
     }
 
     // Insert new
-    std::unique_ptr<btCollisionShape> newShape = std::make_unique<btCapsuleShapeZ>(radius, halfHeight * 2.0f);
-    btCollisionShape* rv = newShape.get();
-    mCapsuleShapes[key] = std::move(newShape);
-    return rv;
+    const CollisionShapeID id = mAllShapes.size();
+    mAllShapes.emplace_back(std::make_unique<btCapsuleShapeZ>(radius, halfHeight * 2.0f));
+    mCapsuleShapes[key] = id;
+    return id;
 }
 
-btCollisionShape* CollisionShapeRepository::getOrAddCylinderCollisionShape(const f32v3& halfExtents) {
+CollisionShapeID CollisionShapeRepository::getOrAddCylinderCollisionShape(const f32v3& halfExtents) {
+    assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     // Find existing
     auto&& it = mCylinderShapes.find(halfExtents);
     if (it != mCylinderShapes.end()) {
-        return it->second.get();
+        return it->second;
     }
 
     // Insert new
-    std::unique_ptr<btCollisionShape> newShape = std::make_unique<btCylinderShapeZ>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z));
-    btCollisionShape* rv = newShape.get();
-    mCylinderShapes[halfExtents] = std::move(newShape);
-    return rv;
+    const CollisionShapeID id = mAllShapes.size();
+    mAllShapes.emplace_back(std::make_unique<btCylinderShapeZ>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z)));
+    mCylinderShapes[halfExtents] = id;
+    return id;
 }
 
-btCollisionShape* CollisionShapeRepository::getOrAddBoxCollisionShape(const f32v3& halfExtents) {
+CollisionShapeID CollisionShapeRepository::getOrAddBoxCollisionShape(const f32v3& halfExtents) {
+    assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     // Find existing
     auto&& it = mBoxShapes.find(halfExtents);
     if (it != mBoxShapes.end()) {
-        return it->second.get();
+        return it->second;
     }
 
     // Insert new
-    std::unique_ptr<btCollisionShape> newShape = std::make_unique<btBoxShape>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z));
-    btCollisionShape* rv = newShape.get();
-    mBoxShapes[halfExtents] = std::move(newShape);
-    return rv;
+    const CollisionShapeID id = mAllShapes.size();
+    mAllShapes.emplace_back(std::make_unique<btBoxShape>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z)));
+    mBoxShapes[halfExtents] = id;
+    return id;
 }
 
-btCollisionShape* CollisionShapeRepository::getOrAddSphereCollisionShape(f32 radius) {
+CollisionShapeID CollisionShapeRepository::getOrAddSphereCollisionShape(f32 radius) {
+    assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     // Find existing
     auto&& it = mSphereShapes.find(radius);
     if (it != mSphereShapes.end()) {
-        return it->second.get();
+        return it->second;
     }
 
     // Insert new
-    std::unique_ptr<btCollisionShape> newShape = std::make_unique<btSphereShape>(radius);
-    btCollisionShape* rv = newShape.get();
-    mSphereShapes[radius] = std::move(newShape);
-    return rv;
+    const CollisionShapeID id = mAllShapes.size();
+    mAllShapes.emplace_back(std::make_unique<btSphereShape>(radius));
+    mSphereShapes[radius] = id;
+    return id;
 }
