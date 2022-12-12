@@ -49,6 +49,12 @@ struct TileContainerPhysicsData {
     StaticPhysicsMesh mStaticMesh; // TODO: hmmm
 };
 
+struct PickParams {
+    f32v3 rayStart;
+    f32v3 rayEnd;
+    PickTypes pickTypes;
+};
+
 class PhysicsWorld
 {
 public:
@@ -76,6 +82,7 @@ public:
 
     // Picking
     PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const;
+    void pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes);
     // Returns false if the physics is currently locked by the game thread
     bool tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const;
 
@@ -95,10 +102,10 @@ private:
 
     CollisionShapeRepository& mShapeRepository;
 
-    std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;
-    mutable bool mWasRenderingStatic = false;
-    mutable bool mWasRenderingTerrain = false;
+    // Deferred picking
+    moodycamel::ConcurrentQueue<std::pair<PickParams, DeferredPhysicsPick*>> mDeferredPicks;
 
+    // Synchronization
     mutable std::shared_mutex mMutex;
 
     // For cleanup
@@ -109,6 +116,11 @@ private:
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
 
     std::map<TileContainerID, TileContainerPhysicsData> mTileContainerPhysicsData; // Model colliders and such
+
+    // Debug drawing
+    std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;
+    mutable bool mWasRenderingStatic = false;
+    mutable bool mWasRenderingTerrain = false;
 
 };
 

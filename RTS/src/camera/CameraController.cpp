@@ -177,7 +177,8 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEnt
     // Collision raycast
     PhysHitResult result;
     // TODO: We used to use tryPick here but it causes contention with the physics system and jitters
-    result = sWorld->getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
+    // TODO: Transparent render all objects?
+    //result = sWorld->getPhysicsWorld().pick(followTargetPos, camPos, PICK_TYPE_STATIC);
     // DebugRenderer::drawWireQuad(followTargetPos, f32v2(0.2f), COLOR_WHITE);
     if (result.didHit()) {
         mCamera.setPosition(result.mPosition);

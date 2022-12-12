@@ -22,6 +22,7 @@ class ResourceManager;
 class RenderContext;
 class IWorld;
 class TileInteractPanel;
+class DeferredPhysicsPick;
 
 DECL_VUI(class InputDispatcher);
 
@@ -94,6 +95,10 @@ private:
 	GameplayScreenState mState = GameplayScreenState::INIT;
 	vui::MouseListeners mMouseListeners;
 	vui::KeyListeners mKeyListeners;
+
+    std::unique_ptr<DeferredPhysicsPick> mRightClickDownPick;
+    std::unique_ptr<DeferredPhysicsPick> mRightClickUpPick;
+	f32v2 mRightClickUpPickScreenPos = f32v2(0.0);
 
 };
 

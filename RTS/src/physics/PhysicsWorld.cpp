@@ -130,6 +130,17 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
         }
     }
 
+    // Process picking from other threads
+    std::pair<PickParams, DeferredPhysicsPick*> pickBuffer[BULK_DEQUEUE_SIZE];
+    if (size_t count = mDeferredPicks.try_dequeue_bulk(pickBuffer, BULK_DEQUEUE_SIZE)) {
+        for (size_t i = 0; i < count; ++i) {
+            const PickParams& params = pickBuffer[i].first;
+            DeferredPhysicsPick* deferredPick = pickBuffer[i].second;
+            PhysHitResult result = pick(params.rayStart, params.rayEnd, params.pickTypes);
+            deferredPick->setPickResult(result);
+        }
+    }
+
     std::lock_guard guard(mMutex);
     mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }
@@ -521,6 +532,10 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
     rv.mCollisionObject = rayResult.m_collisionObject;
     rv.mPosition = rayStart + (rayEnd - rayStart) * rv.mTime;
     return rv;
+}
+
+void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) {
+    mDeferredPicks.enqueue(std::pair<PickParams, DeferredPhysicsPick*>(PickParams{rayStart, rayEnd, pickTypes}, deferredPick));
 }
 
 bool PhysicsWorld::tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const {

@@ -352,6 +352,36 @@ void GameplayScreen::updateTilePicking() {
 	f32v4 pickRayWorldSpace = glm::inverse(mCameraController->getOwnedCamera().getViewMatrix()) * pickRayEyeSpace;
 	f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
 	mMousePickRay = glm::normalize(pickRayXYZ);
+
+    if (mRightClickDownPick && mRightClickDownPick->isDone()) {
+        PhysHitResult hitResult = mRightClickDownPick->getLastPickResult();
+        if (hitResult.didHit()) {
+            mRightClickPickPos = hitResult.mPosition;
+        }
+        else {
+            mRightClickPickPos = f32v3(FLT_MAX);
+        }
+        mRightClickDownPick.reset();
+    }
+    if (mRightClickUpPick && mRightClickUpPick->isDone()) {
+        PhysHitResult hitResult = mRightClickUpPick->getLastPickResult();
+        if (hitResult.didHit()) {
+            mSelectedScreenPos = mRightClickUpPickScreenPos;
+            // For interact must click in about the same spot
+            if (hitResult.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
+                LOG_CRITICAL("WOOOOO");
+            }
+            else {
+                if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
+                    f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
+                    if (mWorldObjectQuery.tryQuery(worldPos)) {
+                        mIsQuerying = true;
+                    }
+                }
+            }
+        }
+        mRightClickUpPick.reset();
+    }
 }
 
 
@@ -552,16 +582,16 @@ void GameplayScreen::initInputs()
         // Fix this
         UIContext::getInstance().closeTileInspectionPanel();
         if (event.button == vorb::ui::MouseButton::RIGHT) {
+            // If we are awaiting a pick result, dont send another
+            if (mRightClickDownPick || mRightClickUpPick) {
+                return;
+            }
             if (mCameraController) {
-                mRightClickTimer.start();
+                mRightClickDownPick = std::make_unique<DeferredPhysicsPick>();
                 const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                PhysHitResult hitResult = mWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
-                if (hitResult.didHit()) {
-                    mRightClickPickPos = hitResult.mPosition;
-                }
-                else {
-                    mRightClickPickPos = f32v3(FLT_MAX);
-                }
+                mWorld->getPhysicsWorld().pickDeferred(mRightClickDownPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                mRightClickTimer.start();
+                
             }
         }
     });
@@ -604,24 +634,11 @@ void GameplayScreen::initInputs()
             if (mRightClickInteractPopup) {
                 mRightClickInteractPopup.reset();
             }
-            else if (mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
+            else if (!mRightClickUpPick && mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                 const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
-                PhysHitResult hitResult = sWorld->getPhysicsWorld().pick(camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
-                if (hitResult.didHit()) {
-                    mSelectedScreenPos = screenPos;
-                    // For interact must click in about the same spot
-                    if (hitResult.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
-                        LOG_CRITICAL("WOOOOO");
-                    }
-                    else {
-                        if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                            f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                            if (mWorldObjectQuery.tryQuery(worldPos)) {
-                                mIsQuerying = true;
-                            }
-                        }
-                    }
-                }
+                mRightClickUpPick = std::make_unique<DeferredPhysicsPick>();
+                sWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL); 
+                mRightClickUpPickScreenPos = screenPos;
             }
         }
 

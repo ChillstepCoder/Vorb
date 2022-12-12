@@ -406,6 +406,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     const f32v3& playerPos = renderState.getCameraOwningEntityPos();
     cameraController.update(1.0f /*TODO DELTATIME*/, frameAlpha, playerPos);
     const Camera3D& camera = cameraController.getOwnedCamera();
+
     beginFrame(&camera, playerPos);
     checkGlError("RenderContext::Begin Frame");
 

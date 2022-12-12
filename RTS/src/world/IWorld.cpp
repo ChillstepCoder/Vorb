@@ -57,7 +57,7 @@ IWorld::~IWorld()
 }
 
 void IWorld::tickShared(f32 elapsedSec) {
-
+    PROFILE_FUNCTION();
     // When player exists set as load center
     // TODO: Handle dedicated server differently
     entt::entity localPlayer = mEcs->getLocalPlayer();

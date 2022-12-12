@@ -41,8 +41,6 @@ void HostWorld::tick(f32 elapsedSec) {
         container->updateActiveDynamicTiles();
     }
 
-    mPhysWorld->stepSimulation(elapsedSec);
-
     // TODO: Figure out best order
     tickShared(elapsedSec);
     tickSrv();

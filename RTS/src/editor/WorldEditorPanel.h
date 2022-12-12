@@ -102,6 +102,7 @@ private:
     mutable i32v2 mPlotDims = i32v2(16);
 
     mutable StrToken mSelectedEntity;
+    DeferredPhysicsPick mDeferredPhysicsPick;
     PhysHitResult mHitResult;
 };
 
