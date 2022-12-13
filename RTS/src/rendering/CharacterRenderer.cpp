@@ -352,6 +352,7 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
 
 void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha) {
     UNUSED(frameAlpha);
+    PROFILE_FUNCTION();
 
     // TODO: UBO
     MaterialRenderer::bindMaterialForRender(*mMaterial);

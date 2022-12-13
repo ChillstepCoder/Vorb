@@ -926,6 +926,23 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
+    sprintf_s(buffer, sizeof(buffer), "Characters: %u", renderState.getCharacterRenderState().size());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "Static objects: %u", sWorld->getPhysicsWorld().getNumStaticCollisionObjects());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    sprintf_s(buffer, sizeof(buffer), "Dynamic objects: %u", sWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
+    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+    yOffset += GAP_SIZE;
+
+    if (sWorld->getPhysicsWorld().isProfiling()) {
+        mSb->drawString(mSpriteFont.get(), "PHYSICS PROFILING ON", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::Red);
+        yOffset += GAP_SIZE;
+    }
+
     if (sDebugOptions.mChunkBoundaries) {
         sprintf_s(buffer, sizeof(buffer), "Chunks: %u", renderState.getDebugChunks().size());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);

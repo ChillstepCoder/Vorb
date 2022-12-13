@@ -23,11 +23,11 @@ layout(std430, binding = 3) buffer InDrawCommands
 
 layout(std140, binding = 4) uniform PerFrameData
 {
-	vec4 cameraPos;
-	vec4 frustumPlanes[4]; // Ignoring near and far plane
-    uvec4 lodDrawInfos[2]; // 4 pairs of <firstIndex, count> representing the 4 LOD levels, packed into uvec4 cause std140 is lame
-    vec3 lodDistancesSQ;
-	uint numShapesToCull;
+	vec4 frustumPlanes[4]; // 64 bytes // Ignoring near and far plane
+    uvec4 lodDrawInfos[2]; // 32 bytes // 4 pairs of <firstIndex, count> representing the 4 LOD levels, packed into uvec4 cause std140 is lame
+	vec4 cameraPos;        // 16 bytes
+    vec4 lodDistancesSQ;   // 16 bytes
+	uint numShapesToCull;  // 4 bytes
 };
 
 // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
@@ -68,6 +68,7 @@ void main()
         vec3 offset = vec3(modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]) - cameraPos.xyz;
         uint numInstances = sphereCheckAndUpdateLOD(offset);
         inDrawCommands[idx].instanceCount = numInstances;
+        inDrawCommands[idx].baseVertex = 0;
         inDrawCommands[idx].baseInstance = idx;
         if (numInstances == 1) {
             // Update LOD

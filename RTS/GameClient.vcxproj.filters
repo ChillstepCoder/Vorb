@@ -639,6 +639,9 @@
     <ClCompile Include="src\physics\CollisionShapeRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\b3ChromeTraceUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1479,6 +1482,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\b3ChromeTraceUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

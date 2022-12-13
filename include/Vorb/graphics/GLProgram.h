@@ -212,6 +212,5 @@ namespace vorb {
     }
 }
 namespace vg = vorb::graphics;
-static_assert(sizeof(vg::GLProgram) == 160, "Keep small");
 
 #endif // !Vorb_GLProgram_h__

@@ -94,7 +94,7 @@ void IWorld::setTimeOfDay(float time) {
 }
 
 entt::entity IWorld::createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate) {
-
+    assert(IS_GAME_THREAD());
     return mEcs->createEntity(pos, typeToken, shouldReplicate);
 }
 

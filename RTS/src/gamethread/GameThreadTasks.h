@@ -1,5 +1,7 @@
 #pragma once
 
+#include "util/StrToken.h"
+
 class StaticPhysicsMeshBuilder;
 
 typedef void(*GameFunction)(class GameThread& gameThread, void*);
@@ -25,6 +27,7 @@ public:
     void addCameraPickTeleportTask(const f32v3& camPos, const f32v3& camDir);
     void addHideLocalPlayerModelTask(bool hide);
     void addTileContainerStaticPhysicsMeshInitTask(TileContainerID containerId, StaticPhysicsMeshBuilder&& meshBuilder);
+    void addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
 
     size_t getQueuedProcsApprox() const { return mGameThreadProcs.size_approx(); }
 

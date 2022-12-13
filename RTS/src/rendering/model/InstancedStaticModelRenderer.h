@@ -39,7 +39,7 @@ struct StaticModelInstanceData {
     // std::unique_ptr<GLIndirectBuffer> mOutDrawCommands;
     //GLBuffer mNumVisibleMeshesBuffer;
     //volatile uint32_t* mNumVisibleMeshesBufferPtr = nullptr;
-    //GLsync mFenceSync = 0;
+   // GLsync mFenceSync = 0;
 };
 
 class InstancedStaticModelRenderer

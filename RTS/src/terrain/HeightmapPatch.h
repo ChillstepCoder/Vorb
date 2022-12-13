@@ -5,7 +5,7 @@
 
 #include <shared_mutex>
 
-class btRigidBody;
+class btCollisionObject;
 
 enum HeightmapPatchFlags : ui32 {
     HEIGHTMAP_PATCH_FLAG_GENERATING = 1 << 0,
@@ -19,7 +19,7 @@ struct HeightmapPatchData {
     BoundingSphere boundingSphere;
     f32AABB3 aabb;
     HeightmapPatchID id;
-    btRigidBody* mCollider = nullptr;
+    btCollisionObject* mCollider = nullptr;
     mutable std::shared_mutex mMutex;
 };
 

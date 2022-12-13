@@ -481,8 +481,8 @@ void WorldEditorPanel::updateTileEdit() {
 }
 
 void WorldEditorPanel::updateEntityEdit() {
-    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && !mSelectedEntity) {
-        sWorld->createEntity(mHitResult.mPosition, mSelectedEntity, true);
+    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && mSelectedEntity) {
+        GameThreadTasks::getInstance().addEntityCreateTask(mHitResult.mPosition, mSelectedEntity, true);
     }
 }
 

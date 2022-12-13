@@ -573,6 +573,16 @@ void GameplayScreen::initInputs()
                 sDebugOptions.mCameraMode = CameraMode::FREE_LOOK;
             }
         }
+        else if (event.keyCode == VKEY_P) {
+            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void*) {
+                if (sWorld->getPhysicsWorld().isProfiling()) {
+                    sWorld->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
+                }
+                else {
+                    sWorld->getPhysicsWorld().startB3Profiling();
+                }
+            }, nullptr);
+        }
         else if (event.keyCode == VKEY_ESCAPE) {
             UIContext::getInstance().toggleMainMenu();
         }

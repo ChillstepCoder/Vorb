@@ -339,7 +339,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
             quadVertices[index + 3].color = q.color;
             index += 4;
         }
-        GL.glNamedBufferStorage(newMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data(), GL_DYNAMIC_DRAW);
+        GL.glNamedBufferStorage(newMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data(), 0);
         GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshVertex));
         bindSimpleMeshVertexAttribs(newMesh.vao);
         sDebugMeshes.emplace_back(std::move(newMesh));

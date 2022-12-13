@@ -64,7 +64,7 @@ public:
     void stepSimulation(f32 deltaTime);
 
     DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
-    btRigidBody* addHeightField(const HeightmapPatch& patch);
+    btCollisionObject* addHeightField(const HeightmapPatch& patch);
     void deleteHeightField(HeightmapPatch& patch);
 
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
@@ -88,9 +88,18 @@ public:
 
     CollisionShapeRepository& getShapeRepository() { return mShapeRepository; }
 
+    ui32 getNumStaticCollisionObjects() const { return mNumStaticCollisionObjects; }
+    ui32 getNumDynamicCollisionObjects() const { return mNumDynamicCollisionObjects; }
+
+    // Create profile file for chrome://tracing/
+    // https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview
+    void startB3Profiling();
+    void endB3ProfilingAndDumpToFile(const char* fileNamePrefix);
+    bool isProfiling() const { return mIsProfiling; }
+
 private:
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialRigidBodyLookup& lookup);
-    RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape);
+    RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape);
     btCollisionObject* createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape);
     f32 getShapeHalfHeight(btCollisionShape* shape) const;
 
@@ -121,6 +130,11 @@ private:
     std::unique_ptr<PhysicsDebugDrawer> mDebugDrawer;
     mutable bool mWasRenderingStatic = false;
     mutable bool mWasRenderingTerrain = false;
+
+    ui32 mNumStaticCollisionObjects = 0;
+    ui32 mNumDynamicCollisionObjects = 0;
+
+    std::atomic_bool mIsProfiling = false;
 
 };
 

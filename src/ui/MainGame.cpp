@@ -10,7 +10,8 @@
 #ifdef DEBUG
 #define IS_DEBUG_OPENGL_CONTEXT 1
 #else
-#define IS_DEBUG_OPENGL_CONTEXT 0
+// TODO: Disable for live
+#define IS_DEBUG_OPENGL_CONTEXT 1
 #endif
 
 

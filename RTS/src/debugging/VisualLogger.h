@@ -3,7 +3,7 @@
 #include "rendering/mesh/Mesh.h"
 #include "debugging/SimpleMesh.h"
 
-class Font;
+struct Font;
 
 struct SimpleLine {
     f32v3 position1;

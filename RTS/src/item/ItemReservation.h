@@ -48,4 +48,4 @@ private:
     ItemID mItemID;
     bool mIsPromise; // If is promise, then we are giving the stacks, otherwise we are taking
 };
-static_assert(sizeof(ItemReservation) == 48, "Keep small");
+//static_assert(sizeof(ItemReservation) == 48, "Keep small");

@@ -5,7 +5,7 @@
 
 #include "rendering/font/Font.h"
 
-class Font;
+struct Font;
 
 // TBO Billboards
 struct GlyphUniformData {

@@ -25,10 +25,19 @@
 #include "debugging/DebugRenderer.h"
 #include "physics/PhysicsConst.h"
 
+// For custom physics tests
+#include "ecs/IEntityComponentSystem.h"
+#include "ecs/component/PhysicsComponent.h"
+
+#include "util/b3ChromeTraceUtil.h"
+
+
 const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);
 const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
 
+// TODO: Figure out lag
+// https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=10544
 
 TileContainerEventDispatcher::Handle sTileContainerDestroyHandle;
 
@@ -47,6 +56,7 @@ PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRe
     mDynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(mDispatcher.get(), mOverlappingPairCache.get(), mSolver.get(), mCollisionConfiguration.get());
     mDynamicsWorld->setGravity(GRAVITY);
     mDynamicsWorld->setDebugDrawer(mDebugDrawer.get()); // TODO: Don't do this on release builds?
+    mDynamicsWorld->setForceUpdateAllAabbs(false); // Attempt to boost performance
 
     // Listen for tile containers to be destroyed
     assert(!sTileContainerDestroyHandle);
@@ -54,6 +64,7 @@ PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRe
         assert(IS_GAME_THREAD());
         sWorld->getPhysicsWorld().deletePhysicsForTileContainer(container.getId());
     });
+    
 }
 
 
@@ -103,12 +114,12 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
         btRigidBody* rigidBodies[BULK_DEQUEUE_SIZE];
 
         // Add new rigid bodies
-        if (size_t count = mRigidBodiesToAdd.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
+       /* if (size_t count = mRigidBodiesToAdd.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
             std::lock_guard guard(mMutex);
             for (size_t i = 0; i < count; ++i) {
                 mDynamicsWorld->addRigidBody(rigidBodies[i]);
             }
-        }
+        }*/
         // Delete expired rigid bodies
         if (size_t count = mRigidBodiesToDelete.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
             std::lock_guard guard(mMutex);
@@ -130,6 +141,13 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
         }
     }
 
+
+    { // Simulate
+        PROFILE_SCOPE("Step");
+        std::lock_guard guard(mMutex);
+        mDynamicsWorld->stepSimulation(elapsedSec, 3 /*maxSubSteps*/);
+    }
+
     // Process picking from other threads
     std::pair<PickParams, DeferredPhysicsPick*> pickBuffer[BULK_DEQUEUE_SIZE];
     if (size_t count = mDeferredPicks.try_dequeue_bulk(pickBuffer, BULK_DEQUEUE_SIZE)) {
@@ -140,9 +158,6 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
             deferredPick->setPickResult(result);
         }
     }
-
-    std::lock_guard guard(mMutex);
-    mDynamicsWorld->stepSimulation(elapsedSec, 5 /*maxSubSteps*/);
 }
 
 DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {
@@ -153,13 +168,11 @@ DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::en
     return dynamicCharacterController;
 }
 
-btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
+btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
 {
     assert(IS_GAME_THREAD());
     btTransform startTransform;
     const f32v3 center = patch.mHeightData->aabb.getCenter();
-    startTransform.setOrigin(btVector3(center.x, center.y, center.z));
-    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
 
     btHeightfieldTerrainShape* heightFieldShape = new btHeightfieldTerrainShape(
         HEIGHTMAP_VERT_WIDTH_PER_PATCH,
@@ -178,15 +191,17 @@ btRigidBody* PhysicsWorld::addHeightField(const HeightmapPatch& patch)
     heightFieldShape->setUseDiamondSubdivision();
     heightFieldShape->setLocalScaling(btVector3(HEIGHTMAP_QUAD_SIZE, HEIGHTMAP_QUAD_SIZE, 1.0f));
 
-    return createRigidBody(entt::null, 0.0f, startTransform, heightFieldShape).first;
+    return createStaticCollisionObject(INVALID_PHYSICS_USER_INDEX, INVALID_PHYSICS_USER_INDEX, center, heightFieldShape);
 }
 
 void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
+    assert(IS_GAME_THREAD());
     auto&& it = mHeightShapes.find(patch.mHeightData);
     assert(it != mHeightShapes.end());
     delete it->second;
     mHeightShapes.erase(it);
-    deleteRigidBody(patch.mHeightData->mCollider);
+    mDynamicsWorld->removeCollisionObject(patch.mHeightData->mCollider);
+    delete patch.mHeightData->mCollider;
     patch.mHeightData->mCollider = nullptr;
 }
 
@@ -196,11 +211,8 @@ RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& 
 }
 
 RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, RigidBodyRotationType rotationType /*= RigidBodyRotationType::FULL*/) {
-    btTransform startTransform;
-    startTransform.setOrigin(btVector3(position.x, position.y, position.z));
-    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
 
-    RigidBodyPair rv = createRigidBody(ownerEntity, mass, startTransform, collisionShape);
+    RigidBodyPair rv = createRigidBody(ownerEntity, mass, position, collisionShape);
 
     // Disable rotation optionally
     if (rotationType == RigidBodyRotationType::NO_ROTATE) {
@@ -257,11 +269,13 @@ void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
 }
 
 void PhysicsWorld::deleteRigidBody(btRigidBody* rigidBody) {
+    --mNumDynamicCollisionObjects;
     mRigidBodiesToDelete.enqueue(rigidBody);
 }
 
 void PhysicsWorld::deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh) {
     if (physicsMesh.isValid()) {
+        --mNumStaticCollisionObjects;
         mStaticPhysicsMeshesToDelete.enqueue(std::move(physicsMesh));
     }
 }
@@ -322,11 +336,15 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBod
 }
 
 
-RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const btTransform& startTransform, btCollisionShape* shape)
+RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape)
 {
     PROFILE_FUNCTION();
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
-    
+    btTransform startTransform;
+    const f32 halfShapeHeight = getShapeHalfHeight(shape);
+    startTransform.setOrigin(btVector3(position.x, position.y, position.z + halfShapeHeight)); // Offset upward so we dont spawn in the ground
+    startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
+
     btVector3 localInertia(0, 0, 0);
     btRigidBody* body;
     if (mass) {
@@ -359,8 +377,9 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
 
     RigidBodyPair rv;
     rv.first = body;
-    rv.second = getShapeHalfHeight(shape);
+    rv.second = halfShapeHeight;
 
+    ++mNumDynamicCollisionObjects;
     return rv;
 }
 
@@ -376,16 +395,20 @@ btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID own
     btCollisionObject* object = new btRigidBody(0.0f, 0, shape, localInertia);
     object->setWorldTransform(startTransform);
 
-    assert(ownerTileContainer < INVALID_PHYSICS_USER_INDEX && "Tile container ID overflow in createRigidBody");
+    // Only entities use user index 0
+    object->setUserIndex(INVALID_PHYSICS_USER_INDEX);
+
+    assert(ownerTileContainer <= INVALID_PHYSICS_USER_INDEX && "Tile container ID overflow in createRigidBody");
     object->setUserIndex2(ownerTileContainer);
 
-    assert(ownerTilePosition < INVALID_PHYSICS_USER_INDEX && "Tile index overflow in createRigidBody");
+    assert(ownerTilePosition <= INVALID_PHYSICS_USER_INDEX && "Tile index overflow in createRigidBody");
     object->setUserIndex3(ownerTilePosition);
 
     assert(IS_GAME_THREAD());
     mDynamicsWorld->addCollisionObject(object);
-    //mRigidBodiesToAdd.enqueue(body);
+    object->setActivationState(DISABLE_SIMULATION);
    
+    ++mNumStaticCollisionObjects;
     return object;
 }
 
@@ -412,7 +435,7 @@ f32 PhysicsWorld::getShapeHalfHeight(btCollisionShape* shape) const {
 
 void PhysicsWorld::debugRender() const {
     assert(IS_RENDER_THREAD());
-    PROFILE_SCOPE();
+    PROFILE_FUNCTION();
 
     const bool showStatic = sDebugOptions.mShowStaticPhysics;
     const bool showDynamic = sDebugOptions.mShowDynamicPhysics;
@@ -566,4 +589,25 @@ bool PhysicsWorld::tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes
     result.mCollisionObject = rayResult.m_collisionObject;
     result.mPosition = rayStart + (rayEnd - rayStart) * result.mTime;
     return true;
+}
+
+void PhysicsWorld::startB3Profiling() {
+    {
+        std::lock_guard guard(mMutex);
+        b3ChromeUtilsStartTimings();
+    }
+    LOG_DEBUG("Begin bullet profiling");
+    mIsProfiling = true;
+}
+
+void PhysicsWorld::endB3ProfilingAndDumpToFile(const char* fileNamePrefix) {
+    {
+        std::lock_guard guard(mMutex);
+        if (mIsProfiling) {
+            b3ChromeUtilsStopTimingsAndWriteJsonFile(fileNamePrefix);
+        }
+    }
+
+    LOG_DEBUG("End bullet profiling, dumping chrome trace file");
+    mIsProfiling = false;
 }

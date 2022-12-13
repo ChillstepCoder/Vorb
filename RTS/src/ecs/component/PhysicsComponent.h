@@ -47,5 +47,5 @@ KEG_TYPE_DECL(PhysicsComponentDef);
 
 class PhysicsSystem {
 public:
-	void update(entt::registry& registry);
+	static void customPhysicsUpdateTest(entt::registry& registry);
 };

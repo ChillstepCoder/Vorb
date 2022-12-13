@@ -4,7 +4,11 @@
 DebugOptions sDebugOptions;
 
 // Lower for faster loading in test
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.5f;
+#ifdef DEBUG
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.3f;
+#else
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.6f;
+#endif
 
 DebugOptions::DebugOptions() :
     mTimeOffset(0.0f),

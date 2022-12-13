@@ -65,3 +65,12 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(TileContainerID 
         builder->finish(sWorld->getPhysicsWorld());
     }, (void*)builderPtr));
 }
+
+void GameThreadTasks::addEntityCreateTask(const f32v3& pos, StrToken typeToken, bool shouldReplicate) {
+    std::tuple<f32v3, StrToken, bool>* createData = new std::tuple<f32v3, StrToken, bool>(pos, typeToken, shouldReplicate);
+    mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
+        std::tuple<f32v3, StrToken, bool>* createData = static_cast<std::tuple<f32v3, StrToken, bool>*>(vData);
+        sWorld->getECS().createEntity(std::get<0>(*createData), std::get<1>(*createData), std::get<2>(*createData));
+        delete createData;
+    }, (void*)createData));
+}

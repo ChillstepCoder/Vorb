@@ -26,14 +26,17 @@ size_t roundToWorkGroupSize(size_t in) {
     }
     return in + (WORK_GROUP_SIZE - remainder);
 }
-
-struct GpuCullUniformData {
-    f32v4 cameraPos;
+#pragma pack(push, 1)
+struct PACKED_STRUCT GpuCullUniformData {
     f32v4 frustumPlanes[4];
     MeshLODDrawInfo lodDrawInfos[4];
+    f32v4 cameraPos;
     float lodDistancesSQ[4];
     ui32 numShapesToCull;
 };
+#pragma pack(pop)
+static_assert(offsetof(GpuCullUniformData, numShapesToCull) == 128);
+static_assert(sizeof(GpuCullUniformData) == 132);
 static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 
 StaticModelInstanceData::StaticModelInstanceData()/* : mNumVisibleMeshesBuffer(sizeof(ui32), nullptr, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT)*/
@@ -179,6 +182,9 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 uniformData.frustumPlanes[i] = camera.getFrustum().getPlane(i).vec4Data;
                 uniformData.lodDrawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
             }
+
+
+            LOG_INFO("numShapesToCull {}", uniformData.numShapesToCull);
             mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
             //*instanceData.mNumVisibleMeshesBufferPtr = 0; // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
 
@@ -200,7 +206,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
         }
         else {
-            assert(drawCommandsSize == instanceData.mInstanceTransforms.size());
+            assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
             PROFILE_SCOPE("CPU Culling");
             // CPU Culling
             for (size_t i = 0; i < instanceData.mInstanceTransforms.size(); ++i) {
@@ -210,6 +216,8 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 const f32v3& pos = reinterpret_cast<const f32v3&>(instance.matrix[3]);
                 if (camera.sphereIsVisible(pos, 10.0f)) {
                     cmd.instanceCount_ = 1;
+                    cmd.baseInstance_ = i;
+                    cmd.baseVertex_ = 0;
                     MeshLODDrawInfo drawInfo;
                     f32 distance2 = glm::length2(pos - camera.getPosition());
                     if (distance2 < SQ(sDebugOptions.mLodDistances[0]) || sDebugOptions.mDisableLOD) {
@@ -302,6 +310,7 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
         //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
         //assert(totalCommands == drawCommands.mDrawCommands.size());
         assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
+        LOG_INFO("DRAW {}", instanceData.mInstanceTransforms.size());
         mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
     }
     
