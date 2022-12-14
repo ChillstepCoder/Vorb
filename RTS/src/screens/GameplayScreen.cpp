@@ -369,13 +369,29 @@ void GameplayScreen::updateTilePicking() {
             mSelectedScreenPos = mRightClickUpPickScreenPos;
             // For interact must click in about the same spot
             if (hitResult.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
-                LOG_CRITICAL("WOOOOO");
+                LOG_CRITICAL("Selected Entity");
             }
             else {
                 if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                    f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                    if (mWorldObjectQuery.tryQuery(worldPos)) {
-                        mIsQuerying = true;
+                    TileContainerID containerOwner = hitResult.mCollisionObject->getUserIndex2();
+                    if (containerOwner != INVALID_PHYSICS_USER_INDEX) {
+                        TileIndex index = hitResult.mCollisionObject->getUserIndex3();
+                        LiteTileHandle* tileHandlePtr = new LiteTileHandle(containerOwner, index);
+                        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                            LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
+                            TileHandle handle = tileHandlePtr->toTileHandle();
+                            if (handle.isValid()) {
+                                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TILE_ID_NONE, TILE_ID_NONE));
+                            }
+                            delete tileHandlePtr;
+                        }, tileHandlePtr);
+                    }
+                    else {
+                        // Selected terrain
+                        f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
+                        if (mWorldObjectQuery.tryQuery(worldPos)) {
+                            mIsQuerying = true;
+                        }
                     }
                 }
             }
