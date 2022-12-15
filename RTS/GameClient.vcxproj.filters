@@ -588,7 +588,7 @@
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\ChunkMesher.cpp">
+    <ClCompile Include="src\rendering\mesh\TileContainerMesher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\mesh\ModelMeshBuilder.cpp">
@@ -1418,7 +1418,7 @@
     <ClInclude Include="src\physics\PhysicsConst.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\ChunkMesher.h">
+    <ClInclude Include="src\rendering\mesh\TileContainerMesher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\types\IdTypes.h">

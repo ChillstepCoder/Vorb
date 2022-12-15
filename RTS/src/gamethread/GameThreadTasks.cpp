@@ -63,6 +63,12 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(TileContainerID 
     mGameThreadProcs.enqueue(std::make_pair([](GameThread&, void* vData) {
         StaticPhysicsMeshBuilder* builder = static_cast<StaticPhysicsMeshBuilder*>(vData);
         builder->finish(sWorld->getPhysicsWorld());
+        // Release
+        TileContainer* container = TileContainerRepository::getTileContainer(builder->getOwnerTileContainerID());
+        assert(container->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
+        container->setDidInitPhysics();
+        container->decRef();
+        delete builder;
     }, (void*)builderPtr));
 }
 

@@ -153,8 +153,6 @@ void RenderContext::removeBillboardMesh(const Mesh* mesh) {
 
 RenderContext* RenderContext::sInstance = nullptr;
 
-static TileContainerEventDispatcher::Handle sTileContainerDestroyHandle;
-
 // TODO: Read http://iquilezles.org/articles/
 RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) :
     mScreenResolution(screenResolution),
@@ -163,12 +161,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // State init
     RenderStateManager::initInstance();
 
-    sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainer& container) {
-        assert(IS_GAME_THREAD());
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vContainerId) {
-            context.mStaticModelRenderer->removeInstancesFromContainer((TileContainerID)vContainerId);
-        }, (void*)container.getId());
-    });
+    initEventHandlers();
 
     // TODO: New depth - https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
 
@@ -735,9 +728,29 @@ void RenderContext::addStaticModelInstancesFromGatherer(InstancedStaticModelGath
     mStaticModelRenderer->addInstancesFromGatherer(gatherer);
 }
 
+void RenderContext::initEventHandlers() {
+
+    //// Tile container handlers
+    //static TileContainerEventDispatcher::Handle sTileContainerReadyHandle = TileContainerRepository::addReadyListener([](const TileContainerEvent& containerEvent) {
+    //    assert(IS_GAME_THREAD());
+    //    TileContainer& container = *containerEvent.container;
+    //    // TODO: Not new?
+
+    //    
+    //});
+
+    static TileContainerEventDispatcher::Handle sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainerEvent& containerEvent) {
+        assert(IS_GAME_THREAD());
+        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vContainerId) {
+            context.mStaticModelRenderer->removeInstancesFromContainer((TileContainerID)vContainerId);
+        }, (void*)containerEvent.container->getId());
+    });
+
+}
+
 void RenderContext::updateRenderThreadProcs() {
     PROFILE_FUNCTION();
-    constexpr ui32 BULK_DEQUEUE_SIZE = 32;
+    constexpr ui32 BULK_DEQUEUE_SIZE = 16;
     std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;
     // TODO: Use optik for profiling
@@ -791,6 +804,9 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
                         break;
                     case ChunkState::TILE_LOAD_FINISHED:
                         color = color4(0.0f, 0.0f, 1.0f);
+                        break;
+                    case ChunkState::WAITING_MESH_AND_PHYSICS:
+                        color = color4(0.0f, 0.5f, 1.0f);
                         break;
                     case ChunkState::FINISHED:
                         color = color4(0.0f, 1.0f, 0.0f);

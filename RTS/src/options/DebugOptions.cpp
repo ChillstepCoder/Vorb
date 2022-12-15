@@ -5,9 +5,9 @@ DebugOptions sDebugOptions;
 
 // Lower for faster loading in test
 #ifdef DEBUG
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.3f;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.3f /*0.3*/;
 #else
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.6f;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.6f /*0.6*/;
 #endif
 
 DebugOptions::DebugOptions() :
@@ -108,7 +108,7 @@ DebugOptions::DebugOptions() :
     mLoadRange(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT),
     mLodDistances{65.0f, 125.0f, 500.0f},
     // Camera settings
-    mFoV(75.0f),
+    mFoV(80.0f),
     mZFar(200000.0f),
     mCameraZHeight(1.5f),
     mCameraXYDistance(1.0f),

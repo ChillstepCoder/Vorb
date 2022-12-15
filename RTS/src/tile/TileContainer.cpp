@@ -12,10 +12,10 @@
 
 #include "physics/PhysicsWorld.h"
 
+// TODO: The vector is pointless, every container is a cache miss anyways
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
 TileContainerID sTileContainerIdGen = 0;
-
 
 RUNTIME_INIT_FUNC(reserveTileContainerData) {
     sTileContainers.reserve(500);
@@ -40,11 +40,14 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
     // TODO: Maybe just dont destroy this on the game thread
     assert(IS_GAME_THREAD() || IS_SHUTTING_DOWN);
     sTileContainerLookup.erase(container->mId);
+
+    assert(container->mRefCount == 0);
     // TODO: Profile linear search
     for (size_t i = 0; i < sTileContainers.size(); ++i) {
         if (sTileContainers[i].get() == container) {
             // container->freeData();
-            TileContainerRepository::dispatchDestroy(*container);
+            TileContainerEvent event{ container, {} };
+            TileContainerRepository::dispatchDestroy(event);
             sTileContainers[i] = std::move(sTileContainers.back()); // TODO: We hit a crash here on destructor
             sTileContainers.pop_back(); 
             return;
@@ -63,17 +66,8 @@ std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileCon
     return sTileContainers;
 }
 
-void TileContainerRenderData::reset() {
-    mHasMesh = false;
-    mDirtyDynamicMesh = false;
-}
-
 TileContainer::~TileContainer() {
 
-    if (RenderThreadTasks::exists()) {
-        // TODO: can we move this so its an event?
-        RenderThreadTasks::getInstance().removeTileContainerMesh(this);
-    }
 }
 
 void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain) {
@@ -84,15 +78,11 @@ void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 f
     mId = id;
 }
 
-std::mutex testMutex;
-
 void TileContainer::allocateData() {
-    testMutex.lock();
     size_t numTiles = mDims.x * mDims.y * mDims.z;
     mTiles.resize(numTiles);
     mWalls.resize(numTiles);
     mFineNavData.resize(numTiles);
-    testMutex.unlock();
 }
 
 void TileContainer::freeData() {
@@ -349,7 +339,6 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
 //#include "debugging/DebugRenderer.h" // TODO: REMOVE
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
-    mRenderData.mDirtyDynamicMesh = true;
     if (!mIsTerrain) {
         IChunkGrid& chunkGrid = sWorld->getChunkGrid();
         const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
@@ -401,7 +390,6 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
 
 void TileContainer::removeDoor(Cartesian doorSide, TileIndex tileIndex) {
     assert(false); // Implement removing the navnode edge
-    mRenderData.mDirtyDynamicMesh = true;
     for (size_t i = 0; i < mDynamicTiles.size(); ++i) {
         if (mDynamicTiles[i].mTileIndex == tileIndex && mDynamicTiles[i].mType == e_cast(doorSide)) {
             mDynamicTiles[i] = mDynamicTiles.back();

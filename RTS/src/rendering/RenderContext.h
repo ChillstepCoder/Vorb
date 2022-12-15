@@ -122,6 +122,7 @@ public:
     // Character models
     CharacterRenderer& getCharacterRenderer() { return *mCharacterRenderer; }
 private:
+    void initEventHandlers();
     void updateRenderThreadProcs();
     void renderDebug(const Camera3D& camera, const RenderState& renderState);
     void renderUI(const Camera3D& camera, const RenderState& renderState);
@@ -165,7 +166,7 @@ private:
     std::unique_ptr<CloudManager> mCloudManager;
 
     // Mesh management
-    std::map<TileContainer*, TileContainerMeshData> mTileContainerMeshData;
+    std::map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
     // TODO: Profile vector instead (linear removal vs logn but better iteration performance)
     std::set<const Mesh*> mStaticMeshes;
     std::set<const Mesh*> mDynamicMeshes;

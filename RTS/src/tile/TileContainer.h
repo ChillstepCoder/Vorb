@@ -9,8 +9,48 @@
 class btRigidBody;
 class Mesh;
 
-enum class TILE_CONTAINER_EVENT_TYPE {
-    Destroy
+enum class TileContainerEventType {
+    Ready,
+    EditTile,
+    Destroy,
+};
+
+enum class TileContainerEditEventType : ui8 {
+    ChangeFlags,
+    ChangeLayer,
+    ChangeZPos,
+    ChangeOrientation,
+    ChangeWall,
+};
+
+struct TileContainerEditEvent {
+    TileIndex editPosition;
+    TileContainerEditEventType type;
+    union {
+        struct {
+            BitFlags<TileFlags> prevFlags;
+            BitFlags<TileFlags> newFlags;
+        };
+        struct {
+            TileID prevId;
+            TileID newId;
+            TileLayer layer;
+        };
+        struct {
+            f32 prevGroundZOffset;
+            f32 newGroundZOffset;
+        };
+        struct {
+            TileOrientation prevOrientation;
+            TileOrientation newOrientation;
+        };
+        // TODO: Walls
+    };
+};
+
+struct TileContainerEvent {
+    TileContainer* container = nullptr;
+    TileContainerEditEvent edit; // TODO: Union
 };
 
 struct TileWallContainer {
@@ -45,13 +85,6 @@ struct DynamicTile {
     DynamicTileType mType;
 };
 static_assert(sizeof(DynamicTile) == 8, "Keep small");
-
-struct TileContainerRenderData {
-    std::atomic_bool mHasMesh = false;
-    bool mDirtyDynamicMesh = false;
-
-    void reset();
-};
 
 struct TileContainerEntranceEdge {
     ui16 adjacentIndex;
@@ -105,7 +138,13 @@ struct TileFineNavData {
 };
 static_assert(sizeof(TileFineNavData) == 3, "Keep tiny");
 
-EVENT_DISPATCHER_TYPE(TileContainer, TILE_CONTAINER_EVENT_TYPE, const TileContainer&);
+EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);
+
+enum class TileContainerState : ui8 {
+    LOADING,
+    WAITING_MESH_AND_PHYSICS,
+    READY
+};
 
 class TileContainer;
 // Static class
@@ -118,8 +157,9 @@ public:
 
     static std::vector<std::unique_ptr<TileContainer>>& getTileContainers();
 
-    STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TILE_CONTAINER_EVENT_TYPE::Destroy, const TileContainer&);
-
+    STATIC_EVENT_LISTENER_FUNCS(TileContainer, Ready, TileContainerEventType::Ready, const TileContainerEvent&);
+    STATIC_EVENT_LISTENER_FUNCS(TileContainer, EditTile, TileContainerEventType::EditTile, const TileContainerEvent&);
+    STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
     STATIC_EVENT_DISPATCHER(TileContainer);
 };
 
@@ -132,7 +172,8 @@ public:
     friend class TileContainerRepository;
     friend class ChunkGenerator;
     friend class NavThread; // TODO: Too many friends?
-    friend class NavWorld;
+    friend class NavWorld; // TODO: Remove
+    friend class IChunkGrid;
     friend class PathFinder;
     TileContainer() = default;
     ~TileContainer();
@@ -217,6 +258,10 @@ public:
     TileContainerID getId() const { return mId; }
     bool isTerrain() const { return mIsTerrain; }
 
+    bool isReady() const { return mState == e_cast(TileContainerState::READY); }
+    TileContainerState getState() const { return (TileContainerState)mState.load(); }
+    void setState(TileContainerState state) { mState = e_cast(state); }
+
     // =========== Ownership  ===========
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
     const BitArray& getOwnedTiles() const { return mOwnedTiles; }
@@ -247,10 +292,12 @@ public:
     ui32 getReadLockCount() const { return mReadLockCount; }
     ui32 getRefCount() const { return mRefCount; }
 
+    bool didInitMeshAndPhysics() const { return mDidInitMesh && mDidInitPhysics; }
+    void setDidInitMesh() { mDidInitMesh = true; }
+    void setDidInitPhysics() { mDidInitPhysics = true; }
+
     // =========== Dirty bits  ===========
-    bool isDirtyDynamicMesh() const { return mRenderData.mDirtyDynamicMesh; }
     bool isDirtyNav() const { return mDirtyNav; }
-    void setDirtyDynamicMesh(bool dirty) const { mRenderData.mDirtyDynamicMesh = dirty; }
     void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
     bool isNavMeshing() const { return mIsNavmeshing.load(/*memory order relaxed?*/); }
     bool shouldBuildNavMesh() const { return Services::isUsingNav() && isDirtyNav() && !isNavMeshing(); }
@@ -274,10 +321,6 @@ public:
     const std::vector<TileContainerEntrance>& getEntrances() const { return mEntrances; }
     void addEntrance(TileIndex pos, bool isLocked);
     void removeEntrance(TileIndex pos);
-
-
-    // =========== Rendering  ===========
-    TileContainerRenderData& getRenderData() const { return mRenderData; }
 
 private:
     void onTileChanged(TileIndex tileIndex, bool isReadLocked);
@@ -303,12 +346,12 @@ private:
     ui32 mFloorHeight = 3u;
     mutable std::atomic_uint32_t mReadLockCount = 0u;
     mutable std::atomic_uint32_t mRefCount = 0u;
+    std::atomic_bool mDidInitMesh = false;
+    std::atomic_bool mDidInitPhysics = false;
 
+    std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
     std::atomic_bool mIsNavmeshing = false;
     bool mDirtyData = false;
     mutable bool mDirtyNav = false;
     bool mIsTerrain = false;
-
-    mutable TileContainerRenderData mRenderData;
 };
-// SIZER(TileContainer); // 424

@@ -136,6 +136,10 @@ void StaticPhysicsMeshBuilder::addTriangleBetweenPoints(const f32v3 vertPoints[3
     verts[2] = vertPoints[2];
 }
 
+bool StaticPhysicsMeshBuilder::hasAnyCollision() {
+    return mVerts.size() || mTrackedRigidBodyGatherer.getNumStaticObjectsToAdd();
+}
+
 void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld) {
     // This is thread safe
     physicsWorld.addStaticMeshFromBuilder(*this);

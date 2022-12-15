@@ -18,7 +18,6 @@ inline void reallocateBuffer(GLuint handle, GLsizeiptr size, const void* data, G
     GL.glDeleteBuffers(1, &handle);
     GL.glCreateBuffers(1, &handle);
     GL.glNamedBufferStorage(handle, size, data, flags);
-    LOG_INFO("  Reallocate GLBuffer {} {}", handle, size);
 }
 
 void GLBuffer::allocate(GLsizeiptr size, const void* data, GLbitfield flags) {
@@ -27,7 +26,6 @@ void GLBuffer::allocate(GLsizeiptr size, const void* data, GLbitfield flags) {
         // Brand new buffer
         GL.glCreateBuffers(1, &mHandle);
         GL.glNamedBufferStorage(mHandle, size, data, flags);
-        LOG_INFO("  Allocate GLBuffer {} {}", mHandle, size);
     }
     else if (flags != mFlags) {
         // New flags always re-upload

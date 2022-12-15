@@ -13,12 +13,13 @@ static_assert(sizeof(TrackedStaticRigidBody) == 20, "Keep tiny");
 class TrackedStaticRigidBodyGatherer {
 public:
     friend class PhysicsWorld;
-    TrackedStaticRigidBodyGatherer() = default;
-    ~TrackedStaticRigidBodyGatherer() = default;
+    TrackedStaticRigidBodyGatherer() = delete;
     VORB_NON_COPYABLE_BUT_MOVABLE(TrackedStaticRigidBodyGatherer);
 
     TrackedStaticRigidBodyGatherer(TileContainerID containerId) : mContainerId(containerId) {};
     void addRigidBody(TileIndex ownerTilePosition, const f32v3& pos, CollisionShapeID shapeId) { mRigidBodiesToAdd.emplace_back(TrackedStaticRigidBody{ pos, shapeId, ownerTilePosition }); }
+    TileContainerID getOwnerTileContainerID() const { return mContainerId; }
+    size_t getNumStaticObjectsToAdd() const { return mRigidBodiesToAdd.size(); }
 private:
     std::vector<TrackedStaticRigidBody> mRigidBodiesToAdd;
     TileContainerID mContainerId;

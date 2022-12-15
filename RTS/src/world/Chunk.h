@@ -58,7 +58,7 @@ class Chunk {
 	friend class WorldEditorPanel;
 	friend class ChunkGenerator;
 	friend class TileContainerRenderer;
-	friend class ChunkMesher;
+	friend class TileContainerMesher;
 	friend class IChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavWorld;
@@ -139,7 +139,8 @@ public:
     // =========== Ref counting  ===========
 	void incReadLock() const { mTileContainer->incReadLock(); }
 	void decReadLock() const { mTileContainer->decReadLock(); }
-	inline void incRef() const { mTileContainer->incRef(); }
+	// Only game thread can incref but any thread can decref
+	inline void incRef() const { assert(IS_GAME_THREAD());  mTileContainer->incRef(); }
 	inline void decRef() const { mTileContainer->decRef(); }
     void incReadLockAndRefCount() const { incRef(); mTileContainer->incReadLock();  }
     void decReadLockAndRefCount() const { mTileContainer->decReadLock(); decRef(); }

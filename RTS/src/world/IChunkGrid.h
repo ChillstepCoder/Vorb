@@ -40,14 +40,15 @@ public:
     /*bool addCreateListener(ChunkListeners& remover, const ChunkEventDispatcher::Callback& callback) {
         return remover.appendListener(CHUNK_EVENT_TYPE::Create, callback);
     }*/
-    EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, const Chunk&);
-    EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, const Chunk&);
+    STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, const Chunk&);
+    STATIC_EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, const Chunk&);
 
 private:
     void markChunkForDestroy(Chunk& chunk);
     void beginHeightLoadForChunk(Chunk& chunk);
     void beginTileLoadForChunk(Chunk& chunk);
     void generateChunkAsync(Chunk& chunk);
+    void onChunkReady(Chunk& chunk);
 
     void tickChunk(Chunk& chunk);
 
@@ -59,8 +60,9 @@ private:
     std::vector<Chunk*> mLoadingChunks;
     std::vector<Chunk*> mActiveChunks;
     std::vector<Chunk*> mDestroyingChunks;
+    std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
 
-    EVENT_DISPATCHER(Chunk);
+    STATIC_EVENT_DISPATCHER(Chunk);
 };
 
 extern IChunkGrid* sChunkGrid;

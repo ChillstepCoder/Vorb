@@ -183,8 +183,6 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 uniformData.lodDrawInfos[i] = mesh.mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
             }
 
-
-            LOG_INFO("numShapesToCull {}", uniformData.numShapesToCull);
             mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
             //*instanceData.mNumVisibleMeshesBufferPtr = 0; // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
 
@@ -310,7 +308,6 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
         //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
         //assert(totalCommands == drawCommands.mDrawCommands.size());
         assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
-        LOG_INFO("DRAW {}", instanceData.mInstanceTransforms.size());
         mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
     }
     
@@ -355,6 +352,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
 
 void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer) {
     assert(IS_RENDER_THREAD());
+    PROFILE_FUNCTION();
     if (gatherer.mInstances.empty()) {
         return;
     }

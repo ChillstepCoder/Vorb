@@ -10,8 +10,8 @@
 
 #include "options/DebugOptions.h"
 
-// RENDERING
-#include "rendering/mesh/ChunkMesher.h"
+// Meshing
+#include "rendering/mesh/TileContainerMesher.h"
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
 // IWORLD
@@ -62,15 +62,25 @@ void IChunkGrid::tick() {
                 break;
             }
             case e_cast(ChunkState::TILE_LOAD_FINISHED): {
-                // Now we need mesh and nav
-                chunk.mTileContainer->setDirtyNav(true);
-                chunk.mTileContainer->setDirtyData();
-                mActiveChunks.emplace_back(&chunk);
-                chunk.mState = e_cast(ChunkState::FINISHED);
-                dispatchReady(chunk);
-
-                mLoadingChunks[i] = mLoadingChunks.back();
-                mLoadingChunks.pop_back();
+                chunk.mState = e_cast(ChunkState::WAITING_MESH_AND_PHYSICS);
+                // Copy height data
+                // TODO: Minimum size instead of entire block
+                f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
+                const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
+                memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
+                TileContainerMesher::initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
+                ++i;
+                break;
+            }
+            case e_cast(ChunkState::WAITING_MESH_AND_PHYSICS): {
+                if (chunk.mTileContainer->didInitMeshAndPhysics()) {
+                    mLoadingChunks[i] = mLoadingChunks.back();
+                    mLoadingChunks.pop_back();
+                    onChunkReady(chunk);
+                }
+                else {
+                    ++i;
+                }
                 break;
             }
             default:
@@ -255,6 +265,18 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 
 }
 
+void IChunkGrid::onChunkReady(Chunk& chunk)
+{
+    // Now we need nav
+    chunk.mTileContainer->setDirtyNav(true); // TODO: OBSERVER
+    mActiveChunks.emplace_back(&chunk);
+    chunk.mState = e_cast(ChunkState::FINISHED);
+
+    // Notify observers
+    dispatchReady(chunk);
+    TileContainerEvent event{ chunk.mTileContainer, {} };
+    TileContainerRepository::dispatchReady(event);
+}
 
 void IChunkGrid::tickChunk(Chunk& chunk) {
     assert(chunk.isDataReady());
@@ -262,20 +284,13 @@ void IChunkGrid::tickChunk(Chunk& chunk) {
 
     // If chunk data is dirty
     // TODO: This is a cache miss, is a dirty lookup worth it?
-    // TODO: CliTickChunk
-    if (tileContainer.isDirtyData()) {
-        tileContainer.clearDirtyData();
-        assert(chunk.mState == e_cast(ChunkState::FINISHED));
-        // TODO: Update collision
-        // 
-        // Update dirty mesh
-        // TODO: copy minimum
-        f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
-        const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
-        memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
-        ChunkMesher::buildMeshAndPhysicsAsync(chunk, sWorld->getPhysicsWorld(), heightData);
-        // TODO: Replicate diff
-    }
+    //// TODO: CliTickChunk
+    //if (tileContainer.isDirtyData()) {
+    //    tileContainer.clearDirtyData();
+    //    assert(chunk.mState == e_cast(ChunkState::FINISHED));
+
+    //    // TODO: serialize diff
+    //}
     // TODO: Should this instead be a TileContainerUpdater?
     if (chunk.mTileContainer->shouldBuildNavMesh()) {
         

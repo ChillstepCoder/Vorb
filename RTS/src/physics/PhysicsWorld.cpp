@@ -41,7 +41,10 @@ const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
 
 TileContainerEventDispatcher::Handle sTileContainerDestroyHandle;
 
+
+
 PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository) {
+
     /// collision configuration contains default setup for memory , collision setup . Advanced users can create their own configuration .
     mCollisionConfiguration = std::make_unique<btDefaultCollisionConfiguration>();
     /// use the default collision dispatcher . For parallel processing you can use a diffent dispatcher(see Extras / BulletMultiThreaded)
@@ -58,11 +61,18 @@ PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRe
     mDynamicsWorld->setDebugDrawer(mDebugDrawer.get()); // TODO: Don't do this on release builds?
     mDynamicsWorld->setForceUpdateAllAabbs(false); // Attempt to boost performance
 
+    constexpr size_t reserveColliderCount = 32768;
+    mFreeStaticCollisionObjects.resize(reserveColliderCount);
+    // Preallocate a bunch of objects so we dont have to later
+    for (auto&& obj : mFreeStaticCollisionObjects) {
+        obj = new btCollisionObject();
+    }
+
     // Listen for tile containers to be destroyed
     assert(!sTileContainerDestroyHandle);
-    sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainer& container) {
+    sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainerEvent& event) {
         assert(IS_GAME_THREAD());
-        sWorld->getPhysicsWorld().deletePhysicsForTileContainer(container.getId());
+        sWorld->getPhysicsWorld().deletePhysicsForTileContainer(event.container->getId());
     });
     
 }
@@ -95,6 +105,10 @@ PhysicsWorld::~PhysicsWorld() {
             mDynamicsWorld->removeCollisionObject(obj);
         }
         delete obj;
+    }
+
+    for (auto&& f : mFreeStaticCollisionObjects) {
+        delete f;
     }
 
     //delete collision shapes
@@ -136,7 +150,7 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
             std::lock_guard guard(mMutex);
             for (size_t i = 0; i < count; ++i) {
                 mDynamicsWorld->removeCollisionObject(staticPhysicsMeshes[i].mCollisionObject);
-                delete staticPhysicsMeshes[i].mCollisionObject;
+                freeStaticCollisionObject(staticPhysicsMeshes[i].mCollisionObject);
             }
         }
     }
@@ -201,7 +215,7 @@ void PhysicsWorld::deleteHeightField(HeightmapPatch& patch) {
     delete it->second;
     mHeightShapes.erase(it);
     mDynamicsWorld->removeCollisionObject(patch.mHeightData->mCollider);
-    delete patch.mHeightData->mCollider;
+    freeStaticCollisionObject(patch.mHeightData->mCollider);
     patch.mHeightData->mCollider = nullptr;
 }
 
@@ -251,7 +265,7 @@ void PhysicsWorld::removeTrackedStaticRigidBodyAtPosition(TileContainerID contai
     assert(it2 != lookup.end());
 
     mDynamicsWorld->removeCollisionObject(it2->second);
-    delete it2->second;
+    freeStaticCollisionObject(it2->second);
     lookup.erase(it2);
 }
 
@@ -262,7 +276,7 @@ void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
         deleteStaticPhysicsMesh(std::move(it->second.mStaticMesh));
         for (auto& collisionObjectPair : it->second.mSpatialRigidBodyLookup) {
             mDynamicsWorld->removeCollisionObject(collisionObjectPair.second);
-            delete collisionObjectPair.second;
+            freeStaticCollisionObject(collisionObjectPair.second);
         }
         mTileContainerPhysicsData.erase(it);
     }
@@ -284,18 +298,19 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     PROFILE_FUNCTION();
     assert(IS_GAME_THREAD());
     const TileContainerID tileContainerId = meshBuilder.mTrackedRigidBodyGatherer.mContainerId;
+    assert(meshBuilder.hasAnyCollision());
 
     std::lock_guard lock(mMutex);
     TileContainerPhysicsData& physicsData = mTileContainerPhysicsData[tileContainerId];
     StaticPhysicsMesh& staticMesh = physicsData.mStaticMesh;
     assert(!staticMesh.isValid());
-    staticMesh.mPhysicsMesh = std::make_unique<btTriangleIndexVertexArray>();
     // Cache the vertex and index data because bullet uses our memory rather than a copy
     // TODO: Compress this? Because its a vector it may have extra capacity
     staticMesh.mVerts = std::move(meshBuilder.mVerts);
     staticMesh.mIndices = std::move(meshBuilder.mIndices);
 
     if (staticMesh.mVerts.size()) {
+        staticMesh.mPhysicsMesh = std::make_unique<btTriangleIndexVertexArray>();
         btIndexedMesh indexedMesh;
         indexedMesh.m_vertexType = PHY_FLOAT;
         indexedMesh.m_vertexStride = sizeof(f32v3);
@@ -319,17 +334,17 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, physicsData.mSpatialRigidBodyLookup);
 }
 
-
 void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialRigidBodyLookup& lookup) {
     assert(IS_GAME_THREAD());
+    PROFILE_FUNCTION();
     if (gatherer.mRigidBodiesToAdd.empty()) {
         return;
     }
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
 #ifdef DEBUG
-        const auto&& it2 = lookup.find(it.position);
-        assert(it2 == lookup.end());
+        //const auto&& it2 = lookup.find(it.position);
+        //assert(it2 == lookup.end());
 #endif
         lookup[it.position] = createStaticCollisionObject(gatherer.mContainerId, it.ownerTilePosition, it.position, mShapeRepository.getShape(it.shapeId));
     }
@@ -384,15 +399,16 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
 }
 
 btCollisionObject* PhysicsWorld::createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape) {
+    PROFILE_FUNCTION();
     btTransform startTransform;
     const f32 halfHeight = getShapeHalfHeight(shape);
     startTransform.setOrigin(btVector3(position.x, position.y, position.z + halfHeight)); // TODO: not always offset up?
     startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
-    PROFILE_FUNCTION();
     btAssert((!shape || shape->getShapeType() != INVALID_SHAPE_PROXYTYPE));
 
     btVector3 localInertia(0, 0, 0);
-    btCollisionObject* object = new btRigidBody(0.0f, 0, shape, localInertia);
+    btCollisionObject* object = allocStaticCollisionObject();
+    object->setCollisionShape(shape);
     object->setWorldTransform(startTransform);
 
     // Only entities use user index 0
@@ -431,6 +447,20 @@ f32 PhysicsWorld::getShapeHalfHeight(btCollisionShape* shape) const {
             assert(false && "Need to implement new shape type!");
     }
     return 0.0f;
+}
+
+btCollisionObject* PhysicsWorld::allocStaticCollisionObject() {
+    if (mFreeStaticCollisionObjects.size()) {
+        btCollisionObject* obj = mFreeStaticCollisionObjects.back();
+        *obj = btCollisionObject();
+        mFreeStaticCollisionObjects.pop_back();
+        return obj;
+    }
+    return new btCollisionObject();
+}
+
+void PhysicsWorld::freeStaticCollisionObject(btCollisionObject* obj) {
+    mFreeStaticCollisionObjects.push_back(obj);
 }
 
 void PhysicsWorld::debugRender() const {

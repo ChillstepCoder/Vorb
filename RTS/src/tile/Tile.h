@@ -9,7 +9,7 @@
 // TODO: Do we need rendering here?
 #include "rendering/texture/SubTexture.h"
 
-enum class TileLayer {
+enum class TileLayer : ui8 {
     Ground = 0,
     Main = 1,
     COUNT = 2
@@ -201,7 +201,7 @@ private:
         };
         TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
     };
-    TileNavData navData;
+    TileNavData navData; // TODO: Get tf out of tile data
     TileOrientation orientation = {}; // TODO: Combine these?
     TileOrientation orientationThreadSafe = {};
     f32 groundZOffset;

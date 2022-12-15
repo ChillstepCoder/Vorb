@@ -176,7 +176,7 @@ void GameThread::updateTimeOfDay() {
 void GameThread::updateProcs()
 {
     PROFILE_FUNCTION();
-    constexpr ui32 BULK_DEQUEUE_SIZE = 32;
+    constexpr ui32 BULK_DEQUEUE_SIZE = 16;
     std::pair<GameFunction, void*> procs[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;
     // TODO: Use optik for profiling

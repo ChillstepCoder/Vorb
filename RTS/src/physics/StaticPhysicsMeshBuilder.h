@@ -26,7 +26,9 @@ public:
     void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3);
     void addTriangleBetweenPoints(const f32v3 vertPoints[3]);
     void addTrackedStaticRigidBody(TileIndex ownerTilePosition, const f32v3& pos, CollisionShapeID shapeId) { mTrackedRigidBodyGatherer.addRigidBody(ownerTilePosition, pos, shapeId); }
+    TileContainerID getOwnerTileContainerID() const { return mTrackedRigidBodyGatherer.getOwnerTileContainerID(); }
 
+    bool hasAnyCollision();
     void finish(PhysicsWorld& physicsWorld);
 
 private:

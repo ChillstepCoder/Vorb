@@ -102,6 +102,8 @@ private:
     RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape);
     btCollisionObject* createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape);
     f32 getShapeHalfHeight(btCollisionShape* shape) const;
+    btCollisionObject* allocStaticCollisionObject();
+    void freeStaticCollisionObject(btCollisionObject* obj);
 
     std::unique_ptr<btDefaultCollisionConfiguration> mCollisionConfiguration;
     std::unique_ptr<btCollisionDispatcher> mDispatcher;
@@ -120,6 +122,7 @@ private:
     // For cleanup
     std::map<HeightmapPatchData*, btHeightfieldTerrainShape*> mHeightShapes;
 
+    std::vector<btCollisionObject*> mFreeStaticCollisionObjects;
     moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToAdd;
     moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToDelete;
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
