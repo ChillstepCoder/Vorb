@@ -16,7 +16,7 @@ TimedTileInteractComponent::TimedTileInteractComponent(
     mRepeatCount(repeatCount),
     mInteractFinishedCallback(callback)
 {
-    assert(!mInteractTile->tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_INTERACTING));
+    assert(!mInteractTile->tile->hasFlag(TileFlags::TILE_FLAG_IS_INTERACTING));
     mInteractTile->container->setTileFlag(mInteractTile->index, TileFlags::TILE_FLAG_IS_INTERACTING);
 }
 

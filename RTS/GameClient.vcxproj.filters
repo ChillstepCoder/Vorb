@@ -1436,7 +1436,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\StaticModelInstanceTransform.h">
+    <ClInclude Include="src\rendering\model\StaticModelInstance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h">
@@ -1485,6 +1485,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\b3ChromeTraceUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\TileContainerEvents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

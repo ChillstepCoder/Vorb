@@ -1,6 +1,8 @@
 #pragma once
 
-#include "rendering/model/StaticModelInstanceTransform.h"
+#include "rendering/model/StaticModelInstance.h"
+
+#include "tile/TileContainer.h"
 
 // TODO: Allow chunks to reference each of their tiles part of a mesh buffer. Allow removing and compacting the mesh buffer instead of full rebuild
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
@@ -11,8 +13,18 @@ struct TileModelInstance {
 };
 static_assert(sizeof(TileModelInstance) == 8, "Keep tiny");
 
-// Allows us to look up the specific model at a position
-typedef std::map<f32v3 /*Position offset*/, TileModelInstance, f32v3cmp> InstanceDataMap;
+struct TileModelPositionKey {
+    bool operator<(const TileModelPositionKey& rhs) const { return tileIndex < rhs.tileIndex; }
+    TileIndex tileIndex;
+};
+
+struct ModelInstanceOwner {
+    TileContainerID containerId;
+    TileIndex tileIndex;
+};
+
+// Allows us to look up the specific model at a position for a tile container
+typedef std::map<TileModelPositionKey, TileModelInstance> SpatialInstanceDataMap;
 
 class Camera3D;
 class InstancedStaticModelGatherer;
@@ -21,6 +33,7 @@ class GLIndirectBuffer;
 
 DECL_VG(class GLProgram);
 
+struct TileContainerModelEditEvent;
 
 // Instance data for a specific model ID (TODO: Multiple models packed)
 struct StaticModelInstanceData {
@@ -28,8 +41,8 @@ struct StaticModelInstanceData {
     ~StaticModelInstanceData();
 
     // TODO: Optimize allocation
-    std::vector<StaticModelInstanceTransform> mInstanceTransforms;
-    std::vector<TileContainerID> mInstanceOwners;
+    std::vector<f32m4> mInstanceTransforms;
+    std::vector<ModelInstanceOwner> mInstanceOwners;
     std::unique_ptr<GLIndirectBuffer> mDrawCommands;
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
@@ -51,19 +64,26 @@ public:
     void frameUpdate(const Camera3D& camera);
 
     void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
-    void removeInstanceAtPosition(TileContainerID containerId, const f32v3& position);
+    void removeInstanceAtPosition(TileContainerID containerId, TileIndex position);
     void renderModels(const Camera3D& camera);
     void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
+
 private:
+    void initEventHandlers();
+    void onModelEditEvent(TileContainerModelEditEvent& evnt);
+    void removeTileModelInstanceInternal(TileModelInstance& instance);
+
     std::map<ModelID, StaticModelInstanceData> mModelsToInstances;
-    std::map<TileContainerID, InstanceDataMap> mTileContainerModels;
+    std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 
     const MaterialShader* mStandardMaterial = nullptr;
     const MaterialShader* mShadowMapperMaterial = nullptr;
     const vg::GLProgram* mCullingComputeShader = nullptr;
+
+    TileContainerListeners mTileContainerEventListeners;
 };
 

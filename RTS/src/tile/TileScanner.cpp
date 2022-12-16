@@ -49,7 +49,7 @@ std::vector<TileHandle> TileScanner::scanForResource(TileResource resource, cons
         // Reserved resources will not be counted
         // Store this if it contains a tile we want
         // Skip the ground layer, it is never a resource
-        if (!tileHandle.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED)) {
+        if (!tileHandle.tile->hasFlag(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED)) {
             for (int i = TILE_LAYER_MAIN; i < TILE_LAYER_COUNT; ++i) {
                 const TileID id = tileHandle.tile->getLayers()[i];
                 if (id != TILE_ID_NONE) {

@@ -26,7 +26,7 @@ GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique
     mResource(resource),
     mItemPromise(std::move(itemPromise)) {
     // Gather task requires target tile to be reserved already
-    assert(tileTarget.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
+    assert(tileTarget.tile->hasFlag(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
     assert(mItemPromise->isPromise());
 }
 
@@ -128,7 +128,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
     }
 
     // Interact
-    if (mTileTarget.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_INTERACTING)) {
+    if (mTileTarget.tile->hasFlag(TileFlags::TILE_FLAG_IS_INTERACTING)) {
         // Someone else is using this tile, try again next tick.
         return false;
     }

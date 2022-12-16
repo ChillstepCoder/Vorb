@@ -96,7 +96,7 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
 
             // Mark all tiles as reserved
             for (auto&& it : gatherCmp.mScannedTiles) {
-                assert(!it.getMutableContainer()->getTileAt(it.tileIndex).hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
+                assert(!it.getMutableContainer()->getTileAt(it.tileIndex).hasFlag(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
                 it.getMutableContainer()->setTileFlag(it.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
             }
             break;
@@ -108,7 +108,7 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
         while (businessCmp.mIdleWorkers.size() && gatherCmp.mScannedTiles.size()) {
             TileHandle handle = gatherCmp.mScannedTiles.back();
 
-            assert(handle.tile->hasFlagMainThread(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
+            assert(handle.tile->hasFlag(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
 
             entt::entity worker = businessCmp.mIdleWorkers.front();
 

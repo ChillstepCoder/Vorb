@@ -140,7 +140,24 @@ bool TileContainer::tryAddTileLayer(TileIndex i, const TileData& tileData)
 void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setTileLayer(layer, id);
+    TileID prevId = tile.layers[e_cast(layer)];
+    if (prevId == id) {
+        return;
+    }
+    // Build notify
+    LOG_CRITICAL("Sending edit = TileIndex {} Layer {} id {} prevId {}", i, e_cast(layer), id, tile.layers[e_cast(layer)]);
+    TileContainerEvent evnt;
+    evnt.container = this;
+    evnt.edit.type = TileContainerEditEventType::ChangeLayer;
+    evnt.edit.editPosition = i;
+    evnt.edit.changeLayer.prevId = prevId;
+    evnt.edit.changeLayer.newId = id;
+    evnt.edit.changeLayer.layer = layer;
+    // Edit
+    tile.layers[e_cast(layer)] = id;
+    // Dispatch notify
+    TileContainerRepository::dispatchEditTile(evnt);
+
     onTileChanged(i);
 }
 

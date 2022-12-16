@@ -15,7 +15,7 @@ TileInspectionPanel::TileInspectionPanel(const f32v2& screenPos, const TileHandl
 
 }
 
-#define FLAG_DISPLAY(flag) ImGui::Text(" %-30s  %s", #flag, (tileHandle.tile->hasFlagMainThread(flag) != 0 ? "True" : "False")); ImGui::Separator();
+#define FLAG_DISPLAY(flag) ImGui::Text(" %-30s  %s", #flag, (tileHandle.tile->hasFlag(flag) != 0 ? "True" : "False")); ImGui::Separator();
 
 inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     ImGui::Text("Flags:");

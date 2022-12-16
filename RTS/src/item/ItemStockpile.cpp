@@ -30,7 +30,7 @@ ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt
             const i32v2 worldPos(x, y);
             TileRef ref(sWorld->getTerrainTileHandleAtWorldPos(worldPos));
             bool c = ownershipMask[index];
-            if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlagMainThread(TILE_FLAG_IS_STOCKPILE)*/) {
+            if ((ownershipMask && ownershipMask[index] == false)/* || ref.tile->hasFlag(TILE_FLAG_IS_STOCKPILE)*/) {
                 // If there is already a stockpile here, we are invalid
                 mStorage[index].stack.id = INVALID_STOCKPILE_INDEX;
             }

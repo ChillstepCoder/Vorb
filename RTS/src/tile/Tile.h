@@ -145,8 +145,8 @@ public:
     Tile(TileID ground, TileID mid, f32 zPos);
     Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags);
 
-    bool hasFlagMainThread(TileFlags flag) const { return tileFlags.isBitSet(flag); }
-    bool hasFlagsMaskAnyMainThread(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
+    bool hasFlag(TileFlags flag) const { return tileFlags.isBitSet(flag); }
+    bool hasFlagsMaskAny(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
 
     bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
 
@@ -169,7 +169,6 @@ private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTileData(const TileData& tile) const;
     void addTileData(const TileData& tile);
-    void setTileLayer(TileLayer layer, TileID id);
     void setTileFlag(TileFlags flag);
     void setTileFlags(TileFlags flags);
     void setOrientation(Cartesian dir, TileLayer layer);

@@ -729,23 +729,7 @@ void RenderContext::addStaticModelInstancesFromGatherer(InstancedStaticModelGath
 }
 
 void RenderContext::initEventHandlers() {
-
-    //// Tile container handlers
-    //static TileContainerEventDispatcher::Handle sTileContainerReadyHandle = TileContainerRepository::addReadyListener([](const TileContainerEvent& containerEvent) {
-    //    assert(IS_GAME_THREAD());
-    //    TileContainer& container = *containerEvent.container;
-    //    // TODO: Not new?
-
-    //    
-    //});
-
-    static TileContainerEventDispatcher::Handle sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainerEvent& containerEvent) {
-        assert(IS_GAME_THREAD());
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vContainerId) {
-            context.mStaticModelRenderer->removeInstancesFromContainer((TileContainerID)vContainerId);
-        }, (void*)containerEvent.container->getId());
-    });
-
+    // TODO: Remove?
 }
 
 void RenderContext::updateRenderThreadProcs() {

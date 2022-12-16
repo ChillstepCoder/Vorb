@@ -287,7 +287,7 @@ void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
         ProceduralMeshBuilder staticMeshBuilder(false);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
-        InstancedStaticModelGatherer modelGatherer(building.getTileContainer()->getId());
+        InstancedStaticModelGatherer modelGatherer(building.getTileContainer()->getId(), f32v3(building.getTileContainer()->getWorldPos3D()));
 
         buildMeshAndPhysicsInternal(building, staticMeshBuilder, dynamicMeshBuilder, billboardMeshBuilder, modelGatherer);
 

@@ -35,7 +35,7 @@ void TileContainerMesher::initMeshAndPhysicsAsync(TileContainer& container, cons
         ProceduralMeshBuilder staticMeshBuilder(true);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
         BillboardMeshBuilder billboardMeshBuilder;
-        InstancedStaticModelGatherer modelGatherer(containerId);
+        InstancedStaticModelGatherer modelGatherer(containerId, f32v3(container.getWorldPos3D()));
         StaticPhysicsMeshBuilder physicsBuilder(containerId);
 
         // TODO: Memory pool for this data?

@@ -521,10 +521,10 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                         f32v3 worldPos = tilePosition + tileContainerWorldPos;
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
-                            modelGatherer.addInstance(tileData.modelId, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
+                            modelGatherer.addInstance(tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
                         }
                         else {
-                            modelGatherer.addInstance(tileData.modelId, worldPos, Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
+                            modelGatherer.addInstance(tileData.modelId, index, worldPos, Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
                         }
                         if (physMesh && tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
                             physMesh->addTrackedStaticRigidBody(index, worldPos, tileData.collisionShapeID);

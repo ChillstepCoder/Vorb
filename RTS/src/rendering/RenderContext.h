@@ -106,6 +106,7 @@ public:
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
     const f32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return mCamera; }
+    InstancedStaticModelRenderer& getInstancedStaticModelRenderer() { return *mStaticModelRenderer; }
 
     // Meshing
     void addTerrainMesh(const TerrainMesh* mesh) { assert(IS_RENDER_THREAD()); mTerrainMeshes.insert(mesh); }

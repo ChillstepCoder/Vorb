@@ -490,7 +490,7 @@ void PhysicsWorld::debugRender() const {
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
             btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
             btRigidBody* body = btRigidBody::upcast(obj);
-            if (body->getMass()) {
+            if (body && body->getMass()) {
                 if (showDynamic) {
                     mDebugDrawer->setIsStaticMode(false);
                     mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_DYNAMIC);
@@ -498,15 +498,15 @@ void PhysicsWorld::debugRender() const {
             }
             else {
                 // Terrain and other static geo
-                if (body->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::TERRAIN_SHAPE_PROXYTYPE) {
+                if (obj->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::TERRAIN_SHAPE_PROXYTYPE) {
                     if (showTerrain) {
                         mDebugDrawer->setIsStaticMode(true);
-                        mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_TERRAIN);
+                        mDynamicsWorld->debugDrawObject(obj->getWorldTransform(), obj->getCollisionShape(), DEBUG_COLOR_TERRAIN);
                     }
                 }
                 else if (showStatic) {
                     mDebugDrawer->setIsStaticMode(true);
-                    mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_STATIC);
+                    mDynamicsWorld->debugDrawObject(obj->getWorldTransform(), obj->getCollisionShape(), DEBUG_COLOR_STATIC);
                 }
             }
         }

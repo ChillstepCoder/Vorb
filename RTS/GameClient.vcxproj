@@ -600,7 +600,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
-    <ClInclude Include="src\rendering\model\StaticModelInstanceTransform.h" />
+    <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
@@ -645,6 +645,7 @@
     <ClInclude Include="src\tile\Tile.h" />
     <ClInclude Include="src\tile\TileConst.h" />
     <ClInclude Include="src\tile\TileContainer.h" />
+    <ClInclude Include="src\tile\TileContainerEvents.h" />
     <ClInclude Include="src\tile\TileFlags.h" />
     <ClInclude Include="src\tile\TileHandle.h" />
     <ClInclude Include="src\tile\TileResource.h" />

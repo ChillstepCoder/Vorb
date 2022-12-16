@@ -3,7 +3,7 @@
 
 #include "rendering/mesh/MeshBuilderCommon.h"
 #include "rendering/texture/SubTexture.h"
-#include "rendering/model/StaticModelInstanceTransform.h"
+#include "rendering/model/StaticModelInstance.h"
 
 #include "rendering/model/Model3D.h"
 #include "rendering/mesh/Mesh.h"

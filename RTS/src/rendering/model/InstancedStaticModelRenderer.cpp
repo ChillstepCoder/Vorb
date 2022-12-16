@@ -3,17 +3,49 @@
 
 #include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
+#include "resources/TileRepository.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 #include "rendering/mesh/ModelMeshBuilder.h"
+#include "rendering/RenderThreadTasks.h"
+#include "rendering/RenderContext.h"
 #include "options/DebugOptions.h"
 
 #include "camera/Camera3D.h"
 
 #include "rendering/gl/GL.h"
+
+#include <boost/pool/singleton_pool.hpp>
+
+
+// Types of events we handle
+constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeLayer) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
+static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+
+struct TileContainerModelEditEvent {
+
+    void* operator new(size_t count);
+    void operator delete(void* pointer, size_t size);
+
+    TileContainerID containerId;
+    TileContainerEditEvent editEvent = {};
+};
+
+struct edit_task_pool {};
+using edit_singleton_task_pool = boost::singleton_pool<edit_task_pool, sizeof(TileContainerModelEditEvent), boost::default_user_allocator_new_delete, boost::details::pool::default_mutex, 256u>;
+
+void* TileContainerModelEditEvent::operator new(size_t count) {
+    UNUSED(count);
+    return edit_singleton_task_pool::malloc();
+}
+
+void TileContainerModelEditEvent::operator delete(void* pointer, size_t size) {
+    UNUSED(size);
+    return edit_singleton_task_pool::free(pointer);
+}
 
 constexpr int WORK_GROUP_SIZE = 64;
 // TODO: Read about advanced gpu driven rendering https://advances.realtimerendering.com/s2015/aaltonenhaar_siggraph2015_combined_final_footer_220dpi.pdf
@@ -44,6 +76,7 @@ StaticModelInstanceData::StaticModelInstanceData()/* : mNumVisibleMeshesBuffer(s
     // TODO: Investigate why, hardware? Driver? - Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
    /* mNumVisibleMeshesBufferPtr = (uint32_t*)glMapNamedBuffer(mNumVisibleMeshesBuffer.getHandle(), GL_READ_WRITE);
     assert(mNumVisibleMeshesBufferPtr);*/
+
 }
 
 StaticModelInstanceData::~StaticModelInstanceData()
@@ -57,6 +90,8 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() :
     mStandardMaterial = materialManager.getMaterialShader("standard_model");
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper_instanced");
     mCullingComputeShader = materialManager.getComputeShader("culling_and_lod");
+
+    initEventHandlers();
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
@@ -111,8 +146,8 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             {
                 PROFILE_SCOPE("VBO");
                 // GPU buffer is larger to accomidate the work group size, or we get corruption
-                const GLsizei gpuBufferSizeBytes = sizeof(StaticModelInstanceTransform) * workGroupRoundedSize;
-                const GLsizei cpuBufferSizeBytes = sizeof(StaticModelInstanceTransform) * instanceData.mInstanceTransforms.size();
+                const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
+                const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * instanceData.mInstanceTransforms.size();
                 if (instanceData.mTransformsVbo == 0) {
                     //LOG_INFO("NEW");
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
@@ -131,7 +166,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                     glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, 1, 1);
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstanceTransform));
+                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(f32m4));
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else if (gpuBufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
@@ -141,7 +176,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(StaticModelInstanceTransform));
+                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(f32m4));
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else {
@@ -149,8 +184,8 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                     // Only upload data after the first dirty instance, which should amortize things a bit
                     glNamedBufferSubData(
                         instanceData.mTransformsVbo,
-                        instanceData.mFirstDirtyInstance * sizeof(StaticModelInstanceTransform),
-                        cpuBufferSizeBytes - instanceData.mFirstDirtyInstance * sizeof(StaticModelInstanceTransform),
+                        instanceData.mFirstDirtyInstance * sizeof(f32m4),
+                        cpuBufferSizeBytes - instanceData.mFirstDirtyInstance * sizeof(f32m4),
                         instanceData.mInstanceTransforms.data() + instanceData.mFirstDirtyInstance
                     );
                 }
@@ -209,9 +244,9 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             // CPU Culling
             for (size_t i = 0; i < instanceData.mInstanceTransforms.size(); ++i) {
                 DrawElementsIndirectCommand& cmd = inDrawCommands.mDrawCommands[i];
-                StaticModelInstanceTransform& instance = instanceData.mInstanceTransforms[i];
+                const f32m4& transform = instanceData.mInstanceTransforms[i];
                 // Columns are first
-                const f32v3& pos = reinterpret_cast<const f32v3&>(instance.matrix[3]);
+                const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
                 if (camera.sphereIsVisible(pos, 10.0f)) {
                     cmd.instanceCount_ = 1;
                     cmd.baseInstance_ = i;
@@ -256,13 +291,27 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 void InstancedStaticModelRenderer::addInstance(ModelID modelId, const f32v3& position, f32 rotation) {
     assert(IS_RENDER_THREAD());
     StaticModelInstanceData& instanceData = mModelsToInstances[modelId];
-    instanceData.mInstanceTransforms.emplace_back(StaticModelInstanceTransform{ glm::translate(glm::mat4(1.0f), position) });
+    instanceData.mInstanceTransforms.emplace_back(glm::translate(f32m4(1.0f), position));
     assert(false); // TODO: Support this
    // instanceData.mDirtyDrawCommands = true;
 }
 
-void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID containerId, const f32v3& position) {
+void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID containerId, TileIndex position) {
     assert(IS_RENDER_THREAD());
+    auto&& it = mTileContainerModels.find(containerId);
+    if (it != mTileContainerModels.end()) {
+        TileModelPositionKey key{ position };
+        SpatialInstanceDataMap& spatialMap = it->second;
+        auto&& spit = spatialMap.find(key);
+
+        if (spit != spatialMap.end()) {
+            removeTileModelInstanceInternal(spit->second);
+            spatialMap.erase(spit);
+            if (spatialMap.empty()) {
+                mTileContainerModels.erase(it);
+            }
+        }
+    }
 }
 
 void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
@@ -358,10 +407,10 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
     }
     // Gatherer should only be used once for init, and future updates should be done per tile
     assert(mTileContainerModels.find(gatherer.mContainerID) == mTileContainerModels.end());
-    InstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
+    SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[gatherer.mContainerID];
     for (auto&& it : gatherer.mInstances) {
         // Insert all instance transforms ordered into the transforms array
-        const std::vector<StaticModelInstanceTransform>& sourceInstances = it.second;
+        const std::vector<StaticModelInstance>& sourceInstances = it.second;
         StaticModelInstanceData& instanceData = mModelsToInstances[it.first];
         const size_t startIndex = instanceData.mInstanceTransforms.size();
         // Track where our buffer is dirty
@@ -373,12 +422,12 @@ void InstancedStaticModelRenderer::addInstancesFromGatherer(InstancedStaticModel
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             size_t instanceIndex = startIndex + i;
-            const StaticModelInstanceTransform& modelInstance = sourceInstances[i];
-            instanceData.mInstanceTransforms[instanceIndex] = modelInstance;
-            instanceData.mInstanceOwners[instanceIndex] = gatherer.mContainerID;
-            const f32v3& pos = reinterpret_cast<const f32v3&>(modelInstance.matrix[3]);
-            assert(tileContainerModels.find(pos) == tileContainerModels.end());
-            tileContainerModels[pos] = { it.first, (ui32)instanceIndex };
+            const StaticModelInstance& modelInstance = sourceInstances[i];
+            instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
+            instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+            TileModelPositionKey positionKey{ modelInstance.tileIndex };
+            assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
+            tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
         }
     }
 }
@@ -391,31 +440,9 @@ void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID 
     if (it == mTileContainerModels.end()) {
         return;
     }
-    InstanceDataMap& tileContainerModels = it->second;
+    SpatialInstanceDataMap& tileContainerModels = it->second;
     for (auto& it : tileContainerModels) {
-        TileModelInstance& instance = it.second;
-        StaticModelInstanceData& instanceData = mModelsToInstances[instance.mModelID];
-        const ui32 instanceIndex = instance.mInstanceIndex;
-        if (instanceIndex < instanceData.mFirstDirtyInstance) {
-            instanceData.mFirstDirtyInstance = instanceIndex;
-        }
-
-        // Tell back owner about new position by grabbing transform position to look up
-        const f32v3& pos = reinterpret_cast<const f32v3&>(instanceData.mInstanceTransforms.back().matrix[3]);
-        TileContainerID backOwner = instanceData.mInstanceOwners.back();
-        auto&& it2 = mTileContainerModels.find(backOwner);
-        assert(it2 != mTileContainerModels.end());
-        InstanceDataMap& backTileContainerModels = it2->second;
-        auto&& backRef = backTileContainerModels.find(pos);
-        assert(backRef != backTileContainerModels.end());
-        backRef->second.mInstanceIndex = instanceIndex;
-
-        // Replace this instance with back instance
-        instanceData.mInstanceTransforms[instanceIndex] = std::move(instanceData.mInstanceTransforms.back());
-        instanceData.mInstanceTransforms.pop_back();
-        instanceData.mInstanceOwners[instanceIndex] = backOwner;
-        instanceData.mInstanceOwners.pop_back();
-
+        removeTileModelInstanceInternal(it.second);
     }
     mTileContainerModels.erase(it);
 
@@ -428,4 +455,80 @@ ui32 InstancedStaticModelRenderer::getNumModels() const {
         numModels += it.second.mInstanceTransforms.size();
     }
     return numModels;
+}
+
+void InstancedStaticModelRenderer::initEventHandlers() {
+    TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
+    TileContainerRepository::addEditTileListener(mTileContainerEventListeners, [](const TileContainerEvent& containerEvent) {
+        assert(IS_GAME_THREAD());
+        if (e_cast(containerEvent.edit.type) & MODEL_EDIT_HANDLE_MASK) {
+            TileContainerModelEditEvent* evnt = new TileContainerModelEditEvent();
+            evnt->containerId = containerEvent.container->getId();
+            evnt->editEvent = containerEvent.edit;
+            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vEditEvent) {
+                TileContainerModelEditEvent* evnt = static_cast<TileContainerModelEditEvent*>(vEditEvent);
+                // TODO: I don't really like how roundabout this is
+                context.getInstancedStaticModelRenderer().onModelEditEvent(*evnt);
+                delete evnt;
+            }, (void*)evnt);
+        }
+    });
+
+    TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [](const TileContainerEvent& containerEvent) {
+        assert(IS_GAME_THREAD());
+        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vContainerId) {
+            // TODO: I don't really like how roundabout this is
+            context.getInstancedStaticModelRenderer().removeInstancesFromContainer((TileContainerID)vContainerId);
+        }, (void*)containerEvent.container->getId());
+    });
+}
+
+
+void InstancedStaticModelRenderer::onModelEditEvent(TileContainerModelEditEvent& evnt) {
+    switch (evnt.editEvent.type) {
+        case TileContainerEditEventType::ChangeFlags:
+            break;
+        case TileContainerEditEventType::ChangeLayer: {
+            const TileID prevId = evnt.editEvent.changeLayer.prevId;
+            if (prevId != TILE_ID_NONE) {
+                const TileData& prevTileData = TileRepository::getTileData(evnt.editEvent.changeLayer.prevId);
+                if (prevTileData.shape == TileShape::MODEL) {
+                    removeInstanceAtPosition(evnt.containerId, evnt.editEvent.editPosition);
+                }
+            }
+            break;
+        }
+        case TileContainerEditEventType::ChangeZPos:
+            break;
+        case TileContainerEditEventType::ChangeOrientation:
+            break;
+        default:
+            assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
+            break;
+    }
+    static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+}
+
+void InstancedStaticModelRenderer::removeTileModelInstanceInternal(TileModelInstance& instance) {
+    StaticModelInstanceData& instanceData = mModelsToInstances[instance.mModelID];
+    const ui32 instanceIndex = instance.mInstanceIndex;
+    if (instanceIndex < instanceData.mFirstDirtyInstance) {
+        instanceData.mFirstDirtyInstance = instanceIndex;
+    }
+
+    // Tell back owner about new position by grabbing transform position to look up
+    ModelInstanceOwner backOwner = instanceData.mInstanceOwners.back();
+    auto&& it2 = mTileContainerModels.find(backOwner.containerId);
+    assert(it2 != mTileContainerModels.end());
+    SpatialInstanceDataMap& backTileContainerModels = it2->second;
+    TileModelPositionKey key{ backOwner.tileIndex };
+    auto&& backRef = backTileContainerModels.find(key);
+    assert(backRef != backTileContainerModels.end());
+    backRef->second.mInstanceIndex = instanceIndex;
+
+    // Replace this instance with back instance
+    instanceData.mInstanceTransforms[instanceIndex] = std::move(instanceData.mInstanceTransforms.back());
+    instanceData.mInstanceTransforms.pop_back();
+    instanceData.mInstanceOwners[instanceIndex] = backOwner;
+    instanceData.mInstanceOwners.pop_back();
 }

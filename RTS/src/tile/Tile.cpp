@@ -204,11 +204,6 @@ void Tile::addTileData(const TileData& tile) {
     layers[tile.layer] = tile.id;
 }
 
-void Tile::setTileLayer(TileLayer layer, TileID id) {
-    assert(IS_GAME_THREAD());
-    layers[e_cast(layer)] = id;
-}
-
 void Tile::setGroundZPosition(f32 groundZPosition) {
     assert(IS_GAME_THREAD());
     groundZOffset = groundZPosition;

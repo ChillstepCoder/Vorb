@@ -57,7 +57,7 @@ constexpr TileFlags FORCE_COARSE_NAV_FLAGS[4] = {
 
 // toDir = south means we enter from the north
 bool canEnterTileInDirection(const Tile& tile, const TileWalls& walls, Cartesian toDir) {
-    if (!tile.hasFlagsMaskAnyMainThread(IMPASSABLE_TILE_FLAGS_MASK)) {
+    if (!tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
         const Cartesian fromDir = CARTESIAN_OPPOSITES[e_cast(toDir)];
         if (!tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDir)])) return false;
         return walls.walls[e_cast(fromDir)].canNavThrough();
@@ -65,7 +65,7 @@ bool canEnterTileInDirection(const Tile& tile, const TileWalls& walls, Cartesian
     return false;
 }
 bool canEnterTileInDirectionDiagonal(const Tile& tile, const TileWalls& walls, Cartesian8 toDir) {
-    if (!tile.hasFlagsMaskAnyMainThread(IMPASSABLE_TILE_FLAGS_MASK)) {
+    if (!tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
         const CartesianPair fromDirs = CARTESIAN_DIAGONAL_OPPOSITES[e_cast(toDir)];
         if (!tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDirs.first)]) || !tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDirs.second)])) return false;
         return (walls.walls[e_cast(fromDirs.first)].canNavThrough() && walls.walls[e_cast(fromDirs.second)].canNavThrough());
@@ -123,7 +123,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                 TileFineNavData& fineNavData = fineNavDataArray[index];
                 fineNavData.reset();
                 // Impassible tiles are not part of navgraph
-                if (tile.hasFlagsMaskAnyMainThread(IMPASSABLE_TILE_FLAGS_MASK)) {
+                if (tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
                     continue;
                 }
 
@@ -152,7 +152,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                     } else {
                         adjIndex = index - dims.x;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::SOUTH, ty > 0 && !tile.hasFlagMainThread(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH), tileContainer, groundZPosition, fineNavData, tz);
+                    setFineNavEdgeCartesian(adjIndex, Cartesian8::SOUTH, ty > 0 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH), tileContainer, groundZPosition, fineNavData, tz);
                 }
                 else {
                     canGoSouthWest = canGoSouthEast = false;
@@ -168,7 +168,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                     else {
                         adjIndex = index - 1;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::WEST, tx > 0 && !tile.hasFlagMainThread(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST), tileContainer, groundZPosition, fineNavData, tz);
+                    setFineNavEdgeCartesian(adjIndex, Cartesian8::WEST, tx > 0 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST), tileContainer, groundZPosition, fineNavData, tz);
                 }
                 else {
                     canGoSouthWest = canGoNorthWest = false;
@@ -184,7 +184,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                     else {
                         adjIndex = index + 1;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::EAST, tx < dims.x - 1 && !tile.hasFlagMainThread(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST), tileContainer, groundZPosition, fineNavData, tz);
+                    setFineNavEdgeCartesian(adjIndex, Cartesian8::EAST, tx < dims.x - 1 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST), tileContainer, groundZPosition, fineNavData, tz);
                 }
                 else {
                     canGoSouthEast = canGoNorthEast = false;
@@ -201,7 +201,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer, OUT Coars
                     else {
                         adjIndex = index + dims.x;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::NORTH, ty < dims.y - 1 && !tile.hasFlagMainThread(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH), tileContainer, groundZPosition, fineNavData, tz);
+                    setFineNavEdgeCartesian(adjIndex, Cartesian8::NORTH, ty < dims.y - 1 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH), tileContainer, groundZPosition, fineNavData, tz);
                 }
                 else {
                     canGoNorthWest = canGoNorthEast = false;
@@ -439,7 +439,7 @@ bool NavWorld::tryBuildEdge(NavGraphTileDataToCopy& navTileData, const TileFineN
     ui16 adjacentNodeIndex = INVALID_NAV_NODE_INDEX; // Signifies external edge
     if (fineNavData.canAccessDirection(CARTESIAN_TO_CARTESIAN8[e_cast(dir)])) {
         const Tile& tile = tileContainer.getTileAt(index);
-        const bool hasFlag = tile.hasFlagMainThread(FORCE_COARSE_NAV_FLAGS[e_cast(dir)]);
+        const bool hasFlag = tile.hasFlag(FORCE_COARSE_NAV_FLAGS[e_cast(dir)]);
         if (isBorder || !tileContainer.isTileOwned(outerIndex) || hasFlag) {
             coarseEdgeType = TileCoarseNavEdgeType::EXTERIOR;
             // External edge

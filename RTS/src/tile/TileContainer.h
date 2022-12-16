@@ -3,55 +3,13 @@
 #include "tile/Tile.h"
 #include "tile/TileHandle.h"
 #include "util/BitArray.h"
+#include "tile/TileContainerEvents.h"
 
 #include "physics/StaticPhysicsMesh.h"
 
 class btRigidBody;
 class Mesh;
 
-enum class TileContainerEventType {
-    Ready,
-    EditTile,
-    Destroy,
-};
-
-enum class TileContainerEditEventType : ui8 {
-    ChangeFlags,
-    ChangeLayer,
-    ChangeZPos,
-    ChangeOrientation,
-    ChangeWall,
-};
-
-struct TileContainerEditEvent {
-    TileIndex editPosition;
-    TileContainerEditEventType type;
-    union {
-        struct {
-            BitFlags<TileFlags> prevFlags;
-            BitFlags<TileFlags> newFlags;
-        };
-        struct {
-            TileID prevId;
-            TileID newId;
-            TileLayer layer;
-        };
-        struct {
-            f32 prevGroundZOffset;
-            f32 newGroundZOffset;
-        };
-        struct {
-            TileOrientation prevOrientation;
-            TileOrientation newOrientation;
-        };
-        // TODO: Walls
-    };
-};
-
-struct TileContainerEvent {
-    TileContainer* container = nullptr;
-    TileContainerEditEvent edit; // TODO: Union
-};
 
 enum DynamicTileType : ui8 {
     // Walls (Keep first)

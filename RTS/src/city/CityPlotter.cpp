@@ -386,7 +386,7 @@ bool CityPlotter::markDistrictTilesAsOwned(CityDistrict& district) {
     sWorld->efficientEnumTileAABB(district.aabb, [&wasConflict](Chunk& chunk, TileIndex tileIndex) {
         // TODO: Look into forcing branch prediction, we should rarely conflict
         const Tile& tile = chunk.getTileContainer()->getTileAt(tileIndex);
-        if (tile.hasFlagMainThread(TileFlags::TILE_FLAG_IN_CITY)) {
+        if (tile.hasFlag(TileFlags::TILE_FLAG_IN_CITY)) {
             wasConflict = true;
         }
         else {
