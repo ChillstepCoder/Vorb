@@ -280,7 +280,9 @@ f32 randFromf32v3(const f32v3& x, ui64 additional) {
 
 
 void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) {
-    building.mTileContainer->incReadLockAndRef();
+
+    building.mTileContainer->incRef();
+    assert(false && "Make this work with new paragdim");
     Services::Threadpool::ref().addTask([&building](ThreadPoolWorkerData*) {
         ProceduralMeshBuilder staticMeshBuilder(false);
         ProceduralMeshBuilder dynamicMeshBuilder(false);
@@ -856,7 +858,7 @@ void BuildingMesher::meshRoomCeilings(const Building& building, ProceduralMeshBu
                     const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
                     if (z == tileContainer.getDims().z - 1 || // If were at the top
                         !ownedTiles.getBit(aboveIndex) || // Or tile above us is an exterior tile
-                        !tileContainer.getTileAt(aboveIndex).isEmptyThreadSafe()) { // Or its an interior tile and not empty
+                        !tileContainer.getTileAt(aboveIndex).isEmpty()) { // Or its an interior tile and not empty
                         // Mesh ceiling
                         f32v3 startPos(x, y, tileContainer.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
                         meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodTexture, rawWoodTexture.mUvRect, COLOR_WHITE);

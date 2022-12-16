@@ -139,28 +139,19 @@ void CliWorldInterface::updateDebugRenderState(IWorld& world, RenderState& rende
         // Add loading chunks
         for (auto&& chunk : loadingChunks) {
             BitFlags<DebugChunkFlags> flags;
-            if (chunk->getTileContainer() && chunk->getTileContainer()->isNavMeshing()) {
-                flags.setBit(DebugChunkFlags::IS_NAVMESHING);
-            }
-            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::LOADING, (ui8)chunk->getRefCount(), (ui8)chunk->getReadLockCount(), flags };
+            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::LOADING, (ui8)chunk->getRefCount(), flags };
         }
 
         // Add active chunks
         for (auto&& chunk : activeChunks) {
             BitFlags<DebugChunkFlags> flags;
-            if (chunk->getTileContainer() && chunk->getTileContainer()->isNavMeshing()) {
-                flags.setBit(DebugChunkFlags::IS_NAVMESHING);
-            }
-            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::ACTIVE, (ui8)chunk->getRefCount(), (ui8)chunk->getReadLockCount(), flags };
+            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::ACTIVE, (ui8)chunk->getRefCount(), flags };
         }
 
         // Add destroying chunks
         for (auto&& chunk : destroyingChunks) {
             BitFlags<DebugChunkFlags> flags;
-            if (chunk->getTileContainer() && chunk->getTileContainer()->isNavMeshing()) {
-                flags.setBit(DebugChunkFlags::IS_NAVMESHING);
-            }
-            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::DESTROYING, (ui8)chunk->getRefCount(), (ui8)chunk->getReadLockCount(), flags };
+            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::DESTROYING, (ui8)chunk->getRefCount(), flags };
         }
     }
     else {

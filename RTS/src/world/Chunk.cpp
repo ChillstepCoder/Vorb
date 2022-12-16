@@ -71,12 +71,14 @@ void Chunk::dispose() {
 
 void Chunk::updateMainThread() {
     assert(mTileContainer);
-    mTileContainer->updateMainThread();
 
     // Structure thread safety
-    if (mStructuresNeedingThreadSafeCopy.size() && !isReadLocked()) {
+    // TODO: REEEEE
+    if (mStructuresNeedingThreadSafeCopy.size()) {
         for (TileIndex& i : mStructuresNeedingThreadSafeCopy) {
             ChunkStructureVector& handle = mStructures[i];
+            // mmmmm no
+            assert(false);
             handle.copyThreadData();
         }
         mStructuresNeedingThreadSafeCopy.clear();
@@ -212,30 +214,14 @@ void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
 void Chunk::setStructureAt(const TileIndex index, Structure* structure) {
     ChunkStructureVector& handle = mStructures[index];
     assert(structure != nullptr);
-    const bool readLocked = isReadLocked();
-    handle.add(structure, readLocked);
-   
-    if (readLocked) {
-        if (!handle.isQueuedWorkerThreadCopy()) {
-            mStructuresNeedingThreadSafeCopy.push_back(index);
-            handle.setQueuedWorkerThreadCopy();
-        }
-    }
+    handle.add(structure);
 }
 
 
 void Chunk::removeStructureAt(const TileIndex index, Structure* structure) {
     ChunkStructureVector& handle = mStructures[index];
     assert(structure != nullptr);
-    const bool readLocked = isReadLocked();
-    handle.remove(structure, readLocked);
-
-    if (readLocked) {
-        if (!handle.isQueuedWorkerThreadCopy()) {
-            mStructuresNeedingThreadSafeCopy.push_back(index);
-            handle.setQueuedWorkerThreadCopy();
-        }
-    }
+    handle.remove(structure);
 }
 
 StructureArrayPtr Chunk::getStructuresAt(const TileIndex index) const {
@@ -277,7 +263,7 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
                     TileIndex tileIndex = mTileContainer->getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
                     Tile& tile = mTileContainer->getMutableTileAt(tileIndex);
-                    if (tile.getLayersMainThread()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
+                    if (tile.getLayers()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
                         mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + worldPos));
                     }

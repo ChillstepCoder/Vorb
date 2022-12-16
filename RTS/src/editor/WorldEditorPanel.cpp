@@ -465,7 +465,7 @@ void WorldEditorPanel::updateTileEdit() {
         if (chunkID != prevChunkID || tileIndex != prevTileIndex) {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
-            tileContainer.addTile(tileIndex, data);
+            tileContainer.addTileLayer(tileIndex, data);
 
             if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
                 f32 height = sHeightmapGrid->computeMinHeightAtTile(mHitResult.mPosition) + mGroundTileOffset;

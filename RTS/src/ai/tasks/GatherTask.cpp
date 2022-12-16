@@ -144,7 +144,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
             // TODO: Interact lock???
             auto&& tileRef = cmp.mInteractTile;
             //if (tileHandle.tile.layers[cmp.mTileLayer])
-            TileID tileId = tileRef->tile->getLayersMainThread()[cmp.mTileLayer];
+            TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
             tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
             tileRef->container->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()

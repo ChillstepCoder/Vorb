@@ -189,6 +189,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
     assert(IS_NAV_THREAD());
+    assert(false && "We can't ever query tile information here, we need to use the nav graph only");
     // TODO: Profiling
     PreciseTimer timer;
     const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
@@ -247,10 +248,11 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             bool isExternal = (cartesian4 != Cartesian::NONE) && (edgeType == TileFineNavEdgeType::EXTERIOR);
             if (isExternal/* || adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)*/) {
                 // External edge
-                const f32 zPos = handle.toTileHandle().tile->getGroundZOffsetThreadSafe();
+                const f32 zPos = handle.toTileHandle().tile->getGroundZOffset();
                 const i32v3 containerOffset = container->getTileXYZOffsetWithZScale(handle.index);
                 const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + zPos));
-                const TileHandle externalHandle = sWorld->getTileHandleAtWorldPosThreadSafe(offset + container->getWorldPos3D());
+                // TODO: BAD
+                const TileHandle externalHandle = sWorld->getTileHandleAtWorldPos(offset + container->getWorldPos3D());
                 if (!externalHandle.isValid()) {
                     continue;
                 }
@@ -521,7 +523,9 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
                 const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * container->getDims().y) * i;
                 const Tile& innerTile = container->getTileAt(nextIndex);
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
-                worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZOffsetThreadSafe());
+                // TODO: Not thread safe!
+                assert(false);
+                worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZOffset());
                 TileHandle outerHandle = sWorld->getTileHandleAtWorldPosThreadSafe(worldPosOuter);
                 if (!outerHandle.isValid()) {
                     continue;

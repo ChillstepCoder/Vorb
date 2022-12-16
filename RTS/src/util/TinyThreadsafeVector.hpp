@@ -10,8 +10,8 @@ template <typename T>
 class TinyThreadsafeVector {
 public:
 
-    void add(const T& val, bool isReadLocked);
-    void remove(const T& val, bool isReadLocked);
+    void add(const T& val);
+    void remove(const T& val);
     void copyThreadData(); // Must not be read locked
 
     std::pair<const T*, ui16> getMainThreadData() const { assert(IS_GAME_THREAD()); return std::make_pair(mMainThreadData ? mMainThreadData.get() : nullptr, mMainThreadDataSize); }
@@ -19,6 +19,7 @@ public:
     ui16 getMainThreadDataSize() { assert(IS_GAME_THREAD()); return mMainThreadDataSize; }
     ui16 getWorkerThreadDataSize() { assert(!IS_GAME_THREAD()); return mWorkerThreadDataSize; }
 
+    // TODO: DELETE
     void setQueuedWorkerThreadCopy() { mIsQueuedWorkerThreadCopy = true; }
     bool isQueuedWorkerThreadCopy() const { return mIsQueuedWorkerThreadCopy; }
 
@@ -41,19 +42,19 @@ void TinyThreadsafeVector<T>::copyThreadData() {
 }
 
 template <typename T>
-void TinyThreadsafeVector<T>::remove(const T& val, bool isReadLocked) {
+void TinyThreadsafeVector<T>::remove(const T& val) {
     assert(false); // TODO: Implement
 }
 
 template <typename T>
-void TinyThreadsafeVector<T>::add(const T& val, bool isReadLocked) {
+void TinyThreadsafeVector<T>::add(const T& val) {
     assert(IS_GAME_THREAD());
     addInternal(mMainThreadData, mMainThreadDataSize, val);
     // If not read locked, do the same to the worker thread data
     // if we arent queued to copy later
-    if (!isReadLocked && !mIsQueuedWorkerThreadCopy) {
+  /*  if (!isReadLocked && !mIsQueuedWorkerThreadCopy) {
         addInternal(mWorkerThreadData, mWorkerThreadDataSize, val);
-    }
+    }*/
 }
 
 template <typename T>

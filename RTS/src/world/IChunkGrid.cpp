@@ -62,18 +62,19 @@ void IChunkGrid::tick() {
                 break;
             }
             case e_cast(ChunkState::TILE_LOAD_FINISHED): {
-                chunk.mState = e_cast(ChunkState::WAITING_MESH_AND_PHYSICS);
+                chunk.mState = e_cast(ChunkState::WAITING_MESH_PHYSICS_NAV);
                 // Copy height data
                 // TODO: Minimum size instead of entire block
                 f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
                 const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                 memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
                 TileContainerMesher::initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
+                Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
                 ++i;
                 break;
             }
-            case e_cast(ChunkState::WAITING_MESH_AND_PHYSICS): {
-                if (chunk.mTileContainer->didInitMeshAndPhysics()) {
+            case e_cast(ChunkState::WAITING_MESH_PHYSICS_NAV): {
+                if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mLoadingChunks[i] = mLoadingChunks.back();
                     mLoadingChunks.pop_back();
                     onChunkReady(chunk);
@@ -89,9 +90,9 @@ void IChunkGrid::tick() {
     }
 
     // Tick all active chunks
-    for (Chunk* chunk : mActiveChunks) {
+   /* for (Chunk* chunk : mActiveChunks) {
         tickChunk(*chunk);
-    }
+    }*/
 
     // Update all destroying chunks
     for (size_t i = 0; i < mDestroyingChunks.size();) {
@@ -188,7 +189,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
                     chunksToBeginLoad.emplace_back(&chunk);
                     mLoadingChunks.emplace_back(&chunk);
                 }
-                else if (chunk.mState == e_cast(ChunkState::FINISHED)) {
+                else if (chunk.mState == e_cast(ChunkState::READY)) {
                     // If we are already loaded, just insert us back into the active list
                     mActiveChunks.emplace_back(&chunk);
                 }
@@ -268,33 +269,12 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 void IChunkGrid::onChunkReady(Chunk& chunk)
 {
     // Now we need nav
-    chunk.mTileContainer->setDirtyNav(true); // TODO: OBSERVER
     mActiveChunks.emplace_back(&chunk);
-    chunk.mState = e_cast(ChunkState::FINISHED);
+    chunk.mState = e_cast(ChunkState::READY);
+    chunk.mTileContainer->setState(TileContainerState::READY);
 
     // Notify observers
     dispatchReady(chunk);
     TileContainerEvent event{ chunk.mTileContainer, {} };
     TileContainerRepository::dispatchReady(event);
 }
-
-void IChunkGrid::tickChunk(Chunk& chunk) {
-    assert(chunk.isDataReady());
-    TileContainer& tileContainer = *chunk.mTileContainer;
-
-    // If chunk data is dirty
-    // TODO: This is a cache miss, is a dirty lookup worth it?
-    //// TODO: CliTickChunk
-    //if (tileContainer.isDirtyData()) {
-    //    tileContainer.clearDirtyData();
-    //    assert(chunk.mState == e_cast(ChunkState::FINISHED));
-
-    //    // TODO: serialize diff
-    //}
-    // TODO: Should this instead be a TileContainerUpdater?
-    if (chunk.mTileContainer->shouldBuildNavMesh()) {
-        
-        Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
-    }
-}
-

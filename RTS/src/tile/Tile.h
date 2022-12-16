@@ -146,13 +146,9 @@ public:
     Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags);
 
     bool hasFlagMainThread(TileFlags flag) const { return tileFlags.isBitSet(flag); }
-    bool hasFlagThreadSafe(TileFlags flag) const { return tileFlagsThreadSafe.isBitSet(flag); }
     bool hasFlagsMaskAnyMainThread(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
-    bool hasFlagsMaskAnyThreadSafe(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
 
     bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
-
-    void updateThreadSafeLayers();
 
     // Only nav thread can access this data
     ui16 getNavNodeIndex_DEBUG_MAIN_THREAD() const { return navData.coarseNavNodeIndex; }
@@ -161,30 +157,25 @@ public:
     bool canNavInDirection(Cartesian8 dir) const;
     f32 getEdgeHeightOffset(Cartesian dir) const;
 
-    f32 getGroundZOffsetMainThread() const { assert(IS_GAME_THREAD()); return groundZOffset; }
-    f32 getGroundZOffsetThreadSafe() const { /*assert(!IS_GAME_THREAD());*/ return groundZOffsetThreadSafe; }
+    f32 getGroundZOffset() const { return groundZOffset; }
 
-	const TileID* getLayersMainThread() const { assert(IS_GAME_THREAD()); return layers; }
-    const TileID* getLayersThreadSafe() const { assert(!IS_GAME_THREAD()); return layersThreadSafe; }
+	const TileID* getLayers() const { return layers; }
 
-    Cartesian getOrientationMainThread(TileLayer layer) const;
-    Cartesian getOrientationThreadSafe(TileLayer layer) const;
+    Cartesian getOrientation(TileLayer layer) const;
 
-    bool isEmptyMainThread() const { assert(IS_GAME_THREAD()); return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MAIN] == TILE_ID_NONE; }
-    bool isEmptyThreadSafe() const { assert(!IS_GAME_THREAD()); return layersThreadSafe[TILE_LAYER_GROUND] == TILE_ID_NONE && layersThreadSafe[TILE_LAYER_MAIN] == TILE_ID_NONE; }
+    bool isEmpty() const { return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MAIN] == TILE_ID_NONE; }
 
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTileData(const TileData& tile) const;
-    void addTileData(const TileData& tile, bool isReadLocked);
-    void setTileLayer(TileLayer layer, TileID id, bool isReadLocked);
-    void setTileFlag(TileFlags flag, bool isReadLocked);
-    void setTileFlags(TileFlags flags, bool isReadLocked);
-    void setOrientation(Cartesian dir, TileLayer layer, bool isReadLocked);
-    void clearTileFlag(TileFlags flag, bool isReadLocked);
-    void clearTileFlags(bool isReadLocked);
-    void setGroundZPosition(f32 groundZPosition, bool isReadLocked);
-    bool isUpdateQueued() { return tileFlags.isBitSet(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE); }
+    void addTileData(const TileData& tile);
+    void setTileLayer(TileLayer layer, TileID id);
+    void setTileFlag(TileFlags flag);
+    void setTileFlags(TileFlags flags);
+    void setOrientation(Cartesian dir, TileLayer layer);
+    void clearTileFlag(TileFlags flag);
+    void clearTileFlags();
+    void setGroundZPosition(f32 groundZPosition);
 
     // ================================= Data =================================
     union { // These can safely be modified at any time and will only be accessed by the main thread
@@ -194,20 +185,11 @@ private:
         };
         TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
     };
-    union { // These can only be modified when there is no read lock or active nav tasks, these are read by worker threads
-        struct {
-            TileID groundLayerThreadSafe;
-            TileID mainLayerThreadSafe;
-        };
-        TileID layersThreadSafe[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
-    };
     TileNavData navData; // TODO: Get tf out of tile data
-    TileOrientation orientation = {}; // TODO: Combine these?
-    TileOrientation orientationThreadSafe = {};
-    f32 groundZOffset;
-    f32 groundZOffsetThreadSafe;
     BitFlags<TileFlags> tileFlags;
-    BitFlags<TileFlags> tileFlagsThreadSafe;
+    TileOrientation orientation = {}; // TODO: Combine these?
+    f32 groundZOffset;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 44, "Keep small");
+static_assert(sizeof(Tile) == 32, "Keep small");
+//SIZER(Tile);

@@ -27,17 +27,16 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_STOCKPILE);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IN_CITY);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_HAS_ITEM_STACK);
-    FLAG_DISPLAY(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_IMPASSABLE);
     FLAG_DISPLAY(TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
 
-    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 11, "Update");
+    static_assert(e_cast(TileFlags::TILE_FLAG_TERM) == 1 << 10, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
 
-    const ui32 id = tileHandle.tile->getLayersMainThread()[layer];
+    const ui32 id = tileHandle.tile->getLayers()[layer];
     if (id == TILE_ID_NONE) {
         ImGui::Text(format, id, "NONE");
     }
@@ -59,7 +58,7 @@ void TileInspectionPanel::updateAndRender() {
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("World Position: <%u, %u>", worldPos.x, worldPos.y);
-    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getGroundZOffsetMainThread());
+    ImGui::Text("Base Z Position: %f", mTileHandle.tile->getGroundZOffset());
     ImGui::Text("ChunkID: %u", ChunkID::fromWorldI32v2(worldPos));
     ImGui::Text("Tile Index: %u", mTileHandle.tileIndex);
     ImGui::Text("Container Offset: <%u,%u>", xyOffset.x, xyOffset.y);

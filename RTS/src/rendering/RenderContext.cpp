@@ -805,10 +805,10 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
                     case ChunkState::TILE_LOAD_FINISHED:
                         color = color4(0.0f, 0.0f, 1.0f);
                         break;
-                    case ChunkState::WAITING_MESH_AND_PHYSICS:
+                    case ChunkState::WAITING_MESH_PHYSICS_NAV:
                         color = color4(0.0f, 0.5f, 1.0f);
                         break;
-                    case ChunkState::FINISHED:
+                    case ChunkState::READY:
                         color = color4(0.0f, 1.0f, 0.0f);
                         break;
                     default:
@@ -825,9 +825,6 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
             for (int i = 0; i < chunkDebugState.mRefCount; ++i) {
                 DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
             }
-            for (int i = 0; i < chunkDebugState.mReadLockCount; ++i) {
-                DebugRenderer::drawWireQuad(worldPos + f32v2(REF_BOX_WIDTH, REF_BOX_WIDTH * 2.0f) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(0.0f, 1.0f, 1.0f));
-            }
         }
     }
 
@@ -841,14 +838,12 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
             DebugRenderer::reserveLines(sWorld->getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = TileContainerRepository::getTileContainers();
             for (auto&& container : containers) {
-                if (!container->isNavMeshing()) {
-                    const f32v3 containerCenter = container->getWorldPosCenter3D();
-                    const f32v3& cameraPos = camera.getPosition();
-                    if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
-                        // TODO: make this only work on host world
-                        assert(false);
-                        //mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
-                    }
+                const f32v3 containerCenter = container->getWorldPosCenter3D();
+                const f32v3& cameraPos = camera.getPosition();
+                if (glm::length2(cameraPos - containerCenter) <= SQ(NAVGRAPH_RENDER_DISTANCE)) {
+                    // TODO: make this only work on host world
+                    assert(false);
+                    //mWorld.getNavWorld().debugDrawCoarseNavGraphForContainer(*container, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
                 }
             }
             wasRenderingNavGraph = true;

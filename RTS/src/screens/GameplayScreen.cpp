@@ -381,7 +381,8 @@ void GameplayScreen::updateTilePicking() {
                             LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
                             TileHandle handle = tileHandlePtr->toTileHandle();
                             if (handle.isValid()) {
-                                handle.getMutableContainer()->setTileAt(handle.tileIndex, Tile(TILE_ID_NONE, TILE_ID_NONE));
+                                handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Ground, TILE_ID_NONE);
+                                handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Main, TILE_ID_NONE);
                             }
                             delete tileHandlePtr;
                         }, tileHandlePtr);
@@ -429,7 +430,9 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TileRepository::getTile(StrToken("grass1")), TILE_ID_NONE, TILE_ID_NONE));
+                    TileContainer* container = tileHandlePtr->getMutableContainer();
+                    container->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Ground, TILE_ID_NONE);
+                    container->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TILE_ID_NONE);
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -439,7 +442,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TileRepository::getTile(StrToken("tree_small"))));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("tree_small")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -449,7 +452,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TileRepository::getTile(StrToken("bush_med"))));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("bush_med")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }
@@ -459,7 +462,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
                     TileHandle* tileHandlePtr = static_cast<TileHandle*>(vTileHandlePtr);
-                    tileHandlePtr->getMutableContainer()->setTileAt(tileHandlePtr->tileIndex, Tile(TILE_ID_NONE, TileRepository::getTile(StrToken("rock1")), 2u));
+                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::getTile(StrToken("rock1")));
                     delete tileHandlePtr;
                 }, tileHandlePtr);
             }

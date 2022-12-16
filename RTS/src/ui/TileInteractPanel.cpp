@@ -208,7 +208,8 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     // Debug render
     TileHandle handle = mWorldObjectQuery.getTileHandle();
     f32v3 tilePos(f32v3(handle.getWorldPos3D()));
-    tilePos.z += handle.tile->getGroundZOffsetThreadSafe();
+    // TODO: Not thread safe!
+    tilePos.z += handle.tile->getGroundZOffset();
     DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");
@@ -240,7 +241,8 @@ ui32 TileInteractPanel::updateAndRenderStructureTile() {
     }
     TileHandle handle = mWorldObjectQuery.getTileHandle();
     f32v3 tilePos(f32v3(handle.getWorldPos3D()));
-    tilePos.z += handle.tile->getGroundZOffsetThreadSafe();
+    // TODO: Not thread safe!
+    tilePos.z += handle.tile->getGroundZOffset();
     DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
     return resultFlags;
 }

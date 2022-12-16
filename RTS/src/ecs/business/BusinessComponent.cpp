@@ -119,7 +119,7 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
             TileLayer gatherLayer;
             if (handle.tile->hasHarvestableResource(gatherCmp.mResourceToGather, &gatherLayer)) {
 
-                const TileData& tileData = TileRepository::getTileData(handle.tile->getLayersMainThread()[e_cast(gatherLayer)]);
+                const TileData& tileData = TileRepository::getTileData(handle.tile->getLayers()[e_cast(gatherLayer)]);
                 // TODO: Play animation of tree falling
 
                 // TODO: HANDLE MULTIPLE DROPS

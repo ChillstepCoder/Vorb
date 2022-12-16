@@ -201,9 +201,9 @@ void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 
     const ui32v3& dims = tileContainer.getDims();
     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
     const Tile& tile = tileContainer.getTileAt(tileIndex);
-    const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
+    const f32 groundZPosition = tile.getGroundZOffset();
     // TODO: Greedy meshing
-    const TileWalls& walls = tileContainer.getWallsThreadSafe(tileIndex);
+    const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
     // TODO: Use paint ID
     ui32& prevInnerIndex = prevSouthNorthWallIndices.indices[isNorth * 2];
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isNorth * 2 + 1];
@@ -214,12 +214,12 @@ void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 
         mergeOrMakeWallFace(tileContainer, prevInnerIndex, wallData, groundZPosition, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, 0.0f, isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, true);
         // Outside walls
         if (isNorth) {
-            if (y == dims.y - 1 || tileContainer.getWallsThreadSafe(tileIndex + dims.x).south.wallID == TILE_ID_NONE) {
+            if (y == dims.y - 1 || tileContainer.getWallsMainThread(tileIndex + dims.x).south.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, 1.0f + OUTSIDE_EPSILON, false);
             }
         }
         else {
-            if (y == 0 || tileContainer.getWallsThreadSafe(tileIndex - dims.x).north.wallID == TILE_ID_NONE) {
+            if (y == 0 || tileContainer.getWallsMainThread(tileIndex - dims.x).north.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, -OUTSIDE_EPSILON, false);
             }
         }
@@ -246,9 +246,9 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
     const ui32v3& dims = tileContainer.getDims();
     TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset(x, y, z);
     const Tile& tile = tileContainer.getTileAt(tileIndex);
-    const f32 groundZPosition = tile.getGroundZOffsetThreadSafe();
+    const f32 groundZPosition = tile.getGroundZOffset();
     // TODO: Greedy meshing
-    const TileWalls& walls = tileContainer.getWallsThreadSafe(tileIndex);
+    const TileWalls& walls = tileContainer.getWallsMainThread(tileIndex);
     // TODO: Use paint ID
     ui32& prevInnerIndex = prevSouthNorthWallIndices.indices[isEast * 2];
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isEast * 2 + 1];
@@ -259,12 +259,12 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
         mergeOrMakeWallFace(tileContainer, prevInnerIndex, wallData, groundZPosition, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, isEast * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, 0.0f, true);
         // Outside walls
         if (isEast) {
-            if (x == dims.x - 1 || tileContainer.getWallsThreadSafe(tileIndex + 1).west.wallID == TILE_ID_NONE) {
+            if (x == dims.x - 1 || tileContainer.getWallsMainThread(tileIndex + 1).west.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 1.0f + OUTSIDE_EPSILON, 0.0f, false);
             }
         }
         else {
-            if (x == 0 || tileContainer.getWallsThreadSafe(tileIndex + 1).east.wallID == TILE_ID_NONE) {
+            if (x == 0 || tileContainer.getWallsMainThread(tileIndex + 1).east.wallID == TILE_ID_NONE) {
                 mergeOrMakeWallFace(tileContainer, prevOuterIndex, wallData, groundZPosition, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, -OUTSIDE_EPSILON, 0.0f, false);
             }
         }
@@ -488,9 +488,9 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
         for (ui32 y = 0; y < tileDims.y; ++y) {
             for (ui32 x = 0; x < tileDims.x; ++x, ++index) {
                 const Tile& tile = tileContainer.getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZOffsetThreadSafe(); // TODO: Thread safe when async
+                const f32 groundZPosition = tile.getGroundZOffset(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayersThreadSafe()[layerIndex];  // TODO: Thread safe when async
+                    TileID layerTile = tile.getLayers()[layerIndex];  // TODO: Thread safe when async
                     // Blocked or invalid tiles have no render
                     if (isTileBlockedOrNone(layerTile)) {
                         continue;
@@ -546,7 +546,7 @@ void TileMeshBuilderMethods::meshTileContainerDynamic(ProceduralMeshBuilder& mes
         if (dynamicTile.mType <= DynamicTileType::WALL_TERM) {
             Cartesian dir = Cartesian(dynamicTile.mType);
             static_assert(e_cast(DynamicTileType::WALL_SOUTH) == 0 && e_cast(DynamicTileType::WALL_TERM) == 3);
-            const TileWall& wall = tileContainer.getWallsThreadSafe(tileIndex).walls[e_cast(dir)];
+            const TileWall& wall = tileContainer.getWallsMainThread(tileIndex).walls[e_cast(dir)];
             assert(wall.wallID != TILE_ID_NONE);
             // Check if is door
             const TileData& tileData = TileRepository::getTileData(wall.wallID);
@@ -634,7 +634,7 @@ void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder
     const SubTexture& texture = tileData.texture;
     const Tile& tile = *tileHandle.tile;
 
-    const f32 topZPosition = tile.getGroundZOffsetThreadSafe();
+    const f32 topZPosition = tile.getGroundZOffset();
     const f32v3 topPos(tilePos.x, tilePos.y, topZPosition);
 
     /*TileHandle neighbors[4];
@@ -729,7 +729,7 @@ void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder
 }
 
 void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, OPT StaticPhysicsMeshBuilder* physMesh) {
-    const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZOffsetThreadSafe();
+    const f32 topHeight = tilePos.z + tileHandle.tile->getGroundZOffset();
 
     const f32v3 botSW(tilePos);
     const f32v3 botSE(tilePos.x + 1.0f, tilePos.y, tilePos.z);
@@ -828,8 +828,8 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
     const f32v3 tilePos = tileContainer.getTileXYZOffsetWithZScale(tileHandle.tileIndex);
     // Place stair steps
     // TODO: ThreadSafe
-    const f32 heightAdd = tileHandle.tile->getGroundZOffsetThreadSafe();
-    const Cartesian dir = tile.getOrientationThreadSafe((TileLayer)tileData.layer);
+    const f32 heightAdd = tileHandle.tile->getGroundZOffset();
+    const Cartesian dir = tile.getOrientation((TileLayer)tileData.layer);
     const f32v2 stepDir = CARTESIAN_NORMALS[e_cast(dir)];
     constexpr f32 stepWidth = 1.0f / STEPS_PER_TILE;
     const f32 stairPieceBaseHeight = tilePos.z + heightAdd;

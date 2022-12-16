@@ -28,10 +28,8 @@ struct DebugChunkRenderState {
     ChunkState mState;
     DebugChunkListIndex mList;
     ui8 mRefCount;
-    ui8 mReadLockCount;
     BitFlags<DebugChunkFlags> mFlags;
 };
-static_assert(sizeof(DebugChunkRenderState) == 20);
 
 class RenderState {
     friend class CliWorldInterface;

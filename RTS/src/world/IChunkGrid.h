@@ -50,7 +50,7 @@ private:
     void generateChunkAsync(Chunk& chunk);
     void onChunkReady(Chunk& chunk);
 
-    void tickChunk(Chunk& chunk);
+    //void tickChunk(Chunk& chunk);
 
     // Virtual interface
    // virtual void onChunkFinished(Chunk& chunk) = 0;

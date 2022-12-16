@@ -112,7 +112,7 @@ public:
 
     // =========== State  ===========
 	bool isInvalid() const { return mState == e_cast(ChunkState::INVALID); }
-	bool isDataReady() const { return mState == e_cast(ChunkState::FINISHED); }
+	bool isDataReady() const { return mState == e_cast(ChunkState::READY); }
 
 	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
@@ -126,33 +126,20 @@ public:
     // =========== Terrain update  ===========
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
 
-
     // =========== Tiles  ===========
     TileContainer* getTileContainer() { return mTileContainer; }
     const TileContainer* getTileContainer() const { return mTileContainer; }
 
-
-    // =========== Dirtyness  ===========
-	void dirtyNavGraph() { mTileContainer->setDirtyNav(true); }
-
-
     // =========== Ref counting  ===========
-	void incReadLock() const { mTileContainer->incReadLock(); }
-	void decReadLock() const { mTileContainer->decReadLock(); }
 	// Only game thread can incref but any thread can decref
 	inline void incRef() const { assert(IS_GAME_THREAD());  mTileContainer->incRef(); }
 	inline void decRef() const { mTileContainer->decRef(); }
-    void incReadLockAndRefCount() const { incRef(); mTileContainer->incReadLock();  }
-    void decReadLockAndRefCount() const { mTileContainer->decReadLock(); decRef(); }
     ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
-    ui32 getReadLockCount() const { return mTileContainer ? mTileContainer->getReadLockCount() : 0; }
 
 	f32 getDistanceFromLoadCenterSQ() const { return mDistanceFromLoadCenterSQ; }
 	void setDistanceFromLoadCenterSQ(f32 distSq) { mDistanceFromLoadCenterSQ = distSq; }
 
 private:
-    // =========== Read lock ===========
-	bool isReadLocked() const { return mTileContainer->isReadLocked(); }
 
     // =========== Members ===========
 	ChunkID mChunkId;

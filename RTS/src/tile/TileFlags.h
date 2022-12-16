@@ -14,13 +14,12 @@ enum class TileFlags : TileFlagType {
     TILE_FLAG_IS_STOCKPILE                = 1 << 5, // True if owned by a stockpile
      // True if inside city limits
     TILE_FLAG_HAS_ITEM_STACK              = 1 << 6,
-    TILE_FLAG_QUEUED_THREADSAFE_UPDATE    = 1 << 7,
-    TILE_FLAG_IS_RESOURCE_RESERVED        = 1 << 8,
-    TILE_FLAG_IS_IMPASSABLE               = 1 << 9,
-    TILE_FLAG_IS_BLOCKED_BY_STRUCTURE     = 1 << 10,
-    TILE_FLAG_IN_CITY                     = 1 << 11,
+    TILE_FLAG_IS_RESOURCE_RESERVED        = 1 << 7,
+    TILE_FLAG_IS_IMPASSABLE               = 1 << 8,
+    TILE_FLAG_IS_BLOCKED_BY_STRUCTURE     = 1 << 9,
+    TILE_FLAG_IN_CITY                     = 1 << 10,
 
-    TILE_FLAG_TERM                        = 1 << 11, // Keep this = last
+    TILE_FLAG_TERM                        = 1 << 10, // Keep this = last
 };
 static_assert(e_cast(TileFlags::TILE_FLAG_TERM) <= 0x8000); // Must fit into a short
 

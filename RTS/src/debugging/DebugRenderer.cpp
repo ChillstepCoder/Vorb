@@ -15,6 +15,9 @@
 
 #include "rendering/gl/GL.h"
 
+// For shared ibo, maybe not the place
+#include "rendering/mesh/ProceduralMeshBuilder.h"
+
 void bindSimpleMeshVertexAttribs(VGVertexArray vao) {
     GL.glEnableVertexArrayAttrib(vao, 0);
     GL.glVertexArrayAttribFormat(vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshVertex, position));
@@ -360,12 +363,14 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         GL.glBindVertexArray(mesh.vao);
         if (mesh.type == DebugMeshType::LINES) {
             glLineWidth(1.0f);
+            glVertexArrayElementBuffer(mesh.vao, 0);
             glDrawArrays(GL_LINES, 0, (GLsizei)mesh.numVerts);
             RenderStats::recordDrawCall(mesh.numVerts / 2);
         }
         // Quads
         else {
-            glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
+            glVertexArrayElementBuffer(mesh.vao, ProceduralMeshBuilder::sQuadIbo);
+            glDrawElements(GL_TRIANGLES, (GLsizei)(mesh.numVerts * 6) / 4, GL_UNSIGNED_INT, 0);
             RenderStats::recordDrawCall(mesh.numVerts / 2);
         }
 

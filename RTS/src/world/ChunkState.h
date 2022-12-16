@@ -5,8 +5,8 @@ enum class ChunkState : ui8 {
     WAITING_HEIGHT,
     LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
     TILE_LOAD_FINISHED,
-    WAITING_MESH_AND_PHYSICS, // TODO: This doesnt make sense on dedicated server
-    FINISHED,
+    WAITING_MESH_PHYSICS_NAV, // TODO: This doesnt make sense on dedicated server
+    READY,
 };
 
 enum class ChunkFlags : ui8 {

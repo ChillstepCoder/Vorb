@@ -69,7 +69,7 @@ bool updateComponentFinePath(entt::entity entity, NavigationComponent& navCmp, C
 	// Check for stuck on new tile/jump
 	const Tile* targetTile = sWorld->getTileHandleAtWorldPos(nextTilePos).tile;
 	if (targetTile) {
-        f32 baseZ = targetTile->getGroundZOffsetMainThread();
+        f32 baseZ = targetTile->getGroundZOffset();
         if (baseZ >= pos.z + 0.1f /*1.1*/) {
             // Climb
 			motionCmp.mDesiredMode = CharacterLocomotionMode::JUMPING;

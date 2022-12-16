@@ -73,11 +73,8 @@ void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle
 void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
     assert(IS_GAME_THREAD());
     TileContainerID id;
-    assert(!tileContainer.mIsNavmeshing.load());
     id = tileContainer.getId();
-    tileContainer.incReadLockAndRef();
-    tileContainer.setDirtyNav(false);
-    tileContainer.mIsNavmeshing.store(true);
+    tileContainer.incRef();
 
     TileContainer* tileContainerPtr = &tileContainer;
 
@@ -89,7 +86,6 @@ void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
         buildArgs.container = tileContainerPtr;
         assert(tileContainerPtr);
         dynamic_cast<SrvWorldInterface*>(sWorld)->getNavWorld().buildNavGraphForContainer(*tileContainerPtr, buildArgs.navGraph, buildArgs.navTileData);
-        tileContainerPtr->mIsNavmeshing.store(false);
         mNavGraphBuildTasks.enqueue(std::move(buildArgs));
     }, nullptr);
 }
@@ -107,12 +103,10 @@ void NavThread::navThreadFunc() {
     assert(srvWorld);
     NavWorld& navWorld = srvWorld->getNavWorld();
     while (!mStop.load()) {
-        // TODO: Super tiny chance of race condition here in isRunning(). We could dequeue a single task and be considered not running very briefly even tho we are
-        mRunningPathfind = false;
-        mRunningPathfind = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
-        bool hasTask = mRunningPathfind;
+        bool hasTask = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
 
         // Any finished navgraphs must be processed first
+        // TODO:BULK
         while (mNavGraphBuildTasks.try_dequeue(graphArgs)) {
             // Assign graph
             navWorld.assignCoarseNavGraph(graphArgs.container->getId(), std::move(graphArgs.navGraph));
@@ -129,7 +123,8 @@ void NavThread::navThreadFunc() {
                 }
             }
             // Release resources
-            graphArgs.container->decReadLockAndRef();
+            graphArgs.container->setDidInitNav();
+            graphArgs.container->decRef();
         }
 
         if (hasTask) {
@@ -153,5 +148,4 @@ void NavThread::navThreadFunc() {
             }
         }
     }
-    mRunningPathfind = false;
 }

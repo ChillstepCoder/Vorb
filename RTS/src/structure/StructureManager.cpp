@@ -44,8 +44,8 @@ Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3
             assert(chunk.isDataReady());
             const i32v2 xyOffset(worldXY.x - chunk.getChunkID().getWorldPosInt().x, worldXY.y - chunk.getChunkID().getWorldPosInt().y);
             chunk.setStructureAt(chunk.getTileContainer()->getTileIndexFromXYZOffset(xyOffset.x, xyOffset.y, 0), rv);
-            // Nav is dirty since structure will block
-            chunk.getTileContainer()->setDirtyNav(true);
+            // TODO: Fire event handler that nav thread can respond to
+            LOG_CRITICAL("Need to update nav for chunk.setStructureAt since it may block navmesh");
         }
     }
 

@@ -27,12 +27,9 @@ void HostWorld::tick(f32 elapsedSec) {
     Services::Threadpool::ref().mainThreadUpdate();
     Services::NavThread::ref().mainThreadUpdate();
 
-    // Update any pending updates if pathfinding is idle
-    if (!Services::NavThread::ref().isRunningPathfind()) {
-        PROFILE_SCOPE("Update chunks");
-        for (auto&& chunk : getActiveChunks()) {
-            chunk->updateMainThread();
-        }
+    // TODO: REMOVE Update any pending updates if pathfinding is idle
+    for (auto&& chunk : getActiveChunks()) {
+        chunk->updateMainThread();
     }
 
     // Update all dynamic tiles

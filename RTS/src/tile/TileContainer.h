@@ -53,16 +53,6 @@ struct TileContainerEvent {
     TileContainerEditEvent edit; // TODO: Union
 };
 
-struct TileWallContainer {
-    TileWalls walls; // Cartesian
-    TileWalls wallsThreadSafe; // Cartesian
-
-    void copyThreadSafeData() {
-        wallsThreadSafe = walls;
-    }
-};
-static_assert(sizeof(TileWallContainer) == 48, "Keep small");
-
 enum DynamicTileType : ui8 {
     // Walls (Keep first)
     WALL_SOUTH = e_cast(Cartesian::SOUTH),
@@ -187,14 +177,12 @@ private:
 public:
     void allocateData();
 
-    void updateMainThread();
     void updateActiveDynamicTiles();
 
     // =========== Tile mutators ===========
-    void setTileAt(TileIndex i, Tile tile);
     bool canAddTileData(TileIndex i, const TileData& tileData) const;
-    void addTile(TileIndex i, const TileData& tileData);
-    bool tryAddTile(TileIndex i, const TileData& tileData);
+    void addTileLayer(TileIndex i, const TileData& tileData);
+    bool tryAddTileLayer(TileIndex i, const TileData& tileData);
     void setTileLayer(TileIndex i, TileLayer layer, TileID id);
     void setTileFlag(TileIndex i, TileFlags flag);
     void setTileFlags(TileIndex i, TileFlags flags);
@@ -205,9 +193,8 @@ public:
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
     void setWallsAt(TileIndex index, TileWalls walls);
 
-    const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i].walls; }
-    const TileWalls& getWallsThreadSafe(TileIndex i) const { return mWalls[i].wallsThreadSafe; }
-    const std::vector<TileWallContainer>& getTileWallContainers() const { return mWalls; }
+    const TileWalls& getWallsMainThread(TileIndex i) const { return mWalls[i]; }
+    const std::vector<TileWalls>& getTileWalls() const { return mWalls; }
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
 
@@ -270,9 +257,7 @@ public:
     void clearOwnedTile(TileIndex index) { mOwnedTiles.clearBit(index); }
     void setOwnedTileTo(TileIndex index, bool isOwned) { mOwnedTiles.setBitTo(index, isOwned); }
 
-    // =========== Thread safety and refcount  ===========
-    void incReadLock() const { ++mReadLockCount; }
-    void decReadLock() const { assert(mReadLockCount.load() > 0);  --mReadLockCount; }
+    // =========== Refcount  ===========
     inline void incRef() const {
         assert(IS_GAME_THREAD()); // Only main thread is allowed to incref
         assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
@@ -286,21 +271,14 @@ public:
         assert(mRefCount.load());
         --mRefCount;
     }
-    void incReadLockAndRef() { incRef(); incReadLock(); }
-    void decReadLockAndRef() { decReadLock(); decRef(); }
-    const bool isReadLocked() const;
-    ui32 getReadLockCount() const { return mReadLockCount; }
     ui32 getRefCount() const { return mRefCount; }
 
-    bool didInitMeshAndPhysics() const { return mDidInitMesh && mDidInitPhysics; }
+    bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mDidInitMesh && mDidInitPhysics; }
     void setDidInitMesh() { mDidInitMesh = true; }
     void setDidInitPhysics() { mDidInitPhysics = true; }
+    void setDidInitNav() { mDidInitNav = true; }
 
     // =========== Dirty bits  ===========
-    bool isDirtyNav() const { return mDirtyNav; }
-    void setDirtyNav(bool dirty) const { mDirtyNav = dirty; }
-    bool isNavMeshing() const { return mIsNavmeshing.load(/*memory order relaxed?*/); }
-    bool shouldBuildNavMesh() const { return Services::isUsingNav() && isDirtyNav() && !isNavMeshing(); }
     bool isDirtyData() const { return mDirtyData; }
     void setDirtyData() { mDirtyData = true; }
     void clearDirtyData() { mDirtyData = false; }
@@ -313,9 +291,8 @@ public:
     ui32 getFloorHeight() const { return mFloorHeight; }
 
     const std::vector<Tile>& getTiles() const { return mTiles; }
-    const std::vector<TileWallContainer>& getWalls() const { return mWalls; }
+    const std::vector<TileWalls>& getWalls() const { return mWalls; }
     const std::vector<TileFineNavData>& getFineNavData() const { return mFineNavData; }
-
 
     // Nav
     const std::vector<TileContainerEntrance>& getEntrances() const { return mEntrances; }
@@ -323,7 +300,7 @@ public:
     void removeEntrance(TileIndex pos);
 
 private:
-    void onTileChanged(TileIndex tileIndex, bool isReadLocked);
+    void onTileChanged(TileIndex tileIndex);
 
     void addDoor(Cartesian doorSide, TileIndex tileIndex);
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
@@ -331,27 +308,21 @@ private:
     BitArray mOwnedTiles;
     // TODO: Can we use arrays instead of vectors to shrink these a bit?
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
-    std::vector<TileWallContainer> mWalls; // TODO: Memory recycler and or compression
+    std::vector<TileWalls> mWalls; // TODO: Memory recycler and or compression
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
     std::vector<TileFineNavData> mFineNavData;
-
-    // All tiles that need to update when read lock is free
-    std::vector<TileIndex> mTilesNeedingThreadSafeCopy;
     std::vector<TileContainerEntrance> mEntrances;
-    std::vector<TileContainerEntrance> mEntrancesThreadSafeCopy;
     TileContainerID mId;
     i32v3 mDims;
     i32v3 mRootPos;
     ui32 mFloorHeight = 3u;
-    mutable std::atomic_uint32_t mReadLockCount = 0u;
     mutable std::atomic_uint32_t mRefCount = 0u;
     std::atomic_bool mDidInitMesh = false;
     std::atomic_bool mDidInitPhysics = false;
+    std::atomic_bool mDidInitNav = false;
 
     std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
-    std::atomic_bool mIsNavmeshing = false;
     bool mDirtyData = false;
-    mutable bool mDirtyNav = false;
     bool mIsTerrain = false;
 };

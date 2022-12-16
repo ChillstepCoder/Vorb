@@ -88,24 +88,10 @@ void TileContainer::allocateData() {
 void TileContainer::freeData() {
     assert(IS_GAME_THREAD());
     std::vector<Tile>().swap(mTiles);
-    std::vector<TileWallContainer>().swap(mWalls);
+    std::vector<TileWalls>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
     std::vector<TileFineNavData>().swap(mFineNavData);
     mOwnedTiles.freeData();
-}
-
-void TileContainer::updateMainThread() {
-    assert(IS_GAME_THREAD());
-    if (mTilesNeedingThreadSafeCopy.size() && mReadLockCount == 0) {
-        for (TileIndex& id : mTilesNeedingThreadSafeCopy) {
-            mTiles[id].updateThreadSafeLayers();
-            mWalls[id].copyThreadSafeData();
-        }
-        mTilesNeedingThreadSafeCopy.clear();
-        // Thread data is now updated, mesh and everything are marked dirty
-        mDirtyData = true;
-        mDirtyNav = true; // TODO: Make this smarter
-    }
 }
 
 void TileContainer::updateActiveDynamicTiles() {
@@ -125,104 +111,90 @@ void TileContainer::updateActiveDynamicTiles() {
     }
 }
 
-void TileContainer::setTileAt(TileIndex i, Tile tile) {
-    assert(i < CHUNK_SIZE);
-    const bool readLocked = isReadLocked();
-    Tile& oldTile = mTiles[i];
-    
-    TileFlags newFlags = TileFlags(oldTile.tileFlags.getBits() | tile.tileFlags.getBits());
-    tile.groundZOffset = oldTile.groundZOffset;
-    tile.navData = oldTile.navData;
-    oldTile = tile;
-    oldTile.setTileFlags(newFlags, readLocked); // Union tile flags
-    onTileChanged(i, readLocked);
-}
-
 bool TileContainer::canAddTileData(TileIndex i, const TileData& tileData) const
 {
     return mTiles[i].canAddTileData(tileData);
 
 }
 
-void TileContainer::addTile(TileIndex i, const TileData& tileData)
+void TileContainer::addTileLayer(TileIndex i, const TileData& tileData)
 {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.addTileData(tileData, readLocked);
-    onTileChanged(i, readLocked);
+    tile.addTileData(tileData);
+    onTileChanged(i);
 }
 
-bool TileContainer::tryAddTile(TileIndex i, const TileData& tileData)
+bool TileContainer::tryAddTileLayer(TileIndex i, const TileData& tileData)
 {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
     if (!tile.canAddTileData(tileData)) {
         return false;
     }
-    tile.addTileData(tileData, readLocked);
-    onTileChanged(i, readLocked);
+    tile.addTileData(tileData);
+    onTileChanged(i);
     return true;
 }
 
 void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setTileLayer(layer, id, readLocked);
-    onTileChanged(i, readLocked);
+    tile.setTileLayer(layer, id);
+    onTileChanged(i);
 }
 
 void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setTileFlag(flag, readLocked);
-    onTileChanged(i, readLocked);
+    tile.setTileFlag(flag);
+    onTileChanged(i);
 }
 
 void TileContainer::setTileFlags(TileIndex i, TileFlags flags) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setTileFlags(flags, readLocked);
-    onTileChanged(i, readLocked);
+    tile.setTileFlags(flags);
+    onTileChanged(i);
 }
 
 void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.clearTileFlag(flag, readLocked);
-    onTileChanged(i, readLocked);
+    tile.clearTileFlag(flag);
+    onTileChanged(i);
 }
 
 void TileContainer::clearTileFlags(TileIndex i) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.clearTileFlags(readLocked);
-    onTileChanged(i, readLocked);
+    tile.clearTileFlags();
+    onTileChanged(i);
 }
 
 void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setGroundZPosition(groundZPosition, readLocked);
-    onTileChanged(i, readLocked);
+    tile.setGroundZPosition(groundZPosition);
+    onTileChanged(i);
 }
 
 void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {
-    const bool readLocked = isReadLocked();
+    assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setOrientation(dir, layer, readLocked);
-    onTileChanged(i, readLocked);
+    tile.setOrientation(dir, layer);
+    onTileChanged(i);
 }
 
 void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
-    const bool readLocked = isReadLocked();
-    TileWallContainer& tileWalls = mWalls[index];
+    assert(isReady());
+    assert(IS_GAME_THREAD());
+    TileWalls& tileWalls = mWalls[index];
     Tile& tile = mTiles[index];
-    if (!readLocked) {
-        tileWalls.wallsThreadSafe.walls[e_cast(dir)] = wall;
-    }
+
     // Check for removed or added door (Dynamic object)
     // Old door
-    TileID oldId = tileWalls.walls.walls[e_cast(dir)].wallID;
+    TileID oldId = tileWalls.walls[e_cast(dir)].wallID;
     if (oldId != TILE_ID_NONE && TileRepository::getTileData(oldId).shape == TileShape::DOOR) {
         removeDoor(dir, index);
     }
@@ -231,21 +203,19 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     if (newId != TILE_ID_NONE && TileRepository::getTileData(newId).shape == TileShape::DOOR) {
         addDoor(dir, index);
     }
-    tileWalls.walls.walls[e_cast(dir)] = wall;
-    onTileChanged(index, readLocked);
+    tileWalls.walls[e_cast(dir)] = wall;
+    onTileChanged(index);
 }
 
 void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
-    const bool readLocked = isReadLocked();
-    TileWallContainer& tileWalls = mWalls[index];
+    assert(isReady());
+    assert(IS_GAME_THREAD());
+    TileWalls& tileWalls = mWalls[index];
     Tile& tile = mTiles[index];
-    if (!readLocked) {
-        tileWalls.wallsThreadSafe = walls;
-    }
     // Check for any removed or added doors (Dynamic objects)
     for (int i = 0; i < 4; ++i) {
         // Old door
-        TileID oldId = tileWalls.walls.walls[i].wallID;
+        TileID oldId = tileWalls.walls[i].wallID;
         if (oldId != TILE_ID_NONE && TileRepository::getTileData(oldId).shape == TileShape::DOOR) {
             removeDoor(Cartesian(i), index);
         }
@@ -255,12 +225,14 @@ void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
             addDoor(Cartesian(i), index);
         }
     }
-    tileWalls.walls = walls;
-    onTileChanged(index, readLocked);
+    tileWalls = walls;
+    onTileChanged(index);
 }
 
-TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) const
-{
+TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) const {
+    if (!isReady()) {
+        return TileHandle();
+    }
     i32v3 offset = worldPos - mRootPos;
     if (offset.x < 0 || offset.y < 0 || offset.z < 0 || offset.x >= mDims.x || offset.y >= mDims.y || offset.z >= mDims.z * (i32)mFloorHeight) {
         return TileHandle();
@@ -270,49 +242,39 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
     return TileHandle(this, getTileIndexFromXYZOffset(ui32v3(offset)));
 }
 
-const bool TileContainer::isReadLocked() const {
-    return mReadLockCount.load() > 0 || (Services::isUsingNav() && Services::NavThread::ref().isRunningPathfind());
-}
 
 void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
     assert(IS_GAME_THREAD());
-    mDirtyNav = true;
+    assert(isReady());
     auto&& newEntrance = mEntrances.emplace_back();
     newEntrance.tileIndex = pos;
     newEntrance.isLocked = true;
+    LOG_CRITICAL("TODO: Update nav in TileContainer::addEntrance");
 }
 
-void TileContainer::removeEntrance(TileIndex pos)
-{
+void TileContainer::removeEntrance(TileIndex pos) {
+    assert(IS_GAME_THREAD());
+    assert(isReady());
     for (size_t i = 0; i < mEntrances.size(); ++i) {
         if (mEntrances[i].tileIndex == pos) {
             mEntrances[i] = mEntrances.back();
             mEntrances.pop_back();
         }
     }
-    mDirtyNav = true;
+    LOG_CRITICAL("TODO: Update nav in TileContainer::removeEntrance");
 }
 
-void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
-{
+void TileContainer::onTileChanged(TileIndex tileIndex) {
+    assert(IS_GAME_THREAD());
+    assert(isReady());
     Tile& tile = mTiles[tileIndex];
-    if (isReadLocked) {
-        if (!tile.isUpdateQueued()) {
-            mTilesNeedingThreadSafeCopy.push_back(tileIndex);
-            tile.tileFlags.setBit(TileFlags::TILE_FLAG_QUEUED_THREADSAFE_UPDATE);
-        }
-    }
-    else {
-        // When not locked we can immediately mark dirty and copy
-        mDirtyNav = true;
-        mDirtyData = true;
-        tile.updateThreadSafeLayers();
-        mWalls[tileIndex].copyThreadSafeData();
-    }
 
+    // When not locked we can immediately mark dirty and copy
+    mDirtyData = true;
 
     // Potentially block or free terrain below
     // TODO: Proper intersection
+    // TODO: Only when the layer changes
     if (!mIsTerrain) {
         IChunkGrid& chunkGrid = sWorld->getChunkGrid();
         const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
@@ -323,7 +285,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
                 TileContainer* chunkTileContainer = chunk.getTileContainer();
                 assert(chunkTileContainer);
                 TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(worldPos2D.x - chunkTileContainer->getWorldPos2D().x, worldPos2D.y - chunkTileContainer->getWorldPos2D().y, 0);
-                if (tile.isEmptyMainThread()) {
+                if (tile.isEmpty()) {
                     chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
                 }
                 else {
@@ -338,6 +300,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex, bool isReadLocked)
 }
 //#include "debugging/DebugRenderer.h" // TODO: REMOVE
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
+    assert(isReady());
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
     if (!mIsTerrain) {
         IChunkGrid& chunkGrid = sWorld->getChunkGrid();
