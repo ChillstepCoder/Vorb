@@ -201,9 +201,9 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     if (ImGui::CollapsingHeader("Water")) {
         ImGui::PushID(++ID);
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableWater);
-        ImGui::ColorPicker4("Shallow Color", &sDebugOptions.mShallowWaterColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::ColorPicker4("Deep Color", &sDebugOptions.mDeepWaterColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::ColorPicker4("Foam Color", &sDebugOptions.mWaterFoamColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker4("Shallow Color", &sDebugOptions.mShallowWaterColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker4("Deep Color", &sDebugOptions.mDeepWaterColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker4("Foam Color", &sDebugOptions.mWaterFoamColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::SliderFloat("Distort Amount", &sDebugOptions.mWaterSurfaceDistortAmount, 0.0f, 1.0f);
         ImGui::SliderFloat("Move Speed", &sDebugOptions.mWaterSurfaceMoveSpeed, 0.0f, 1.0f);
         ImGui::SliderFloat("Noise Cutoff", &sDebugOptions.mWaterSurfaceNoiseCutoff, 0.0f, 1.0f);
@@ -330,7 +330,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Bias", &sDebugOptions.mSSAOBias, 0.0f, 0.2f);
         ImGui::SliderFloat("Radius", &sDebugOptions.mSSAORadius, 0.001f, 4.0f);
         ImGui::SliderFloat("Range Check Mult", &sDebugOptions.mSSAORangeCheckMult, 0.01f, 1.5f);
-        ImGui::ColorPicker3("Color", &sDebugOptions.mSSAOColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker3("Color", &sDebugOptions.mSSAOColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
         ImGui::Separator();
     }
@@ -343,7 +343,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderInt("Blur Passes", &sDebugOptions.mShadowBlurPasses, 0, 15);
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mShadowBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::PopID();
         ImGui::Separator();
     }
@@ -401,8 +401,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
 
     if (ImGui::CollapsingHeader("Shader Tweaker")) {
         ImGui::PushID(++ID);
-        ImGui::ColorPicker3("Debug Color 1", &sDebugOptions.mDebugColor01.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::ColorPicker3("Debug Color 2", &sDebugOptions.mDebugColor02.x, ImGuiColorEditFlags_RGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker3("Debug Color 1", &sDebugOptions.mDebugColor01.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::ColorPicker3("Debug Color 2", &sDebugOptions.mDebugColor02.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::SliderFloat("DebugFloat1", &sDebugOptions.mDebugFloat01, 0.0f, 1.0f);
         ImGui::SliderFloat("DebugFloat2", &sDebugOptions.mDebugFloat02, 0.0f, 1.0f);
         ImGui::SliderFloat("DebugFloat3", &sDebugOptions.mDebugFloat03, 0.0f, 1.0f);

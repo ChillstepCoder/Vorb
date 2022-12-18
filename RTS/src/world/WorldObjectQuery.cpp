@@ -32,6 +32,7 @@ bool WorldObjectQuery::tryQuery(const f32v3& worldPos)
     }
     mData->mWorldPos = worldPos;
     query();
+    return true;
 }
 
 void WorldObjectQuery::query() {

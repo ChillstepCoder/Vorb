@@ -8,6 +8,7 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
+#include "rendering/model/ModelUtil.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 #include "rendering/mesh/ModelMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
@@ -292,23 +293,19 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 void InstancedStaticModelRenderer::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation) {
     assert(IS_RENDER_THREAD());
     StaticModelInstanceData& instanceData = mModelsToInstances[modelId];
-    //instanceData.mInstanceTransforms.emplace_back(glm::translate(f32m4(1.0f), position));
 
     const size_t instanceIndex = instanceData.mInstanceTransforms.size();
     if (instanceIndex < instanceData.mFirstDirtyInstance) {
         instanceData.mFirstDirtyInstance = instanceIndex;
     }
-    // TODO thingyyyy
-    instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
-    instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
     // Store per tile references
-    const StaticModelInstance& modelInstance = sourceInstances[i];
-    instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-    instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
-    TileModelPositionKey positionKey{ modelInstance.tileIndex };
+    instanceData.mInstanceTransforms.emplace_back(ModelUtil::computeTransformMatrixForModel(position, rotation));
+    instanceData.mInstanceOwners.emplace_back(ModelInstanceOwner{ containerId, tileIndex });
+    TileModelPositionKey positionKey{ tileIndex };
+
+    SpatialInstanceDataMap& tileContainerModels = mTileContainerModels[containerId];
     assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
-    tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
-   // instanceData.mDirtyDrawCommands = true;
+    tileContainerModels[positionKey] = { modelId, (ui32)instanceIndex };
 }
 
 void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
