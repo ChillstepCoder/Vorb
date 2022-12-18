@@ -659,7 +659,7 @@ void GameplayScreen::initInputs()
             }
         }
         else if (event.button == vui::MouseButton::RIGHT) {
-            constexpr f64 RIGHT_CLICK_INTERACT_MS_THRESHOLD = 160.0;
+            constexpr f64 RIGHT_CLICK_INTERACT_MS_THRESHOLD = 220.0;
             if (mRightClickInteractPopup) {
                 mRightClickInteractPopup.reset();
             }

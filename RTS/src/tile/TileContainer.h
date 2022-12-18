@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tile/Tile.h"
 #include "tile/TileHandle.h"
 #include "util/BitArray.h"
 #include "tile/TileContainerEvents.h"
@@ -85,8 +84,6 @@ struct TileFineNavData {
 
 };
 static_assert(sizeof(TileFineNavData) == 3, "Keep tiny");
-
-EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);
 
 enum class TileContainerState : ui8 {
     LOADING,
@@ -190,6 +187,10 @@ public:
     i32v2 getTileXYOffset(TileIndex i) const {
         const ui32 layerSize = mDims.x * mDims.y;
         return i32v2(i % mDims.x, (i % layerSize) / mDims.x);
+    }
+    f32v3 getTileCenterWorldPosition(TileIndex i) const {
+        const ui32 layerSize = mDims.x * mDims.y;
+        return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + mTiles[i].groundZOffset);
     }
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
         return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;

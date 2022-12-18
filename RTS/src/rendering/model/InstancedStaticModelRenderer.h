@@ -2,7 +2,7 @@
 
 #include "rendering/model/StaticModelInstance.h"
 
-#include "tile/TileContainer.h"
+#include "tile/TileContainerEvents.h"
 
 // TODO: Allow chunks to reference each of their tiles part of a mesh buffer. Allow removing and compacting the mesh buffer instead of full rebuild
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
@@ -63,8 +63,8 @@ public:
 
     void frameUpdate(const Camera3D& camera);
 
-    void addInstance(ModelID modelId, const f32v3& position, f32 rotation);
-    void removeInstanceAtPosition(TileContainerID containerId, TileIndex position);
+    void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
+    void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
     void renderModels(const Camera3D& camera);
     void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);

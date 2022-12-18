@@ -12,14 +12,15 @@
 #include "rendering/mesh/ModelMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/RenderContext.h"
+#include "rendering/mesh/TileMeshBuilderMethods.h"
 #include "options/DebugOptions.h"
+#include "tile/TileContainer.h"
 
 #include "camera/Camera3D.h"
 
 #include "rendering/gl/GL.h"
 
 #include <boost/pool/singleton_pool.hpp>
-
 
 // Types of events we handle
 constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeLayer) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
@@ -288,19 +289,33 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
 }
 
-void InstancedStaticModelRenderer::addInstance(ModelID modelId, const f32v3& position, f32 rotation) {
+void InstancedStaticModelRenderer::addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation) {
     assert(IS_RENDER_THREAD());
     StaticModelInstanceData& instanceData = mModelsToInstances[modelId];
-    instanceData.mInstanceTransforms.emplace_back(glm::translate(f32m4(1.0f), position));
-    assert(false); // TODO: Support this
+    //instanceData.mInstanceTransforms.emplace_back(glm::translate(f32m4(1.0f), position));
+
+    const size_t instanceIndex = instanceData.mInstanceTransforms.size();
+    if (instanceIndex < instanceData.mFirstDirtyInstance) {
+        instanceData.mFirstDirtyInstance = instanceIndex;
+    }
+    // TODO thingyyyy
+    instanceData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
+    instanceData.mInstanceOwners.resize(instanceData.mInstanceTransforms.size());
+    // Store per tile references
+    const StaticModelInstance& modelInstance = sourceInstances[i];
+    instanceData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
+    instanceData.mInstanceOwners[instanceIndex] = ModelInstanceOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+    TileModelPositionKey positionKey{ modelInstance.tileIndex };
+    assert(tileContainerModels.find(positionKey) == tileContainerModels.end());
+    tileContainerModels[positionKey] = { it.first, (ui32)instanceIndex };
    // instanceData.mDirtyDrawCommands = true;
 }
 
-void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID containerId, TileIndex position) {
+void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
     assert(IS_RENDER_THREAD());
     auto&& it = mTileContainerModels.find(containerId);
     if (it != mTileContainerModels.end()) {
-        TileModelPositionKey key{ position };
+        TileModelPositionKey key{ tileIndex };
         SpatialInstanceDataMap& spatialMap = it->second;
         auto&& spit = spatialMap.find(key);
 
@@ -493,7 +508,14 @@ void InstancedStaticModelRenderer::onModelEditEvent(TileContainerModelEditEvent&
             if (prevId != TILE_ID_NONE) {
                 const TileData& prevTileData = TileRepository::getTileData(evnt.editEvent.changeLayer.prevId);
                 if (prevTileData.shape == TileShape::MODEL) {
-                    removeInstanceAtPosition(evnt.containerId, evnt.editEvent.editPosition);
+                    removeInstanceAtPosition(evnt.containerId, evnt.editEvent.tileIndex);
+                }
+            }
+            const TileID newId = evnt.editEvent.changeLayer.newId;
+            if (newId != TILE_ID_NONE) {
+                const TileData& tileData = TileRepository::getTileData(newId);
+                if (tileData.shape == TileShape::MODEL) {
+                    addInstanceAtPosition(evnt.containerId, evnt.editEvent.tileIndex, tileData.modelId, evnt.editEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(evnt.editEvent.worldPosition));
                 }
             }
             break;

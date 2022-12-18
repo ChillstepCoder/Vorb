@@ -148,8 +148,9 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     LOG_CRITICAL("Sending edit = TileIndex {} Layer {} id {} prevId {}", i, e_cast(layer), id, tile.layers[e_cast(layer)]);
     TileContainerEvent evnt;
     evnt.container = this;
+    evnt.edit.worldPosition = getTileCenterWorldPosition(i);
     evnt.edit.type = TileContainerEditEventType::ChangeLayer;
-    evnt.edit.editPosition = i;
+    evnt.edit.tileIndex = i;
     evnt.edit.changeLayer.prevId = prevId;
     evnt.edit.changeLayer.newId = id;
     evnt.edit.changeLayer.layer = layer;

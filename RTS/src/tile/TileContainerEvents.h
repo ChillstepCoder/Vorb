@@ -1,5 +1,7 @@
 #pragma once
 
+#include "tile/Tile.h"
+
 class TileContainer;
 
 enum class TileContainerEventType {
@@ -39,7 +41,8 @@ struct TileContainerEditOrientationEventData {
 };
 
 struct TileContainerEditEvent {
-    TileIndex editPosition;
+    f32v3 worldPosition;
+    TileIndex tileIndex;
     TileContainerEditEventType type;
     union {
         TileContainerEditFlagsEventData changeFlags;
@@ -54,3 +57,4 @@ struct TileContainerEvent {
     TileContainer* container = nullptr;
     TileContainerEditEvent edit = {}; // TODO: Union
 };
+EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);

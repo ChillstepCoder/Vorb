@@ -488,7 +488,6 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
         for (ui32 y = 0; y < tileDims.y; ++y) {
             for (ui32 x = 0; x < tileDims.x; ++x, ++index) {
                 const Tile& tile = tileContainer.getTileAt(index);
-                const f32 groundZPosition = tile.getGroundZOffset(); // TODO: Thread safe when async
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayers()[layerIndex];  // TODO: Thread safe when async
                     // Blocked or invalid tiles have no render
@@ -503,7 +502,7 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                     if (tileData.shape == TileShape::THIN) {
                         // Billboards
                         if (billboardMeshBuilder) {
-                            f32v3 tilePosition(x + 0.5f, y + 0.5f, z * tileContainer.getFloorHeight() + groundZPosition);
+                            f32v3 tilePosition = tileContainer.getTileCenterWorldPosition(index);
                             billboardMeshBuilder->addBillboard(tilePosition, tileData.dims, tileData.materialId, true);
                         }
                     }
@@ -517,14 +516,13 @@ void TileMeshBuilderMethods::meshTileContainerStatic(
                         TileMeshBuilderMethods::addStairs(meshBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physMesh);
                     }
                     else if (tileData.shape == TileShape::MODEL) {
-                        f32v3 tilePosition(x + 0.5f, y + 0.5f, z * tileContainer.getFloorHeight() + groundZPosition);
-                        f32v3 worldPos = tilePosition + tileContainerWorldPos;
+                        f32v3 worldPos = tileContainer.getTileCenterWorldPosition(index);
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                             modelGatherer.addInstance(tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
                         }
                         else {
-                            modelGatherer.addInstance(tileData.modelId, index, worldPos, Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI);
+                            modelGatherer.addInstance(tileData.modelId, index, worldPos, getModelRotationAtPosition(worldPos));
                         }
                         if (physMesh && tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
                             physMesh->addTrackedStaticRigidBody(index, worldPos, tileData.collisionShapeID);
@@ -1161,6 +1159,10 @@ void TileMeshBuilderMethods::addWall(ProceduralMeshBuilder& meshBuilder, const f
     //    }
     //}
 
+}
+
+f32 TileMeshBuilderMethods::getModelRotationAtPosition(const f32v3& worldPos) {
+    return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
 }
 
 //

@@ -117,7 +117,6 @@ public:
     void removeGrassMesh(const GrassMesh* mesh) { assert(IS_RENDER_THREAD()); mGrassMeshes.erase(mesh); }
     
     // Static models
-    void addStaticModelInstance(ModelID id, const f32v3& pos, f32 rotation);
     void addStaticModelInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
 
     // Character models

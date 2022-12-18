@@ -26,6 +26,7 @@ constexpr int INVALID_PHYSICS_USER_INDEX = INT32_MAX;
 #include "physics/StaticPhysicsMesh.h"
 #include "physics/CollisionShapeRepository.h"
 #include "physics/TrackedStaticRigidBodyGatherer.h"
+#include "tile/TileContainerEvents.h"
 
 #include <shared_mutex>
 
@@ -36,7 +37,7 @@ enum class RigidBodyRotationType {
 };
 
 typedef std::pair<btRigidBody*, f32/*colliderHalfHeight*/> RigidBodyPair;
-typedef std::map<f32v3, btCollisionObject*, f32v3cmp> SpatialRigidBodyLookup;
+typedef std::map<TileIndex, btCollisionObject*> SpatialCollisionObjectLookup;
 
 enum PickTypes {
     PICK_TYPE_STATIC = 1 << 0,
@@ -45,7 +46,7 @@ enum PickTypes {
 };
 
 struct TileContainerPhysicsData {
-    SpatialRigidBodyLookup mSpatialRigidBodyLookup;
+    SpatialCollisionObjectLookup mSpatialCollisionObjectLookup;
     StaticPhysicsMesh mStaticMesh; // TODO: hmmm
 };
 
@@ -70,8 +71,8 @@ public:
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, btCollisionShape* collisionShape, f32 mass, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);
 
-    void addTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape);
-    void removeTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, const f32v3& position);
+    void addTrackedStaticCollisionObjectAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape);
+    void removeTrackedStaticCollisionObjectAtPosition(TileContainerID containerId, TileIndex tileIndex);
     void deletePhysicsForTileContainer(TileContainerID container);
 
     void deleteRigidBody(btRigidBody* rigidBody);
@@ -98,7 +99,8 @@ public:
     bool isProfiling() const { return mIsProfiling; }
 
 private:
-    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialRigidBodyLookup& lookup);
+    void initEventHandlers();
+    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialCollisionObjectLookup& lookup);
     RigidBodyPair createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape);
     btCollisionObject* createStaticCollisionObject(TileContainerID ownerTileContainer, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* shape);
     f32 getShapeHalfHeight(btCollisionShape* shape) const;
@@ -117,14 +119,15 @@ private:
     moodycamel::ConcurrentQueue<std::pair<PickParams, DeferredPhysicsPick*>> mDeferredPicks;
 
     // Synchronization
-    mutable std::shared_mutex mMutex;
+    mutable std::shared_mutex mStepSimulationMutex;
+
+    // Events
+    TileContainerListeners mTileContainerEventListeners;
 
     // For cleanup
     std::map<HeightmapPatchData*, btHeightfieldTerrainShape*> mHeightShapes;
 
     std::vector<btCollisionObject*> mFreeStaticCollisionObjects;
-    moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToAdd;
-    moodycamel::ConcurrentQueue<btRigidBody*> mRigidBodiesToDelete;
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
 
     std::map<TileContainerID, TileContainerPhysicsData> mTileContainerPhysicsData; // Model colliders and such

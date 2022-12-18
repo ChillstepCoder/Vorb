@@ -8,6 +8,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 //#include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "BulletCollision/BroadphaseCollision/btAxisSweep3.h"
+#include "resources/TileRepository.h"
 
 #include "world/IWorld.h"
 #include "tile/TileContainer.h"
@@ -39,9 +40,6 @@ const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);
 // TODO: Figure out lag
 // https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=10544
 
-TileContainerEventDispatcher::Handle sTileContainerDestroyHandle;
-
-
 
 PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRepository(shapeRepository) {
 
@@ -68,19 +66,10 @@ PhysicsWorld::PhysicsWorld(CollisionShapeRepository& shapeRepository) : mShapeRe
         obj = new btCollisionObject();
     }
 
-    // Listen for tile containers to be destroyed
-    assert(!sTileContainerDestroyHandle);
-    sTileContainerDestroyHandle = TileContainerRepository::addDestroyListener([](const TileContainerEvent& event) {
-        assert(IS_GAME_THREAD());
-        sWorld->getPhysicsWorld().deletePhysicsForTileContainer(event.container->getId());
-    });
-    
+    initEventHandlers();
 }
 
-
 PhysicsWorld::~PhysicsWorld() {
-
-    sTileContainerDestroyHandle.reset();
 
     //cleanup in the reverse order of creation/initialization
 
@@ -123,46 +112,15 @@ PhysicsWorld::~PhysicsWorld() {
 void PhysicsWorld::stepSimulation(f32 elapsedSec) {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
-    constexpr int BULK_DEQUEUE_SIZE = 64;
-    {
-        btRigidBody* rigidBodies[BULK_DEQUEUE_SIZE];
-
-        // Add new rigid bodies
-       /* if (size_t count = mRigidBodiesToAdd.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
-            std::lock_guard guard(mMutex);
-            for (size_t i = 0; i < count; ++i) {
-                mDynamicsWorld->addRigidBody(rigidBodies[i]);
-            }
-        }*/
-        // Delete expired rigid bodies
-        if (size_t count = mRigidBodiesToDelete.try_dequeue_bulk(rigidBodies, BULK_DEQUEUE_SIZE)) {
-            std::lock_guard guard(mMutex);
-            for (size_t i = 0; i < count; ++i) {
-                mDynamicsWorld->removeRigidBody(rigidBodies[i]);
-                delete rigidBodies[i];
-            }
-        }
-    }
-    {
-        // Static physics meshes have other RAII associated data that we must free after deleting their rigid bodies
-        StaticPhysicsMesh staticPhysicsMeshes[BULK_DEQUEUE_SIZE];
-        if (size_t count = mStaticPhysicsMeshesToDelete.try_dequeue_bulk(staticPhysicsMeshes, BULK_DEQUEUE_SIZE)) {
-            std::lock_guard guard(mMutex);
-            for (size_t i = 0; i < count; ++i) {
-                mDynamicsWorld->removeCollisionObject(staticPhysicsMeshes[i].mCollisionObject);
-                freeStaticCollisionObject(staticPhysicsMeshes[i].mCollisionObject);
-            }
-        }
-    }
-
 
     { // Simulate
         PROFILE_SCOPE("Step");
-        std::lock_guard guard(mMutex);
+        std::lock_guard guard(mStepSimulationMutex);
         mDynamicsWorld->stepSimulation(elapsedSec, 3 /*maxSubSteps*/);
     }
 
     // Process picking from other threads
+    constexpr int BULK_DEQUEUE_SIZE = 64;
     std::pair<PickParams, DeferredPhysicsPick*> pickBuffer[BULK_DEQUEUE_SIZE];
     if (size_t count = mDeferredPicks.try_dequeue_bulk(pickBuffer, BULK_DEQUEUE_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
@@ -246,27 +204,30 @@ RigidBodyPair PhysicsWorld::addRigidBody(entt::entity ownerEntity, const f32v3& 
 }
 
 
-void PhysicsWorld::addTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape) {
-    SpatialRigidBodyLookup& lookup = mTileContainerPhysicsData[containerOwner].mSpatialRigidBodyLookup;
+void PhysicsWorld::addTrackedStaticCollisionObjectAtPosition(TileContainerID containerOwner, TileIndex ownerTilePosition, const f32v3& position, btCollisionShape* collisionShape) {
+    SpatialCollisionObjectLookup& lookup = mTileContainerPhysicsData[containerOwner].mSpatialCollisionObjectLookup;
 #ifdef DEBUG
-    const auto&& it = lookup.find(position);
+    const auto&& it = lookup.find(ownerTilePosition);
     assert(it == lookup.end());
 #endif
-    lookup[position] = createStaticCollisionObject(containerOwner, ownerTilePosition, position, collisionShape);
+    lookup[ownerTilePosition] = createStaticCollisionObject(containerOwner, ownerTilePosition, position, collisionShape);
 }
 
-void PhysicsWorld::removeTrackedStaticRigidBodyAtPosition(TileContainerID containerOwner, const f32v3& position) {
-    assert(IS_GAME_THREAD());
-    auto&& it = mTileContainerPhysicsData.find(containerOwner);
-    assert(it != mTileContainerPhysicsData.end());
 
-    SpatialRigidBodyLookup& lookup = it->second.mSpatialRigidBodyLookup;
-    auto&& it2 = lookup.find(position);
-    assert(it2 != lookup.end());
-
-    mDynamicsWorld->removeCollisionObject(it2->second);
-    freeStaticCollisionObject(it2->second);
-    lookup.erase(it2);
+void PhysicsWorld::removeTrackedStaticCollisionObjectAtPosition(TileContainerID containerId, TileIndex tileIndex) {
+    auto&& it = mTileContainerPhysicsData.find(containerId);
+    if (it != mTileContainerPhysicsData.end()) {
+        SpatialCollisionObjectLookup& lookup = it->second.mSpatialCollisionObjectLookup;
+        auto&& spit = lookup.find(tileIndex);
+        if (spit != lookup.end()) {
+            {
+                std::lock_guard lock(mStepSimulationMutex);
+                mDynamicsWorld->removeCollisionObject(spit->second);
+            }
+            freeStaticCollisionObject(spit->second);
+            lookup.erase(spit);
+        }
+    }
 }
 
 void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
@@ -274,7 +235,7 @@ void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
     auto&& it = mTileContainerPhysicsData.find(container);
     if (it != mTileContainerPhysicsData.end()) {
         deleteStaticPhysicsMesh(std::move(it->second.mStaticMesh));
-        for (auto& collisionObjectPair : it->second.mSpatialRigidBodyLookup) {
+        for (auto& collisionObjectPair : it->second.mSpatialCollisionObjectLookup) {
             mDynamicsWorld->removeCollisionObject(collisionObjectPair.second);
             freeStaticCollisionObject(collisionObjectPair.second);
         }
@@ -283,8 +244,10 @@ void PhysicsWorld::deletePhysicsForTileContainer(TileContainerID container)
 }
 
 void PhysicsWorld::deleteRigidBody(btRigidBody* rigidBody) {
+    assert(IS_GAME_THREAD());
     --mNumDynamicCollisionObjects;
-    mRigidBodiesToDelete.enqueue(rigidBody);
+    mDynamicsWorld->removeRigidBody(rigidBody);
+    delete rigidBody;
 }
 
 void PhysicsWorld::deleteStaticPhysicsMesh(StaticPhysicsMesh&& physicsMesh) {
@@ -300,7 +263,7 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     const TileContainerID tileContainerId = meshBuilder.mTrackedRigidBodyGatherer.mContainerId;
     assert(meshBuilder.hasAnyCollision());
 
-    std::lock_guard lock(mMutex);
+    std::lock_guard lock(mStepSimulationMutex);
     TileContainerPhysicsData& physicsData = mTileContainerPhysicsData[tileContainerId];
     StaticPhysicsMesh& staticMesh = physicsData.mStaticMesh;
     assert(!staticMesh.isValid());
@@ -331,10 +294,47 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
     }
 
     // Add all tracked bodies
-    addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, physicsData.mSpatialRigidBodyLookup);
+    addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, physicsData.mSpatialCollisionObjectLookup);
 }
 
-void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialRigidBodyLookup& lookup) {
+void PhysicsWorld::initEventHandlers() {
+    TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
+    // TODO: Profile version without lambda capture?
+    TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
+        assert(IS_GAME_THREAD());
+        deletePhysicsForTileContainer(event.container->getId());
+    });
+    TileContainerRepository::addEditTileListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
+        assert(IS_GAME_THREAD());
+        const TileContainerEditEvent& editEvent = event.edit;
+        switch (event.edit.type) {
+            case TileContainerEditEventType::ChangeFlags:
+                break;
+            case TileContainerEditEventType::ChangeLayer: {
+                const TileID prevId = editEvent.changeLayer.prevId;
+                if (prevId != TILE_ID_NONE) {
+                    const TileData& prevTileData = TileRepository::getTileData(editEvent.changeLayer.prevId);
+                    if (prevTileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                        removeTrackedStaticCollisionObjectAtPosition(event.container->getId(), editEvent.tileIndex);
+                    }
+                }
+                break;
+            }
+            case TileContainerEditEventType::ChangeZPos:
+                break;
+            case TileContainerEditEventType::ChangeOrientation:
+                break;
+            case TileContainerEditEventType::ChangeWall:
+                break;
+            default:
+                assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
+                break;
+        }
+        static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+    });
+}
+
+void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, SpatialCollisionObjectLookup& lookup) {
     assert(IS_GAME_THREAD());
     PROFILE_FUNCTION();
     if (gatherer.mRigidBodiesToAdd.empty()) {
@@ -346,7 +346,7 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBod
         //const auto&& it2 = lookup.find(it.position);
         //assert(it2 == lookup.end());
 #endif
-        lookup[it.position] = createStaticCollisionObject(gatherer.mContainerId, it.ownerTilePosition, it.position, mShapeRepository.getShape(it.shapeId));
+        lookup[it.ownerTilePosition] = createStaticCollisionObject(gatherer.mContainerId, it.ownerTilePosition, it.position, mShapeRepository.getShape(it.shapeId));
     }
 }
 
@@ -387,7 +387,10 @@ RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar m
     }
 
     assert(IS_GAME_THREAD());
-    mDynamicsWorld->addRigidBody(body);
+    {
+        std::lock_guard lock(mStepSimulationMutex);
+        mDynamicsWorld->addRigidBody(body);
+    }
     //mRigidBodiesToAdd.enqueue(body);
 
     RigidBodyPair rv;
@@ -484,7 +487,6 @@ void PhysicsWorld::debugRender() const {
         // Draw static and dynamic
         ScopedTimer timer("Static debug");
         // TODO: We might still have race condition with adding rigidbodies
-        std::shared_lock lock(mMutex);
         if (showTerrain) mDebugDrawer->reserveStaticLines(2000000);
 
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
@@ -512,7 +514,6 @@ void PhysicsWorld::debugRender() const {
         }
     }
     else if (showDynamic) {
-        std::shared_lock lock(mMutex);
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
             btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
             btRigidBody* body = btRigidBody::upcast(obj);
@@ -524,7 +525,6 @@ void PhysicsWorld::debugRender() const {
     }
 
     if (sDebugOptions.mShowPhysicsActions) {
-        std::lock_guard lock(mMutex);
         // Draw actions
         const auto& actions = mDynamicsWorld->getActions();
         for (int i = 0; i < actions.size(); ++i) {
@@ -575,7 +575,6 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
         mDynamicsWorld->rayTest(start, end, rayResult);
     }
     else {
-        std::shared_lock guard(mMutex);
         mDynamicsWorld->rayTest(start, end, rayResult);
     }
 
@@ -591,39 +590,10 @@ void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& 
     mDeferredPicks.enqueue(std::pair<PickParams, DeferredPhysicsPick*>(PickParams{rayStart, rayEnd, pickTypes}, deferredPick));
 }
 
-bool PhysicsWorld::tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const {
-    assert(!IS_GAME_THREAD());
-    btVector3 start = f32v3ToBtVector3(rayStart);
-    btVector3 end = f32v3ToBtVector3(rayEnd);
-    // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
-    CustomRayResult rayResult(start, end);
-    int collisionMask = btBroadphaseProxy::DefaultFilter;
-
-    if (pickTypes & PICK_TYPE_DYNAMIC) {
-        collisionMask |= btBroadphaseProxy::KinematicFilter;
-    }
-    if (pickTypes & PICK_TYPE_STATIC) {
-        collisionMask |= btBroadphaseProxy::StaticFilter;
-    }
-    rayResult.m_collisionFilterMask = collisionMask;
-    //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
-    if (mMutex.try_lock_shared()) {
-        mDynamicsWorld->rayTest(start, end, rayResult);
-        mMutex.unlock_shared();
-    } else {
-        return false;
-    }
-
-    result.mTime = rayResult.m_closestHitFraction;
-    result.mNormal = rayResult.mHitNormal;
-    result.mCollisionObject = rayResult.m_collisionObject;
-    result.mPosition = rayStart + (rayEnd - rayStart) * result.mTime;
-    return true;
-}
 
 void PhysicsWorld::startB3Profiling() {
     {
-        std::lock_guard guard(mMutex);
+        std::lock_guard guard(mStepSimulationMutex);
         b3ChromeUtilsStartTimings();
     }
     LOG_DEBUG("Begin bullet profiling");
@@ -632,7 +602,7 @@ void PhysicsWorld::startB3Profiling() {
 
 void PhysicsWorld::endB3ProfilingAndDumpToFile(const char* fileNamePrefix) {
     {
-        std::lock_guard guard(mMutex);
+        std::lock_guard guard(mStepSimulationMutex);
         if (mIsProfiling) {
             b3ChromeUtilsStopTimingsAndWriteJsonFile(fileNamePrefix);
         }
