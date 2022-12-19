@@ -13,6 +13,10 @@
 // Meshing
 #include "rendering/mesh/TileContainerMesher.h"
 
+// How many tiles the load center has to move before we force update edge chunks
+constexpr f32 DISTANCE_SQ_CHANGE_UNTIL_FORCE_UPDATE_EDGES = SQ(16.0f);
+
+
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
 // IWORLD
 // 0. Iterate all mLoadingChunks and mActiveChunks, if they are out of range, add them to mDestroyingChunksand clear their world bits
@@ -42,8 +46,20 @@ IChunkGrid::IChunkGrid() {
     }
 }
 
-void IChunkGrid::tick() {
+void IChunkGrid::onWorldBegin(const f32v2& loadCenter) {
+    // Update the grid until we have no further updates
+    do {
+        updateGridEdges(loadCenter);
+    } while (mForceUpdateEdgeChunks);
+}
+
+void IChunkGrid::tick(const f32v2& loadCenter) {
     assert(IS_GAME_THREAD());
+
+    // Check if we need to force update
+    if (mForceUpdateEdgeChunks || (glm::length2(loadCenter - mPrevLoadCenter) > DISTANCE_SQ_CHANGE_UNTIL_FORCE_UPDATE_EDGES)) {
+        updateGridEdges(loadCenter);
+    }
 
     // Update all loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
@@ -109,14 +125,14 @@ void IChunkGrid::tick() {
     }
 }
 
+// TODO: DELETE
 bool compareLoadingChunk(Chunk* a, Chunk* b) { // return type is bool
     return a->getDistanceFromLoadCenterSQ() < b->getDistanceFromLoadCenterSQ();
 }
 
-void IChunkGrid::refresh(const f32v2& loadCenter) {
-    assert(IS_GAME_THREAD());
-
+void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
     PROFILE_FUNCTION();
+    mPrevLoadCenter = loadCenter;
 
     // Remove any loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
@@ -143,6 +159,8 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
         }
     }
 
+    // This will be set if we mutate any data
+    mForceUpdateEdgeChunks = false;
     // Iterate every chunk in range (TODO: Use offset mask for perfect iteration and no distance checks?)
     // Need OnChunkLoadDistanceChanged to update the static offset mask
     //ChunkID
@@ -178,6 +196,7 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
                             mDestroyingChunks[i] = mDestroyingChunks.back();
                             mDestroyingChunks.pop_back();
                             chunk.mFlags.clearBit(ChunkFlags::IN_DESTROY_LIST);
+                            mForceUpdateEdgeChunks = true;
                             break;
                         }
                     }
@@ -188,14 +207,17 @@ void IChunkGrid::refresh(const f32v2& loadCenter) {
                 if (chunk.mState == e_cast(ChunkState::INVALID)) {
                     chunksToBeginLoad.emplace_back(&chunk);
                     mLoadingChunks.emplace_back(&chunk);
+                    mForceUpdateEdgeChunks = true;
                 }
                 else if (chunk.mState == e_cast(ChunkState::READY)) {
                     // If we are already loaded, just insert us back into the active list
                     mActiveChunks.emplace_back(&chunk);
+                    mForceUpdateEdgeChunks = true;
                 }
                 else {
                     // Otherwise we are still loading
                     mLoadingChunks.emplace_back(&chunk);
+                    mForceUpdateEdgeChunks = true;
                 }
             }
         }

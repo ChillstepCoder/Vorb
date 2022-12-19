@@ -66,6 +66,7 @@ struct GridID {
         return pos.x >= GRIDWIDTH || pos.y >= GRIDWIDTH;
     }
 
+    // TODO: Get ID implicitly? Is it worth 50% increased memory size to cut out a multiply and an add? (initIdFromPos())
     ui32v2 pos; // TODO: Compress pos to ui16v2 and union with ID. Take note of WorldData::WORLD_WIDTH_CHUNKS and make the X fit into as many bits exactly
     ui32 id;
 

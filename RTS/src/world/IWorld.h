@@ -90,7 +90,6 @@ public:
 
 protected:
     void onWorldBeginShared(const f32v2& loadCenter);
-    void refreshWorld();
     void sharedDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius);
 
     void updateTimeOfDay();
@@ -101,7 +100,6 @@ protected:
     IChunkGrid* mChunkGrid = nullptr;
     IHeightmapGrid* mHeightmapGrid = nullptr;
 
-    f32v2 mPrevLoadCenter = f32v2(0);
     f32v2 mLoadCenter = f32v2(0);
 
     // ECS

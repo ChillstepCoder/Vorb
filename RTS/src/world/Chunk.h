@@ -136,6 +136,7 @@ public:
 	inline void decRef() const { mTileContainer->decRef(); }
     ui32 getRefCount() const { return mTileContainer ? mTileContainer->getRefCount() : 0; }
 
+	// TODO: DELETE
 	f32 getDistanceFromLoadCenterSQ() const { return mDistanceFromLoadCenterSQ; }
 	void setDistanceFromLoadCenterSQ(f32 distSq) { mDistanceFromLoadCenterSQ = distSq; }
 

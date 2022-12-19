@@ -26,7 +26,7 @@ void GrassMeshManager::tick() {
     for (auto&& it : mChunkGrassQuadtrees) {
         const Chunk& chunk = *it.first;
         
-        const f32 distSq = glm::length2(chunk.getWorldPosCenter2D() - loadCenter);//chunk.getDistanceFromLoadCenterSQ(); // TODO: Why doesnt this work?
+        const f32 distSq = glm::length2(chunk.getWorldPosCenter2D() - loadCenter);
 
         std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = it.second;
         if (grassQuadtree) {

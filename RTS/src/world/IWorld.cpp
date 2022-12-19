@@ -24,9 +24,6 @@
 
 #include "resources/ResourceManager.h"
 
-// How many tiles the load center has to move before we refresh the world
-constexpr f32 DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH = SQ(16.0f);
-
 IWorld* sWorld = nullptr;
 
 IWorld::IWorld(IChunkGrid* chunkGrid, IHeightmapGrid* heightmapGrid) : mChunkGrid(chunkGrid), mHeightmapGrid(heightmapGrid)
@@ -58,21 +55,17 @@ IWorld::~IWorld()
 
 void IWorld::tickShared(f32 elapsedSec) {
     PROFILE_FUNCTION();
-    // When player exists set as load center
+    // Load center is player position
     // TODO: Handle dedicated server differently
+    // TODO: Multiplayer considerations
     entt::entity localPlayer = mEcs->getLocalPlayer();
     if (localPlayer != entt::null) {
         PhysicsComponent& physCmp = mEcs->mRegistry.get<PhysicsComponent>(localPlayer);
         const f32v3 localPlayerPos = physCmp.getPosition();
         mLoadCenter = localPlayerPos;
-
-        if (glm::length2(mLoadCenter - mPrevLoadCenter) > DISTANCE_SQ_CHANGE_PER_WORLD_REFRESH) {
-            mPrevLoadCenter = mLoadCenter;
-            refreshWorld();
-        }
     }
 
-    mChunkGrid->tick();
+    mChunkGrid->tick(mLoadCenter);
 
     mHeightmapGrid->tick();
 
@@ -297,15 +290,7 @@ void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
 
     // Init chunks
     mChunkGrid->onWorldBegin(loadCenter);
-
-    mPrevLoadCenter = mLoadCenter = loadCenter;
-
-    // Refresh all
-    refreshWorld();
-}
-
-void IWorld::refreshWorld() {
-    mChunkGrid->refresh(mLoadCenter);
+    mLoadCenter = loadCenter;
 }
 
 void IWorld::sharedDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
