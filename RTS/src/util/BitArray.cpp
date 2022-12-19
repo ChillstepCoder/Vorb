@@ -19,11 +19,13 @@ BitArray::~BitArray()
 }
 
 void BitArray::resize(ui32 numBits) {
-    mData.resize((size_t)std::ceil((f32)numBits / BITS_PER_ELEMENT));
+    mData.resize(size_t(numBits + (BITS_PER_ELEMENT - 1) / BITS_PER_ELEMENT));
+    //mData.resize((size_t)std::ceil((f32)numBits / BITS_PER_ELEMENT));
 }
 
 void BitArray::resizeAndZero(ui32 numBits) {
-    mData.resize((size_t)std::ceil((f32)numBits / BITS_PER_ELEMENT), 0ui8);
+    mData.resize(size_t(numBits + (BITS_PER_ELEMENT - 1) / BITS_PER_ELEMENT), 0ui8);
+    //mData.resize((size_t)std::ceil((f32)numBits / BITS_PER_ELEMENT), 0ui8);
 }
 
 void BitArray::setBit(ui32 index) {
@@ -53,7 +55,7 @@ bool BitArray::getBit(ui32 index) const {
     const ui32 i = index >> 3;
     const ui32 j = index - (i << 3);
     static_assert(BITS_PER_ELEMENT == 8);
-    return (mData[i] & (1 << j)) > 0 ? true : false;
+    return (mData[i] & (1 << j)) != 0;
 }
 
 void BitArray::zeroAllBits() {

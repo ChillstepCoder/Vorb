@@ -16,6 +16,22 @@ struct cui32v2 {
 };
 static_assert(sizeof(cui32v2) == sizeof(ui32v2));
 
+struct ci32v2 {
+    constexpr ci32v2() : x(0), y(0) {};
+    constexpr ci32v2(i32 v) : x(v), y(v) {};
+    constexpr ci32v2(i32 x, i32 y) : x(x), y(y) {};
+    operator i32v2& () { return *reinterpret_cast<i32v2*>(this); }
+    operator const i32v2& () const { return *reinterpret_cast<const i32v2*>(this); }
+    union {
+        struct {
+            i32 x;
+            i32 y;
+        };
+        i32v2 xy;
+    };
+};
+static_assert(sizeof(ci32v2) == sizeof(i32v2));
+
 struct cf32v2 {
     constexpr cf32v2() : x(0.0f), y(0.0f) {};
     constexpr cf32v2(f32 v) : x(v), y(v) {};

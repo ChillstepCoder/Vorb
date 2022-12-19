@@ -5,9 +5,9 @@ DebugOptions sDebugOptions;
 
 // Lower for faster loading in test
 #ifdef DEBUG
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.3f /*0.3*/;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.35f /*0.35*/;
 #else
-constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.6f /*0.6*/;
+constexpr f32 CHUNK_LOAD_RANGE_MULT = 0.65f /*0.65*/;
 #endif
 
 DebugOptions::DebugOptions() :

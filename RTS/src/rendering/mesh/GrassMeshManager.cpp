@@ -25,23 +25,25 @@ void GrassMeshManager::tick() {
     // Update grass
     for (auto&& it : mChunkGrassQuadtrees) {
         const Chunk& chunk = *it.first;
-        
-        const f32 distSq = glm::length2(chunk.getWorldPosCenter2D() - loadCenter);
+        if (chunk.isDataReady()) {
 
-        std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = it.second;
-        if (grassQuadtree) {
-            grassQuadtree->update(loadCenter);
-            if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
-                if (grassQuadtree->getRefCount() == 0) {
-                    grassQuadtree.reset();
+            const f32 distSq = glm::length2(chunk.getWorldPosCenter2D() - loadCenter);
+
+            std::unique_ptr<ChunkGrassQuadtree>& grassQuadtree = it.second;
+            if (grassQuadtree) {
+                grassQuadtree->update(loadCenter);
+                if (distSq > sDebugOptions.mGrassSettings.distanceSq + 10.0f) {
+                    if (grassQuadtree->getRefCount() == 0) {
+                        grassQuadtree.reset();
+                    }
+                }
+                else {
+                    grassQuadtree->update(loadCenter);
                 }
             }
-            else {
-                grassQuadtree->update(loadCenter);
+            else if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
+                grassQuadtree = std::make_unique<ChunkGrassQuadtree>(chunk);
             }
-        }
-        else if (distSq < sDebugOptions.mGrassSettings.distanceSq) {
-            grassQuadtree = std::make_unique<ChunkGrassQuadtree>(chunk);
         }
     }
 }

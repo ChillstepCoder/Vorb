@@ -74,6 +74,7 @@ public:
 	void allocateTileContainer();
 	void freeTiles();
 	void dispose();
+	// TODO: REMOVE
 	void updateMainThread();
 
 

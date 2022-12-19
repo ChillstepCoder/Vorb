@@ -24,15 +24,15 @@ public:
     void onWorldBegin(const f32v2& loadCenter);
     void tick(const f32v2& loadCenter);
 
-    Chunk& getChunk(ui32 i) { return mChunks[i]; }
-    const Chunk& getChunk(ui32 i) const { return mChunks[i]; }
+    Chunk& getChunk(LiteChunkID i) { return mChunks[i]; }
+    const Chunk& getChunk(LiteChunkID i) const { return mChunks[i]; }
     Chunk& getChunk(ChunkID id) { return mChunks[id.id]; }
     const Chunk& getChunk(ChunkID id) const { return mChunks[id.id]; }
 
     static ui32 numChunks() { return WorldData::WORLD_SIZE_CHUNKS; }
-    const std::vector<Chunk*>& getLoadingChunks() const { return mLoadingChunks; }
-    const std::vector<Chunk*>& getActiveChunks() const { return mActiveChunks; }
-    const std::vector<Chunk*>& getDestroyingChunks() const { return mDestroyingChunks; }
+    const std::vector<LiteChunkID>& getLoadingChunks() const { return mLoadingChunks; }
+    const std::vector<LiteChunkID>& getActiveChunks() const { return mActiveChunks; }
+    const std::vector<LiteChunkID>& getDestroyingChunks() const { return mDestroyingChunks; }
 
     // Events
     /*bool addCreateListener(ChunkListeners& remover, const ChunkEventDispatcher::Callback& callback) {
@@ -42,30 +42,41 @@ public:
     STATIC_EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, const Chunk&);
 
 private:
+    // Grid management
     void updateGridEdges(const f32v2& loadCenter);
-    void markChunkForDestroy(Chunk& chunk);
+    void makeChunkAlive(const ChunkID& chunkId);
+    // List management
+    void addChunkToActiveList(Chunk& chunk);
+    void removeChunkFromActiveList(Chunk& chunk);
+    void addChunkToLoadList(Chunk& chunk);
+    void removeChunkFromLoadList(Chunk& chunk);
+    void addChunkToDestroyList(Chunk& chunk);
+    void removeChunkFromDestroyList(Chunk& chunk);
+    // Loading
+    void onAllNeighborsAlive(Chunk& chunk);
     void beginHeightLoadForChunk(Chunk& chunk);
     void beginTileLoadForChunk(Chunk& chunk);
     void generateChunkAsync(Chunk& chunk);
+    // Ready
     void onChunkReady(Chunk& chunk);
     
     // Chunk data
     Chunk mChunks[WorldData::WORLD_SIZE_CHUNKS];
     
     // Chunk grid data
-    BitArray mAliveChunkBits = BitArray(WorldData::WORLD_SIZE_CHUNKS); // Includes both simulating chunks, and edge chunks which will not be simulating
-    bool mForceUpdateEdgeChunks = true;
-    std::vector<ChunkID> mEdgeChunkPositions;
+    BitArray mAliveChunkBits = BitArray(WorldData::WORLD_SIZE_CHUNKS); // Includes any chunk which is in range, but an "alive" chunk is not active until it loads, which triggers once 8 neighbors are alive
+    ui8 mNeighborBits[WorldData::WORLD_SIZE_CHUNKS] = {};
     f32v2 mPrevLoadCenter = f32v2(0);
+    bool mForceUpdateEdgeChunks = true;
+    std::vector<LiteChunkID> mEdgeChunkPositions;
 
     // Chunk lists
-    std::vector<Chunk*> mLoadingChunks;
-    std::vector<Chunk*> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
-    std::vector<Chunk*> mDestroyingChunks;
+    std::vector<LiteChunkID> mLoadingChunks;
+    std::vector<LiteChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
+    std::vector<LiteChunkID> mDestroyingChunks;
     std::vector<TileContainer*> mTileContainersWaitingMeshAndPhysics;
 
     // Events
     STATIC_EVENT_DISPATCHER(Chunk);
 };
-
 extern IChunkGrid* sChunkGrid;

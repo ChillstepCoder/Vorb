@@ -56,6 +56,9 @@ struct GridID {
     GridID getTopID() const { return GridID(ui32v2(pos.x, pos.y + 1)); }
     GridID getRightID() const { return GridID(ui32v2(pos.x + 1, pos.y)); }
     GridID getBottomID() const { return GridID(ui32v2(pos.x, pos.y - 1)); }
+    inline static i32v2 geti32XYFromId(ui32 id) {
+        return i32v2(id % GRIDWIDTH, id / GRIDWIDTH);
+    }
 
     // Return true if we should never load
     bool isSentinelID() const {
@@ -78,6 +81,8 @@ protected:
 
 typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
 typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
+
+typedef ui32 LiteChunkID;
 
 namespace {
     inline HeightmapPatchID heightmapPatchIDFromChunkID(ChunkID id) {

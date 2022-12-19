@@ -49,7 +49,7 @@ public:
     Chunk& getChunk(ui32 chunkId);
     const Chunk& getChunk(ui32 chunkId) const;
     size_t getNumActiveChunks() const;
-    const std::vector<Chunk*>& getActiveChunks() const;
+    const std::vector<LiteChunkID>& getActiveChunks() const;
 
     // mutators
     virtual void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) = 0;

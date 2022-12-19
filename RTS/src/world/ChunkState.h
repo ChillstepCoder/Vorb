@@ -11,4 +11,7 @@ enum class ChunkState : ui8 {
 
 enum class ChunkFlags : ui8 {
     IN_DESTROY_LIST = 1 << 0,
+    IN_LOAD_LIST    = 1 << 1,
+    IN_ACTIVE_LIST  = 1 << 2,
+    IN_EDGE_LIST    = 1 << 3
 };

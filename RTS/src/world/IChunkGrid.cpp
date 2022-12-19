@@ -15,6 +15,7 @@
 
 // How many tiles the load center has to move before we force update edge chunks
 constexpr f32 DISTANCE_SQ_CHANGE_UNTIL_FORCE_UPDATE_EDGES = SQ(16.0f);
+constexpr ui8 ALL_NEIGHBORS_ALIVE = 0xff;
 
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
@@ -35,6 +36,12 @@ bool updateChunkLoadDistanceAndCheckIfInRange(Chunk& chunk, const f32v2& loadCen
     const f32v2 centerPos = chunk.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
     f32 distSq = glm::length2(centerPos - loadCenter);
     chunk.setDistanceFromLoadCenterSQ(distSq);
+    return distSq <= sDebugOptions.mLoadRangeSq;
+}
+
+bool isChunkInLoadRange(const ChunkID& id, const f32v2& loadCenter) {
+    const f32v2 centerPos = id.getWorldPos() + f32v2(HALF_CHUNK_WIDTH);
+    const f32 distSq = glm::length2(centerPos - loadCenter);
     return distSq <= sDebugOptions.mLoadRangeSq;
 }
 
@@ -63,7 +70,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
 
     // Update all loading chunks
     for (size_t i = 0; i < mLoadingChunks.size();) {
-        Chunk& chunk = *mLoadingChunks[i];
+        Chunk& chunk = mChunks[mLoadingChunks[i]];
         switch (chunk.mState) {
             case e_cast(ChunkState::WAITING_HEIGHT): {
                 // Poll for generated height
@@ -93,6 +100,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mLoadingChunks[i] = mLoadingChunks.back();
                     mLoadingChunks.pop_back();
+                    chunk.mFlags.clearBit(ChunkFlags::IN_LOAD_LIST);
                     onChunkReady(chunk);
                 }
                 else {
@@ -112,9 +120,14 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
 
     // Update all destroying chunks
     for (size_t i = 0; i < mDestroyingChunks.size();) {
-        Chunk& chunk = *mDestroyingChunks[i];
+        Chunk& chunk = mChunks[mDestroyingChunks[i]];
         if (chunk.getRefCount() == 0) {
-            dispatchDestroy(chunk);
+            // Release height and notify only if we were ever valid
+            if (chunk.mState != e_cast(ChunkState::INVALID)) {
+                const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
+                sHeightmapGrid->releaseHeightDataAt(heightId);
+                dispatchDestroy(chunk);
+            }
             chunk.dispose();
             mDestroyingChunks[i] = mDestroyingChunks.back();
             mDestroyingChunks.pop_back();
@@ -125,132 +138,222 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
     }
 }
 
-// TODO: DELETE
-bool compareLoadingChunk(Chunk* a, Chunk* b) { // return type is bool
-    return a->getDistanceFromLoadCenterSQ() < b->getDistanceFromLoadCenterSQ();
-}
-
 void IChunkGrid::updateGridEdges(const f32v2& loadCenter) {
     PROFILE_FUNCTION();
-    mPrevLoadCenter = loadCenter;
-
-    // Remove any loading chunks
-    for (size_t i = 0; i < mLoadingChunks.size();) {
-        Chunk* chunk = mLoadingChunks[i];
-        if (!updateChunkLoadDistanceAndCheckIfInRange(*chunk, loadCenter)) {
-            markChunkForDestroy(*chunk);
-            mLoadingChunks[i] = mLoadingChunks.back();
-            mLoadingChunks.pop_back();
-        }
-        else {
-            ++i;
-        }
-    }
-    // Remove any active chunks
-    for (size_t i = 0; i < mActiveChunks.size(); ++i) {
-        Chunk* chunk = mActiveChunks[i];
-        if (!updateChunkLoadDistanceAndCheckIfInRange(*chunk, loadCenter)) {
-            markChunkForDestroy(*chunk);
-            mActiveChunks[i] = mActiveChunks.back();
-            mActiveChunks.pop_back();
-        }
-        else {
-            ++i;
-        }
-    }
-
     // This will be set if we mutate any data
     mForceUpdateEdgeChunks = false;
-    // Iterate every chunk in range (TODO: Use offset mask for perfect iteration and no distance checks?)
-    // Need OnChunkLoadDistanceChanged to update the static offset mask
-    //ChunkID
-    f32v2 bottomLeft = loadCenter - f32v2(sDebugOptions.mLoadRange);
-    f32v2 topRight = loadCenter + f32v2(sDebugOptions.mLoadRange);
-    bottomLeft.x = glm::clamp(bottomLeft.x, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
-    bottomLeft.y = glm::clamp(bottomLeft.y, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
-    topRight.x = glm::clamp(topRight.x, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
-    topRight.y = glm::clamp(topRight.y, 0.0f, (f32)WorldData::WORLD_WIDTH_TILES);
-    const ChunkID bottomLeftPos(bottomLeft);
-    const ChunkID topRightPos(topRight);
-    std::set<ChunkID> ids;
+    mPrevLoadCenter = loadCenter;
 
-    // We will store these and load them after so we can sort any new chunks based on distance
-    std::vector<Chunk*> chunksToBeginLoad;
-    chunksToBeginLoad.reserve(128);
+    // Make sure center chunk is alive
+    ChunkID centerId(loadCenter);
+    if (mAliveChunkBits.getBit(centerId.id) == false) {
+        makeChunkAlive(centerId);
+    }
 
-    // TODO: Spiral iterate, cache.
-    for (ui32 y = bottomLeftPos.pos.y; y < topRightPos.pos.y; ++y) {
-        for (ui32 x = bottomLeftPos.pos.x; x < topRightPos.pos.x; ++x) {
-            ChunkID chunkId(x, y);
-            assert(ids.find(chunkId) == ids.end());
-            ids.insert(chunkId);
-            // If there is no alive chunk here and we are in distance, add new alive chunk
-            Chunk& chunk = mChunks[chunkId.id];
-            if (!mAliveChunkBits.getBit(chunkId.id) && updateChunkLoadDistanceAndCheckIfInRange(chunk, loadCenter)) {
-                assert(chunk.getChunkID() == chunkId.id);
-                // Check if we need to remove from destroy list first
-                if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
-                    for (size_t i = 0; i < mDestroyingChunks.size(); ++i) {
-                        if (mDestroyingChunks[i] == &chunk) {
-                            // Pop and swap
-                            mDestroyingChunks[i] = mDestroyingChunks.back();
-                            mDestroyingChunks.pop_back();
-                            chunk.mFlags.clearBit(ChunkFlags::IN_DESTROY_LIST);
-                            mForceUpdateEdgeChunks = true;
-                            break;
-                        }
+    // Reverse iterate the edge positions so new edge chunks don't usually get processed this frame
+    for (int i = (int)mEdgeChunkPositions.size() - 1; i >= 0; --i) {
+        const LiteChunkID chunkId = mEdgeChunkPositions[i];
+        if (isChunkInLoadRange(chunkId, loadCenter)) {
+            // Try to load any unloaded neighbors
+            const ui8& neighborBits = mNeighborBits[chunkId];
+            const i32v2 xy = ChunkID::geti32XYFromId(chunkId);
+            for (ui8 i = 0; i < 8; ++i) {
+                if ((neighborBits & (1 << i)) == 0) {
+                    const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
+                    const ChunkID neighborId(neighborXy);
+                    if (isChunkInLoadRange(neighborId, loadCenter)) {
+                        makeChunkAlive(neighborId);
                     }
-                    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
-                }
-                mAliveChunkBits.setBit(chunkId.id);
-                // Only begin load if we are flagged as "Invalid" since otherwise we never disposed, and we can just keep our old state
-                if (chunk.mState == e_cast(ChunkState::INVALID)) {
-                    chunksToBeginLoad.emplace_back(&chunk);
-                    mLoadingChunks.emplace_back(&chunk);
-                    mForceUpdateEdgeChunks = true;
-                }
-                else if (chunk.mState == e_cast(ChunkState::READY)) {
-                    // If we are already loaded, just insert us back into the active list
-                    mActiveChunks.emplace_back(&chunk);
-                    mForceUpdateEdgeChunks = true;
-                }
-                else {
-                    // Otherwise we are still loading
-                    mLoadingChunks.emplace_back(&chunk);
-                    mForceUpdateEdgeChunks = true;
                 }
             }
         }
-    }
-
-    {
-        PROFILE_SCOPE("Load chunk sort");
-
-        // TODO: we could use a circular iteration above to avoid this sort
-        std::sort(chunksToBeginLoad.begin(), chunksToBeginLoad.end(), compareLoadingChunk);
-    }
-
-    // Load any new chunks
-    for (auto& chunk : chunksToBeginLoad) {
-        if (sHeightmapGrid->tryAquireHeightData(chunk->getHeightmapPatchID())) {
-            beginTileLoadForChunk(*chunk);
-        }
         else {
-            beginHeightLoadForChunk(*chunk);
+            // Destroying chunks are not edge chunks since they aren't alive
+            Chunk& chunk = mChunks[chunkId];
+            mEdgeChunkPositions[i] = mEdgeChunkPositions.back();
+            mEdgeChunkPositions.pop_back();
+            chunk.mFlags.clearBit(ChunkFlags::IN_EDGE_LIST);
+            mForceUpdateEdgeChunks = true;
+            // Chunk is now dead and destroying
+            addChunkToDestroyList(chunk);
         }
     }
 }
 
-void IChunkGrid::markChunkForDestroy(Chunk& chunk) {
-    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
-    assert(chunk.getState() >= ChunkState::WAITING_HEIGHT); // Make sure we actually aquired height
-    chunk.mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
-    mDestroyingChunks.emplace_back(&chunk);
-    mAliveChunkBits.clearBit(chunk.getChunkID().id);
-    // Release height
-    const HeightmapPatchID& heightId = chunk.getHeightmapPatchID();
-    sHeightmapGrid->releaseHeightDataAt(heightId);
+void IChunkGrid::makeChunkAlive(const ChunkID& chunkId) {
+    PROFILE_FUNCTION();
+    // Any time grid state changes we will update again
+    mForceUpdateEdgeChunks = true;
+    mAliveChunkBits.setBit(chunkId.id);
 
+    // Check if we need to remove from destroy list first
+    Chunk& chunk = mChunks[chunkId.id];
+    if (chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST)) {
+        removeChunkFromDestroyList(chunk);
+    }
+
+    ui8& neighborBits = mNeighborBits[chunkId.id];
+    assert(neighborBits == 0);
+    const i32v2 xy = chunkId.pos;
+    for (ui8 i = 0; i < 8; ++i) {
+        const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
+        const ChunkID neighborId(neighborXy);
+        if (mAliveChunkBits.getBit(neighborId.id)) {
+            // Create the alive neighbor connection
+            neighborBits |= (1ui8 << i);
+            ui8& adjacentNeighborBits = mNeighborBits[neighborId.id];
+            adjacentNeighborBits |= (1ui8 << (ui8)CARTESIAN8_OPPOSITES[i]);
+            if (adjacentNeighborBits == ALL_NEIGHBORS_ALIVE) {
+                onAllNeighborsAlive(mChunks[neighborId.id]);
+            }
+        }
+    }
+    if (neighborBits == ALL_NEIGHBORS_ALIVE) {
+        onAllNeighborsAlive(chunk);
+    }
+    else {
+        mEdgeChunkPositions.emplace_back(chunkId.id);
+        chunk.mFlags.setBit(ChunkFlags::IN_EDGE_LIST);
+    }
+}
+
+void IChunkGrid::addChunkToActiveList(Chunk& chunk) {
+    mActiveChunks.emplace_back(chunk.getChunkID().id);
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST));
+    chunk.mFlags.setBit(ChunkFlags::IN_ACTIVE_LIST);
+}
+
+void IChunkGrid::removeChunkFromActiveList(Chunk& chunk) {
+    // TODO: Eliminate linear search? Do we care?
+    LiteChunkID chunkId = chunk.getChunkID().id;
+    for (size_t i = 0; i < mActiveChunks.size(); ++i) {
+        if (mActiveChunks[i] == chunkId) {
+            // Pop and swap
+            mActiveChunks[i] = mActiveChunks.back();
+            mActiveChunks.pop_back();
+            chunk.mFlags.clearBit(ChunkFlags::IN_ACTIVE_LIST);
+            break;
+        }
+    }
+    // Make sure we removed
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST));
+}
+
+void IChunkGrid::addChunkToLoadList(Chunk& chunk) {
+    mLoadingChunks.emplace_back(chunk.getChunkID().id);
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
+    chunk.mFlags.setBit(ChunkFlags::IN_LOAD_LIST);
+}
+
+void IChunkGrid::removeChunkFromLoadList(Chunk& chunk) {
+    // TODO: Eliminate linear search? Do we care?
+    LiteChunkID chunkId = chunk.getChunkID().id;
+    for (size_t i = 0; i < mLoadingChunks.size(); ++i) {
+        if (mLoadingChunks[i] == chunkId) {
+            // Pop and swap
+            mLoadingChunks[i] = mLoadingChunks.back();
+            mLoadingChunks.pop_back();
+            chunk.mFlags.clearBit(ChunkFlags::IN_LOAD_LIST);
+            break;
+        }
+    }
+    // Make sure we removed
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST));
+}
+
+void IChunkGrid::addChunkToDestroyList(Chunk& chunk) {
+    PROFILE_FUNCTION();
+
+    if (chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST)) {
+        removeChunkFromActiveList(chunk);
+    }
+    else if (chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST)) {
+        removeChunkFromLoadList(chunk);
+    }
+    const LiteChunkID id = chunk.getChunkID().id;
+    // We are destroying so we have no neighbor bits
+    mNeighborBits[id] = 0;
+    mAliveChunkBits.clearBit(id);
+
+    // Notify alive neighbors
+    const i32v2 xy = chunk.getChunkID().pos;
+    for (ui8 i = 0; i < 8; ++i) {
+        const i32v2 neighborXy = xy + CARTESIAN8_DIR_OFFSETS[i];
+        const ChunkID neighborId(neighborXy);
+        if (mAliveChunkBits.getBit(neighborId.id)) {
+            ui8& adjacentNeighborBits = mNeighborBits[neighborId.id];
+            // If neighbor wasn't an edge, make him one
+            if (adjacentNeighborBits == ALL_NEIGHBORS_ALIVE) {
+                mEdgeChunkPositions.emplace_back(neighborId.id);
+                mChunks[neighborId.id].mFlags.setBit(ChunkFlags::IN_EDGE_LIST);
+                // TODO: Deactivate neighbor?
+            }
+            // Remove our bit
+            adjacentNeighborBits &= ~(1ui8 << (ui8)CARTESIAN8_OPPOSITES[i]);
+        }
+    }
+
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
+    chunk.mFlags.setBit(ChunkFlags::IN_DESTROY_LIST);
+    mDestroyingChunks.emplace_back(id);
+}
+
+void IChunkGrid::removeChunkFromDestroyList(Chunk& chunk) {
+    // TODO: Eliminate linear search? Do we care?
+    LiteChunkID chunkId = chunk.getChunkID().id;
+    for (size_t i = 0; i < mDestroyingChunks.size(); ++i) {
+        if (mDestroyingChunks[i] == chunkId) {
+            // Pop and swap
+            mDestroyingChunks[i] = mDestroyingChunks.back();
+            mDestroyingChunks.pop_back();
+            chunk.mFlags.clearBit(ChunkFlags::IN_DESTROY_LIST);
+            break;
+        }
+    }
+    // Make sure we removed
+    assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_DESTROY_LIST));
+}
+
+void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
+    PROFILE_FUNCTION();
+    // Once all neighbors are alive, we can begin loading
+    // Only begin load if we are flagged as "Invalid" since otherwise we never disposed, and we can just keep our old state
+
+    if (chunk.mFlags.isBitSet(ChunkFlags::IN_EDGE_LIST)) {
+        LiteChunkID id = chunk.getChunkID().id;
+        for (size_t i = 0; i < mEdgeChunkPositions.size(); ++i) {
+            if (mEdgeChunkPositions[i] == id) {
+                mEdgeChunkPositions[i] = mEdgeChunkPositions.back();
+                mEdgeChunkPositions.pop_back();
+                chunk.mFlags.clearBit(ChunkFlags::IN_EDGE_LIST);
+                break;
+            }
+        }
+        assert(!chunk.mFlags.isBitSet(ChunkFlags::IN_EDGE_LIST));
+    }
+    // If we are still in any load or active list, its because we lost and regained a neighbor at some point, just ignore
+    if (chunk.mFlags.isBitSet(ChunkFlags::IN_ACTIVE_LIST) || chunk.mFlags.isBitSet(ChunkFlags::IN_LOAD_LIST)) {
+        return;
+    }
+
+    if (chunk.mState == e_cast(ChunkState::INVALID)) {
+        // Begin load
+        if (sHeightmapGrid->tryAquireHeightData(chunk.getHeightmapPatchID())) {
+            beginTileLoadForChunk(chunk);
+        }
+        else {
+            beginHeightLoadForChunk(chunk);
+        }
+        addChunkToLoadList(chunk);
+    }
+    else if (chunk.mState == e_cast(ChunkState::READY)) {
+        // If we are already loaded, just insert us back into the active list
+        addChunkToActiveList(chunk);
+    }
+    else {
+        // Otherwise we are still loading
+        addChunkToLoadList(chunk);
+    }
 }
 
 void IChunkGrid::beginHeightLoadForChunk(Chunk& chunk) {
@@ -291,7 +394,7 @@ void IChunkGrid::generateChunkAsync(Chunk& chunk) {
 void IChunkGrid::onChunkReady(Chunk& chunk)
 {
     // Now we need nav
-    mActiveChunks.emplace_back(&chunk);
+    addChunkToActiveList(chunk);
     chunk.mState = e_cast(ChunkState::READY);
     chunk.mTileContainer->setState(TileContainerState::READY);
 

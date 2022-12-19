@@ -137,21 +137,24 @@ void CliWorldInterface::updateDebugRenderState(IWorld& world, RenderState& rende
         int i = 0;
 
         // Add loading chunks
-        for (auto&& chunk : loadingChunks) {
+        for (auto&& cid : loadingChunks) {
+            const Chunk& chunk = chunkGrid.getChunk(cid);
             BitFlags<DebugChunkFlags> flags;
-            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::LOADING, (ui8)chunk->getRefCount(), flags };
+            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk.getChunkID(), chunk.getState(), DebugChunkListIndex::LOADING, (ui8)chunk.getRefCount(), flags };
         }
 
         // Add active chunks
-        for (auto&& chunk : activeChunks) {
+        for (auto&& cid : activeChunks) {
+            const Chunk& chunk = chunkGrid.getChunk(cid);
             BitFlags<DebugChunkFlags> flags;
-            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::ACTIVE, (ui8)chunk->getRefCount(), flags };
+            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk.getChunkID(), chunk.getState(), DebugChunkListIndex::ACTIVE, (ui8)chunk.getRefCount(), flags };
         }
 
         // Add destroying chunks
-        for (auto&& chunk : destroyingChunks) {
+        for (auto&& cid : destroyingChunks) {
+            const Chunk& chunk = chunkGrid.getChunk(cid);
             BitFlags<DebugChunkFlags> flags;
-            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk->getChunkID(), chunk->getState(), DebugChunkListIndex::DESTROYING, (ui8)chunk->getRefCount(), flags };
+            renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk.getChunkID(), chunk.getState(), DebugChunkListIndex::DESTROYING, (ui8)chunk.getRefCount(), flags };
         }
     }
     else {

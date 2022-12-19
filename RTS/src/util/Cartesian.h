@@ -41,6 +41,28 @@ constexpr Cartesian8 CARTESIAN_TO_CARTESIAN8[4] = {
     Cartesian8::NORTH,
 };
 
+const i32v2 CARTESIAN8_DIR_OFFSETS[8] = {
+    {-1, -1}, //SOUTH_WEST
+    { 0, -1}, //SOUTH 
+    { 1, -1}, //SOUTH_EAST
+    {-1,  0}, //WEST
+    { 1,  0}, //EAST
+    {-1,  1}, //NORTH_WEST
+    { 0,  1}, //NORTH
+    { 1,  1}, //NORTH_EAST
+};
+
+constexpr Cartesian8 CARTESIAN8_OPPOSITES[8] = {
+    Cartesian8::NORTH_EAST, //SOUTH_WEST
+    Cartesian8::NORTH,      //SOUTH 
+    Cartesian8::NORTH_WEST, //SOUTH_EAST
+    Cartesian8::EAST,       //WEST
+    Cartesian8::WEST,       //EAST
+    Cartesian8::SOUTH_EAST, //NORTH_WEST
+    Cartesian8::SOUTH,      //NORTH
+    Cartesian8::SOUTH_WEST, //NORTH_EAST
+};
+
 enum AXIS_2D {
     AXIS_HORIZONTAL = 0,
     AXIS_VERTICAL = 1

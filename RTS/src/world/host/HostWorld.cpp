@@ -28,9 +28,9 @@ void HostWorld::tick(f32 elapsedSec) {
     Services::NavThread::ref().mainThreadUpdate();
 
     // TODO: REMOVE Update any pending updates if pathfinding is idle
-    for (auto&& chunk : getActiveChunks()) {
+  /*  for (auto&& chunk : getActiveChunks()) {
         chunk->updateMainThread();
-    }
+    }*/
 
     // Update all dynamic tiles
     auto&& tileContainers = TileContainerRepository::getTileContainers();

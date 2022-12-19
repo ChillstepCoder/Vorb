@@ -178,7 +178,7 @@ size_t IWorld::getNumActiveChunks() const {
     return mChunkGrid->getActiveChunks().size();
 }
 
-const std::vector<Chunk*>& IWorld::getActiveChunks() const {
+const std::vector<LiteChunkID>& IWorld::getActiveChunks() const {
     return mChunkGrid->getActiveChunks();
 }
 
@@ -276,8 +276,8 @@ StructureArrayPtr IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos) cons
 
 void IWorld::enumActiveChunks(std::function<void(const Chunk&)> func) const {
     assert(IS_GAME_THREAD());
-    for (auto&& chunk : getActiveChunks()) {
-        func(*chunk);
+    for (auto&& cid : getActiveChunks()) {
+        func(mChunkGrid->getChunk(cid));
     }
 }
 
@@ -294,9 +294,8 @@ void IWorld::onWorldBeginShared(const f32v2& loadCenter) {
 }
 
 void IWorld::sharedDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-
-    for (Chunk* chunk : getActiveChunks()) {
-        chunk->onTerrainDataChanged(pos, brushRadius);
+    for (LiteChunkID cid : getActiveChunks()) {
+        mChunkGrid->getChunk(cid).onTerrainDataChanged(pos, brushRadius);
     }
 }
 

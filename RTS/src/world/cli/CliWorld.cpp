@@ -20,9 +20,10 @@ void CliWorld::tick(f32 elapsedSec) {
     Services::Threadpool::ref().mainThreadUpdate();
 
     // Update any pending updates if pathfinding is idle
-    for (auto&& chunk : getActiveChunks()) {
-        chunk->updateMainThread();
-    }
+    // TODO: REMOVE
+    /*for (auto&& cid : getActiveChunks()) {
+        mChunkGrid->getChunk(cid).updateMainThread();
+    }*/
 
     mPhysWorld->stepSimulation(elapsedSec);
 
