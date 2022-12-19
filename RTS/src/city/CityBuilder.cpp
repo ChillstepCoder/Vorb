@@ -123,7 +123,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                         if (tileId != TILE_ID_NONE) {
                             // We dont add to mean height here because tile height is relative to the floor of this tile layer
                             const f32 height = 0.0f;
-                            tileContainer.addTileLayer(tileIndex, TileRepository::getTileData(tileId));
+                            tileContainer.setTileLayer(tileIndex, TileRepository::getTileData(tileId));
                             //assert(false); // Set building structure pointer
                             // TODO: always set ground position?
                             tileContainer.setTileGroundZPosition(tileIndex, height);
@@ -185,7 +185,7 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
         for (xy.x = road.aabb.x; xy.x < road.aabb.x + road.aabb.width; ++xy.x) {
             TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(xy);
-            handle.getMutableContainer()->addTileLayer(handle.tileIndex, TileRepository::getTileData(tileId));
+            handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileRepository::getTileData(tileId));
         }
     }
 }

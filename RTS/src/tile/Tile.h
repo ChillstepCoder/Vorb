@@ -168,7 +168,6 @@ public:
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTileData(const TileData& tile) const;
-    void addTileData(const TileData& tile);
     void setTileFlag(TileFlags flag);
     void setTileFlags(TileFlags flags);
     void setOrientation(Cartesian dir, TileLayer layer);

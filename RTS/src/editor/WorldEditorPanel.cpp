@@ -451,28 +451,30 @@ void WorldEditorPanel::updateGrassEdit() {
 }
 
 void WorldEditorPanel::updateTileEdit() {
-
     static ChunkID prevChunkID;
     static TileIndex prevTileIndex;
     if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
-        ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
-        TileContainer& tileContainer = *sWorld->getChunk(chunkID).getTileContainer();
-        TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)mHitResult.mPosition.x % CHUNK_WIDTH, (ui32)mHitResult.mPosition.y % CHUNK_WIDTH, 0);
-        Tile tile;
-        const TileData& data = TileRepository::getTileData(mSelectedTile);
+        const ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
+        const TileIndex tileIndex = (TileIndex)((ui32)mHitResult.mPosition.x % CHUNK_WIDTH + ((ui32)mHitResult.mPosition.y % CHUNK_WIDTH) * CHUNK_WIDTH);
 
-        // Make sure while mouse is held we arent spamming tiles in the same spot
+        // Make sure while mouse is held we aren't spamming tiles in the same spot
         if (chunkID != prevChunkID || tileIndex != prevTileIndex) {
             prevChunkID = chunkID;
             prevTileIndex = tileIndex;
-            tileContainer.addTileLayer(tileIndex, data);
 
-            if (mSelectedFloor == 0 && data.layer == TILE_LAYER_GROUND) {
-                f32 height = sHeightmapGrid->computeMinHeightAtTile(mHitResult.mPosition) + mGroundTileOffset;
-                height = round(height);
-                if (height == 0.0f) height = 1.0f;
-                tileContainer.setTileGroundZPosition(tileIndex, height);
-            }
+            std::tuple<LiteChunkID, TileIndex, TileID>* taskData = new std::tuple<LiteChunkID, TileIndex, TileID>(chunkID.id, tileIndex, mSelectedTile);
+            GameThreadTasks::getInstance().addGenericTask([](GameThread& gameThread, void* v) {
+                std::tuple<LiteChunkID, TileIndex, TileID>* taskData = (std::tuple<LiteChunkID, TileIndex, TileID>*)v;
+                LiteChunkID chunkId = std::get<0>(*taskData);
+                Chunk& chunk = sWorld->getChunk(chunkId);
+                if (chunk.isDataReady()) {
+                    TileIndex tileIndex = std::get<1>(*taskData);
+                    const TileData& data = TileRepository::getTileData(std::get<2>(*taskData));
+                    TileContainer& tileContainer = *chunk.getTileContainer();
+                    tileContainer.setTileLayer(tileIndex, data);
+                }
+                delete taskData;
+            }, taskData);
         }
     }
     else {

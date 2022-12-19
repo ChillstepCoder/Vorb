@@ -318,6 +318,13 @@ void PhysicsWorld::initEventHandlers() {
                         removeTrackedStaticCollisionObjectAtPosition(event.container->getId(), editEvent.tileIndex);
                     }
                 }
+                const TileID newId = editEvent.changeLayer.newId;
+                if (newId != TILE_ID_NONE) {
+                    const TileData& tileData = TileRepository::getTileData(newId);
+                    if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                        addTrackedStaticCollisionObjectAtPosition(event.container->getId(), event.edit.tileIndex, event.edit.worldPosition, mShapeRepository.getShape(tileData.collisionShapeID));
+                    }
+                }
                 break;
             }
             case TileContainerEditEventType::ChangeZPos:
