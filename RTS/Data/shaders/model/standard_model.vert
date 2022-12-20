@@ -21,18 +21,17 @@ void main() {
     fTint = vTint;
     fUV = vUV;
     fMaterialIndex = vMaterialIndex;
-    //worldPos.x += getWindAtPosition(Time, vPosition) * vWindInfluence;
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vec3(vTangent, 0));
-	vec3 binormal = cross(normal, tangent);
-	fTBN = mat3(tangent, binormal, normal);
+    normal = (vModelMatrix * vec4(normal, 0.0)).rgb;
+    tangent = (vModelMatrix * vec4(tangent, 0.0)).rgb;
+    
+	vec3 bitangent = cross(normal, tangent);
+	fTBN = mat3(tangent, bitangent, normal);
 	
 	fRoughness = 0.2;
     
-    //mat4 MVP = VP * iModels[gl_InstanceID];
-    
     vec4 worldPos = (vModelMatrix * vPosition) - vec4(CameraPos, 0.0);
-    //worldPos.x += getWindAtPosition(Time, vPosition) * 1.0;
     gl_Position = VP * worldPos;
 }

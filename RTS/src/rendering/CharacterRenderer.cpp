@@ -358,7 +358,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
     MaterialRenderer::bindMaterialForRender(*mMaterial);
     VGUniform offsetUniform = mMaterial->mProgram.getUniform("unOffset");
     VGUniform modelTransformUniform = mMaterial->mProgram.getUniform("unModelTransform");
-    VGUniform scaleUniform = mMaterial->mProgram.getUniform("unScale");
     VGUniform boneUniform = mMaterial->mProgram.getUniform("unBoneTransforms[0]");
 
     for (const auto& character : characters) {
@@ -370,7 +369,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
         if (it != mEntityCharacterModels.end()) {
             AnimState& animState = *it->second;
             const ModelDef& modelDef = Services::ResourceManager::ref().getModelRepository().getModelDef(animState.mModelID);
-            glUniform1f(scaleUniform, 1.0f);
 
             // TODO: Optimize
             f32m4 transform(1.0f);

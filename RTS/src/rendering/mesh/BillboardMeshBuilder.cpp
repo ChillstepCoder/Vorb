@@ -79,7 +79,7 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& 
 
 
 
-void BillboardMeshBuilder::uploadBufferData(SubMeshData& subMesh, const f32v3& position, GLbitfield bufferFlags)
+void BillboardMeshBuilder::uploadBufferData(MeshData& subMesh, const f32v3& position, GLbitfield bufferFlags)
 {
     // IBO
     subMesh.mLODData.mTotalIndexCount = mBillboards.size() * 6;

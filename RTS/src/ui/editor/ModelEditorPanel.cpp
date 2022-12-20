@@ -205,6 +205,32 @@ void ModelEditorPanel::renderModelToTexture() {
         StaticModel3D& mModel = mCurrentModel->getStaticModel();
         mModel.getMesh()->draw(MeshLODLevel(mLod));
     }
+    else if (mCurrentModel->mModelType == Model3DType::SKINNED) {
+        const MaterialShader* staticModelMaterial = nullptr;
+
+        switch (mDrawMode) {
+            case ModelEditorPanelDrawMode::Default:
+                staticModelMaterial = resourceManager.getMaterialManager().getMaterialShader("editor_model");
+                break;
+            case ModelEditorPanelDrawMode::Wireframe:
+                staticModelMaterial = resourceManager.getMaterialManager().getMaterialShader("mesh_wireframe");
+                break;
+            case ModelEditorPanelDrawMode::Normals:
+                staticModelMaterial = resourceManager.getMaterialManager().getMaterialShader("mesh_normals");
+                break;
+            default:
+                assert(false);
+                break;
+
+                VGUniform unVP = staticModelMaterial->getUniform("unVP");
+                MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
+
+                glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));
+
+                SkinnedModel3D& mModel = mCurrentModel->getSkinnedModel();
+                mModel.getMeshes()[0].draw(MeshLODLevel(mLod));
+        }
+    }
 
     mModelGBuffer->unuse();
 }

@@ -33,7 +33,7 @@ private:
     };
     static_assert(sizeof(BillboardData) == 32);
 
-    void uploadBufferData(SubMeshData& subMesh, const f32v3& position, GLbitfield bufferFlags);
+    void uploadBufferData(MeshData& subMesh, const f32v3& position, GLbitfield bufferFlags);
 
     std::vector<BillboardData>         mBillboards;
     BoundingSphere                     mBoundingSphere;

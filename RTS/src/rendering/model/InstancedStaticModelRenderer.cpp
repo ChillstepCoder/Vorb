@@ -151,7 +151,6 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
                 const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * instanceData.mInstanceTransforms.size();
                 if (instanceData.mTransformsVbo == 0) {
-                    //LOG_INFO("NEW");
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
                     glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
                     glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 8);

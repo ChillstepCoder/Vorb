@@ -113,7 +113,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     }
 
     // Upload mesh data
-    SubMeshData* meshData = &model.mMesh->mMainMesh;
+    MeshData* meshData = &model.mMesh->mMainMesh;
 
     PreciseTimer uploadTimer;
     MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
@@ -280,7 +280,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             }
 
             // Upload mesh data
-            SubMeshData* meshData = &model.mSkinnedMeshes[m].mMainMesh;
+            MeshData* meshData = &model.mSkinnedMeshes[m].mMainMesh;
 
             PreciseTimer uploadTimer;
             MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);

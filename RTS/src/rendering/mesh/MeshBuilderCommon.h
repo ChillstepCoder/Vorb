@@ -28,18 +28,18 @@ class MeshBuilderCommon
 public:
     MeshBuilderCommon() = delete;
     // Will create buffers and bind VAO
-    static void initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags = {});
+    static void initMeshBuffers(MeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags = {});
     template<typename VERTEX>
-    static void optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices);
+    static void optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices);
     template<typename VERTEX>
-    static void optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices);
+    static void optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices);
     // Requires VAO still bound
-    static void uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags);
-    static void uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags);
+    static void uploadIndexData(MeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags);
+    static void uploadIndexData(MeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags);
 
     template<typename VERTEX>
-    static void uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags);
-    static void uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags);
+    static void uploadVertexData(MeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags);
+    static void uploadStandardTextureUboData(MeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags);
 
 };
 

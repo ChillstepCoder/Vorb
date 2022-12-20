@@ -11,7 +11,7 @@ struct mesh_pool {};
 using singleton_task_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
 
 struct submesh_pool {};
-using singleton_submesh_pool = boost::singleton_pool<submesh_pool, sizeof(SubMeshData), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 16u>;
+using singleton_submesh_pool = boost::singleton_pool<submesh_pool, sizeof(MeshData), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 16u>;
 
 Mesh::Mesh() {
 
@@ -98,7 +98,7 @@ void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) 
     assert(mMainMesh.mVao);
     assert(mMainMesh.mLODData.mTotalIndexCount);
 
-    const SubMeshData* currentSubmesh = &mMainMesh;
+    const MeshData* currentSubmesh = &mMainMesh;
     // Draw any submeshes
     GL.glBindVertexArray(mMainMesh.mVao);
     if (mMainMesh.mUbo) {
@@ -119,7 +119,7 @@ void Mesh::destroy() {
     }
 }
 
-void SubMeshData::destroy() {
+void MeshData::destroy() {
     if (mVao) {
         // glDeleteBuffers silently ignores 0
         GL.glDeleteBuffers(1, &mUbo);

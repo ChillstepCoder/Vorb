@@ -9,7 +9,7 @@
 
 // DAS Reference : https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
-void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
+void MeshBuilderCommon::initMeshBuffers(MeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
     // VAO
     if (subMesh.mVao == 0) {
         GL.glCreateVertexArrays(1, &subMesh.mVao);
@@ -47,7 +47,7 @@ void MeshBuilderCommon::initMeshBuffers(SubMeshData& subMesh, OPT VGBuffer* shar
 }
 
 template<typename VERTEX>
-void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices) {
+void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices) {
     static_assert(sizeof(unsigned int) == sizeof(ui32));
     std::vector<ui32> indicesUi32;
     indicesUi32.resize(indices.size());
@@ -62,11 +62,11 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
         indices[i] = (ui16)indicesUi32[i];
     }
 }
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
 
 template<typename VERTEX>
-void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
+void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
     PROFILE_FUNCTION();
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
 
@@ -149,10 +149,10 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::v
     indices.swap(remappedIndices);
     vertices.swap(remappedVertices);
 }
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(SubMeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
 
-void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
+void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indices.size();
     const ui32 indexBufferSizeBytes = subMesh.mLODData.mTotalIndexCount * sizeof(ui32);
     assert(subMesh.mIbo);
@@ -162,7 +162,7 @@ void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const std::vector<
     glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
 }
 
-void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags) {
+void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indexCount;
     subMesh.mIndexType = GL_UNSIGNED_SHORT;
     const ui32 indexBufferSizeBytes = indexCount * sizeof(ui16);
@@ -174,15 +174,15 @@ void MeshBuilderCommon::uploadIndexData(SubMeshData& subMesh, const ui16* indice
 }
 
 template<typename VERTEX>
-void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags) {
+void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags) {
     const unsigned bufferSizeBytes = vertices.size() * sizeof(VERTEX);
     subMesh.mVbo.allocate(bufferSizeBytes, vertices.data(), flags);
     glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(VERTEX));
 }
-template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
-template void MeshBuilderCommon::uploadVertexData(SubMeshData& subMesh, const std::vector<Vertex64>& vertices, GLbitfield flags);
+template void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
+template void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<Vertex64>& vertices, GLbitfield flags);
 
-void MeshBuilderCommon::uploadStandardTextureUboData(SubMeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
+void MeshBuilderCommon::uploadStandardTextureUboData(MeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
     // UBO
     const ui32 uboSizeBytes = sizeof(f32v4) + textures.size() * sizeof(TextureHandle);
     // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture

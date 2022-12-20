@@ -61,8 +61,8 @@ public:
 private:
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex);
-    void uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags);
-    void bindVertexAttribs(SubMeshData& subMesh);
+    void uploadMeshData(MeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags);
+    void bindVertexAttribs(MeshData& subMesh);
 
     // TODO: Try both multi-context opengl and pool_allocator
     std::unordered_map<VGTexture, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/>> mTextureToSubmesh;

@@ -7,8 +7,11 @@ layout(location = 2) in uint vMaterialIndex;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec2 vTangent;
-layout(location = 6) in vec4 vBoneWeights;
-layout(location = 7) in ivec4 vBoneIds;
+// 6 is reserved for wind influence
+layout(location = 7) in mat4 vModelMatrix;
+// Model matrix consumes 4 locations
+layout(location = 11) in vec4 vBoneWeights;
+layout(location = 12) in ivec4 vBoneIds;
 
 out vec4 fTint;
 out vec2 fUV;
@@ -17,7 +20,6 @@ out mat3 fTBN;
 out vec3 fNormal;
 
 uniform vec3 unOffset;
-uniform float unScale;
 uniform mat4 unModelTransform;
 const int MAX_BONES = 100;
 uniform mat4 unBoneTransforms[MAX_BONES];
@@ -34,18 +36,15 @@ void main() {
   
   vec4 localPos = boneTransform * vec4(vPosition.xyz, 1.0);
 
-  vec4 scaledPos = vec4(localPos.xyz * unScale, 1.0);
-  vec4 transformedPos = unModelTransform * scaledPos;
+  vec4 transformedPos = unModelTransform * localPos;
   vec4 worldPos = transformedPos + vec4(unOffset, 0.0);
   gl_Position = VP * worldPos;
   
   
   vec3 normal = normalize(vNormal);
   vec3 tangent = normalize(vec3(vTangent, 0));
-  vec3 binormal = cross(normal, tangent);
-  normal = (unModelTransform * vec4(normal, 1.0)).rgb;
-  tangent = (unModelTransform * vec4(tangent, 1.0)).rgb;
-  //vec3 bitangent = (unModelTransform * vec4(vBitangent, 1.0)).rgb;
+  normal = (unModelTransform * vec4(normal, 0.0)).rgb;
+  tangent = (unModelTransform * vec4(tangent, 0.0)).rgb;
   
 
   vec3 bitangent = cross(normal, tangent);

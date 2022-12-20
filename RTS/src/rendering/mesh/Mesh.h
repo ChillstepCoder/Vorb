@@ -48,7 +48,7 @@ enum class MeshFlags : ui8 {
     USING_SHARED_IBO = 1 << 0
 };
 
-struct SubMeshData {
+struct MeshData {
     VGBuffer  mVao = 0;
     GLBuffer  mVbo;
     VGBuffer  mUbo = 0;
@@ -103,7 +103,7 @@ public:
 public:    
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
-    SubMeshData              mMainMesh;
+    MeshData              mMainMesh;
     std::unique_ptr<MeshSkeletonData> mSkeletonData;
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array

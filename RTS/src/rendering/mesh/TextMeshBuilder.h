@@ -44,8 +44,8 @@ private:
     };
 
     ui8 getFontIndex(const SubTexture& texture);
-    void initMeshBuffers(SubMeshData& subMesh);
-    void uploadBufferData(SubMeshData& subMesh, const FontMeshData& data, MeshDrawMode drawMode);
+    void initMeshBuffers(MeshData& subMesh);
+    void uploadBufferData(MeshData& subMesh, const FontMeshData& data, MeshDrawMode drawMode);
 
     // Map font texture IDs to fonts 
     std::unordered_map<VGTexture, ui8 /*fontTextureIndex*/> mSubtextureLookup;

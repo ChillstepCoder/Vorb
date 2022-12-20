@@ -768,7 +768,7 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
     }
 }
 
-void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags) {
+void ProceduralMeshBuilder::uploadMeshData(MeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags) {
 
     // Shared IBO
     if (subMesh.mIbo == sQuadIbo) {
@@ -798,7 +798,7 @@ void ProceduralMeshBuilder::uploadMeshData(SubMeshData& subMesh, const f32v3& po
     bindVertexAttribs(subMesh);
 }
 
-void ProceduralMeshBuilder::bindVertexAttribs(SubMeshData& subMesh)
+void ProceduralMeshBuilder::bindVertexAttribs(MeshData& subMesh)
 {
     if (mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN)) {
         TerrainVertex::bindVertexAttribs(subMesh.mVao);

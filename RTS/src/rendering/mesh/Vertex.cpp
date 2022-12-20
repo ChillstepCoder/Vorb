@@ -115,11 +115,11 @@ void SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
     glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(SkinnedModelVertex, tangentPacked));
     glVertexArrayAttribBinding(vao, 5, 0);
 
-    glEnableVertexArrayAttrib(vao, 6);
-    glVertexArrayAttribFormat(vao, 6 /*index*/, MAX_BONES_PER_VERTEX /*size*/, GL_FLOAT, false, offsetof(SkinnedModelVertex, boneWeights));
-    glVertexArrayAttribBinding(vao, 6, 0);
+    glEnableVertexArrayAttrib(vao, 11);
+    glVertexArrayAttribFormat(vao, 11 /*index*/, MAX_BONES_PER_VERTEX /*size*/, GL_FLOAT, false, offsetof(SkinnedModelVertex, boneWeights));
+    glVertexArrayAttribBinding(vao, 11, 0);
 
-    glEnableVertexArrayAttrib(vao, 7);
-    glVertexArrayAttribIFormat(vao, 7 /*index*/, MAX_BONES_PER_VERTEX /*size*/, GL_UNSIGNED_BYTE, offsetof(SkinnedModelVertex, boneIDs));
-    glVertexArrayAttribBinding(vao, 7, 0);
+    glEnableVertexArrayAttrib(vao, 12);
+    glVertexArrayAttribIFormat(vao, 12 /*index*/, MAX_BONES_PER_VERTEX /*size*/, GL_UNSIGNED_BYTE, offsetof(SkinnedModelVertex, boneIDs));
+    glVertexArrayAttribBinding(vao, 12, 0);
 }

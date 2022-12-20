@@ -139,7 +139,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
         return;
     }
     // Build notify
-    LOG_CRITICAL("Sending edit = TileIndex {} Layer {} id {} prevId {}", i, e_cast(layer), id, tile.layers[e_cast(layer)]);
+    //LOG_TRACE("Sending edit = TileIndex {} Layer {} id {} prevId {}", i, e_cast(layer), id, tile.layers[e_cast(layer)]);
     TileContainerEvent evnt;
     evnt.container = this;
     evnt.edit.worldPosition = getTileCenterWorldPosition(i);

@@ -19,8 +19,6 @@ out mat3 fTBN;
 out float fRoughness;
 
 
-
-
 void main() {
     fTint = vTint;
     fUV = vUV;
