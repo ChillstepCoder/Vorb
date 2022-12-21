@@ -34,6 +34,7 @@ void main() {
   boneTransform += unBoneTransforms[vBoneIds[2]] * vBoneWeights[2];
   boneTransform += unBoneTransforms[vBoneIds[3]] * vBoneWeights[3];
   
+  
   vec4 localPos = boneTransform * vec4(vPosition.xyz, 1.0);
 
   vec4 transformedPos = unModelTransform * localPos;

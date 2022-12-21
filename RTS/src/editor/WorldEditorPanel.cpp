@@ -134,7 +134,26 @@ void WorldEditorPanel::renderBrushDecals (const Camera3D& camera) const {
 void WorldEditorPanel::renderUI(f32 ySize) const {
     const BrushRepository& brushRepo = Services::ResourceManager::ref().getBrushRepository();
 
-    ImGui::BeginChild("World Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+    ImGui::BeginChild("World Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::BeginMenu("Import")) {
+                if (ImGui::MenuItem("Model (FBX)")) {
+
+                }
+                ImGui::EndMenu();
+            }
+
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit", "Alt+F4")) {
+                vui::InputDispatcher::onQuit();
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+
     ImGui::Text("World Editor");
     ui32 ID = 10;
 

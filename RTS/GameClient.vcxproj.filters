@@ -1493,6 +1493,9 @@
     <ClInclude Include="src\rendering\model\ModelUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\util\NativeFileBrowser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

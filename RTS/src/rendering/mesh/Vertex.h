@@ -80,13 +80,13 @@ static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
 
 constexpr int MAX_BONES_PER_VERTEX = 4;
 
-// TODO: Reduce to 64 https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
+// https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 struct alignas(32) SkinnedModelVertex {
 public:
     SkinnedModelVertex() {};
 
     f32v3 pos;
-    ui32 normalPacked;
+    ui32 normalPacked; // TODO: Test uncompressed since we have lots of padding room
     ui32 tangentPacked;
     ui16v2 uvsPacked;
     color4 color;

@@ -76,12 +76,13 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         const size_t prevSize = mStaticVerts.size();
         mStaticVerts.resize(mStaticVerts.size() + outputMesh.vertex_count());
         assert(outputMesh.parts.size() == 1);
+        const int materialIndex = glm::min(m, (int)materialIds.size() - 1);
         for (int i = 0; i < outputMesh.vertex_count(); ++i) {
             const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
             StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
             myVert.pos *= modelScale;
-            myVert.materialId = materialIds[m]; // TODO: Smarter
+            myVert.materialId = materialIds[materialIndex]; // TODO: Smarter
             f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
             assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
             myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
