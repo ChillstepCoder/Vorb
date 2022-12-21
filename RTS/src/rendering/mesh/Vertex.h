@@ -1,11 +1,6 @@
 #pragma once
 
-enum class VertexVariantType {
-    STANDARD,
-    TERRAIN,
-    WATER,
-    MODEL
-};
+#include "rendering/mesh/VertexType.h"
 
 // For packing signed normals in to a single 32 byte value
 // https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
@@ -33,7 +28,7 @@ struct alignas(32) StaticModelVertex {
     color4 color;
     ui16 materialId;
 
-    static void bindVertexAttribs(VGBuffer vao);
+    static VertexType bindVertexAttribs(VGBuffer vao);
 };
 static_assert(sizeof(StaticModelVertex) == 32, "32 byte alignment needed");
 
@@ -45,7 +40,7 @@ struct alignas(32) StandardVertex {
     i8v2 tangent;
     color4 color;
 
-    static void bindVertexAttribs(VGBuffer vao);
+    static VertexType bindVertexAttribs(VGBuffer vao);
 };
 static_assert(sizeof(StandardVertex) == 32, "32 byte alignment needed");
 
@@ -53,7 +48,7 @@ struct alignas(32) TerrainVertex {
     f32v3 pos;
     f32v3 normal;
 
-    static void bindVertexAttribs(VGBuffer vao);
+    static VertexType bindVertexAttribs(VGBuffer vao);
 };
 static_assert(sizeof(TerrainVertex) == 32, "32 byte alignment needed");
 
@@ -61,7 +56,7 @@ struct alignas(32) WaterVertex {
     f32v3 pos;
     f32 depth;
 
-    static void bindVertexAttribs(VGBuffer vao);
+    static VertexType bindVertexAttribs(VGBuffer vao);
 };
 static_assert(sizeof(WaterVertex) == 32, "32 byte alignment needed");
 
@@ -70,10 +65,10 @@ struct alignas(32) Vertex32 {
     Vertex32() {};
 
     union { 
-        StandardVertex mStandard; // VertexVariantType::STANDARD
-        TerrainVertex mTerrain; // VertexVariantType::TERRAIN
-        WaterVertex mWater; // VertexVariantType::WATER
-        StaticModelVertex mStaticModel; // VertexVariantType::MODEL
+        StandardVertex mStandard; // VertexType::STANDARD
+        TerrainVertex mTerrain; // VertexType::TERRAIN
+        WaterVertex mWater; // VertexType::WATER
+        StaticModelVertex mStaticModel; // VertexType::STATIC_MODEL
     };
 };
 static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
@@ -96,7 +91,7 @@ public:
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
 
 
-    static void bindVertexAttribs(VGBuffer vao);
+    static VertexType bindVertexAttribs(VGBuffer vao);
 };
 static_assert(sizeof(SkinnedModelVertex) == 64, "32 byte alignment needed");
 
@@ -104,7 +99,7 @@ struct alignas(32) Vertex64 {
     Vertex64() {};
 
     union {
-        SkinnedModelVertex mSkinnedModelVertex;
+        SkinnedModelVertex mSkinnedModelVertex; // SKINNED_MODEL
     };
 };
 static_assert(sizeof(Vertex64) == 64, "32 byte alignment needed");

@@ -642,6 +642,12 @@
     <ClCompile Include="src\util\b3ChromeTraceUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\ResourceOperations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\MeshOperations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1496,11 +1502,21 @@
     <ClInclude Include="src\util\NativeFileBrowser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\resources\ResourceOperations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\MeshOperations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\VertexType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
     <None Include="src\rendering\tasks\CharacterModelTask.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="src\rendering\mesh\VertexType" />
   </ItemGroup>
 </Project>

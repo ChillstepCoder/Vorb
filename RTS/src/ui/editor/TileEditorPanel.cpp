@@ -43,7 +43,7 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
             ImGui::TableHeadersRow();
 
             for (auto&& it : modelRepository.mModelIdLookup) {
-                ModelDef& def = modelRepository.mModelDefs[it.second];
+                ModelDef& def = *modelRepository.mModelDefs[it.second];
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, rowMinHeight);
                 // Name

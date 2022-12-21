@@ -57,11 +57,24 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const MaterialRep
     return false;
 }
 
-bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+bool ModelRepository::loadFbxFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository) {
+    PROFILE_FUNCTION();
+
+    LOG_TRACE("Loading FBX {}", filePath.getCString());
+
+    vio::Path rootDir = filePath;
+    rootDir.trimEnd();
+    assert(rootDir.isDirectory());
+
+    ModelDefFileData fileData;
+    return loadStaticModel(fileData, materialRepository, filePath, filePath, rootDir);
+}
+
+bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir) {
 
     PROFILE_FUNCTION();
 
-    ModelDef& def = mModelDefs.emplace_back();
+    ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
     def.mModelType = Model3DType::SKINNED;
     def.mShadowDetail = fileData.mShadowDetail;
@@ -103,11 +116,11 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Materia
     return true;
 }
 
-bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, vio::Path& modelPath, vio::Path rootDir) {
+bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir) {
 
     PROFILE_FUNCTION();
 
-    ModelDef& def = mModelDefs.emplace_back();
+    ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
     def.mModelType = Model3DType::STATIC;
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
     def.mShadowDetail = fileData.mShadowDetail;
@@ -131,7 +144,9 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const Material
 
     // Store lookup
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
-    assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
+    if (mModelIdLookup.find(modelFileNameNoExtension) != mModelIdLookup.end()) {
+        LOG_INFO("Replacing model {}", filePath.getCString());
+    }
     mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
     // TODO: Don't use extra lookup to copy the name?
     def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
@@ -142,7 +157,7 @@ const ModelDef& ModelRepository::getModelDef(const nString& name) const
 {
     auto&& it = mModelIdLookup.find(name);
     assert(it != mModelIdLookup.end());
-    return mModelDefs[it->second];
+    return *mModelDefs[it->second];
 }
 
 ModelID ModelRepository::getModelID(const nString& name) const {

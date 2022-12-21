@@ -62,6 +62,7 @@ public:
     void renderUI(f32 ySize) const;
 
 private:
+    void renderMenuBar() const;
     void renderModeButtons() const;
     void tryRenderBrushSelect(const BrushRepository& brushRepo) const;
     void renderTerrainEditUI() const;

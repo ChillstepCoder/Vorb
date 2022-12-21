@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Vertex.h"
 
-void StandardVertex::bindVertexAttribs(VGBuffer vao) {
+VertexType StandardVertex::bindVertexAttribs(VGBuffer vao) {
     assert(vao);
     // Standard verts
     glEnableVertexArrayAttrib(vao, 0);
@@ -27,9 +27,11 @@ void StandardVertex::bindVertexAttribs(VGBuffer vao) {
     glEnableVertexArrayAttrib(vao, 5);
     glVertexArrayAttribFormat(vao, 5 /*index*/, 2 /*size*/, GL_BYTE, false, offsetof(StandardVertex, tangent));
     glVertexArrayAttribBinding(vao, 5, 0);
+
+    return VertexType::STANDARD;
 }
 
-void TerrainVertex::bindVertexAttribs(VGBuffer vao) {
+VertexType TerrainVertex::bindVertexAttribs(VGBuffer vao) {
     assert(vao);
 
     glEnableVertexArrayAttrib(vao, 0);
@@ -39,9 +41,11 @@ void TerrainVertex::bindVertexAttribs(VGBuffer vao) {
     glEnableVertexArrayAttrib(vao, 1);
     glVertexArrayAttribFormat(vao, 1 /*index*/, 3 /*size*/, GL_FLOAT, false, offsetof(TerrainVertex, normal));
     glVertexArrayAttribBinding(vao, 1, 0);
+
+    return VertexType::TERRAIN;
 }
 
-void WaterVertex::bindVertexAttribs(VGBuffer vao) {
+VertexType WaterVertex::bindVertexAttribs(VGBuffer vao) {
     assert(vao);
 
     glEnableVertexArrayAttrib(vao, 0);
@@ -51,9 +55,11 @@ void WaterVertex::bindVertexAttribs(VGBuffer vao) {
     glEnableVertexArrayAttrib(vao, 1);
     glVertexArrayAttribFormat(vao, 1 /*index*/, 1 /*size*/, GL_FLOAT, false, offsetof(WaterVertex, depth));
     glVertexArrayAttribBinding(vao, 1, 0);
+
+    return VertexType::WATER;
 }
 
-void StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
+VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     assert(vao);
     // Standard verts
     glEnableVertexArrayAttrib(vao, 0);
@@ -85,9 +91,10 @@ void StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     //assert(false && "Check that size in the shader is 3, in standard_tile it is 2");
     //glVertexArrayAttribFormat(vao, 4 /*index*/, 3 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));
    // glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, tangentPacked));
+    return VertexType::STATIC_MODEL;
 }
 
-void SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
+VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
 {
     // Standard verts
     glEnableVertexArrayAttrib(vao, 0);
@@ -122,4 +129,6 @@ void SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
     glEnableVertexArrayAttrib(vao, 12);
     glVertexArrayAttribIFormat(vao, 12 /*index*/, MAX_BONES_PER_VERTEX /*size*/, GL_UNSIGNED_BYTE, offsetof(SkinnedModelVertex, boneIDs));
     glVertexArrayAttribBinding(vao, 12, 0);
+
+    return VertexType::SKINNED_MODEL;
 }

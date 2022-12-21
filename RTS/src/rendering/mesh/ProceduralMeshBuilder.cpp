@@ -801,13 +801,13 @@ void ProceduralMeshBuilder::uploadMeshData(MeshData& subMesh, const f32v3& posit
 void ProceduralMeshBuilder::bindVertexAttribs(MeshData& subMesh)
 {
     if (mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN)) {
-        TerrainVertex::bindVertexAttribs(subMesh.mVao);
+        subMesh.mVertexType = TerrainVertex::bindVertexAttribs(subMesh.mVao);
     }
     else if (mPolyTypeFlags.isBitSet(PolyTypeFlags::WATER)) {
-        WaterVertex::bindVertexAttribs(subMesh.mVao);
+        subMesh.mVertexType = WaterVertex::bindVertexAttribs(subMesh.mVao);
     }
     else {
-        StandardVertex::bindVertexAttribs(subMesh.mVao);
+        subMesh.mVertexType = StandardVertex::bindVertexAttribs(subMesh.mVao);
     }
 }
 

@@ -22,7 +22,7 @@ m_path(p) {
 }
 
 bool vio::Path::isNull() const {
-    return m_path.empty() || m_path.length() == 0;
+    return m_path.empty();
 }
 
 /************************************************************************\

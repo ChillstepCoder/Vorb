@@ -9,6 +9,7 @@
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
 
+#include "resources/ResourceOperations.h"
 #include "resources/ResourceManager.h"
 #include "ecs/EntityDefinitionRepository.h"
 #include "editor/BrushRepository.h"
@@ -31,6 +32,8 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include <Vorb/ui/InputDispatcher.h>
+
+#include "util/NativeFileBrowser.h"
 
 constexpr f32 MIN_BRUSH_SIZE = 1.0f;
 constexpr f32 MAX_BRUSH_SIZE = 50.0f;
@@ -136,23 +139,7 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
 
     ImGui::BeginChild("World Editor", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
 
-    if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::BeginMenu("Import")) {
-                if (ImGui::MenuItem("Model (FBX)")) {
-
-                }
-                ImGui::EndMenu();
-            }
-
-            ImGui::Separator();
-            if (ImGui::MenuItem("Quit", "Alt+F4")) {
-                vui::InputDispatcher::onQuit();
-            }
-            ImGui::EndMenu();
-        }
-        ImGui::EndMenuBar();
-    }
+    renderMenuBar();
 
     ImGui::Text("World Editor");
     ui32 ID = 10;
@@ -190,6 +177,28 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
     checkGlError("WorldEditor::renderUI()");
 }
 
+void WorldEditorPanel::renderMenuBar() const {
+    if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::BeginMenu("Import")) {
+                if (ImGui::MenuItem("Model (FBX)")) {
+                    const vio::Path filePath = NativeFileBrowser::openFile(FileBrowserTypes::FBX);
+                    if (!filePath.isNull()) {
+                        ResourceOperations::importFbxModel(filePath);
+                    }
+                }
+                ImGui::EndMenu();
+            }
+
+            ImGui::Separator();
+            if (ImGui::MenuItem("Quit", "Alt+F4")) {
+                vui::InputDispatcher::onQuit();
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+    }
+}
 
 void WorldEditorPanel::renderModeButtons() const {
     

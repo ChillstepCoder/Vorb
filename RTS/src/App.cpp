@@ -26,6 +26,7 @@
 #define SKIP_MAIN_MENU 0
 
 // Use dedicated GPUs
+// DOESN'T ALWAYS WORK https://forums.developer.nvidia.com/t/nvoptimusenablement-is-not-working-in-our-opengl-application/41299/3
 extern "C"
 {
     __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;

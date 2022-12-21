@@ -26,6 +26,8 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     const MaterialRepository& materialRepo,
     float modelScale
 ) {
+    assert(IS_RENDER_THREAD());
+
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
         pError("No mesh to process in this file: " + filePath.getString());
@@ -122,7 +124,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
     MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, 0);
     //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
-    StaticModelVertex::bindVertexAttribs(meshData->mVao);
+    meshData->mVertexType = StaticModelVertex::bindVertexAttribs(meshData->mVao);
     checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
 
     LOG_TRACE("  Upload data in {} ms", uploadTimer.stop());
@@ -139,6 +141,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     MeshDrawMode drawMode,
     const MaterialRepository& materialRepo
 ) {
+    assert(IS_RENDER_THREAD());
 
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
@@ -289,7 +292,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
             MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts, 0);
             //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
-            SkinnedModelVertex::bindVertexAttribs(meshData->mVao);
+            meshData->mVertexType = SkinnedModelVertex::bindVertexAttribs(meshData->mVao);
             checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
 
             LOG_TRACE("  Upload data in {} ms", uploadTimer.stop());

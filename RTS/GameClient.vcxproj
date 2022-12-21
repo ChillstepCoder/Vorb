@@ -336,6 +336,7 @@
     <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
@@ -373,6 +374,7 @@
     <ClCompile Include="src\resources\MaterialRepository.cpp" />
     <ClCompile Include="src\resources\ModelRepository.cpp" />
     <ClCompile Include="src\resources\ResourceManager.cpp" />
+    <ClCompile Include="src\resources\ResourceOperations.cpp" />
     <ClCompile Include="src\resources\RigRepository.cpp" />
     <ClCompile Include="src\resources\SkillRepository.cpp" />
     <ClCompile Include="src\resources\TextureRepository.cpp" />
@@ -585,6 +587,7 @@
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
     <ClInclude Include="src\rendering\mesh\TileContainerMesher.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
@@ -595,6 +598,7 @@
     <ClInclude Include="src\rendering\mesh\TextMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\TileMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
+    <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
@@ -631,6 +635,7 @@
     <ClInclude Include="src\resources\MaterialRepository.h" />
     <ClInclude Include="src\resources\ModelRepository.h" />
     <ClInclude Include="src\resources\ResourceManager.h" />
+    <ClInclude Include="src\resources\ResourceOperations.h" />
     <ClInclude Include="src\resources\RigRepository.h" />
     <ClInclude Include="src\resources\SkillRepository.h" />
     <ClInclude Include="src\resources\TextureRepository.h" />
@@ -713,6 +718,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
+    <None Include="src\rendering\mesh\VertexType" />
     <None Include="src\rendering\tasks\CharacterModelTask.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

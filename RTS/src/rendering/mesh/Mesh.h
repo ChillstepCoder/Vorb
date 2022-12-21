@@ -3,6 +3,8 @@
 
 #include <ozz/base/maths/simd_math.h>
 
+#include "rendering/mesh/VertexType.h"
+
 // Enough for a full chunk of grass + padding
 // TODO: How much do we really save doing this?
 // Profile how often we use this...
@@ -57,6 +59,7 @@ struct MeshData {
     MeshLODData mLODData;
     ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
     BitFlags<MeshFlags> mFlags;
+    VertexType mVertexType = VertexType::INVALID;
 
     void destroy();
 };
@@ -103,7 +106,7 @@ public:
 public:    
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
-    MeshData              mMainMesh;
+    MeshData                 mMainMesh;
     std::unique_ptr<MeshSkeletonData> mSkeletonData;
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array
