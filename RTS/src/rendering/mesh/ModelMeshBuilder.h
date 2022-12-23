@@ -43,7 +43,6 @@ public:
     );
 
 private:
-
     std::vector<Vertex32> mStaticVerts;
     std::vector<Vertex64> mSkinnedVerts;
     std::vector<uint16_t> mIndices;

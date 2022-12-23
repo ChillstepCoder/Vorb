@@ -337,6 +337,7 @@
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
+    <ClCompile Include="src\rendering\mesh\RawMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
@@ -588,6 +589,7 @@
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
+    <ClInclude Include="src\rendering\mesh\RawMesh.h" />
     <ClInclude Include="src\rendering\mesh\TileContainerMesher.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
