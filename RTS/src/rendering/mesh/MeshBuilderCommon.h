@@ -37,8 +37,8 @@ public:
     static void uploadIndexData(MeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags);
     static void uploadIndexData(MeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags);
 
-    template<typename VERTEX>
-    static void uploadVertexData(MeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags);
+    static void uploadVertexData(MeshData& subMesh, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags);
+    static void uploadVertexDataNonInterleavedPositions(MeshData& subMesh, const f32v3* positionData, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags);
     static void uploadStandardTextureUboData(MeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags);
 
 };

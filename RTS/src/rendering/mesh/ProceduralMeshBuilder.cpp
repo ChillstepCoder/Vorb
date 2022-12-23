@@ -789,7 +789,7 @@ void ProceduralMeshBuilder::uploadMeshData(MeshData& subMesh, const f32v3& posit
         MeshBuilderCommon::uploadIndexData(subMesh, data.mIndices, flags);
     }
 
-    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts, flags);
+    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts.data(), data.mVerts.size(), sizeof(Vertex32), flags);
 
     MeshBuilderCommon::uploadStandardTextureUboData(subMesh, position, data.mTextures, flags);
 

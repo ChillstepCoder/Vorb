@@ -150,6 +150,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 // GPU buffer is larger to accomidate the work group size, or we get corruption
                 const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
                 const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * instanceData.mInstanceTransforms.size();
+                constexpr GLuint BINDING_POINT = 2;
                 if (instanceData.mTransformsVbo == 0) {
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
                     glEnableVertexArrayAttrib(mesh.mMainMesh.mVao, 7);
@@ -160,14 +161,14 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                     glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
                     glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
                     glVertexArrayAttribFormat(mesh.mMainMesh.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
-                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, 1);
-                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, 1);
-                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, 1);
-                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, 1);
-                    glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, 1, 1);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 7, BINDING_POINT);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 8, BINDING_POINT);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 9, BINDING_POINT);
+                    glVertexArrayAttribBinding(mesh.mMainMesh.mVao, 10, BINDING_POINT);
+                    glVertexArrayBindingDivisor(mesh.mMainMesh.mVao, BINDING_POINT, 1);
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(f32m4));
+                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else if (gpuBufferSizeBytes > instanceData.mTransformsVboSizeBytes) {
@@ -177,7 +178,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                     GL.glCreateBuffers(1, &instanceData.mTransformsVbo);
                     GL.glNamedBufferStorage(instanceData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
                     GL.glNamedBufferSubData(instanceData.mTransformsVbo, 0, cpuBufferSizeBytes, instanceData.mInstanceTransforms.data());
-                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, 1, instanceData.mTransformsVbo, 0, sizeof(f32m4));
+                    GL.glVertexArrayVertexBuffer(mesh.mMainMesh.mVao, BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
                     instanceData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
                 }
                 else {
@@ -402,6 +403,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
         const Mesh& mesh = *model.getMesh();
 
         assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
+
         mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
     }
 

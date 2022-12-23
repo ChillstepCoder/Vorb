@@ -173,14 +173,25 @@ void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const ui16* indices, 
     glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
 }
 
-template<typename VERTEX>
-void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags) {
-    const unsigned bufferSizeBytes = vertices.size() * sizeof(VERTEX);
-    subMesh.mVbo.allocate(bufferSizeBytes, vertices.data(), flags);
-    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(VERTEX));
+void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags) {
+    const unsigned bufferSizeBytes = vertexCount * vertexSize;
+    subMesh.mVbo.allocate(bufferSizeBytes, vertexData, flags);
+    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, vertexSize);
 }
-template void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
-template void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<Vertex64>& vertices, GLbitfield flags);
+
+void MeshBuilderCommon::uploadVertexDataNonInterleavedPositions(MeshData& subMesh, const f32v3* positionData, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags) {
+    const ui32 positionsSizeBytes = vertexCount * sizeof(f32v3);
+    const ui32 interleavedSizeBytes = vertexCount * vertexSize;
+    const ui32 bufferSizeBytes = interleavedSizeBytes + positionsSizeBytes;
+    // Need mutable buffer since we are uploading data in two parts
+    subMesh.mVbo.allocate(bufferSizeBytes, nullptr, flags | GL_DYNAMIC_STORAGE_BIT);
+    subMesh.mVbo.updateSubData(0, positionsSizeBytes, positionData);
+    subMesh.mVbo.updateSubData(positionsSizeBytes, interleavedSizeBytes, vertexData);
+    // Positions
+    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(f32v3));
+    // Interleaved data
+    glVertexArrayVertexBuffer(subMesh.mVao, 1, subMesh.mVbo.getHandle(), positionsSizeBytes, vertexSize);
+}
 
 void MeshBuilderCommon::uploadStandardTextureUboData(MeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
     // UBO

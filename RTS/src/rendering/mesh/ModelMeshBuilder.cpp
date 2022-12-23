@@ -122,7 +122,14 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
     MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mStaticVerts);
     MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
-    MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, 0);
+    MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts.data(), mStaticVerts.size(), sizeof(StaticModelVertex), 0);
+    //// TMP: DEINTERLEAVED VERTEX ATTRIBUTE POSITION
+    //std::vector<f32v3> tmpPositions;
+    //tmpPositions.resize(mStaticVerts.size());
+    //for (size_t i = 0; i < mStaticVerts.size(); ++i) {
+    //    tmpPositions[i] = mStaticVerts[i].mStaticModel.pos;
+    //}
+    //MeshBuilderCommon::uploadVertexDataNonInterleavedPositions(*meshData, tmpPositions.data(), mStaticVerts.data(), mStaticVerts.size(), sizeof(StaticModelVertex), 0);
     //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
     meshData->mVertexType = StaticModelVertex::bindVertexAttribs(meshData->mVao);
     checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
@@ -290,7 +297,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
             MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mSkinnedVerts);
             MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
-            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts, 0);
+            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts.data(), mSkinnedVerts.size(), sizeof(SkinnedModelVertex), 0);
             //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
             meshData->mVertexType = SkinnedModelVertex::bindVertexAttribs(meshData->mVao);
             checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
