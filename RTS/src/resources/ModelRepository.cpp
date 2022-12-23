@@ -424,8 +424,7 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Materia
     timer.start();
 
     SkinnedModel3D& model = def.getSkinnedModel();
-    ModelMeshBuilder meshBuilder;
-    meshBuilder.buildSkinnedMeshesForModel(model, def.mRig->mSkeleton, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, materialRepository);
+    ModelMeshBuilder::buildSkinnedMeshesForModel(model, def.mRig->mSkeleton, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, materialRepository);
 
     // Store lookup
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
@@ -459,8 +458,7 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const Material
     timer.start();
 
     StaticModel3D& model = def.getStaticModel();
-    ModelMeshBuilder meshBuilder;
-    meshBuilder.buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, materialRepository, fileData.mScale);
+    ModelMeshBuilder::buildStaticMeshesForModel(model, filePath, rootDir, sceneLoader, MeshDrawMode::STATIC, materialRepository, fileData.mScale);
 
     // Store lookup
     const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();

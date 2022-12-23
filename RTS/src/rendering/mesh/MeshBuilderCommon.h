@@ -3,19 +3,6 @@
 #include "Mesh.h"
 #include "Vertex.h"
 
-struct SubMeshBufferData {
-    void clear() {
-        mVerts.clear();
-        mIndices.clear();
-        mTextures.clear();
-    }
-
-    // TODO: Pool allocators or reserve?
-    std::vector<Vertex32> mVerts;
-    std::vector<ui32> mIndices;
-    std::vector<TextureHandle> mTextures;
-};
-
 enum class MeshBuilderBufferFlags : ui8 {
     NO_VBO = BIT(0),
     SSBO = BIT(1),
@@ -29,6 +16,7 @@ public:
     MeshBuilderCommon() = delete;
     // Will create buffers and bind VAO
     static void initMeshBuffers(MeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags = {});
+    // TODO: REMOVE VERTEX
     template<typename VERTEX>
     static void optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices);
     template<typename VERTEX>

@@ -19,11 +19,13 @@ enum class ModelMeshVertexType : ui8 {
     SKINNED
 };
 
-class ModelMeshBuilder
+static class ModelMeshBuilder
 {
 public:
+    ModelMeshBuilder() = delete;
+
     // TODO: Instead optional skeleton and modelDef?
-    bool buildStaticMeshesForModel(
+    static bool buildStaticMeshesForModel(
         StaticModel3D& model,
         const vio::Path& filePath,
         const vio::Path& rootDir,
@@ -32,7 +34,7 @@ public:
         const MaterialRepository& materialRepo,
         float modelScale
     );
-    bool buildSkinnedMeshesForModel(
+    static bool buildSkinnedMeshesForModel(
         SkinnedModel3D& model,
         const ozz::animation::Skeleton& skeleton,
         const vio::Path& filePath,
@@ -41,10 +43,5 @@ public:
         MeshDrawMode drawMode,
         const MaterialRepository& materialRepo
     );
-
-private:
-    std::vector<Vertex32> mStaticVerts;
-    std::vector<Vertex64> mSkinnedVerts;
-    std::vector<uint16_t> mIndices;
 };
 

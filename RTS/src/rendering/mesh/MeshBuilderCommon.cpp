@@ -64,6 +64,8 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vect
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<StaticModelVertex>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<SkinnedModelVertex>& vertices);
 
 template<typename VERTEX>
 void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
@@ -151,6 +153,8 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vect
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<StaticModelVertex>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<SkinnedModelVertex>& vertices);
 
 void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indices.size();

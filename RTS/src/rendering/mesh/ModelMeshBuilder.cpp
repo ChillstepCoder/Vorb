@@ -27,6 +27,8 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
     float modelScale
 ) {
     assert(IS_RENDER_THREAD());
+    std::vector<StaticModelVertex> mStaticVerts;
+    std::vector<uint16_t> mIndices;
 
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
@@ -81,7 +83,7 @@ bool ModelMeshBuilder::buildStaticMeshesForModel(
         const int materialIndex = glm::min(m, (int)materialIds.size() - 1);
         for (int i = 0; i < outputMesh.vertex_count(); ++i) {
             const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-            StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
+            StaticModelVertex& myVert = mStaticVerts[prevSize + i];
             memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
             myVert.pos *= modelScale;
             myVert.materialId = materialIds[materialIndex]; // TODO: Smarter
@@ -149,6 +151,8 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     const MaterialRepository& materialRepo
 ) {
     assert(IS_RENDER_THREAD());
+    std::vector<SkinnedModelVertex> mSkinnedVerts;
+    std::vector<uint16_t> mIndices;
 
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
@@ -238,7 +242,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             assert(outputMesh.parts.size() == 1);
             for (int i = 0; i < outputMesh.vertex_count(); ++i) {
                 const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-                SkinnedModelVertex& myVert = mSkinnedVerts[i].mSkinnedModelVertex;
+                SkinnedModelVertex& myVert = mSkinnedVerts[i];
                 memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
 
                 myVert.materialId = materialIds[materialId];
