@@ -355,7 +355,7 @@ namespace fbx2raw {
                 rv.transparencyFactor = parseMaterialPropertyToFloat(matProp);
             }
 
-            LOG_DEBUG("  Property {} {} {}", propName, (int)matProp.GetPropertyDataType().GetType(), matProp.GetPropertyDataType().GetName());
+            //LOG_DEBUG("  Property {} {} {}", propName, (int)matProp.GetPropertyDataType().GetType(), matProp.GetPropertyDataType().GetName());
         }
         return rv;
     }

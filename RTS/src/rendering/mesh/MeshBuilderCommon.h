@@ -6,19 +6,6 @@
 
 struct RawMeshVertex;
 
-struct SubMeshBufferData {
-    void clear() {
-        mVerts.clear();
-        mIndices.clear();
-        mTextures.clear();
-    }
-
-    // TODO: Pool allocators or reserve?
-    std::vector<Vertex32> mVerts;
-    std::vector<ui32> mIndices;
-    std::vector<TextureHandle> mTextures;
-};
-
 enum class MeshBuilderBufferFlags : ui8 {
     NO_VBO = BIT(0),
     SSBO = BIT(1),
@@ -41,6 +28,7 @@ public:
     MeshBuilderCommon() = delete;
     // Will create buffers and bind VAO
     static void initMeshBuffers(MeshGpuData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags = {});
+    // TODO: REMOVE VERTEX
     template<typename VERTEX>
     static void optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices);
     template<typename VERTEX>
@@ -52,6 +40,8 @@ public:
 
     static void uploadVertexData(MeshGpuData& subMesh, const void* vertexData, ui32 vertexCount, ui32 vertexSize, GLbitfield flags);
     static void uploadStandardTextureUboData(MeshGpuData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags);
+    static void uploadVertexDataNonInterleavedPositions(MeshGpuData& subMesh, const f32v3* positionData, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags);
+
 
 };
 

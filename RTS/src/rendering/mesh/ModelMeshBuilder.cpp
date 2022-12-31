@@ -27,6 +27,8 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     const MaterialRepository& materialRepo
 ) {
     assert(IS_RENDER_THREAD());
+    std::vector<SkinnedModelVertex> mSkinnedVerts;
+    std::vector<uint16_t> mIndices;
 
     const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
@@ -116,7 +118,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             assert(outputMesh.parts.size() == 1);
             for (int i = 0; i < outputMesh.vertex_count(); ++i) {
                 const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-                SkinnedModelVertex& myVert = mSkinnedVerts[i].mSkinnedModelVertex;
+                SkinnedModelVertex& myVert = mSkinnedVerts[i];
                 memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
 
                 myVert.materialId = materialIds[materialId];
@@ -175,7 +177,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
             MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mSkinnedVerts);
             MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
-            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts.data(), mSkinnedVerts.size(), sizeof(Vertex64), 0);
+            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts.data(), mSkinnedVerts.size(), sizeof(SkinnedModelVertex), 0);
             //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
             meshData->mVertexType = SkinnedModelVertex::bindVertexAttribs(meshData->mVao);
             checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");

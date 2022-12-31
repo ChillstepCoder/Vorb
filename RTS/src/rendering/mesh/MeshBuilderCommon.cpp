@@ -62,8 +62,10 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::v
         indices[i] = (ui16)indicesUi32[i];
     }
 }
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData & subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<StaticModelVertex>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<SkinnedModelVertex>& vertices);
 
 template<typename VERTEX>
 void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
@@ -151,6 +153,8 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::v
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<StaticModelVertex>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<SkinnedModelVertex>& vertices);
 
 OptimizedCpuMeshData MeshBuilderCommon::optimizeMeshAndGenerateLODs(const std::vector<ui32>& indices, const std::vector<RawMeshVertex>& vertices) {
     PROFILE_FUNCTION();
@@ -263,6 +267,20 @@ void MeshBuilderCommon::uploadVertexData(MeshGpuData& subMesh, const void* verte
     const unsigned bufferSizeBytes = vertexCount * vertexSize;
     subMesh.mVbo.allocate(bufferSizeBytes, vertexData, flags);
     glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, vertexSize);
+}
+
+void MeshBuilderCommon::uploadVertexDataNonInterleavedPositions(MeshGpuData& subMesh, const f32v3* positionData, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags) {
+    const ui32 positionsSizeBytes = vertexCount * sizeof(f32v3);
+    const ui32 interleavedSizeBytes = vertexCount * vertexSize;
+    const ui32 bufferSizeBytes = interleavedSizeBytes + positionsSizeBytes;
+    // Need mutable buffer since we are uploading data in two parts
+    subMesh.mVbo.allocate(bufferSizeBytes, nullptr, flags | GL_DYNAMIC_STORAGE_BIT);
+    subMesh.mVbo.updateSubData(0, positionsSizeBytes, positionData);
+    subMesh.mVbo.updateSubData(positionsSizeBytes, interleavedSizeBytes, vertexData);
+    // Positions
+    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(f32v3));
+    // Interleaved data
+    glVertexArrayVertexBuffer(subMesh.mVao, 1, subMesh.mVbo.getHandle(), positionsSizeBytes, vertexSize);
 }
 
 void MeshBuilderCommon::uploadStandardTextureUboData(MeshGpuData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {

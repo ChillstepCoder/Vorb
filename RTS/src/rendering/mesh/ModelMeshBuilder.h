@@ -21,11 +21,13 @@ enum class ModelMeshVertexType : ui8 {
     SKINNED
 };
 
-class ModelMeshBuilder
+static class ModelMeshBuilder
 {
 public:
+    ModelMeshBuilder() = delete;
+
     // TODO: Instead optional skeleton and modelDef?
-    bool buildSkinnedMeshesForModel(
+    static bool buildSkinnedMeshesForModel(
         SkinnedModel3D& model,
         const ozz::animation::Skeleton& skeleton,
         const vio::Path& filePath,
@@ -40,10 +42,5 @@ public:
         ui8 numSkinningMatrices
     );
     static void uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh);
-
-private:
-    std::vector<Vertex32> mStaticVerts;
-    std::vector<Vertex64> mSkinnedVerts;
-    std::vector<uint16_t> mIndices;
 };
 

@@ -5,6 +5,19 @@
 
 struct SubTexture;
 
+// TODO: Remove?
+struct SubMeshBufferData {
+    void clear() {
+        mVerts.clear();
+        mIndices.clear();
+        mTextures.clear();
+    }
+
+    // TODO: Pool allocators or reserve?
+    std::vector<Vertex32> mVerts;
+    std::vector<ui32> mIndices;
+    std::vector<TextureHandle> mTextures;
+};
 
 // Keep track of all they types of indices so we can decide to share if needed
 enum class PolyTypeFlags : ui8 {
