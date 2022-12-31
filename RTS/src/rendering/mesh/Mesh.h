@@ -26,6 +26,13 @@ struct MeshLODDrawInfo {
 };
 
 struct MeshLODData {
+
+    MeshLODData& operator=(const MeshLODData& o) {
+        this->mTotalIndexCount = o.mTotalIndexCount;
+        memcpy(this->mLODStarts, o.mLODStarts, sizeof(ui32) * e_cast(MeshLODLevel::COUNT));
+        return *this;
+    }
+
     // TODO: High start is always 0 so why store it
     ui32 mLODStarts[e_cast(MeshLODLevel::COUNT)] = {};
     ui32 mTotalIndexCount = 0;
@@ -50,14 +57,36 @@ enum class MeshFlags : ui8 {
     USING_SHARED_IBO = 1 << 0
 };
 
-struct MeshData {
+enum class MeshIndexType : ui16 {
+    INVALID = 0,
+    SHORT = GL_UNSIGNED_SHORT,
+    INT = GL_UNSIGNED_INT
+};
+
+class MeshCpuData final {
+public:
+    MeshCpuData() = default;
+    VORB_NON_COPYABLE(MeshCpuData);
+    ~MeshCpuData();
+    MeshCpuData(MeshCpuData&& o);
+    MeshCpuData& operator=(MeshCpuData&& o);
+
+    void* mVertsPtr = nullptr;
+    void* mElementsPtr = nullptr;
+    ui32 mVertsCount = 0;
+    MeshIndexType mIndexType = MeshIndexType::INVALID;
+    VertexType mVertexType = VertexType::INVALID;
+    MeshLODData mLodData;
+};
+
+struct MeshGpuData {
     VGBuffer  mVao = 0;
     GLBuffer  mVbo;
     VGBuffer  mUbo = 0;
     VGBuffer  mIbo = 0;
     VGBuffer  mSSBO = 0;
     MeshLODData mLODData;
-    ui16 mIndexType = GL_UNSIGNED_INT; // SHORT OR INT
+    MeshIndexType mIndexType = MeshIndexType::INVALID;
     BitFlags<MeshFlags> mFlags;
     VertexType mVertexType = VertexType::INVALID;
 
@@ -70,10 +99,20 @@ struct MeshSkeletonData {
     ui8 mNumJoints = 0;
 };
 
+//
+//class BatchedMesh {
+//public:
+//    BoundingSphere getBoundingSphere() const { return BoundingSphere{ mPosition, mDrawInfo.mBoundingSphereRadius }; }
+//    const f32v3& getPosition() const { return mPosition; }
+//    const ModelDrawInfo& getDrawInfo() const { return mDrawInfo; }
+//private:
+//    ModelDrawInfo mDrawInfo;
+//    f32v3 mPosition = f32v3(0.0f);
+//};
+
 
 // TODO: Indirect https://cpp-rendering.io/indirect-rendering/
-class Mesh
-{
+class Mesh {
     friend class ProceduralMeshBuilder;
     friend class BillboardMeshBuilder;
     friend class TextMeshBuilder;
@@ -106,7 +145,7 @@ public:
 public:    
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
-    MeshData                 mMainMesh;
+    MeshGpuData                 mMainMesh;
     std::unique_ptr<MeshSkeletonData> mSkeletonData;
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array

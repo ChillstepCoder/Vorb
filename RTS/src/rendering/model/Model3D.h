@@ -8,6 +8,7 @@ enum class Model3DType {
     COUNT
 };
 
+// TODO: Deprecate?
 class StaticModel3D {
     friend class ModelRepository;
     friend class ModelMeshBuilder;
@@ -18,6 +19,7 @@ private:
     std::unique_ptr<Mesh> mMesh;
 };
 
+// TODO: Deprecate?
 class SkinnedModel3D {
     friend class ModelRepository;
     friend class ModelMeshBuilder;

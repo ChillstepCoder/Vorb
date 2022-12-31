@@ -132,3 +132,22 @@ VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
 
     return VertexType::SKINNED_MODEL;
 }
+
+constexpr size_t getVertexSize(VertexType type) {
+    switch (type) {
+        case VertexType::STANDARD:
+            return sizeof(StandardVertex);
+        case VertexType::TERRAIN:
+            return sizeof(TerrainVertex);
+        case VertexType::WATER:
+            return sizeof(WaterVertex);
+        case VertexType::STATIC_MODEL:
+            return sizeof(StaticModelVertex);
+        case VertexType::SKINNED_MODEL:
+            return sizeof(SkinnedModelVertex);
+        default:
+            assert(false);
+    }
+    return 0;
+    static_assert(e_cast(VertexType::COUNT) == 6);
+}

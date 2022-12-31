@@ -237,7 +237,7 @@ ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {
     }
 }
 
-void TextMeshBuilder::initMeshBuffers(MeshData& subMesh) {
+void TextMeshBuilder::initMeshBuffers(MeshGpuData& subMesh) {
     // VAO
     if (subMesh.mVao == 0) {
         glGenVertexArrays(1, &subMesh.mVao);
@@ -256,12 +256,12 @@ void TextMeshBuilder::initMeshBuffers(MeshData& subMesh) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, subMesh.mSSBO);
     }
     // IBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIboUI32);
 
     checkGlError("TextMeshBuilder::initMeshBuffers");
 }
 
-void TextMeshBuilder::uploadBufferData(MeshData& subMesh, const FontMeshData& data, MeshDrawMode drawMode) {
+void TextMeshBuilder::uploadBufferData(MeshGpuData& subMesh, const FontMeshData& data, MeshDrawMode drawMode) {
     glBindVertexArray(subMesh.mVao);
 
     // IBO

@@ -73,8 +73,6 @@ struct alignas(32) Vertex32 {
 };
 static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
 
-constexpr int MAX_BONES_PER_VERTEX = 4;
-
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
 struct alignas(32) SkinnedModelVertex {
 public:
@@ -103,3 +101,5 @@ struct alignas(32) Vertex64 {
     };
 };
 static_assert(sizeof(Vertex64) == 64, "32 byte alignment needed");
+
+extern constexpr size_t getVertexSize(VertexType type);

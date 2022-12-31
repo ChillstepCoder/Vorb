@@ -25,15 +25,20 @@ public:
     const ModelDef& getModelDef(const nString& name) const;
     ModelID getModelID(const nString& name) const;
 
+    void buildModelBatches();
+
 private:
     bool loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir);
     bool loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir);
-    bool loadRawModel(const vio::Path& filePath);
+    RawMesh* loadRawModelFromFBX(const vio::Path& filePath);
 
     const RigRepository& mRigRepository;
     vio::IOManager& mIoManager;
     std::map<nString, ModelID> mModelIdLookup;
     std::vector<std::unique_ptr<ModelDef>> mModelDefs;
     std::map<nString, std::unique_ptr<RawMesh>> mRawModels;
+
+    // TODO: Pooled allocate
+    std::vector<std::unique_ptr<ModelBatch>> mModelBatches;
 };
 

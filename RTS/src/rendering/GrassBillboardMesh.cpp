@@ -129,7 +129,7 @@ void GrassBillboardMesh::initBuffers() {
         glGenBuffers(1, &mVboPosition);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0); // Hack, no data at all, the shader generates vertex positions
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIboUI32);
 
         glGenTextures(1, &mTboInstanceData);
         glGenTextures(1, &mTboPositionData);

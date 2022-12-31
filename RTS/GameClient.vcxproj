@@ -720,6 +720,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
+    <None Include="src\rendering\mesh\fbx2raw.inl" />
     <None Include="src\rendering\mesh\VertexType" />
     <None Include="src\rendering\tasks\CharacterModelTask.inl" />
   </ItemGroup>

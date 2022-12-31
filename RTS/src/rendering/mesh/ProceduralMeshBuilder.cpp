@@ -12,8 +12,8 @@ constexpr ui32 TERRAIN_MESH_INDICES = SQ(TERRAIN_MESH_WIDTH_QUADS) * 6 + TERRAIN
 struct mesh_builder_pool {};
 using singleton_task_pool = boost::singleton_pool<mesh_builder_pool, sizeof(ProceduralMeshBuilder), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 128u>;
 
-VGBuffer ProceduralMeshBuilder::sQuadIbo = 0;
-VGBuffer ProceduralMeshBuilder::sTerrainIbo = 0;
+VGBuffer ProceduralMeshBuilder::sQuadIboUI32 = 0;
+VGBuffer ProceduralMeshBuilder::sTerrainIboUI32 = 0;
 
 const f32v2 CUBE_FACING_AXIS_DIRECTIONS[e_cast(CubeFacing::COUNT)] = {
     f32v2(-1, 1), // LEFT
@@ -697,11 +697,11 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     VGBuffer* sharedIbo = nullptr;
     if (polyTypeBits == e_cast(PolyTypeFlags::QUADS)) {
         usingSharedIbo = true;
-        sharedIbo = &sQuadIbo;
+        sharedIbo = &sQuadIboUI32;
     }
     else if ((polyTypeBits == e_cast(PolyTypeFlags::TERRAIN)) || (polyTypeBits == e_cast(PolyTypeFlags::WATER))) {
         usingSharedIbo = true;
-        sharedIbo = &sTerrainIbo;
+        sharedIbo = &sTerrainIboUI32;
     }
     else {
         // Make sure we don't have terrain mixed with something else
@@ -716,6 +716,9 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     MeshBuilderCommon::initMeshBuffers(mesh.mMainMesh, sharedIbo, BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::UBO));
     assert(sharedIbo); // If not shared, wheres our elements?
     uploadMeshData(mesh.mMainMesh, worldPos, mSubMeshesData[0], GL_DYNAMIC_STORAGE_BIT);
+
+    // TODO: Support other index formats
+    mesh.mMainMesh.mIndexType = MeshIndexType::INT;
 
     // Cleanup
     // TODO: Do we need this really?
@@ -768,14 +771,14 @@ void ProceduralMeshBuilder::getSubmeshAndTextureIndex(const SubTexture& texture,
     }
 }
 
-void ProceduralMeshBuilder::uploadMeshData(MeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags) {
+void ProceduralMeshBuilder::uploadMeshData(MeshGpuData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags) {
 
     // Shared IBO
-    if (subMesh.mIbo == sQuadIbo) {
+    if (subMesh.mIbo == sQuadIboUI32) {
         subMesh.mLODData.mTotalIndexCount = (data.mVerts.size() / 4u) * 6u;
         assert(subMesh.mLODData.mTotalIndexCount < MAX_QUAD_MESH_INDICES);
     }
-    else if (subMesh.mIbo == sTerrainIbo) {
+    else if (subMesh.mIbo == sTerrainIboUI32) {
         if (mPolyTypeFlags.isBitSet(PolyTypeFlags::WATER)) {
             subMesh.mLODData.mTotalIndexCount = WATER_MESH_INDICES;
         }
@@ -789,7 +792,7 @@ void ProceduralMeshBuilder::uploadMeshData(MeshData& subMesh, const f32v3& posit
         MeshBuilderCommon::uploadIndexData(subMesh, data.mIndices, flags);
     }
 
-    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts, flags);
+    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts.data(), data.mVerts.size(), sizeof(Vertex32), flags);
 
     MeshBuilderCommon::uploadStandardTextureUboData(subMesh, position, data.mTextures, flags);
 
@@ -798,7 +801,7 @@ void ProceduralMeshBuilder::uploadMeshData(MeshData& subMesh, const f32v3& posit
     bindVertexAttribs(subMesh);
 }
 
-void ProceduralMeshBuilder::bindVertexAttribs(MeshData& subMesh)
+void ProceduralMeshBuilder::bindVertexAttribs(MeshGpuData& subMesh)
 {
     if (mPolyTypeFlags.isBitSet(PolyTypeFlags::TERRAIN)) {
         subMesh.mVertexType = TerrainVertex::bindVertexAttribs(subMesh.mVao);
@@ -816,7 +819,7 @@ void ProceduralMeshBuilder::initStaticIBOs() {
     // ========================================
     // =              QUADS                   =
     // ========================================
-    if (sQuadIbo) {
+    if (sQuadIboUI32) {
         return;
     }
 
@@ -831,8 +834,8 @@ void ProceduralMeshBuilder::initStaticIBOs() {
         quadIndices[i++] = v;
     }
 
-    glCreateBuffers(1, &sQuadIbo);
-    glNamedBufferStorage(sQuadIbo, MAX_QUAD_MESH_INDICES * sizeof(ui32), quadIndices.data(), 0);
+    glCreateBuffers(1, &sQuadIboUI32);
+    glNamedBufferStorage(sQuadIboUI32, MAX_QUAD_MESH_INDICES * sizeof(ui32), quadIndices.data(), 0);
 
     // ========================================
     // =              TERRAIN                 =
@@ -916,8 +919,8 @@ void ProceduralMeshBuilder::initStaticIBOs() {
 
     assert(index == TERRAIN_MESH_INDICES);
 
-    glCreateBuffers(1, &sTerrainIbo);
-    glNamedBufferStorage(sTerrainIbo, TERRAIN_MESH_INDICES * sizeof(ui32), indices.data(), 0);
+    glCreateBuffers(1, &sTerrainIboUI32);
+    glNamedBufferStorage(sTerrainIboUI32, TERRAIN_MESH_INDICES * sizeof(ui32), indices.data(), 0);
     checkGlError("TerrainMesh::initGlobalIBO");
 }
 

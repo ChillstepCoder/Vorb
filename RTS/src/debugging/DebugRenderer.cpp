@@ -369,7 +369,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         }
         // Quads
         else {
-            glVertexArrayElementBuffer(mesh.vao, ProceduralMeshBuilder::sQuadIbo);
+            glVertexArrayElementBuffer(mesh.vao, ProceduralMeshBuilder::sQuadIboUI32);
             glDrawElements(GL_TRIANGLES, (GLsizei)(mesh.numVerts * 6) / 4, GL_UNSIGNED_INT, 0);
             RenderStats::recordDrawCall(mesh.numVerts / 2);
         }

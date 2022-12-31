@@ -6,6 +6,7 @@
 #include "rendering/model/StaticModelInstance.h"
 
 #include "rendering/model/Model3D.h"
+#include "rendering/mesh/RawMesh.h"
 #include "rendering/mesh/Mesh.h"
 
 #include <ozz/base/io/archive.h>
@@ -17,126 +18,10 @@
 #include <fbxsdk/core/base/fbxstring.h>
 #include <fbxsdk/scene/geometry/fbxlayer.h>
 
-bool ModelMeshBuilder::buildStaticMeshesForModel(
-    StaticModel3D& model,
-    const vio::Path& filePath,
-    const vio::Path& rootDir,
-    OzzFbxSceneLoader& sceneLoader,
-    MeshDrawMode drawMode,
-    const MaterialRepository& materialRepo,
-    float modelScale
-) {
-    assert(IS_RENDER_THREAD());
-
-    const int numMeshes = sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
-    if (numMeshes == 0) {
-        pError("No mesh to process in this file: " + filePath.getString());
-        return false;
-    }
-
-    // Read read material textures matched to material names
-    std::vector<MaterialID> materialIds;
-    const int materialCount = sceneLoader.scene()->GetMaterialCount();
-    materialIds.resize(materialCount);
-    for (int i = 0; i < materialCount; ++i) {
-        FbxSurfaceMaterial* fbxMaterial = sceneLoader.scene()->GetMaterial(i);
-
-        const nString materialName = fbxMaterial->GetName();
-        materialIds[i] = materialRepo.getMaterialId(materialName);
-
-        /* LOG_DEBUG("Material {} name {} ", i, materialName);
-         for (FbxProperty matProp = fbxMaterial->GetFirstProperty(); matProp.IsValid(); matProp = fbxMaterial->GetNextProperty(matProp)) {
-             LOG_DEBUG("  Property {}",  matProp.GetName().Buffer());
-         }*/
-    }
-
-    model.mMesh = std::make_unique<Mesh>();
-
-    // TODO: Per submesh textures
-
-    mStaticVerts.clear();
-    // Combine all submeshes into one mesh
-    for (int m = 0; m < numMeshes; ++m) {
-
-        FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
-        FbxLayerElementArrayTemplate<int>* pLockableArray;
-        fbxMesh->GetMaterialIndices(&pLockableArray);
-        LOG_DEBUG("    Material sttuff {} {}", pLockableArray->GetCount(), pLockableArray->GetFirst());
-
-        PreciseTimer timer;
-        // Allocates output mesh.
-        ozzfbx::Mesh outputMesh;
-        outputMesh.parts.resize(1);
-
-        ControlPointsRemap remap;
-        // TODO: Non OZZ version so we dont have an intermediate conversion
-        if (!BuildVertices(fbxMesh, sceneLoader.converter(), &remap, &outputMesh)) {
-            pError("Failed to read vertices: " + filePath.getString());
-            return false;
-         }
-
-        const size_t prevSize = mStaticVerts.size();
-        mStaticVerts.resize(mStaticVerts.size() + outputMesh.vertex_count());
-        assert(outputMesh.parts.size() == 1);
-        const int materialIndex = glm::min(m, (int)materialIds.size() - 1);
-        for (int i = 0; i < outputMesh.vertex_count(); ++i) {
-            const ozzfbx::Mesh::Part& part = outputMesh.parts[0];
-            StaticModelVertex& myVert = mStaticVerts[prevSize + i].mStaticModel;
-            memcpy(&myVert.pos, &part.positions[(int)(i * 3)], sizeof(f32) * 3);
-            myVert.pos *= modelScale;
-            myVert.materialId = materialIds[materialIndex]; // TODO: Smarter
-            f32v2 uvsFloat{ part.uvs[(int)i * 2], part.uvs[(int)i * 2 + 1] };
-            assert(uvsFloat.x >= 0.0f && uvsFloat.x <= 1.0f && uvsFloat.y >= 0.0f && uvsFloat.y <= 1.0f);
-            myVert.uvsPacked.x = (ui16)(uvsFloat.x * UINT16_MAX);
-            myVert.uvsPacked.y = (ui16)(uvsFloat.y * UINT16_MAX);
-            const f32v3* normals = (const f32v3*)(&part.normals[(int)(i * 3)]);
-            myVert.normalPacked = Pack_INT_2_10_10_10_REV(normals->x, normals->y, normals->z, 0.0f);
-            const f32v3* tangents = (const f32v3*)(&part.tangents[(int)(i * 3)]);
-            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(tangents->x, tangents->y, tangents->z, 0.0f);
-           // memcpy(&myVert.normal, &part.normals[(int)(i * 3)], sizeof(f32) * 3);
-           // memcpy(&myVert.tangent, &part.tangents[(int)(i * 3)], sizeof(f32) * 3);
-            // TODO: Check materials for this mesh! See if each mesh has its own material data we can leverage
-            if (part.colors.size()) {
-                memcpy(&myVert.color, &part.colors[(int)(i * 4)], sizeof(uint8_t) * 4);
-            }
-            else {
-                myVert.color = COLOR_WHITE;
-            }
-        }
-        // Copy indices
-        size_t start = mIndices.size();
-        mIndices.resize(mIndices.size() + outputMesh.triangle_indices.size());
-        
-        for (int i = 0; i < outputMesh.triangle_index_count(); ++i) {
-            mIndices[start + i] = outputMesh.triangle_indices[i] + prevSize; // Copy index data and shift index
-        }
-      
-
-        timer.start();
-    }
-
-    // Upload mesh data
-    MeshData* meshData = &model.mMesh->mMainMesh;
-
-    PreciseTimer uploadTimer;
-    MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
-    MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mStaticVerts);
-    MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
-    MeshBuilderCommon::uploadVertexData(*meshData, mStaticVerts, 0);
-    //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
-    meshData->mVertexType = StaticModelVertex::bindVertexAttribs(meshData->mVao);
-    checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
-
-    LOG_TRACE("  Upload data in {} ms", uploadTimer.stop());
-
-    return true;
-}
-
 bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     SkinnedModel3D& model,
     const ozz::animation::Skeleton& skeleton,
     const vio::Path& filePath,
-    const vio::Path& rootDir,
     OzzFbxSceneLoader& sceneLoader,
     MeshDrawMode drawMode,
     const MaterialRepository& materialRepo
@@ -284,13 +169,13 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             }
 
             // Upload mesh data
-            MeshData* meshData = &model.mSkinnedMeshes[m].mMainMesh;
+            MeshGpuData* meshData = &model.mSkinnedMeshes[m].mMainMesh;
 
             PreciseTimer uploadTimer;
             MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
             MeshBuilderCommon::optimizeMeshAndGenerateLODs(*meshData, mIndices, mSkinnedVerts);
             MeshBuilderCommon::uploadIndexData(*meshData, mIndices.data(), mIndices.size(), 0);
-            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts, 0);
+            MeshBuilderCommon::uploadVertexData(*meshData, mSkinnedVerts.data(), mSkinnedVerts.size(), sizeof(Vertex64), 0);
             //MeshBuilderCommon::uploadStandardTextureUboData(*meshData, f32v3(0.0f), textures, 0);
             meshData->mVertexType = SkinnedModelVertex::bindVertexAttribs(meshData->mVao);
             checkGlError("ModelMeshBuilder::buildStaticMeshesForModel");
@@ -330,4 +215,91 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
 
     glBindVertexArray(0);
     return true;
+}
+
+MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<RawMaterialData>& rawMaterials, const MaterialRepository& materialRepo, ui8 numSkinningMatrices) {
+
+    MeshCpuData rv;
+
+    // Optimize + LOD
+    OptimizedCpuMeshData meshData = MeshBuilderCommon::optimizeMeshAndGenerateLODs(subMesh.mIndices, subMesh.mVertices);
+    rv.mLodData = meshData.lodData;
+
+    // Grab material IDs from material names
+    std::vector<MaterialID> materialIds;
+    materialIds.resize(rawMaterials.size());
+    for (int i = 0; i < rawMaterials.size(); ++i) {
+        const nString materialName = rawMaterials[i].materialName;
+        materialIds[i] = materialRepo.getMaterialId(materialName);
+    }
+
+    // Different vertex format based on skin or no
+    rv.mVertsCount = meshData.vertices.size();
+    if (subMesh.mHasSkin) {
+        SkinnedModelVertex* verts = new SkinnedModelVertex[rv.mVertsCount];
+        rv.mVertsPtr = verts;
+        rv.mVertexType = VertexType::SKINNED_MODEL;
+        assert(false);
+    }
+    else {
+        StaticModelVertex* verts = new StaticModelVertex[rv.mVertsCount];
+        rv.mVertsPtr = verts;
+        rv.mVertexType = VertexType::STATIC_MODEL;
+        for (int i = 0; i < rv.mVertsCount; ++i) {
+            const RawMeshVertex& rawVert = meshData.vertices[i];
+            StaticModelVertex& myVert = verts[i];
+            myVert.pos = rawVert.pos;
+            myVert.materialId = materialIds[rawVert.materialIndex];
+            assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
+            myVert.uvsPacked.x = (ui16)(rawVert.uvs.x * UINT16_MAX);
+            myVert.uvsPacked.y = (ui16)(rawVert.uvs.y * UINT16_MAX);
+            myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
+            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
+            myVert.color = rawVert.color;
+        }
+    }
+
+    // Copy indices
+    // TODO: Allow int?
+    rv.mIndexType = MeshIndexType::SHORT;
+    ui16* indices = new ui16[meshData.indices.size()];
+    rv.mElementsPtr = (void*)indices;
+    for (int i = 0; i < meshData.indices.size(); ++i) {
+        assert(meshData.indices[i] <= UINT16_MAX);
+        indices[i] = (ui16)meshData.indices[i];
+    }
+
+    return rv;
+}
+
+void ModelMeshBuilder::uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh) {
+    MeshBuilderCommon::initMeshBuffers(outGpuMesh, nullptr);
+    assert(cpuMesh.mIndexType == MeshIndexType::SHORT); // TODO: Support int
+    outGpuMesh.mLODData = cpuMesh.mLodData;
+    MeshBuilderCommon::uploadIndexData(outGpuMesh, (ui16*)cpuMesh.mElementsPtr, cpuMesh.mLodData.mTotalIndexCount, 0);
+    MeshBuilderCommon::uploadVertexData(outGpuMesh, cpuMesh.mVertsPtr, cpuMesh.mVertsCount, getVertexSize(cpuMesh.mVertexType), 0);
+    // TODO: Common util?
+    VertexType mappedVertexType = VertexType::INVALID;
+    switch (cpuMesh.mVertexType) {
+        case VertexType::STANDARD:
+            mappedVertexType = StandardVertex::bindVertexAttribs(outGpuMesh.mVao);
+            break;
+        case VertexType::TERRAIN:
+            mappedVertexType = TerrainVertex::bindVertexAttribs(outGpuMesh.mVao);
+            break;
+        case VertexType::WATER:
+            mappedVertexType = WaterVertex::bindVertexAttribs(outGpuMesh.mVao);
+            break;
+        case VertexType::STATIC_MODEL:
+            mappedVertexType = StaticModelVertex::bindVertexAttribs(outGpuMesh.mVao);
+            break;
+        case VertexType::SKINNED_MODEL:
+            mappedVertexType = SkinnedModelVertex::bindVertexAttribs(outGpuMesh.mVao);
+            break;
+        default:
+            assert(false);
+    }
+    static_assert(e_cast(VertexType::COUNT) == 6);
+    assert(mappedVertexType == cpuMesh.mVertexType);
+    checkGlError("ModelMeshBuilder::uploadCpuMeshToGpu");
 }

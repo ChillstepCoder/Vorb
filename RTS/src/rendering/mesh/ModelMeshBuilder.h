@@ -7,6 +7,8 @@
 #include <ozz/animation/offline/fbx/fbx.h>
 
 struct SubTexture;
+struct RawSubMesh;
+struct RawMaterialData;
 class SkinnedMesh; // TODO: Just mesh?
 class SkinnedModel3D;
 class StaticModel3D;
@@ -23,24 +25,21 @@ class ModelMeshBuilder
 {
 public:
     // TODO: Instead optional skeleton and modelDef?
-    bool buildStaticMeshesForModel(
-        StaticModel3D& model,
-        const vio::Path& filePath,
-        const vio::Path& rootDir,
-        OzzFbxSceneLoader& sceneLoader,
-        MeshDrawMode drawMode,
-        const MaterialRepository& materialRepo,
-        float modelScale
-    );
     bool buildSkinnedMeshesForModel(
         SkinnedModel3D& model,
         const ozz::animation::Skeleton& skeleton,
         const vio::Path& filePath,
-        const vio::Path& rootDir,
         OzzFbxSceneLoader& sceneLoader,
         MeshDrawMode drawMode,
         const MaterialRepository& materialRepo
     );
+    static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
+        RawSubMesh& subMesh,
+        const std::vector<RawMaterialData>& rawMaterials,
+        const MaterialRepository& materialRepo,
+        ui8 numSkinningMatrices
+    );
+    static void uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh);
 
 private:
     std::vector<Vertex32> mStaticVerts;

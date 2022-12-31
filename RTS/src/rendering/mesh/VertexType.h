@@ -1,5 +1,7 @@
 #pragma once
 
+constexpr int MAX_BONES_PER_VERTEX = 4;
+
 enum class VertexType {
     INVALID,
     STANDARD,

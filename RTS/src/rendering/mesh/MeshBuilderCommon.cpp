@@ -9,7 +9,7 @@
 
 // DAS Reference : https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
-void MeshBuilderCommon::initMeshBuffers(MeshData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
+void MeshBuilderCommon::initMeshBuffers(MeshGpuData& subMesh, OPT VGBuffer* sharedIbo, BitFlags<MeshBuilderBufferFlags> flags) {
     // VAO
     if (subMesh.mVao == 0) {
         GL.glCreateVertexArrays(1, &subMesh.mVao);
@@ -47,7 +47,7 @@ void MeshBuilderCommon::initMeshBuffers(MeshData& subMesh, OPT VGBuffer* sharedI
 }
 
 template<typename VERTEX>
-void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices) {
+void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices) {
     static_assert(sizeof(unsigned int) == sizeof(ui32));
     std::vector<ui32> indicesUi32;
     indicesUi32.resize(indices.size());
@@ -62,11 +62,11 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vect
         indices[i] = (ui16)indicesUi32[i];
     }
 }
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
 
 template<typename VERTEX>
-void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
+void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
     PROFILE_FUNCTION();
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
 
@@ -149,10 +149,96 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vect
     indices.swap(remappedIndices);
     vertices.swap(remappedVertices);
 }
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
+template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
 
-void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
+OptimizedCpuMeshData MeshBuilderCommon::optimizeMeshAndGenerateLODs(const std::vector<ui32>& indices, const std::vector<RawMeshVertex>& vertices) {
+    PROFILE_FUNCTION();
+
+    static_assert(sizeof(unsigned int) == sizeof(ui32));
+    OptimizedCpuMeshData meshData;
+
+    // TODO: Binary equivalence considers all input bytes, including padding which should be zero-initialized if the vertex structure has gaps.
+    std::vector<ui32> remap(indices.size());
+    size_t vertexCount = meshopt_generateVertexRemap(remap.data(), indices.data(), indices.size(), vertices.data(), vertices.size(), sizeof(RawMeshVertex));
+
+    std::vector<ui32>& remappedIndices = meshData.indices;
+    std::vector<RawMeshVertex>& remappedVertices = meshData.vertices;
+    remappedIndices.resize(indices.size());
+    remappedVertices.resize(vertexCount);
+
+    meshopt_remapIndexBuffer(remappedIndices.data(), indices.data(), indices.size(), remap.data());
+    meshopt_remapVertexBuffer(remappedVertices.data(), vertices.data(), vertices.size(), sizeof(RawMeshVertex), remap.data());
+
+    // Optimize initial mesh to get rid of mostly useless polygons
+    constexpr float threshold = 0.2f;
+    {
+        std::vector<ui32> optimizedIndices;
+        optimizedIndices.resize(remappedIndices.size());
+        constexpr f32 targetError = 0.0006f;
+        const size_t targetIndexCount = size_t(remappedIndices.size() * threshold);
+        ui32 newSize = meshopt_simplify(&optimizedIndices[0], &remappedIndices[0], remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(RawMeshVertex), targetIndexCount, targetError);
+        optimizedIndices.resize(newSize);
+        remappedIndices.swap(optimizedIndices);
+    }
+
+    // Re-remap to delete unused vertices
+    {
+        remap.resize(remappedIndices.size());
+        vertexCount = meshopt_generateVertexRemap(remap.data(), remappedIndices.data(), remappedIndices.size(), remappedVertices.data(), remappedVertices.size(), sizeof(RawMeshVertex));
+
+        std::vector<ui32> remappedIndices2(remappedIndices.size());
+        std::vector<RawMeshVertex> remappedVertices2(vertexCount);
+
+        meshopt_remapIndexBuffer(remappedIndices2.data(), remappedIndices.data(), remappedIndices.size(), remap.data());
+        meshopt_remapVertexBuffer(remappedVertices2.data(), remappedVertices.data(), remappedVertices.size(), sizeof(RawMeshVertex), remap.data());
+
+        remappedIndices.swap(remappedIndices2);
+        remappedVertices.swap(remappedVertices2);
+    }
+
+
+    meshopt_optimizeVertexCache(remappedIndices.data(), remappedIndices.data(), remappedIndices.size(), vertexCount);
+    // TODO: THIS ASSUMES POSITION IS ALWAYS THE FIRST FIELD! It better be :P
+    meshopt_optimizeOverdraw(remappedIndices.data(), remappedIndices.data(), remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(RawMeshVertex), 1.05f);
+    meshopt_optimizeVertexFetch(remappedVertices.data(), remappedIndices.data(), remappedIndices.size(), remappedVertices.data(), vertexCount, sizeof(RawMeshVertex));
+    // TODO: Test compression - https://github.com/zeux/meshoptimizer
+
+    /*TODO: https://github.com/zeux/meshoptimizer When a sequence of LOD meshes is generated that all use the original vertex buffer, care must be taken to order vertices optimally to not penalize mobile
+     GPU architectures that are only capable of transforming a sequential vertex buffer range.It's recommended in this case to first optimize each LOD for vertex cache, then assemble all LODs in one large
+     index buffer starting from the coarsest LOD (the one with fewest triangles), and call meshopt_optimizeVertexFetch on the final large index buffer. This will make sure that coarser LODs require a smaller
+     vertex range and are efficient wrt vertex fetch and transform. */
+
+    constexpr float targetErrors[3]{
+        0.01f, //0.0006f,
+        0.02f,
+        0.04f
+    };
+
+    // Level of detail
+    MeshLODData& lodData = meshData.lodData;
+    lodData.mLODStarts[0] = 0;
+    size_t prevSize = remappedIndices.size();
+    size_t prevStart = 0;
+    for (int i = 1; i < 4; ++i) {
+        const float targetError = targetErrors[i - 1];
+        size_t prevTotalSize = remappedIndices.size();
+        const size_t targetIndexCount = size_t(prevSize * threshold);
+        lodData.mLODStarts[i] = prevTotalSize;
+        size_t maxLODSize = prevSize;
+        remappedIndices.resize(prevTotalSize + maxLODSize);
+        prevSize = meshopt_simplify(&remappedIndices[prevTotalSize], &remappedIndices[prevStart], prevSize, (const f32*)(&remappedVertices[0]), vertexCount, sizeof(RawMeshVertex), targetIndexCount, targetError);
+        prevStart = prevTotalSize;
+        remappedIndices.resize(prevTotalSize + prevSize);
+
+        // TODO: Optimize vertex cache, overdraw, vertex fetch per LOD?
+    }
+    lodData.mTotalIndexCount = remappedIndices.size();
+
+    return meshData;
+}
+
+void MeshBuilderCommon::uploadIndexData(MeshGpuData& subMesh, const std::vector<ui32>& indices, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indices.size();
     const ui32 indexBufferSizeBytes = subMesh.mLODData.mTotalIndexCount * sizeof(ui32);
     assert(subMesh.mIbo);
@@ -162,9 +248,9 @@ void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const std::vector<ui3
     glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
 }
 
-void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const ui16* indices, int indexCount, GLbitfield flags) {
+void MeshBuilderCommon::uploadIndexData(MeshGpuData& subMesh, const ui16* indices, int indexCount, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indexCount;
-    subMesh.mIndexType = GL_UNSIGNED_SHORT;
+    subMesh.mIndexType = MeshIndexType::SHORT;
     const ui32 indexBufferSizeBytes = indexCount * sizeof(ui16);
     assert(subMesh.mIbo);
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
@@ -173,16 +259,13 @@ void MeshBuilderCommon::uploadIndexData(MeshData& subMesh, const ui16* indices, 
     glVertexArrayElementBuffer(subMesh.mVao, subMesh.mIbo);
 }
 
-template<typename VERTEX>
-void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<VERTEX>& vertices, GLbitfield flags) {
-    const unsigned bufferSizeBytes = vertices.size() * sizeof(VERTEX);
-    subMesh.mVbo.allocate(bufferSizeBytes, vertices.data(), flags);
-    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, sizeof(VERTEX));
+void MeshBuilderCommon::uploadVertexData(MeshGpuData& subMesh, const void* vertexData, ui32 vertexCount, ui32 vertexSize, GLbitfield flags) {
+    const unsigned bufferSizeBytes = vertexCount * vertexSize;
+    subMesh.mVbo.allocate(bufferSizeBytes, vertexData, flags);
+    glVertexArrayVertexBuffer(subMesh.mVao, 0, subMesh.mVbo.getHandle(), 0, vertexSize);
 }
-template void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<Vertex32>& vertices, GLbitfield flags);
-template void MeshBuilderCommon::uploadVertexData(MeshData& subMesh, const std::vector<Vertex64>& vertices, GLbitfield flags);
 
-void MeshBuilderCommon::uploadStandardTextureUboData(MeshData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
+void MeshBuilderCommon::uploadStandardTextureUboData(MeshGpuData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
     // UBO
     const ui32 uboSizeBytes = sizeof(f32v4) + textures.size() * sizeof(TextureHandle);
     // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture

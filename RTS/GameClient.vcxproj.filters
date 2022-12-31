@@ -1524,5 +1524,8 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="src\rendering\mesh\VertexType" />
+    <None Include="src\rendering\mesh\fbx2raw.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

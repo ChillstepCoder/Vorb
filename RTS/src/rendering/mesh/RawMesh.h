@@ -1,17 +1,16 @@
 #pragma once
 
-#include "rendering/mesh/Vertex.h"
+#include "rendering/mesh/VertexType.h"
 #include "rendering/material/MaterialData.h"
 
 // Not intended to be uploaded to GPU except for editor render
-struct alignas(32) RawMeshVertex {
-public:
+struct alignas(16) RawMeshVertex {
     f32v3 pos;
     f32v3 normal; // TODO: Test uncompressed since we have lots of padding room
     f32v3 tangent;
     f32v2 uvs;
     color4 color;
-    ui16 materialId;
+    ui16 materialIndex;
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
 };
@@ -21,12 +20,16 @@ struct RawMaterialData {
     nString materialName;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    f32v4 specularColor = { 1.0f, 1.0f, 1.0f, 1.0f };
     // UV anisotropic roughness (isotropic lighting models use only the first value). ZW values are ignored
     f32v4 roughness = { 1.0f, 1.0f, 0.0f, 0.0f };
 
     f32 transparencyFactor = 1.0f; // UNUSED
     f32 alphaTest = 0.01f;
     f32 metallicFactor = 0.0f;
+    f32 bumpFactor = 1.0f;
+    f32 emissiveFactor = 0.0f;
+    f32 albedoFactor = 1.0f;
 
     ui32 flags = MaterialFlags_CastShadow | MaterialFlags_ReceiveShadow;
     // maps
@@ -39,6 +42,7 @@ struct RawMaterialData {
 struct RawSubMesh {
     std::vector<RawMeshVertex> mVertices;
     std::vector<ui32> mIndices;
+    bool mHasSkin;
 };
 
 // Contains everything that a mesh could need, skeleton, vertex data, vertex types,
@@ -47,5 +51,6 @@ class RawMesh {
 public:
     std::vector<RawMaterialData> mMaterials;
     std::vector<RawSubMesh> mSubMeshes;
+    RawSubMesh mCombinedMeshData;
 };
 

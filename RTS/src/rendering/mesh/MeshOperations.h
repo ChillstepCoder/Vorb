@@ -1,8 +1,9 @@
 #pragma once
 
-class Mesh;
+class MeshCpuData;
 
 namespace MeshOperations {
-    bool rotate90AboutAxis(Mesh& mesh, const f32v3& axis);
+    void rotate90AboutAxis(MeshCpuData& mesh, const f32v3& axis);
+    void applyScale(MeshCpuData& mesh, f32 scale);
 };
 

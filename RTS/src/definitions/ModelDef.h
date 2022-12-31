@@ -1,5 +1,6 @@
 #pragma once
 
+#include "rendering/mesh/Mesh.h"
 #include "rendering/model/Model3D.h"
 #include "rendering/model/ModelConst.h"
 #include "rendering/post_process/ShadowLodDetail.h"
@@ -18,6 +19,23 @@ struct ModelDefFileData {
 };
 KEG_TYPE_DECL(ModelDefFileData);
 
+// Contains gpu buffers one or more models and their LODs, to improve batching performance
+// Currently all models in a batch must share a skeleton (or have no skeleton)
+struct ModelBatch {
+    MeshGpuData mMeshData;
+    std::unique_ptr<MeshSkeletonData> mSkeletonData;
+};
+
+struct ModelDrawInfo {
+    bool isValid() const { return mModelBatch != nullptr; }
+
+    ModelBatch* mModelBatch = nullptr;
+    GLuint mBaseVertex = 0;
+    f32 mBoundingSphereRadius = 10.0f;
+};
+
+// Modeldef contains all information about a 3D model including its location
+// in a ModelBatch
 struct ModelDef {
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
@@ -26,6 +44,8 @@ struct ModelDef {
     const SkinnedModel3D& getSkinnedModel() const { assert(mModelType == Model3DType::SKINNED); return mSkinnedModel; }
     StaticModel3D& getStaticModel() { assert(mModelType == Model3DType::STATIC); return mStaticModel; }
     const StaticModel3D& getStaticModel() const { assert(mModelType == Model3DType::STATIC); return mStaticModel; }
+
+    bool hasGpuMesh() const { return mDrawInfo.isValid(); }
 private:
     // TODO: Fix union, rightnow the skinned model internally holds unique_ptr, that needs to be managed here in the modeldef
     //union {
@@ -37,4 +57,5 @@ public:
     ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     const char* mName = nullptr;
+    ModelDrawInfo mDrawInfo;
 };

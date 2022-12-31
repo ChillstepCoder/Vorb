@@ -68,19 +68,19 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& 
     mesh->mBoundingSphere.center += worldPos;
     MeshBuilderCommon::initMeshBuffers(
         mesh->mMainMesh,
-        &ProceduralMeshBuilder::sQuadIbo,
+        &ProceduralMeshBuilder::sQuadIboUI32,
         BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::NO_VBO, MeshBuilderBufferFlags::SSBO)
     );
+
+    // TODO: Support other formats
+    mesh->mMainMesh.mIndexType = MeshIndexType::INT;
 
     // Upload data
     uploadBufferData(mesh->mMainMesh, worldPos, bufferFlags);
     mBillboards.clear();
 }
 
-
-
-void BillboardMeshBuilder::uploadBufferData(MeshData& subMesh, const f32v3& position, GLbitfield bufferFlags)
-{
+void BillboardMeshBuilder::uploadBufferData(MeshGpuData& subMesh, const f32v3& position, GLbitfield bufferFlags) {
     // IBO
     subMesh.mLODData.mTotalIndexCount = mBillboards.size() * 6;
 
@@ -89,7 +89,6 @@ void BillboardMeshBuilder::uploadBufferData(MeshData& subMesh, const f32v3& posi
     glNamedBufferStorage(subMesh.mSSBO, sizeof(BillboardData) * mBillboards.size(), mBillboards.data(), bufferFlags);
     checkGlError("MeshBuilder::uploadMeshData");
 }
-
 
 void* BillboardMeshBuilder::operator new(size_t count) {
     assert(IS_GAME_THREAD());

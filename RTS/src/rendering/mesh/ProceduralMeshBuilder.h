@@ -61,8 +61,8 @@ public:
 private:
 
     void getSubmeshAndTextureIndex(const SubTexture& texture, OUT SubMeshBufferData** submesh, OUT ui8* textureIndex);
-    void uploadMeshData(MeshData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags);
-    void bindVertexAttribs(MeshData& subMesh);
+    void uploadMeshData(MeshGpuData& subMesh, const f32v3& position, const SubMeshBufferData& data, GLbitfield flags);
+    void bindVertexAttribs(MeshGpuData& subMesh);
 
     // TODO: Try both multi-context opengl and pool_allocator
     std::unordered_map<VGTexture, std::pair<i32 /*submeshIndex*/, ui8/*textureIndex*/>> mTextureToSubmesh;
@@ -74,6 +74,7 @@ private:
 
 public:
     // Shared index buffers
-    static VGBuffer sQuadIbo;
-    static VGBuffer sTerrainIbo;
+    // TODO: UI16 Formats as well?
+    static VGBuffer sQuadIboUI32;
+    static VGBuffer sTerrainIboUI32;
 };

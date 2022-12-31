@@ -198,7 +198,6 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
         GLIndirectBuffer& inDrawCommands = *instanceData.mDrawCommands;
         const size_t drawCommandsSize = inDrawCommands.mDrawCommands.size();
 
-
         if (sDebugOptions.mDisableGPUCulling == false) {
             PROFILE_SCOPE("GPU Culling");
             // GPU Culling

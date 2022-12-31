@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Mesh.h"
 
+#include "rendering/mesh/Vertex.h"
 #include "rendering/RenderStats.h"
 
 #include <boost/pool/singleton_pool.hpp>
@@ -8,10 +9,7 @@
 #include "rendering/gl/GL.h"
 
 struct mesh_pool {};
-using singleton_task_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
-
-struct submesh_pool {};
-using singleton_submesh_pool = boost::singleton_pool<submesh_pool, sizeof(MeshData), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 16u>;
+using singleton_mesh_pool = boost::singleton_pool<mesh_pool, sizeof(Mesh), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 512u>;
 
 Mesh::Mesh() {
 
@@ -32,7 +30,7 @@ void Mesh::draw() const {
     if (mMainMesh.mSSBO) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
     }
-    glDrawElements(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, mMainMesh.mIndexType, (const GLvoid*)(0) /* offset */);
+    glDrawElements(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mMainMesh.mLODData.mTotalIndexCount / 3);
 
     glBindVertexArray(0);
@@ -52,7 +50,7 @@ void Mesh::draw(MeshLODLevel lod) const
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
     }
 
-    glDrawElements(GL_TRIANGLES, drawInfo.indexCount, mMainMesh.mIndexType, (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == GL_UNSIGNED_INT ? sizeof(ui32) : sizeof(ui16))) /* offset */);
+    glDrawElements(GL_TRIANGLES, drawInfo.indexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */);
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 
     glBindVertexArray(0);
@@ -69,7 +67,7 @@ void Mesh::drawInstanced(GLsizei instanceCount) const {
     if (mMainMesh.mSSBO) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
     }
-    glDrawElementsInstanced(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, mMainMesh.mIndexType, (const GLvoid*)(0) /* offset */, instanceCount);
+    glDrawElementsInstanced(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(0) /* offset */, instanceCount);
     RenderStats::recordDrawCall(mMainMesh.mLODData.mTotalIndexCount / 3);
 
     glBindVertexArray(0);
@@ -87,7 +85,7 @@ void Mesh::drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const {
     if (mMainMesh.mSSBO) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
     }
-    glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, mMainMesh.mIndexType, (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == GL_UNSIGNED_INT ? sizeof(ui32) : sizeof(ui16))) /* offset */, instanceCount);
+    glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */, instanceCount);
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 
     glBindVertexArray(0);
@@ -98,7 +96,7 @@ void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) 
     assert(mMainMesh.mVao);
     assert(mMainMesh.mLODData.mTotalIndexCount);
 
-    const MeshData* currentSubmesh = &mMainMesh;
+    const MeshGpuData* currentSubmesh = &mMainMesh;
     // Draw any submeshes
     GL.glBindVertexArray(mMainMesh.mVao);
     if (mMainMesh.mUbo) {
@@ -108,7 +106,7 @@ void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) 
         GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, mMainMesh.mSSBO);
     }
     GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
-    glMultiDrawElementsIndirect(GL_TRIANGLES, mMainMesh.mIndexType, nullptr, (GLsizei)numDrawCommands, 0);
+    glMultiDrawElementsIndirect(GL_TRIANGLES, e_cast(mMainMesh.mIndexType), nullptr, (GLsizei)numDrawCommands, 0);
 
     GL.glBindVertexArray(0);
 }
@@ -119,7 +117,7 @@ void Mesh::destroy() {
     }
 }
 
-void MeshData::destroy() {
+void MeshGpuData::destroy() {
     if (mVao) {
         // glDeleteBuffers silently ignores 0
         GL.glDeleteBuffers(1, &mUbo);
@@ -141,11 +139,70 @@ void MeshData::destroy() {
 void* Mesh::operator new(size_t count) {
     assert(IS_RENDER_THREAD());
     UNUSED(count);
-    return singleton_task_pool::malloc();
+    return singleton_mesh_pool::malloc();
 }
 
 void Mesh::operator delete(void* pointer, size_t size) {
     assert(IS_RENDER_THREAD());
     UNUSED(size);
-    return singleton_task_pool::free(pointer);
+    return singleton_mesh_pool::free(pointer);
+}
+
+MeshCpuData::~MeshCpuData() {
+    if (mVertsPtr) {
+        assert(mElementsPtr); // For now we always guarantee both
+        switch (mVertexType) {
+            case VertexType::STANDARD:
+                delete[] static_cast<StandardVertex*>(mVertsPtr);
+                break;
+            case VertexType::TERRAIN:
+                delete[] static_cast<TerrainVertex*>(mVertsPtr);
+                break;
+            case VertexType::WATER:
+                delete[] static_cast<WaterVertex*>(mVertsPtr);
+                break;
+            case VertexType::STATIC_MODEL:
+                delete[] static_cast<StaticModelVertex*>(mVertsPtr);
+                break;
+            case VertexType::SKINNED_MODEL:
+                delete[] static_cast<SkinnedModelVertex*>(mVertsPtr);
+                break;
+            default:
+                assert(false);
+        }
+        static_assert(e_cast(VertexType::COUNT) == 6, "Delete new types");
+        switch (mIndexType) {
+            case MeshIndexType::SHORT:
+                delete[] static_cast<ui16*>(mElementsPtr);
+                break;
+            case MeshIndexType::INT:
+                delete[] static_cast<ui32*>(mElementsPtr);
+                break;
+            default:
+                assert(false);
+        }
+    }
+}
+
+MeshCpuData::MeshCpuData(MeshCpuData&& o) {
+    this->mVertsPtr = o.mVertsPtr;
+    this->mElementsPtr = o.mElementsPtr;
+    this->mVertsCount = o.mVertsCount;
+    this->mLodData = o.mLodData;
+    this->mIndexType = o.mIndexType;
+    this->mVertexType = o.mVertexType;
+    o.mVertsPtr = nullptr;
+    o.mElementsPtr = nullptr;
+}
+
+MeshCpuData& MeshCpuData::operator=(MeshCpuData&& o) {
+    this->mVertsPtr = o.mVertsPtr;
+    this->mElementsPtr = o.mElementsPtr;
+    this->mVertsCount = o.mVertsCount;
+    this->mLodData = o.mLodData;
+    this->mIndexType = o.mIndexType;
+    this->mVertexType = o.mVertexType;
+    o.mVertsPtr = nullptr;
+    o.mElementsPtr = nullptr;
+    return *this;
 }
