@@ -113,11 +113,15 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                 case TileEditorPanelResultCode::EDIT_MODEL:
                     openModelForEdit(*std::get<ModelDef*>(result.second));
                     break;
+                case TileEditorPanelResultCode::EDIT_MATERIAL:
+                    assert(false);
+                    //openMaterialForEdit(*std::get<MaterialData*>(result.second));
+                    break;
                 default:
                     assert(false);
                     break;
             }
-            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 2);
+            static_assert(e_cast(TileEditorPanelResultCode::COUNT) == 3);
 
         }
 

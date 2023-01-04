@@ -10,6 +10,7 @@ class NormalMapGenerator;
 
 class MaterialRepository
 {
+    friend class TileEditorPanel;
 public:
     MaterialRepository(vio::IOManager& ioManager);
     ~MaterialRepository();

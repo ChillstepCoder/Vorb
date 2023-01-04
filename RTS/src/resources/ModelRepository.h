@@ -17,7 +17,7 @@ namespace ozz::animation {
 
 class ModelRepository
 {
-    friend class TileEditorPanel; // TODO: ModelEditorPanel only?
+    friend class TileEditorPanel;
 public:
     ModelRepository(vio::IOManager& ioManager, const RigRepository& rigRepository);
     ~ModelRepository();

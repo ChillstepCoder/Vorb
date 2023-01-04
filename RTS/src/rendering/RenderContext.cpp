@@ -883,7 +883,7 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
     yOffset += GAP_SIZE;
 
     if (Services::isUsingNav()) {
-        sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + Services::NavThread::ref().getMainThreadQueuedProcsApprox());
+        sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + (int)Services::NavThread::ref().getMainThreadQueuedProcsApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
@@ -917,7 +917,7 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
-    sprintf_s(buffer, sizeof(buffer), "Characters: %u", renderState.getCharacterRenderState().size());
+    sprintf_s(buffer, sizeof(buffer), "Characters: %u", (ui32)renderState.getCharacterRenderState().size());
     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
     yOffset += GAP_SIZE;
 
@@ -935,7 +935,7 @@ void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderSt
     }
 
     if (sDebugOptions.mChunkBoundaries) {
-        sprintf_s(buffer, sizeof(buffer), "Chunks: %u", renderState.getDebugChunks().size());
+        sprintf_s(buffer, sizeof(buffer), "Chunks: %u", (ui32)renderState.getDebugChunks().size());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
     }

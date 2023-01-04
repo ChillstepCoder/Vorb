@@ -23,6 +23,7 @@ struct PACKED_STRUCT MaterialData final {
     // maps
     TextureHandle albedoMap = INVALID_TEXTURE_HANDLE;
     TextureHandle normalMap = INVALID_TEXTURE_HANDLE;
+    // TODO: Bake ambientOcclusionMap into albedoMap
     TextureHandle ambientOcclusionMap = INVALID_TEXTURE_HANDLE;
     /// Occlusion (R), Roughness (G), Metallic (B) https://github.com/KhronosGroup/glTF/issues/857
     TextureHandle metallicRoughnessMap = INVALID_TEXTURE_HANDLE;
