@@ -196,10 +196,9 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
     // TODO: cache
     ui8 num_skinning_matrices = 0;
     const SkinnedModel3D& skinnedModel = modelDef.getSkinnedModel();
-    for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
-        num_skinning_matrices =
-            std::max(num_skinning_matrices, skinnedModel.getMeshes()[i].tryGetSkeleton()->mNumJoints);
-    }
+    const MeshSkeletonData* skeletonData = skinnedModel.getMesh()->tryGetSkeleton();
+    assert(skeletonData);
+    num_skinning_matrices = skeletonData->mNumJoints;
 
     ui32 numValidTracks = 0;
     for (ui32 i = 0; i < NUM_ANIM_STATE_TRACKS; ++i) {
@@ -390,32 +389,28 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
             if (updateAnimation(animState, character.mLocomotionMode, modelDef, models, elapsedSec)) {
                 // Draw animated
-                for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
-                    const auto& mesh = skinnedModel.getMeshes()[i];
-                    const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
-                    const ozz::math::Float4x4* bindPoses = skelData->mInverseBindPoses.get();
-                    for (size_t i = 0; i < skelData->mNumJoints; ++i) {
-                        skinningMatrices[i] = models[skelData->mJointRemaps[i]] * bindPoses[i];
-                    }
-                    glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
-
-                    // TODO: Indirect?
-                    mesh.draw();
+                const auto& mesh = *skinnedModel.getMesh();
+                const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
+                const ozz::math::Float4x4* bindPoses = skelData->mInverseBindPoses.get();
+                for (size_t i = 0; i < skelData->mNumJoints; ++i) {
+                    skinningMatrices[i] = models[skelData->mJointRemaps[i]] * bindPoses[i];
                 }
+                glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
+
+                // TODO: Indirect?
+                mesh.draw();
             }
             else {
                 // INVALID ANIMATION
                 // Draw T pose
-                for (ui32 i = 0; i < skinnedModel.getNumMeshes(); ++i) {
-                    const auto& mesh = skinnedModel.getMeshes()[i];
-                    const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
-                    for (size_t i = 0; i < skelData->mNumJoints; ++i) {
-                        skinningMatrices[i] = ozz::math::Float4x4::identity();
-                    }
-                    glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
-
-                    mesh.draw();
+                const auto& mesh = *skinnedModel.getMesh();
+                const MeshSkeletonData* skelData = mesh.tryGetSkeleton();
+                for (size_t i = 0; i < skelData->mNumJoints; ++i) {
+                    skinningMatrices[i] = ozz::math::Float4x4::identity();
                 }
+                glUniformMatrix4fv(boneUniform, skelData->mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
+
+                mesh.draw();
             }
         }
     }

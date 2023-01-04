@@ -359,4 +359,281 @@ namespace fbx2raw {
         }
         return rv;
     }
+
+
+
+    // Define a per vertex skin attributes mapping.
+    struct SkinMapping {
+        ui8 index;
+        float weight;
+    };
+
+    typedef ozz::vector<SkinMapping> SkinMappings;
+    typedef ozz::vector<SkinMappings> VertexSkinMappings;
+
+    // Sort highest weight first.
+    bool SortInfluenceWeights(const SkinMapping& l, const SkinMapping& r) {
+        return l.weight > r.weight;
+    }
+
+    struct strLess {
+        bool operator()(const char* const& _left, const char* const& _right) const {
+            return strcmp(_left, _right) < 0;
+        }
+    };
+
+    bool buildSkin(
+        FbxMesh* fbxMesh,
+        ozz::animation::offline::fbx::FbxSystemConverter* converter,
+        const ControlPointsRemap& inputRemap,
+        const ozz::animation::Skeleton& skeleton,
+        RawSubMesh& subMesh
+    ) {
+
+        const int skin_count = fbxMesh->GetDeformerCount(FbxDeformer::eSkin);
+        if (skin_count == 0) {
+            LOG_CRITICAL("No skin found for fbx mesh");
+            return false;
+        }
+        if (skin_count > 1) {
+            LOG_WARN("More than one skin found for fbx mesh, only first will be processed");
+        }
+
+        // Get skinning indices and weights.
+        FbxSkin* deformer = static_cast<FbxSkin*>(fbxMesh->GetDeformer(0, FbxDeformer::eSkin));
+
+        FbxSkin::EType skinning_type = deformer->GetSkinningType();
+        if (skinning_type != FbxSkin::eRigid && skinning_type != FbxSkin::eLinear) {
+            LOG_CRITICAL("Unsupported skinning type for fbx mesh");
+            return false;
+        }
+
+        const ui32 numJoints = skeleton.num_joints();
+        if (numJoints > UINT8_MAX) {
+            LOG_CRITICAL("More than 256 joints in fbx, please reduce");
+            return false;
+        }
+
+        // Builds joints names map
+        typedef std::map<const char*, ui8, strLess> JointsMap;
+        JointsMap jointsMap;
+        for (int i = 0; i < numJoints; ++i) {
+            jointsMap[skeleton.joint_names()[i]] = static_cast<ui8>(i);
+        }
+
+        // Tmp vectors while we build and minimize the joints
+        std::vector<ozz::math::Float4x4> inverseBindPoses(numJoints, ozz::math::Float4x4::identity());
+
+        // Resize to the number of vertices
+        const size_t vertexCount = subMesh.mVertices.size();
+        VertexSkinMappings vertexSkinMappings(vertexCount);
+
+        // Computes geometry matrix.
+        const FbxAMatrix geometry_matrix(
+            fbxMesh->GetNode()->GetGeometricTranslation(FbxNode::eSourcePivot),
+            fbxMesh->GetNode()->GetGeometricRotation(FbxNode::eSourcePivot),
+            fbxMesh->GetNode()->GetGeometricScaling(FbxNode::eSourcePivot)
+        );
+
+        const int clusterCount = deformer->GetClusterCount();
+        for (int cl = 0; cl < clusterCount; ++cl) {
+            const FbxCluster* cluster = deformer->GetCluster(cl);
+            const FbxNode* node = cluster->GetLink();
+            if (!node) {
+                LOG_ERROR("No node linked to cluster {} in fbx file.", cluster->GetName());
+                continue;
+            }
+
+            const FbxCluster::ELinkMode mode = cluster->GetLinkMode();
+            if (mode != FbxCluster::eNormalize) {
+                LOG_CRITICAL("Unsupported link mode for joint {} in fbx file.", node->GetName());
+                return false;
+            }
+
+            // Get corresponding joint index;
+            JointsMap::const_iterator it = jointsMap.find(node->GetName());
+            if (it == jointsMap.end()) {
+                LOG_CRITICAL("Required joint {} not found in provided skeleton in fbx file.", node->GetName());
+                return false;
+            }
+            const uint16_t joint = it->second;
+
+            // Computes joint's inverse bind-pose matrix.
+            FbxAMatrix transform_matrix;
+            cluster->GetTransformMatrix(transform_matrix);
+            transform_matrix *= geometry_matrix;
+
+            FbxAMatrix transform_link_matrix;
+            cluster->GetTransformLinkMatrix(transform_link_matrix);
+
+            const FbxAMatrix inverseBindPose = transform_link_matrix.Inverse() * transform_matrix;
+
+            // Stores inverse transformation.
+            inverseBindPoses[joint] = converter->ConvertMatrix(inverseBindPose);
+
+            // Affect joint to all vertices of the cluster.
+            const int ctrlPointIndexCount = cluster->GetControlPointIndicesCount();
+
+            const int* ctrlPointIndices = cluster->GetControlPointIndices();
+            const double* ctrlPointWeights = cluster->GetControlPointWeights();
+            for (int cpi = 0; cpi < ctrlPointIndexCount; ++cpi) {
+                // It happens that weight is 0. In this case give the vertex a very small
+                // weight so normalization succeeds.
+                const float ctrlPointWeight = static_cast<float>(ctrlPointWeights[cpi]);
+                const SkinMapping mapping = { joint, ctrlPointWeight == 0.f ? 1e-9f : ctrlPointWeight };
+
+                // remap.size() can be 0, skinned control point might not be used by any
+                // polygon of the mesh. Sometimes, the mesh can have less points than at
+                // the time of the skinning because a smooth operator was active when
+                // skinning but has been deactivated during export.
+                const int ctrl_point = ctrlPointIndices[cpi];
+                const ControlPointRemap& remap = inputRemap[ctrl_point];
+                for (size_t v = 0; v < remap.size(); ++v) {
+                    vertexSkinMappings[remap[v]].push_back(mapping);
+                }
+            }
+        }
+
+        // Sort joint indexes according to weights.
+        // Also deduce max number of indices per vertex.
+        size_t maxInfluences = 0;
+        for (size_t i = 0; i < vertexCount; ++i) {
+            VertexSkinMappings::reference inv = vertexSkinMappings[i];
+
+            // Updates max_influences.
+            maxInfluences = ozz::math::Max(maxInfluences, inv.size());
+
+            // Normalize weights.
+            float sum = 0.f;
+            for (size_t j = 0; j < inv.size(); ++j) {
+                sum += inv[j].weight;
+            }
+            const float inv_sum = 1.f / (sum != 0.f ? sum : 1.f);
+            for (size_t j = 0; j < inv.size(); ++j) {
+                inv[j].weight *= inv_sum;
+            }
+
+            // Sort weights, bigger ones first, so that lowest one can be filtered out.
+            std::sort(inv.begin(), inv.end(), &SortInfluenceWeights);
+        }
+
+        // Allocates indices and weights.
+        std::vector<ui8> jointIndices(vertexCount * maxInfluences);
+        std::vector<float> jointWeights(vertexCount * maxInfluences);
+
+        // Build output vertices data.
+        bool vertexIsntInfluenced = false;
+        for (size_t i = 0; i < vertexCount; ++i) {
+            VertexSkinMappings::const_reference inv = vertexSkinMappings[i];
+            ui8* indices = &jointIndices[i * maxInfluences];
+            float* weights = &jointWeights[i * maxInfluences];
+
+            // Stores joint's indices and weights.
+            size_t influenceCount = inv.size();
+            if (influenceCount == 0) {
+                vertexSkinMappings[i].push_back({ 0, 1.f });
+                influenceCount = 1;
+            }
+
+            if (influenceCount > 0) {
+                size_t j = 0;
+                for (; j < influenceCount; ++j) {
+                    indices[j] = inv[j].index;
+                    weights[j] = inv[j].weight;
+                }
+            }
+            else {
+                // No joint influencing this vertex.
+                vertexIsntInfluenced = true;
+            }
+
+            // Set unused indices and weights.
+            for (size_t j = influenceCount; j < maxInfluences; ++j) {
+                indices[j] = 0;
+                weights[j] = 0.f;
+            }
+        }
+
+        if (vertexIsntInfluenced) {
+            LOG_WARN("At least one vertex isn't influenced by any joints in fbx. It's been reassigned to root joint.");
+        }
+
+        assert(maxInfluences > 0 && "Vertices are not set up with any bone weights");
+
+        // Remove lowest weight influences if needed
+        if (maxInfluences > MAX_BONES_PER_VERTEX) {
+
+            // Iterate all vertices to remove unwanted weights and renormalizes.
+            // Note that weights are already sorted, so the last ones are the less
+            // influencing.
+            const size_t vertexCount = subMesh.mVertices.size();
+            for (size_t i = 0, offset = 0; i < vertexCount; ++i, offset += MAX_BONES_PER_VERTEX) {
+                // Remove exceeding influences
+                float sum = 0.f;
+                for (int j = 0; j < MAX_BONES_PER_VERTEX; ++j) {
+                    jointIndices[offset + j] = jointIndices[i * maxInfluences + j];
+                    jointWeights[offset + j] = jointWeights[i * maxInfluences + j];
+                    sum += jointWeights[offset + j];
+                }
+                // Renormalize weights
+                for (int j = 0; j < MAX_BONES_PER_VERTEX; ++j) {
+                    jointWeights[offset + j] *= 1.f / sum;
+                }
+            }
+
+            // Shrink buffers
+            jointIndices.resize(vertexCount * MAX_BONES_PER_VERTEX);
+            jointWeights.resize(vertexCount * MAX_BONES_PER_VERTEX);
+            maxInfluences = MAX_BONES_PER_VERTEX;
+        }
+
+        // Finds used joints and remaps joint indices to the minimal range.
+        // The mesh might not use all skeleton joints, so this function remaps joint
+        // indices to the subset of used joints. It also reorders inverse bin pose
+        // matrices.
+        // Collects all unique indices.
+        std::vector<ui8> uniqueIndices = jointIndices;
+        std::sort(uniqueIndices.begin(), uniqueIndices.end());
+        uniqueIndices.erase(std::unique(uniqueIndices.begin(), uniqueIndices.end()), uniqueIndices.end());
+
+        // Build mapping table of mesh original joints to the new ones. Unused joints
+        // are set to 0.
+        std::vector<ui8> originalRemap(numJoints, 0);
+        for (size_t i = 0; i < uniqueIndices.size(); ++i) {
+            originalRemap[uniqueIndices[i]] = static_cast<ui8>(i);
+        }
+
+        // Reset all joints in the mesh.
+        for (size_t i = 0; i < jointIndices.size(); ++i) {
+            jointIndices[i] = originalRemap[jointIndices[i]];
+        }
+
+        // Remaps bind poses and removes unused joints.
+        for (size_t i = 0; i < uniqueIndices.size(); ++i) {
+            inverseBindPoses[i] = inverseBindPoses[uniqueIndices[i]];
+        }
+        inverseBindPoses.resize(uniqueIndices.size());
+
+        // Allocate and fill skeleton data
+        RawMeshSkeletonData& skeletonData = subMesh.mSkeletonData;
+        skeletonData.mNumJoints = uniqueIndices.size();
+        skeletonData.mJointRemaps.resize(skeletonData.mNumJoints);
+        skeletonData.mInverseBindPoses.resize(skeletonData.mNumJoints);
+        memcpy(skeletonData.mJointRemaps.data(), uniqueIndices.data(), sizeof(ui8) * skeletonData.mNumJoints);
+        memcpy(skeletonData.mInverseBindPoses.data(), inverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
+
+        // Set all vertex data
+        for (size_t i = 0; i < subMesh.mVertices.size(); ++i) {
+            RawMeshVertex& myVert = subMesh.mVertices[i];
+            // Make sure data is zeroed
+            memset(myVert.boneIDs, 0, sizeof(ui8) * MAX_BONES_PER_VERTEX);
+            memset(myVert.boneWeights, 0, sizeof(f32) * MAX_BONES_PER_VERTEX);
+            // Copy data
+            memcpy(myVert.boneIDs, &jointIndices[(int)(i * maxInfluences)], sizeof(ui8) * maxInfluences);
+            memcpy(myVert.boneWeights, &jointWeights[(int)(i * maxInfluences)], sizeof(f32) * maxInfluences);
+        }
+
+        return true;
+    };
+
 };

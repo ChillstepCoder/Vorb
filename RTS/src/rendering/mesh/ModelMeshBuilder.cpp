@@ -36,8 +36,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
         return false;
     }
 
-    model.mSkinnedMeshes = std::unique_ptr<Mesh[]>(new Mesh[numMeshes]);
-    model.mNumMeshes = numMeshes;
+    model.mSkinnedMesh = std::make_unique<Mesh>();
     // Read read material textures matched to material names
     std::vector<MaterialID> materialIds;
     const int materialCount = sceneLoader.scene()->GetMaterialCount();
@@ -49,13 +48,13 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
         materialIds[i] = materialRepo.getMaterialId(materialName);
     }
 
-    for (int m = 0; m < numMeshes; ++m) {
+    for (int m = 0; m < 1; ++m) {
         // This is not correct lol
         const MaterialID materialId = glm::min((MaterialID)m, (MaterialID)(materialIds.size() - 1));
 
         FbxMesh* fbxMesh = sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
 
-        Mesh& outMesh = model.mSkinnedMeshes[m];
+        Mesh& outMesh = *model.mSkinnedMesh;
 
         PreciseTimer timer;
         // Allocates output mesh.
@@ -139,7 +138,6 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
                 }
                 // TODO: Shrink to ui8?
                 int influencesCount = part.influences_count();
-                int j = 0;
                 for (int j = 0; j < influencesCount; ++j) {
                     myVert.boneIDs[j] = (ui8)part.joint_indices[(int)(i * influencesCount + j)];
                 }
@@ -171,7 +169,7 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
             }
 
             // Upload mesh data
-            MeshGpuData* meshData = &model.mSkinnedMeshes[m].mMainMesh;
+            MeshGpuData* meshData = &model.mSkinnedMesh->mMainMesh;
 
             PreciseTimer uploadTimer;
             MeshBuilderCommon::initMeshBuffers(*meshData, nullptr);
@@ -209,17 +207,13 @@ bool ModelMeshBuilder::buildSkinnedMeshesForModel(
     //    model.mSkinnedMeshes[i].setSpecularTexture(tex);
     //}
 
-    ui8 numSkinningMatrices = 0;
-    for (ui32 i = 0; i < model.getNumMeshes(); ++i) {
-        numSkinningMatrices = std::max(numSkinningMatrices, model.getMeshes()[i].tryGetSkeleton()->mNumJoints);
-    }
-    model.mNumSkinningMatrices = numSkinningMatrices;
+    model.mNumSkinningMatrices = model.getMesh()->tryGetSkeleton()->mNumJoints;
 
     glBindVertexArray(0);
     return true;
 }
 
-MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<RawMaterialData>& rawMaterials, const MaterialRepository& materialRepo, ui8 numSkinningMatrices) {
+MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<RawMaterialData>& rawMaterials, const MaterialRepository& materialRepo) {
 
     MeshCpuData rv;
 
@@ -241,7 +235,20 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
         SkinnedModelVertex* verts = new SkinnedModelVertex[rv.mVertsCount];
         rv.mVertsPtr = verts;
         rv.mVertexType = VertexType::SKINNED_MODEL;
-        assert(false);
+        for (int i = 0; i < rv.mVertsCount; ++i) {
+            const RawMeshVertex& rawVert = meshData.vertices[i];
+            SkinnedModelVertex& myVert = verts[i];
+            myVert.pos = rawVert.pos;
+            myVert.materialId = materialIds[rawVert.materialIndex];
+            assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
+            myVert.uvsPacked.x = (ui16)(rawVert.uvs.x * UINT16_MAX);
+            myVert.uvsPacked.y = (ui16)(rawVert.uvs.y * UINT16_MAX);
+            myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
+            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
+            myVert.color = rawVert.color;
+            memcpy(myVert.boneWeights, rawVert.boneWeights, sizeof(f32) * MAX_BONES_PER_VERTEX);
+            memcpy(myVert.boneIDs, rawVert.boneIDs, sizeof(ui8) * MAX_BONES_PER_VERTEX);
+        }
     }
     else {
         StaticModelVertex* verts = new StaticModelVertex[rv.mVertsCount];

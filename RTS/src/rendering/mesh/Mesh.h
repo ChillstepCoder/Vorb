@@ -1,9 +1,8 @@
 #pragma once
 
 
-#include <ozz/base/maths/simd_math.h>
-
 #include "rendering/mesh/VertexType.h"
+#include "rendering/mesh/MeshSkeletonData.h"
 
 // Enough for a full chunk of grass + padding
 // TODO: How much do we really save doing this?
@@ -93,11 +92,6 @@ struct MeshGpuData {
     void destroy();
 };
 
-struct MeshSkeletonData {
-    std::unique_ptr<ui8[]> mJointRemaps; // Maps specific joint(bone) indices to inverse bind poses
-    std::unique_ptr<ozz::math::Float4x4[]> mInverseBindPoses;
-    ui8 mNumJoints = 0;
-};
 
 //
 //class BatchedMesh {

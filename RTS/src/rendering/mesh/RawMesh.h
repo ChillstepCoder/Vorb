@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/VertexType.h"
+#include "rendering/mesh/MeshSkeletonData.h"
 #include "rendering/material/MaterialData.h"
 
 // Not intended to be uploaded to GPU except for editor render
@@ -42,6 +43,7 @@ struct RawMaterialData {
 struct RawSubMesh {
     std::vector<RawMeshVertex> mVertices;
     std::vector<ui32> mIndices;
+    RawMeshSkeletonData mSkeletonData;
     bool mHasSkin;
 };
 

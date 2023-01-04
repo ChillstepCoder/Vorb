@@ -228,7 +228,7 @@ void ModelEditorPanel::renderModelToTexture() {
                 glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));
 
                 SkinnedModel3D& mModel = mCurrentModel->getSkinnedModel();
-                mModel.getMeshes()[0].draw(MeshLODLevel(mLod));
+                mModel.getMesh()->draw(MeshLODLevel(mLod));
         }
     }
 

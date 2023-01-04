@@ -15,7 +15,6 @@
 #include <ozz/base/io/archive.h>
 #include <ozz/base/io/stream.h>
 #include <ozz/animation/runtime/skeleton.h>
-#include <ozz/animation/offline/fbx/fbx.h>
 
 #include "rendering/mesh/fbx2raw.inl"
 
@@ -74,6 +73,9 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath, const MaterialRepos
     return loadStaticModel(fileData, materialRepository, filePath, filePath, rootDir);
 }
 
+
+#define NEW_METHOD 1
+
 bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir) {
 
     PROFILE_FUNCTION();
@@ -96,6 +98,47 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Materia
         def.mAnimMachine = animMachineDef;
     }
 
+#if NEW_METHOD == 1
+    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, &def.mRig->mSkeleton);
+    if (rawMesh) {
+        assert(rawMesh->mCombinedMeshData.mHasSkin);
+
+        // TODO: Handle other submeshes?
+        MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository);
+        // Apply scale if needed
+        if (fileData.mScale != 1.0f) {
+            MeshOperations::applyScale(meshData, fileData.mScale);
+        }
+        SkinnedModel3D& model = def.getSkinnedModel();
+        RawMeshSkeletonData& rawSkeletonData = rawMesh->mCombinedMeshData.mSkeletonData;
+
+        model.mNumSkinningMatrices = rawSkeletonData.mNumJoints;
+        model.mSkinnedMesh = std::make_unique<Mesh>();
+
+        // Allocate and fill skeleton data
+        model.mSkinnedMesh->mSkeletonData = std::make_unique<MeshSkeletonData>();
+        MeshSkeletonData& skeletonData = *model.mSkinnedMesh->mSkeletonData;
+        skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
+        skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
+        memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
+        skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
+        memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
+
+        ModelMeshBuilder::uploadCpuMeshToGpu(meshData, model.mSkinnedMesh->mMainMesh);
+
+        // Store lookup
+        const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
+        if (mModelIdLookup.find(modelFileNameNoExtension) != mModelIdLookup.end()) {
+            LOG_INFO("Replacing model {}", filePath.getCString());
+        }
+        mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
+        // TODO: Don't use extra lookup to copy the name?
+        def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
+        return true;
+    }
+    return false;
+#else
+
     // Import Fbx content.
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
     ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
@@ -117,6 +160,7 @@ bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const Materia
     // TODO: Don't use extra lookup to copy the name?
     def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
     return true;
+#endif
 }
 
 bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir) {
@@ -130,12 +174,11 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const Material
 
     PreciseTimer timer;
 
-#define NEW_METHOD 1
 #if NEW_METHOD == 1
-    RawMesh* rawMesh = loadRawModelFromFBX(modelPath);
+    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, nullptr /*skeleton*/);
     if (rawMesh) {
         // TODO: Handle other submeshes?
-        MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository, 0u /*numSkinningMatrices*/);
+        MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository);
         // Apply scale if needed
         if (fileData.mScale != 1.0f) {
             MeshOperations::applyScale(meshData, fileData.mScale);
@@ -183,7 +226,7 @@ bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const Material
 #endif
 }
 
-RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath) {
+RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
 
     // Load scene
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
@@ -235,12 +278,12 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath) {
             assert(hasSkin == true || hasSkin == INT32_MAX);
             subMesh.mHasSkin = true;
             hasSkin = true;
-            // TODO: DO THIS
-            assert(false);
-            /* if (!BuildSkin(fbxMesh, sceneLoader.converter(), remap, skeleton, &outputMesh)) {
-                 pError("Failed to read skinning data: " + filePath.getString());
-                 return false;
-             }*/
+            assert(skeleton && "Needs to have skeleton explicitly passed in");
+            if (!fbx2raw::buildSkin(fbxMesh, sceneLoader.converter(), remap, *skeleton, subMesh)) {
+                LOG_CRITICAL("Failed to read skinning data {} for {}", m, filePath.getString());
+                pError("Failed to read skinning data: " + filePath.getString());
+                return nullptr;
+            }
         }
         else {
             assert(hasSkin == false || hasSkin == INT32_MAX);
@@ -257,6 +300,10 @@ RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath) {
     rv->mCombinedMeshData.mVertices.resize(totalVertices);
     rv->mCombinedMeshData.mIndices.resize(totalIndices);
     rv->mCombinedMeshData.mHasSkin = hasSkin;
+    if (hasSkin) {
+        assert(numMeshes == 1 && "Currently skinned meshes must be a single submesh only");
+        rv->mCombinedMeshData.mSkeletonData = std::move(rawFbxMesh->mSubMeshes[0].mSkeletonData);
+    }
     int v = 0;
     int i = 0;
     int iStart = 0;

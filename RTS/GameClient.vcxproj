@@ -589,6 +589,7 @@
     <ClInclude Include="src\rendering\material\MaterialData.h" />
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
+    <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h" />
     <ClInclude Include="src\rendering\mesh\RawMesh.h" />
     <ClInclude Include="src\rendering\mesh\TileContainerMesher.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />

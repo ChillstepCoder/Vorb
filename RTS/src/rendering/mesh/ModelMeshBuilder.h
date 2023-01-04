@@ -38,8 +38,7 @@ public:
     static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
         RawSubMesh& subMesh,
         const std::vector<RawMaterialData>& rawMaterials,
-        const MaterialRepository& materialRepo,
-        ui8 numSkinningMatrices
+        const MaterialRepository& materialRepo
     );
     static void uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh);
 };
