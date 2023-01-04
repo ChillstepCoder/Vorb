@@ -56,19 +56,12 @@ TileEditorPanelResult TileEditorPanel::updateAndRender(float ySize) {
                 ImGui::Text(label);
                 // Type
                 ImGui::TableSetColumnIndex(2);
-                switch (def.mModelType)
-                {
-                    case Model3DType::STATIC:
-                        ImGui::Text("Static");
-                        break;
-                    case Model3DType::SKINNED:
-                        ImGui::Text("Skinned");
-                        break;
-                    default:
-                        assert(false);
-                        break;
+                if (def.mRig) {
+                    ImGui::Text("Skinned");
                 }
-                static_assert(e_cast(Model3DType::COUNT) == 2);
+                else {
+                    ImGui::Text("Static");
+                }
                 // Action
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {

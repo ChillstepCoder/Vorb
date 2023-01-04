@@ -122,7 +122,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
         }
 
         ModelID modelId = it.first;
-        const StaticModel3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).getStaticModel();
+        const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
         const Mesh& mesh = *model.getMesh();
         MeshLODDrawInfo drawInfos[4];
         for (int i = 0; i < 4; ++i) {
@@ -351,7 +351,7 @@ void InstancedStaticModelRenderer::renderModels(const Camera3D& camera) {
         }
 
         ModelID modelId = it.first;
-        const StaticModel3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).getStaticModel();
+        const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
         const Mesh& mesh = *model.getMesh();
 
         // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
@@ -398,7 +398,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
         }
 
         ModelID modelId = it.first;
-        const StaticModel3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).getStaticModel();
+        const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
         const Mesh& mesh = *model.getMesh();
 
         assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);

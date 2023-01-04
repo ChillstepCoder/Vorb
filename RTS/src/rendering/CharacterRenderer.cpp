@@ -195,7 +195,7 @@ bool updateAnimation(AnimState& animState, CharacterLocomotionMode locomotionMod
 
     // TODO: cache
     ui8 num_skinning_matrices = 0;
-    const SkinnedModel3D& skinnedModel = modelDef.getSkinnedModel();
+    const Model3D& skinnedModel = modelDef.mModel;
     const MeshSkeletonData* skeletonData = skinnedModel.getMesh()->tryGetSkeleton();
     assert(skeletonData);
     num_skinning_matrices = skeletonData->mNumJoints;
@@ -384,8 +384,8 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             // inverse bind pose with the model space matrix.
             ozz::vector<ozz::math::Float4x4> skinningMatrices;
             // Allocates skinning matrices.
-            const SkinnedModel3D& skinnedModel = modelDef.getSkinnedModel();
-            skinningMatrices.resize(skinnedModel.getNumSkinningMatrices());
+            const Model3D& skinnedModel = modelDef.mModel;
+            skinningMatrices.resize(skinnedModel.getNumJoints());
 
             if (updateAnimation(animState, character.mLocomotionMode, modelDef, models, elapsedSec)) {
                 // Draw animated

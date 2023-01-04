@@ -48,16 +48,8 @@ bool ModelRepository::loadModelFile(const vio::Path& filePath, const MaterialRep
     rootDir.trimEnd();
     assert(rootDir.isDirectory());
 
-    vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName;
-
-    if (fileData.mRigName.size()) {
-        // Load ozz Skeleton if we use it
-        return loadSkinnedModel(fileData, materialRepository, animMachineRepository, filePath, modelPath, rootDir);
-    }
-    else {
-        return loadStaticModel(fileData, materialRepository, filePath, modelPath, rootDir);
-    }
-    return false;
+    const vio::Path modelPath = rootDir + nString("\\") + fileData.mModelName;
+    return loadModelInternal(fileData, materialRepository, animMachineRepository, filePath.getFileNameNoExtension(), modelPath);
 }
 
 bool ModelRepository::loadFbxFile(const vio::Path& filePath, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository) {
@@ -70,160 +62,71 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath, const MaterialRepos
     assert(rootDir.isDirectory());
 
     ModelDefFileData fileData;
-    return loadStaticModel(fileData, materialRepository, filePath, filePath, rootDir);
+    return loadModelInternal(fileData, materialRepository, animMachineRepository, filePath.getFileNameNoExtension(), filePath);
 }
 
-
-#define NEW_METHOD 1
-
-bool ModelRepository::loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir) {
-
-    PROFILE_FUNCTION();
-
+bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath) {
+    // Create the modeldef
     ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
     def.mModelId = (ui32)(mModelDefs.size() - 1u);
-    def.mModelType = Model3DType::SKINNED;
     def.mShadowDetail = fileData.mShadowDetail;
 
-    PreciseTimer timer;
-    def.mRig = &mRigRepository.getRigDef(fileData.mRigName);
+    // If has rig, we need to load animation and skeleton info
+    if (fileData.mRigName.size()) {
+        def.mRig = &mRigRepository.getRigDef(fileData.mRigName);
 
-    // Hookup animation machine
-    if (fileData.mMachineName.size()) {
-        const AnimMachineDef* animMachineDef = animMachineRepository.tryGetAnimMachineDef(fileData.mMachineName);
-        if (!animMachineDef) {
-            pError("Failed to find anim machine " + fileData.mMachineName + " for: " + filePath.getString());
-            return false;
+        if (fileData.mMachineName.size()) {
+            const AnimMachineDef* animMachineDef = animMachineRepository.tryGetAnimMachineDef(fileData.mMachineName);
+            if (!animMachineDef) {
+                pError("Failed to find anim machine " + fileData.mMachineName + " for: " + modelPath.getString());
+                return false;
+            }
+            def.mAnimMachine = animMachineDef;
         }
-        def.mAnimMachine = animMachineDef;
     }
 
-#if NEW_METHOD == 1
+    // Load model to raw
     RawMesh* rawMesh = loadRawModelFromFBX(modelPath, &def.mRig->mSkeleton);
     if (rawMesh) {
-        assert(rawMesh->mCombinedMeshData.mHasSkin);
-
         // TODO: Handle other submeshes?
         MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository);
         // Apply scale if needed
         if (fileData.mScale != 1.0f) {
             MeshOperations::applyScale(meshData, fileData.mScale);
         }
-        SkinnedModel3D& model = def.getSkinnedModel();
+        Model3D& model = def.mModel;
         RawMeshSkeletonData& rawSkeletonData = rawMesh->mCombinedMeshData.mSkeletonData;
 
-        model.mNumSkinningMatrices = rawSkeletonData.mNumJoints;
-        model.mSkinnedMesh = std::make_unique<Mesh>();
+        model.mNumJoints = rawSkeletonData.mNumJoints;
+        model.mMesh = std::make_unique<Mesh>();
 
         // Allocate and fill skeleton data
-        model.mSkinnedMesh->mSkeletonData = std::make_unique<MeshSkeletonData>();
-        MeshSkeletonData& skeletonData = *model.mSkinnedMesh->mSkeletonData;
-        skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
-        skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
-        memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
-        skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
-        memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
-
-        ModelMeshBuilder::uploadCpuMeshToGpu(meshData, model.mSkinnedMesh->mMainMesh);
-
-        // Store lookup
-        const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
-        if (mModelIdLookup.find(modelFileNameNoExtension) != mModelIdLookup.end()) {
-            LOG_INFO("Replacing model {}", filePath.getCString());
+        if (model.mNumJoints) {
+            assert(def.mRig && "Missing rig for skeletal model");
+            model.mMesh->mSkeletonData = std::make_unique<MeshSkeletonData>();
+            MeshSkeletonData& skeletonData = *model.mMesh->mSkeletonData;
+            skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
+            skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
+            memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
+            skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
+            memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
         }
-        mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
-        // TODO: Don't use extra lookup to copy the name?
-        def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
-        return true;
-    }
-    return false;
-#else
 
-    // Import Fbx content.
-    ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
-    ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
-    ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)modelPath.getCString(), "", fbxManager, settings);
-    if (!sceneLoader.scene()) {
-        pError("Failed to import fbx scene: " + filePath.getString());
-        return false;
-    }
-    LOG_TRACE("  Import in {} ms", timer.stop());
-    timer.start();
-
-    SkinnedModel3D& model = def.getSkinnedModel();
-    ModelMeshBuilder::buildSkinnedMeshesForModel(model, def.mRig->mSkeleton, filePath, sceneLoader, MeshDrawMode::STATIC, materialRepository);
-
-    // Store lookup
-    const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
-    assert(mModelIdLookup.find(modelFileNameNoExtension) == mModelIdLookup.end());
-    mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
-    // TODO: Don't use extra lookup to copy the name?
-    def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
-    return true;
-#endif
-}
-
-bool ModelRepository::loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir) {
-
-    PROFILE_FUNCTION();
-
-    ModelDef& def = *mModelDefs.emplace_back(std::make_unique<ModelDef>());
-    def.mModelType = Model3DType::STATIC;
-    def.mModelId = (ui32)(mModelDefs.size() - 1u);
-    def.mShadowDetail = fileData.mShadowDetail;
-
-    PreciseTimer timer;
-
-#if NEW_METHOD == 1
-    RawMesh* rawMesh = loadRawModelFromFBX(modelPath, nullptr /*skeleton*/);
-    if (rawMesh) {
-        // TODO: Handle other submeshes?
-        MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository);
-        // Apply scale if needed
-        if (fileData.mScale != 1.0f) {
-            MeshOperations::applyScale(meshData, fileData.mScale);
-        }
-        StaticModel3D& model = def.getStaticModel();
-
-        model.mMesh = std::make_unique<Mesh>();
         ModelMeshBuilder::uploadCpuMeshToGpu(meshData, model.mMesh->mMainMesh);
 
         // Store lookup
-        const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
-        if (mModelIdLookup.find(modelFileNameNoExtension) != mModelIdLookup.end()) {
-            LOG_INFO("Replacing model {}", filePath.getCString());
+        if (mModelIdLookup.find(modelName) != mModelIdLookup.end()) {
+            LOG_INFO("Replacing model {}", modelName);
         }
-        mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
+        mModelIdLookup[modelName] = def.mModelId;
         // TODO: Don't use extra lookup to copy the name?
-        def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
+        def.mName = mModelIdLookup.find(modelName)->first.c_str();
         return true;
     }
+
+    // Failure
+    mModelDefs.pop_back();
     return false;
-#else
-    // Import Fbx content.
-    ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
-    ozz::animation::offline::fbx::FbxDefaultIOSettings settings(fbxManager);
-    ozz::animation::offline::fbx::FbxSceneLoader sceneLoader((const char*)modelPath.getCString(), "", fbxManager, settings);
-    if (!sceneLoader.scene()) {
-        pError("Failed to import fbx scene: " + filePath.getString());
-        return false;
-    }
-    LOG_TRACE("  Import in {} ms", timer.stop());
-    timer.start();
-
-    StaticModel3D& model = def.getStaticModel();
-    ModelMeshBuilder::buildStaticMeshesForModel(model, filePath, sceneLoader, MeshDrawMode::STATIC, materialRepository, fileData.mScale);
-
-    // Store lookup
-    const nString modelFileNameNoExtension = filePath.getFileNameNoExtension();
-    if (mModelIdLookup.find(modelFileNameNoExtension) != mModelIdLookup.end()) {
-        LOG_INFO("Replacing model {}", filePath.getCString());
-    }
-    mModelIdLookup[modelFileNameNoExtension] = def.mModelId;
-    // TODO: Don't use extra lookup to copy the name?
-    def.mName = mModelIdLookup.find(modelFileNameNoExtension)->first.c_str();
-    return true;
-#endif
 }
 
 RawMesh* ModelRepository::loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {

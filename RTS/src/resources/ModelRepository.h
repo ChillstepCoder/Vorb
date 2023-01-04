@@ -32,8 +32,7 @@ public:
     void buildModelBatches();
 
 private:
-    bool loadSkinnedModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir);
-    bool loadStaticModel(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const vio::Path& filePath, const vio::Path& modelPath, const vio::Path& rootDir);
+    bool loadModelInternal(ModelDefFileData& fileData, const MaterialRepository& materialRepository, const AnimMachineRepository& animMachineRepository, const nString& modelName, const vio::Path& modelPath);
     RawMesh* loadRawModelFromFBX(const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
 
     const RigRepository& mRigRepository;

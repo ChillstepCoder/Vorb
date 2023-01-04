@@ -129,10 +129,8 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
         {
             ImGui::SetTooltip("LOD is auto generated");
         }
-        if (mCurrentModel->mModelType == Model3DType::STATIC) {
-            StaticModel3D& mModel = mCurrentModel->getStaticModel();
-            ImGui::Text("Polygons %d", mModel.getMesh()->mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3);
-        }
+        Model3D& mModel = mCurrentModel->mModel;
+        ImGui::Text("Polygons %d", mModel.getMesh()->mMainMesh.mLODData.getDrawInfoForLOD(MeshLODLevel(mLod)).indexCount / 3);
     }
 
     ImGui::EndChild();
@@ -179,7 +177,7 @@ void ModelEditorPanel::renderModelToTexture() {
     ResourceManager& resourceManager = Services::ResourceManager::ref();
 
     // Render model
-    if (mCurrentModel->mModelType == Model3DType::STATIC) {
+    if (mCurrentModel->mRig == nullptr) {
         const MaterialShader* staticModelMaterial = nullptr;
 
         switch (mDrawMode) {
@@ -202,10 +200,11 @@ void ModelEditorPanel::renderModelToTexture() {
 
         glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));
 
-        StaticModel3D& mModel = mCurrentModel->getStaticModel();
+        Model3D& mModel = mCurrentModel->mModel;
         mModel.getMesh()->draw(MeshLODLevel(mLod));
     }
-    else if (mCurrentModel->mModelType == Model3DType::SKINNED) {
+    else {
+        // Skinned mesh render
         const MaterialShader* staticModelMaterial = nullptr;
 
         switch (mDrawMode) {
@@ -227,7 +226,7 @@ void ModelEditorPanel::renderModelToTexture() {
 
                 glUniformMatrix4fv(unVP, 1, false, &(camera.getViewProjectionMatrix()[0][0]));
 
-                SkinnedModel3D& mModel = mCurrentModel->getSkinnedModel();
+                Model3D& mModel = mCurrentModel->mModel;
                 mModel.getMesh()->draw(MeshLODLevel(mLod));
         }
     }
