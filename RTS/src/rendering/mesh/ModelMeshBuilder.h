@@ -26,15 +26,6 @@ static class ModelMeshBuilder
 public:
     ModelMeshBuilder() = delete;
 
-    // TODO: Instead optional skeleton and modelDef?
-    static bool buildSkinnedMeshesForModel(
-        SkinnedModel3D& model,
-        const ozz::animation::Skeleton& skeleton,
-        const vio::Path& filePath,
-        OzzFbxSceneLoader& sceneLoader,
-        MeshDrawMode drawMode,
-        const MaterialRepository& materialRepo
-    );
     static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
         RawSubMesh& subMesh,
         const std::vector<RawMaterialData>& rawMaterials,
