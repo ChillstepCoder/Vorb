@@ -295,7 +295,7 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
 
 void RenderContext::initPostLoad() {
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
 
     // Init all passthrough materials
     {

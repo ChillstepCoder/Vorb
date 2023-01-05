@@ -38,8 +38,8 @@ public:
 
     // TODO: Replace?
     vg::TextureCache& getTextureCache();
-    const MaterialShaderManager& getMaterialManager() const { return *mMaterialManager; }
-    const MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
+    MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
+    MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
     BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }

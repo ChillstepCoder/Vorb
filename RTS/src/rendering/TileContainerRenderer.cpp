@@ -34,7 +34,7 @@ TileContainerRenderer::TileContainerRenderer()
     mCliWorld = dynamic_cast<CliWorldInterface*>(sWorld);
     assert(mCliWorld);
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mStandardMaterial = materialManager.getMaterialShader("standard_tile");
     mBillboardMaterial = materialManager.getMaterialShader("billboard_ssbo");
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");

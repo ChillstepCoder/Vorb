@@ -17,7 +17,7 @@
 
 TerrainRenderer::TerrainRenderer()
 {
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mTerrainMaterial = materialManager.getMaterialShader("terrain");
     mWaterMaterial = materialManager.getMaterialShader("water");
 }

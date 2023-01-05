@@ -75,7 +75,7 @@ void ParticleSystemRenderer::renderParticleSystem(const Camera3D& camera, const 
     if (!particleSystem.mParticles.size()) {
         return;
     }
-    const MaterialShader* material = Services::ResourceManager::ref().getMaterialManager().getMaterialShader(particleSystem.mSystemData.materialName);
+    const MaterialShader* material = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader(particleSystem.mSystemData.materialName);
 
     // Lazy mesh init
     if (!particleSystem.mVbo) {
@@ -145,7 +145,7 @@ vg::GBuffer ParticleSystemRenderer::getOrCreateFramebufferForParticleSystem(cons
 
 void ParticleSystemRenderer::renderPostProcess(const ParticleSystemData& particleSystemData, vg::GBuffer& gBuffer)
 {
-    const MaterialShader* material = Services::ResourceManager::ref().getMaterialManager().getMaterialShader(particleSystemData.postMaterialName);
+    const MaterialShader* material = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader(particleSystemData.postMaterialName);
     assert(material);
 
     MaterialRenderer::bindMaterialForRender(*material);

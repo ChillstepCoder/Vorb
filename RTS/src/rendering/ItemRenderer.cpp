@@ -11,7 +11,7 @@
 
 ItemRenderer::ItemRenderer() {
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mItemMeshMaterial = materialManager.getMaterialShader("standard_tile");
   //  mItemBillboardMaterial = materialManager.getMaterial("billboard");
 

@@ -31,7 +31,7 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const f32v2& gbufferDim
     mGBuffers[1].setSize(ui32v2(mGbufferDims));
     mGBuffers[1].init(attachment, nullptr, nullptr);
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mMaterial = materialManager.getMaterialShader("ssao");
     mApplyMaterial = materialManager.getMaterialShader("ssao_apply");
     mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_r");

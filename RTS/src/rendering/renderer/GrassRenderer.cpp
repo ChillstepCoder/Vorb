@@ -12,7 +12,7 @@
 
 GrassRenderer::GrassRenderer()
 {
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mGrassMaterial = materialManager.getMaterialShader("grass");
 }
 

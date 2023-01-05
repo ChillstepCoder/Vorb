@@ -48,7 +48,7 @@ constexpr ui16 DEFAULT_ANIM_TRACK_FLAGS[NUM_ANIM_STATE_TRACKS] = {
 static_assert(NUM_ANIM_STATE_TRACKS == 14u, "Update any defaults");
 
 CharacterRenderer::CharacterRenderer() :
-    mMaterial(Services::ResourceManager::ref().getMaterialManager().getMaterialShader("character")) {
+    mMaterial(Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("character")) {
     mEntityCharacterModels.reserve(256);
 }
 

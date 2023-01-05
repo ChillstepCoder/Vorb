@@ -17,7 +17,7 @@
 
 CloudRenderer::CloudRenderer(const f32v2& gbufferDims) : mGbufferDims(gbufferDims)
 {
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mCloudMaterial = materialManager.getMaterialShader("cloud");
     mPostMaterial = materialManager.getMaterialShader("cloud_post");
     mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_rgb");

@@ -1,11 +1,9 @@
 #include "MaterialData.glsl"
 
-
 in vec2 fUV;
 flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
-in float fRoughness;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec4 oNormal;
@@ -35,7 +33,7 @@ void main() {
 	// Normal is always the next page
     normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
-	oRoughness.r = fRoughness;
+	oRoughness.r = 0.2;
 	oRoughness.a = 1.0;
     
     oColor.a = 1.0;

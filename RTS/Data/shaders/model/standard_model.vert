@@ -15,7 +15,6 @@ out vec2 fUV;
 flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
-out float fRoughness;
 
 void main() {
     fTint = vTint;
@@ -29,8 +28,6 @@ void main() {
     
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
-	
-	fRoughness = 0.2;
     
     vec4 worldPos = (vModelMatrix * vPosition) - vec4(CameraPos, 0.0);
     gl_Position = VP * worldPos;

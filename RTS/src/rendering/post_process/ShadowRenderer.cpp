@@ -188,7 +188,7 @@ ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
     }
 
     // Materials
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mShadowMapperMaterial = materialManager.getMaterialShader("shadow_mapper");
     mShadowVarianceMaterial = materialManager.getMaterialShader("shadow_variance");
     mShadowApplyMaterial = materialManager.getMaterialShader("shadow_apply");
