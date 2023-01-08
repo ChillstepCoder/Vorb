@@ -8,7 +8,10 @@ class WorldEditorPanel;
 class Camera3D;
 class TileEditorPanel;
 struct ModelDef;
+struct MaterialHandle;
 class ModelEditorPanel;
+class MaterialEditorPanel;
+class IEditorViewportPanel;
 
 class EditorRoot
 {
@@ -21,15 +24,18 @@ public:
 
 private:
     void openModelForEdit(ModelDef& model);
+    void openMaterialForEdit(MaterialHandle& materialHandle);
 
     // Center panel display
-    bool mShowModelEditor = false;
+    IEditorViewportPanel* mActiveCenterPanel = nullptr;
 
     // Subpanels
     std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
     std::unique_ptr<WorldEditorPanel> mWorldEditorPanel;
     std::unique_ptr<TileEditorPanel> mTileEditorPanel;
+    // Center panels
     std::unique_ptr<ModelEditorPanel> mModelEditorPanel;
+    std::unique_ptr<MaterialEditorPanel> mMaterialEditorPanel;
 
     // Event listeners
     vui::KeyListeners mKeyListeners;

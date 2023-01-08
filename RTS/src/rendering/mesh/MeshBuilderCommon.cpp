@@ -63,7 +63,6 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::v
     }
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData & subMesh, std::vector<ui16>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<Vertex64>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<StaticModelVertex>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<SkinnedModelVertex>& vertices);
 
@@ -152,7 +151,6 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::v
     vertices.swap(remappedVertices);
 }
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<Vertex32>& vertices);
-template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<Vertex64>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<StaticModelVertex>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<SkinnedModelVertex>& vertices);
 

@@ -2,8 +2,7 @@
 
 constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
 
-enum MaterialFlags
-{
+enum MaterialFlags {
     MaterialFlags_CastShadow = BIT(0),
     MaterialFlags_ReceiveShadow = BIT(1),
     MaterialFlags_Transparent = BIT(2),
@@ -29,3 +28,11 @@ struct PACKED_STRUCT MaterialData final {
     TextureHandle metallicRoughnessMap = INVALID_TEXTURE_HANDLE;
 };
 static_assert(sizeof(MaterialData) % 16 == 0, "MaterialData should be padded to 16 bytes");
+
+struct MaterialHandle {
+    bool isValid() const { return data != nullptr; }
+
+    MaterialID materialId = INVALID_MATERIAL_ID;
+    MaterialData* data = nullptr;
+    nString name;
+};

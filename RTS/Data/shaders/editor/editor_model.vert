@@ -3,6 +3,7 @@
 #include "../util/wind.glsl"
 
 uniform mat4 unVP;
+uniform vec4 unPosOffset = vec4(0.0);
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
@@ -28,5 +29,5 @@ void main() {
 	vec3 binormal = cross(normal, tangent);
 	fTBN = mat3(tangent, binormal, normal);
 	
-    gl_Position = unVP * vPosition;
+    gl_Position = unVP * (vPosition + unPosOffset);
 }

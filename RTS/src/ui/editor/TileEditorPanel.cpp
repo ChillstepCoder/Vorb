@@ -186,7 +186,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
                 ImGui::TableSetColumnIndex(3);
                 if (ImGui::Button("Edit")) {
                     result.first = TileEditorPanelResultCode::EDIT_MATERIAL;
-                    result.second = &material;
+                    result.second = std::make_unique<MaterialHandle>(materialRepository.getMutableMaterialHandle(it.first));
                 }
 
                 ImGui::PopID();

@@ -337,6 +337,7 @@
     <ClCompile Include="src\rendering\MaterialUtils.cpp" />
     <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
+    <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp" />
     <ClCompile Include="src\rendering\mesh\RawMesh.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
@@ -395,6 +396,8 @@
     <ClCompile Include="src\time\GameTimeManager.cpp" />
     <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
     <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
+    <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\MaterialEditorPanel.cpp" />
     <ClCompile Include="src\ui\editor\ModelEditorPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorPanel.cpp" />
     <ClCompile Include="src\ui\PauseMenuPanel.cpp" />
@@ -590,6 +593,7 @@
     <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
     <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h" />
+    <ClInclude Include="src\rendering\mesh\PrimitiveShapeMeshes.h" />
     <ClInclude Include="src\rendering\mesh\RawMesh.h" />
     <ClInclude Include="src\rendering\mesh\TileContainerMesher.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
@@ -664,6 +668,8 @@
     <ClInclude Include="src\types\IdTypes.h" />
     <ClInclude Include="src\ui\DebugTweakerPanel.h" />
     <ClInclude Include="src\ui\editor\EditorRoot.h" />
+    <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\MaterialEditorPanel.h" />
     <ClInclude Include="src\ui\editor\ModelEditorPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorPanel.h" />
     <ClInclude Include="src\ui\ImguiUtil.hpp" />

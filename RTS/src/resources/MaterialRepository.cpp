@@ -141,7 +141,18 @@ const MaterialData& MaterialRepository::getMaterial(const nString& materialName)
     return mMaterials[it->second];
 }
 
+MaterialData& MaterialRepository::getMutableMaterial(const nString& materialName) {
+    auto&& it = mMaterialIDLookup.find(materialName);
+    assert(it != mMaterialIDLookup.end());
+    return mMaterials[it->second];
+}
+
 const MaterialData& MaterialRepository::getMaterial(MaterialID materialId) const {
+    assert(materialId < mMaterials.size());
+    return mMaterials[materialId];
+}
+
+MaterialData& MaterialRepository::getMutableMaterial(MaterialID materialId){
     assert(materialId < mMaterials.size());
     return mMaterials[materialId];
 }
@@ -150,6 +161,14 @@ MaterialID MaterialRepository::getMaterialId(const nString& materialName) const 
     auto&& it = mMaterialIDLookup.find(materialName);
     assert(it != mMaterialIDLookup.end());
     return it->second;
+}
+
+MaterialHandle MaterialRepository::getMutableMaterialHandle(const nString& materialName) {
+    MaterialHandle handle;
+    handle.materialId = getMaterialId(materialName);
+    handle.data = &getMutableMaterial(handle.materialId);
+    handle.name = materialName;
+    return handle;
 }
 
 void MaterialRepository::uploadMaterialData() {

@@ -31,6 +31,8 @@ public:
         const std::vector<RawMaterialData>& rawMaterials,
         const MaterialRepository& materialRepo
     );
+
     static void uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuData& outGpuMesh);
+    static void uploadCpuMeshToGpu(const void* vertsPtr, ui32 vertsCount, VertexType vertexType, const void* indicesPtr, MeshIndexType indexType, const MeshLODData& lodData, MeshGpuData& outGpuMesh);
 };
 

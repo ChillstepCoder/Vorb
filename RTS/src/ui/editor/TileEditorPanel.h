@@ -3,6 +3,7 @@
 #include <variant>
 struct ModelDef;
 struct MaterialData;
+struct MaterialHandle;
 class MaterialShader;
 
 DECL_VG(class GBuffer);
@@ -14,7 +15,7 @@ enum class TileEditorPanelResultCode {
     COUNT
 };
 
-typedef std::variant<ModelDef*, MaterialData*> TileEditorPanelResultVariant;
+typedef std::variant<ModelDef*, std::unique_ptr<MaterialHandle>> TileEditorPanelResultVariant;
 
 typedef std::pair<TileEditorPanelResultCode, TileEditorPanelResultVariant> TileEditorPanelResult;
 

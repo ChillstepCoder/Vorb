@@ -2,6 +2,30 @@
 
 #include "rendering/mesh/VertexType.h"
 
+// ChatGPT made this lol
+inline uint32_t CHATGPT_Pack_INT_2_10_10_10_REV(const f32v4& v) {
+    // Convert the vec4 components to integers in the range [-512, 511]
+    int x = static_cast<int>(round(v.x * 511.0f));
+    int y = static_cast<int>(round(v.y * 511.0f));
+    int z = static_cast<int>(round(v.z * 511.0f));
+    int w = static_cast<int>(round(v.w * 511.0f));
+
+    // Clamp the values to the valid range
+    x = std::max(-512, std::min(511, x));
+    y = std::max(-512, std::min(511, y));
+    z = std::max(-512, std::min(511, z));
+    w = std::max(-512, std::min(511, w));
+
+    // Pack the values into the GL_INT_2_10_10_10_REV format
+    uint32_t result = (x & 0x3FF) | ((y & 0x3FF) << 10) | ((z & 0x3FF) << 20) | ((w & 0x3) << 30);
+    if (x < 0) result |= 0x400;
+    if (y < 0) result |= 0x40000;
+    if (z < 0) result |= 0x4000000;
+    if (w < 0) result |= 0xC0000000;
+
+    return result;
+}
+
 // For packing signed normals in to a single 32 byte value
 // https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
 // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
@@ -20,7 +44,7 @@ inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
 }
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct alignas(32) StaticModelVertex {
+struct alignas(16) StaticModelVertex {
     f32v3 pos;
     ui32 normalPacked;
     ui32 tangentPacked;
@@ -29,10 +53,11 @@ struct alignas(32) StaticModelVertex {
     ui16 materialId;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
+    static VertexType vertexType() { return VertexType::STATIC_MODEL; }
 };
-static_assert(sizeof(StaticModelVertex) == 32, "32 byte alignment needed");
+static_assert(sizeof(StaticModelVertex) == 32, "16 byte alignment needed");
 
-struct alignas(32) StandardVertex {
+struct alignas(16) StandardVertex {
     f32v3 pos;
     f32v2 uvs;
     ui8 textureIndex;
@@ -41,27 +66,31 @@ struct alignas(32) StandardVertex {
     color4 color;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
+    static VertexType vertexType() { return VertexType::STANDARD; }
 };
-static_assert(sizeof(StandardVertex) == 32, "32 byte alignment needed");
+static_assert(sizeof(StandardVertex) == 32, "16 byte alignment needed");
 
-struct alignas(32) TerrainVertex {
+struct alignas(16) TerrainVertex {
     f32v3 pos;
     f32v3 normal;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
+    static VertexType vertexType() { return VertexType::TERRAIN; }
 };
-static_assert(sizeof(TerrainVertex) == 32, "32 byte alignment needed");
+static_assert(sizeof(TerrainVertex) == 32, "16 byte alignment needed");
 
+// TODO: 16 byte!
 struct alignas(32) WaterVertex {
     f32v3 pos;
     f32 depth;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
+    static VertexType vertexType() { return VertexType::WATER; }
 };
-static_assert(sizeof(WaterVertex) == 32, "32 byte alignment needed");
+static_assert(sizeof(WaterVertex) == 32, "16 byte alignment needed");
 
 // Vertex variant
-struct alignas(32) Vertex32 {
+struct alignas(16) Vertex32 {
     Vertex32() {};
 
     union { 
@@ -71,10 +100,10 @@ struct alignas(32) Vertex32 {
         StaticModelVertex mStaticModel; // VertexType::STATIC_MODEL
     };
 };
-static_assert(sizeof(Vertex32) == 32, "32 byte alignment needed");
+static_assert(sizeof(Vertex32) == 32, "16 byte alignment needed");
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct alignas(32) SkinnedModelVertex {
+struct alignas(16) SkinnedModelVertex {
 public:
     SkinnedModelVertex() {};
 
@@ -90,16 +119,8 @@ public:
 
 
     static VertexType bindVertexAttribs(VGBuffer vao);
+    static VertexType vertexType() { return VertexType::SKINNED_MODEL; }
 };
-static_assert(sizeof(SkinnedModelVertex) == 64, "32 byte alignment needed");
-
-struct alignas(32) Vertex64 {
-    Vertex64() {};
-
-    union {
-        SkinnedModelVertex mSkinnedModelVertex; // SKINNED_MODEL
-    };
-};
-static_assert(sizeof(Vertex64) == 64, "32 byte alignment needed");
+static_assert(sizeof(SkinnedModelVertex) == 64, "16 byte alignment needed");
 
 extern constexpr size_t getVertexSize(VertexType type);

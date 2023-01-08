@@ -31,6 +31,7 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
     static TileID pineTree = TileRepository::getTile(StrToken("tree_small"));
     static TileID bushSmall = TileRepository::getTile(StrToken("bush_small"));
     static TileID bushMed = TileRepository::getTile(StrToken("bush_med"));
+    static TileID bush2 = TileRepository::getTile(StrToken("bush_g"));
 
     constexpr f32 MAX_GRASS_HEIGHT = 16.0f;
     constexpr f32 MAX_TREE_HEIGHT = 100.0f;
@@ -59,11 +60,15 @@ Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* g
                 *grass = 0;
             }
             else if (Random::getThreadSafef(worldPos.x, worldPos.y * 4041.0f) < BUSH_DENSITY) {
-                tile.mainLayer = bushMed;
+                tile.mainLayer = bush2;
                 *grass = 0;
             }
-            else if (Random::getThreadSafef(worldPos.x * 4021.0f, worldPos.y * 22.0f) < BUSH_DENSITY * 1.3f) {
+            else if (Random::getThreadSafef(worldPos.x * 1021.0f, worldPos.y * 522.0f) < BUSH_DENSITY * 0.7f) {
                 tile.mainLayer = bushSmall;
+                *grass = 0;
+            }
+            else if (Random::getThreadSafef(worldPos.x * 4021.0f, worldPos.y * 22.0f) < BUSH_DENSITY * 0.7f) {
+                tile.mainLayer = bushMed;
                 *grass = 0;
             }
         }

@@ -1,38 +1,27 @@
 #pragma once
 
+#include "IEditorViewportPanel.h"
+
 struct ModelDef;
-DECL_VG(class GBuffer);
 
-enum class ModelEditorPanelDrawMode {
-    Default,
-    Wireframe,
-    Normals,
-    COUNT
-};
-
-class ModelEditorPanel
+class ModelEditorPanel : public IEditorViewportPanel
 {
 public:
     ModelEditorPanel();
     ~ModelEditorPanel();
 
-    bool updateAndRender(const vg::GBuffer* activeGBuffer);
-    void updateAndRenderControls(f32 ySize);
+    bool updateAndRender() override;
+    void updateAndRenderControls(f32 ySize) override;
 
     void setModel(ModelDef& model) { mCurrentModel = &model; }
 
 private:
-    void updateCamera(f32 aspectRatio);
-    void initGBuffer(f32v2 imageDims);
     void renderModelToTexture();
-    void renderGrid();
 
-    VGVertexArray mGridVao = 0;
     ModelDef* mCurrentModel = nullptr;
-    std::unique_ptr<vg::GBuffer> mModelGBuffer = nullptr;
+   
     bool mDirtyModelData = false;
     int mLod = 0;
 
-    ModelEditorPanelDrawMode mDrawMode = ModelEditorPanelDrawMode::Default;
 };
 

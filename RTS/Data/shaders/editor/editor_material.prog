@@ -1,0 +1,3 @@
+editor_material:
+  vert: editor_model.vert
+  frag: editor_material.frag

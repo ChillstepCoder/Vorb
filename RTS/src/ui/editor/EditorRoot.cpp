@@ -5,6 +5,7 @@
 #include "ui/DebugTweakerPanel.h"
 #include "ui/editor/TileEditorPanel.h"
 #include "ui/editor/ModelEditorPanel.h"
+#include "ui/editor/MaterialEditorPanel.h"
 #include "options/DebugOptions.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -36,6 +37,7 @@ EditorRoot::EditorRoot() {
     mWorldEditorPanel = std::make_unique<WorldEditorPanel>();
     mTileEditorPanel = std::make_unique<TileEditorPanel>();
     mModelEditorPanel = std::make_unique<ModelEditorPanel>();
+    mMaterialEditorPanel = std::make_unique<MaterialEditorPanel>();
 
     // Initialize inputs
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
@@ -94,11 +96,13 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
             TileEditorPanelResult result;
             static f32 ySize1 = ImGui::GetContentRegionAvail().y * 0.5f;
             static f32 ySize2 = ySize1;
-            // With model editor open we render details panel
-            if (mShowModelEditor) {
+            // With model editor open we render controls panel
+            if (mActiveCenterPanel) {
                 Splitter(false, 10.0f, &ySize1, &ySize2, 8, 8, ImGui::GetContentRegionAvail().x);
                 result = mTileEditorPanel->updateAndRender(ySize1);
-                mModelEditorPanel->updateAndRenderControls(ySize2);
+
+                // Controls
+                mActiveCenterPanel->updateAndRenderControls(ySize2);
             }
             else {
                 result = mTileEditorPanel->updateAndRender(ImGui::GetContentRegionAvail().y);
@@ -114,8 +118,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
                     openModelForEdit(*std::get<ModelDef*>(result.second));
                     break;
                 case TileEditorPanelResultCode::EDIT_MATERIAL:
-                    assert(false);
-                    //openMaterialForEdit(*std::get<MaterialData*>(result.second));
+                    openMaterialForEdit(*std::get<std::unique_ptr<MaterialHandle>>(result.second));
                     break;
                 default:
                     assert(false);
@@ -125,12 +128,15 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer) {
 
         }
 
-        if (mShowModelEditor) {// Center panel
+        // Center panel
+        if (mActiveCenterPanel) {
             f32 width = dims.x - (rightPanelWidth + leftPanelWidth);
             if (width >= 2.0f) {
                 ImGui::SetNextWindowPos(ImVec2(leftPanelWidth, 0.0f));
                 ImGui::SetNextWindowSize(ImVec2(width, dims.y));
-                mShowModelEditor = mModelEditorPanel->updateAndRender(activeGBuffer);
+                if (!mActiveCenterPanel->updateAndRender()) {
+                    mActiveCenterPanel = nullptr;
+                }
             }
         }
     }
@@ -144,5 +150,10 @@ void EditorRoot::renderEditorBrushDecals(const Camera3D& camera) {
 
 void EditorRoot::openModelForEdit(ModelDef& model) {
     mModelEditorPanel->setModel(model);
-    mShowModelEditor = true;
+    mActiveCenterPanel = mModelEditorPanel.get();
+}
+
+void EditorRoot::openMaterialForEdit(MaterialHandle& materialHandle) {
+    mMaterialEditorPanel->setMaterial(materialHandle);
+    mActiveCenterPanel = mMaterialEditorPanel.get();
 }

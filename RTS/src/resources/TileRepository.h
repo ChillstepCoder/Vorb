@@ -40,7 +40,9 @@ public:
         return sTileData[id];
     }
     static TileID getTile(StrToken tileToken) {
-        return sTileIdMapping[tileToken];
+        auto&& it = sTileIdMapping.find(tileToken);
+        assert(it != sTileIdMapping.end());
+        return it->second;
     }
 
     static const std::vector<TileData>& getAllTileData() { return sTileData;  }
