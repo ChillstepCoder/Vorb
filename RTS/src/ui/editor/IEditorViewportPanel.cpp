@@ -34,9 +34,10 @@ void IEditorViewportPanel::updateAndRenderDrawModeControl() {
     const char* drawModes[e_cast(EditorViewportDrawMode::COUNT)] = {
         "Default",
         "Wireframe",
-        "Normals"
+        "Normals",
+        "UVs"
     };
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 3);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
     if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
         for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;

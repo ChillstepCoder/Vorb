@@ -10,6 +10,7 @@ enum class EditorViewportDrawMode {
     Default,
     Wireframe,
     Normals,
+    UVs,
     COUNT
 };
 

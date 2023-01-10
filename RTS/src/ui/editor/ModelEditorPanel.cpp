@@ -132,11 +132,14 @@ void ModelEditorPanel::renderModelToTexture() {
             case EditorViewportDrawMode::Normals:
                 staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_normals");
                 break;
+            case EditorViewportDrawMode::UVs:
+                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_uvs");
+                break;
             default:
                 assert(false);
                 break;
         }
-        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 3);
+        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
 
         VGUniform unVP = staticModelMaterial->getUniform("unVP");
         MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
@@ -160,6 +163,9 @@ void ModelEditorPanel::renderModelToTexture() {
             case EditorViewportDrawMode::Normals:
                 staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_normals");
                 break;
+            case EditorViewportDrawMode::UVs:
+                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_uvs");
+                break;
             default:
                 assert(false);
                 break;
@@ -172,7 +178,7 @@ void ModelEditorPanel::renderModelToTexture() {
                 Model3D& mModel = mCurrentModel->mModel;
                 mModel.getMesh()->draw(MeshLODLevel(mLod));
         }
-        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 3);
+        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
     }
 
 }

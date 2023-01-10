@@ -111,10 +111,10 @@ void MaterialEditorPanel::renderModelToTexture() {
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialShader* material = nullptr;
-
     switch (mDrawMode) {
         case EditorViewportDrawMode::Default:
         case EditorViewportDrawMode::Normals:
+        case EditorViewportDrawMode::UVs:
             material = resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
             break;
         case EditorViewportDrawMode::Wireframe:
@@ -123,7 +123,7 @@ void MaterialEditorPanel::renderModelToTexture() {
         default:
             assert(false);
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 3);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
 
 
     MaterialRenderer::bindMaterialForRender(*material);
@@ -131,10 +131,17 @@ void MaterialEditorPanel::renderModelToTexture() {
     glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
 
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
-        VGUniform unRenderNormals = material->getUniform("unRenderNormals");
+        VGUniform unRenderMode = material->getUniform("unRenderMode");
         VGUniform unMaterialIndex = material->getUniform("unMaterialIndex");
 
-        glUniform1i(unRenderNormals, (int)(mDrawMode == EditorViewportDrawMode::Normals));
+        int drawMode = 0;
+        if (mDrawMode == EditorViewportDrawMode::Normals) {
+            drawMode = 1;
+        }
+        else if (mDrawMode == EditorViewportDrawMode::UVs) {
+            drawMode = 2;
+        }
+        glUniform1i(unRenderMode, drawMode);
         glUniform1i(unMaterialIndex, mCurrentMaterial.materialId);
     }
 

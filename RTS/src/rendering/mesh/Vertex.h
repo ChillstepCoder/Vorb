@@ -2,30 +2,6 @@
 
 #include "rendering/mesh/VertexType.h"
 
-// ChatGPT made this lol
-inline uint32_t CHATGPT_Pack_INT_2_10_10_10_REV(const f32v4& v) {
-    // Convert the vec4 components to integers in the range [-512, 511]
-    int x = static_cast<int>(round(v.x * 511.0f));
-    int y = static_cast<int>(round(v.y * 511.0f));
-    int z = static_cast<int>(round(v.z * 511.0f));
-    int w = static_cast<int>(round(v.w * 511.0f));
-
-    // Clamp the values to the valid range
-    x = std::max(-512, std::min(511, x));
-    y = std::max(-512, std::min(511, y));
-    z = std::max(-512, std::min(511, z));
-    w = std::max(-512, std::min(511, w));
-
-    // Pack the values into the GL_INT_2_10_10_10_REV format
-    uint32_t result = (x & 0x3FF) | ((y & 0x3FF) << 10) | ((z & 0x3FF) << 20) | ((w & 0x3) << 30);
-    if (x < 0) result |= 0x400;
-    if (y < 0) result |= 0x40000;
-    if (z < 0) result |= 0x4000000;
-    if (w < 0) result |= 0xC0000000;
-
-    return result;
-}
-
 // For packing signed normals in to a single 32 byte value
 // https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
 // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev

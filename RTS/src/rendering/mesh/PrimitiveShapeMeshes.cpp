@@ -49,10 +49,17 @@ void PrimitiveShapeMeshes::generateSphereMesh() {
         myVert.pos = positions[i];
         f32v3 normalFloat = glm::normalize(myVert.pos);
         f32v3 tangentFloat = glm::normalize(glm::cross(normalFloat, f32v3(0.0f, 0.0f, 1.0f)));
+        if (normalFloat == f32v3(0.0f, 0.0f, 1.0f)) {
+            tangentFloat = f32v3(1.0f, 0.0f, 0.0f);
+        }
+        else if (normalFloat == f32v3(0.0f, 0.0f, -1.0f)) {
+            tangentFloat = f32v3(-1.0f, 0.0f, 0.0f);
+        }
         // https://gamedev.stackexchange.com/questions/114412/how-to-get-uv-coordinates-for-sphere-cylindrical-projection
         f32v2 uvFloat;
-        uvFloat.x = atan2(normalFloat.x, normalFloat.z) / (M_2_PI) + 0.5;
-        uvFloat.y = normalFloat.y * 0.5 + 0.5;
+        uvFloat.x = atan2(normalFloat.x, normalFloat.y) / (M_2_PI) + 0.5;
+        uvFloat.y = normalFloat.z * 0.5 + 0.5;
+        uvFloat = glm::clamp(uvFloat, f32v2(0.0), f32v2(1.0));
         myVert.uvsPacked.x = (ui16)(uvFloat.x * UINT16_MAX);
         myVert.uvsPacked.y = (ui16)(uvFloat.y * UINT16_MAX);
         myVert.normalPacked = Pack_INT_2_10_10_10_REV(normalFloat.x, normalFloat.y, normalFloat.z, 0.0f);
