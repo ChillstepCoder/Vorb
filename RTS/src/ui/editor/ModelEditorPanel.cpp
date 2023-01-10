@@ -123,7 +123,8 @@ void ModelEditorPanel::renderModelToTexture() {
         const MaterialShader* staticModelMaterial = nullptr;
 
         switch (mDrawMode) {
-            case EditorViewportDrawMode::Default:
+            case EditorViewportDrawMode::Lit:
+            case EditorViewportDrawMode::Unlit:
                 staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
                 break;
             case EditorViewportDrawMode::Wireframe:
@@ -139,7 +140,7 @@ void ModelEditorPanel::renderModelToTexture() {
                 assert(false);
                 break;
         }
-        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
+        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
 
         VGUniform unVP = staticModelMaterial->getUniform("unVP");
         MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
@@ -154,7 +155,8 @@ void ModelEditorPanel::renderModelToTexture() {
         const MaterialShader* staticModelMaterial = nullptr;
 
         switch (mDrawMode) {
-            case EditorViewportDrawMode::Default:
+            case EditorViewportDrawMode::Lit:
+            case EditorViewportDrawMode::Unlit:
                 staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
                 break;
             case EditorViewportDrawMode::Wireframe:
@@ -178,7 +180,7 @@ void ModelEditorPanel::renderModelToTexture() {
                 Model3D& mModel = mCurrentModel->mModel;
                 mModel.getMesh()->draw(MeshLODLevel(mLod));
         }
-        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
+        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
     }
 
 }

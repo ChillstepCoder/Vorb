@@ -43,6 +43,7 @@ void PrimitiveShapeMeshes::generateSphereMesh() {
         indices16[i] = indices[i];
     }
 
+    // This has an ugly seam
     std::vector<StaticModelVertex> vertices(positions.size(), StaticModelVertex{});
     for (size_t i = 0; i < vertices.size(); ++i) {
         StaticModelVertex& myVert = vertices[i];
@@ -60,8 +61,7 @@ void PrimitiveShapeMeshes::generateSphereMesh() {
         uvFloat.x = atan2(normalFloat.x, normalFloat.y) / (M_2_PI) + 0.5;
         uvFloat.y = normalFloat.z * 0.5 + 0.5;
         uvFloat = glm::clamp(uvFloat, f32v2(0.0), f32v2(1.0));
-        myVert.uvsPacked.x = (ui16)(uvFloat.x * UINT16_MAX);
-        myVert.uvsPacked.y = (ui16)(uvFloat.y * UINT16_MAX);
+        myVert.uvsPacked = PackUVs(uvFloat);
         myVert.normalPacked = Pack_INT_2_10_10_10_REV(normalFloat.x, normalFloat.y, normalFloat.z, 0.0f);
         myVert.tangentPacked = Pack_INT_2_10_10_10_REV(tangentFloat.x, tangentFloat.y, tangentFloat.z, 0.0f);
         myVert.color = COLOR_WHITE;
@@ -71,11 +71,84 @@ void PrimitiveShapeMeshes::generateSphereMesh() {
 }
 
 void PrimitiveShapeMeshes::generatePlaneMesh() {
-    assert(false);
+    std::vector<StaticModelVertex> verts(4, StaticModelVertex{});
+    std::vector<ui16> indices(6);
+    indices[0] = 0;
+    indices[1] = 1;
+    indices[2] = 2;
+    indices[3] = 2;
+    indices[4] = 3;
+    indices[5] = 0;
+
+    const ui32 normalPacked = Pack_INT_2_10_10_10_REV(f32v3(0.0f, 1.0f, 0.0f));
+    const ui32 tangentPacked = Pack_INT_2_10_10_10_REV(f32v3(1.0f, 0.0f, 0.0f));
+
+    verts[0].pos = f32v3(-1.0f, 0.0f, -1.0f);
+    verts[0].uvsPacked = PackUVs(f32v2(0.0f, 0.0f));
+    verts[1].pos = f32v3(1.0f, 0.0f, -1.0f);
+    verts[1].uvsPacked = PackUVs(f32v2(1.0f, 0.0f));
+    verts[2].pos = f32v3(1.0f, 0.0f, 1.0f);
+    verts[2].uvsPacked = PackUVs(f32v2(1.0f, 1.0f));
+    verts[3].pos = f32v3(-1.0f, 0.0f, 1.0f);
+    verts[3].uvsPacked = PackUVs(f32v2(0.0f, 1.0f));
+
+    for (int i = 0; i < 4; ++i) {
+        verts[i].normalPacked = normalPacked;
+        verts[i].tangentPacked = tangentPacked;
+        verts[i].color = COLOR_WHITE;
+    }
+
+    uploadMesh(verts, indices, PrimitiveShapeType::Plane);
 }
 
 void PrimitiveShapeMeshes::generateCubeMesh() {
-    assert(false);
+    std::vector<StaticModelVertex> verts(6 * 4, StaticModelVertex{});
+    std::vector<ui16> indices(6 * 6);
+
+    // UVs
+    for (size_t i = 0; i < verts.size(); i += 4) {
+        verts[i].uvsPacked = PackUVs(f32v2(0.0f, 0.0f));
+        verts[i + 1].uvsPacked = PackUVs(f32v2(1.0f, 0.0f));
+        verts[i + 2].uvsPacked = PackUVs(f32v2(1.0f, 1.0f));
+        verts[i + 3].uvsPacked = PackUVs(f32v2(0.0f, 1.0f));
+    }
+
+    // Positions normals and tangents
+    for (int i = 0; i < (int)CubeFacing::COUNT; ++i) {
+        const int vi = i * 4;
+        const ui32 packedNormal = Pack_INT_2_10_10_10_REV(f32v3(CUBE_FACING_NORMALS[i]));
+        const ui32 packedTangent = Pack_INT_2_10_10_10_REV(f32v3(CUBE_FACING_TANGENTS_3D[i]));
+        verts[vi].normalPacked = packedNormal;
+        verts[vi + 1].normalPacked = packedNormal;
+        verts[vi + 2].normalPacked = packedNormal;
+        verts[vi + 3].normalPacked = packedNormal;
+        verts[vi].tangentPacked = packedTangent;
+        verts[vi + 1].tangentPacked = packedTangent;
+        verts[vi + 2].tangentPacked = packedTangent;
+        verts[vi + 3].tangentPacked = packedTangent;
+        verts[vi].pos = CUBE_POSITIONS[i][0];
+        verts[vi + 1].pos = CUBE_POSITIONS[i][1];
+        verts[vi + 2].pos = CUBE_POSITIONS[i][2];
+        verts[vi + 3].pos = CUBE_POSITIONS[i][3];
+        verts[vi].color = COLOR_WHITE;
+        verts[vi + 1].color = COLOR_WHITE;
+        verts[vi + 2].color = COLOR_WHITE;
+        verts[vi + 3].color = COLOR_WHITE;
+    }
+
+    // Indices
+    int j = 0;
+    for (size_t i = 0; i < verts.size(); i += 4) {
+        indices[j++] = i;
+        indices[j++] = i + 1;
+        indices[j++] = i + 2;
+        indices[j++] = i + 2;
+        indices[j++] = i + 3;
+        indices[j++] = i;
+    }
+
+
+    uploadMesh(verts, indices, PrimitiveShapeType::Cube);
 }
 
 // Chatgpt made this
@@ -90,9 +163,11 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
         f32v3 tangent;
         f32v2 uv;
     };
-
     // The resulting vector of vertices
     std::vector<TmpVertex> vertices;
+
+    // The resulting index buffer
+    std::vector<ui16> indices;
 
     // Calculate the angle between each side
     float angleBetweenSides = 360.0f / numSides;
@@ -131,6 +206,24 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
         uv.y = 1.0f;
         vertices.push_back({ {x, y, -height / 2}, normal, tangent, uv });
     }
+
+    // Generate the indices for the top and bottom disks
+    for (int i = 0; i < numSides - 1; i++) {
+        indices.push_back(i * 2);
+        indices.push_back(i * 2 + 1);
+        indices.push_back(i * 2 + 3);
+        indices.push_back(i * 2 + 2);
+        indices.push_back(i * 2);
+        indices.push_back(i * 2 + 3);
+    }
+    // Add the final indices for the top and bottom disks
+    indices.push_back((numSides - 1) * 2);
+    indices.push_back((numSides - 1) * 2 + 1);
+    indices.push_back(1);
+    indices.push_back(0);
+    indices.push_back((numSides - 1) * 2);
+    indices.push_back(1);
+
     // Generate the vertices for the sides of the cylinder
     for (int i = 0; i < numSides; i++) {
         // Calculate the angle for this side
@@ -146,11 +239,10 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
         normal = glm::normalize(normal);
 
         // The tangent is the cross product of the normal and the up vector (0, 0, 1). This will give us
-        // a vector that is tangent to the surface and points
-        // in the positive x direction.
+        // a vector that is tangent to the surface and points in the positive x direction.
         f32v3 tangent = glm::cross(normal, { 0.0f, 0.0f, 1.0f });
-        // The texture coordinate for this vertex is based on the
-        // angle around the cylinder
+
+        // The texture coordinate for this vertex is based on the angle around the cylinder
         f32v2 uv = { uvIncrement * i, 0.0f };
 
         // Add the top vertex
@@ -161,7 +253,45 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
         vertices.push_back({ {x, y, -height / 2}, normal, tangent, uv });
     }
 
-    assert(false);
+    // Generate the indices for the sides of the cylinder
+    for (int i = 0; i < numSides - 1; i++) {
+        // The indices for the two triangles that make up this quad
+        uint32_t i1 = (numSides * 2) + (i * 2);
+        uint32_t i2 = (numSides * 2) + (i * 2 + 1);
+        uint32_t i3 = (numSides * 2) + (i * 2 + 3);
+        uint32_t i4 = (numSides * 2) + (i * 2 + 2);
+
+        indices.push_back(i1);
+        indices.push_back(i2);
+        indices.push_back(i3);
+        indices.push_back(i4);
+        indices.push_back(i1);
+        indices.push_back(i3);
+    }
+    // Add the final indices for the sides of the cylinder
+    uint32_t i1 = (numSides * 2) + (numSides - 1) * 2;
+    uint32_t i2 = (numSides * 2) + (numSides - 1) * 2 + 1;
+    uint32_t i3 = (numSides * 2) + 1;
+    uint32_t i4 = (numSides * 2) + 0;
+    indices.push_back(i1);
+    indices.push_back(i2);
+    indices.push_back(i3);
+    indices.push_back(i4);
+    indices.push_back(i1);
+    indices.push_back(i3);
+
+    std::vector<StaticModelVertex> staticVertices(vertices.size());
+    for (size_t i = 0; i < staticVertices.size(); ++i) {
+        StaticModelVertex& myVert = staticVertices[i];
+        myVert.pos = vertices[i].position;
+        myVert.uvsPacked.x = (ui16)(vertices[i].uv.x * UINT16_MAX);
+        myVert.uvsPacked.y = (ui16)(vertices[i].uv.y * UINT16_MAX);
+        myVert.normalPacked = Pack_INT_2_10_10_10_REV(vertices[i].normal);
+        myVert.tangentPacked = Pack_INT_2_10_10_10_REV(vertices[i].tangent);
+        myVert.color = COLOR_WHITE;
+    }
+
+    uploadMesh(staticVertices, indices, PrimitiveShapeType::Cylinder);
 }
 
 

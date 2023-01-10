@@ -5,9 +5,9 @@ DECL_VG(class GBuffer);
 class SimpleCamera;
 class CameraPositioner_FirstPerson;
 
-
 enum class EditorViewportDrawMode {
-    Default,
+    Lit,
+    Unlit,
     Wireframe,
     Normals,
     UVs,
@@ -35,6 +35,6 @@ protected:
 
     VGVertexArray mGridVao = 0;
     std::unique_ptr<vg::GBuffer> mGBuffer = nullptr;
-    EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::Default;
+    EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::Lit;
 };
 

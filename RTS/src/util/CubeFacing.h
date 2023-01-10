@@ -39,6 +39,15 @@ const i32v2 CUBE_FACING_TANGENTS[e_cast(CubeFacing::COUNT)] = {
     i32v2(0, -1)   // BOTTOM
 };
 
+const i32v3 CUBE_FACING_TANGENTS_3D[e_cast(CubeFacing::COUNT)] = {
+    i32v3(1, 0, 0),   // LEFT
+    i32v3(-1,  0, 0), // FRONT
+    i32v3(-1, 0, 0),  // RIGHT
+    i32v3(1, 0, 0),   // BACK
+    i32v3(0, 1, 0),   // TOP
+    i32v3(0, -1, 0)   // BOTTOM
+};
+
 const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v3(0, 0, 0), // LEFT
     f32v3(0, 0, 0), // FRONT
@@ -46,4 +55,14 @@ const f32v3 CUBE_FACING_GEOMETRY_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v3(0, 1.0f, 0), // BACK
     f32v3(0, 0, 1.0f),  // TOP
     f32v3(0, 0, 0) // BOTTOM
+};
+
+// Radius 1 origin 0
+const f32v3 CUBE_POSITIONS[e_cast(CubeFacing::COUNT)][4] = {
+    { f32v3(-1, -1, -1), f32v3(-1, 1, -1), f32v3(-1, 1, 1), f32v3(-1, -1, 1) }, // LEFT
+    { f32v3(-1, -1, -1), f32v3(1, -1, -1), f32v3(1, -1, 1), f32v3(-1, -1, 1) }, // FRONT
+    { f32v3(1, 1, -1), f32v3(1, -1, -1), f32v3(1, -1, 1), f32v3(1, 1, 1) }, // RIGHT
+    { f32v3(1, 1, -1), f32v3(-1, 1, -1), f32v3(-1, 1, 1), f32v3(1, 1, 1) }, // BACK
+    { f32v3(-1, -1, 1), f32v3(1, -1, 1), f32v3(1, 1, 1), f32v3(-1, 1, 1) }, // TOP
+    { f32v3(-1, 1, -1), f32v3(1, 1, -1), f32v3(1, -1, -1), f32v3(-1, -1, -1) }, // BOTTOM
 };

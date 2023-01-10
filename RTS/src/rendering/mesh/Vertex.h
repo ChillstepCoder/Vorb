@@ -5,7 +5,7 @@
 // For packing signed normals in to a single 32 byte value
 // https://www.khronos.org/opengl/wiki/Normalized_Integer#Alternate_mapping
 // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
-inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
+inline constexpr uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
 {
     const uint32_t xs = x < 0;
     const uint32_t ys = y < 0;
@@ -17,6 +17,14 @@ inline uint32_t Pack_INT_2_10_10_10_REV(float x, float y, float z, float w)
         ys << 19 | ((uint32_t)(y * 0x1ff + (ys << 9)) & 0x1ff) << 10 |
         xs << 9 | ((uint32_t)(x * 0x1ff + (xs << 9)) & 0x1ff);
     return vi;
+}
+inline constexpr uint32_t Pack_INT_2_10_10_10_REV(const f32v3& vec3) {
+    return Pack_INT_2_10_10_10_REV(vec3.x, vec3.y, vec3.z, 0.0f);
+}
+
+// TODO: Allow -1->2?
+inline ui16v2 PackUVs(const f32v2& uvs) {
+    return ui16v2(uvs.x * UINT16_MAX, uvs.y * UINT16_MAX);
 }
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices

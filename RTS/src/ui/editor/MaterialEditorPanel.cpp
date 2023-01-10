@@ -107,12 +107,13 @@ void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
 }
 
 void MaterialEditorPanel::renderModelToTexture() {
-    Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType::Sphere);
+    Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialShader* material = nullptr;
     switch (mDrawMode) {
-        case EditorViewportDrawMode::Default:
+        case EditorViewportDrawMode::Unlit:
+        case EditorViewportDrawMode::Lit:
         case EditorViewportDrawMode::Normals:
         case EditorViewportDrawMode::UVs:
             material = resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
@@ -123,12 +124,14 @@ void MaterialEditorPanel::renderModelToTexture() {
         default:
             assert(false);
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 4);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
 
 
     MaterialRenderer::bindMaterialForRender(*material);
     VGUniform unVP = material->getUniform("unVP");
+    VGUniform unPosOffset = material->getUniform("unPosOffset");
     glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+    glUniform4f(unPosOffset, 0.0f, 0.0f, 1.0f, 0.0f);
 
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
         VGUniform unRenderMode = material->getUniform("unRenderMode");

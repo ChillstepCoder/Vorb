@@ -1,7 +1,7 @@
 uniform sampler2D GradientTexture;
 uniform vec3 ShadowColor;
 
-// Lighting uniforms
+// Lighting uniforms (MaterialUtils::uploadLightingUniforms)
 uniform vec2 unGamma;
 uniform vec2 unExposure;
 uniform vec2 unHazeExponent;
@@ -15,14 +15,14 @@ uniform float unLightingSplit;
 #include "util/lighting.glsl"
 #include "util/tonemapping.glsl"
 
-vec3 getCurrentSunColor(int preset) {
-	float sunIntensity = max(SunHeight * unSunIntensity[preset], 0.0);
+vec3 getCurrentSunColor(int preset, vec3 sunColor, float sunHeight) {
+	float sunIntensity = max(sunHeight * unSunIntensity[preset], 0.0);
 	float lightTotal = sunIntensity + unAmbient[preset];
-    return lightTotal * SunColor;
+    return lightTotal * sunColor;
 }
 
-vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, float roughness, float isSky, float shadow) {
-
+vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, float roughness, float isSky, float shadow, vec3 sunColor, float sunHeight) {
+    
     // Split view for light presets
     int preset = int(step(unLightingSplit, screenUV.x));
 
@@ -32,7 +32,7 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
 	// ==                     Sunlight color              ==
 	// =====================================================
 	
-    vec3 sunColor = getCurrentSunColor(preset);
+    sunColor = getCurrentSunColor(preset, sunColor, sunHeight);
     // Clamp sky light total
     if (isSky > 0.0) {
         if (unTonemapOperator[preset] > 0.0) {
@@ -124,4 +124,8 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
     pixelColor = pow(pixelColor, vec3(1.0 / unGamma[preset]));
     
     return pixelColor;
+}
+
+vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, float roughness, float isSky, float shadow) {
+    return lightPixel(pixelColor, normal, worldPos, screenUV, roughness, isSky, shadow, SunColor, SunHeight);
 }
