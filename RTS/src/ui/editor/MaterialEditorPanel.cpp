@@ -12,6 +12,7 @@
 //#include "resources/ModelRepository.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/MaterialUtils.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -134,17 +135,11 @@ void MaterialEditorPanel::renderModelToTexture() {
     glUniform4f(unPosOffset, 0.0f, 0.0f, 1.0f, 0.0f);
 
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
+        MaterialUtils::uploadLightingUniforms(*material);
         VGUniform unRenderMode = material->getUniform("unRenderMode");
         VGUniform unMaterialIndex = material->getUniform("unMaterialIndex");
 
-        int drawMode = 0;
-        if (mDrawMode == EditorViewportDrawMode::Normals) {
-            drawMode = 1;
-        }
-        else if (mDrawMode == EditorViewportDrawMode::UVs) {
-            drawMode = 2;
-        }
-        glUniform1i(unRenderMode, drawMode);
+        glUniform1i(unRenderMode, (int)mDrawMode);
         glUniform1i(unMaterialIndex, mCurrentMaterial.materialId);
     }
 

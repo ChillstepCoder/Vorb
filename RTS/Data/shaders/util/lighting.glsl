@@ -57,7 +57,7 @@ vec3 computeBlinnPhong(vec3 worldPos, vec3 color, vec3 normal, vec3 lightDir, fl
    return color * (((ambient + (1.0 - ambient) * diffuse) + specular));
 }
 
-vec3 computePhongHDR(vec3 worldPos,vec3 color, vec3 normal, vec3 lightDir, float ambient, float roughness, float shadow) {
+vec3 computePhongHDR(vec3 worldPos, vec3 color, vec3 normal, vec3 lightDir, float ambient, float roughness, float shadow) {
 
    
    float lightAmount = 1.0 - shadow;

@@ -6,13 +6,14 @@ class SimpleCamera;
 class CameraPositioner_FirstPerson;
 
 enum class EditorViewportDrawMode {
-    Lit,
-    Unlit,
-    Wireframe,
-    Normals,
-    UVs,
+    Lit = 0,
+    Unlit = 1,
+    Normals = 2,
+    UVs = 3,
+    Wireframe = 4,
     COUNT
 };
+static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5, "Copy to data/shaders/editor/editor_util.glsl");
 
 class IEditorViewportPanel
 {

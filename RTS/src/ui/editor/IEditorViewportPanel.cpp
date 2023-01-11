@@ -34,9 +34,9 @@ void IEditorViewportPanel::updateAndRenderDrawModeControl() {
     const char* drawModes[e_cast(EditorViewportDrawMode::COUNT)] = {
         "Lit",
         "Unlit",
-        "Wireframe",
         "Normals",
-        "UVs"
+        "UVs",
+        "Wireframe",
     };
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
     if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {

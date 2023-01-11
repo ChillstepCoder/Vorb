@@ -2,7 +2,6 @@
 #include "BillboardSSBO.glsl"
 #include "GlobalUbo.glsl"
 
-
 uniform vec4 unSphereNormalRect;
 uniform float unSphereNormalPage;
 uniform sampler2D unCloudNormals;
@@ -51,8 +50,6 @@ void main() {
     fNormal.rgb = (norm + 1.0) * 0.5;
     
     // TODO: Combine to single texture
-    if (fNormal.a < 0.1) {
-        discard;
-    }
+    tryDiscardTransparentPixel(fNormal.a);
     //fNormal.a = 1.0;
 }

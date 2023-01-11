@@ -1,30 +1,29 @@
 #include "MaterialData.glsl"
+#include "GlobalUbo.glsl"
+#include "lighting/scene_lighting.glsl"
+
+uniform mat4 unVP;
 
 in vec2 fUV;
+in vec3 fWorldPos;
+in vec2 fScreenPos;
 flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
 
 layout (location = 0) out vec4 oColor;
-layout (location = 1) out vec4 oNormal;
-layout (location = 2) out vec4 oRoughness;
+
+#include "editor/editor_util.glsl"
 
 void main() {
 
     vec3 normal;
     getMaterialPixelInfo(fMaterialIndex, fUV, oColor, normal, fTint);
-
+    
     tryDiscardTransparentPixel(oColor.a);
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
-    // Into 0-1 range
-	oNormal.rgb = (normal + 1.0) * 0.5;
     
-    
-	oRoughness.r = 0.2;
-	oRoughness.a = 1.0;
-    
-    oColor.a = 1.0;
-	oNormal.a = oColor.a;
+    oColor = getEditorOutputPixelColor(oColor.rgb, normal, fWorldPos, fScreenPos);
 }

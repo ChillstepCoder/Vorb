@@ -1,52 +1,34 @@
 #include "MaterialData.glsl"
+#include "GlobalUbo.glsl"
+#include "lighting/scene_lighting.glsl"
+
+uniform mat4 unVP;
 
 in vec2 fUV;
+in vec3 fWorldPos;
+in vec2 fScreenPos;
 in vec4 fTint;
 in mat3 fTBN;
 
 // 0 = default
-// 1 = normals
+// 1 = normalst
 // 2 = uvs
-uniform int unRenderMode = 0;
 uniform int unMaterialIndex;
+
+#include "editor/editor_util.glsl"
 
 layout (location = 0) out vec4 oColor;
 
 void main() {
-    MaterialData mtl = inMaterials[unMaterialIndex];
-    
-    vec4 color = mtl.albedoColor;
-	vec3 normal = vec3(0.0, 0.0, 1.0);
 
-	if (mtl.albedoMap > 0) {
-		color = sampleMaterialAlbedo(mtl, fUV) * fTint;
-    }
-	if (mtl.normalMap > 0) {
-		normal = sampleMaterialNormal(mtl, fUV);
-        normal = normal * 2.0 - 1.0;
-    }
+    vec4 color;
+    vec3 normal;
+    getMaterialPixelInfo(unMaterialIndex, fUV, color, normal, fTint);
 
-    // Don't write 0 alpha
-    if (color.a < 0.01) {
-        discard;
-    }
-    color.a = 1.0;
+    tryDiscardTransparentPixel(color.a);
     
+    // Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    // Lighting
-    
-    // Color
-    if (unRenderMode == 1) {
-        // Normals render
-        oColor.rgb = (normal + 1.0) * 0.5;
-        oColor.a = color.a;
-    } else if (unRenderMode == 2) {
-        // UVs render
-        oColor.rg = fUV;
-        oColor.b = 0.0;
-        oColor.a = 1.0;
-    } else {
-        oColor = color;
-    }
+    oColor = getEditorOutputPixelColor(color.rgb, normal, fWorldPos, fScreenPos);
 }

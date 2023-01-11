@@ -6,6 +6,7 @@ uniform sampler2D unGradientTexture;
 uniform sampler2D unCloudColor;
 uniform sampler2D unSkyGradient;
 #include "GlobalUbo.glsl"
+#include "AlphaTest.glsl"
 
 uniform float DebugFloat2;
 
@@ -23,9 +24,8 @@ void main() {
 	vec3 norm = cloudTextureSample.rgb;
 	
 	float z = step(0.000001, norm.z);
-	if (z == 0.0) {
-	  discard;
-	}
+    
+    runAlphaTest(z, 0.0);
     norm = normalize(norm * 2.0 - 1.0);
 	
     

@@ -14,6 +14,8 @@ layout(location = 5) in vec2 vTangent;
 //layout(location = 6) in float vWindInfluence;
 
 out vec2 fUV;
+out vec3 fWorldPos;
+out vec2 fScreenPos;
 flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
@@ -29,5 +31,10 @@ void main() {
 	vec3 binormal = cross(normal, tangent);
 	fTBN = mat3(tangent, binormal, normal);
 	
-    gl_Position = unVP * (vPosition + unPosOffset);
+    vec4 worldPos = (vPosition + unPosOffset);
+    fWorldPos = worldPos.xyz;
+    vec4 screenPos = unVP * worldPos;
+    gl_Position = screenPos;
+    // Homogenous space to NDC
+    fScreenPos = ((screenPos.xy / screenPos.w) + 1.0) * 0.5;
 }

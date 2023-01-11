@@ -15,13 +15,13 @@ uniform float unLightingSplit;
 #include "util/lighting.glsl"
 #include "util/tonemapping.glsl"
 
-vec3 getCurrentSunColor(int preset, vec3 sunColor, float sunHeight) {
-	float sunIntensity = max(sunHeight * unSunIntensity[preset], 0.0);
-	float lightTotal = sunIntensity + unAmbient[preset];
+vec3 getCurrentSunColor(int preset, vec3 sunColor, float sunIntensity) {
+	float sunIntensityAdjusted = max(sunIntensity * unSunIntensity[preset], 0.0);
+	float lightTotal = sunIntensityAdjusted + unAmbient[preset];
     return lightTotal * sunColor;
 }
 
-vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, float roughness, float isSky, float shadow, vec3 sunColor, float sunHeight) {
+vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, float roughness, float isSky, float shadow, mat4 inverseVP, vec3 sunColor, float sunIntensity, vec3 sunPosition) {
     
     // Split view for light presets
     int preset = int(step(unLightingSplit, screenUV.x));
@@ -32,7 +32,7 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
 	// ==                     Sunlight color              ==
 	// =====================================================
 	
-    sunColor = getCurrentSunColor(preset, sunColor, sunHeight);
+    sunColor = getCurrentSunColor(preset, sunColor, sunIntensity);
     // Clamp sky light total
     if (isSky > 0.0) {
         if (unTonemapOperator[preset] > 0.0) {
@@ -50,41 +50,40 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
 	// =====================================================
 	// World space ray
 	vec4 rayClip = vec4(screenUV.x * 2.0 - 1.0, screenUV.y * 2.0 - 1.0, -1.0, 1.0);
-	vec4 rayWorld = InverseVP * rayClip;
+	vec4 rayWorld = inverseVP * rayClip;
 	// Get Angle
-	float sunAngle = max(pow(dot(SunPosition, normalize(rayWorld.xyz)), 64.0), 0.0);
+	float sunAngle = max(pow(dot(sunPosition, normalize(rayWorld.xyz)), 64.0), 0.0);
 	
 	// Sun Glow
-	float hazeIntensity = max(SunHeight, 0.0);
+	float hazeIntensity = max(sunIntensity, 0.0);
 	pixelColor += sunAngle * max(pow(hazeIntensity, 0.15), 0.0);
 	// Sky sun glow + sun texture
 	pixelColor += isSky * (sunAngle * 0.5 + max(pow(sunAngle - 0.95, 0.3), 0.0) * 2.0);
 	
 	// Sun phong
-    
     float PHONG_AMBIENT = 0.5;
     if (unTonemapOperator[preset] > 0.0) {
         if (unLightingModel[preset] == 0) {
             // Phong
-            pixelColor = computePhongHDR(worldPos, pixelColor, normal, SunPosition, PHONG_AMBIENT, roughness, shadow);
+            pixelColor = computePhongHDR(worldPos, pixelColor, normal, sunPosition, PHONG_AMBIENT, roughness, shadow);
         } else {
             // Blinn phong
-            pixelColor = computeBlinnPhongHDR(worldPos, pixelColor, normal, SunPosition, PHONG_AMBIENT, roughness, shadow);
+            pixelColor = computeBlinnPhongHDR(worldPos, pixelColor, normal, sunPosition, PHONG_AMBIENT, roughness, shadow);
         }
     } else {
 	     if (unLightingModel[preset] == 0) {
             // Phong
-            pixelColor = computePhong(worldPos, pixelColor, normal, SunPosition, PHONG_AMBIENT, roughness, shadow);
+            pixelColor = computePhong(worldPos, pixelColor, normal, sunPosition, PHONG_AMBIENT, roughness, shadow);
         } else {
             // Blinn phong
-            pixelColor = computeBlinnPhong(worldPos, pixelColor, normal, SunPosition, PHONG_AMBIENT, roughness, shadow);
+            pixelColor = computeBlinnPhong(worldPos, pixelColor, normal, sunPosition, PHONG_AMBIENT, roughness, shadow);
         }
     }
 	
 	// =====================================================
 	// ==                     SHADOW                      ==
 	// =====================================================
-	float shadowMult = shadow * 0.5 * SunHeight;
+	float shadowMult = shadow * 0.5 * sunIntensity;
 	pixelColor = mix(pixelColor, pixelColor * ShadowColor, shadowMult);
 	
 	// =====================================================
@@ -127,5 +126,5 @@ vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, floa
 }
 
 vec3 lightPixel(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV, float roughness, float isSky, float shadow) {
-    return lightPixel(pixelColor, normal, worldPos, screenUV, roughness, isSky, shadow, SunColor, SunHeight);
+    return lightPixel(pixelColor, normal, worldPos, screenUV, roughness, isSky, shadow, InverseVP, SunColor, SunHeight, SunPosition);
 }

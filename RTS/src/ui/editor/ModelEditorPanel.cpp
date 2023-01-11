@@ -7,6 +7,7 @@
 //#include "resources/ModelRepository.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/MaterialUtils.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 
 #include <Vorb/ui/imgui/imgui.h>
@@ -125,16 +126,12 @@ void ModelEditorPanel::renderModelToTexture() {
         switch (mDrawMode) {
             case EditorViewportDrawMode::Lit:
             case EditorViewportDrawMode::Unlit:
+            case EditorViewportDrawMode::Normals:
+            case EditorViewportDrawMode::UVs:
                 staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
                 break;
             case EditorViewportDrawMode::Wireframe:
                 staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
-                break;
-            case EditorViewportDrawMode::Normals:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_normals");
-                break;
-            case EditorViewportDrawMode::UVs:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_uvs");
                 break;
             default:
                 assert(false);
@@ -147,40 +144,18 @@ void ModelEditorPanel::renderModelToTexture() {
 
         glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
 
+        if (mDrawMode != EditorViewportDrawMode::Wireframe) {
+            MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
+            glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+        }
+
         Model3D& mModel = mCurrentModel->mModel;
         mModel.getMesh()->draw(MeshLODLevel(mLod));
     }
     else {
         // Skinned mesh render
-        const MaterialShader* staticModelMaterial = nullptr;
-
-        switch (mDrawMode) {
-            case EditorViewportDrawMode::Lit:
-            case EditorViewportDrawMode::Unlit:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
-                break;
-            case EditorViewportDrawMode::Wireframe:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
-                break;
-            case EditorViewportDrawMode::Normals:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_normals");
-                break;
-            case EditorViewportDrawMode::UVs:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_uvs");
-                break;
-            default:
-                assert(false);
-                break;
-
-                VGUniform unVP = staticModelMaterial->getUniform("unVP");
-                MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
-
-                glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
-
-                Model3D& mModel = mCurrentModel->mModel;
-                mModel.getMesh()->draw(MeshLODLevel(mLod));
-        }
-        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
+        // TODO:
+        return;
     }
 
 }

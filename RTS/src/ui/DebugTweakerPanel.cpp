@@ -13,6 +13,7 @@
 #include <Vorb/ui/imgui/backends/imgui_impl_opengl3.h>
 
 #include "rendering/GLExtensions.h"
+#include "rendering/MaterialUtils.h"
 
 #include "options/DebugOptions.h"
 
@@ -20,7 +21,6 @@
 #include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/ValueTweaker.h"
-
 #include <Vorb/graphics/GBuffer.h>
 
 // TODO: Use
@@ -90,54 +90,6 @@ void setDefaultTheme() {
     // IO
     ImGuiIO& io = ImGui::GetIO();
     io.FontGlobalScale = 1.6f;
-}
-
-void renderLightingUI(ui32& ID, LightingOptions* options, int presetIndex) {
-    ImGui::PushID(++ID);
-    ImGui::SliderFloat("Gamma", &options->mGamma, 0.0f, 4.0f);
-    ImGui::SliderFloat("Exposure", &options->mExposure, 0.0f, 4.0f);
-    ImGui::SliderFloat("Haze Exponent", &options->mHazeExponent, 0.0f, 2.0f);
-    ImGui::SliderFloat("Haze Divisor", &options->mHazeDivisor, 10.0f, 15000.0f);
-    ImGui::SliderFloat("Ambient Light", &options->mAmbient, 0.0f, 1.0f);
-    ImGui::SliderFloat("Sun Intensity", &options->mSunIntensity, 0.0f, 3.0f);
-    switch (options->mToneMapOperator) {
-        case 0:
-            ImGui::Text("TONEMAP: NONE");
-            break;
-        case 1:
-            ImGui::Text("TONEMAP: REINARD");
-            break;
-        case 2:
-            ImGui::Text("TONEMAP: LOTTES");
-            break;
-        case 3:
-            ImGui::Text("TONEMAP: UCHIMURA");
-            break;
-        case 4:
-            ImGui::Text("TONEMAP: UNREAL");
-            break;
-        case 5:
-            ImGui::Text("TONEMAP: FILMIC");
-            break;
-        case 6:
-            ImGui::Text("TONEMAP: UNCHARTED 2");
-            break;
-    }
-    ImGui::SliderInt("Tonemap Operator", &options->mToneMapOperator, 0, 6);
-
-    switch (options->mLightingModel) {
-        case 0:
-            ImGui::Text("LIGHTMODEL: PHONG");
-            break;
-        case 1:
-            ImGui::Text("LIGHTMODEL: BLINN_PHONG");
-            break;
-    }
-    ImGui::SliderInt("Lighting model", &options->mLightingModel, 0, e_cast(LIGHTING_MODEL::COUNT) - 1);
-    if (ImGui::Button("Reset to Default")) {
-        *options = sLightingPresetDefaults[presetIndex];
-    }
-    ImGui::PopID();
 }
 
 // Use the manual it rocks
@@ -229,14 +181,14 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             if (ImGui::SliderInt("Light Preset Left", &sDebugOptions.mLightingPreset, 0, LIGHT_PRESET_COUNT - 1)) {
                 sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mLightingPreset];
             }
-            renderLightingUI(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
+            MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
             ImGui::Separator();
             ImGui::Text("RIGHT: "); ImGui::SameLine();
             ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPresetSplit]);
             if (ImGui::SliderInt("Light Preset Right", &sDebugOptions.mLightingPresetSplit, 0, LIGHT_PRESET_COUNT - 1)) {
                 sDebugOptions.mLightingOptionsSplit = &sLightingPresets[sDebugOptions.mLightingPresetSplit];
             }
-            renderLightingUI(ID, sDebugOptions.mLightingOptionsSplit, sDebugOptions.mLightingPresetSplit);
+            MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptionsSplit, sDebugOptions.mLightingPresetSplit);
             if (sDebugOptions.mLightingPresetSplit != LIGHT_PRESET_CUSTOM) {
                 if (ImGui::Button("Copy to CUSTOM")) {
                     sLightingPresets[LIGHT_PRESET_CUSTOM] = sLightingPresets[sDebugOptions.mLightingPresetSplit];
@@ -253,7 +205,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             if (ImGui::SliderInt("Light Preset", &sDebugOptions.mLightingPreset, 0, LIGHT_PRESET_COUNT - 1)) {
                 sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mLightingPreset];
             }
-            renderLightingUI(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
+            MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
             ImGui::Separator();
         }
         
