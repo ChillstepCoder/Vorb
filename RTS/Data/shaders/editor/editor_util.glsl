@@ -5,7 +5,8 @@ const int RENDER_MODE_LIT = 0;
 const int RENDER_MODE_UNLIT = 1;
 const int RENDER_MODE_NORMALS = 2;
 const int RENDER_MODE_UVS = 3;
-const int RENDER_MODE_WIREFRAME = 4;
+const int RENDER_MODE_BLEND_TEST = 4;
+const int RENDER_MODE_WIREFRAME = 5;
 
 vec4 getEditorOutputPixelColor(vec3 pixelColor, vec3 normal, vec3 worldPos, vec2 screenUV) {
     vec4 rv;

@@ -44,14 +44,14 @@ bool MaterialEditorPanel::updateAndRender()
     }
 
     // Lazy init so we don't use GPU memory when not in editor
-    if (mGBuffer == nullptr) {
-        initGBuffer(imageDims);
+    if (mGBuffers[0] == nullptr) {
+        initGBuffers(imageDims);
     }
 
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    mGBuffer->useGeometry();
+    mGBuffers[0]->useGeometry();
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -59,12 +59,12 @@ bool MaterialEditorPanel::updateAndRender()
     if (mCurrentMaterial.isValid()) {
         renderModelToTexture();
     }
-    mGBuffer->unuse();
+    mGBuffers[0]->unuse();
 
     const ImVec2 uv0(0, 1);
     const ImVec2 uv1(1, 0);
     const ImVec2 dims(imageDims.x, imageDims.y);
-    ImGui::Image((ImTextureID)mGBuffer->getGeometryTexture(), dims, uv0, uv1);
+    ImGui::Image((ImTextureID)mGBuffers[0]->getGeometryTexture(), dims, uv0, uv1);
 
     ImGui::End();
 
@@ -117,6 +117,7 @@ void MaterialEditorPanel::renderModelToTexture() {
         case EditorViewportDrawMode::Lit:
         case EditorViewportDrawMode::Normals:
         case EditorViewportDrawMode::UVs:
+        case EditorViewportDrawMode::BlendTest: // TODO
             material = resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
             break;
         case EditorViewportDrawMode::Wireframe:
@@ -125,7 +126,7 @@ void MaterialEditorPanel::renderModelToTexture() {
         default:
             assert(false);
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 6);
 
 
     MaterialRenderer::bindMaterialForRender(*material);

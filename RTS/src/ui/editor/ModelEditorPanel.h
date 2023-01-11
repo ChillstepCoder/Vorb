@@ -17,6 +17,7 @@ public:
 
 private:
     void renderModelToTexture();
+    void renderModelToTextureBlendTest();
 
     ModelDef* mCurrentModel = nullptr;
    

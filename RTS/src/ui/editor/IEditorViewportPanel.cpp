@@ -36,9 +36,10 @@ void IEditorViewportPanel::updateAndRenderDrawModeControl() {
         "Unlit",
         "Normals",
         "UVs",
-        "Wireframe",
+        "Blend Test",
+        "Wireframe", // Always last
     };
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 6);
     if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
         for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;
@@ -68,19 +69,29 @@ void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
     positioner->update(1.0f / 60.0f, f32v2(ImGui::GetMousePos().x / ImGui::GetWindowWidth(), ImGui::GetMousePos().y / ImGui::GetWindowHeight()), ImGui::IsMouseDown(ImGuiMouseButton_Right), aspectRatio);
 }
 
-void IEditorViewportPanel::initGBuffer(f32v2 imageDims) {
-    mGBuffer = std::make_unique<vg::GBuffer>();
+void IEditorViewportPanel::initGBuffers(f32v2 imageDims) {
 
-    vg::GBufferAttachment attachment;
+    // TODO: PBR https://www.hiagodesena.com/blog/physically-based-deferred-renderer
+    // TODO: Tile based deferred rendering (not clustered) see compute at page 35-36 https://www.digipen.edu/sites/default/files/public/docs/theses/denis-ishmukhametov-master-of-science-in-computer-science-thesis-efficient-tile-based-deferred-shading-pipeline.pdf
+    vg::GBufferAttachment attachments[2];
     // Color
-    attachment.format = vg::TextureInternalFormat::RGB8;
-    attachment.number = FBO_GEOMETRY_COLOR;
-    attachment.pixelFormat = vg::TextureFormat::RGB;
-    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGB16F;
+    attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
+    attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RGB;
+    attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
 
-    mGBuffer->setSize(imageDims);
-    mGBuffer->init(attachment, nullptr, nullptr);
-    mGBuffer->initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT16);
+    // Normals
+    attachments[FBO_GEOMETRY_NORMAL].format = vg::TextureInternalFormat::RGB8;
+    attachments[FBO_GEOMETRY_NORMAL].number = FBO_GEOMETRY_NORMAL;
+    attachments[FBO_GEOMETRY_NORMAL].pixelFormat = vg::TextureFormat::RGB;
+    attachments[FBO_GEOMETRY_NORMAL].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
+
+    for (int i = 0; i < 2; ++i) {
+        mGBuffers[i] = std::make_unique<vg::GBuffer>();
+        mGBuffers[i]->setSize(imageDims);
+        mGBuffers[i]->init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], nullptr);
+        mGBuffers[i]->initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT16);
+    }
 
     checkGlError("ModelEditorPanel::initGBuffer");
 }

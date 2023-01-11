@@ -47,25 +47,25 @@ bool ModelEditorPanel::updateAndRender() {
     }
 
     // Lazy init so we don't use GPU memory when not in editor
-    if (mGBuffer == nullptr) {
-        initGBuffer(imageDims);
+    if (mGBuffers[0] == nullptr) {
+        initGBuffers(imageDims);
     }
 
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    mGBuffer->useGeometry();
+    mGBuffers[0]->useGeometry();
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     renderGrid();
     renderModelToTexture();
-    mGBuffer->unuse();
+    mGBuffers[0]->unuse();
 
     const ImVec2 uv0(0, 1);
     const ImVec2 uv1(1, 0);
     const ImVec2 dims(imageDims.x, imageDims.y);
-    ImGui::Image((ImTextureID)mGBuffer->getGeometryTexture(), dims, uv0, uv1);
+    ImGui::Image((ImTextureID)mGBuffers[0]->getGeometryTexture(), dims, uv0, uv1);
 
     ImGui::End();
 
@@ -121,36 +121,43 @@ void ModelEditorPanel::renderModelToTexture() {
 
     // Render model
     if (mCurrentModel->mRig == nullptr) {
-        const MaterialShader* staticModelMaterial = nullptr;
 
-        switch (mDrawMode) {
-            case EditorViewportDrawMode::Lit:
-            case EditorViewportDrawMode::Unlit:
-            case EditorViewportDrawMode::Normals:
-            case EditorViewportDrawMode::UVs:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
-                break;
-            case EditorViewportDrawMode::Wireframe:
-                staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
-                break;
-            default:
-                assert(false);
-                break;
+        if (mDrawMode == EditorViewportDrawMode::BlendTest) {
+            renderModelToTextureBlendTest();
         }
-        static_assert(e_cast(EditorViewportDrawMode::COUNT) == 5);
+        else {
 
-        VGUniform unVP = staticModelMaterial->getUniform("unVP");
-        MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
+            const MaterialShader* staticModelMaterial = nullptr;
 
-        glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+            switch (mDrawMode) {
+                case EditorViewportDrawMode::Lit:
+                case EditorViewportDrawMode::Unlit:
+                case EditorViewportDrawMode::Normals:
+                case EditorViewportDrawMode::UVs:
+                    staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
+                    break;
+                case EditorViewportDrawMode::Wireframe:
+                    staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
+                    break;
+                default:
+                    assert(false);
+                    break;
+            }
+            static_assert(e_cast(EditorViewportDrawMode::COUNT) == 6);
 
-        if (mDrawMode != EditorViewportDrawMode::Wireframe) {
-            MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
-            glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+            VGUniform unVP = staticModelMaterial->getUniform("unVP");
+            MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
+
+            glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+
+            if (mDrawMode != EditorViewportDrawMode::Wireframe) {
+                MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
+                glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+            }
+
+            Model3D& mModel = mCurrentModel->mModel;
+            mModel.getMesh()->draw(MeshLODLevel(mLod));
         }
-
-        Model3D& mModel = mCurrentModel->mModel;
-        mModel.getMesh()->draw(MeshLODLevel(mLod));
     }
     else {
         // Skinned mesh render
@@ -158,4 +165,24 @@ void ModelEditorPanel::renderModelToTexture() {
         return;
     }
 
+}
+
+void ModelEditorPanel::renderModelToTextureBlendTest()
+{
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+
+    const MaterialShader* staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model");
+
+    VGUniform unVP = staticModelMaterial->getUniform("unVP");
+    MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
+
+    glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+
+    if (mDrawMode != EditorViewportDrawMode::Wireframe) {
+        MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
+        glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+    }
+
+    Model3D& mModel = mCurrentModel->mModel;
+    mModel.getMesh()->draw(MeshLODLevel(mLod));
 }

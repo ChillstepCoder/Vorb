@@ -1,4 +1,5 @@
 #include "../GlobalUbo.glsl"
+#include "AlphaTest.glsl"
 
 uniform sampler2D GreyNoise;
 uniform sampler2D GrassTexture;
@@ -35,9 +36,7 @@ void main() {
 	oColor.a = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), oColor.a);
 	oColor.a = clamp(oColor.a, 0.0, 1.0);
 	
-	if (oColor.a < 0.01) {
-        discard;
-    }
+    runAlphaTest(oColor.a, 0.01);
     oColor.a = 1.0;
     
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);
