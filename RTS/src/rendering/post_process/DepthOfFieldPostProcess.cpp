@@ -11,28 +11,22 @@
 
 #include "options/DebugOptions.h"
 
-DepthOfFieldPostProcess::DepthOfFieldPostProcess(const f32v2& gbufferDims) :
-    mGbufferDims(gbufferDims)
-{
-    vg::GBufferAttachment attachment;
-    // Color
+#include <Vorb/graphics/GBuffer.h>
+
+DepthOfFieldPostProcess::DepthOfFieldPostProcess(const ui32v2& gbufferDims) {
     // TODO: SWAP CHAIN
-    attachment.format = vg::TextureInternalFormat::RGB8;
-    attachment.number = FBO_GEOMETRY_COLOR;
-    attachment.pixelFormat = vg::TextureFormat::RGB;
-    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    mGBuffers[0].setSize(ui32v2(mGbufferDims));
-    mGBuffers[0].init(attachment, nullptr, nullptr);
-    mGBuffers[1].setSize(ui32v2(mGbufferDims));
-    mGBuffers[1].init(attachment, nullptr, nullptr);
+    for (int i = 0; i < 2; ++i) {
+        mGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
+    }
 
     mMaterial = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("depth_of_field");
 
     checkGlError("init DepthOfFieldPostProcess");
 }
 
-vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
-{
+vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
+
     if (sDebugOptions.mDepthOfFieldBlurPasses == 0) {
         return prevGBuffer;
     }
@@ -54,37 +48,37 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer)
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
     // Clearing in this order to suppress REDUNDANT_FBO_BIND warning
-    mGBuffers[1].useGeometry();
+    mGBuffers[1]->use();
     glClear(GL_COLOR_BUFFER_BIT);
-    mGBuffers[0].useGeometry();
+    mGBuffers[0]->use();
     glClear(GL_COLOR_BUFFER_BIT);
 
     const VGUniform& fboUniform = mMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mMaterial->mProgram.getUniform("unDirection");
-    prevGBuffer->bindGeometryTexture(nextTexture);
+    prevGBuffer->bindAlbedoTexture(nextTexture);
     for (int i = 0; i < sDebugOptions.mDepthOfFieldBlurPasses; ++i) {
 
         // Horizontal
-        mGBuffers[1].useGeometry();
+        mGBuffers[1]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mDepthOfFieldBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
-        mGBuffers[1].bindGeometryTexture(nextTexture);
-        mGBuffers[0].useGeometry();
+        mGBuffers[1]->bindAlbedoTexture(nextTexture);
+        mGBuffers[0]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mDepthOfFieldBlurRadius);
         sGlobalFullQuadVBO.draw();
 
-        mGBuffers[0].bindGeometryTexture(nextTexture);
+        mGBuffers[0]->bindAlbedoTexture(nextTexture);
     }
 
     // Share textures with previous gbuffer since this will become new active gbuffer
-    mGBuffers[0].setDepthTexture(prevGBuffer->getDepthTexture());
-    mGBuffers[0].setNormalTexture(prevGBuffer->getNormalTexture());
-    mGBuffers[0].setRoughnessTexture(prevGBuffer->getRoughnessTexture());
+    mGBuffers[0]->setDepthTexture(prevGBuffer->getDepthTexture());
+    mGBuffers[0]->setNormalTexture(prevGBuffer->getNormalTexture());
+    mGBuffers[0]->setTertiaryTexture(prevGBuffer->getTertiaryTexture());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, prevGBuffer->getDepthTexture(), 0);
 
-    return &mGBuffers[0];
+    return mGBuffers[0].get();
 }

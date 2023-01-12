@@ -28,7 +28,7 @@ public:
 protected:
     void updateAndRenderDrawModeControl();
     void updateCamera(f32 aspectRatio);
-    void initGBuffers(f32v2 imageDims);
+    void initGBuffers(ui32v2 imageDims);
     void renderGrid();
 
     // Shared with all?

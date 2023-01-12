@@ -15,23 +15,20 @@
 
 #include "options/DebugOptions.h"
 
-CloudRenderer::CloudRenderer(const f32v2& gbufferDims) : mGbufferDims(gbufferDims)
-{
+
+#include <Vorb/graphics/GBuffer.h>
+
+CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
+
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mCloudMaterial = materialManager.getMaterialShader("cloud");
     mPostMaterial = materialManager.getMaterialShader("cloud_post");
     mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_rgb");
     mCloudShadowMaterial = materialManager.getMaterialShader("cloud_shadow_mapper");
 
-    vg::GBufferAttachment mainAttachment;
-    // Color
-    mainAttachment.format = vg::TextureInternalFormat::RGBA8;
-    mainAttachment.number = FBO_GEOMETRY_COLOR;
-    mainAttachment.pixelFormat = vg::TextureFormat::RGBA;
-    mainAttachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
     for (int i = 0; i < 2; ++i) {
-        mGBuffers[i].setSize(ui32v2(mGbufferDims));
-        mGBuffers[i].init(mainAttachment, nullptr, nullptr);
+        mGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
     }
     checkGlError("CloudRenderer GBuffer init");
 }
@@ -43,9 +40,9 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     vg::DepthState::FULL.set();
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    mGBuffers[1].useGeometry();
+    mGBuffers[1]->use();
     glClear(GL_COLOR_BUFFER_BIT);
-    mGBuffers[0].useGeometry();
+    mGBuffers[0]->use();;
     glClear(GL_COLOR_BUFFER_BIT);
     // Depth share
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, activeGbuffer->getDepthTexture(), 0);
@@ -66,7 +63,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
     blurNormals();
 
     if (activeGbuffer) {
-        activeGbuffer->useGeometry();
+        activeGbuffer->use();
     }
     else {
         vg::GBuffer::unuse();
@@ -104,15 +101,15 @@ void CloudRenderer::blurNormals() {
     for (int i = 0; i < sDebugOptions.mCloudBlurPasses; ++i) {
 
         // Horizontal
-        mGBuffers[0].bindGeometryTexture(nextTexture);
-        mGBuffers[1].useGeometry();
+        mGBuffers[0]->bindAlbedoTexture(nextTexture);
+        mGBuffers[1]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mCloudBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
-        mGBuffers[1].bindGeometryTexture(nextTexture);
-        mGBuffers[0].useGeometry();
+        mGBuffers[1]->bindAlbedoTexture(nextTexture);
+        mGBuffers[0]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mCloudBlurRadius);
         sGlobalFullQuadVBO.draw();
@@ -126,7 +123,7 @@ void CloudRenderer::renderFboToScreen()
     MaterialRenderer::bindMaterialForRender(*mPostMaterial, &nextTexture);
     MaterialUtils::uploadLightingUniforms(*mPostMaterial);
     if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
-        mGBuffers[0].bindGeometryTexture(nextTexture);
+        mGBuffers[0]->bindAlbedoTexture(nextTexture);
         glUniform1i(*inputUniform, nextTexture++);
     }
 

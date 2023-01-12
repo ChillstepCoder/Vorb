@@ -13,23 +13,18 @@
 
 #include <random>
 
+#include <Vorb/graphics/GBuffer.h>
+
 // Match shader
 const int KERNEL_SIZE = 32;
 
-AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const f32v2& gbufferDims) :
-    mGbufferDims(gbufferDims)
-{
-    vg::GBufferAttachment attachment;
+AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const ui32v2& gbufferDims) {
     // Color
     // TODO: SWAP CHAIN
-    attachment.format = vg::TextureInternalFormat::R8;
-    attachment.number = FBO_GEOMETRY_COLOR;
-    attachment.pixelFormat = vg::TextureFormat::RED;
-    attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    mGBuffers[0].setSize(ui32v2(mGbufferDims));
-    mGBuffers[0].init(attachment, nullptr, nullptr);
-    mGBuffers[1].setSize(ui32v2(mGbufferDims));
-    mGBuffers[1].init(attachment, nullptr, nullptr);
+    for (int i = 0; i < 2; ++i) {
+        mGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::R8);
+    }
 
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mMaterial = materialManager.getMaterialShader("ssao");
@@ -81,14 +76,14 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const f32v2& gbufferDim
 void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 {
     if (sDebugOptions.mSSAODisabled) {
-        mGBuffers[0].useGeometry();
+        mGBuffers[0]->use();
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        activeGBuffer->useGeometry();
+        activeGBuffer->use();
         return;
     }
 
-    mGBuffers[0].useGeometry();
+    mGBuffers[0]->use();
 
     ui32 nextTexture;
     MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTexture);
@@ -117,38 +112,38 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     sGlobalFullQuadVBO.draw();
 
     /*glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    mGBuffers[0].useGeometry();
+    mGBuffers[0].use();
     glClear(GL_COLOR_BUFFER_BIT);
-    mGBuffers[1].useGeometry();
+    mGBuffers[1].use();
     glClear(GL_COLOR_BUFFER_BIT);*/
 
     // Blur it
     MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
-    mGBuffers[0].bindGeometryTexture(nextTexture);
+    mGBuffers[0]->bindAlbedoTexture(nextTexture);
     for (int i = 0; i < sDebugOptions.mSSAOBlurPasses; ++i) {
 
         // Horizontal
-        mGBuffers[1].useGeometry();
+        mGBuffers[1]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mSSAOBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
-        mGBuffers[1].bindGeometryTexture(nextTexture);
-        mGBuffers[0].useGeometry();
+        mGBuffers[1]->bindAlbedoTexture(nextTexture);
+        mGBuffers[0]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mSSAOBlurRadius);
         sGlobalFullQuadVBO.draw();
 
-        mGBuffers[0].bindGeometryTexture(nextTexture);
+        mGBuffers[0]->bindAlbedoTexture(nextTexture);
     }
 
     vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
 
     // Apply to gbuffer
-    activeGBuffer->useGeometry();
+    activeGBuffer->use();
     MaterialRenderer::bindMaterialForRender(*mApplyMaterial, &nextTexture);
     sGlobalFullQuadVBO.draw();
 
@@ -159,5 +154,5 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 }
 
 VGTexture AmbientOcclusionPostProcess::getSSAOTexture() const {
-    return mGBuffers[0].getGeometryTexture();
+    return mGBuffers[0]->getAlbedoTexture();
 }

@@ -10,6 +10,7 @@
 #include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/BlendState.h>
+#include <Vorb/graphics/GBuffer.h>
 
 #include "options/DebugOptions.h"
 
@@ -129,59 +130,40 @@ constexpr int MAX_MIP_LEVELS = 9; // TODO: Make this dynamic?
 // TODO: https://developer.nvidia.com/gpugems/gpugems3/part-ii-light-and-shadows/chapter-8-summed-area-variance-shadow-maps
 // https://docs.microsoft.com/en-us/windows/win32/dxtecharts/common-techniques-to-improve-shadow-depth-maps
 
-ShadowRenderer::ShadowRenderer(const f32v2& gbufferDims) :
-    mGBufferDims(gbufferDims)
-{
+ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
 
-    {// Shadow map gbuffers
-        vg::GBufferAttachment attachment;
-        // Color
-        attachment.format = vg::TextureInternalFormat::RG32F;
-        attachment.number = FBO_GEOMETRY_COLOR;
-        attachment.pixelFormat = vg::TextureFormat::RG;
-        attachment.pixelType = vg::TexturePixelType::FLOAT;
+    {// Shadow map gbuffer
 
-        mShadowMapGBuffer.setSize(ui32v2(DEPTH_MAP_RESOLUTION));
-        mShadowMapGBuffer.init(attachment, nullptr, nullptr, MAX_SHADOW_CASCADE_LEVELS + 1);
-        mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
+        mShadowMapGBuffer = std::make_unique<vg::GBuffer>(ui32v2(DEPTH_MAP_RESOLUTION), MAX_SHADOW_CASCADE_LEVELS + 1);
+        // TODO: Not mipmap???
+        mShadowMapGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RG32F, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP);
+
+        // Set up additional params
+        VGTexture shadowMapTexture = mShadowMapGBuffer->getAlbedoTexture();
         constexpr float bordercolor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-        glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, bordercolor);
-        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D_ARRAY);
+        glTextureParameterfv(shadowMapTexture, GL_TEXTURE_BORDER_COLOR, bordercolor);
         GLint maxAnisotropy = 0;
         glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
-        glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
+        glTextureParameteri(shadowMapTexture, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 
-        mShadowMapGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32, MAX_SHADOW_CASCADE_LEVELS + 1);
+        // TODO: Experiment with lower depth resolution
+        mShadowMapGBuffer->initDepth(vg::GBufferDepthFormat::DEPTH_32, MAX_SHADOW_CASCADE_LEVELS + 1);
         checkGlError("Shadow FBO init");
     }
 
     // TODO: Can we compress depth size (alpha channel)
     {// Shadow mip gbuffer
-        vg::GBufferAttachment attachment;
-        // Color
-        attachment.format = vg::TextureInternalFormat::RGB16F;
-        attachment.number = FBO_GEOMETRY_COLOR;
-        attachment.pixelFormat = vg::TextureFormat::RGB;
-        attachment.pixelType = vg::TexturePixelType::FLOAT;
-        mShadowMipGBuffer.setSize(ui32v2(mGBufferDims));
-        mShadowMipGBuffer.init(attachment, nullptr, nullptr);
-        mShadowMipGBuffer.initMipLevelsGeom(attachment, MAX_MIP_LEVELS);
+        mShadowMipGBuffer = std::make_unique<vg::GBuffer>(gbufferDims);
+        // TODO: Better sampler state?
+        mShadowMipGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F, vg::sSamplerStates.POINT_CLAMP, MAX_MIP_LEVELS);
 
         checkGlError("Shadow mips init");
     }
 
     {// Shadow blur gbuffer
-        vg::GBufferAttachment attachment;
-        // Color
-        attachment.format = vg::TextureInternalFormat::R8;
-        attachment.number = FBO_GEOMETRY_COLOR;
-        attachment.pixelFormat = vg::TextureFormat::RED;
-        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
         for (int i = 0; i < 2; ++i) {
-            mShadowBlurGBuffers[i].setSize(ui32v2(mGBufferDims));
-            mShadowBlurGBuffers[i].init(attachment, nullptr, nullptr);
-            mShadowBlurGBuffers[i].bindGeometryTexture(0);
-            vg::sSamplerStates.LINEAR_CLAMP.setForTarget(GL_TEXTURE_2D);
+            mShadowBlurGBuffers[i] = std::make_unique<vg::GBuffer>(gbufferDims);
+            mShadowBlurGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::R8, vg::sSamplerStates.LINEAR_CLAMP);
         }
 
         checkGlError("Shadow FBO 2 init");
@@ -359,31 +341,31 @@ void ShadowRenderer::beginFrame(const Camera3D& camera, const f32v3& sunPosition
 }
 
 void ShadowRenderer::useShadowBuffer() {
-    assert(mShadowMapGBuffer.getFboGeometry());
-    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMapGBuffer.getFboGeometry());
+    assert(mShadowMapGBuffer->getFbo());
+    glBindFramebuffer(GL_FRAMEBUFFER, mShadowMapGBuffer->getFbo());
     glViewport(0, 0, DEPTH_MAP_RESOLUTION, DEPTH_MAP_RESOLUTION);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 void ShadowRenderer::clearShadowTexture(vg::GBuffer* activeGBuffer) {
-    mShadowBlurGBuffers[0].useGeometry();
+    mShadowBlurGBuffers[0]->use();
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    activeGBuffer->useGeometry();
+    activeGBuffer->use();
 }
 
 vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos) {
 
     // Mip it
-    mShadowMapGBuffer.bindGeometryTexture(0, GL_TEXTURE_2D_ARRAY);
+    mShadowMapGBuffer->bindAlbedoTexture(0);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
     assert(activeGBuffer);
 
     f32v3 offset = cameraPos - mLastUpdatedCameraPos;
 
-    mShadowMipGBuffer.useGeometry();
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer.getGeometryTexture(), 0);
+    mShadowMipGBuffer->use();
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer->getAlbedoTexture(), 0);
     MaterialRenderer::bindMaterialForRender(*mShadowVarianceMaterial);
 
     glUniform3fv(glGetUniformLocation(mShadowVarianceMaterial->mProgram.getID(), "CameraOffset"), 1, &offset[0]);
@@ -398,16 +380,17 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
     vg::BlendState::restorePrevious();
 
     { // Apply shadows
-        mShadowBlurGBuffers[0].useGeometry();
+        mShadowBlurGBuffers[0]->use();
         ui32 nextTextureIndex = 0;
         MaterialRenderer::bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
-        mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex, GL_TEXTURE_2D);
-        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D);
+        mShadowMipGBuffer->bindAlbedoTexture(nextTextureIndex);
+        // TODO: Move this into init
+        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTexture(mShadowMipGBuffer->getAlbedoTexture());
         glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
 
         VGUniform mipCountUniform = glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unMipCount");
-        ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();
+        ui32 mipCount = mShadowMipGBuffer->getNumMipLevels(vg::GBufferAttachmentIndex::ALBEDO);
         glUniform1i(mipCountUniform, mipCount);
 
         sGlobalFullQuadVBO.draw();
@@ -418,12 +401,16 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
     return activeGBuffer;
 }
 
+const VGTexture ShadowRenderer::getShadowMap() const {
+    return mShadowMapGBuffer->getAlbedoTexture();
+}
+
 const f32 ShadowRenderer::getMaxDistance(ShadowLodDetail detail) const {
     return Shadows::getMaxDistance(mPlaneDistances, detail);
 }
 
 VGTexture ShadowRenderer::getShadowTexture() const {
-    return mShadowBlurGBuffers[0].getGeometryTexture();
+    return mShadowBlurGBuffers[0]->getAlbedoTexture();
 }
 
 void ShadowRenderer::updateFrustumCorners(const f32m4& projection, const f32m4& view) {
@@ -453,17 +440,18 @@ void ShadowRenderer::generateMipmaps() {
     MaterialRenderer::bindMaterialForRender(*mShadowMipMaterial, &nextTextureIndex);
     VGUniform inputUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unInputTexture");
     VGUniform levelUniform = glGetUniformLocation(mShadowMipMaterial->mProgram.getID(), "unPreviousLevel");
-    mShadowMipGBuffer.bindGeometryTexture(nextTextureIndex);
-    vg::sSamplerStates.LINEAR_CLAMP.setForTarget(GL_TEXTURE_2D);
+    VGTexture shadowMipTexture = mShadowMipGBuffer->getAlbedoTexture();
+    vg::sSamplerStates.LINEAR_CLAMP.setForTexture(shadowMipTexture);
+    glBindTextureUnit(nextTextureIndex, shadowMipTexture);
     glUniform1i(inputUniform, nextTextureIndex);
 
-    ui32 mipCount = mShadowMipGBuffer.getNumMipLevels();
-    ui32 width = mShadowMipGBuffer.getSize().x / 2;
-    ui32 height = mShadowMipGBuffer.getSize().y / 2;
-    for (int i = 0; i < mipCount; ++i) {
+    ui32 mipCount = mShadowMipGBuffer->getNumMipLevels(vg::GBufferAttachmentIndex::ALBEDO);
+    ui32 width = mShadowMipGBuffer->getSize().x / 2;
+    ui32 height = mShadowMipGBuffer->getSize().y / 2;
+    for (int i = 0; i < mipCount - 1; ++i) {
         glUniform1i(levelUniform, i);
         glTextureBarrier();
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer.getGeometryTexture(), i + 1); // Write to next level
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer->getAlbedoTexture(), i + 1); // Write to next level
         GLenum buf = GL_COLOR_ATTACHMENT0;
         glDrawBuffers((GLsizei)1, &buf);
         glTextureBarrier();
@@ -489,15 +477,15 @@ void ShadowRenderer::blurShadowMap()
     for (int i = 0; i < sDebugOptions.mShadowBlurPasses; ++i) {
 
         // Horizontal
-        mShadowBlurGBuffers[0].bindGeometryTexture(nextTexture, GL_TEXTURE_2D);
-        mShadowBlurGBuffers[1].useGeometry();
+        mShadowBlurGBuffers[0]->bindAlbedoTexture(nextTexture);
+        mShadowBlurGBuffers[1]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mShadowBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
-        mShadowBlurGBuffers[1].bindGeometryTexture(nextTexture, GL_TEXTURE_2D);
-        mShadowBlurGBuffers[0].useGeometry();
+        mShadowBlurGBuffers[1]->bindAlbedoTexture(nextTexture);
+        mShadowBlurGBuffers[0]->use();
         glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mShadowBlurRadius);
         sGlobalFullQuadVBO.draw();

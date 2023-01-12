@@ -25,22 +25,20 @@
 #include "GLEnums.h"
 #include "gtypes.h"
 
+#include "Vorb/graphics/SamplerState.h"
+
 /************************************************************************/
-/* GBuffer breakdown                                                    */
+/* Typical GBuffer breakdown                                            */
 /* -----------------------------------------------------------------    */
-/* | Diffuse R     | Diffuse G     | Diffuse B     | Light Model   |    */
+/* | Albedo R      | Albedo G      | Albedo B      | Metallic      |    */
 /* -----------------------------------------------------------------    */
-/* | Normal X      | Normal Y      | Normal Z      | Specular Pow  |    */
+/* | Normal X      | Normal Y      | Normal Z      | Roughness     |    */
+/* -----------------------------------------------------------------    */
+/* | Tertiary                      |                               |    */
 /* -----------------------------------------------------------------    */
 /* | Depth                         |                               |    */
 /* -----------------------------------------------------------------    */
-/* | Light R       | Light G       | Light B       |  X X X X X X  |    */
-/* -----------------------------------------------------------------    */
 /************************************************************************/
-#define GBUFFER_INTERNAL_FORMAT_COLOR vg::TextureInternalFormat::RGBA16F
-#define GBUFFER_INTERNAL_FORMAT_NORMAL vg::TextureInternalFormat::RGBA16F
-#define GBUFFER_INTERNAL_FORMAT_DEPTH vg::TextureInternalFormat::RG32F
-
 
 enum FboGeometryLayers {
     FBO_GEOMETRY_COLOR = 0,
@@ -54,99 +52,82 @@ namespace vorb {
     namespace graphics {
          /*! @brief Information that specifies size and location of a texture in the GBuffer
           */
-        struct GBufferAttachment {
-        public:
-            vg::TextureInternalFormat format; ///< Internal format for the attachment (all must be the same size).
-            vg::TextureFormat pixelFormat;
-            vg::TexturePixelType pixelType;
-            ui32 number; ///< Attachment index for the texture [0, MaxAttachments).
+
+        enum class GBufferAttachmentIndex {
+            ALBEDO  = 0,
+            NORMALS  = 1,
+            TERTIARY = 2,
+            COUNT
+        };
+
+        enum class GBufferDepthFormat {
+            DEPTH_16 = GL_DEPTH_COMPONENT16,
+            DEPTH_24 = GL_DEPTH_COMPONENT24,
+            DEPTH_32 = GL_DEPTH_COMPONENT32,
+        };
+
+        struct GBufferAttachmentTexture {
+            VGTexture mTexture;
+            int mMipLevels;
         };
 
         /// Geometry and light render target for deferred rendering
         class GBuffer {
         public:
+            VORB_NON_COPYABLE(GBuffer);
             /// Set up a GBuffer with a certain size
             /// @param w: Width in pixels of each target
             /// @param h: Height in pixels of each target
-            GBuffer(ui32 w = 0, ui32 h = 0);
+            GBuffer(ui32 w, ui32 h, int layerCount = 1);
             /// Set up a GBuffer with a certain size
             /// @param s: Size in pixels of each target
-            GBuffer(ui32v2 s) : GBuffer(s.x, s.y) {
-                // Empty
-            }
+            GBuffer(ui32v2 s, int layerCount = 1) : GBuffer(s.x, s.y, layerCount) {}
+            GBuffer(GBuffer&& o) noexcept;
             ~GBuffer();
 
-            /// Create the value-based render targets
-            /// @return Self
-            GBuffer& init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, int layerCount = 1);
-            /// Attach a depth buffer to this GBuffer
-            /// @param depthFormat: Precision used for depth buffer
-            /// @return Self
-            GBuffer& initDepth(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH_COMPONENT32, int layerCount = 1);
-            /// Attack a depth and stencil buffer to this GBuffer
-            /// @param depthFormat: Precision used for depth and stencil buffer
-            /// @return Self
-            GBuffer& initDepthStencil(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH24_STENCIL8);
 
-            void initMipLevelsGeom(const vg::GBufferAttachment& geomAttachment, int maxDepth = 0xff);
-
-            void initTarget(const ui32v2& _size, const ui32& texID, const GBufferAttachment& attachment, int layerCount = 1);
             /// Destroy all render targets
             void dispose();
 
-            /// Set up the geometry targets to be active
-            void useGeometry() const;
+            GBuffer& initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
+            GBuffer& initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
+            //GBuffer& initDepthStencil(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH24_STENCIL8);
 
+            void use() const;
             static void unuse();
 
-            /// Bind Geometry Texture
-            /// @param i: Which Geometry texture to bind
-            /// @param textureUnit Position to bind texture
-            void bindGeometryTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
+            void bindAlbedoTexture(ui32 textureUnit);
+            void bindNormalTexture(ui32 textureUnit);
+            void bindDepthTexture(ui32 textureUnit);
 
-            void bindNormalTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
+            VGTexture getAlbedoTexture() const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mTexture;  }
+            VGTexture getNormalTexture() const { return mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture; }
+            VGTexture getTertiaryTexture() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture;  }
 
-            /// Bind Depth Texture
-            /// @param textureUnit Position to bind texture
-            void bindDepthTexture(ui32 textureUnit, GLenum target = GL_TEXTURE_2D);
+            const ui32v2& getSize() const { return mSize; }
+            const ui32& getWidth() const { return mSize.x; }
+            const ui32& getHeight() const { return mSize.y; }
+            const ui32& getNumMipLevels(GBufferAttachmentIndex index) const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mMipLevels; }
 
-            /// @return Light texture
-            const VGTexture& getGeometryTexture() const {  return m_texGeom;  }
-            const VGTexture& getNormalTexture() const { return m_texNormal; }
-            const VGTexture& getRoughnessTexture() const { return m_texRoughness;  }
+            const VGFramebuffer& getFbo() const { return mFbo; }
+            const VGTexture& getDepthTexture() const { return mTexDepth.mTexture; }
 
-            void setSize(ui32 width, ui32 height) {
-                m_size.x = width;
-                m_size.y = height;
-            }
-            void setSize(const ui32v2& size) { m_size = size; }
+            void setDepthTexture(VGTexture tex) { mTexDepth.mTexture = tex; }
+            void setNormalTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture = tex; }
+            void setTertiaryTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture = tex; }
 
-            /// @return Size of the GBuffer in pixels (W,H)
-            const ui32v2& getSize() const { return m_size; }
-            /// @return Width of the GBuffer in pixels
-            const ui32& getWidth() const { return m_size.x; }
-            /// @return Height of the GBuffer in pixels
-            const ui32& getHeight() const { return m_size.y; }
-            const ui32& getNumMipLevels() const { return mMipLevels; }
-
-            const VGFramebuffer& getFboGeometry() const { return m_fboGeom; }
-            const VGTexture& getDepthTexture() const { return m_texDepth; }
-
-            void setDepthTexture(VGTexture tex) { m_texDepth = tex; }
-            void setNormalTexture(VGTexture tex) { m_texNormal = tex; }
-            void setRoughnessTexture(VGTexture tex) { m_texRoughness = tex; }
-
-            bool checkError();
         private:
-            ui32v2 m_size; ///< The width and height of the GBuffer
+            void initTexture(GBufferAttachmentTexture& texture, VGEnum format, const vg::SamplerState& samplerState, int mipLevels);
+            bool checkError();
 
-            VGFramebuffer m_fboGeom = 0; ///< The rendering target for geometry
-            VGTexture m_texGeom = 0; ///< Normal texture of GBuffer
-            VGTexture m_texNormal = 0; ///< Normal texture of GBuffer
-            VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
-            VGTexture m_texRoughness = 0; ///< Roughness texture of GBuffer
+            ui32v2 mSize; ///< The width and height of the GBuffer
+
+            VGFramebuffer mFbo = 0; ///< The rendering target for geometry
+            GBufferAttachmentTexture mAttachments[(int)GBufferAttachmentIndex::COUNT] = {};
+            VGEnum mDrawBuffers[(int)GBufferAttachmentIndex::COUNT] = { GL_NONE, GL_NONE, GL_NONE };
+            static_assert((int)GBufferAttachmentIndex::COUNT == 3, "Update brace init");
+            GBufferAttachmentTexture mTexDepth = {}; ///< Depth texture of GBuffer
             int mLayerCount = 1;
-            ui32 mMipLevels = 0;
         };
     }
 }

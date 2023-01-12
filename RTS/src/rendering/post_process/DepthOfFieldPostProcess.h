@@ -3,11 +3,11 @@
 class ResourceManager;
 class MaterialShader;
 
-#include <Vorb/graphics/GBuffer.h>
+DECL_VG(class GBuffer);
 
 class DepthOfFieldPostProcess {
 public:
-    DepthOfFieldPostProcess(const f32v2& gbufferDims);
+    DepthOfFieldPostProcess(const ui32v2& gbufferDims);
 
     // Returns target gbuffer
     vg::GBuffer* render(vg::GBuffer* prevGBuffer);
@@ -15,8 +15,7 @@ public:
 private:
 
     // TODO: Maybe shared g buffer? :thinkies:
-    vg::GBuffer mGBuffers[2];
-    f32v2 mGbufferDims;
+    std::unique_ptr<vg::GBuffer> mGBuffers[2];
 
     const MaterialShader* mMaterial = nullptr;
 };

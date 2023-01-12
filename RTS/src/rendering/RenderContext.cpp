@@ -198,36 +198,15 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     sGlobalFullQuadVBO.init();
 
     // GBuffer
-    vg::GBufferAttachment attachments[3];
-    // Color
-    attachments[FBO_GEOMETRY_COLOR].format = vg::TextureInternalFormat::RGB16F;
-    attachments[FBO_GEOMETRY_COLOR].number = FBO_GEOMETRY_COLOR;
-    attachments[FBO_GEOMETRY_COLOR].pixelFormat = vg::TextureFormat::RGB;
-    attachments[FBO_GEOMETRY_COLOR].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    // Normals
-    attachments[FBO_GEOMETRY_NORMAL].format = vg::TextureInternalFormat::RGB8;
-    attachments[FBO_GEOMETRY_NORMAL].number = FBO_GEOMETRY_NORMAL;
-    attachments[FBO_GEOMETRY_NORMAL].pixelFormat = vg::TextureFormat::RGB;
-    attachments[FBO_GEOMETRY_NORMAL].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    // Normals
-    attachments[FBO_GEOMETRY_ROUGHNESS].format = vg::TextureInternalFormat::R8;
-    attachments[FBO_GEOMETRY_ROUGHNESS].number = FBO_GEOMETRY_ROUGHNESS;
-    attachments[FBO_GEOMETRY_ROUGHNESS].pixelFormat = vg::TextureFormat::RED;
-    attachments[FBO_GEOMETRY_ROUGHNESS].pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-    // TODO: Third doesnt need a unique depth texture
     for (int i = 0; i < 2; ++i) {
-        mGBuffers[i].setSize(ui32v2(mScreenResolution));
-        mGBuffers[i].init(attachments[FBO_GEOMETRY_COLOR], &attachments[FBO_GEOMETRY_NORMAL], &attachments[FBO_GEOMETRY_ROUGHNESS]);
-        if (i != 2) {
-            // TODO: DEPTH_COMPONENT32F instead of DEPTH_COMPONENT32 and then
-            // https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/
-            // reverse https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
-            //glClipControl();
-            mGBuffers[i].initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT32);
-        }
+        mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::R8);
+        mGBuffers[i]->initDepth(vg::GBufferDepthFormat::DEPTH_32);
     }
-    mTransparencyGBuffer.setSize(ui32v2(mScreenResolution));
-    mTransparencyGBuffer.init(attachments[FBO_GEOMETRY_COLOR], nullptr, nullptr);
+    mTransparencyGBuffer = std::make_unique<vg::GBuffer>(mScreenResolution);
+    mTransparencyGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
     checkGlError("GBuffer init");
 
@@ -406,11 +385,11 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Update clouds
     mCloudManager->tick(renderState.getWorldLoadCenter());
     
-    mActiveGBuffer = &mGBuffers[mActiveGBufferIndex];
+    mActiveGBuffer = mGBuffers[mActiveGBufferIndex].get();
 
     // Cutout pass (wtf is this?)
     /*if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-        mZCutoutGBuffer.useGeometry();
+        mZCutoutGBuffer.use();
         vg::BlendState::set(vg::BlendStateType::REPLACE);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -418,7 +397,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }*/
 
     // Main geometry pass
-    mActiveGBuffer->useGeometry();
+    mActiveGBuffer->use();
     mCurrentFramebufferDims = mActiveGBuffer->getSize();
 
     // Clear screen
@@ -556,7 +535,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         vg::DepthState::NONE.set();
         mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer, camera.getPosition());
 
-        mActiveGBuffer->useGeometry();
+        mActiveGBuffer->use();
     }
     else {
         // No shadow bleed from previous frames
@@ -577,19 +556,19 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     //// Shadows
-    //mShadowGBuffer.useGeometry();
+    //mShadowGBuffer.use();
     //if (lodState == ChunkRenderLOD::FULL_DETAIL) {
     //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //    // TODO: Replace With BlendState
     //    glBlendFunc(GL_ONE, GL_ZERO);
     //    mChunkRenderer->renderWorldShadows(mWorld, camera2d);
     //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //    activeGbuffer.useGeometry();
+    //    activeGbuffer.use();
     //}
     //else {
     //    // TODO: Can we not do this every frame?
     //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //    activeGbuffer.useGeometry();
+    //    activeGbuffer.use();
     //}
 
 
@@ -636,11 +615,11 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     vg::DepthState::NONE.set();
 
     // Final render for pre-transparency
-    mTransparencyGBuffer.useGeometry();
+    mTransparencyGBuffer->use();
     // Share values
-    mTransparencyGBuffer.setRoughnessTexture(mActiveGBuffer->getRoughnessTexture());
-    mTransparencyGBuffer.setNormalTexture(mActiveGBuffer->getNormalTexture());
-    mTransparencyGBuffer.setDepthTexture(mActiveGBuffer->getDepthTexture());
+    mTransparencyGBuffer->setTertiaryTexture(mActiveGBuffer->getTertiaryTexture());
+    mTransparencyGBuffer->setNormalTexture(mActiveGBuffer->getNormalTexture());
+    mTransparencyGBuffer->setDepthTexture(mActiveGBuffer->getDepthTexture());
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mActiveGBuffer->getDepthTexture(), 0);
 
     // Final Lighting
@@ -650,7 +629,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Render clouds without shadows
     if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(*mCloudManager, &mTransparencyGBuffer, camera);
+        mCloudRenderer->renderClouds(*mCloudManager, mTransparencyGBuffer.get(), camera);
     }
 
     // === Transparency ===
@@ -660,7 +639,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Update active
-    mActiveGBuffer = &mTransparencyGBuffer;
+    mActiveGBuffer = mTransparencyGBuffer.get();
 
     // Depth of field
     vg::DepthState::NONE.set();

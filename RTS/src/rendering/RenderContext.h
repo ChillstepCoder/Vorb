@@ -38,11 +38,11 @@ class InstancedStaticModelRenderer;
 
 struct SDL_Window;
 
-#include <Vorb/graphics/GBuffer.h>
 #include "rendering/GlobalUboData.h"
 
 DECL_VG(class SpriteBatch);
 DECL_VG(class SpriteFont);
+DECL_VG(class GBuffer);
 
 struct GlobalRenderData {
     GlobalUboData globalUboData;
@@ -98,13 +98,13 @@ public:
     const GlobalRenderData& getRenderData() const { return mRenderData; }
     TileContainerRenderer& getChunkRenderer() const { return *mTileContainerRenderer; }
     const vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }
-    const vg::GBuffer& getPrevFinalGBuffer() const { return mGBuffers[mPrevGBufferIndex]; }
-    const f32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
+    const vg::GBuffer& getPrevFinalGBuffer() const { return *mGBuffers[mPrevGBufferIndex]; }
+    const ui32v2& getCurrentFramebufferDims() const { return mCurrentFramebufferDims; }
     VGTexture getShadowTexture() const;
     VGTexture getSSAOTexture() const;
     vg::SpriteFont& getSpriteFont() const { return *mSpriteFont; }
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
-    const f32v2& getScreenResolution() const { return mScreenResolution;}
+    const ui32v2& getScreenResolution() const { return mScreenResolution;}
     const Camera3D* getCamera() const { return mCamera; }
     InstancedStaticModelRenderer& getInstancedStaticModelRenderer() { return *mStaticModelRenderer; }
 
@@ -142,8 +142,8 @@ private:
 
     // Data
     GlobalRenderData mRenderData;
-    f32v2 mScreenResolution;
-    f32v2 mCurrentFramebufferDims;
+    ui32v2 mScreenResolution;
+    ui32v2 mCurrentFramebufferDims;
     const Camera3D* mCamera = nullptr;
 
     // Renderers
@@ -183,8 +183,8 @@ private:
     int mPrevGBufferIndex = 1;
     int mActiveGBufferIndex = 0;
     vg::GBuffer* mActiveGBuffer = nullptr;
-    vg::GBuffer mGBuffers[2];
-    vg::GBuffer mTransparencyGBuffer;
+    std::unique_ptr<vg::GBuffer> mGBuffers[2];
+    std::unique_ptr<vg::GBuffer> mTransparencyGBuffer;
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
     VGBuffer mGlobalUbo = 0;

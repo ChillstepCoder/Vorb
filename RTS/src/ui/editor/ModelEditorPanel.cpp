@@ -54,7 +54,7 @@ bool ModelEditorPanel::updateAndRender() {
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    mGBuffers[0]->useGeometry();
+    mGBuffers[0]->use();
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -65,7 +65,7 @@ bool ModelEditorPanel::updateAndRender() {
     const ImVec2 uv0(0, 1);
     const ImVec2 uv1(1, 0);
     const ImVec2 dims(imageDims.x, imageDims.y);
-    ImGui::Image((ImTextureID)mGBuffers[0]->getGeometryTexture(), dims, uv0, uv1);
+    ImGui::Image((ImTextureID)mGBuffers[0]->getAlbedoTexture(), dims, uv0, uv1);
 
     ImGui::End();
 

@@ -1,191 +1,114 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/graphics/GBuffer.h"
 
-#include "Vorb/graphics/SamplerState.h"
-
-vg::GBuffer::GBuffer(ui32 w /*= 0*/, ui32 h /*= 0*/) :
-m_size(w, h) {
-    // Empty
+vg::GBuffer::GBuffer(ui32 w, ui32 h, int layerCount) : mSize(w, h), mLayerCount(layerCount) {
+    glCreateFramebuffers(1, &mFbo);
 }
 
-void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::GBufferAttachment& attachment, int layerCount) {
-    if (layerCount <= 1) {
-        glBindTexture(GL_TEXTURE_2D, texID);
-     //   if (glTexStorage2D) { // TODO: This doesnt work for manual mipmaps
-     //       glTexStorage2D(GL_TEXTURE_2D, 1, (VGEnum)attachment.format, _size.x, _size.y);
-     //   }
-      //  else {
-            glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)attachment.format, _size.x, _size.y, 0, (VGEnum)attachment.pixelFormat, (VGEnum)attachment.pixelType, nullptr);
-     //   }
-        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
-    }
-    else {
-        glBindTexture(GL_TEXTURE_2D_ARRAY, texID);
-        if (glTexStorage3D) {
-            glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, (VGEnum)attachment.format, _size.x, _size.y, layerCount);
-        }
-        else {
-            glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (VGEnum)attachment.format, _size.x, _size.y, layerCount, 0, (VGEnum)attachment.pixelFormat, (VGEnum)attachment.pixelType, nullptr);
-        }
-        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D_ARRAY);
-    }
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment.number, texID, 0);
-    checkError();
-}
-
-vg::GBuffer& vg::GBuffer::init(const GBufferAttachment& geometryAttachment, const GBufferAttachment* normalAttachment, const GBufferAttachment* roughnessAttachment, int layerCount) {
-
-    // Make the framebuffer
-    glGenFramebuffers(1, &m_fboGeom);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-
-    mLayerCount = layerCount;
-
-    glGenTextures((GLsizei)1, &m_texGeom);
-    initTarget(m_size, m_texGeom, geometryAttachment, layerCount);
-
-    ui32 numAttachments = 1;
-    if (normalAttachment) {
-        glGenTextures((GLsizei)1, &m_texNormal);
-        initTarget(m_size, m_texNormal, *normalAttachment, layerCount);
-        ++numAttachments;
-    }
-    if (roughnessAttachment) {
-        glGenTextures((GLsizei)1, &m_texRoughness);
-        initTarget(m_size, m_texRoughness, *roughnessAttachment, layerCount);
-        ++numAttachments;
-    }
-    // Add the attachments
-    VGEnum bufs[3];
-    for (ui32 i = 0; i < numAttachments; i++) {
-        bufs[i] = GL_COLOR_ATTACHMENT0 + i;
-    }
-    // Set the output location for pixels
-    glDrawBuffers((GLsizei)numAttachments, bufs);
-
-    // Unbind used resources
-    if (layerCount > 1) {
-        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-    }
-    else {
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // TODO(Cristian): Change The Memory Usage Of The GPU
-
-    return *this;
-}
-vg::GBuffer& vg::GBuffer::initDepth(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH_COMPONENT32*/, int layerCount) {
-    assert(mLayerCount == layerCount);
-    glGenTextures(1, &m_texDepth);
-    if (layerCount <= 1) {
-        glBindTexture(GL_TEXTURE_2D, m_texDepth);
-        glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, nullptr);
-        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_texDepth, 0);
-
-        checkError();
-
-        // Unbind used resources
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-    else {
-        glBindTexture(GL_TEXTURE_2D_ARRAY, m_texDepth);
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (VGEnum)depthFormat, m_size.x, m_size.y, layerCount, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, nullptr);
-        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D_ARRAY);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, m_texDepth, 0);
-
-        checkError();
-
-        // Unbind used resources
-        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-    // TODO: Change The Memory Usage Of The GPU
-
-    return *this;
-}
-vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH24_STENCIL8*/) {
-    glGenTextures(1, &m_texDepth);
-    glBindTexture(GL_TEXTURE_2D, m_texDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_STENCIL, (VGEnum)vg::TexturePixelType::UNSIGNED_INT_24_8, nullptr);
-    vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, m_texDepth, 0);
-
-    // Unbind used resources
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    return *this;
-}
-void vg::GBuffer::dispose() {
-    if (m_fboGeom) {
-        glDeleteFramebuffers(1, &m_fboGeom);
-        m_fboGeom = 0;
-    }
-    if (m_texGeom) {
-        glDeleteTextures(1, &m_texGeom);
-        m_texGeom = 0;
-    }
-    if (m_texNormal) {
-        glDeleteTextures(1, &m_texNormal);
-        m_texNormal = 0;
-    }
-    if (m_texDepth) {
-        glDeleteTextures(1, &m_texDepth);
-        m_texDepth = 0;
-    }
-}
-
-void vg::GBuffer::useGeometry() const {
-    assert(m_fboGeom);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-    glViewport(0, 0, m_size.x, m_size.y);
-}
-
-vorb::graphics::GBuffer::~GBuffer() {
+vg::GBuffer::~GBuffer() {
     dispose();
 }
 
-void vorb::graphics::GBuffer::initMipLevelsGeom(const vg::GBufferAttachment& geomAttachment, int maxDepth /*= 0xff*/)
-{
-    assert(m_texGeom);
-    assert(geomAttachment.number == FBO_GEOMETRY_COLOR);
-
-    ui32 width = m_size.x / 2;
-    ui32 height = m_size.y / 2;
-    glBindTexture(GL_TEXTURE_2D, m_texGeom);
-    for (mMipLevels = 1; mMipLevels <= maxDepth; ++mMipLevels) {
-        assert(width > 0);
-        // TODO: Compress (breaks normal generation so we need to post compress)
-        if (mLayerCount <= 1) {
-            glTexImage2D(GL_TEXTURE_2D, mMipLevels, (VGEnum)geomAttachment.format, width, height, 0, (VGEnum)geomAttachment.pixelFormat, (VGEnum)geomAttachment.pixelType, nullptr);
-            checkError();
+void vg::GBuffer::dispose() {
+    if (mFbo) {
+        glDeleteFramebuffers(1, &mFbo);
+        mFbo = 0;
+        for (int i = 0; i < (int)GBufferAttachmentIndex::COUNT; ++i) {
+            if (mAttachments[i].mTexture) {
+                glDeleteTextures(1, &mAttachments[i].mTexture);
+                mAttachments[i].mTexture = 0;
+            }
         }
-        else {
-            assert(false); // I dont think this is right
-            glBindTexture(GL_TEXTURE_2D_ARRAY, m_texGeom);
-            glTexImage3D(GL_TEXTURE_2D_ARRAY, mMipLevels, (VGEnum)geomAttachment.format, width, height, mLayerCount, 0, (VGEnum)geomAttachment.pixelFormat, (VGEnum)geomAttachment.pixelType, nullptr);
-            checkError();
+        if (mTexDepth.mTexture) {
+            glDeleteTextures(1, &mTexDepth.mTexture);
+            mTexDepth.mTexture = 0;
         }
-        if (width == 1 || height == 1) break;
-        width = width / 2;
-        height = height / 2;
     }
-    glGenerateMipmap(GL_TEXTURE_2D); // TODO: is allocating images needed?
-    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+vg::GBuffer& vg::GBuffer::initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState /*= vg::sSamplerStates.POINT_CLAMP*/, int mipLevels /*= 1*/) {
+    assert(mFbo);
+    GBufferAttachmentTexture& attachment = mAttachments[(int)index];
+
+    initTexture(attachment, (VGEnum)format, samplerState, mipLevels);
+
+    glNamedFramebufferTexture(mFbo, GL_COLOR_ATTACHMENT0 + (VGEnum)index, attachment.mTexture, 0);
+
+    // Mark this as a valid render target
+    mDrawBuffers[(int)index] = GL_COLOR_ATTACHMENT0 + (VGEnum)index;
+    // Just reupload all draw buffers every time for simplicity (glDrawBuffer only allows you to specify a single buffer)
+    glNamedFramebufferDrawBuffers(mFbo, (GLsizei)GBufferAttachmentIndex::COUNT, mDrawBuffers);
+    checkError();
+
+    return *this;
+}
+
+vg::GBuffer& vg::GBuffer::initDepth(GBufferDepthFormat depthFormat, int mipLevels /*= 1*/) {
+
+    initTexture(mTexDepth, (VGEnum)depthFormat, vg::sSamplerStates.POINT_CLAMP, mipLevels);
+    glNamedFramebufferTexture(mFbo, GL_DEPTH_ATTACHMENT, mTexDepth.mTexture, 0);
+
+    checkError();
+    return *this;
+}
+//vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH24_STENCIL8*/) {
+//    glCreateTextures(GL_TEXTURE_2D, 1, &mTexDepth);
+//    glTextureStorage2D(mTexDepth, 1, (VGEnum)depthFormat, mSize.x, mSize.y);
+//    vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
+//
+//    glNamedFramebufferTexture(mFbo, GL_DEPTH_STENCIL_ATTACHMENT, mTexDepth, 0);
+//
+//    checkError();
+//    return *this;
+//}
+
+void vg::GBuffer::use() const {
+    assert(mFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
+    glViewport(0, 0, mSize.x, mSize.y);
+}
+
+vg::GBuffer::GBuffer(GBuffer&& o) noexcept {
+    memcpy(this, &o, sizeof(vg::GBuffer));
+    o.mFbo = 0;
 }
 
 void vorb::graphics::GBuffer::unuse() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void vg::GBuffer::bindAlbedoTexture(ui32 textureUnit) {
+    VGTexture texture = getAlbedoTexture();
+    assert(texture);
+    glBindTextureUnit(textureUnit, texture);
+}
+void vg::GBuffer::bindNormalTexture(ui32 textureUnit) {
+    VGTexture texture = getNormalTexture();
+    assert(texture);
+    glBindTextureUnit(textureUnit, texture);
+}
+void vg::GBuffer::bindDepthTexture(ui32 textureUnit) {
+    VGTexture texture = mTexDepth.mTexture;
+    assert(texture);
+    glBindTextureUnit(textureUnit, texture);
+}
+
+void vg::GBuffer::initTexture(GBufferAttachmentTexture& texture, VGEnum format, const vg::SamplerState& samplerState, int mipLevels) {
+    VGTexture& tex = texture.mTexture;
+    assert(tex == 0);
+    texture.mMipLevels = mipLevels;
+    glCreateTextures(mLayerCount > 1 ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D, 1, &tex);
+
+    if (mLayerCount <= 1) {
+        glTextureStorage2D(tex, mipLevels, (VGEnum)format, mSize.x, mSize.y);
+    }
+    else {
+        glTextureStorage3D(tex, mipLevels, (VGEnum)format, mSize.x, mSize.y, mLayerCount);
+    }
+    samplerState.setForTexture(tex);
+    if (mipLevels > 0) {
+        glGenerateTextureMipmap(tex);
+    }
 }
 
 bool vorb::graphics::GBuffer::checkError() {
@@ -263,19 +186,4 @@ bool vorb::graphics::GBuffer::checkError() {
     return false;
 
     return false;
-}
-void vg::GBuffer::bindGeometryTexture(ui32 textureUnit, GLenum target /*= GL_TEXTURE_2D*/) {
-    assert(m_texGeom);
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(target, m_texGeom);
-}
-void vg::GBuffer::bindNormalTexture(ui32 textureUnit, GLenum target /*= GL_TEXTURE_2D*/) {
-    assert(m_texNormal);
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(target, m_texNormal);
-}
-void vg::GBuffer::bindDepthTexture(ui32 textureUnit, GLenum target /*= GL_TEXTURE_2D*/) {
-    assert(m_texDepth);
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(target, m_texDepth);
 }

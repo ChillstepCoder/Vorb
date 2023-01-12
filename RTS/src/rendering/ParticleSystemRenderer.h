@@ -19,7 +19,7 @@ private:
     void renderPostProcess(const ParticleSystemData& particleSystemData, vg::GBuffer& gBuffer);
 
     // For use in multipass
-    std::map<nString, vg::GBuffer> mGBuffers;
+    //std::map<nString, vg::GBuffer> mGBuffers;
     f32v2 mGbufferDims;
 };
 

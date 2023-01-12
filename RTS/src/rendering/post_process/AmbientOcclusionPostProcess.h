@@ -2,11 +2,11 @@
 
 class MaterialShader;
 
-#include <Vorb/graphics/GBuffer.h>
+DECL_VG(class GBuffer);
 
 class AmbientOcclusionPostProcess {
 public:
-    AmbientOcclusionPostProcess(const f32v2& gbufferDims);
+    AmbientOcclusionPostProcess(const ui32v2& gbufferDims);
 
     // Returns target gbuffer
     void render(vg::GBuffer* activeGBuffer);
@@ -16,8 +16,7 @@ public:
 private:
 
     // TODO: Maybe shared g buffer? :thinkies:
-    vg::GBuffer mGBuffers[2];
-    f32v2 mGbufferDims;
+    std::unique_ptr<vg::GBuffer> mGBuffers[2];
 
     VGTexture mNoiseTexture;
     std::vector<f32v3> mSsaoKernel;

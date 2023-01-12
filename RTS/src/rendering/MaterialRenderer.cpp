@@ -8,6 +8,7 @@
 
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/GBuffer.h>
 
 #include "options/DebugOptions.h"
 
@@ -76,7 +77,7 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
             case MaterialShaderUniform::Fbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getGeometryTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getAlbedoTexture());
                 break;
             case MaterialShaderUniform::FboDepth:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
@@ -91,12 +92,12 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
             case MaterialShaderUniform::FboRoughness:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getRoughnessTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getTertiaryTexture());
                 break;
             case MaterialShaderUniform::PrevFbo0:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getGeometryTexture());
+                glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getAlbedoTexture());
                 break;
             case MaterialShaderUniform::PrevFboDepth:
                 glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
@@ -104,7 +105,7 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
                 glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getDepthTexture());
                 break;
             case MaterialShaderUniform::PixelDims: {
-                const f32v2 pixelDims = 1.0f / renderContext.getCurrentFramebufferDims();
+                const f32v2 pixelDims = 1.0f / f32v2(renderContext.getCurrentFramebufferDims());
                 glUniform2f(it.second, pixelDims.x, pixelDims.y);
                 break;
             }

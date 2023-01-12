@@ -340,11 +340,11 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             const ImVec2 uv1(1, 0);
             const ImVec2 dims(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().x / aspectRatio);
             ImGui::Text("Geometry");
-            ImGui::Image((ImTextureID)activeGBuffer->getGeometryTexture(), dims, uv0, uv1);
+            ImGui::Image((ImTextureID)activeGBuffer->getAlbedoTexture(), dims, uv0, uv1);
             ImGui::Text("Normals");
             ImGui::Image((ImTextureID)activeGBuffer->getNormalTexture(), dims, uv0, uv1);
             ImGui::Text("Roughness");
-            ImGui::Image((ImTextureID)activeGBuffer->getRoughnessTexture(), dims, uv0, uv1);
+            ImGui::Image((ImTextureID)activeGBuffer->getTertiaryTexture(), dims, uv0, uv1);
             ImGui::Text("Depth");
             ImGui::Image((ImTextureID)activeGBuffer->getDepthTexture(), dims, uv0, uv1);
             ImGui::Separator();

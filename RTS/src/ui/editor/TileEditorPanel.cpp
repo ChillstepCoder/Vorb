@@ -205,18 +205,10 @@ VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, i
     // Allocate new gbuffer if needed
     assert(previewIndex <= (int)mMaterialPreviewGBuffers.size());
     if (previewIndex == (int)mMaterialPreviewGBuffers.size()) {
-        vg::GBuffer& newGBuffer = *mMaterialPreviewGBuffers.emplace_back(std::make_unique<vg::GBuffer>());
-        vg::GBufferAttachment attachment;
+        vg::GBuffer& newGBuffer = *mMaterialPreviewGBuffers.emplace_back(std::make_unique<vg::GBuffer>(PREVIEW_RESOLUTION));
 
-        // Color
-        attachment.format = vg::TextureInternalFormat::RGB8;
-        attachment.number = FBO_GEOMETRY_COLOR;
-        attachment.pixelFormat = vg::TextureFormat::RGB;
-        attachment.pixelType = vg::TexturePixelType::UNSIGNED_BYTE;
-
-        newGBuffer.setSize(PREVIEW_RESOLUTION);
-        newGBuffer.init(attachment, nullptr, nullptr);
-        newGBuffer.initDepth(vg::TextureInternalFormat::DEPTH_COMPONENT16);
+        newGBuffer.initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
+        newGBuffer.initDepth(vg::GBufferDepthFormat::DEPTH_16);
 
         checkGlError("TileEditorPanel::renderMaterialPreview");
     }
@@ -227,7 +219,7 @@ VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, i
     glUniform1ui64ARB(albedoUniform, materialData.albedoMap);
 
     // Render to texture
-    gBuffer.useGeometry();
+    gBuffer.use();
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindVertexArray(mPreviewVAO);
@@ -235,5 +227,5 @@ VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, i
     glBindVertexArray(0);
 
     gBuffer.unuse();
-    return gBuffer.getGeometryTexture();
+    return gBuffer.getAlbedoTexture();
 }
