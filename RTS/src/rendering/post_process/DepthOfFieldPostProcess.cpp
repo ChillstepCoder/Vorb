@@ -55,19 +55,18 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
 
     const VGUniform& fboUniform = mMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mMaterial->mProgram.getUniform("unDirection");
+    glUniform1i(fboUniform, nextTexture);
     prevGBuffer->bindAlbedoTexture(nextTexture);
     for (int i = 0; i < sDebugOptions.mDepthOfFieldBlurPasses; ++i) {
 
         // Horizontal
         mGBuffers[1]->use();
-        glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mDepthOfFieldBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
         mGBuffers[1]->bindAlbedoTexture(nextTexture);
         mGBuffers[0]->use();
-        glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mDepthOfFieldBlurRadius);
         sGlobalFullQuadVBO.draw();
 

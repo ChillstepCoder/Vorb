@@ -12,6 +12,7 @@ in vec4 fTint;
 in mat3 fTBN;
 
 layout (location = 0) out vec4 oColor;
+layout (location = 1) out vec3 oNormal;
 
 #include "editor/editor_util.glsl"
 
@@ -26,4 +27,5 @@ void main() {
     normal = normalize(fTBN * normal);
     
     oColor = getEditorOutputPixelColor(oColor.rgb, normal, fWorldPos, fScreenPos);
+    oNormal = (normal + 1.0) * 0.5;
 }

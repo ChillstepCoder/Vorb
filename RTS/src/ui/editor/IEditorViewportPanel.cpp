@@ -37,9 +37,10 @@ void IEditorViewportPanel::updateAndRenderDrawModeControl() {
         "Normals",
         "UVs",
         "Blend Test",
+        "Edge Test",
         "Wireframe", // Always last
     };
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 6);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 7);
     if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
         for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;
@@ -79,7 +80,7 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
     // 
     // TODO: Tile based deferred rendering (not clustered) see compute at page 35-36 https://www.digipen.edu/sites/default/files/public/docs/theses/denis-ishmukhametov-master-of-science-in-computer-science-thesis-efficient-tile-based-deferred-shading-pipeline.pdf
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(imageDims);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB8);

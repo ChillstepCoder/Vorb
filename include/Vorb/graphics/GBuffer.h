@@ -109,8 +109,8 @@ namespace vorb {
             const ui32& getHeight() const { return mSize.y; }
             const ui32& getNumMipLevels(GBufferAttachmentIndex index) const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mMipLevels; }
 
-            const VGFramebuffer& getFbo() const { return mFbo; }
-            const VGTexture& getDepthTexture() const { return mTexDepth.mTexture; }
+            VGFramebuffer getFbo() const { return mFbo; }
+            VGTexture getDepthTexture() const { return mTexDepth.mTexture; }
 
             void setDepthTexture(VGTexture tex) { mTexDepth.mTexture = tex; }
             void setNormalTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture = tex; }

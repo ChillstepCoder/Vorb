@@ -44,7 +44,6 @@ namespace vorb {
         public:
             BlendState(GLenum srcFactor, GLenum dstFactor);
 
-            // Apply State In The Rendering Pipeline
             void set() const;
             static void set(const BlendStateType state);
 

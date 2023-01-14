@@ -136,7 +136,7 @@ ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
 
         mShadowMapGBuffer = std::make_unique<vg::GBuffer>(ui32v2(DEPTH_MAP_RESOLUTION), MAX_SHADOW_CASCADE_LEVELS + 1);
         // TODO: Not mipmap???
-        mShadowMapGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RG32F, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP);
+        mShadowMapGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RG32F, vg::sSamplerStates.LINEAR_CLAMP);
 
         // Set up additional params
         VGTexture shadowMapTexture = mShadowMapGBuffer->getAlbedoTexture();
@@ -155,7 +155,7 @@ ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
     {// Shadow mip gbuffer
         mShadowMipGBuffer = std::make_unique<vg::GBuffer>(gbufferDims);
         // TODO: Better sampler state?
-        mShadowMipGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F, vg::sSamplerStates.POINT_CLAMP, MAX_MIP_LEVELS);
+        mShadowMipGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, MAX_MIP_LEVELS);
 
         checkGlError("Shadow mips init");
     }
@@ -385,8 +385,6 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
         MaterialRenderer::bindMaterialForRender(*mShadowApplyMaterial, &nextTextureIndex);
 
         mShadowMipGBuffer->bindAlbedoTexture(nextTextureIndex);
-        // TODO: Move this into init
-        vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTexture(mShadowMipGBuffer->getAlbedoTexture());
         glUniform1i(glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unShadowFbo"), nextTextureIndex);
 
         VGUniform mipCountUniform = glGetUniformLocation(mShadowApplyMaterial->mProgram.getID(), "unMipCount");
@@ -396,6 +394,7 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
         sGlobalFullQuadVBO.draw();
     }
 
+    // TODO: We should be blurring the mips
     blurShadowMap();
 
     return activeGBuffer;

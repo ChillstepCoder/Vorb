@@ -1,6 +1,5 @@
 
 const float ALPHA_THRESHOLD = 0.01;
-const float SAMPLE_COUNT = 7.0;
 
 // Only increment count when there is alpha
 vec3 sampleAndIncrementTotalAlpha(sampler2D image, vec2 uv, float weight, inout float weightTotal) {

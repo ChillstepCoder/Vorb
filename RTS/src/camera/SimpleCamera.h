@@ -25,6 +25,8 @@ public:
     glm::mat4 getViewProjectionMatrix() const { return positioner_->getViewProjectionMatrix(); }
     glm::vec3 getPosition() const { return positioner_->getPosition(); }
 
+    inline static constexpr f32 ZNEAR = 0.1f;
+    inline static constexpr f32 ZFAR = 100.0f;
 private:
     const SimpleCameraPositionerInterface* positioner_;
 };
@@ -106,7 +108,7 @@ public:
     virtual glm::mat4 getViewProjectionMatrix() const override {
         const glm::mat4 t = glm::translate(glm::mat4(1.0f), -cameraPosition_);
         glm::mat4 r = glm::mat4_cast(cameraOrientation_);
-        r = glm::perspective(glm::radians(90.0f), mAspectRatio, 0.1f, 100.0f) * r;
+        r = glm::perspective(glm::radians(90.0f), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
         return r * t;
     }
 
@@ -149,9 +151,9 @@ public:
 
 public:
     float mouseSpeed_ = 4.0f;
-    float acceleration_ = 120.0f;
+    float acceleration_ = 70.0f;
     float damping_ = 0.2f;
-    float maxSpeed_ = 5.0f;
+    float maxSpeed_ = 2.0f;
     float fastCoef_ = 10.0f;
 
 private:

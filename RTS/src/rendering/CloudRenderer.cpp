@@ -98,19 +98,18 @@ void CloudRenderer::blurNormals() {
 
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
+    glUniform1i(fboUniform, nextTexture);
     for (int i = 0; i < sDebugOptions.mCloudBlurPasses; ++i) {
 
         // Horizontal
         mGBuffers[0]->bindAlbedoTexture(nextTexture);
         mGBuffers[1]->use();
-        glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, sDebugOptions.mCloudBlurRadius, 0.0f);
         sGlobalFullQuadVBO.draw();
 
         // Vertical
         mGBuffers[1]->bindAlbedoTexture(nextTexture);
         mGBuffers[0]->use();
-        glUniform1i(fboUniform, nextTexture);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mCloudBlurRadius);
         sGlobalFullQuadVBO.draw();
     }

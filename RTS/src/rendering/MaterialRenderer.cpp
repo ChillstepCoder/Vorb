@@ -75,34 +75,28 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
     for (auto&& it : material.mUniforms) {
         switch (it.first) {
             case MaterialShaderUniform::Fbo0:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getActiveGBuffer().getAlbedoTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getAlbedoTexture());
                 break;
             case MaterialShaderUniform::FboDepth:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getActiveGBuffer().getDepthTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getDepthTexture());
                 break;
             case MaterialShaderUniform::FboNormals:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getActiveGBuffer().getNormalTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getNormalTexture());
                 break;
             case MaterialShaderUniform::FboRoughness:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getActiveGBuffer().getTertiaryTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getActiveGBuffer().getTertiaryTexture());
                 break;
             case MaterialShaderUniform::PrevFbo0:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getPrevFinalGBuffer().getAlbedoTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getAlbedoTexture());
                 break;
             case MaterialShaderUniform::PrevFboDepth:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getPrevFinalGBuffer().getDepthTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getPrevFinalGBuffer().getDepthTexture());
                 break;
             case MaterialShaderUniform::PixelDims: {
                 const f32v2 pixelDims = 1.0f / f32v2(renderContext.getCurrentFramebufferDims());
@@ -133,22 +127,19 @@ void MaterialRenderer::uploadUniforms(const MaterialShader& material, OUT ui32& 
                 glUniform1fv(it.second, renderData.shadowFrustumMatricesCount, renderData.shadowCascadePlaneDistances);
                 break;
             case MaterialShaderUniform::ShadowMap:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderData.shadowMap);
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D_ARRAY, renderData.shadowMap);
                 break;
             case MaterialShaderUniform::ShadowColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mShadowColor[0]);
                 break;
             case MaterialShaderUniform::ShadowTexture:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getShadowTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getShadowTexture());
                 break;
             case MaterialShaderUniform::SSAOTexture:
-                glActiveTexture(GL_TEXTURE0 + nextAvailableTextureIndex);
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getSSAOTexture());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
-                glBindTexture(GL_TEXTURE_2D, renderContext.getSSAOTexture());
                 break;
             case MaterialShaderUniform::SSAOColor:
                 glUniform3fv(it.second, 1, &sDebugOptions.mSSAOColor[0]);

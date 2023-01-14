@@ -83,11 +83,11 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::v
     meshopt_remapVertexBuffer(remappedVertices.data(), vertices.data(), vertices.size(), sizeof(VERTEX), remap.data());
 
     // Optimize initial mesh to get rid of mostly useless polygons
-    constexpr float threshold = 0.2f;
+    constexpr float threshold = 0.25f; // 0.2f
     {
         std::vector<ui32> optimizedIndices;
         optimizedIndices.resize(remappedIndices.size());
-        constexpr f32 targetError = 0.0006f;
+        constexpr f32 targetError = 0.0003f; // 0.0006f
         const size_t targetIndexCount = size_t(remappedIndices.size() * threshold);
         ui32 newSize = meshopt_simplify(&optimizedIndices[0], &remappedIndices[0], remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(VERTEX), targetIndexCount, targetError);
         optimizedIndices.resize(newSize);

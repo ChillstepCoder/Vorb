@@ -11,10 +11,11 @@ enum class EditorViewportDrawMode {
     Normals = 2,
     UVs = 3,
     BlendTest = 4,
-    Wireframe = 5, // Always last
+    EdgeTest = 5,
+    Wireframe = 6, // Always last
     COUNT
 };
-static_assert(e_cast(EditorViewportDrawMode::COUNT) == 6, "Copy to data/shaders/editor/editor_util.glsl");
+static_assert(e_cast(EditorViewportDrawMode::COUNT) == 7, "Copy to data/shaders/editor/editor_util.glsl");
 
 class IEditorViewportPanel
 {
@@ -36,7 +37,7 @@ protected:
     std::unique_ptr<SimpleCamera> camera;
 
     VGVertexArray mGridVao = 0;
-    std::unique_ptr<vg::GBuffer> mGBuffers[2];
+    std::unique_ptr<vg::GBuffer> mGBuffers[3];
     EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::Lit;
 };
 
