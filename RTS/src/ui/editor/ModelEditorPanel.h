@@ -35,7 +35,7 @@ private:
     bool mBlendTestShowEdges = 0;
     bool mBlendTestDisable = 0;
 
-    // Edge test
+    // Edge test //TODO: She likes this blurrier
     float mEdgeTestThreshold = 0.08f;
     f32 mEdgeTestDepthThreshold = 0.05f;
     int mEdgeTestDisplayMode = 0;

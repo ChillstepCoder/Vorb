@@ -78,16 +78,15 @@ namespace vorb {
             /// Set up a GBuffer with a certain size
             /// @param w: Width in pixels of each target
             /// @param h: Height in pixels of each target
+
             GBuffer(ui32 w, ui32 h, int layerCount = 1);
             /// Set up a GBuffer with a certain size
             /// @param s: Size in pixels of each target
             GBuffer(ui32v2 s, int layerCount = 1) : GBuffer(s.x, s.y, layerCount) {}
             GBuffer(GBuffer&& o) noexcept;
+            GBuffer& operator=(GBuffer&& o) noexcept;
             ~GBuffer();
 
-
-            /// Destroy all render targets
-            void dispose();
 
             GBuffer& initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
             GBuffer& initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
@@ -102,7 +101,8 @@ namespace vorb {
 
             VGTexture getAlbedoTexture() const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mTexture;  }
             VGTexture getNormalTexture() const { return mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture; }
-            VGTexture getTertiaryTexture() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture;  }
+            VGTexture getTertiaryTexture() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture; }
+            VGTexture getDepthTexture() const { return mTexDepth.mTexture; }
 
             const ui32v2& getSize() const { return mSize; }
             const ui32& getWidth() const { return mSize.x; }
@@ -110,7 +110,6 @@ namespace vorb {
             const ui32& getNumMipLevels(GBufferAttachmentIndex index) const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mMipLevels; }
 
             VGFramebuffer getFbo() const { return mFbo; }
-            VGTexture getDepthTexture() const { return mTexDepth.mTexture; }
 
             void setDepthTexture(VGTexture tex) { mTexDepth.mTexture = tex; }
             void setNormalTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture = tex; }
@@ -128,6 +127,34 @@ namespace vorb {
             static_assert((int)GBufferAttachmentIndex::COUNT == 3, "Update brace init");
             GBufferAttachmentTexture mTexDepth = {}; ///< Depth texture of GBuffer
             int mLayerCount = 1;
+        };
+
+        // Wrapper that represents a chain of vg::GBuffer
+        class SwapChain {
+        public:
+            VORB_NON_COPYABLE(SwapChain);
+            SwapChain(ui32 w, ui32 h, ui32 gBufferCount, int layerCount = 1);
+            /// Set up a GBuffer with a certain size
+            /// @param s: Size in pixels of each target
+            SwapChain(ui32v2 s, ui32 gBufferCount, int layerCount = 1) : SwapChain(s.x, s.y, gBufferCount, layerCount) {}
+            ~SwapChain();
+
+            void initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
+            void initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
+
+            GBuffer& get(ui32 index);
+            GBuffer& getPrev();
+            GBuffer& getNext();
+            GBuffer& use(ui32 index);
+            GBuffer& useNext();
+            GBuffer& useFirst() { return use(0); }
+
+            const ui32v2& getDims() const;
+            ui32 getGBufferCount() const { return mGBuffers.size(); }
+            ui32 getIndexCurrent() const { return mCurrent; }
+        private:
+            std::vector<std::unique_ptr<GBuffer>> mGBuffers;
+            ui32 mCurrent = 0;
         };
     }
 }

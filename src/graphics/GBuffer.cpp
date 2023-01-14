@@ -6,10 +6,6 @@ vg::GBuffer::GBuffer(ui32 w, ui32 h, int layerCount) : mSize(w, h), mLayerCount(
 }
 
 vg::GBuffer::~GBuffer() {
-    dispose();
-}
-
-void vg::GBuffer::dispose() {
     if (mFbo) {
         glDeleteFramebuffers(1, &mFbo);
         mFbo = 0;
@@ -44,6 +40,7 @@ vg::GBuffer& vg::GBuffer::initAttachment(GBufferAttachmentIndex index, vg::Textu
 }
 
 vg::GBuffer& vg::GBuffer::initDepth(GBufferDepthFormat depthFormat, int mipLevels /*= 1*/) {
+    assert(mFbo);
 
     initTexture(mTexDepth, (VGEnum)depthFormat, vg::sSamplerStates.POINT_CLAMP, mipLevels);
     glNamedFramebufferTexture(mFbo, GL_DEPTH_ATTACHMENT, mTexDepth.mTexture, 0);
@@ -71,6 +68,12 @@ void vg::GBuffer::use() const {
 vg::GBuffer::GBuffer(GBuffer&& o) noexcept {
     memcpy(this, &o, sizeof(vg::GBuffer));
     o.mFbo = 0;
+}
+
+vorb::graphics::GBuffer& vorb::graphics::GBuffer::operator=(GBuffer&& o) noexcept {
+    memcpy(this, &o, sizeof(vg::GBuffer));
+    o.mFbo = 0;
+    return *this;
 }
 
 void vorb::graphics::GBuffer::unuse() {
@@ -186,4 +189,59 @@ bool vorb::graphics::GBuffer::checkError() {
     return false;
 
     return false;
+}
+
+vg::SwapChain::SwapChain(ui32 w, ui32 h, ui32 gBufferCount, int layerCount /*= 1*/) {
+    // 5 is probably too many
+    assert(gBufferCount > 1 && gBufferCount <= 4);
+    mGBuffers.resize(gBufferCount);
+    for (size_t i = 0; i < mGBuffers.size(); ++i) {
+        mGBuffers[i] = std::make_unique<GBuffer>(w, h, layerCount);
+    }
+}
+
+vg::SwapChain::~SwapChain()
+{
+}
+
+void vg::SwapChain::initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState /*= vg::sSamplerStates.POINT_CLAMP*/, int mipLevels /*= 1*/) {
+    for (auto&& gb : mGBuffers) {
+        gb->initAttachment(index, format, samplerState, mipLevels);
+    }
+}
+
+void vg::SwapChain::initDepth(GBufferDepthFormat depthFormat, int mipLevels /*= 1*/) {
+    for (auto&& gb : mGBuffers) {
+        gb->initDepth(depthFormat, mipLevels);
+    }
+}
+
+vg::GBuffer& vg::SwapChain::get(ui32 index) {
+    return *mGBuffers[index];
+}
+
+vg::GBuffer& vg::SwapChain::getPrev() {
+    if (mCurrent == 0) {
+        return *mGBuffers.back();
+    }
+    return *mGBuffers[mCurrent - 1];
+}
+
+vg::GBuffer& vg::SwapChain::getNext() {
+    return *mGBuffers[(mCurrent + 1) % mGBuffers.size()];
+}
+
+vg::GBuffer& vg::SwapChain::use(ui32 index) {
+    vg::GBuffer& gb = *mGBuffers[index];
+    gb.use();
+    mCurrent = index;
+    return gb;
+}
+
+vg::GBuffer& vg::SwapChain::useNext() {
+    return use((mCurrent + 1) % mGBuffers.size());
+}
+
+const ui32v2& vg::SwapChain::getDims() const {
+    return mGBuffers[0]->getSize();
 }
