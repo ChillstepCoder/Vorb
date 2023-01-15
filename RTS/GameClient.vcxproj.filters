@@ -660,6 +660,9 @@
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\model\ModelRenderPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1536,6 +1539,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\model\ModelRenderPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

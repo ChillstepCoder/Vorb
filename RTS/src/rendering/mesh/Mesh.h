@@ -94,7 +94,7 @@ struct MeshGpuData {
 };
 
 
-//
+// TODO - This?
 //class BatchedMesh {
 //public:
 //    BoundingSphere getBoundingSphere() const { return BoundingSphere{ mPosition, mDrawInfo.mBoundingSphereRadius }; }

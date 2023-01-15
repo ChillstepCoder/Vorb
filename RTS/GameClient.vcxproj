@@ -352,6 +352,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\Model3D.cpp" />
+    <ClCompile Include="src\rendering\model\ModelRenderPass.cpp" />
     <ClCompile Include="src\rendering\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
@@ -611,6 +612,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
     <ClInclude Include="src\rendering\model\Model3D.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
+    <ClInclude Include="src\rendering\model\ModelRenderPass.h" />
     <ClInclude Include="src\rendering\model\ModelUtil.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
     <ClInclude Include="src\rendering\ParticleSystemRenderer.h" />

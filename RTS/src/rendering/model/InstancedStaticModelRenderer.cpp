@@ -529,7 +529,9 @@ void InstancedStaticModelRenderer::onModelEditEvent(TileContainerModelEditEvent&
 }
 
 void InstancedStaticModelRenderer::removeTileModelInstanceInternal(TileModelInstance& instance) {
-    StaticModelInstanceData& instanceData = mModelsToInstances[instance.mModelID];
+    auto&& it = mModelsToInstances.find(instance.mModelID);
+    assert(it != mModelsToInstances.end());
+    StaticModelInstanceData& instanceData = it->second;
     const ui32 instanceIndex = instance.mInstanceIndex;
     if (instanceIndex < instanceData.mFirstDirtyInstance) {
         instanceData.mFirstDirtyInstance = instanceIndex;
@@ -550,4 +552,9 @@ void InstancedStaticModelRenderer::removeTileModelInstanceInternal(TileModelInst
     instanceData.mInstanceTransforms.pop_back();
     instanceData.mInstanceOwners[instanceIndex] = backOwner;
     instanceData.mInstanceOwners.pop_back();
+
+    // If we are empty now, remove from the model map
+    if (instanceData.mInstanceTransforms.empty()) {
+        mModelsToInstances.erase(it);
+    }
 }

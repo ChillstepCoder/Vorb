@@ -387,15 +387,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     
     mActiveGBuffer = mGBuffers[mActiveGBufferIndex].get();
 
-    // Cutout pass (wtf is this?)
-    /*if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-        mZCutoutGBuffer.use();
-        vg::BlendState::set(vg::BlendStateType::REPLACE);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        mChunkRenderer->renderChunksZCutout(mWorld, camera2d);
-    }*/
-
     // Main geometry pass
     mActiveGBuffer->use();
     mCurrentFramebufferDims = mActiveGBuffer->getSize();
@@ -411,6 +402,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
     else {
         // TODO: Can we not do GL_COLOR_BUFFER_BIT? (IT causes clouds issues rn)
+        // TODO2: What issues? lol thanks for nothing previous self
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
@@ -554,23 +546,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
-
-    //// Shadows
-    //mShadowGBuffer.use();
-    //if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //    // TODO: Replace With BlendState
-    //    glBlendFunc(GL_ONE, GL_ZERO);
-    //    mChunkRenderer->renderWorldShadows(mWorld, camera2d);
-    //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //    activeGbuffer.use();
-    //}
-    //else {
-    //    // TODO: Can we not do this every frame?
-    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //    activeGbuffer.use();
-    //}
-
 
     // *** Post processes ***
 
