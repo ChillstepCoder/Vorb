@@ -1,3 +1,4 @@
+
 const vec3 pos[4] = vec3[4](
 	vec3(-1.0, -1.0, 0.0),
 	vec3( 1.0, -1.0, 0.0),
@@ -17,14 +18,11 @@ flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 
-#include "GridParameters.h"
-
-
 void main() {
 	int idx = indices[gl_VertexID];
-	vec3 position = pos[idx] * gridSize;
+	vec3 position = pos[idx];
 
-	gl_Position = unVP * vec4(position, 1.0);
+	gl_Position = vec4(position, 1.0);
     
 	fUV = position.xy;
     fMaterialIndex = unMaterialIndex;

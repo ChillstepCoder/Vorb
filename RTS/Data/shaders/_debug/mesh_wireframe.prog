@@ -1,0 +1,4 @@
+mesh_wireframe:
+  vert: mesh_wireframe.vert
+  frag: mesh_wireframe.frag
+  geom: mesh_wireframe.geom

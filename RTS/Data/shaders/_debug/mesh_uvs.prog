@@ -1,0 +1,3 @@
+mesh_uvs:
+  vert: mesh_uvs.vert
+  frag: mesh_uvs.frag
