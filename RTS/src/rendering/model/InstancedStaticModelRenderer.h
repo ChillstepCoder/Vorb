@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/model/StaticModelInstance.h"
+#include "rendering/model/ModelRenderPass.h"
 
 #include "tile/TileContainerEvents.h"
 
@@ -23,8 +24,6 @@ struct ModelInstanceOwner {
     TileIndex tileIndex;
 };
 
-// Allows us to look up the specific model at a position for a tile container
-typedef std::map<TileModelPositionKey, TileModelInstance> SpatialInstanceDataMap;
 
 class Camera3D;
 class InstancedStaticModelGatherer;
@@ -32,6 +31,7 @@ class MaterialShader;
 class GLIndirectBuffer;
 
 DECL_VG(class GLProgram);
+DECL_VG(class SwapChain);
 
 struct TileContainerModelEditEvent;
 
@@ -55,8 +55,12 @@ struct StaticModelInstanceData {
    // GLsync mFenceSync = 0;
 };
 
-class InstancedStaticModelRenderer
-{
+// Allows us to look up the specific model at a position for a tile container
+typedef std::map<TileModelPositionKey, TileModelInstance> SpatialInstanceDataMap;
+// Stores all specific instances of a given model in the world
+typedef std::map<ModelID, StaticModelInstanceData> ModelInstanceMap;
+
+class InstancedStaticModelRenderer {
 public:
     InstancedStaticModelRenderer();
     ~InstancedStaticModelRenderer();
@@ -65,7 +69,8 @@ public:
 
     void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
-    void renderModels(const Camera3D& camera);
+    void renderModelsDefaultPass(const Camera3D& camera);
+    void renderModelsSmudgePass(const Camera3D& camera);
     void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
@@ -76,13 +81,17 @@ private:
     void onModelEditEvent(TileContainerModelEditEvent& evnt);
     void removeTileModelInstanceInternal(TileModelInstance& instance);
 
-    std::map<ModelID, StaticModelInstanceData> mModelsToInstances;
+    ModelInstanceMap mModelsToInstances[e_cast(ModelRenderPass::COUNT)];
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 
     const MaterialShader* mStandardMaterial = nullptr;
     const MaterialShader* mShadowMapperMaterial = nullptr;
+    const MaterialShader* mSmudgeShader = nullptr;
     const vg::GLProgram* mCullingComputeShader = nullptr;
+
+    // Smudge post process
+    std::unique_ptr<vg::SwapChain> mPostProcessSwapChain;
 
     TileContainerListeners mTileContainerEventListeners;
 };

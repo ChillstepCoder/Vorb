@@ -416,7 +416,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Instanced models
     Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-    mStaticModelRenderer->renderModels(camera);
+    mStaticModelRenderer->renderModelsDefaultPass(camera);
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);

@@ -1,0 +1,3 @@
+sunlight:
+  vert: pass_through.vert
+  frag: sunlight.frag
