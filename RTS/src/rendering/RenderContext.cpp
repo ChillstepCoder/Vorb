@@ -223,6 +223,10 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_GLOBAL_UBO, mGlobalUbo);
 
     mCloudManager = std::make_unique<CloudManager>();
+
+    // Improve depth precision (req for reverse depth buffer)
+    // https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/
+    glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 }
 
 RenderContext::~RenderContext() {
