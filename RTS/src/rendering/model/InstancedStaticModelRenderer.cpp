@@ -21,7 +21,6 @@
 
 #include "rendering/gl/GL.h"
 
-#include <Vorb/graphics/GBuffer.h>
 #include <boost/pool/singleton_pool.hpp>
 
 // Types of events we handle
@@ -336,7 +335,7 @@ void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID cont
     }
 }
 
-void InstancedStaticModelRenderer::renderModelsDefaultPass(const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelPass(ModelRenderPass renderPass, const Camera3D& camera) {
     assert(IS_RENDER_THREAD());
     if (sDebugOptions.mHideModels)
         return;
@@ -346,9 +345,8 @@ void InstancedStaticModelRenderer::renderModelsDefaultPass(const Camera3D& camer
     // TODO: Material specific
     glDisable(GL_CULL_FACE);
 
-
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
-    for (auto& it : mModelsToInstances[e_cast(ModelRenderPass::Default)]) {
+    for (auto& it : mModelsToInstances[e_cast(renderPass)]) {
         StaticModelInstanceData& instanceData = it.second;
         if (!instanceData.mDrawCommands) {
             continue;
@@ -384,58 +382,7 @@ void InstancedStaticModelRenderer::renderModelsDefaultPass(const Camera3D& camer
     
     // TODO: Material specific
     glEnable(GL_CULL_FACE);
-    checkGlError("InstancedStaticModelRenderer::renderModels");
-}
-
-void InstancedStaticModelRenderer::renderModelsSmudgePass(const Camera3D& camera) {
-    assert(IS_RENDER_THREAD());
-    if (sDebugOptions.mHideModels)
-        return;
-
-    PROFILE_FUNCTION();
-
-    // TODO: Material specific
-    glDisable(GL_CULL_FACE);
-
-
-    MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
-    for (auto& it : mModelsToInstances[e_cast(ModelRenderPass::Smudge)]) {
-        StaticModelInstanceData& instanceData = it.second;
-        if (!instanceData.mDrawCommands) {
-            continue;
-        }
-
-        // Copy draw commands
-        GLIndirectBuffer& drawCommands = *instanceData.mDrawCommands;
-        const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
-        if (!drawCommandsSize) {
-            continue;
-        }
-
-        ModelID modelId = it.first;
-        const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
-        const Mesh& mesh = *model.getMesh();
-
-        // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-        //// Make sure we created a fence for this instance
-        //assert(instanceData.mFenceSync);
-        //// Make sure all compute commands are finished
-        //while (true) {
-        //    const GLenum res = glClientWaitSync(instanceData.mFenceSync, GL_SYNC_FLUSH_COMMANDS_BIT, 100);
-        //    if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) break;
-        //}
-        //glDeleteSync(instanceData.mFenceSync);
-        //instanceData.mFenceSync = 0;
-
-        //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
-        //assert(totalCommands == drawCommands.mDrawCommands.size());
-        assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
-        mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
-    }
-
-    // TODO: Material specific
-    glEnable(GL_CULL_FACE);
-    checkGlError("InstancedStaticModelRenderer::renderModels");
+    checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
 void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, const f32* shadowDistances) {

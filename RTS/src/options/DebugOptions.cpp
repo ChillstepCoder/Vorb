@@ -55,6 +55,14 @@ DebugOptions::DebugOptions() :
     mShadowBlurPasses(3), // 2
     mShadowBlurRadius(0.4f),  // (0.045f) //1.5f),
     mDisableShadows(true),
+    // Smudge
+    mSmudgeTestPasses(1),
+    mSmudgeTestRadius(7.0f),
+    mSmudgeTestNormThreshold(0.05f), //0.016f
+    mSmudgeTestDepthThreshold(0.104f),
+    mSmudgeTestShowVariance(0),
+    mSmudgeTestShowEdges(0),
+    mSmudgeTestDisable(0),
     // Toggles
     mPauseFrustum(false),
     mWireframe(false),

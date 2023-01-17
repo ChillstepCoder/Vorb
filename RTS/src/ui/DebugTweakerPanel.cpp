@@ -208,18 +208,18 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
             ImGui::Separator();
         }
+
+        if (ImGui::CollapsingHeader("Tonemap Uchimura")) {
+            ImGui::SliderFloat("Max Display Brightness", &sDebugOptions.unUchMaxDisplayBrightness, 0.0f, 2.0f);
+            ImGui::SliderFloat("Contrast", &sDebugOptions.unUchContrast, 0.0f, 2.0f);
+            ImGui::SliderFloat("Linear Section Start", &sDebugOptions.unUchLinearSectionStart, 0.0f, 1.0f);
+            ImGui::SliderFloat("Linear Section Length", &sDebugOptions.unUchLinearSectionLength, 0.0f, 1.0f);
+            ImGui::SliderFloat("Black", &sDebugOptions.unUchBlack, 0.0f, 2.0f);
+            ImGui::SliderFloat("Pedestal", &sDebugOptions.unUchPedestal, 0.0f, 1.0f);
+            ImGui::Separator();
+        }
         
         ImGui::PopID();
-        ImGui::Separator();
-    }
-
-    if (ImGui::CollapsingHeader("Tonemap Uchimura")) {
-        ImGui::SliderFloat("Max Display Brightness", &sDebugOptions.unUchMaxDisplayBrightness, 0.0f, 2.0f);
-        ImGui::SliderFloat("Contrast", &sDebugOptions.unUchContrast, 0.0f, 2.0f);
-        ImGui::SliderFloat("Linear Section Start", &sDebugOptions.unUchLinearSectionStart, 0.0f, 1.0f);
-        ImGui::SliderFloat("Linear Section Length", &sDebugOptions.unUchLinearSectionLength, 0.0f, 1.0f);
-        ImGui::SliderFloat("Black", &sDebugOptions.unUchBlack, 0.0f, 2.0f);
-        ImGui::SliderFloat("Pedestal", &sDebugOptions.unUchPedestal, 0.0f, 1.0f);
         ImGui::Separator();
     }
 
@@ -262,42 +262,65 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Separator();
     }
 
-    if (ImGui::CollapsingHeader("Depth of Field")) {
-        ImGui::PushID(++ID);
-        ImGui::SliderInt("Blur Passes", &sDebugOptions.mDepthOfFieldBlurPasses, 0, 15);
-        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mDepthOfFieldBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Exponent", &sDebugOptions.mDepthOfFieldExponent, 0.0f, 2.0f, "%.3f");
-        ImGui::DragFloatRange2("Blur Range Near", &sDebugOptions.mDepthOfFieldRangeNear.x, &sDebugOptions.mDepthOfFieldRangeNear.y, 0.01f, 0.0f, 3.0f);
-        ImGui::DragFloatRange2("Blur Range Far", &sDebugOptions.mDepthOfFieldRangeFar.x, &sDebugOptions.mDepthOfFieldRangeFar.y, 1.0f, 0.0f, 8000.0f, "%.3f", (const char*)0, ImGuiSliderFlags_Logarithmic);
-        ImGui::Checkbox("DebugRender", &sDebugOptions.mDepthOfFieldDebugRender);
-        ImGui::PopID();
+    if (ImGui::CollapsingHeader("Post Process")) {
+
+        if (ImGui::CollapsingHeader("Depth of Field")) {
+            ImGui::PushID(++ID);
+            ImGui::SliderInt("Blur Passes", &sDebugOptions.mDepthOfFieldBlurPasses, 0, 15);
+            ImGui::SliderFloat("Blur Radius", &sDebugOptions.mDepthOfFieldBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Exponent", &sDebugOptions.mDepthOfFieldExponent, 0.0f, 2.0f, "%.3f");
+            ImGui::DragFloatRange2("Blur Range Near", &sDebugOptions.mDepthOfFieldRangeNear.x, &sDebugOptions.mDepthOfFieldRangeNear.y, 0.01f, 0.0f, 3.0f);
+            ImGui::DragFloatRange2("Blur Range Far", &sDebugOptions.mDepthOfFieldRangeFar.x, &sDebugOptions.mDepthOfFieldRangeFar.y, 1.0f, 0.0f, 8000.0f, "%.3f", (const char*)0, ImGuiSliderFlags_Logarithmic);
+            ImGui::Checkbox("DebugRender", &sDebugOptions.mDepthOfFieldDebugRender);
+            ImGui::PopID();
+            ImGui::Separator();
+        }
+
+        if (ImGui::CollapsingHeader("Ambient Occlusion")) {
+            ImGui::PushID(++ID);
+            ImGui::Checkbox("Disable", &sDebugOptions.mSSAODisabled);
+            ImGui::SliderInt("Blur Passes", &sDebugOptions.mSSAOBlurPasses, 0, 15);
+            ImGui::SliderFloat("Blur Radius", &sDebugOptions.mSSAOBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Bias", &sDebugOptions.mSSAOBias, 0.0f, 0.2f);
+            ImGui::SliderFloat("Radius", &sDebugOptions.mSSAORadius, 0.001f, 4.0f);
+            ImGui::SliderFloat("Range Check Mult", &sDebugOptions.mSSAORangeCheckMult, 0.01f, 1.5f);
+            ImGui::ColorPicker3("Color", &sDebugOptions.mSSAOColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+            ImGui::PopID();
+            ImGui::Separator();
+        }
+
+        if (ImGui::CollapsingHeader("Shadows")) {
+            ImGui::PushID(++ID);
+            ImGui::Checkbox("Disable", &sDebugOptions.mDisableShadows);
+            ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Update Rate Seconds", &sDebugOptions.mShadowUpdateRateSeconds, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderInt("Blur Passes", &sDebugOptions.mShadowBlurPasses, 0, 15);
+            ImGui::SliderFloat("Blur Radius", &sDebugOptions.mShadowBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+            ImGui::PopID();
+            ImGui::Separator();
+        }
+
+        if (ImGui::CollapsingHeader("Smudge")) {
+            ImGui::SliderInt("Blend Passes", &sDebugOptions.mSmudgeTestPasses, 0, 15);
+            ImGui::SliderFloat("Blend Radius", &sDebugOptions.mSmudgeTestRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Blend Norm Threshold", &sDebugOptions.mSmudgeTestNormThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::SliderFloat("Blend Depth Threshold", &sDebugOptions.mSmudgeTestDepthThreshold, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+            ImGui::Checkbox("Show Variance", &sDebugOptions.mSmudgeTestShowVariance);
+            ImGui::Checkbox("Show Edges", &sDebugOptions.mSmudgeTestShowEdges);
+            ImGui::Checkbox("Disable", &sDebugOptions.mSmudgeTestDisable);
+        }
+
         ImGui::Separator();
     }
 
-    if (ImGui::CollapsingHeader("Ambient Occlusion")) {
-        ImGui::PushID(++ID);
-        ImGui::Checkbox("Disable", &sDebugOptions.mSSAODisabled);
-        ImGui::SliderInt("Blur Passes", &sDebugOptions.mSSAOBlurPasses, 0, 15);
-        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mSSAOBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Bias", &sDebugOptions.mSSAOBias, 0.0f, 0.2f);
-        ImGui::SliderFloat("Radius", &sDebugOptions.mSSAORadius, 0.001f, 4.0f);
-        ImGui::SliderFloat("Range Check Mult", &sDebugOptions.mSSAORangeCheckMult, 0.01f, 1.5f);
-        ImGui::ColorPicker3("Color", &sDebugOptions.mSSAOColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::PopID();
-        ImGui::Separator();
-    }
-
-    if (ImGui::CollapsingHeader("Shadows")) {
-        ImGui::PushID(++ID);
-        ImGui::Checkbox("Disable", &sDebugOptions.mDisableShadows);
-        ImGui::SliderFloat("Z Mult", &sDebugOptions.mShadowZMult, 0.0f, 100.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Update Rate Seconds", &sDebugOptions.mShadowUpdateRateSeconds, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Near Cascade Size", &sDebugOptions.mShadowNearSize, 10.0f, 300.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderInt("Blur Passes", &sDebugOptions.mShadowBlurPasses, 0, 15);
-        ImGui::SliderFloat("Blur Radius", &sDebugOptions.mShadowBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::ColorPicker3("Color", &sDebugOptions.mShadowColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
-        ImGui::PopID();
-        ImGui::Separator();
+    if (ImGui::CollapsingHeader("Physics")) {
+        ImGui::Text("Physics Debug");
+        ImGui::Checkbox("Static Physics (Toggle to refresh)", &sDebugOptions.mShowStaticPhysics);
+        ImGui::Checkbox("Terrain Physics (Toggle to refresh)", &sDebugOptions.mShowTerrainPhysics);
+        ImGui::Checkbox("Dynamic Physics", &sDebugOptions.mShowDynamicPhysics);
+        ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
     }
 
     if (ImGui::CollapsingHeader("Toggles")) {
@@ -317,15 +340,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
         ImGui::Separator();
-        ImGui::Text("Physics Debug");
-        ImGui::Checkbox("Static Physics (Toggle to refresh)", &sDebugOptions.mShowStaticPhysics);
-        ImGui::Checkbox("Terrain Physics (Toggle to refresh)", &sDebugOptions.mShowTerrainPhysics);
-        ImGui::Checkbox("Dynamic Physics", &sDebugOptions.mShowDynamicPhysics);
-        ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
-
-        ImGui::Separator();
     }
-
 
     if (ImGui::CollapsingHeader("Models")) {
         ImGui::Checkbox("Hide Models", &sDebugOptions.mHideModels);

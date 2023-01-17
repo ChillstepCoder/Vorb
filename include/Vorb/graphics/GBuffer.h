@@ -90,7 +90,12 @@ namespace vorb {
 
             GBuffer& initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
             GBuffer& initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
+            // Allows us to share depth with other framebuffers, we will NOT delete this depth texture on destruction
+            void setSharedDepthTexture(CALLEE_DELETE VGTexture depthTexture);
             //GBuffer& initDepthStencil(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH24_STENCIL8);
+
+            void clearAttachment(GBufferAttachmentIndex index, const f32v4& newColor = f32v4(0.0f));
+            void clearDepth(f32 newDepth = 1.0f);
 
             void use() const;
             static void unuse();
@@ -111,7 +116,8 @@ namespace vorb {
 
             VGFramebuffer getFbo() const { return mFbo; }
 
-            void setDepthTexture(VGTexture tex) { mTexDepth.mTexture = tex; }
+            // TODO: This is WRONG its a hack for my shitty auto shader uniforms
+            // ~GBuffer() will delete shared textures!!!!
             void setNormalTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture = tex; }
             void setTertiaryTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture = tex; }
 
@@ -127,6 +133,8 @@ namespace vorb {
             static_assert((int)GBufferAttachmentIndex::COUNT == 3, "Update brace init");
             GBufferAttachmentTexture mTexDepth = {}; ///< Depth texture of GBuffer
             int mLayerCount = 1;
+            // TODO: Flags
+            bool mSharedDepth = false;
         };
 
         // Wrapper that represents a chain of vg::GBuffer

@@ -31,7 +31,6 @@ class MaterialShader;
 class GLIndirectBuffer;
 
 DECL_VG(class GLProgram);
-DECL_VG(class SwapChain);
 
 struct TileContainerModelEditEvent;
 
@@ -69,8 +68,7 @@ public:
 
     void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
-    void renderModelsDefaultPass(const Camera3D& camera);
-    void renderModelsSmudgePass(const Camera3D& camera);
+    void renderModelPass(ModelRenderPass renderPass, const Camera3D& camera);
     void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
@@ -89,9 +87,6 @@ private:
     const MaterialShader* mShadowMapperMaterial = nullptr;
     const MaterialShader* mSmudgeShader = nullptr;
     const vg::GLProgram* mCullingComputeShader = nullptr;
-
-    // Smudge post process
-    std::unique_ptr<vg::SwapChain> mPostProcessSwapChain;
 
     TileContainerListeners mTileContainerEventListeners;
 };

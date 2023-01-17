@@ -65,13 +65,12 @@ float getNormalVariance(vec3 n1, vec3 n2) {
 
 void main() {
     vec3 baseNormal = texture(unNormalFbo, fUV).rgb;
-    vec3 baseColor = texture(unAlbedoFbo, fUV).rgb;
+    vec4 baseColor = texture(unAlbedoFbo, fUV).rgba;
     vec3 avgColor;
-    float normLength = length(baseNormal);
-    if (normLength > 0.0) {
+    if (baseColor.a > 0.0) {
         vec3 avgNormal = getAverageNormalAndColor(unNormalFbo, fUV, unScreenResolution, unDirection, avgColor);
         if (unShowVariance == 1) {
-            oColor.rgb = vec3(getNormalVariance(baseNormal, avgNormal) * 20.0, 0.0, 0.0);
+            oColor = vec4(getNormalVariance(baseNormal, avgNormal) * 20.0, 0.0, 0.0, 1.0);
             oNormal = avgNormal;
         } else if (getNormalVariance(avgNormal, baseNormal) > unNormalThreshold) {
             if (unShowEdges == 1) {
@@ -80,15 +79,12 @@ void main() {
                 oColor.rgb = avgColor;
             }
             oNormal = avgNormal;
+            oColor.a = 1.0;
         } else {
-            oColor.rgb = baseColor;
+            oColor = baseColor;
             oNormal = baseNormal;
         }
     } else {
-        oColor.rgb = baseColor;
-        oNormal.rgb = vec3(0.0);
+        discard;
     }
-    oColor.a = 1.0;
-    
-
 }

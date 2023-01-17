@@ -35,6 +35,7 @@ class CloudManager;
 class RenderState;
 class InstancedStaticModelGatherer;
 class InstancedStaticModelRenderer;
+class SmudgeRenderer;
 
 struct SDL_Window;
 
@@ -161,6 +162,7 @@ private:
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
     mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
+    mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;

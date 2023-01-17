@@ -27,6 +27,7 @@
 #include "rendering/ParticleSystemRenderer.h"
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
+#include "rendering/post_process/SmudgeRenderer.h"
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
@@ -269,6 +270,7 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         mTerrainRenderer = std::make_unique<TerrainRenderer>();
         mGrassRenderer = std::make_unique<GrassRenderer>();
         mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
+        mSmudgeRenderer = std::make_unique<SmudgeRenderer>(mScreenResolution);
         checkGlError("Renderer init");
     }
 
@@ -420,7 +422,18 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Instanced models
     Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelsDefaultPass(camera);
+    mStaticModelRenderer->renderModelPass(ModelRenderPass::Default, camera);
+
+    // Smudge
+    {
+        mSmudgeRenderer->useSmudgeFBO(mActiveGBuffer->getDepthTexture());
+        mStaticModelRenderer->renderModelPass(ModelRenderPass::Smudge, camera);
+        if (!sDebugOptions.mHideGrass) {
+            mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
+        }
+        // mActiveGBuffer will be used at end
+        mSmudgeRenderer->renderSmudge(mActiveGBuffer, camera);
+    }
 
     //mEcsRenderer->renderSimpleSprites(camera);
     mEcsRenderer->renderInteractUI(camera);
@@ -459,9 +472,10 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Grass + billboards
 
     mTileContainerRenderer->renderBillboards(mBillboardMeshes, camera);
-    if (!sDebugOptions.mHideGrass) {
+    // PRE SMUDGE GRASS PASS
+    /*if (!sDebugOptions.mHideGrass) {
         mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
-    }
+    }*/
 
     // Terrain
     if (!sDebugOptions.mDisableTerrain) {
@@ -598,8 +612,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Share values
     mTransparencyGBuffer->setTertiaryTexture(mActiveGBuffer->getTertiaryTexture());
     mTransparencyGBuffer->setNormalTexture(mActiveGBuffer->getNormalTexture());
-    mTransparencyGBuffer->setDepthTexture(mActiveGBuffer->getDepthTexture());
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mActiveGBuffer->getDepthTexture(), 0);
+    mTransparencyGBuffer->setSharedDepthTexture(mActiveGBuffer->getDepthTexture());
 
     // Final Lighting
     MaterialRenderer::bindMaterialForRender(*mSceneLightingMaterial);

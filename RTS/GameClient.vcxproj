@@ -359,6 +359,7 @@
     <ClCompile Include="src\rendering\post_process\ShadowLodDetail.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
+    <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
     <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
@@ -621,6 +622,7 @@
     <ClInclude Include="src\rendering\post_process\ShadowLodDetail.h" />
     <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
     <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
+    <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h" />
     <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
     <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
     <ClInclude Include="src\rendering\renderstate\RenderState.h" />

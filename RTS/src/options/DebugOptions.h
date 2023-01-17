@@ -63,6 +63,14 @@ struct DebugOptions {
     int mShadowBlurPasses; // 2
     float mShadowBlurRadius;
     bool mDisableShadows;
+    // Smudge
+    int mSmudgeTestPasses;
+    f32 mSmudgeTestRadius;
+    f32 mSmudgeTestNormThreshold;
+    f32 mSmudgeTestDepthThreshold;
+    bool mSmudgeTestShowVariance;
+    bool mSmudgeTestShowEdges;
+    bool mSmudgeTestDisable;
     // Toggles
     bool mPauseFrustum;
     bool mWireframe;

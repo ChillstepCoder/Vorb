@@ -59,12 +59,10 @@ bool ModelEditorPanel::updateAndRender() {
     // Clear framebuffers
     f32v4 colorClear(1.0f, 1.0f, 1.0f, 0.0f);
     f32v4 normalClear(0.0f);
-    f32 clearDepth = 1.0f;
     for (int i = 0; i < 3; ++i) {
-        VGFramebuffer fbo = mGBuffers[i]->getFbo();
-        glClearNamedFramebufferfv(fbo, GL_COLOR, (GLint)vg::GBufferAttachmentIndex::ALBEDO, &colorClear.x);
-        glClearNamedFramebufferfv(fbo, GL_COLOR, (GLint)vg::GBufferAttachmentIndex::NORMALS, &normalClear.x);
-        glClearNamedFramebufferfv(fbo, GL_DEPTH, 0, &clearDepth);
+        mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 0.0f));
+        mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
+        mGBuffers[i]->clearDepth();
     }
     mGBuffers[0]->use();
 

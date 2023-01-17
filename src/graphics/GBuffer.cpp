@@ -15,7 +15,7 @@ vg::GBuffer::~GBuffer() {
                 mAttachments[i].mTexture = 0;
             }
         }
-        if (mTexDepth.mTexture) {
+        if (mTexDepth.mTexture && !mSharedDepth) {
             glDeleteTextures(1, &mTexDepth.mTexture);
             mTexDepth.mTexture = 0;
         }
@@ -48,6 +48,19 @@ vg::GBuffer& vg::GBuffer::initDepth(GBufferDepthFormat depthFormat, int mipLevel
     checkError();
     return *this;
 }
+
+void vg::GBuffer::setSharedDepthTexture(CALLEE_DELETE VGTexture depthTexture) {
+    // We can set shared multiple times but not if we called initDepth previously
+    assert(mSharedDepth || !mTexDepth.mTexture);
+    assert(depthTexture);
+
+    mSharedDepth = true;
+    if (mTexDepth.mTexture != depthTexture) {
+        mTexDepth.mTexture = depthTexture;
+        glNamedFramebufferTexture(mFbo, GL_DEPTH_ATTACHMENT, depthTexture, 0);
+    }
+}
+
 //vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH24_STENCIL8*/) {
 //    glCreateTextures(GL_TEXTURE_2D, 1, &mTexDepth);
 //    glTextureStorage2D(mTexDepth, 1, (VGEnum)depthFormat, mSize.x, mSize.y);
@@ -74,6 +87,16 @@ vorb::graphics::GBuffer& vorb::graphics::GBuffer::operator=(GBuffer&& o) noexcep
     memcpy(this, &o, sizeof(vg::GBuffer));
     o.mFbo = 0;
     return *this;
+}
+
+void vg::GBuffer::clearAttachment(GBufferAttachmentIndex index, const f32v4& newColor /*= f32v4(0.0f)*/) {
+    assert(mAttachments[int(index)].mTexture);
+    glClearNamedFramebufferfv(mFbo, GL_COLOR, (GLint)index, &const_cast<f32v4&>(newColor).x);
+}
+
+void vg::GBuffer::clearDepth(f32 newDepth /*= 1.0f*/) {
+    assert(mTexDepth.mTexture);
+    glClearNamedFramebufferfv(mFbo, GL_DEPTH, 0, &newDepth);
 }
 
 void vorb::graphics::GBuffer::unuse() {
