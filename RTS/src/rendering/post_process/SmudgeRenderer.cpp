@@ -26,13 +26,26 @@ SmudgeRenderer::SmudgeRenderer(const ui32v2& screenResolution) {
 SmudgeRenderer::~SmudgeRenderer() {
 }
 
-void SmudgeRenderer::useSmudgeFBO(VGTexture depthTexture) {
+void SmudgeRenderer::beginSmudgePass(vg::GBuffer* activeGBuffer) {
+    assert(activeGBuffer->getSize() == mGBuffers[0]->getSize());
     if (sDebugOptions.mSmudgeTestDisable) {
         return;
     }
-    mGBuffers[0]->setSharedDepthTexture(depthTexture);
-    mGBuffers[0]->use();
+    if (activeGBuffer->hasStencil()) {
+        // All GBuffers will use same depth/stencil
+        mGBuffers[0]->setSharedDepthStencilTexture(activeGBuffer->getDepthTexture());
+        mGBuffers[1]->setSharedDepthStencilTexture(activeGBuffer->getDepthTexture());
+        // Enable stencil buffer to set 1s whenever we add a fragment
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    }
+    else {
+        mGBuffers[0]->setSharedDepthTexture(activeGBuffer->getDepthTexture());
+        //mGBuffers[0]->use();
+    }
 
+    // TODO: If smudge test passes is always 1, we only needa single gbuffer
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO);
         mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
@@ -60,13 +73,22 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
     glUniform1i(mSmudgeShader->mProgram.getUniform("unShowEdges"), sDebugOptions.mSmudgeTestShowEdges);
     glUniform2f(mSmudgeShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
     glUniform2f(mSmudgeShader->mProgram.getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
-    mGBuffers[0]->bindDepthTexture(freeTextureIndex + 2);
+    activeGBuffer->bindDepthTexture(freeTextureIndex + 2);
     vg::DepthState::NONE.set();
-    for (int i = 0; i < sDebugOptions.mSmudgeTestPasses; ++i) {
 
+    if (activeGBuffer->hasStencil()) {
+        // Enable stencil buffer only pass where we have 1s
+        glStencilFunc(GL_EQUAL, 1, 0xFF);
+        // Disable stencil modification
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    }
+
+    activeGBuffer->bindAlbedoTexture(freeTextureIndex);
+    activeGBuffer->bindNormalTexture(freeTextureIndex + 1);
+
+    assert(sDebugOptions.mSmudgeTestPasses > 0);
+    for (int i = 0;; ++i) {
         // Horizontal
-        mGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
-        mGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
         mGBuffers[1]->use();
         // Replace normals TODO: Build into gbuffer
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::ALBEDO), GL_ONE, GL_ZERO);
@@ -79,7 +101,8 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
         mGBuffers[1]->bindAlbedoTexture(freeTextureIndex);
         mGBuffers[1]->bindNormalTexture(freeTextureIndex + 1);
         // Last pass composites onto main scene
-        if (i == sDebugOptions.mSmudgeTestPasses - 1) {
+        const bool isLastPass = (i == sDebugOptions.mSmudgeTestPasses - 1);
+        if (isLastPass) {
             activeGBuffer->use();
         }
         else {
@@ -89,6 +112,18 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mSmudgeTestRadius);
         sGlobalFullQuadVBO.draw();
+
+        if (isLastPass) {
+            break;
+        }
+        else {
+            mGBuffers[0]->bindAlbedoTexture(freeTextureIndex);
+            mGBuffers[0]->bindNormalTexture(freeTextureIndex + 1);
+        }
     }
     vg::DepthState::restorePrevious();
+
+    if (activeGBuffer->hasStencil()) {
+        glDisable(GL_STENCIL_TEST);
+    }
 }

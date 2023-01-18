@@ -35,7 +35,7 @@ DebugOptions::DebugOptions() :
     // DOF
     mDepthOfFieldBlurRadius(0.6f),
     mDepthOfFieldBlurPasses(1),
-    mDepthOfFieldRangeNear(0.0f, 2.0f),
+    mDepthOfFieldRangeNear(0.0f, 1.0f),
     mDepthOfFieldRangeFar(10.0f, 1000.0f),
     mDepthOfFieldExponent(1.0f),
     mDepthOfFieldDebugRender(false),

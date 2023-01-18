@@ -66,6 +66,10 @@ namespace vorb {
             DEPTH_32 = GL_DEPTH_COMPONENT32,
         };
 
+        enum class GBufferDepthStencilFormat {
+            DEPTH_24_STENCIL_8 = GL_DEPTH24_STENCIL8
+        };
+
         struct GBufferAttachmentTexture {
             VGTexture mTexture;
             int mMipLevels;
@@ -90,12 +94,14 @@ namespace vorb {
 
             GBuffer& initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
             GBuffer& initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
+            GBuffer& initDepthStencil(GBufferDepthStencilFormat depthFormat = GBufferDepthStencilFormat::DEPTH_24_STENCIL_8, int mipLevels = 1);
             // Allows us to share depth with other framebuffers, we will NOT delete this depth texture on destruction
             void setSharedDepthTexture(CALLEE_DELETE VGTexture depthTexture);
-            //GBuffer& initDepthStencil(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH24_STENCIL8);
+            void setSharedDepthStencilTexture(CALLEE_DELETE VGTexture depthStencilTexture);
 
             void clearAttachment(GBufferAttachmentIndex index, const f32v4& newColor = f32v4(0.0f));
             void clearDepth(f32 newDepth = 1.0f);
+            void clearDepthStencil(f32 newDepth = 1.0f, GLint newStencil = 0);
 
             void use() const;
             static void unuse();
@@ -115,6 +121,7 @@ namespace vorb {
             const ui32& getNumMipLevels(GBufferAttachmentIndex index) const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mMipLevels; }
 
             VGFramebuffer getFbo() const { return mFbo; }
+            bool hasStencil() const { return mHasStencil; }
 
             // TODO: This is WRONG its a hack for my shitty auto shader uniforms
             // ~GBuffer() will delete shared textures!!!!
@@ -131,10 +138,11 @@ namespace vorb {
             GBufferAttachmentTexture mAttachments[(int)GBufferAttachmentIndex::COUNT] = {};
             VGEnum mDrawBuffers[(int)GBufferAttachmentIndex::COUNT] = { GL_NONE, GL_NONE, GL_NONE };
             static_assert((int)GBufferAttachmentIndex::COUNT == 3, "Update brace init");
-            GBufferAttachmentTexture mTexDepth = {}; ///< Depth texture of GBuffer
+            GBufferAttachmentTexture mTexDepth = {}; // Depth texture 
             int mLayerCount = 1;
             // TODO: Flags
             bool mSharedDepth = false;
+            bool mHasStencil = false;
         };
 
         // Wrapper that represents a chain of vg::GBuffer

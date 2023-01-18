@@ -9,7 +9,7 @@ public:
     SmudgeRenderer(const ui32v2& screenResolution);
     ~SmudgeRenderer();
 
-    void useSmudgeFBO(VGTexture depthTexture);
+    void beginSmudgePass(vg::GBuffer* activeGBuffer);
     void renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& camera);
 private:
     // Smudge post process

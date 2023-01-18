@@ -74,6 +74,8 @@
 
 #include "options/DebugOptions.h"
 
+#define USE_STENCIL 1
+
 // Opengl debugging
 void APIENTRY glDebugOutput(GLenum source,
     GLenum type,
@@ -201,10 +203,15 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // GBuffer
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
+        // TODO: Albedo can be 8 bit, we don't need float albedo for HDR, just compute the HDR in the final stage
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB8);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::R8);
+#if USE_STENCIL == 1
+        mGBuffers[i]->initDepthStencil();
+#else
         mGBuffers[i]->initDepth(vg::GBufferDepthFormat::DEPTH_32);
+#endif
     }
     mTransparencyGBuffer = std::make_unique<vg::GBuffer>(mScreenResolution);
     mTransparencyGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
@@ -403,13 +410,13 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     if (sDebugOptions.mWireframe) {
         glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | (GL_STENCIL_BUFFER_BIT * USE_STENCIL));
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
     else {
         // TODO: Can we not do GL_COLOR_BUFFER_BIT? (IT causes clouds issues rn)
         // TODO2: What issues? lol thanks for nothing previous self
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | (GL_STENCIL_BUFFER_BIT * USE_STENCIL));
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
@@ -426,7 +433,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Smudge
     {
-        mSmudgeRenderer->useSmudgeFBO(mActiveGBuffer->getDepthTexture());
+        mSmudgeRenderer->beginSmudgePass(mActiveGBuffer);
         mStaticModelRenderer->renderModelPass(ModelRenderPass::Smudge, camera);
         if (!sDebugOptions.mHideGrass) {
             mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
