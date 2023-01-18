@@ -67,7 +67,7 @@ void main() {
     vec3 baseNormal = texture(unNormalFbo, fUV).rgb;
     vec4 baseColor = texture(unAlbedoFbo, fUV).rgba;
     vec3 avgColor;
-    if (baseColor.a > 0.0) {
+    if (dot(baseNormal, baseNormal) > 0.0) {
         vec3 avgNormal = getAverageNormalAndColor(unNormalFbo, fUV, unScreenResolution, unDirection, avgColor);
         if (unShowVariance == 1) {
             oColor = vec4(getNormalVariance(baseNormal, avgNormal) * 20.0, 0.0, 0.0, 1.0);
