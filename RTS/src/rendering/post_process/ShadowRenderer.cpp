@@ -16,7 +16,7 @@
 
 //#include "debugging/DebugRenderer.h"
 
-constexpr int DEPTH_MAP_RESOLUTION = 4096;
+constexpr int DEPTH_MAP_RESOLUTION = 2048; //4096
 
 
 ////===========================================================================
@@ -449,7 +449,7 @@ void ShadowRenderer::generateMipmaps() {
     ui32 height = mShadowMipGBuffer->getSize().y / 2;
     for (int i = 0; i < mipCount - 1; ++i) {
         glUniform1i(levelUniform, i);
-        glTextureBarrier();
+        glTextureBarrier(); //TODO Can we eliminate these?
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, mShadowMipGBuffer->getAlbedoTexture(), i + 1); // Write to next level
         GLenum buf = GL_COLOR_ATTACHMENT0;
         glDrawBuffers((GLsizei)1, &buf);

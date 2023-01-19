@@ -32,12 +32,13 @@ void Skybox::init(const MaterialShader* material) {
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
     f32v3 bottomLeft(-RADIUS);
     const SubTexture dummyTexture = {};
-    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::LEFT, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::FRONT, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(DIAMETER, 0.0f, 0.0f), dims, CubeFacing::RIGHT, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, DIAMETER, 0.0f), dims, CubeFacing::BACK, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, 0.0f, DIAMETER), dims, CubeFacing::TOP, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::BOTTOM, dummyTexture, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::RIGHT, dummyTexture, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::BACK, dummyTexture, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(DIAMETER, 0.0f, 0.0f), dims, CubeFacing::LEFT, dummyTexture, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, DIAMETER, 0.0f), dims, CubeFacing::FRONT, dummyTexture, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, 0.0f, DIAMETER), dims, CubeFacing::BOTTOM, dummyTexture, uvRect, COLOR_WHITE);
+    // This is broken but its OK because this is always invisible
+    //meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::TOP, dummyTexture, uvRect, COLOR_WHITE);
     mSkyboxMesh = std::make_unique<Mesh>();
     meshBuilder.finishMesh(mSkyboxMesh, f32v3(0.0f));
     //TileVertex verts[NUM_VERTS];
@@ -83,9 +84,11 @@ void Skybox::init(const MaterialShader* material) {
 }
 
 void Skybox::render() {
+    glEnable(GL_DEPTH_CLAMP);
     assert(mMaterial);
     vg::DepthState::READ.set();
     MaterialRenderer::renderMesh(*mSkyboxMesh, *mMaterial);
 
     vg::DepthState::restorePrevious();
+    glDisable(GL_DEPTH_CLAMP);
 }

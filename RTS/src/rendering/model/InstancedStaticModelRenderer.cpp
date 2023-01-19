@@ -414,7 +414,6 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
             const Mesh& mesh = *model.getMesh();
 
             assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
-
             mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
         }
     }

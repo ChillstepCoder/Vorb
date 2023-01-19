@@ -508,11 +508,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     UIContext::getInstance().renderEditorBrushDecals(camera);
 
     // Sky
-    glEnable(GL_DEPTH_CLAMP);
-    glDisable(GL_CULL_FACE); // TODO: Fix geometry so we dont have to disable cull face
     mSkyBox->render();
-    glEnable(GL_CULL_FACE);
-    glDisable(GL_DEPTH_CLAMP);
 
     // Horizon
     //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
@@ -520,6 +516,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Shadows
     if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
         if (mShadowRenderer->shouldUpdateShadowsThisFrame()) {
+            PROFILE_SCOPE("Update shadows");
             mShadowRenderer->useShadowBuffer();
             glEnable(GL_DEPTH_CLAMP);
 
