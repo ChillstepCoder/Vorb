@@ -1,6 +1,5 @@
 
 vec4 viewPosFromDepth(float depth, vec2 fboUV, mat4 inverseP) {
-
     vec4 clipSpacePosition = vec4(fboUV * 2.0 - 1.0, depth, 1.0);
     vec4 viewSpacePosition = inverseP * clipSpacePosition;
 

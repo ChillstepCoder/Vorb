@@ -141,6 +141,11 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
 
     renderMenuBar();
 
+    // Add FPS for convenience
+    char buffer[64];
+    sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
+    ImGui::Text(buffer);
+
     ImGui::Text("World Editor");
     ui32 ID = 10;
 

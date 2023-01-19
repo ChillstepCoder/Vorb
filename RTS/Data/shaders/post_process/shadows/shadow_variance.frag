@@ -15,8 +15,6 @@ const int cascadeCount = 4;
 
 out vec3 fColor;
 
-// TODO: SHARED
-
 
 // For reducing light bleed
 float linstep(float low, float high, float v) {
@@ -27,7 +25,7 @@ float linstep(float low, float high, float v) {
 vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 inverseLight) {
 
 	// get depth of current fragment from light's perspective
-	float currentDepth = projCoords.z;
+	float currentDepth = projCoords.z * 2.0 - 1.0;
 	//if (currentDepth  > 1.0) {
 	//	return 0.0;
 	//}
@@ -42,7 +40,6 @@ vec2 getShadowVariance(vec3 projCoords, int layer, vec3 worldCoords, mat4 invers
 	float pMax = variance / (variance + d * d); // maximum percentage of values greater than equal to currentDepth
 	// Reduce light bleeding hack
 	pMax = linstep(0.98, 1.0, pMax);
-	
 	
 	// Get world position of occluder
 	float z = moments.x * 2.0 - 1.0;
@@ -74,8 +71,8 @@ vec2 getShadowAndDistAtLayer(int layer, vec3 worldSpacePosition) {
 
 vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
 	vec4 worldSpacePosition = InverseV * viewSpacePosition + vec4(CameraOffset, 0.0);
-	// Bias with normals
-	worldSpacePosition.xyz -= normal * 0.04;
+	// Bias with normals (This looks wrong! += is better but idk)
+	// worldSpacePosition.xyz -= normal * 0.04;
     float depthValue = abs(viewSpacePosition.z);
 	
 	float dist = 0.0;
@@ -106,7 +103,7 @@ vec2 getShadow(vec4 viewSpacePosition, vec3 normal) {
 
 void main() {
 	vec3 normal = texture(FboNormal, fUV).rgb * 2.0 - 1.0;
-	normal.z *= 0.0; // No Z bias
+	//normal.z *= 0.0; // No Z bias
 	float depth = texture(FboDepth, fUV).r;
     vec4 viewSpacePosition = viewPosFromDepth(depth, fUV, InverseP);
 	vec2 shadowAndDist = getShadow(viewSpacePosition, normal);
