@@ -12,6 +12,7 @@ uniform float DebugFloat2;
 
 #include "lighting/scene_lighting.glsl"
 #include "util/hsv.glsl"
+#include "util/depth.glsl"
 
 in vec2 fUV;
 
@@ -96,7 +97,7 @@ void main() {
     
     // Lightings
 	float depth = texture2D(FboDepth, fUV).r;
-    vec3 worldPos = worldPosFromDepth(depth, fUV);
+    vec3 worldPos = worldPosFromDepth(depth, fUV, InverseV, InverseP);
     fColor.rgb = lightPixel(fColor.rgb, vec3(0.0, 0.0, 1.0), worldPos, fUV, 0.9, 0.0, 0.0);
     //fColor.rgb = 0.0001 * fColor.rgb + vec3(gradientX, 0.0, 0.0);
     

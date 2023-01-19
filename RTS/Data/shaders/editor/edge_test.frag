@@ -4,10 +4,7 @@ uniform vec2 unCameraZRange;
 uniform float unEdgeThreshold;
 uniform float unDepthThreshold;
 
-float linearizeDepth(float d) {
-    float zn = 2.0 * d - 1.0;
-    return 2.0 * unCameraZRange.x * unCameraZRange.y / (unCameraZRange.y + unCameraZRange.x - zn * (unCameraZRange.y - unCameraZRange.x));
-}
+#include "util/depth.glsl"
 
 in vec2 fUV;
 
@@ -15,7 +12,7 @@ layout (location = 0) out vec4 oColor;
 
 void main() {
     vec3 baseNormal = texture(unNormalFbo, fUV).rgb;
-    float baseDepth = linearizeDepth(texture(unDepthFbo, fUV).r);
+    float baseDepth = linearizeDepth(texture(unDepthFbo, fUV).r, unCameraZRange);
     
     // Edge detect
     // Sobel operator
@@ -40,14 +37,14 @@ void main() {
     vec3 s12 = texelFetchOffset(unNormalFbo, pix, 0, ivec2(0,1)).rgb;
     vec3 s22 = texelFetchOffset(unNormalFbo, pix, 0, ivec2(1,1)).rgb;
     // Depth differences so we dont detect edges with pixels too far away
-    float d00 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(-1,-1)).r) - baseDepth);
-    float d10 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(0,-1)).r) - baseDepth);
-    float d20 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(1,-1)).r) - baseDepth);
-    float d01 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(-1,0)).r) - baseDepth);
-    float d21 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(1,0)).r) - baseDepth);
-    float d02 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(-1,1)).r) - baseDepth);
-    float d12 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(0,1)).r) - baseDepth);
-    float d22 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(1,1)).r) - baseDepth);
+    float d00 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(-1,-1)).r, unCameraZRange) - baseDepth);
+    float d10 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(0,-1)).r, unCameraZRange) - baseDepth);
+    float d20 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(1,-1)).r, unCameraZRange) - baseDepth);
+    float d01 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(-1,0)).r, unCameraZRange) - baseDepth);
+    float d21 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(1,0)).r, unCameraZRange) - baseDepth);
+    float d02 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(-1,1)).r, unCameraZRange) - baseDepth);
+    float d12 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(0,1)).r, unCameraZRange) - baseDepth);
+    float d22 = abs(linearizeDepth(texelFetchOffset(unDepthFbo, pix, 0, ivec2(1,1)).r, unCameraZRange) - baseDepth);
     
     vec3 sx = vec3(0.0);
     vec3 sy = vec3(0.0);

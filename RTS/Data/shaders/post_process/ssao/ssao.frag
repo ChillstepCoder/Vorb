@@ -11,7 +11,8 @@ uniform float unOcclusionAdjust = 7.0;
 const int KERNEL_SIZE = 32; // Match C++
 uniform vec3 unSamples[KERNEL_SIZE];
 
-#include "../../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
+#include "util/depth.glsl"
 
 in vec2 fUV;
 
@@ -19,26 +20,8 @@ const float NOISE_SCALE = 4.0;
 
 out float fColor;
 
-// TODO: Shared
-vec4 viewPosFromDepth(float depth, vec2 fboUV, mat4 inverseP) {
-    float z = depth * 2.0 - 1.0;
-
-    vec4 clipSpacePosition = vec4(fboUV * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = inverseP * clipSpacePosition;
-
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-
-    return viewSpacePosition;
-}
-
 float easeInOutCubic(float x) {
    return x < 0.5 ? (4.0 * x * x * x) : (1.0 - pow(-2.0 * x + 2.0, 3.0) / 2.0);
-}
-
-float linearizeDepth(float d) {
-    float zn = 2.0 * d - 1.0;
-    return 2.0 * CameraZRange.x * CameraZRange.y / (CameraZRange.y + CameraZRange.x - zn * (CameraZRange.y - CameraZRange.x));
 }
 
 void main() {
@@ -56,7 +39,7 @@ void main() {
     mat3 TBN = mat3(tangent, bitangent, normal);
 	
 	// Reduce AO far from the camera
-	float depthBias = unBias * (linearizeDepth(depth) + 30.0) * 0.03;
+	float depthBias = unBias * (linearizeDepth(depth, CameraZRange) + 30.0) * 0.03;
    
     float occlusion = 0.0;
 	for(int i = 0; i < KERNEL_SIZE; ++i)

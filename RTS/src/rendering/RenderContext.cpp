@@ -200,12 +200,18 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 
     sGlobalFullQuadVBO.init();
 
+    // GRAPHICS STUDIES
+    // GTA5 https://www.adriancourreges.com/blog/2015/11/02/gta-v-graphics-study/
+    // DOOM2016 https://www.adriancourreges.com/blog/2016/09/09/doom-2016-graphics-study/
+    // Cyberpunk https://c0de517e.blogspot.com/2020/12/hallucinations-re-rendering-of.html
+    // Metro exodus https://aschrein.github.io/2019/08/11/metro_breakdown.html
+    // Others https://www.reddit.com/r/TheMakingOfGames/search?q=frame&restrict_sr=on
     // GBuffer
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
         // TODO: Albedo can be 8 bit, we don't need float albedo for HDR, just compute the HDR in the final stage
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::R8);
 #if USE_STENCIL == 1
         mGBuffers[i]->initDepthStencil();
@@ -214,7 +220,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 #endif
     }
     mTransparencyGBuffer = std::make_unique<vg::GBuffer>(mScreenResolution);
-    mTransparencyGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
+    mTransparencyGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
 
     checkGlError("GBuffer init");
 
@@ -232,7 +238,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 
     mCloudManager = std::make_unique<CloudManager>();
 
-    // Improve depth precision (req for reverse depth buffer)
+    // Improve depth precision (req for reverse depth buffer if we ever wanna do that)
     // https://www.danielecarbone.com/reverse-depth-buffer-in-opengl/
     glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 }

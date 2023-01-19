@@ -10,15 +10,11 @@ uniform int unShowEdges;
 uniform int unShowVariance;
 
 #include "GlobalUbo.glsl"
-
-float linearizeDepth(float d) {
-    float zn = 2.0 * d - 1.0;
-    return 2.0 * unCameraZRange.x * unCameraZRange.y / (unCameraZRange.y + unCameraZRange.x - zn * (unCameraZRange.y - unCameraZRange.x));
-}
+#include "util/depth.glsl"
 
 vec3 sampleNormalAndIncrementTotalWeight(sampler2D image, vec2 uv, float weight, inout float weightTotal, float baseDepth, inout vec3 avgColor) {
 
-    const float depth = linearizeDepth(texture(unDepthFbo, uv).r);
+    const float depth = linearizeDepth(texture(unDepthFbo, uv).r, unCameraZRange);
     if (abs(depth - baseDepth) < unDepthThreshold) {
         vec3 color = texture2D(unAlbedoFbo, uv).rgb;
         vec3 normal = texture2D(image, uv).rgb;
@@ -38,7 +34,7 @@ vec3 getAverageNormalAndColor(sampler2D image, vec2 uv, vec2 resolution, vec2 di
   vec2 off2 = vec2(3.2941176470588234) * direction;
   vec2 off3 = vec2(5.176470588235294) * direction;
   
-  const float baseDepth = linearizeDepth(texture(unDepthFbo, uv).r);
+  const float baseDepth = linearizeDepth(texture(unDepthFbo, uv).r, unCameraZRange);
   
   float weightTotal = 0.0;
   nAvg += sampleNormalAndIncrementTotalWeight(image, uv, 0.1964825501511404, weightTotal, baseDepth, avgColor);

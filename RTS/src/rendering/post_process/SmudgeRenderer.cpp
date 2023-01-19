@@ -15,7 +15,7 @@ SmudgeRenderer::SmudgeRenderer(const ui32v2& screenResolution) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(screenResolution);
         // Lower color precision since we don't need the hdr color
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10);
         // No depth as we will share the depth texture with the main attachment
     }
 
@@ -45,7 +45,7 @@ void SmudgeRenderer::beginSmudgePass(vg::GBuffer* activeGBuffer) {
         //mGBuffers[0]->use();
     }
 
-    // TODO: If smudge test passes is always 1, we only needa single gbuffer
+    // TODO: If smudge test passes is always 1, we only need a single gbuffer
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO);
         mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);

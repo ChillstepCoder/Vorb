@@ -2,7 +2,8 @@
 uniform sampler2D FboNormal;
 uniform sampler2D FboDepth;
 uniform sampler2DArray ShadowMap;
-#include "../../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
+#include "util/depth.glsl"
 
 uniform float ShadowCascadePlaneDistances[4];
 uniform mat4 ShadowFrustumMatrices[4];
@@ -15,17 +16,7 @@ const int cascadeCount = 4;
 out vec3 fColor;
 
 // TODO: SHARED
-vec4 viewPosFromDepth(float depth, vec2 fboUV, mat4 inverseP) {
-    float z = depth * 2.0 - 1.0;
 
-    vec4 clipSpacePosition = vec4(fboUV * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = inverseP * clipSpacePosition;
-
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-
-    return viewSpacePosition;
-}
 
 // For reducing light bleed
 float linstep(float low, float high, float v) {

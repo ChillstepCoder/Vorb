@@ -8,23 +8,19 @@ uniform vec2 unBlurRangeFar;
 uniform float unBlurExponent;
 uniform float unDebugRender;
 
-#include "../../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
 
 in vec2 fUV;
 
 out vec4 fColor;
 
 #include "util/gaussian_blur.glsl"
-
-float linearizeDepth(float d) {
-    float zn = 2.0 * d - 1.0;
-    return 2.0 * CameraZRange.x * CameraZRange.y / (CameraZRange.y + CameraZRange.x - zn * (CameraZRange.y - CameraZRange.x));
-}
+#include "util/depth.glsl"
 
 void main() {
     float depth = texture2D(FboDepth, fUV).r;
 	float isGround = 1.0 - step(0.999999999, depth);
-    float linDepth = linearizeDepth(depth);
+    float linDepth = linearizeDepth(depth, CameraZRange);
 	// Blur far away
 	float blurValue = smoothstep(unBlurRangeFar.x, unBlurRangeFar.y, linDepth) * isGround;
 	// Blur near the camera

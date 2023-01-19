@@ -64,6 +64,7 @@ namespace vorb {
             DEPTH_16 = GL_DEPTH_COMPONENT16,
             DEPTH_24 = GL_DEPTH_COMPONENT24,
             DEPTH_32 = GL_DEPTH_COMPONENT32,
+            DEPTH_32F = GL_DEPTH_COMPONENT32F,
         };
 
         enum class GBufferDepthStencilFormat {

@@ -82,8 +82,8 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
 
     for (int i = 0; i < 3; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(imageDims);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10);
         mGBuffers[i]->initDepth(vg::GBufferDepthFormat::DEPTH_16);
     }
 

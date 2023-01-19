@@ -26,14 +26,9 @@ in float fDepth;
 in float fCameraDist;
 
 #include "lighting/scene_lighting.glsl"
+#include "util/depth.glsl"
 
 layout (location = 0) out vec4 oColor;
-
-float linearizeDepth(float d) {
-    float zn = 2.0 * d - 1.0;
-    return 2.0 * CameraZRange.x * CameraZRange.y / (CameraZRange.y + CameraZRange.x - zn * (CameraZRange.y - CameraZRange.x));
-}
-
 
 void main() {
 	
@@ -42,8 +37,8 @@ void main() {
     
     // get difference in depth
     float maxDepthDiff = 0.8;
-    float linFragDepth = linearizeDepth(gl_FragCoord.z);
-    float depthDiff = linearizeDepth(depth) - linFragDepth;
+    float linFragDepth = linearizeDepth(gl_FragCoord.z, CameraZRange);
+    float depthDiff = linearizeDepth(depth, CameraZRange) - linFragDepth;
     depthDiff = clamp(depthDiff / maxDepthDiff, 0.0, 1.0);
     vec4 waterColor = mix(unShallowColor, unDeepColor, depthDiff);
     

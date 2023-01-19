@@ -11,6 +11,7 @@ out vec4 fColor;
 
 #include "GlobalUbo.glsl"
 #include "scene_lighting.glsl"
+#include "util/depth.glsl"
 
 
 void main() {
@@ -18,7 +19,7 @@ void main() {
 	float depth = texture(FboDepth, fUV).r;
 	float isSky = step(0.999999999, depth);
 	float shadow = texture(ShadowTexture, fUV).r;
-    vec3 worldPos = worldPosFromDepth(depth, fUV);
+    vec3 worldPos = worldPosFromDepth(depth, fUV, InverseV, InverseP);
 	vec3 fboColor = texture(Fbo0, fUV).rgb;
     vec3 normal = texture(FboNormals, fUV).rgb;
 	float roughness = texture(FboRoughness, fUV).r;

@@ -1,19 +1,4 @@
 
-// TODO: SHARED
-vec3 worldPosFromDepth(float depth, vec2 fboUV) {
-    float z = depth * 2.0 - 1.0;
-
-    vec4 clipSpacePosition = vec4(fboUV * 2.0 - 1.0, z, 1.0);
-    vec4 viewSpacePosition = InverseP * clipSpacePosition;
-
-    // Perspective division
-    viewSpacePosition /= viewSpacePosition.w;
-
-    vec4 worldSpacePosition = InverseV * viewSpacePosition;
-
-    return worldSpacePosition.xyz;
-}
-
 float computeDiffuse(vec3 normal, vec3 lightDir) {
   return max(dot(normal, lightDir), 0.0);
 }
