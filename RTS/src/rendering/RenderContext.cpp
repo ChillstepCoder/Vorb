@@ -412,7 +412,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Clear screen
     vg::DepthState::FULL.set();
-    vg::BlendState::set(vg::BlendStateType::ALPHA);
+    vg::BlendState::set(vg::BlendStateType::REPLACE);
 
     if (sDebugOptions.mWireframe) {
         glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
@@ -489,7 +489,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     /*if (!sDebugOptions.mHideGrass) {
         mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
     }*/
-
+    // TODO: Where is this getting unset?
+    glEnable(GL_CULL_FACE);
     // Terrain
     if (!sDebugOptions.mDisableTerrain) {
         mTerrainRenderer->renderTerrain(camera, mTerrainMeshes);
@@ -529,7 +530,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
             Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
             mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
 
-            //glCullFace(GL_BACK);
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {
                 mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));

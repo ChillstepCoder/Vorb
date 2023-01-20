@@ -489,4 +489,5 @@ void ShadowRenderer::blurShadowMap()
         glUniform2f(dirUniform, 0.0f, sDebugOptions.mShadowBlurRadius);
         sGlobalFullQuadVBO.draw();
     }
+    vg::BlendState::restorePrevious();
 }

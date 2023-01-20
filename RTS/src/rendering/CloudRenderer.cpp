@@ -73,6 +73,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, vg::GBuffer* 
 
     // Restore previous
     prevDepthState.set();
+    vg::BlendState::restorePrevious();
 }
 
 void CloudRenderer::renderCloudShadows(const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance) {
@@ -94,7 +95,6 @@ void CloudRenderer::blurNormals() {
     MaterialRenderer::bindMaterialForRender(*mBlurMaterial, &nextTexture);
 
     vg::DepthState::NONE.set();
-    vg::BlendState::set(vg::BlendStateType::ALPHA);
 
     const VGUniform& fboUniform = mBlurMaterial->mProgram.getUniform("unInputFbo");
     const VGUniform& dirUniform = mBlurMaterial->mProgram.getUniform("unDirection");
@@ -127,6 +127,5 @@ void CloudRenderer::renderFboToScreen()
     }
 
     vg::DepthState::NONE.set();
-    vg::BlendState::set(vg::BlendStateType::ALPHA);
     sGlobalFullQuadVBO.draw();
 }

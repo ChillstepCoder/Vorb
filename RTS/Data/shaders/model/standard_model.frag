@@ -5,26 +5,25 @@ flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
 
-layout (location = 0) out vec4 oColor;
-layout (location = 1) out vec4 oNormal;
-layout (location = 2) out vec4 oRoughness;
+layout (location = 0) out vec3 oColor;
+layout (location = 1) out vec3 oNormal;
+layout (location = 2) out vec3 oRoughness;
 
 void main() {
 
     vec3 normal;
-    getMaterialPixelInfo(fMaterialIndex, fUV, oColor, normal, fTint);
+    vec4 color;
+    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, fTint);
 
-    tryDiscardTransparentPixel(oColor.a);
+    tryDiscardTransparentPixel(color.a);
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
     // Into 0-1 range
-	oNormal.rgb = (normal + 1.0) * 0.5;
+	oNormal = (normal + 1.0) * 0.5;
     
     
 	oRoughness.r = 0.2;
-	oRoughness.a = 1.0;
     
-    oColor.a = 1.0;
-	oNormal.a = oColor.a;
+    oColor = color.rgb;
 }

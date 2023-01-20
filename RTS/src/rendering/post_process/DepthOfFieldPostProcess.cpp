@@ -78,5 +78,7 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
     mGBuffers[0]->setNormalTexture(prevGBuffer->getNormalTexture());
     mGBuffers[0]->setTertiaryTexture(prevGBuffer->getTertiaryTexture());
 
+    vg::BlendState::restorePrevious();
+
     return mGBuffers[0].get();
 }

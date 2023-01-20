@@ -34,8 +34,6 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeDirection");
 
-    // TODO: Where is this getting unset?
-    glEnable(GL_CULL_FACE);
 
     for (auto&& terrainMesh : terrainMeshes) {
         const Mesh& mesh = terrainMesh->mMesh;
