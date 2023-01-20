@@ -65,5 +65,4 @@ void GLBuffer::destroy() {
 
 void GLIndirectBuffer::uploadIndirectBuffer() {
     mIndirectBuffer.updateSubData(0, sizeof(DrawElementsIndirectCommand) * mDrawCommands.size(), mDrawCommands.data());
-    TMPlastUploadedSize = mDrawCommands.size();
 }

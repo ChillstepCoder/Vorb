@@ -123,6 +123,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             // TODO: Move this to onRemove
             if (!instanceData.mInstanceTransforms.size()) {
                 instanceData.mDrawCommands.reset();
+                instanceData.mDrawCommandsShadows.reset();
                 if (instanceData.mTransformsVbo) {
                     GL.glDeleteBuffers(1, &instanceData.mTransformsVbo);
                     instanceData.mTransformsVbo = 0;
@@ -145,12 +146,13 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 {
                     PROFILE_SCOPE("Indirect Buffer");
                     instanceData.mDrawCommands = std::make_unique<GLIndirectBuffer>(workGroupRoundedSize);
+                    instanceData.mDrawCommandsShadows = std::make_unique<GLIndirectBuffer>(workGroupRoundedSize);
                     // This is now initialized on the gpu
                     //for (size_t i = 0; i < instanceData.mDrawCommands->mDrawCommands.size(); ++i) {
                     //    DrawElementsIndirectCommand& cmd = instanceData.mDrawCommands->mDrawCommands[i];
                     //    cmd.baseInstance_ = i;
                     //}
-                    instanceData.mDrawCommands->uploadIndirectBuffer();
+                    //instanceData.mDrawCommands->uploadIndirectBuffer();
                 }
 
                 // Allocate VBO
@@ -206,6 +208,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
             }
 
             GLIndirectBuffer& inDrawCommands = *instanceData.mDrawCommands;
+            GLIndirectBuffer& inDrawCommandsShadows = *instanceData.mDrawCommandsShadows;
             const size_t drawCommandsSize = inDrawCommands.mDrawCommands.size();
 
             if (sDebugOptions.mDisableGPUCulling == false) {
@@ -235,7 +238,8 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
                 GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mTransformsVbo);
                 GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inDrawCommands.getHandle());
-                GL.glBindBufferBase(GL_UNIFORM_BUFFER, 4, mGpuCullingUniformBuffer.getHandle());
+                GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, inDrawCommandsShadows.getHandle());
+                GL.glBindBufferBase(GL_UNIFORM_BUFFER, 5, mGpuCullingUniformBuffer.getHandle());
                 //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
                 //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
                 if (drawCommandsSize % WORK_GROUP_SIZE == 0) {
@@ -246,44 +250,59 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
                 }
                 glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT); // GL_ATOMIC_COUNTER_BARRIER_BIT
                 // 114 fps
-
+                instanceData.mShadowDrawCommandsCount = drawCommandsSize;
             }
             else {
                 assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
                 PROFILE_SCOPE("CPU Culling");
                 // CPU Culling
+                int shadowCount = 0;
                 for (size_t i = 0; i < instanceData.mInstanceTransforms.size(); ++i) {
                     DrawElementsIndirectCommand& cmd = inDrawCommands.mDrawCommands[i];
+                    DrawElementsIndirectCommand& cmdShadow = inDrawCommandsShadows.mDrawCommands[shadowCount];
                     const f32m4& transform = instanceData.mInstanceTransforms[i];
                     // Columns are first
                     const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
                     if (camera.sphereIsVisible(pos, 10.0f)) {
                         cmd.instanceCount_ = 1;
+                        cmdShadow.instanceCount_ = 1;
                         cmd.baseInstance_ = i;
+                        cmdShadow.baseInstance_ = i;
                         cmd.baseVertex_ = 0;
-                        MeshLODDrawInfo drawInfo;
+                        cmdShadow.baseVertex_ = 0;
+                        MeshLODDrawInfo drawInfo, drawInfoShadow;
                         f32 distance2 = glm::length2(pos - camera.getPosition());
-                        if (distance2 < SQ(sDebugOptions.mLodDistances[0]) || sDebugOptions.mDisableLOD) {
+                        if ((distance2 < SQ(sDebugOptions.mLodDistances[0])) || sDebugOptions.mDisableLOD) {
                             drawInfo = drawInfos[0];
+                            drawInfoShadow = drawInfos[1];
+                            ++shadowCount;
                         }
                         else if (distance2 < SQ(sDebugOptions.mLodDistances[1])) {
                             drawInfo = drawInfos[1];
+                            drawInfoShadow = drawInfos[2];
+                            ++shadowCount;
                         }
                         else if (distance2 < SQ(sDebugOptions.mLodDistances[2])) {
                             drawInfo = drawInfos[2];
+                            drawInfoShadow = drawInfos[3];
+                            ++shadowCount;
                         }
                         else {
                             drawInfo = drawInfos[3];
+                            drawInfoShadow = drawInfos[3];
                         }
                         cmd.count_ = drawInfo.indexCount;
                         cmd.firstIndex_ = drawInfo.startIndex;
+                        cmdShadow.count_ = drawInfoShadow.indexCount;
+                        cmdShadow.firstIndex_ = drawInfoShadow.startIndex;
                     }
                     else {
                         cmd.instanceCount_ = 0;
                     }
                 }
-
+                instanceData.mShadowDrawCommandsCount = shadowCount;
                 inDrawCommands.uploadIndirectBuffer();
+                inDrawCommandsShadows.uploadIndirectBuffer();
 
             }
 
@@ -398,23 +417,20 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
             // TODO: Have a no shadow render type?
 
             StaticModelInstanceData& instanceData = it.second;
-            if (!instanceData.mDrawCommands) {
+            if (!instanceData.mShadowDrawCommandsCount) {
                 continue;
             }
 
             // Copy draw commands
-            GLIndirectBuffer& drawCommands = *instanceData.mDrawCommands;
+            GLIndirectBuffer& drawCommands = *instanceData.mDrawCommandsShadows;
             const size_t drawCommandsSize = drawCommands.mDrawCommands.size();
-            if (!drawCommandsSize) {
-                continue;
-            }
 
             ModelID modelId = it.first;
             const Model3D& model = Services::ResourceManager::ref().getModelRepository().getModelDef(modelId).mModel;
             const Mesh& mesh = *model.getMesh();
 
-            assert(instanceData.mInstanceTransforms.size() <= drawCommandsSize);
-            mesh.drawIndirect(instanceData.mInstanceTransforms.size(), &drawCommands);
+            assert(instanceData.mShadowDrawCommandsCount <= drawCommandsSize);
+            mesh.drawIndirect(instanceData.mShadowDrawCommandsCount, &drawCommands);
         }
     }
 

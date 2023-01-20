@@ -21,7 +21,12 @@ layout(std430, binding = 3) buffer InDrawCommands
 	DrawCommand inDrawCommands[];
 };
 
-layout(std140, binding = 4) uniform PerFrameData
+layout(std430, binding = 4) buffer InDrawCommandsShadows
+{
+	DrawCommand inDrawCommandsShadows[];
+};
+
+layout(std140, binding = 5) uniform PerFrameData
 {
 	vec4 frustumPlanes[4]; // 64 bytes // Ignoring near and far plane
     uvec4 lodDrawInfos[2]; // 32 bytes // 4 pairs of <firstIndex, count> representing the 4 LOD levels, packed into uvec4 cause std140 is lame
@@ -68,23 +73,35 @@ void main()
         vec3 offset = vec3(modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]) - cameraPos.xyz;
         uint numInstances = sphereCheckAndUpdateLOD(offset);
         inDrawCommands[idx].instanceCount = numInstances;
+        inDrawCommandsShadows[idx].instanceCount = numInstances;
         inDrawCommands[idx].baseVertex = 0;
+        inDrawCommandsShadows[idx].baseVertex = 0;
         inDrawCommands[idx].baseInstance = idx;
+        inDrawCommandsShadows[idx].baseInstance = idx;
         if (numInstances == 1) {
             // Update LOD
             float distance2 = dot(offset, offset);
+            // Shadow detail is always 1 less than the mesh detail
             if (distance2 < lodDistancesSQ[0]) {
                 inDrawCommands[idx].firstIndex = lodDrawInfos[0].x;
                 inDrawCommands[idx].count = lodDrawInfos[0].y;
+                inDrawCommandsShadows[idx].firstIndex = lodDrawInfos[0].z;
+                inDrawCommandsShadows[idx].count = lodDrawInfos[0].w;
             } else if (distance2 < lodDistancesSQ[1]) {
                 inDrawCommands[idx].firstIndex = lodDrawInfos[0].z;
                 inDrawCommands[idx].count = lodDrawInfos[0].w;
+                inDrawCommandsShadows[idx].firstIndex = lodDrawInfos[1].x;
+                inDrawCommandsShadows[idx].count = lodDrawInfos[1].y;
             } else if (distance2 < lodDistancesSQ[2]) {
                 inDrawCommands[idx].firstIndex = lodDrawInfos[1].x;
                 inDrawCommands[idx].count = lodDrawInfos[1].y;
+                inDrawCommandsShadows[idx].firstIndex = lodDrawInfos[1].z;
+                inDrawCommandsShadows[idx].count = lodDrawInfos[1].w;
             } else {
                 inDrawCommands[idx].firstIndex = lodDrawInfos[1].z;
                 inDrawCommands[idx].count = lodDrawInfos[1].w;
+                // Cull shadow completely
+                inDrawCommandsShadows[idx].instanceCount = 0;
             }
         }
     }

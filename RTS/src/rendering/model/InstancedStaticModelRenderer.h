@@ -43,6 +43,8 @@ struct StaticModelInstanceData {
     std::vector<f32m4> mInstanceTransforms;
     std::vector<ModelInstanceOwner> mInstanceOwners;
     std::unique_ptr<GLIndirectBuffer> mDrawCommands;
+    std::unique_ptr<GLIndirectBuffer> mDrawCommandsShadows;
+    ui32 mShadowDrawCommandsCount = 0;
     VGBuffer mTransformsVbo = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
