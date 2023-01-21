@@ -210,8 +210,8 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
         // TODO: Albedo can be 8 bit, we don't need float albedo for HDR, just compute the HDR in the final stage
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::R8);
 #if USE_STENCIL == 1
         mGBuffers[i]->initDepthStencil();

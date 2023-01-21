@@ -82,11 +82,12 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
     // 
     // TODO: Tile based deferred rendering (not clustered) see compute at page 35-36 https://www.digipen.edu/sites/default/files/public/docs/theses/denis-ishmukhametov-master-of-science-in-computer-science-thesis-efficient-tile-based-deferred-shading-pipeline.pdf
 
+    // TODO: RG16F normals or R11F_G11F_B10F?? https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
     for (int i = 0; i < 3; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(imageDims);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10);
-        mGBuffers[i]->initDepth(vg::GBufferDepthFormat::DEPTH_16);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
+        mGBuffers[i]->initDepthStencil(vg::GBufferDepthStencilFormat::DEPTH_24_STENCIL_8);
     }
 
     checkGlError("ModelEditorPanel::initGBuffer");

@@ -416,8 +416,6 @@ VGTexture ModelEditorPanel::renderModelToTexturePBRTest() {
 
         Model3D& mModel = mCurrentModel->mModel;
         mModel.getMesh()->draw(MeshLODLevel(mLod));
-
-        // Now we have the mesh normals, positions depth.
     }
-    return VGTexture(0);
+    return mGBuffers[0]->getAlbedoTexture();
 }
