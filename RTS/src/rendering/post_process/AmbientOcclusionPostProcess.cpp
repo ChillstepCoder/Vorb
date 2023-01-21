@@ -87,9 +87,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
 
     ui32 nextTexture;
     MaterialRenderer::bindMaterialForRender(*mMaterial, &nextTexture);
-    vg::BlendState& PREV_BLEND = vg::BlendState::PREV;
     vg::DepthState::NONE.set();
-    vg::BlendState::set(vg::BlendStateType::REPLACE);
 
     const VGUniform& noiseUniform = mMaterial->mProgram.getUniform("unTexNoise");
     const VGUniform& samplesUniform = mMaterial->mProgram.getUniform("unSamples[0]");
@@ -148,7 +146,7 @@ void AmbientOcclusionPostProcess::render(vg::GBuffer* activeGBuffer)
     sGlobalFullQuadVBO.draw();
 
     vg::DepthState::restorePrevious();
-    PREV_BLEND.set();
+    vg::BlendState::restorePrevious();
 
     checkGlError("Ambient Occlusion");
 }

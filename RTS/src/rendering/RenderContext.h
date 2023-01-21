@@ -36,6 +36,7 @@ class RenderState;
 class InstancedStaticModelGatherer;
 class InstancedStaticModelRenderer;
 class SmudgeRenderer;
+class TonemapRenderer;
 
 struct SDL_Window;
 
@@ -49,11 +50,11 @@ struct GlobalRenderData {
     GlobalUboData globalUboData;
     f32 cameraZAngle;
     f32m4 skyRotMatrix;
-    const f32m4* shadowFrustumMatrices;
-    const f32* shadowCascadePlaneDistances;
-    VGTexture shadowMap;
-    ui32 shadowFrustumMatricesCount;
-    const ICamera* mainCamera = nullptr;
+    const f32m4* shadowFrustumMatrices; // TODO: Delete this stuff???
+    const f32* shadowCascadePlaneDistances; // TODO: Delete this stuff???
+    VGTexture shadowMap; // TODO: Delete this stuff???
+    ui32 shadowFrustumMatricesCount; // TODO: Delete this stuff???
+    const ICamera* mainCamera = nullptr; // TODO: Delete this stuff???
 };
 
 constexpr ui32 INVALID_MESH_INDEX = UINT32_MAX;
@@ -125,10 +126,15 @@ public:
 private:
     void initEventHandlers();
     void updateRenderThreadProcs();
-    void renderDebug(const Camera3D& camera, const RenderState& renderState);
-    void renderUI(const Camera3D& camera, const RenderState& renderState);
-    void buildHorizonMesh();
 
+    // Render passes
+    void renderPassShadows(const Camera3D& camera, const RenderState& renderState);
+    void renderPassTransparent(const Camera3D& camera, const RenderState& renderState);
+    void renderPassDebug(const Camera3D& camera, const RenderState& renderState);
+    void renderPassUI(const Camera3D& camera, const RenderState& renderState);
+
+    // Mesh management
+    void buildHorizonMesh();
     void addStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.insert(mesh); }
     void removeStaticMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mStaticMeshes.erase(mesh); }
     void addDynamicMesh(const Mesh* mesh) { assert(IS_RENDER_THREAD()); mDynamicMeshes.insert(mesh); }
@@ -163,6 +169,7 @@ private:
     mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
+    mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
 
     // Clouds
     std::unique_ptr<CloudManager> mCloudManager;

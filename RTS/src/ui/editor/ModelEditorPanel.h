@@ -19,6 +19,7 @@ private:
     VGTexture renderModelToTexture();
     VGTexture renderModelToTextureBlendTest();
     VGTexture renderModelToTextureEdgeTest();
+    VGTexture renderModelToTexturePBRTest();
 
     ModelDef* mCurrentModel = nullptr;
    

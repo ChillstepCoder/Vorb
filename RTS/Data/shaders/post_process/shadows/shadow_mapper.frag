@@ -1,5 +1,5 @@
 
-out vec4 fColor;
+out vec2 oColor;
 
 void main()
 {
@@ -11,7 +11,8 @@ void main()
   float dx = dFdx(depth);
   float dy = dFdy(depth);
   float moment2 = depth * depth + 0.25 * (dx * dx + dy * dy);
-
+   
+  // TODO: RG16
   // Variance shadow mapping
-  fColor = vec4(depth,  moment2, 0.0, 1.0);
+  oColor = vec2(depth,  moment2);
 }

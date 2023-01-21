@@ -12,10 +12,11 @@ enum class EditorViewportDrawMode {
     UVs = 3,
     BlendTest = 4,
     EdgeTest = 5,
-    Wireframe = 6, // Always last
+    PBRTest = 6,
+    Wireframe = 7, // Always last
     COUNT
 };
-static_assert(e_cast(EditorViewportDrawMode::COUNT) == 7, "Copy to data/shaders/editor/editor_util.glsl");
+static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Copy to data/shaders/editor/editor_util.glsl");
 
 class IEditorViewportPanel
 {

@@ -115,6 +115,7 @@ namespace vorb {
             VGTexture getNormalTexture() const { return mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture; }
             VGTexture getTertiaryTexture() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture; }
             VGTexture getDepthTexture() const { return mTexDepth.mTexture; }
+            VGTexture getDepthStencilTexture() const { assert(mHasStencil); return mTexDepth.mTexture; }
 
             const ui32v2& getSize() const { return mSize; }
             const ui32& getWidth() const { return mSize.x; }

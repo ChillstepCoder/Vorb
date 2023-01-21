@@ -6,6 +6,8 @@ bool hasInitCachedRandom = false;
 std::vector<ui32> cachedRandom;
 static thread_local unsigned cachedRandomIndex = 0;
 
+// TODO: Try splitmix https://rosettacode.org/wiki/Pseudo-random_numbers/Splitmix64
+
 ui32 Random::xorshf96() {          //period 2^96-1
     ui32 t;
     x ^= x << 16;

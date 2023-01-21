@@ -660,10 +660,13 @@
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\ModelRenderPass.cpp">
+    <ClCompile Include="src\rendering\model\ModelRenderPassType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1544,10 +1547,16 @@
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\ModelRenderPass.h">
+    <ClInclude Include="src\rendering\model\ModelRenderPassType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\post_process\TonemapRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\StencilBufferIDs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

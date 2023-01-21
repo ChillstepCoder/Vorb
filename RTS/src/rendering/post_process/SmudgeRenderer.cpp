@@ -5,6 +5,7 @@
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/StencilBufferIDs.h"
 #include "camera/Camera3D.h"
 
 #include <Vorb/graphics/GBuffer.h>
@@ -37,7 +38,7 @@ void SmudgeRenderer::beginSmudgePass(vg::GBuffer* activeGBuffer) {
         mGBuffers[1]->setSharedDepthStencilTexture(activeGBuffer->getDepthTexture());
         // Enable stencil buffer to set 1s whenever we add a fragment
         glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::SMUDGE), 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     }
     else {
@@ -77,8 +78,8 @@ void SmudgeRenderer::renderSmudge(vg::GBuffer* activeGBuffer, const Camera3D& ca
     vg::DepthState::NONE.set();
 
     if (activeGBuffer->hasStencil()) {
-        // Enable stencil buffer only pass where we have 1s
-        glStencilFunc(GL_EQUAL, 1, 0xFF);
+        // Enable stencil buffer only pass where we have SMUDGE
+        glStencilFunc(GL_EQUAL, e_cast(StencilBufferIDs::SMUDGE), 0xFF);
         // Disable stencil modification
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
     }

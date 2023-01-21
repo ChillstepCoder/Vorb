@@ -135,8 +135,8 @@ ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
     {// Shadow map gbuffer
 
         mShadowMapGBuffer = std::make_unique<vg::GBuffer>(ui32v2(DEPTH_MAP_RESOLUTION), MAX_SHADOW_CASCADE_LEVELS + 1);
-        // TODO: Not mipmap???
-        mShadowMapGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RG32F, vg::sSamplerStates.LINEAR_CLAMP);
+        // TODO: Testing RG16F to see if its fine
+        mShadowMapGBuffer->initAttachment(vorb::graphics::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RG16F /*vg::TextureInternalFormat::RG32F*/, vg::sSamplerStates.LINEAR_CLAMP);
 
         // Set up additional params
         VGTexture shadowMapTexture = mShadowMapGBuffer->getAlbedoTexture();
@@ -146,7 +146,7 @@ ShadowRenderer::ShadowRenderer(const ui32v2& gbufferDims) {
         glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisotropy);
         glTextureParameteri(shadowMapTexture, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisotropy);
 
-        // TODO: Experiment with lower depth resolution
+        // TODO: Experiment with lower depth resolution (depth16)
         mShadowMapGBuffer->initDepth(vg::GBufferDepthFormat::DEPTH_32, MAX_SHADOW_CASCADE_LEVELS + 1);
         checkGlError("Shadow FBO init");
     }
@@ -348,19 +348,15 @@ void ShadowRenderer::useShadowBuffer() {
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 }
 
-void ShadowRenderer::clearShadowTexture(vg::GBuffer* activeGBuffer) {
-    mShadowBlurGBuffers[0]->use();
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    activeGBuffer->use();
+void ShadowRenderer::clearShadowTexture() {
+    mShadowBlurGBuffers[0]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO);
 }
 
-vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos) {
+void ShadowRenderer::renderShadows(const f32v3& cameraPos) {
 
     // Mip it
     mShadowMapGBuffer->bindAlbedoTexture(0);
     glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-    assert(activeGBuffer);
 
     f32v3 offset = cameraPos - mLastUpdatedCameraPos;
 
@@ -396,8 +392,6 @@ vg::GBuffer* ShadowRenderer::renderShadows(vg::GBuffer* activeGBuffer, const f32
 
     // TODO: We should be blurring the mips
     blurShadowMap();
-
-    return activeGBuffer;
 }
 
 const VGTexture ShadowRenderer::getShadowMap() const {

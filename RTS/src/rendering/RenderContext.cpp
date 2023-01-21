@@ -28,6 +28,7 @@
 #include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
 #include "rendering/post_process/SmudgeRenderer.h"
+#include "rendering/post_process/TonemapRenderer.h"
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
 #include "rendering/MaterialUtils.h"
@@ -129,7 +130,6 @@ void APIENTRY glDebugOutput(GLenum source,
 
 constexpr ui32 CAMERA_MATRICES_BYTE_SIZE = sizeof(f32m4) * 6 /*camera matrices*/;
 
-// TODO: Render a string to the screen for these, Debug Render: %s (gone for pass_through)
 // TODO: Instead of single shader these should be able to be shader chains.
 const std::string sPassthroughMaterialNames[] = {
     "pass_through",
@@ -284,6 +284,7 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
         mGrassRenderer = std::make_unique<GrassRenderer>();
         mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
         mSmudgeRenderer = std::make_unique<SmudgeRenderer>(mScreenResolution);
+        mTonemapRenderer = std::make_unique<TonemapRenderer>();
         checkGlError("Renderer init");
     }
 
@@ -422,7 +423,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     else {
         // TODO: Can we not do GL_COLOR_BUFFER_BIT? (IT causes clouds issues rn)
         // TODO2: What issues? lol thanks for nothing previous self
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | (GL_STENCIL_BUFFER_BIT * USE_STENCIL));
+        glClear(GL_DEPTH_BUFFER_BIT | (GL_STENCIL_BUFFER_BIT * USE_STENCIL));
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
@@ -435,21 +436,18 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Instanced models
     Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelPass(ModelRenderPass::Default, camera);
+    mStaticModelRenderer->renderModelPass(ModelRenderPassType::Default, camera);
 
     // Smudge
     {
         mSmudgeRenderer->beginSmudgePass(mActiveGBuffer);
-        mStaticModelRenderer->renderModelPass(ModelRenderPass::Smudge, camera);
+        mStaticModelRenderer->renderModelPass(ModelRenderPassType::Smudge, camera);
         if (!sDebugOptions.mHideGrass) {
             mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
         }
         // mActiveGBuffer will be used at end
         mSmudgeRenderer->renderSmudge(mActiveGBuffer, camera);
     }
-
-    //mEcsRenderer->renderSimpleSprites(camera);
-    mEcsRenderer->renderInteractUI(camera);
 
     // Render stockpiles
     for (auto&& stockPilePtr : sWorld->getItemStockpileRegistry().getAllStockpiles()) {
@@ -458,25 +456,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         }
     }
 
-    // Render loose items
+    // TODO: Render loose items
 
-    // Render building roofs
-    // TODO: Frustum cull
-    //const CityGraph& cities = sWorld->getCityGraph();
-    //for (auto&& city : cities.mNodes) {
-    //    const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
-    //    for (auto&& building : buildings) {
-    //        //mBuildingRenderer->renderBuildingRoof(*building, camera);
-    //    }
-    //}
-    //const StructureManager& structureManager = sWorld->getStructureManager();
-    //const StructureList& structures = structureManager.getStructures();
-    //for (auto&& structure : structures) {
-    //    // TODO: List of buildings instead?
-    //    if (structure->getType() == StructureType::Building) {
-    //        //mBuildingRenderer->renderBuildingRoof((Building&)*structure, camera);
-    //    }
-    //}
 
     // Ambient occlusion
     mAmbientOcclusion->render(mActiveGBuffer);
@@ -514,62 +495,9 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Horizon
     //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
-    // Shadows
-    if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
-        if (mShadowRenderer->shouldUpdateShadowsThisFrame()) {
-            PROFILE_SCOPE("Update shadows");
-            mShadowRenderer->useShadowBuffer();
-            glEnable(GL_DEPTH_CLAMP);
-
-            vg::DepthState::FULL.set();
-            // Render all shadow casters
-            //glCullFace(GL_FRONT);
-            mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
-
-            // Instanced models
-            Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-            mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
-
-            // TODO: Frustum cull
-            if (!sDebugOptions.mDisableClouds) {
-                mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
-            }
-
-            //const CityGraph& cities = sWorld->getCityGraph();
-            //for (auto&& city : cities.mNodes) {
-            //    const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
-            //    for (auto& building : buildings) {
-            //        mBuildingRenderer->renderBuildingShadows(*building, camera);
-            //    }
-            //}
-            //for (auto&& structure : structures) {
-            //    // TODO: List of buildings instead?
-            //    if (structure->getType() == StructureType::Building) {
-            //        mBuildingRenderer->renderBuildingShadows((Building&)*structure, camera);
-            //    }
-            //}
-
-            glDisable(GL_DEPTH_CLAMP);
-        }
-
-        vg::DepthState::NONE.set();
-        mActiveGBuffer = mShadowRenderer->renderShadows(mActiveGBuffer, camera.getPosition());
-
-        mActiveGBuffer->use();
-    }
-    else {
-        // No shadow bleed from previous frames
-        mShadowRenderer->clearShadowTexture(mActiveGBuffer);
-    }
-
-    // Particles
-    //if (lodState == ChunkRenderLOD::FULL_DETAIL) {
-    //    vg::DepthState::READ.set();
-    //    // TODO: Replace With BlendState
-    //    mParticleSystemRenderer->renderParticleSystems(camera, mActiveGBuffer, true);
-    //    vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
-    //    vg::DepthState::FULL.set();
-    //}
+    renderPassShadows(camera, renderState);
+    
+    // TODO: Particles
 
     if (sDebugOptions.mWireframe) {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -577,7 +505,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // *** Post processes ***
 
-    // Depth of field
     vg::DepthState::NONE.set();
 
     // Render characters that are behind geometry with some transparency
@@ -593,52 +520,19 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
 
-    //// Disable depth testing for post processing
-    //// TODO: Swap chains?
-    //// TODO: This should be at top
-    //mActiveGBuffer->unuse();
-    //mCurrentFramebufferDims = mScreenResolution;
-    //// *** Lighting ***
-    //mActiveGBuffer->useLight();
-    //glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    //glClear(GL_COLOR_BUFFER_BIT);
-
-    //// Sun Light
-    //// TODO: Collapse this into lightPassThrough?
-    //mMaterialRenderer->renderFullScreenQuad(*mSunLightMaterial);
-
-    ////  Dynamic  light
-    //glBlendFunc(GL_ONE, GL_ONE);
-    //mEcsRenderer->renderDynamicLightComponents(camera, *mLightRenderer);
-
-
-    mActiveGBuffer->unuse();
     mCurrentFramebufferDims = mScreenResolution;
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    vg::DepthState::NONE.set();
 
     // Final render for pre-transparency
     mTransparencyGBuffer->use();
     // Share values
     mTransparencyGBuffer->setTertiaryTexture(mActiveGBuffer->getTertiaryTexture());
     mTransparencyGBuffer->setNormalTexture(mActiveGBuffer->getNormalTexture());
-    mTransparencyGBuffer->setSharedDepthTexture(mActiveGBuffer->getDepthTexture());
+    mTransparencyGBuffer->setSharedDepthStencilTexture(mActiveGBuffer->getDepthStencilTexture());
 
-    // Final Lighting
-    MaterialRenderer::bindMaterialForRender(*mSceneLightingMaterial);
-    MaterialUtils::uploadLightingUniforms(*mSceneLightingMaterial);
-    sGlobalFullQuadVBO.draw();
+    // Sunlight
+    mLightRenderer->renderSunlight(*mActiveGBuffer, mShadowRenderer->getShadowTexture());
 
-    // Render clouds without shadows
-    if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(*mCloudManager, mTransparencyGBuffer.get(), camera);
-    }
-
-    // === Transparency ===
-    // Water (No depth write)
-    if (!sDebugOptions.mDisableWater) {
-        mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes);
-    }
+    renderPassTransparent(camera, renderState);
 
     // Update active
     mActiveGBuffer = mTransparencyGBuffer.get();
@@ -647,13 +541,15 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     vg::DepthState::NONE.set();
     mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
 
-    // Final render to screen
+    // Final render to screen, applying tonemap
     mActiveGBuffer->unuse();
-    MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
+    glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
+    mTonemapRenderer->render(mTransparencyGBuffer->getAlbedoTexture());
+    //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
 
-   
     // Final Pass through process
-    // Debug (kinda broken, need swap chain). This should also not be reading from same FBO it writes to...
+    // TODO: Make this work. When in debug, render tonemap to a new texture
+    // FBODebugRenderer?
     if (mPassthroughRenderMode > 1) {
         const MaterialShader* postMat = mPassthroughMaterials[mPassthroughRenderMode];
         assert(postMat);
@@ -662,15 +558,11 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         MaterialRenderer::renderFullScreenQuad(*postMat);
     }
 
-
     // Debug rendering
-    renderDebug(camera, renderState);
+    renderPassDebug(camera, renderState);
 
     // UI last
-    renderUI(camera, renderState);
-
-    // Debugging
-    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer);
+    renderPassUI(camera, renderState);
 
     // Swap
     mPrevGBufferIndex = mActiveGBufferIndex;
@@ -725,7 +617,69 @@ void RenderContext::updateRenderThreadProcs() {
     }
 }
 
-void RenderContext::renderDebug(const Camera3D& camera, const RenderState& renderState) {
+void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState& renderState) {
+    PROFILE_FUNCTION();
+    if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
+        if (mShadowRenderer->shouldUpdateShadowsThisFrame()) {
+            mShadowRenderer->useShadowBuffer();
+            glEnable(GL_DEPTH_CLAMP);
+
+            vg::DepthState::FULL.set();
+            // Render all shadow casters
+            //glCullFace(GL_FRONT);
+            mTileContainerRenderer->renderWorldShadows(mStaticMeshes, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::High));
+
+            // Instanced models
+            Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
+            mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
+
+            // TODO: Frustum cull
+            if (!sDebugOptions.mDisableClouds) {
+                mCloudRenderer->renderCloudShadows(*mCloudManager, camera, mShadowRenderer->getMaxDistance(ShadowLodDetail::Highest));
+            }
+
+            //const CityGraph& cities = sWorld->getCityGraph();
+            //for (auto&& city : cities.mNodes) {
+            //    const std::vector<std::unique_ptr<Building>>& buildings = city->getBuildings();
+            //    for (auto& building : buildings) {
+            //        mBuildingRenderer->renderBuildingShadows(*building, camera);
+            //    }
+            //}
+            //for (auto&& structure : structures) {
+            //    // TODO: List of buildings instead?
+            //    if (structure->getType() == StructureType::Building) {
+            //        mBuildingRenderer->renderBuildingShadows((Building&)*structure, camera);
+            //    }
+            //}
+
+            glDisable(GL_DEPTH_CLAMP);
+        }
+
+        vg::DepthState::NONE.set();
+        mShadowRenderer->renderShadows(camera.getPosition());
+        mActiveGBuffer->use();
+    }
+    else {
+        // No shadow bleed from previous frames
+        mShadowRenderer->clearShadowTexture();
+    }
+}
+
+void RenderContext::renderPassTransparent(const Camera3D& camera, const RenderState& renderState) {
+    // Render clouds without shadows
+    if (!sDebugOptions.mDisableClouds) {
+        mCloudRenderer->renderClouds(*mCloudManager, mTransparencyGBuffer->getDepthStencilTexture(), mTransparencyGBuffer.get(), camera);
+    }
+
+    // Water (No depth write)
+    if (!sDebugOptions.mDisableWater) {
+        mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes);
+    }
+    
+    // Light transparent layer
+}
+
+void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& renderState) {
     PROFILE_FUNCTION();
     // City Debug
     if (sDebugOptions.mCities) {
@@ -842,119 +796,119 @@ void RenderContext::renderDebug(const Camera3D& camera, const RenderState& rende
 
 }
 
-void RenderContext::renderUI(const Camera3D& camera, const RenderState& renderState) {
-    if (!sDebugOptions.mShowDevHud) {
-        return;
-    }
-    mSb->begin(100);
-    char buffer[256];
-    f32 scales = 0.6f;
-    const float GAP_SIZE = 35.0f * scales;
-    const float START_MULT = 0.1f;
-    float yOffset = 0.0f;
-    const f32v2 scale(scales);
-    const f32 xPos = 10.0f;
+void RenderContext::renderPassUI(const Camera3D& camera, const RenderState& renderState) {
+    if (sDebugOptions.mShowDevHud) {
+        mSb->begin(100);
+        char buffer[256];
+        f32 scales = 0.6f;
+        const float GAP_SIZE = 35.0f * scales;
+        const float START_MULT = 0.1f;
+        float yOffset = 0.0f;
+        const f32v2 scale(scales);
+        const f32 xPos = 10.0f;
 
-    sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    if (Services::isUsingNav()) {
-        sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + (int)Services::NavThread::ref().getMainThreadQueuedProcsApprox());
+        sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, sizeof(buffer), "NavQueue: %d", (int)Services::NavThread::ref().getTasksSizeApprox());
+        sprintf_s(buffer, sizeof(buffer), "Jobs: %d", (int)Services::Threadpool::ref().getTasksSizeApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
-    }
-    else {
-        sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
-        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-        yOffset += GAP_SIZE;
-    }
 
-    sprintf_s(buffer, sizeof(buffer), "GameQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
+        if (Services::isUsingNav()) {
+            sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox() + (int)Services::NavThread::ref().getMainThreadQueuedProcsApprox());
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
 
-    sprintf_s(buffer, sizeof(buffer), "RenderQueue: %d", (int)RenderThreadTasks::getInstance().getQueuedProcsApprox());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "DrawCalls: %u", RenderStats::sDrawCalls);
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "Polygons: %u", RenderStats::sPolyCount);
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "Models: %u", mStaticModelRenderer->getNumModels());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "Characters: %u", (ui32)renderState.getCharacterRenderState().size());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "Static objects: %u", sWorld->getPhysicsWorld().getNumStaticCollisionObjects());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "Dynamic objects: %u", sWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    if (sWorld->getPhysicsWorld().isProfiling()) {
-        mSb->drawString(mSpriteFont.get(), "PHYSICS PROFILING ON", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::Red);
-        yOffset += GAP_SIZE;
-    }
-
-    if (sDebugOptions.mChunkBoundaries) {
-        sprintf_s(buffer, sizeof(buffer), "Chunks: %u", (ui32)renderState.getDebugChunks().size());
-        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-        yOffset += GAP_SIZE;
-    }
-
-    // If we are host, draw our server IP
-    if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
-        char buffer2[256];
-        yojimbo::Address address = GameServer::getInstance().getServerAddress();
-        yojimbo::Address addressNoPort;
-        if (address.GetType() == yojimbo::ADDRESS_IPV4) {
-            addressNoPort = yojimbo::Address(address.GetAddress4());
+            sprintf_s(buffer, sizeof(buffer), "NavQueue: %d", (int)Services::NavThread::ref().getTasksSizeApprox());
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
         }
         else {
-            addressNoPort = yojimbo::Address(address.GetAddress6());
-
+            sprintf_s(buffer, sizeof(buffer), "MainQueue: %d", (int)Services::Threadpool::ref().getMainThreadQueuedProcsApprox());
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
         }
-        addressNoPort.ToString(buffer2, 256);
-        sprintf_s(buffer, sizeof(buffer), "Host IP: %s", buffer2);
+
+        sprintf_s(buffer, sizeof(buffer), "GameQueue: %d", (int)GameThreadTasks::getInstance().getQueuedProcsApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
-    }
 
-    /*sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;
-
-    sprintf_s(buffer, sizeof(buffer), "SunPosition: %.2f", mWorld.getSunPosition());
-    mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-    yOffset += GAP_SIZE;*/
-
-    if (mPassthroughRenderMode != 0) {
-        sprintf_s(buffer, sizeof(buffer), "DEBUG FBO: %s", sPassthroughMaterialNames[mPassthroughRenderMode].c_str());
+        sprintf_s(buffer, sizeof(buffer), "RenderQueue: %d", (int)RenderThreadTasks::getInstance().getQueuedProcsApprox());
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
-    }
 
-    mSb->end();
-    mSb->render(mScreenResolution);
+        sprintf_s(buffer, sizeof(buffer), "DrawCalls: %u", RenderStats::sDrawCalls);
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, sizeof(buffer), "Polygons: %u", RenderStats::sPolyCount);
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, sizeof(buffer), "Models: %u", mStaticModelRenderer->getNumModels());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, sizeof(buffer), "Characters: %u", (ui32)renderState.getCharacterRenderState().size());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, sizeof(buffer), "Static objects: %u", sWorld->getPhysicsWorld().getNumStaticCollisionObjects());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, sizeof(buffer), "Dynamic objects: %u", sWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        if (sWorld->getPhysicsWorld().isProfiling()) {
+            mSb->drawString(mSpriteFont.get(), "PHYSICS PROFILING ON", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::Red);
+            yOffset += GAP_SIZE;
+        }
+
+        if (sDebugOptions.mChunkBoundaries) {
+            sprintf_s(buffer, sizeof(buffer), "Chunks: %u", (ui32)renderState.getDebugChunks().size());
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
+        }
+
+        // If we are host, draw our server IP
+        if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
+            char buffer2[256];
+            yojimbo::Address address = GameServer::getInstance().getServerAddress();
+            yojimbo::Address addressNoPort;
+            if (address.GetType() == yojimbo::ADDRESS_IPV4) {
+                addressNoPort = yojimbo::Address(address.GetAddress4());
+            }
+            else {
+                addressNoPort = yojimbo::Address(address.GetAddress6());
+
+            }
+            addressNoPort.ToString(buffer2, 256);
+            sprintf_s(buffer, sizeof(buffer), "Host IP: %s", buffer2);
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
+        }
+
+        /*sprintf_s(buffer, sizeof(buffer), "SunHeight: %.2f", mWorld.getSunHeight());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;
+
+        sprintf_s(buffer, sizeof(buffer), "SunPosition: %.2f", mWorld.getSunPosition());
+        mSb->drawString(mSpriteFont.get(), buffer, f32v2(0.0f, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+        yOffset += GAP_SIZE;*/
+
+        if (mPassthroughRenderMode != 0) {
+            sprintf_s(buffer, sizeof(buffer), "DEBUG FBO: %s", sPassthroughMaterialNames[mPassthroughRenderMode].c_str());
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
+        }
+
+        mSb->end();
+        mSb->render(mScreenResolution);
+    }
+    UIContext::getInstance().updateAndRenderUI(mActiveGBuffer);
 }
 
 void RenderContext::buildHorizonMesh()

@@ -19,9 +19,9 @@ public:
     void beginFrame(const Camera3D& camera, const f32v3& sunPositionWorld);
 
     void useShadowBuffer();
-    void clearShadowTexture(vg::GBuffer* activeGBuffer);
+    void clearShadowTexture();
 
-    vg::GBuffer* renderShadows(vg::GBuffer* activeGBuffer, const f32v3& cameraPos);
+    void renderShadows(const f32v3& cameraPos);
 
     const f32m4* getShadowFrustumMatrices() const { return mLightVP; }
     const f32* getShadowCascadePlaneDistances() const { return mPlaneDistances; }

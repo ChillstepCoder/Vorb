@@ -26,6 +26,10 @@ void main() {
     
     // Replace alpha
     fNormal.a = sampleMaterialAlbedo(mtl, fUV).a;
+    tryDiscardTransparentPixel(fNormal.a);
+    
+    // TODO: Try uncommenting this line, see if talia likes it
+    //fNormal.a = 1.0;
 
     // https://gamedev.stackexchange.com/questions/16588/computing-gl-fragdepth
     float ndcDepth = (2.0 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / (gl_DepthRange.diff);
@@ -49,7 +53,5 @@ void main() {
     
     fNormal.rgb = (norm + 1.0) * 0.5;
     
-    // TODO: Combine to single texture
-    tryDiscardTransparentPixel(fNormal.a);
     //fNormal.a = 1.0;
 }

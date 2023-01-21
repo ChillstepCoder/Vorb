@@ -6,63 +6,55 @@
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 #include "resources/ResourceManager.h"
-#include "camera/Camera3D.h"
+#include "rendering/MaterialUtils.h"
+
+#include "options/DebugOptions.h"
+
+#include <Vorb/graphics/GBuffer.h>
+#include <Vorb/graphics/FullQuadVBO.h>
+#include <Vorb/graphics/BlendState.h>
 
 static_assert((int)LightShape::Count == 1, "Update this file to handle new light shape");
 static_assert((int)LightAttenuationType::Count == 1, "Update this file to handle new attenuation type");
 
 LightRenderer::LightRenderer() {
-    mPointLightMaterial = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("point_light");
-    assert(mPointLightMaterial);
+    mSunlightMaterial = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sunlight");
+    assert(mSunlightMaterial);
 
-    InitSharedMesh();
 }
 
 LightRenderer::~LightRenderer() {
-    if (mSharedPointLightMesh.mVao) {
-        glDeleteBuffers(2, mSharedPointLightMesh.mBuffers);
-        glDeleteVertexArrays(1, &mSharedPointLightMesh.mVao);
+   
+}
+
+void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture) const {
+    vg::sBlendStates.REPLACE.set();
+    ui32 textureUnit = 0;
+    MaterialRenderer::bindMaterialForRender(*mSunlightMaterial, &textureUnit);
+    // Texture inputs
+    glUniform1i(mSunlightMaterial->getUniform("unTextureAlbedo"), textureUnit);
+    glBindTextureUnit(textureUnit, inputGBuffer.getAlbedoTexture());
+    glUniform1i(mSunlightMaterial->getUniform("unTextureNormals"), textureUnit + 1);
+    glBindTextureUnit(textureUnit + 1, inputGBuffer.getNormalTexture());
+    glUniform1i(mSunlightMaterial->getUniform("unTextureDepth"), textureUnit + 2);
+    glBindTextureUnit(textureUnit + 2, inputGBuffer.getDepthTexture());
+    glUniform1i(mSunlightMaterial->getUniform("unTextureShadow"), textureUnit + 3);
+    glBindTextureUnit(textureUnit + 3, shadowTexture);
+
+    // Light uniforms
+    LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
+    LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
+    glUniform2i(mSunlightMaterial->getUniform("unLightingModel"), optionsLeft.mLightingModel, optionsRight.mLightingModel);
+    glUniform2f(mSunlightMaterial->getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
+    glUniform2f(mSunlightMaterial->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+    glUniform2f(mSunlightMaterial->getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
+    glUniform2f(mSunlightMaterial->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
+    if (sDebugOptions.mLightPresetSplitView) {
+        glUniform1f(mSunlightMaterial->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
     }
-}
+    else {
+        glUniform1f(mSunlightMaterial->getUniform("unLightingSplit"), 1.0f);
+    }
 
-void LightRenderer::RenderLight(const f32v2& position, const LightData& lightData, const Camera3D& camera) const {
-
-    MaterialRenderer::bindMaterialForRender(*mPointLightMaterial);
-
-    // Upload light uniforms
-    glUniform1f(mPointLightMaterial->mProgram.getUniform("InnerRadius"), lightData.mInnerRadiusCoef);
-    glUniform3f(mPointLightMaterial->mProgram.getUniform("Color"), lightData.mColor.r / 255.0f, lightData.mColor.g / 255.0f, lightData.mColor.b / 255.0f);
-    glUniform1f(mPointLightMaterial->mProgram.getUniform("Intensity"), lightData.mIntensity);
-    glUniform2f(mPointLightMaterial->mProgram.getUniform("Position"), position.x, position.y);
-    glUniform1f(mPointLightMaterial->mProgram.getUniform("Scale"), lightData.mOuterRadius);
-
-    // Bind mesh
-    glBindVertexArray(mSharedPointLightMesh.mVao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mSharedPointLightMesh.mIb);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-void LightRenderer::InitSharedMesh()
-{
-    glGenBuffers(2, mSharedPointLightMesh.mBuffers);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mSharedPointLightMesh.mIb);
-    const ui32 inds[6] = { 0, 1, 3, 0, 3, 2 };
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(inds), inds, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, mSharedPointLightMesh.mVb);
-    const f32 points[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
-
-    glGenVertexArrays(1, &mSharedPointLightMesh.mVao);
-    glBindVertexArray(mSharedPointLightMesh.mVao);
-    glEnableVertexAttribArray(0);
-    // Vertex shader input, simple position
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, mSharedPointLightMesh.mVb);
-    glBindVertexArray(0);
+    sGlobalFullQuadVBO.draw();
 }

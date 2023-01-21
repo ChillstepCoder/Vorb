@@ -154,8 +154,10 @@ VGTexture ModelEditorPanel::renderModelToTexture() {
 
         if (mDrawMode == EditorViewportDrawMode::BlendTest) {
             return renderModelToTextureBlendTest();
-        }else if (mDrawMode == EditorViewportDrawMode::EdgeTest) {
+        } else if (mDrawMode == EditorViewportDrawMode::EdgeTest) {
             return renderModelToTextureEdgeTest();
+        } else if (mDrawMode == EditorViewportDrawMode::PBRTest) {
+            return renderModelToTexturePBRTest();
         }
         else {
 
@@ -175,7 +177,7 @@ VGTexture ModelEditorPanel::renderModelToTexture() {
                     assert(false);
                     break;
             }
-            static_assert(e_cast(EditorViewportDrawMode::COUNT) == 7);
+            static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
 
             VGUniform unVP = staticModelMaterial->getUniform("unVP");
             MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
@@ -395,4 +397,8 @@ VGTexture ModelEditorPanel::renderModelToTextureEdgeTest()
         default:
             return mGBuffers[0]->getDepthTexture();
     }
+}
+
+VGTexture ModelEditorPanel::renderModelToTexturePBRTest() {
+    return VGTexture();
 }

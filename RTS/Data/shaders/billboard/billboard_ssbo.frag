@@ -7,20 +7,20 @@ in vec4 fTint;
 in mat3 fTBN;
 in float fRoughness;
 
-layout (location = 0) out vec4 oColor;
-layout (location = 1) out vec4 oNormal;
-layout (location = 2) out vec4 oRoughness;
+layout (location = 0) out vec3 oColor;
+layout (location = 1) out vec3 oNormal;
+layout (location = 2) out vec3 oRoughness;
 
 void main() {
     MaterialData mtl = inMaterials[fMaterialIndex];
-    oColor = sampleMaterialAlbedo(mtl, fUV) * fTint;
+    vec4 color = sampleMaterialAlbedo(mtl, fUV) * fTint;
     // Don't write 0 alpha (TMP?)
 	// TODO: Noise on this edge so that its fuzzy average
 	
-    if (oColor.a < 0.70) {
+    if (color.a < 0.70) {
         discard;
     }
-	oColor.a = 1.0;
+    oColor = color.rgb;
 	
 	
 	// Normal is always the next page
@@ -34,8 +34,6 @@ void main() {
     
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
-	oNormal.a = oColor.a;
 	oRoughness.r = fRoughness;
-	oRoughness.a = 1.0;
     //oColor.rgb = oColor.rgb * 0.0001 + vec3(1.0, 0.0, 0.0);
 }

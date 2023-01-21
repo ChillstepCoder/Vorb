@@ -13,12 +13,12 @@ class CloudRenderer
 public:
     CloudRenderer(const ui32v2& gbufferDims);
 
-    void renderClouds(const CloudManager& cloudManager, vg::GBuffer* activeGbuffer, const Camera3D& camera);
+    void renderClouds(const CloudManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera);
     void renderCloudShadows(const CloudManager& cloudManager, const Camera3D& camera, f32 maxDistance);
 
 private:
     void blurNormals();
-    void renderFboToScreen();
+    void renderToOutput();
 
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
 

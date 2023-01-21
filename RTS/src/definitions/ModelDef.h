@@ -3,7 +3,7 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/model/Model3D.h"
 #include "rendering/model/ModelConst.h"
-#include "rendering/model/ModelRenderPass.h"
+#include "rendering/model/ModelRenderPassType.h"
 #include "rendering/post_process/ShadowLodDetail.h"
 
 #include <ozz/animation/runtime/skeleton.h>
@@ -17,7 +17,7 @@ struct ModelDefFileData {
     nString mMachineName;
     f32 mScale = 1.0f;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
-    ModelRenderPass mRenderPass = ModelRenderPass::Default;
+    ModelRenderPassType mRenderPass = ModelRenderPassType::Default;
 };
 KEG_TYPE_DECL(ModelDefFileData);
 
@@ -49,6 +49,6 @@ struct ModelDef {
     ModelID mModelId;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     const char* mName = nullptr;
-    ModelRenderPass mRenderPass = ModelRenderPass::Default;
+    ModelRenderPassType mRenderPass = ModelRenderPassType::Default;
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };

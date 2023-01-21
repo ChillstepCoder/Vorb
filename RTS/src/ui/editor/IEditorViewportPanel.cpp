@@ -38,9 +38,10 @@ void IEditorViewportPanel::updateAndRenderDrawModeControl() {
         "UVs",
         "Blend Test",
         "Edge Test",
+        "PBR Test",
         "Wireframe", // Always last
     };
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 7);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
     if (ImGui::BeginCombo("Draw Mode", drawModes[e_cast(mDrawMode)])) {
         for (int i = 0; i < e_cast(EditorViewportDrawMode::COUNT); ++i) {
             bool isSelected = e_cast(mDrawMode) == i;

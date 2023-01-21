@@ -23,6 +23,9 @@ TerrainRenderer::TerrainRenderer()
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const TerrainMesh*>& terrainMeshes) {
+
+    glEnable(GL_CULL_FACE);
+
     MaterialRenderer::bindMaterialForRender(*mTerrainMaterial);
     // Terrain uniforms
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unHeightMult"), sDebugOptions.mTerrainHeightColorMult);

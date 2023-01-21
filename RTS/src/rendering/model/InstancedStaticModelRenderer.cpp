@@ -103,7 +103,7 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() :
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
-    for (int ri = 0; ri < e_cast(ModelRenderPass::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             GL.glDeleteBuffers(1, &it.second.mTransformsVbo);
         }
@@ -117,7 +117,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
     PROFILE_FUNCTION();
 
-    for (int ri = 0; ri < e_cast(ModelRenderPass::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             StaticModelInstanceData& instanceData = it.second;
             // TODO: Move this to onRemove
@@ -354,14 +354,14 @@ void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID cont
     }
 }
 
-void InstancedStaticModelRenderer::renderModelPass(ModelRenderPass renderPass, const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelPass(ModelRenderPassType renderPass, const Camera3D& camera) {
     assert(IS_RENDER_THREAD());
     if (sDebugOptions.mHideModels)
         return;
 
     PROFILE_FUNCTION();
 
-    // TODO: Material specific
+    // TODO: Material specific, we lose 10fps disabling this
     glDisable(GL_CULL_FACE);
 
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
@@ -412,7 +412,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
     PROFILE_FUNCTION();
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
-    for (int ri = 0; ri < e_cast(ModelRenderPass::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             // TODO: Have a no shadow render type?
 
@@ -492,7 +492,7 @@ void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID 
 ui32 InstancedStaticModelRenderer::getNumModels() const {
     assert(IS_RENDER_THREAD());
     ui32 numModels = 0;
-    for (int ri = 0; ri < e_cast(ModelRenderPass::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             numModels += it.second.mInstanceTransforms.size();
         }

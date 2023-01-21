@@ -25,9 +25,9 @@ in mat3 fTBN;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 
-layout (location = 0) out vec4 oColor; // TODO: vec3
-layout (location = 1) out vec4 oNormal;
-layout (location = 2) out vec4 oRoughness;
+layout (location = 0) out vec3 oColor;
+layout (location = 1) out vec3 oNormal;
+layout (location = 2) out vec3 oRoughness;
 
 
 float InvSmoothStep(float x) {
@@ -74,13 +74,12 @@ void main() {
 	float noiseVal = texture(GreyNoise, screenUV * 3.0).r;
     float alpha = unCrossfadeAlpha * 0.05 + noiseVal * unCrossfadeAlpha + 0.4;
 	alpha = InvSmoothStep(alpha);
-	oColor.a = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), 1.0);
-	oColor.a = clamp(oColor.a, 0.0, 1.0);
+	alpha = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), 1.0);
+	alpha = clamp(alpha, 0.0, 1.0);
 	
-	if (oColor.a <= 0.5) {
+	if (alpha <= 0.5) {
         discard;
     }
-    oColor.a = 1.0;
     
     // === Terrain texturing ===
     
@@ -94,7 +93,7 @@ void main() {
     float stoneLerpHeight = fHeight - fTBN[2].z * 20.0 + lerpNoise; // Include surface normal val
     
     if (fHeight < 0.0) {
-        oColor.rgb = WaterColor;
+        oColor = WaterColor;
         normal = vec3(0.0, 0.0, 1.0);
     } else {
         vec3 grassColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp) * GrassColor;
@@ -102,7 +101,7 @@ void main() {
         
         //stoneColor = stoneColor * 0.00001 + StoneColor;
         float stoneLerp = clamp((stoneLerpHeight - 6.0) * 0.5, 0.0, 1.0);
-        oColor.rgb = mix(grassColor, stoneColor, stoneLerp);
+        oColor = mix(grassColor, stoneColor, stoneLerp);
 	    normal = mix(vec3(0.0, 0.0, 1.0), texture(StoneNormal, farStoneUVs).xyz * 2.0 - 1.0, stoneLerp);
     }
     
@@ -112,7 +111,6 @@ void main() {
     
 	normal = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
-	oNormal.a = oColor.a;
     
     // Debug distance lerp
     //oColor.rgb = oColor.rgb * 0.0001 + vec3(distUvLerp, 0.0, 0.0);
@@ -163,5 +161,4 @@ void main() {
     // === Roughness ===
     
 	oRoughness.r = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3;
-	oRoughness.a = 1.0;
 }

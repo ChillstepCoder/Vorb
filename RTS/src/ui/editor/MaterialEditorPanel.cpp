@@ -119,6 +119,7 @@ void MaterialEditorPanel::renderModelToTexture() {
         case EditorViewportDrawMode::UVs:
         case EditorViewportDrawMode::BlendTest: // TODO
         case EditorViewportDrawMode::EdgeTest: // TODO
+        case EditorViewportDrawMode::PBRTest: // TODO
             material = resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
             break;
         case EditorViewportDrawMode::Wireframe:
@@ -127,7 +128,7 @@ void MaterialEditorPanel::renderModelToTexture() {
         default:
             assert(false);
     }
-    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 7);
+    static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
 
 
     MaterialRenderer::bindMaterialForRender(*material);
