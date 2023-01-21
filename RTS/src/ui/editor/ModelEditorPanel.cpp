@@ -400,5 +400,24 @@ VGTexture ModelEditorPanel::renderModelToTextureEdgeTest()
 }
 
 VGTexture ModelEditorPanel::renderModelToTexturePBRTest() {
-    return VGTexture();
+    ResourceManager& resourceManager = Services::ResourceManager::ref();
+    {
+        const MaterialShader* staticModelMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("editor_model_pbr");
+
+        VGUniform unVP = staticModelMaterial->getUniform("unVP");
+        MaterialRenderer::bindMaterialForRender(*staticModelMaterial);
+
+        glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
+
+        MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
+        glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+        // Replace normals
+        glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
+
+        Model3D& mModel = mCurrentModel->mModel;
+        mModel.getMesh()->draw(MeshLODLevel(mLod));
+
+        // Now we have the mesh normals, positions depth.
+    }
+    return VGTexture(0);
 }
