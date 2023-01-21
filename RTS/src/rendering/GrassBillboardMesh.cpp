@@ -52,20 +52,16 @@ void GrassBillboardMesh::addBladeQuad(const f32v3& position, const f32v2& xyDims
     mPositionData.emplace_back(position);
 }
 
-void GrassBillboardMesh::draw(VGUniform tboSizeType, VGUniform tboPosition) const
-{
+void GrassBillboardMesh::draw(VGUniform tboSizeType, VGUniform tboPosition) const {
     // Make sure we have been initialized
     assert(mVao);
     if (!mIndexCount) return;
 
     glBindVertexArray(mVao);
 
-    glActiveTexture(GL_TEXTURE10);
-    glBindTexture(GL_TEXTURE_BUFFER, mTboInstanceData);
-    glActiveTexture(GL_TEXTURE11);
-    glBindTexture(GL_TEXTURE_BUFFER, mTboPositionData);
-
-    // Bind uniforms
+    // Bind textures
+    glBindTextureUnit(10, mTboInstanceData);
+    glBindTextureUnit(11, mTboPositionData);
     glUniform1i(tboSizeType, 10);
     glUniform1i(tboPosition, 11);
 
@@ -76,24 +72,15 @@ void GrassBillboardMesh::draw(VGUniform tboSizeType, VGUniform tboPosition) cons
 
 void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
 {
-    // TODO: RAII
     if (mInstanceData.size()) {
         initBuffers();
 
         mIndexCount = mInstanceData.size() * 6;
+        glNamedBufferStorage(mVboPosition, sizeof(f32v3) * mPositionData.size(), mPositionData.data(), 0);
+        glNamedBufferStorage(mVboInstanceData, sizeof(GrassBillboardInstanceData) * mInstanceData.size(), mInstanceData.data(), 0);
 
-        glBindBuffer(GL_TEXTURE_BUFFER, mVboPosition);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(f32v3) * mPositionData.size(), nullptr, (GLenum)drawMode);
-        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(f32v3) * mPositionData.size(), mPositionData.data());
-
-        glBindBuffer(GL_TEXTURE_BUFFER, mVboInstanceData);
-        glBufferData(GL_TEXTURE_BUFFER, sizeof(GrassBillboardInstanceData) * mInstanceData.size(), nullptr, (GLenum)drawMode);
-        glBufferSubData(GL_TEXTURE_BUFFER, 0, sizeof(GrassBillboardInstanceData) * mInstanceData.size(), mInstanceData.data());
-
-        glBindTexture(GL_TEXTURE_BUFFER, mTboInstanceData);
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, mVboInstanceData);
-        glBindTexture(GL_TEXTURE_BUFFER, mTboPositionData);
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mVboPosition);
+        glTextureBuffer(mTboInstanceData, GL_RGBA8, mVboInstanceData);
+        glTextureBuffer(mTboPositionData, GL_RGB32F, mVboPosition);
     }
     else {
         destroy();
@@ -120,19 +107,14 @@ void GrassBillboardMesh::destroy()
 
 void GrassBillboardMesh::initBuffers() {
     if (mVao == 0) { // Create VAO
-        glGenVertexArrays(1, &mVao);
-        glBindVertexArray(mVao);
+        glCreateVertexArrays(1, &mVao);
 
-        glGenBuffers(1, &mVboInstanceData);
-        glGenBuffers(1, &mVboPosition);
+        glCreateBuffers(1, &mVboInstanceData);
+        glCreateBuffers(1, &mVboPosition);
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0); // Hack, no data at all, the shader generates vertex positions
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIboUI32);
+        glVertexArrayElementBuffer(mVao, ProceduralMeshBuilder::sQuadIboUI32);
 
-        glGenTextures(1, &mTboInstanceData);
-        glGenTextures(1, &mTboPositionData);
-    }
-    else {
-        glBindVertexArray(mVao);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &mTboInstanceData);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &mTboPositionData);
     }
 }
