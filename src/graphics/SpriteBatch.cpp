@@ -84,8 +84,6 @@ void vg::SpriteBatch::init() {
         glVertexAttribPointer(s_program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, uv));
         glVertexAttribPointer(s_program.getAttribute("vUVRect"), 4, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, uvRect));
 
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     { // Create Pixel Texture
@@ -316,8 +314,6 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
         glDrawElements(GL_TRIANGLES, b.indices, GL_UNSIGNED_INT, (const GLvoid*)(b.indexOffset * sizeof(ui32)));
     }
 
-    glBindVertexArray(0);
-
     shader->unuse();
 }
 void vg::SpriteBatch::render(const f32m4& mWorld, const f32v2& screenSize, /*const BlendState* bs = nullptr,*/ const SamplerState* ss /*= nullptr*/, const DepthState* ds /*= nullptr*/, const RasterizerState* rs /*= nullptr*/, vg::GLProgram* shader /*= nullptr*/) {
@@ -353,6 +349,7 @@ void vg::SpriteBatch::sortGlyphs(SpriteSortMode ssm) {
     }
 }
 void vg::SpriteBatch::generateBatches() {
+    glBindVertexArray(m_vao);
     if (m_glyphPtrs.empty()) {
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
         glBufferData(GL_ARRAY_BUFFER, 0, nullptr, m_bufUsage);

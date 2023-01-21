@@ -22,7 +22,6 @@ i32 vg::ShaderInterface::build(const AttributeSemBinding& semBinds) {
             bind.location = -1;
         }
     }
-    glBindVertexArray(0);
 
     return numLinked;
 }

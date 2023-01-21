@@ -3,6 +3,7 @@
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
+#include <Vorb/graphics/BlendState.h>
 #include <Vorb/ui/InputDispatcher.h>
 
 #include <glm/gtx/rotate_vector.hpp>
@@ -93,6 +94,7 @@ void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {
 
 void IEditorViewportPanel::renderGrid() {
     vg::DepthState::NONE.set();
+    vg::sBlendStates.ALPHA.set();
 
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     const MaterialShader* gridMaterial = resourceManager.getMaterialShaderManager().getMaterialShader("grid");
@@ -102,7 +104,7 @@ void IEditorViewportPanel::renderGrid() {
 
     glBindVertexArray(mGridVao);
     glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
-    glBindVertexArray(0);
 
     vg::DepthState::restorePrevious();
+    vg::BlendState::restorePrevious();
 }

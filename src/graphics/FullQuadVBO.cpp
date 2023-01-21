@@ -25,7 +25,6 @@ void vg::FullQuadVBO::init(i32 attrLocation /*= 0*/) {
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(attrLocation, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glBindBuffer(GL_ARRAY_BUFFER, m_vb);
-        glBindVertexArray(0);
     }
 }
 
@@ -42,5 +41,4 @@ void vg::FullQuadVBO::draw() const{
     assert(m_vao);
     glBindVertexArray(m_vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
 }

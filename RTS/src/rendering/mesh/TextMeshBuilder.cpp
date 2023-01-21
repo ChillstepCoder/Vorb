@@ -217,8 +217,6 @@ void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
     // Cleanup
     // TODO: Do we need this really?
     mSubtextureLookup.clear();
-
-    glBindVertexArray(0);
 }
 
 ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {

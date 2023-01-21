@@ -32,8 +32,6 @@ void Mesh::draw() const {
     }
     glDrawElements(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mMainMesh.mLODData.mTotalIndexCount / 3);
-
-    glBindVertexArray(0);
 }
 
 void Mesh::draw(MeshLODLevel lod) const
@@ -53,7 +51,6 @@ void Mesh::draw(MeshLODLevel lod) const
     glDrawElements(GL_TRIANGLES, drawInfo.indexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */);
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 
-    glBindVertexArray(0);
 }
 
 void Mesh::drawInstanced(GLsizei instanceCount) const {
@@ -70,7 +67,6 @@ void Mesh::drawInstanced(GLsizei instanceCount) const {
     glDrawElementsInstanced(GL_TRIANGLES, mMainMesh.mLODData.mTotalIndexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(0) /* offset */, instanceCount);
     RenderStats::recordDrawCall(mMainMesh.mLODData.mTotalIndexCount / 3);
 
-    glBindVertexArray(0);
 }
 
 void Mesh::drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const {
@@ -88,7 +84,6 @@ void Mesh::drawInstanced(MeshLODLevel lod, GLsizei instanceCount) const {
     glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, e_cast(mMainMesh.mIndexType), (const GLvoid*)(drawInfo.startIndex * (mMainMesh.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */, instanceCount);
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 
-    glBindVertexArray(0);
 }
 
 void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) const
@@ -108,7 +103,6 @@ void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) 
     GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, buffer->getHandle());
     glMultiDrawElementsIndirect(GL_TRIANGLES, e_cast(mMainMesh.mIndexType), nullptr, (GLsizei)numDrawCommands, 0);
 
-    GL.glBindVertexArray(0);
 }
 
 void Mesh::destroy() {

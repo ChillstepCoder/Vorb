@@ -224,7 +224,6 @@ VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, i
 
     glBindVertexArray(mPreviewVAO);
     glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
-    glBindVertexArray(0);
 
     gBuffer.unuse();
     return gBuffer.getAlbedoTexture();

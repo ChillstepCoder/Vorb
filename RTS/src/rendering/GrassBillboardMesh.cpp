@@ -72,11 +72,11 @@ void GrassBillboardMesh::draw(VGUniform tboSizeType, VGUniform tboPosition) cons
     glPatchParameteri(GL_PATCH_VERTICES, 3);
     glDrawElements(GL_PATCHES, mIndexCount, GL_UNSIGNED_INT, (const GLvoid*)(0) /* offset */);
     RenderStats::recordDrawCall(mIndexCount / 3);
-    glBindVertexArray(0);
 }
 
 void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
 {
+    // TODO: RAII
     if (mInstanceData.size()) {
         initBuffers();
 
@@ -94,8 +94,6 @@ void GrassBillboardMesh::finishMesh(MeshDrawMode drawMode)
         glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA8, mVboInstanceData);
         glBindTexture(GL_TEXTURE_BUFFER, mTboPositionData);
         glTexBuffer(GL_TEXTURE_BUFFER, GL_RGB32F, mVboPosition);
-
-        glBindVertexArray(0);
     }
     else {
         destroy();

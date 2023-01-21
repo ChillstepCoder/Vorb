@@ -460,8 +460,6 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         }
     }
 
-    sGlobalCircleProgram.unuse();
-    GL.glBindVertexArray(0);
 }
 
 void DebugRenderer::clearAllMeshesWithId(int id)
