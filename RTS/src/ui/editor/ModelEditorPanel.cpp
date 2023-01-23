@@ -57,8 +57,6 @@ bool ModelEditorPanel::updateAndRender() {
 
     // TODO: Put into gbuffer impl
     // Clear framebuffers
-    f32v4 colorClear(1.0f, 1.0f, 1.0f, 0.0f);
-    f32v4 normalClear(0.0f);
     for (int i = 0; i < 3; ++i) {
         mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::ALBEDO, f32v4(1.0f, 1.0f, 1.0f, 0.0f));
         mGBuffers[i]->clearAttachment(vg::GBufferAttachmentIndex::NORMALS);
@@ -136,6 +134,10 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
             ImGui::SliderFloat("Edge Blur Radius", &mEdgeBlendRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
             ImGui::Checkbox("Show Edges", &mEdgeTestShowEdges);
             ImGui::Checkbox("Disable", &mEdgeTestDisable);
+        }
+        else if (mDrawMode == EditorViewportDrawMode::PBRTest) {
+            ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
+            ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
         }
     }
 
@@ -409,8 +411,13 @@ VGTexture ModelEditorPanel::renderModelToTexturePBRTest() {
 
         glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
 
-        MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
-        glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+        //MaterialUtils::uploadLightingUniforms(*staticModelMaterial);
+        //glUniform1i(staticModelMaterial->getUniform("unRenderMode"), (int)mDrawMode);
+        glUniform1f(staticModelMaterial->getUniform("unMetallic"), mMetallic);
+        glUniform1f(staticModelMaterial->getUniform("unRoughness"), mRoughness);
+        f32v3 lightDir = glm::normalize(f32v3(-1.0, 0.0, 1.0));
+        glUniform3fv(staticModelMaterial->getUniform("unLightDir"), 1, &lightDir.x);
+        glUniform3fv(staticModelMaterial->getUniform("unCameraPos"), 1, &camera->getPosition()[0]);
         // Replace normals
         glBlendFunci(e_cast(vg::GBufferAttachmentIndex::NORMALS), GL_ONE, GL_ZERO);
 

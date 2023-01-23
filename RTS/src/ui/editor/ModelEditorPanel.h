@@ -45,5 +45,9 @@ private:
     f32 mEdgeBlendRadius = 1.315f;
     bool mEdgeTestDisable = 0;
     bool mEdgeTestShowEdges = 0;
+    
+    // PBR test
+    float mMetallic = 0.5f;
+    float mRoughness = 0.5f;
 };
 
