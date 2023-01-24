@@ -3,17 +3,13 @@
 #include "lighting/scene_lighting.glsl"
 
 uniform mat4 unVP;
+uniform int unMaterialIndex;
 
 in vec2 fUV;
 in vec3 fWorldPos;
 in vec2 fScreenPos;
 in vec4 fTint;
 in mat3 fTBN;
-
-// 0 = default
-// 1 = normalst
-// 2 = uvs
-uniform int unMaterialIndex;
 
 #include "editor/editor_util.glsl"
 

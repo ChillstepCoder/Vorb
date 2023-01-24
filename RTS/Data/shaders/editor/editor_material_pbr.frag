@@ -10,11 +10,11 @@ uniform ivec2 unTonemapOperator;
 uniform float unLightingSplit;
 
 uniform mat4 unVP;
+uniform int unMaterialIndex;
 
 in vec2 fUV;
 in vec3 fWorldPos;
 in vec2 fScreenPos;
-flat in uint fMaterialIndex;
 in vec4 fTint;
 in mat3 fTBN;
 
@@ -23,15 +23,14 @@ layout (location = 1) out vec3 oNormal;
 
 void main() {
 
-    vec3 normal;
     vec4 color;
-    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, fTint);
-    
+    vec3 normal;
+    getMaterialPixelInfo(unMaterialIndex, fUV, color, normal, fTint);
+
     tryDiscardTransparentPixel(color.a);
-	
-	// Normal to tangent space
-    normal = normalize(fTBN * normal);
     
+    // Normal to tangent space
+    normal = normalize(fTBN * normal);
     
     oColor.rgb = PBRLearnOpengl(fWorldPos, color.rgb, normal);
     
@@ -42,9 +41,9 @@ void main() {
     // Gamma correction
     oColor.rgb = pow(oColor.rgb, vec3(1.0 / unGamma[preset]));
     
-    vec3 color2 = oColor.rgb * 0.1 + PBRLearnOpengl(fWorldPos, color.rgb, normal);
-    oColor.rgb = color2.rgb  / (color2.rgb  + vec3(1.0));
-    oColor.rgb  = pow(oColor.rgb , vec3(1.0/2.2));  
+   // vec3 color2 = oColor.rgb * 0.0001 + PBRLearnOpengl(fWorldPos, color.rgb, normal);
+   // oColor.rgb = color2.rgb  / (oColor.rgb  + vec3(1.0));
+   // oColor.rgb  = pow(oColor.rgb , vec3(1.0/2.2));  
     
     oColor.a = 1.0;
     //oColor = getEditorOutputPixelColor(color.rgb, normal, fWorldPos, fScreenPos);

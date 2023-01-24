@@ -1,0 +1,3 @@
+editor_material_pbr:
+  vert: editor_model.vert
+  frag: editor_material_pbr.frag

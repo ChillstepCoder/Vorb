@@ -51,20 +51,9 @@ bool MaterialEditorPanel::updateAndRender()
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
 
-    mGBuffers[0]->use();
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     renderGrid();
-    if (mCurrentMaterial.isValid()) {
-        renderModelToTexture();
-    }
-    mGBuffers[0]->unuse();
+    renderCenterPanel();
 
-    const ImVec2 uv0(0, 1);
-    const ImVec2 uv1(1, 0);
-    const ImVec2 dims(imageDims.x, imageDims.y);
-    ImGui::Image((ImTextureID)mGBuffers[0]->getAlbedoTexture(), dims, uv0, uv1);
 
     ImGui::End();
 
@@ -102,50 +91,47 @@ void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
         }
         ImGui::EndCombo();
     }
+
+    if (mCurrentMaterial.isValid()) {
+        updateAndRenderTweakers();
+    }
     ImGui::Separator();
 
     ImGui::EndChild();
 }
 
-void MaterialEditorPanel::renderModelToTexture() {
-    Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
-
+const MaterialShader* MaterialEditorPanel::getShader()
+{
     ResourceManager& resourceManager = Services::ResourceManager::ref();
-    const MaterialShader* material = nullptr;
     switch (mDrawMode) {
+        case EditorViewportDrawMode::PBRTest:
+            return resourceManager.getMaterialShaderManager().getMaterialShader("editor_material_pbr");
         case EditorViewportDrawMode::Unlit:
         case EditorViewportDrawMode::Lit:
         case EditorViewportDrawMode::Normals:
         case EditorViewportDrawMode::UVs:
-        case EditorViewportDrawMode::BlendTest: // TODO
-        case EditorViewportDrawMode::EdgeTest: // TODO
-        case EditorViewportDrawMode::PBRTest: // TODO
-            material = resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
-            break;
+        case EditorViewportDrawMode::BlendTest:
+        case EditorViewportDrawMode::EdgeTest:
+            return resourceManager.getMaterialShaderManager().getMaterialShader("editor_material");
         case EditorViewportDrawMode::Wireframe:
-            material = resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
-            break;
+            return resourceManager.getMaterialShaderManager().getMaterialShader("mesh_wireframe");
         default:
             assert(false);
     }
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8);
+    return nullptr;
+}
 
-
-    MaterialRenderer::bindMaterialForRender(*material);
-    VGUniform unVP = material->getUniform("unVP");
-    VGUniform unPosOffset = material->getUniform("unPosOffset");
-    glUniformMatrix4fv(unVP, 1, false, &(camera->getViewProjectionMatrix()[0][0]));
-    glUniform4f(unPosOffset, 0.0f, 0.0f, 1.0f, 0.0f);
-
+void MaterialEditorPanel::uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
+    UNUSED(availableTextureUnit);
     if (mDrawMode != EditorViewportDrawMode::Wireframe) {
-        MaterialUtils::uploadLightingUniforms(*material);
-        VGUniform unRenderMode = material->getUniform("unRenderMode");
-        VGUniform unMaterialIndex = material->getUniform("unMaterialIndex");
-
-        glUniform1i(unRenderMode, (int)mDrawMode);
+        VGUniform unMaterialIndex = shader->getUniform("unMaterialIndex");
         glUniform1i(unMaterialIndex, mCurrentMaterial.materialId);
     }
+    glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 1.0f, 0.0f);
+}
 
-
+void MaterialEditorPanel::renderMesh() {
+    Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
     mesh.draw(MeshLODLevel(0));
 }

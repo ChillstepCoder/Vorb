@@ -17,7 +17,9 @@ public:
     void setMaterial(MaterialHandle& materialData) { mCurrentMaterial = materialData; }
 
 private:
-    void renderModelToTexture();
+    const MaterialShader* getShader() override;
+    void uploadCustomShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) override;
+    void renderMesh() override;
 
     MaterialHandle mCurrentMaterial;
     PrimitiveShapeType mShapeType = PrimitiveShapeType::Sphere;

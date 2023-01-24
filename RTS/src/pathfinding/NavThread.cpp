@@ -100,7 +100,7 @@ void NavThread::navThreadFunc() {
     NavThreadGraphBuildArgs graphArgs;
     SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(sWorld);
     LOG_CRITICAL("TODO: Fix srvWorld assert in NavThread::navThreadFunc");
-    // TODO: This assert happened three times (NEXT TIME CHECK sWorld, is  it  just a failed upcast? or is sWorld null?)
+    // TODO: This assert happened three times (FAILED DYNAMIC_CAST. sWorld is valid but srvWorld is null)
     assert(srvWorld);
     NavWorld& navWorld = srvWorld->getNavWorld();
     while (!mStop.load()) {

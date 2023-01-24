@@ -2,11 +2,10 @@
 
 uniform sampler2D unLightTexture;
 
-// Lighting uniforms (MaterialUtils::uploadLightingUniforms)
+// Lighting uniforms (MaterialUtils::uploadTonemapUniforms)
 uniform vec2 unGamma;
 uniform vec2 unExposure;
 uniform ivec2 unTonemapOperator;
-uniform ivec2 unLightingModel;
 uniform float unLightingSplit;
 
 in vec2 fUV;
