@@ -32,7 +32,6 @@ void main() {
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    
     oColor.rgb = PBRLearnOpengl(fWorldPos, color.rgb, normal);
     
     // Tonemapping
@@ -41,10 +40,6 @@ void main() {
    
     // Gamma correction
     oColor.rgb = pow(oColor.rgb, vec3(1.0 / unGamma[preset]));
-    
-    vec3 color2 = oColor.rgb * 0.1 + PBRLearnOpengl(fWorldPos, color.rgb, normal);
-    oColor.rgb = color2.rgb  / (color2.rgb  + vec3(1.0));
-    oColor.rgb  = pow(oColor.rgb , vec3(1.0/2.2));  
     
     oColor.a = 1.0;
     //oColor = getEditorOutputPixelColor(color.rgb, normal, fWorldPos, fScreenPos);

@@ -193,7 +193,7 @@ private:
     int mActiveGBufferIndex = 0;
     vg::GBuffer* mActiveGBuffer = nullptr;
     std::unique_ptr<vg::GBuffer> mGBuffers[2];
-    std::unique_ptr<vg::GBuffer> mTransparencyGBuffer;
+    std::unique_ptr<vg::GBuffer> mHDRLightGBuffer;
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
     VGBuffer mGlobalUbo = 0;

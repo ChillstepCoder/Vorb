@@ -16,7 +16,10 @@
 #include "resources/ResourceManager.h"
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialRenderer.h"
+#include "resources/TextureRepository.h"
 #include "rendering/MaterialUtils.h"
+#include "rendering/Skybox.h"
+#include "rendering/mesh/Mesh.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -33,6 +36,11 @@ IEditorViewportPanel::~IEditorViewportPanel() {
 }
 
 void IEditorViewportPanel::renderCenterPanel() {
+    // Lazy init resources
+    if (!mSkybox) {
+        mSkybox = std::make_unique<Skybox>();
+        mSkybox->init(Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sky"), nullptr);
+    }
 
     glDisable(GL_CULL_FACE);
     vg::DepthState::FULL.set();
@@ -44,6 +52,10 @@ void IEditorViewportPanel::renderCenterPanel() {
         mGBuffers[i]->clearDepth();
     }
     mGBuffers[0]->use();
+
+    if (mSkybox->hasTexture()) {
+        mSkybox->render(camera->getViewProjectionMatrix());
+    }
 
     if (mRenderGrid) {
         renderGrid();
@@ -107,7 +119,7 @@ VGTexture IEditorViewportPanel::getFinalOutputTexture() {
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Make sure you don't need to set a custom output texture");
 }
 
-void IEditorViewportPanel::updateAndRenderDrawModeControl() {
+void IEditorViewportPanel::updateAndRenderSharedControls() {
     // Draw mode
     const char* drawModes[e_cast(EditorViewportDrawMode::COUNT)] = {
         "Lit",
@@ -132,11 +144,44 @@ void IEditorViewportPanel::updateAndRenderDrawModeControl() {
         }
         ImGui::EndCombo();
     }
+
+    // Skybox
+    // TODO: Cache this?
+    TextureRepository& textureRepository = Services::ResourceManager::ref().getTextureRepository();
+    const std::map<nString, CubemapID>& cubemapIds = textureRepository.getCubemapIDs();
+    std::vector<nString> cubemapNames;
+    cubemapNames.reserve(cubemapIds.size() + 1);
+    cubemapNames.emplace_back("NONE");
+    for (auto&& it : cubemapIds) {
+        cubemapNames.emplace_back(it.first);
+    }
+    if (ImGui::BeginCombo("Skybox", cubemapNames[mSelectedSkyboxIndex].c_str())) {
+        for (size_t i = 0; i < cubemapNames.size(); ++i) {
+            bool isSelected = mSelectedSkyboxIndex == i;
+            ImGui::Selectable(cubemapNames[i].c_str(), &isSelected);
+
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+                mSelectedSkyboxIndex = i;
+                if (i == 0) {
+                    mSkybox->setCubemap(nullptr);
+                }
+                else {
+                    auto&& it = cubemapIds.find(cubemapNames[i]);
+                    assert(it != cubemapIds.end());
+                    mSkybox->setCubemap(&textureRepository.getCubemap(it->second));
+                }
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    // Grid
+    ImGui::Checkbox("Show Grid", &mRenderGrid);
 }
 
 void IEditorViewportPanel::updateAndRenderTweakers() {
 
-    ImGui::Checkbox("Show Grid", &mRenderGrid);
     ImGui::Separator();
 
     // Blend test controls

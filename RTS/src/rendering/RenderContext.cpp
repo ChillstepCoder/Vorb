@@ -2,6 +2,7 @@
 #include "RenderContext.h"
 #include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
+#include "resources/TextureRepository.h"
 #include "world/IWorld.h"
 #include "world/cli/CliWorldInterface.h"
 #include "world/HeightmapTerrainQuadtree.h"
@@ -219,8 +220,8 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         mGBuffers[i]->initDepth(vg::GBufferDepthFormat::DEPTH_32);
 #endif
     }
-    mTransparencyGBuffer = std::make_unique<vg::GBuffer>(mScreenResolution);
-    mTransparencyGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB8);
+    mHDRLightGBuffer = std::make_unique<vg::GBuffer>(mScreenResolution);
+    mHDRLightGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
     checkGlError("GBuffer init");
 
@@ -294,7 +295,8 @@ void RenderContext::onWorldBegin(const f32v2& worldCenter) {
 
 void RenderContext::initPostLoad() {
 
-    const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
+    const ResourceManager& resourceManager = Services::ResourceManager::ref();
+    const MaterialShaderManager& materialManager = resourceManager.getMaterialShaderManager();
 
     // Init all passthrough materials
     {
@@ -316,11 +318,11 @@ void RenderContext::initPostLoad() {
     mPassthroughMaterial = materialManager.getMaterialShader("pass_through");
 
     {
-        
         ScopedTimer timer("Skybox init", 2);
         buildHorizonMesh();
         mSkyBox = std::make_unique<Skybox>();
-        mSkyBox->init(materialManager.getMaterialShader("sky"));
+        mSkyBox->init(materialManager.getMaterialShader("sky"), &resourceManager.getTextureRepository().getCubemap("graycloud"));
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     }
 }
 
@@ -489,9 +491,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Editor brushes
     UIContext::getInstance().renderEditorBrushDecals(camera);
 
-    // Sky
-    mSkyBox->render();
-
     // Horizon
     //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
 
@@ -522,12 +521,15 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     mCurrentFramebufferDims = mScreenResolution;
 
+    // Sky
+    mSkyBox->render(camera.getVPMatrix());
+
     // Final render for pre-transparency
-    mTransparencyGBuffer->use();
+    mHDRLightGBuffer->use();
     // Share values
-    mTransparencyGBuffer->setTertiaryTexture(mActiveGBuffer->getTertiaryTexture());
-    mTransparencyGBuffer->setNormalTexture(mActiveGBuffer->getNormalTexture());
-    mTransparencyGBuffer->setSharedDepthStencilTexture(mActiveGBuffer->getDepthStencilTexture());
+    mHDRLightGBuffer->setTertiaryTexture(mActiveGBuffer->getTertiaryTexture());
+    mHDRLightGBuffer->setNormalTexture(mActiveGBuffer->getNormalTexture());
+    mHDRLightGBuffer->setSharedDepthStencilTexture(mActiveGBuffer->getDepthStencilTexture());
 
     // Sunlight
     mLightRenderer->renderSunlight(*mActiveGBuffer, mShadowRenderer->getShadowTexture());
@@ -535,7 +537,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     renderPassTransparent(camera, renderState);
 
     // Update active
-    mActiveGBuffer = mTransparencyGBuffer.get();
+    mActiveGBuffer = mHDRLightGBuffer.get();
 
     // Depth of field
     vg::DepthState::NONE.set();
@@ -544,7 +546,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     // Final render to screen, applying tonemap
     mActiveGBuffer->unuse();
     glViewport(0, 0, mScreenResolution.x, mScreenResolution.y);
-    mTonemapRenderer->render(mTransparencyGBuffer->getAlbedoTexture());
+    mTonemapRenderer->render(mHDRLightGBuffer->getAlbedoTexture());
     //MaterialRenderer::renderFullScreenQuad(*mPassthroughMaterial);
 
     // Final Pass through process
@@ -668,7 +670,7 @@ void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState&
 void RenderContext::renderPassTransparent(const Camera3D& camera, const RenderState& renderState) {
     // Render clouds without shadows
     if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(*mCloudManager, mTransparencyGBuffer->getDepthStencilTexture(), mTransparencyGBuffer.get(), camera);
+        mCloudRenderer->renderClouds(*mCloudManager, mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), camera);
     }
 
     // Water (No depth write)

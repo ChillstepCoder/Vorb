@@ -363,6 +363,7 @@
     <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
+    <ClCompile Include="src\rendering\texture\Cubemap.cpp" />
     <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
     <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
     <ClCompile Include="src\rendering\RenderContext.cpp" />
@@ -631,6 +632,7 @@
     <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
     <ClInclude Include="src\rendering\StencilBufferIDs.h" />
     <ClInclude Include="src\rendering\tasks\MeshTask.inl" />
+    <ClInclude Include="src\rendering\texture\Cubemap.h" />
     <ClInclude Include="src\rendering\texture\GLTexture.h" />
     <ClInclude Include="src\rendering\TileContainerRenderer.h" />
     <ClInclude Include="src\rendering\RenderCommon.h" />

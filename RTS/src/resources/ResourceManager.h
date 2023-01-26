@@ -69,6 +69,7 @@ private:
     // Tasks
     // TODO: ResourceLoader?
     std::vector<vio::Path> mTextureFiles;
+    std::vector<vio::Path> mCubemapFiles;
     std::vector<vio::Path> mMaterialFiles;
     std::vector<vio::Path> mMaterialShaderFiles;
     std::vector<vio::Path> mComputeFiles;

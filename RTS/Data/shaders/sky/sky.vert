@@ -4,6 +4,7 @@ in vec2 vUV;
 
 #include "../GlobalUbo.glsl"
 
+uniform mat4 unVP;
 uniform mat4 SkyRotMatrix;
 
 out vec2 fUV;
@@ -14,5 +15,6 @@ void main() {
   fUV = vUV;
   fPosition = normalize(vPosition.xyz);
   fSkyVector = normalize((SkyRotMatrix * vPosition).xyz);
-  gl_Position = VP * SkyRotMatrix * vPosition;
+  vec4 pos = unVP * SkyRotMatrix * vPosition;
+  gl_Position = pos.xyww; // Force depth to 1.0
 }

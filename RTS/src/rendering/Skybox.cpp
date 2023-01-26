@@ -5,6 +5,7 @@
 #include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "camera/ICamera.h"
 #include "rendering/MaterialRenderer.h"
+#include "rendering/MaterialShader.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
@@ -13,11 +14,12 @@ Skybox::~Skybox() {
 
 }
 
-void Skybox::init(const MaterialShader* material) {
+void Skybox::init(const MaterialShader* material, const Cubemap* skyTexture) {
     constexpr unsigned NUM_VERTS = 4 * 6;
     constexpr float RADIUS = 100000.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
     mMaterial = material;
+    mSkyTexture = skyTexture;
     ProceduralMeshBuilder meshBuilder(true);
     // Bottom left
 
@@ -82,12 +84,24 @@ void Skybox::init(const MaterialShader* material) {
 
 }
 
-void Skybox::render() {
+void Skybox::render(const f32m4& cameraMatrix) {
+    assert(mSkyTexture);
     glEnable(GL_DEPTH_CLAMP);
     assert(mMaterial);
     vg::DepthState::READ.set();
-    MaterialRenderer::renderMesh(*mSkyboxMesh, *mMaterial);
+    glDepthFunc(GL_LEQUAL);
+
+    ui32 textureUnit;
+    MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
+    glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    glBindTextureUnit(textureUnit, mSkyTexture->getTexture());
+    mSkyboxMesh->draw();
 
     vg::DepthState::restorePrevious();
     glDisable(GL_DEPTH_CLAMP);
+}
+
+void Skybox::setCubemap(const Cubemap* skyTexture) {
+    mSkyTexture = skyTexture;
 }

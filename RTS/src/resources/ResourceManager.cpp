@@ -115,18 +115,24 @@ void ResourceManager::loadFiles() {
 
     PreciseTimer totalTimer;
 
-    {
-        ScopedTimer timer("NEW: Texture load");
+    { // Brushes
+        ScopedTimer timer("Brush load");
         for (auto&& entry : mTextureFiles) {
             if (vio::containsSubpath(entry, "_brushes")) {
                 mBrushRepository->loadBrush(entry, *mTextureCache);
             }
-            else if (!vio::containsSubpath(entry, "_loadscreen")/* && !vio::containsSubpath(entry, "materials")*/) { // Ignore loadscreen files as we manually load them
-            //    mTextureRepository->loadSubTextureOLD(entry);
-            }
+            //else if (!vio::containsSubpath(entry, "_loadscreen")/* && !vio::containsSubpath(entry, "materials")*/) { // Ignore loadscreen files as we manually load them
+            ////    mTextureRepository->loadSubTextureOLD(entry);
+            //}
         }
         // New
         mTextureRepository->setTextureAssetPaths(mTextureFiles);
+    }
+
+    { // Load cubemaps
+        for (auto&& entry : mCubemapFiles) {
+            mTextureRepository->loadCubemap(entry);
+        }
     }
 
     // Load Materials
@@ -326,6 +332,9 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
                 (strcmp(&str[str.size() - 9], ".sten.png") != 0)) {
                 mTextureFiles.emplace_back(entry);
             }
+        }
+        else if (fileHasExtension(entry, ".cube")) {
+            mCubemapFiles.emplace_back(entry);
         }
         else if (fileHasExtension(entry, ".room")) {
             mRoomFiles.emplace_back(entry);

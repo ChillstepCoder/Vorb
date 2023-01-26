@@ -10,6 +10,21 @@
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
 
+i32 computeMipmapCount(const ui32v2& dims, i32 mipmapLevels) {
+    // Determine The Maximum Number Of Mipmap Levels Available
+    i32 maxMipmapLevels = 0;
+    i32 size = (i32)glm::min(dims.x, dims.y);
+    while (size > 1) {
+        maxMipmapLevels++;
+        size >>= 1;
+    }
+
+    // Get the number of mipmaps for this image
+    mipmapLevels = MIN(mipmapLevels, maxMipmapLevels);
+    return mipmapLevels;
+}
+
+
 KEG_TYPE_DEF(SubtextureMetaData, SubtextureMetaData, kt) {
     kt.addValue("name", keg::Value::basic(offsetof(SubtextureMetaData, name), keg::BasicType::STRING));
     kt.addValue("uv_rect", keg::Value::basic(offsetof(SubtextureMetaData, uvRect), keg::BasicType::F32_V4));
@@ -54,7 +69,6 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
             vg::ScopedBitmapResource rs(vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/));
             if (!rs.data) return nullptr;
 
-            // Upload the texture through GpuMemory.
             texture = uploadTexture(rs.bytesUI8,
                 ui32v2(rs.width, rs.height),
                 vg::TexturePixelType::UNSIGNED_BYTE,
@@ -90,6 +104,7 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
     mTextureAssetPaths[filePath.getString()] = textureId;
 
     textureData->texture = std::move(texture);
+    textureData->type = type;
     textureData->textureId = textureId;
     textureData->texturePath = filePath;
     textureData->samplerState = samplerState;
@@ -105,6 +120,113 @@ const TextureData& TextureRepository::getTextureNew(const nString& textureName) 
         assert(false);
     }
     return mTextures[it->second];
+}
+
+const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath)
+{
+    CubemapFileData fileData;
+    if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, cubeFilePath, &KEG_GLOBAL_TYPE(CubemapFileData), false /*allowEmpty*/)) {
+        LOG_CRITICAL("Failed to parse cubemap {}", cubeFilePath.getString());
+        return nullptr;
+    }
+    const nString* facePaths[6] = {
+        &fileData.mTexPosX,
+        &fileData.mTexNegX,
+        &fileData.mTexPosY,
+        &fileData.mTexNegY,
+        &fileData.mTexPosZ,
+        &fileData.mTexNegZ
+    };
+
+    vio::Path directory = cubeFilePath;
+    directory.trimEnd();
+
+    CubemapID id = mCubemaps.size();
+    Cubemap& cubemap = *mCubemaps.emplace_back(std::make_unique<Cubemap>(id));
+    mCubemapIdLookup[cubeFilePath.getFileNameNoExtension()] = id;
+
+    VGTexture texture = cubemap.getTexture();
+
+    bool allocateStorage = true;
+    ui32 width = 0;
+    ui32 height = 0;
+    for (int i = 0; i < 6; ++i) {
+
+        const nString& str = *facePaths[i];
+        if (str.size()) {
+
+            // Get absolute path of texture.
+            vio::Path resultPath;
+            vio::Path texPath = directory / str;
+            if (mIoManager.resolvePath(texPath, resultPath)) {
+
+                // Load the pixel data.
+                vg::ScopedBitmapResource rs(vg::ImageIO().load(resultPath.getString(), vg::ImageIOFormat::RGBA_UI8, true /*flipv*/));
+                if (!rs.data) {
+                    LOG_CRITICAL("Empty cubemap texture {} for {}", str, cubeFilePath.getString());
+                    return nullptr;
+                }
+
+                if (allocateStorage) {
+                    width = rs.width;
+                    height = rs.height;
+                    glTextureStorage2D(
+                        texture,
+                        1,           // one level, no mipmaps
+                        GL_RGBA8,    // internal format
+                        width,
+                        height
+                    );
+                    allocateStorage = false;
+                }
+                else if (width != rs.width || height != rs.height) {
+                    LOG_CRITICAL("Cubemap texture size mismatch {} for {}", str, cubeFilePath.getString());
+                    return nullptr;
+                }
+
+                glTextureSubImage3D(
+                    texture,
+                    0,
+                    0,
+                    0,
+                    i,
+                    width,
+                    height,
+                    1,      // depth how many faces to set, if this was 3 we'd set 3 cubemap faces at once
+                    GL_BGRA,
+                    GL_UNSIGNED_BYTE,
+                    rs.data
+                );
+            }
+            else {
+                LOG_CRITICAL("Failed to find cubemap texture {} for {}", str, cubeFilePath.getString());
+                return nullptr;
+            }
+        }
+    }
+
+    // Create Mipmaps If Necessary
+    ui32 mipmapLevels = computeMipmapCount(ui32v2(width, height), 5 /* arbitrary max*/);
+    if (mipmapLevels > 0) {
+        glTextureParameteri(texture, GL_TEXTURE_MAX_LOD, mipmapLevels);
+        glTextureParameteri(texture, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
+        glGenerateTextureMipmap(texture);
+    }
+
+    return &cubemap;
+}
+
+const Cubemap& TextureRepository::getCubemap(const nString& cubemapName) const {
+    auto&& it = mCubemapIdLookup.find(cubemapName);
+    if (it == mCubemapIdLookup.end()) {
+        LOG_CRITICAL("Failed to find cubemap {} make sure there is a .cube for it", cubemapName);
+        assert(false);
+    }
+    return *mCubemaps[it->second];
+}
+
+const Cubemap& TextureRepository::getCubemap(CubemapID cubemapId) const {
+    return *mCubemaps[cubemapId];
 }
 
 void TextureRepository::setTextureAssetPaths(const std::vector<vio::Path>& paths) {
@@ -189,20 +311,12 @@ bool TextureRepository::loadSubTextureOLD(const vio::Path& filePath) {
     return true;
 }
 
+
 GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::TexturePixelType texturePixelType, vg::TextureTarget textureTarget, const vg::SamplerState* samplingParameters, vg::TextureInternalFormat internalFormat, vg::TextureFormat textureFormat, i32 mipmapLevels) {
     VGTexture handle;
     glCreateTextures((VGEnum)textureTarget, 1, &handle);
-    { // Determine The Maximum Number Of Mipmap Levels Available
-        i32 maxMipmapLevels = 0;
-        i32 size = (i32)glm::min(dims.x, dims.y);
-        while (size > 1) {
-            maxMipmapLevels++;
-            size >>= 1;
-        }
+    mipmapLevels = computeMipmapCount(dims, mipmapLevels);
 
-        // Get the number of mipmaps for this image
-        mipmapLevels = MIN(mipmapLevels, maxMipmapLevels);
-    }
 
     // "Bind" the newly created texture : all future texture functions will modify this texture
     switch (textureTarget) {

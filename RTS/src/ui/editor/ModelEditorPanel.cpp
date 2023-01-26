@@ -20,7 +20,6 @@
 
 #include "camera/SimpleCamera.h"
 
-
 ModelEditorPanel::ModelEditorPanel()
 {
 }
@@ -64,7 +63,7 @@ void ModelEditorPanel::updateAndRenderControls(f32 ySize)
     ImGui::BeginChild("Model Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Model Editor Controls");
     ImGui::Separator();
-    updateAndRenderDrawModeControl();
+    updateAndRenderSharedControls();
     ImGui::Separator();
 
     if (mCurrentModel) {

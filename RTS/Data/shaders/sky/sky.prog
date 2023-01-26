@@ -4,13 +4,3 @@ sky:
   textures:
     - name: starfield
       uniform: StarfieldTexture
-    - name: graycloud_lf
-      uniform: SkyboxLeft
-    - name: graycloud_rt
-      uniform: SkyboxRight
-    - name: graycloud_up
-      uniform: SkyboxUp
-    - name: graycloud_bk
-      uniform: SkyboxBack
-    - name: graycloud_ft
-      uniform: SkyboxFront

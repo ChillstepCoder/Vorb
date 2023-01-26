@@ -5,6 +5,7 @@
 #include <Vorb/graphics/GLEnums.h>
 #include "rendering/texture/SubTexture.h"
 #include "rendering/texture/GLTexture.h"
+#include "rendering/texture/Cubemap.h"
 
 DECL_VG(class TextureCache);
 DECL_VG(class SamplerState);
@@ -30,6 +31,7 @@ KEG_TYPE_DECL(TextureMetaData);
 struct TextureData {
     GLTexture texture;
     TextureID textureId;
+    vg::TextureTarget type;
     vio::Path texturePath;
     const vg::SamplerState* samplerState;
     bool flipV; // TODO: Flags
@@ -42,6 +44,12 @@ public:
 
     const TextureData* loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV);
     const TextureData& getTextureNew(const nString& textureName) const;
+
+    const Cubemap* loadCubemap(const vio::Path& cubeFilePath);
+    const Cubemap& getCubemap(const nString& cubemapName) const;
+    const Cubemap& getCubemap(CubemapID cubemapId) const;
+    const std::map<nString, CubemapID>& getCubemapIDs() const { return mCubemapIdLookup; }
+
     void setTextureAssetPaths(const std::vector<vio::Path>& paths);
 
     bool loadSubTextureOLD(const vio::Path& filePath);
@@ -65,6 +73,8 @@ private:
     std::vector<TextureData> mTextures;
     std::map<nString, TextureID> mTextureIdLookup;
     std::map<nString, TextureID> mTextureAssetPaths;
+    std::vector<std::unique_ptr<Cubemap>> mCubemaps;
+    std::map<nString, CubemapID> mCubemapIdLookup;
 
     // OLD
     std::vector<SubTexture> mSubTextures;

@@ -64,7 +64,7 @@ void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
     ImGui::BeginChild("Material Editor Controls", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Material Editor Controls");
     ImGui::Separator();
-    updateAndRenderDrawModeControl();
+    updateAndRenderSharedControls();
     ImGui::Separator();
     // Sphere
     // Plane

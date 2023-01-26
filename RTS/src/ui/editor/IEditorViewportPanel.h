@@ -5,6 +5,7 @@ DECL_VG(class GBuffer);
 class SimpleCamera;
 class CameraPositioner_FirstPerson;
 class MaterialShader;
+class Skybox;
 
 enum class EditorViewportDrawMode {
     Lit = 0,
@@ -37,7 +38,7 @@ protected:
     virtual void renderMesh() = 0;
 
     VGTexture getFinalOutputTexture();
-    void updateAndRenderDrawModeControl();
+    void updateAndRenderSharedControls();
     void updateAndRenderTweakers();
     void updateCamera(f32 aspectRatio);
     void initGBuffers(ui32v2 imageDims);
@@ -56,9 +57,11 @@ protected:
     std::unique_ptr<SimpleCamera> camera;
 
     VGVertexArray mGridVao = 0;
+    std::unique_ptr<Skybox> mSkybox;
     std::unique_ptr<vg::GBuffer> mGBuffers[3];
     EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::Lit;
 
+    int mSelectedSkyboxIndex = 0;
     bool mRenderGrid = true;
 
     // Blend test
