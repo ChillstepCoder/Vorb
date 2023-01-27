@@ -4,6 +4,8 @@
 
 typedef ui32 CubemapID;
 
+DECL_VG(class ScopedBitmapResource);
+
 struct CubemapFileData {
     nString mTexPosX;
     nString mTexNegX;
@@ -11,7 +13,7 @@ struct CubemapFileData {
     nString mTexNegY;
     nString mTexPosZ;
     nString mTexNegZ;
-    vg::SamplerStateType mSamplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
+    vg::SamplerStateType mSamplerState = vg::SamplerStateType::LINEAR_CLAMP_MIPMAP;
 };
 KEG_TYPE_DECL(CubemapFileData);
 
@@ -22,9 +24,21 @@ public:
     Cubemap(CubemapID id);
     ~Cubemap();
 
+    // Must be called sequencailly 0-6
+    bool initFace(int face, const vg::ScopedBitmapResource& rs);
+
     VGTexture getTexture() const { return mTexture; }
+    VGTexture getIrradianceTexture() const { return mIrradianceMap; }
+    VGTexture getPrecomputedMap() const { return mPrecomputedMap; }
+    void computePBRMaps();
 private:
+    void createMipmaps();
+    void computeIrradianceMap();
+    void computePrecomputedMap();
     CubemapID mId;
     VGTexture mTexture = 0;
+    VGTexture mIrradianceMap = 0;
+    VGTexture mPrecomputedMap = 0;
+    ui32v2 mDims;
 };
 

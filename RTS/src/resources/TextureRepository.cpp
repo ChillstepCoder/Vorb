@@ -3,27 +3,14 @@
 
 #include "rendering/texture/NormalMapGenerator.h"
 
+#include "util/TextureUtil.h"
+
 #include <Vorb/graphics/TextureCache.h>
 
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
-
-i32 computeMipmapCount(const ui32v2& dims, i32 mipmapLevels) {
-    // Determine The Maximum Number Of Mipmap Levels Available
-    i32 maxMipmapLevels = 0;
-    i32 size = (i32)glm::min(dims.x, dims.y);
-    while (size > 1) {
-        maxMipmapLevels++;
-        size >>= 1;
-    }
-
-    // Get the number of mipmaps for this image
-    mipmapLevels = MIN(mipmapLevels, maxMipmapLevels);
-    return mipmapLevels;
-}
-
 
 KEG_TYPE_DEF(SubtextureMetaData, SubtextureMetaData, kt) {
     kt.addValue("name", keg::Value::basic(offsetof(SubtextureMetaData, name), keg::BasicType::STRING));
@@ -147,9 +134,6 @@ const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath)
 
     VGTexture texture = cubemap.getTexture();
 
-    bool allocateStorage = true;
-    ui32 width = 0;
-    ui32 height = 0;
     for (int i = 0; i < 6; ++i) {
 
         const nString& str = *facePaths[i];
@@ -167,36 +151,9 @@ const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath)
                     return nullptr;
                 }
 
-                if (allocateStorage) {
-                    width = rs.width;
-                    height = rs.height;
-                    glTextureStorage2D(
-                        texture,
-                        1,           // one level, no mipmaps
-                        GL_RGBA8,    // internal format
-                        width,
-                        height
-                    );
-                    allocateStorage = false;
+                if (!cubemap.initFace(i, rs)) {
+                    LOG_CRITICAL("Failed to init cubemap face {} for {}", str, cubeFilePath.getString());
                 }
-                else if (width != rs.width || height != rs.height) {
-                    LOG_CRITICAL("Cubemap texture size mismatch {} for {}", str, cubeFilePath.getString());
-                    return nullptr;
-                }
-
-                glTextureSubImage3D(
-                    texture,
-                    0,
-                    0,
-                    0,
-                    i,
-                    width,
-                    height,
-                    1,      // depth how many faces to set, if this was 3 we'd set 3 cubemap faces at once
-                    GL_BGRA,
-                    GL_UNSIGNED_BYTE,
-                    rs.data
-                );
             }
             else {
                 LOG_CRITICAL("Failed to find cubemap texture {} for {}", str, cubeFilePath.getString());
@@ -205,13 +162,8 @@ const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath)
         }
     }
 
-    // Create Mipmaps If Necessary
-    ui32 mipmapLevels = computeMipmapCount(ui32v2(width, height), 5 /* arbitrary max*/);
-    if (mipmapLevels > 0) {
-        glTextureParameteri(texture, GL_TEXTURE_MAX_LOD, mipmapLevels);
-        glTextureParameteri(texture, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
-        glGenerateTextureMipmap(texture);
-    }
+    // TODO: on demand? Cached?
+    cubemap.computePBRMaps();
 
     return &cubemap;
 }

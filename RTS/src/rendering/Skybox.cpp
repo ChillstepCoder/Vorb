@@ -16,7 +16,7 @@ Skybox::~Skybox() {
 
 void Skybox::init(const MaterialShader* material, const Cubemap* skyTexture) {
     constexpr unsigned NUM_VERTS = 4 * 6;
-    constexpr float RADIUS = 100000.0f;
+    constexpr float RADIUS = 1.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
     mMaterial = material;
     mSkyTexture = skyTexture;
@@ -97,6 +97,45 @@ void Skybox::render(const f32m4& cameraMatrix) {
     glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, mSkyTexture->getTexture());
     mSkyboxMesh->draw();
+
+    vg::DepthState::restorePrevious();
+    glDisable(GL_DEPTH_CLAMP);
+}
+
+void Skybox::renderIrradianceDebug(const f32m4& cameraMatrix) {
+    assert(mSkyTexture);
+    glEnable(GL_DEPTH_CLAMP);
+    assert(mMaterial);
+    vg::DepthState::READ.set();
+    glDepthFunc(GL_LEQUAL);
+
+    ui32 textureUnit;
+    MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
+    glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    glBindTextureUnit(textureUnit, mSkyTexture->getIrradianceTexture());
+    mSkyboxMesh->draw();
+
+    vg::DepthState::restorePrevious();
+    glDisable(GL_DEPTH_CLAMP);
+}
+
+void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel) {
+    assert(mSkyTexture);
+    glEnable(GL_DEPTH_CLAMP);
+    assert(mMaterial);
+    vg::DepthState::READ.set();
+    glDepthFunc(GL_LEQUAL);
+
+    ui32 textureUnit;
+    MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
+    glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    VGTexture texture = mSkyTexture->getPrecomputedMap();
+    glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, baseLevel);
+    glBindTextureUnit(textureUnit, texture);
+    mSkyboxMesh->draw();
+    glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, 0);
 
     vg::DepthState::restorePrevious();
     glDisable(GL_DEPTH_CLAMP);

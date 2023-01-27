@@ -54,7 +54,15 @@ void IEditorViewportPanel::renderCenterPanel() {
     mGBuffers[0]->use();
 
     if (mSkybox->hasTexture()) {
-        mSkybox->render(camera->getViewProjectionMatrix());
+        if (mShowSkyboxIrradiance) {
+            mSkybox->renderIrradianceDebug(camera->getViewProjectionMatrixNoTranslation());
+        }
+        else if (mShowSkyboxPrecomputedMap) {
+            mSkybox->renderPrecomputedMapDebug(camera->getViewProjectionMatrixNoTranslation(), mPrecomputedLOD);
+        }
+        else {
+            mSkybox->render(camera->getViewProjectionMatrixNoTranslation());
+        }
     }
 
     if (mRenderGrid) {
@@ -176,6 +184,18 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
         ImGui::EndCombo();
     }
 
+    if (mSelectedSkyboxIndex != 0) {
+        ImGui::Checkbox("Skybox Irradiance", &mShowSkyboxIrradiance);
+        if (mShowSkyboxIrradiance) {
+            mShowSkyboxPrecomputedMap = false;
+        }
+        ImGui::Checkbox("Skybox Precomputed map", &mShowSkyboxPrecomputedMap);
+        if (mShowSkyboxPrecomputedMap) {
+            ImGui::SliderInt("Level", &mPrecomputedLOD, 0, 10);
+            mShowSkyboxIrradiance = false;
+        }
+    }
+
     // Grid
     ImGui::Checkbox("Show Grid", &mRenderGrid);
 }
@@ -208,9 +228,10 @@ void IEditorViewportPanel::updateAndRenderTweakers() {
     else if (mDrawMode == EditorViewportDrawMode::PBRTest) {
         ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
         ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
-        ImGui::SliderFloat("Ambient", &mAmbient, 0.0f, 1.0f, "%.3f");
-        ImGui::SliderFloat2("Light Dir", &mLightDir.x, -2.0f, 2.0f);
-        ImGui::ColorPicker3("SunColor", &mLightColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        ImGui::SliderFloat("Ambient", &mAmbient, 0.0f, 3.0f, "%.3f");
+        ImGui::SliderFloat("Sun Intensity", &mSunIntensity, 0.0f, 25.0f, "%.3f");
+        ImGui::SliderFloat2("Sun Dir", &mLightDir.x, -2.0f, 2.0f);
+        ImGui::ColorPicker3("Sun Color", &mLightColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
         ImGui::Checkbox("Array View", &mRenderArray);
         if (mRenderArray) {
             ImGui::Checkbox("Preview Follow Axis", &mFollowAxis);
@@ -280,10 +301,18 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
         glUniform1f(shader->getUniform("unAmbient"), mAmbient);
         glUniform1f(shader->getUniform("unMetallic"), mMetallic);
         glUniform1f(shader->getUniform("unRoughness"), mRoughness);
+        glUniform1f(shader->getUniform("unSunIntensity"), mSunIntensity);
         f32v3 lightDir = glm::normalize(f32v3(mLightDir.x, -1.0f, mLightDir.y));
         glUniform3fv(shader->getUniform("unLightDir"), 1, &lightDir.x);
         glUniform3fv(shader->getUniform("unCameraPos"), 1, &camera->getPosition()[0]);
         glUniform3fv(shader->getUniform("unSunColor"), 1, &mLightColor.x);
+        if (mSkybox->hasTexture()) {
+            glBindTextureUnit(availableTextureUnit, mSkybox->getCubemap()->getIrradianceTexture());
+        }
+        else {
+            // TODO: empty cubemap?
+        }
+        glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit++);
         MaterialUtils::uploadTonemapUniforms(*shader);
     }
     else if (mDrawMode <= EditorViewportDrawMode::UVs) {

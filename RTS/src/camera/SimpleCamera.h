@@ -8,6 +8,7 @@ public:
     virtual ~SimpleCameraPositionerInterface() = default;
     virtual glm::mat4 getViewMatrix() const = 0;
     virtual glm::mat4 getViewProjectionMatrix() const = 0;
+    virtual glm::mat4 getViewProjectionMatrixNoTranslation() const = 0;
     virtual glm::vec3 getPosition() const = 0;
 };
 
@@ -23,6 +24,7 @@ public:
 
     glm::mat4 getViewMatrix() const { return positioner_->getViewMatrix(); }
     glm::mat4 getViewProjectionMatrix() const { return positioner_->getViewProjectionMatrix(); }
+    glm::mat4 getViewProjectionMatrixNoTranslation() const { return positioner_->getViewProjectionMatrixNoTranslation(); }
     glm::vec3 getPosition() const { return positioner_->getPosition(); }
 
     inline static constexpr f32 ZNEAR = 0.1f;
@@ -110,6 +112,12 @@ public:
         glm::mat4 r = glm::mat4_cast(cameraOrientation_);
         r = glm::perspective(glm::radians(90.0f), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
         return r * t;
+    }
+
+    virtual glm::mat4 getViewProjectionMatrixNoTranslation() const override {
+        glm::mat4 r = glm::mat4_cast(cameraOrientation_);
+        r = glm::perspective(glm::radians(90.0f), mAspectRatio, SimpleCamera::ZNEAR, SimpleCamera::ZFAR) * r;
+        return r;
     }
 
     virtual glm::vec3 getPosition() const override

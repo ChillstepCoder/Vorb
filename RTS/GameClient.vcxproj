@@ -702,6 +702,7 @@
     <ClInclude Include="src\util\NativeFileBrowser.h" />
     <ClInclude Include="src\util\StringHash.h" />
     <ClInclude Include="src\util\StrToken.h" />
+    <ClInclude Include="src\util\TextureUtil.h" />
     <ClInclude Include="src\util\ThreadIDs.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />

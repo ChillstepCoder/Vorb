@@ -129,12 +129,6 @@ void ResourceManager::loadFiles() {
         mTextureRepository->setTextureAssetPaths(mTextureFiles);
     }
 
-    { // Load cubemaps
-        for (auto&& entry : mCubemapFiles) {
-            mTextureRepository->loadCubemap(entry);
-        }
-    }
-
     // Load Materials
     {
         ScopedTimer timer("Material load");
@@ -174,6 +168,12 @@ void ResourceManager::loadFiles() {
         for (auto&& entry : mComputeFiles) {
             mMaterialManager->loadComputeShader(entry);
         };
+    }
+
+    { // Load cubemaps
+        for (auto&& entry : mCubemapFiles) {
+            mTextureRepository->loadCubemap(entry);
+        }
     }
 
 

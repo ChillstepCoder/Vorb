@@ -2,9 +2,11 @@
 uniform float unMetallic;
 uniform float unRoughness;
 uniform float unAmbient;
+uniform float unSunIntensity;
 uniform vec3 unLightDir;
 uniform vec3 unCameraPos;
 uniform vec3 unSunColor;
+uniform samplerCube unIrradianceMap;
 
 const float PI = 3.14159265359;
 
@@ -48,9 +50,21 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 calculateAmbient(vec3 albedo, vec3 normal, vec3 viewNormal, vec3 f0, float roughness) {
+    vec3 kS = fresnelSchlickRoughness(max(dot(normal, viewNormal), 0.0), f0, roughness); 
+    vec3 kD = 1.0 - kS;
+    vec3 irradiance = texture(unIrradianceMap, normal).rgb;
+    vec3 diffuse    = irradiance * albedo;
+    return (kD * diffuse); 
+}
+
 vec3 PBRLearnOpengl(vec3 worldPos, vec3 albedo, vec3 normal) {
-    albedo = albedo * 0.0001 + vec3(1.0, 0.0, 0.0); // TODO: REMOVE
-    vec3  lightColor  = unSunColor * 20.0;
+    vec3  lightColor  = unSunColor * unSunIntensity;
     float cosTheta    = max(dot(normal, unLightDir), 0.0);
     vec3  radiance    = lightColor * cosTheta;
     
@@ -78,7 +92,7 @@ vec3 PBRLearnOpengl(vec3 worldPos, vec3 albedo, vec3 normal) {
     float NdotL = max(dot(normal, unLightDir), 0.0);        
     vec3 outgoingRadiance = (kDiffuse * albedo / PI + specular) * radiance * NdotL;
     
-    vec3 ambient = vec3(unAmbient) * albedo;
+    vec3 ambient = calculateAmbient(albedo, normal, viewNormal, f0, unRoughness) * unAmbient;
     vec3 color   = ambient + outgoingRadiance;
     //color = 0.0001 * color + vec3(F);
     return color;

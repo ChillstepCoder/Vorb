@@ -165,6 +165,9 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // State init
     RenderStateManager::initInstance();
 
+    // Make sure we can filter cubemaps properly
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
     initEventHandlers();
 
     // TODO: New depth - https://outerra.blogspot.com/2012/11/maximizing-depth-buffer-range-and.html
@@ -322,7 +325,6 @@ void RenderContext::initPostLoad() {
         buildHorizonMesh();
         mSkyBox = std::make_unique<Skybox>();
         mSkyBox->init(materialManager.getMaterialShader("sky"), &resourceManager.getTextureRepository().getCubemap("graycloud"));
-        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     }
 }
 
