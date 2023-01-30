@@ -62,10 +62,11 @@ vec3 cook_torrance_ggx(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, floa
 {
     // Precalculate half-vector and dot products    
     vec3 H = normalize (V + L);
-    float dotNV = clamp(dot(N, V), 0.0, 1.0);
-    float dotNL = clamp(dot(N, L), 0.0, 1.0);
-    float dotLH = clamp(dot(L, H), 0.0, 1.0);
-    float dotNH = clamp(dot(N, H), 0.0, 1.0);
+    float dotHV = max(dot(H, V), 0.0);
+    float dotNV = max(dot(N, V), 0.001); // Ben: This 0.001 fixes a hard line issue with force up normal objects like bushes
+    float dotNL = max(dot(N, L), 0.0);
+    float dotLH = max(dot(L, H), 0.0);
+    float dotNH = max(dot(N, H), 0.0);
 
     vec3 color = vec3(0.0);
     if (dotNL > 0.0)
@@ -75,7 +76,7 @@ vec3 cook_torrance_ggx(vec3 L, vec3 V, vec3 N, vec3 albedo, float metallic, floa
         // Geometric shadowing term 
         float G = g_schlickSmithGGX(dotNL, dotNV, roughness);
         // Fresnel factor 
-        vec3 F = f_schlick(dotNV, albedo, metallic, specular);
+        vec3 F = f_schlick(dotHV, albedo, metallic, specular);
         vec3 S = NDF * F * G / (4.0 * dotNL * dotNV + 0.001); // add delta to prevent division by zero
 
         color = d_lambert(F, albedo, metallic) + S;

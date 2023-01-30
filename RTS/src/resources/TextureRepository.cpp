@@ -109,8 +109,7 @@ const TextureData& TextureRepository::getTextureNew(const nString& textureName) 
     return mTextures[it->second];
 }
 
-const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath)
-{
+const Cubemap* TextureRepository::loadCubemap(const vio::Path& cubeFilePath) {
     CubemapFileData fileData;
     if (!mIoManager.parseFileAsKegObject((ui8*)&fileData, cubeFilePath, &KEG_GLOBAL_TYPE(CubemapFileData), false /*allowEmpty*/)) {
         LOG_CRITICAL("Failed to parse cubemap {}", cubeFilePath.getString());

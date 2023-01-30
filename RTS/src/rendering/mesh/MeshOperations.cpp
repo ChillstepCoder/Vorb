@@ -2,6 +2,7 @@
 #include "MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/Vertex.h"
+#include "rendering/mesh/RawMesh.h"
 
 void MeshOperations::rotate90AboutAxis(MeshCpuData& mesh, const f32v3& axis) {
     assert(false);
@@ -30,4 +31,17 @@ void MeshOperations::applyScale(MeshCpuData& mesh, f32 scale) {
             assert(false && "Unsupported applyScale operation");
     }
     static_assert(e_cast(VertexType::COUNT) == 6);
+}
+
+void MeshOperations::setAllNormals(RawMesh& rawMesh, const f32v3& normal, const f32v3& tangent) {
+    for (auto&& subMesh : rawMesh.mSubMeshes) {
+        for (auto&& v : subMesh.mVertices) {
+            v.normal = normal;
+            v.tangent = tangent;
+        }
+    }
+    for (auto&& v : rawMesh.mCombinedMeshData.mVertices) {
+        v.normal = normal;
+        v.tangent = tangent;
+    }
 }

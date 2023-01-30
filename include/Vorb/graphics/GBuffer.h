@@ -40,14 +40,6 @@
 /*           -----------------------------------------------------------------   */
 /*********************************************************************************/
 
-enum FboGeometryLayers {
-    FBO_GEOMETRY_COLOR = 0,
-    FBO_GEOMETRY_NORMAL = 1,
-    FBO_GEOMETRY_ROUGHNESS = 2,
-    FBO_GEOMETRY_MAX_COUNT = 3
-};
-
-
 namespace vorb {
     namespace graphics {
          /*! @brief Information that specifies size and location of a texture in the GBuffer

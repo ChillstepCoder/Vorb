@@ -18,6 +18,7 @@ struct ModelDefFileData {
     f32 mScale = 1.0f;
     ShadowLodDetail mShadowDetail = ShadowLodDetail::High;
     ModelRenderPassType mRenderPass = ModelRenderPassType::Default;
+    bool mForceNormalsUp = false;
 };
 KEG_TYPE_DECL(ModelDefFileData);
 

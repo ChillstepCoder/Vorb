@@ -89,6 +89,11 @@ bool ModelRepository::loadModelInternal(ModelDefFileData& fileData, const Materi
     // Load model to raw
     RawMesh* rawMesh = loadRawModelFromFBX(modelPath, &def.mRig->mSkeleton);
     if (rawMesh) {
+        if (fileData.mForceNormalsUp) {
+            MeshOperations::setAllNormals(*rawMesh, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
+        }
+
+
         // TODO: Handle other submeshes?
         MeshCpuData meshData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(rawMesh->mCombinedMeshData, rawMesh->mMaterials, materialRepository);
         // Apply scale if needed
