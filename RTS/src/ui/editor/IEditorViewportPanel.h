@@ -90,8 +90,9 @@ protected:
     // PBR test
     float mMetallic = 0.5f;
     float mRoughness = 0.5f;
+    float mExposure = 1.0f;
     float mAmbient = 1.0f;
-    float mSunIntensity = 15.0f;
+    float mSunIntensity = 3.0f;
     f32v2 mLightDir = f32v2(1.0f, 1.0f);
     f32v3 mLightColor = f32v3(1.0f, 0.8f, 0.8f);
     bool mRenderArray = false;

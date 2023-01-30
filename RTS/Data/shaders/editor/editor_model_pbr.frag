@@ -32,7 +32,7 @@ void main() {
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    oColor.rgb = PBRLearnOpengl(fWorldPos, color.rgb, normal);
+    oColor.rgb = PBR(fWorldPos, color.rgb, normal);
     
     // Tonemapping
     const int preset = int(step(unLightingSplit, fScreenPos.x));

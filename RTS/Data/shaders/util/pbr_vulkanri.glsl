@@ -100,7 +100,8 @@ vec3 ibl_diffuse(vec3 N, vec3 kS, vec3 albedo, float metallic, samplerCube irrad
 }
 
 vec3 ibl_specular(vec3 N, vec3 V, vec3 F, float roughness, samplerCube prefilteredMap, float exposure, sampler2D brdfLUT)
-{
+{ 
+    // TODO: Base on the mip count
     const float maxReflectionLOD = 4.0;
 
     // sample both the pre-filter map and the BRDF lut

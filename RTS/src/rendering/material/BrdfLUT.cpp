@@ -16,7 +16,7 @@ void BrdfLUT::loadOrComputeTexture() {
     assert(!sTexture);
     // TODO: load cached
 
-    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &sTexture);
+    glCreateTextures(GL_TEXTURE_2D, 1, &sTexture);
     glTextureStorage2D(
         sTexture,
         1,           // one level, no mipmaps

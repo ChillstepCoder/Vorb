@@ -230,6 +230,7 @@ void IEditorViewportPanel::updateAndRenderTweakers() {
         ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
         ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
         ImGui::SliderFloat("Ambient", &mAmbient, 0.0f, 3.0f, "%.3f");
+        ImGui::SliderFloat("Exposure", &mExposure, 0.0f, 3.0f, "%.3f");
         ImGui::SliderFloat("Sun Intensity", &mSunIntensity, 0.0f, 25.0f, "%.3f");
         ImGui::SliderFloat2("Sun Dir", &mLightDir.x, -2.0f, 2.0f);
         ImGui::ColorPicker3("Sun Color", &mLightColor.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
@@ -295,30 +296,27 @@ void IEditorViewportPanel::renderGrid() {
 }
 
 void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui32 availableTextureUnit) {
-
+    assert(availableTextureUnit == 0);
     glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &(camera->getViewProjectionMatrix()[0][0]));
 
     if (mDrawMode == EditorViewportDrawMode::PBRTest) {
         glUniform1f(shader->getUniform("unAmbient"), mAmbient);
         glUniform1f(shader->getUniform("unMetallic"), mMetallic);
         glUniform1f(shader->getUniform("unRoughness"), mRoughness);
+        glUniform1f(shader->getUniform("unExposure2"), mExposure);
         glUniform1f(shader->getUniform("unSunIntensity"), mSunIntensity);
         f32v3 lightDir = glm::normalize(f32v3(mLightDir.x, -1.0f, mLightDir.y));
         glUniform3fv(shader->getUniform("unLightDir"), 1, &lightDir.x);
         glUniform3fv(shader->getUniform("unCameraPos"), 1, &camera->getPosition()[0]);
         glUniform3fv(shader->getUniform("unSunColor"), 1, &mLightColor.x);
         if (mSkybox->hasTexture()) {
-            glBindTextureUnit(availableTextureUnit, mSkybox->getCubemap()->getIrradianceTexture());
-            glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit++);
-            glBindTextureUnit(availableTextureUnit, mSkybox->getCubemap()->getPrefilterMap());
-            glUniform1i(shader->getUniform("unPrefilterMap"), availableTextureUnit++);
+            glBindTextureUnit(0, mSkybox->getCubemap()->getIrradianceTexture());
+            glBindTextureUnit(1, mSkybox->getCubemap()->getPrefilterMap());
         }
         else {
             // TODO: empty textures?
-            availableTextureUnit += 2; // idk
         }
-        glBindTextureUnit(availableTextureUnit, BrdfLUT::getTexture());
-        glUniform1i(shader->getUniform("unBrdfLUT"), availableTextureUnit++);
+        glBindTextureUnit(2, BrdfLUT::getTexture());
 
         MaterialUtils::uploadTonemapUniforms(*shader);
     }
@@ -331,7 +329,7 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
     }
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 8, "Make sure you don't need to set any uniforms");
 
-    uploadCustomShaderUniforms(shader, availableTextureUnit);
+    uploadCustomShaderUniforms(shader, 3);
 }
 
 void IEditorViewportPanel::renderPBRArray(const MaterialShader* shader) {

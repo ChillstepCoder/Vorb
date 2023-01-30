@@ -21,6 +21,7 @@ in mat3 fTBN;
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
 
+
 void main() {
 
     vec4 color;
@@ -32,7 +33,7 @@ void main() {
     // Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    oColor.rgb = PBRLearnOpengl(fWorldPos, color.rgb, normal);
+    oColor.rgb = PBR(fWorldPos, color.rgb, normal);
     
     // Tonemapping
     const int preset = int(step(unLightingSplit, fScreenPos.x));
@@ -44,6 +45,9 @@ void main() {
    // vec3 color2 = oColor.rgb * 0.0001 + PBRLearnOpengl(fWorldPos, color.rgb, normal);
    // oColor.rgb = color2.rgb  / (oColor.rgb  + vec3(1.0));
    // oColor.rgb  = pow(oColor.rgb , vec3(1.0/2.2));  
+   
+    //oColor.rgb = oColor.rgb * 0.00001 + PBR(fWorldPos, color.rgb, normal);
+    //oColor.rgb = pow(oColor.rgb, vec3(1.0 / 2.2));
     
     oColor.a = 1.0;
     //oColor = getEditorOutputPixelColor(color.rgb, normal, fWorldPos, fScreenPos);
