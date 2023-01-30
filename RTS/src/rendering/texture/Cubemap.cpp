@@ -67,7 +67,7 @@ bool Cubemap::initFace(int face, const vg::ScopedBitmapResource& rs) {
 void Cubemap::computePBRMaps() {
     createMipmaps(); // Used for precomputed map
     computeIrradianceMap();
-    computePrecomputedMap();
+    computePrefilterMap();
 }
 
 void Cubemap::createMipmaps() {
@@ -115,24 +115,24 @@ void Cubemap::computeIrradianceMap() {
     glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }
 
-void Cubemap::computePrecomputedMap() {
-    assert(!mPrecomputedMap);
+void Cubemap::computePrefilterMap() {
+    assert(!mPrefilterMap);
     const int precomputedWidth = 128;
     const int numMipMaps = computeMipmapCount(ui32v2(precomputedWidth), 10);
 
-    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mPrecomputedMap);
+    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mPrefilterMap);
     glTextureStorage2D(
-        mPrecomputedMap,
+        mPrefilterMap,
         numMipMaps,   // one level, no mipmaps
         GL_RGBA16F,    // internal format
         precomputedWidth,
         precomputedWidth
     );
-    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTexture(mPrecomputedMap);
+    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTexture(mPrefilterMap);
     assert(numMipMaps > 0);
-    glTextureParameteri(mPrecomputedMap, GL_TEXTURE_MAX_LOD, numMipMaps);
-    glTextureParameteri(mPrecomputedMap, GL_TEXTURE_MAX_LEVEL, numMipMaps);
-    glGenerateTextureMipmap(mPrecomputedMap);
+    glTextureParameteri(mPrefilterMap, GL_TEXTURE_MAX_LOD, numMipMaps);
+    glTextureParameteri(mPrefilterMap, GL_TEXTURE_MAX_LEVEL, numMipMaps);
+    glGenerateTextureMipmap(mPrefilterMap);
 
     const vg::GLProgram* computeShader = Services::ResourceManager::ref().getMaterialShaderManager().getComputeShader("prefilter_ggx");
     computeShader->use();
@@ -148,7 +148,7 @@ void Cubemap::computePrecomputedMap() {
         glUniform1f(unRoughness, roughness);
 
         // Output
-        glBindImageTexture(1, mPrecomputedMap, mip, false, 0, GL_WRITE_ONLY, GL_RGBA16F);
+        glBindImageTexture(1, mPrefilterMap, mip, false, 0, GL_WRITE_ONLY, GL_RGBA16F);
 
         if (mipmapSize % WORK_GROUP_SIZE == 0) {
             const GLuint sz = (GLuint)mipmapSize / WORK_GROUP_SIZE;

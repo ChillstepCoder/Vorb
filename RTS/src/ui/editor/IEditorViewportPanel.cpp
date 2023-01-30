@@ -20,6 +20,7 @@
 #include "rendering/MaterialUtils.h"
 #include "rendering/Skybox.h"
 #include "rendering/mesh/Mesh.h"
+#include "rendering/material/BrdfLUT.h"
 
 #include "camera/SimpleCamera.h"
 
@@ -308,11 +309,17 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
         glUniform3fv(shader->getUniform("unSunColor"), 1, &mLightColor.x);
         if (mSkybox->hasTexture()) {
             glBindTextureUnit(availableTextureUnit, mSkybox->getCubemap()->getIrradianceTexture());
+            glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit++);
+            glBindTextureUnit(availableTextureUnit, mSkybox->getCubemap()->getPrefilterMap());
+            glUniform1i(shader->getUniform("unPrefilterMap"), availableTextureUnit++);
         }
         else {
-            // TODO: empty cubemap?
+            // TODO: empty textures?
+            availableTextureUnit += 2; // idk
         }
-        glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit++);
+        glBindTextureUnit(availableTextureUnit, BrdfLUT::getTexture());
+        glUniform1i(shader->getUniform("unBrdfLUT"), availableTextureUnit++);
+
         MaterialUtils::uploadTonemapUniforms(*shader);
     }
     else if (mDrawMode <= EditorViewportDrawMode::UVs) {

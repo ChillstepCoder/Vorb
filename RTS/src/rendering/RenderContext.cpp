@@ -32,6 +32,7 @@
 #include "rendering/post_process/TonemapRenderer.h"
 #include "rendering/RenderStats.h"
 #include "rendering/TerrainRenderer.h"
+#include "rendering/material/BrdfLUT.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/ProceduralMeshBuilder.h"
@@ -326,6 +327,9 @@ void RenderContext::initPostLoad() {
         mSkyBox = std::make_unique<Skybox>();
         mSkyBox->init(materialManager.getMaterialShader("sky"), &resourceManager.getTextureRepository().getCubemap("graycloud"));
     }
+
+    BrdfLUT::loadOrComputeTexture();
+
 }
 
 void RenderContext::beginFrame(const Camera3D* camera, f32v3 playerPos) {

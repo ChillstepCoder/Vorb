@@ -7,6 +7,8 @@ uniform vec3 unLightDir;
 uniform vec3 unCameraPos;
 uniform vec3 unSunColor;
 uniform samplerCube unIrradianceMap;
+uniform samplerCube unPrefilterMap;
+uniform sampler2D unBrdfLUT;
 
 const float PI = 3.14159265359;
 
@@ -76,16 +78,17 @@ vec3 PBRLearnOpengl(vec3 worldPos, vec3 albedo, vec3 normal) {
     
     float NDF = DistributionGGX(normal, halfVector, unRoughness);       
     float G  = GeometrySmith(normal, viewNormal, unLightDir, unRoughness);     
-    vec3 F = fresnelSchlick(max(dot(halfVector, viewNormal), 0.0), f0);
+    vec3 F = FresnelSchlickRoughness(max(dot(halfVector, viewNormal), 0.0), f0, unRoughness);
 
     vec3 kSpecular = F;
     vec3 kDiffuse = vec3(1.0) - kSpecular;
     kDiffuse *= 1.0 - unMetallic;
 
-    // Cook-Torrance BRDF
+    // Cook-Torrance BRDF for sunlight
     vec3 numerator    = NDF * G * F;
     float denominator = 4.0 * max(dot(normal, viewNormal), 0.0) * max(dot(normal, unLightDir), 0.0) + 0.0001;
     vec3 specular     = numerator / denominator;  
+
 
     
     // Calculate reflectance

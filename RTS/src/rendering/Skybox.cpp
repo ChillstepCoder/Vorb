@@ -131,7 +131,7 @@ void Skybox::renderPrecomputedMapDebug(const f32m4& cameraMatrix, int baseLevel)
     MaterialRenderer::bindMaterialForRender(*mMaterial, &textureUnit);
     glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
-    VGTexture texture = mSkyTexture->getPrecomputedMap();
+    VGTexture texture = mSkyTexture->getPrefilterMap();
     glTextureParameteri(texture, GL_TEXTURE_BASE_LEVEL, baseLevel);
     glBindTextureUnit(textureUnit, texture);
     mSkyboxMesh->draw();

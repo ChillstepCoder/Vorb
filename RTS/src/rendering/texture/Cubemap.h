@@ -29,16 +29,16 @@ public:
 
     VGTexture getTexture() const { return mTexture; }
     VGTexture getIrradianceTexture() const { return mIrradianceMap; }
-    VGTexture getPrecomputedMap() const { return mPrecomputedMap; }
+    VGTexture getPrefilterMap() const { return mPrefilterMap; }
     void computePBRMaps();
 private:
     void createMipmaps();
     void computeIrradianceMap();
-    void computePrecomputedMap();
+    void computePrefilterMap();
     CubemapID mId;
     VGTexture mTexture = 0;
     VGTexture mIrradianceMap = 0;
-    VGTexture mPrecomputedMap = 0;
+    VGTexture mPrefilterMap = 0;
     ui32v2 mDims;
 };
 
