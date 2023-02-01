@@ -5,9 +5,9 @@ in vec2 fUV;
 flat in uint fMaterialIndex;
 in mat3 fTBN;
 
-layout (location = 0) out vec3 oColor;
+layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
-layout (location = 2) out vec3 oRoughness;
+layout (location = 2) out float oRoughness;
 
 void main() {
     MaterialData mtl = inMaterials[fMaterialIndex];
@@ -23,13 +23,14 @@ void main() {
         normal = normal * 2.0 - 1.0;
     }
     
-    // Diffuse
-    oColor = color;
+    // Albedo
+    oColor.rgb = color;
+    // Metallic
+    oColor.a = getMaterialMetallic(mtl);
     
     // Normal
 	normal.rgb = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
     
-    // Specular (OLD)
-    oRoughness.rgb = vec3(0.5);
+    oRoughness.r = getMaterialRoughness(mtl);
 }

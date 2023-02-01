@@ -309,14 +309,19 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
         glUniform3fv(shader->getUniform("unLightDir"), 1, &lightDir.x);
         glUniform3fv(shader->getUniform("unCameraPos"), 1, &camera->getPosition()[0]);
         glUniform3fv(shader->getUniform("unSunColor"), 1, &mLightColor.x);
+
         if (mSkybox->hasTexture()) {
-            glBindTextureUnit(0, mSkybox->getCubemap()->getIrradianceTexture());
-            glBindTextureUnit(1, mSkybox->getCubemap()->getPrefilterMap());
+            glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit);
+            glBindTextureUnit(availableTextureUnit++, mSkybox->getCubemap()->getIrradianceTexture());
+            glUniform1i(shader->getUniform("unPrefilterMap"), availableTextureUnit);
+            glBindTextureUnit(availableTextureUnit++, mSkybox->getCubemap()->getPrefilterMap());
         }
         else {
             // TODO: empty textures?
+            availableTextureUnit += 2;
         }
-        glBindTextureUnit(2, BrdfLUT::getTexture());
+        glUniform1i(shader->getUniform("unBrdfLUT"), availableTextureUnit);
+        glBindTextureUnit(availableTextureUnit++, BrdfLUT::getTexture());
 
         MaterialUtils::uploadTonemapUniforms(*shader);
     }

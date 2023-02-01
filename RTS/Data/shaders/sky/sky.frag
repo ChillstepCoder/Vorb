@@ -10,6 +10,7 @@ in vec3 fSkyVector;
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
+layout (location = 2) out float oRoughness;
 
 
 void main() {
@@ -35,4 +36,6 @@ void main() {
     oColor.a = 1.0;
     
     oNormal.rgb = vec3(0.0);
+    
+    oRoughness = 1.0;
 }

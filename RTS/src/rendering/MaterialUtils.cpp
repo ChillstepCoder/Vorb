@@ -50,8 +50,8 @@ void MaterialUtils::updateAndRenderLightingControls(ui32& ID, LightingOptions* o
     ImGui::SliderFloat("Exposure", &options->mExposure, 0.0f, 4.0f);
     ImGui::SliderFloat("Haze Exponent", &options->mHazeExponent, 0.0f, 2.0f);
     ImGui::SliderFloat("Haze Divisor", &options->mHazeDivisor, 10.0f, 15000.0f);
-    ImGui::SliderFloat("Ambient Light", &options->mAmbient, 0.0f, 1.0f);
-    ImGui::SliderFloat("Sun Intensity", &options->mSunIntensity, 0.0f, 3.0f);
+    ImGui::SliderFloat("Ambient Light", &options->mAmbient, 0.0f, 2.0f);
+    ImGui::SliderFloat("Sun Intensity", &options->mSunIntensity, 0.0f, 20.0f);
     switch (options->mToneMapOperator) {
         case 0:
             ImGui::Text("TONEMAP: NONE");
@@ -87,7 +87,7 @@ void MaterialUtils::updateAndRenderLightingControls(ui32& ID, LightingOptions* o
     }
     ImGui::SliderInt("Lighting model", &options->mLightingModel, 0, e_cast(LIGHTING_MODEL::COUNT) - 1);
     if (ImGui::Button("Reset to Default")) {
-        *options = sLightingPresetDefaults[presetIndex];
+        *options = sLightingPresetDefaults[sDebugOptions.mUsingPBR][presetIndex];
     }
     ImGui::PopID();
 }

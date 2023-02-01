@@ -128,6 +128,7 @@ private:
     void updateRenderThreadProcs();
 
     // Render passes
+    void renderPassSky(const Camera3D& camera);
     void renderPassShadows(const Camera3D& camera, const RenderState& renderState);
     void renderPassTransparent(const Camera3D& camera, const RenderState& renderState);
     void renderPassDebug(const Camera3D& camera, const RenderState& renderState);

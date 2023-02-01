@@ -25,9 +25,9 @@ in mat3 fTBN;
 uniform float unCrossfadeAlpha = 0.0;
 uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 
-layout (location = 0) out vec3 oColor;
+layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
-layout (location = 2) out vec3 oRoughness;
+layout (location = 2) out float oRoughness;
 
 
 float InvSmoothStep(float x) {
@@ -93,7 +93,7 @@ void main() {
     float stoneLerpHeight = fHeight - fTBN[2].z * 20.0 + lerpNoise; // Include surface normal val
     
     if (fHeight < 0.0) {
-        oColor = WaterColor;
+        oColor.rgb = WaterColor;
         normal = vec3(0.0, 0.0, 1.0);
     } else {
         vec3 grassColor = mix(texture(GrassTexture, fUV).rgb, texture(GrassTexture, farGrassUVs).rgb, distUvLerp) * GrassColor;
@@ -101,7 +101,7 @@ void main() {
         
         //stoneColor = stoneColor * 0.00001 + StoneColor;
         float stoneLerp = clamp((stoneLerpHeight - 6.0) * 0.5, 0.0, 1.0);
-        oColor = mix(grassColor, stoneColor, stoneLerp);
+        oColor.rgb = mix(grassColor, stoneColor, stoneLerp);
 	    normal = mix(vec3(0.0, 0.0, 1.0), texture(StoneNormal, farStoneUVs).xyz * 2.0 - 1.0, stoneLerp);
     }
     
@@ -158,7 +158,7 @@ void main() {
     currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
     oColor.rgb = hsv2rgb(currhsv);
     
-    // === Roughness ===
-    
-	oRoughness.r = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3;
+    // === Roughness + metallic ===
+    oColor.a = 0.0; // metallic
+	oRoughness = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3;
 }

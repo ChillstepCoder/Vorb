@@ -35,19 +35,21 @@ void main() {
   boneTransform += unBoneTransforms[vBoneIds[3]] * vBoneWeights[3];
   
   
+  vec3 normal = normalize(vNormal);
+  vec3 tangent = normalize(vec3(vTangent, 0));
   vec4 localPos = boneTransform * vec4(vPosition.xyz, 1.0);
+  vec4 localNormal = boneTransform * vec4(normal, 0.0);
+  vec4 localTangent = boneTransform * vec4(tangent, 0.0);
 
   vec4 transformedPos = unModelTransform * localPos;
   vec4 worldPos = transformedPos + vec4(unOffset, 0.0);
   gl_Position = VP * worldPos;
   
   
-  vec3 normal = normalize(vNormal);
-  vec3 tangent = normalize(vec3(vTangent, 0));
-  normal = (unModelTransform * vec4(normal, 0.0)).rgb;
-  tangent = (unModelTransform * vec4(tangent, 0.0)).rgb;
+  localNormal = (unModelTransform * localNormal);
+  localTangent = (unModelTransform * localTangent);
   
 
-  vec3 bitangent = cross(normal, tangent);
-  fTBN = mat3(tangent, bitangent, normal);
+  vec3 bitangent = cross(localNormal.xyz, localTangent.xyz);
+  fTBN = mat3(localTangent.xyz, bitangent, localNormal.xyz);
 }

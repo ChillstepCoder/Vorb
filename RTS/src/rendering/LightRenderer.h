@@ -3,6 +3,7 @@
 
 class MaterialShader;
 class Camera3D;
+class Cubemap;
 
 DECL_VG(class GBuffer);
 
@@ -13,9 +14,10 @@ public:
     LightRenderer();
     ~LightRenderer();
 
-    void renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture) const;
+    void renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTexture, const Cubemap& skyCubeMap) const;
 
 private:
     const MaterialShader* mSunlightMaterial = nullptr;
+    const MaterialShader* mSunlightMaterialPbr = nullptr;
 };
 

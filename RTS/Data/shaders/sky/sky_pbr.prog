@@ -1,0 +1,8 @@
+sky_pbr:
+  vert: sky.vert
+  frag: sky_pbr.frag
+  textures:
+    - name: starfield
+      uniform: StarfieldTexture
+    - name: sky_gradient
+      uniform: GradientTexture

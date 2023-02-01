@@ -107,6 +107,7 @@ struct DebugOptions {
     f32 mWaterNoiseTiling;
     bool mDisableWater;
     // Lighting
+    bool mUsingPBR;
     LightingOptions* mLightingOptions;
     LightingOptions* mLightingOptionsSplit;
     int mLightingPreset;
@@ -119,6 +120,8 @@ struct DebugOptions {
     f32 unUchLinearSectionLength;
     f32 unUchBlack;
     f32 unUchPedestal;
+    f32v3 mSunColorPeak;
+    f32v3 mSunColorSunset;
     // Game settings
     f32 mLoadRangeSq;
     f32 mLoadRange;

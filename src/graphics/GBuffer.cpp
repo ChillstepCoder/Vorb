@@ -49,9 +49,12 @@ vg::GBuffer& vg::GBuffer::initDepth(GBufferDepthFormat depthFormat, int mipLevel
 vg::GBuffer& vg::GBuffer::initDepthStencil(GBufferDepthStencilFormat depthFormat, int mipLevels /*= 1*/) {
     assert(mFbo);
 
+    // TODO: SEPARATE DEPTH STENCIL https://www.reddit.com/r/opengl/comments/tzx6gs/how_can_i_read_the_stencil_value_in_a_fragment/
+    // TODO: Should be using GL_DEPTH_COMPONENT[n] and GL_STENCIL_INDEX[8] for the internal formats when creating the textures
     initTexture(mTexDepth, (VGEnum)depthFormat, vg::sSamplerStates.POINT_CLAMP, mipLevels);
     glNamedFramebufferTexture(mFbo, GL_DEPTH_STENCIL_ATTACHMENT, mTexDepth.mTexture, 0);
     mHasStencil = true;
+
 
     checkError();
     return *this;

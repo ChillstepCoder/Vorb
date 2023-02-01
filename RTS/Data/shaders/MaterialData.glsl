@@ -33,11 +33,21 @@ vec3 sampleMaterialNormal(MaterialData mtl, vec2 uv) {
     return texture( sampler2D(unpackUint2x32(mtl.normalMap)), uv).xyz;
 }
 
-void getMaterialPixelInfo(uint materialIndex, vec2 uv, inout vec4 color, inout vec3 normal, vec4 tint) {
+float getMaterialRoughness(MaterialData mtl) {
+    return mtl.roughness.r;
+}
+
+float getMaterialMetallic(MaterialData mtl) {
+    return mtl.metallicFactor;
+}
+
+void getMaterialPixelInfo(uint materialIndex, vec2 uv, inout vec4 color, inout vec3 normal, inout float metallic, inout float roughness, vec4 tint) {
     MaterialData mtl = inMaterials[materialIndex];
     
     color = mtl.albedoColor;
 	normal = vec3(0.0, 0.0, 1.0);
+    metallic = getMaterialMetallic(mtl);
+    roughness = getMaterialRoughness(mtl);
 
 	if (mtl.albedoMap > 0) {
 		color = sampleMaterialAlbedo(mtl, uv);

@@ -54,5 +54,5 @@ struct LightingOptions {
     int mLightingModel = e_cast(LIGHTING_MODEL::PHONG);
 };
 
-extern LightingOptions sLightingPresets[LIGHT_PRESET_COUNT];
-extern LightingOptions sLightingPresetDefaults[LIGHT_PRESET_COUNT];
+extern LightingOptions sLightingPresets[2][LIGHT_PRESET_COUNT];
+extern LightingOptions sLightingPresetDefaults[2][LIGHT_PRESET_COUNT];

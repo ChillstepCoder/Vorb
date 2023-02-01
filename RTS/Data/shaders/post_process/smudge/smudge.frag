@@ -13,22 +13,22 @@ uniform int unShowVariance;
 #include "util/depth.glsl"
 
 
-vec3 sampleNormalAndIncrementTotalWeight(vec2 uv, float weight, inout float weightTotal, float baseDepth, inout vec3 avgColor) {
+vec3 sampleNormalAndIncrementTotalWeight(vec2 uv, float weight, inout float weightTotal, float baseDepth, inout vec4 avgColor) {
 
     const float depth = linearizeDepth(texture(unDepthFbo, uv).r, unCameraZRange);
     if (abs(depth - baseDepth) < unDepthThreshold) {
-        vec3 color = texture2D(unAlbedoFbo, uv).rgb;
+        vec4 color = texture2D(unAlbedoFbo, uv);
         vec3 normal = texture2D(unNormalFbo, uv).rgb;
         float isValid = step(0.01, dot(normal, normal)); // TODO: isValid IS needed, but why? Shouldnt the input buffer always have valid normals?
         weightTotal += weight * isValid;
-        avgColor += color.rgb * weight * isValid;
+        avgColor += color * weight * isValid;
         return normal.rgb * weight * isValid;
     } else {
         return vec3(0.0);
     }
 }
 
-vec3 getAverageNormalAndColor(vec2 uv, vec2 resolution, vec2 direction, vec3 baseNormal, vec3 baseColor, inout vec3 avgColor) {
+vec3 getAverageNormalAndColor(vec2 uv, vec2 resolution, vec2 direction, vec3 baseNormal, vec4 baseColor, inout vec4 avgColor) {
 
   float weightTotal = 0.1964825501511404;
   vec3 nAvg = baseNormal * weightTotal;
@@ -40,12 +40,12 @@ vec3 getAverageNormalAndColor(vec2 uv, vec2 resolution, vec2 direction, vec3 bas
   const float baseDepth = linearizeDepth(texture(unDepthFbo, uv).r, unCameraZRange);
   
   //nAvg += sampleNormalAndIncrementTotalWeight(uv, 0.1964825501511404, weightTotal, baseDepth, avgColor);
-  nAvg += sampleNormalAndIncrementTotalWeight(uv + (off1 / resolution), 0.2969069646728344, weightTotal, baseDepth, avgColor).rgb;
-  nAvg += sampleNormalAndIncrementTotalWeight(uv - (off1 / resolution), 0.2969069646728344, weightTotal, baseDepth, avgColor).rgb;
-  nAvg += sampleNormalAndIncrementTotalWeight(uv + (off2 / resolution), 0.09447039785044732, weightTotal, baseDepth, avgColor).rgb;
-  nAvg += sampleNormalAndIncrementTotalWeight(uv - (off2 / resolution), 0.09447039785044732, weightTotal, baseDepth, avgColor).rgb;
-  nAvg += sampleNormalAndIncrementTotalWeight(uv + (off3 / resolution), 0.010381362401148057, weightTotal, baseDepth, avgColor).rgb;
-  nAvg += sampleNormalAndIncrementTotalWeight(uv - (off3 / resolution), 0.010381362401148057, weightTotal, baseDepth, avgColor).rgb;
+  nAvg += sampleNormalAndIncrementTotalWeight(uv + (off1 / resolution), 0.2969069646728344, weightTotal, baseDepth, avgColor);
+  nAvg += sampleNormalAndIncrementTotalWeight(uv - (off1 / resolution), 0.2969069646728344, weightTotal, baseDepth, avgColor);
+  nAvg += sampleNormalAndIncrementTotalWeight(uv + (off2 / resolution), 0.09447039785044732, weightTotal, baseDepth, avgColor);
+  nAvg += sampleNormalAndIncrementTotalWeight(uv - (off2 / resolution), 0.09447039785044732, weightTotal, baseDepth, avgColor);
+  nAvg += sampleNormalAndIncrementTotalWeight(uv + (off3 / resolution), 0.010381362401148057, weightTotal, baseDepth, avgColor);
+  nAvg += sampleNormalAndIncrementTotalWeight(uv - (off3 / resolution), 0.010381362401148057, weightTotal, baseDepth, avgColor);
   
   avgColor /= weightTotal;
   nAvg /= weightTotal;
@@ -65,22 +65,21 @@ float getNormalVariance(vec3 n1, vec3 n2) {
 
 void main() {
     vec3 baseNormal = texture(unNormalFbo, fUV).rgb;
-    vec4 baseColor = texture(unAlbedoFbo, fUV).rgba;
-    vec3 avgColor;
+    vec4 baseColor = texture(unAlbedoFbo, fUV);
+    vec4 avgColor;
     // Only need this if theres no stencil buffer
     //if (dot(baseNormal, baseNormal) > 0.0) {
-        vec3 avgNormal = getAverageNormalAndColor(fUV, unScreenResolution, unDirection, baseNormal, baseColor.rgb, avgColor);
+        vec3 avgNormal = getAverageNormalAndColor(fUV, unScreenResolution, unDirection, baseNormal, baseColor, avgColor);
         if (unShowVariance == 1) {
             oColor = vec4(getNormalVariance(baseNormal, avgNormal) * 20.0, 0.0, 0.0, 1.0);
             oNormal = avgNormal;
         } else if (getNormalVariance(avgNormal, baseNormal) > unNormalThreshold) {
             if (unShowEdges == 1) {
-                oColor.rgb = vec3(1.0, 0.0, 0.0);
+                oColor = vec4(1.0, 0.0, 0.0, 1.0);
             } else {
-                oColor.rgb = avgColor;
+                oColor = avgColor;
             }
             oNormal = avgNormal;
-            oColor.a = 1.0;
         } else {
             oColor = baseColor;
             oNormal = baseNormal;

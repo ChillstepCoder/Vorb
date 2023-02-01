@@ -1,0 +1,14 @@
+water_pbr:
+  vert: water.vert
+  frag: water_pbr.frag
+  textures:
+    - name: water_distortion
+      uniform: unSurfaceDistort
+    - name: perlin_noise
+      uniform: unSurfaceNoise
+    - name: oil_canvas
+      uniform: unOilCanvas
+    - name: hsv_jitter
+      uniform: unHsvJitter
+    - name: sky_gradient
+      uniform: GradientTexture

@@ -317,8 +317,8 @@ void IWorld::updateTimeOfDay() {
     mSkyRotMatrix = glm::rotate(sunRotate, f32v3(0.0f, 1.0f, 0.0f));
 
     // Colors
-    f32v3 sunSet(1.0f, 0.5f, 0.0f);
-    f32v3 sunPeak(1.0f, 1.0f, 1.0f);
+    const f32v3& sunSet = sDebugOptions.mSunColorSunset;
+    const f32v3& sunPeak = sDebugOptions.mSunColorPeak;
     const float c = vmath::max(mSunHeight, 0.0f);
     mSunColor = f32v3(
         vmath::lerp(sunSet.r, sunPeak.r, c),

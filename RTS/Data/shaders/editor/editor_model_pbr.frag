@@ -9,6 +9,13 @@ uniform vec2 unExposure;
 uniform ivec2 unTonemapOperator;
 uniform float unLightingSplit;
 
+uniform float unSunIntensity;
+uniform vec3 unSunColor;
+uniform float unMetallic;
+uniform float unRoughness;
+uniform vec3 unLightDir;
+uniform vec3 unCameraPos;
+
 uniform mat4 unVP;
 
 in vec2 fUV;
@@ -25,14 +32,17 @@ void main() {
 
     vec3 normal;
     vec4 color;
-    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, fTint);
+    float metallic;
+    float roughness;
+    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, metallic, roughness, fTint);
     
     tryDiscardTransparentPixel(color.a);
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
     
-    oColor.rgb = PBR(fWorldPos, color.rgb, normal);
+    vec3 sunColor = unSunIntensity * unSunColor;
+    oColor.rgb = PBR(fWorldPos, color.rgb, normal, unMetallic, unRoughness, 1.0, sunColor, unLightDir, unCameraPos);
     
     // Tonemapping
     const int preset = int(step(unLightingSplit, fScreenPos.x));

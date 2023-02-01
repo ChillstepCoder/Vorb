@@ -39,5 +39,5 @@ void main() {
     runAlphaTest(color.a, 0.01);
     oColor = color.rgb;
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);
-	oRoughness.r = 0.75;
+	oRoughness.r = 0.85;
 }

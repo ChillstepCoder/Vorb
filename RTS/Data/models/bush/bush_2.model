@@ -2,4 +2,3 @@ model: bush_2.fbx
 scale: 1.0
 shadow_detail: medium
 render_pass: smudge
-force_normals_up: true

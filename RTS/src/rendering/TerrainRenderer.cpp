@@ -5,6 +5,9 @@
 #include "rendering/MaterialShaderManager.h"
 #include "rendering/MaterialUtils.h"
 
+#include "rendering/texture/Cubemap.h"
+#include "rendering/material/BrdfLUT.h"
+
 #include <Vorb/graphics/GBuffer.h>
 
 #include "world/HeightmapTerrainQuadtree.h"
@@ -20,6 +23,7 @@ TerrainRenderer::TerrainRenderer()
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mTerrainMaterial = materialManager.getMaterialShader("terrain");
     mWaterMaterial = materialManager.getMaterialShader("water");
+    mWaterPbrMaterial = materialManager.getMaterialShader("water_pbr");
 }
 
 void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const TerrainMesh*>& terrainMeshes) {
@@ -59,26 +63,57 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const
     }
 }
 
-void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const TerrainMesh*>& waterMeshes)
+void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const TerrainMesh*>& waterMeshes, const Cubemap& skyCubeMap)
 {
     glDisable(GL_CULL_FACE);
     vg::DepthState::READ.set();
-    MaterialRenderer::bindMaterialForRender(*mWaterMaterial);
+    const MaterialShader* shader;
+    if (sDebugOptions.mUsingPBR) {
+        shader = mWaterPbrMaterial;
+        ui32 textureUnit;
+        MaterialRenderer::bindMaterialForRender(*shader, &textureUnit);
+        glUniform1i(shader->getUniform("unIrradianceMap"), textureUnit);
+        glBindTextureUnit(textureUnit++, skyCubeMap.getIrradianceTexture());
+        glUniform1i(shader->getUniform("unPrefilterMap"), textureUnit);
+        glBindTextureUnit(textureUnit++, skyCubeMap.getPrefilterMap());
+        glUniform1i(shader->getUniform("unBrdfLUT"), textureUnit);
+        glBindTextureUnit(textureUnit++, BrdfLUT::getTexture());
+
+
+        LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
+        LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
+        glUniform2f(shader->getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
+        glUniform2f(shader->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
+        glUniform2f(shader->getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
+        glUniform2f(shader->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        glUniform2f(shader->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
+        if (sDebugOptions.mLightPresetSplitView) {
+            glUniform1f(shader->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
+        }
+        else {
+            glUniform1f(shader->getUniform("unLightingSplit"), 1.0f);
+        }
+    }
+    else {
+        shader = mWaterMaterial;
+        MaterialRenderer::bindMaterialForRender(*shader);
+        MaterialUtils::uploadLightingUniforms(*shader);
+    }
+
     // TODO: UBO?
     // Water uniforms
-    glUniform4fv(mWaterMaterial->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
-    glUniform4fv(mWaterMaterial->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
-    glUniform4fv(mWaterMaterial->mProgram.getUniform("unFoamColor"), 1, &sDebugOptions.mWaterFoamColor.x);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceDistortAmount"), sDebugOptions.mWaterSurfaceDistortAmount);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceMoveSpeed"), sDebugOptions.mWaterSurfaceMoveSpeed);
-    glUniform2fv(mWaterMaterial->mProgram.getUniform("unFoamDistanceRange"), 1, &sDebugOptions.mWaterFoamDistanceRange.x);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSurfaceNoiseCutoff"), sDebugOptions.mWaterSurfaceNoiseCutoff);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unSmoothstepAA"), sDebugOptions.mWaterSmoothstepAA);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
-    glUniform1f(mWaterMaterial->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
-    VGUniform offsetUniform = mWaterMaterial->mProgram.getUniform("unOffset");
-    MaterialUtils::uploadLightingUniforms(*mWaterMaterial);
+    glUniform4fv(shader->mProgram.getUniform("unShallowColor"), 1, &sDebugOptions.mShallowWaterColor.x);
+    glUniform4fv(shader->mProgram.getUniform("unDeepColor"), 1, &sDebugOptions.mDeepWaterColor.x);
+    glUniform4fv(shader->mProgram.getUniform("unFoamColor"), 1, &sDebugOptions.mWaterFoamColor.x);
+    glUniform1f(shader->mProgram.getUniform("unSurfaceDistortAmount"), sDebugOptions.mWaterSurfaceDistortAmount);
+    glUniform1f(shader->mProgram.getUniform("unSurfaceMoveSpeed"), sDebugOptions.mWaterSurfaceMoveSpeed);
+    glUniform2fv(shader->mProgram.getUniform("unFoamDistanceRange"), 1, &sDebugOptions.mWaterFoamDistanceRange.x);
+    glUniform1f(shader->mProgram.getUniform("unSurfaceNoiseCutoff"), sDebugOptions.mWaterSurfaceNoiseCutoff);
+    glUniform1f(shader->mProgram.getUniform("unSmoothstepAA"), sDebugOptions.mWaterSmoothstepAA);
+    glUniform1f(shader->mProgram.getUniform("unColorNoiseIntensity"), sDebugOptions.mWaterColorNoiseIntensity);
+    glUniform1f(shader->mProgram.getUniform("unDistortTiling"), sDebugOptions.mWaterDistortTiling);
+    glUniform1f(shader->mProgram.getUniform("unNoiseTiling"), sDebugOptions.mWaterNoiseTiling);
+    VGUniform offsetUniform = shader->mProgram.getUniform("unOffset");
     for (auto&& waterMesh : waterMeshes) {
         const Mesh& mesh = waterMesh->mMesh;
         f32v3 offset = mesh.getPosition() - camera.getPosition();;
@@ -86,7 +121,7 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const T
 
         const ui32 lod = QUADTREE_LOD_FROM_INDEX[waterMesh->mIndex];
         /* f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
-         f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/
+            f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/
         int crossfadeDir = waterMesh->mCrossfadeDir.load();
         const BoundingSphere& bounds = mesh.getBoundingSphere();
         if (camera.sphereIsVisible(bounds.center, bounds.radius)) {

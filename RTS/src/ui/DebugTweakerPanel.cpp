@@ -171,6 +171,14 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     if (ImGui::CollapsingHeader("Lighting")) {
         ImGui::PushID(++ID);
         f64v2 range(0.0, 1600.0);
+        if (ImGui::Checkbox("Use PBR", &sDebugOptions.mUsingPBR)) {
+            sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mUsingPBR][sDebugOptions.mLightingPreset];
+        }
+        if (ImGui::CollapsingHeader("Sun Color Options")) {
+            ImGui::ColorPicker3("Peak Color", &sDebugOptions.mSunColorPeak.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+            ImGui::ColorPicker3("Sunset Color", &sDebugOptions.mSunColorSunset.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+            ImGui::Separator();
+        }
         ImGui::SliderScalar("Time of Day", ImGuiDataType_Double, &sDebugOptions.mTimeOffset, &range.x, &range.y);
         ImGui::Checkbox("Split View", &sDebugOptions.mLightPresetSplitView);
         if (sDebugOptions.mLightPresetSplitView) {
@@ -179,19 +187,19 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
             ImGui::Text("LEFT: "); ImGui::SameLine();
             ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPreset]);
             if (ImGui::SliderInt("Light Preset Left", &sDebugOptions.mLightingPreset, 0, LIGHT_PRESET_COUNT - 1)) {
-                sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mLightingPreset];
+                sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mUsingPBR][sDebugOptions.mLightingPreset];
             }
             MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
             ImGui::Separator();
             ImGui::Text("RIGHT: "); ImGui::SameLine();
             ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPresetSplit]);
             if (ImGui::SliderInt("Light Preset Right", &sDebugOptions.mLightingPresetSplit, 0, LIGHT_PRESET_COUNT - 1)) {
-                sDebugOptions.mLightingOptionsSplit = &sLightingPresets[sDebugOptions.mLightingPresetSplit];
+                sDebugOptions.mLightingOptionsSplit = &sLightingPresets[sDebugOptions.mUsingPBR][sDebugOptions.mLightingPresetSplit];
             }
             MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptionsSplit, sDebugOptions.mLightingPresetSplit);
             if (sDebugOptions.mLightingPresetSplit != LIGHT_PRESET_CUSTOM) {
                 if (ImGui::Button("Copy to CUSTOM")) {
-                    sLightingPresets[LIGHT_PRESET_CUSTOM] = sLightingPresets[sDebugOptions.mLightingPresetSplit];
+                    sLightingPresets[sDebugOptions.mUsingPBR][LIGHT_PRESET_CUSTOM] = sLightingPresets[sDebugOptions.mUsingPBR][sDebugOptions.mLightingPresetSplit];
                 }
             }
             if (ImGui::Button("Swap left/right")) {
@@ -203,7 +211,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         else {
             ImGui::Text(LIGHT_PRESET_NAMES[sDebugOptions.mLightingPreset]);
             if (ImGui::SliderInt("Light Preset", &sDebugOptions.mLightingPreset, 0, LIGHT_PRESET_COUNT - 1)) {
-                sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mLightingPreset];
+                sDebugOptions.mLightingOptions = &sLightingPresets[sDebugOptions.mUsingPBR][sDebugOptions.mLightingPreset];
             }
             MaterialUtils::updateAndRenderLightingControls(ID, sDebugOptions.mLightingOptions, sDebugOptions.mLightingPreset);
             ImGui::Separator();
@@ -321,6 +329,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Terrain Physics (Toggle to refresh)", &sDebugOptions.mShowTerrainPhysics);
         ImGui::Checkbox("Dynamic Physics", &sDebugOptions.mShowDynamicPhysics);
         ImGui::Checkbox("Actions (Characters)", &sDebugOptions.mShowPhysicsActions);
+        ImGui::Separator();
     }
 
     if (ImGui::CollapsingHeader("Toggles")) {
@@ -347,7 +356,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
         ImGui::Checkbox("CPU Culling", &sDebugOptions.mDisableGPUCulling);
         ImGui::SliderFloat3("LOD Distances", sDebugOptions.mLodDistances, 0.0f, 1000.0f);
-
+        ImGui::Separator();
     }
     if (activeGBuffer) {
         if (ImGui::CollapsingHeader("GBuffer")) {

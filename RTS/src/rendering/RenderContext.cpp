@@ -38,6 +38,7 @@
 #include "rendering/mesh/ProceduralMeshBuilder.h"
 #include "rendering/renderstate/RenderStateManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
+#include "rendering/StencilBufferIDs.h"
 #include "weather/CloudManager.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -214,7 +215,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // GBuffer
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
-        // TODO: Albedo can be 8 bit, we don't need float albedo for HDR, just compute the HDR in the final stage
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::R8);
@@ -435,6 +435,10 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
+    // Mark everything we draw as geometry
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     // Static meshes
     mTileContainerRenderer->renderStaticMeshes(mStaticMeshes, camera);
 
@@ -453,7 +457,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         if (!sDebugOptions.mHideGrass) {
             mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
         }
-        // mActiveGBuffer will be used at end
         mSmudgeRenderer->renderSmudge(mActiveGBuffer, camera);
     }
 
@@ -480,15 +483,21 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }*/
     // TODO: Where is this getting unset?
     glEnable(GL_CULL_FACE);
-    // Terrain
-    if (!sDebugOptions.mDisableTerrain) {
-        mTerrainRenderer->renderTerrain(camera, mTerrainMeshes);
+
+    {
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::GEOMETRY), 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        // Terrain
+        if (!sDebugOptions.mDisableTerrain) {
+            mTerrainRenderer->renderTerrain(camera, mTerrainMeshes);
+        }
+        glDisable(GL_STENCIL_TEST);
     }
 
     if (sDebugOptions.mShowBusinessDebug) {
         mEcsRenderer->renderBusinessDebug(camera);
     }
-
     // Clouds
    /* if (!sDebugOptions.mDisableClouds) {
         mCloudRenderer->renderClouds(mWorld.getCloudManager(), mActiveGBuffer, camera);
@@ -499,6 +508,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Horizon
     //mMaterialRenderer->renderMesh(*mHorizonQuad, *mResourceManager.getMaterialManager().getMaterial("simple_color"));
+
 
     renderPassShadows(camera, renderState);
     
@@ -527,8 +537,10 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     mCurrentFramebufferDims = mScreenResolution;
 
-    // Sky
-    mSkyBox->render(camera.getVPMatrix());
+    // Sky (non PBR version)
+    if (!sDebugOptions.mUsingPBR) {
+        renderPassSky(camera);
+    }
 
     // Final render for pre-transparency
     mHDRLightGBuffer->use();
@@ -538,7 +550,12 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mHDRLightGBuffer->setSharedDepthStencilTexture(mActiveGBuffer->getDepthStencilTexture());
 
     // Sunlight
-    mLightRenderer->renderSunlight(*mActiveGBuffer, mShadowRenderer->getShadowTexture());
+    mLightRenderer->renderSunlight(*mActiveGBuffer, mShadowRenderer->getShadowTexture(), *mSkyBox->getCubemap());
+
+    // Sky (PBR version)
+    if (sDebugOptions.mUsingPBR) {
+        renderPassSky(camera);
+    }
 
     renderPassTransparent(camera, renderState);
 
@@ -625,6 +642,19 @@ void RenderContext::updateRenderThreadProcs() {
     }
 }
 
+void RenderContext::renderPassSky(const Camera3D& camera) {
+   // glEnable(GL_STENCIL_TEST);
+   // glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::SKY), 0xFF);
+    //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    if (sDebugOptions.mUsingPBR) {
+        mSkyBox->renderPbr(camera.getVPMatrix());
+    }
+    else {
+        mSkyBox->render(camera.getVPMatrix());
+    }
+   // glDisable(GL_STENCIL_TEST);
+}
+
 void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState& renderState) {
     PROFILE_FUNCTION();
     if (mRenderData.globalUboData.SunHeight > 0.01f && !sDebugOptions.mDisableShadows) {
@@ -681,7 +711,7 @@ void RenderContext::renderPassTransparent(const Camera3D& camera, const RenderSt
 
     // Water (No depth write)
     if (!sDebugOptions.mDisableWater) {
-        mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes);
+        mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes, *mSkyBox->getCubemap());
     }
     
     // Light transparent layer

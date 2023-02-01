@@ -1,0 +1,6 @@
+sunlight_pbr:
+  vert: pass_through.vert
+  frag: sunlight_pbr.frag
+  textures:
+    - name: sky_gradient
+      uniform: GradientTexture

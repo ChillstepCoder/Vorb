@@ -6,9 +6,12 @@
 #include "camera/ICamera.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShader.h"
+#include "rendering/MaterialShaderManager.h"
 
 #include "resources/ResourceManager.h"
 #include "resources/TextureRepository.h"
+
+#include "options/DebugOptions.h"
 
 Skybox::~Skybox() {
 
@@ -19,6 +22,7 @@ void Skybox::init(const MaterialShader* material, const Cubemap* skyTexture) {
     constexpr float RADIUS = 1.0f;
     constexpr float DIAMETER = RADIUS * 2.0f;
     mMaterial = material;
+    mMaterialPbr = Services::ResourceManager::ref().getMaterialShaderManager().getMaterialShader("sky_pbr");
     mSkyTexture = skyTexture;
     ProceduralMeshBuilder meshBuilder(true);
     // Bottom left
@@ -96,6 +100,36 @@ void Skybox::render(const f32m4& cameraMatrix) {
     glUniform1i(mMaterial->getUniform("unSkyboxCube"), textureUnit);
     glUniformMatrix4fv(mMaterial->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
     glBindTextureUnit(textureUnit, mSkyTexture->getTexture());
+    mSkyboxMesh->draw();
+
+    vg::DepthState::restorePrevious();
+    glDisable(GL_DEPTH_CLAMP);
+}
+
+void Skybox::renderPbr(const f32m4& cameraMatrix) {
+    assert(mSkyTexture);
+    glEnable(GL_DEPTH_CLAMP);
+    assert(mMaterialPbr);
+    vg::DepthState::READ.set();
+    glDepthFunc(GL_LEQUAL);
+
+    ui32 textureUnit;
+    MaterialRenderer::bindMaterialForRender(*mMaterialPbr, &textureUnit);
+    glUniform1i(mMaterialPbr->getUniform("unSkyboxCube"), textureUnit);
+    glUniformMatrix4fv(mMaterialPbr->getUniform("unVP"), 1, false, &cameraMatrix[0][0]);
+    glBindTextureUnit(textureUnit, mSkyTexture->getTexture());
+
+    LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
+    LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
+    glUniform2f(mMaterialPbr->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
+    glUniform2f(mMaterialPbr->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
+    glUniform2f(mMaterialPbr->getUniform("unGamma"), optionsLeft.mGamma, optionsRight.mGamma);
+    if (sDebugOptions.mLightPresetSplitView) {
+        glUniform1f(mMaterialPbr->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
+    }
+    else {
+        glUniform1f(mMaterialPbr->getUniform("unLightingSplit"), 1.0f);
+    }
     mSkyboxMesh->draw();
 
     vg::DepthState::restorePrevious();
