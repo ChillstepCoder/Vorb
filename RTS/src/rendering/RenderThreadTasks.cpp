@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "RenderThreadTasks.h"
 
-#include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
 #include "rendering/RenderContext.h"
-#include "rendering/mesh/TileMeshBuilderMethods.h"
-#include "rendering/mesh/BillboardMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
+#include "rendering/mesh/mesher/builder/BillboardMeshBuilder.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 
@@ -42,27 +42,21 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
 }
 
 void RenderThreadTasks::addTileContainerMeshInitTask(
-    TileContainer* containerToMesh,
-    ProceduralMeshBuilder&& staticMeshBuilder,
-    ProceduralMeshBuilder&& dynamicMeshBuilder,
-    BillboardMeshBuilder&& billboardMeshBuilder,
-    InstancedStaticModelGatherer&& modelGatherer
+    const TileContainer* containerToMesh,
+    ContainerMeshBuilders&& builders
 ) {
 
     MeshTaskData* taskData = 
         new MeshTaskData(
             containerToMesh,
-            std::move(staticMeshBuilder), 
-            std::move(dynamicMeshBuilder),
-            std::move(billboardMeshBuilder),
-            std::move(modelGatherer)
+            std::move(builders)
         );
     assert(containerToMesh->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
     // Pass result to the render thread
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* meshTaskData) {
         PROFILE_SCOPE("RenderThreadTasks::AddTileContainerMeshInitTask");
         MeshTaskData* taskData = static_cast<MeshTaskData*>(meshTaskData);
-        TileContainer* tileContainer = taskData->container;
+        const TileContainer* tileContainer = taskData->container;
         TileContainerID id = tileContainer->getId();
 
         assert(context.mTileContainerMeshData.find(id) == context.mTileContainerMeshData.end());
@@ -70,9 +64,9 @@ void RenderThreadTasks::addTileContainerMeshInitTask(
         TileContainerMeshData& meshData = context.mTileContainerMeshData[id];
           
         // Upload mesh buffers
-        taskData->staticMeshBuilder.finishMesh(meshData.mStaticMesh, tileContainer->getWorldPos3D());
-        taskData->dynamicMeshBuilder.finishMesh(meshData.mDynamicMesh, tileContainer->getWorldPos3D());
-        taskData->billboardMeshBuilder.finishMesh(meshData.mBillboardMesh, tileContainer->getWorldPos3D(), 0 /*bufferFlags*/);
+        taskData->builders.staticBuilder.finishMesh(meshData.mStaticMesh, tileContainer->getWorldPos3D());
+        taskData->builders.dynamicBuilder.finishMesh(meshData.mDynamicMesh, tileContainer->getWorldPos3D());
+        taskData->builders.billboardBuilder.finishMesh(meshData.mBillboardMesh, tileContainer->getWorldPos3D(), 0 /*bufferFlags*/);
 
         bool hadAny = false;
         // Static
@@ -94,7 +88,7 @@ void RenderThreadTasks::addTileContainerMeshInitTask(
         }
         
         // Model instances
-        context.addStaticModelInstancesFromGatherer(taskData->modelGatherer);
+        context.addStaticModelInstancesFromGatherer(taskData->builders.modelGatherer);
 
         // Release
         tileContainer->setDidInitMesh();

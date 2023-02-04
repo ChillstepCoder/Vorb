@@ -10,6 +10,8 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/StencilBufferIDs.h"
+#include "rendering/texture/Cubemap.h"
+#include "rendering/material/BrdfLUT.h"
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
@@ -23,6 +25,7 @@ CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
     const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
     mCloudMaterial = materialManager.getMaterialShader("cloud");
     mPostMaterial = materialManager.getMaterialShader("cloud_post");
+    mPostPbrMaterial = materialManager.getMaterialShader("cloud_post_pbr");
     mBlurMaterial = materialManager.getMaterialShader("gaussian_blur_rgb");
     mCloudShadowMaterial = materialManager.getMaterialShader("cloud_shadow_mapper");
 
@@ -33,7 +36,7 @@ CloudRenderer::CloudRenderer(const ui32v2& gbufferDims) {
     checkGlError("CloudRenderer GBuffer init");
 }
 
-void CloudRenderer::renderClouds(const CloudManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera) {
+void CloudRenderer::renderClouds(const CloudManager& cloudManager, VGTexture sharedDepthStencilTexture, vg::GBuffer* outputGBuffer, const Camera3D& camera, const Cubemap& skyCubeMap) {
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_ALWAYS, e_cast(StencilBufferIDs::CLOUD_OR_WATER), 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -70,7 +73,7 @@ void CloudRenderer::renderClouds(const CloudManager& cloudManager, VGTexture sha
     blurNormals();
 
     outputGBuffer->use();
-    renderToOutput();
+    renderToOutput(skyCubeMap);
 
     // Restore previous
     prevDepthState.set();
@@ -119,15 +122,54 @@ void CloudRenderer::blurNormals() {
     }
 }
 
-void CloudRenderer::renderToOutput()
+void CloudRenderer::renderToOutput(const Cubemap& skyCubeMap)
 {
     //vg::sBlendStates.REPLACE.set();
-    ui32 nextTexture = 0;
-    MaterialRenderer::bindMaterialForRender(*mPostMaterial, &nextTexture);
-    MaterialUtils::uploadLightingUniforms(*mPostMaterial);
-    if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
-        mGBuffers[0]->bindAlbedoTexture(nextTexture);
-        glUniform1i(*inputUniform, nextTexture++);
+    ui32 textureUnit = 0;
+
+    if (sDebugOptions.mUsingPBR) {
+        MaterialRenderer::bindMaterialForRender(*mPostPbrMaterial, &textureUnit);
+        LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;
+        LightingOptions& optionsRight = *sDebugOptions.mLightingOptionsSplit;
+        glUniform1i(mPostPbrMaterial->getUniform("unIrradianceMap"), textureUnit);
+        glBindTextureUnit(textureUnit++, skyCubeMap.getIrradianceTexture());
+        glUniform1i(mPostPbrMaterial->getUniform("unPrefilterMap"), textureUnit);
+        glBindTextureUnit(textureUnit++, skyCubeMap.getPrefilterMap());
+        glUniform1i(mPostPbrMaterial->getUniform("unBrdfLUT"), textureUnit);
+        glBindTextureUnit(textureUnit++, BrdfLUT::getTexture());
+
+        glUniform1f(mPostPbrMaterial->getUniform("unCloudMetallic"), sDebugOptions.mCloudMetallic);
+        glUniform1f(mPostPbrMaterial->getUniform("unCloudRoughness"), sDebugOptions.mCloudRoughness);
+
+        glUniform2f(mPostPbrMaterial->getUniform("unHazeExponent"), optionsLeft.mHazeExponent, optionsRight.mHazeExponent);
+        glUniform2f(mPostPbrMaterial->getUniform("unHazeDivisor"), optionsLeft.mHazeDivisor, optionsRight.mHazeDivisor);
+        glUniform2f(mPostPbrMaterial->getUniform("unAmbient"), optionsLeft.mAmbient, optionsRight.mAmbient);
+        glUniform2f(mPostPbrMaterial->getUniform("unExposure"), optionsLeft.mExposure, optionsRight.mExposure);
+        glUniform2f(mPostPbrMaterial->getUniform("unSunIntensity"), optionsLeft.mSunIntensity, optionsRight.mSunIntensity);
+        glUniform2f(mPostPbrMaterial->getUniform("unGamma"), optionsLeft.mGamma, optionsRight.mGamma);
+        if (sDebugOptions.mLightPresetSplitView) {
+            glUniform1f(mPostPbrMaterial->getUniform("unLightingSplit"), sDebugOptions.mLightPresetSplitAmount);
+        }
+        else {
+            glUniform1f(mPostPbrMaterial->getUniform("unLightingSplit"), 1.0f);
+        }
+        if (const VGUniform* inputUniform = mPostPbrMaterial->mProgram.tryGetUniform("unCloudTexture")) {
+            mGBuffers[0]->bindAlbedoTexture(textureUnit);
+            glUniform1i(*inputUniform, textureUnit++);
+        }
+        if (const VGUniform* inputUniform = mPostPbrMaterial->mProgram.tryGetUniform("unDepthTexture")) {
+            mGBuffers[0]->bindDepthTexture(textureUnit);
+            glUniform1i(*inputUniform, textureUnit++);
+        }
+    }
+    else {
+        MaterialRenderer::bindMaterialForRender(*mPostMaterial, &textureUnit);
+        MaterialUtils::uploadLightingUniforms(*mPostMaterial);
+        if (const VGUniform* inputUniform = mPostMaterial->mProgram.tryGetUniform("CloudFbo")) {
+            mGBuffers[0]->bindAlbedoTexture(textureUnit);
+            glUniform1i(*inputUniform, textureUnit++);
+        }
+
     }
 
     vg::DepthState::NONE.set();

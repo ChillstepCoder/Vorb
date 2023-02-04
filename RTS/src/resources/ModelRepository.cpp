@@ -8,7 +8,7 @@
 #include "resources/RigRepository.h"
 #include "resources/AnimMachineRepository.h"
 #include "rendering/model/Model3D.h"
-#include "rendering/mesh/ModelMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/mesh/MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
 

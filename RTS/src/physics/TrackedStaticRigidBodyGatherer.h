@@ -17,7 +17,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(TrackedStaticRigidBodyGatherer);
 
     TrackedStaticRigidBodyGatherer(TileContainerID containerId) : mContainerId(containerId) {};
-    void addRigidBody(TileIndex ownerTilePosition, const f32v3& pos, CollisionShapeID shapeId) { mRigidBodiesToAdd.emplace_back(TrackedStaticRigidBody{ pos, shapeId, ownerTilePosition }); }
+    void addRigidBody(TileIndex ownerTilePosition, const f32v3& pos, CollisionShapeID shapeId) { assert(shapeId != INVALID_COLLISION_SHAPE_ID); mRigidBodiesToAdd.emplace_back(TrackedStaticRigidBody{ pos, shapeId, ownerTilePosition }); }
     TileContainerID getOwnerTileContainerID() const { return mContainerId; }
     size_t getNumStaticObjectsToAdd() const { return mRigidBodiesToAdd.size(); }
 private:

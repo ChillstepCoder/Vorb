@@ -16,10 +16,10 @@ vec3 applyHaze(vec3 inputColor, vec3 cameraRelativePos, int preset, vec3 hazeCol
 	vec3 pixelColor = mix(inputColor, hazeColor, depthHaze);
 
 	// Night Haze, darken everything at night
-    const float NIGHT_DARKNESS_FACTOR = 0.35;
+    const float NIGHT_DARKNESS_FACTOR = 0.8;
     const float NIGHT_THRESHOLD_FACTOR = 0.005;
     const float NIGHT_HAZE_DIVISOR = 300.0;
-    const float MIN_AMBIENT = 0.05;
+    const float MIN_AMBIENT = 0.2;
     float divisor = NIGHT_HAZE_DIVISOR + sunIntensity * 6000.0;
     const float nightHazeDistance = linearDistance / divisor;
 	float nightHaze = 1.0 - pow(nightHazeDistance * (1.0 - pow(sunIntensity, NIGHT_THRESHOLD_FACTOR)), NIGHT_DARKNESS_FACTOR);

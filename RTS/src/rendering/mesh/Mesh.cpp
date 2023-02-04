@@ -22,6 +22,7 @@ Mesh::~Mesh() {
 void Mesh::draw() const {
     assert(mMainMesh.mVao);
     assert(mMainMesh.mLODData.mTotalIndexCount);
+    assert(mMainMesh.mIndexType != MeshIndexType::INVALID);
 
     glBindVertexArray(mMainMesh.mVao);
     if (mMainMesh.mUbo) {
@@ -146,9 +147,6 @@ MeshCpuData::~MeshCpuData() {
     if (mVertsPtr) {
         assert(mElementsPtr); // For now we always guarantee both
         switch (mVertexType) {
-            case VertexType::STANDARD:
-                delete[] static_cast<StandardVertex*>(mVertsPtr);
-                break;
             case VertexType::TERRAIN:
                 delete[] static_cast<TerrainVertex*>(mVertsPtr);
                 break;
@@ -164,7 +162,7 @@ MeshCpuData::~MeshCpuData() {
             default:
                 assert(false);
         }
-        static_assert(e_cast(VertexType::COUNT) == 6, "Delete new types");
+        static_assert(e_cast(VertexType::COUNT) == 5, "Delete new types");
         switch (mIndexType) {
             case MeshIndexType::SHORT:
                 delete[] static_cast<ui16*>(mElementsPtr);

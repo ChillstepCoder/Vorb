@@ -2,7 +2,7 @@
 #include "VisualLogger.h"
 
 #include "rendering/RenderStats.h"
-#include "rendering/mesh/TextMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/TextMeshBuilder.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
 

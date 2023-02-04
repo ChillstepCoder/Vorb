@@ -2,7 +2,7 @@
 #include "Skybox.h"
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "camera/ICamera.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShader.h"
@@ -37,13 +37,13 @@ void Skybox::init(const MaterialShader* material, const Cubemap* skyTexture) {
     const f32v2 dims(DIAMETER);
     const f32v4 uvRect(0.0f, 0.0f, 1.0f, 1.0f);
     f32v3 bottomLeft(-RADIUS);
-    const SubTexture dummyTexture = {};
-    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::RIGHT, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::BACK, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(DIAMETER, 0.0f, 0.0f), dims, CubeFacing::LEFT, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, DIAMETER, 0.0f), dims, CubeFacing::FRONT, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, 0.0f, DIAMETER), dims, CubeFacing::BOTTOM, dummyTexture, uvRect, COLOR_WHITE);
-    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::TOP, dummyTexture, uvRect, COLOR_WHITE);
+    const MaterialData dummyMaterial;
+    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::RIGHT, dummyMaterial, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::BACK, dummyMaterial, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(DIAMETER, 0.0f, 0.0f), dims, CubeFacing::LEFT, dummyMaterial, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, DIAMETER, 0.0f), dims, CubeFacing::FRONT, dummyMaterial, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft + f32v3(0.0f, 0.0f, DIAMETER), dims, CubeFacing::BOTTOM, dummyMaterial, uvRect, COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(bottomLeft, dims, CubeFacing::TOP, dummyMaterial, uvRect, COLOR_WHITE);
     mSkyboxMesh = std::make_unique<Mesh>();
     meshBuilder.finishMesh(mSkyboxMesh, f32v3(0.0f));
     //TileVertex verts[NUM_VERTS];

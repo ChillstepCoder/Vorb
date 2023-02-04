@@ -11,7 +11,7 @@
 #include "options/DebugOptions.h"
 
 // Meshing
-#include "rendering/mesh/TileContainerMesher.h"
+#include "rendering/mesh/mesher/ChunkMesher.h"
 
 // How many tiles the load center has to move before we force update edge chunks
 constexpr f32 DISTANCE_SQ_CHANGE_UNTIL_FORCE_UPDATE_EDGES = SQ(16.0f);
@@ -91,7 +91,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];
                 const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                 memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
-                TileContainerMesher::initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
+                sChunkMesher.initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
                 Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
                 ++i;
                 break;

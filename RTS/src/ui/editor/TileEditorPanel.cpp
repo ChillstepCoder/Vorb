@@ -154,7 +154,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
             ui32 ID = 250;
             ui32 previewIndex = 0;
             for (auto&& it : materialRepository.mMaterialIDLookup) {
-                MaterialData& material = materialRepository.mMaterials[it.second];
+                MaterialGpuData& material = materialRepository.mMaterialGpuData[it.second];
                 ImGui::PushID(++ID);
                 ImGui::TableNextRow(ImGuiTableRowFlags_None, ROW_MIN_HEIGHT);
 
@@ -201,7 +201,7 @@ void TileEditorPanel::updateAndRenderMaterialsTab(TileEditorPanelResult& result)
     }
 }
 
-VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialData& materialData) {
+VGTexture TileEditorPanel::renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData) {
     // Allocate new gbuffer if needed
     assert(previewIndex <= (int)mMaterialPreviewGBuffers.size());
     if (previewIndex == (int)mMaterialPreviewGBuffers.size()) {

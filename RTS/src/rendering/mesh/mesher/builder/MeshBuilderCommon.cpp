@@ -281,21 +281,3 @@ void MeshBuilderCommon::uploadVertexDataNonInterleavedPositions(MeshGpuData& sub
     glVertexArrayVertexBuffer(subMesh.mVao, 1, subMesh.mVbo.getHandle(), positionsSizeBytes, vertexSize);
 }
 
-void MeshBuilderCommon::uploadStandardTextureUboData(MeshGpuData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags) {
-    // UBO
-    const ui32 uboSizeBytes = sizeof(f32v4) + textures.size() * sizeof(TextureHandle);
-    // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
-    // With position in front
-    constexpr size_t BUFFER_SIZE = sizeof(f32v4) + MAX_TEXTURES_PER_MESH * 2 * sizeof(ui32v2);
-    ui8 byteBuffer[BUFFER_SIZE];
-    *(f32v3*)byteBuffer = pos;
-    ui32v2* buffer = (ui32v2*)(byteBuffer + sizeof(f32v4));
-    for (ui32 i = 0; i < textures.size(); ++i) {
-        TextureHandle handle = textures[i];
-        buffer[i].x = handle & 0xffffffff;
-        buffer[i].y = handle >> 32;
-    }
-    assert(subMesh.mUbo);
-
-    glNamedBufferStorage(subMesh.mUbo, uboSizeBytes, byteBuffer, flags);
-}

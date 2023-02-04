@@ -10,11 +10,6 @@ void MeshOperations::rotate90AboutAxis(MeshCpuData& mesh, const f32v3& axis) {
 
 void MeshOperations::applyScale(MeshCpuData& mesh, f32 scale) {
     switch (mesh.mVertexType) {
-        case VertexType::STANDARD:
-            for (ui32 i = 0; i < mesh.mVertsCount; ++i) {
-                static_cast<StandardVertex*>(mesh.mVertsPtr)[i].pos *= scale;
-            }
-            break;
         case VertexType::STATIC_MODEL:
             for (ui32 i = 0; i < mesh.mVertsCount; ++i) {
                 static_cast<StaticModelVertex*>(mesh.mVertsPtr)[i].pos *= scale;
@@ -30,7 +25,7 @@ void MeshOperations::applyScale(MeshCpuData& mesh, f32 scale) {
         default:
             assert(false && "Unsupported applyScale operation");
     }
-    static_assert(e_cast(VertexType::COUNT) == 6);
+    static_assert(e_cast(VertexType::COUNT) == 5);
 }
 
 void MeshOperations::setAllNormals(RawMesh& rawMesh, const f32v3& normal, const f32v3& tangent) {

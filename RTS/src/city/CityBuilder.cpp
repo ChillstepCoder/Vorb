@@ -15,7 +15,7 @@
 #include "ecs/IEntityComponentSystem.h"
 
 #include "debugging/DebugRenderer.h"
-#include "rendering/BuildingMesher.h"
+#include "rendering/mesh/mesher/BuildingMesher.h"
 
 #include "structure/StructureManager.h"
 
@@ -102,6 +102,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     TileContainer& tileContainer = *newBuilding->mTileContainer;
     tileContainer.allocateOwnedTiles();
 
+    std::vector<Tile>& tiles = tileContainer.mTiles;
+
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;
     for (i32 z = 0; z < bp.floorCount; ++z) {
@@ -117,19 +119,22 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     }
 
                     tileContainer.setOwnedTile(tileIndex);
+
                     // Stairs are processed below
                     if (type != BlueprintTileType::STAIRS) {
                         const TileID tileId = bp.tileIDs[e_cast(type)];
                         if (tileId != TILE_ID_NONE) {
+                            Tile& tile = tiles[tileIndex];
                             // We dont add to mean height here because tile height is relative to the floor of this tile layer
-                            const f32 height = 0.0f;
-                            tileContainer.setTileLayer(tileIndex, TileRepository::getTileData(tileId));
+                            //const f32 height = 0.0f;
+                            const TileData& data = TileRepository::getTileData(tileId);
+                            tile.layers[data.layer] = data.id;
+                            //tile.groundZOffset = height;
                             //assert(false); // Set building structure pointer
                             // TODO: always set ground position?
-                            tileContainer.setTileGroundZPosition(tileIndex, height);
                         }
                     }
-                    tileContainer.setWallsAt(tileIndex, bp.walls[tileIndex]);
+                    tileContainer.mWalls[tileIndex] = bp.walls[tileIndex];
 
                     // TERRAIN
                     //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
@@ -154,14 +159,10 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
             // Place stair steps
             const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
             const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
-            if (stairPiece.isFlatPart) {
-                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Main, stairsFlatTileId);
-            }
-            else {
-                tileContainer.setTileLayer(stairPiece.pos, TileLayer::Main, stairsTileId);
-            }
-            tileContainer.setTileGroundZPosition(stairPiece.pos, tilePos.z + heightAdd);
-            tileContainer.setTileOrientation(stairPiece.pos, stairPiece.dir, TileLayer::Main);
+            Tile& tile = tiles[stairPiece.pos];
+            tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
+            tile.setGroundZPosition(tilePos.z + heightAdd);
+            tile.setOrientation(stairPiece.dir, TileLayer::Main);
         }
     }
 
@@ -208,7 +209,7 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
         Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
     }
 
-    BuildingMesher::buildMeshAndPhysicsAsync(building);
+    sBuildingMesher.buildMeshAndPhysicsAsync(building);
 }
 
 bool CityBuilder::trySendBuildingJob(BuildingBlueprint* blueprint) {

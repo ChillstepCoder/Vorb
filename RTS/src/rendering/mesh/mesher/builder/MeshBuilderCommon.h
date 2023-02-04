@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Mesh.h"
-#include "Vertex.h"
+#include "rendering/mesh/Mesh.h"
+#include "rendering/mesh/Vertex.h"
 #include "rendering/mesh/RawMesh.h"
 
 struct RawMeshVertex;
@@ -39,7 +39,6 @@ public:
     static void uploadIndexData(MeshGpuData& subMesh, const ui16* indices, int indexCount, GLbitfield flags);
 
     static void uploadVertexData(MeshGpuData& subMesh, const void* vertexData, ui32 vertexCount, ui32 vertexSize, GLbitfield flags);
-    static void uploadStandardTextureUboData(MeshGpuData& subMesh, const f32v3& pos, const std::vector<TextureHandle>& textures, GLbitfield flags);
     static void uploadVertexDataNonInterleavedPositions(MeshGpuData& subMesh, const f32v3* positionData, const void* vertexData, ui32 vertexCount, size_t vertexSize, GLbitfield flags);
 
 

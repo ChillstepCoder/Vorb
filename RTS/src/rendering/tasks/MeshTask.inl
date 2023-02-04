@@ -6,27 +6,18 @@ class MeshTaskData {
 public:
     // TODO: Are we guarenteeing quads?
     MeshTaskData(
-        TileContainer* container,
-        ProceduralMeshBuilder&& staticMeshBuilder,
-        ProceduralMeshBuilder&& dynamicMeshBuilder,
-        BillboardMeshBuilder&& billboardMeshBuilder,
-        InstancedStaticModelGatherer&& modelGatherer
+        const TileContainer* container,
+        ContainerMeshBuilders&& builders
     ) :
         container(container),
-        staticMeshBuilder(std::move(staticMeshBuilder)),
-        dynamicMeshBuilder(std::move(dynamicMeshBuilder)),
-        billboardMeshBuilder(std::move(billboardMeshBuilder)),
-        modelGatherer(std::move(modelGatherer))
+        builders(std::move(builders))
     {};
 
     void* operator new(size_t count);
     void operator delete(void* pointer, size_t size);
 
-    TileContainer* container;
-    ProceduralMeshBuilder staticMeshBuilder;
-    ProceduralMeshBuilder dynamicMeshBuilder;
-    BillboardMeshBuilder billboardMeshBuilder;
-    InstancedStaticModelGatherer modelGatherer;
+    const TileContainer* container;
+    ContainerMeshBuilders builders;
 };
 
 // TODO: We should make sure we dont build this on dedicated server as it initializes some memory

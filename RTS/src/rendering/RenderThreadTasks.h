@@ -1,10 +1,8 @@
 #pragma once
 
 class TileContainer;
-class ProceduralMeshBuilder;
-class BillboardMeshBuilder;
+class ContainerMeshBuilders;
 struct ModelDef;
-class InstancedStaticModelGatherer;
 
 typedef void(*RenderFunction)(class RenderContext& context, void*);
 
@@ -29,11 +27,8 @@ public:
 
     // Tasks
     void addTileContainerMeshInitTask(
-        TileContainer* containerToMesh,
-        ProceduralMeshBuilder&& staticMeshBuilder,
-        ProceduralMeshBuilder&& dynamicMeshBuilder,
-        BillboardMeshBuilder&& billboardMeshBuilder,
-        InstancedStaticModelGatherer&& modelGatherer
+        const TileContainer* containerToMesh,
+        ContainerMeshBuilders&& builders
     );
     void removeTileContainerMesh(TileContainerID id);
     void addCharacterModel(entt::entity characterEntity, ui32 modelId);

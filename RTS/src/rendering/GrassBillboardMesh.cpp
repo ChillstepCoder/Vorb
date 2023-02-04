@@ -10,7 +10,7 @@
 
 #include "rendering/RenderStats.h"
 
-#include "mesh/ProceduralMeshBuilder.h"
+#include "mesh/mesher/builder/ProceduralMeshBuilder.h"
 
 #include "rendering/gl/GL.h"
 

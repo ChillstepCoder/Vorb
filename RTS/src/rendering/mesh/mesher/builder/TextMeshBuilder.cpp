@@ -2,7 +2,7 @@
 #include "TextMeshBuilder.h"
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 
 
 TextMeshBuilder::TextMeshBuilder() {

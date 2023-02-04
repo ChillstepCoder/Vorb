@@ -1,12 +1,11 @@
 #pragma once
 
 #include "rendering/mesh/Vertex.h"
-#include "Mesh.h"
+#include "rendering/mesh/Mesh.h"
 // TODO: Why is FbxMesh ambiguous if we forward declare instead?
 #include <ozz/animation/runtime/skeleton.h>
 #include <ozz/animation/offline/fbx/fbx.h>
 
-struct SubTexture;
 struct RawSubMesh;
 struct RawMaterialData;
 class SkinnedMesh; // TODO: Just mesh?

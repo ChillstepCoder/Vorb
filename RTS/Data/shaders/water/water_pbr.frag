@@ -8,6 +8,8 @@ uniform sampler2D unSurfaceNoise;
 uniform sampler2D unOilCanvas;
 uniform sampler2D unHsvJitter;
 uniform sampler2D GradientTexture;
+uniform float unWaterMetallic;
+uniform float unWaterRoughness;
 
 uniform float unSurfaceDistortAmount = 0.27;
 uniform float unSurfaceMoveSpeed = 0.03;
@@ -91,7 +93,7 @@ void main() {
     
     // Color noise
     vec2 colorNoiseUV = fUV + vec2(Time) * unSurfaceMoveSpeed * oilMoveSpeed + distortSample * oilDistortVal;
-    vec3 colorJitter = texture(unHsvJitter, colorNoiseUV * 0.2).rgb;
+    vec3 colorJitter = texture(unHsvJitter, colorNoiseUV * 0.02).rgb;
     oColor.rgb += cos(colorJitter * 15.0) * unColorNoiseIntensity;
     
     vec2 normalSample = texture(unSurfaceDistort, fUV.xy * unDistortTiling + timeOffset).rg * unSurfaceDistortAmount;
@@ -99,15 +101,15 @@ void main() {
     
     // Lighting and shadow
 	float shadow = texture(ShadowTexture, fboUV).r;
-    float metallic = 0.1;
-    float roughness = 0.35;
     
     const int preset = int(step(unLightingSplit, fboUV.x));
     // PBR
     vec3 sunColor = getCurrentSunColor(preset, SunColor, SunHeight);
+    
+    
     //oColor.rgb *= 2.0;
     float ambient = getAmbientFactor(preset, unAmbient, SunHeight);
-    oColor.rgb = PBR(fPosition, oColor.rgb, normal, metallic, roughness, 1.0, shadow, ambient, unExposure[preset], sunColor, SunPosition, vec3(0.0));
+    oColor.rgb = PBR(fPosition, oColor.rgb, normal, unWaterMetallic, unWaterRoughness, 1.0, shadow, ambient, unExposure[preset], sunColor, SunPosition, vec3(0.0));
     vec3 hazeColor = texture(GradientTexture, vec2(0.5, max(SunHeight, 0.0))).rgb;
     oColor.rgb = applyHaze(oColor.rgb, fPosition, preset, hazeColor);
     oColor.rgb = gammaEncode(oColor.rgb, 2.2);

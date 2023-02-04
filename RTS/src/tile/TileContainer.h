@@ -116,6 +116,7 @@ public:
     friend struct TileHandle;
     friend class TileContainerRepository;
     friend class ChunkGenerator;
+    friend class CityBuilder; // ONLY FOR DEBUG GENERATION
     friend class NavThread; // TODO: Too many friends?
     friend class NavWorld; // TODO: Remove
     friend class IChunkGrid;
@@ -206,7 +207,7 @@ public:
 
     bool isReady() const { return mState == e_cast(TileContainerState::READY); }
     TileContainerState getState() const { return (TileContainerState)mState.load(); }
-    void setState(TileContainerState state) { mState = e_cast(state); }
+    void setState(TileContainerState state) const { mState = e_cast(state); }
 
     // =========== Ownership  ===========
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
@@ -233,9 +234,9 @@ public:
     ui32 getRefCount() const { return mRefCount; }
 
     bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mDidInitMesh && mDidInitPhysics; }
-    void setDidInitMesh() { mDidInitMesh = true; }
-    void setDidInitPhysics() { mDidInitPhysics = true; }
-    void setDidInitNav() { mDidInitNav = true; }
+    void setDidInitMesh() const { mDidInitMesh = true; }
+    void setDidInitPhysics() const { mDidInitPhysics = true; }
+    void setDidInitNav() const { mDidInitNav = true; }
 
     // =========== Dirty bits  ===========
     bool isDirtyData() const { return mDirtyData; }
@@ -277,11 +278,11 @@ private:
     i32v3 mRootPos;
     ui32 mFloorHeight = 3u;
     mutable std::atomic_uint32_t mRefCount = 0u;
-    std::atomic_bool mDidInitMesh = false;
-    std::atomic_bool mDidInitPhysics = false;
-    std::atomic_bool mDidInitNav = false;
+    mutable std::atomic_bool mDidInitMesh = false;
+    mutable std::atomic_bool mDidInitPhysics = false;
+    mutable std::atomic_bool mDidInitNav = false;
 
-    std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
+    mutable std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
     bool mDirtyData = false;
     bool mIsTerrain = false;
 };

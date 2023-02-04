@@ -16,7 +16,7 @@
 #include "rendering/gl/GL.h"
 
 // For shared ibo, maybe not the place
-#include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 
 void bindSimpleMeshVertexAttribs(VGVertexArray vao) {
     GL.glEnableVertexArrayAttrib(vao, 0);

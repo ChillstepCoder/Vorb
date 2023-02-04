@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/model/StaticModelInstance.h"
-#include "rendering/model/ModelRenderPassType.h"
+#include "rendering/model/MaterialRenderPassType.h"
 
 #include "tile/TileContainerEvents.h"
 
@@ -70,7 +70,7 @@ public:
 
     void addInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, const f32v3& position, f32 rotation);
     void removeInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
-    void renderModelPass(ModelRenderPassType renderPass, const Camera3D& camera);
+    void renderModelPass(MaterialRenderPassType renderPass, const Camera3D& camera);
     void renderModelShadows(const Camera3D& camera, const f32* shadowDistances);
     void addInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeInstancesFromContainer(TileContainerID containerId);
@@ -81,7 +81,7 @@ private:
     void onModelEditEvent(TileContainerModelEditEvent& evnt);
     void removeTileModelInstanceInternal(TileModelInstance& instance);
 
-    ModelInstanceMap mModelsToInstances[e_cast(ModelRenderPassType::COUNT)];
+    ModelInstanceMap mModelsToInstances[e_cast(MaterialRenderPassType::COUNT)];
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerModels;
     GLBuffer mGpuCullingUniformBuffer;
 

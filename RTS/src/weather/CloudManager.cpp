@@ -3,7 +3,7 @@
 
 #include "debugging/DebugRenderer.h"
 
-#include "rendering/mesh/BillboardMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/BillboardMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
 
 #include "world/IWorld.h"

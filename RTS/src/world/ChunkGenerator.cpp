@@ -150,7 +150,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
 
     const f32v2 chunkPosWorld = chunk.getWorldPos();
     f32 maxHeight = 1.0f;
-    auto& tiles = chunk.mTileContainer->mTiles;
+    std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
         const ui32 y = i >> TILE_INDEX_Y_SHIFT;

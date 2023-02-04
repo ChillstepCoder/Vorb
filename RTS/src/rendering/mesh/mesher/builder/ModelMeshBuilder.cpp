@@ -1,8 +1,7 @@
 #include "stdafx.h"
 #include "ModelMeshBuilder.h"
 
-#include "rendering/mesh/MeshBuilderCommon.h"
-#include "rendering/texture/SubTexture.h"
+#include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 #include "rendering/model/StaticModelInstance.h"
 
 #include "rendering/model/Model3D.h"
@@ -62,17 +61,18 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
         for (int i = 0; i < rv.mVertsCount; ++i) {
             const RawMeshVertex& rawVert = meshData.vertices[i];
             StaticModelVertex& myVert = verts[i];
-            myVert.pos = rawVert.pos;
-            myVert.materialId = materialIds[rawVert.materialIndex];
             f32v2 uvs;
             uvs.x = glm::clamp(rawVert.uvs.x, 0.0f, 1.0f);
             uvs.y = glm::clamp(rawVert.uvs.y, 0.0f, 1.0f);
-            //assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
-            myVert.uvsPacked.x = (ui16)(uvs.x * UINT16_MAX);
-            myVert.uvsPacked.y = (ui16)(uvs.y * UINT16_MAX);
-            myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
-            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
-            myVert.color = rawVert.color;
+            myVert.build(
+                rawVert.pos,
+                rawVert.normal,
+                rawVert.tangent,
+                uvs,
+                rawVert.color,
+                materialIds[rawVert.materialIndex],
+                0
+            );
         }
     }
 
@@ -105,9 +105,6 @@ void ModelMeshBuilder::uploadCpuMeshToGpu(const void* vertsPtr, ui32 vertsCount,
     // TODO: Common util?
     VertexType mappedVertexType = VertexType::INVALID;
     switch (vertexType) {
-        case VertexType::STANDARD:
-            mappedVertexType = StandardVertex::bindVertexAttribs(outGpuMesh.mVao);
-            break;
         case VertexType::TERRAIN:
             mappedVertexType = TerrainVertex::bindVertexAttribs(outGpuMesh.mVao);
             break;
@@ -123,7 +120,7 @@ void ModelMeshBuilder::uploadCpuMeshToGpu(const void* vertsPtr, ui32 vertsCount,
         default:
             assert(false);
     }
-    static_assert(e_cast(VertexType::COUNT) == 6);
+    static_assert(e_cast(VertexType::COUNT) == 5);
     assert(mappedVertexType == vertexType);
     checkGlError("ModelMeshBuilder::uploadCpuMeshToGpu");
 }

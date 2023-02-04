@@ -1,36 +1,6 @@
 #include "stdafx.h"
 #include "Vertex.h"
 
-VertexType StandardVertex::bindVertexAttribs(VGBuffer vao) {
-    assert(vao);
-    // Standard verts
-    glEnableVertexArrayAttrib(vao, 0);
-    glVertexArrayAttribFormat(vao, 0 /*index*/, 3 /*size*/, GL_FLOAT, false, offsetof(StandardVertex, pos));
-    glVertexArrayAttribBinding(vao, 0, 0);
-
-    glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_FLOAT, false, offsetof(StandardVertex, uvs));
-    glVertexArrayAttribBinding(vao, 1, 0);
-
-    glEnableVertexArrayAttrib(vao, 2);
-    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, offsetof(StandardVertex, textureIndex));
-    glVertexArrayAttribBinding(vao, 2, 0);
-
-    glEnableVertexArrayAttrib(vao, 3);
-    glVertexArrayAttribFormat(vao, 3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, offsetof(StandardVertex, color));
-    glVertexArrayAttribBinding(vao, 3, 0);
-
-    glEnableVertexArrayAttrib(vao, 4);
-    glVertexArrayAttribFormat(vao, 4 /*index*/, 3 /*size*/, GL_BYTE, false, offsetof(StandardVertex, normal));
-    glVertexArrayAttribBinding(vao, 4, 0);
-
-    glEnableVertexArrayAttrib(vao, 5);
-    glVertexArrayAttribFormat(vao, 5 /*index*/, 2 /*size*/, GL_BYTE, false, offsetof(StandardVertex, tangent));
-    glVertexArrayAttribBinding(vao, 5, 0);
-
-    return VertexType::STANDARD;
-}
-
 VertexType TerrainVertex::bindVertexAttribs(VGBuffer vao) {
     assert(vao);
 
@@ -57,6 +27,17 @@ VertexType WaterVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribBinding(vao, 1, 0);
 
     return VertexType::WATER;
+}
+
+void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, MaterialID materialId, ui8 windInfluence) {
+    this->pos = pos;
+    this->materialId = materialId;
+    //assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
+    this->uvsPacked.x = (ui16)(uvs.x * UINT16_MAX);
+    this->uvsPacked.y = (ui16)(uvs.y * UINT16_MAX);
+    this->normalPacked = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
+    this->tangentPacked = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);
+    this->color = color;
 }
 
 VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
@@ -96,6 +77,8 @@ VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     glEnableVertexArrayAttrib(vao, 5);
     glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(StaticModelVertex, tangentPacked));
     glVertexArrayAttribBinding(vao, 5, BINDING_POINT_INTERLEAVED);
+
+    // TODO: WIND
 
    // glEnableVertexArrayAttrib(vao, .*);
     //assert(false && "Check that size in the shader is 3, in standard_tile it is 2");
@@ -145,8 +128,6 @@ VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
 
 constexpr size_t getVertexSize(VertexType type) {
     switch (type) {
-        case VertexType::STANDARD:
-            return sizeof(StandardVertex);
         case VertexType::TERRAIN:
             return sizeof(TerrainVertex);
         case VertexType::WATER:
@@ -159,5 +140,5 @@ constexpr size_t getVertexSize(VertexType type) {
             assert(false);
     }
     return 0;
-    static_assert(e_cast(VertexType::COUNT) == 6);
+    static_assert(e_cast(VertexType::COUNT) == 5);
 }

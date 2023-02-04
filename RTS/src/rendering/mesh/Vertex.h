@@ -35,24 +35,15 @@ struct alignas(16) StaticModelVertex {
     ui16v2 uvsPacked;
     color4 color;
     ui16 materialId;
+    ui8 windInfluence;
+
+    // TODO: Pre-packed normals/tangent
+    void build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, MaterialID materialId, ui8 windInfluence);
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::STATIC_MODEL; }
 };
 static_assert(sizeof(StaticModelVertex) == 32, "16 byte alignment needed");
-
-struct alignas(16) StandardVertex {
-    f32v3 pos;
-    f32v2 uvs;
-    ui8 textureIndex;
-    i8v3 normal; // https://stackoverflow.com/questions/5255806/how-to-calculate-tangent-and-binormal
-    i8v2 tangent;
-    color4 color;
-
-    static VertexType bindVertexAttribs(VGBuffer vao);
-    static VertexType vertexType() { return VertexType::STANDARD; }
-};
-static_assert(sizeof(StandardVertex) == 32, "16 byte alignment needed");
 
 struct alignas(16) TerrainVertex {
     f32v3 pos;
@@ -63,24 +54,21 @@ struct alignas(16) TerrainVertex {
 };
 static_assert(sizeof(TerrainVertex) == 32, "16 byte alignment needed");
 
-// TODO: 16 byte!
-struct alignas(32) WaterVertex {
+struct alignas(16) WaterVertex {
     f32v3 pos;
     f32 depth;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::WATER; }
 };
-static_assert(sizeof(WaterVertex) == 32, "16 byte alignment needed");
+static_assert(sizeof(WaterVertex) == 16, "16 byte alignment needed");
 
 // Vertex variant
 struct alignas(16) Vertex32 {
     Vertex32() {};
 
     union { 
-        StandardVertex mStandard; // VertexType::STANDARD
         TerrainVertex mTerrain; // VertexType::TERRAIN
-        WaterVertex mWater; // VertexType::WATER
         StaticModelVertex mStaticModel; // VertexType::STATIC_MODEL
     };
 };

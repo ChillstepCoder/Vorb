@@ -35,7 +35,8 @@
 #include "rendering/material/BrdfLUT.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/RenderThreadTasks.h"
-#include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/renderstate/RenderStateManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
 #include "rendering/StencilBufferIDs.h"
@@ -190,6 +191,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
 
     // Mesh init
     ProceduralMeshBuilder::initStaticIBOs();
+    TerrainMeshBuilder::initStaticIBO();
     checkGlError("Meshbase init");
 
     // int UI resources
@@ -448,12 +450,12 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
 
     // Instanced models
     Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelPass(ModelRenderPassType::Default, camera);
+    mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Default, camera);
 
     // Smudge
     {
         mSmudgeRenderer->beginSmudgePass(mActiveGBuffer);
-        mStaticModelRenderer->renderModelPass(ModelRenderPassType::Smudge, camera);
+        mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Smudge, camera);
         if (!sDebugOptions.mHideGrass) {
             mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
         }
@@ -563,6 +565,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mActiveGBuffer = mHDRLightGBuffer.get();
 
     // Depth of field
+    // TODO: THIS DOESNT WORK BECAUSE ITS NOT AN HDR BUFFER
     vg::DepthState::NONE.set();
     mActiveGBuffer = mDepthOfField->render(mActiveGBuffer);
 
@@ -706,7 +709,7 @@ void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState&
 void RenderContext::renderPassTransparent(const Camera3D& camera, const RenderState& renderState) {
     // Render clouds without shadows
     if (!sDebugOptions.mDisableClouds) {
-        mCloudRenderer->renderClouds(*mCloudManager, mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), camera);
+        mCloudRenderer->renderClouds(*mCloudManager, mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), camera, *mSkyBox->getCubemap());
     }
 
     // Water (No depth write)
@@ -954,7 +957,7 @@ void RenderContext::buildHorizonMesh()
     mHorizonQuad = std::make_unique<Mesh>();
     ProceduralMeshBuilder meshBuilder(true);
     constexpr float QUAD_WIDTH = 140000.0f;
-    meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, SubTexture{}, f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
+    meshBuilder.addAxisAlignedQuad(f32v3(-QUAD_WIDTH, -QUAD_WIDTH, 0.0f), f32v2(QUAD_WIDTH * 2.0f), CubeFacing::TOP, MaterialData(), f32v4(0.0f, 0.0f, 1.0f, 1.0f), COLOR_WHITE);
     meshBuilder.finishMesh(mHorizonQuad, f32v3(0.0f));
 }
 

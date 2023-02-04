@@ -6,7 +6,7 @@
 #include "debugging/DebugRenderer.h"
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
-#include "rendering/mesh/ProceduralMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
 
@@ -24,20 +24,18 @@ constexpr f32 TERRAIN_SUBDIVIDE_DISTANCES_SQ[TERRAIN_QUADTREE_MAX_LOD] = { // sq
 };
 
 struct TerrainMeshTaskData {
-    TerrainMeshTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : terrainBuilder(true), waterBuilder(true), owner(owner), patchIndex(patchIndex) {}
+    TerrainMeshTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : owner(owner), patchIndex(patchIndex) {}
 
-    ProceduralMeshBuilder terrainBuilder;
-    ProceduralMeshBuilder waterBuilder;
+    TerrainMeshBuilder terrainBuilder;
     HeightmapTerrainQuadtree* owner;
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
     ui32 patchIndex;
 };
 
 struct TerrainMeshGenTaskData {
-    TerrainMeshGenTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : terrainBuilder(true), waterBuilder(true), owner(owner), patchIndex(patchIndex) {}
+    TerrainMeshGenTaskData(HeightmapTerrainQuadtree* owner, ui32 patchIndex) : owner(owner), patchIndex(patchIndex) {}
 
-    ProceduralMeshBuilder terrainBuilder;
-    ProceduralMeshBuilder waterBuilder;
+    TerrainMeshBuilder terrainBuilder;
     HeightmapTerrainQuadtree* owner;
     ui32 patchIndex;
     bool isAnyMeshValid;
@@ -72,23 +70,14 @@ void HeightmapTerrainQuadtree::markDirty() {
 
 
 void createTerrainAndWaterMeshFromGen(
-    ProceduralMeshBuilder& terrainBuilder,
-    ProceduralMeshBuilder& waterBuilder,
+    TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos
 ) {
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 quadDims = f32v2(dims) / f32v2(TERRAIN_MESH_WIDTH_QUADS);
-
-    // AABB calculation
-    f32AABB3 aabb;
-    aabb.dims.x = dims.x;
-    aabb.dims.y = dims.y;
-    aabb.pos.x = posStart.x + worldPos.x;
-    aabb.pos.y = posStart.y + worldPos.y;
-    f32 minZ = FLT_MAX;
-    f32 maxZ = FLT_MIN;
+    assert(dims.x == dims.y);
 
     // Generate heightfield
     f32 paddedHeightfield[TERRAIN_MESH_PADDED_WIDTH_VERTS][TERRAIN_MESH_PADDED_WIDTH_VERTS];
@@ -96,24 +85,14 @@ void createTerrainAndWaterMeshFromGen(
         for (ui32 x = 0; x < TERRAIN_MESH_PADDED_WIDTH_VERTS; ++x) {
             const f32v2 vertPos = f32v2(posStart.x + ((f32)x - 1.0f) * quadDims.x, posStart.y + ((f32)y - 1.0f) * quadDims.y);
             f32 zPos = sWorldGen.getHeightAtPos(f32v2(vertPos.x + worldPos.x, vertPos.y + worldPos.y));
-            if (zPos < minZ) minZ = zPos;
-            if (zPos > maxZ) maxZ = zPos;
             paddedHeightfield[y][x] = zPos;
         }
     }
-    terrainBuilder.setVertsTerrainFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
-    waterBuilder.setVertsWaterFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
-    // Bounding sphere
-    aabb.pos.z = minZ;
-    aabb.dims.z = maxZ - minZ;
-    const BoundingSphere sphere = boundingSphereFromAABB(aabb);
-    terrainBuilder.setBoundingSphere(sphere);
-    waterBuilder.setBoundingSphere(sphere);
+    terrainBuilder.buildFromPaddedHeightfield(posStart, dims.x, paddedHeightfield);
 };
 
 void createTerrainAndWaterMesh(
-    ProceduralMeshBuilder& terrainBuilder,
-    ProceduralMeshBuilder& waterBuilder,
+    TerrainMeshBuilder& terrainBuilder,
     const ui32v2& posStart,
     ui32 lod,
     const f32v2& worldPos,
@@ -122,20 +101,8 @@ void createTerrainAndWaterMesh(
     const ui32v2& dims = (ui32v2&)FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::LOD_DIMS[lod];
     f32v2 patchWorldPos = worldPos + f32v2(posStart);
 
-    // Compute bounds
-    // TODO: TRUE AABB generated bounding sphere via boundingSphereFromAABB
-    BoundingSphere boundingSphere;
-    f32 lodRadius = HeightmapTerrainQuadtree::LOD_DIMS[lod].x * 0.5f;
-    f32v2 centerxy = patchWorldPos + f32v2(lodRadius);
-    boundingSphere.center = f32v3(centerxy.x, centerxy.y, 0.0f);
-    f32 lodRadius2 = SQ(lodRadius);
-    boundingSphere.radius = sqrt(lodRadius2 + lodRadius2) + 10.0f;// 10.0f is tmp until true bounding sphere
-    terrainBuilder.setBoundingSphere(boundingSphere);
-    waterBuilder.setBoundingSphere(boundingSphere);
-
     // Build
-    terrainBuilder.setVertsTerrainFromPaddedHeightfield(posStart, (f32)dims.x, paddedHeightfield);
-    waterBuilder.setVertsWaterFromPaddedHeightfield(posStart, (f32)dims.x, paddedHeightfield);
+    terrainBuilder.buildFromPaddedHeightfield(posStart, (f32)dims.x, paddedHeightfield);
 };
 
 void HeightmapTerrainQuadtree::resetCrossfadeRenderForPatch(ui32 patchIndex, int crossfadeDir, f32 crossfadeAlpha) {
@@ -174,10 +141,6 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
 
         TerrainMeshTaskData* taskData = new TerrainMeshTaskData(this, patchIndex);
 
-        // TODO: Can we malloc these together?
-        std::shared_ptr<ProceduralMeshBuilder> terrainBuilder = std::make_shared<ProceduralMeshBuilder>(true);
-        std::shared_ptr<ProceduralMeshBuilder> waterBuilder = std::make_shared<ProceduralMeshBuilder>(true);
-
         if (hasAquired || sHeightmapGrid->tryAquirePaddedHeightDataAt(id)) {
             createMeshesHighestLOD(taskData);
         }
@@ -195,13 +158,13 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         // TODO: we actually shouldnt do this.. it ignores diffs
         // Generate mesh data on worker thread
         Services::Threadpool::ref().addTask([this, lod, taskData](ThreadPoolWorkerData*) {
-            createTerrainAndWaterMeshFromGen(taskData->terrainBuilder, taskData->waterBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
+            createTerrainAndWaterMeshFromGen(taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
 
             // To render thread for upload
             RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
                 TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
                 HeightmapTerrainQuadtree* owner = taskData->owner;
-                owner->finishMeshes(taskData->terrainBuilder, taskData->waterBuilder, taskData->patchIndex);
+                owner->finishMeshes(taskData->terrainBuilder, taskData->patchIndex);
                 taskData->isAnyMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
 
                 // Back to the main thread to update state
@@ -230,12 +193,12 @@ void HeightmapTerrainQuadtree::createMeshesHighestLOD(TerrainMeshTaskData* taskD
 
     // Generate mesh data on worker thread
     Services::Threadpool::ref().addTask([this, taskData](ThreadPoolWorkerData*) {
-        createTerrainAndWaterMesh(taskData->terrainBuilder, taskData->waterBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD, mWorldPos, taskData->paddedHeightfield);
+        createTerrainAndWaterMesh(taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, FlatQuadtree<TERRAIN_QUADTREE_MAX_LOD, TERRAIN_QUADTREE_WIDTH>::HIGHEST_LOD, mWorldPos, taskData->paddedHeightfield);
 
         // To render thread to upload
         RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
             TerrainMeshTaskData* taskData = static_cast<TerrainMeshTaskData*>(vTaskData);
-            taskData->owner->finishMeshes(taskData->terrainBuilder, taskData->waterBuilder, taskData->patchIndex);
+            taskData->owner->finishMeshes(taskData->terrainBuilder, taskData->patchIndex);
 
             // Back to the main thread to update state
             GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTaskData) {
@@ -251,12 +214,11 @@ void HeightmapTerrainQuadtree::createMeshesHighestLOD(TerrainMeshTaskData* taskD
 
 }
 
-void HeightmapTerrainQuadtree::finishMeshes(ProceduralMeshBuilder& terrainBuilder, ProceduralMeshBuilder& waterBuilder, ui32 patchIndex) {
+void HeightmapTerrainQuadtree::finishMeshes(TerrainMeshBuilder& terrainBuilder, ui32 patchIndex) {
     const f32v3& worldPos = f32v3(mWorldPos.x, mWorldPos.y, 0.0f);
     const bool hadTerrain = mTerrainMeshes[patchIndex]->mMesh.isValid();
     const bool hadWater = mWaterMeshes[patchIndex]->mMesh.isValid();
-    terrainBuilder.finishMesh(mTerrainMeshes[patchIndex]->mMesh, worldPos);
-    waterBuilder.finishMesh(mWaterMeshes[patchIndex]->mMesh, worldPos);
+    terrainBuilder.finishMeshes(mTerrainMeshes[patchIndex]->mMesh, mWaterMeshes[patchIndex]->mMesh, worldPos);
     // TODO: if this can happen, we need to store a "has acquired" bit since right now we are using existence of a mesh to determine if we acquired
     assert(mTerrainMeshes[patchIndex] || mWaterMeshes[patchIndex]);
 

@@ -7,7 +7,7 @@
 #include "physics/CollisionShapes.h"
 
 // TODO: Do we need rendering here?
-#include "rendering/texture/SubTexture.h"
+#include "rendering/material/MaterialData.h"
 
 enum class TileLayer : ui8 {
     Ground = 0,
@@ -68,8 +68,7 @@ struct TileData {
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
     CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
     TileResource resource = TileResource::NONE;
-    SubTexture texture; // TODO: We dont use this when we have a model, make this a pointer? Its big
-    MaterialID materialId;
+    MaterialData materialData;
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
     ui8 layer = 2;
@@ -139,6 +138,7 @@ struct TileNavData {
 class Tile {
     friend class TileContainer;
     friend class ChunkGenerator;
+    friend class CityBuilder; // TODO: Remove? Only for debug?
 public:
 	Tile() {};
     Tile(TileID ground, TileID mid);

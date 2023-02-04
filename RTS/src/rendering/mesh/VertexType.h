@@ -4,7 +4,6 @@ constexpr int MAX_BONES_PER_VERTEX = 4;
 
 enum class VertexType {
     INVALID,
-    STANDARD,
     TERRAIN,
     WATER,
     STATIC_MODEL,
@@ -13,7 +12,6 @@ enum class VertexType {
 };
 const char* const VertexTypeNames[e_cast(VertexType::COUNT)] = {
     "Invalid", // INVALID
-    "Standard", // STANDARD
     "Terrain", // TERRAIN
     "Water", // WATER
     "Static Model", // STATIC_MODEL
@@ -22,4 +20,4 @@ const char* const VertexTypeNames[e_cast(VertexType::COUNT)] = {
 inline const char* getVertexTypeName(VertexType type) {
     return VertexTypeNames[e_cast(type)];
 }
-static_assert(e_cast(VertexType::COUNT) == 6, "Update display strings");
+static_assert(e_cast(VertexType::COUNT) == 5, "Update display strings");

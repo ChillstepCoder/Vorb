@@ -10,10 +10,10 @@
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/model/ModelUtil.h"
 #include "rendering/post_process/ShadowLodDetail.h"
-#include "rendering/mesh/ModelMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/RenderContext.h"
-#include "rendering/mesh/TileMeshBuilderMethods.h"
+#include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
 #include "options/DebugOptions.h"
 #include "tile/TileContainer.h"
 
@@ -103,7 +103,7 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() :
 }
 
 InstancedStaticModelRenderer::~InstancedStaticModelRenderer() {
-    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             GL.glDeleteBuffers(1, &it.second.mTransformsVbo);
         }
@@ -117,7 +117,7 @@ void InstancedStaticModelRenderer::frameUpdate(const Camera3D& camera) {
 
     PROFILE_FUNCTION();
 
-    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             StaticModelInstanceData& instanceData = it.second;
             // TODO: Move this to onRemove
@@ -354,7 +354,7 @@ void InstancedStaticModelRenderer::removeInstanceAtPosition(TileContainerID cont
     }
 }
 
-void InstancedStaticModelRenderer::renderModelPass(ModelRenderPassType renderPass, const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelPass(MaterialRenderPassType renderPass, const Camera3D& camera) {
     assert(IS_RENDER_THREAD());
     if (sDebugOptions.mHideModels)
         return;
@@ -412,7 +412,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const Camera3D& camera, co
     PROFILE_FUNCTION();
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
-    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             // TODO: Have a no shadow render type?
 
@@ -492,7 +492,7 @@ void InstancedStaticModelRenderer::removeInstancesFromContainer(TileContainerID 
 ui32 InstancedStaticModelRenderer::getNumModels() const {
     assert(IS_RENDER_THREAD());
     ui32 numModels = 0;
-    for (int ri = 0; ri < e_cast(ModelRenderPassType::COUNT); ++ri) {
+    for (int ri = 0; ri < e_cast(MaterialRenderPassType::COUNT); ++ri) {
         for (auto& it : mModelsToInstances[ri]) {
             numModels += it.second.mInstanceTransforms.size();
         }

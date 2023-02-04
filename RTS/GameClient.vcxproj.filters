@@ -237,9 +237,6 @@
     <ClCompile Include="src\util\BitArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\BuildingMesher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\CloudRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -363,9 +360,6 @@
     <ClCompile Include="src\rendering\mesh\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\ProceduralMeshBuilder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\resources\TextureRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -376,12 +370,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\mesh\BillboardMeshBuilder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\mesh\TileMeshBuilderMethods.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\structure\Structure.cpp">
@@ -421,9 +409,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resources\FontRepository.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\mesh\TextMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\physics\PhysicsWorld.cpp">
@@ -588,15 +573,6 @@
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\TileContainerMesher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\mesh\ModelMeshBuilder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\mesh\MeshBuilderCommon.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\mesh\Vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -660,7 +636,7 @@
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\ModelRenderPassType.cpp">
+    <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp">
@@ -673,6 +649,39 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\ChunkMesher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\BuildingMesher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\ITileContainerMesher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -968,9 +977,6 @@
     <ClInclude Include="src\util\BitArray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\BuildingMesher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\rendering\CloudRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1121,9 +1127,6 @@
     <ClInclude Include="src\rendering\mesh\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\ProceduralMeshBuilder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\rendering\mesh\Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1140,12 +1143,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\texture\NormalMapGenerator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\mesh\BillboardMeshBuilder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\mesh\TileMeshBuilderMethods.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\structure\Structure.h">
@@ -1203,9 +1200,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\font\Font.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\mesh\TextMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\PhysicsWorld.h">
@@ -1451,16 +1445,7 @@
     <ClInclude Include="src\physics\PhysicsConst.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\TileContainerMesher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\types\IdTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\mesh\ModelMeshBuilder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\mesh\MeshBuilderCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h">
@@ -1553,7 +1538,7 @@
     <ClInclude Include="src\ui\editor\IEditorViewportPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\ModelRenderPassType.h">
+    <ClInclude Include="src\rendering\model\MaterialRenderPassType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h">
@@ -1572,6 +1557,39 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\material\BrdfLUT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\ChunkMesher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\BuildingMesher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\ITileContainerMesher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

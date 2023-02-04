@@ -164,6 +164,8 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::SliderFloat("Distort Tiling", &sDebugOptions.mWaterDistortTiling, 0.0f, 16.0f);
         ImGui::SliderFloat("Noise Tiling", &sDebugOptions.mWaterNoiseTiling, 0.0f, 16.0f);
         ImGui::DragFloatRange2("Foam Dist Range", &sDebugOptions.mWaterFoamDistanceRange.x, &sDebugOptions.mWaterFoamDistanceRange.y, 0.01f, 0.0f, 2.0f);
+        ImGui::SliderFloat("Metallic", &sDebugOptions.mWaterMetallic, 0.0f, 1.0f, "%.3f");
+        ImGui::SliderFloat("Roughness", &sDebugOptions.mWaterRoughness, 0.0f, 1.0f, "%.3f");
         ImGui::PopID();
         ImGui::Separator();
     }
@@ -264,8 +266,10 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Disable", &sDebugOptions.mDisableClouds);
         ImGui::SliderInt("Blur Passes", &sDebugOptions.mCloudBlurPasses, 0, 15);
         ImGui::SliderFloat("Blur Radius", &sDebugOptions.mCloudBlurRadius, 0.0f, 15.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-        ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f, "%.3f");
+        //ImGui::SliderFloat("Ambient", &sDebugOptions.mCloudAmbient, 0.0f, 1.0f, "%.3f");
         ImGui::SliderFloat("Speed", &sDebugOptions.mCloudSpeed, 0.0f, 50.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+        ImGui::SliderFloat("Metallic", &sDebugOptions.mCloudMetallic, 0.0f, 1.0f, "%.3f");
+        ImGui::SliderFloat("Roughness", &sDebugOptions.mCloudRoughness, 0.0f, 1.0f, "%.3f");
         ImGui::PopID();
         ImGui::Separator();
     }

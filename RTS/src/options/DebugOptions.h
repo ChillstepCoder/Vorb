@@ -27,6 +27,8 @@ struct DebugOptions {
     float mCloudBlurRadius;
     float mCloudAmbient;
     float mCloudSpeed;
+    float mCloudMetallic;
+    float mCloudRoughness;
     // Grass
     QuadtreeSettings mGrassSettings;
     bool mDebugGrassLod;
@@ -105,6 +107,8 @@ struct DebugOptions {
     f32 mWaterColorNoiseIntensity;
     f32 mWaterDistortTiling;
     f32 mWaterNoiseTiling;
+    f32 mWaterMetallic;
+    f32 mWaterRoughness;
     bool mDisableWater;
     // Lighting
     bool mUsingPBR;

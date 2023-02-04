@@ -37,27 +37,28 @@ void TerrainRenderer::renderTerrain(const Camera3D& camera, const std::set<const
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresPeriod"), sDebugOptions.mTerrainSquaresColorPeriod);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unSquaresIntensity"), sDebugOptions.mTerrainSquaresIntensity);
     glUniform1f(mTerrainMaterial->mProgram.getUniform("unBlendMult"), sDebugOptions.mTerrainBlendMult);
-
+    VGUniform positionUniform = mTerrainMaterial->mProgram.getUniform("unPosition");
     VGUniform crossfadeAlphaUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeAlpha");
     VGUniform crossfadeDirectionUniform = mTerrainMaterial->mProgram.getUniform("unCrossfadeDirection");
 
-
     for (auto&& terrainMesh : terrainMeshes) {
         const Mesh& mesh = terrainMesh->mMesh;
-        const ui32 lod = QUADTREE_LOD_FROM_INDEX[terrainMesh->mIndex];
-        /*  f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
-          f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/
-        int crossfadeDir = terrainMesh->mCrossfadeDir.load();
-        if (crossfadeDir != 0) {
-            glUniform1f(crossfadeAlphaUniform, terrainMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
-            glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
-        }
-        else {
-            glUniform1f(crossfadeAlphaUniform, 0.0f);
-            glUniform1f(crossfadeDirectionUniform, 0.0f);
-        }
         const BoundingSphere& bounds = mesh.getBoundingSphere();
         if (camera.sphereIsVisible(bounds.center, bounds.radius)) {
+            const ui32 lod = QUADTREE_LOD_FROM_INDEX[terrainMesh->mIndex];
+            /*  f32v2 centerPos = f32v2(HeightmapTerrainQuadtree::PATCH_POSITIONS.data[terrainMesh->mIndex].xy) + f32v2(HeightmapTerrainQuadtree::LOD_HALF_DIMS[lod].xy);
+              f32v3 centerPos3d(centerPos.x, centerPos.y, 0.0f);*/
+            int crossfadeDir = terrainMesh->mCrossfadeDir.load();
+            if (crossfadeDir != 0) {
+                glUniform1f(crossfadeAlphaUniform, terrainMesh->mCrossfadeAlpha.load() * 0.5f /* Constant that was selected via trial and error*/);
+                glUniform1f(crossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
+            }
+            else {
+                glUniform1f(crossfadeAlphaUniform, 0.0f);
+                glUniform1f(crossfadeDirectionUniform, 0.0f);
+            }
+            f32v3 position = mesh.getPosition();
+            glUniform3fv(positionUniform, 1, &position.x);
             mesh.draw();
         }
     }
@@ -78,6 +79,9 @@ void TerrainRenderer::renderWater(const Camera3D& camera, const std::set<const T
         glBindTextureUnit(textureUnit++, skyCubeMap.getPrefilterMap());
         glUniform1i(shader->getUniform("unBrdfLUT"), textureUnit);
         glBindTextureUnit(textureUnit++, BrdfLUT::getTexture());
+
+        glUniform1f(shader->getUniform("unWaterMetallic"), sDebugOptions.mWaterMetallic);
+        glUniform1f(shader->getUniform("unWaterRoughness"), sDebugOptions.mWaterRoughness);
 
 
         LightingOptions& optionsLeft = *sDebugOptions.mLightingOptions;

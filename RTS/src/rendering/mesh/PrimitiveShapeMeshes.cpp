@@ -3,8 +3,8 @@
 
 #include "Vorb/MeshGenerators.h"
 
-#include "rendering/mesh/ModelMeshBuilder.h"
-#include "rendering/mesh/MeshBuilderCommon.h"
+#include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
+#include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 
 Mesh& PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType type) {
     assert(IS_RENDER_THREAD());

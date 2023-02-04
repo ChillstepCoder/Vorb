@@ -1,8 +1,9 @@
-#include "../TextureUbo.glsl"
-#include "../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec3 vNormal;
+
+uniform vec3 unPosition;
 
 out float fHeight;
 out vec3 fPosition;

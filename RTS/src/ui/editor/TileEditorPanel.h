@@ -2,7 +2,7 @@
 
 #include <variant>
 struct ModelDef;
-struct MaterialData;
+struct MaterialGpuData;
 struct MaterialHandle;
 class MaterialShader;
 
@@ -30,7 +30,7 @@ public:
 private:
     void updateAndRenderModelsTab(TileEditorPanelResult& result);
     void updateAndRenderMaterialsTab(TileEditorPanelResult& result);
-    VGTexture renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialData& materialData);
+    VGTexture renderMaterialPreview(const MaterialShader* shader, int previewIndex, const MaterialGpuData& materialData);
 
     // Material preview
     VGVertexArray mPreviewVAO = 0;

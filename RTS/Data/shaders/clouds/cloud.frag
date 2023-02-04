@@ -39,6 +39,7 @@ void main() {
     // SUUPER HACKY DEPTH BULLSHIT LOL
 	cameraSpacePosition.z += norm.z * 10.0 - step(0.01, (1.0 - fNormal.a)) * 1000.0;
     
+    // TODO: Do we actually care about this? gl_FragDepth is expensive
     vec4 clipPos = P * vec4(cameraSpacePosition.xyz, 1.0);
     ndcDepth = clipPos.z / clipPos.w;
     gl_FragDepth = ((gl_DepthRange.diff * ndcDepth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;

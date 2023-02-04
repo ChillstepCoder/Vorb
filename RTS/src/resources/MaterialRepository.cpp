@@ -67,9 +67,11 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         return false;
     }
 
-    assert(mMaterials.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
-    const MaterialID materialId = mMaterials.size();
-    MaterialData& materialData = mMaterials.emplace_back();
+    assert(mMaterialGpuData.size() < UINT16_MAX && "Too many materials! Increase vertex material index to 32 bits");
+    const MaterialID materialId = mMaterialGpuData.size();
+    MaterialData& materialData = mMaterialData.emplace_back();
+    materialData.id = materialId;
+    MaterialGpuData& materialGpuData = mMaterialGpuData.emplace_back();
     const nString materialName = filePath.getFileNameNoExtension();
     vio::Path folderPath = filePath;
     --folderPath;
@@ -85,7 +87,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         LOG_CRITICAL("Failed to load albedo texture {} for material {}", fileData.albedoTexture, filePath.getString());
         return false;
     }
-    materialData.albedoMap = albedoTextureData->texture.getHandleBindless();
+    materialGpuData.albedoMap = albedoTextureData->texture.getHandleBindless();
 
     // Normal
     if (fileData.normalTexture.empty()) {
@@ -100,7 +102,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
         VGTexture normalTexture = mNormalMapGenerator->generateNormalTexture(albedoTextureData->texture.getHandle(), albedoTextureData->texture.getDims(), *samplerState);
         GLTexture& normalGLTexture = mGeneratedNormalTextures[materialName];
         normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
-        materialData.normalMap = normalGLTexture.getHandleBindless();
+        materialGpuData.normalMap = normalGLTexture.getHandleBindless();
     }
     else if (fileData.normalTexture.size()) {
         const TextureData* normalTextureData = textureRepository.loadTextureNew(folderPath / fileData.normalTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
@@ -108,7 +110,7 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
             LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
             return false;
         }
-        materialData.normalMap = normalTextureData->texture.getHandleBindless();
+        materialGpuData.normalMap = normalTextureData->texture.getHandleBindless();
     }
 
     // Ambient Occlusion
@@ -122,39 +124,39 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     }
 
     // Copy properties
-    materialData.emissiveColor = fileData.emissiveColor;
-    materialData.albedoColor = fileData.albedoColor;
-    materialData.roughness.x = fileData.roughness.x;
-    materialData.roughness.y = fileData.roughness.y;
-    materialData.transparencyFactor = fileData.transparencyFactor;
-    materialData.alphaTest = fileData.alphaTest;
-    materialData.metallicFactor = fileData.metallicFactor;
-    materialData.flags = (MaterialFlags_CastShadow * (int)fileData.castsShadow) | (MaterialFlags_ReceiveShadow * (int)fileData.receivesShadow);
+    materialGpuData.emissiveColor = fileData.emissiveColor;
+    materialGpuData.albedoColor = fileData.albedoColor;
+    materialGpuData.roughness.x = fileData.roughness.x;
+    materialGpuData.roughness.y = fileData.roughness.y;
+    materialGpuData.transparencyFactor = fileData.transparencyFactor;
+    materialGpuData.alphaTest = fileData.alphaTest;
+    materialGpuData.metallicFactor = fileData.metallicFactor;
+    materialGpuData.flags = (MaterialFlags_CastShadow * (int)fileData.castsShadow) | (MaterialFlags_ReceiveShadow * (int)fileData.receivesShadow);
 
     mMaterialIDLookup[materialName] = materialId;
     return true;
 }
 
-const MaterialData& MaterialRepository::getMaterial(const nString& materialName) const {
+const MaterialGpuData& MaterialRepository::getMaterial(const nString& materialName) const {
     auto&& it = mMaterialIDLookup.find(materialName);
     assert(it != mMaterialIDLookup.end());
-    return mMaterials[it->second];
+    return mMaterialGpuData[it->second];
 }
 
-MaterialData& MaterialRepository::getMutableMaterial(const nString& materialName) {
+MaterialGpuData& MaterialRepository::getMutableMaterial(const nString& materialName) {
     auto&& it = mMaterialIDLookup.find(materialName);
     assert(it != mMaterialIDLookup.end());
-    return mMaterials[it->second];
+    return mMaterialGpuData[it->second];
 }
 
-const MaterialData& MaterialRepository::getMaterial(MaterialID materialId) const {
-    assert(materialId < mMaterials.size());
-    return mMaterials[materialId];
+const MaterialGpuData& MaterialRepository::getMaterial(MaterialID materialId) const {
+    assert(materialId < mMaterialGpuData.size());
+    return mMaterialGpuData[materialId];
 }
 
-MaterialData& MaterialRepository::getMutableMaterial(MaterialID materialId){
-    assert(materialId < mMaterials.size());
-    return mMaterials[materialId];
+MaterialGpuData& MaterialRepository::getMutableMaterial(MaterialID materialId){
+    assert(materialId < mMaterialGpuData.size());
+    return mMaterialGpuData[materialId];
 }
 
 MaterialID MaterialRepository::getMaterialId(const nString& materialName) const {
@@ -171,8 +173,19 @@ MaterialHandle MaterialRepository::getMutableMaterialHandle(const nString& mater
     return handle;
 }
 
+MaterialData MaterialRepository::getMaterialData(const nString& materialName) const {
+    auto&& it = mMaterialIDLookup.find(materialName);
+    assert(it != mMaterialIDLookup.end());
+    return mMaterialData[it->second];
+}
+
+MaterialData MaterialRepository::getMaterialData(MaterialID materialId) const {
+    assert(materialId < mMaterialData.size());
+    return mMaterialData[materialId];
+}
+
 void MaterialRepository::uploadMaterialData() {
-    mMaterialDataBuffer.allocate(sizeof(MaterialData) * mMaterials.size(), mMaterials.data(), 0);
+    mMaterialDataBuffer.allocate(sizeof(MaterialGpuData) * mMaterialGpuData.size(), mMaterialGpuData.data(), 0);
 }
 
 void MaterialRepository::bindMaterialBuffer() const {

@@ -58,7 +58,7 @@ class Chunk {
 	friend class WorldEditorPanel;
 	friend class ChunkGenerator;
 	friend class TileContainerRenderer;
-	friend class TileContainerMesher;
+	friend class ITileContainerMesher;
 	friend class IChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavWorld;
