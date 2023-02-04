@@ -1,6 +1,5 @@
-#include "../TextureUbo.glsl"
-#include "../GlobalUbo.glsl"
-#include "../util/wind.glsl"
+#include "GlobalUbo.glsl"
+#include "util/wind.glsl"
 
 uniform mat4 unVP;
 uniform vec4 unPosOffset = vec4(0.0);

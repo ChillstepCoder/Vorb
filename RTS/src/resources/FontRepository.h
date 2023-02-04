@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rendering/texture/SubTexture.h"
 #include "rendering/font/Font.h"
 
 class FontRepository

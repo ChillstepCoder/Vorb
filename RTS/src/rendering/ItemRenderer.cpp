@@ -105,8 +105,6 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
 void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
 {
     const Item& item = Services::ResourceManager::ref().getItemRepository().getItem(itemStack.id);
-    const SubTexture& texture = item.mTexture;
-    const f32v4& uvs = texture.mUvRect;
     //mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
 }
 

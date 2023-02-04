@@ -1,7 +1,6 @@
 #pragma once
 
 #include "rendering/mesh/Mesh.h"
-#include "rendering/texture/SubTexture.h"
 
 #include <boost/container_hash/hash.hpp>
 

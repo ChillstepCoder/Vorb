@@ -49,8 +49,10 @@ void TileContainerRenderer::renderStaticMeshes(const std::set<const Mesh*>& mesh
     // Tiles
     // TODO: Move this to MaterialRenderer::renderMeshes();
     MaterialRenderer::bindMaterialForRender(*mStandardMaterial);
+    VGUniform unPosition = mStandardMaterial->getUniform("unPosition");
     for (auto&& mesh : meshes) {
         if (camera.sphereIsVisible(mesh->getBoundingSphere())) {
+            glUniform3fv(unPosition, 1, &mesh->getPosition().x);
             mesh->draw();
         }
     }

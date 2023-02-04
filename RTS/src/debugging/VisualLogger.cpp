@@ -132,7 +132,7 @@ void VisualLog::finish() {
 }
 
 void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
-    assert(IS_GAME_THREAD());
+    assert(IS_RENDER_THREAD());
 
     // Rebuild if needed
     if (mDirtyRender) {
@@ -182,9 +182,12 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         glDisable(GL_CULL_FACE);
         const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
         const MaterialShader* material = materialManager.getMaterialShader("text_billboard");
-        MaterialRenderer::bindMaterialForRender(*material);
+        ui32 textureUnit;
+        MaterialRenderer::bindMaterialForRender(*material, &textureUnit);
         f32v3 offset = mRootPos - cameraPos;
         glUniform3fv(material->getUniform("unOffset"), 1, &offset.x);
+        glUniform1i(material->getUniform("unFontTexture"), textureUnit);
+        glBindTextureUnit(textureUnit, mTextData[0].font->mTexture);
         mTextMesh.draw();
     }
 }

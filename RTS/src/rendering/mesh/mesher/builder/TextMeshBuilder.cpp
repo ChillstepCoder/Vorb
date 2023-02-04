@@ -176,8 +176,6 @@ void TextMeshBuilder::addString(const nString& str, const f32v3& rootPosition, c
     // Get y offset
     f32 yOff = getYOffset(rows.size(), align, glyphHeight);
 
-    const ui8 subtextureIndex = getFontIndex(font.mTexture);
-
     // Render each row
     for (size_t y = 0; y < rows.size(); y++) {
         for (auto& g : rows[y]) {
@@ -189,7 +187,7 @@ void TextMeshBuilder::addString(const nString& str, const f32v3& rootPosition, c
             // Don't draw the glyph if its too small after clipping
             if (dims.x > 0.0f && dims.y > 0.0f) {
                 // Add glyph
-                mFontData.mGlyphs.emplace_back(GlyphData{ uvRect, rootPosition, subtextureIndex, dims, position });
+                mFontData.mGlyphs.emplace_back(GlyphData{ uvRect, rootPosition, dims, position });
             }
         }
     }
@@ -214,25 +212,6 @@ void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
     uploadBufferData(mesh.mMainMesh, mFontData, drawMode);
     mFontData.clear();
 
-    // Cleanup
-    // TODO: Do we need this really?
-    mSubtextureLookup.clear();
-}
-
-ui8 TextMeshBuilder::getFontIndex(const SubTexture& texture) {
-    auto&& it = mSubtextureLookup.find(texture.mTextureAlbedo);
-    if (it != mSubtextureLookup.end()) {
-      // TODO: UNEEDED
-        return it->second;
-    }
-    else {
-        assert(mFontData.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);
-        // This texture fits in the main submesh
-        const ui8 fontIndex = (ui8)mFontData.mFontTextures.size();
-        mFontData.mFontTextures.emplace_back(texture.mTextureHandleAlbedo);
-        mSubtextureLookup[texture.mTextureAlbedo] = fontIndex;
-        return fontIndex;
-    }
 }
 
 void TextMeshBuilder::initMeshBuffers(MeshGpuData& subMesh) {
@@ -241,12 +220,6 @@ void TextMeshBuilder::initMeshBuffers(MeshGpuData& subMesh) {
         glGenVertexArrays(1, &subMesh.mVao);
     }
     glBindVertexArray(subMesh.mVao);
-    // UBO
-    if (subMesh.mUbo == 0) {
-        glGenBuffers(1, &subMesh.mUbo);
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MESH_UBO, subMesh.mUbo);
-    }
     // SSBO
     if (subMesh.mSSBO == 0) {
         glGenBuffers(1, &subMesh.mSSBO);
@@ -264,26 +237,6 @@ void TextMeshBuilder::uploadBufferData(MeshGpuData& subMesh, const FontMeshData&
 
     // IBO
     subMesh.mLODData.mTotalIndexCount = (ui32)data.mGlyphs.size() * 6u;
-
-    // UBO
-    if (subMesh.mUbo) {
-        const ui32 textureBufferSizeBytes = (ui32)(data.mFontTextures.size() * sizeof(ui32v4));
-        // Pack into uvec2 - https://www.khronos.org/opengl/wiki/Bindless_Texture
-        ui32v4 buffer[MAX_SUBTEXTURES_PER_MESH];
-        assert(data.mFontTextures.size() < MAX_SUBTEXTURES_PER_MESH);
-        for (ui32 i = 0; i < data.mFontTextures.size(); ++i) {
-            TextureHandle handle = data.mFontTextures[i];
-            // We pack two textures into a single ui32v4
-            ui32 textureOffset = (i % 2) * 2;
-            buffer[i][textureOffset] = handle & 0xffffffff;
-            buffer[i][textureOffset + 1] = handle >> 32;
-        }
-        // Allocate orphaned
-        glBindBuffer(GL_UNIFORM_BUFFER, subMesh.mUbo);
-        glBufferData(GL_UNIFORM_BUFFER, textureBufferSizeBytes, nullptr, e_cast(drawMode));
-        // Set data
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, textureBufferSizeBytes, buffer);
-    }
 
     // SSBO
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);

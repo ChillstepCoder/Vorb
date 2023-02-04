@@ -33,9 +33,6 @@ public:
     void gatherFiles(const vio::Path& folderPath);
     void loadFiles();
 
-    // Resource Accessors
-    const SubTexture& getTexture(const nString& textureName) const;
-
     // TODO: Replace?
     vg::TextureCache& getTextureCache();
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }

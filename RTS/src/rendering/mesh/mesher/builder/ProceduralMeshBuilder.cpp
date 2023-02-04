@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "ProceduralMeshBuilder.h"
 
-#include "rendering/texture/SubTexture.h"
-
 #include <boost/pool/singleton_pool.hpp>
 #include "math/Random.h"
 
@@ -442,9 +440,8 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     // Make sure we didn't fuck up and say shared when it wasn't
     assert((usingSharedIbo == mUsingSharedIndexBuffer || !mUsingSharedIndexBuffer) && "Mesh was flagged improperly as shared index buffer");
 
-    // TODO: NO UBO
-    MeshBuilderCommon::initMeshBuffers(mesh.mMainMesh, sharedIbo, BitFlags<MeshBuilderBufferFlags>(MeshBuilderBufferFlags::UBO));
-    assert(sharedIbo); // If not shared, wheres our elements?
+    MeshBuilderCommon::initMeshBuffers(mesh.mMainMesh, sharedIbo, 0);
+
     uploadMeshData(mesh.mMainMesh, worldPos, mSubMeshesData[0], GL_DYNAMIC_STORAGE_BIT);
 
     // TODO: Support other index formats

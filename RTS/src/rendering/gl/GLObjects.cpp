@@ -14,7 +14,7 @@ GLBuffer::~GLBuffer() {
     GL.glDeleteBuffers(1, &mHandle);
 }
 
-inline void reallocateBuffer(GLuint handle, GLsizeiptr size, const void* data, GLbitfield flags) {
+inline void reallocateBuffer(GLuint& handle, GLsizeiptr size, const void* data, GLbitfield flags) {
     GL.glDeleteBuffers(1, &handle);
     GL.glCreateBuffers(1, &handle);
     GL.glNamedBufferStorage(handle, size, data, flags);

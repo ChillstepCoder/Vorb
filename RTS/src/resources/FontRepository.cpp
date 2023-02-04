@@ -103,9 +103,8 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
     }
 
     // Create The Texture
-    glGenTextures(1, &font.mTexture.mTextureAlbedo);
-    glBindTexture(GL_TEXTURE_2D, font.mTexture.mTextureAlbedo);
-    glTexStorage2D(GL_TEXTURE_2D, maxMipmapLevels, GL_RGBA8, bestWidth, bestHeight);
+    glCreateTextures(GL_TEXTURE_2D, 1, &font.mTexture);
+    glTextureStorage2D(font.mTexture, maxMipmapLevels, GL_RGBA8, bestWidth, bestHeight);
 
     // Now Draw All The Glyphs
     ui32 ly = padding;
@@ -126,7 +125,7 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
             }
 
             // Save Glyph Image And Update Coordinates
-            glTexSubImage2D(GL_TEXTURE_2D, 0, lx, ly, glyphSurface->w, glyphSurface->h, GL_BGRA, GL_UNSIGNED_BYTE, glyphSurface->pixels);
+            glTextureSubImage2D(font.mTexture, 0, lx, ly, glyphSurface->w, glyphSurface->h, GL_BGRA, GL_UNSIGNED_BYTE, glyphSurface->pixels);
             glyphRects[gi].x = lx;
             glyphRects[gi].y = ly;
             glyphRects[gi].z = glyphSurface->w;
@@ -144,7 +143,7 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
     ui32 rs = padding - 1;
     ui32* pureWhiteSquare = new ui32[rs * rs];
     memset(pureWhiteSquare, 0xffffffffu, rs * rs * sizeof(ui32));
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rs, rs, GL_RGBA, GL_UNSIGNED_BYTE, pureWhiteSquare);
+    glTextureSubImage2D(font.mTexture, 0, 0, 0, rs, rs, GL_RGBA, GL_UNSIGNED_BYTE, pureWhiteSquare);
     delete[] pureWhiteSquare;
     pureWhiteSquare = nullptr;
 
@@ -173,26 +172,17 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
     //#endif // DEBUG
 
 
-
     // Sampler state and mipmap
-    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTarget(GL_TEXTURE_2D);
-    glTexParameteri((VGEnum)GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, maxMipmapLevels);
-    glTexParameteri((VGEnum)GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, maxMipmapLevels);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    vg::sSamplerStates.LINEAR_CLAMP_MIPMAP.setForTexture(font.mTexture);
+    glTextureParameteri(font.mTexture, GL_TEXTURE_MAX_LOD, maxMipmapLevels);
+    glTextureParameteri(font.mTexture, GL_TEXTURE_MAX_LEVEL, maxMipmapLevels);
+    glGenerateTextureMipmap(font.mTexture);
 
     // Make resident handle
-    font.mTexture.mTextureHandleAlbedo = glGetTextureHandleARB(font.mTexture.mTextureAlbedo);
-    assert(font.mTexture.mTextureHandleAlbedo);
-    glMakeTextureHandleResidentARB(font.mTexture.mTextureHandleAlbedo);
-    // We dont have normals
-    font.mTexture.mTextureNormal = font.mTexture.mTextureAlbedo;
-    font.mTexture.mTextureHandleNormal = font.mTexture.mTextureHandleAlbedo;
-    font.mTexture.mUvRect = f32v4(0.0f, 0.0f, 1.0f, 1.0f);
 
 
     TTF_CloseFont(f);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
     delete[] bestPartition;
 
     checkGlError("FontRepository::loadFont");

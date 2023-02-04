@@ -3,7 +3,6 @@
 
 #include <Vorb/graphics/SamplerStateType.h>
 #include <Vorb/graphics/GLEnums.h>
-#include "rendering/texture/SubTexture.h"
 #include "rendering/texture/GLTexture.h"
 #include "rendering/texture/Cubemap.h"
 
@@ -12,21 +11,6 @@ DECL_VG(class SamplerState);
 DECL_VIO(class IOManager);
 
 class NormalMapGenerator;
-
-struct SubtextureMetaData {
-    std::string name;
-    f32v4 uvRect = f32v4(0.0f, 0.0f, 1.0f, 1.0f);
-    ui32v4 pixelRect = ui32v4(0, 0, 0, 0);
-    bool randFlip = false;
-};
-KEG_TYPE_DECL(SubtextureMetaData);
-
-struct TextureMetaData {
-    Array<SubtextureMetaData> subTextures;
-    vg::SamplerStateType samplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
-    bool flipV = false;
-};
-KEG_TYPE_DECL(TextureMetaData);
 
 struct TextureData {
     GLTexture texture;
@@ -52,9 +36,6 @@ public:
 
     void setTextureAssetPaths(const std::vector<vio::Path>& paths);
 
-    bool loadSubTextureOLD(const vio::Path& filePath);
-    const SubTexture& getSubTextureOLD(const nString& textureName) const;
-
 private:
     GLTexture uploadTexture(
         const void* data,
@@ -66,8 +47,6 @@ private:
         vg::TextureFormat textureFormat /* = vg::TextureFormat::RGBA */,
         i32 mipmapLevels);
 
-    SubTexture& newSubTexture(const nString& name, VGTexture diffuse, TextureHandle diffuseHandle, VGTexture normal, TextureHandle normalHandle, const f32v4& uvRect, bool randFlip);
-    TextureMetaData getFileMetadata(const vio::Path& imageFilePath);
 
     // NEW
     std::vector<TextureData> mTextures;
@@ -77,8 +56,6 @@ private:
     std::map<nString, CubemapID> mCubemapIdLookup;
 
     // OLD
-    std::vector<SubTexture> mSubTextures;
-    std::map<nString, SubTextureID> mSubTextureIdLookup;
     vg::TextureCache& mTextureCache;
 
     vio::IOManager& mIoManager;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rendering/texture/SubTexture.h"
 
 // MUST BE POWER OF 2 >= 16
 const ui32 FONT_PX_SIZE = 32;
@@ -28,5 +27,6 @@ enum class TextAlign {
 struct Font {
     std::vector<CharGlyph> mGlyphs;
     ui32 mFontHeight = 0;
-    SubTexture mTexture;
+    VGTexture mTexture;
+    ui32v2 mTextureDims;
 };

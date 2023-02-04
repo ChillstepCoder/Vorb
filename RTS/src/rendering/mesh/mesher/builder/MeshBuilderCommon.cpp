@@ -3,8 +3,6 @@
 
 #include <meshoptimizer.h>
 
-#include "rendering/texture/SubTexture.h"
-
 #include "rendering/gl/GL.h"
 
 // DAS Reference : https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions

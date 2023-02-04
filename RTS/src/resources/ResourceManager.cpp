@@ -274,10 +274,6 @@ void ResourceManager::loadFiles() {
     LOG_TRACE("Loaded resources in {:.4} ms");
 }
 
-const SubTexture& ResourceManager::getTexture(const nString& textureName) const {
-    return mTextureRepository->getSubTextureOLD(textureName);
-}
-
 vg::TextureCache& ResourceManager::getTextureCache() {
     return *mTextureCache;
 }

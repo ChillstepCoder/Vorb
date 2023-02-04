@@ -4,7 +4,6 @@
 uniform vec3 unOffset;
 
 out vec2 fUV;
-flat out int fTextureIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out float fRoughness;
@@ -42,7 +41,6 @@ void main() {
 	
 	// Compute uvs
     fUV = getUvs(data);
-    fTextureIndex = data.texture;
 	
 	// Compute position
 	vec2 vertexOffsets = getVertexOffsets();

@@ -3,7 +3,6 @@
 // TODO: instead have the ItemRenderer manage this mapping
 
 #include "item/ItemStack.h"
-#include "rendering/texture/SubTexture.h"
 
 enum class ItemType {
     UNKNOWN,
@@ -47,7 +46,6 @@ protected:
     ItemStorageShape mShape = ItemStorageShape::POINT;
     ItemID mId;
     // TODO: Model or something?
-    SubTexture mTexture; // TODO: instead have the ItemRenderer manage this mapping?
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;
     ui32 mStackSize = 10;

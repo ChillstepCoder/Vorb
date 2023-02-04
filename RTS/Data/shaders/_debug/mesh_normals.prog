@@ -1,3 +1,0 @@
-mesh_normals:
-  vert: mesh_normals.vert
-  frag: mesh_normals.frag
