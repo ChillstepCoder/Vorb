@@ -27,13 +27,13 @@ VisualLog::VisualLog(const nString& name) : mName(name) {
 }
 
 VisualLog::~VisualLog() {
-    if (mLinesMesh.vbo) {
+    if (mLinesMesh.vao) {
+        GL.glDeleteVertexArrays(1, &mLinesMesh.vao);
         GL.glDeleteBuffers(1, &mLinesMesh.vbo);
-        mLinesMesh.vbo = 0;
     }
-    if (mQuadsMesh.vbo) {
+    if (mQuadsMesh.vao) {
+        GL.glDeleteVertexArrays(1, &mQuadsMesh.vao);
         GL.glDeleteBuffers(1, &mQuadsMesh.vbo);
-        mQuadsMesh.vbo = 0;
     }
 }
 
@@ -144,27 +144,19 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         initGlobalSimpleProgram();
     }
 
-    // Make sure we dont modify state
-    glBindVertexArray(0);
 
     sGlobalSimpleProgram.use();
     sGlobalSimpleProgram.enableVertexAttribArrays();
 
-    if (mQuadsMesh.vbo) {
-        glBindBuffer(GL_ARRAY_BUFFER, mQuadsMesh.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
-        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
+    if (mQuadsMesh.vao) {
+        glBindVertexArray(mQuadsMesh.vao);
         glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         glDrawArrays(GL_QUADS, 0, (GLsizei)mQuadsMesh.numVerts);
         RenderStats::recordDrawCall(mQuadsMesh.numVerts / 4);
     }
-    if (mLinesMesh.vbo) {
-        glBindBuffer(GL_ARRAY_BUFFER, mLinesMesh.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vPosition"), 3, GL_FLOAT, GL_FALSE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, position));
-        glVertexAttribPointer(sGlobalSimpleProgram.getAttribute("vColor"), 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(SimpleMeshVertex), offsetptr(SimpleMeshVertex, color));
+    if (mLinesMesh.vao) {
+        glBindVertexArray(mLinesMesh.vao);
         glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
         glDrawArrays(GL_LINES, 0, (GLsizei)mLinesMesh.numVerts);
@@ -173,9 +165,6 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
 
     sGlobalSimpleProgram.disableVertexAttribArrays();
     sGlobalSimpleProgram.unuse();
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Render text
     if (mTextMesh.isValid()) {
@@ -317,40 +306,64 @@ void VisualLog::buildMesh() {
 
     // Lines
     if (lineVertices.size()) {
-        if (mLinesMesh.vbo == 0) {
-            glGenBuffers(1, &mLinesMesh.vbo);
+        if (mLinesMesh.vao == 0) {
+            glCreateVertexArrays(1, &mLinesMesh.vao);
         }
+        else {
+            // Refresh the vbo
+            glDeleteBuffers(1, &mLinesMesh.vbo);
+        }
+        glCreateBuffers(1, &mLinesMesh.vbo);
         mLinesMesh.numVerts = lineVertices.size();
         mLinesMesh.type = DebugMeshType::LINES;
-        glBindBuffer(GL_ARRAY_BUFFER, mLinesMesh.vbo);
-        glBufferData(GL_ARRAY_BUFFER, lineVertices.size() * sizeof(SimpleMeshVertex), nullptr, GL_DYNAMIC_DRAW);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data());
+        glNamedBufferStorage(mLinesMesh.vbo, lineVertices.size() * sizeof(SimpleMeshVertex), lineVertices.data(), 0);
+        glVertexArrayVertexBuffer(mLinesMesh.vao, 0, mLinesMesh.vbo, 0, sizeof(SimpleMeshVertex));
+
+        glEnableVertexArrayAttrib(mLinesMesh.vao, 0);
+        glVertexArrayAttribFormat(mLinesMesh.vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshVertex, position));
+        glVertexArrayAttribBinding(mLinesMesh.vao, 0, 0);
+        glEnableVertexArrayAttrib(mLinesMesh.vao, 1);
+        glVertexArrayAttribFormat(mLinesMesh.vao, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(SimpleMeshVertex, color));
+        glVertexArrayAttribBinding(mLinesMesh.vao, 1, 0);
+
     }
-    else if (mLinesMesh.vbo) {
+    else if (mLinesMesh.vao) {
+        glDeleteVertexArrays(1, &mLinesMesh.vao);
         glDeleteBuffers(1, &mLinesMesh.vbo);
-        mLinesMesh.vbo = 0;
+        mLinesMesh.vao = 0;
     }
 
     // Quads
     if (quadVertices.size()) {
-        if (mQuadsMesh.vbo == 0) {
-            glGenBuffers(1, &mQuadsMesh.vbo);
+        if (mQuadsMesh.vao == 0) {
+            glCreateVertexArrays(1, &mQuadsMesh.vao);
         }
+        else {
+            // Refresh the vbo
+            glDeleteBuffers(1, &mQuadsMesh.vbo);
+        }
+        glCreateBuffers(1, &mQuadsMesh.vbo);
         mQuadsMesh.numVerts = quadVertices.size();
         mQuadsMesh.type = DebugMeshType::QUADS;
-        glBindBuffer(GL_ARRAY_BUFFER, mQuadsMesh.vbo);
-        glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(SimpleMeshVertex), nullptr, GL_DYNAMIC_DRAW);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data());
+        glNamedBufferStorage(mQuadsMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), nullptr, 0);
+        glVertexArrayVertexBuffer(mQuadsMesh.vao, 0, mQuadsMesh.vbo, 0, sizeof(SimpleMeshVertex));
+
+        glEnableVertexArrayAttrib(mQuadsMesh.vao, 0);
+        glVertexArrayAttribFormat(mQuadsMesh.vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshVertex, position));
+        glVertexArrayAttribBinding(mQuadsMesh.vao, 0, 0);
+        glEnableVertexArrayAttrib(mQuadsMesh.vao, 1);
+        glVertexArrayAttribFormat(mQuadsMesh.vao, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, offsetof(SimpleMeshVertex, color));
+        glVertexArrayAttribBinding(mQuadsMesh.vao, 1, 0);
     }
-    else if (mQuadsMesh.vbo) {
+    else if (mQuadsMesh.vao) {
+        glDeleteVertexArrays(1, &mQuadsMesh.vao);
         glDeleteBuffers(1, &mQuadsMesh.vbo);
-        mQuadsMesh.vbo = 0;
+        mQuadsMesh.vao = 0;
     }
 
     // Finish text
     textBuilder.finishMesh(mTextMesh, MeshDrawMode::STATIC);
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     mDirtyRender = false;
 }
 

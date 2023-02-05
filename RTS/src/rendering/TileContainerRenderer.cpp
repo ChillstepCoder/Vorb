@@ -74,9 +74,11 @@ void TileContainerRenderer::renderWorldShadows(const std::set<const Mesh*>& mesh
     const f32 maxDistSQ = SQ(maxDistance + CHUNK_WIDTH * 0.5f);
 
     MaterialRenderer::bindMaterialForRender(*mShadowMapperMaterial);
+    VGUniform unPosition = mShadowMapperMaterial->getUniform("unPosition");
     for (auto&& mesh : meshes) {
         f32v3 offset = mesh->getPosition() - camera.getPosition();
         if (glm::length2(offset) <= maxDistSQ) {
+            glUniform3fv(unPosition, 1, &mesh->getPosition().x);
             mesh->draw();
         }
     }

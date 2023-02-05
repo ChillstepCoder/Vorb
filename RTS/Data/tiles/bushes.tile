@@ -1,17 +1,14 @@
 bush_med:
-#  tex: tree_small
   model: bush
   col: circle
   dims: [1.0, 1.0, 1.0]
   col_dims: [0.1, 0.5, 1.0]
 bush_small:
-#  tex: tree_small
   model: small_bush
   col: circle
   dims: [1.0, 1.0, 1.0]
   col_dims: [0.1, 0.5, 1.0]
 bush_g:
-#  tex: tree_small
   model: bush_2
   col: circle
   dims: [1.0, 1.0, 1.0]

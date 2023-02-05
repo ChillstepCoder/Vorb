@@ -215,7 +215,7 @@ void ResourceManager::loadFiles() {
         TileRepository::sTileData.reserve(mTileFiles.size() + 10);
         for (auto&& entry : mTileFiles) {
             // TODO: Tilemanager?
-            TileRepository::loadTileFile(*mIoManager, entry, *mTextureRepository, *mItemRepository, *mModelRepository, *mCollisionShapeRepository);
+            TileRepository::loadTileFile(*mIoManager, entry, *mMaterialRepository, *mItemRepository, *mModelRepository, *mCollisionShapeRepository);
         }
     }
 

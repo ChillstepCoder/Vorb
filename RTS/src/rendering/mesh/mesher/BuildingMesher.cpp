@@ -354,7 +354,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     meshRoomCeilings(building, meshBuilders.staticBuilder, rawWoodMaterial);
 
     // ========================== Room supports ===============================
-    meshRoomSupports(building, meshBuilders.staticBuilder, rawWoodMaterial);
+    meshRoomUndercarriage(building, meshBuilders.staticBuilder, rawWoodMaterial);
 
 
     physicsBuilder.setRootPos(f32v3(building.mAABB.pos));
@@ -754,13 +754,13 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
         points[1] = second;
         points[2] = second + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
         points[3] = first + f32v3(0.0f, 0.0f, ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE);
+        meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
         // Bottom
         points[0] = second;
         points[1] = first;
         points[2] = f32v3(edge.parent1.x, edge.parent1.y, zPos - ROOF_THICKNESS);
         points[3] = f32v3(edge.parent2.x, edge.parent2.y, zPos - ROOF_THICKNESS);
-        meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE);
+        meshBuilder.addQuadBetweenPoints(points, shinglesMaterial, f32v2(1.0f), COLOR_WHITE, false);
 
         // Compute edge dir
         Cartesian dir;
@@ -851,7 +851,7 @@ void BuildingMesher::meshRoomCeilings(const Building& building, ProceduralMeshBu
     }
 }
 
-void BuildingMesher::meshRoomSupports(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
+void BuildingMesher::meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial) {
     const i32AABB3& aabb = building.mAABB;
     const TileContainer& tileContainer = *building.mTileContainer;
     const ui32 floorStride = aabb.dims.x * aabb.dims.y;
@@ -871,8 +871,9 @@ void BuildingMesher::meshRoomSupports(const Building& building, ProceduralMeshBu
                     } while (++x < aabb.dims.x && ownedTiles.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;
-                    const f32v3 startPos(startX, y + 0.5f, tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
-                    meshBuilder.addBoardBetweenPoints(startPos, startPos + f32v3(x - startX, 0.0f, 0.0f), f32v2(boardThickness), rawWoodMaterial, f32v2(1.0f));
+                    f32v3 startPos(startX, y + 0.5f, tileContainer.getFloorHeight() * z - boardThickness - 0.0001f);
+                    f32v3 endPos = startPos + f32v3(x - startX, 0.0f, 0.0f);
+                    meshBuilder.addBoardBetweenPoints(startPos, endPos, f32v2(boardThickness), rawWoodMaterial, f32v2(1.0f));
                 }
             }
         }

@@ -217,29 +217,24 @@ void TextMeshBuilder::finishMesh(Mesh& mesh, MeshDrawMode drawMode) {
 void TextMeshBuilder::initMeshBuffers(MeshGpuData& subMesh) {
     // VAO
     if (subMesh.mVao == 0) {
-        glGenVertexArrays(1, &subMesh.mVao);
+        glCreateVertexArrays(1, &subMesh.mVao);
     }
-    glBindVertexArray(subMesh.mVao);
     // SSBO
     if (subMesh.mSSBO == 0) {
-        glGenBuffers(1, &subMesh.mSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, subMesh.mSSBO);
+        glCreateBuffers(1, &subMesh.mSSBO);
     }
     // IBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ProceduralMeshBuilder::sQuadIboUI32);
+    subMesh.mIndexType = MeshIndexType::INT;
+    glVertexArrayElementBuffer(subMesh.mVao, ProceduralMeshBuilder::sQuadIboUI32);
 
     checkGlError("TextMeshBuilder::initMeshBuffers");
 }
 
 void TextMeshBuilder::uploadBufferData(MeshGpuData& subMesh, const FontMeshData& data, MeshDrawMode drawMode) {
-    glBindVertexArray(subMesh.mVao);
-
     // IBO
     subMesh.mLODData.mTotalIndexCount = (ui32)data.mGlyphs.size() * 6u;
 
     // SSBO
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, subMesh.mSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GlyphData) * data.mGlyphs.size(), data.mGlyphs.data(), GL_STATIC_COPY);
+    glNamedBufferStorage(subMesh.mSSBO, sizeof(GlyphData) * data.mGlyphs.size(), data.mGlyphs.data(), 0);
     checkGlError("TextMeshBuilder::uploadMeshData");
 }

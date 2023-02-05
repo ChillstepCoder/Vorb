@@ -1,5 +1,6 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
+#include "util/uv.glsl"
 
 uniform mat4 unVP;
 uniform vec4 unPosOffset = vec4(0.0);
@@ -22,7 +23,7 @@ out mat3 fTBN;
 
 void main() {
     fTint = vTint;
-    fUV = vUV;
+    fUV = unpackUV(vUV);
     fMaterialIndex = vMaterialIndex;
 	
 	vec3 normal = normalize(vNormal);

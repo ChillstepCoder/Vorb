@@ -60,7 +60,7 @@ private:
     );
     static void meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>& contourEdges, const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& shinglesMaterial, const MaterialData& rawWoodMaterial, f32 zPos, VisualLog* visLog);
     static void meshRoomCeilings(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
-    static void meshRoomSupports(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
+    static void meshRoomUndercarriage(const Building& building, ProceduralMeshBuilder& meshBuilder, const MaterialData& rawWoodMaterial);
 };
 
 extern BuildingMesher sBuildingMesher;

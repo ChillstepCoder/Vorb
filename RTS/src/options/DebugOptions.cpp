@@ -25,6 +25,9 @@ DebugOptions::DebugOptions() :
     mGrassSettings{ DEFAULT_GRASS_DISTANCE, SQ(DEFAULT_GRASS_DISTANCE), DEFAULT_GRASS_DISTANCE * GRASS_FADE_MULT, 50.0f },
     mDebugGrassLod(false),
     mHideGrass(false),
+    // Structures
+    mWallWoobleChance(0.3f),
+    mWallWoobleIntensity(0.15f),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra
     mDebugTerrainLod(false),

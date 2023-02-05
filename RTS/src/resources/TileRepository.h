@@ -5,7 +5,7 @@
 
 DECL_VIO(class IOManager);
 
-class TextureRepository;
+class MaterialRepository;
 class ItemRepository;
 class ModelRepository;
 class CollisionShapeRepository;
@@ -19,7 +19,7 @@ struct TileFileData {
     TileResource resource = TileResource::NONE;
     ui8 pathWeight = 255;
     ui8 layer = 1;
-    nString textureName;
+    nString materialName;
     nString modelName;
     Array<ItemDropDef> itemDrops;
     Array<ItemInputDef> recipe;
@@ -47,7 +47,7 @@ public:
 
     static const std::vector<TileData>& getAllTileData() { return sTileData;  }
 
-    static bool loadTileFile(vio::IOManager& ioManager, const vio::Path& path, TextureRepository& textureRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository);
+    static bool loadTileFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository);
 
 private:
     static std::unordered_map<StrToken, TileID> sTileIdMapping;

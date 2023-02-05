@@ -34,7 +34,7 @@ extern "C"
 }
 
 // size of global cached random table
-const unsigned CACHED_RANDOM_SIZE = 65536;
+constexpr unsigned CACHED_RANDOM_SIZE = 65536;//  *2; // TODO: Uncomment to break building generation
 
 App::App() {
 }

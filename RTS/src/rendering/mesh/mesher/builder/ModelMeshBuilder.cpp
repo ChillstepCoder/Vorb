@@ -45,8 +45,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
             myVert.pos = rawVert.pos;
             myVert.materialId = materialIds[rawVert.materialIndex];
             assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
-            myVert.uvsPacked.x = (ui16)(rawVert.uvs.x * UINT16_MAX);
-            myVert.uvsPacked.y = (ui16)(rawVert.uvs.y * UINT16_MAX);
+            myVert.uvsPacked = PackUVs(rawVert.uvs);
             myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
             myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
             myVert.color = rawVert.color;

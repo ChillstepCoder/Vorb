@@ -3,7 +3,7 @@
 
 #include <Vorb/io/IOManager.h>
 
-#include "resources/TextureRepository.h"
+#include "resources/MaterialRepository.h"
 #include "tile/Stairs.h"
 #include "item/ItemRepository.h"
 #include "resources/ModelRepository.h"
@@ -13,7 +13,7 @@ std::unordered_map<StrToken, TileID> TileRepository::sTileIdMapping;
 std::vector<TileData> TileRepository::sTileData;
 
 KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
-    kt.addValue("tex", keg::Value::basic(offsetof(TileFileData, textureName), keg::BasicType::STRING));
+    kt.addValue("mat", keg::Value::basic(offsetof(TileFileData, materialName), keg::BasicType::STRING));
     kt.addValue("model", keg::Value::basic(offsetof(TileFileData, modelName), keg::BasicType::STRING));
     kt.addValue("texture_method", keg::Value::custom(offsetof(TileFileData, textureMethod), "TileTextureMethod", true));
     kt.addValue("dims", keg::Value::basic(offsetof(TileFileData, dims.x), keg::BasicType::F32_V3));
@@ -27,7 +27,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
 }
 
-bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, TextureRepository& textureRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository) {
+bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& path, const MaterialRepository& materialRepository, ItemRepository& itemRepository, ModelRepository& modelRepository, CollisionShapeRepository& shapeRepository) {
     // Read file
     return ioManager.parseFileAsKegObjectMap(path, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
         keg::ReadContext& readContext = *((keg::ReadContext*)s);
@@ -74,8 +74,8 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             tileData.shape = TileShape::MODEL;
         }
         else {
-            // TODO: NEW
-            //tileData.texture = textureRepository.getSubTextureOLD(fileData.textureName);
+            assert(fileData.materialName.size());
+            tileData.materialData = materialRepository.getMaterialData(fileData.materialName);
             tileData.shape = fileData.tileShape;
         }
 

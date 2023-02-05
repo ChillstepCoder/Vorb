@@ -1,5 +1,6 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
+#include "util/uv.glsl"
 
 
 layout(location = 0) in vec4 vPosition;
@@ -19,7 +20,7 @@ out mat3 fTBN;
 
 void main() {
     fTint = vTint;
-    fUV = vUV;
+    fUV = unpackUV(vUV);
     fMaterialIndex = vMaterialIndex;
 	
 	vec3 normal = normalize(vNormal);

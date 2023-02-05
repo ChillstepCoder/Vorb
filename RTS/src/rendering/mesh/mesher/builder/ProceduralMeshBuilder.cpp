@@ -193,11 +193,11 @@ void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const Materi
     indexData[i + 2u] = v + 2u;
 }
 
-void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color) {
-    addQuadBetweenPoints(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], materialData, uvScale, color);
+void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV) {
+    addQuadBetweenPoints(vertPoints[0], vertPoints[1], vertPoints[2], vertPoints[3], materialData, uvScale, color, swapUV);
 }
 
-void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialData& materialData, f32v2 uvScale, color4 color) {
+void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialData& materialData, f32v2 uvScale, color4 color, bool swapUV) {
    
     SubMeshBufferData& submesh = mSubMeshesData[e_cast(materialData.renderPass)];
 
@@ -228,19 +228,34 @@ void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v
     if (tangent == f32v3(0)) {
         tangent.x = 1.0f;
     }
-
     // TODO: These UV calculations are only accurate for perfect quads, for squished quads it wont work
-    { // Bottom Left
-        verts[0].build(v0, normal, tangent, f32v2(0.0f), color, materialData.id, 0);
+    if (swapUV) {
+        { // Bottom Left
+            verts[0].build(v0, normal, tangent, f32v2(0.0f), color, materialData.id, 0);
+        }
+        { // Bottom Right
+            verts[1].build(v1, normal, tangent, f32v2(0.0f, uvScale.y * glm::length(v1 - v0)), color, materialData.id, 0);
+        }
+        { // Top Right
+            verts[2].build(v2, normal, tangent, f32v2(uvScale.x * glm::length(v2 - v1), uvScale.y * glm::length(v2 - v3)), color, materialData.id, 0);
+        }
+        { // Top Left
+            verts[3].build(v3, normal, tangent, f32v2(uvScale.x * glm::length(v3 - v0), 0.0f), color, materialData.id, 0);
+        }
     }
-    { // Bottom Right
-        verts[1].build(v1, normal, tangent, f32v2(uvScale.x * glm::length(v1 - v0), 0.0f), color, materialData.id, 0);
-    }
-    { // Top Right
-        verts[2].build(v2, normal, tangent, f32v2(uvScale.x * glm::length(v2 - v3), uvScale.y * glm::length(v2 - v1)), color, materialData.id, 0);
-    }
-    { // Top Left
-        verts[3].build(v3, normal, tangent, f32v2(0.0f, uvScale.y * uvScale.y * glm::length(v3 - v0)), color, materialData.id, 0);
+    else {
+        { // Bottom Left
+            verts[0].build(v0, normal, tangent, f32v2(0.0f), color, materialData.id, 0);
+        }
+        { // Bottom Right
+            verts[1].build(v1, normal, tangent, f32v2(uvScale.x * glm::length(v1 - v0), 0.0f), color, materialData.id, 0);
+        }
+        { // Top Right
+            verts[2].build(v2, normal, tangent, f32v2(uvScale.x * glm::length(v2 - v3), uvScale.y * glm::length(v2 - v1)), color, materialData.id, 0);
+        }
+        { // Top Left
+            verts[3].build(v3, normal, tangent, f32v2(0.0f, uvScale.y * glm::length(v3 - v0)), color, materialData.id, 0);
+        }
     }
 }
 
@@ -355,18 +370,18 @@ void ProceduralMeshBuilder::addBoardBetweenPoints(const f32v3& p1, const f32v3& 
 
     // P1 cap
     f32v2 uvScale2(uvScale);
-    addQuadBetweenPoints(pointsP1, materialData, uvScale2, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1, materialData, uvScale2, COLOR_WHITE, false);
     // P2 cap
-    addQuadBetweenPoints(pointsP2, materialData, uvScale2, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP2, materialData, uvScale2, COLOR_WHITE, false);
 
     // Bottom
-    addQuadBetweenPoints(pointsP1[1], pointsP1[0], pointsP2[1], pointsP2[0], materialData, uvScale2, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[1], pointsP1[0], pointsP2[1], pointsP2[0], materialData, uvScale2, COLOR_WHITE, false);
     // Left
-    addQuadBetweenPoints(pointsP1[2], pointsP1[1], pointsP2[0], pointsP2[3], materialData, uvScale2, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[2], pointsP1[1], pointsP2[0], pointsP2[3], materialData, uvScale2, COLOR_WHITE, false);
     // Right
-    addQuadBetweenPoints(pointsP1[0], pointsP1[3], pointsP2[2], pointsP2[1], materialData, uvScale2, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[0], pointsP1[3], pointsP2[2], pointsP2[1], materialData, uvScale2, COLOR_WHITE, false);
     // Top
-    addQuadBetweenPoints(pointsP1[3], pointsP1[2], pointsP2[3], pointsP2[2], materialData, uvScale2, COLOR_WHITE);
+    addQuadBetweenPoints(pointsP1[3], pointsP1[2], pointsP2[3], pointsP2[2], materialData, uvScale2, COLOR_WHITE, false);
 
 }
 

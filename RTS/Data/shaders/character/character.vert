@@ -1,4 +1,5 @@
-#include "../GlobalUbo.glsl"
+#include "GlobalUbo.glsl"
+#include "util/uv.glsl"
 
 // Input
 layout(location = 0) in vec4 vPosition;
@@ -26,7 +27,7 @@ uniform mat4 unBoneTransforms[MAX_BONES];
 
 void main() {
   fTint = vTint;
-  fUV = vUV;
+  fUV = unpackUV(vUV);
   fMaterialIndex = vMaterialIndex;
   
   mat4 boneTransform = unBoneTransforms[vBoneIds[0]] * vBoneWeights[0];

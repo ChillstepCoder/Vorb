@@ -33,8 +33,7 @@ void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3
     this->pos = pos;
     this->materialId = materialId;
     //assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
-    this->uvsPacked.x = (ui16)(uvs.x * UINT16_MAX);
-    this->uvsPacked.y = (ui16)(uvs.y * UINT16_MAX);
+    this->uvsPacked = PackUVs(uvs);
     this->normalPacked = Pack_INT_2_10_10_10_REV(normal.x, normal.y, normal.z, 0.0f);
     this->tangentPacked = Pack_INT_2_10_10_10_REV(tangent.x, tangent.y, tangent.z, 0.0f);
     this->color = color;
@@ -58,7 +57,7 @@ VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribBinding(vao, 0, BINDING_POINT_POSITION);
 
     glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_UNSIGNED_SHORT, true, offsetof(StaticModelVertex, uvsPacked));
+    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_SHORT, true, offsetof(StaticModelVertex, uvsPacked));
     glVertexArrayAttribBinding(vao, 1, BINDING_POINT_INTERLEAVED);
 
     glEnableVertexArrayAttrib(vao, 2);
@@ -95,7 +94,7 @@ VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
     glVertexArrayAttribBinding(vao, 0, 0);
 
     glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_UNSIGNED_SHORT, true, offsetof(SkinnedModelVertex, uvsPacked));
+    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_SHORT, true, offsetof(SkinnedModelVertex, uvsPacked));
     glVertexArrayAttribBinding(vao, 1, 0);
 
     glEnableVertexArrayAttrib(vao, 2);

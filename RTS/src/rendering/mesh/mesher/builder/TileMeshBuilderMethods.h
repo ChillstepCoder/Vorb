@@ -23,4 +23,7 @@ namespace TileMeshBuilderMethods {
     void addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh);
     void addWall(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, StaticPhysicsMeshBuilder& physMesh);
     f32 getModelRotationAtPosition(const f32v3& worldPos);
+
+    // Gets wooblyness of buildings based on XYZ tile offset
+    f32v2 getStructureWoobleAtPoint(ui32 x, ui32 y, ui32 z);
 };

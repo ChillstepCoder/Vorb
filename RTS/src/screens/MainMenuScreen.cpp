@@ -52,6 +52,7 @@ void MainMenuScreen::onEntry(const vui::GameTime& gameTime) {
     LOG_CRITICAL("  TODO: Conan package manager");
     LOG_CRITICAL("  TODO: Update cmake");
     LOG_CRITICAL("  TODO: Custom allocator for std::string/nString");
+    // TODO: Cool character customization? https://www.youtube.com/watch?v=A-P0llMckSw
     // TODO: Vertex pooling https://nickmcd.me/2021/04/04/high-performance-voxel-engine/
     // TODO: Spatial hash grid? https://github.com/simondevyoutube/Quick_3D_MMORPG/blob/main/client/shared/spatial-hash-grid.mjs
     // TODO: Tile based deferred rendering? https://leifnode.com/2015/05/tiled-deferred-shading/

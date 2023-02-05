@@ -33,6 +33,9 @@ struct DebugOptions {
     QuadtreeSettings mGrassSettings;
     bool mDebugGrassLod;
     bool mHideGrass;
+    // Structures
+    float mWallWoobleChance;
+    float mWallWoobleIntensity;
     // Terrain
     f32 mTerrainLodDistanceOffset; // 1500 for ultra
     bool mDebugTerrainLod;
