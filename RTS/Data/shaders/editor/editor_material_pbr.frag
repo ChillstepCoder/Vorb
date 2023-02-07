@@ -47,7 +47,7 @@ vec2 parallaxMapping(vec2 uvs, float disp, vec3 viewDir) {
 vec2 superMapping(vec2 uvs, sampler2D disp, vec3 viewDirection) {
     // Variables that control parallax occlusion mapping quality
 	const float minLayers = 1.0;
-    const float maxLayers = 1024.0;
+    const float maxLayers = 16.0;
     float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0, 0.0, 1.0), viewDirection)));
     numLayers = clamp(numLayers, minLayers, maxLayers);
 	float layerDepth = 1.0 / numLayers;
