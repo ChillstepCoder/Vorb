@@ -19,9 +19,10 @@ void main() {
 
     vec4 color;
     vec3 normal;
+    float ao;
     float metallic;
     float roughness;
-    getMaterialPixelInfo(unMaterialIndex, fUV, color, normal, metallic, roughness, fTint);
+    getMaterialPixelInfo(unMaterialIndex, fUV, color, normal, ao, metallic, roughness, fTint);
 
     tryDiscardTransparentPixel(color.a);
     

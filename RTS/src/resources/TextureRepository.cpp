@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "TextureRepository.h"
 
-#include "rendering/texture/NormalMapGenerator.h"
+#include "rendering/texture/MaterialTextureGenerator.h"
 
 #include "util/TextureUtil.h"
 
@@ -13,7 +13,7 @@
 #include <Vorb/io/IOManager.h>
 
 TextureRepository::TextureRepository(vg::TextureCache& textureCache, vio::IOManager& ioManager) : mTextureCache(textureCache), mIoManager(ioManager) {
-    mNormalMapGenerator = std::make_unique<NormalMapGenerator>();
+    mNormalMapGenerator = std::make_unique<MaterialTextureGenerator>();
     mNormalMapGenerator->init();
 }
 
@@ -21,7 +21,7 @@ TextureRepository::~TextureRepository() {
 
 }
 
-const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV) {
+const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV) {
     // TODO: Test using temporary nString buffer memory so we dont keep heap allocating all these strings
     nString textureName = vio::getLeafNameFromFilePathNoExtension(filePath);
 
@@ -48,7 +48,7 @@ const TextureData* TextureRepository::loadTextureNew(const vio::Path& filePath, 
                 vg::TexturePixelType::UNSIGNED_BYTE,
                 type,
                 samplerState,
-                vg::TextureInternalFormat::RGBA8,
+                internalFormat,
                 vg::TextureFormat::RGBA,
                 INT_MAX /*mipmap levels*/);
             break;
@@ -172,6 +172,16 @@ void TextureRepository::setTextureAssetPaths(const std::vector<vio::Path>& paths
     for (auto& path : paths) {
         mTextureAssetPaths[path.getString()] = INVALID_TEXTURE_ID;
     }
+}
+
+bool TextureRepository::loadRawTextureData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV) {
+    // Get absolute path of texture.
+    vio::Path texPath;
+    mIoManager.resolvePath(filePath, texPath);
+
+    // Load the pixel data.
+    outRs = vg::ImageIO().load(texPath.getString(), vg::ImageIOFormat::RGBA_UI8, !flipV /*inverted on purpose*/);
+    return outRs.data != nullptr;
 }
 
 GLTexture TextureRepository::uploadTexture(const void* data, ui32v2 dims, vg::TexturePixelType texturePixelType, vg::TextureTarget textureTarget, const vg::SamplerState* samplingParameters, vg::TextureInternalFormat internalFormat, vg::TextureFormat textureFormat, i32 mipmapLevels) {

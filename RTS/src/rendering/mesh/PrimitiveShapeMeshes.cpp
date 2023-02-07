@@ -6,14 +6,19 @@
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 
+#include "glm/gtx/rotate_vector.hpp"
+
 Mesh& PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType type) {
     assert(IS_RENDER_THREAD());
 
     // Generate lazily if needed
     if (mMeshes[e_cast(type)] == nullptr) {
         switch (type) {
-            case PrimitiveShapeType::Sphere:
-                generateSphereMesh();
+            case PrimitiveShapeType::IcoSphere:
+                generateIcoSphereMesh();
+                break;
+            case PrimitiveShapeType::UVSphere:
+                generateUVSphereMesh();
                 break;
             case PrimitiveShapeType::Plane:
                 generatePlaneMesh();
@@ -28,13 +33,13 @@ Mesh& PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType type) {
                 assert(false);
 
         }
-        static_assert(e_cast(PrimitiveShapeType::COUNT) == 4);
+        static_assert(e_cast(PrimitiveShapeType::COUNT) == 5);
     }
 
     return *mMeshes[e_cast(type)];
 }
 
-void PrimitiveShapeMeshes::generateSphereMesh() {
+void PrimitiveShapeMeshes::generateIcoSphereMesh() {
     std::vector<ui32> indices;
     std::vector<f32v3> positions;
     vmesh::generateIcosphereMesh(3, indices, positions);
@@ -58,7 +63,7 @@ void PrimitiveShapeMeshes::generateSphereMesh() {
         }
         // https://gamedev.stackexchange.com/questions/114412/how-to-get-uv-coordinates-for-sphere-cylindrical-projection
         f32v2 uvFloat;
-        uvFloat.x = atan2(normalFloat.x, normalFloat.y) / (M_2_PI) + 0.5;
+        uvFloat.x = atan2(normalFloat.x, 1.0 - normalFloat.y) / (M_2_PI) + 0.5;
         uvFloat.y = normalFloat.z * 0.5 + 0.5;
         uvFloat = glm::clamp(uvFloat, f32v2(0.0), f32v2(1.0));
         myVert.uvsPacked = PackUVs(uvFloat);
@@ -67,7 +72,97 @@ void PrimitiveShapeMeshes::generateSphereMesh() {
         myVert.color = COLOR_WHITE;
     }
 
-    uploadMesh(vertices, indices16, PrimitiveShapeType::Sphere);
+    uploadMesh(vertices, indices16, PrimitiveShapeType::IcoSphere);
+}
+
+// http://www.songho.ca/opengl/gl_sphere.html
+void PrimitiveShapeMeshes::generateUVSphereMesh() {
+
+    constexpr int stackCount = 24;
+    constexpr int sectorCount = stackCount * 2;
+    constexpr float radius = 1.0f;
+
+    // clear memory of prev arrays
+    // TODO: Reserve
+    std::vector<StaticModelVertex> vertices;
+
+    float x, y, z, xy;                              // vertex position
+    float nx, ny, nz, lengthInv = 1.0f / radius;    // vertex normal
+    float s, t;                                     // vertex texCoord
+
+    float sectorStep = 2 * M_PIF / sectorCount;
+    float stackStep = M_PIF / stackCount;
+    float sectorAngle, stackAngle;
+
+    for (int i = 0; i <= stackCount; ++i)
+    {
+        stackAngle = M_PIF / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+        xy = radius * cosf(stackAngle);             // r * cos(u)
+        z = radius * sinf(stackAngle);              // r * sin(u)
+
+        // add (sectorCount+1) vertices per stack
+        // the first and last vertices have same position and normal, but different tex coords
+        for (int j = 0; j <= sectorCount; ++j)
+        {
+            sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+            
+            StaticModelVertex& v = vertices.emplace_back();
+
+            // vertex position (x, y, z)
+            x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+            y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+
+            // normalized vertex normal (nx, ny, nz)
+            nx = x * lengthInv;
+            ny = y * lengthInv;
+            nz = z * lengthInv;
+
+            // vertex tex coord (s, t) range between [0, 1]
+            s = (float)j / sectorCount;
+            t = 1.0 - (float)i / stackCount;
+
+            // Compute tangent http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
+            f32v3 normal = f32v3(nx, ny, nz);
+            f32v3 tangent = glm::rotate(normal, glm::radians(90.0f), f32v3(0.0f, 0.0f, 1.0f));
+
+            v.build(f32v3(x, y, z), f32v3(nx, ny, nz), tangent, f32v2(s, t), COLOR_WHITE, 0, 0);
+        }
+    }
+    // generate CCW index list of sphere triangles
+    // k1--k1+1
+    // |  / |
+    // | /  |
+    // k2--k2+1
+    std::vector<ui16> indices;
+    int k1, k2;
+    for (int i = 0; i < stackCount; ++i)
+    {
+        k1 = i * (sectorCount + 1);     // beginning of current stack
+        k2 = k1 + sectorCount + 1;      // beginning of next stack
+
+        for (int j = 0; j < sectorCount; ++j, ++k1, ++k2)
+        {
+            // 2 triangles per sector excluding first and last stacks
+            // k1 => k2 => k1+1
+            if (i != 0)
+            {
+                indices.push_back(k1);
+                indices.push_back(k2);
+                indices.push_back(k1 + 1);
+            }
+
+            // k1+1 => k2 => k2+1
+            if (i != (stackCount - 1))
+            {
+                indices.push_back(k1 + 1);
+                indices.push_back(k2);
+                indices.push_back(k2 + 1);
+            }
+
+        }
+    }
+
+    uploadMesh(vertices, indices, PrimitiveShapeType::UVSphere);
 }
 
 void PrimitiveShapeMeshes::generatePlaneMesh() {
@@ -80,7 +175,7 @@ void PrimitiveShapeMeshes::generatePlaneMesh() {
     indices[4] = 3;
     indices[5] = 0;
 
-    const ui32 normalPacked = Pack_INT_2_10_10_10_REV(f32v3(0.0f, 1.0f, 0.0f));
+    const ui32 normalPacked = Pack_INT_2_10_10_10_REV(f32v3(0.0f, -1.0f, 0.0f));
     const ui32 tangentPacked = Pack_INT_2_10_10_10_REV(f32v3(1.0f, 0.0f, 0.0f));
 
     verts[0].pos = f32v3(-1.0f, 0.0f, -1.0f);

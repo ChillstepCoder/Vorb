@@ -366,7 +366,7 @@
     <ClCompile Include="src\rendering\GLExtensions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp">
+    <ClCompile Include="src\rendering\texture\MaterialTextureGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\structure\Structure.cpp">
@@ -1136,7 +1136,7 @@
     <ClInclude Include="src\rendering\GLExtensions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\texture\NormalMapGenerator.h">
+    <ClInclude Include="src\rendering\texture\MaterialTextureGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\structure\Structure.h">

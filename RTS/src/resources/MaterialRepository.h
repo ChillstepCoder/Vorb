@@ -6,7 +6,7 @@
 DECL_VIO(class IOManager);
 
 class TextureRepository;
-class NormalMapGenerator;
+class MaterialTextureGenerator;
 
 class MaterialRepository
 {
@@ -34,10 +34,11 @@ private:
     std::vector<MaterialData> mMaterialData;
     std::vector<MaterialGpuData> mMaterialGpuData;
     std::map<nString, GLTexture> mGeneratedNormalTextures;
+    std::map<nString, GLTexture> mGeneratedAOMetallicRoughnessTextures;
     std::map<nString, MaterialID> mMaterialIDLookup;
 
     vio::IOManager& mIoManager;
-    std::unique_ptr<NormalMapGenerator> mNormalMapGenerator;
+    std::unique_ptr<MaterialTextureGenerator> mMaterialTextureGenerator;
 
     GLBuffer mMaterialDataBuffer;
 };

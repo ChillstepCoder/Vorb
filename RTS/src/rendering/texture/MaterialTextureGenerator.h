@@ -3,13 +3,14 @@
 DECL_VG(class GLProgram);
 DECL_VG(class SamplerState);
 
-class NormalMapGenerator
+class MaterialTextureGenerator
 {
 public:
-    NormalMapGenerator();
-    ~NormalMapGenerator();
+    MaterialTextureGenerator();
+    ~MaterialTextureGenerator();
     void init();
     VGTexture generateNormalTexture(VGTexture input, const ui32v2& dims, const vg::SamplerState& samplerState);
+    VGTexture generateAoRoughnessMetallicTexture(const ui8* ao, const ui8* roughness, const ui8* metallic, const ui32v2& dims, const vg::SamplerState& samplerState);
 
 private:
     VGUniform mUvRectUniform;

@@ -5,7 +5,8 @@
 struct StaticModelVertex;
 
 enum class PrimitiveShapeType {
-    Sphere,
+    IcoSphere,
+    UVSphere,
     Plane,
     Cube,
     Cylinder,
@@ -21,7 +22,8 @@ public:
     static Mesh& getOrGenerateShapeMesh(PrimitiveShapeType type);
 
 private:
-    static void generateSphereMesh();
+    static void generateIcoSphereMesh();
+    static void generateUVSphereMesh();
     static void generatePlaneMesh();
     static void generateCubeMesh();
     static void generateCylinderMesh();

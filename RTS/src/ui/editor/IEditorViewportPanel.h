@@ -59,7 +59,7 @@ protected:
     VGVertexArray mGridVao = 0;
     std::unique_ptr<Skybox> mSkybox;
     std::unique_ptr<vg::GBuffer> mGBuffers[3];
-    EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::Lit;
+    EditorViewportDrawMode mDrawMode = EditorViewportDrawMode::PBRTest;
 
     int mSelectedSkyboxIndex = 0;
     bool mShowSkyboxIrradiance = false;
@@ -88,8 +88,10 @@ protected:
     bool mEdgeTestShowEdges = 0;
 
     // PBR test
+    bool mOverrideMetallicRoughness = false;
     float mMetallic = 0.5f;
     float mRoughness = 0.5f;
+    float mHeightScale = 0.18f;
     float mExposure = 1.0f;
     float mAmbient = 1.0f;
     float mSunIntensity = 3.0f;

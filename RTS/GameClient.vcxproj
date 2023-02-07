@@ -375,7 +375,7 @@
     <ClCompile Include="src\rendering\RenderThreadTasks.cpp" />
     <ClCompile Include="src\rendering\ShaderLoader.cpp" />
     <ClCompile Include="src\rendering\Skybox.cpp" />
-    <ClCompile Include="src\rendering\texture\NormalMapGenerator.cpp" />
+    <ClCompile Include="src\rendering\texture\MaterialTextureGenerator.cpp" />
     <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
     <ClCompile Include="src\resources\AnimationRepository.cpp" />
     <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
@@ -646,7 +646,7 @@
     <ClInclude Include="src\rendering\RenderStats.h" />
     <ClInclude Include="src\rendering\RenderThreadTasks.h" />
     <ClInclude Include="src\rendering\Skybox.h" />
-    <ClInclude Include="src\rendering\texture\NormalMapGenerator.h" />
+    <ClInclude Include="src\rendering\texture\MaterialTextureGenerator.h" />
     <ClInclude Include="src\rendering\TileVertex.h" />
     <ClInclude Include="src\rendering\RenderContext.h" />
     <ClInclude Include="src\rendering\ShaderLoader.h" />

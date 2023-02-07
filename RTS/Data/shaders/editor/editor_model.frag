@@ -19,9 +19,10 @@ layout (location = 1) out vec3 oNormal;
 void main() {
 
     vec3 normal;
+    float ao;
     float metallic;
     float roughness;
-    getMaterialPixelInfo(fMaterialIndex, fUV, oColor, normal, metallic, roughness, fTint);
+    getMaterialPixelInfo(fMaterialIndex, fUV, oColor, normal, ao, metallic, roughness, fTint);
     
     tryDiscardTransparentPixel(oColor.a);
 	

@@ -72,9 +72,10 @@ void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
     // Cylinder
     // Custom Mesh
     // Draw mode
-    static_assert(e_cast(PrimitiveShapeType::COUNT) == 4);
+    static_assert(e_cast(PrimitiveShapeType::COUNT) == 5);
     const char* shapeTypes[e_cast(PrimitiveShapeType::COUNT)] = {
-        "Sphere",
+        "IcoSphere",
+        "UVSphere",
         "Plane",
         "Cube",
         "Cylinder"
@@ -91,6 +92,8 @@ void MaterialEditorPanel::updateAndRenderControls(f32 ySize) {
         }
         ImGui::EndCombo();
     }
+
+    ImGui::SliderFloat("UV Scale", &mUvScale, 0.0f, 4.0f);
 
     if (mCurrentMaterial.isValid()) {
         updateAndRenderTweakers();
@@ -129,9 +132,13 @@ void MaterialEditorPanel::uploadCustomShaderUniforms(const MaterialShader* shade
         glUniform1i(unMaterialIndex, mCurrentMaterial.materialId);
     }
     glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 1.0f, 0.0f);
+    if (const VGUniform* uniform = shader->tryGetUniform("unUvScale")) {
+        glUniform2f(*uniform, mUvScale, mUvScale);
+    }
 }
 
 void MaterialEditorPanel::renderMesh() {
+    glEnable(GL_CULL_FACE);
     Mesh& mesh = PrimitiveShapeMeshes::getOrGenerateShapeMesh(mShapeType);
     mesh.draw(MeshLODLevel(0));
 }

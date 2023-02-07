@@ -26,7 +26,7 @@ uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 
 layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
-layout (location = 2) out float oRoughness;
+layout (location = 2) out vec2 oMetallicRoughness;
 
 
 float InvSmoothStep(float x) {
@@ -156,8 +156,9 @@ void main() {
     //currhsv.b = texturehsv.b;
     currhsv.b = mix(currhsv.b, texturehsv.b, 0.4);
     oColor.rgb = hsv2rgb(currhsv);
+    oColor.a = 1.0; // AO
     
     // === Roughness + metallic ===
-    oColor.a = 0.0; // metallic
-	oRoughness = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3;
+    oMetallicRoughness.r = 0.0; // Metallic
+	oMetallicRoughness.g = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3; // Roughness
 }

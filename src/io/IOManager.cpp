@@ -89,6 +89,10 @@ bool vio::IOManager::readFileToData(const Path& path, std::vector<ui8>& data) co
 }
 
 bool vio::IOManager::resolvePath(const Path& path, Path& resultAbsolutePath) const {
+    if (path.isNull()) {
+        return false;
+    }
+
     // Special case if the path is already an absolute path
     if (path.isAbsolute()) {
         if (path.isValid()) {

@@ -12,9 +12,9 @@ in vec2 fUV;
 flat in float fAtlasPage;
 in float fDistance;
 
-layout (location = 0) out vec3 oColor;
+layout (location = 0) out vec4 oColor;
 layout (location = 1) out vec3 oNormal;
-layout (location = 2) out vec3 oRoughness;
+layout (location = 2) out vec2 oMetallicRoughness;
 
 float InvSmoothStep(float x) {
     return x + (x - (x * x * (3.0 - 2.0 * x)));
@@ -37,7 +37,13 @@ void main() {
 	color.a = clamp(color.a, 0.0, 1.0);
 	
     runAlphaTest(color.a, 0.01);
-    oColor = color.rgb;
+    oColor.rgb = color.rgb;
+    oColor.a = 1.0; // AO
+    
+    // Normal (Upwards)
 	oNormal.rgb = vec3(0.5, 0.5, 1.0);
-	oRoughness.r = 0.85;
+    
+    // Metallic Roughness
+	oMetallicRoughness.r = 0.0;
+	oMetallicRoughness.g = 0.85;
 }

@@ -9,8 +9,9 @@
 DECL_VG(class TextureCache);
 DECL_VG(class SamplerState);
 DECL_VIO(class IOManager);
+DECL_VG(class ScopedBitmapResource);
 
-class NormalMapGenerator;
+class MaterialTextureGenerator;
 
 struct TextureData {
     GLTexture texture;
@@ -26,7 +27,7 @@ public:
     TextureRepository(vg::TextureCache& textureCache, vio::IOManager& ioManager);
     ~TextureRepository();
 
-    const TextureData* loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, bool flipV);
+    const TextureData* loadTextureNew(const vio::Path& filePath, vg::TextureTarget type, const vg::SamplerState* samplerState, vg::TextureInternalFormat internalFormat, bool flipV);
     const TextureData& getTextureNew(const nString& textureName) const;
 
     const Cubemap* loadCubemap(const vio::Path& cubeFilePath);
@@ -35,6 +36,9 @@ public:
     const std::map<nString, CubemapID>& getCubemapIDs() const { return mCubemapIdLookup; }
 
     void setTextureAssetPaths(const std::vector<vio::Path>& paths);
+
+    // Loads in as RGBAUI8
+    bool loadRawTextureData(const vio::Path& filePath, OUT vg::ScopedBitmapResource& outRs, bool flipV);
 
 private:
     GLTexture uploadTexture(
@@ -59,6 +63,6 @@ private:
     vg::TextureCache& mTextureCache;
 
     vio::IOManager& mIoManager;
-    std::unique_ptr<NormalMapGenerator> mNormalMapGenerator;
+    std::unique_ptr<MaterialTextureGenerator> mNormalMapGenerator;
     nString mDataBuffer;
 };

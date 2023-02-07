@@ -15,6 +15,7 @@ uniform float unMetallic;
 uniform float unRoughness;
 uniform vec3 unLightDir;
 uniform vec3 unCameraPos;
+uniform bool unOverrideMR;
 
 uniform mat4 unVP;
 
@@ -32,9 +33,15 @@ void main() {
 
     vec3 normal;
     vec4 color;
+    float ao;
     float metallic;
     float roughness;
-    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, metallic, roughness, fTint);
+    getMaterialPixelInfo(fMaterialIndex, fUV, color, normal, ao, metallic, roughness, fTint);
+    
+    if (unOverrideMR) {
+        metallic = unMetallic;
+        roughness = unRoughness;
+    }
     
     tryDiscardTransparentPixel(color.a);
 	
@@ -42,7 +49,7 @@ void main() {
     normal = normalize(fTBN * normal);
     
     vec3 sunColor = unSunIntensity * unSunColor;
-    oColor.rgb = PBR(fWorldPos, color.rgb, normal, unMetallic, unRoughness, 1.0, sunColor, unLightDir, unCameraPos);
+    oColor.rgb = PBR(fWorldPos, color.rgb, normal, metallic, roughness, ao, sunColor, unLightDir, unCameraPos);
     
     // Tonemapping
     const int preset = int(step(unLightingSplit, fScreenPos.x));

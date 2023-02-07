@@ -38,17 +38,17 @@ void main() {
 
 	float shadow = texture(unTextureShadow, fUV).r;
     
-	vec4 albedoMetallic = texture(unTextureAlbedo, fUV).rgba;
-    albedoMetallic.rgb = gammaDecode(albedoMetallic.rgb, unGamma[preset]);
+	vec4 albedoAo = texture(unTextureAlbedo, fUV).rgba;
+    albedoAo.rgb = gammaDecode(albedoAo.rgb, unGamma[preset]);
     vec3 normal = texture(unTextureNormals, fUV).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
-    float roughness = texture(unTextureRoughness, fUV).r;
-    float metallic = albedoMetallic.a;
+    vec2 metallicRoughness = texture(unTextureRoughness, fUV).rg;
+    float ao = albedoAo.a;
     
     // PBR
     vec3 sunColor = getCurrentSunColor(preset, SunColor, SunHeight);
     float ambient = getAmbientFactor(preset, unAmbient, SunHeight);
-    oColor.rgb = PBR(worldPos, albedoMetallic.rgb, normal, metallic, roughness, 1.0, shadow, ambient, unExposure[preset], sunColor, SunPosition, vec3(0.0));
+    oColor.rgb = PBR(worldPos, albedoAo.rgb, normal, metallicRoughness.r, metallicRoughness.g, ao, shadow, ambient, unExposure[preset], sunColor, SunPosition, vec3(0.0));
     
     // Haze (TODO: Final tonemap?)
     vec3 hazeColor = texture(GradientTexture, vec2(0.5, max(SunHeight, 0.0))).rgb;

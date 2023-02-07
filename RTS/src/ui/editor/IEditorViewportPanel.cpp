@@ -227,8 +227,13 @@ void IEditorViewportPanel::updateAndRenderTweakers() {
         ImGui::Checkbox("Disable", &mEdgeTestDisable);
     }
     else if (mDrawMode == EditorViewportDrawMode::PBRTest) {
-        ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
-        ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
+        ImGui::Checkbox("Set Metallic Roughness", &mOverrideMetallicRoughness);
+        if (mOverrideMetallicRoughness) {
+            ImGui::SliderFloat("Metallic", &mMetallic, 0.0f, 1.0f, "%.3f");
+            ImGui::SliderFloat("Roughness", &mRoughness, 0.0f, 1.0f, "%.3f");
+            ImGui::Separator();
+        }
+        ImGui::SliderFloat("Height Scale", &mHeightScale, 0.0f, 3.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Ambient", &mAmbient, 0.0f, 3.0f, "%.3f");
         ImGui::SliderFloat("Exposure", &mExposure, 0.0f, 3.0f, "%.3f");
         ImGui::SliderFloat("Sun Intensity", &mSunIntensity, 0.0f, 25.0f, "%.3f");
@@ -309,6 +314,10 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShader* shader, ui
         glUniform3fv(shader->getUniform("unLightDir"), 1, &lightDir.x);
         glUniform3fv(shader->getUniform("unCameraPos"), 1, &camera->getPosition()[0]);
         glUniform3fv(shader->getUniform("unSunColor"), 1, &mLightColor.x);
+        glUniform1i(shader->getUniform("unOverrideMR"), mOverrideMetallicRoughness);
+        if (const VGUniform* un = shader->tryGetUniform("unHeightScale")) {
+            glUniform1f(*un, mHeightScale);
+        }
 
         if (mSkybox->hasTexture()) {
             glUniform1i(shader->getUniform("unIrradianceMap"), availableTextureUnit);

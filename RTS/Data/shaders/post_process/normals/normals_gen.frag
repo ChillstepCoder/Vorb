@@ -4,7 +4,7 @@ uniform vec4 unUvRect;
 
 in vec2 fUV;
 
-out vec4 fColor;
+out vec3 fColor;
 
 const float THRESH = 0.01;
 const vec3 COLOR = vec3(0.0, 0.0, 0.0);
@@ -78,7 +78,5 @@ vec3 getNormalSobel() {
 }
 
 void main() {
-	fColor.rgb = getNormalSobel();
-	fColor.a = 1.0;
-    
+	fColor = getNormalSobel();
 }

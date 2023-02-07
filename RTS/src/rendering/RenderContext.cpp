@@ -217,9 +217,9 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // GBuffer
     for (int i = 0; i < 2; ++i) {
         mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2);
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::R8);
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8); // Albedo + AO
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2); // Normal
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::RG8); // Roughness + Metallic
 #if USE_STENCIL == 1
         mGBuffers[i]->initDepthStencil();
 #else

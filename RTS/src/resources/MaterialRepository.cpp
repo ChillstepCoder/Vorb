@@ -3,13 +3,14 @@
 #include "resources/TextureRepository.h"
 
 #include <Vorb/graphics/SamplerState.h>
+#include <Vorb/graphics/ImageIO.h>
 
 #include "Vorb/io/YAML.h"
 #include "Vorb/io/YAMLImpl.h"
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
 
-#include "rendering/texture/NormalMapGenerator.h"
+#include "rendering/texture/MaterialTextureGenerator.h"
 
 const char* GENERATE_TEXT = "GENERATE";
 
@@ -18,6 +19,8 @@ struct MaterialFileData {
     nString normalTexture;
     nString ambientOcclusionTexture;
     nString displacementTexture;
+    nString roughnessTexture;
+    nString metalTexture;
     vg::SamplerStateType samplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
     f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
     f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -34,8 +37,10 @@ struct MaterialFileData {
 KEG_TYPE_DEF_SAME_NAME(MaterialFileData, kt) {
     kt.addValue("albedo", keg::Value::basic(offsetof(MaterialFileData, albedoTexture), keg::BasicType::STRING));
     kt.addValue("normal", keg::Value::basic(offsetof(MaterialFileData, normalTexture), keg::BasicType::STRING));
-    kt.addValue("ambient_occlusion", keg::Value::basic(offsetof(MaterialFileData, ambientOcclusionTexture), keg::BasicType::STRING));
-    kt.addValue("displacement", keg::Value::basic(offsetof(MaterialFileData, displacementTexture), keg::BasicType::STRING));
+    kt.addValue("ao", keg::Value::basic(offsetof(MaterialFileData, ambientOcclusionTexture), keg::BasicType::STRING));
+    kt.addValue("disp", keg::Value::basic(offsetof(MaterialFileData, displacementTexture), keg::BasicType::STRING));
+    kt.addValue("rough", keg::Value::basic(offsetof(MaterialFileData, roughnessTexture), keg::BasicType::STRING));
+    kt.addValue("metal", keg::Value::basic(offsetof(MaterialFileData, metalTexture), keg::BasicType::STRING));
     kt.addValue("sampler_state", keg::Value::custom(offsetof(MaterialFileData, samplerState), "SamplerStateType", true));
     kt.addValue("emissive_color", keg::Value::basic(offsetof(MaterialFileData, emissiveColor), keg::BasicType::F32_V4));
     kt.addValue("albedo_color", keg::Value::basic(offsetof(MaterialFileData, albedoColor), keg::BasicType::F32_V4));
@@ -50,8 +55,8 @@ KEG_TYPE_DEF_SAME_NAME(MaterialFileData, kt) {
 
 MaterialRepository::MaterialRepository(vio::IOManager& ioManager) : mIoManager(ioManager)
 {
-    mNormalMapGenerator = std::make_unique<NormalMapGenerator>();
-    mNormalMapGenerator->init();
+    mMaterialTextureGenerator = std::make_unique<MaterialTextureGenerator>();
+    mMaterialTextureGenerator->init();
 }
 
 MaterialRepository::~MaterialRepository()
@@ -59,6 +64,13 @@ MaterialRepository::~MaterialRepository()
 
 }
 
+nString getImplicitAlbedoPath(const vio::Path& materialPath) {
+    return materialPath.getFileNameNoExtension() + ".png";
+}
+
+nString getImplicitNormalPath(const vio::Path& materialPath) {
+    return materialPath.getFileNameNoExtension() + "_norm.png";
+}
 
 bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureRepository& textureRepository) {
     MaterialFileData fileData;
@@ -76,51 +88,131 @@ bool MaterialRepository::loadMaterial(const vio::Path& filePath, TextureReposito
     vio::Path folderPath = filePath;
     --folderPath;
 
-    // Albedo
+    // Filepath Fallbacks
     if (fileData.albedoTexture.empty()) {
         // Fall back to using the file name as the albedo, so we can just specify an empty .material file
         fileData.albedoTexture = filePath.getFileNameNoExtension() + ".png";
     }
+    const vio::Path albedoTexturePath = folderPath / fileData.albedoTexture;
+    if (fileData.normalTexture.empty()) {
+        // Fall back to using the file name as the normal, so we can just specify an empty .material file
+        fileData.normalTexture = filePath.getFileNameNoExtension() + "_norm.png";
+    }
+    const vio::Path normalTexturePath = folderPath / fileData.normalTexture;
+    if (fileData.ambientOcclusionTexture.empty()) {
+        // Fall back to using the file name as the normal, so we can just specify an empty .material file
+        fileData.ambientOcclusionTexture = filePath.getFileNameNoExtension() + "_ao.png";
+    }
+    const vio::Path ambientOcclusionTexturePath = folderPath / fileData.ambientOcclusionTexture;
+    if (fileData.displacementTexture.empty()) {
+        // Fall back to using the file name as the normal, so we can just specify an empty .material file
+        fileData.displacementTexture = filePath.getFileNameNoExtension() + "_disp.png";
+    }
+    const vio::Path displacementTexturePath = folderPath / fileData.displacementTexture;
+    if (fileData.roughnessTexture.empty()) {
+        // Fall back to using the file name as the normal, so we can just specify an empty .material file
+        fileData.roughnessTexture = filePath.getFileNameNoExtension() + "_rough.png";
+    }
+    const vio::Path roughnessTexturePath = folderPath / fileData.roughnessTexture;
+    if (fileData.metalTexture.empty()) {
+        // Fall back to using the file name as the normal, so we can just specify an empty .material file
+        fileData.metalTexture = filePath.getFileNameNoExtension() + "_metal.png";
+    }
+    const vio::Path metalTexturePath = folderPath / fileData.metalTexture;
+
     const vg::SamplerState* samplerState = &vg::sSamplerStates.STATE_ARRAY[e_cast(fileData.samplerState)];
-    const TextureData* albedoTextureData = textureRepository.loadTextureNew(folderPath / fileData.albedoTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
+    // TODO: Texture Compression
+    const TextureData* albedoTextureData = textureRepository.loadTextureNew(albedoTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGBA8, fileData.flipV);
     if (!albedoTextureData) {
         LOG_CRITICAL("Failed to load albedo texture {} for material {}", fileData.albedoTexture, filePath.getString());
         return false;
     }
+    const ui32v2 textureDims = albedoTextureData->texture.getDims();
     materialGpuData.albedoMap = albedoTextureData->texture.getHandleBindless();
 
     // Normal
-    if (fileData.normalTexture.empty()) {
-        // Fall back to using the file name as the normal, so we can just specify an empty .material file
-        vio::Path implicitPath = filePath.getFileNameNoExtension() + ".norm.png";
-        if (mIoManager.fileExists(folderPath / implicitPath)) {
-            fileData.normalTexture = implicitPath.getString();
-        }
-    }
     // Generated vs loaded normals
+    // TODO RGTC compression https://www.reddit.com/r/opengl/comments/dyedbv/when_to_use_compressed_textures/
     if (fileData.normalTexture == GENERATE_TEXT) {
-        VGTexture normalTexture = mNormalMapGenerator->generateNormalTexture(albedoTextureData->texture.getHandle(), albedoTextureData->texture.getDims(), *samplerState);
+        VGTexture normalTexture = mMaterialTextureGenerator->generateNormalTexture(albedoTextureData->texture.getHandle(), albedoTextureData->texture.getDims(), *samplerState);
         GLTexture& normalGLTexture = mGeneratedNormalTextures[materialName];
         normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
         materialGpuData.normalMap = normalGLTexture.getHandleBindless();
     }
-    else if (fileData.normalTexture.size()) {
-        const TextureData* normalTextureData = textureRepository.loadTextureNew(folderPath / fileData.normalTexture, vg::TextureTarget::TEXTURE_2D, samplerState, fileData.flipV);
+    else if (mIoManager.fileExists(normalTexturePath)) {
+        const TextureData* normalTextureData = textureRepository.loadTextureNew(normalTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::RGB8, fileData.flipV);
         if (!normalTextureData) {
             LOG_CRITICAL("Failed to load normal texture {} for material {}", fileData.normalTexture, filePath.getString());
             return false;
         }
         materialGpuData.normalMap = normalTextureData->texture.getHandleBindless();
     }
-
-    // Ambient Occlusion
-    if (fileData.ambientOcclusionTexture.size()) {
-        assert(false); // TODO
+    
+    // Displacement
+    if (mIoManager.fileExists(displacementTexturePath)) {
+        const TextureData* displacementTextureData = textureRepository.loadTextureNew(displacementTexturePath, vg::TextureTarget::TEXTURE_2D, samplerState, vg::TextureInternalFormat::R8, fileData.flipV);
+        if (!displacementTextureData) {
+            LOG_CRITICAL("Failed to load displacement texture {} for material {}", fileData.displacementTexture, filePath.getString());
+            return false;
+        }
+        materialGpuData.displacementMap = displacementTextureData->texture.getHandleBindless();
     }
 
-    // Displacement
-    if (fileData.displacementTexture.size()) {
-        assert(false); // TODO
+    // Ambient Occlusion, Metallic, Roughness
+    {
+        vg::ScopedBitmapResource aoData;
+        vg::ScopedBitmapResource roughnessData;
+        vg::ScopedBitmapResource metalData;
+        // TODO: Free maps
+        bool hasTexture = false;
+        // AO
+        if (mIoManager.fileExists(ambientOcclusionTexturePath)) {
+            textureRepository.loadRawTextureData(ambientOcclusionTexturePath, aoData, true /*flipV*/);
+            if (!aoData.bytesUI8) {
+                LOG_CRITICAL("Failed to load AO texture {} for material {}", fileData.ambientOcclusionTexture, filePath.getString());
+                return false;
+            }
+            if (ui32v2(aoData.width, aoData.height) != textureDims) {
+                LOG_CRITICAL("AO texture {} for material {} doesn't match albedo dims", fileData.ambientOcclusionTexture, filePath.getString());
+                return false;
+            }
+            hasTexture = true;
+        }
+
+        // Roughness
+        if (mIoManager.fileExists(roughnessTexturePath)) {
+            textureRepository.loadRawTextureData(roughnessTexturePath, roughnessData, true /*flipV*/);
+            if (!roughnessData.bytesUI8) {
+                LOG_CRITICAL("Failed to load roughness texture {} for material {}", fileData.roughnessTexture, filePath.getString());
+                return false;
+            }
+            if (ui32v2(roughnessData.width, roughnessData.height) != textureDims) {
+                LOG_CRITICAL("Roughness texture {} for material {} doesn't match albedo dims", fileData.roughnessTexture, filePath.getString());
+                return false;
+            }
+            hasTexture = true;
+        }
+
+        // Metallic
+        if (mIoManager.fileExists(metalTexturePath)) {
+            textureRepository.loadRawTextureData(metalTexturePath, metalData, true /*flipV*/);
+            if (!metalData.bytesUI8) {
+                LOG_CRITICAL("Failed to load Metallic texture {} for material {}", fileData.metalTexture, filePath.getString());
+                return false;
+            }
+            if (ui32v2(metalData.width, metalData.height) != textureDims) {
+                LOG_CRITICAL("Metallic texture {} for material {} doesn't match albedo dims", fileData.metalTexture, filePath.getString());
+                return false;
+            }
+            hasTexture = true;
+        }
+
+        if (hasTexture) {
+            VGTexture generatedTexture = mMaterialTextureGenerator->generateAoRoughnessMetallicTexture(aoData.bytesUI8, roughnessData.bytesUI8, metalData.bytesUI8, textureDims, *samplerState);
+            GLTexture& aoMetalRoughGLTexture = mGeneratedAOMetallicRoughnessTextures[materialName];
+            aoMetalRoughGLTexture.init(generatedTexture, vg::TextureTarget::TEXTURE_2D, albedoTextureData->texture.getDims());
+            materialGpuData.aoMetallicRoughnessMap = aoMetalRoughGLTexture.getHandleBindless();
+        }
     }
 
     // Copy properties

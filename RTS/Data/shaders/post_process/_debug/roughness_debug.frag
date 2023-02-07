@@ -6,8 +6,9 @@ out vec4 fColor;
 
 void main() {
 
-    float z = texture(FboRoughness, fUV).r;           // fetch the z-value from our depth texture
+    vec2 rm = texture(FboRoughness, fUV).xy;           // fetch the z-value from our depth texture
     
-    fColor.rgb = vec3(z);
+    fColor.rg = rm;
+    fColor.b = 0.0;
 	fColor.a = 1.0;
 }

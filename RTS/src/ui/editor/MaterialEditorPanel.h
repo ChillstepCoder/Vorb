@@ -22,6 +22,7 @@ private:
     void renderMesh() override;
 
     MaterialHandle mCurrentMaterial;
-    PrimitiveShapeType mShapeType = PrimitiveShapeType::Sphere;
+    PrimitiveShapeType mShapeType = PrimitiveShapeType::UVSphere;
+    float mUvScale = 2.0f;
 };
 

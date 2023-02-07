@@ -1,7 +1,10 @@
 #include "stdafx.h"
-#include "NormalMapGenerator.h"
+#include "MaterialTextureGenerator.h"
+
+#include "util/TextureUtil.h"
 
 #include <Vorb/graphics/SamplerState.h>
+#include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/FullQuadVBO.h>
 #include <Vorb/graphics/GLProgram.h>
 
@@ -125,11 +128,11 @@ void main() {
 }
 )";
 
-NormalMapGenerator::NormalMapGenerator() {
+MaterialTextureGenerator::MaterialTextureGenerator() {
 
 }
 
-NormalMapGenerator::~NormalMapGenerator() {
+MaterialTextureGenerator::~MaterialTextureGenerator() {
 
 }
 
@@ -137,10 +140,9 @@ void onError(const nString& n) {
     pError("Failed to load internal normal map generator shader with error " + n);
 }
 
-void NormalMapGenerator::init() {
+void MaterialTextureGenerator::init() {
     glGenFramebuffers(1, &mFramebufferID);
     mNormalProgram = std::make_unique<vg::GLProgram>();
-    mStencilProgram = std::make_unique<vg::GLProgram>();
     eventpp::ScopedRemover<GLProgramErrorCallbackList> remover1(mNormalProgram->onShaderCompilationError);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> remover2(mNormalProgram->onShaderCompilationError);
     remover1.append([](const nString& s) { onError(s); });
@@ -156,17 +158,10 @@ void NormalMapGenerator::init() {
     mTextureUniform = mNormalProgram->getUniform("unTexture");
     mPixelDimsUniform = mNormalProgram->getUniform("unPixelDims");
 
-    // Stencil
-   /* mStencilProgram->init();
-    mStencilProgram->addShader(vg::ShaderType::VERTEX_SHADER, STENCIL_VERT_SRC);
-    mStencilProgram->addShader(vg::ShaderType::FRAGMENT_SHADER, NORMAL_FRAG_SRC);
-    mStencilProgram->link();
-    mStencilProgram->initUniforms();*/
-
     checkGlError("NormalMapGenerator::init");
 }
 
-VGTexture NormalMapGenerator::generateNormalTexture(VGTexture input, const ui32v2& dims, const vg::SamplerState& samplerState)
+VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const ui32v2& dims, const vg::SamplerState& samplerState)
 {
    glBindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
    glViewport(0, 0, dims.x, dims.y);
@@ -179,12 +174,13 @@ VGTexture NormalMapGenerator::generateNormalTexture(VGTexture input, const ui32v
    ui32 mipLevels = static_cast<ui32>(std::floor(std::log2(std::max(dims.x, dims.y)))) + 1;
    // TODO: Combine specular into the alpha channel?
    // TODO: Remove alpha channel?
-   glTextureStorage2D(normalTexture, mipLevels, GL_RGBA8, dims.x, dims.y);
+   glTextureStorage2D(normalTexture, mipLevels, GL_RGB8, dims.x, dims.y);
 
    glBindTextureUnit(0, input);
    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, normalTexture, 0);
 
    mNormalProgram->use();
+   vg::sBlendStates.REPLACE.set();
    glUniform4f(mUvRectUniform, 0.0f, 0.0f, 1.0f, 1.0f);
    glUniform1i(mTextureUniform, 0);
    glUniform2f(mPixelDimsUniform, 1.0f / dims.x, 1.0f / dims.y);
@@ -192,10 +188,55 @@ VGTexture NormalMapGenerator::generateNormalTexture(VGTexture input, const ui32v
 
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+   samplerState.setForTexture(normalTexture);
    glGenerateTextureMipmap(normalTexture);
    // Ensure texture writes have finished
    //glTextureBarrier(); We dont need this
    checkGlError("Generate Normal Maps End");
 
+   vg::BlendState::restorePrevious();
    return normalTexture;
+}
+
+VGTexture MaterialTextureGenerator::generateAoRoughnessMetallicTexture(const ui8* ao, const ui8* roughness, const ui8* metallic, const ui32v2& dims, const vg::SamplerState& samplerState) {
+    const ui32 pixelCount = dims.x * dims.y;
+    std::vector<ui8v3> combinedBytes(pixelCount);
+    // Combine
+    if (ao && roughness && metallic) {
+        for (ui32 i = 0; i < pixelCount; ++i) {
+            const int sourceOffset = i * 4; // For RGBA
+            // TODO: Load these as R textures
+            combinedBytes[i] = ui8v3(ao[sourceOffset], metallic[sourceOffset], roughness[sourceOffset]);
+        }
+    }
+    else if (roughness && metallic) {
+        for (ui32 i = 0; i < pixelCount; ++i) {
+            const int sourceOffset = i * 4; // For RGBA
+            // TODO: Load these as R textures
+            combinedBytes[i] = ui8v3(UINT8_MAX, metallic[sourceOffset], roughness[sourceOffset]);
+        }
+    }
+    else if (ao && !(roughness || metallic)) {
+        for (ui32 i = 0; i < pixelCount; ++i) {
+            const int sourceOffset = i * 4; // For RGBA
+            // TODO: Load these as R textures
+            combinedBytes[i] = ui8v3(ao[sourceOffset], UINT8_MAX, UINT8_MAX);
+        }
+    }
+    else {
+        for (ui32 i = 0; i < pixelCount; ++i) {
+            const int sourceOffset = i * 4; // For RGBA
+            // TODO: Load these as R textures
+            combinedBytes[i] = ui8v3(ao ? ao[sourceOffset] : UINT8_MAX, metallic ? metallic[sourceOffset] : UINT8_MAX, roughness ? roughness[sourceOffset] : UINT8_MAX);
+        }
+    }
+    VGTexture aoRoughnessMetallicTexture;
+    glCreateTextures(GL_TEXTURE_2D, 1, &aoRoughnessMetallicTexture);
+    glTextureStorage2D(aoRoughnessMetallicTexture, computeMipmapCount(dims, INT_MAX), (VGEnum)vg::TextureInternalFormat::RGB8, dims.x, dims.y);
+    glTextureSubImage2D(aoRoughnessMetallicTexture, 0, 0, 0, dims.x, dims.y, (VGEnum)vg::TextureFormat::RGB, (VGEnum)vg::TexturePixelType::UNSIGNED_BYTE, combinedBytes.data());
+
+    samplerState.setForTexture(aoRoughnessMetallicTexture);
+    glGenerateTextureMipmap(aoRoughnessMetallicTexture);
+
+    return aoRoughnessMetallicTexture;
 }
