@@ -300,23 +300,32 @@ void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f
     const f32v3 pos[4] = { v0, v1, v2, v3 };
 
     // TODO: This could be an axis lookup for branchless
+    // UVs have limited precision range, so we will use modf to make all vertices relative
+    // to a small origin. This assumes materials tile in 0-1
+    float modx, mody;
     switch (uvOrient) {
         case AXIS_X:
-            for (int i = 0; i < 4; ++i) {
-                uvs[i].x = (pos[i].y - worldUVRoot.y) * uvScale.x;
-                uvs[i].y = (pos[i].z - worldUVRoot.z) * uvScale.y;
+            uvs[0].x = std::modf((pos[0].y - worldUVRoot.y) * uvScale.x, &modx);
+            uvs[0].y = std::modf((pos[0].z - worldUVRoot.z) * uvScale.y, &mody);
+            for (int i = 1; i < 4; ++i) {
+                uvs[i].x = (pos[i].y - worldUVRoot.y) * uvScale.x - modx;
+                uvs[i].y = (pos[i].z - worldUVRoot.z) * uvScale.y - mody;
             }
             break;
         case AXIS_Y:
-            for (int i = 0; i < 4; ++i) {
-                uvs[i].x = (pos[i].x - worldUVRoot.x) * uvScale.x;
-                uvs[i].y = (pos[i].z - worldUVRoot.z) * uvScale.y;
+            uvs[0].x = std::modf((pos[0].x - worldUVRoot.x) * uvScale.x, &modx);
+            uvs[0].y = std::modf((pos[0].z - worldUVRoot.z) * uvScale.y, &mody);
+            for (int i = 1; i < 4; ++i) {
+                uvs[i].x = (pos[i].x - worldUVRoot.x) * uvScale.x - modx;
+                uvs[i].y = (pos[i].z - worldUVRoot.z) * uvScale.y - mody;
             }
             break;
         case AXIS_Z:
-            for (int i = 0; i < 4; ++i) {
-                uvs[i].x = (pos[i].x - worldUVRoot.x) * uvScale.x;
-                uvs[i].y = (pos[i].y - worldUVRoot.y) * uvScale.y;
+            uvs[0].x = std::modf((pos[0].x - worldUVRoot.x) * uvScale.x, &modx);
+            uvs[0].y = std::modf((pos[0].y - worldUVRoot.y) * uvScale.y, &mody);
+            for (int i = 1; i < 4; ++i) {
+                uvs[i].x = (pos[i].x - worldUVRoot.x) * uvScale.x - modx;
+                uvs[i].y = (pos[i].y - worldUVRoot.y) * uvScale.y - mody;
             }
             break;
         default:

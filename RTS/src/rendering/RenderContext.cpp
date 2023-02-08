@@ -456,7 +456,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     {
         mSmudgeRenderer->beginSmudgePass(mActiveGBuffer);
         mStaticModelRenderer->renderModelPass(MaterialRenderPassType::Smudge, camera);
-        if (!sDebugOptions.mHideGrass) {
+        if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             mGrassRenderer->renderGrass(camera, playerPos, mGrassMeshes);
         }
         mSmudgeRenderer->renderSmudge(mActiveGBuffer, camera);
@@ -521,6 +521,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // *** Post processes ***
+    // TODO: Bloom note (from acerola) https://www.youtube.com/watch?v=IMiiUEG-sLQ_
+    // Contrast -> Brighness -> Saturation -> Gamma correction -> Bloom -> Bloom can be done via mipmapping (GPU DOWNSCALING then UPSCALING)
 
     vg::DepthState::NONE.set();
 
@@ -708,12 +710,12 @@ void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState&
 
 void RenderContext::renderPassTransparent(const Camera3D& camera, const RenderState& renderState) {
     // Render clouds without shadows
-    if (!sDebugOptions.mDisableClouds) {
+    if (!sDebugOptions.mDisableClouds && !sDebugOptions.mWireframe) {
         mCloudRenderer->renderClouds(*mCloudManager, mHDRLightGBuffer->getDepthStencilTexture(), mHDRLightGBuffer.get(), camera, *mSkyBox->getCubemap());
     }
 
     // Water (No depth write)
-    if (!sDebugOptions.mDisableWater) {
+    if (!sDebugOptions.mDisableWater && !sDebugOptions.mWireframe) {
         mTerrainRenderer->renderWater(camera, mTerrainWaterMeshes, *mSkyBox->getCubemap());
     }
     

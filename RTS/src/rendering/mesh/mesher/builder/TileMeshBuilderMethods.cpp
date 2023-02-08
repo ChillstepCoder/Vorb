@@ -246,8 +246,8 @@ void mergeOrMakeSouthNorthWall(const TileContainer& tileContainer, ui32 x, ui32 
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isNorth * 2 + 1];
     const ui32 wallCartesian = isNorth * 3; // Match cartesian
 
-    const f32v2 vertWoobleStartBottom = (z == 0 ? f32v2(0.0f) : TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z - 1));
-    const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z);
+    const f32v2 vertWoobleStartBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z);
+    const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z + 1);
     if (walls.walls[wallCartesian].wallID != TILE_ID_NONE) {
         // We have a wall
         // Inside walls
@@ -298,8 +298,8 @@ void mergeOrMakeWestEastWall(const TileContainer& tileContainer, ui32 x, ui32 y,
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isEast * 2 + 1];
     const ui32 wallCartesian = 1 + isEast; // Match cartesian
 
-    const f32v2 vertWoobleStartBottom = (z == 0 ? f32v2(0.0f) : TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z - 1));
-    const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z);
+    const f32v2 vertWoobleStartBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z);
+    const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z + 1);
     if (walls.walls[wallCartesian].wallID != TILE_ID_NONE) {
         // We have a wall
         // Inside walls
@@ -529,23 +529,24 @@ void meshWalls(const TileContainer& tileContainer, ProceduralMeshBuilder& meshBu
 }
 
 void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
+    PROFILE_FUNCTION();
 
     const TileContainer& tileContainer = builders.container;
     const ui32v3& tileDims = tileContainer.getDims();
     const f32v3 tileContainerWorldPos = tileContainer.getWorldPos3D();
     // =============== Mesh tiles ===============
     TileIndex index = 0;
-    for (ui32 z = 0; z < tileDims.z; ++z) {
-        for (ui32 y = 0; y < tileDims.y; ++y) {
-            for (ui32 x = 0; x < tileDims.x; ++x, ++index) {
+    ui32v3 xyz;
+    for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
+        for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
+            for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++index) {
                 const Tile& tile = tileContainer.getTileAt(index);
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayers()[layerIndex];  // TODO: Thread safe when async
-                    // Blocked or invalid tiles have no render
+                    // Blocked or invalid tiles have no render (Unowned tiles should all be NONE)
                     if (isTileBlockedOrNone(layerTile)) {
                         continue;
                     }
-
                     const TileData& tileData = TileRepository::getTileData(layerTile);
 
                     // Tile mesh
@@ -556,13 +557,13 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData.id, true);
                     }
                     else if (tileData.shape == TileShape::BLOCK) {
-                        TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(x, y, z * tileContainer.getFloorHeight()), TileHandle(&tileContainer, index), tileData, physics);
+                        TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * tileContainer.getFloorHeight()), TileHandle(&tileContainer, index), tileData, physics);
                     }
                     else if (tileData.shape == TileShape::FLOOR) {
-                        TileMeshBuilderMethods::addFloor(builders.staticBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physics);
+                        TileMeshBuilderMethods::addFloor(builders.staticBuilder, xyz.z * tileContainer.getFloorHeight(), xyz, tileData.materialData, physics);
                     }
                     else if (tileData.shape == TileShape::STAIRS) {
-                        TileMeshBuilderMethods::addStairs(builders.staticBuilder, z * tileContainer.getFloorHeight(), f32v2(x, y), TileHandle(&tileContainer, index), tileData, physics);
+                        TileMeshBuilderMethods::addStairs(builders.staticBuilder, xyz.z * tileContainer.getFloorHeight(), f32v2(xyz.x, xyz.y), TileHandle(&tileContainer, index), tileData, physics);
                     }
                     else if (tileData.shape == TileShape::MODEL) {
                         f32v3 worldPos = tileContainer.getTileCenterWorldPosition(index);
@@ -795,21 +796,24 @@ void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuil
     physMesh.addQuadBetweenPoints(botNW, topNW, topNE, botNE);
 }
 
-void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh) {
-    const f32v3 tilePos(tileXY.x, tileXY.y, floorBaseHeight + 0.0001f);
-    // Render top
-    meshBuilder.addAxisAlignedQuad(
-        tilePos,
-        f32v2(1.0f), // Dimensions
-        CubeFacing::TOP,
-        tileData.materialData,
-        f32v4(0.0f, 2.0f / 3.0f, 1.0f, 1.0f / 3.0f),
-        COLOR_WHITE
-    );
-    physMesh.addTileQuad(tilePos, f32v2(1.0f), CubeFacing::TOP);
-    // TODO: Thickness
+void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh) {
+    const f32v3 tilePos(tileXYZ.x, tileXYZ.y, floorBaseHeight + 0.0001f);
 
+    f32v3 positions[4];
+    const f32v2 wooble0 = getStructureWoobleAtPoint(tileXYZ);
+    positions[0] = f32v3(tilePos.x + wooble0.x, tilePos.y + wooble0.y, tilePos.z);
+    const f32v2 wooble1 = getStructureWoobleAtPoint(tileXYZ + ui32v3(1, 0, 0));
+    positions[1] = f32v3(tilePos.x + 1.0f + wooble1.x, tilePos.y + wooble1.y, tilePos.z);
+    const f32v2 wooble2 = getStructureWoobleAtPoint(tileXYZ + ui32v3(1, 1, 0));
+    positions[2] = f32v3(tilePos.x + 1.0f + wooble2.x, tilePos.y + 1.0f + wooble2.y, tilePos.z);
+    const f32v2 wooble3 = getStructureWoobleAtPoint(tileXYZ + ui32v3(0, 1, 0));
+    positions[3] = f32v3(tilePos.x + wooble3.x, tilePos.y + 1.0f + wooble3.y, tilePos.z);
+
+    meshBuilder.addQuadBetweenPointsWorldUV(positions, materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+    physMesh.addQuadBetweenPoints(positions);
+   // assert(false); // You know what to do ;)
     /*f32 corners[4];
+
     mWorldGrid.computeTileCorners(heightData->data, TilePosition(chunk.getChunkID(), tileIndex), corners);
 
     if (isOnTerrain) {
@@ -824,6 +828,23 @@ void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, f32 fl
     else {
         assert(false);
     }*/
+}
+
+void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh) {
+    const f32v3 tilePos(tileXYZ.x, tileXYZ.y, floorBaseHeight + 0.0001f);
+
+    f32v3 positions[4];
+    const f32v2 wooble0 = getStructureWoobleAtPoint(tileXYZ);
+    positions[0] = f32v3(tilePos.x + wooble0.x, tilePos.y + wooble0.y, tilePos.z);
+    const f32v2 wooble1 = getStructureWoobleAtPoint(tileXYZ + ui32v3(1, 0, 0));
+    positions[1] = f32v3(tilePos.x + 1.0f + wooble1.x, tilePos.y + wooble1.y, tilePos.z);
+    const f32v2 wooble2 = getStructureWoobleAtPoint(tileXYZ + ui32v3(1, 1, 0));
+    positions[2] = f32v3(tilePos.x + 1.0f + wooble2.x, tilePos.y + 1.0f + wooble2.y, tilePos.z);
+    const f32v2 wooble3 = getStructureWoobleAtPoint(tileXYZ + ui32v3(0, 1, 0));
+    positions[3] = f32v3(tilePos.x + wooble3.x, tilePos.y + 1.0f + wooble3.y, tilePos.z);
+
+    meshBuilder.addQuadBetweenPointsWorldUV(positions, materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+    physMesh.addQuadBetweenPoints(positions);
 }
 
 void TileMeshBuilderMethods::addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData) {
@@ -1206,8 +1227,13 @@ f32 TileMeshBuilderMethods::getModelRotationAtPosition(const f32v3& worldPos) {
     return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
 }
 
+f32v2 TileMeshBuilderMethods::getStructureWoobleAtPoint(const ui32v3& xyz) {
+    return getStructureWoobleAtPoint(xyz.x, xyz.y, xyz.z);
+}
+
 f32v2 TileMeshBuilderMethods::getStructureWoobleAtPoint(ui32 x, ui32 y, ui32 z) {
-    if (Random::getCachedRandomfSpecific(x | (y << 3) + z * 1523u) <= sDebugOptions.mWallWoobleChance) {
+    // No wooble on the bottom layer
+    if (z != 0 && Random::getCachedRandomfSpecific(x | (y << 3) + z * 1523u) <= sDebugOptions.mWallWoobleChance) {
         f32v2 outWooble = f32v2(Random::getThreadSafef(x, y + z * 1200u), Random::getThreadSafef(y - z * 1200u, x));
         // Scale -1 to 1
         outWooble = outWooble * 2.0f - 1.0f;

@@ -62,6 +62,8 @@ void main() {
     
     vec2 timeOffset = vec2(Time) * unSurfaceMoveSpeed;
     vec2 distortSample = texture(unSurfaceDistort, fUV.xy * unDistortTiling).rg * unSurfaceDistortAmount;
+    // Add a finer detail layer (need to apply to normal too)
+    //distortSample += texture(unSurfaceDistort, fUV.xy * unDistortTiling * 4.0).rg * unSurfaceDistortAmount;
     
     vec2 noiseUV = fUV + timeOffset + distortSample;
      

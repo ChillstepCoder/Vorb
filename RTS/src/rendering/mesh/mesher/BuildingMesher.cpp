@@ -834,8 +834,8 @@ void BuildingMesher::meshRoomCeilings(const Building& building, ProceduralMeshBu
                     // If were at the top or the tile above us is outside the interior, or its interior and a non air tile above us, mesh a ceiling
                     const TileIndex aboveIndex = index + aabb.dims.x * aabb.dims.y;
                     if (z == tileContainer.getDims().z - 1 || // If were at the top
-                        !ownedTiles.getBit(aboveIndex) || // Or tile above us is an exterior tile
-                        !tileContainer.getTileAt(aboveIndex).isEmpty()) { // Or its an interior tile and not empty
+                        !ownedTiles.getBit(aboveIndex) // Or tile above us is an exterior tile
+                        /*|| !tileContainer.getTileAt(aboveIndex).isEmpty()*/) { // Or its an interior tile and not empty
                         // Mesh ceiling
                         f32v3 startPos(x, y, tileContainer.getFloorHeight() * (z + 1) - CEILING_THICKNESS);
                         meshBuilder.addAxisAlignedQuad(startPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodMaterial, uvRect, COLOR_WHITE);

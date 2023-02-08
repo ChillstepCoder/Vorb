@@ -17,6 +17,8 @@ out vec4 fColor;
 #include "util/gaussian_blur.glsl"
 #include "util/depth.glsl"
 
+// TODO: Improve https://www.youtube.com/watch?v=v9x_50czf-4
+
 void main() {
     float depth = texture2D(FboDepth, fUV).r;
 	float isGround = 1.0 - step(0.999999999, depth);
