@@ -191,3 +191,9 @@ private:
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
 static_assert(sizeof(Tile) == 32, "Keep small");
 //SIZER(Tile);
+
+// All meshable data from a container, copied to prevent race conditions or mutex locks
+struct ContainerTileDataCopy {
+    std::vector<Tile> mTiles;
+    std::vector<TileWalls> mWalls;
+};

@@ -498,7 +498,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprint& bp, VisualLog* vi
             break;
     }
     const i32 maxDepthOffsetPerLayer = dims.x / maximumDepth;
-    f32 availableWidthSpan = dims.y;
+    f32 availableWidthSpan = (f32)dims.y;
     // Place the root, +1 so we are less likely to touch the side of the AABB
     root->offsetFromZero = i32v2(vmath::min(maxDepthOffsetPerLayer / 2, (i32)root->desiredWidth / 2) + 1, dims.y / 2);
     if (root->offsetFromZero.x == 0) root->offsetFromZero.x = 1u;

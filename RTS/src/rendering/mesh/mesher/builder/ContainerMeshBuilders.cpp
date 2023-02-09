@@ -9,7 +9,7 @@ ContainerMeshBuilders::ContainerMeshBuilders(const TileContainer& container, boo
     billboardBuilder(),
     modelGatherer(container.getId(), f32v3(container.getWorldPos3D()))
 {
-
+    container.copyMeshableDataWorkerThread(tileData);
 }
 
 void ContainerMeshBuilders::computeBoundingSpheres() {

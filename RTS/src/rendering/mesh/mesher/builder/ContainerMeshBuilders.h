@@ -3,6 +3,7 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/BillboardMeshBuilder.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
+#include "tile/Tile.h"
 
 class TileContainer;
 
@@ -15,6 +16,7 @@ public:
     void computeBoundingSpheres();
 
     const TileContainer& container;
+    ContainerTileDataCopy tileData;
     ProceduralMeshBuilder staticBuilder;
     ProceduralMeshBuilder dynamicBuilder;
     BillboardMeshBuilder billboardBuilder;

@@ -5,6 +5,7 @@
 #include "tile/TileContainerEvents.h"
 
 #include "physics/StaticPhysicsMesh.h"
+#include <shared_mutex>
 
 class btRigidBody;
 class Mesh;
@@ -190,8 +191,16 @@ public:
         return i32v2(i % mDims.x, (i % layerSize) / mDims.x);
     }
     f32v3 getTileCenterWorldPosition(TileIndex i) const {
+        assert(IS_GAME_THREAD());
         const ui32 layerSize = mDims.x * mDims.y;
         return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + mTiles[i].groundZOffset);
+    }
+    f32v3 getTileCenterWorldPositionThreadSafe(TileIndex i, f32 tileGroundZOffset) const {
+        const ui32 layerSize = mDims.x * mDims.y;
+        return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + tileGroundZOffset);
+    }
+    static TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz, const ui32v3& dims) {
+        return xyz.x + xyz.y * dims.x + xyz.z * dims.x * dims.y;
     }
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
         return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;
@@ -259,6 +268,8 @@ public:
     void addEntrance(TileIndex pos, bool isLocked);
     void removeEntrance(TileIndex pos);
 
+    void copyMeshableDataWorkerThread(OUT ContainerTileDataCopy& dataCopy) const;
+
 private:
     void onTileChanged(TileIndex tileIndex);
 
@@ -266,6 +277,7 @@ private:
     void removeDoor(Cartesian doorSide, TileIndex tileIndex);
 
     BitArray mOwnedTiles;
+    mutable std::shared_mutex mSharedMutex;
     // TODO: Can we use arrays instead of vectors to shrink these a bit?
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
     std::vector<TileWalls> mWalls; // TODO: Memory recycler and or compression

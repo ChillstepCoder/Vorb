@@ -376,16 +376,23 @@ void GameplayScreen::updateTilePicking() {
                     TileContainerID containerOwner = hitResult.mCollisionObject->getUserIndex2();
                     if (containerOwner != INVALID_PHYSICS_USER_INDEX) {
                         TileIndex index = hitResult.mCollisionObject->getUserIndex3();
-                        LiteTileHandle* tileHandlePtr = new LiteTileHandle(containerOwner, index);
-                        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                            LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
-                            TileHandle handle = tileHandlePtr->toTileHandle();
-                            if (handle.isValid()) {
-                                handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Ground, TILE_ID_NONE);
-                                handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Main, TILE_ID_NONE);
-                            }
-                            delete tileHandlePtr;
-                        }, tileHandlePtr);
+                        // ONLY WORKS FOR MODELS
+                        // (TODO: TILE SELECT)
+                        if (index != INVALID_TILE_INDEX) {
+                            LiteTileHandle* tileHandlePtr = new LiteTileHandle(containerOwner, index);
+                            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                                LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
+                                TileHandle handle = tileHandlePtr->toTileHandle();
+                                if (handle.isValid()) {
+                                    handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Ground, TILE_ID_NONE);
+                                    handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Main, TILE_ID_NONE);
+                                }
+                                delete tileHandlePtr;
+                            }, tileHandlePtr);
+                        }
+                        else {
+                            LOG_DEBUG("Selected invalid tile");
+                        }
                     }
                     else {
                         // Selected terrain

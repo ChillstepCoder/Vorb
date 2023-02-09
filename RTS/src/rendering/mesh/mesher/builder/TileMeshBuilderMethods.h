@@ -19,10 +19,10 @@ namespace TileMeshBuilderMethods {
     void addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh);
     void addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh);
     void addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh);
-    void addFloor(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh);
-    void addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh);
+    void addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh);
+    void addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh);
     void addFloorTerrainAligned(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const HeightmapPatchData* heightData, const TileHandle& tileHandle, const TileData& tileData);
-    void addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorBaseHeight, const f32v2& tileXY, const TileHandle& tileHandle, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh);
+    void addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, float tileGroundZOffset, Cartesian tileOrientation, const TileData& tileData, StaticPhysicsMeshBuilder& physMesh);
     void addWall(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const TileData& tileData, Cartesian dir, f32 height, StaticPhysicsMeshBuilder& physMesh);
     f32 getModelRotationAtPosition(const f32v3& worldPos);
 

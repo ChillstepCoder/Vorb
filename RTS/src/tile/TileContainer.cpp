@@ -149,7 +149,10 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     evnt.edit.changeLayer.newId = id;
     evnt.edit.changeLayer.layer = layer;
     // Edit
-    tile.layers[e_cast(layer)] = id;
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.layers[e_cast(layer)] = id;
+    }
     // Dispatch notify
     TileContainerRepository::dispatchEditTile(evnt);
 
@@ -159,42 +162,65 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
 void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setTileFlag(flag);
+
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.setTileFlag(flag);
+    }
     onTileChanged(i);
 }
 
 void TileContainer::setTileFlags(TileIndex i, TileFlags flags) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setTileFlags(flags);
+
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.setTileFlags(flags);
+    }
     onTileChanged(i);
 }
 
 void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.clearTileFlag(flag);
+
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.clearTileFlag(flag);
+    }
     onTileChanged(i);
 }
 
 void TileContainer::clearTileFlags(TileIndex i) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.clearTileFlags();
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.clearTileFlags();
+    }
     onTileChanged(i);
 }
 
 void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setGroundZPosition(groundZPosition);
+
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.setGroundZPosition(groundZPosition);
+    }
     onTileChanged(i);
 }
 
 void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    tile.setOrientation(dir, layer);
+
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.setOrientation(dir, layer);
+    }
     onTileChanged(i);
 }
 
@@ -215,7 +241,11 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
     if (newId != TILE_ID_NONE && TileRepository::getTileData(newId).shape == TileShape::DOOR) {
         addDoor(dir, index);
     }
-    tileWalls.walls[e_cast(dir)] = wall;
+
+    {
+        std::lock_guard lock(mSharedMutex);
+        tileWalls.walls[e_cast(dir)] = wall;
+    }
     onTileChanged(index);
 }
 
@@ -223,7 +253,6 @@ void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
     assert(isReady());
     assert(IS_GAME_THREAD());
     TileWalls& tileWalls = mWalls[index];
-    Tile& tile = mTiles[index];
     // Check for any removed or added doors (Dynamic objects)
     for (int i = 0; i < 4; ++i) {
         // Old door
@@ -237,7 +266,10 @@ void TileContainer::setWallsAt(TileIndex index, TileWalls walls) {
             addDoor(Cartesian(i), index);
         }
     }
-    tileWalls = walls;
+    {
+        std::lock_guard lock(mSharedMutex);
+        tileWalls = walls;
+    }
     onTileChanged(index);
 }
 
@@ -258,15 +290,19 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
 void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
     assert(IS_GAME_THREAD());
     assert(isReady());
-    auto&& newEntrance = mEntrances.emplace_back();
-    newEntrance.tileIndex = pos;
-    newEntrance.isLocked = true;
+    {
+        std::lock_guard lock(mSharedMutex);
+        auto&& newEntrance = mEntrances.emplace_back();
+        newEntrance.tileIndex = pos;
+        newEntrance.isLocked = true;
+    }
     LOG_CRITICAL("TODO: Update nav in TileContainer::addEntrance");
 }
 
 void TileContainer::removeEntrance(TileIndex pos) {
     assert(IS_GAME_THREAD());
     assert(isReady());
+    std::lock_guard lock(mSharedMutex);
     for (size_t i = 0; i < mEntrances.size(); ++i) {
         if (mEntrances[i].tileIndex == pos) {
             mEntrances[i] = mEntrances.back();
@@ -274,6 +310,16 @@ void TileContainer::removeEntrance(TileIndex pos) {
         }
     }
     LOG_CRITICAL("TODO: Update nav in TileContainer::removeEntrance");
+}
+
+void TileContainer::copyMeshableDataWorkerThread(OUT ContainerTileDataCopy& dataCopy) const {
+    assert(!IS_GAME_THREAD());
+    PROFILE_FUNCTION();
+    {
+        std::shared_lock lock(mSharedMutex);
+        dataCopy.mTiles = mTiles;
+        dataCopy.mWalls = mWalls;
+    } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 
 void TileContainer::onTileChanged(TileIndex tileIndex) {
@@ -312,6 +358,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
 }
 //#include "debugging/DebugRenderer.h" // TODO: REMOVE
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
+    std::lock_guard lock(mSharedMutex);
     assert(isReady());
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
     if (!mIsTerrain) {
@@ -364,6 +411,7 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
 }
 
 void TileContainer::removeDoor(Cartesian doorSide, TileIndex tileIndex) {
+    std::lock_guard lock(mSharedMutex);
     assert(false); // Implement removing the navnode edge
     for (size_t i = 0; i < mDynamicTiles.size(); ++i) {
         if (mDynamicTiles[i].mTileIndex == tileIndex && mDynamicTiles[i].mType == e_cast(doorSide)) {
