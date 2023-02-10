@@ -80,3 +80,7 @@ void HostWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
     cliDirtyTerrainFromBrush(pos, brushRadius);
     sharedDirtyTerrainFromBrush(pos, brushRadius);
 }
+
+void HostWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
+    cliDirtyGrassFromBrush(pos, brushRadius);
+}

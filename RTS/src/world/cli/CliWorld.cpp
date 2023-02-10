@@ -59,3 +59,7 @@ void CliWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
     cliDirtyTerrainFromBrush(pos, brushRadius);
     sharedDirtyTerrainFromBrush(pos, brushRadius);
 }
+
+void CliWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
+    cliDirtyGrassFromBrush(pos, brushRadius);
+}

@@ -866,8 +866,9 @@ void BuildingMesher::meshRoomUndercarriage(const Building& building, ProceduralM
                     // Place floor tiles and increment X
                     const ui32 startX = x;
                     do {
-                        const f32v3 floorPos(x, y, tileContainer.getFloorHeight() * z - 0.0001f);
-                        meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodMaterial, uvRect, COLOR_WHITE);
+                        // Disabled now since floor takes care of it
+                       // const f32v3 floorPos(x, y, tileContainer.getFloorHeight() * z - 0.0001f);
+                       // meshBuilder.addAxisAlignedQuad(floorPos, f32v2(1.0f), CubeFacing::BOTTOM, rawWoodMaterial, uvRect, COLOR_WHITE);
                     } while (++x < aabb.dims.x && ownedTiles.getBit(++index));
                     // TODO: ADD BOARD
                     const f32 boardThickness = 0.1f;

@@ -17,6 +17,7 @@ public:
     void frameUpdate(const Camera3D& camera, f32 elapsedSec) override;
     void onWorldBegin(const f32v2& loadCenter) override;
     void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) override;
+    void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) override;
 
 private:
 

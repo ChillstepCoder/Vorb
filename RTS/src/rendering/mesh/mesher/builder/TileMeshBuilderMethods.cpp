@@ -172,7 +172,8 @@ struct PrevWallIndices {
 };
 
 constexpr f32 WALL_THICKNESS = 0.1f;
-constexpr f32 OUTSIDE_EPSILON = 0.01f;
+// TODO: Fix pixel seams that this causes
+constexpr f32 OUTSIDE_EPSILON = 0.002f; // Reduce Z fighting artefacts
 constexpr f32 WALL_THICKNESS_PLUS_EPSILON = WALL_THICKNESS + OUTSIDE_EPSILON;
 
 
@@ -191,17 +192,15 @@ void mergeOrMakeWallFace(
     f32 yAdd,
     bool isInside,
     const f32v2& woobleStartBottom,
-    const f32v2& woobleStartTop
+    const f32v2& woobleStartTop,
+    const f32v2& woobleEndBottom,
+    const f32v2& woobleEndTop
 ) {
     bool didMerge = false;
-    // We are looking at the last vertex of the previous wall, apply its wooble
-
     if (prevIndex != UINT32_MAX) {
         WallChainData& prevWall = wallData[prevIndex];
-        prevWall.vertWoobleEndBottom = woobleStartBottom;
-        prevWall.vertWoobleEndTop = woobleStartTop;
         // Woobles cant merge
-        if (prevWall.hasWooble() == false) {
+        if (prevWall.hasWooble() == false && woobleEndBottom == f32v2(0.0f) && woobleEndTop == f32v2(0.0f)) {
             // We can only merge if same height, same tile ID, and not a door, and if we arent about to blow our UV range
             if (prevWall.groundPos == groundZPosition && prevWall.tileId == walls.walls[wallCartesian].wallID && prevWall.length < UV_MAX_RANGE) {
                 // Extend previous wall
@@ -231,6 +230,8 @@ void mergeOrMakeWallFace(
         newWall.isPrimary = isInside;
         newWall.vertWoobleStartBottom = woobleStartBottom;
         newWall.vertWoobleStartTop = woobleStartTop;
+        newWall.vertWoobleEndBottom = woobleEndBottom;
+        newWall.vertWoobleEndTop = woobleEndTop;
     }         
 }
 
@@ -243,21 +244,24 @@ void mergeOrMakeSouthNorthWall(const std::vector<TileWalls>& tileWalls, const st
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isNorth * 2 + 1];
     const ui32 wallCartesian = isNorth * 3; // Match cartesian
 
-    const f32v2 vertWoobleStartBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z);
-    const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z + 1);
     if (walls.walls[wallCartesian].wallID != TILE_ID_NONE) {
+        // TODO: We can cache this so its not shitty
+        const f32v2 vertWoobleStartBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z);
+        const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x, y + (ui32)isNorth, z + 1);
+        const f32v2 vertWoobleEndBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + 1, y + (ui32)isNorth, z);
+        const f32v2 vertWoobleEndTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + 1, y + (ui32)isNorth, z + 1);
         // We have a wall
         // Inside walls
-        mergeOrMakeWallFace(floorHeight, prevInnerIndex, wallData, groundZOffset, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, 0.0f, isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, true, vertWoobleStartBottom, vertWoobleStartTop);
+        mergeOrMakeWallFace(floorHeight, prevInnerIndex, wallData, groundZOffset, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, 0.0f, isNorth * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, true, vertWoobleStartBottom, vertWoobleStartTop, vertWoobleEndBottom, vertWoobleEndTop);
         // Outside walls
         if (isNorth) {
             if (y == dims.y - 1 || tileWalls[tileIndex + dims.x].south.wallID == TILE_ID_NONE) {
-                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, 1.0f + OUTSIDE_EPSILON, false, vertWoobleStartBottom, vertWoobleStartTop);
+                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, 1.0f + OUTSIDE_EPSILON, false, vertWoobleStartBottom, vertWoobleStartTop, vertWoobleEndBottom, vertWoobleEndTop);
             }
         }
         else {
             if (y == 0 || tileWalls[tileIndex - dims.x].north.wallID == TILE_ID_NONE) {
-                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, -OUTSIDE_EPSILON, false, vertWoobleStartBottom, vertWoobleStartTop);
+                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 0.0f, -OUTSIDE_EPSILON, false, vertWoobleStartBottom, vertWoobleStartTop, vertWoobleEndBottom, vertWoobleEndTop);
             }
         }
         
@@ -267,16 +271,12 @@ void mergeOrMakeSouthNorthWall(const std::vector<TileWalls>& tileWalls, const st
         if (prevInnerIndex != UINT32_MAX) {
             // End previous wall
             WallChainData& prevWall = wallData[prevInnerIndex];
-            prevWall.vertWoobleEndBottom = vertWoobleStartBottom;
-            prevWall.vertWoobleEndTop = vertWoobleStartTop;
             prevWall.cornerTypeEnd = WallCornerType::FLAT;
             prevInnerIndex = UINT32_MAX;
         }
         if (prevOuterIndex != UINT32_MAX) {
             // End previous wall
             WallChainData& prevWall = wallData[prevOuterIndex];
-            prevWall.vertWoobleEndBottom = vertWoobleStartBottom;
-            prevWall.vertWoobleEndTop = vertWoobleStartTop;
             prevWall.cornerTypeEnd = WallCornerType::FLAT;
             prevOuterIndex = UINT32_MAX;
         }
@@ -292,21 +292,23 @@ void mergeOrMakeWestEastWall(const std::vector<TileWalls>& tileWalls, const std:
     ui32& prevOuterIndex = prevSouthNorthWallIndices.indices[isEast * 2 + 1];
     const ui32 wallCartesian = 1 + isEast; // Match cartesian
 
-    const f32v2 vertWoobleStartBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z);
-    const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z + 1);
     if (walls.walls[wallCartesian].wallID != TILE_ID_NONE) {
+        const f32v2 vertWoobleStartBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z);
+        const f32v2 vertWoobleStartTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y, z + 1);
+        const f32v2 vertWoobleEndBottom = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y + 1, z);
+        const f32v2 vertWoobleEndTop = TileMeshBuilderMethods::getStructureWoobleAtPoint(x + (ui32)isEast, y + 1, z + 1);
         // We have a wall
         // Inside walls
-        mergeOrMakeWallFace(floorHeight, prevInnerIndex, wallData, groundZOffset, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, isEast * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, 0.0f, true, vertWoobleStartBottom, vertWoobleStartTop);
+        mergeOrMakeWallFace(floorHeight, prevInnerIndex, wallData, groundZOffset, walls, wallCartesian, CARTESIAN_OPPOSITES[wallCartesian], x, y, z, isEast * (1.0f - 2.0f * WALL_THICKNESS) + WALL_THICKNESS, 0.0f, true, vertWoobleStartBottom, vertWoobleStartTop, vertWoobleEndBottom, vertWoobleEndTop);
         // Outside walls
         if (isEast) {
             if (x == dims.x - 1 || tileWalls[tileIndex + 1].west.wallID == TILE_ID_NONE) {
-                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 1.0f + OUTSIDE_EPSILON, 0.0f, false, vertWoobleStartBottom, vertWoobleStartTop);
+                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, 1.0f + OUTSIDE_EPSILON, 0.0f, false, vertWoobleStartBottom, vertWoobleStartTop, vertWoobleEndBottom, vertWoobleEndTop);
             }
         }
         else {
             if (x == 0 || tileWalls[tileIndex + 1].east.wallID == TILE_ID_NONE) {
-                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, -OUTSIDE_EPSILON, 0.0f, false, vertWoobleStartBottom, vertWoobleStartTop);
+                mergeOrMakeWallFace(floorHeight, prevOuterIndex, wallData, groundZOffset, walls, wallCartesian, Cartesian(wallCartesian), x, y, z, -OUTSIDE_EPSILON, 0.0f, false, vertWoobleStartBottom, vertWoobleStartTop, vertWoobleEndBottom, vertWoobleEndTop);
             }
         }
 
@@ -316,16 +318,12 @@ void mergeOrMakeWestEastWall(const std::vector<TileWalls>& tileWalls, const std:
         if (prevInnerIndex != UINT32_MAX) {
             // End previous wall
             WallChainData& prevWall = wallData[prevInnerIndex];
-            prevWall.vertWoobleEndBottom = vertWoobleStartBottom;
-            prevWall.vertWoobleEndTop = vertWoobleStartTop;
             prevWall.cornerTypeEnd = WallCornerType::FLAT;
             prevInnerIndex = UINT32_MAX;
         }
         if (prevOuterIndex != UINT32_MAX) {
             // End previous wall
             WallChainData& prevWall = wallData[prevOuterIndex];
-            prevWall.vertWoobleEndBottom = vertWoobleStartBottom;
-            prevWall.vertWoobleEndTop = vertWoobleStartTop;
             prevWall.cornerTypeEnd = WallCornerType::FLAT;
             prevOuterIndex = UINT32_MAX;
         }
@@ -821,6 +819,8 @@ void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuil
 }
 
 void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialData& materialData, StaticPhysicsMeshBuilder& physMesh) {
+
+    constexpr f32 FLOOR_THICKNESS = 0.05f;
     const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight + 0.0001f);
 
     f32v3 positions[4];
@@ -834,6 +834,8 @@ void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileSh
     positions[3] = f32v3(tilePos.x + wooble3.x, tilePos.y + 1.0f + wooble3.y, tilePos.z);
 
     // Top
+    // 3 2
+    // 0 1
     meshBuilder.addQuadBetweenPointsWorldUV(positions, materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
 
     // Collision ONLY on top. Floors are thin so the extra physics geo is not needed
@@ -843,9 +845,34 @@ void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileSh
     if (tileXYZ.z == 0) {
         return;
     }
-
+    f32v3 bottomPositions[4] = {
+        positions[1], positions[0], positions[3], positions[2]
+    };
+    for (int i = 0; i < 4; ++i) {
+        bottomPositions[i].z -= FLOOR_THICKNESS;
+    }
     // Bottom
-    meshBuilder.addQuadBetweenPointsWorldUV(positions[1], positions[0], positions[3], positions[2], materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+    // 2 3
+    // 1 0
+    meshBuilder.addQuadBetweenPointsWorldUV(bottomPositions, materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Z, f32v3(0.0f));
+
+    // TODO: Smarter culling
+    // South
+    if (adjacentShapes[e_cast(Cartesian::SOUTH)] != TileShape::FLOOR) {
+        meshBuilder.addQuadBetweenPointsWorldUV(bottomPositions[1], bottomPositions[0], positions[1], positions[0], materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Y, f32v3(0.0f));
+    }
+    // West
+    if (adjacentShapes[e_cast(Cartesian::WEST)] != TileShape::FLOOR) {
+        meshBuilder.addQuadBetweenPointsWorldUV(bottomPositions[2], bottomPositions[1], positions[0], positions[3], materialData, f32v2(1.0f), COLOR_WHITE, AXIS_X, f32v3(0.0f));
+    }
+    // East
+    if (adjacentShapes[e_cast(Cartesian::EAST)] != TileShape::FLOOR) {
+        meshBuilder.addQuadBetweenPointsWorldUV(bottomPositions[0], bottomPositions[3], positions[2], positions[1], materialData, f32v2(1.0f), COLOR_WHITE, AXIS_X, f32v3(0.0f));
+    }
+    // North
+    if (adjacentShapes[e_cast(Cartesian::NORTH)] != TileShape::FLOOR) {
+        meshBuilder.addQuadBetweenPointsWorldUV(bottomPositions[3], bottomPositions[2], positions[3], positions[2], materialData, f32v2(1.0f), COLOR_WHITE, AXIS_Y, f32v3(0.0f));
+    }
     
     // OLD terrain implementation
     /*f32 corners[4];
@@ -1271,6 +1298,9 @@ f32v2 TileMeshBuilderMethods::getStructureWoobleAtPoint(ui32 x, ui32 y, ui32 z) 
         f32v2 outWooble = f32v2(Random::getThreadSafef(x, y + z * 1200u), Random::getThreadSafef(y - z * 1200u, x));
         // Scale -1 to 1
         outWooble = outWooble * 2.0f - 1.0f;
+        // Get rid of small woobles by scaling to [-1, -0.5) [0.5, 1]
+        outWooble.x = (outWooble.x + 1.0f) * 0.5f - (f32)(outWooble.x < 0.0f);
+        outWooble.y = (outWooble.y + 1.0f) * 0.5f - (f32)(outWooble.y < 0.0f);
         outWooble *= sDebugOptions.mWallWoobleIntensity;
         return outWooble;
     }

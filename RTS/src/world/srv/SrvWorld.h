@@ -35,5 +35,6 @@ public:
 
 
     void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) override;
+    void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) override;
 
 };

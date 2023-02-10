@@ -13,3 +13,10 @@ void SrvWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius)
 {
     sharedDirtyTerrainFromBrush(pos, brushRadius);
 }
+
+void SrvWorld::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius)
+{
+    UNUSED(pos);
+    UNUSED(brushRadius);
+    // Do nothing
+}

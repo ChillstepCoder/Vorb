@@ -65,3 +65,13 @@ void GrassMeshManager::removeGrassForChunk(const Chunk& chunk) {
     //    mChunkGrassQuadtrees.erase(it);
     //}
 }
+
+void GrassMeshManager::dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
+    assert(IS_GAME_THREAD());
+    // Only update grass which was impacted by brush
+    for (auto&& quadtree : mChunkGrassQuadtrees) {
+        if (quadtree.second) {
+            quadtree.second->onDataChanged(pos, brushRadius);
+        }
+    }
+}

@@ -524,7 +524,7 @@ void PhysicsWorld::debugRender() const {
         for (int i = mDynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--) {
             btCollisionObject* obj = mDynamicsWorld->getCollisionObjectArray()[i];
             btRigidBody* body = btRigidBody::upcast(obj);
-            if (body->getMass()) {
+            if (body && body->getMass()) {
                 mDebugDrawer->setIsStaticMode(false);
                 mDynamicsWorld->debugDrawObject(body->getWorldTransform(), body->getCollisionShape(), DEBUG_COLOR_DYNAMIC);
             }

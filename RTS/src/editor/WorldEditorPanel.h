@@ -52,6 +52,8 @@ struct BrushSettings {
     f32 brushStrength;
 };
 
+constexpr f64 WORLD_EDITOR_UPDATE_RATE_MS = 32.0;
+
 class WorldEditorPanel {
 public:
     WorldEditorPanel();
@@ -79,9 +81,9 @@ private:
     void updateCityEdit();
     void updateBuildingEdit();
 
-    void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex);
-    void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile);
-    f32 getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint);
+    static void editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
+    static void editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState);
+    static f32 getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint);
     void setEditMode(WorldEditorEditMode mode) const;
 
     // Edit states
@@ -105,5 +107,6 @@ private:
     mutable StrToken mSelectedEntity;
     DeferredPhysicsPick mDeferredPhysicsPick;
     PhysHitResult mHitResult;
+    TickingTimer mUpdateTimer = TickingTimer(WORLD_EDITOR_UPDATE_RATE_MS);
 };
 

@@ -205,6 +205,7 @@ Chunk& Chunk::getBottomNeighbor() const {
 
 void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
     mGrass[index] = grass;
+    LOG_CRITICAL("Need to update Chunk::setGrassAt");
     // TODO: mark dirty
     /* if (mChunkRenderData.mGrassLod) {
          mChunkRenderData.mGrassLod

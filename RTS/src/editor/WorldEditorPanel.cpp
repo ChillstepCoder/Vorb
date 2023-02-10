@@ -94,6 +94,11 @@ WorldEditorPanel::WorldEditorPanel() {
 void WorldEditorPanel::update(const Camera3D& camera, const f32v3& pickRay) {
     PROFILE_FUNCTION();
 
+    mUpdateTimer.startFrame();
+    if (!mUpdateTimer.tryTick()) {
+        return;
+    }
+
     {
         PROFILE_SCOPE("Tile picking");
         mHitResult = mDeferredPhysicsPick.getLastPickResult();
@@ -418,29 +423,48 @@ void WorldEditorPanel::updateTerrainEdit() {
     //std::cout << "TERRAIN PICK MS " << timer.stop() << std::endl;
     if (mHitResult.didHit()) {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
-            PreciseTimer timer;
-            // Edit the terrain with iteration
-            const f32v2 hitPosition2D(mHitResult.mPosition.x, mHitResult.mPosition.y);
-            const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mCurrentBrushSettings->brushSize);
-            const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mCurrentBrushSettings->brushSize);
-            const f32 brushSizeSq = SQ(mCurrentBrushSettings->brushSize);
-            f32v2 worldPos;
-            for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
-                for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
-                    HeightmapPatchID id(worldPos);
-                    const f32v2 terrainWorldPos = id.getWorldPos();
-                    const f32v2 offset = worldPos - terrainWorldPos;
-                    const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
-                    const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
-                    const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
-                    if (glm::length2(offsetToVertex) < brushSizeSq) {
-                        editVertex(id, vertexPos, offsetToVertex);
+
+            struct TerrainEditTask {
+                PhysHitResult hitResult;
+                BrushSettings brushSettings;
+                TerrainEditState editState;
+            };
+            TerrainEditTask* task = new TerrainEditTask;
+            task->hitResult = mHitResult;
+            task->brushSettings = *mCurrentBrushSettings;
+            task->editState = mTerrainEditState;
+
+            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+                const TerrainEditTask* task = static_cast<TerrainEditTask*>(vTask);
+                const PhysHitResult& hitResult = task->hitResult;
+                const BrushSettings& brushSettings = task->brushSettings;
+
+                PreciseTimer timer;
+                // Edit the terrain with iteration
+                const f32v2 hitPosition2D(hitResult.mPosition.x, hitResult.mPosition.y);
+                const f32v2 worldPosBrushStart = hitPosition2D - f32v2(brushSettings.brushSize);
+                const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(brushSettings.brushSize);
+                const f32 brushSizeSq = SQ(brushSettings.brushSize);
+                f32v2 worldPos;
+                for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
+                    for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
+                        HeightmapPatchID id(worldPos);
+                        const f32v2 terrainWorldPos = id.getWorldPos();
+                        const f32v2 offset = worldPos - terrainWorldPos;
+                        const ui32v2 vertexPos = ui32v2(offset / (f32)HEIGHTMAP_QUAD_SIZE);
+                        const f32v2 vertexPosWorld = f32v2(vertexPos) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
+                        const f32v2 offsetToVertex = hitPosition2D - vertexPosWorld;
+                        if (glm::length2(offsetToVertex) < brushSizeSq) {
+                            editVertex(id, vertexPos, offsetToVertex, brushSettings, task->editState);
+                        }
                     }
                 }
-            }
 
-            // Notify all terrain stuff to update
-            sWorld->dirtyTerrainFromBrush(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize + HEIGHTMAP_QUAD_SIZE);
+                // Notify all terrain stuff to update
+                sWorld->dirtyTerrainFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + HEIGHTMAP_QUAD_SIZE);
+
+                delete task;
+            }, task);
         }
     }
 }
@@ -453,32 +477,50 @@ void WorldEditorPanel::updateGrassEdit() {
 
     if (mHitResult.didHit()) {
         if (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
-            PreciseTimer timer;
-            // Edit the terrain with iteration
-            const f32v2 hitPosition2D(mHitResult.mPosition.x, mHitResult.mPosition.y);
-            const f32v2 worldPosBrushStart = hitPosition2D - f32v2(mCurrentBrushSettings->brushSize);
-            const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(mCurrentBrushSettings->brushSize);
-            const f32 brushSizeSq = SQ(mCurrentBrushSettings->brushSize);
-            f32v2 worldPos;
-            for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
-                for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
-                    ChunkID id(worldPos);
-                    const TileContainer& tileContainer = *sWorld->getChunk(id).getTileContainer();
-                    TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
-                    const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
-                    const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
-                    if (glm::length2(offsetToTile) < brushSizeSq) {
-                        editGrass(id, tileIndex, offsetToTile);
+
+            struct GrassEditTask {
+                PhysHitResult hitResult;
+                BrushSettings brushSettings;
+                GrassEditState editState;
+            };
+            GrassEditTask* task = new GrassEditTask;
+            task->hitResult = mHitResult;
+            task->brushSettings = *mCurrentBrushSettings;
+            task->editState = mGrassEditState;
+
+            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+                const GrassEditTask* task = static_cast<GrassEditTask*>(vTask);
+                const PhysHitResult& hitResult = task->hitResult;
+                const BrushSettings& brushSettings = task->brushSettings;
+                PreciseTimer timer;
+                // Edit the terrain with iteration
+                const f32v2 hitPosition2D(hitResult.mPosition.x, hitResult.mPosition.y);
+                const f32v2 worldPosBrushStart = hitPosition2D - f32v2(brushSettings.brushSize);
+                const f32v2 worldPosBrushEnd = hitPosition2D + f32v2(brushSettings.brushSize);
+                const f32 brushSizeSq = SQ(brushSettings.brushSize);
+                f32v2 worldPos;
+                {
+                    PROFILE_SCOPE("Edit Grass");
+                    for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
+                        for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
+                            ChunkID id(worldPos);
+                            const TileContainer& tileContainer = *sWorld->getChunk(id).getTileContainer();
+                            TileIndex tileIndex = tileContainer.getTileIndexFromXYZOffset((ui32)worldPos.x % CHUNK_WIDTH, (ui32)worldPos.y % CHUNK_WIDTH, 0);
+                            const f32v2 tilePosWorld = worldPos + f32v2(0.5f, 0.5f);
+                            const f32v2 offsetToTile = hitPosition2D - tilePosWorld;
+                            if (glm::length2(offsetToTile) < brushSizeSq) {
+                                editGrass(id, tileIndex, offsetToTile, brushSettings, task->editState);
+                            }
+                        }
                     }
                 }
-            }
 
-            //// TODO: Notify grass to update
-            //for (Chunk* chunk : sWorld->getActiveChunks()) {
-            //    if (chunk->mChunkRenderData.mGrassLod) {
-            //        chunk->mChunkRenderData.mGrassLod->onDataChanged(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y), mCurrentBrushSettings->brushSize);
-            //    }
-            //}
+         
+                // Notify all terrain stuff to update
+                sWorld->dirtyGrassFromBrush(f32v2(hitResult.mPosition.x, hitResult.mPosition.y), brushSettings.brushSize + 1);
+
+            delete task;
+            }, task);
         }
     }
 }
@@ -557,13 +599,13 @@ void WorldEditorPanel::updateBuildingEdit() {
     }
 }
 
-void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex) {
+void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, const f32v2& offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
     
     // Read brush data
-    f32 strength = getBrushStrengthAtPoint(offsetToVertex);
+    f32 strength = getBrushStrengthAtPoint(brush, offsetToVertex);
 
     if (strength > 0.001f) {
-        switch (mTerrainEditState) {
+        switch (editState) {
             case TerrainEditState::RAISE_TERRAIN:
                 break;
             case TerrainEditState::LOWER_TERRAIN:
@@ -576,23 +618,23 @@ void WorldEditorPanel::editVertex(HeightmapPatchID id, const ui32v2& vertPos, co
                 break;
         }
         static_assert((int)TerrainEditState::COUNT == 3, "Update for new edit type");
-        const f32 adjust = strength * mCurrentBrushSettings->brushStrength;
+        const f32 adjust = strength * brush.brushStrength;
         sHeightmapGrid->adjustHeightAt(id, vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x, adjust);
 
         // Debug render
         f32v2 chunkPos = id.getWorldPos();
         f32v2 dims(0.5f);
         f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, sHeightmapGrid->getHeightAtVert(id, vertPos) + adjust);
-        DebugRenderer::drawWireQuad(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
+        DebugRenderer::drawWireQuadThreadSafe(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
     }
 }
 
-void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile) {
+void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& offsetToTile, const BrushSettings& brush, GrassEditState editState) {
 
-    f32 strength = getBrushStrengthAtPoint(offsetToTile) * mCurrentBrushSettings->brushStrength;
+    f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
     const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     if (random < strength) {
-        if (mGrassEditState == GrassEditState::ADD) {
+        if (editState == GrassEditState::ADD) {
             sWorld->getChunk(id).setGrassAt(tileIndex, 1);
         }
         else {
@@ -601,17 +643,16 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, const f32v2& o
     }
 }
 
-f32 WorldEditorPanel::getBrushStrengthAtPoint(const f32v2& brushOffsetToPoint)
-{
-    f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(mCurrentBrushSettings->brushSize)) / f32v2(mCurrentBrushSettings->brushSize * 2.0f);
+f32 WorldEditorPanel::getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint) {
+    f32v2 offsetToCornerNormalized = (brushOffsetToPoint + f32v2(brush.brushSize)) / f32v2(brush.brushSize * 2.0f);
     if (offsetToCornerNormalized.x < 0.0f || offsetToCornerNormalized.y < 0.0f) {
         return 0.0f;
     }
-    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(mCurrentBrushSettings->activeBrush->dims.x, mCurrentBrushSettings->activeBrush->dims.y);
-    if (pixelPos.x >= mCurrentBrushSettings->activeBrush->dims.x || pixelPos.y >= mCurrentBrushSettings->activeBrush->dims.y) {
+    ui32v2 pixelPos = offsetToCornerNormalized * f32v2(brush.activeBrush->dims.x, brush.activeBrush->dims.y);
+    if (pixelPos.x >= brush.activeBrush->dims.x || pixelPos.y >= brush.activeBrush->dims.y) {
         return 0.0f;
     }
-    ui8 brushIntensity = mCurrentBrushSettings->activeBrush->data[pixelPos.y * mCurrentBrushSettings->activeBrush->dims.x + pixelPos.x];
+    ui8 brushIntensity = brush.activeBrush->data[pixelPos.y * brush.activeBrush->dims.x + pixelPos.x];
     return (f32)brushIntensity / 255.0f;
 }
 

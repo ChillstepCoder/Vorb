@@ -106,15 +106,18 @@ void GrassBillboardMesh::destroy()
 }
 
 void GrassBillboardMesh::initBuffers() {
-    if (mVao == 0) { // Create VAO
+    if (mVao == 0) { // Create VAO and textures
         glCreateVertexArrays(1, &mVao);
-
-        glCreateBuffers(1, &mVboInstanceData);
-        glCreateBuffers(1, &mVboPosition);
-
         glVertexArrayElementBuffer(mVao, ProceduralMeshBuilder::sQuadIboUI32);
 
         glCreateTextures(GL_TEXTURE_BUFFER, 1, &mTboInstanceData);
         glCreateTextures(GL_TEXTURE_BUFFER, 1, &mTboPositionData);
     }
+    else {
+        // Recreate immutable buffers
+        glDeleteBuffers(1, &mVboInstanceData);
+        glDeleteBuffers(1, &mVboPosition);
+    }
+    glCreateBuffers(1, &mVboInstanceData);
+    glCreateBuffers(1, &mVboPosition);
 }

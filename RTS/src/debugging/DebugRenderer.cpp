@@ -115,6 +115,17 @@ void DebugRenderer::drawLineBetweenPointsThreadSafe(const f32v3& origin, const f
     lines.emplace_back(origin, end, color);
 }
 
+void DebugRenderer::drawWireQuadThreadSafe(const f32v3& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(!IS_RENDER_THREAD());
+    const f32v3 topRight = origin + f32v3(dims.x, dims.y, 0.0f);
+    std::lock_guard<std::mutex> lockGuard(sNewLinesThreadSafeMutex);
+    auto&& lines = sNewLinesThreadSafe[std::make_pair(lifeTime, id)];
+    lines.emplace_back(origin, origin + f32v3(dims.x, 0.0f, 0.0f), color);
+    lines.emplace_back(origin, origin + f32v3(0.0f, dims.y, 0.0f), color);
+    lines.emplace_back(topRight, topRight - f32v3(dims.x, 0.0f, 0.0f), color);
+    lines.emplace_back(topRight, topRight - f32v3(0.0f, dims.x, 0.0f), color);
+}
+
 void DebugRenderer::drawWireQuad(const f32v2& origin, const f32v2& dims, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
     assert(IS_RENDER_THREAD());
     const f32v2 topRight = origin + dims;

@@ -27,7 +27,7 @@ DebugOptions::DebugOptions() :
     mHideGrass(false),
     // Structures
     mWallWoobleChance(0.3f),
-    mWallWoobleIntensity(0.35f), //0.15f
+    mWallWoobleIntensity(0.15f),
     // Terrain
     mTerrainLodDistanceOffset(540.0f), // 1500 for ultra
     mDebugTerrainLod(false),

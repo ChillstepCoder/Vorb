@@ -53,6 +53,7 @@ public:
 
     // mutators
     virtual void dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) = 0;
+    virtual void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) = 0;
 
     // Tile Accessors
     TileHandle getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const;

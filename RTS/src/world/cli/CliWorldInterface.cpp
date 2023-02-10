@@ -69,7 +69,14 @@ void CliWorldInterface::onWorldBeginClient() {
 }
 
 void CliWorldInterface::cliDirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
+    PROFILE_FUNCTION();
     mTerrainMeshManager->dirtyTerrainFromBrush(pos, brushRadius);
+    mGrassMeshManager->dirtyGrassFromBrush(pos, brushRadius);
+}
+
+void CliWorldInterface::cliDirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) {
+    PROFILE_FUNCTION();
+    mGrassMeshManager->dirtyGrassFromBrush(pos, brushRadius);
 }
 
 void CliWorldInterface::updateRenderState(IWorld& world) {
