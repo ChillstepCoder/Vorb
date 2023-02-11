@@ -185,19 +185,22 @@ struct FineNodeData {
 };
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path) {
+bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path) {
+    PROFILE_FUNCTION();
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
     assert(IS_NAV_THREAD());
-    assert(false && "We can't ever query tile information here, we need to use the nav graph only");
     // TODO: Profiling
     PreciseTimer timer;
     const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
 
-    // Make sure we can fit in nodes array
     // We pathfind backwards
-    const f32v3 goalWorldPos = start.getWorldPos3D();
-    const f32v3 startWorldPos = goal.getWorldPos3D();
+    LiteTileHandle startLiteHandle = goal;
+    LiteTileHandle goalLiteHandle = start;
+    const ContainerNavData& startNavData = mNavWorld.getNavDataForContainer(startLiteHandle.containerId);
+    const ContainerNavData& goalNavData = mNavWorld.getNavDataForContainer(goalLiteHandle.containerId);
+    const f32v3 startWorldPos = startNavData.getTileXYZOffsetWithZScale(startLiteHandle.index);
+    const f32v3 goalWorldPos = goalNavData.getTileXYZOffsetWithZScale(goalLiteHandle.index);
 
     // Instead of an explicit closed list, we use an implicit closed list
     // If a node exists in the gLookup, but not in the openList, then it is in
@@ -209,8 +212,6 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
     nodeLookup.reserve(MAX_OPEN_LIST_SIZE);
 
     // Add start node to the open list (inverted because we pathfind backwards)
-    LiteTileHandle startLiteHandle = goal.toLiteTileHandle();
-    LiteTileHandle goalLiteHandle = start.toLiteTileHandle();
     openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startLiteHandle, goalWorldPos));
     nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ startLiteHandle, 0 }));
 
@@ -228,39 +229,78 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
         }
 
         const ui16 g = nodeLookup.find(handle)->second.g;
-        TileContainer* container = handle.getTileContainer();
-        const i32v3& dims = container->getDims();
-        const TileFineNavData& fineNavData = container->getFineNavData()[handle.index];
+        const ContainerNavData& containerNavData = mNavWorld.getNavDataForContainer(handle.containerId);
+        const TileFineNavData fineNavData = containerNavData.fineNavGraph[handle.index];
         // Add current node to implicit closed list
 
         // Precompute collision weights and points for neighbors
         for (int dir = (int)Cartesian8::SOUTH_WEST; dir <= (int)Cartesian8::NORTH_EAST; ++dir) {
-            if (!fineNavData.canAccessDirection(Cartesian8(dir))) {
+            Cartesian8 cartesianDir = Cartesian8(dir);
+            if (!fineNavData.canAccessDirection(cartesianDir)) {
                 continue;
             }
 
-            f32 pathWeight;
+            f32 pathWeight = 1.0f;
             const i32v2& adjOffset = NODE_OFFSETS[dir];
             
             LiteTileHandle adjHandle;
+            TileFineNavData adjFineNavData;
+            
             Cartesian cartesian4 = CARTESIAN8_TO_CARTESIAN[dir];
             const TileFineNavEdgeType edgeType = fineNavData.getEdgeType(cartesian4);
-            bool isExternal = (cartesian4 != Cartesian::NONE) && (edgeType == TileFineNavEdgeType::EXTERIOR);
+            bool isExternal = (edgeType == TileFineNavEdgeType::EXTERIOR);
             if (isExternal/* || adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)*/) {
+                assert(cartesian4 != Cartesian::NONE);
                 // External edge
-                const f32 zPos = handle.toTileHandle().tile->getGroundZOffset();
-                const i32v3 containerOffset = container->getTileXYZOffsetWithZScale(handle.index);
-                const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + zPos));
-                // TODO: BAD
-                const TileHandle externalHandle = sWorld->getTileHandleAtWorldPos(offset + container->getWorldPos3D());
-                if (!externalHandle.isValid()) {
+                const i32v3 containerOffset = TileContainer::getTileXYZOffsetWithZScale(handle.index, containerNavData.containerDims, containerNavData.floorHeight);
+                const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + fineNavData.zPositionOffsetFromFloor));
+
+                const ContainerNavData* outNavData = nullptr;
+                adjHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(offset + containerNavData.worldPos, outNavData);
+                assert(adjHandle.containerId != handle.containerId);
+                if (outNavData) {
+                    assert(outNavData->containerId != handle.containerId);
+                    adjFineNavData = outNavData->fineNavGraph[adjHandle.index];
+                }
+                else {
+                    // No valid data
                     continue;
                 }
-                adjHandle = externalHandle.toLiteTileHandle();
+                // Check if we can enter the adjacent file tile
+                // TODO: Handle dropping down
+                // Are there issues with dropping down since we pathfind in reverse?
+                if (adjFineNavData.canAccessDirection(CARTESIAN8_OPPOSITES[e_cast(cartesianDir)])) {
+                    const int myFloorIndex = containerOffset.z;
+                    const f32 myZPos = fineNavData.zPositionOffsetFromFloor + myFloorIndex * containerNavData.floorHeight + containerNavData.worldPos.z;
+                    const int adjFloorIndex = adjHandle.index / (outNavData->containerDims.x * outNavData->containerDims.y);
+                    const f32 zPosAdjacent = adjFineNavData.zPositionOffsetFromFloor + adjFloorIndex * outNavData->floorHeight + outNavData->worldPos.z;
+                    // We pathfind in reverse
+                    constexpr f32 MAX_DROP_HEIGHT = 5.0f;
+                    constexpr f32 MAX_CLIMB_HEIGHT = 1.5f;
+                    constexpr f32 DROP_PATH_WEIGHT = 0.75f;
+                    constexpr f32 CLIMB_PATH_WEIGHT = 0.3f;
+                    if (zPosAdjacent > myZPos && zPosAdjacent - myZPos < MAX_DROP_HEIGHT) {
+                        // Drop down
+                        adjFineNavData = outNavData->fineNavGraph[adjHandle.index];
+                        pathWeight = DROP_PATH_WEIGHT;
+
+                    }
+                    else if (myZPos > zPosAdjacent && myZPos - zPosAdjacent < MAX_CLIMB_HEIGHT) {
+                        // Climb up
+                        adjFineNavData = outNavData->fineNavGraph[adjHandle.index];
+                        pathWeight = CLIMB_PATH_WEIGHT;
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else {
+                    continue;
+                }
             }
             else {
                 // Internal edge
-                const i32v3 containerOffset = container->getTileXYZOffset(handle.index);
+                const i32v3 containerOffset = TileContainer::getTileXYZOffset(handle.index, containerNavData.containerDims);
                 i32v3 adjPos(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, containerOffset.z);
                 if (edgeType == TileFineNavEdgeType::DOWN) {
                     --adjPos.z;
@@ -268,12 +308,13 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
                 else if (edgeType == TileFineNavEdgeType::UP) {
                     ++adjPos.z;
                 }
-                TileIndex adjIndex = container->getTileIndexFromXYZOffset(adjPos);
-                adjHandle = LiteTileHandle(container->getId(), adjIndex);
+                TileIndex adjIndex = TileContainer::getTileIndexFromXYZOffset(adjPos, containerNavData.containerDims);
+                adjHandle = LiteTileHandle(handle.containerId, adjIndex);
+                adjFineNavData = mNavWorld.getFineNavData(adjHandle.containerId, adjHandle.index);
             }
+            assert(adjFineNavData.isOwned);
             // Get path weight
-            const TileFineNavData& adjNavData = adjHandle.getTileContainer()->getFineNavData()[adjHandle.index];
-            pathWeight = adjNavData.pathWeight / 255.0f;
+            pathWeight *= ((f32)adjFineNavData.pathWeight / 255.0f);
 
             // Compute cost to the adj node
             const ui16 newG = g + MOVEMENT_COSTS[dir] / pathWeight;
@@ -295,7 +336,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
             if (newG < prevG) {
                 if (openList.contains(adjHandle)) {
                     // New node is better than current openlist node
-                    std::cout << "Detected open list node with better priority. TODO: Implement increase priority and benchmark\n";
+                    LOG_DEBUG("Detected open list node with better priority. TODO: Implement increase priority and benchmark\n");
                     //openList.replace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
                     //it->second.g = newG;
                     //it->second.parent = handle;
@@ -321,7 +362,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
     }
 
     if (!foundGoal) {
-        std::cout << "Failed to find path in " << timer.stop() << " ms\n";
+        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked\n", timer.stop(), TOTAL);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -344,7 +385,7 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
 
     if (pathSize == PATH_POINT_BUFFER_SIZE) {
         // Warning! Path is too long!
-        std::cout << "Failed to find path in " << timer.stop() << " ms because result path is too long\n";
+        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked because result path is too long\n", timer.stop(), TOTAL);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -353,17 +394,24 @@ bool PathFinder::generateFinePathSynchronous(const TileHandle& start, const Tile
     // Copy the path
     memcpy(path.points, sPathPointBuffer, pathSize * sizeof(LiteTileHandle));
 
-    std::cout << "Generated path in " << timer.stop() << " ms with " << TOTAL << " nodes checked\n";
+    LOG_TRACE("Generated path in {} ms with {} total nodes checked\n", timer.stop(), TOTAL);
     path.finishedGenerating.store(true);
     return true;
 }
 
-bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path)
+bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path)
 {
+    PROFILE_FUNCTION();
     assert(IS_NAV_THREAD());
     assert(path.numPoints == 0); // Should be uninitialized
 
-    if (start.tile->getNavNodeIndex() == INVALID_NAV_NODE_INDEX || goal.tile->getNavNodeIndex() == INVALID_NAV_NODE_INDEX) {
+    // We pathfind backwards so swap start and goal
+    const ContainerNavData& startNavData = mNavWorld.getNavDataForContainer(goal.containerId);
+    const ContainerNavData& goalNavData = mNavWorld.getNavDataForContainer(start.containerId);
+    const CoarseNavNodeIndex startNavNodeIndex = startNavData.coarseNavGraph.tileCoarseNavIndices[goal.index];
+    const CoarseNavNodeIndex goalNavNodeIndex = goalNavData.coarseNavGraph.tileCoarseNavIndices[start.index];
+    if (startNavNodeIndex == INVALID_NAV_NODE_INDEX ||
+        goalNavNodeIndex == INVALID_NAV_NODE_INDEX) {
         pError("Error: Failed to find coarse path due to invalid start\n");
         path.finishedGenerating.store(true);
         return false;
@@ -375,24 +423,23 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     mOpenList.reserve(MAXIMUM_COARSE_NODES);
     
     const IHeightmapGrid& heightGrid = *sHeightmapGrid;
-    const TileContainer* startContainer = start.container;
    
-    // We pathfind backwards
-    const CoarseNavGraph& startNavGraph = mNavWorld.getCoarseNavGraph(goal.container->getId());
-    const CoarseNavNode* startNode = &startNavGraph.getNode(goal.tile->getNavNodeIndex());
-    const CoarseNavNode* endNode = mNavWorld.getCoarseNavNode(start.container->getId(), start.tile->getNavNodeIndex());
+    const CoarseNavGraph& startNavGraph = startNavData.coarseNavGraph;
+    const CoarseNavGraph& endNavGraph = goalNavData.coarseNavGraph;
+    const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
+    const CoarseNavNode* endNode = &endNavGraph.getNode(goalNavNodeIndex);
 
     // Case where we are in the same node, just return the goal
     if (startNode == endNode) {
         path.allocatePath(1);
-        path.points[0] = goal.toLiteTileHandle();
+        path.points[0] = goal;
         path.finishedGenerating.store(true);
         return true;
     }
 
     // Inverted since we pathfind backwards
-    const f32v3 startWorldPos = goal.getWorldPos3D();
-    const f32v3 goalWorldPos = start.getWorldPos3D();
+    const f32v3 startWorldPos = startNavData.getTileWorldPos(goal.index);
+    const f32v3 goalWorldPos = goalNavData.getTileWorldPos(start.index);
 
     // A* pathfind through the coarse graph
     // TODO: non arbitrary reserve (Is this fixed?)
@@ -411,7 +458,7 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     // TODO: According to the algorithm this should happen at the end of while loop
     startNode->isClosed = true;
     mCoarseClosedList.push_back(startNode);
-    coarseAstarEdgePropagate(startNode, goal, startNavGraph, goalWorldPos, INVALID_COARSE_NODE_PARENT, 0.0f);
+    coarseAstarEdgePropagate(startNavData, startNode, goal, startNavGraph, goalWorldPos, INVALID_COARSE_NODE_PARENT, 0.0f);
     // Do the A*
     while (mOpenList.size() && mTotalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
         const auto& topNode = mOpenList.top();
@@ -420,16 +467,17 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
         
         mOpenList.pop();
 
-        TileHandle handle = astarNode.tileHandle.toTileHandle();
-        ui16 navNodeIndex = handle.container->getTileAt(handle.tileIndex).getNavNodeIndex();
-        const CoarseNavGraph& navGraph = mNavWorld.getCoarseNavGraph(astarNode.tileHandle.containerId);
+        const LiteTileHandle& handle = astarNode.tileHandle;
+        const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
+        const CoarseNavGraph& navGraph = navData.coarseNavGraph;
+        const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];;
         const CoarseNavNode* navNode = &navGraph.getNode(navNodeIndex);
         if (navNode == endNode) {
             foundGoal = true;
             break;
         }
 
-        coarseAstarEdgePropagate(navNode, handle, navGraph, goalWorldPos, id, astarNode.g);
+        coarseAstarEdgePropagate(navData, navNode, handle, navGraph, goalWorldPos, id, astarNode.g);
     }
 
     for (auto&& node : mCoarseClosedList) {
@@ -445,14 +493,14 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
     }*/
 
     if (!foundGoal) {
-        std::cout << "Coarse path failed in " << timer.stop() << "ms with " << mTotalAstarNodes << " total nodes checked\n";
+        LOG_TRACE("Coarse path failed in {} ms with {} total nodes checked\n", timer.stop(), mTotalAstarNodes);
         path.finishedGenerating.store(true);
         return false;
     }
 
     ui32 pathSize = 0;
     {
-        sPathPointBuffer[pathSize++] = start.toLiteTileHandle();
+        sPathPointBuffer[pathSize++] = start;
         CoarseAstarNodeID parentId = id;
         // Find out the path size and cache the points
         while (parentId != INVALID_COARSE_NODE_PARENT) {
@@ -462,8 +510,8 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
         }
     }
 
-    // Append goal if it isnt at the endpoint already
-    LiteTileHandle goalLiteHandle = goal.toLiteTileHandle();
+    // Append goal if it isn't at the endpoint already
+    LiteTileHandle goalLiteHandle = goal;
     if (sPathPointBuffer[pathSize - 1] != goalLiteHandle) {
         sPathPointBuffer[pathSize++] = goalLiteHandle;
     }
@@ -484,7 +532,7 @@ bool PathFinder::generateCoarsePathSynchronous(const TileHandle& start, const Ti
         }
     }
 
-    std::cout << "Coarse path found in " << timer.stop() << "ms with " << mTotalAstarNodes << " total nodes checked\n";
+    LOG_TRACE("Coarse path found in {} ms with {} total nodes checked\n", timer.stop(), mTotalAstarNodes);
     path.finishedGenerating.store(true);
     return true;
 }
@@ -499,9 +547,8 @@ public:
     }
 };
 
-void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const TileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG) {
-    const TileContainer* container = tileHandle.container;
-    const i32v3& containerDims = container->getDims();
+void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const CoarseNavNode* navNode, const LiteTileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG) {
+    const i32v3& containerDims = navData.containerDims;
     const TileIndex internalIndexOffsetsCartesian[4] = {
         -containerDims.x, // South
         -1,               // West
@@ -509,36 +556,44 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
         containerDims.x   // North
     };
 
-    const i32v3 tilePos = tileHandle.getWorldPos3D();
+    const i32v3 tilePos = navData.getTileWorldPos(tileHandle.index);
     // Iterate all edges
     for (ui16 i = 0; i < navNode->edgeCount; ++i) {
         CoarseNavNodeEdge& edge = navNode->edges[i];
         if (edge.isExternalEdge()) {
             // With external edges we have to look up the adjacent nav nodes
-            std::unordered_map<std::pair<TileContainerID, ui32 /*navNode*/>, TileIndex, EdgeNodeHash> edgeNodes;
-            i32v3 edgeStartPosWorld = container->getWorldPos3D() + container->getTileXYZOffsetWithZScale(edge.startPos);
+            typedef std::pair<TileContainerID, ui32 /*navNode*/> EdgeKey;
+            std::unordered_map<EdgeKey, TileIndex, EdgeNodeHash> edgeNodes;
+            edgeNodes.reserve(4); // Usually quite small, can we use a better data structure?
+            i32v3 edgeStartPosWorld = navData.worldPos + navData.getTileXYZOffsetWithZScale(edge.startPos);
+            // Collect all valid external nodes along this edge
             for (int i = 0; i < (int)edge.edgeLength; ++i) {
                 const i32v3& edgeDir = CARTESIAN_EDGE_DIRS_ABS_3D[e_cast(edge.dir)];
                 const i32v3 edgePosWorld = edgeStartPosWorld + edgeDir * i;
-                const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * container->getDims().y) * i;
-                const Tile& innerTile = container->getTileAt(nextIndex);
+                const TileIndex nextIndex = edge.startPos + (edgeDir.x + edgeDir.y * containerDims.y) * i;
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
-                // TODO: Not thread safe!
-                assert(false);
-                worldPosOuter.z = glm::round(worldPosOuter.z + innerTile.getGroundZOffset());
-                TileHandle outerHandle = sWorld->getTileHandleAtWorldPosThreadSafe(worldPosOuter);
-                if (!outerHandle.isValid()) {
+                worldPosOuter.z = glm::round(worldPosOuter.z + navData.fineNavGraph[nextIndex].zPositionOffsetFromFloor);
+                // Get the outer tile along this coarse edge point
+                ContainerNavData* outerNavData = nullptr;
+                LiteTileHandle outerTileHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(worldPosOuter, outerNavData);
+                if (!outerTileHandle.isValid()) {
                     continue;
                 }
-                // This should be very rare and is a failure case for this edge, TODO: debug log it or something?
-                if (outerHandle.container != container) {
+                // This should be impossible and is a failure case for this edge, TODO: debug log it or something?
+                if (outerTileHandle.containerId != navData.containerId) {
                     LOG_CRITICAL("outerHandle.container != container in PathFinder::coarseAStarEdgePropagate. Adding red debug draw line to world at edge");
                     DebugRenderer::drawLineBetweenPointsThreadSafe(edgePosWorld, worldPosOuter, COLOR_RED, 200000);
                     __debugbreak();
                     continue;
                 }
-                // TODO: This always picks last node
-                edgeNodes[std::make_pair(outerHandle.container->getId(), outerHandle.tile->getNavNodeIndex())] = outerHandle.tileIndex;
+                // Add this as a new valid node if needed
+                // This always picks first position for node due to overwrites, but thats OK we will let fine nav / steering do
+                // string pulling to improve the path
+                EdgeKey edgeKey = std::make_pair(outerTileHandle.containerId, outerNavData->coarseNavGraph.tileCoarseNavIndices[outerTileHandle.index]);
+                auto&& it = edgeNodes.find(edgeKey);
+                if (it == edgeNodes.end()) {
+                    edgeNodes.insert(std::make_pair(edgeKey, outerTileHandle.index));
+                }
             }
             for (auto&& it : edgeNodes) {
                 //TileContainer* adjContainer = TileContainerRepository::getTileContainer(it.first);
@@ -585,15 +640,15 @@ void PathFinder::coarseAstarEdgePropagate(const CoarseNavNode* navNode, const Ti
             const TileIndex midPoint = edge.startPos + internalIndexOffsetsCartesian[e_cast(edgeWalkDir)] * (edge.edgeLength / 2);
             TileIndex nextTileIndex = midPoint + internalIndexOffsetsCartesian[e_cast(edge.dir)];
             if (edge.edgeType == TileCoarseNavEdgeType::DOWN) {
-                nextTileIndex -= container->getDims().x * container->getDims().y;
+                nextTileIndex -= containerDims.x * containerDims.y;
             }
             else if (edge.edgeType == TileCoarseNavEdgeType::UP) {
-                nextTileIndex += container->getDims().x * container->getDims().y;
+                nextTileIndex += containerDims.x * containerDims.y;
             }
             const CoarseAstarNodeID newId = mTotalAstarNodes++;
             CoarseAStarNode& newAstarNode = sCoarseAstarNodes[newId];
-            newAstarNode.tileHandle = LiteTileHandle(tileHandle.container->getId(), nextTileIndex);
-            const i32v3 nextPos = newAstarNode.tileHandle.getWorldPosition();
+            newAstarNode.tileHandle = LiteTileHandle(tileHandle.containerId, nextTileIndex);
+            const i32v3 nextPos = navData.getTileWorldPos(newAstarNode.tileHandle.index);
             newAstarNode.g = prevG + glm::length(f32v3(nextPos - tilePos));
             newAstarNode.h = getEuclideanHeuristicAtPosition(nextPos, goalPos);
             if (sDebugOptions.mShowPaths) {

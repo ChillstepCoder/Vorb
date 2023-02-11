@@ -26,7 +26,7 @@ struct BuildingPathArgs {
 
 struct PathArgs {
     PathArgs() {};
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const TileHandle& start, const TileHandle& end, bool isCoarse) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const LiteTileHandle& start, const LiteTileHandle& end, bool isCoarse) :
         pathToBuild(pathToBuild),
         start(start),
         goal(end) {
@@ -39,37 +39,33 @@ struct PathArgs {
     }
 
     std::shared_ptr<NavPath> pathToBuild;
-    TileHandle start;
-    TileHandle goal;
+    LiteTileHandle start;
+    LiteTileHandle goal;
     PathRequestType type;
 };
 
 // TODO: we can definitely replace std::function with a function pointer that takes TileContainerID as parameter
 using NavThreadPathArgs = std::pair<PathArgs, std::function<void()>>;
-struct NavThreadGraphBuildArgs {
-    NavGraphTileDataToCopy navTileData;
-    CoarseNavGraph navGraph;
-    TileContainer* container;
-};
+
 
 class NavThread {
 public:
     NavThread();
     ~NavThread();
 
-    void init(const NavWorld& navWorld);
+    void init(NavWorld& navWorld);
 
     void mainThreadUpdate();
 
     /// Clears all unprocessed tasks from the task queue
     void clearTasks();
 
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse, std::function<void()>&& mainProc);
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse);
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse, std::function<void()>&& mainProc);
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse);
 
     void addNavgraphBuildTask(TileContainer& tileContainer);
 
-    size_t getTasksSizeApprox() const { return mPathTasks.size_approx() + mNavGraphBuildTasks.size_approx(); }
+    size_t getTasksSizeApprox() const { return mPathTasks.size_approx(); }
     size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }
 
 private:
@@ -81,7 +77,8 @@ private:
 
 
     moodycamel::BlockingConcurrentQueue<NavThreadPathArgs> mPathTasks; ///< Holds tasks to execute
-    moodycamel::ConcurrentQueue<NavThreadGraphBuildArgs> mNavGraphBuildTasks; ///< Holds tasks to execute
     moodycamel::ConcurrentQueue<std::function<void()>> mMainThreadProcs; ///< Contains functions to run on main thread after complete
+
+    NavWorld* mNavWorld = nullptr;
 };
 

@@ -2,8 +2,9 @@
 
 #include "world/TerrainConstants.h"
 
-constexpr ui32 GRID_ID_INVALID = UINT32_MAX;
-constexpr ui32 CHUNK_ID_INVALID = GRID_ID_INVALID;
+typedef ui32 GridIdType;
+constexpr GridIdType GRID_ID_INVALID = UINT32_MAX;
+constexpr GridIdType CHUNK_ID_INVALID = GRID_ID_INVALID;
 
 template<ui32 GRIDWIDTH, ui32 CELLWIDTH>
 struct GridID {
@@ -71,7 +72,7 @@ struct GridID {
 
     // TODO: Get ID implicitly? Is it worth 50% increased memory size to cut out a multiply and an add? (initIdFromPos())
     ui32v2 pos; // TODO: Compress pos to ui16v2 and union with ID. Take note of WorldData::WORLD_WIDTH_CHUNKS and make the X fit into as many bits exactly
-    ui32 id;
+    GridIdType id;
 
 protected:
     inline void initIdFromPos() {

@@ -76,7 +76,7 @@ void BuildTask::pathToStockpileSlot(entt::registry& registry, entt::entity agent
     f32v2 targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
     assert(false); // itemreservation should use TileHandle or most probably, TileRef
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos).toLiteTileHandle(), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)).toLiteTileHandle(), [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }

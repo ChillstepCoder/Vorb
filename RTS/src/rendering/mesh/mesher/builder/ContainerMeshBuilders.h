@@ -16,7 +16,7 @@ public:
     void computeBoundingSpheres();
 
     const TileContainer& container;
-    ContainerTileDataCopy tileData;
+    ContainerMeshDataCopy tileData;
     ProceduralMeshBuilder staticBuilder;
     ProceduralMeshBuilder dynamicBuilder;
     BillboardMeshBuilder billboardBuilder;

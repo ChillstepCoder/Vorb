@@ -45,47 +45,6 @@ struct TileContainerEntrance {
     bool isLocked; // TODO: Access type enum?
 };
 
-enum class TileFineNavEdgeType : ui8 {
-    NONE = 0,
-    DOWN = 1,
-    UP = 2,
-    EXTERIOR = 3,
-};
-
-struct TileFineNavData {
-
-    void setCanAccessDirection(Cartesian8 dir8, bool canAccess) {
-        const ui8 bitShift = e_cast(dir8);
-        const ui8 bitMask = 1ui8 << bitShift;
-        accessBits = (accessBits & (~bitMask)) | (canAccess << bitShift);
-    }
-    bool canAccessDirection(Cartesian8 dir8) const {
-        return accessBits & 1ui8 << e_cast(dir8);
-    }
-    void setEdgeType(Cartesian dir, TileFineNavEdgeType edgeType) {
-        const ui8 bitShift = e_cast(dir) * 2ui8;
-        const ui8 bitMask = 0b11 << bitShift;
-        edgeTypeCartesian = (edgeTypeCartesian & (~bitMask)) | (e_cast(edgeType) << bitShift);
-    }
-    TileFineNavEdgeType getEdgeType(Cartesian dir) const {
-        const ui8 bitShift = e_cast(dir) * 2ui8;
-        const ui8 bitMask = 0b11 << bitShift;
-        return TileFineNavEdgeType((edgeTypeCartesian & bitMask) >> bitShift);
-    }
-
-    void reset() {
-        accessBits = 0;
-        edgeTypeCartesian = 0;
-        pathWeight = 255;
-    }
-
-    ui8 accessBits = 0; // from diagonal left to diagonal up right
-    ui8 edgeTypeCartesian = 0; // Each cartesian gets 2 bits 0 = flat, 1 = down, 2 = up, 3 = exterior
-    ui8 pathWeight = 255;
-
-};
-static_assert(sizeof(TileFineNavData) == 3, "Keep tiny");
-
 enum class TileContainerState : ui8 {
     LOADING,
     WAITING_MESH_AND_PHYSICS,
@@ -179,27 +138,38 @@ public:
         return mTiles[i];
     }
     i32v3 getTileXYZOffsetWithZScale(TileIndex i) const {
-        const ui32 layerSize = mDims.x * mDims.y;
+        const i32 layerSize = mDims.x * mDims.y;
         return i32v3(i % mDims.x, (i % layerSize) / mDims.x, (i / layerSize) * mFloorHeight);
     }
+    static i32v3 getTileXYZOffsetWithZScale(TileIndex i, const i32v3& dims, i32 floorHeight) {
+        const i32 layerSize = dims.x * dims.y;
+        return i32v3(i % dims.x, (i % layerSize) / dims.x, (i / layerSize) * floorHeight);
+    }
     i32v3 getTileXYZOffset(TileIndex i) const {
-       const ui32 layerSize = mDims.x * mDims.y;
+       const i32 layerSize = mDims.x * mDims.y;
        return i32v3(i % mDims.x, (i % layerSize) / mDims.x, i / layerSize);
     }
+    static i32v3 getTileXYZOffset(TileIndex i, const i32v3& dims) {
+        const i32 layerSize = dims.x * dims.y;
+        return i32v3(i % dims.x, (i % layerSize) / dims.x, i / layerSize);
+    }
     i32v2 getTileXYOffset(TileIndex i) const {
-        const ui32 layerSize = mDims.x * mDims.y;
+        const i32 layerSize = mDims.x * mDims.y;
         return i32v2(i % mDims.x, (i % layerSize) / mDims.x);
     }
     f32v3 getTileCenterWorldPosition(TileIndex i) const {
         assert(IS_GAME_THREAD());
-        const ui32 layerSize = mDims.x * mDims.y;
+        const i32 layerSize = mDims.x * mDims.y;
         return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + mTiles[i].groundZOffset);
     }
     f32v3 getTileCenterWorldPositionThreadSafe(TileIndex i, f32 tileGroundZOffset) const {
-        const ui32 layerSize = mDims.x * mDims.y;
+        const i32 layerSize = mDims.x * mDims.y;
         return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + tileGroundZOffset);
     }
     static TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz, const ui32v3& dims) {
+        return xyz.x + xyz.y * dims.x + xyz.z * dims.x * dims.y;
+    }
+    static TileIndex getTileIndexFromXYZOffset(const i32v3& xyz, const i32v3& dims) {
         return xyz.x + xyz.y * dims.x + xyz.z * dims.x * dims.y;
     }
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
@@ -219,6 +189,7 @@ public:
     void setState(TileContainerState state) const { mState = e_cast(state); }
 
     // =========== Ownership  ===========
+    static bool isTileOwned(const BitArray& ownedTiles, TileIndex index) { return ownedTiles.getNumBits() == 0 || ownedTiles.getBit(index); }
     bool isTileOwned(TileIndex index) const { return mOwnedTiles.getNumBits() == 0 || mOwnedTiles.getBit(index); }
     const BitArray& getOwnedTiles() const { return mOwnedTiles; }
     void allocateOwnedTiles() { mOwnedTiles.resizeAndZero(mDims.x * mDims.y * mDims.z); assert(!mOwnedTiles.isEmpty()); }
@@ -256,19 +227,21 @@ public:
     const i32v2& getWorldPos2D() const { return reinterpret_cast<const i32v2&>(mRootPos); }
     const i32v3& getWorldPos3D() const { return mRootPos; }
     const f32v3 getWorldPosCenter3D() const { return f32v3(mRootPos) + f32v3(mDims) * 0.5f; }
+    const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mDims); }
     const i32v3& getDims() const { return mDims; }
-    ui32 getFloorHeight() const { return mFloorHeight; }
+    i32 getFloorHeight() const { return mFloorHeight; }
 
-    const std::vector<Tile>& getTiles() const { return mTiles; }
-    const std::vector<TileWalls>& getWalls() const { return mWalls; }
-    const std::vector<TileFineNavData>& getFineNavData() const { return mFineNavData; }
+    const std::vector<Tile>& getTiles() const { assert(IS_GAME_THREAD()); mTiles; }
+    const std::vector<TileWalls>& getWalls() const { assert(IS_GAME_THREAD()); return mWalls; }
+    size_t getNumTiles() const { return mTiles.size(); }
 
-    // Nav
+    // Nav // TODO: Move?
     const std::vector<TileContainerEntrance>& getEntrances() const { return mEntrances; }
     void addEntrance(TileIndex pos, bool isLocked);
     void removeEntrance(TileIndex pos);
 
-    void copyMeshableDataWorkerThread(OUT ContainerTileDataCopy& dataCopy) const;
+    void copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const;
+    void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
 private:
     void onTileChanged(TileIndex tileIndex);
@@ -283,12 +256,11 @@ private:
     std::vector<TileWalls> mWalls; // TODO: Memory recycler and or compression
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
-    std::vector<TileFineNavData> mFineNavData;
     std::vector<TileContainerEntrance> mEntrances;
     TileContainerID mId;
     i32v3 mDims;
     i32v3 mRootPos;
-    ui32 mFloorHeight = 3u;
+    i32 mFloorHeight = 3;
     mutable std::atomic_uint32_t mRefCount = 0u;
     mutable std::atomic_bool mDidInitMesh = false;
     mutable std::atomic_bool mDidInitPhysics = false;

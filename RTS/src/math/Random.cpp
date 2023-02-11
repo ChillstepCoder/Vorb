@@ -7,6 +7,7 @@ std::vector<ui32> cachedRandom;
 static thread_local unsigned cachedRandomIndex = 0;
 
 // TODO: Try splitmix https://rosettacode.org/wiki/Pseudo-random_numbers/Splitmix64
+// https://www.youtube.com/watch?v=e4b--cyXEsM
 
 ui32 Random::xorshf96() {          //period 2^96-1
     ui32 t;

@@ -8,6 +8,7 @@
 
 // TODO: Do we need rendering here?
 #include "rendering/material/MaterialData.h"
+#include "util/BitArray.h"
 
 enum class TileLayer : ui8 {
     Ground = 0,
@@ -121,7 +122,8 @@ struct TileWalls {
 };
 
 // Per tile steering and navigation usage
-struct TileNavData {
+// TODO: Use
+struct TileSteeringData {
     union {
         struct {
             entt::entity e0; // Southwest
@@ -131,8 +133,6 @@ struct TileNavData {
         };
         entt::entity entities[4];
     };
-    // Collision stuff
-    mutable ui16 coarseNavNodeIndex = UINT16_MAX; // Modified by nav thread
 };
 
 class Tile {
@@ -150,10 +150,7 @@ public:
 
     bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
 
-    // Only nav thread can access this data
-    ui16 getNavNodeIndex_DEBUG_MAIN_THREAD() const { return navData.coarseNavNodeIndex; }
-    ui16 getNavNodeIndex() const { assert(IS_NAV_THREAD()); return navData.coarseNavNodeIndex; }
-    void setNavNodeIndex(ui16 index) const { assert(IS_NAV_THREAD()); navData.coarseNavNodeIndex = index; }
+    // Only nav thread can access this data TODO: MOVE
     bool canNavInDirection(Cartesian8 dir) const;
     f32 getEdgeHeightOffset(Cartesian dir) const;
 
@@ -183,17 +180,22 @@ private:
         };
         TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
     };
-    TileNavData navData; // TODO: Get tf out of tile data
     BitFlags<TileFlags> tileFlags;
     TileOrientation orientation = {}; // TODO: Combine these?
     f32 groundZOffset;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 32, "Keep small");
+static_assert(sizeof(Tile) == 12, "Keep small");
 //SIZER(Tile);
 
 // All meshable data from a container, copied to prevent race conditions or mutex locks
-struct ContainerTileDataCopy {
+struct ContainerMeshDataCopy {
     std::vector<Tile> mTiles;
     std::vector<TileWalls> mWalls;
+};
+
+struct ContainerNavDataCopy {
+    std::vector<Tile> mTiles;
+    std::vector<TileWalls> mWalls;
+    BitArray mOwnedTiles;
 };

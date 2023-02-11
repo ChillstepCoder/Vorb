@@ -20,9 +20,10 @@ NavThread::~NavThread() {
     }
 }
 
-void NavThread::init(const NavWorld& navWorld) {
+void NavThread::init(NavWorld& navWorld) {
     assert(!mThread); // No double init
     assert(sWorld);
+    mNavWorld = &navWorld;
     if (!mThread) {
         mThread = std::make_unique<std::thread>(&NavThread::navThreadFunc, this);
     }
@@ -52,21 +53,11 @@ void NavThread::clearTasks() {
     while (mPathTasks.try_dequeue(args));
 }
 
-void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse, std::function<void()>&& mainProc)
-{
-    //if (sDebugOptions.mShowPaths) {
-    //    DebugRenderer::drawFilledQuad(f32v3(start.getWorldPos3D()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.7f), 1000);
-    //    DebugRenderer::drawFilledQuad(f32v3(goal.getWorldPos3D()), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.7f), 1000);
-    //}
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse, std::function<void()>&& mainProc) {
     mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
 }
 
-void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const TileHandle& start, const TileHandle& goal, bool isCoarse)
-{
-    //if (sDebugOptions.mShowPaths) {
-    //    DebugRenderer::drawFilledQuad(f32v3(start.getWorldPos3D()), f32v2(1.0f), color4(0.0f, 1.0f, 0.0f, 0.7f), 1000);
-    //    DebugRenderer::drawFilledQuad(f32v3(goal.getWorldPos3D()), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.7f), 1000);
-    //}
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse) {
     mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
 }
 
@@ -78,15 +69,10 @@ void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
 
     TileContainer* tileContainerPtr = &tileContainer;
 
+    // Navgraph construction is handled by thread pool, result is returned to us via 
     Services::Threadpool::ref().addTask([this, tileContainerPtr](ThreadPoolWorkerData* workerData) {
-        NavThreadGraphBuildArgs buildArgs;
-        CoarseNavGraph navGraph;
-        NavGraphTileDataToCopy navTileData;
-
-        buildArgs.container = tileContainerPtr;
         assert(tileContainerPtr);
-        dynamic_cast<SrvWorldInterface*>(sWorld)->getNavWorld().buildNavGraphForContainer(*tileContainerPtr, buildArgs.navGraph, buildArgs.navTileData);
-        mNavGraphBuildTasks.enqueue(std::move(buildArgs));
+        mNavWorld->buildNavGraphForContainer(*tileContainerPtr);
     }, nullptr);
 }
 
@@ -97,36 +83,13 @@ void NavThread::navThreadFunc() {
     NAV_THREAD_ID = std::this_thread::get_id();
 
     NavThreadPathArgs pathArgs;
-    NavThreadGraphBuildArgs graphArgs;
-    SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(sWorld);
     LOG_CRITICAL("TODO: Fix srvWorld assert in NavThread::navThreadFunc");
     // TODO: This assert happened three times (FAILED DYNAMIC_CAST. sWorld is valid but srvWorld is null)
-    assert(srvWorld);
-    NavWorld& navWorld = srvWorld->getNavWorld();
     while (!mStop.load()) {
         bool hasTask = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
 
-        // Any finished navgraphs must be processed first
-        // TODO:BULK
-        while (mNavGraphBuildTasks.try_dequeue(graphArgs)) {
-            // Assign graph
-            navWorld.assignCoarseNavGraph(graphArgs.container->getId(), std::move(graphArgs.navGraph));
-            // Notify tile data
-            NavGraphTileDataToCopy& navTileData = graphArgs.navTileData;
-            const std::vector<Tile>& tiles = graphArgs.container->getTiles();
-            for (ui32 i = 0; i < navTileData.tileDjNodeIDs.size(); ++i) {
-                const ui16 nodeId = navTileData.tileDjNodeIDs[i];
-                if (nodeId == INVALID_DJ_NODE_ID) {
-                    tiles[i].setNavNodeIndex(INVALID_NAV_NODE_INDEX);
-                }
-                else {
-                    tiles[i].setNavNodeIndex(navTileData.djNodes[nodeId]);
-                }
-            }
-            // Release resources
-            graphArgs.container->setDidInitNav();
-            graphArgs.container->decRef();
-        }
+        mNavWorld->updateNavThread();
+        
 
         if (hasTask) {
             const PathArgs& args = pathArgs.first;

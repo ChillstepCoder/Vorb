@@ -56,7 +56,7 @@ void TileContainerRepository::destroyTileContainer(TileContainer* container) {
 }
 
 TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
-    assert(IS_GAME_THREAD() || IS_NAV_THREAD()); // Nav thread is allowed to access tile containers because the world is write locked during nav
+    assert(IS_GAME_THREAD());
     auto&& it = sTileContainerLookup.find(id);
     assert(it != sTileContainerLookup.end());
     return it->second;
@@ -82,7 +82,6 @@ void TileContainer::allocateData() {
     size_t numTiles = mDims.x * mDims.y * mDims.z;
     mTiles.resize(numTiles);
     mWalls.resize(numTiles);
-    mFineNavData.resize(numTiles);
 }
 
 void TileContainer::freeData() {
@@ -90,7 +89,6 @@ void TileContainer::freeData() {
     std::vector<Tile>().swap(mTiles);
     std::vector<TileWalls>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
-    std::vector<TileFineNavData>().swap(mFineNavData);
     mOwnedTiles.freeData();
 }
 
@@ -286,7 +284,6 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
     return TileHandle(this, getTileIndexFromXYZOffset(ui32v3(offset)));
 }
 
-
 void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
     assert(IS_GAME_THREAD());
     assert(isReady());
@@ -312,13 +309,25 @@ void TileContainer::removeEntrance(TileIndex pos) {
     LOG_CRITICAL("TODO: Update nav in TileContainer::removeEntrance");
 }
 
-void TileContainer::copyMeshableDataWorkerThread(OUT ContainerTileDataCopy& dataCopy) const {
+void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const {
     assert(!IS_GAME_THREAD());
     PROFILE_FUNCTION();
     {
         std::shared_lock lock(mSharedMutex);
         dataCopy.mTiles = mTiles;
         dataCopy.mWalls = mWalls;
+    } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
+}
+
+void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const
+{
+    assert(!IS_GAME_THREAD());
+    PROFILE_FUNCTION();
+    {
+        std::shared_lock lock(mSharedMutex);
+        dataCopy.mTiles = mTiles;
+        dataCopy.mWalls = mWalls;
+        dataCopy.mOwnedTiles = mOwnedTiles;
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 

@@ -106,7 +106,7 @@ void GatherTask::init(entt::registry& registry, entt::entity agent) {
         return;
     }
 
-    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(physCmp.getPosition()), mTileTarget, [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(physCmp.getPosition()).toLiteTileHandle(), mTileTarget.toLiteTileHandle(), [this](bool success) {
         if (success == true) {
             mState = GatherTaskState::BEGIN_HARVEST;
         }
@@ -185,7 +185,7 @@ void GatherTask::pathToStockpileSlot(entt::registry& registry, entt::entity agen
     PathPoint targetPos(mItemPromise->getCurrentTargetWorldPosition());
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos).toLiteTileHandle(), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)).toLiteTileHandle(), [this](bool success) {
         if (success) {
             mState = GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT;
         }

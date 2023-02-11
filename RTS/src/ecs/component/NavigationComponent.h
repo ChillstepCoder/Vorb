@@ -4,7 +4,7 @@
 #include "pathfinding/PathFinder.h"
 
 struct CharacterControlComponent;
-struct TileHandle;
+struct LiteTileHandle;
 class TileContainer;
 
 enum class NavigationType : ui8 {
@@ -22,17 +22,18 @@ enum NavigationComponentFlags : ui8 {
 
 struct NavigationComponent {
 
-	void requestPathTo(const TileHandle& targetTile);
+	// TODO: IMPLEMENT
+	void requestPathTo(const LiteTileHandle& targetTile);
 
 	// Make sure navigation component is destroyed before the callback owner is destroyed
     // Callback should ideally only be set from the same entity
     void setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback);
 
-    void requestFinePath(const TileHandle& start, const TileHandle& goal);
-	void requestCoarsePath(const TileHandle& start, const TileHandle& goal);
+    void requestFinePath(const LiteTileHandle& start, const LiteTileHandle& goal);
+	void requestCoarsePath(const LiteTileHandle& start, const LiteTileHandle& goal);
 
-    void requestFinePathWithCallback(const TileHandle& start, const TileHandle& goal, std::function<void(bool)> finishedCallback);
-    void requestCoarsePathWithCallback(const TileHandle& start, const TileHandle& goal, std::function<void(bool)> finishedCallback);
+    void requestFinePathWithCallback(const LiteTileHandle& start, const LiteTileHandle& goal, std::function<void(bool)> finishedCallback);
+    void requestCoarsePathWithCallback(const LiteTileHandle& start, const LiteTileHandle& goal, std::function<void(bool)> finishedCallback);
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);

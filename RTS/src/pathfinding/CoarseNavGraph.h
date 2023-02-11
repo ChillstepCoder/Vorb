@@ -49,14 +49,18 @@ static_assert(sizeof(CoarseNavNodeIndexPair) == 8, "Keep small");
 struct CoarseNavGraph {
     // Could fit another ui32 here
     //TileContainer* parentContainer; // TODO: Is this needed?
+    std::unique_ptr<CoarseNavNodeIndex[]> tileCoarseNavIndices; // Size = tile container size
     std::unique_ptr<CoarseNavNode[]> nodes;
     std::unique_ptr<CoarseNavNodeEdge[]> edges;
     ui32 numNodes = 0;
     ui32 numEdges = 0;
+
+    const CoarseNavNodeIndex getCoarseNavNodeIndexForTile(TileIndex index) {
+        return tileCoarseNavIndices[index];
+    }
 
     const CoarseNavNode& getNode(ui32 nodeIndex) const {
         assert(nodeIndex < numNodes);
         return nodes[nodeIndex];
     }
 };
-

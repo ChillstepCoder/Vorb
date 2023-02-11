@@ -523,7 +523,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
     PROFILE_FUNCTION();
 
     const TileContainer& tileContainer = builders.container;
-    const ContainerTileDataCopy& tiles = builders.tileData;
+    const ContainerMeshDataCopy& tiles = builders.tileData;
     // TODO: Do we need to handle container resize? Or is resize destroy and remake?
     const ui32v3& tileDims = tileContainer.getDims();
     const f32v3 tileContainerWorldPos = tileContainer.getWorldPos3D();

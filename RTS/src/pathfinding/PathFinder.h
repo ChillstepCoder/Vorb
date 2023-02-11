@@ -6,6 +6,7 @@ class NavWorld;
 class TileContainer;
 struct CoarseNavNode;
 struct CoarseNavGraph;
+struct ContainerNavData;
 struct TileHandle;
 
 #include <boost/heap/priority_queue.hpp>
@@ -39,11 +40,11 @@ class PathFinder {
 public:
     PathFinder(const NavWorld& navWorld);
 
-    bool generateFinePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path);
-    bool generateCoarsePathSynchronous(const TileHandle& start, const TileHandle& goal, OUT NavPath& path);
+    bool generateFinePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path);
+    bool generateCoarsePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path);
 
 private:
-    void coarseAstarEdgePropagate(const CoarseNavNode* navNode, const TileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG);
+    void coarseAstarEdgePropagate(const ContainerNavData& navData, const CoarseNavNode* navNode, const LiteTileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG);
 
     CoarseOpenList mOpenList;
     CoarseClosedList mCoarseClosedList;

@@ -10,7 +10,7 @@
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
-typedef bg::model::point<ui32, 2, bg::cs::cartesian> BoxPoint;
+typedef bg::model::point<i32, 2, bg::cs::cartesian> BoxPoint;
 typedef bg::model::box<BoxPoint> BBox;
 
 typedef std::vector<std::unique_ptr<Structure>> StructureList;
