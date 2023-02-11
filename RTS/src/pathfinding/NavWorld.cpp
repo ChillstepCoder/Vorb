@@ -82,7 +82,7 @@ void NavWorld::updateNavThread()
             const i32v2& worldPos2D = taskData.container->getWorldPos2D();
             const i32v2 dims2D = taskData.container->getDims2D();
             NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + dims2D.x, worldPos2D.y + dims2D.y));
-            mSpatialLookup.insert(std::make_pair(newBox, taskData.container->getId()));
+            mSpatialLookup.insert(ContainerNavRegion{ newBox, taskData.container->getId() });
         }
 
         // Release resources
@@ -942,21 +942,23 @@ const ContainerNavData& NavWorld::getNavDataForContainer(TileContainerID contain
 LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData* outNavData) const {
     assert(IS_NAV_THREAD());
     // TODO: Stack memory?
-    std::vector<TileContainerID> overlappingContainers;
+    std::vector<ContainerNavRegion> overlappingContainers;
     overlappingContainers.reserve(4);
     // https://valelab4.ucsf.edu/svn/3rdpartypublic/boost-versions/boost_1_55_0/libs/geometry/doc/html/geometry/spatial_indexes/queries.html
     const size_t overlapCount = mSpatialLookup.query(boost::geometry::index::intersects(NavBoxPoint(worldPos.x, worldPos.y)), std::back_inserter(overlappingContainers));
 
     // Find the first structure whos tile is included in this point
     // Structures are AABBs
-    for (auto&& containerId : overlappingContainers) {
-        auto&& it = mNavGraphs.find(containerId);
+    // TODO: Iterator instead of back_inserter 
+    // https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
+    for (auto&& containerRegion : overlappingContainers) {
+        auto&& it = mNavGraphs.find(containerRegion.id);
         assert(it != mNavGraphs.end());
         const ContainerNavData& navData = it->second;
         TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(worldPos - navData.worldPos, navData.containerDims);
         if (navData.fineNavGraph[tileIndex].isOwned) {
             outNavData = &navData;
-            return LiteTileHandle(containerId, tileIndex);
+            return LiteTileHandle(containerRegion.id, tileIndex);
         }
     }
 

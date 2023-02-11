@@ -128,6 +128,19 @@ struct NavGraphBuildTaskData {
     TileContainer* container;
 };
 
+struct ContainerNavRegion {
+    NavBBox box;
+    TileContainerID id;
+};
+
+// https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
+template <>
+struct bgi::indexable<ContainerNavRegion>
+{
+    typedef NavBBox result_type;
+    NavBBox operator()(const ContainerNavRegion& c) const { return c.box; }
+};
+
 // TODO: Lazy navgraph generation?
 class NavWorld
 {
@@ -169,7 +182,7 @@ private:
     // TODO: We need to destroy these on chunk destruct
     moodycamel::ConcurrentQueue<NavGraphBuildTaskData> mFinishedNavGraphBuildTasks;
     std::unordered_map<TileContainerID, ContainerNavData> mNavGraphs;
-    bgi::rtree<std::pair<NavBBox, TileContainerID>, bgi::quadratic<16>> mSpatialLookup;
+    bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> mSpatialLookup;
 
     TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];
 };
