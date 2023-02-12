@@ -150,6 +150,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
 
 
     sGlobalSimpleProgram.use();
+    // TODO: This should be deprecated I think
     sGlobalSimpleProgram.enableVertexAttribArrays();
 
     if (mQuadsMesh.vao) {
@@ -167,6 +168,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         RenderStats::recordDrawCall(mLinesMesh.numVerts / 2);
     }
 
+    // TODO: This should be deprecated I think
     sGlobalSimpleProgram.disableVertexAttribArrays();
     sGlobalSimpleProgram.unuse();
 
