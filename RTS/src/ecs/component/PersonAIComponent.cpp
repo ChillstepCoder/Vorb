@@ -15,6 +15,13 @@ PersonAISystem::PersonAISystem()
 }
 
 // TODO: Refactor
+// TODO: Investigate maslows hierarchy (probability weight?) (Concern probability gradually increases for things that didnt run recently?
+// 1. Self Actuation
+// 2. Esteem needs
+// 3. Belonginess and love needs
+// 4. Safety needs
+// 5. physiological needs
+// https://www.youtube.com/watch?v=RYZSdPuvta8
 inline void updateComponent(entt::registry& registry, entt::entity entity, PersonAIComponent& ai, PhysicsComponent& physics) {
     
     // Set home to first city if none (TODO: better residence)
