@@ -380,10 +380,20 @@ VisualLog* VisualLogger::tryGetNewVisualLog(const nString& name) {
 void VisualLogger::renderImgui() {
 
     static ui32 sSelected = UINT32_MAX;
+    static bool sAnimate = false;
+    static int sAnimationSpeed = 32;
+    static TickingTimer sAnimationTimer = TickingTimer(32);
+    sAnimationTimer.startFrame();
 
     ImGui::Text("Logs");
     ImGui::Checkbox("Enable", &sDebugOptions.mEnableVisualLogs);
-
+    ImGui::Checkbox("Animate", &sAnimate);
+    if (sAnimate) {
+        if (ImGui::SliderInt("MS per tick", &sAnimationSpeed, 8, 512)) {
+            sAnimationTimer.setMsPerTick(sAnimationSpeed);
+        }
+        ImGui::Separator();
+    }
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
 
     std::lock_guard<std::mutex> lock(sMutex);
@@ -471,13 +481,35 @@ void VisualLogger::renderImgui() {
                 log.mDirtyRender = true;
             }
         }
+
+
+        // Delete log at the end
         ImGui::PopID();
         ImGui::Separator();
         if (ImGui::Button("Delete")) {
             deleteLog(&log);
         }
+        else {
+            // Animation
+            if (sAnimate) {
+                int i = 0; // Make sure we have a max
+                while (sAnimationTimer.tryTick() && (++i < 10)) {
+                    log.mDirtyRender = true;
+                    if (selected.shapeCount != 0 && log.mShapesToRender < selected.shapeCount - 1) {
+                        ++log.mShapesToRender;
+                    }
+                    else {
+                        log.mShapesToRender = 0;
+                        ++log.mSelectedRenderStep;
+                        if (log.mSelectedRenderStep >= log.mRenderStepInfo.size()) {
+                            log.mSelectedRenderStep = 0;
+                        }
+                    }
+                }
+            }
+        }
     }
-    ImGui::Separator();
+    
 }
 
 void VisualLogger::renderActiveLogs(const f32v3& cameraPos, const f32m4& viewMatrix) {
