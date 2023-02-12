@@ -133,6 +133,9 @@ void VisualLog::finish() {
 
 void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
     assert(IS_RENDER_THREAD());
+    if (!mShapesToRender) {
+        return;
+    }
 
     // Rebuild if needed
     if (mDirtyRender) {
@@ -152,6 +155,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         glBindVertexArray(mQuadsMesh.vao);
         glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
+        xxx; //fixme NOT QUADS
         glDrawArrays(GL_QUADS, 0, (GLsizei)mQuadsMesh.numVerts);
         RenderStats::recordDrawCall(mQuadsMesh.numVerts / 4);
     }
@@ -495,7 +499,7 @@ void VisualLogger::renderImgui() {
                 int i = 0; // Make sure we have a max
                 while (sAnimationTimer.tryTick() && (++i < 10)) {
                     log.mDirtyRender = true;
-                    if (selected.shapeCount != 0 && log.mShapesToRender < selected.shapeCount - 1) {
+                    if ((int)log.mShapesToRender < (int)selected.shapeCount - 1) {
                         ++log.mShapesToRender;
                     }
                     else {
