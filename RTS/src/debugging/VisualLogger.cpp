@@ -5,6 +5,7 @@
 #include "rendering/mesh/mesher/builder/TextMeshBuilder.h"
 #include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderManager.h"
+#include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h" // FOR SHARED
 
 #include "resources/ResourceManager.h"
 
@@ -155,8 +156,7 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         glBindVertexArray(mQuadsMesh.vao);
         glUniformMatrix4fv(sGlobalSimpleProgram.getUniform("unWVP"), 1, GL_FALSE, &viewMatrix[0][0]);
         glUniform3fv(sGlobalSimpleProgram.getUniform("CameraPos"), 1, &cameraPos[0]);
-        xxx; //fixme NOT QUADS
-        glDrawArrays(GL_QUADS, 0, (GLsizei)mQuadsMesh.numVerts);
+        glDrawElements(GL_TRIANGLES, ((GLsizei)mQuadsMesh.numVerts / 4) * 6, GL_UNSIGNED_INT, nullptr);
         RenderStats::recordDrawCall(mQuadsMesh.numVerts / 4);
     }
     if (mLinesMesh.vao) {
@@ -351,6 +351,7 @@ void VisualLog::buildMesh() {
         mQuadsMesh.type = DebugMeshType::QUADS;
         glNamedBufferStorage(mQuadsMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), nullptr, 0);
         glVertexArrayVertexBuffer(mQuadsMesh.vao, 0, mQuadsMesh.vbo, 0, sizeof(SimpleMeshVertex));
+        glVertexArrayElementBuffer(mQuadsMesh.vao, ProceduralMeshBuilder::sQuadIboUI32);
 
         glEnableVertexArrayAttrib(mQuadsMesh.vao, 0);
         glVertexArrayAttribFormat(mQuadsMesh.vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(SimpleMeshVertex, position));
@@ -391,7 +392,9 @@ void VisualLogger::renderImgui() {
 
     ImGui::Text("Logs");
     ImGui::Checkbox("Enable", &sDebugOptions.mEnableVisualLogs);
-    ImGui::Checkbox("Animate", &sAnimate);
+    if (ImGui::Checkbox("Animate", &sAnimate)) {
+        sAnimationTimer.reset();
+    }
     if (sAnimate) {
         if (ImGui::SliderInt("MS per tick", &sAnimationSpeed, 8, 512)) {
             sAnimationTimer.setMsPerTick(sAnimationSpeed);

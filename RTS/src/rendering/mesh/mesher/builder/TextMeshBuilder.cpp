@@ -220,9 +220,10 @@ void TextMeshBuilder::initMeshBuffers(MeshGpuData& subMesh) {
         glCreateVertexArrays(1, &subMesh.mVao);
     }
     // SSBO
-    if (subMesh.mSSBO == 0) {
-        glCreateBuffers(1, &subMesh.mSSBO);
+    if (subMesh.mSSBO != 0) {
+        glDeleteBuffers(1, &subMesh.mSSBO);
     }
+    glCreateBuffers(1, &subMesh.mSSBO);
     // IBO
     subMesh.mIndexType = MeshIndexType::INT;
     glVertexArrayElementBuffer(subMesh.mVao, ProceduralMeshBuilder::sQuadIboUI32);

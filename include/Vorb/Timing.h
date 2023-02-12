@@ -58,6 +58,7 @@ public:
     void startFrame();
     // Returns true while we should be ticking
     bool tryTick();
+    void reset() { mAccumulator = 0; }
 
     f32 getFrameAlpha() { return (f32)(mAccumulator / mMsPerTick); }
 
