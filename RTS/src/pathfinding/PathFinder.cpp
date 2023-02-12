@@ -181,6 +181,7 @@ PathFinder::PathFinder(const NavWorld& navWorld) : mNavWorld(navWorld) {
 struct FineNodeData {
     LiteTileHandle parent;
     ui16 g;
+    //ui16 whatever;
 };
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
@@ -210,26 +211,32 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     openList.reserve(MAX_OPEN_LIST_SIZE);
     nodeLookup.reserve(MAX_OPEN_LIST_SIZE);
 
-    // Add start node to the open list (inverted because we pathfind backwards)
+    // Add start node to the open list
     openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startWorldPos, goalWorldPos));
-    nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ startLiteHandle, 0 }));
+    nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ LiteTileHandle() /*parent*/, 0}));
 
     int TOTAL = 0;
 
     bool foundGoal = false;
-    // TODO: Replace open list with boost priority queue like coarse does
     while (openList.size() && openList.size() < MAX_OPEN_LIST_SIZE) {
         ++TOTAL;
-        // Pull best node off of the open list (Linear search)
+        // Pull best node off of the open list
         LiteTileHandle handle = openList.popLowestScoreNode();
         if (handle == goalLiteHandle) {
             foundGoal = true;
             break;
         }
 
-        const ui16 g = nodeLookup.find(handle)->second.g;
+        // Score and nav data lookup
+        const ui16 g = nodeLookup.find(handle)->second.g; // TODO: Can we potentially stop this lookup by storing it in the openList? Profile
         const ContainerNavData& containerNavData = mNavWorld.getNavDataForContainer(handle.containerId);
         const TileFineNavData fineNavData = containerNavData.fineNavGraph[handle.index];
+
+        // Debug render
+        if (sDebugOptions.mShowPaths) {
+            const ui8 r = (ui8)(g % 256);
+            DebugRenderer::drawWireQuadThreadSafe(containerNavData.getTileWorldPos(handle.index), f32v2(1.0f), color4(r, 0ui8, (ui8)(255ui8 - r), 255ui8), DEBUG_DURATION);
+        }
         // Add current node to implicit closed list
 
         // Precompute collision weights and points for neighbors
@@ -336,6 +343,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
             // We dont do anything if this is a worse path than what we had before
             if (newG < prevG) {
                 if (openList.contains(adjHandle)) {
+                    // TODO: Implement
                     // New node is better than current openlist node
                     LOG_DEBUG("Detected open list node with better priority. TODO: Implement increase priority and benchmark\n");
                     //openList.replace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
