@@ -108,9 +108,8 @@ private:
 };
 
 // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
-f32 getDiagonalHeuristicAtPosition(const LiteTileHandle& pos, const f32v3& goalPos) {
+f32 getDiagonalHeuristicAtPosition(const f32v3& pos, const f32v3& goalPos) {
 
-    const f32v3 worldPos = pos.getWorldPosition();
     //constexpr f32 D = 1;
     constexpr f32 D2 = 1.4f;
 
@@ -118,8 +117,8 @@ f32 getDiagonalHeuristicAtPosition(const LiteTileHandle& pos, const f32v3& goalP
     // When D = 1 and D2 = sqrt(2) (1.4), this is called the octile distance.
     // TODO: Truncation error for large integers?? (i dont remember this)
     // TODO: 3D
-    f32 dx = abs((f32)worldPos.x - (f32)goalPos.x);
-    f32 dy = abs((f32)worldPos.y - (f32)goalPos.y);
+    f32 dx = abs((f32)pos.x - (f32)goalPos.x);
+    f32 dy = abs((f32)pos.y - (f32)goalPos.y);
     return /*D * */(dx + dy) + (D2 - 2.0f/* * D*/) * vmath::min(dx, dy);
 }
 
@@ -212,7 +211,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     nodeLookup.reserve(MAX_OPEN_LIST_SIZE);
 
     // Add start node to the open list (inverted because we pathfind backwards)
-    openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startLiteHandle, goalWorldPos));
+    openList.add(startLiteHandle, 0, getDiagonalHeuristicAtPosition(startWorldPos, goalWorldPos));
     nodeLookup.emplace(std::make_pair(startLiteHandle, FineNodeData{ startLiteHandle, 0 }));
 
     int TOTAL = 0;
@@ -256,7 +255,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
                 const i32v3 offset(containerOffset.x + adjOffset.x, containerOffset.y + adjOffset.y, glm::round(containerOffset.z + fineNavData.zPositionOffsetFromFloor));
 
                 const ContainerNavData* outNavData = nullptr;
-                adjHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(offset + containerNavData.worldPos, outNavData);
+                adjHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(offset + containerNavData.worldPos, &outNavData);
                 assert(adjHandle.containerId != handle.containerId);
                 if (outNavData) {
                     assert(outNavData->containerId != handle.containerId);
@@ -283,12 +282,14 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
                         // Drop down
                         adjFineNavData = outNavData->fineNavGraph[adjHandle.index];
                         pathWeight = DROP_PATH_WEIGHT;
+                        assert(adjFineNavData.isOwned);
 
                     }
                     else if (myZPos > zPosAdjacent && myZPos - zPosAdjacent < MAX_CLIMB_HEIGHT) {
                         // Climb up
                         adjFineNavData = outNavData->fineNavGraph[adjHandle.index];
                         pathWeight = CLIMB_PATH_WEIGHT;
+                        assert(adjFineNavData.isOwned);
                     }
                     else {
                         continue;
@@ -310,9 +311,9 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
                 }
                 TileIndex adjIndex = TileContainer::getTileIndexFromXYZOffset(adjPos, containerNavData.containerDims);
                 adjHandle = LiteTileHandle(handle.containerId, adjIndex);
-                adjFineNavData = mNavWorld.getFineNavData(adjHandle.containerId, adjHandle.index);
+                adjFineNavData = containerNavData.fineNavGraph[adjHandle.index];
+                assert(adjFineNavData.isOwned);
             }
-            assert(adjFineNavData.isOwned);
             // Get path weight
             pathWeight *= ((f32)adjFineNavData.pathWeight / 255.0f);
 
@@ -345,7 +346,10 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
                 else {
                     // This is an unvisited node OR
                     // this node was already processed but with a worse score
-                    openList.add(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
+                    // TODO: Is it cheaper to store the position?
+                    const f32v3 adjPos = mNavWorld.getNavDataForContainer(adjHandle.containerId).getTileWorldPos(adjHandle.index);
+
+                    openList.add(adjHandle, newG, getDiagonalHeuristicAtPosition(adjPos, goalWorldPos));
                     // Update or insert into gLookup
                     if (it != nodeLookup.end()) {
                         it->second.g = newG;
@@ -412,7 +416,7 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
     const CoarseNavNodeIndex goalNavNodeIndex = goalNavData.coarseNavGraph.tileCoarseNavIndices[start.index];
     if (startNavNodeIndex == INVALID_NAV_NODE_INDEX ||
         goalNavNodeIndex == INVALID_NAV_NODE_INDEX) {
-        pError("Error: Failed to find coarse path due to invalid start\n");
+        LOG_WARN("Failed to find coarse path due to invalid start");
         path.finishedGenerating.store(true);
         return false;
     }
@@ -493,7 +497,7 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
     }*/
 
     if (!foundGoal) {
-        LOG_TRACE("Coarse path failed in {} ms with {} total nodes checked\n", timer.stop(), mTotalAstarNodes);
+        LOG_TRACE("Coarse path failed in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -522,17 +526,22 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
     memcpy(path.points, sPathPointBuffer, pathSize * sizeof(LiteTileHandle));
 
 
+    LOG_TRACE("Coarse path found in {} ms with {} total nodes checked", timer.stop(), mTotalAstarNodes);
+
     if (sDebugOptions.mShowPaths) {
+        timer.start();
         for (ui32 i = 1; i < path.numPoints; ++i) {
-            assert(path.points[i - 1].isValid());
-            const f32v3 a = path.points[i - 1].getWorldPosition();
-            assert(path.points[i].isValid());
-            const f32v3 b = path.points[i].getWorldPosition();
+            const LiteTileHandle& pa = path.points[i - 1];
+            const LiteTileHandle& pb = path.points[i];
+            assert(pa.isValid());
+            assert(pb.isValid());
+            const f32v3 a = mNavWorld.getNavDataForContainer(pa.containerId).getTileWorldPos(pa.index);
+            const f32v3 b = mNavWorld.getNavDataForContainer(pb.containerId).getTileWorldPos(pb.index);
             DebugRenderer::drawLineBetweenPointsThreadSafe(a, b, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
         }
+        LOG_TRACE("  -Debug draw took {}", timer.stop());
     }
 
-    LOG_TRACE("Coarse path found in {} ms with {} total nodes checked\n", timer.stop(), mTotalAstarNodes);
     path.finishedGenerating.store(true);
     return true;
 }
@@ -574,14 +583,15 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                 i32v3 worldPosOuter = edgePosWorld + CARTESIAN_NORMALS_3D[e_cast(edge.dir)];
                 worldPosOuter.z = glm::round(worldPosOuter.z + navData.fineNavGraph[nextIndex].zPositionOffsetFromFloor);
                 // Get the outer tile along this coarse edge point
-                ContainerNavData* outerNavData = nullptr;
-                LiteTileHandle outerTileHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(worldPosOuter, outerNavData);
+                const ContainerNavData* outerNavData = nullptr;
+                LiteTileHandle outerTileHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(worldPosOuter, &outerNavData);
                 if (!outerTileHandle.isValid()) {
                     continue;
                 }
+                assert(outerNavData);
                 // This should be impossible and is a failure case for this edge, TODO: debug log it or something?
-                if (outerTileHandle.containerId != navData.containerId) {
-                    LOG_CRITICAL("outerHandle.container != container in PathFinder::coarseAStarEdgePropagate. Adding red debug draw line to world at edge");
+                if (outerTileHandle.containerId == navData.containerId) {
+                    LOG_CRITICAL("outerTileHandle.containerId == navData.containerId in PathFinder::coarseAStarEdgePropagate.Adding red debug draw line to world at edge");
                     DebugRenderer::drawLineBetweenPointsThreadSafe(edgePosWorld, worldPosOuter, COLOR_RED, 200000);
                     __debugbreak();
                     continue;
@@ -589,7 +599,13 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                 // Add this as a new valid node if needed
                 // This always picks first position for node due to overwrites, but thats OK we will let fine nav / steering do
                 // string pulling to improve the path
-                EdgeKey edgeKey = std::make_pair(outerTileHandle.containerId, outerNavData->coarseNavGraph.tileCoarseNavIndices[outerTileHandle.index]);
+                CoarseNavNodeIndex navIndex = outerNavData->coarseNavGraph.tileCoarseNavIndices[outerTileHandle.index];
+                if (navIndex == INVALID_NAV_NODE_INDEX) {
+                    continue;
+                }
+                assert(navIndex < outerNavData->coarseNavGraph.numNodes);
+                EdgeKey edgeKey = std::make_pair(outerTileHandle.containerId, navIndex);
+                UINT16_MAX;
                 auto&& it = edgeNodes.find(edgeKey);
                 if (it == edgeNodes.end()) {
                     edgeNodes.insert(std::make_pair(edgeKey, outerTileHandle.index));
@@ -598,11 +614,10 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
             for (auto&& it : edgeNodes) {
                 //TileContainer* adjContainer = TileContainerRepository::getTileContainer(it.first);
                 const TileContainerID nextContainerId = it.first.first;
-                const CoarseNavGraph* adjNavGraph = mNavWorld.tryGetCoarseNavGraph(nextContainerId);
-                if (!adjNavGraph) {
-                    continue;
-                }
-                const CoarseNavNode& nextNode = adjNavGraph->getNode(it.first.second);
+                // TODO: It might be cheaper to cache this, since we are doing it already in the above pass ^
+                const ContainerNavData& nextNavData = mNavWorld.getNavDataForContainer(nextContainerId);
+                const CoarseNavGraph& adjNavGraph = nextNavData.coarseNavGraph;
+                const CoarseNavNode& nextNode = adjNavGraph.getNode(it.first.second);
                 if (nextNode.isClosed) {
                     continue;
                 }
@@ -613,8 +628,8 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
 
                 const CoarseAstarNodeID newId = mTotalAstarNodes++;
                 CoarseAStarNode& newAstarNode = sCoarseAstarNodes[newId];
+                const i32v3 nextPos = nextNavData.getTileWorldPos(it.second);
                 newAstarNode.tileHandle = LiteTileHandle(nextContainerId, it.second);
-                const i32v3 nextPos = newAstarNode.tileHandle.getWorldPosition();
                 newAstarNode.g = prevG + glm::length(f32v3(nextPos - tilePos));
                 newAstarNode.h = getEuclideanHeuristicAtPosition(nextPos, goalPos);
                 if (sDebugOptions.mShowPaths) {

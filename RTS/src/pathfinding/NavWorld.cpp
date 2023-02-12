@@ -34,6 +34,9 @@ NavWorld::NavWorld()
 {
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
+    for (int i = 0; i < WorldData::WORLD_SIZE_CHUNKS; ++i) {
+        mTerrainTileContainers[i] = INVALID_TILE_CONTAINER_ID;
+    }
 }
 
 void NavWorld::updateNavThread()
@@ -64,7 +67,9 @@ void NavWorld::updateNavThread()
                     taskData.navGraph.tileCoarseNavIndices[i] = INVALID_NAV_NODE_INDEX;
                 }
                 else {
-                    taskData.navGraph.tileCoarseNavIndices[i] = navTileData.djNodes[nodeId];
+                    DisjointSetNode navIndex = navTileData.djNodes[nodeId];
+                    taskData.navGraph.tileCoarseNavIndices[i] = navIndex;
+                    assert(navIndex < taskData.navGraph.numNodes);
                 }
             }
         }
@@ -166,6 +171,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
     tileContainer.copyDataWorkerThread(tileData);
     const std::vector<Tile>& tiles = tileData.mTiles;
     const std::vector<TileWalls>& tileWalls = tileData.mWalls;
+    fineNavData.resize(tiles.size());
     const BitArray& ownedTiles = tileData.mOwnedTiles;
 
     navTileData.tileDjNodeIDs.resize(tiles.size(), INVALID_DJ_NODE_ID);
@@ -184,6 +190,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                 if (!tileContainer.isTileOwned(index)) {
                     continue;
                 }
+                tileFineNavData.isOwned = true;
                 // Impassible tiles are not part of navgraph
                 const Tile& tile = tiles[index];
                 if (tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
@@ -939,7 +946,7 @@ const ContainerNavData& NavWorld::getNavDataForContainer(TileContainerID contain
     return it->second;
 }
 
-LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData* outNavData) const {
+LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const {
     assert(IS_NAV_THREAD());
     // TODO: Stack memory?
     std::vector<ContainerNavRegion> overlappingContainers;
@@ -955,9 +962,14 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
         auto&& it = mNavGraphs.find(containerRegion.id);
         assert(it != mNavGraphs.end());
         const ContainerNavData& navData = it->second;
-        TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(worldPos - navData.worldPos, navData.containerDims);
+        i32v3 offset = worldPos - navData.worldPos;
+        offset.x = glm::clamp(offset.x, 0, navData.containerDims.x);
+        offset.y = glm::clamp(offset.y, 0, navData.containerDims.y);
+        offset.z = glm::clamp(offset.z, 0, navData.containerDims.z * navData.floorHeight);
+        offset.z /= navData.floorHeight;
+        TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(offset, navData.containerDims);
         if (navData.fineNavGraph[tileIndex].isOwned) {
-            outNavData = &navData;
+            *outNavData = &navData;
             return LiteTileHandle(containerRegion.id, tileIndex);
         }
     }
@@ -967,11 +979,14 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
     const i32v2 chunkOffset(worldPos.x / CHUNK_WIDTH, worldPos.y / CHUNK_WIDTH);
     const GridIdType chunkId = chunkOffset.y * WorldData::WORLD_WIDTH_CHUNKS + chunkOffset.x;
     TileContainerID containerId = mTerrainTileContainers[chunkId];
-    if (containerId != CHUNK_ID_INVALID) {
+    if (containerId != INVALID_TILE_CONTAINER_ID) {
         auto&& it = mNavGraphs.find(containerId);
         assert(it != mNavGraphs.end());
         const ContainerNavData& navData = it->second;
-        TileIndex tileIndex = TileContainer::getTileIndexFromXYZOffset(worldPos - navData.worldPos, navData.containerDims);
+        const i32v2 offset = i32v2(worldPos.x - navData.worldPos.x, worldPos.y - navData.worldPos.y);
+        TileIndex tileIndex = TileContainer::getBaseTileIndexFromXYOffset(offset, navData.containerDims);
+        assert(tileIndex < navData.containerDims.x* navData.containerDims.y* navData.containerDims.z);
+        *outNavData = &navData;
         return LiteTileHandle(containerId, tileIndex);
     }
     outNavData = nullptr;

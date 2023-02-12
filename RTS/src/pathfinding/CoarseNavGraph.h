@@ -55,10 +55,6 @@ struct CoarseNavGraph {
     ui32 numNodes = 0;
     ui32 numEdges = 0;
 
-    const CoarseNavNodeIndex getCoarseNavNodeIndexForTile(TileIndex index) {
-        return tileCoarseNavIndices[index];
-    }
-
     const CoarseNavNode& getNode(ui32 nodeIndex) const {
         assert(nodeIndex < numNodes);
         return nodes[nodeIndex];

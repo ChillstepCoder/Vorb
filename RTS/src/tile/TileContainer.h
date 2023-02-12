@@ -172,6 +172,9 @@ public:
     static TileIndex getTileIndexFromXYZOffset(const i32v3& xyz, const i32v3& dims) {
         return xyz.x + xyz.y * dims.x + xyz.z * dims.x * dims.y;
     }
+    static TileIndex getBaseTileIndexFromXYOffset(const i32v2& xy, const i32v3& dims) {
+        return xy.x + xy.y * dims.x;
+    }
     TileIndex getTileIndexFromXYZOffset(const ui32v3& xyz) const {
         return xyz.x + xyz.y * mDims.x + xyz.z * mDims.x * mDims.y;
     }
