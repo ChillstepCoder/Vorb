@@ -37,6 +37,7 @@ NavWorld::NavWorld()
     for (int i = 0; i < WorldData::WORLD_SIZE_CHUNKS; ++i) {
         mTerrainTileContainers[i] = INVALID_TILE_CONTAINER_ID;
     }
+    initEventHandlers();
 }
 
 void NavWorld::updateNavThread()
@@ -93,6 +94,45 @@ void NavWorld::updateNavThread()
         // Release resources
         taskData.container->setDidInitNav();
         taskData.container->decRef();
+    }
+
+    // Update dirty tile containers
+    {
+        std::set<TileContainer*> dirtyContainers;
+        {
+            std::lock_guard lock(mDirtyTileContainersMutex);
+            if (mDirtyTileContainers.size()) {
+                // Take ownership and release the lock
+                dirtyContainers.swap(mDirtyTileContainers);
+            }
+        }
+        for (auto&& container : dirtyContainers) {
+            // The decref will happen after the build
+            Services::Threadpool::ref().addTask([this, container](ThreadPoolWorkerData* workerData) {
+                buildNavGraphForContainer(*container);
+            }, nullptr);
+        }
+    }
+
+    // Destroy tile containers
+    TileContainerToDestroy containersToDestroy[32];
+    if (size_t count = mContainersToDestroy.try_dequeue_bulk(containersToDestroy, 32)) {
+        for (size_t i = 0; i < count; ++i) {
+            TileContainerToDestroy containerData = containersToDestroy[i];
+            mNavGraphs.erase(containerData.id);
+
+            // Remove from spatial lookup
+            const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
+            if (containerData.isTerrain) {
+                i32v3 worldPos = containerData.worldPos;
+                ChunkID chunkID = ChunkID::fromWorldI32v2(worldPos2D);
+                mTerrainTileContainers[chunkID.id] = INVALID_TILE_CONTAINER_ID;
+            }
+            else {
+                NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + containerData.dims.x, worldPos2D.y + containerData.dims.y));
+                mSpatialLookup.remove(ContainerNavRegion{ newBox, containerData.id });
+            }
+        }
     }
 }
 
@@ -433,6 +473,41 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
 
     //std::cout << "Nav graph generated in " << timer.stop() << "ms with " << 0 << " total nodes checked" << std::endl;
 
+}
+
+void NavWorld::initEventHandlers() {
+
+
+    TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
+    TileContainerRepository::addEditTileListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
+
+        constexpr ui8 EDIT_TYPES_MASK = 0xffui8;
+        static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+
+        assert(IS_GAME_THREAD());
+        if (e_cast(containerEvent.edit.type) & EDIT_TYPES_MASK) {
+            TileContainer* container = containerEvent.container;
+            bool didAdd = false;
+            {
+                std::lock_guard lock(mDirtyTileContainersMutex);
+                auto&& it = mDirtyTileContainers.find(container);
+                if (it == mDirtyTileContainers.end()) {
+                    didAdd = true;
+                    mDirtyTileContainers.insert(container);
+                }
+            }
+            // Make sure we don't get deallocated while we are in the dirty list
+            if (didAdd) {
+                container->incRef();
+            }
+        }
+    });
+
+    TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
+        assert(IS_GAME_THREAD());
+        const TileContainer& container = *containerEvent.container;
+        mContainersToDestroy.enqueue(TileContainerToDestroy{ container.getWorldPos3D(), container.getDims2D(), container.getId(), container.isTerrain() });
+    });
 }
 
 void NavWorld::setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ) {

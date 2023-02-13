@@ -7,6 +7,7 @@
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/SpriteFont.h>
+#include <Vorb/graphics/BlendState.h>
 #include <glm/gtx/rotate_vector.hpp>
 #include "rendering/RenderStats.h"
 #include "tile/TileHandle.h"
@@ -260,6 +261,8 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 {
     assert(IS_RENDER_THREAD());
 
+    vg::sBlendStates.ALPHA.set();
+
     // context in
     for (auto&& lineIt : sNewLines) {
         SimpleMesh newMesh;
@@ -471,6 +474,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         }
     }
 
+    vg::BlendState::restorePrevious();
 }
 
 void DebugRenderer::clearAllMeshesWithId(int id)

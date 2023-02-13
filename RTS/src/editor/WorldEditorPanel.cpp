@@ -154,31 +154,42 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
     ImGui::Text("World Editor");
     ui32 ID = 10;
 
-    renderModeButtons();
+   // renderModeButtons();
+    if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None)) { //ImGuiTabBarFlags_AutoSelectNewTabs
 
-    switch (mEditMode) {
-        case WorldEditorEditMode::TERRAIN:
+        if (ImGui::BeginTabItem("Terrain")) {
+            setEditMode(WorldEditorEditMode::TERRAIN);
             renderTerrainEditUI();
-            break;
-        case WorldEditorEditMode::GRASS:
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Grass")) {
+            setEditMode(WorldEditorEditMode::GRASS);
             renderGrassEditUI();
-            break;
-        case WorldEditorEditMode::TILE:
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Tile")) {
+            setEditMode(WorldEditorEditMode::TILE);
             renderTileEditUI();
-            break;
-        case WorldEditorEditMode::ENTITY:
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Entity")) {
+            setEditMode(WorldEditorEditMode::ENTITY);
             renderEntityEditUI();
-            break;
-        case WorldEditorEditMode::CITY:
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("City")) {
+            setEditMode(WorldEditorEditMode::CITY);
             renderCityEditUI();
-            break;
-        case WorldEditorEditMode::BUILDING:
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Building")) {
+            setEditMode(WorldEditorEditMode::BUILDING);
             renderBuildingEditUI();
-            break;
-        default:
-            assert(false);
+            ImGui::EndTabItem();
+        }
+
+        ImGui::EndTabBar();
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 6);
 
     ImGui::NewLine();
     tryRenderBrushSelect(brushRepo);
@@ -210,67 +221,67 @@ void WorldEditorPanel::renderMenuBar() const {
     }
 }
 
-void WorldEditorPanel::renderModeButtons() const {
-    
-    // Helper for selected button styling
-#define PUSH_SELECTED_STYLE() \
-    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f)); \
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f)); \
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
-#define POP_SELECTED_STYLE() ImGui::PopStyleColor(3);
-#define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_SELECTED_STYLE();
-
-    if (mEditMode == WorldEditorEditMode::TERRAIN) {
-        SELECTED_BUTTON(ImGui::Button("Terrain"));
-    }
-    else {
-        if (ImGui::Button("Terrain")) {
-            setEditMode(WorldEditorEditMode::TERRAIN);
-        }
-    }
-    ImGui::SameLine();
-
-    if (mEditMode == WorldEditorEditMode::GRASS) {
-        SELECTED_BUTTON(ImGui::Button("Grass"));
-    }
-    else if (ImGui::Button("Grass")) {
-        setEditMode(WorldEditorEditMode::GRASS);
-    }
-    ImGui::SameLine();
-
-    if (mEditMode == WorldEditorEditMode::TILE) {
-        SELECTED_BUTTON(ImGui::Button("Tile"));
-    }
-    else if (ImGui::Button("Tile")) {
-        setEditMode(WorldEditorEditMode::TILE);
-    }
-    ImGui::SameLine();
-
-    if (mEditMode == WorldEditorEditMode::ENTITY) {
-        SELECTED_BUTTON(ImGui::Button("Entity"));
-    }
-    else if (ImGui::Button("Entity")) {
-        setEditMode(WorldEditorEditMode::ENTITY);
-    }
-    ImGui::SameLine();
-
-    if (mEditMode == WorldEditorEditMode::CITY) {
-        SELECTED_BUTTON(ImGui::Button("City"));
-    }
-    else if (ImGui::Button("City")) {
-        setEditMode(WorldEditorEditMode::CITY);
-    }
-    ImGui::SameLine();
-
-    if (mEditMode == WorldEditorEditMode::BUILDING) {
-        SELECTED_BUTTON(ImGui::Button("Building"));
-    }
-    else if (ImGui::Button("Building")) {
-        setEditMode(WorldEditorEditMode::BUILDING);
-    }
-
-    static_assert((int)WorldEditorEditMode::COUNT == 6);
-}
+//void WorldEditorPanel::renderModeButtons() const {
+//    
+//    // Helper for selected button styling
+//#define PUSH_SELECTED_STYLE() \
+//    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(1.0f, 0.6f, 0.6f)); \
+//    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(1.0f, 0.7f, 0.7f)); \
+//    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(1.0f, 0.8f, 0.8f));
+//#define POP_SELECTED_STYLE() ImGui::PopStyleColor(3);
+//#define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_SELECTED_STYLE();
+//
+//    if (mEditMode == WorldEditorEditMode::TERRAIN) {
+//        SELECTED_BUTTON(ImGui::Button("Terrain"));
+//    }
+//    else {
+//        if (ImGui::Button("Terrain")) {
+//            setEditMode(WorldEditorEditMode::TERRAIN);
+//        }
+//    }
+//    ImGui::SameLine();
+//
+//    if (mEditMode == WorldEditorEditMode::GRASS) {
+//        SELECTED_BUTTON(ImGui::Button("Grass"));
+//    }
+//    else if (ImGui::Button("Grass")) {
+//        setEditMode(WorldEditorEditMode::GRASS);
+//    }
+//    ImGui::SameLine();
+//
+//    if (mEditMode == WorldEditorEditMode::TILE) {
+//        SELECTED_BUTTON(ImGui::Button("Tile"));
+//    }
+//    else if (ImGui::Button("Tile")) {
+//        setEditMode(WorldEditorEditMode::TILE);
+//    }
+//    ImGui::SameLine();
+//
+//    if (mEditMode == WorldEditorEditMode::ENTITY) {
+//        SELECTED_BUTTON(ImGui::Button("Entity"));
+//    }
+//    else if (ImGui::Button("Entity")) {
+//        setEditMode(WorldEditorEditMode::ENTITY);
+//    }
+//    ImGui::SameLine();
+//
+//    if (mEditMode == WorldEditorEditMode::CITY) {
+//        SELECTED_BUTTON(ImGui::Button("City"));
+//    }
+//    else if (ImGui::Button("City")) {
+//        setEditMode(WorldEditorEditMode::CITY);
+//    }
+//    ImGui::SameLine();
+//
+//    if (mEditMode == WorldEditorEditMode::BUILDING) {
+//        SELECTED_BUTTON(ImGui::Button("Building"));
+//    }
+//    else if (ImGui::Button("Building")) {
+//        setEditMode(WorldEditorEditMode::BUILDING);
+//    }
+//
+//    static_assert((int)WorldEditorEditMode::COUNT == 6);
+//}
 
 void WorldEditorPanel::tryRenderBrushSelect(const BrushRepository& brushRepo) const {
     if (mCurrentBrushSettings) {

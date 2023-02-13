@@ -10,6 +10,8 @@
 #include <boost/geometry/geometries/box.hpp>
 #include <boost/geometry/index/rtree.hpp>
 
+#include "tile/TileContainerEvents.h"
+
 namespace bg = boost::geometry;
 namespace bgi = boost::geometry::index;
 
@@ -131,6 +133,10 @@ struct NavGraphBuildTaskData {
 struct ContainerNavRegion {
     NavBBox box;
     TileContainerID id;
+
+    bool operator==(const ContainerNavRegion& rhs) const {
+        return (id == rhs.id) && (memcmp(&this->box, &rhs.box, sizeof(box)) == 0);
+    }
 };
 
 // https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
@@ -169,6 +175,7 @@ public:
     LiteTileHandle getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const;
 
 private:
+    void initEventHandlers();
     void setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ);
     void setFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
 
@@ -185,4 +192,16 @@ private:
     bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> mSpatialLookup;
 
     TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];
+
+    struct TileContainerToDestroy {
+        i32v3 worldPos;
+        i32v2 dims;
+        TileContainerID id;
+        bool isTerrain;
+    };
+    moodycamel::ConcurrentQueue<TileContainerToDestroy> mContainersToDestroy;
+    TileContainerListeners mTileContainerEventListeners;
+
+    std::mutex mDirtyTileContainersMutex;
+    std::set<TileContainer*> mDirtyTileContainers;
 };

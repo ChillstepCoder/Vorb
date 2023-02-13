@@ -136,7 +136,9 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     }
                     tileContainer.mWalls[tileIndex] = bp.walls[tileIndex];
 
-                    // TERRAIN
+                    xxx;
+                    // INTERSECT TERRAIN
+                    // TODO: Intersect terrain
                     //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
                     //TileContainer& container = *handle.getMutableContainer();
                     //container.addTile(handle.index, TileRepository::getTileData(tileId));

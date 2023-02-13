@@ -65,7 +65,6 @@ public:
 
 private:
     void renderMenuBar() const;
-    void renderModeButtons() const;
     void tryRenderBrushSelect(const BrushRepository& brushRepo) const;
     void renderTerrainEditUI() const;
     void renderGrassEditUI() const;
