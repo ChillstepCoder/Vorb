@@ -105,6 +105,7 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
     // Create The Texture
     glCreateTextures(GL_TEXTURE_2D, 1, &font.mTexture);
     glTextureStorage2D(font.mTexture, maxMipmapLevels, GL_RGBA8, bestWidth, bestHeight);
+    font.mTextureDims = ui32v2(bestWidth, bestHeight);
 
     // Now Draw All The Glyphs
     ui32 ly = padding;

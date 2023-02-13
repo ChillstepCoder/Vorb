@@ -23,13 +23,14 @@ public:
     void finishMesh(Mesh& mesh, MeshDrawMode drawMode);
 private:
 
-    struct GlyphData {
+    PACKED_STRUCT struct GlyphData {
         f32v4 uvRect;
         f32v3 mOrigin;
+        i32 padding;
         f32v2 mDims;
         f32v2 xyOffset;
     };
-    static_assert(sizeof(GlyphData) == 44);
+    static_assert(sizeof(GlyphData) == 48, "Needs to be a multiple of sizeof(f32v4) as per std430");
 
     struct FontMeshData {
         void clear() {

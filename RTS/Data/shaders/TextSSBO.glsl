@@ -13,10 +13,11 @@ const vec2 VertexData[4] = {
 struct GlyphData {
    vec4 uvs;
    vec3 origin;
+   int padding;
    vec2 dims;
    vec2 xyOffset;
 };
 
-layout(std430, binding = 3) buffer BillboardSSBO {
+layout(std430, binding = 3) readonly buffer BillboardSSBO {
     GlyphData glyphData[];
 };

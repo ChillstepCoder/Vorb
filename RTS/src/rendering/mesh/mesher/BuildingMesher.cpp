@@ -130,11 +130,11 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
                 ui32 bitIndex;
                 if (axis == 0) {
                     bitIndex = floorIndex + start.y * aabb.dims.x + i;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + i, aabb.y + start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(i, start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 else {
                     bitIndex = floorIndex + i * aabb.dims.x + start.x;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + start.x, aabb.y + i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(start.x, i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
                     return true;
@@ -149,11 +149,11 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
                 ui32 bitIndex;
                 if (axis == 0) {
                     bitIndex = floorIndex + start.y * aabb.dims.x + i;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + i, aabb.y + start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(i, start.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 else {
                     bitIndex = floorIndex + i * aabb.dims.x + start.x;
-                    if (visLog) visLog->addWireQuad(f32v3(aabb.x + start.x, aabb.y + i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
+                    if (visLog) visLog->addWireQuad(f32v3(start.x, i, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 1.0f));
                 }
                 if (building.getInteriorTilesInAABB().getBit(bitIndex)) {
                     return true;
@@ -176,13 +176,13 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
             const auto& thisPoint = he->vertex()->point();
             const auto& oppositePoint = he->opposite()->vertex()->point();
             const auto& nextPoint = he->next()->vertex()->point();
-            f32v3 p1(building.getAABB().pos.x + thisPoint.x(), building.getAABB().pos.y + thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
+            f32v3 p1(thisPoint.x(), thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
             {
-                f32v3 p2(building.getAABB().pos.x + oppositePoint.x(), building.getAABB().pos.y + oppositePoint.y(), zPos + he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
+                f32v3 p2(oppositePoint.x(), oppositePoint.y(), zPos + he->opposite()->vertex()->time() * ROOF_HEIGHT_MULT);
                 visLog->addLineBetweenPoints(p1, p2, color4(1.0f, 0.0f, 0.0f, 0.75f));
             }
             {
-                f32v3 p2(building.getAABB().pos.x + nextPoint.x(), building.getAABB().pos.y + nextPoint.y(), zPos + he->next()->vertex()->time() * ROOF_HEIGHT_MULT);
+                f32v3 p2(nextPoint.x(), nextPoint.y(), zPos + he->next()->vertex()->time() * ROOF_HEIGHT_MULT);
                 visLog->addLineBetweenPoints(p1, p2, color4(1.0f, 0.0f, 1.0f, 0.75f));
             }
         }
@@ -204,7 +204,7 @@ void computeGablePointsAndExtrudePositions(const Building& building, ui32 floor,
                 // Visual log
                 if (visLog) {
                     const auto& thisPoint = he->vertex()->point();
-                    f32v3 p1(building.getAABB().pos.x + thisPoint.x(), building.getAABB().pos.y + thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
+                    f32v3 p1(thisPoint.x(), thisPoint.y(), zPos + he->vertex()->time() * ROOF_HEIGHT_MULT);
                     visLog->addWireQuad(p1 - f32v3(0.2f, 0.2f, 0.0f), f32v2(0.4f), color4(0.0f, 1.0f, 0.0f, 0.75f));
                 }
             }
@@ -299,8 +299,9 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
     // Debug log
     VisualLog* visLog = VisualLogger::tryGetNewVisualLog("building");
     if (visLog) {
+        visLog->setRootPos(tileContainer.getWorldPos3D());
         visLog->nextStep("AABB");
-        visLog->addWireQuad(f32v3(building.mAABB.pos), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
+        visLog->addWireQuad(f32v3(0.0f), building.mAABB.dims, color4(1.0f, 0.0f, 0.0f, 0.9f));
     }
 
     // Materials
@@ -332,7 +333,7 @@ void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, Stat
         }
 
         // Generate a list of straight skeletons
-        if (visLog) visLog->nextStep("Detect walls " + std::to_string(floor));
+        if (visLog) visLog->nextStep("Detect roof edges " + std::to_string(floor));
         std::vector<SsPtr> iss = buildRoofStraightSkeletons(roofedTiles, building, zPos, visLog);
         std::vector<RoofContourEdgeInfo> contourEdges;
         contourEdges.reserve(20);
@@ -411,7 +412,7 @@ std::vector<SsPtr> BuildingMesher::buildRoofStraightSkeletons(const BitArray& ow
             // Visual log
             if (visLog) {
                 const ui32v2& xy = building.mTileContainer->getTileXYOffset(index);
-                visLog->addWireQuad(f32v3(aabb.pos.x + xy.x, aabb.pos.y + xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
+                visLog->addWireQuad(f32v3(xy.x, xy.y, zPos), f32v2(1.0f), color4(1.0f, 1.0f, 1.0f, 0.75f));
             }
 
             checkedTiles.setBitTo(index, true);
@@ -513,7 +514,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                         meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, f32v2(0.11f), rawWoodMaterial, f32v2(1.0f));
                         // Visual log
                         if (visLog) {
-                            visLog->addLineBetweenPoints(boardStart + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), boardEnd + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), color4(0.0f, 1.0f, 1.0f, 1.0f));
+                            visLog->addLineBetweenPoints(boardStart, boardEnd, color4(0.0f, 1.0f, 1.0f, 1.0f));
                         }
 
                         const f32v3& extrudePosition = extrudeIt->second;
@@ -554,7 +555,7 @@ void BuildingMesher::buildMeshFromStraightSkeleton(SsPtr iss, const Building& bu
                     meshBuilder.addBoardBetweenPoints(boardStart, boardEnd, halfDims, rawWoodMaterial, f32v2(1.0f));
                     // Visual log
                     if (visLog) {
-                        visLog->addLineBetweenPoints(boardStart + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), boardEnd + f32v3(building.mAABB.pos.x, building.mAABB.pos.y, 0.0f), color4(0.0f, 1.0f, 1.0f, 1.0f));
+                        visLog->addLineBetweenPoints(boardStart, boardEnd, color4(0.0f, 1.0f, 1.0f, 1.0f));
                     }
                 }
             }
@@ -768,21 +769,21 @@ void BuildingMesher::meshRoofContourEdges(const std::vector<RoofContourEdgeInfo>
         f32 yDiff = abs(edge.v2.y - edge.v1.y);
         if (xDiff > yDiff) {
            if (edge.v2.x > edge.v1.x) {
-               if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(1.0f, 0.0f, 0.0f));
+               if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(1.0f, 0.0f, 0.0f));
                dir = Cartesian::SOUTH;
             }
            else {
-               if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(0.0f, 1.0f, 0.0f));
+               if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(0.0f, 1.0f, 0.0f));
                dir = Cartesian::NORTH;
            }
         }
         else {
             if (edge.v2.y > edge.v1.y) {
-                if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(0.0f, 1.0f, 1.0f));
+                if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(0.0f, 1.0f, 1.0f));
                 dir = Cartesian::EAST;
             }
             else {
-                if (visLog) visLog->addLineBetweenPoints(f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v2, f32v3(building.mAABB.pos.x, building.mAABB.pos.y, zPos) + edge.v1, color4(0.0f, 0.0f, 1.0f));
+                if (visLog) visLog->addLineBetweenPoints(edge.v2, edge.v1, color4(0.0f, 0.0f, 1.0f));
                 dir = Cartesian::WEST;
             }
         }

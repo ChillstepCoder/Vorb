@@ -150,8 +150,6 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
 
 
     sGlobalSimpleProgram.use();
-    // TODO: This should be deprecated I think
-    sGlobalSimpleProgram.enableVertexAttribArrays();
 
     if (mQuadsMesh.vao) {
         glBindVertexArray(mQuadsMesh.vao);
@@ -168,13 +166,9 @@ void VisualLog::render(const f32v3& cameraPos, const f32m4& viewMatrix) {
         RenderStats::recordDrawCall(mLinesMesh.numVerts / 2);
     }
 
-    // TODO: This should be deprecated I think
-    sGlobalSimpleProgram.disableVertexAttribArrays();
-    sGlobalSimpleProgram.unuse();
-
     // Render text
     if (mTextMesh.isValid()) {
-        glDisable(GL_CULL_FACE);
+        glDisable(GL_CULL_FACE); // TODO: Remove
         const MaterialShaderManager& materialManager = Services::ResourceManager::ref().getMaterialShaderManager();
         const MaterialShader* material = materialManager.getMaterialShader("text_billboard");
         ui32 textureUnit;
@@ -336,6 +330,7 @@ void VisualLog::buildMesh() {
     else if (mLinesMesh.vao) {
         glDeleteVertexArrays(1, &mLinesMesh.vao);
         glDeleteBuffers(1, &mLinesMesh.vbo);
+        mLinesMesh.vbo = 0;
         mLinesMesh.vao = 0;
     }
 
@@ -351,7 +346,7 @@ void VisualLog::buildMesh() {
         glCreateBuffers(1, &mQuadsMesh.vbo);
         mQuadsMesh.numVerts = quadVertices.size();
         mQuadsMesh.type = DebugMeshType::QUADS;
-        glNamedBufferStorage(mQuadsMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), nullptr, 0);
+        glNamedBufferStorage(mQuadsMesh.vbo, quadVertices.size() * sizeof(SimpleMeshVertex), quadVertices.data(), 0);
         glVertexArrayVertexBuffer(mQuadsMesh.vao, 0, mQuadsMesh.vbo, 0, sizeof(SimpleMeshVertex));
         glVertexArrayElementBuffer(mQuadsMesh.vao, ProceduralMeshBuilder::sQuadIboUI32);
 
@@ -365,6 +360,7 @@ void VisualLog::buildMesh() {
     else if (mQuadsMesh.vao) {
         glDeleteVertexArrays(1, &mQuadsMesh.vao);
         glDeleteBuffers(1, &mQuadsMesh.vbo);
+        mQuadsMesh.vbo = 0;
         mQuadsMesh.vao = 0;
     }
 

@@ -5,8 +5,6 @@ uniform vec3 unOffset;
 
 out vec2 fUV;
 out vec4 fTint;
-out mat3 fTBN;
-out float fRoughness;
 
 
 GlyphData getGlyphData() {
@@ -52,11 +50,6 @@ void main() {
     
 	vec4 glPos = VP * worldPos;
     fTint = vec4(1.0);
-	
-	// Hardcoded for facing up
-	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
-    
-    fRoughness = 0.9;
 	
     gl_Position = VP * worldPos;
 }

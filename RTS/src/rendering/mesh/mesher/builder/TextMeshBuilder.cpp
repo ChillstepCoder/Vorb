@@ -187,7 +187,7 @@ void TextMeshBuilder::addString(const nString& str, const f32v3& rootPosition, c
             // Don't draw the glyph if its too small after clipping
             if (dims.x > 0.0f && dims.y > 0.0f) {
                 // Add glyph
-                mFontData.mGlyphs.emplace_back(GlyphData{ uvRect, rootPosition, dims, position });
+                mFontData.mGlyphs.emplace_back(GlyphData{ uvRect, rootPosition, 0, dims, position });
             }
         }
     }
