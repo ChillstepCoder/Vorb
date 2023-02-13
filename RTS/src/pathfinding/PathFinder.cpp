@@ -199,8 +199,8 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     LiteTileHandle goalLiteHandle = start;
     const ContainerNavData& startNavData = mNavWorld.getNavDataForContainer(startLiteHandle.containerId);
     const ContainerNavData& goalNavData = mNavWorld.getNavDataForContainer(goalLiteHandle.containerId);
-    const f32v3 startWorldPos = startNavData.getTileXYZOffsetWithZScale(startLiteHandle.index);
-    const f32v3 goalWorldPos = goalNavData.getTileXYZOffsetWithZScale(goalLiteHandle.index);
+    const f32v3 startWorldPos = startNavData.getTileWorldPos(startLiteHandle.index);
+    const f32v3 goalWorldPos = goalNavData.getTileWorldPos(goalLiteHandle.index);
 
     // Instead of an explicit closed list, we use an implicit closed list
     // If a node exists in the gLookup, but not in the openList, then it is in
@@ -345,7 +345,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
                 if (openList.contains(adjHandle)) {
                     // TODO: Implement
                     // New node is better than current openlist node
-                    LOG_DEBUG("Detected open list node with better priority. TODO: Implement increase priority and benchmark\n");
+                    LOG_DEBUG("Detected open list node with better priority. TODO: Implement increase priority and benchmark");
                     //openList.replace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
                     //it->second.g = newG;
                     //it->second.parent = handle;
@@ -374,7 +374,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     }
 
     if (!foundGoal) {
-        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked\n", timer.stop(), TOTAL);
+        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -397,7 +397,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
 
     if (pathSize == PATH_POINT_BUFFER_SIZE) {
         // Warning! Path is too long!
-        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked because result path is too long\n", timer.stop(), TOTAL);
+        LOG_TRACE("Failed to find path in {} ms with {} total nodes checked because result path is too long", timer.stop(), TOTAL);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -406,7 +406,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     // Copy the path
     memcpy(path.points, sPathPointBuffer, pathSize * sizeof(LiteTileHandle));
 
-    LOG_TRACE("Generated path in {} ms with {} total nodes checked\n", timer.stop(), TOTAL);
+    LOG_TRACE("Generated path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
     path.finishedGenerating.store(true);
     return true;
 }
