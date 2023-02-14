@@ -174,6 +174,8 @@ public:
     // Spatial lookup
     LiteTileHandle getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos, OUT const ContainerNavData** outNavData) const;
 
+
+    void markContainerNavDirty(TileContainer* container);
 private:
     void initEventHandlers();
     void setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ);

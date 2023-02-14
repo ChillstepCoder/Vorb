@@ -486,20 +486,7 @@ void NavWorld::initEventHandlers() {
 
         assert(IS_GAME_THREAD());
         if (e_cast(containerEvent.edit.type) & EDIT_TYPES_MASK) {
-            TileContainer* container = containerEvent.container;
-            bool didAdd = false;
-            {
-                std::lock_guard lock(mDirtyTileContainersMutex);
-                auto&& it = mDirtyTileContainers.find(container);
-                if (it == mDirtyTileContainers.end()) {
-                    didAdd = true;
-                    mDirtyTileContainers.insert(container);
-                }
-            }
-            // Make sure we don't get deallocated while we are in the dirty list
-            if (didAdd) {
-                container->incRef();
-            }
+            markContainerNavDirty(containerEvent.container);
         }
     });
 
@@ -1066,4 +1053,21 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
     }
     outNavData = nullptr;
     return LiteTileHandle();
+}
+
+void NavWorld::markContainerNavDirty(TileContainer* container) {
+    assert(container);
+    bool didAdd = false;
+    {
+        std::lock_guard lock(mDirtyTileContainersMutex);
+        auto&& it = mDirtyTileContainers.find(container);
+        if (it == mDirtyTileContainers.end()) {
+            didAdd = true;
+            mDirtyTileContainers.insert(container);
+        }
+    }
+    // Make sure we don't get deallocated while we are in the dirty list
+    if (didAdd) {
+        container->incRef();
+    }
 }

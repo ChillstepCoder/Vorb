@@ -135,8 +135,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                         }
                     }
                     tileContainer.mWalls[tileIndex] = bp.walls[tileIndex];
-
-                    xxx;
+                    markContainerNavDirty;
+                    tileContainer.onTileChanged(tileIndex);
                     // INTERSECT TERRAIN
                     // TODO: Intersect terrain
                     //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
