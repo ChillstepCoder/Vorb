@@ -35,6 +35,20 @@ bool WorldObjectQuery::tryQuery(const f32v3& worldPos)
     return true;
 }
 
+bool WorldObjectQuery::tryQuery(LiteTileHandle handle) {
+    if (mData) {
+        if (mData->mIsQuerying) {
+            return false;
+        }
+    }
+    else {
+        mData = std::make_shared<WorldObjectQueryData>();
+    }
+    mData->mLiteHandle = handle;
+    query();
+    return true;
+}
+
 void WorldObjectQuery::query() {
     mData->mStockpileAtTile = nullptr;
     mData->mBuildingAtTile = nullptr;
@@ -60,29 +74,38 @@ void WorldObjectQuery::query() {
 
 void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
 {
-    assert(IS_GAME_THREAD());
-    f32v2 tilePos2D(data.mWorldPos.x, data.mWorldPos.y);
-    TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
-    if (!handle.isValid()) {
-        return;
+    TileHandle handle;
+    if (data.mLiteHandle.isValid()) {
+        handle = data.mLiteHandle.toTileHandle();
+        // TODO: mSelectedStructure? 
+        xxx;
     }
+    else {
+        assert(IS_GAME_THREAD());
+        f32v2 tilePos2D(data.mWorldPos.x, data.mWorldPos.y);
+        TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+        if (!handle.isValid()) {
+            return;
+        }
 
-    Chunk& chunk = sWorld->getChunkAtPosition(tilePos2D);
-    if (chunk.isDataReady()) {
-        data.mStructures = chunk.getStructuresAt(handle.tileIndex);
-        for (int i = 0; i < data.mStructures.second; ++i) {
-            Structure* structure = data.mStructures.first[i];
-            TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);
-            if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
-                data.mSelectedStructure = structure;
-                data.mTileRef.acquire(nextHandle);
-                break;
+        // TODO: This could be wrapped in above query?
+        Chunk& chunk = sWorld->getChunkAtPosition(tilePos2D);
+        if (chunk.isDataReady()) {
+            data.mStructures = chunk.getStructuresAt(handle.tileIndex);
+            for (int i = 0; i < data.mStructures.second; ++i) {
+                Structure* structure = data.mStructures.first[i];
+                TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);
+                if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+                    data.mSelectedStructure = structure;
+                    data.mTileRef.acquire(nextHandle);
+                    break;
+                }
             }
         }
-    }
-    // Fallback to terrain if no structure
-    if (!data.mTileRef.container) {
-        data.mTileRef.acquire(handle);
+        // Fallback to terrain if no structure
+        if (!data.mTileRef.container) {
+            data.mTileRef.acquire(handle);
+        }
     }
 
     // TODO: Tile flag city?

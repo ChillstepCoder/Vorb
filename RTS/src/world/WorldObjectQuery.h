@@ -14,6 +14,7 @@ struct WorldObjectQueryData {
     ItemStockpile* mStockpileAtTile = nullptr;
     Building* mBuildingAtTile = nullptr;
     std::vector<EntityDistSortKey> mEntitiesAtTile;
+    LiteTileHandle mLiteHandle;
     f32v3 mWorldPos;
     TileRef mTileRef;
     StructureArrayPtr mStructures = {};
@@ -32,6 +33,7 @@ public:
 
     // Returns false if we are still in the process of a refresh
     bool tryQuery(const f32v3& worldPos);
+    bool tryQuery(LiteTileHandle handle);
     void release() { if (mData) { mData->mTileRef.release(); mData.reset(); } }
 
     bool isReady() const { assert(mData); return mData->mIsReady; }

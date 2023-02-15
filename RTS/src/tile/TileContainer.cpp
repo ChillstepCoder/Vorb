@@ -62,6 +62,14 @@ TileContainer* TileContainerRepository::getTileContainer(TileContainerID id) {
     return it->second;
 }
 
+TileContainer* TileContainerRepository::tryGetTileContainer(TileContainerID id) {
+    auto&& it = sTileContainerLookup.find(id);
+    if (it == sTileContainerLookup.end()) {
+        return nullptr;
+    }
+    return it->second;
+}
+
 std::vector<std::unique_ptr<TileContainer>>& TileContainerRepository::getTileContainers() {
     return sTileContainers;
 }
@@ -160,44 +168,90 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
 void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
-
+    // Build notify
+    TileContainerEvent evnt;
+    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
     {
         std::lock_guard lock(mSharedMutex);
         tile.setTileFlag(flag);
     }
-    onTileChanged(i);
+    evnt.edit.changeFlags.newFlags = tile.tileFlags;
+
+    // Dispatch notify if changed
+    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+        evnt.container = this;
+        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
+        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
+        evnt.edit.tileIndex = i;
+        TileContainerRepository::dispatchEditTile(evnt);
+        onTileChanged(i);
+    }
 }
 
 void TileContainer::setTileFlags(TileIndex i, TileFlags flags) {
     assert(isReady());
     Tile& tile = mTiles[i];
 
+    // Build notify
+    TileContainerEvent evnt;
+    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
     {
         std::lock_guard lock(mSharedMutex);
         tile.setTileFlags(flags);
     }
-    onTileChanged(i);
+    evnt.edit.changeFlags.newFlags = tile.tileFlags;
+    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+        evnt.container = this;
+        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
+        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
+        evnt.edit.tileIndex = i;
+        TileContainerRepository::dispatchEditTile(evnt);
+        onTileChanged(i);
+    }
 }
 
 void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
 
+    // Build notify
+    TileContainerEvent evnt;
+    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
     {
         std::lock_guard lock(mSharedMutex);
         tile.clearTileFlag(flag);
     }
-    onTileChanged(i);
+    evnt.edit.changeFlags.newFlags = tile.tileFlags;
+    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+        evnt.container = this;
+        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
+        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
+        evnt.edit.tileIndex = i;
+        TileContainerRepository::dispatchEditTile(evnt);
+        onTileChanged(i);
+    }
 }
 
 void TileContainer::clearTileFlags(TileIndex i) {
     assert(isReady());
     Tile& tile = mTiles[i];
+
+    // Build notify
+    TileContainerEvent evnt;
+    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
     {
         std::lock_guard lock(mSharedMutex);
         tile.clearTileFlags();
     }
-    onTileChanged(i);
+    evnt.edit.changeFlags.newFlags = tile.tileFlags;
+    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+        evnt.container = this;
+        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
+        evnt.edit.type = TileContainerEditEventType::ChangeFlags;
+        evnt.edit.tileIndex = i;
+        TileContainerRepository::dispatchEditTile(evnt);
+        onTileChanged(i);
+    }
 }
 
 void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
@@ -333,7 +387,7 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
 
 void TileContainer::onTileChanged(TileIndex tileIndex) {
     assert(IS_GAME_THREAD());
-    assert(isReady());
+    //assert(isReady());
     Tile& tile = mTiles[tileIndex];
 
     // When not locked we can immediately mark dirty and copy
@@ -365,7 +419,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
         }
     }
 }
-//#include "debugging/DebugRenderer.h" // TODO: REMOVE
+
 void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     std::lock_guard lock(mSharedMutex);
     assert(isReady());

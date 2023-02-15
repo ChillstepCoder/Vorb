@@ -178,8 +178,8 @@ public:
     void markContainerNavDirty(TileContainer* container);
 private:
     void initEventHandlers();
-    void setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ);
-    void setFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
+    bool trySetFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ);
+    bool trySetFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
 
 
     //void buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir);

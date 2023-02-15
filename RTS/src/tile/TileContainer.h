@@ -59,6 +59,7 @@ public:
     static void destroyTileContainer(TileContainer* container);
     
     static TileContainer* getTileContainer(TileContainerID id);
+    static TileContainer* tryGetTileContainer(TileContainerID id);
 
     static std::vector<std::unique_ptr<TileContainer>>& getTileContainers();
 
@@ -66,6 +67,11 @@ public:
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, EditTile, TileContainerEventType::EditTile, const TileContainerEvent&);
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
     STATIC_EVENT_DISPATCHER(TileContainer);
+};
+
+enum class TileContainerOwnerType : ui8 {
+    CHUNK,
+    STRUCTURE
 };
 
 // TODO: Memory recycler?

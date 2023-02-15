@@ -39,6 +39,7 @@ struct LiteTileHandle {
     LiteTileHandle(TileContainerID containerId, TileIndex index) : containerId(containerId), index(index) {};
 
     TileContainer* getTileContainer() const;
+    TileContainer* tryGetTileContainer() const;
     bool isValid() const { return  containerId != INVALID_TILE_CONTAINER_ID; }
     TileHandle toTileHandle() const;
 

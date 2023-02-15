@@ -230,12 +230,12 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                 if (!tileContainer.isTileOwned(index)) {
                     continue;
                 }
-                tileFineNavData.isOwned = true;
                 // Impassible tiles are not part of navgraph
                 const Tile& tile = tiles[index];
                 if (tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
                     continue;
                 }
+                tileFineNavData.isOwned = true;
 
                 tileFineNavData.zPositionOffsetFromFloor = tile.getGroundZOffset();
                 const TileWalls& walls = tileWalls[index];
@@ -262,7 +262,9 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     } else {
                         adjIndex = index - dims.x;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::SOUTH, ty > 0 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz);
+                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::SOUTH, ty > 0 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                        canGoSouthWest = canGoSouthEast = false;
+                    }
                 }
                 else {
                     canGoSouthWest = canGoSouthEast = false;
@@ -278,7 +280,9 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     else {
                         adjIndex = index - 1;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::WEST, tx > 0 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz);
+                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::WEST, tx > 0 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                        canGoSouthWest = canGoNorthWest = false;
+                    }
                 }
                 else {
                     canGoSouthWest = canGoNorthWest = false;
@@ -294,7 +298,9 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     else {
                         adjIndex = index + 1;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::EAST, tx < dims.x - 1 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz);
+                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::EAST, tx < dims.x - 1 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                        canGoSouthEast = canGoNorthEast = false;
+                    }
                 }
                 else {
                     canGoSouthEast = canGoNorthEast = false;
@@ -311,7 +317,9 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     else {
                         adjIndex = index + dims.x;
                     }
-                    setFineNavEdgeCartesian(adjIndex, Cartesian8::NORTH, ty < dims.y - 1 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz);
+                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::NORTH, ty < dims.y - 1 && !tile.hasFlag(TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                        canGoNorthWest = canGoNorthEast = false;
+                    }
                 }
                 else {
                     canGoNorthWest = canGoNorthEast = false;
@@ -319,19 +327,19 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
 
                 // South West
                 if (canGoSouthWest && tile.canNavInDirection(Cartesian8::SOUTH_WEST)) {
-                    setFineNavEdgeCartesianDiagonal(index - dims.x - 1, Cartesian8::SOUTH_WEST, ty > 0 && tx > 0, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index - dims.x - 1, Cartesian8::SOUTH_WEST, ty > 0 && tx > 0, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
                 }
                 // South East
                 if (canGoSouthEast && tile.canNavInDirection(Cartesian8::SOUTH_EAST)) {
-                    setFineNavEdgeCartesianDiagonal(index - dims.x + 1, Cartesian8::SOUTH_EAST, ty > 0 && tx < dims.x - 1, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index - dims.x + 1, Cartesian8::SOUTH_EAST, ty > 0 && tx < dims.x - 1, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
                 }
                 // North West
                 if (canGoNorthWest && tile.canNavInDirection(Cartesian8::NORTH_WEST)) {
-                    setFineNavEdgeCartesianDiagonal(index + dims.x - 1, Cartesian8::NORTH_WEST, ty < dims.y - 1 && tx > 0, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index + dims.x - 1, Cartesian8::NORTH_WEST, ty < dims.y - 1 && tx > 0, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
                 }
                 // North East
                 if (canGoNorthEast && tile.canNavInDirection(Cartesian8::NORTH_EAST)) {
-                    setFineNavEdgeCartesianDiagonal(index + dims.x + 1, Cartesian8::NORTH_EAST, ty < dims.y - 1 && tx < dims.x - 1, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
+                    trySetFineNavEdgeCartesianDiagonal(index + dims.x + 1, Cartesian8::NORTH_EAST, ty < dims.y - 1 && tx < dims.x - 1, dims, tiles, tileWalls, ownedTiles, groundZPosition, tileFineNavData);
                 }
 
                 // ================= Disjoint Set =================
@@ -497,7 +505,7 @@ void NavWorld::initEventHandlers() {
     });
 }
 
-void NavWorld::setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ) {
+bool NavWorld::trySetFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ) {
 
     const Cartesian cartesian = CARTESIAN8_TO_CARTESIAN[e_cast(cartesian8)];
     assert(cartesian != Cartesian::NONE);
@@ -518,7 +526,7 @@ void NavWorld::setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 carte
                     // Exterior edge
                     tileFineNavData.setCanAccessDirection(cartesian8, true);
                     tileFineNavData.setEdgeType(cartesian, TileFineNavEdgeType::EXTERIOR);
-                    return;
+                    return true;
                 }
             }
         }
@@ -532,18 +540,19 @@ void NavWorld::setFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 carte
             else if (adjZ > prevZ) {
                 tileFineNavData.setEdgeType(cartesian, TileFineNavEdgeType::UP);
             }
-            // TODO: Handle stairs
-            //fineNavData.setEdgeType(Cartesian::SOUTH, TileFineNavEdgeType::UP);
+            return true;
         }
     }
     else {
         // Exterior edge
         tileFineNavData.setCanAccessDirection(cartesian8, true);
         tileFineNavData.setEdgeType(cartesian, TileFineNavEdgeType::EXTERIOR);
+        return true;
     }
+    return false;
 }
 
-void NavWorld::setFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
+bool NavWorld::trySetFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
     UNUSED(containerDims);
     if (isInner && TileContainer::isTileOwned(ownedTiles, adjacentIndex)) {
         // Interior edge
@@ -553,13 +562,16 @@ void NavWorld::setFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Ca
             fineNavData.setCanAccessDirection(cartesian8, true);
             // TODO: Handle stairs
             //fineNavData.setEdgeType(Cartesian::SOUTH, TileFineNavEdgeType::UP);
+            return true;
         }
     }
     else {
-        // TODO: Allow diagonal exterior edges
+        // TODO: Allow diagonal exterior edges?
         //fineNavData.setCanAccessDirection(cartesian8, false);
        // fineNavData.setEdgeType(cartesian8, TileFineNavEdgeType::EXTERIOR);
+        // return true;
     }
+    return false;
 }
 
 bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
@@ -845,7 +857,9 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
                 worldPos3.z = IHeightmapGrid::computeHeightAtPoint(patchId, heightData, f32v2(worldPos3));
                 worldPos4.z = IHeightmapGrid::computeHeightAtPoint(patchId, heightData, f32v2(worldPos4));
             }
-            DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COARSE_NAV_COLORS[colorIndex], lifetime, debugId);
+            if (navNodeIndex != INVALID_NAV_NODE_INDEX) {
+                DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COARSE_NAV_COLORS[colorIndex], lifetime, debugId);
+            }
             DebugRenderer::drawLineBetweenPoints(worldPos, worldPos2, whiteColor, lifetime, debugId);
             DebugRenderer::drawLineBetweenPoints(worldPos2, worldPos3, whiteColor, lifetime, debugId);
             DebugRenderer::drawLineBetweenPoints(worldPos3, worldPos4, whiteColor, lifetime, debugId);

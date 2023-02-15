@@ -5,14 +5,26 @@ struct PhysHitResult {
     f32v3 mPosition;
     f32v3 mNormal;
     f32 mTime;
+    entt::entity mSelectedEntity = INVALID_ENTITY;
+    TileContainerID mContainerID = INVALID_TILE_CONTAINER_ID;
+    TileIndex mTileIndex = INVALID_TILE_INDEX;
 
     bool didHit() const { return mCollisionObject != nullptr; }
+};
+
+enum class PhysicsPickQueryFlags : ui8 {
+    QUERY_TILE_INFO = BIT(0)
 };
 
 // Allows thread to request the physics engine to perform a pick that will be populated eventually.
 // Intended for things like editor tile picking where we dont need instant response
 class DeferredPhysicsPick {
 public:
+
+    void setQueryFlags(BitFlags<PhysicsPickQueryFlags> queryFlags) {
+        mQueryFlags = queryFlags;
+    }
+    BitFlags<PhysicsPickQueryFlags> getQueryFlags() const { return mQueryFlags; }
 
     void setPickResult(const PhysHitResult& hitResult) {
         std::lock_guard lock(mMutex);
@@ -35,6 +47,7 @@ public:
     }
 private:
     PhysHitResult lastResult;
-    std::mutex mMutex;
+    std::mutex mMutex; // TODO: Too heavy?
     bool mDone = false;
+    BitFlags<PhysicsPickQueryFlags> mQueryFlags;
 };

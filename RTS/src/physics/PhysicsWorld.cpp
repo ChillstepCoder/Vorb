@@ -126,7 +126,7 @@ void PhysicsWorld::stepSimulation(f32 elapsedSec) {
         for (size_t i = 0; i < count; ++i) {
             const PickParams& params = pickBuffer[i].first;
             DeferredPhysicsPick* deferredPick = pickBuffer[i].second;
-            PhysHitResult result = pick(params.rayStart, params.rayEnd, params.pickTypes);
+            PhysHitResult result = pick(params.rayStart, params.rayEnd, params.pickTypes, deferredPick->getQueryFlags());
             deferredPick->setPickResult(result);
         }
     }
@@ -290,7 +290,7 @@ void PhysicsWorld::addStaticMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilde
         startTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
         // TODO: House owner entity
         staticMesh.mShape = std::make_unique<btBvhTriangleMeshShape>(staticMesh.mPhysicsMesh.get(), true /*aabbCompression*/);
-        staticMesh.mCollisionObject = createStaticCollisionObject(tileContainerId, INT32_MAX, meshBuilder.getRootPos(), staticMesh.mShape.get());
+        staticMesh.mCollisionObject = createStaticCollisionObject(tileContainerId, INVALID_PHYSICS_USER_INDEX, meshBuilder.getRootPos(), staticMesh.mShape.get());
     }
 
     // Add all tracked bodies
@@ -562,8 +562,9 @@ struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
     f32v3 mHitNormal = f32v3(0.0f);
 };
 
-PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const
+PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) const
 {
+    assert(IS_GAME_THREAD());
     btVector3 start = f32v3ToBtVector3(rayStart);
     btVector3 end = f32v3ToBtVector3(rayEnd);
     // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
@@ -578,25 +579,58 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
     }
     rayResult.m_collisionFilterMask = collisionMask;
     //rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
-    if (IS_GAME_THREAD()) {
-        mDynamicsWorld->rayTest(start, end, rayResult);
-    }
-    else {
-        mDynamicsWorld->rayTest(start, end, rayResult);
-    }
+    mDynamicsWorld->rayTest(start, end, rayResult);
 
     PhysHitResult rv;
     rv.mTime = rayResult.m_closestHitFraction;
     rv.mNormal = rayResult.mHitNormal;
     rv.mCollisionObject = rayResult.m_collisionObject;
     rv.mPosition = rayStart + (rayEnd - rayStart) * rv.mTime;
+    if (queryFlags.isBitSet(PhysicsPickQueryFlags::QUERY_TILE_INFO) && rv.mCollisionObject) {
+        
+        if (rv.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
+            rv.mSelectedEntity = entt::entity(rv.mCollisionObject->getUserIndex());
+        }
+        else {
+            TileContainerID containerId = rv.mCollisionObject->getUserIndex2();
+            if (containerId != INVALID_PHYSICS_USER_INDEX) {
+                rv.mContainerID = containerId;
+                TileIndex index = rv.mCollisionObject->getUserIndex3();
+                if (index != INVALID_PHYSICS_USER_INDEX) {
+                    rv.mTileIndex = index;
+                }
+                else {
+                    f32v2 tilePos2D(rv.mPosition.x, rv.mPosition.y);
+                    TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+                    if (handle.isValid()) {
+                        // TODO: Avoid second query here?
+                        Chunk& chunk = sWorld->getChunkAtPosition(tilePos2D);
+                        StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
+                        for (int i = 0; i < structures.second; ++i) {
+                            Structure* structure = structures.first[i];
+                            TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
+                            if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+                                rv.mTileIndex = nextHandle.tileIndex;
+                                break;
+                            }
+                        }
+                    }
+                    else {
+                        // Need to query which tile we selected
+                        LOG_DEBUG("Selected invalid chunk in ray pick");
+                    }
+                }
+            }
+        }
+    }
+
     return rv;
 }
 
-void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) {
+void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) {
+    deferredPick->setQueryFlags(queryFlags);
     mDeferredPicks.enqueue(std::pair<PickParams, DeferredPhysicsPick*>(PickParams{rayStart, rayEnd, pickTypes}, deferredPick));
 }
-
 
 void PhysicsWorld::startB3Profiling() {
     {

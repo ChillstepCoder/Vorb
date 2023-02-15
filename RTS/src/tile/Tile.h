@@ -182,7 +182,7 @@ private:
     };
     BitFlags<TileFlags> tileFlags;
     TileOrientation orientation = {}; // TODO: Combine these?
-    f32 groundZOffset;
+    f32 groundZOffset = 0.0f;
 };
 // TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
 static_assert(sizeof(Tile) == 12, "Keep small");

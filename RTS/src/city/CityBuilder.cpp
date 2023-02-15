@@ -103,6 +103,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     tileContainer.allocateOwnedTiles();
 
     std::vector<Tile>& tiles = tileContainer.mTiles;
+    std::vector<TileContainer*> dirtyNavTileContainers;
 
     // === Set world tiles, flatten heightmap, and track occupied bits ===
     ui32 tileIndex = 0;
@@ -120,6 +121,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
                     tileContainer.setOwnedTile(tileIndex);
 
+                    tileContainer.mWalls[tileIndex] = bp.walls[tileIndex];
                     // Stairs are processed below
                     if (type != BlueprintTileType::STAIRS) {
                         const TileID tileId = bp.tileIDs[e_cast(type)];
@@ -133,10 +135,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                             //assert(false); // Set building structure pointer
                             // TODO: always set ground position?
                         }
+                        tileContainer.onTileChanged(tileIndex);
                     }
-                    tileContainer.mWalls[tileIndex] = bp.walls[tileIndex];
-                    markContainerNavDirty;
-                    tileContainer.onTileChanged(tileIndex);
                     // INTERSECT TERRAIN
                     // TODO: Intersect terrain
                     //TileHandle handle = world.getTileHandleAtWorldPos(tileWorldPos);
@@ -165,6 +165,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
             tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
             tile.setGroundZPosition(tilePos.z + heightAdd);
             tile.setOrientation(stairPiece.dir, TileLayer::Main);
+            tileContainer.onTileChanged(stairPiece.pos);
         }
     }
 
@@ -205,6 +206,9 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     building.mNavEntrances = blueprint.exteriorDoors;
     assert(building.mNavEntrances.size());
     assert(building.mRooms.size());
+
+    // Mark ready for access
+    building.getTileContainer()->setState(TileContainerState::READY);
 
     // Navmesh
     if (Services::isUsingNav()) {

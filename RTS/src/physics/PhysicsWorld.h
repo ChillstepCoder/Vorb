@@ -82,8 +82,8 @@ public:
     void debugRender() const;
 
     // Picking
-    PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes) const;
-    void pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes);
+    PhysHitResult pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) const;
+    void pickDeferred(DeferredPhysicsPick* deferredPick, const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags);
     // Returns false if the physics is currently locked by the game thread
     bool tryPick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, OUT PhysHitResult& result) const;
 

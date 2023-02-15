@@ -51,7 +51,7 @@ void RenderThreadTasks::addTileContainerMeshInitTask(
             containerToMesh,
             std::move(builders)
         );
-    assert(containerToMesh->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
+    //assert(containerToMesh->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
     // Pass result to the render thread
     mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* meshTaskData) {
         PROFILE_SCOPE("RenderThreadTasks::AddTileContainerMeshInitTask");

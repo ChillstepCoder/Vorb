@@ -13,6 +13,9 @@
 #include "generation/NoiseFunction.hpp"
 #include "generation/WorldGeneration.h"
 
+// RESOURCES:
+// Domain warping https://iquilezles.org/articles/warp/
+
 // Region LOD data
 #ifdef DEBUG
 constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH;

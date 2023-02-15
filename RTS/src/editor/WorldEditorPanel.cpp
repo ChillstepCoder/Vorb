@@ -102,7 +102,7 @@ void WorldEditorPanel::update(const Camera3D& camera, const f32v3& pickRay) {
     {
         PROFILE_SCOPE("Tile picking");
         mHitResult = mDeferredPhysicsPick.getLastPickResult();
-        sWorld->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL);
+        sWorld->getPhysicsWorld().pickDeferred(&mDeferredPhysicsPick, camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
     }
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {

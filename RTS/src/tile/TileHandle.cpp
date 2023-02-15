@@ -81,8 +81,12 @@ TileContainer* LiteTileHandle::getTileContainer() const {
     return TileContainerRepository::getTileContainer(containerId);
 }
 
+TileContainer* LiteTileHandle::tryGetTileContainer() const {
+    return TileContainerRepository::tryGetTileContainer(containerId);
+}
+
 TileHandle LiteTileHandle::toTileHandle() const {
-    return TileHandle(getTileContainer(), index);
+    return TileHandle(tryGetTileContainer(), index);
 }
 
 i32v3 LiteTileHandle::getWorldPosition() const

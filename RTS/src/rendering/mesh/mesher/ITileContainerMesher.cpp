@@ -23,11 +23,11 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
     assert(IS_GAME_THREAD()); // Game thread makes the request
 
     // Always incref, will be decrefed in the task
-    assert(container.getState() == TileContainerState::LOADING);
+    // TODO: Non terrain is handled differently???
+    assert(!container.isTerrain() || container.getState() == TileContainerState::LOADING);
     // We will incref twice, once for mesh and once for static physics
     container.incRef();
     container.incRef();
-    container.setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
 
     Services::Threadpool::ref().addTask([&container, heightData, staticMeshIsOnlyQuads, reserveStaticVertexCount, this, userData](ThreadPoolWorkerData*) {
 

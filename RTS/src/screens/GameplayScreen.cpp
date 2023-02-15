@@ -368,30 +368,39 @@ void GameplayScreen::updateTilePicking() {
         if (hitResult.didHit()) {
             mSelectedScreenPos = mRightClickUpPickScreenPos;
             // For interact must click in about the same spot
-            if (hitResult.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
+            if (hitResult.mSelectedEntity != INVALID_ENTITY) {
                 LOG_CRITICAL("Selected Entity");
             }
             else {
                 if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                    TileContainerID containerOwner = hitResult.mCollisionObject->getUserIndex2();
-                    if (containerOwner != INVALID_PHYSICS_USER_INDEX) {
-                        TileIndex index = hitResult.mCollisionObject->getUserIndex3();
+                    TileContainerID containerOwner = hitResult.mContainerID;
+                    if (containerOwner != INVALID_TILE_CONTAINER_ID) {
+                        TileIndex index = hitResult.mTileIndex;
                         // ONLY WORKS FOR MODELS
-                        // (TODO: TILE SELECT)
                         if (index != INVALID_TILE_INDEX) {
-                            LiteTileHandle* tileHandlePtr = new LiteTileHandle(containerOwner, index);
-                            GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
-                                LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
-                                TileHandle handle = tileHandlePtr->toTileHandle();
-                                if (handle.isValid()) {
-                                    handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Ground, TILE_ID_NONE);
-                                    handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Main, TILE_ID_NONE);
-                                }
-                                delete tileHandlePtr;
-                            }, tileHandlePtr);
-                        }
-                        else {
-                            LOG_DEBUG("Selected invalid tile");
+                            // Select individual tile/model
+                            // DELETE MODEL TILE TMP
+                            // Terrain destroy
+                            //LiteTileHandle* tileHandlePtr = new LiteTileHandle(containerOwner, index);
+                            //GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTileHandlePtr) {
+                            //    LiteTileHandle* tileHandlePtr = static_cast<LiteTileHandle*>(vTileHandlePtr);
+                            //    TileHandle handle = tileHandlePtr->toTileHandle();
+                            //    if (handle.isValid()) {
+                            //        TileContainer* container = handle.getMutableContainer();
+                            //        // TEMPORARY
+                            //        if (container->isTerrain()) {
+                            //            // Delete terrain objects
+                            //            handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Ground, TILE_ID_NONE);
+                            //            handle.getMutableContainer()->setTileLayer(handle.tileIndex, TileLayer::Main, TILE_ID_NONE);
+                            //        }
+                            //    }
+                            //    delete tileHandlePtr;
+                            //}, tileHandlePtr);
+
+                            // Query whatever we selected
+                            if (mWorldObjectQuery.tryQuery(LiteTileHandle(containerOwner, index)) {
+                                mIsQuerying = true;
+                            }
                         }
                     }
                     else {
@@ -625,7 +634,7 @@ void GameplayScreen::initInputs()
             if (mCameraController) {
                 mRightClickDownPick = std::make_unique<DeferredPhysicsPick>();
                 const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                mWorld->getPhysicsWorld().pickDeferred(mRightClickDownPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL);
+                mWorld->getPhysicsWorld().pickDeferred(mRightClickDownPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
                 mRightClickTimer.start();
                 
             }
@@ -673,7 +682,7 @@ void GameplayScreen::initInputs()
             else if (!mRightClickUpPick && mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                 const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
                 mRightClickUpPick = std::make_unique<DeferredPhysicsPick>();
-                sWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL); 
+                sWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
                 mRightClickUpPickScreenPos = screenPos;
             }
         }

@@ -92,6 +92,7 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 const f32* srcData = sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                 memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
                 sChunkMesher.initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
+                chunk.getTileContainer()->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
                 Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
                 ++i;
                 break;

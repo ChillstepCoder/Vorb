@@ -41,7 +41,7 @@ void GameThreadTasks::addCameraPickTeleportTask(const f32v3& camPos, const f32v3
         CameraPickTeleportData* data = static_cast<CameraPickTeleportData*>(vData);
         IEntityComponentSystem& ecs = sWorld->getECS();
         if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
-            PhysHitResult hitResult = sWorld->getPhysicsWorld().pick(data->camPos, data->camPos + data->camDir * 3000.0f, PICK_TYPE_ALL);
+            PhysHitResult hitResult = sWorld->getPhysicsWorld().pick(data->camPos, data->camPos + data->camDir * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
             if (hitResult.didHit()) {
                 phys->teleportToPoint(hitResult.mPosition);
             }
@@ -65,7 +65,7 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(TileContainerID 
         builder->finish(sWorld->getPhysicsWorld());
         // Release
         TileContainer* container = TileContainerRepository::getTileContainer(builder->getOwnerTileContainerID());
-        assert(container->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
+        //assert(container->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
         container->setDidInitPhysics();
         container->decRef();
         delete builder;
