@@ -12,13 +12,13 @@ class Chunk;
 
 struct WorldObjectQueryData {
     ItemStockpile* mStockpileAtTile = nullptr;
-    Building* mBuildingAtTile = nullptr;
+    //Building* mBuildingAtTile = nullptr;
     std::vector<EntityDistSortKey> mEntitiesAtTile;
     LiteTileHandle mLiteHandle;
     f32v3 mWorldPos;
     TileRef mTileRef;
-    StructureArrayPtr mStructures = {};
-    Structure* mSelectedStructure = nullptr;
+    //StructureArrayPtr mStructures = {};
+    //Structure* mSelectedStructure = nullptr;
     std::atomic_bool mIsReady = false;
     std::atomic_bool mIsQuerying = false;
 };
@@ -40,15 +40,11 @@ public:
     bool isValid() const { return mData && mData->mIsReady && mData->mTileRef.isValid(); }
 
     ItemStockpile* getStockpile() const { assert(mData); return mData->mStockpileAtTile; }
-    Building* getBuilding() const { assert(mData); return mData->mBuildingAtTile; }
     const std::vector<EntityDistSortKey>& getEntities() const { assert(mData); return mData->mEntitiesAtTile; }
+    TileContainer* getTileContainer() const { return mData->mTileRef.container; }
     TileHandle getTileHandle() const { assert(mData); return TileHandle(mData->mTileRef.container, mData->mTileRef.index); }
+    TileIndex getTileIndex() const { assert(mData); return mData->mTileRef.index; }
     const f32v2& getTilePos() const { assert(mData); return mData->mWorldPos; }
-
-    // TODO: This isn't exactly thread safe, if the structure(s) are deleted while we hold this handle, we have a dangling pointer
-    StructureArrayPtr& getStructures() const { assert(mData); return mData->mStructures; }
-    Structure* getSelectedStructure() const { assert(mData); return mData->mSelectedStructure; }
-    void setSelectedStructure(Structure* s) { mData->mSelectedStructure = s; }
 
 private:
     void query();

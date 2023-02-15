@@ -22,11 +22,11 @@ RUNTIME_INIT_FUNC(reserveTileContainerData) {
     sTileContainerLookup.reserve(500);
 }
 
-TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, bool isTerrain) {
+TileContainer* TileContainerRepository::getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner) {
     assert(IS_GAME_THREAD());
     std::unique_ptr<TileContainer> newContainer = std::make_unique<TileContainer>();
     TileContainer* rv = newContainer.get();
-    newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, isTerrain);
+    newContainer->init(sTileContainerIdGen++, rootPos, dims, floorHeight, owner);
     // Clamp to int to prevent issues with PhysicsWorld storing these as signed integers
     if (sTileContainerIdGen > INT32_MAX) {
         sTileContainerIdGen = 0;
@@ -78,12 +78,23 @@ TileContainer::~TileContainer() {
 
 }
 
-void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain) {
+void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, VarTileContainerOwner owner) {
     mRootPos = rootPos;
     mDims = dims;
     mFloorHeight = floorHeight;
-    mIsTerrain = isTerrain;
     mId = id;
+    mOwner = owner;
+    if (std::holds_alternative<Chunk*>(owner)) {
+        mOwnerType = TileContainerOwnerType::CHUNK;
+    }
+    else if (std::holds_alternative<Building*>(owner)) {
+        mOwnerType = TileContainerOwnerType::BUILDING;
+    }
+    else {
+        assert(false && "invalid tile container owner");
+    }
+    static_assert(std::variant_size_v<VarTileContainerOwner> == 2);
+    static_assert(e_cast(TileContainerOwnerType::COUNT) == 2);
 }
 
 void TileContainer::allocateData() {
@@ -338,6 +349,22 @@ TileHandle TileContainer::tryGetTileHandleAtWorldPos(const i32v3& worldPos) cons
     return TileHandle(this, getTileIndexFromXYZOffset(ui32v3(offset)));
 }
 
+Chunk* TileContainer::getOwnerChunk() const {
+    Chunk*const* chunk = std::get_if<Chunk*>(&mOwner);
+    if (chunk) {
+        return *chunk;
+    }
+    return nullptr;
+}
+
+Building* TileContainer::getOwnerBuilding() const {
+    Building* const* building = std::get_if<Building*>(&mOwner);
+    if (building) {
+        return *building;
+    }
+    return nullptr;
+}
+
 void TileContainer::addEntrance(TileIndex pos, bool isLocked) {
     assert(IS_GAME_THREAD());
     assert(isReady());
@@ -396,7 +423,7 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
     // Potentially block or free terrain below
     // TODO: Proper intersection
     // TODO: Only when the layer changes
-    if (!mIsTerrain) {
+    if (!isTerrain()) {
         IChunkGrid& chunkGrid = sWorld->getChunkGrid();
         const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
@@ -424,7 +451,7 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
     std::lock_guard lock(mSharedMutex);
     assert(isReady());
     mDynamicTiles.emplace_back(DynamicTile{ tileIndex, {}/*flags*/, DynamicTileType(doorSide) });
-    if (!mIsTerrain) {
+    if (!isTerrain()) {
         IChunkGrid& chunkGrid = sWorld->getChunkGrid();
         const i32v3 offset = getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {

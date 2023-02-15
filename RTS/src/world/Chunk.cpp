@@ -41,7 +41,7 @@ void Chunk::allocateTileContainer() {
     assert(!mTileContainer);
     const i32v2& worldPosInt2D = mChunkId.getWorldPosInt();
     const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
-    mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, true);
+    mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
     mGrass.resize(CHUNK_SIZE);
     mStructures.resize(CHUNK_SIZE);
     assert(mTileContainer);

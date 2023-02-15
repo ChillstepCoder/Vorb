@@ -51,7 +51,6 @@ bool WorldObjectQuery::tryQuery(LiteTileHandle handle) {
 
 void WorldObjectQuery::query() {
     mData->mStockpileAtTile = nullptr;
-    mData->mBuildingAtTile = nullptr;
 
     if (IS_GAME_THREAD()) {
         queryInternal(*mData);
@@ -77,26 +76,23 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
     TileHandle handle;
     if (data.mLiteHandle.isValid()) {
         handle = data.mLiteHandle.toTileHandle();
-        // TODO: mSelectedStructure? 
-        xxx;
+        data.mTileRef.acquire(handle);
     }
     else {
         assert(IS_GAME_THREAD());
         f32v2 tilePos2D(data.mWorldPos.x, data.mWorldPos.y);
-        TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
+        handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
         if (!handle.isValid()) {
             return;
         }
 
-        // TODO: This could be wrapped in above query?
-        Chunk& chunk = sWorld->getChunkAtPosition(tilePos2D);
-        if (chunk.isDataReady()) {
-            data.mStructures = chunk.getStructuresAt(handle.tileIndex);
-            for (int i = 0; i < data.mStructures.second; ++i) {
-                Structure* structure = data.mStructures.first[i];
+        Chunk* chunk = handle.container->getOwnerChunk();
+        if (chunk->isDataReady()) {
+            StructureArrayPtr structures = chunk->getStructuresAt(handle.tileIndex);
+            for (int i = 0; i < structures.second; ++i) {
+                Structure* structure = structures.first[i];
                 TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);
                 if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
-                    data.mSelectedStructure = structure;
                     data.mTileRef.acquire(nextHandle);
                     break;
                 }
@@ -110,6 +106,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
 
     // TODO: Tile flag city?
     // Stockpile
+    assert(handle.isValid());
     if (handle.tile->hasFlag(TileFlags::TILE_FLAG_IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
         const auto* stockPiles = sWorld->getItemStockpileRegistry().tryGetStockpilesAtChunkPosition(id);

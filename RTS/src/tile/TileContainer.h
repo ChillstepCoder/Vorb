@@ -9,7 +9,8 @@
 
 class btRigidBody;
 class Mesh;
-
+class Chunk;
+class Building;
 
 enum DynamicTileType : ui8 {
     // Walls (Keep first)
@@ -51,11 +52,18 @@ enum class TileContainerState : ui8 {
     READY
 };
 
+enum class TileContainerOwnerType : ui8 {
+    CHUNK,
+    BUILDING,
+    COUNT
+};
+typedef std::variant<Chunk*, Building*> VarTileContainerOwner;
+
 class TileContainer;
 // Static class
 class TileContainerRepository {
 public:
-    static TileContainer* getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, bool isTerrain);
+    static TileContainer* getNewTileContainer(const ui32v3& rootPos, const ui32v3& dims, ui32 floorHeight, VarTileContainerOwner owner);
     static void destroyTileContainer(TileContainer* container);
     
     static TileContainer* getTileContainer(TileContainerID id);
@@ -69,10 +77,6 @@ public:
     STATIC_EVENT_DISPATCHER(TileContainer);
 };
 
-enum class TileContainerOwnerType : ui8 {
-    CHUNK,
-    STRUCTURE
-};
 
 // TODO: Memory recycler?
 class TileContainer
@@ -93,7 +97,7 @@ public:
 
 private:
 
-    void init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, bool isTerrain);
+    void init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, VarTileContainerOwner owner);
     void freeData();
 
 public:
@@ -191,7 +195,13 @@ public:
         return (TileIndex)(x + y * mDims.x + z * mDims.x * mDims.y);
     }
     TileContainerID getId() const { return mId; }
-    bool isTerrain() const { return mIsTerrain; }
+
+    // Ownership
+    TileContainerOwnerType getOwnerType() const { return mOwnerType; }
+    bool isTerrain() const { return mOwnerType == TileContainerOwnerType::CHUNK; }
+    const VarTileContainerOwner& getOwnerVariant() const { return mOwner; }
+    Chunk* getOwnerChunk() const;
+    Building* getOwnerBuilding() const;
 
     bool isReady() const { return mState == e_cast(TileContainerState::READY); }
     TileContainerState getState() const { return (TileContainerState)mState.load(); }
@@ -277,5 +287,6 @@ private:
 
     mutable std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
     bool mDirtyData = false;
-    bool mIsTerrain = false;
+    std::variant<Chunk*, Building*> mOwner;
+    TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
 };

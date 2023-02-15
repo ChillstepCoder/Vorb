@@ -603,15 +603,16 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
                     f32v2 tilePos2D(rv.mPosition.x, rv.mPosition.y);
                     TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
                     if (handle.isValid()) {
-                        // TODO: Avoid second query here?
-                        Chunk& chunk = sWorld->getChunkAtPosition(tilePos2D);
-                        StructureArrayPtr structures = chunk.getStructuresAt(handle.tileIndex);
-                        for (int i = 0; i < structures.second; ++i) {
-                            Structure* structure = structures.first[i];
-                            TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
-                            if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
-                                rv.mTileIndex = nextHandle.tileIndex;
-                                break;
+                        Chunk* chunk = handle.container->getOwnerChunk();
+                        if (chunk->isDataReady()) {
+                            StructureArrayPtr structures = chunk->getStructuresAt(handle.tileIndex);
+                            for (int i = 0; i < structures.second; ++i) {
+                                Structure* structure = structures.first[i];
+                                TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
+                                if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+                                    rv.mTileIndex = nextHandle.tileIndex;
+                                    break;
+                                }
                             }
                         }
                     }

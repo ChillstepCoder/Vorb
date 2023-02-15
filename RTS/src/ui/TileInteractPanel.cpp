@@ -49,7 +49,7 @@ UIInteractMenuResultFlags TileInteractPanel::updateAndRender()
     ImGui::SetNextWindowPos(ImVec2(clampedScreenPos.x, clampedScreenPos.y));
     ImGui::SetNextWindowSize(ImVec2(panelDims.x, panelDims.y));
 
-    if (mWorldObjectQuery.getSelectedStructure()) {
+    if (mWorldObjectQuery.getTileHandle().container->getOwnerBuilding()) {
         resultFlags = updateAndRenderStructureTile();
     }
     else {
@@ -104,15 +104,17 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             }
 
             // Structure list
-            ++optionCount;
-            StructureArrayPtr& structures = mWorldObjectQuery.getStructures();
+            /*++optionCount;
+            Chunk* owner = mWorldObjectQuery.getTileHandle().container->getOwnerChunk();
+            assert(owner);
+            const StructureArrayPtr& structures = owner->getStructuresAt(mWorldObjectQuery.getTileIndex());
             if (structures.second) {
                 nextState = UIInteractMenuState::SELECTED_STRUCTURE_LIST;
                 if (ImGui::Button("Structures")) {
                     mState = nextState;
                     break;
                 }
-            }
+            }*/
 
             if (optionCount == 0) {
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
@@ -180,7 +182,9 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
         }
         case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
-            StructureArrayPtr& structures = mWorldObjectQuery.getStructures();
+            Chunk* owner = mWorldObjectQuery.getTileContainer()->getOwnerChunk();
+            assert(owner);
+            const StructureArrayPtr& structures = owner->getStructuresAt(mWorldObjectQuery.getTileIndex());
             if (!structures.second) {
                 // If we got here the structure  was deleted while we had it selected
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
@@ -191,7 +195,9 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
                     if (structure->getType() == StructureType::Building) {
                         nString name = "Building " + std::to_string(i);
                         if (ImGui::Button(name.c_str())) {
-                            mWorldObjectQuery.setSelectedStructure(mSelectedStructure = structure);
+                            // TODO: Now what?
+                            LOG_DEBUG("Building selected but we dont handle it yet");
+                            //mWorldObjectQuery.setSelectedStructure(mSelectedStructure = structure);
                             break;
                         }
                     }

@@ -398,7 +398,7 @@ void GameplayScreen::updateTilePicking() {
                             //}, tileHandlePtr);
 
                             // Query whatever we selected
-                            if (mWorldObjectQuery.tryQuery(LiteTileHandle(containerOwner, index)) {
+                            if (mWorldObjectQuery.tryQuery(LiteTileHandle(containerOwner, index))) {
                                 mIsQuerying = true;
                             }
                         }

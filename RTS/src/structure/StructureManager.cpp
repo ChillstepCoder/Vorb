@@ -11,21 +11,21 @@ StructureManager::StructureManager() {
 
 Structure* StructureManager::makeNewStructure(StructureType type, const i32AABB3& aabb, ui32 floorHeight) {
     assert(IS_GAME_THREAD());
+    i32v3 tileDims = aabb.dims;
     std::unique_ptr<Structure> newStructure;
     switch (type) {
         case StructureType::Building: {
             newStructure = std::make_unique<Building>();
             newStructure->mType = StructureType::Building;
+            newStructure->mTileContainer = TileContainerRepository::getNewTileContainer(aabb.pos, tileDims, floorHeight, (Building*)newStructure.get());
             break;
         }
         default:
             assert(false && "Invalid structure type");
     }
     newStructure->mAABB = aabb;
-    i32v3 tileDims = aabb.dims;
     assert((tileDims.z % floorHeight) == 0);
     tileDims.z /= floorHeight;
-    newStructure->mTileContainer = TileContainerRepository::getNewTileContainer(aabb.pos, tileDims, floorHeight, false /*isTerrain*/);
     newStructure->mTileContainer->allocateData();
     newStructure->mId = (StructureID)mStructures.size();
     // TODO: This structure ID needs a lookup
