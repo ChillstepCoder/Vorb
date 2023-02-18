@@ -1070,6 +1070,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
 }
 
 void NavWorld::markContainerNavDirty(TileContainer* container) {
+    assert(IS_GAME_THREAD());
     assert(container);
     bool didAdd = false;
     {

@@ -519,6 +519,7 @@ void meshWalls(const std::vector<TileWalls>& tileWalls, const std::vector<Tile>&
     }
 }
 
+// TODO: Dual grid meshing? https://www.youtube.com/watch?v=buKQjkad2I0
 void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const f32* heightData) {
     PROFILE_FUNCTION();
 

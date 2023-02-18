@@ -84,6 +84,7 @@ typedef GridID<WORLD_WIDTH_HEIGHTMAP_PATCHES, HEIGHTMAP_WIDTH> HeightmapPatchID;
 typedef GridID<WorldData::WORLD_WIDTH_CHUNKS, CHUNK_WIDTH> ChunkID;
 
 typedef ui32 LiteChunkID;
+constexpr ui32 INVALID_CHUNK_ID = UINT32_MAX;
 
 namespace {
     inline HeightmapPatchID heightmapPatchIDFromChunkID(ChunkID id) {

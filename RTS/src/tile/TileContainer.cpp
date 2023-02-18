@@ -79,6 +79,7 @@ TileContainer::~TileContainer() {
 }
 
 void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 floorHeight, VarTileContainerOwner owner) {
+   
     mRootPos = rootPos;
     mDims = dims;
     mFloorHeight = floorHeight;
@@ -86,9 +87,11 @@ void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 f
     mOwner = owner;
     if (std::holds_alternative<Chunk*>(owner)) {
         mOwnerType = TileContainerOwnerType::CHUNK;
+        assert(dims.x == CHUNK_WIDTH && dims.y == CHUNK_WIDTH && dims.z == 1u);
     }
     else if (std::holds_alternative<Building*>(owner)) {
         mOwnerType = TileContainerOwnerType::BUILDING;
+        assert(dims.x < CHUNK_WIDTH && dims.y < CHUNK_WIDTH);
     }
     else {
         assert(false && "invalid tile container owner");
@@ -438,6 +441,8 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
                 }
                 else {
                     chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
+                    // TODO: Don't always clear grass?
+                    chunk.setGrassAt(chunkTileIndex, 0);
                 }
             }
             else {

@@ -10,6 +10,7 @@
 #include "pathfinding/NavThread.h"
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
+#include "structure/Structure.h"
 
 #include "resources/TileRepository.h"
 
@@ -43,47 +44,28 @@ void Chunk::allocateTileContainer() {
     const ui32v3 worldPosInt3D(worldPosInt2D.x, worldPosInt2D.y, 0u);
     mTileContainer = TileContainerRepository::getNewTileContainer(worldPosInt3D, ui32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, this);
     mGrass.resize(CHUNK_SIZE);
-    mStructures.resize(CHUNK_SIZE);
     assert(mTileContainer);
 }
 
-void Chunk::freeTiles() {
+void Chunk::freeData() {
     if (mTileContainer) {
         TileContainerRepository::destroyTileContainer(mTileContainer);
         mTileContainer = nullptr;
     }
     std::vector<ui8>().swap(mGrass);
+    // TODO: Serialization
+    std::vector<StructureID>().swap(mStructures);
+    std::map<TileIndex, ItemStack>().swap(mItemsOnGround);
 }
 
 void Chunk::dispose() {
-
     mFlags = 0;
     mState = e_cast(ChunkState::INVALID);
-    freeTiles();
-
-    //mChunkRenderData.mBillboardMesh.reset();
-    //// Make sure no funny business
-    //// TOCO: Crashes on shutdown
-    //if (mChunkRenderData.mGrassLod) assert(IS_SHUTTING_DOWN || !mChunkRenderData.mGrassLod->getRefCount());
-    //mChunkRenderData.mGrassLod.reset();
-
+    freeData();
 }
 
 void Chunk::updateMainThread() {
     assert(mTileContainer);
-
-    // Structure thread safety
-    // TODO: REEEEE
-    if (mStructuresNeedingThreadSafeCopy.size()) {
-        for (TileIndex& i : mStructuresNeedingThreadSafeCopy) {
-            ChunkStructureVector& handle = mStructures[i];
-            // mmmmm no
-            assert(false);
-            handle.copyThreadData();
-        }
-        mStructuresNeedingThreadSafeCopy.clear();
-        // mDirtyNav = true; // TODO: Make this smarter
-    }
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
@@ -212,29 +194,6 @@ void Chunk::setGrassAt(const TileIndex index, ui8 grass) {
      }*/
 }
 
-void Chunk::setStructureAt(const TileIndex index, Structure* structure) {
-    ChunkStructureVector& handle = mStructures[index];
-    assert(structure != nullptr);
-    handle.add(structure);
-}
-
-
-void Chunk::removeStructureAt(const TileIndex index, Structure* structure) {
-    ChunkStructureVector& handle = mStructures[index];
-    assert(structure != nullptr);
-    handle.remove(structure);
-}
-
-StructureArrayPtr Chunk::getStructuresAt(const TileIndex index) const {
-    assert(IS_GAME_THREAD());
-    return mStructures[index].getMainThreadData();
-}
-
-StructureArrayPtr Chunk::getStructuresAtThreadSafe(const TileIndex index) const {
-    assert(!IS_GAME_THREAD());
-    return mStructures[index].getWorkerThreadData();
-}
-
 void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
     constexpr ui32 DEBUG_DURATION = 100;
     const f32v2 dims = f32v2(CHUNK_WIDTH);
@@ -275,5 +234,11 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
             }
         }
     }
+}
 
+void Chunk::addStructure(Structure* structure) {
+    assert(IS_GAME_THREAD());
+    assert(isDataReady());
+    structure->incRef();
+    mStructures.emplace_back(structure->getId());
 }

@@ -23,7 +23,7 @@ public:
     static void reserveFilledQuads(ui32 count, int lifeTime = 0, int id = 0);
     static void reserveLines(ui32 count, int lifeTime = 0, int id = 0);
     static void drawAABB(const i32AABB2& aabb, f32 height, color4 color, int lifeTime = 0, int id = 0);
-	static void drawAABB(const f32AABB3& aabb, f32 height, color4 color, int lifeTime = 0, int id = 0);
+	static void drawAABB(const i32AABB3& aabb, color4 color, int lifeTime = 0, int id = 0);
 	static void drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime = 0, int id = 0);
     static void drawAABB(const f32v2& botLeft, const f32v2& dims, f32 height, color4 color, int lifeTime = 0, int id = 0);
     static void drawPath(const std::vector<f32v3>& path, color4 color, int lifeTime = 0, int id = 0);

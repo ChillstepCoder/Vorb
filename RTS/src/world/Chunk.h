@@ -30,8 +30,6 @@ constexpr ui32 CHUNK_NEIGHBOR_COUNT = 4;
 
 class IWorldGrid;
 
-typedef TinyThreadsafeVector<Structure*> ChunkStructureVector;
-
 enum class NeighborIndex4 {
 	BOTTOM = 0,
 	LEFT   = 1,
@@ -49,6 +47,11 @@ enum class NeighborIndex8 {
 	TOP          = 6,
 	TOP_RIGHT    = 7,
 	COUNT        = 8
+};
+
+enum class ChunkEventType {
+	Ready,
+    Destroy,
 };
 
 // TODO: Chunks and structures both have base class "TileContainer" ???
@@ -72,7 +75,7 @@ public:
     // =========== Main methods  ===========
 	void init(const ChunkID& chunkId);
 	void allocateTileContainer();
-	void freeTiles();
+	void freeData();
 	void dispose();
 	// TODO: REMOVE
 	void updateMainThread();
@@ -88,6 +91,7 @@ public:
 	const HeightmapPatchID getHeightmapPatchID() const { return heightmapPatchIDFromChunkID(mChunkId); }
     ui8 getGrassAt(const TileIndex index) const { return mGrass[index]; }
     const f32AABB3& getAABB() const { return mAABB; }
+	const std::vector<StructureID>& getStructures() const { return mStructures; }
 
 
     // =========== Tile handles  ===========
@@ -118,12 +122,6 @@ public:
 	void setState(ChunkState state) { mState = e_cast(state); }
 	void setGrassAt(const TileIndex index, ui8 grass);
 
-    // =========== Structures  ===========
-    void setStructureAt(const TileIndex index, Structure* structure);
-    void removeStructureAt(const TileIndex index, Structure* structure);
-	StructureArrayPtr getStructuresAt(const TileIndex index) const;
-	StructureArrayPtr getStructuresAtThreadSafe(const TileIndex index) const;
-
     // =========== Terrain update  ===========
 	void onTerrainDataChanged(const f32v2& editPosition, f32 editRadius);
 
@@ -141,6 +139,8 @@ public:
 	f32 getDistanceFromLoadCenterSQ() const { return mDistanceFromLoadCenterSQ; }
 	void setDistanceFromLoadCenterSQ(f32 distSq) { mDistanceFromLoadCenterSQ = distSq; }
 
+	void addStructure(Structure* structure);
+
 private:
 
     // =========== Members ===========
@@ -153,11 +153,8 @@ private:
 
 	TileContainer* mTileContainer = nullptr;
     std::vector<ui8> mGrass; // Grass densities
-	std::vector<ChunkStructureVector> mStructures; // TODO: List or something for multiple structures? idk
-	std::vector<TileIndex> mStructuresNeedingThreadSafeCopy;
+	std::vector<StructureID> mStructures;
 	std::map<TileIndex, ItemStack> mItemsOnGround;
-
-
 };
 #ifdef DEBUG // Release has different size
 //static_assert(sizeof(Chunk) == 296, "These are permanently allocated, so keep small");

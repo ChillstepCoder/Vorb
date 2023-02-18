@@ -79,6 +79,10 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
             tileData.shape = fileData.tileShape;
         }
 
+        if (tileData.pathWeight == 0) {
+            tileData.navMask = 0;
+        }
+
         // Nav bits
         if (tileData.shape == TileShape::STAIRS) {
             tileData.navMask = 0b01000010; // SOUTH and NORTH access

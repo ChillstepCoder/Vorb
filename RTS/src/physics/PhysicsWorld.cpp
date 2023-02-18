@@ -565,6 +565,7 @@ struct CustomRayResult : public btCollisionWorld::ClosestRayResultCallback
 PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, PickTypes pickTypes, BitFlags<PhysicsPickQueryFlags> queryFlags) const
 {
     assert(IS_GAME_THREAD());
+    PROFILE_FUNCTION();
     btVector3 start = f32v3ToBtVector3(rayStart);
     btVector3 end = f32v3ToBtVector3(rayEnd);
     // TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
@@ -603,7 +604,16 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
                     f32v2 tilePos2D(rv.mPosition.x, rv.mPosition.y);
                     TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(tilePos2D);
                     if (handle.isValid()) {
-                        Chunk* chunk = handle.container->getOwnerChunk();
+                        assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
+                        std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+                        for (auto&& structure : structures) {
+                            TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
+                            if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+                                rv.mTileIndex = nextHandle.tileIndex;
+                                break;
+                            }
+                        }
+                        /*Chunk* chunk = handle.container->getOwnerChunk();
                         if (chunk->isDataReady()) {
                             StructureArrayPtr structures = chunk->getStructuresAt(handle.tileIndex);
                             for (int i = 0; i < structures.second; ++i) {
@@ -614,7 +624,7 @@ PhysHitResult PhysicsWorld::pick(const f32v3& rayStart, const f32v3& rayEnd, Pic
                                     break;
                                 }
                             }
-                        }
+                        }*/
                     }
                     else {
                         // Need to query which tile we selected

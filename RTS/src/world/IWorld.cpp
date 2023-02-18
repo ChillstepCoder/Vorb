@@ -191,45 +191,20 @@ void IWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
 
 }
 
-TileHandle IWorld::getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const {
-    assert(!IS_GAME_THREAD());
-    const Chunk* chunk = &getChunkAtPosition(i32v2(worldPos));
-    if (chunk->isDataReady()) {
-        const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
-        StructureArrayPtr structures = chunk->getStructuresAtThreadSafe(baseHandle.tileIndex);
-        for (ui16 i = 0; i < structures.second; ++i) {
-            Structure* structure = structures.first[i];
-            const TileContainer* container = structure->getTileContainer();
-            if (container) {
-                TileHandle structureHandle = container->tryGetTileHandleAtWorldPos(worldPos);
-                if (structureHandle.isValid() && container->isTileOwned(structureHandle.tileIndex)) {
-                    return structureHandle;
-                }
-            }
-        }
-        return baseHandle;
-    }
-    return TileHandle();
-}
-
 TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     assert(IS_GAME_THREAD());
-    const Chunk* chunk = &getChunkAtPosition(i32v2(worldPos));
+    i32v2 worldPos2D = worldPos;
+    const Chunk* chunk = &getChunkAtPosition(worldPos2D);
     if (chunk->isDataReady()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
         TileHandle baseHandle = chunk->getTileHandleAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
-        StructureArrayPtr structures = chunk->getStructuresAt(baseHandle.tileIndex);
-        for (ui16 i = 0; i < structures.second; ++i) {
-            Structure* structure = structures.first[i];
-            const TileContainer* container = structure->getTileContainer();
-            if (container) {
-                TileHandle structureHandle = container->tryGetTileHandleAtWorldPos(worldPos);
-                if (structureHandle.isValid() && container->isTileOwned(structureHandle.tileIndex)) {
-                    return structureHandle;
-                }
+        assert(worldPos2D.x >= 0.0f && worldPos2D.y >= 0.0f);
+        std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(worldPos2D);
+        for (auto&& structure : structures) {
+            TileHandle structureHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(worldPos);
+            if (structureHandle.isValid() && structure->isTileOwned(structureHandle.tileIndex)) {
+                return structureHandle;
             }
         }
         return baseHandle;
@@ -264,14 +239,8 @@ TileHandle IWorld::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     return TileHandle();
 }
 
-StructureArrayPtr IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
-    const Chunk* chunk = &getChunkAtPosition(worldPos);
-    if (chunk->isDataReady()) {
-        ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
-        ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
-        return chunk->getStructuresAt(chunk->getTileContainer()->getTileIndexFromXYZOffset(x, y, 0));
-    }
-    return std::make_pair(nullptr, 0);
+std::vector<Structure*> IWorld::tryGetStructuresAtWorldPos(const i32v2& worldPos) const {
+    return mStructureManager->tryGetStructuresAtWorldPos(worldPos);
 }
 
 void IWorld::enumActiveChunks(std::function<void(const Chunk&)> func) const {

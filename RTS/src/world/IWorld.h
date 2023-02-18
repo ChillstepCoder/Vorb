@@ -56,13 +56,13 @@ public:
     virtual void dirtyGrassFromBrush(const f32v2& pos, f32 brushRadius) = 0;
 
     // Tile Accessors
-    TileHandle getTileHandleAtWorldPosThreadSafe(const i32v3& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const i32v3& worldPos) const;
     TileHandle getTileHandleAtWorldPos(const f32v3& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const ui32v2& worldPos) const { return getTerrainTileHandleAtWorldPos(f32v2(worldPos.x, worldPos.y)); }
     TileHandle getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const;
     TileHandle getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const;
-    StructureArrayPtr tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
+    // TODO: Non vector
+    std::vector<Structure*> tryGetStructuresAtWorldPos(const i32v2& worldPos) const;
 
     void enumActiveChunks(std::function<void(const Chunk&)> func) const;
 

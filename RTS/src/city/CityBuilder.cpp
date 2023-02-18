@@ -116,7 +116,8 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
                     // Flatten heightmap
                     if (z == 0) {
                         f32v2 tileWorldPos = worldPos + i32v2(x, y);
-                        grid.setHeightAt(tileWorldPos, meanHeight);
+                        // Epsilon to prevent z fighting
+                        grid.setHeightAt(tileWorldPos, meanHeight - 0.005f);
                     }
 
                     tileContainer.setOwnedTile(tileIndex);
@@ -203,8 +204,8 @@ void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
 void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprint) {
     building.mFunction = blueprint.desc.function;
     building.mPlotIndex = blueprint.plotIndex;
-    building.mNavEntrances = blueprint.exteriorDoors;
-    assert(building.mNavEntrances.size());
+    building.mDoorTiles = blueprint.exteriorDoors;
+    assert(building.mDoorTiles.size());
     assert(building.mRooms.size());
 
     // Mark ready for access

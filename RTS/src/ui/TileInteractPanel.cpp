@@ -184,19 +184,19 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
             Chunk* owner = mWorldObjectQuery.getTileContainer()->getOwnerChunk();
             assert(owner);
-            const StructureArrayPtr& structures = owner->getStructuresAt(mWorldObjectQuery.getTileIndex());
-            if (!structures.second) {
+            std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(i32v2(mWorldObjectQuery.getTilePos()));
+            if (structures.empty()) {
                 // If we got here the structure  was deleted while we had it selected
                 resultFlags = INTERACT_MENU_RESULT_INVALID;
             }
             else {
-                for (ui16 i = 0; i < structures.second; ++i) {
-                    Structure* structure = structures.first[i];
+                for (size_t i = 0; i < structures.size(); ++i) {
+                    Structure* structure = structures[i];
                     if (structure->getType() == StructureType::Building) {
                         nString name = "Building " + std::to_string(i);
                         if (ImGui::Button(name.c_str())) {
                             // TODO: Now what?
-                            LOG_DEBUG("Building selected but we dont handle it yet");
+                            LOG_DEBUG("Building selected but we don't handle it yet");
                             //mWorldObjectQuery.setSelectedStructure(mSelectedStructure = structure);
                             break;
                         }

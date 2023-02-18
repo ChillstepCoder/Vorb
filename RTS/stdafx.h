@@ -120,10 +120,6 @@ inline void setThreadPriorityToMax() {
 #define PACKED_STRUCT
 #endif
 
-typedef GLuint64 TextureHandle;
-typedef ui16 MaterialID;
-constexpr ui16 INVALID_MATERIAL_ID = UINT16_MAX;
-
 // DEBUGGING GRAPHICS
 // We get texture warnings if we bind a null texture. TODO: Why? (Used to bind 0 in shadow mapping)
 //#define glBindTexture(x, y) assert(y); glBindTexture(x, y)

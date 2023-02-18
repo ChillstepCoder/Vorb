@@ -111,6 +111,10 @@ struct ContainerNavData {
     i32 floorHeight;
     TileContainerID containerId;
 
+
+    // TODO: Dependencies
+    // Terrain nav graph depends on building nav graph
+
     i32v3 getTileWorldPos(TileIndex index) const {
         assert(index < fineNavGraph.size());
         const i32 floorStride = containerDims.x * containerDims.y;
@@ -138,7 +142,6 @@ struct ContainerNavRegion {
         return (id == rhs.id) && (memcmp(&this->box, &rhs.box, sizeof(box)) == 0);
     }
 };
-
 // https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
 template <>
 struct bgi::indexable<ContainerNavRegion>

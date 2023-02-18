@@ -739,6 +739,11 @@ void RenderContext::renderPassDebug(const Camera3D& camera, const RenderState& r
         mCityDebugRenderer->clearMeshes();
     }
 
+    // Structure debug
+    if (sDebugOptions.mStructureDebug) {
+        sWorld->getStructureManager().debugRender();
+    }
+
 
     if (sDebugOptions.mChunkBoundaries) {
         for (const auto& chunkDebugState : renderState.getDebugChunks()) {

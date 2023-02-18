@@ -88,9 +88,10 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
 
         Chunk* chunk = handle.container->getOwnerChunk();
         if (chunk->isDataReady()) {
-            StructureArrayPtr structures = chunk->getStructuresAt(handle.tileIndex);
-            for (int i = 0; i < structures.second; ++i) {
-                Structure* structure = structures.first[i];
+            assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
+            std::vector<Structure*> structures = sWorld->tryGetStructuresAtWorldPos(i32v2(tilePos2D));
+            for (size_t i = 0; i < structures.size(); ++i) {
+                Structure* structure = structures[i];
                 TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(data.mWorldPos);
                 if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
                     data.mTileRef.acquire(nextHandle);

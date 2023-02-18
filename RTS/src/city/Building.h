@@ -36,7 +36,7 @@ public:
 
     const BitArray& getInteriorTilesInAABB() const { return mTileContainer->getOwnedTiles(); }
     const std::vector<RoomNode>& getRooms() const { return mRooms; }
-    const std::map<TileIndex, RoomNodeID>& getNavEntrances() const { return mNavEntrances; }
+    const std::map<TileIndex, RoomNodeID>& getDoorTiles() const { return mDoorTiles; }
 
 private:
    
@@ -45,7 +45,7 @@ private:
     BuildingFunction mFunction = BuildingFunction::NONE;
     BuildingID mId = INVALID_BUILDING_ID;
 
-    std::map<TileIndex, RoomNodeID> mNavEntrances;
+    std::map<TileIndex, RoomNodeID> mDoorTiles;
     // Entity owning this plot, can be a person or a business
     entt::entity mOwnerEntity = INVALID_ENTITY;
 

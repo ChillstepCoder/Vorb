@@ -126,6 +126,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
     if (ImGui::CollapsingHeader("Structures")) {
         ImGui::SliderFloat("Wall Wooble Chance", &sDebugOptions.mWallWoobleChance, 0.0f, 1.0f);
         ImGui::SliderFloat("Wall Wooble Intensity", &sDebugOptions.mWallWoobleIntensity, 0.0f, 1.0f);
+        ImGui::Checkbox("Debug draw", &sDebugOptions.mStructureDebug);
         ImGui::Separator();
     }
 

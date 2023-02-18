@@ -9,9 +9,7 @@ enum class CHUNK_EVENT_TYPE {
     Ready,
     Destroy
 };
-
-
-EVENT_DISPATCHER_TYPE(Chunk, CHUNK_EVENT_TYPE, const Chunk&);
+EVENT_DISPATCHER_TYPE(Chunk, CHUNK_EVENT_TYPE, Chunk&);
 
 class IWorldGrid;
 
@@ -38,8 +36,8 @@ public:
     /*bool addCreateListener(ChunkListeners& remover, const ChunkEventDispatcher::Callback& callback) {
         return remover.appendListener(CHUNK_EVENT_TYPE::Create, callback);
     }*/
-    STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, const Chunk&);
-    STATIC_EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, const Chunk&);
+    STATIC_EVENT_LISTENER_FUNCS(Chunk, Ready, CHUNK_EVENT_TYPE::Ready, Chunk&);
+    STATIC_EVENT_LISTENER_FUNCS(Chunk, Destroy, CHUNK_EVENT_TYPE::Destroy, Chunk&);
 
 private:
     // Grid management

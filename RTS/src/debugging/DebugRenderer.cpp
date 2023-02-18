@@ -182,15 +182,35 @@ void DebugRenderer::reserveLines(ui32 count, int lifeTime /*= 0*/, int id /*= 0*
     lines.reserve(lines.size() + count);
 }
 
-void DebugRenderer::drawAABB(const f32AABB3& aabb, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
-    /* assert(IS_RENDER_THREAD());
-     const f32v2& bottomLeft = TO_VVEC2_C(aabb.lowerBound);
-     const f32v2& topRight = TO_VVEC2_C(aabb.upperBound);
-     const f32v2 topLeft = f32v2(bottomLeft.x, topRight.y);
-     const f32v2 bottomRight = f32v2(topRight.x, bottomLeft.y);
-
-     drawAABB(bottomLeft, bottomRight, topLeft, topRight, height, color, lifeTime);*/
-    std::cout << "DebugRenderer::drawAABB not implemented\n";
+void DebugRenderer::drawAABB(const i32AABB3& aabb, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
+    assert(IS_RENDER_THREAD());
+    auto&& lines = sNewLines[std::make_pair(lifeTime, id)];
+    lines.reserve(lines.size() + 12);
+    // Bottom 4
+    const f32v3 v0(aabb.x, aabb.y, aabb.z);
+    const f32v3 v1(aabb.x + aabb.dims.x, aabb.y, aabb.z);
+    const f32v3 v2(aabb.x + aabb.dims.x, aabb.y + aabb.dims.x, aabb.z);
+    const f32v3 v3(aabb.x, aabb.y + aabb.dims.x, aabb.z);
+    // Top 4
+    const f32v3 v4(aabb.x, aabb.y, aabb.z + aabb.dims.z);
+    const f32v3 v5(aabb.x + aabb.dims.x, aabb.y, aabb.z + aabb.dims.z);
+    const f32v3 v6(aabb.x + aabb.dims.x, aabb.y + aabb.dims.x, aabb.z + aabb.dims.z);
+    const f32v3 v7(aabb.x, aabb.y + aabb.dims.x, aabb.z + aabb.dims.z);
+    // Bottom
+    lines.emplace_back(v0, v1, color);
+    lines.emplace_back(v1, v2, color);
+    lines.emplace_back(v2, v3, color);
+    lines.emplace_back(v3, v0, color);
+    // Top
+    lines.emplace_back(v4, v5, color);
+    lines.emplace_back(v5, v6, color);
+    lines.emplace_back(v6, v7, color);
+    lines.emplace_back(v7, v4, color);
+    // Middle
+    lines.emplace_back(v0, v4, color);
+    lines.emplace_back(v1, v5, color);
+    lines.emplace_back(v2, v6, color);
+    lines.emplace_back(v3, v7, color);
 }
 
 void DebugRenderer::drawAABB(const f32v2& botLeft, const f32v2& botRight, const f32v2& topLeft, const f32v2& topRight, f32 height, color4 color, int lifeTime /*= 0*/, int id /*= 0*/) {
