@@ -485,7 +485,6 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
 
 void NavWorld::initEventHandlers() {
 
-
     TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
     TileContainerRepository::addEditTileListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
 

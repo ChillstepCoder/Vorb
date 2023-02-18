@@ -5,8 +5,11 @@
 #include "world/ChunkGenerator.h"
 #include "world/IWorld.h"
 
+// TODO: SrvChunkGrid?
+#include "world/srv/SrvWorldInterface.h"
+
 #include "services/Services.h"
-#include "pathfinding/NavThread.h"
+#include "pathfinding/NavWorld.h"
 
 #include "options/DebugOptions.h"
 
@@ -93,7 +96,10 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
                 sChunkMesher.initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
                 chunk.getTileContainer()->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
-                Services::NavThread::ref().addNavgraphBuildTask(*chunk.mTileContainer);
+                // TODO: SrvChunkGrid?
+                SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(sWorld);
+                assert(srvWorld);
+                srvWorld->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
                 ++i;
                 break;
             }

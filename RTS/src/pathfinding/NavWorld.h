@@ -118,7 +118,7 @@ struct ContainerNavData {
     i32v3 getTileWorldPos(TileIndex index) const {
         assert(index < fineNavGraph.size());
         const i32 floorStride = containerDims.x * containerDims.y;
-        return worldPos + i32v3(index % containerDims.x, (index % floorStride) / containerDims.x, (index / floorStride) * floorHeight);
+        return worldPos + i32v3(index % containerDims.x, (index % floorStride) / containerDims.x, (index / floorStride) * floorHeight + fineNavGraph[index].zPositionOffsetFromFloor);
     }
 
     i32v3 getTileXYZOffsetWithZScale(TileIndex index) const {

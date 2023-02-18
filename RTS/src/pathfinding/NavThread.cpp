@@ -77,7 +77,7 @@ void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
 }
 
 // Yield CPU resources
-constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 3000;
+constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
 
 void NavThread::navThreadFunc() {
     NAV_THREAD_ID = std::this_thread::get_id();
@@ -86,6 +86,8 @@ void NavThread::navThreadFunc() {
     LOG_CRITICAL("TODO: Fix srvWorld assert in NavThread::navThreadFunc");
     // TODO: This assert happened three times (FAILED DYNAMIC_CAST. sWorld is valid but srvWorld is null)
     while (!mStop.load()) {
+
+
         bool hasTask = mPathTasks.wait_dequeue_timed(pathArgs, MAX_PATH_WAIT_TIME_MICROSECONDS);
 
         mNavWorld->updateNavThread();
