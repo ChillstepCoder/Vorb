@@ -162,7 +162,7 @@ public:
 
     // ========== Debug drawing ==========
     void debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const f32* heightData, ui32 lifetime, int debugId = 0) const;
-    void debugDrawFineNavGraphForContainer(const TileContainer& tileContainer, OPT const f32* heightData, ui32 lifetime, int debugId = 0) const;
+    void debugDrawFineNavGraphForContainer(const TileContainer& tileContainer, ui32 lifetime, int debugId = 0) const;
     void debugDrawCoarseNavNode(const TileHandle& tileHandle, OPT const f32* heightData, ui32 lifetime, int debugId = 0) const;
 
     const CoarseNavGraph* tryGetCoarseNavGraph(TileContainerID containerId) const;

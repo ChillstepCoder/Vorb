@@ -16,8 +16,8 @@ TimedTileInteractComponent::TimedTileInteractComponent(
     mRepeatCount(repeatCount),
     mInteractFinishedCallback(callback)
 {
-    assert(!mInteractTile->tile->hasFlag(TileFlags::TILE_FLAG_IS_INTERACTING));
-    mInteractTile->container->setTileFlag(mInteractTile->index, TileFlags::TILE_FLAG_IS_INTERACTING);
+    assert(!mInteractTile->tile->hasFlag(TileFlags::IS_INTERACTING));
+    mInteractTile->container->setTileFlag(mInteractTile->index, TileFlags::IS_INTERACTING);
 }
 
 TimedTileInteractComponent::~TimedTileInteractComponent() {
@@ -41,7 +41,7 @@ void TimedTileInteractSystem::update(entt::registry& registry) {
                 // Remove the component and reset flag.
                 // This crashes in the destructor because it frees the unique_ptr first sadly
                 assert(cmp.mInteractTile);
-                cmp.mInteractTile->container->clearTileFlag(cmp.mInteractTile->index, TileFlags::TILE_FLAG_IS_INTERACTING);
+                cmp.mInteractTile->container->clearTileFlag(cmp.mInteractTile->index, TileFlags::IS_INTERACTING);
                 registry.remove<TimedTileInteractComponent>(entity);
             }
             else {

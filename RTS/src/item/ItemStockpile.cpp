@@ -38,7 +38,7 @@ ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt
                 // Valid slot
                 if (mFirstFreeSlot == UINT32_MAX) mFirstFreeSlot = index;
                 ++mTotalSlots;
-                ref.container->setTileFlag(ref.index, TileFlags::TILE_FLAG_IS_STOCKPILE);
+                ref.container->setTileFlag(ref.index, TileFlags::IS_STOCKPILE);
                 f32 height = sHeightmapGrid->computeMaxHeightAtTile(worldPos);
                 if (height > maxZPos) maxZPos = height;
             }

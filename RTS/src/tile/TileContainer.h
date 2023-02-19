@@ -248,6 +248,7 @@ public:
     const f32v3 getWorldPosCenter3D() const { return f32v3(mRootPos) + f32v3(mDims) * 0.5f; }
     const i32v2& getDims2D() const { return reinterpret_cast<const i32v2&>(mDims); }
     const i32v3& getDims() const { return mDims; }
+    const i32 getFloorStride() const { return mDims.x * mDims.y; }
     i32 getFloorHeight() const { return mFloorHeight; }
 
     const std::vector<Tile>& getTiles() const { assert(IS_GAME_THREAD()); mTiles; }

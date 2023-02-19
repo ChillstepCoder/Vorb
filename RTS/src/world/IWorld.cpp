@@ -187,8 +187,7 @@ Chunk& IWorld::getChunkAtChunkCoords(const i32v2& worldPos) {
 }
 
 void IWorld::dirtyTerrainFromBrush(const f32v2& pos, f32 brushRadius) {
-
-
+    UNUSED(pos, brushRadius);
 }
 
 TileHandle IWorld::getTileHandleAtWorldPos(const i32v3& worldPos) const {

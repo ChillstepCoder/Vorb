@@ -6,21 +6,21 @@ enum class TileBaseFlags : ui8 {
 
 typedef ui16 TileFlagType;
 enum class TileFlags : TileFlagType {
-    TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH   = 1 << 0,
-    TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST    = 1 << 1,
-    TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST    = 1 << 2,
-    TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH   = 1 << 3,
-    TILE_FLAG_IS_INTERACTING              = 1 << 4,
-    TILE_FLAG_IS_STOCKPILE                = 1 << 5, // True if owned by a stockpile
+    FORCE_EXTERNAL_EDGE_SOUTH   = 1 << 0,
+    FORCE_EXTERNAL_EDGE_WEST    = 1 << 1,
+    FORCE_EXTERNAL_EDGE_EAST    = 1 << 2,
+    FORCE_EXTERNAL_EDGE_NORTH   = 1 << 3,
+    IS_INTERACTING              = 1 << 4,
+    IS_STOCKPILE                = 1 << 5, // True if owned by a stockpile
      // True if inside city limits
-    TILE_FLAG_HAS_ITEM_STACK              = 1 << 6,
-    TILE_FLAG_IS_RESOURCE_RESERVED        = 1 << 7,
-    TILE_FLAG_IS_IMPASSABLE               = 1 << 8,
-    TILE_FLAG_IS_BLOCKED_BY_STRUCTURE     = 1 << 9,
-    TILE_FLAG_IN_CITY                     = 1 << 10,
+    HAS_ITEM_STACK              = 1 << 6,
+    IS_RESOURCE_RESERVED        = 1 << 7,
+    IS_IMPASSABLE               = 1 << 8,
+    IS_BLOCKED_BY_STRUCTURE     = 1 << 9,
+    IN_CITY                     = 1 << 10,
 
-    TILE_FLAG_TERM                        = 1 << 10, // Keep this = last
+    TERM                        = 1 << 10, // Keep this = last
 };
-static_assert(e_cast(TileFlags::TILE_FLAG_TERM) <= 0x8000); // Must fit into a short
+static_assert(e_cast(TileFlags::TERM) <= 0x8000); // Must fit into a short
 
-constexpr TileFlagType IMPASSABLE_TILE_FLAGS_MASK = e_cast(TileFlags::TILE_FLAG_IS_IMPASSABLE) | e_cast(TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
+constexpr TileFlagType IMPASSABLE_TILE_FLAGS_MASK = e_cast(TileFlags::IS_IMPASSABLE) | e_cast(TileFlags::IS_BLOCKED_BY_STRUCTURE);

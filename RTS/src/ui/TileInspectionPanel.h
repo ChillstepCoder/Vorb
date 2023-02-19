@@ -10,5 +10,6 @@ public:
 private:
     f32v2 mScreenPos;
     TileHandle mTileHandle;
+    bool mDidInit = false;
 };
 

@@ -271,23 +271,42 @@ void TileContainer::clearTileFlags(TileIndex i) {
 void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     assert(isReady());
     Tile& tile = mTiles[i];
-
-    {
-        std::lock_guard lock(mSharedMutex);
-        tile.setGroundZPosition(groundZPosition);
+    TileContainerEvent evnt;
+    if (tile.getGroundZOffset() != groundZPosition) {
+        evnt.edit.changeZPos.prevGroundZOffset = tile.getGroundZOffset();
+        {
+            std::lock_guard lock(mSharedMutex);
+            tile.setGroundZPosition(groundZPosition);
+        }
+        evnt.edit.changeZPos.newGroundZOffset = tile.getGroundZOffset();
+        evnt.container = this;
+        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
+        evnt.edit.type = TileContainerEditEventType::ChangeZPos;
+        evnt.edit.tileIndex = i;
+        TileContainerRepository::dispatchEditTile(evnt);
+        onTileChanged(i);
     }
-    onTileChanged(i);
 }
 
 void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {
     assert(isReady());
     Tile& tile = mTiles[i];
 
-    {
-        std::lock_guard lock(mSharedMutex);
-        tile.setOrientation(dir, layer);
+    TileContainerEvent evnt;
+    evnt.edit.changeOrientation.prevOrientation = tile.orientation;
+    if (tile.getOrientation(layer) != dir) {
+        {
+            std::lock_guard lock(mSharedMutex);
+            tile.setOrientation(dir, layer);
+        }
+        evnt.edit.changeOrientation.newOrientation = tile.orientation;
+        evnt.container = this;
+        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
+        evnt.edit.type = TileContainerEditEventType::ChangeOrientation;
+        evnt.edit.tileIndex = i;
+        TileContainerRepository::dispatchEditTile(evnt);
+        onTileChanged(i);
     }
-    onTileChanged(i);
 }
 
 void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
@@ -437,10 +456,10 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
                 assert(chunkTileContainer);
                 TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(worldPos2D.x - chunkTileContainer->getWorldPos2D().x, worldPos2D.y - chunkTileContainer->getWorldPos2D().y, 0);
                 if (tile.isEmpty()) {
-                    chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
+                    chunkTileContainer->clearTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
                 }
                 else {
-                    chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::TILE_FLAG_IS_BLOCKED_BY_STRUCTURE);
+                    chunkTileContainer->setTileFlag(chunkTileIndex, TileFlags::IS_BLOCKED_BY_STRUCTURE);
                     // TODO: Don't always clear grass?
                     chunk.setGrassAt(chunkTileIndex, 0);
                 }
@@ -468,19 +487,19 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
             switch (doorSide) {
                 case Cartesian::SOUTH:
                     isExterior = ((offset.y == 0) || !isTileOwned(tileIndex - mDims.x));
-                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_NORTH;
+                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_NORTH;
                     break;
                 case Cartesian::WEST:
                     isExterior = ((offset.x == 0) || !isTileOwned(tileIndex - 1));
-                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_EAST;
+                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_EAST;
                     break;
                 case Cartesian::EAST:
                     isExterior = ((offset.x == mDims.x - 1) || !isTileOwned(tileIndex + 1));
-                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_WEST;
+                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_WEST;
                     break;
                 case Cartesian::NORTH:
                     isExterior = ((offset.y == mDims.y - 1) || !isTileOwned(tileIndex + mDims.x));
-                    forceFlag = TileFlags::TILE_FLAG_FORCE_EXTERNAL_EDGE_SOUTH;
+                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_SOUTH;
                     break;
                 default:
                     break;

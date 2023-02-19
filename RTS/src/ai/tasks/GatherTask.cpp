@@ -26,7 +26,7 @@ GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique
     mResource(resource),
     mItemPromise(std::move(itemPromise)) {
     // Gather task requires target tile to be reserved already
-    assert(tileTarget.tile->hasFlag(TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED));
+    assert(tileTarget.tile->hasFlag(TileFlags::IS_RESOURCE_RESERVED));
     assert(mItemPromise->isPromise());
 }
 
@@ -34,7 +34,7 @@ GatherTask::~GatherTask() {
     // Clear tile flag on abort
     if (!IS_SHUTTING_DOWN) {
         if (mState <= GatherTaskState::HARVESTING) {
-            mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+            mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.tileIndex, TileFlags::IS_RESOURCE_RESERVED);
         }
     }
 }
@@ -128,7 +128,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
     }
 
     // Interact
-    if (mTileTarget.tile->hasFlag(TileFlags::TILE_FLAG_IS_INTERACTING)) {
+    if (mTileTarget.tile->hasFlag(TileFlags::IS_INTERACTING)) {
         // Someone else is using this tile, try again next tick.
         return false;
     }
@@ -147,7 +147,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
             TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
             const TileData& tileData = TileRepository::getTileData(tileId);
             tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
-            tileRef->container->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
+            tileRef->container->clearTileFlag(mTileTarget.tileIndex, TileFlags::IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
             // TODO: Play animation of tree falling
 
             // Award loot
@@ -240,7 +240,7 @@ void GatherTask::addItemToStockpile(entt::registry& registry, entt::entity agent
 
 void GatherTask::failTask() {
     if (mState <= GatherTaskState::HARVESTING) {
-        mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.tileIndex, TileFlags::TILE_FLAG_IS_RESOURCE_RESERVED);
+        mTileTarget.getMutableContainer()->clearTileFlag(mTileTarget.tileIndex, TileFlags::IS_RESOURCE_RESERVED);
         mState = GatherTaskState::FAIL;
     }
     mItemPromise = nullptr;

@@ -522,7 +522,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH) {
             if (mClientType == WorldType::HOST) {
                 TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
-                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, nullptr, 2000);
+                static_cast<HostWorld*>(mWorld)->getNavWorld().debugDrawFineNavGraphForContainer(*tileHandle.container, 2000);
             }
             else {
                 assert(false);
