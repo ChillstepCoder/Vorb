@@ -78,6 +78,10 @@ public:
         mPriorityHeap.emplace(std::make_pair((f32)g / 10.0f + h, handle));
         mLookup.emplace(handle);
     }
+    void addReplace(LiteTileHandle handle, ui16 g, f32 h) {
+        // TODO: This isn't a true replace it is a duplicate
+        mPriorityHeap.emplace(std::make_pair((f32)g / 10.0f + h, handle));
+    }
 
     bool contains(LiteTileHandle handle) {
         return mLookup.find(handle) != mLookup.end();
@@ -203,7 +207,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     const f32v3 goalWorldPos = goalNavData.getTileWorldPos(goalLiteHandle.index);
 
     // Instead of an explicit closed list, we use an implicit closed list
-    // If a node exists in the gLookup, but not in the openList, then it is in
+    // If a node exists in the nodeLookup, but not in the openList, then it is in
     // the closed list
     // TODO: Static representation?
     FineNodeList openList;
@@ -237,7 +241,6 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
             const ui8 r = (ui8)(g % 256);
             DebugRenderer::drawWireQuadThreadSafe(containerNavData.getTileWorldPos(handle.index), f32v2(1.0f), color4(r, 0ui8, (ui8)(255ui8 - r), 255ui8), DEBUG_DURATION);
         }
-        // Add current node to implicit closed list
 
         // Precompute collision weights and points for neighbors
         for (int dir = (int)Cartesian8::SOUTH_WEST; dir <= (int)Cartesian8::NORTH_EAST; ++dir) {
@@ -255,7 +258,7 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
             Cartesian cartesian4 = CARTESIAN8_TO_CARTESIAN[dir];
             const TileFineNavEdgeType edgeType = fineNavData.getEdgeType(cartesian4);
             bool isExternal = (edgeType == TileFineNavEdgeType::EXTERIOR);
-            if (isExternal/* || adjPos.x < 0 || adjPos.y < 0 || adjPos.x >= dims.x || adjPos.y >= dims.y || !container->isTileOwned(adjIndex)*/) {
+            if (isExternal) {
                 assert(cartesian4 != Cartesian::NONE);
                 // External edge
                 const i32v3 containerOffset = TileContainer::getTileXYZOffsetWithZScale(handle.index, containerNavData.containerDims, containerNavData.floorHeight);
@@ -342,29 +345,23 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
 
             // We dont do anything if this is a worse path than what we had before
             if (newG < prevG) {
+                const f32v3 adjPos = mNavWorld.getNavDataForContainer(adjHandle.containerId).getTileWorldPos(adjHandle.index);
                 if (openList.contains(adjHandle)) {
-                    // TODO: Implement
+                    // TODO: Based on https://gist.github.com/ryancollingwood/32446307e976a11a1185a5394d6657bc, we are not removing the existing node
+                    // just adding a new node. Instead we could remove the existing one with increase_priority
+                    
                     // New node is better than current openlist node
-                    LOG_DEBUG("Detected open list node with better priority. TODO: Implement increase priority and benchmark");
-                    //openList.replace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjHandle, goalWorldPos));
-                    //it->second.g = newG;
-                    //it->second.parent = handle;
-                    //assert(handle.isValid());
+                    // TODO: Will we cause a problem if we process the same node twice?
+                    //LOG_DEBUG("Detected open list node with better priority. TODO: Implement increase priority and benchmark");
+                    openList.addReplace(adjHandle, newG, getDiagonalHeuristicAtPosition(adjPos, goalWorldPos));
+                    // Store new score in the lookup
+                    it->second.g = newG;
+                    it->second.parent = handle;
                 }
                 else {
-                    // This is an unvisited node OR
-                    // this node was already processed but with a worse score
-                    // TODO: Is it cheaper to store the position?
-                    const f32v3 adjPos = mNavWorld.getNavDataForContainer(adjHandle.containerId).getTileWorldPos(adjHandle.index);
-
-                    openList.add(adjHandle, newG, getDiagonalHeuristicAtPosition(adjPos, goalWorldPos));
-                    // Update or insert into gLookup
-                    if (it != nodeLookup.end()) {
-                        it->second.g = newG;
-                        it->second.parent = handle;
-                        assert(handle.isValid());
-                    }
-                    else {
+                    // If we are in the node lookup, we are closed
+                    if (it == nodeLookup.end()) {
+                        openList.add(adjHandle, newG, getDiagonalHeuristicAtPosition(adjPos, goalWorldPos));
                         nodeLookup.emplace(std::make_pair(adjHandle, FineNodeData{ handle, newG }));
                         assert(handle.isValid());
                     }

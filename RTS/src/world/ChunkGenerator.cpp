@@ -15,6 +15,7 @@
 
 // RESOURCES:
 // Domain warping https://iquilezles.org/articles/warp/
+// Voronoi biome placement https://www.youtube.com/watch?v=g7j3jmHj2Rg
 
 // Region LOD data
 #ifdef DEBUG
@@ -25,7 +26,7 @@ constexpr int LOD_TEXTURE_RESOLUTION = CHUNK_WIDTH * 4;
 constexpr float LOD_STRIDE = WorldData::REGION_WIDTH_TILES / LOD_TEXTURE_RESOLUTION;
 
 void TryGenerateLargeObjectAtPoint(const f32v2& worldPos, ui32 index, f32 minHeights[CHUNK_SIZE], std::vector<Tile>& tiles) {
-
+    assert(false);
 }
 
 Tile ChunkGenerator::GenerateTileAtPos(const f32v2& worldPos, f32 height, ui8* grass) {
