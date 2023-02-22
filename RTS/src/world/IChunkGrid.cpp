@@ -6,7 +6,6 @@
 #include "world/IWorld.h"
 
 // TODO: SrvChunkGrid?
-#include "world/srv/SrvWorldInterface.h"
 
 #include "services/Services.h"
 #include "pathfinding/NavWorld.h"
@@ -24,7 +23,7 @@ constexpr ui8 ALL_NEIGHBORS_ALIVE = 0xff;
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
 // IWORLD
 // 0. Iterate all mLoadingChunks and mActiveChunks, if they are out of range, add them to mDestroyingChunksand clear their world bits
-// 1. Efficient iterate and set bitmask, findand set new bits in rangeand add their chunks to mLoading
+// 1. Efficient iterate and set bitmask, find and set new bits in rangeand add their chunks to mLoading
 // new 1 bits are added to mLoadingChunks state set to WAITING_HEIGHT or WAITING_GENERATION based on if height already exists
 //
 // If a loading chunk is added to mDestroyingChunks, thats fine, when iterating mDestroying or mLoading we always handle chunk state
@@ -96,10 +95,8 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
                 memcpy(heightData, srcData, sizeof(f32) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
                 sChunkMesher.initMeshAndPhysicsAsync(*chunk.getTileContainer(), heightData);
                 chunk.getTileContainer()->setState(TileContainerState::WAITING_MESH_AND_PHYSICS);
-                // TODO: SrvChunkGrid?
-                SrvWorldInterface* srvWorld = dynamic_cast<SrvWorldInterface*>(sWorld);
-                assert(srvWorld);
-                srvWorld->getNavWorld().markContainerNavDirty(chunk.mTileContainer);
+                assert(sNavWorld);
+                sNavWorld->markContainerNavDirty(chunk.mTileContainer);
                 ++i;
                 break;
             }

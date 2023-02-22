@@ -61,21 +61,6 @@ void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHa
     mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
 }
 
-void NavThread::addNavgraphBuildTask(TileContainer& tileContainer) {
-    assert(IS_GAME_THREAD());
-    TileContainerID id;
-    id = tileContainer.getId();
-    tileContainer.incRef();
-
-    TileContainer* tileContainerPtr = &tileContainer;
-
-    // Navgraph construction is handled by thread pool, result is returned to us via 
-    Services::Threadpool::ref().addTask([this, tileContainerPtr](ThreadPoolWorkerData* workerData) {
-        assert(tileContainerPtr);
-        mNavWorld->buildNavGraphForContainer(*tileContainerPtr);
-    }, nullptr);
-}
-
 // Yield CPU resources
 constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
 

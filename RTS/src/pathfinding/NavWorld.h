@@ -103,17 +103,17 @@ struct TileFineNavData {
 };
 static_assert(sizeof(TileFineNavData) == 8, "Keep tiny");
 
+typedef std::vector<std::pair<TileIndex, Cartesian>> ExternalEdgeList;
+typedef std::unordered_map<TileContainerID, ExternalEdgeList> ContainerTerrainDependentEdges;
 struct ContainerNavData {
+    // TODO: Pool alloc?
+    std::unique_ptr<ContainerTerrainDependentEdges> terrainDependentEdges; // Edges belonging to tile containers inside this terrain
     CoarseNavGraph coarseNavGraph;
     std::vector<TileFineNavData> fineNavGraph;
     i32v3 worldPos;
     i32v3 containerDims;
     i32 floorHeight;
     TileContainerID containerId;
-
-
-    // TODO: Dependencies
-    // Terrain nav graph depends on building nav graph
 
     i32v3 getTileWorldPos(TileIndex index) const {
         assert(index < fineNavGraph.size());
@@ -128,6 +128,7 @@ struct ContainerNavData {
 };
 
 struct NavGraphBuildTaskData {
+    ExternalEdgeList externalEdges;
     std::vector<TileFineNavData> fineNavData;
     NavGraphTileDataToCopy navTileData;
     CoarseNavGraph navGraph;
@@ -155,6 +156,7 @@ class NavWorld
 {
 public:
     NavWorld();
+    ~NavWorld();
 
     void updateNavThread();
 
@@ -180,10 +182,12 @@ public:
 
     void markContainerNavDirty(TileContainer* container);
 private:
+    void finishNavGraphBuildTask(NavGraphBuildTaskData& taskData);
     void initEventHandlers();
-    bool trySetFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ);
-    bool trySetFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
+    bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ExternalEdgeList* externalEdges);
+    bool trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
 
+    void markChunkContainerNavDirty(LiteChunkID chunkId);
 
     //void buildEdges(TileContainer& tileContainer, const int cornerX, const int cornerY, const int zPos, const i32v2& subchunkDims, TileIndex cornerIndex, DisjointSetNode* djNodes, ui32* djNodeIDs, CoarseNavNodeIndex* navNodeIdTable, std::vector<CoarseNavNode>& navNodes, Cartesian dir);
     //void addNodeEdge(TileContainer& tileContainer, CoarseNavNodeIndex* navNodeIdTable, const ui32 djIndex, std::vector<CoarseNavNode>& navNodes, TileIndex corner, TileIndex start, int length, Cartesian dir);
@@ -210,3 +214,5 @@ private:
     std::mutex mDirtyTileContainersMutex;
     std::set<TileContainer*> mDirtyTileContainers;
 };
+
+extern NavWorld* sNavWorld;

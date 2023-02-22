@@ -35,6 +35,9 @@ public:
     void incRef() { assert(mTileContainer); mTileContainer->incRef(); }
     void decRef() { assert(mTileContainer); mTileContainer->decRef(); }
 
+    const LiteChunkID* getChunkDependencies() const { return mChunkDependencies; }
+    bool hasUnloadedChunkDependencies() const { return mChunkDependenciesUnloaded != 0; }
+
 protected:
     TileContainer* mTileContainer = nullptr;
     i32AABB3 mAABB;

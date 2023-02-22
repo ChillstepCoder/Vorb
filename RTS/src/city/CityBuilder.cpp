@@ -7,6 +7,7 @@
 #include "BuildingBlueprint.h"
 
 #include "pathfinding/NavThread.h"
+#include "pathfinding/NavWorld.h"
 
 #include "world/IWorld.h"
 #include "world/IHeightmapGrid.h"
@@ -212,8 +213,8 @@ void CityBuilder::finishBuilding(Building& building, BuildingBlueprint& blueprin
     building.getTileContainer()->setState(TileContainerState::READY);
 
     // Navmesh
-    if (Services::isUsingNav()) {
-        Services::NavThread::ref().addNavgraphBuildTask(*building.mTileContainer);
+    if (sNavWorld) {
+        sNavWorld->markContainerNavDirty(building.mTileContainer);
     }
 
     sBuildingMesher.buildMeshAndPhysicsAsync(building);

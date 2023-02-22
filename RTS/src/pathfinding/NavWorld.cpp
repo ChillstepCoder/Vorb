@@ -7,9 +7,13 @@
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
 
+#include "city/Building.h"
+
 #include "debugging/VisualLogger.h"
 
 #include "resources/TileRepository.h"
+
+NavWorld* sNavWorld = nullptr;
 
 // 0 or 1 for rendering debug
 #define DEBUG_RENDER_NAV_NODES 1
@@ -32,6 +36,8 @@ inline f32v3 helperGet3DPoint(const IHeightmapGrid& heightGrid, const HeightmapP
 
 NavWorld::NavWorld()
 {
+    assert(!sNavWorld);
+    sNavWorld = this;
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
     for (int i = 0; i < WorldData::WORLD_SIZE_CHUNKS; ++i) {
@@ -40,35 +46,22 @@ NavWorld::NavWorld()
     initEventHandlers();
 }
 
+NavWorld::~NavWorld()
+{
+    sNavWorld = nullptr;
+}
+
 void NavWorld::updateNavThread()
 {
     assert(IS_NAV_THREAD());
 
-    NavGraphBuildTaskData taskData;
+    constexpr int MAX_BULK_DEQUE_TASK_DATA = 32;
+    NavGraphBuildTaskData taskDataBulk[MAX_BULK_DEQUE_TASK_DATA];
 
-    // TODO:BULK (There are a couple vectors in graph args
-    while (mFinishedNavGraphBuildTasks.try_dequeue(taskData)) {
-
-        LOG_DEBUG("FINISHED {}", taskData.container->getId());
-        // Store nav data
-        mNavGraphs[taskData.container->getId()] = ContainerNavData{ std::move(taskData.navGraph), std::move(taskData.fineNavData), taskData.container->getWorldPos3D(), taskData.container->getDims(), taskData.container->getFloorHeight(), taskData.container->getId()};
-
-        // Store in spatial lookup
-        if (taskData.container->isTerrain()) {
-            i32v3 worldPos = taskData.container->getWorldPos3D();
-            ChunkID chunkID = ChunkID::fromWorldI32v2(i32v2(worldPos.x, worldPos.y));
-            mTerrainTileContainers[chunkID.id] = taskData.container->getId();
+    while (size_t count = mFinishedNavGraphBuildTasks.try_dequeue_bulk(taskDataBulk, MAX_BULK_DEQUE_TASK_DATA)) {
+        for (size_t i = 0; i < count; ++i) {
+            finishNavGraphBuildTask(taskDataBulk[i]);
         }
-        else {
-            const i32v2& worldPos2D = taskData.container->getWorldPos2D();
-            const i32v2 dims2D = taskData.container->getDims2D();
-            NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + dims2D.x, worldPos2D.y + dims2D.y));
-            mSpatialLookup.insert(ContainerNavRegion{ newBox, taskData.container->getId() });
-        }
-
-        // Release resources
-        taskData.container->setDidInitNav();
-        taskData.container->decRef();
     }
 
     // Update dirty tile containers
@@ -83,7 +76,7 @@ void NavWorld::updateNavThread()
         }
         for (auto&& container : dirtyContainers) {
             // The decref will happen after the build
-            LOG_DEBUG("BEGIN {}", container->getId());
+            LOG_DEBUG("NAV BEGIN {}", container->getId());
             Services::Threadpool::ref().addTask([this, container](ThreadPoolWorkerData* workerData) {
                 buildNavGraphForContainer(*container);
             }, nullptr);
@@ -95,6 +88,35 @@ void NavWorld::updateNavThread()
     if (size_t count = mContainersToDestroy.try_dequeue_bulk(containersToDestroy, 32)) {
         for (size_t i = 0; i < count; ++i) {
             TileContainerToDestroy containerData = containersToDestroy[i];
+
+            // Remove external edge dependencies on terrain
+            if (!containerData.isTerrain) {
+                // Manually compute chunk dependencies since we dont have the data here
+                std::set<LiteChunkID> chunkDependencies;
+                i32v2 worldXY = i32v2(containerData.worldPos.x, containerData.worldPos.y);
+                chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+                worldXY = i32v2(containerData.worldPos.x + containerData.dims.x, containerData.worldPos.y);
+                chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+                worldXY = i32v2(containerData.worldPos.x, containerData.worldPos.y + containerData.dims.y);
+                chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+                worldXY = i32v2(containerData.worldPos.x + containerData.dims.x, containerData.worldPos.y + containerData.dims.y);
+                chunkDependencies.insert(ChunkID::fromWorldI32v2(worldXY).id);
+
+                for (LiteChunkID id : chunkDependencies) {
+                    assert(id < WorldData::WORLD_SIZE_CHUNKS);
+                    TileContainerID terrainContainerId = mTerrainTileContainers[id];
+                    const auto& navGraphIt = mNavGraphs.find(terrainContainerId);
+                    assert(navGraphIt != mNavGraphs.end()); // We must enforce that chunks always finish their first nav before any buildings are navved
+                    ContainerNavData& chunkNavData = navGraphIt->second;
+                    chunkNavData.terrainDependentEdges->erase(containerData.id);
+
+                    LOG_WARN("TODO: When building container destroyed, flag terrain dirty");
+                    //assert(false); // This is a race condition as if chunk is null, incref crashes
+                   // sWorld->getChunk(id).incRef();
+                   // markChunkContainerNavDirty(id);
+                }
+            }
+
             mNavGraphs.erase(containerData.id);
 
             // Remove from spatial lookup
@@ -166,14 +188,20 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
     std::vector<TileFineNavData>& fineNavData = taskData.fineNavData;
     const f32 floorHeight = tileContainer.getFloorHeight();
     const bool isTerrain = tileContainer.isTerrain();
+    // We only care about external edges for non terrain
+    ExternalEdgeList* externalEdges = nullptr;
+    if (!isTerrain) {
+        externalEdges = &taskData.externalEdges;
+        externalEdges->reserve(6);
+    }
 
     //ScopedTimer timer("Built nav graph");
     const i32v3& dims = tileContainer.getDims();
 
-    Chunk* chunk = nullptr;
-    if (isTerrain) {
-        chunk = &sWorld->getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
-    }
+    /* Chunk* chunk = nullptr;
+     if (isTerrain) {
+         chunk = &sWorld->getChunk(ChunkID(f32v2(tileContainer.getWorldPos2D())));
+     }*/
 
     ui32 totalDjSets = 0;
 
@@ -241,7 +269,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     } else {
                         adjIndex = index - dims.x;
                     }
-                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::SOUTH, ty > 0 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_SOUTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::SOUTH, ty > 0 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_SOUTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoSouthWest = canGoSouthEast = false;
                     }
                 }
@@ -259,7 +287,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     else {
                         adjIndex = index - 1;
                     }
-                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::WEST, tx > 0 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_WEST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::WEST, tx > 0 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_WEST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoSouthWest = canGoNorthWest = false;
                     }
                 }
@@ -277,7 +305,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     else {
                         adjIndex = index + 1;
                     }
-                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::EAST, tx < dims.x - 1 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_EAST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::EAST, tx < dims.x - 1 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_EAST), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoSouthEast = canGoNorthEast = false;
                     }
                 }
@@ -296,7 +324,7 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
                     else {
                         adjIndex = index + dims.x;
                     }
-                    if (!trySetFineNavEdgeCartesian(adjIndex, Cartesian8::NORTH, ty < dims.y - 1 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_NORTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz)) {
+                    if (!trySetFineNavEdgeCartesian(index, adjIndex, Cartesian8::NORTH, ty < dims.y - 1 && !tile.hasFlag(TileFlags::FORCE_EXTERNAL_EDGE_NORTH), dims, tiles, tileWalls, ownedTiles, groundZPosition, floorHeight, tileFineNavData, tz, externalEdges)) {
                         canGoNorthWest = canGoNorthEast = false;
                     }
                 }
@@ -480,6 +508,68 @@ void NavWorld::buildNavGraphForContainer(TileContainer& tileContainer) {
 
 }
 
+void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
+    const TileContainerID containerId = taskData.container->getId();
+    LOG_DEBUG("NAV FINISHED {}", containerId);
+    // Store nav data
+    const auto& navGraphIt = mNavGraphs.find(containerId);
+    bool isNewContainer = (navGraphIt == mNavGraphs.end());
+    if (isNewContainer) {
+        if (taskData.container->isTerrain()) {
+            mNavGraphs.insert(std::make_pair(containerId, ContainerNavData{ std::make_unique<ContainerTerrainDependentEdges>(), std::move(taskData.navGraph), std::move(taskData.fineNavData), taskData.container->getWorldPos3D(), taskData.container->getDims(), taskData.container->getFloorHeight(), taskData.container->getId() }));
+        }
+        else {
+            mNavGraphs.insert(std::make_pair(containerId, ContainerNavData{ nullptr, std::move(taskData.navGraph), std::move(taskData.fineNavData), taskData.container->getWorldPos3D(), taskData.container->getDims(), taskData.container->getFloorHeight(), taskData.container->getId() }));
+        }
+    }
+    else {
+        navGraphIt->second = ContainerNavData{ nullptr, std::move(taskData.navGraph), std::move(taskData.fineNavData), taskData.container->getWorldPos3D(), taskData.container->getDims(), taskData.container->getFloorHeight(), taskData.container->getId() };
+    }
+
+    // Store in spatial lookup
+    if (isNewContainer) {
+        if (taskData.container->isTerrain()) {
+            i32v3 worldPos = taskData.container->getWorldPos3D();
+            ChunkID chunkID = ChunkID::fromWorldI32v2(i32v2(worldPos.x, worldPos.y));
+            mTerrainTileContainers[chunkID.id] = taskData.container->getId();
+        }
+        else {
+            const i32v2& worldPos2D = taskData.container->getWorldPos2D();
+            const i32v2 dims2D = taskData.container->getDims2D();
+            NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + dims2D.x, worldPos2D.y + dims2D.y));
+            mSpatialLookup.insert(ContainerNavRegion{ newBox, taskData.container->getId() });
+        }
+    }
+    else {
+        // TODO: Implement container resizing
+    }
+
+    if (!taskData.container->isTerrain()) {
+        // Tell chunks about our external edges
+        const ExternalEdgeList& externalEdges = taskData.externalEdges;
+
+        Structure* owner = taskData.container->getOwnerBuilding();
+        assert(owner);
+        for (int j = 0; j < 4; ++j) {
+            LiteChunkID id = owner->getChunkDependencies()[j];
+            if (id == INVALID_CHUNK_ID) {
+                break;
+            }
+            
+            TileContainerID terrainContainerId = mTerrainTileContainers[id];
+            const auto& navGraphIt = mNavGraphs.find(terrainContainerId);
+            assert(navGraphIt != mNavGraphs.end()); // We must enforce that chunks always finish their first nav before any buildings are navved
+            ContainerNavData& chunkNavData = navGraphIt->second;
+            // TODO: SharedPtr so we don't have up to 4 copies of this memory?
+            chunkNavData.terrainDependentEdges->operator[](containerId) = taskData.externalEdges;
+            markChunkContainerNavDirty(id);
+        }
+    }
+    // Release resources
+    taskData.container->setDidInitNav();
+    taskData.container->decRef();
+}
+
 void NavWorld::initEventHandlers() {
 
     TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
@@ -490,7 +580,7 @@ void NavWorld::initEventHandlers() {
 
         assert(IS_GAME_THREAD());
         if (e_cast(containerEvent.edit.type) & EDIT_TYPES_MASK) {
-            LOG_DEBUG("DIRTY {}",  containerEvent.container->getId());
+            LOG_DEBUG("NAV DIRTY {}",  containerEvent.container->getId());
             markContainerNavDirty(containerEvent.container);
         }
     });
@@ -502,7 +592,7 @@ void NavWorld::initEventHandlers() {
     });
 }
 
-bool NavWorld::trySetFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ) {
+bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ExternalEdgeList* externalEdges) {
 
     const Cartesian cartesian = CARTESIAN8_TO_CARTESIAN[e_cast(cartesian8)];
     assert(cartesian != Cartesian::NONE);
@@ -523,6 +613,9 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 ca
                     // Exterior edge
                     tileFineNavData.setCanAccessDirection(cartesian8, true);
                     tileFineNavData.setEdgeType(cartesian, TileFineNavEdgeType::EXTERIOR);
+                    if (externalEdges) {
+                        externalEdges->emplace_back(std::make_pair(tileIndex, cartesian));
+                    }
                     return true;
                 }
             }
@@ -544,12 +637,15 @@ bool NavWorld::trySetFineNavEdgeCartesian(TileIndex adjacentIndex, Cartesian8 ca
         // Exterior edge
         tileFineNavData.setCanAccessDirection(cartesian8, true);
         tileFineNavData.setEdgeType(cartesian, TileFineNavEdgeType::EXTERIOR);
+        if (externalEdges) {
+            externalEdges->emplace_back(std::make_pair(tileIndex, cartesian));
+        }
         return true;
     }
     return false;
 }
 
-bool NavWorld::trySetFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
+bool NavWorld::trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData) {
     UNUSED(containerDims);
     if (isInner && TileContainer::isTileOwned(ownedTiles, adjacentIndex)) {
         // Interior edge
@@ -569,6 +665,30 @@ bool NavWorld::trySetFineNavEdgeCartesianDiagonal(const TileIndex adjacentIndex,
         // return true;
     }
     return false;
+}
+
+void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
+{
+    assert(IS_NAV_THREAD());
+    Chunk& chunk = sWorld->getChunk(chunkId);
+    TileContainer* chunkTileContainer = chunk.getTileContainer();
+    // Mark dirty again
+    bool didAdd = false;
+    {
+        std::lock_guard lock(mDirtyTileContainersMutex);
+        auto&& it = mDirtyTileContainers.find(chunkTileContainer);
+        if (it == mDirtyTileContainers.end()) {
+            didAdd = true;
+            mDirtyTileContainers.insert(chunkTileContainer);
+        }
+    }
+    // If we added, we dont decref as we will get dec-reffed after updating the container
+    if (!didAdd) {
+        chunk.decRef();
+    }
+    else {
+        LOG_DEBUG("NAV FORCE DIRTY CHUNK {}", chunkId);
+    }
 }
 
 bool NavWorld::tryBuildCoarseEdge(NavGraphTileDataToCopy& navTileData, const TileFineNavData& fineNavData, const TileIndex index, const TileIndex prevIndex, TileIndex outerIndex, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const ui16 navNodeIndex, std::vector<CoarseTileEdgePointer>& tileEdgePointers, std::vector<std::vector<CoarseNavNodeEdge>>& nodeEdges, const Cartesian dir, bool isBorder, bool canExtendPrevEdge)
@@ -1052,6 +1172,7 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
     assert(IS_GAME_THREAD());
     assert(container);
     bool didAdd = false;
+    
     {
         std::lock_guard lock(mDirtyTileContainersMutex);
         auto&& it = mDirtyTileContainers.find(container);
@@ -1061,7 +1182,22 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
         }
     }
     // Make sure we don't get deallocated while we are in the dirty list
+    // TODO: Technically this is race condition if the nav thread and worker thread manage to finish their entire cycle before we get here.. but
+    // this should be statistically impossible
     if (didAdd) {
         container->incRef();
+        if (!container->isTerrain()) {
+            Structure* owner = container->getOwnerBuilding();
+            assert(owner);
+            assert(!owner->hasUnloadedChunkDependencies());
+            for (int i = 0; i < 4; ++i) {
+                LiteChunkID id = owner->getChunkDependencies()[i];
+                if (id == INVALID_CHUNK_ID) {
+                    break;
+                }
+                // Make sure this chunk stays
+                sWorld->getChunk(id).incRef();
+            }
+        }
     }
 }
