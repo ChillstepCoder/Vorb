@@ -167,6 +167,10 @@ public:
         const i32 layerSize = mDims.x * mDims.y;
         return i32v2(i % mDims.x, (i % layerSize) / mDims.x);
     }
+    static i32v2 getTileXYOffset(TileIndex i, const i32v2& dims) {
+        const i32 layerSize = dims.x * dims.y;
+        return i32v2(i % dims.x, (i % layerSize) / dims.x);
+    }
     f32v3 getTileCenterWorldPosition(TileIndex i) const {
         assert(IS_GAME_THREAD());
         const i32 layerSize = mDims.x * mDims.y;

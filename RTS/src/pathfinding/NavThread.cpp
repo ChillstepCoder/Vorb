@@ -66,6 +66,7 @@ constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
 
 void NavThread::navThreadFunc() {
     NAV_THREAD_ID = std::this_thread::get_id();
+    setThreadName("Nav");
 
     NavThreadPathArgs pathArgs;
     LOG_CRITICAL("TODO: Fix srvWorld assert in NavThread::navThreadFunc");

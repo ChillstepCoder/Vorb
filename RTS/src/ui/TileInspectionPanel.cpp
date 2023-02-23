@@ -21,10 +21,6 @@ TileInspectionPanel::TileInspectionPanel(const f32v2& screenPos, const TileHandl
 
 inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     ImGui::Text("Flags:");
-    FLAG_DISPLAY(TileFlags::FORCE_EXTERNAL_EDGE_SOUTH);
-    FLAG_DISPLAY(TileFlags::FORCE_EXTERNAL_EDGE_WEST);
-    FLAG_DISPLAY(TileFlags::FORCE_EXTERNAL_EDGE_EAST);
-    FLAG_DISPLAY(TileFlags::FORCE_EXTERNAL_EDGE_NORTH);
     FLAG_DISPLAY(TileFlags::IS_INTERACTING);
     FLAG_DISPLAY(TileFlags::IS_STOCKPILE);
     FLAG_DISPLAY(TileFlags::IN_CITY);
@@ -33,7 +29,7 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::IS_IMPASSABLE);
     FLAG_DISPLAY(TileFlags::IS_BLOCKED_BY_STRUCTURE);
 
-    static_assert(e_cast(TileFlags::TERM) == 1 << 10, "Update");
+    static_assert(e_cast(TileFlags::TERM) == 1 << 6, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {

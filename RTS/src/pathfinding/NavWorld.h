@@ -104,10 +104,11 @@ struct TileFineNavData {
 static_assert(sizeof(TileFineNavData) == 8, "Keep tiny");
 
 typedef std::vector<std::pair<TileIndex, Cartesian>> ExternalEdgeList;
+// TODO: Vector of Vector may be better here for memory footprint + iteration?
 typedef std::unordered_map<TileContainerID, ExternalEdgeList> ContainerTerrainDependentEdges;
 struct ContainerNavData {
-    // TODO: Pool alloc?
-    std::unique_ptr<ContainerTerrainDependentEdges> terrainDependentEdges; // Edges belonging to tile containers inside this terrain
+    VORB_NON_COPYABLE_BUT_MOVABLE(ContainerNavData);
+
     CoarseNavGraph coarseNavGraph;
     std::vector<TileFineNavData> fineNavGraph;
     i32v3 worldPos;
@@ -132,7 +133,7 @@ struct NavGraphBuildTaskData {
     std::vector<TileFineNavData> fineNavData;
     NavGraphTileDataToCopy navTileData;
     CoarseNavGraph navGraph;
-    TileContainer* container;
+    const TileContainer* container;
 };
 
 struct ContainerNavRegion {
@@ -151,6 +152,19 @@ struct bgi::indexable<ContainerNavRegion>
     NavBBox operator()(const ContainerNavRegion& c) const { return c.box; }
 };
 
+class TerrainExternalEdges {
+public:
+    inline bool isExternal(TileIndex tileIndex, Cartesian cartesian) {
+        return edgeData.getBit(tileIndex * 4 + e_cast(cartesian));
+    }
+    void setExternal(TileIndex tileIndex, Cartesian cartesian) {
+        edgeData.setBit(tileIndex * 4 + e_cast(cartesian));
+    }
+
+private:
+    StaticBitArray<CHUNK_SIZE * 4> edgeData; // 8kb
+};
+
 // TODO: Lazy navgraph generation?
 class NavWorld
 {
@@ -160,7 +174,7 @@ public:
 
     void updateNavThread();
 
-    void buildNavGraphForContainer(TileContainer& tileContainer);
+    void buildNavGraphForContainer(const TileContainer& tileContainer, OPT TerrainExternalEdges* terrainExternalEdges);
 
     // ========== Debug drawing ==========
     void debugDrawCoarseNavGraphForContainer(const TileContainer& tileContainer, OPT const f32* heightData, ui32 lifetime, int debugId = 0) const;
@@ -200,19 +214,28 @@ private:
     std::unordered_map<TileContainerID, ContainerNavData> mNavGraphs;
     bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> mSpatialLookup;
 
-    TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];
-
+    enum class ChunkDependencyFlags : ui8 {
+        CHUNK_DEPENDENCY_0 = BIT(0),
+        CHUNK_DEPENDENCY_1 = BIT(1),
+        CHUNK_DEPENDENCY_2 = BIT(2),
+        CHUNK_DEPENDENCY_3 = BIT(3)
+    };
     struct TileContainerToDestroy {
         i32v3 worldPos;
         i32v2 dims;
         TileContainerID id;
         bool isTerrain;
+        BitFlags<ChunkDependencyFlags> chunkDependencyFlags;
     };
     moodycamel::ConcurrentQueue<TileContainerToDestroy> mContainersToDestroy;
     TileContainerListeners mTileContainerEventListeners;
 
     std::mutex mDirtyTileContainersMutex;
-    std::set<TileContainer*> mDirtyTileContainers;
+    std::set<const TileContainer*> mDirtyTileContainers;
+
+    // Large data at the bottom
+    TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];
+    std::unordered_map<LiteChunkID, ContainerTerrainDependentEdges> mTerrainDependentEdges;
 };
 
 extern NavWorld* sNavWorld;

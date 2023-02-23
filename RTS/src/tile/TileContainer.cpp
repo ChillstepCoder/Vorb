@@ -483,23 +483,18 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
 
             //DebugRenderer::drawFilledQuad(f32v3(worldPos2D.x, worldPos2D.y, 5.0f), f32v2(1.0f), COLOR_RED, 10000000);
             bool isExterior = false;
-            TileFlags forceFlag;
             switch (doorSide) {
                 case Cartesian::SOUTH:
                     isExterior = ((offset.y == 0) || !isTileOwned(tileIndex - mDims.x));
-                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_NORTH;
                     break;
                 case Cartesian::WEST:
                     isExterior = ((offset.x == 0) || !isTileOwned(tileIndex - 1));
-                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_EAST;
                     break;
                 case Cartesian::EAST:
                     isExterior = ((offset.x == mDims.x - 1) || !isTileOwned(tileIndex + 1));
-                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_WEST;
                     break;
                 case Cartesian::NORTH:
                     isExterior = ((offset.y == mDims.y - 1) || !isTileOwned(tileIndex + mDims.x));
-                    forceFlag = TileFlags::FORCE_EXTERNAL_EDGE_SOUTH;
                     break;
                 default:
                     break;
@@ -513,7 +508,6 @@ void TileContainer::addDoor(Cartesian doorSide, TileIndex tileIndex) {
                     TileContainer* chunkTileContainer = chunk.getTileContainer();
                     assert(chunkTileContainer);
                     TileIndex chunkTileIndex = chunkTileContainer->getTileIndexFromXYZOffset(chunkTilePos.x - chunkTileContainer->getWorldPos2D().x, chunkTilePos.y - chunkTileContainer->getWorldPos2D().y, 0);
-                    chunkTileContainer->setTileFlag(chunkTileIndex, forceFlag);
                    // DebugRenderer::drawFilledQuad(f32v3(chunkTileContainer->getTileXYZOffsetWithZScale(chunkTileIndex) + chunkTileContainer->getWorldPos3D()), f32v2(1.0f), COLOR_WHITE, 10000000);
                 }
                 else {
