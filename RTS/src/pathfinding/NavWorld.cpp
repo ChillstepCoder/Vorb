@@ -215,9 +215,10 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     const f32 floorHeight = tileContainer.getFloorHeight();
     const bool isTerrain = tileContainer.isTerrain();
     // We only care about external edges for non terrain
-    ExternalEdgeList* externalEdges = nullptr;
+    StructureExternalEdgeList* externalEdges = nullptr;
+    StructureExternalEdgeList localEdgeList;
     if (!isTerrain) {
-        externalEdges = &taskData.externalEdges;
+        externalEdges = &localEdgeList;
         externalEdges->reserve(6);
         assert(!terrainExternalEdges);
     }
@@ -539,16 +540,19 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     if (externalEdges) {
         for (auto& edge : *externalEdges) {
             // Get world position
-            i32v2 pos = TileContainer::getTileXYOffset(edge.first, dims);
-            pos += tileContainer.getWorldPos2D();
-            // Add cartesian offset and invert since its an opposite tile
-            pos += CARTESIAN_NORMALS[e_cast(edge.second)];
-            edge.second = CARTESIAN_OPPOSITES[e_cast(edge.second)];
+            i32v2 worldPos = TileContainer::getTileXYOffset(edge.first, dims);
+            worldPos += tileContainer.getWorldPos2D();
+            // Add cartesian offset since its an opposite tile
+            worldPos += CARTESIAN_NORMALS[e_cast(edge.second)];
+            assert(worldPos.x >= 0 && worldPos.y >= 0);
+
+            LiteChunkID chunkId = ChunkID::fromWorldI32v2(worldPos).id;
+
             // Chunk relative
-            assert(pos.x >= 0 && pos.y >= 0);
-            pos %= CHUNK_WIDTH;
+            worldPos %= CHUNK_WIDTH;
             // Convert to Chunk tileindex
-            edge.first = pos.y * CHUNK_WIDTH + pos.x;
+            // Invert cartesian since its an opposite tile
+            taskData.externalEdges[chunkId].emplace_back(std::make_pair(worldPos.y * CHUNK_WIDTH + worldPos.x, CARTESIAN_OPPOSITES[e_cast(edge.second)]));
         }
     }
 
@@ -591,7 +595,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
 
     if (!taskData.container->isTerrain()) {
         // Tell chunks about our external edges
-        const ExternalEdgeList& externalEdges = taskData.externalEdges;
+        const StructureExternalEdgeListOutput& externalEdges = taskData.externalEdges;
 
         Structure* owner = taskData.container->getOwnerBuilding();
         assert(owner);
@@ -600,10 +604,12 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
             if (id == INVALID_CHUNK_ID) {
                 break;
             }
-            
-            // TODO: SharedPtr so we don't have up to 4 copies of this memory?
-            mTerrainDependentEdges[id][containerId] = taskData.externalEdges;
-            markChunkContainerNavDirty(id);
+            // If we have edges for this chunk, store
+            auto&& it = externalEdges.find(id);
+            if (it != externalEdges.end()) {
+                mTerrainDependentEdges[id][containerId] = it->second;
+                markChunkContainerNavDirty(id);
+            }
         }
     }
     // Release resources
@@ -649,7 +655,7 @@ void NavWorld::initEventHandlers() {
     });
 }
 
-bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ExternalEdgeList* externalEdges) {
+bool NavWorld::trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges) {
 
     const Cartesian cartesian = CARTESIAN8_TO_CARTESIAN[e_cast(cartesian8)];
     assert(cartesian != Cartesian::NONE);

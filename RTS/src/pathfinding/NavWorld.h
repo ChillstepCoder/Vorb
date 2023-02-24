@@ -103,9 +103,12 @@ struct TileFineNavData {
 };
 static_assert(sizeof(TileFineNavData) == 8, "Keep tiny");
 
-typedef std::vector<std::pair<TileIndex, Cartesian>> ExternalEdgeList;
+// Stores all external edges for a container
+typedef std::vector<std::pair<TileIndex, Cartesian>> StructureExternalEdgeList;
+// Stores external edges mapped to chunk locations
+typedef std::map<LiteChunkID, StructureExternalEdgeList> StructureExternalEdgeListOutput;
 // TODO: Vector of Vector may be better here for memory footprint + iteration?
-typedef std::unordered_map<TileContainerID, ExternalEdgeList> ContainerTerrainDependentEdges;
+typedef std::unordered_map<TileContainerID, StructureExternalEdgeList> ContainerTerrainDependentEdges;
 struct ContainerNavData {
     VORB_NON_COPYABLE_BUT_MOVABLE(ContainerNavData);
 
@@ -129,7 +132,7 @@ struct ContainerNavData {
 };
 
 struct NavGraphBuildTaskData {
-    ExternalEdgeList externalEdges;
+    StructureExternalEdgeListOutput externalEdges;
     std::vector<TileFineNavData> fineNavData;
     NavGraphTileDataToCopy navTileData;
     CoarseNavGraph navGraph;
@@ -198,7 +201,7 @@ public:
 private:
     void finishNavGraphBuildTask(NavGraphBuildTaskData& taskData);
     void initEventHandlers();
-    bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, ExternalEdgeList* externalEdges);
+    bool trySetFineNavEdgeCartesian(TileIndex tileIndex, TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, const f32 floorHeight, TileFineNavData& tileFineNavData, int prevZ, StructureExternalEdgeList* externalEdges);
     bool trySetFineNavEdgeCartesianDiagonal(TileIndex adjacentIndex, Cartesian8 cartesian8, bool isInner, const i32v3& containerDims, const std::vector<Tile>& tiles, const std::vector<TileWalls>& tileWallsContainer, const BitArray& ownedTiles, const f32 groundZPosition, TileFineNavData& fineNavData);
 
     void markChunkContainerNavDirty(LiteChunkID chunkId);
