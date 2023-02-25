@@ -12,8 +12,6 @@ const float DEAD_COLOR_MULT = 0.4f;
 
 IEntityComponentSystem::IEntityComponentSystem()
 	: mPlayerControlSystem()
-	, mPersonAISystem()
-	, mBusinessSystem()
 	, mTimedTileInteractSystem() {
 }
 
@@ -22,12 +20,12 @@ IEntityComponentSystem::~IEntityComponentSystem() {
 }
 
 void IEntityComponentSystem::tick() {
+    PROFILE_FUNCTION();
     assert(IS_GAME_THREAD());
 	
-    mBusinessSystem.update(mRegistry);
     //mPlayerControlSystem.update(mRegistry, playerCamera);
-	mPersonAISystem.update(mRegistry);
-    mNavigationSystem.update(mRegistry);
+    // TODO: Move 
+  
 	mCharacterControlSystem.update(mRegistry);
 	mTimedTileInteractSystem.update(mRegistry);
     //mCorpseTable.update();

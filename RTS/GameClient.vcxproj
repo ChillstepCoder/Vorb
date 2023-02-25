@@ -536,6 +536,7 @@
     <ClInclude Include="src\item\ItemReservation.h" />
     <ClInclude Include="src\item\ItemStack.h" />
     <ClInclude Include="src\item\ItemStockpile.h" />
+    <ClInclude Include="src\item\ItemStockpileEvent.h" />
     <ClInclude Include="src\item\ItemStockpileRegistry.h" />
     <ClInclude Include="src\item\ItemTradeManager.h" />
     <ClInclude Include="src\item\ShieldItem.h" />
@@ -710,6 +711,7 @@
     <ClInclude Include="src\util\StrToken.h" />
     <ClInclude Include="src\util\TextureUtil.h" />
     <ClInclude Include="src\util\ThreadIDs.h" />
+    <ClInclude Include="src\util\ThreadSafeDirtyList.h" />
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\util\TypeHash.h" />

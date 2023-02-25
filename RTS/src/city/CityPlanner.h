@@ -41,7 +41,7 @@ public:
 private:
 
 
-    std::unique_ptr<BuildingBlueprintGenerator> mBuildingGenerator;
+    std::unique_ptr<BuildingBlueprintGenerator> mBlueprintGenerator;
 
     City& mCity;
 };

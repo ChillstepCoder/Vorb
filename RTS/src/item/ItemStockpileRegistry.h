@@ -12,13 +12,12 @@ public:
     void destroyStockpile(ItemStockpile* stockpile);
 
     const std::vector<ItemStockpile*>* tryGetStockpilesAtChunkPosition(ChunkID chunkID) const;
-    const std::vector<std::unique_ptr<ItemStockpile>>& getAllStockpiles() const { return mAllStockpiles; }
 
 private:
     void addStockpileToAreaLookup(ItemStockpile& stockpile);
     void removeStockpileFromAreaLookup(ItemStockpile& stockpile);
 
-    std::vector<std::unique_ptr<ItemStockpile>> mAllStockpiles;
+    std::unordered_map<ItemStockpileID, std::unique_ptr<ItemStockpile>> mAllStockpiles;
 
     std::unordered_map<ChunkID, std::vector<ItemStockpile*>> mAreaLookup;
 };

@@ -101,12 +101,14 @@ void GatherTask::init(entt::registry& registry, entt::entity agent) {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
 
     // Make sure tile still has the resource
-    if (!sWorld->tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, nullptr)) {
+    // TODO: Handle target tile being invalid!
+    // TODO: TileRefWeak?
+    if (!mTileTarget.tile->hasHarvestableResource(mResource, nullptr)) {
         failTask();
         return;
     }
 
-    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(physCmp.getPosition()).toLiteTileHandle(), mTileTarget.toLiteTileHandle(), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(physCmp.getPosition(), mTileTarget.getWorldPos3D(), [this](bool success) {
         if (success == true) {
             mState = GatherTaskState::BEGIN_HARVEST;
         }
@@ -122,7 +124,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
 {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
-    if (!sWorld->tileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, &layer)) {
+    if (!sWorld->terrainTileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, &layer)) {
         failTask();
         return false;
     }
@@ -182,10 +184,11 @@ void GatherTask::pathToStockpileSlot(entt::registry& registry, entt::entity agen
 
     // TODO: Make sure the stockpile didnt die
     assert(mItemPromise->isValid());
+    // TODO: THIS SHOULD BE 3D!
     PathPoint targetPos(mItemPromise->getCurrentTargetWorldPosition());
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos).toLiteTileHandle(), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)).toLiteTileHandle(), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(myPos, f32v3(targetPos.x, targetPos.y, 0.0f), [this](bool success) {
         if (success) {
             mState = GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT;
         }

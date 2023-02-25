@@ -29,11 +29,11 @@ struct NavigationComponent {
     // Callback should ideally only be set from the same entity
     void setSimpleLinearTargetPoint(const ui32v2& targetPoint, std::function<void(bool)> finishedCallback);
 
-    void requestFinePath(const LiteTileHandle& start, const LiteTileHandle& goal);
-	void requestCoarsePath(const LiteTileHandle& start, const LiteTileHandle& goal);
+    void requestFinePath(const f32v3& start, const f32v3& goal);
+	void requestCoarsePath(const f32v3& start, const f32v3& goal);
 
-    void requestFinePathWithCallback(const LiteTileHandle& start, const LiteTileHandle& goal, std::function<void(bool)> finishedCallback);
-    void requestCoarsePathWithCallback(const LiteTileHandle& start, const LiteTileHandle& goal, std::function<void(bool)> finishedCallback);
+    void requestFinePathWithCallback(const f32v3& start, const f32v3& goal, std::function<void(bool)> finishedCallback);
+    void requestCoarsePathWithCallback(const f32v3& start, const f32v3& goal, std::function<void(bool)> finishedCallback);
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);

@@ -9,7 +9,7 @@ public:
     IEntityComponentSystem();
     virtual ~IEntityComponentSystem();
 
-	void tick();
+	virtual void tick();
 
     // Create an entity, on server it will optionally replicate, on client it cannot replicate
     virtual entt::entity createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) = 0;
@@ -22,12 +22,7 @@ public:
     // TODO: UniquePtr for faster include
     CharacterControlSystem mCharacterControlSystem;
     PlayerControlSystem mPlayerControlSystem;
-    PersonAISystem mPersonAISystem;
-    NavigationComponentSystem mNavigationSystem;
     TimedTileInteractSystem mTimedTileInteractSystem;
-
-    // City stuff
-    BusinessSystem mBusinessSystem;
 
 	// Classes with World access
 	friend class PhysicsComponent;
@@ -35,7 +30,7 @@ public:
 
     entt::registry mRegistry;
 
-private:
+protected:
 
     entt::entity mPlayerEntity = entt::null;
 };

@@ -77,7 +77,7 @@ IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
         const ui32 maxTilesForJob = glm::min((mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt) - mNumTilesReservedInTasks, MAX_TILES_TO_BUILD_PER_JOB);
 
         std::vector<std::unique_ptr<ItemReservation>> sourceItems;
-        std::vector<ui16> targetTiles;
+        std::vector<TileIndex> targetTiles;
         const ui32 bpSize = mBlueprint.aabb.dims.x * mBlueprint.aabb.dims.y;
         for (ui32 i = mFirstUnfinishedBpIndex; i < bpSize; ++i) {
             BlueprintTile& tile = mBlueprint.tiles[i];

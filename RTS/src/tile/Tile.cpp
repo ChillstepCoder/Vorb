@@ -95,7 +95,7 @@ bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) co
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
         // Harvestble resources only exist on ground floor
         TileID tileId = layers[i];
-        if (tileId != INVALID_TILE_INDEX) {
+        if (tileId != TILE_ID_NONE) {
             if (TileRepository::getTileData(tileId).resource == resource) {
                 if (outLayer) {
                     *outLayer = (TileLayer)i;

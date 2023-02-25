@@ -23,6 +23,24 @@
 // TODO: replace?
 #include "BuildingBlueprintGenerator.h"
 
+BitArray computeOwnedTilesOnFirstFloor(const BuildingBlueprint& bp) {
+    BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
+    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
+        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
+            const ui32 tileIndex = y * bp.aabb.dims.x + x;
+            const BlueprintTileType type = bp.tiles[tileIndex].type;
+            if (type != BlueprintTileType::NONE) {
+
+                const TileID tileId = bp.tileIDs[e_cast(type)];
+                if (tileId != TILE_ID_NONE) {
+                    ownedTilesOnFirstFloor.setBitTo(tileIndex, true);
+                }
+            }
+        }
+    }
+    return ownedTilesOnFirstFloor;
+}
+
 CityBuilder::CityBuilder(City& city)
     : mCity(city)
 {
@@ -53,7 +71,7 @@ void CityBuilder::update() {
 void CityBuilder::addBlueprintToBuildAndPreprocess(BuildingBlueprint* blueprint) {
     assert(!blueprint->isBuilding);
     blueprint->isBuilding = true;
-    preprocessBlueprint(blueprint);
+    preprocessBlueprint(*blueprint);
     mBlueprintsToBuild.push_back(blueprint);
 }
 
@@ -64,21 +82,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
     PreciseTimer timer;
     const i32v2& worldPos = bp.aabb.pos;
 
-    // For mean height calc
-    BitArray ownedTilesOnFirstFloor(bp.aabb.dims.x * bp.aabb.dims.y);
-    for (ui32 y = 0; y < bp.aabb.dims.y; ++y) {
-        for (ui32 x = 0; x < bp.aabb.dims.x; ++x) {
-            const ui32 tileIndex = y * bp.aabb.dims.x + x;
-            const BlueprintTileType type = bp.tiles[tileIndex].type;
-            if (type != BlueprintTileType::NONE) {
-
-                const TileID tileId = bp.tileIDs[e_cast(type)];
-                if (tileId != TILE_ID_NONE) {
-                    ownedTilesOnFirstFloor.setBitTo(tileIndex, true);
-                }
-            }
-        }
-    }
+    BitArray ownedTilesOnFirstFloor = computeOwnedTilesOnFirstFloor(bp);
 
     // Clamp building height to 1 meter increments
     IHeightmapGrid& grid = sWorld->getHeightmapGrid();
@@ -181,11 +185,15 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
 
 void CityBuilder::debugBuildRoadInstant(RoadID roadId)
 {
-    static TileID bricksId = TileRepository::getTile(StrToken("bricks1"));
-    static TileID grassId = TileRepository::getTile(StrToken("grass1"));
+    static TileID bricksId = TileRepository::getTile(StrToken("bricks", 1));
 
     CityRoad& road = *mCity.mRoads[roadId];
-    TileID tileId = road.type == RoadType::PAVED ? bricksId : grassId;
+    // TODO: Other types of paths
+    if (road.type != RoadType::PAVED) {
+        LOG_WARN("Invalid road type built");
+        return;
+    }
+    TileID tileId = bricksId;
 
     i32v2 xy;
     for (xy.y = road.aabb.y; xy.y < road.aabb.y + road.aabb.depth; ++xy.y) {
@@ -196,9 +204,28 @@ void CityBuilder::debugBuildRoadInstant(RoadID roadId)
     }
 }
 
-void CityBuilder::preprocessBlueprint(BuildingBlueprint* blueprint) {
-    if (blueprint->flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
-        mCity.getCityQuartermaster().createStockpilesForBlueprint(*blueprint);
+void CityBuilder::preprocessBlueprint(BuildingBlueprint& bp) {
+    assert(IS_GAME_THREAD());
+
+    BitArray ownedTilesOnFirstFloor = computeOwnedTilesOnFirstFloor(bp);
+
+    // Clamp building height to 1 meter increments
+    IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+    const ui32 meanHeight = round(grid.computeMeanHeightAtAABB(bp.aabb, ownedTilesOnFirstFloor));
+
+    i32AABB3 aabb;
+    aabb.x = bp.aabb.x;
+    aabb.y = bp.aabb.y;
+    aabb.z = meanHeight;
+    aabb.width = bp.aabb.width;
+    aabb.depth = bp.aabb.depth;
+    aabb.height = bp.floorCount * bp.floorHeight;
+
+    bp.building = static_cast<Building*>(sWorld->getStructureManager().makeNewStructure(StructureType::Building, aabb, bp.floorHeight));
+    // Force ready so we can place tiles
+    bp.building->getTileContainer()->setState(TileContainerState::READY);
+    if (bp.flags.isBitSet(BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE)) {
+        mCity.getCityQuartermaster().createStockpilesForBlueprint(bp);
     }
 }
 

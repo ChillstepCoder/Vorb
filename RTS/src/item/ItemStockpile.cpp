@@ -10,8 +10,11 @@
 #include "ecs/IEntityComponentSystem.h"
 #include "ecs/component/OwnershipComponent.h"
 
-ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
-    : mAABB(aabb)
+#include "camera/Camera3D.h"
+
+ItemStockpile::ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity /*= INVALID_ENTITY*/)
+    : mId(id)
+    , mAABB(aabb)
     , mOwnerEntity(ownerEntity) {
 
     assert(mAABB.width <= MAX_STOCKPILE_WIDTH && mAABB.depth <= MAX_STOCKPILE_WIDTH);
@@ -25,7 +28,6 @@ ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt
 
     ui32 index = 0;
     for (ui32 y = mAABB.y; y < mAABB.y + mAABB.depth; ++y) {
-        std::cout << "  ";
         for (ui32 x = mAABB.x; x < mAABB.x + mAABB.width; ++x) {
             const i32v2 worldPos(x, y);
             TileRef ref(sWorld->getTerrainTileHandleAtWorldPos(worldPos));
@@ -55,13 +57,16 @@ ItemStockpile::ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt
         OwnershipComponent& ownershipCmp = sWorld->getECS().mRegistry.get<OwnershipComponent>(mOwnerEntity);
         ownershipCmp.mOwnedStockpiles.push_back(this);
     }
+
+    dispatchCreate(ItemStockpileEvent{ this, INVALID_ITEM_ID });
 }
 
 ItemStockpile::~ItemStockpile() {
     // TODO: can we make this more elegant
     if (IS_SHUTTING_DOWN) return;
+    assert(mRefCount == 0);
 
-    onDestroy(this);
+    dispatchDestroy(ItemStockpileEvent{ this, INVALID_ITEM_ID });
 
     // TODO: Run a function on the reservation?
     assert(!mReservations.size()); // TODO: UNSUPPORTED
@@ -80,16 +85,6 @@ ItemStockpile::~ItemStockpile() {
             }
         }
     }
-}
-
-bool ItemStockpile::isVisible() const {
-    assert(false);
-    /* for (const ChunkID& chunkId : mResidingChunks) {
-         if (sWorld->getChunk(chunkId).isVisible()) {
-             return true;
-         }
-     }*/
-    return false;
 }
 
 void ItemStockpile::renderDebug() const {
@@ -276,21 +271,6 @@ void ItemStockpile::releaseReservation(ItemReservation* reservation) {
     }
 }
 
-void ItemStockpile::dirtyMeshForItem(ItemID itemId) {
-
-    // TODO: More separate meshes?
-    ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
-    const Item& item = itemRepo.getItem(itemId);
-
-    // Decide which mesh to dirty based on our material/shape
-    if (item.mShape >= ItemStorageShape::QUAD_SHAPES_START) {
-        mRenderData.mQuadMeshDirty = true;
-    }
-    else {
-        mRenderData.mBillboardMeshDirty = true;
-    }
-}
-
 bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reservation, OUT ItemStack& sourceStack) {
     assert(sourceStack.id == reservation->mItemID);
     ItemReservationTarget& target = reservation->mTargets.back();
@@ -300,8 +280,6 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
     assert(mit != mItemContents.end());
     ItemStockpileRecord& record = mit->second;
 
-    // Mesh will need to change
-    dirtyMeshForItem(sourceStack.id);
 
     if (reservation->mIsPromise) {
         const ui32 transferQuantity = std::min(target.quantity, sourceStack.quantity);
@@ -336,6 +314,7 @@ bool ItemStockpile::itemReservationFulfullCurrentTarget(ItemReservation* reserva
         }
     }
 
+    dispatchEdit(ItemStockpileEvent{ this, sourceStack.id });
 
     if (target.quantity == 0) {
         assert(&target == &reservation->mTargets.back());

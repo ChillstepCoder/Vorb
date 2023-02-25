@@ -116,7 +116,10 @@ public:
     Mesh();
     ~Mesh();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(Mesh);
+    VORB_NON_COPYABLE(Mesh);
+
+    Mesh(Mesh&& o);
+    Mesh& operator=(Mesh&& o);
 
     // TODO: Have each renderer implement its own "draw" method
     //   Renderer knows what type of mesh this is  so we can avoid
@@ -140,8 +143,9 @@ public:
 public:    
     f32v3                    mPosition = f32v3(0.0f);
     BoundingSphere           mBoundingSphere;  ///< Optional
-    MeshGpuData                 mMainMesh;
+    MeshGpuData              mMainMesh;
     std::unique_ptr<MeshSkeletonData> mSkeletonData;
+    // Make sure to update move constructor on new members
     // TODO: Pool allocate?
     // TODO: We dont need dynamic vector, just use a C array
    // std::vector<SubMeshData> mSubMeshes; ///< Most meshes wont have any submeshes so we store 2-infinity meshes in a separate data store to keep Mesh smaller

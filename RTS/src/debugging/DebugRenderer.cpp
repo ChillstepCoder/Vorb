@@ -459,6 +459,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
         }
         GL.glNamedBufferStorage(newMesh.vbo, circleVertices.size() * sizeof(SimpleMeshCircleVertex), circleVertices.data(), 0);
         GL.glVertexArrayVertexBuffer(newMesh.vao, 0, newMesh.vbo, 0, sizeof(SimpleMeshCircleVertex));
+        GL.glVertexArrayElementBuffer(newMesh.vao, ProceduralMeshBuilder::sQuadIboUI32);
         bindCircleMeshVertexAttribs(newMesh.vao);
         sDebugCircleMeshes.emplace_back(std::move(newMesh));
     }
@@ -478,7 +479,7 @@ void DebugRenderer::render(const f32v3& cameraPos, const f32m4& viewMatrix)
 
         GL.glBindVertexArray(mesh.vao);
        
-        glDrawArrays(GL_QUADS, 0, (GLsizei)mesh.numVerts);
+        glDrawElements(GL_TRIANGLES, (GLsizei)(mesh.numVerts * 6) / 4, GL_UNSIGNED_INT, nullptr);
         RenderStats::recordDrawCall(mesh.numVerts / 2);
 
         if (mesh.lifetime <= 0) {

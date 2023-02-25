@@ -23,7 +23,7 @@ public:
     void debugBuildRoadInstant(RoadID roadId);
 
 private:
-    void preprocessBlueprint(BuildingBlueprint* blueprint);
+    void preprocessBlueprint(BuildingBlueprint& bp);
     static void finishBuilding(Building& building, BuildingBlueprint& blueprint);
     bool trySendBuildingJob(BuildingBlueprint* blueprint);
 

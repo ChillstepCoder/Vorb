@@ -210,7 +210,7 @@ void onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& m
     navCmp.mNavigationType = NavigationType::INVALID;
 }
 
-void requestFinePathToPoint(NavigationComponent& navCmp, const LiteTileHandle& start, const LiteTileHandle& goal) {
+void requestFinePathToPoint(NavigationComponent& navCmp, const f32v3& start, const f32v3& goal) {
     navCmp.mPendingFinePath = std::make_shared<NavPath>();
 	if (sDebugOptions.mShowPaths) {
 		// Make sure we dont free this path before it is rendered
@@ -264,7 +264,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
     if (!hasFinePath) {
         // We need a path
         navCmp.mCurrentFinePoint = 0;
-		requestFinePathToPoint(navCmp, sWorld->getTileHandleAtWorldPos(pos).toLiteTileHandle(), sWorld->getTileHandleAtWorldPos(nextCoarseTilePos).toLiteTileHandle());
+		requestFinePathToPoint(navCmp, pos, nextCoarseTilePos);
 
     }
     else {
@@ -298,7 +298,7 @@ bool updateComponentCoarsePath(entt::entity entity, NavigationComponent& navCmp,
                     navCmp.mFramesUntilNextRayCheck = 0;
 					// Path forward
                     nextCoarseTilePos = f32v3(points[navCmp.mCurrentCoarsePoint].getWorldPosition()) + f32v3(0.5f, 0.5f, 0.0f);
-                    requestFinePathToPoint(navCmp, sWorld->getTileHandleAtWorldPos(pos).toLiteTileHandle(), sWorld->getTileHandleAtWorldPos(nextCoarseTilePos).toLiteTileHandle());
+                    requestFinePathToPoint(navCmp, pos, nextCoarseTilePos);
                 }
 			}
 		}
@@ -372,15 +372,15 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
 	}
 }
 
-void NavigationComponent::requestFinePath(const LiteTileHandle& start, const LiteTileHandle& goal) {
+void NavigationComponent::requestFinePath(const f32v3& start, const f32v3& goal) {
     requestCoarsePathWithCallback(start, goal, nullptr);
 }
 
-void NavigationComponent::requestCoarsePath(const LiteTileHandle& start, const LiteTileHandle& goal) {
+void NavigationComponent::requestCoarsePath(const f32v3& start, const f32v3& goal) {
 	requestCoarsePathWithCallback(start, goal, nullptr);
 }
 
-void NavigationComponent::requestFinePathWithCallback(const LiteTileHandle& start, const LiteTileHandle& goal, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::requestFinePathWithCallback(const f32v3& start, const f32v3& goal, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::FINE_PATH;
     mCoarsePath.reset();
     mFinePath = std::shared_ptr<NavPath>(new NavPath());
@@ -391,7 +391,7 @@ void NavigationComponent::requestFinePathWithCallback(const LiteTileHandle& star
     mFinishedCallback = finishedCallback;
 }
 
-void NavigationComponent::requestCoarsePathWithCallback(const LiteTileHandle& start, const LiteTileHandle& goal, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::requestCoarsePathWithCallback(const f32v3& start, const f32v3& goal, std::function<void(bool)> finishedCallback) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());

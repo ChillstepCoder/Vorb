@@ -38,7 +38,7 @@ public:
     MaterialShaderManager& getMaterialShaderManager() const { return *mMaterialManager; }
     MaterialRepository& getMaterialRepository() const { return *mMaterialRepository; }
     ParticleSystemManager& getParticleSystemManager() const { return *mParticleSystemManager; }
-    BuildingDescriptionRepository& getBuildingRepository() const { return *mBuildingRepository; }
+    BuildingDescriptionRepository& getBuildingDescriptionRepository() const { return *mBuildingRepository; }
     EntityDefinitionRepository& getEntityDefinitionRepository() const { return *mEntityDefinitionRepository; }
     ItemRepository& getItemRepository() const { return *mItemRepository; }
     BusinessRepository& getBusinessRepository() const { return *mBusinessRepository; }

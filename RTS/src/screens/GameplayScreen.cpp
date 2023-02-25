@@ -436,7 +436,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                         IEntityComponentSystem& ecs = sWorld->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                        cmp.requestCoarsePath(sWorld->getTileHandleAtWorldPos(physCmp.getPosition()).toLiteTileHandle(), tileHandle.toLiteTileHandle());
+                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D());
                     }
                 }, &mSelectedTileHandle);
             }

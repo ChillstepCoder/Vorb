@@ -15,6 +15,25 @@ Mesh::Mesh() {
 
 }
 
+Mesh::Mesh(Mesh&& o) {
+    mPosition = std::move(o.mPosition);
+    mBoundingSphere = std::move(o.mBoundingSphere);
+    memcpy(&mMainMesh, &o.mMainMesh, sizeof(MeshGpuData));
+    mSkeletonData = std::move(o.mSkeletonData);
+    // Prevent double destroy
+    o.mMainMesh.mVao = 0;
+}
+
+Mesh& Mesh::operator=(Mesh&& o) {
+    mPosition = std::move(o.mPosition);
+    mBoundingSphere = std::move(o.mBoundingSphere);
+    memcpy(&mMainMesh, &o.mMainMesh, sizeof(MeshGpuData));
+    mSkeletonData = std::move(o.mSkeletonData);
+    // Prevent double destroy
+    o.mMainMesh.mVao = 0;
+    return *this;
+}
+
 Mesh::~Mesh() {
     destroy();
 }
@@ -107,9 +126,7 @@ void Mesh::drawIndirect(size_t numDrawCommands, const GLIndirectBuffer* buffer) 
 }
 
 void Mesh::destroy() {
-    if (mMainMesh.mVao) {
-        mMainMesh.destroy();
-    }
+    mMainMesh.destroy();
 }
 
 void MeshGpuData::destroy() {

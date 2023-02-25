@@ -87,10 +87,10 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
         for (auto&& ownedPlot : ownershipCmp.mOwnedPlots) {
             PreciseTimer timer;
             gatherCmp.mScannedTiles = TileScanner::scanForResource(gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
-            std::cout << " Tile scanning took " << timer.stop() << " ms and returned " << gatherCmp.mScannedTiles.size() << " tiles\n";
+            LOG_INFO("Tile scanning took {} ms and returned {} tiles", timer.stop(), gatherCmp.mScannedTiles.size());
             if (sDebugOptions.mShowPaths) {
                 for (auto&& it : gatherCmp.mScannedTiles) {
-                    DebugRenderer::drawWireQuad(f32v2(it.getWorldPos2D()), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+                    DebugRenderer::drawWireQuadThreadSafe(it.getWorldPos3D(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
                 }
             }
 
@@ -135,7 +135,7 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
                 }
             }
             else {
-                std::cout << "Failed to find resource to gather in business cmp";
+                LOG_INFO("Failed to find resource to gather in business cmp");
             }
 
             // If employee has a task, we succeeded. Otherwise, break cause we cant give any tasks right now
@@ -176,7 +176,7 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
         City& city = *cmp.mCity;
         CityPlot* plot = city.getCityPlanner().tryPurchasePlot(props, entity);
         if (plot) {
-            const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
+            const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
             city.getCityPlanner().generatePlanForPlotAsyncThenSendToBuilder(*plot, cmp.mBusinessDef->mBuildingName, BuildingBlueprintFlags::BLUEPRINT_FLAG_CREATE_EARLY_STOCKPILE);
             ownershipCmp.mOwnedPlots.push_back(plot);
         }

@@ -23,7 +23,7 @@ void CityQuartermaster::createStockpilesForBlueprint(BuildingBlueprint& bp) {
 
     bool ownershipMask[CHUNK_SIZE];
 
-    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
     for (auto&& room : bp.rooms) {
         const RoomDef& def = buildingRepo.getRoomDefFromID(room.roomDefId);
         if (def.roomType == RoomType::STOCKPILE) {
@@ -49,8 +49,7 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, entt::ent
     
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
-        mAllStockpiles.emplace_back(newStockpile);
-        newStockpile->onDestroy.add(makeDelegate(this, &CityQuartermaster::onStockpileDestroy));
+        mAllStockpiles.insert(newStockpile);
         return true;
     }
     return false;
@@ -62,8 +61,7 @@ bool CityQuartermaster::tryCreateCityStockpileAt(const i32AABB2& aabb, bool* own
 
     // Create new stockpile and leave unassigned (city ownership)
     if (newStockpile) {
-        mAllStockpiles.emplace_back(newStockpile);
-        newStockpile->onDestroy.add(makeDelegate(this, &CityQuartermaster::onStockpileDestroy));
+        mAllStockpiles.insert(newStockpile);
         return true;
     }
     return false;
@@ -87,12 +85,11 @@ ItemStockpile* CityQuartermaster::tryGetClosestStockpileToPoint(const i32v2 posi
     return best;
 }
 
-void CityQuartermaster::onStockpileDestroy(Sender s, ItemStockpile* stockPile) {
-    for (size_t i = 0; i < mAllStockpiles.size(); ++i) {
-        if (mAllStockpiles[i] == stockPile) {
-            mAllStockpiles[i] = mAllStockpiles.back();
-            mAllStockpiles.pop_back();
-        }
-    }
+void CityQuartermaster::initEventHandlers() {
+    ItemStockpile::registerItemStockpileListeners(mItemStockpileListeners);
+    ItemStockpile::addDestroyListener(mItemStockpileListeners, [this](const ItemStockpileEvent& stockpileEvent) {
+        mAllStockpiles.erase(stockpileEvent.stockPile);
+    });
 }
+
 

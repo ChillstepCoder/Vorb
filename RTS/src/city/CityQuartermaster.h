@@ -1,8 +1,9 @@
 #pragma once
 
-class ItemStockpile;
 class City;
 struct BuildingBlueprint;
+
+#include "item/ItemStockpile.h"
 
 // Tracks public stockpiles in the city and managers
 // resource allocation and trade between cities
@@ -21,13 +22,13 @@ public:
 
     ItemStockpile* tryGetClosestStockpileToPoint(const i32v2 position);
 
-    const std::vector<ItemStockpile*>& getStockpiles() const { return mAllStockpiles; }
-
+    const std::set<ItemStockpile*>& getStockpiles() const { return mAllStockpiles; }
 
 private:
-    void onStockpileDestroy(Sender s, ItemStockpile* stockPile);
+    void initEventHandlers();
 
     // TODO: Sorted with Fast AABB search algorithm?
-    std::vector<ItemStockpile*> mAllStockpiles;
+    ItemStockpileListeners mItemStockpileListeners;
+    std::set<ItemStockpile*> mAllStockpiles;
     City& mCity;
 };

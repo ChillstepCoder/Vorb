@@ -5,17 +5,11 @@
 #include "world/ChunkID.h"
 #include "util/BitArray.h"
 #include "ItemReservation.h"
+#include "ItemStockpileEvent.h"
+
+class Camera3D;
 
 constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;
-
-class ItemStockpile;
-
-struct ItemStockpileRenderData {
-   // std::unique_ptr<TBOBillboardMesh> mBillboardMesh; // TODO: Custom allocator
-    //std::unique_ptr<QuadMesh> mQuadMesh; // TODO: Custom allocator
-    bool mBillboardMeshDirty = false;
-    bool mQuadMeshDirty = false;
-};
 
 // TODO: ui16?
 struct ItemStockpileRecord {
@@ -38,6 +32,11 @@ struct ItemStockpileTileStorage {
 };
 static_assert(sizeof(ItemStockpileTileStorage) == 8, "Keep small");
 
+// All data needed to mesh a stockpile
+struct ItemStockpileMeshDataCopy {
+    // TODO:
+};
+
 // Tracks the location, dimensions, and contents of a stockpile
 // of items. Can be owned.
 class ItemStockpile
@@ -48,11 +47,10 @@ class ItemStockpile
     friend class ItemStockpileRegistry;
     friend class RenderContext;
 public:
-    ItemStockpile(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
+    ItemStockpile(ItemStockpileID id, const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity = INVALID_ENTITY);
     ~ItemStockpile();
 
     bool isValid() const { return mAABB.width != 0; } // If we have 0 width we are null
-    bool isVisible() const;
 
     void renderDebug() const;
 
@@ -62,14 +60,32 @@ public:
 
     ui32v2 getWorldPositionAtIndex(ui32 index) const;
     const i32AABB2& getAABB() const { return mAABB; }
+    ItemStockpileID getId() const { return mId; }
+
+    // =========== Refcount  ===========
+    inline void incRef() const {
+        assert(IS_GAME_THREAD()); // Only main thread is allowed to incref
+        assert(mRefCount.load() < 2000u); // This is probably a sign of something really awful
+        ++mRefCount;
+        if (mRefCount > 400) {
+            std::cout << "DETECTED " << mRefCount << " REF COUNTS ON ITEM STOCKPILE " << std::endl;
+            assert(false && "Too many container refcounts");
+        }
+    }
+    inline void decRef() const {
+        assert(mRefCount.load());
+        --mRefCount;
+    }
+    ui32 getRefCount() const { return mRefCount; }
 
     // Events
-    Event<ItemStockpile*> onDestroy;
-
+    STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Create, ItemStockpileEventType::Create, const ItemStockpileEvent&);
+    STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Edit, ItemStockpileEventType::Edit, const ItemStockpileEvent&);
+    STATIC_EVENT_LISTENER_FUNCS(ItemStockpile, Destroy, ItemStockpileEventType::Destroy, const ItemStockpileEvent&);
+    STATIC_EVENT_DISPATCHER(ItemStockpile);
 private:
     void releaseReservation(ItemReservation* reservation);
 
-    void dirtyMeshForItem(ItemID itemId);
     // Return true if fully fulfilled
     bool itemReservationFulfullCurrentTarget(ItemReservation* reservation, OUT ItemStack& sourceStack);
 
@@ -77,10 +93,8 @@ private:
     bool freeSlot(ItemStockpileTileStorage& tileStorage, ItemStockpileRecord& record, std::unordered_map<ItemID, ItemStockpileRecord>::const_iterator& iterator, ItemID itemId, ui16 stackIndex);
 
     std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui16 splitQuantity);
-
         
-    // TODO: Multiaabb
-    std::vector<ChunkID> mResidingChunks;
+    std::vector<ChunkID> mResidingChunks; // TODO: Share dependency logic with tilecontainer? No instead we need tile container dependencies
     std::vector<ItemStockpileTileStorage> mStorage;
     std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;
     std::unordered_set<ItemReservation*> mReservations;
@@ -93,10 +107,8 @@ private:
     ui32 mTotalSlots = 0;
     ui32 mFreeSlots = 0;
     ui32 mFirstFreeSlot = 0;
+    ItemStockpileID mId;
 
-    // TODO: This should be in a separate component list for fast, cache friendly iteration?
-    mutable ItemStockpileRenderData mRenderData;
+    mutable std::atomic_uint32_t mRefCount = 0u;
 
-    // TODO: Allowed item tags
-    // TODO: Priorities? May not need...
 };

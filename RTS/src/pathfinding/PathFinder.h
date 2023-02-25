@@ -40,8 +40,8 @@ class PathFinder {
 public:
     PathFinder(const NavWorld& navWorld);
 
-    bool generateFinePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path);
-    bool generateCoarsePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path);
+    bool generateFinePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path);
+    bool generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path);
 
 private:
     void coarseAstarEdgePropagate(const ContainerNavData& navData, const CoarseNavNode* navNode, const LiteTileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG);

@@ -189,7 +189,7 @@ struct FineNodeData {
 };
 
 // https://github.com/daancode/a-star/blob/master/source/AStar.cpp
-bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path) {
+bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path) {
     PROFILE_FUNCTION();
     assert(path.numPoints == 0); // Should be uninitialized
     // Only runs on nav thread
@@ -199,12 +199,18 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     const IHeightmapGrid& heightGrid = sWorld->getHeightmapGrid();
 
     // We pathfind backwards
-    LiteTileHandle startLiteHandle = goal;
-    LiteTileHandle goalLiteHandle = start;
-    const ContainerNavData& startNavData = mNavWorld.getNavDataForContainer(startLiteHandle.containerId);
-    const ContainerNavData& goalNavData = mNavWorld.getNavDataForContainer(goalLiteHandle.containerId);
-    const f32v3 startWorldPos = startNavData.getTileWorldPos(startLiteHandle.index);
-    const f32v3 goalWorldPos = goalNavData.getTileWorldPos(goalLiteHandle.index);
+    const ContainerNavData* startNavData = nullptr;
+    const ContainerNavData* goalNavData = nullptr;
+    LiteTileHandle startLiteHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(goal, &startNavData);
+    LiteTileHandle goalLiteHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(start, &goalNavData);
+    if (!startNavData || !goalNavData) {
+        LOG_WARN("Failed to find fine path due to invalid start or end");
+        path.finishedGenerating.store(true);
+        return false;
+    }
+
+    const f32v3 startWorldPos = startNavData->getTileWorldPos(startLiteHandle.index);
+    const f32v3 goalWorldPos = goalNavData->getTileWorldPos(goalLiteHandle.index);
 
     // Instead of an explicit closed list, we use an implicit closed list
     // If a node exists in the nodeLookup, but not in the openList, then it is in
@@ -408,20 +414,30 @@ bool PathFinder::generateFinePathSynchronous(const LiteTileHandle& start, const 
     return true;
 }
 
-bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, const LiteTileHandle& goal, OUT NavPath& path)
+bool PathFinder::generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path)
 {
     PROFILE_FUNCTION();
     assert(IS_NAV_THREAD());
     assert(path.numPoints == 0); // Should be uninitialized
 
     // We pathfind backwards so swap start and goal
-    const ContainerNavData& startNavData = mNavWorld.getNavDataForContainer(goal.containerId);
-    const ContainerNavData& goalNavData = mNavWorld.getNavDataForContainer(start.containerId);
-    const CoarseNavNodeIndex startNavNodeIndex = startNavData.coarseNavGraph.tileCoarseNavIndices[goal.index];
-    const CoarseNavNodeIndex goalNavNodeIndex = goalNavData.coarseNavGraph.tileCoarseNavIndices[start.index];
+    const ContainerNavData* startNavData = nullptr;
+    const ContainerNavData* goalNavData = nullptr;
+    LiteTileHandle startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(goal), &startNavData);
+    LiteTileHandle goalHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(start), &goalNavData);
+
+    if (!startNavData || !goalNavData) {
+        LOG_WARN("Failed to find coarse path due to invalid start or end");
+        path.finishedGenerating.store(true);
+        return false;
+    }
+
+    const CoarseNavNodeIndex startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
+    const CoarseNavNodeIndex goalNavNodeIndex = goalNavData->coarseNavGraph.tileCoarseNavIndices[goalHandle.index];
+
     if (startNavNodeIndex == INVALID_NAV_NODE_INDEX ||
         goalNavNodeIndex == INVALID_NAV_NODE_INDEX) {
-        LOG_WARN("Failed to find coarse path due to invalid start");
+        LOG_WARN("Failed to find coarse path due to invalid navnode");
         path.finishedGenerating.store(true);
         return false;
     }
@@ -433,22 +449,21 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
     
     const IHeightmapGrid& heightGrid = *sHeightmapGrid;
    
-    const CoarseNavGraph& startNavGraph = startNavData.coarseNavGraph;
-    const CoarseNavGraph& endNavGraph = goalNavData.coarseNavGraph;
+    const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
+    const CoarseNavGraph& endNavGraph = goalNavData->coarseNavGraph;
     const CoarseNavNode* startNode = &startNavGraph.getNode(startNavNodeIndex);
     const CoarseNavNode* endNode = &endNavGraph.getNode(goalNavNodeIndex);
 
     // Case where we are in the same node, just return the goal
     if (startNode == endNode) {
         path.allocatePath(1);
-        path.points[0] = goal;
+        path.points[0] = startHandle;
         path.finishedGenerating.store(true);
         return true;
     }
 
-    // Inverted since we pathfind backwards
-    const f32v3 startWorldPos = startNavData.getTileWorldPos(goal.index);
-    const f32v3 goalWorldPos = goalNavData.getTileWorldPos(start.index);
+    const f32v3 startWorldPos = startNavData->getTileWorldPos(startHandle.index);
+    const f32v3 goalWorldPos = goalNavData->getTileWorldPos(goalHandle.index);
 
     // A* pathfind through the coarse graph
     // TODO: non arbitrary reserve (Is this fixed?)
@@ -467,7 +482,7 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
     // TODO: According to the algorithm this should happen at the end of while loop
     startNode->isClosed = true;
     mCoarseClosedList.push_back(startNode);
-    coarseAstarEdgePropagate(startNavData, startNode, goal, startNavGraph, goalWorldPos, INVALID_COARSE_NODE_PARENT, 0.0f);
+    coarseAstarEdgePropagate(*startNavData, startNode, startHandle, startNavGraph, goalWorldPos, INVALID_COARSE_NODE_PARENT, 0.0f);
     // Do the A*
     while (mOpenList.size() && mTotalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
         const auto& topNode = mOpenList.top();
@@ -509,7 +524,7 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
 
     ui32 pathSize = 0;
     {
-        sPathPointBuffer[pathSize++] = start;
+        sPathPointBuffer[pathSize++] = goalHandle;
         CoarseAstarNodeID parentId = id;
         // Find out the path size and cache the points
         while (parentId != INVALID_COARSE_NODE_PARENT) {
@@ -519,8 +534,8 @@ bool PathFinder::generateCoarsePathSynchronous(const LiteTileHandle& start, cons
         }
     }
 
-    // Append goal if it isn't at the endpoint already
-    LiteTileHandle goalLiteHandle = goal;
+    // Append goal if it isn't at the endpoint already (Reversed)
+    LiteTileHandle goalLiteHandle = startHandle;
     if (sPathPointBuffer[pathSize - 1] != goalLiteHandle) {
         sPathPointBuffer[pathSize++] = goalLiteHandle;
     }

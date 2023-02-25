@@ -8,6 +8,7 @@
 
 #include "resources/TileRepository.h"
 #include "world/IWorld.h"
+#include "world/IHeightmapGrid.h"
 
 #include "city/BuildingBlueprint.h"
 
@@ -16,7 +17,7 @@
 struct build_pool {};
 using singleton_task_pool = boost::singleton_pool<build_pool, sizeof(BuildTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
-BuildTask::BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<ui16>&& targetTiles) : mSourceItems(std::move(sourceItems)), mTargetTiles(std::move(targetTiles)), mBlueprint(blueprint) {
+BuildTask::BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<TileIndex>&& targetTiles) : mSourceItems(std::move(sourceItems)), mTargetTiles(std::move(targetTiles)), mBlueprint(blueprint) {
     assert(mSourceItems.size());
 }
 
@@ -73,10 +74,11 @@ void BuildTask::pathToStockpileSlot(entt::registry& registry, entt::entity agent
 
     // TODO: Make sure the stockpile didnt die
     assert(mSourceItems.size());
+    // TODO: THIS SHOULD BE 3D!
     f32v2 targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
-    assert(false); // itemreservation should use TileHandle or most probably, TileRef
+    //assert(false); // itemreservation should use TileHandle or most probably, TileRef ACKSUALLY we dont want it to be tileRef or busy chunks will never LOD ai. Instead it should handle LOD transition
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(sWorld->getTileHandleAtWorldPos(myPos).toLiteTileHandle(), sWorld->getTileHandleAtWorldPos(f32v3(targetPos.x, targetPos.y, 0.0f)).toLiteTileHandle(), [this](bool success) {
+    navCmp.requestCoarsePathWithCallback(myPos, f32v3(targetPos.x, targetPos.y, 0.0f), [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }
@@ -127,27 +129,25 @@ void BuildTask::pathToBlueprint(entt::registry& registry, entt::entity agent) {
     assert(!navCmp.mCoarsePath);
 
     const f32v3 myPos = physCmp.getPosition();
-
-    PathPoint targetPos(mBlueprint.getWorldPositionOfTile(mTargetTiles.back()));
-    assert(false); // We need to actually have a tileContainer with proper TileHandles to path to
-    //navCmp.requestCoarsePathWithCallback(world.getTileHandleAtWorldPosWITHSTRUCTURES(myPos), mTargetTiles.back(), [this](bool success) {
-    //    if (success) {
-    //        mState = BuildTaskState::BUILD_TILE;
-    //    }
-    //    else {
-    //        // Failed to path, fail he task
-    //        failTask();
-    //    }
-    //});
+    navCmp.requestCoarsePathWithCallback(myPos, mBlueprint.getTileHandle(mTargetTiles.back()).getWorldPos3D(), [this](bool success) {
+        if (success) {
+            mState = BuildTaskState::BUILD_TILE;
+        }
+        else {
+            // Failed to path, fail he task
+            failTask();
+        }
+    });
     mState = BuildTaskState::PATH_TO_BLUEPRINT_TILE;
 }
 
 void BuildTask::buildTile(entt::registry& registry, entt::entity agent) {
-    ui16 tileIndex = mTargetTiles.back();
+    TileIndex tileIndex = mTargetTiles.back();
     mTargetTiles.pop_back();
 
     BlueprintTile& bpTile = mBlueprint.tiles[tileIndex];
     const TileID tileId = mBlueprint.tileIDs[e_cast(bpTile.type)];
+    assert(tileId != TILE_ID_NONE);
     const TileData& tileData = TileRepository::getTileData(tileId);
     const auto& recipe = *mBlueprint.tileRecipes[e_cast(bpTile.type)];
 
@@ -174,14 +174,28 @@ void BuildTask::buildTile(entt::registry& registry, entt::entity agent) {
     }
 
     // Build tile
-    const i32v2 worldPos = mBlueprint.getWorldPositionOfTile(tileIndex);
-    TileHandle tileHandle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
-    TileContainer& tiles = *tileHandle.getMutableContainer();
-    tiles.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
-    //// Walls have higher base Z position
-    //if (bpTile.type == BlueprintTileType::WALL) {
-    //    tiles.setTileGroundZPosition(tileHandle.tileIndex, tileHandle.tile->getGroundZPositionUncompressedMainThread() + 3.0f);
-    //}
+    TileHandle tileHandle = mBlueprint.getTileHandle(tileIndex);
+    TileContainer& tileContainer = *tileHandle.getMutableContainer();
+    const i32v3 xyzOffset = tileContainer.getTileXYZOffset(tileIndex);
+
+    if (bpTile.type != BlueprintTileType::NONE) {
+        // Flatten heightmap
+        if (xyzOffset.z == 0) {
+            IHeightmapGrid& grid = sWorld->getHeightmapGrid();
+            // Epsilon to prevent z fighting
+            grid.setHeightAt(tileHandle.getWorldPos2D(), (f32)tileContainer.getWorldPos3D().z - 0.005f);
+        }
+
+        tileContainer.setOwnedTile(tileIndex);
+        if (!mBlueprint.walls[tileIndex].isEmpty()) {
+            tileContainer.setWallsAt(tileIndex, mBlueprint.walls[tileIndex]);
+        }
+
+        // TODO: Stairs
+        if (bpTile.type != BlueprintTileType::STAIRS) {
+            tileContainer.setTileLayer(tileHandle.tileIndex, (TileLayer)tileData.layer, tileId);
+        }
+    }
 
     // Notify blueprint
     bpTile.isBuilt = true;

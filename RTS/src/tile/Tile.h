@@ -119,6 +119,8 @@ struct TileWalls {
             TileWall north;
         };
     };
+
+    bool isEmpty() const { return south.wallID == TILE_ID_NONE && west.wallID == TILE_ID_NONE && east.wallID == TILE_ID_NONE && north.wallID == TILE_ID_NONE; }
 };
 
 // Per tile steering and navigation usage

@@ -7,7 +7,7 @@ constexpr ui64 strTokenEncodeChar(const char c) {
     else if (c >= 'A' && c <= 'Z') {
         return ui64(c) - 'A' + 1ull;
     }
-    return ui64(0);
+    return ui64(0); // Underscores, ect 
 }
 
 constexpr ui64 strTokenEncodeIndex(const char c) {

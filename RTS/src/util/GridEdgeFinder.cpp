@@ -107,7 +107,7 @@ i32v2 getPosFromTileIndex(TileIndex index, const ui32v2& dims) {
 }
 
 std::vector<GridEdge> GridEdgeFinder::getInteriorEdgesFromOwnershipArray(const BitArray& ownershipBits, const ui32v2& dims, VisualLog* visLog, f32 vislogZ /*= 0.0f*/) {
-    assert(ownershipBits.getNumBits() == (size_t)dims.x * dims.y);
+    assert(ownershipBits.getNumBits() >= (size_t)dims.x * dims.y);
     std::vector<GridEdge> edges;
     // Find first bottom left owned bit to begin iteration
     TileIndex tileIndex;

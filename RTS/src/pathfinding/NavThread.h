@@ -26,7 +26,7 @@ struct BuildingPathArgs {
 
 struct PathArgs {
     PathArgs() {};
-    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const LiteTileHandle& start, const LiteTileHandle& end, bool isCoarse) :
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, const f32v3& end, bool isCoarse) :
         pathToBuild(pathToBuild),
         start(start),
         goal(end) {
@@ -39,8 +39,8 @@ struct PathArgs {
     }
 
     std::shared_ptr<NavPath> pathToBuild;
-    LiteTileHandle start;
-    LiteTileHandle goal;
+    f32v3 start;
+    f32v3 goal;
     PathRequestType type;
 };
 
@@ -60,8 +60,8 @@ public:
     /// Clears all unprocessed tasks from the task queue
     void clearTasks();
 
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse, std::function<void()>&& mainProc);
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse);
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, std::function<void()>&& mainProc);
+    void addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse);
 
     size_t getTasksSizeApprox() const { return mPathTasks.size_approx(); }
     size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }

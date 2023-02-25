@@ -53,11 +53,11 @@ void NavThread::clearTasks() {
     while (mPathTasks.try_dequeue(args));
 }
 
-void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse, std::function<void()>&& mainProc) {
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, std::function<void()>&& mainProc) {
     mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
 }
 
-void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const LiteTileHandle& start, const LiteTileHandle& goal, bool isCoarse) {
+void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse) {
     mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
 }
 

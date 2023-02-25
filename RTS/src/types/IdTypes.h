@@ -9,3 +9,6 @@ constexpr ui16 INVALID_MATERIAL_ID = UINT16_MAX;
 
 typedef ui32 StructureID;
 constexpr StructureID INVALID_STRUCTURE_ID = UINT32_MAX;
+
+typedef ui32 ItemStockpileID;
+constexpr ItemStockpileID INVALID_ITEM_STOCKPILE_ID = UINT32_MAX;

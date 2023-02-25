@@ -77,6 +77,7 @@ inline void updateComponent(entt::registry& registry, entt::entity entity, Perso
 }
 
 void PersonAISystem::update(entt::registry& registry) {
+    PROFILE_FUNCTION();
     auto view = registry.view<PersonAIComponent, PhysicsComponent>();
     for (auto entity : view) {
         PersonAIComponent& ai = view.get<PersonAIComponent>(entity);

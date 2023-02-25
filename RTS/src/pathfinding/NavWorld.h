@@ -4,6 +4,7 @@
 #include "CoarseNavGraph.h"
 
 #include "tile/TileHandle.h"
+#include "util/ThreadSafeDirtyList.h"
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/point.hpp>
@@ -233,8 +234,7 @@ private:
     moodycamel::ConcurrentQueue<TileContainerToDestroy> mContainersToDestroy;
     TileContainerListeners mTileContainerEventListeners;
 
-    std::mutex mDirtyTileContainersMutex;
-    std::set<const TileContainer*> mDirtyTileContainers;
+    ThreadSafeDirtyList<const TileContainer*> mDirtyTileContainers;
 
     // Large data at the bottom
     TileContainerID mTerrainTileContainers[WorldData::WORLD_SIZE_CHUNKS];

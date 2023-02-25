@@ -20,7 +20,7 @@ enum class BuildTaskState {
 
 class BuildTask : public IAgentTask {
 public:
-    BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<ui16>&& targetTiles);
+    BuildTask(BuildingBlueprint& blueprint, std::vector<std::unique_ptr<ItemReservation>>&& sourceItems, std::vector<TileIndex>&& targetTiles);
     ~BuildTask();
 
 	bool tick(entt::registry& registry, entt::entity agent) override;
@@ -41,7 +41,7 @@ private:
 
     BuildTaskState mState = BuildTaskState::FULFILL_RESERVATIONS;
     std::vector<std::unique_ptr<ItemReservation>> mSourceItems;
-    std::vector<ui16> mTargetTiles; // BP relative
+    std::vector<TileIndex> mTargetTiles;
     BuildingBlueprint& mBlueprint;
 };
 

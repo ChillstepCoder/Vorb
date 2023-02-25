@@ -32,10 +32,12 @@ enum class BuildingBlueprintFlags : ui8 {
 struct BuildingBlueprint {
     BuildingBlueprint(const BuildingDef& desc, float sizeAlpha, Cartesian entrySide, ui32v2 dims, ui32v2 bottomLeftWorldPos, entt::entity ownerEntity, BuildingBlueprintFlags flags);
 
-    ui32v2 getWorldPositionOfTile(ui32 tileIndex) const {
-        return aabb.pos + i32v2(tileIndex % aabb.dims.x, tileIndex / aabb.dims.x);
+    TileHandle getTileHandle(ui32 tileIndex) const {
+        assert(IS_GAME_THREAD());
+        return TileHandle(building->getTileContainer(), tileIndex);
     }
 
+    Building* building = nullptr;
     const BuildingDef& desc;
     float sizeAlpha;
     Cartesian entrySide = Cartesian::WEST;
@@ -62,5 +64,4 @@ struct BuildingBlueprint {
     BitFlags<BuildingBlueprintFlags> flags;
     f32 zPos = 0.0f;
     ui32 floorHeight = 3;
-    // TODO: This is for debug only
 };

@@ -20,7 +20,7 @@
 CityPlanner::CityPlanner(City& city)
     : mCity(city)
 {
-    mBuildingGenerator = std::make_unique<BuildingBlueprintGenerator>(Services::ResourceManager::ref().getBuildingRepository(), mCity.getCityBuilder());
+    mBlueprintGenerator = std::make_unique<BuildingBlueprintGenerator>(Services::ResourceManager::ref().getBuildingDescriptionRepository(), mCity.getCityBuilder());
 }
 
 void CityPlanner::update() {
@@ -38,7 +38,7 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     assert(!plot.mPendingBlueprint);
 
     ui32v2 cityCenter = mCity.mCityCenterWorldPos;
-    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
 
     const float sizeAlpha = Random::xorshf96f();
 
@@ -61,12 +61,12 @@ void CityPlanner::generatePlanForPlotAsyncThenSendToBuilder(CityPlot& plot, cons
     else if (plot.neighborRoads[e_cast(Cartesian::NORTH)] != INVALID_ROAD_ID) {
         dir = Cartesian::SOUTH;
     }
-    plot.mPendingBlueprint = mBuildingGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos, plot.mOwnerEntity, flags, 5.0f /*TODO: Pass in*/);
+    plot.mPendingBlueprint = mBlueprintGenerator->generateBlueprintAsyncThenSendToBuilder(desc, sizeAlpha, dir, plotDims, bottomLeftPos, plot.mOwnerEntity, flags, 5.0f /*TODO: Pass in*/);
     plot.mPendingBlueprint->plotIndex = plot.plotIndex;
 }
 
 void CityPlanner::debugPrintBlueprint(std::unique_ptr<BuildingBlueprint>& bp) const {
-    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
+    const BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
     LOG_DEBUG("Generated house: dx {} dy {}", bp->rooms.size(), bp->aabb.dims.x);
     for (auto&& node : bp->rooms) {
         char nameBuf[64];

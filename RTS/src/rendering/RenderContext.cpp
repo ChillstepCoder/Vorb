@@ -463,11 +463,7 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     }
 
     // Render stockpiles
-    for (auto&& stockPilePtr : sWorld->getItemStockpileRegistry().getAllStockpiles()) {
-        if (stockPilePtr->isVisible()) {
-            mItemRenderer->renderStockpile(*stockPilePtr, camera);
-        }
-    }
+    mItemRenderer->render(camera);
 
     // TODO: Render loose items
 

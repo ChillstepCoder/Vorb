@@ -402,7 +402,7 @@ void WorldEditorPanel::renderBuildingEditUI() const {
 
     ImGui::Separator();
     ImGui::Text("Building select");
-    const std::vector<BuildingDef> buildings = Services::ResourceManager::ref().getBuildingRepository().getBuildingDefs();
+    const std::vector<BuildingDef> buildings = Services::ResourceManager::ref().getBuildingDescriptionRepository().getBuildingDefs();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
     for (size_t i = 0; i < buildings.size(); ++i) {
         const BuildingDef& buildingDef = buildings[i];
@@ -577,9 +577,17 @@ void WorldEditorPanel::updateEntityEdit() {
 void WorldEditorPanel::updateCityEdit() {
     // Happens on mouse up
     if (mHitResult.didHit() && mCityEditState == CityEditState::CREATE) {
-        f32v2 worldPos(mHitResult.mPosition.x, mHitResult.mPosition.y);
-        TileHandle handle = sWorld->getTerrainTileHandleAtWorldPos(worldPos);
-        sWorld->getCityGraph().createCityAt(ui32v2(floor(worldPos.x), floor(worldPos.y)));
+
+        struct CityCreateTask {
+            f32v2 worldPos;
+        };
+        CityCreateTask* task = new CityCreateTask;
+        task->worldPos = f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y);
+        GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
+            CityCreateTask* task = static_cast<CityCreateTask*>(vTask);
+            sWorld->getCityGraph().createCityAt(ui32v2(floor(task->worldPos.x), floor(task->worldPos.y)));
+            delete task;
+        }, task);
     }
 }
 
@@ -601,9 +609,10 @@ void WorldEditorPanel::updateBuildingEdit() {
         GameThreadTasks::getInstance().addGenericTask([](GameThread&, void* vTask) {
             BuildingEditCreateTask* task = static_cast<BuildingEditCreateTask*>(vTask);
             const f32 meanHeight = round(sHeightmapGrid->computeMeanHeightAtAABB(task->aabb));
-            BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingRepository();
+            BuildingDescriptionRepository& buildingRepo = Services::ResourceManager::ref().getBuildingDescriptionRepository();
             std::unique_ptr<BuildingBlueprint> bp = BuildingBlueprintGenerator::generateBlueprintSync(buildingRepo, buildingRepo.getBuildingDef(task->selectedBuildingId), 1.0f /*?*/, Cartesian::WEST, task->aabb.dims, task->aabb.pos, INVALID_ENTITY, BuildingBlueprintFlags(0), meanHeight);
             CityBuilder::debugBuildInstant(*bp);
+            delete task;
         }, task);
 
       

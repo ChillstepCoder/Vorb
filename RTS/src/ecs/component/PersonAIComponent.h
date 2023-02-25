@@ -25,7 +25,7 @@ struct NeedsComponent {
     float tiredness = 0.0f; // 0.0 = well rested, 1.0 = sleep deprived
 };
 
-// Humans, elves
+// Humanoids
 // TODO: mCurrentTask is a raw pointer and can leak
 struct PersonAIComponent {
     // Memories

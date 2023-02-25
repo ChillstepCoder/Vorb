@@ -8,6 +8,15 @@
 #include "network/srv/GameServer.h"
 #include "network/srv/SrvMessage.h"
 
+void SrvEntityComponentSystem::tick()
+{
+    PROFILE_FUNCTION();
+    IEntityComponentSystem::tick();
+    mBusinessSystem.update(mRegistry);
+    mPersonAISystem.update(mRegistry);
+    mNavigationSystem.update(mRegistry);
+}
+
 entt::entity SrvEntityComponentSystem::createEntity(const f32v3& position, StrToken typeToken, bool shouldReplicate) {
     assert(IS_GAME_THREAD());
     entt::entity newEntity = EntityFactory::createEntity(position, typeToken);

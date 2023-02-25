@@ -15,6 +15,8 @@ ItemRenderer::ItemRenderer() {
     mItemMeshMaterial = materialManager.getMaterialShader("standard_tile");
   //  mItemBillboardMaterial = materialManager.getMaterial("billboard");
 
+    initEventHandlers();
+
 }
 
 void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) const {
@@ -64,7 +66,6 @@ void ItemRenderer::updateStockpileBillboardMesh(const ItemStockpile& stockpile) 
 }
 
 void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const {
-    assert(false);
     //ItemStockpileRenderData& renderData = stockpile.mRenderData;
     //// TODO: Multithread?
     //if (!renderData.mQuadMesh) {
@@ -98,8 +99,6 @@ void ItemRenderer::updateStockpileQuadMesh(const ItemStockpile& stockpile) const
     //}
 
     //mesh.finishMesh(MeshDrawMode::DYNAMIC);
-
-    //renderData.mQuadMeshDirty = false;
 }
 
 void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemStack& itemStack) const
@@ -108,9 +107,10 @@ void ItemRenderer::addItemStackToMesh(Mesh& mesh, const f32v3& pos, const ItemSt
     //mesh.addQuad(pos, f32v2(1.0f), f32v2(0.0f), 0, uvs, COLOR_WHITE, false, 0u, 0u);
 }
 
-void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3D& camera) const
+void ItemRenderer::render(const Camera3D& camera) const
 {
-    assert(false);
+    updateDirtyStockpileMeshes();
+    //assert(false);
     //ItemStockpileRenderData& renderData = stockpile.mRenderData;
 
     //// TODO: Multithreaded?
@@ -130,6 +130,45 @@ void ItemRenderer::renderStockpile(const ItemStockpile& stockpile, const Camera3
     //}
 }
 
+void ItemRenderer::initEventHandlers() {
+
+    ItemStockpile::registerItemStockpileListeners(mItemStockpileListeners);
+    ItemStockpile::addCreateListener(mItemStockpileListeners, [this](const ItemStockpileEvent& stockpileEvent) {
+        if (mDirtyStockpiles.tryDirtyObject(stockpileEvent.stockPile)) {
+            stockpileEvent.stockPile->incRef();
+        }
+    });
+    ItemStockpile::addEditListener(mItemStockpileListeners, [this](const ItemStockpileEvent& stockpileEvent) {
+        if (mDirtyStockpiles.tryDirtyObject(stockpileEvent.stockPile)) {
+            stockpileEvent.stockPile->incRef();
+        }
+        //ItemRepository& itemRepo = Services::ResourceManager::ref().getItemRepository();
+        //const Item& item = itemRepo.getItem(containerEvent.itemAddedOrRemoved);
+
+        //// Decide which mesh to dirty based on our material/shape
+        //if (item.mShape >= ItemStorageShape::QUAD_SHAPES_START) {
+        //    mRenderData.mQuadMeshDirty = true;
+        //}
+        //else {
+        //    mRenderData.mBillboardMeshDirty = true;
+        //}
+    });
+    ItemStockpile::addDestroyListener(mItemStockpileListeners, [this](const ItemStockpileEvent& stockpileEvent) {
+        mMeshesToDestroy.enqueue(stockpileEvent.stockPile->getId());
+    });
+}
+
+void ItemRenderer::updateDirtyStockpileMeshes() const {
+    std::set<const ItemStockpile*> dirtyStockpiles;
+    mDirtyStockpiles.aquireAllDirtyObjects(dirtyStockpiles);
+
+    for (auto&& stockpile : dirtyStockpiles) {
+        Services::Threadpool::ref().addTask([this, stockpile](ThreadPoolWorkerData* workerData) {
+            updateStockpileQuadMesh(*stockpile);
+        }, nullptr);
+    }
+}
+
 void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMesh, const Camera3D& camera) const {
     VGUniform offsetUniform = mItemBillboardMaterial->mProgram.getUniform("unOffset");
     const f32v3 stockpilePos(stockpile.mAABB.pos.x, stockpile.mAABB.pos.y, 0.0f);
@@ -143,7 +182,7 @@ void ItemRenderer::renderMesh(const ItemStockpile& stockpile, const Mesh& itemMe
 
 
 void ItemRenderer::addItemStackPlanks(const ItemStockpileRecord& record, const Item& item, const ItemStockpile& stockpile, Mesh& mesh) const {
-    assert(false);
+    //assert(false);
     //const SubTexture& texture = item.mTexture;
 
     //const ui32v3& stackDims = item.mStackDims;

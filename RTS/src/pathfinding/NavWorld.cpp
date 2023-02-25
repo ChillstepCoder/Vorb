@@ -80,13 +80,8 @@ void NavWorld::updateNavThread()
     // Update dirty tile containers
     {
         std::set<const TileContainer*> dirtyContainers;
-        {
-            std::lock_guard lock(mDirtyTileContainersMutex);
-            if (mDirtyTileContainers.size()) {
-                // Take ownership and release the lock
-                dirtyContainers.swap(mDirtyTileContainers);
-            }
-        }
+        mDirtyTileContainers.aquireAllDirtyObjects(dirtyContainers);
+
         for (auto&& container : dirtyContainers) {
             // The decref will happen after the build
             LOG_DEBUG("NAV BEGIN {}", container->getId());
@@ -736,15 +731,7 @@ void NavWorld::markChunkContainerNavDirty(LiteChunkID chunkId)
     const Chunk& chunk = sWorld->getChunk(chunkId);
     const TileContainer* chunkTileContainer = chunk.getTileContainer();
     // Mark dirty again
-    bool didAdd = false;
-    {
-        std::lock_guard lock(mDirtyTileContainersMutex);
-        auto&& it = mDirtyTileContainers.find(chunkTileContainer);
-        if (it == mDirtyTileContainers.end()) {
-            didAdd = true;
-            mDirtyTileContainers.insert(chunkTileContainer);
-        }
-    }
+    bool didAdd = mDirtyTileContainers.tryDirtyObject(chunkTileContainer);
     // If we added, we dont decref as we will get dec-reffed after updating the container
     if (!didAdd) {
         chunk.decRef();
@@ -1230,16 +1217,8 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(const i32v3& worldPos
 void NavWorld::markContainerNavDirty(TileContainer* container) {
     assert(IS_GAME_THREAD());
     assert(container);
-    bool didAdd = false;
+    bool didAdd = mDirtyTileContainers.tryDirtyObject(container);
     
-    {
-        std::lock_guard lock(mDirtyTileContainersMutex);
-        auto&& it = mDirtyTileContainers.find(container);
-        if (it == mDirtyTileContainers.end()) {
-            didAdd = true;
-            mDirtyTileContainers.insert(container);
-        }
-    }
     // Make sure we don't get deallocated while we are in the dirty list
     // TODO: Technically this is race condition if the nav thread and worker thread manage to finish their entire cycle before we get here.. but
     // this should be statistically impossible

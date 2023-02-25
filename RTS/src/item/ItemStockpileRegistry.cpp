@@ -3,6 +3,7 @@
 
 #include "world/IWorld.h"
 
+static ItemStockpileID sItemStockpileIdGen;
 
 ItemStockpileRegistry::ItemStockpileRegistry()
 {
@@ -16,20 +17,25 @@ ItemStockpileRegistry::~ItemStockpileRegistry()
 
 ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const i32AABB2& aabb, OPT bool* ownershipMask, entt::entity ownerEntity) {
     // Create new stockpile and leave unassigned (city ownership)
-    ItemStockpile* newStockpile = mAllStockpiles.emplace_back(std::make_unique<ItemStockpile>(aabb, ownershipMask, ownerEntity)).get();
+    ItemStockpileID id = sItemStockpileIdGen++;
+    std::unique_ptr<ItemStockpile> newUnique = std::make_unique<ItemStockpile>(id, aabb, ownershipMask, ownerEntity);
+    ItemStockpile* newStockpile = newUnique.get();
+    mAllStockpiles.insert(std::make_pair(id, std::move(newUnique)));
+
+    if (sItemStockpileIdGen > INT32_MAX) {
+        sItemStockpileIdGen = 0;
+    }
+
     addStockpileToAreaLookup(*newStockpile);
     return newStockpile;
 }
 
 void ItemStockpileRegistry::destroyStockpile(ItemStockpile* stockpile)
 {
-    for (size_t i = 0; i < mAllStockpiles.size(); ++i) {
-        if (mAllStockpiles[i].get() == stockpile) {
-            removeStockpileFromAreaLookup(*stockpile);
-            mAllStockpiles[i] = std::move(mAllStockpiles.back());
-            mAllStockpiles.pop_back();
-        }
-    }
+    auto&& it = mAllStockpiles.find(stockpile->getId());
+    assert(it != mAllStockpiles.end());
+    removeStockpileFromAreaLookup(*stockpile);
+    mAllStockpiles.erase(it);
 }
 
 const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtChunkPosition(ChunkID chunkID) const {
