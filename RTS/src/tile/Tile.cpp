@@ -199,7 +199,7 @@ bool Tile::canAddTileData(const TileData& tile) const {
     return layers[tile.layer] == TILE_ID_NONE;
 }
 
-void Tile::setGroundZPosition(f32 groundZPosition) {
+void Tile::setGroundZOffset(f32 groundZPosition) {
     assert(IS_GAME_THREAD());
     groundZOffset = groundZPosition;
 }

@@ -276,7 +276,7 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
         evnt.edit.changeZPos.prevGroundZOffset = tile.getGroundZOffset();
         {
             std::lock_guard lock(mSharedMutex);
-            tile.setGroundZPosition(groundZPosition);
+            tile.setGroundZOffset(groundZPosition);
         }
         evnt.edit.changeZPos.newGroundZOffset = tile.getGroundZOffset();
         evnt.container = this;
@@ -285,6 +285,19 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
         evnt.edit.tileIndex = i;
         TileContainerRepository::dispatchEditTile(evnt);
         onTileChanged(i);
+    }
+}
+
+void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* data, size_t count) {
+    {
+        std::lock_guard lock(mSharedMutex);
+        for (size_t i = 0; i < count; ++i) {
+            TileIndex pos = data[i].first;
+            f32 zPosition = data[i].second;
+            mTiles[pos].setGroundZOffset(data[i].second);
+            xxx;
+            assert(false);
+        }
     }
 }
 

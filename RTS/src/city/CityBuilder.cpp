@@ -169,7 +169,7 @@ Building* CityBuilder::debugBuildInstant(BuildingBlueprint& bp) {
             const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
             Tile& tile = tiles[stairPiece.pos];
             tile.layers[e_cast(TileLayer::Main)] = stairPiece.isFlatPart ? stairsFlatTileId : stairsTileId;
-            tile.setGroundZPosition(tilePos.z + heightAdd);
+            tile.setGroundZOffset(tilePos.z + heightAdd);
             tile.setOrientation(stairPiece.dir, TileLayer::Main);
             tileContainer.onTileChanged(stairPiece.pos);
         }

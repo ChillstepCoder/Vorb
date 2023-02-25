@@ -172,7 +172,7 @@ private:
     void setOrientation(Cartesian dir, TileLayer layer);
     void clearTileFlag(TileFlags flag);
     void clearTileFlags();
-    void setGroundZPosition(f32 groundZPosition);
+    void setGroundZOffset(f32 groundZPosition);
 
     // ================================= Data =================================
     union { // These can safely be modified at any time and will only be accessed by the main thread

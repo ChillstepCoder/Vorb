@@ -615,7 +615,6 @@ void WorldEditorPanel::updateBuildingEdit() {
             delete task;
         }, task);
 
-      
     }
 }
 

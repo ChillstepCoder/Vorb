@@ -93,7 +93,7 @@ private:
     bool freeSlot(ItemStockpileTileStorage& tileStorage, ItemStockpileRecord& record, std::unordered_map<ItemID, ItemStockpileRecord>::const_iterator& iterator, ItemID itemId, ui16 stackIndex);
 
     std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui16 splitQuantity);
-        
+    
     std::vector<ChunkID> mResidingChunks; // TODO: Share dependency logic with tilecontainer? No instead we need tile container dependencies
     std::vector<ItemStockpileTileStorage> mStorage;
     std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;

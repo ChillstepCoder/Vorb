@@ -200,12 +200,13 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
     const f32v2 halfDims = dims * 0.5f;
     const f32v2 worldPos = getWorldPos();
     const f32v2 offsetFromCenter = editPosition - (worldPos + halfDims);
+    std::vector<std::pair<TileIndex, f32>> bulkEdit;
     if (abs(offsetFromCenter.x) < halfDims.x + editRadius && abs(offsetFromCenter.y) < halfDims.y + editRadius) {
 
         // TODO: dirty grass
 
         // Update baseZ position
-        const f32v2 startPos = editRadius - f32v2(editRadius);
+        const f32v2 startPos = editPosition - f32v2(editRadius);
         f32v2 offsetFromChunk = startPos - worldPos;
         f32 rangeX = editRadius * 2.0f;
         f32 rangeY = editRadius * 2.0f;
@@ -223,15 +224,19 @@ void Chunk::onTerrainDataChanged(const f32v2& editPosition, f32 editRadius) {
                 if (chunkRelPos.x < CHUNK_WIDTH && chunkRelPos.y < CHUNK_WIDTH) {
                     TileIndex tileIndex = mTileContainer->getTileIndexFromXYZOffset(chunkRelPos.x, chunkRelPos.y, 0);
                     Tile& tile = mTileContainer->getMutableTileAt(tileIndex);
+                    bulkEdit.emplace_back(std::make_pair(tileIndex, sHeightmapGrid->computeMinHeightAtTile(f32v2(chunkRelPos) + worldPos)));
                     //if (tile.getLayers()[TILE_LAYER_GROUND] == TILE_ID_NONE) {
                         // If we have no ground layer, then we just set base Z to ground height
-                        mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeCenterHeightAtTile(f32v2(chunkRelPos) + worldPos));
+                        //mTileContainer->setTileGroundZPosition(tileIndex, sHeightmapGrid->computeMinHeightAtTile(f32v2(chunkRelPos) + worldPos));
                     //}
                     //else {
                         // What happens here? What happens when we cover up the tile?
                     //}
                 }
             }
+        }
+        if (bulkEdit.size()) {
+            mTileContainer->bulkSetTileGroundZPosition(bulkEdit.data(), bulkEdit.size());
         }
     }
 }
