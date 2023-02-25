@@ -12,6 +12,8 @@
 
 #include "physics/PhysicsWorld.h"
 
+constexpr ui32 MAX_BULK_EDIT_EVENT_COUNT = 2048;
+
 // TODO: The vector is pointless, every container is a cache miss anyways
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
@@ -272,33 +274,57 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     assert(isReady());
     Tile& tile = mTiles[i];
     TileContainerEvent evnt;
+    TileContainerEditZPosEventData eventData;
     if (tile.getGroundZOffset() != groundZPosition) {
-        evnt.edit.changeZPos.prevGroundZOffset = tile.getGroundZOffset();
+        evnt.container = this;
+        evnt.edit.changeZPosArray = &eventData;
+        evnt.edit.editCount = 1;
+        evnt.edit.type = TileContainerEditEventType::ChangeZPos;
+        eventData.prevGroundZOffset = tile.getGroundZOffset();
         {
             std::lock_guard lock(mSharedMutex);
             tile.setGroundZOffset(groundZPosition);
         }
-        evnt.edit.changeZPos.newGroundZOffset = tile.getGroundZOffset();
-        evnt.container = this;
-        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
-        evnt.edit.type = TileContainerEditEventType::ChangeZPos;
-        evnt.edit.tileIndex = i;
-        TileContainerRepository::dispatchEditTile(evnt);
+        eventData.newGroundZOffset = tile.getGroundZOffset();
+        eventData.worldPosition = getTileCenterWorldPosition(i);
+        eventData.tileIndex = i;
+        TileContainerRepository::dispatchEditTiles(evnt);
         onTileChanged(i);
     }
 }
 
-void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* data, size_t count) {
-    {
+void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editData, size_t count) {
+    assert(count);
+    assert(count < MAX_BULK_EDIT_EVENT_COUNT);
+    TileContainerEvent evnt;
+    TileContainerEditZPosEventData eventData[MAX_BULK_EDIT_EVENT_COUNT];
+    evnt.container = this;
+    evnt.edit.editCount = count;
+    evnt.edit.type = TileContainerEditEventType::ChangeZPos;
+    evnt.edit.changeZPosArray = eventData;
+    { // Critical section
         std::lock_guard lock(mSharedMutex);
         for (size_t i = 0; i < count; ++i) {
-            TileIndex pos = data[i].first;
-            f32 zPosition = data[i].second;
-            mTiles[pos].setGroundZOffset(data[i].second);
-            xxx;
-            assert(false);
+            TileContainerEditZPosEventData& currEventData = eventData[i];
+            const TileIndex tileIndex = editData[i].first;
+            const f32 zPosition = editData[i].second;
+            Tile& tile = mTiles[tileIndex];
+            currEventData.prevGroundZOffset = tile.groundZOffset;
+            mTiles[tileIndex].setGroundZOffset(zPosition);
+            currEventData.newGroundZOffset = tile.groundZOffset;
         }
     }
+
+    // Move out to keep critical section tiny
+    for (size_t i = 0; i < count; ++i) {
+        TileContainerEditZPosEventData& currEventData = eventData[i];
+        const TileIndex tileIndex = editData[i].first;
+        currEventData.tileIndex = tileIndex;
+        currEventData.worldPosition = getTileCenterWorldPosition(currEventData.tileIndex);
+        onTileChanged(tileIndex);
+    }
+
+    TileContainerRepository::dispatchEditTiles(evnt);
 }
 
 void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {

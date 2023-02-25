@@ -72,7 +72,7 @@ public:
     static std::vector<std::unique_ptr<TileContainer>>& getTileContainers();
 
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, Ready, TileContainerEventType::Ready, const TileContainerEvent&);
-    STATIC_EVENT_LISTENER_FUNCS(TileContainer, EditTile, TileContainerEventType::EditTile, const TileContainerEvent&);
+    STATIC_EVENT_LISTENER_FUNCS(TileContainer, EditTiles, TileContainerEventType::EditTiles, const TileContainerEvent&);
     STATIC_EVENT_LISTENER_FUNCS(TileContainer, Destroy, TileContainerEventType::Destroy, const TileContainerEvent&);
     STATIC_EVENT_DISPATCHER(TileContainer);
 };
@@ -115,7 +115,7 @@ public:
     void clearTileFlag(TileIndex i, TileFlags flag);
     void clearTileFlags(TileIndex i);
     void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
-    void bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* data, size_t count);
+    void bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editData, size_t count);
     void setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer);
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
     void setWallsAt(TileIndex index, TileWalls walls);

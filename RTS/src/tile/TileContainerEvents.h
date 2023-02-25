@@ -6,7 +6,7 @@ class TileContainer;
 
 enum class TileContainerEventType {
     Ready,
-    EditTile,
+    EditTiles,
     Destroy,
 };
 
@@ -20,37 +20,44 @@ enum class TileContainerEditEventType : ui8 {
 };
 
 struct TileContainerEditFlagsEventData {
+    TileIndex tileIndex;
+    f32v3 worldPosition;
     BitFlags<TileFlags> prevFlags;
     BitFlags<TileFlags> newFlags;
 };
 
 struct TileContainerEditLayerEventData {
+    TileIndex tileIndex;
+    f32v3 worldPosition;
     TileID prevId;
     TileID newId;
     TileLayer layer;
 };
 
 struct TileContainerEditZPosEventData {
+    TileIndex tileIndex;
+    f32v3 worldPosition;
     f32 prevGroundZOffset;
     f32 newGroundZOffset;
 };
 
 struct TileContainerEditOrientationEventData {
+    TileIndex tileIndex;
+    f32v3 worldPosition;
     TileOrientation prevOrientation;
     TileOrientation newOrientation;
 };
 
 struct TileContainerEditEvent {
-    f32v3 worldPosition;
-    TileIndex tileIndex;
-    TileContainerEditEventType type;
     union {
-        TileContainerEditFlagsEventData changeFlags;
-        TileContainerEditLayerEventData changeLayer;
-        TileContainerEditZPosEventData changeZPos;
-        TileContainerEditOrientationEventData changeOrientation;
+        TileContainerEditFlagsEventData* changeFlagsArray;
+        TileContainerEditLayerEventData* changeLayerArray;
+        TileContainerEditZPosEventData* changeZPosArray;
+        TileContainerEditOrientationEventData* changeOrientationArray;
         // TODO: Walls
     };
+    ui32 editCount;
+    TileContainerEditEventType type;
 };
 
 struct TileContainerEvent {

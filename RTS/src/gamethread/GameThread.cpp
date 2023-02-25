@@ -52,8 +52,8 @@ void GameThread::mainFunc() {
 
     GAME_THREAD_ID = std::this_thread::get_id();
     setThreadName("Game");
-
     setThreadPriorityToMax();
+
     initWorld();
 
     // Init time
