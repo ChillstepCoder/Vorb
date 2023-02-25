@@ -56,7 +56,7 @@ struct TileContainerEditEvent {
         TileContainerEditOrientationEventData* changeOrientationArray;
         // TODO: Walls
     };
-    ui32 editCount;
+    ui32 editCount = 1;
     TileContainerEditEventType type;
 };
 
@@ -65,3 +65,5 @@ struct TileContainerEvent {
     TileContainerEditEvent edit = {}; // TODO: Union
 };
 EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);
+
+constexpr ui32 MAX_BULK_EDIT_EVENT_COUNT = 2048;

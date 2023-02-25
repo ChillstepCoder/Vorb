@@ -304,25 +304,28 @@ void PhysicsWorld::initEventHandlers() {
         assert(IS_GAME_THREAD());
         deletePhysicsForTileContainer(event.container->getId());
     });
-    TileContainerRepository::addEditTileListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
+    TileContainerRepository::addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& event) {
         assert(IS_GAME_THREAD());
         const TileContainerEditEvent& editEvent = event.edit;
         switch (event.edit.type) {
             case TileContainerEditEventType::ChangeFlags:
                 break;
             case TileContainerEditEventType::ChangeLayer: {
-                const TileID prevId = editEvent.changeLayer.prevId;
-                if (prevId != TILE_ID_NONE) {
-                    const TileData& prevTileData = TileRepository::getTileData(editEvent.changeLayer.prevId);
-                    if (prevTileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                        removeTrackedStaticCollisionObjectAtPosition(event.container->getId(), editEvent.tileIndex);
+                for (ui32 i = 0; i < editEvent.editCount; ++i) {
+                    TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
+                    const TileID prevId = edit.prevId;
+                    if (prevId != TILE_ID_NONE) {
+                        const TileData& prevTileData = TileRepository::getTileData(edit.prevId);
+                        if (prevTileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                            removeTrackedStaticCollisionObjectAtPosition(event.container->getId(), edit.tileIndex);
+                        }
                     }
-                }
-                const TileID newId = editEvent.changeLayer.newId;
-                if (newId != TILE_ID_NONE) {
-                    const TileData& tileData = TileRepository::getTileData(newId);
-                    if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                        addTrackedStaticCollisionObjectAtPosition(event.container->getId(), event.edit.tileIndex, event.edit.worldPosition, mShapeRepository.getShape(tileData.collisionShapeID));
+                    const TileID newId = edit.newId;
+                    if (newId != TILE_ID_NONE) {
+                        const TileData& tileData = TileRepository::getTileData(newId);
+                        if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                            addTrackedStaticCollisionObjectAtPosition(event.container->getId(), edit.tileIndex, edit.worldPosition, mShapeRepository.getShape(tileData.collisionShapeID));
+                        }
                     }
                 }
                 break;

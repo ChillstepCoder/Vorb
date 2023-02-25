@@ -12,8 +12,6 @@
 
 #include "physics/PhysicsWorld.h"
 
-constexpr ui32 MAX_BULK_EDIT_EVENT_COUNT = 2048;
-
 // TODO: The vector is pointless, every container is a cache miss anyways
 std::vector<std::unique_ptr<TileContainer>> sTileContainers;
 std::unordered_map<TileContainerID, TileContainer*> sTileContainerLookup;
@@ -161,22 +159,23 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
         return;
     }
     // Build notify
-    //LOG_TRACE("Sending edit = TileIndex {} Layer {} id {} prevId {}", i, e_cast(layer), id, tile.layers[e_cast(layer)]);
     TileContainerEvent evnt;
+    TileContainerEditLayerEventData eventData;
     evnt.container = this;
-    evnt.edit.worldPosition = getTileCenterWorldPosition(i);
     evnt.edit.type = TileContainerEditEventType::ChangeLayer;
-    evnt.edit.tileIndex = i;
-    evnt.edit.changeLayer.prevId = prevId;
-    evnt.edit.changeLayer.newId = id;
-    evnt.edit.changeLayer.layer = layer;
+    evnt.edit.changeLayerArray = &eventData;
+    eventData.worldPosition = getTileCenterWorldPosition(i);
+    eventData.tileIndex = i;
+    eventData.prevId = prevId;
+    eventData.newId = id;
+    eventData.layer = layer;
     // Edit
     {
         std::lock_guard lock(mSharedMutex);
         tile.layers[e_cast(layer)] = id;
     }
     // Dispatch notify
-    TileContainerRepository::dispatchEditTile(evnt);
+    TileContainerRepository::dispatchEditTiles(evnt);
 
     onTileChanged(i);
 }
@@ -186,20 +185,20 @@ void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
     Tile& tile = mTiles[i];
     // Build notify
     TileContainerEvent evnt;
-    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
-    {
-        std::lock_guard lock(mSharedMutex);
-        tile.setTileFlag(flag);
-    }
-    evnt.edit.changeFlags.newFlags = tile.tileFlags;
-
-    // Dispatch notify if changed
-    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+    TileContainerEditFlagsEventData eventData;
+    if (!tile.hasFlag(flag)) {
         evnt.container = this;
-        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
         evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.tileIndex = i;
-        TileContainerRepository::dispatchEditTile(evnt);
+        evnt.edit.changeFlagsArray = &eventData;
+        eventData.prevFlags = tile.tileFlags;
+        {
+            std::lock_guard lock(mSharedMutex);
+            tile.setTileFlag(flag);
+        }
+        eventData.newFlags = tile.tileFlags;
+        eventData.tileIndex = i;
+        eventData.worldPosition = getTileCenterWorldPosition(i);
+        TileContainerRepository::dispatchEditTiles(evnt);
         onTileChanged(i);
     }
 }
@@ -210,18 +209,20 @@ void TileContainer::setTileFlags(TileIndex i, TileFlags flags) {
 
     // Build notify
     TileContainerEvent evnt;
-    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
-    {
-        std::lock_guard lock(mSharedMutex);
-        tile.setTileFlags(flags);
-    }
-    evnt.edit.changeFlags.newFlags = tile.tileFlags;
-    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+    TileContainerEditFlagsEventData eventData;
+    if (tile.tileFlags.getBits() != e_cast(flags)) {
         evnt.container = this;
-        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
         evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.tileIndex = i;
-        TileContainerRepository::dispatchEditTile(evnt);
+        evnt.edit.changeFlagsArray = &eventData;
+        eventData.prevFlags = tile.tileFlags;
+        {
+            std::lock_guard lock(mSharedMutex);
+            tile.setTileFlags(flags);
+        }
+        eventData.newFlags = tile.tileFlags;
+        eventData.tileIndex = i;
+        eventData.worldPosition = getTileCenterWorldPosition(i);
+        TileContainerRepository::dispatchEditTiles(evnt);
         onTileChanged(i);
     }
 }
@@ -230,20 +231,21 @@ void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];
 
-    // Build notify
     TileContainerEvent evnt;
-    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
-    {
-        std::lock_guard lock(mSharedMutex);
-        tile.clearTileFlag(flag);
-    }
-    evnt.edit.changeFlags.newFlags = tile.tileFlags;
-    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+    TileContainerEditFlagsEventData eventData;
+    if (tile.hasFlag(flag)) {
         evnt.container = this;
-        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
         evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.tileIndex = i;
-        TileContainerRepository::dispatchEditTile(evnt);
+        evnt.edit.changeFlagsArray = &eventData;
+        eventData.prevFlags = tile.tileFlags;
+        {
+            std::lock_guard lock(mSharedMutex);
+            tile.clearTileFlag(flag);
+        }
+        eventData.newFlags = tile.tileFlags;
+        eventData.tileIndex = i;
+        eventData.worldPosition = getTileCenterWorldPosition(i);
+        TileContainerRepository::dispatchEditTiles(evnt);
         onTileChanged(i);
     }
 }
@@ -254,18 +256,20 @@ void TileContainer::clearTileFlags(TileIndex i) {
 
     // Build notify
     TileContainerEvent evnt;
-    evnt.edit.changeFlags.prevFlags = tile.tileFlags;
-    {
-        std::lock_guard lock(mSharedMutex);
-        tile.clearTileFlags();
-    }
-    evnt.edit.changeFlags.newFlags = tile.tileFlags;
-    if (evnt.edit.changeFlags.prevFlags.getBits() != evnt.edit.changeFlags.newFlags.getBits()) {
+    TileContainerEditFlagsEventData eventData;
+    if (tile.tileFlags.getBits()) {
         evnt.container = this;
-        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
         evnt.edit.type = TileContainerEditEventType::ChangeFlags;
-        evnt.edit.tileIndex = i;
-        TileContainerRepository::dispatchEditTile(evnt);
+        evnt.edit.changeFlagsArray = &eventData;
+        eventData.prevFlags = tile.tileFlags;
+        {
+            std::lock_guard lock(mSharedMutex);
+            tile.clearTileFlags();
+        }
+        eventData.newFlags = tile.tileFlags;
+        eventData.tileIndex = i;
+        eventData.worldPosition = getTileCenterWorldPosition(i);
+        TileContainerRepository::dispatchEditTiles(evnt);
         onTileChanged(i);
     }
 }
@@ -277,9 +281,8 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
     TileContainerEditZPosEventData eventData;
     if (tile.getGroundZOffset() != groundZPosition) {
         evnt.container = this;
-        evnt.edit.changeZPosArray = &eventData;
-        evnt.edit.editCount = 1;
         evnt.edit.type = TileContainerEditEventType::ChangeZPos;
+        evnt.edit.changeZPosArray = &eventData;
         eventData.prevGroundZOffset = tile.getGroundZOffset();
         {
             std::lock_guard lock(mSharedMutex);
@@ -315,7 +318,7 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
         }
     }
 
-    // Move out to keep critical section tiny
+    // Move out to keep critical section small as possible
     for (size_t i = 0; i < count; ++i) {
         TileContainerEditZPosEventData& currEventData = eventData[i];
         const TileIndex tileIndex = editData[i].first;
@@ -332,18 +335,20 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer lay
     Tile& tile = mTiles[i];
 
     TileContainerEvent evnt;
-    evnt.edit.changeOrientation.prevOrientation = tile.orientation;
+    TileContainerEditOrientationEventData eventData;
     if (tile.getOrientation(layer) != dir) {
+        evnt.container = this;
+        evnt.edit.type = TileContainerEditEventType::ChangeOrientation;
+        evnt.edit.changeOrientationArray = &eventData;
+        eventData.prevOrientation = tile.orientation;
         {
             std::lock_guard lock(mSharedMutex);
             tile.setOrientation(dir, layer);
         }
-        evnt.edit.changeOrientation.newOrientation = tile.orientation;
-        evnt.container = this;
-        evnt.edit.worldPosition = getTileCenterWorldPosition(i);
-        evnt.edit.type = TileContainerEditEventType::ChangeOrientation;
-        evnt.edit.tileIndex = i;
-        TileContainerRepository::dispatchEditTile(evnt);
+        eventData.newOrientation = tile.orientation;
+        eventData.worldPosition = getTileCenterWorldPosition(i);
+        eventData.tileIndex = i;
+        TileContainerRepository::dispatchEditTiles(evnt);
         onTileChanged(i);
     }
 }

@@ -502,19 +502,21 @@ ui32 InstancedStaticModelRenderer::getNumModels() const {
 
 void InstancedStaticModelRenderer::initEventHandlers() {
     TileContainerRepository::registerTileContainerListeners(mTileContainerEventListeners);
-    TileContainerRepository::addEditTileListener(mTileContainerEventListeners, [](const TileContainerEvent& containerEvent) {
+    TileContainerRepository::addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
         assert(IS_GAME_THREAD());
         if (e_cast(containerEvent.edit.type) & MODEL_EDIT_HANDLE_MASK) {
-            TileContainerModelEditEvent* evnt = new TileContainerModelEditEvent();
-            evnt->containerId = containerEvent.container->getId();
-            evnt->editEvent = containerEvent.edit;
-            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vEditEvent) {
-                TileContainerModelEditEvent* evnt = static_cast<TileContainerModelEditEvent*>(vEditEvent);
-                // TODO: I don't really like how roundabout this is
-                context.getInstancedStaticModelRenderer().onModelEditEvent(*evnt);
-                delete evnt;
-            }, (void*)evnt);
+            onContainerEditEvent(containerEvent);
         }
+        //    TileContainerModelEditEvent* evnt = new TileContainerModelEditEvent();
+        //    evnt->containerId = containerEvent.container->getId();
+        //    evnt->editEvent = containerEvent.edit;
+
+        //    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vEditEvent) {
+        //        TileContainerModelEditEvent* evnt = static_cast<TileContainerModelEditEvent*>(vEditEvent);
+        //        // TODO: I don't really like how roundabout this is
+        //        context.getInstancedStaticModelRenderer().onModelEditEvent(*evnt);
+        //        delete evnt;
+        //    }, (void*)evnt);
     });
 
     TileContainerRepository::addDestroyListener(mTileContainerEventListeners, [](const TileContainerEvent& containerEvent) {
@@ -526,24 +528,44 @@ void InstancedStaticModelRenderer::initEventHandlers() {
     });
 }
 
+void InstancedStaticModelRenderer::onContainerEditEvent(const TileContainerEvent& evnt) {
 
-void InstancedStaticModelRenderer::onModelEditEvent(TileContainerModelEditEvent& evnt) {
-    switch (evnt.editEvent.type) {
+    const TileContainerID containerId = evnt.container->getId();
+
+    // TODO: These all come from same TileContainerID so we dont need to duplicate it for every event
+    struct ModelEditEvents {
+        InstancedStaticModelRenderer* renderer = nullptr;
+        xxx; // USE THIS
+    };
+    struct ModelAddEvent {
+        f32v3 worldPosition;
+        TileContainerID containerId;
+        TileIndex tileIndex;
+        ModelID modelId;
+    };
+    typedef std::vector<std::pair<TileContainerID, TileIndex>> RemoveEventsVec;
+    std::vector<ModelAddEvent> addEvents;
+    RemoveEventsVec removeEvents;
+
+    switch (evnt.edit.type) {
         case TileContainerEditEventType::ChangeFlags:
             break;
         case TileContainerEditEventType::ChangeLayer: {
-            const TileID prevId = evnt.editEvent.changeLayer.prevId;
-            if (prevId != TILE_ID_NONE) {
-                const TileData& prevTileData = TileRepository::getTileData(evnt.editEvent.changeLayer.prevId);
-                if (prevTileData.shape == TileShape::MODEL) {
-                    removeInstanceAtPosition(evnt.containerId, evnt.editEvent.tileIndex);
+            for (ui32 i = 0; i < evnt.edit.editCount; ++i) {
+                TileContainerEditLayerEventData& edit = evnt.edit.changeLayerArray[i];
+                const TileID prevId = edit.prevId;
+                if (prevId != TILE_ID_NONE) {
+                    const TileData& prevTileData = TileRepository::getTileData(edit.prevId);
+                    if (prevTileData.shape == TileShape::MODEL) {
+                        addEvents.emplace_back(std::make_pair(containerId, edit.tileIndex));
+                    }
                 }
-            }
-            const TileID newId = evnt.editEvent.changeLayer.newId;
-            if (newId != TILE_ID_NONE) {
-                const TileData& tileData = TileRepository::getTileData(newId);
-                if (tileData.shape == TileShape::MODEL) {
-                    addInstanceAtPosition(evnt.containerId, evnt.editEvent.tileIndex, tileData.modelId, evnt.editEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(evnt.editEvent.worldPosition));
+                const TileID newId = edit.newId;
+                if (newId != TILE_ID_NONE) {
+                    const TileData& tileData = TileRepository::getTileData(newId);
+                    if (tileData.shape == TileShape::MODEL) {
+                        addEvents.emplace_back(ModelAddEvent{edit.worldPosition, containerId, edit.tileIndex, tileData.modelId });
+                    }
                 }
             }
             break;
@@ -557,6 +579,24 @@ void InstancedStaticModelRenderer::onModelEditEvent(TileContainerModelEditEvent&
             break;
     }
     static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+
+    if (removeEvents.size()) {
+        RemoveEventsVec* removePtr = new RemoveEventsVec();
+        removePtr->swap(removeEvents);
+        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vRemovePtr) {
+            RemoveEventsVec* removePtr = static_cast<RemoveEventsVec*>(vRemovePtr);
+            for (auto&& r : *removePtr) {
+                removeInstanceAtPosition(r.first, r.second);
+            }
+            delete removePtr;
+        }, removePtr);
+    }
+    if (addEvents.size()) {
+        std::vector<ModelAddEvent>* addPtr = new std::vector<ModelAddEvent>();
+        addPtr->swap(addEvents);
+        addInstanceAtPosition(evnt.containerId, evnt.editEvent.tileIndex, tileData.modelId, evnt.editEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(evnt.editEvent.worldPosition));
+        xxx;
+    }
 }
 
 void InstancedStaticModelRenderer::removeTileModelInstanceInternal(TileModelInstance& instance) {

@@ -78,7 +78,7 @@ public:
 
 private:
     void initEventHandlers();
-    void onModelEditEvent(TileContainerModelEditEvent& evnt);
+    void onContainerEditEvent(const TileContainerEvent& evnt);
     void removeTileModelInstanceInternal(TileModelInstance& instance);
 
     ModelInstanceMap mModelsToInstances[e_cast(MaterialRenderPassType::COUNT)];
