@@ -530,22 +530,21 @@ void InstancedStaticModelRenderer::initEventHandlers() {
 
 void InstancedStaticModelRenderer::onContainerEditEvent(const TileContainerEvent& evnt) {
 
-    const TileContainerID containerId = evnt.container->getId();
-
-    // TODO: These all come from same TileContainerID so we dont need to duplicate it for every event
-    struct ModelEditEvents {
-        InstancedStaticModelRenderer* renderer = nullptr;
-        xxx; // USE THIS
-    };
     struct ModelAddEvent {
         f32v3 worldPosition;
-        TileContainerID containerId;
         TileIndex tileIndex;
         ModelID modelId;
     };
-    typedef std::vector<std::pair<TileContainerID, TileIndex>> RemoveEventsVec;
-    std::vector<ModelAddEvent> addEvents;
-    RemoveEventsVec removeEvents;
+    struct ModelEditEvents {
+        TileContainerID containerId;
+        InstancedStaticModelRenderer* renderer = nullptr;
+        std::vector<ModelAddEvent> addEvents;
+        std::vector<TileIndex> removeEvents;
+    };
+
+    ModelEditEvents editEvents;
+    editEvents.renderer = this;
+    editEvents.containerId = evnt.container->getId();
 
     switch (evnt.edit.type) {
         case TileContainerEditEventType::ChangeFlags:
@@ -557,14 +556,15 @@ void InstancedStaticModelRenderer::onContainerEditEvent(const TileContainerEvent
                 if (prevId != TILE_ID_NONE) {
                     const TileData& prevTileData = TileRepository::getTileData(edit.prevId);
                     if (prevTileData.shape == TileShape::MODEL) {
-                        addEvents.emplace_back(std::make_pair(containerId, edit.tileIndex));
+                        editEvents.removeEvents.emplace_back(edit.tileIndex);
                     }
                 }
                 const TileID newId = edit.newId;
+                assert(newId != prevId);
                 if (newId != TILE_ID_NONE) {
                     const TileData& tileData = TileRepository::getTileData(newId);
                     if (tileData.shape == TileShape::MODEL) {
-                        addEvents.emplace_back(ModelAddEvent{edit.worldPosition, containerId, edit.tileIndex, tileData.modelId });
+                        editEvents.addEvents.emplace_back(ModelAddEvent{edit.worldPosition, edit.tileIndex, tileData.modelId });
                     }
                 }
             }
@@ -580,22 +580,22 @@ void InstancedStaticModelRenderer::onContainerEditEvent(const TileContainerEvent
     }
     static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
-    if (removeEvents.size()) {
-        RemoveEventsVec* removePtr = new RemoveEventsVec();
-        removePtr->swap(removeEvents);
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vRemovePtr) {
-            RemoveEventsVec* removePtr = static_cast<RemoveEventsVec*>(vRemovePtr);
-            for (auto&& r : *removePtr) {
-                removeInstanceAtPosition(r.first, r.second);
+    if (editEvents.removeEvents.size() || editEvents.addEvents.size()) {
+
+        ModelEditEvents* editPtr = new ModelEditEvents(std::move(editEvents));
+
+        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vEditsPtr) {
+            ModelEditEvents* editPtr = static_cast<ModelEditEvents*>(vEditsPtr);
+            TileContainerID containerId = editPtr->containerId;
+            InstancedStaticModelRenderer* renderer = editPtr->renderer;
+            for (auto&& index : editPtr->removeEvents) {
+                renderer->removeInstanceAtPosition(containerId, index);
             }
-            delete removePtr;
-        }, removePtr);
-    }
-    if (addEvents.size()) {
-        std::vector<ModelAddEvent>* addPtr = new std::vector<ModelAddEvent>();
-        addPtr->swap(addEvents);
-        addInstanceAtPosition(evnt.containerId, evnt.editEvent.tileIndex, tileData.modelId, evnt.editEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(evnt.editEvent.worldPosition));
-        xxx;
+            for (auto&& addEvent : editPtr->addEvents) {
+                renderer->addInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, TileMeshBuilderMethods::getModelRotationAtPosition(addEvent.worldPosition));
+            }
+            delete editPtr;
+        }, editPtr);
     }
 }
 
