@@ -1,13 +1,12 @@
 #pragma once
 
 #include "IAgentTask.h"
-
 #include "tile/TileHandle.h"
+#include "item/ItemReservation.h"
 
 class City;
 
 class ItemStockpile;
-class ItemReservation;
 
 enum class GatherTaskState : ui8 {
 	INIT,
@@ -48,3 +47,38 @@ protected:
     GatherTaskState mState = GatherTaskState::INIT;
 	City* mCity;
 };
+
+//class GatherResourceTask : public IAgentTask {
+//
+//};
+
+class GatherItemsForPromiseTask : public IAgentTask {
+public:
+	GatherItemsForPromiseTask(ItemPromiseWeakPtr&& itemPromise);
+	~GatherItemsForPromiseTask();
+
+    // TODO: Override allocation to use boost::singleton_pool
+    // static void* operator new(size_t count);
+    // static void operator delete(void* pointer, size_t size);
+
+	enum class TaskState : ui8 {
+		FIND_ITEM,
+		PATH_TO_ITEM,
+		HARVEST_ITEM,
+		HARVESTING,
+		SUCCESS,
+		FAIL
+	};
+
+	bool tick(entt::registry& registry, entt::entity agent) override;
+
+protected:
+    void findItem(entt::registry& registry, entt::entity agent);
+    void harvestItem(entt::registry& registry, entt::entity agent);
+
+    ItemPromiseWeakPtr mItemPromise;
+    TileHandle mCurrentTileTarget;
+	TaskState mState = TaskState::FIND_ITEM;
+};
+
+typedef std::unique_ptr<GatherItemsForPromiseTask> GatherItemsForPromiseTaskPtr;

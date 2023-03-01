@@ -45,3 +45,18 @@ private:
     BuildingBlueprint& mBlueprint;
 };
 
+struct BuildTilesFromPromiseTask : public IAgentTask {
+public:
+    BuildTilesFromPromiseTask(ItemPromiseWeakPtr&& itemPromise, BuildingBlueprint& blueprint);
+    ~BuildTilesFromPromiseTask();
+
+    // TODO:s Override allocation to use boost::singleton_pool
+   // static void* operator new(size_t count);
+   // static void operator delete(void* pointer, size_t size);
+protected:
+    ItemPromiseWeakPtr mItemPromise;
+    BuildingBlueprint& mBlueprint;
+    std::vector<TileIndex> mTargetTiles;
+};
+
+typedef std::unique_ptr<BuildTilesFromPromiseTask> BuildTilesFromPromiseTaskPtr;

@@ -63,13 +63,21 @@ void ItemReservation::operator delete(void* pointer, size_t size) {
     return singleton_task_pool::free(pointer);
 }
 
-ItemPromise::ItemPromise(ItemID itemId, ui16 itemCount, ui16 minShipmentSize) : mPromisedItemStack{itemId, itemCount}, mMinShipmentSize(minShipmentSize) {
-
+ItemPromise::ItemPromise(ItemID itemId, ui16 minItemCount, ui16 maxItemCount, ui16 minShipmentSize, std::function<void(ItemPromise*, ui16)>&& onFinish)
+    : mItemId(itemId)
+    , mMinItemCount(minItemCount)
+    , mMaxItemCount(maxItemCount)
+    , mMinShipmentSize(minShipmentSize)
+    , mOnFinish(std::move(onFinish)) {
+    if (mMaxItemCount < mMinItemCount) {
+        mMaxItemCount = mMinItemCount;
+    }
 }
 
 void ItemPromise::promiseShipment(ui16 maxShipmentQuantity) {
     assert(mItemsReady > 0);
     mPendingShipmentQuantity += maxShipmentQuantity;
+    assert(mPendingShipmentQuantity)
 }
 
 void ItemPromise::cancelShipment(ui16 maxShipmentQuantity) {
@@ -77,10 +85,31 @@ void ItemPromise::cancelShipment(ui16 maxShipmentQuantity) {
     mPendingShipmentQuantity -= maxShipmentQuantity;
 }
 
-std::shared_ptr<ItemPromise> ItemPromise::splitPromiseForShipment(ui16 maxShipmentQuantity) {
+ui16 ItemPromise::beginShipment(ui16 maxShipmentQuantity) {
     assert(maxShipmentQuantity <= mPendingShipmentQuantity);
     assert(mItemsReady > 0);
-    assert(mItemsReady <= mPromisedItemStack.quantity);
+    assert(mItemsReady <= mMaxItemCount);
 
-    std::shared_ptr<ItemPromise> itemPromise = std::make_shared<ItemPromise>();
+}
+
+void ItemPromise::fulfillQuantity(ui16 quantity) {
+    assert(quantity <= mItemsReady);
+    mItemsReady -= quantity;
+    if (quantity >= mMinItemCount) {
+        mMinItemCount = 0;
+    }
+    else {
+        mMinItemCount -= quantity;
+    }
+    mMinItemCount -= quantity;
+    assert(quantity >= mMaxItemCount);
+    mMaxItemCount -= quantity;
+
+    mTotalFulfilled += quantity;
+
+    // We are finished
+    if (mMinItemCount == 0) {
+        assert(mTotalFulfilled >= mMinItemCount);
+        mOnFinish(this, mTotalFulfilled);
+    }
 }

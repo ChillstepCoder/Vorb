@@ -252,3 +252,35 @@ void GatherTask::failTask() {
     }
     mItemPromise = nullptr;
 }
+
+GatherItemsForPromiseTask::GatherItemsForPromiseTask(ItemPromiseWeakPtr&& itemPromise) : mItemPromise(std::move(itemPromise)) {
+
+}
+
+GatherItemsForPromiseTask::~GatherItemsForPromiseTask() {
+
+}
+
+bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agent)
+{
+    switch (mState) {
+        case TaskState::FIND_ITEM:
+            findItem(registry, agent);
+            break;
+        case TaskState::PATH_TO_ITEM:
+            // Awaiting callback
+            break;
+        case TaskState::HARVEST_ITEM:
+            break;
+        case TaskState::HARVESTING:
+            // Awaiting callback
+            break;
+        case TaskState::SUCCESS:
+        case TaskState::FAIL:
+            return true;
+        default:
+            assert(false);
+      
+    }
+    return false;
+}

@@ -681,6 +681,9 @@
     <ClCompile Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ai\tasks\ShipItemsForPromiseTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\SimpleSpriteComponent.h">
@@ -1590,6 +1593,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\ThreadSafeDirtyList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ai\tasks\ShipItemsForPromiseTask.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

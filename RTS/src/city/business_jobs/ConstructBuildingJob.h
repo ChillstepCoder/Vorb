@@ -33,8 +33,8 @@ struct JobRequiredItems {
     ItemID id = INVALID_ITEM_ID;
     ui32 quantityRequired = 0;
     ui32 quantityReserved = 0;
-	ui32 quantityGathering = 0;
-    std::vector<std::unique_ptr<ItemReservation>> mReservations;
+    std::set<std::shared_ptr<ItemPromise>> mReservations; // TODO: Split out for faster iteration
+    //std::vector<std::unique_ptr<ItemReservation>> mReservations;
 };
 
 class ConstructBuildingJob : public IBusinessJob
@@ -58,8 +58,6 @@ private:
 	
 	ConstructBuildingState mState = ConstructBuildingState::NONE;
 
-	ui32 mNumTilesReservedInTasks = 0;
-	ui32 mFirstUnfinishedBpIndex = 0;
 	ui32 tickCounter = 0;
 };
 

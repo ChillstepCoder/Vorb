@@ -53,21 +53,30 @@ private:
 // Can only promise up to MAX_ITEM_RESERVATION_SIZE
 class ItemPromise {
 public:
-    ItemPromise(ItemID itemId, ui16 itemCount, ui16 minShipmentSize);
+    ItemPromise(ItemID itemId, ui16 minItemCount, ui16 maxItemCount, ui16 minShipmentSize, std::function<void(ItemPromise*, ui16)>&& onFinish);
 
     void promiseShipment(ui16 maxShipmentQuantity);
     void cancelShipment(ui16 maxShipmentQuantity);
-    bool readyForShipment() const { return (mItemsReady - mPendingShipmentQuantity) >= mMinShipmentSize; }
-    std::shared_ptr<ItemPromise> splitPromiseForShipment(ui16 maxShipmentQuantity);
+    ui16 beginShipment(ui16 maxShipmentQuantity);
+    void addItemsReadyQuantity(ui16 quantity) { mItemsReady += quantity; }
+    void fulfillQuantity(ui16 quantity);
+    ui16 getMinItemsRemaining() { return mItemsReady <= mMinItemCount ? (mMinItemCount - mItemsReady) : 0; }
+    ui16 getMaxItemsRemaining() { assert(mItemsReady <= mMaxItemCount); return mMaxItemCount - mItemsReady; }
+
+    bool isReadyForShipment() const { return (mItemsReady - mPendingShipmentQuantity) >= mMinShipmentSize; }
+    bool isFinished() const { return mTotalFulfilled >= mMinItemCount; }
 
 private:
-    ItemStack mPromisedItemStack;
-    ui16 mItemsReady;
-    ui16 mMinShipmentSize;
-    ui16 mPendingShipmentQuantity;
+    std::function<void(ItemPromise*, ui16)> mOnFinish;
+    ItemID mItemId;
+    ui16 mMinItemCount; // Contract is fulfilled once we fullfill this many items
+    ui16 mMaxItemCount; // Allow some degree of overflow
+    ui16 mItemsReady = 0;
+    ui16 mMinShipmentSize; // Minimum allowed size of a shipment
+    ui16 mPendingShipmentQuantity = 0; // Quantity marked for ship
+    ui16 mShippingQuantity = 0; // Quantity actively shipping
+    ui16 mTotalFulfilled = 0;
 };
 
-struct ItemPromiseHandle {
-    std::weak_ptr<ItemPromise> mPromisePtr;
-    ItemStack mItemData;
-};
+typedef std::shared_ptr<ItemPromise> ItemPromisePtr;
+typedef std::weak_ptr<ItemPromise> ItemPromiseWeakPtr;

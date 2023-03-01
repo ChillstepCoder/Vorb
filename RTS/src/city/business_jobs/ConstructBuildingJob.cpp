@@ -9,18 +9,18 @@
 #include "item/ItemStockpile.h"
 
 #include "ai/tasks/BuildTask.h"
+#include "ai/tasks/GatherTask.h"
+#include "ai/tasks/ShipItemsForPromiseTask.h"
 
 // Look for items every 8 ticks
 constexpr ui32 TICK_RATE_RESERVE_ITEMS = 8;
 
 
-JobRequiredItems::JobRequiredItems()
-{
+JobRequiredItems::JobRequiredItems() {
 
 }
 
-JobRequiredItems::~JobRequiredItems()
-{
+JobRequiredItems::~JobRequiredItems() {
 
 }
 
@@ -74,9 +74,43 @@ float ConstructBuildingJob::getProgress() const {
 
 IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
 
-    
+    for (auto&& item : mRequiredItems) {
+        // Gather
+        if (item.quantityReserved < item.quantityRequired) {
+            ui32 remainingQuantity = item.quantityRequired - item.quantityReserved;
+            // TODO: check worker inventory space
+            ui16 minQuantity = (ui16)std::min(16u, remainingQuantity);
+            ui16 maxQuantity = minQuantity + 16;
 
+            // Mark as reserved
+            item.quantityRequired += minQuantity;
 
+            ItemPromisePtr itemPromise = std::make_shared<ItemPromise>(item.id, minQuantity, maxQuantity, minQuantity,
+                [this](ItemPromise* itemPromise, ui16 fulfilledQuantity) {
+                LOG_CRITICAL("WEEEE DID IT {}", fulfilledQuantity);
+                assert(false);
+            });
+            ItemPromiseWeakPtr promiseHandle = itemPromise;
+
+            // Gather
+            GatherItemsForPromiseTaskPtr gatherTask = std::make_unique<GatherItemsForPromiseTask>(itemPromise);
+
+            // Ship
+            constexpr f32 SHIPMENT_COMPLETE_RADIUS = 16.0f;
+            TileHandle targetHandle = mBlueprint.getTileHandle(0); // TODO: BETTER
+            ShipItemsForPromiseTaskPtr shipTask = std::make_unique<ShipItemsForPromiseTask>(itemPromise, mBlueprint.getTileHandle(0), SHIPMENT_COMPLETE_RADIUS);
+            
+            // Build
+            BuildTilesFromPromiseTaskPtr buildTask = std::make_unique<BuildTilesFromPromiseTask>(itemPromise, mBlueprint);
+
+            // Link
+            shipTask->setNextTask(std::move(buildTask));
+            gatherTask->setNextTask(std::move(shipTask));
+
+            item.mReservations.insert(std::move(itemPromise));
+            return std::move(gatherTask);
+        }
+    }
     // OLD
     //if (mTotalResourcesReserved && mNumTilesReservedInTasks < (mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt)) {
     //    constexpr ui32 MAX_TILES_TO_BUILD_PER_JOB = 5;

@@ -9,6 +9,7 @@ public:
     virtual bool tick(entt::registry& registry, entt::entity agent) = 0;
 
     std::unique_ptr<IAgentTask>& getNextTask() { return mNextTask; }
+    void setNextTask(std::unique_ptr<IAgentTask>&& nextTask) { assert(!mNextTask); mNextTask = std::move(nextTask); }
 
 private:
     std::unique_ptr<IAgentTask> mNextTask = nullptr;

@@ -1693,8 +1693,9 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
 
     std::unordered_map<RoomNodeID, i32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
-
-    for (i32 i = 0; i < (i32)bp.tiles.size(); ++i) {
+    // Guess
+    bp.tilesToBuild.reserve(bp.tiles.size() / 2);
+    for (TileIndex i = 0; i < (TileIndex)bp.tiles.size(); ++i) {
         // Compute bounds
         RoomNodeID id = bp.ownerArray[i];
         if (id != INVALID_ROOM_ID) {
@@ -1728,8 +1729,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
             case BlueprintTileType::WALL:
             case BlueprintTileType::FLOOR:
             case BlueprintTileType::DOOR:
-
-                ++bp.totalTilesToBuild;
+                bp.tilesToBuild.emplace_back(i);
                 for (auto&& itemStack : *bp.tileRecipes[e_cast(bp.tiles[i].type)]) {
                     auto&& it = requiredItems.find(itemStack.id);
                     if (it == requiredItems.end()) {
@@ -1762,6 +1762,9 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprint& bp) {
     for (auto&& it : requiredItems) {
         bp.requiredItemsToBuild.push_back(ItemStackUnbounded{ it.first, (ui32)it.second });
     }
+
+    bp.totalTilesToBuild = bp.tilesToBuild.size();
+    // TODO: Sort bp.tilesToBuild by distance from entrances
 }
 
 BuildingBlueprintId BuildingBlueprintGenerator::getNextBuildingID() {
