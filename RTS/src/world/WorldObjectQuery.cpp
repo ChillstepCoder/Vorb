@@ -110,7 +110,7 @@ void WorldObjectQuery::queryInternal(WorldObjectQueryData& data)
     assert(handle.isValid());
     if (handle.tile->hasFlag(TileFlags::IS_STOCKPILE)) {
         const ChunkID id = handle.getChunkIDAtPos();
-        const auto* stockPiles = sWorld->getItemStockpileRegistry().tryGetStockpilesAtChunkPosition(id);
+        const auto* stockPiles = sWorld->getItemStockpileRegistry().tryGetStockpilesAtTileContainer(sWorld->getChunk(id).getTileContainer()->getId());
         if (stockPiles) {
             for (auto& stockpile : *stockPiles) {
                 if (pointIsWithinAABBInclusive(data.mWorldPos, stockpile->getAABB())) {

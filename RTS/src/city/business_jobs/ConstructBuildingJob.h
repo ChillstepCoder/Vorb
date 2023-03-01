@@ -33,6 +33,7 @@ struct JobRequiredItems {
     ItemID id = INVALID_ITEM_ID;
     ui32 quantityRequired = 0;
     ui32 quantityReserved = 0;
+	ui32 quantityGathering = 0;
     std::vector<std::unique_ptr<ItemReservation>> mReservations;
 };
 

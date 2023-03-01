@@ -47,7 +47,7 @@ ItemStack InventoryComponent::removeItemStackFromPersonalStorage(ItemStack itemS
     return ItemStack();
 }
 
-bool InventoryComponent::addOrDropItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID) {
+bool InventoryComponent::addItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID) {
 
     auto&& workingStorage = mWorkingStorage[workingStorageID];
     for (size_t i = 0; i < workingStorage.size(); ++i) {

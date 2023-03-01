@@ -62,3 +62,25 @@ void ItemReservation::operator delete(void* pointer, size_t size) {
     UNUSED(size);
     return singleton_task_pool::free(pointer);
 }
+
+ItemPromise::ItemPromise(ItemID itemId, ui16 itemCount, ui16 minShipmentSize) : mPromisedItemStack{itemId, itemCount}, mMinShipmentSize(minShipmentSize) {
+
+}
+
+void ItemPromise::promiseShipment(ui16 maxShipmentQuantity) {
+    assert(mItemsReady > 0);
+    mPendingShipmentQuantity += maxShipmentQuantity;
+}
+
+void ItemPromise::cancelShipment(ui16 maxShipmentQuantity) {
+    assert(mPendingShipmentQuantity >= maxShipmentQuantity);
+    mPendingShipmentQuantity -= maxShipmentQuantity;
+}
+
+std::shared_ptr<ItemPromise> ItemPromise::splitPromiseForShipment(ui16 maxShipmentQuantity) {
+    assert(maxShipmentQuantity <= mPendingShipmentQuantity);
+    assert(mItemsReady > 0);
+    assert(mItemsReady <= mPromisedItemStack.quantity);
+
+    std::shared_ptr<ItemPromise> itemPromise = std::make_shared<ItemPromise>();
+}

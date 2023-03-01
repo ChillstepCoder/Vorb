@@ -26,7 +26,7 @@ ItemStockpile* ItemStockpileRegistry::tryCreateStockpileAt(const i32AABB2& aabb,
         sItemStockpileIdGen = 0;
     }
 
-    addStockpileToAreaLookup(*newStockpile);
+    addTerrainStockpileToAreaLookup(*newStockpile);
     return newStockpile;
 }
 
@@ -38,15 +38,16 @@ void ItemStockpileRegistry::destroyStockpile(ItemStockpile* stockpile)
     mAllStockpiles.erase(it);
 }
 
-const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtChunkPosition(ChunkID chunkID) const {
-    const auto& it = mAreaLookup.find(chunkID);
+const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtTileContainer(TileContainerID containerId) const {
+    const auto& it = mAreaLookup.find(containerId);
     if (it == mAreaLookup.end()) {
         return nullptr;
     }
     return &it->second;
 }
 
-void ItemStockpileRegistry::addStockpileToAreaLookup(ItemStockpile& stockpile) {
+void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stockpile) {
+    // TODO: I think this is bad
     // Get all possible chunks
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
@@ -54,15 +55,22 @@ void ItemStockpileRegistry::addStockpileToAreaLookup(ItemStockpile& stockpile) {
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, 0.0f))));
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(0.0f, aabb.depth))));
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
-    stockpile.mResidingChunks.reserve(chunkPositions.size());
+    int i = 0;
     for (auto&& id : chunkPositions) {
-        mAreaLookup[id].push_back(&stockpile);
-        // Tell the stockpile what chunks it resides in
-        stockpile.mResidingChunks.push_back(id);
+        Chunk& chunk = sWorld->getChunk(id);
+        if (chunk.getTileContainer()) {
+            const TileContainerID chunkContainerId = chunk.getTileContainer()->getId();
+            mAreaLookup[chunkContainerId].push_back(&stockpile);
+            stockpile.mContainerDependencies[i++] = chunkContainerId;
+        }
+        else {
+            assert(false);
+        }
     }
 }
 
 void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpile) {
+    // TODO: I think this is bad
     // Get all possible chunks
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
@@ -70,8 +78,11 @@ void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpi
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, 0.0f))));
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(0.0f, aabb.depth))));
     chunkPositions.insert(ChunkID(f32v2(aabb.pos + i32v2(aabb.width, aabb.depth))));
+    int i = 0;
     for (auto&& id : chunkPositions) {
-        const auto& it = mAreaLookup.find(id);
+        Chunk& chunk = sWorld->getChunk(id);
+        assert(chunk.getTileContainer());
+        const auto& it = mAreaLookup.find(chunk.getTileContainer()->getId());
         assert(it != mAreaLookup.end());
         auto& arry = it->second;
         for (size_t i = 0; i < arry.size(); ++i) {

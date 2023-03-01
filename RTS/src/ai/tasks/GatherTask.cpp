@@ -27,7 +27,7 @@ GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique
     mItemPromise(std::move(itemPromise)) {
     // Gather task requires target tile to be reserved already
     assert(tileTarget.tile->hasFlag(TileFlags::IS_RESOURCE_RESERVED));
-    assert(mItemPromise->isPromise());
+    assert(!mItemPromise || mItemPromise->isPromise());
 }
 
 GatherTask::~GatherTask() {
@@ -58,8 +58,12 @@ bool GatherTask::tick(entt::registry& registry, entt::entity agent) {
             break;
         case GatherTaskState::HARVESTING: {
             // Once the component is destroyed, we are done
+            // TODO: This does not allow for harvesting failure
             if (!registry.try_get<TimedTileInteractComponent>(agent)) {
-                pathToStockpileSlot(registry, agent);
+                if (mItemPromise) {
+                    // TODO: This should be another task
+                    pathToStockpileSlot(registry, agent);
+                }
             }
             break;
         }
@@ -164,7 +168,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
                     stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
                 }
                 stack.id = drop.id;
-                invCmp.addOrDropItemStackToWorkingStorage(stack, e_cast(WorkStorageID::HAULING));
+                invCmp.addItemStackToWorkingStorage(stack, e_cast(WorkStorageID::HAULING));
             }
         }
     );

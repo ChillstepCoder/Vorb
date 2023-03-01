@@ -49,3 +49,25 @@ private:
     bool mIsPromise; // If is promise, then we are giving the stacks, otherwise we are taking
 };
 //static_assert(sizeof(ItemReservation) == 48, "Keep small");
+
+// Can only promise up to MAX_ITEM_RESERVATION_SIZE
+class ItemPromise {
+public:
+    ItemPromise(ItemID itemId, ui16 itemCount, ui16 minShipmentSize);
+
+    void promiseShipment(ui16 maxShipmentQuantity);
+    void cancelShipment(ui16 maxShipmentQuantity);
+    bool readyForShipment() const { return (mItemsReady - mPendingShipmentQuantity) >= mMinShipmentSize; }
+    std::shared_ptr<ItemPromise> splitPromiseForShipment(ui16 maxShipmentQuantity);
+
+private:
+    ItemStack mPromisedItemStack;
+    ui16 mItemsReady;
+    ui16 mMinShipmentSize;
+    ui16 mPendingShipmentQuantity;
+};
+
+struct ItemPromiseHandle {
+    std::weak_ptr<ItemPromise> mPromisePtr;
+    ItemStack mItemData;
+};

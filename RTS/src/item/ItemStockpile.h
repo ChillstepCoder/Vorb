@@ -6,10 +6,16 @@
 #include "util/BitArray.h"
 #include "ItemReservation.h"
 #include "ItemStockpileEvent.h"
+#include "tile/TileHandle.h"
 
 class Camera3D;
 
 constexpr ui32 MAX_STOCKPILE_WIDTH = CHUNK_WIDTH / 2;
+//
+//struct ItemStackLocation {
+//    LiteTileHandle tileHandle;
+//    f32 zPos;
+//};
 
 // TODO: ui16?
 struct ItemStockpileRecord {
@@ -23,14 +29,16 @@ struct ItemStockpileRecord {
 };
 
 struct ItemStockpileTileStorage {
+   // TileIndex tileIndex;
     ItemStack stack;
     ui16 promiseCount = 0u;
     ui16 reserveCount = 0u;
+  //  f32 zPos = 0.0f;
 
     bool isNull() const { return promiseCount == 0 && stack.quantity == 0; }
     bool isInvalidStorage() const { return stack.id == INVALID_STOCKPILE_INDEX; }
 };
-static_assert(sizeof(ItemStockpileTileStorage) == 8, "Keep small");
+//static_assert(sizeof(ItemStockpileTileStorage) == 16, "Keep small");
 
 // All data needed to mesh a stockpile
 struct ItemStockpileMeshDataCopy {
@@ -93,12 +101,13 @@ private:
     bool freeSlot(ItemStockpileTileStorage& tileStorage, ItemStockpileRecord& record, std::unordered_map<ItemID, ItemStockpileRecord>::const_iterator& iterator, ItemID itemId, ui16 stackIndex);
 
     std::unique_ptr<ItemReservation> splitReservation(ItemReservation* reservation, ui16 splitQuantity);
-    
-    std::vector<ChunkID> mResidingChunks; // TODO: Share dependency logic with tilecontainer? No instead we need tile container dependencies
-    std::vector<ItemStockpileTileStorage> mStorage;
+
     std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;
+    std::vector<ItemStockpileTileStorage> mStorage;
     std::unordered_set<ItemReservation*> mReservations;
 
+    TileContainerID mContainerDependencies[4] = {};
+    ui8 mContainerDependenciesUnloaded = 0;
     i32AABB2 mAABB = i32AABB2(0);
     f32 mZPos = 0; // TODO: Use this better
     entt::entity mOwnerEntity = INVALID_ENTITY; // Business entity that owns this stockpile

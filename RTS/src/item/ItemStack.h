@@ -1,6 +1,7 @@
 #pragma once
 
 constexpr ui16 MAX_ITEM_STACK_SIZE = UINT16_MAX;
+constexpr ui16 MAX_ITEM_RESERVATION_SIZE = MAX_ITEM_STACK_SIZE;
 
 // Maximum stack size is 65,535
 struct ItemStack {

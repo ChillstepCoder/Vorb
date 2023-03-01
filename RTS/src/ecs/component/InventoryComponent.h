@@ -36,7 +36,7 @@ public:
 
     bool addOrDropItemStackToPersonalStorage(ItemStack itemStack);
     ItemStack removeItemStackFromPersonalStorage(ItemStack itemStack);
-    bool addOrDropItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID);
+    bool addItemStackToWorkingStorage(ItemStack itemStack, int workingStorageID);
     std::vector<ItemStack>& getMutableWorkingStorage(int workingStorageID);
     void eraseWorkingStorage(int workingStorageID);
 

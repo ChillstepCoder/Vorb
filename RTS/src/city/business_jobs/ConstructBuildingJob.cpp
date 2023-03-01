@@ -58,7 +58,8 @@ bool ConstructBuildingJob::tick(entt::registry& registry, entt::entity business)
     if (tickCounter % TICK_RATE_RESERVE_ITEMS == 0) {
         for (auto&& item : mRequiredItems) {
             if (item.quantityReserved < item.quantityRequired) {
-                tryReserveItems(item, ownershipCmp);
+                // TODO: Re-enable
+    //            tryReserveItems(item, ownershipCmp);
             }
         }
     }
@@ -72,79 +73,84 @@ float ConstructBuildingJob::getProgress() const {
 }
 
 IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
-    if (mTotalResourcesReserved && mNumTilesReservedInTasks < (mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt)) {
-        constexpr ui32 MAX_TILES_TO_BUILD_PER_JOB = 5;
-        const ui32 maxTilesForJob = glm::min((mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt) - mNumTilesReservedInTasks, MAX_TILES_TO_BUILD_PER_JOB);
 
-        std::vector<std::unique_ptr<ItemReservation>> sourceItems;
-        std::vector<TileIndex> targetTiles;
-        const ui32 bpSize = mBlueprint.aabb.dims.x * mBlueprint.aabb.dims.y;
-        for (ui32 i = mFirstUnfinishedBpIndex; i < bpSize; ++i) {
-            BlueprintTile& tile = mBlueprint.tiles[i];
-            if (!tile.isReserved && !tile.isBuilt) {
-                auto&& recipe = mBlueprint.tileRecipes[e_cast(tile.type)];
-                assert(recipe);
-                // Check if we have enough (TODO: can we make this not n^2?)
-                bool canFulfill = true;
-                for (const ItemStack& itemStack : *recipe) {
-                    for (const JobRequiredItems& requiredItems : mRequiredItems) {
-                        if (requiredItems.id == itemStack.id) {
-                            if (requiredItems.quantityReserved < itemStack.quantity) {
-                                canFulfill = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (!canFulfill) break;
-                }
+    
 
-                if (canFulfill) {
-                    ++mNumTilesReservedInTasks;
-                    targetTiles.push_back(i);
-                    tile.isReserved = true;
-                    // Second pass. reserve the items
-                    for (const ItemStack& itemStack : *recipe) {
-                        for (JobRequiredItems& requiredItems : mRequiredItems) {
-                            if (requiredItems.id == itemStack.id) {
-                                ui32 totalNeeded = itemStack.quantity;
-                                for (size_t i = 0; i < requiredItems.mReservations.size() && totalNeeded;) {
-                                    const ui32 reservationQuantity = requiredItems.mReservations[i]->getRemainingQuantity();
-                                    if (reservationQuantity <= totalNeeded) {
-                                        // This stack is smaller than or equal to what we need, consume the entire reservation
-                                        totalNeeded -= reservationQuantity;
-                                        sourceItems.push_back(std::move(requiredItems.mReservations[i]));
-                                        requiredItems.mReservations[i] = std::move(requiredItems.mReservations.back());
-                                        requiredItems.mReservations.pop_back();
-                                    }
-                                    else {
-                                        // This reservation is bigger than what we need, split it and break
-                                        sourceItems.push_back(std::move(requiredItems.mReservations[i]->splitReservation(totalNeeded)));
-                                        totalNeeded = 0;
-                                        break;
-                                    }
-                                }
-                                assert(totalNeeded == 0);
-                                // Adjust totals
-                                requiredItems.quantityReserved -= itemStack.quantity;
-                                requiredItems.quantityRequired -= itemStack.quantity;
-                            }
-                        }
-                        // TODO: Sort reservations by item stockpile?
-                    }
-                    // Stop if we cant do any more
-                    if (targetTiles.size() >= maxTilesForJob) break;
-                }
-            }
-            else if (i == mFirstUnfinishedBpIndex) {
-                // Increment to reduce iteration later
-                ++mFirstUnfinishedBpIndex;
-            }
-        }
-        if (targetTiles.size()) {
-            return std::make_unique<BuildTask>(mBlueprint, std::move(sourceItems), std::move(targetTiles));
-        }
-    }
-    return nullptr;
+
+    // OLD
+    //if (mTotalResourcesReserved && mNumTilesReservedInTasks < (mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt)) {
+    //    constexpr ui32 MAX_TILES_TO_BUILD_PER_JOB = 5;
+    //    const ui32 maxTilesForJob = glm::min((mBlueprint.totalTilesToBuild - mBlueprint.tilesBuilt) - mNumTilesReservedInTasks, MAX_TILES_TO_BUILD_PER_JOB);
+
+    //    std::vector<std::unique_ptr<ItemReservation>> sourceItems;
+    //    std::vector<TileIndex> targetTiles;
+    //    const ui32 bpSize = mBlueprint.aabb.dims.x * mBlueprint.aabb.dims.y;
+    //    for (ui32 i = mFirstUnfinishedBpIndex; i < bpSize; ++i) {
+    //        BlueprintTile& tile = mBlueprint.tiles[i];
+    //        if (!tile.isReserved && !tile.isBuilt) {
+    //            auto&& recipe = mBlueprint.tileRecipes[e_cast(tile.type)];
+    //            assert(recipe);
+    //            // Check if we have enough (TODO: can we make this not n^2?)
+    //            bool canFulfill = true;
+    //            for (const ItemStack& itemStack : *recipe) {
+    //                for (const JobRequiredItems& requiredItems : mRequiredItems) {
+    //                    if (requiredItems.id == itemStack.id) {
+    //                        if (requiredItems.quantityReserved < itemStack.quantity) {
+    //                            canFulfill = false;
+    //                            break;
+    //                        }
+    //                    }
+    //                }
+    //                if (!canFulfill) break;
+    //            }
+
+    //            if (canFulfill) {
+    //                ++mNumTilesReservedInTasks;
+    //                targetTiles.push_back(i);
+    //                tile.isReserved = true;
+    //                // Second pass. reserve the items
+    //                for (const ItemStack& itemStack : *recipe) {
+    //                    for (JobRequiredItems& requiredItems : mRequiredItems) {
+    //                        if (requiredItems.id == itemStack.id) {
+    //                            ui32 totalNeeded = itemStack.quantity;
+    //                            for (size_t i = 0; i < requiredItems.mReservations.size() && totalNeeded;) {
+    //                                const ui32 reservationQuantity = requiredItems.mReservations[i]->getRemainingQuantity();
+    //                                if (reservationQuantity <= totalNeeded) {
+    //                                    // This stack is smaller than or equal to what we need, consume the entire reservation
+    //                                    totalNeeded -= reservationQuantity;
+    //                                    sourceItems.push_back(std::move(requiredItems.mReservations[i]));
+    //                                    requiredItems.mReservations[i] = std::move(requiredItems.mReservations.back());
+    //                                    requiredItems.mReservations.pop_back();
+    //                                }
+    //                                else {
+    //                                    // This reservation is bigger than what we need, split it and break
+    //                                    sourceItems.push_back(std::move(requiredItems.mReservations[i]->splitReservation(totalNeeded)));
+    //                                    totalNeeded = 0;
+    //                                    break;
+    //                                }
+    //                            }
+    //                            assert(totalNeeded == 0);
+    //                            // Adjust totals
+    //                            requiredItems.quantityReserved -= itemStack.quantity;
+    //                            requiredItems.quantityRequired -= itemStack.quantity;
+    //                        }
+    //                    }
+    //                    // TODO: Sort reservations by item stockpile?
+    //                }
+    //                // Stop if we cant do any more
+    //                if (targetTiles.size() >= maxTilesForJob) break;
+    //            }
+    //        }
+    //        else if (i == mFirstUnfinishedBpIndex) {
+    //            // Increment to reduce iteration later
+    //            ++mFirstUnfinishedBpIndex;
+    //        }
+    //    }
+    //    if (targetTiles.size()) {
+    //        return std::make_unique<BuildTask>(mBlueprint, std::move(sourceItems), std::move(targetTiles));
+    //    }
+    //}
+    //return nullptr;
 }
 
 void ConstructBuildingJob::tryReserveItems(JobRequiredItems& item, OwnershipComponent& ownerCmp) {
@@ -152,6 +158,7 @@ void ConstructBuildingJob::tryReserveItems(JobRequiredItems& item, OwnershipComp
     itemsRequired.id = item.id;
     itemsRequired.quantity = item.quantityRequired - item.quantityReserved;
     for (auto&& stockpile : ownerCmp.mOwnedStockpiles) {
+        // TODO: IncreaseReservation
         std::unique_ptr<ItemReservation> reservation = stockpile->tryReserveItemStack(itemsRequired, 1);
         if (reservation) {
             mTotalResourcesReserved += reservation->getRemainingQuantity();
