@@ -670,7 +670,9 @@ void RenderContext::renderPassShadows(const Camera3D& camera, const RenderState&
 
             // Instanced models
             Services::ResourceManager::ref().getMaterialRepository().bindMaterialBuffer();
-            mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
+            if (!sDebugOptions.mHideModels) {
+                mStaticModelRenderer->renderModelShadows(camera, mShadowRenderer->getShadowCascadePlaneDistances());
+            }
 
             // TODO: Frustum cull
             if (!sDebugOptions.mDisableClouds) {

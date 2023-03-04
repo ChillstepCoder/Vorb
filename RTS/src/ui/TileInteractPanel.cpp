@@ -129,18 +129,31 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
         case UIInteractMenuState::SELECTED_TILE: {
             ImGui::Begin("Tile action", nullptr, WINDOW_FLAGS);
 
-            if (ImGui::Button("Debug Coarse Navmesh")) {
-                resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
-                mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+            if (ImGui::CollapsingHeader("Debug Rendering")) {
+                if (ImGui::Button("Debug Coarse Navmesh")) {
+                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAVMESH;
+                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                }
+                if (ImGui::Button("Debug Fine Navmesh")) {
+                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH;
+                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                }
+                if (ImGui::Button("Debug Coarse Nav Node")) {
+                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
+                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                }
+                if (ImGui::Button("Debug Harvestables", sButtonSize)) {
+                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_HARVESTABLES;
+                    mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+                }
             }
-            if (ImGui::Button("Debug Fine Navmesh")) {
-                resultFlags |= INTERACT_MENU_RESULT_DEBUG_FINE_NAVMESH;
-                mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
+
+            if (ImGui::CollapsingHeader("Debug Actions")) {
+                if (ImGui::Button("Path to nearest Wood", sButtonSize)) {
+                    resultFlags |= INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD;
+                }
             }
-            if (ImGui::Button("Debug Coarse Nav Node")) {
-                resultFlags |= INTERACT_MENU_RESULT_DEBUG_NAV_NODE;
-                mSelectedTileHandle = mWorldObjectQuery.getTileHandle();
-            }
+            
             if (ImGui::Button("Go Here", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_PATHFIND;
             }
@@ -217,7 +230,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     // TODO: Not thread safe!
     tilePos.z += handle.tile->getGroundZOffset();
     DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
-    static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 15, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");
     return resultFlags;
 }

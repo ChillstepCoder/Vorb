@@ -1,10 +1,10 @@
 #pragma once
 
 #include "TileConst.h"
-#include "TileResource.h"
 #include "tile/TileFlags.h"
 #include "item/ItemStack.h"
 #include "physics/CollisionShapes.h"
+#include "tile/HarvestableSubChunkRegistry.h"
 
 // TODO: Do we need rendering here?
 #include "rendering/material/MaterialData.h"
@@ -30,7 +30,6 @@ enum class TileShape {
     NONE = COUNT
 };
 KEG_ENUM_DECL(TileShape);
-
 
 struct ItemInputDef {
     nString itemName;
@@ -68,7 +67,7 @@ struct TileData {
    // TileCollider collider;
     //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
     CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
-    TileResource resource = TileResource::NONE;
+    TileHarvestable harvestable = TileHarvestable::NONE;
     MaterialData materialData;
     TileTextureMethod textureMethod;
     ModelID modelId = INVALID_MODEL_ID;
@@ -150,7 +149,7 @@ public:
     bool hasFlag(TileFlags flag) const { return tileFlags.isBitSet(flag); }
     bool hasFlagsMaskAny(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
 
-    bool hasHarvestableResource(TileResource resource, TileLayer* outLayer) const;
+    bool hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const;
 
     // Only nav thread can access this data TODO: MOVE
     bool canNavInDirection(Cartesian8 dir) const;
@@ -159,6 +158,8 @@ public:
     f32 getGroundZOffset() const { return groundZOffset; }
 
 	const TileID* getLayers() const { return layers; }
+    TileID getGroundID() const { return groundLayer; }
+    TileID getMainID() const { return mainLayer; }
 
     Cartesian getOrientation(TileLayer layer) const;
 
@@ -197,6 +198,7 @@ struct ContainerMeshDataCopy {
 };
 
 struct ContainerNavDataCopy {
+    std::vector<HarvestableSubchunkRegistry> mHarvestables;
     std::vector<Tile> mTiles;
     std::vector<TileWalls> mWalls;
     BitArray mOwnedTiles;

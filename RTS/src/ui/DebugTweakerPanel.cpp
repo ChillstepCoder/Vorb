@@ -359,6 +359,7 @@ void DebugTweakerPanel::updateAndRender(const vg::GBuffer* activeGBuffer, float 
         ImGui::Checkbox("Show Entity Queries", &sDebugOptions.mShowEntityQueries);
         ImGui::Checkbox("Show Dev Hud", &sDebugOptions.mShowDevHud);
         ImGui::Checkbox("Hide Characters", &sDebugOptions.mHideCharacters);
+        ImGui::Checkbox("Debug Toggle 0", &sDebugOptions.mDebugToggle0);
         ImGui::Separator();
     }
 

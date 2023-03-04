@@ -88,6 +88,10 @@ void IChunkGrid::tick(const f32v2& loadCenter) {
             }
             case e_cast(ChunkState::TILE_LOAD_FINISHED): {
                 chunk.mState = e_cast(ChunkState::WAITING_MESH_PHYSICS_NAV);
+
+                // Cache harvestables
+                chunk.mTileContainer->mHarvestableRegistry.refreshFromOwner();
+
                 // Copy height data
                 // TODO: Minimum size instead of entire block
                 f32* heightData = new f32[HEIGHTMAP_VERT_SIZE_PER_PATCH];

@@ -22,7 +22,7 @@ enum class GatherTaskState : ui8 {
 class GatherTask : public IAgentTask
 {
 public:
-	GatherTask(TileHandle tileTarget, TileResource resource, std::unique_ptr<ItemReservation> itemPromise);
+	GatherTask(TileHandle tileTarget, TileHarvestable resource, std::unique_ptr<ItemReservation> itemPromise);
 	~GatherTask();
 
 	// Returns True when done
@@ -42,7 +42,7 @@ protected:
 	void failTask();
 
     TileHandle mTileTarget;
-    TileResource mResource;
+    TileHarvestable mResource;
 	std::unique_ptr<ItemReservation> mItemPromise;
     GatherTaskState mState = GatherTaskState::INIT;
 	City* mCity;

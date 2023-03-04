@@ -1,6 +1,7 @@
 #pragma once
 
 #include "NavPath.h"
+#include "tile/TileHarvestable.h"
 
 class NavWorld;
 class TileContainer;
@@ -43,8 +44,12 @@ public:
     bool generateFinePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path);
     bool generateCoarsePathSynchronous(const f32v3& start, const f32v3& goal, OUT NavPath& path);
 
+    LiteTileHandle tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, OUT NavPath& path);
+
 private:
     void coarseAstarEdgePropagate(const ContainerNavData& navData, const CoarseNavNode* navNode, const LiteTileHandle& tileHandle, const CoarseNavGraph& navGraph, const f32v3& goalPos, CoarseAstarNodeID parentId, f32 prevG);
+    void clearCoarseClosedList();
+    void finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goalHandle, CoarseAstarNodeID lastId, NavPath& path, bool reverse);
 
     CoarseOpenList mOpenList;
     CoarseClosedList mCoarseClosedList;

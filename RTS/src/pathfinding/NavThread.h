@@ -15,6 +15,7 @@ class NavWorld;
 enum class PathRequestType {
     FINE,
     COARSE,
+    COARSE_HARVESTABLE,
     COUNT
 };
 
@@ -37,10 +38,23 @@ struct PathArgs {
             type = PathRequestType::FINE;
         }
     }
+    PathArgs(std::shared_ptr<NavPath>& pathToBuild, const f32v3& start, TileHarvestable harvestable, f32 maxDistance) :
+        pathToBuild(pathToBuild),
+        start(start),
+        goalHarvestable(harvestable),
+        harvestableMaxDistance(maxDistance) {
+        type = PathRequestType::COARSE_HARVESTABLE;
+    }
 
     std::shared_ptr<NavPath> pathToBuild;
     f32v3 start;
-    f32v3 goal;
+    union {
+        f32v3 goal; // COARSE or FINE
+        struct {
+            TileHarvestable goalHarvestable; // COARSE_HARVESTABLE
+            f32 harvestableMaxDistance;
+        };
+    };
     PathRequestType type;
 };
 
@@ -61,7 +75,7 @@ public:
     void clearTasks();
 
     void addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse, std::function<void()>&& mainProc);
-    void addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse);
+    void addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void()>&& mainProc);
 
     size_t getTasksSizeApprox() const { return mPathTasks.size_approx(); }
     size_t getMainThreadQueuedProcsApprox() const { return mMainThreadProcs.size_approx(); }

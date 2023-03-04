@@ -19,6 +19,10 @@ public:
     size_t getNumBits() const { return mData.size() * (sizeof(ui8) * 8u); }
     bool isEmpty() const { return mData.empty(); }
 
+    ui8* data() { return mData.data(); }
+    const ui8* data() const { return mData.data(); }
+    size_t getNumBytes() const { return mData.size(); }
+
     void debugPrint(ui32 width, ui32 height) const;
 private:
     std::vector<ui8> mData;
@@ -36,7 +40,7 @@ public:
 
     static size_t getNumBits() { return N; }
 private:
-    ui8 mData[N] = {};
+    ui8 mData[N / 8] = {};
 };
 
 template <size_t N>

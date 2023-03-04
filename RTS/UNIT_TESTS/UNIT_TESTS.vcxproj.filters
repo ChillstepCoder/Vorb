@@ -69,7 +69,7 @@
     <ClCompile Include="..\src\tile\TileHandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\tile\TileResource.cpp">
+    <ClCompile Include="..\src\tile\TileHarvestable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\tile\TileScanner.cpp">
@@ -236,7 +236,7 @@
     <ClInclude Include="..\src\tile\TileHandle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\tile\TileResource.h">
+    <ClInclude Include="..\src\tile\TileHarvestable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\tile\TileScanner.h">

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tile/TileConst.h"
-#include "tile/TileResource.h"
+#include "tile/TileHarvestable.h"
 
 typedef ui32 BusinessTypeID;
 #define INVALID_BUSINESS_TYPE_ID UINT32_MAX
@@ -14,7 +14,7 @@ struct BusinessComponentDefinition {
 
 struct BusinessGatherComponentDef : public BusinessComponentDefinition {
     ui32 mPriority = PRIORITY_NO_COMPONENT;
-    TileResource mResourceToFind = TileResource::NONE;
+    TileHarvestable mResourceToFind = TileHarvestable::NONE;
 };
 KEG_TYPE_DECL(BusinessGatherComponentDef);
 

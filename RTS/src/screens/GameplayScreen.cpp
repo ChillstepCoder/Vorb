@@ -436,7 +436,7 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                         IEntityComponentSystem& ecs = sWorld->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D());
+                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), nullptr);
                     }
                 }, &mSelectedTileHandle);
             }
@@ -537,7 +537,26 @@ void GameplayScreen::tryUpdateAndRenderInteractPopup() {
                 assert(false);
             }
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 13, "update");
+        else if (result & INTERACT_MENU_RESULT_DEBUG_HARVESTABLES) {
+            if (mClientType == WorldType::HOST) {
+                TileHandle tileHandle = mRightClickInteractPopup->getSelectedTileHandle();
+                tileHandle.container->getHarvestables().debugDraw();
+            }
+            else {
+                assert(false);
+            }
+        }
+        else if (result & INTERACT_MENU_RESULT_DEBUG_PATH_TO_WOOD) {
+            if (mSelectedTileHandle.isValid()) {
+                GameThreadTasks::getInstance().addGenericTask([](GameThread&, void*) {
+                    IEntityComponentSystem& ecs = sWorld->getECS();
+                    PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
+                    NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
+                    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
+                }, nullptr);
+            }
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 15, "update");
 
         // If we had a result, close window
         if (result) {

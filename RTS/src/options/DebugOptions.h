@@ -99,6 +99,7 @@ struct DebugOptions {
     bool mHideModels;
     bool mDisableLOD;
     bool mDisableGPUCulling;
+    bool mDebugToggle0;
     // Water
     f32v4 mShallowWaterColor;
     f32v4 mDeepWaterColor;

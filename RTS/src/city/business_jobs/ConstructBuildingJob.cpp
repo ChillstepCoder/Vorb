@@ -36,7 +36,6 @@ ConstructBuildingJob::ConstructBuildingJob(BuildingBlueprint& blueprint) : mBlue
         required.id = stack.id;
         required.quantityRequired = stack.quantity;
     }
-    mFirstUnfinishedBpIndex = 0;
     assert(mBlueprint.totalTilesToBuild);
 }
 static_assert(e_cast(BlueprintTileType::TYPES) == 7, "Update build logic");
@@ -188,21 +187,21 @@ IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
 }
 
 void ConstructBuildingJob::tryReserveItems(JobRequiredItems& item, OwnershipComponent& ownerCmp) {
-    ItemStack itemsRequired;
-    itemsRequired.id = item.id;
-    itemsRequired.quantity = item.quantityRequired - item.quantityReserved;
-    for (auto&& stockpile : ownerCmp.mOwnedStockpiles) {
-        // TODO: IncreaseReservation
-        std::unique_ptr<ItemReservation> reservation = stockpile->tryReserveItemStack(itemsRequired, 1);
-        if (reservation) {
-            mTotalResourcesReserved += reservation->getRemainingQuantity();
-            item.quantityReserved += reservation->getRemainingQuantity();
-            itemsRequired.quantity -= reservation->getRemainingQuantity();
-            item.mReservations.push_back(std::move(reservation));
+    //ItemStack itemsRequired;
+    //itemsRequired.id = item.id;
+    //itemsRequired.quantity = item.quantityRequired - item.quantityReserved;
+    //for (auto&& stockpile : ownerCmp.mOwnedStockpiles) {
+    //    // TODO: IncreaseReservation
+    //    std::unique_ptr<ItemReservation> reservation = stockpile->tryReserveItemStack(itemsRequired, 1);
+    //    if (reservation) {
+    //        mTotalResourcesReserved += reservation->getRemainingQuantity();
+    //        item.quantityReserved += reservation->getRemainingQuantity();
+    //        itemsRequired.quantity -= reservation->getRemainingQuantity();
+    //        item.mReservations.push_back(std::move(reservation));
 
-            if (itemsRequired.quantity == 0) {
-                break;
-            }
-        }
-    }
+    //        if (itemsRequired.quantity == 0) {
+    //            break;
+    //        }
+    //    }
+    //}
 }

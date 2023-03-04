@@ -3,7 +3,7 @@
 
 KEG_TYPE_DEF_SAME_NAME(BusinessGatherComponentDef, kt) {
     kt.addValue("priority", keg::Value::basic(offsetof(BusinessGatherComponentDef, mPriority), keg::BasicType::UI32));
-    kt.addValue("resource", keg::Value::custom(offsetof(BusinessGatherComponentDef, mResourceToFind), "TileResource", true));
+    kt.addValue("resource", keg::Value::custom(offsetof(BusinessGatherComponentDef, mResourceToFind), "TileHarvestable", true));
 }
 
 KEG_TYPE_DEF_SAME_NAME(BusinessBuildComponentDef, kt) {

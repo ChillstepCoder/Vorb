@@ -38,6 +38,7 @@ DebugOptions::DebugOptions() :
     mTerrainSquaresIntensity(0.0f),
     mTerrainBlendMult(0.037f),
     mDisableTerrain(false),
+    mDebugToggle0(false),
     // DOF
     mDepthOfFieldBlurRadius(0.6f),
     mDepthOfFieldBlurPasses(1),

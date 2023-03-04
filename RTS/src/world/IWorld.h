@@ -33,7 +33,7 @@ public:
     void setTimeOfDay(f32 time);
     entt::entity createEntity(const f32v3& pos, StrToken typeToken, bool shouldReplicate);
     // Queries
-    bool terrainTileHasHarvestableResource(const i32v2& worldPos, TileResource resource, TileLayer* outLayer);
+    bool terrainTileHasHarvestableResource(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);
     void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
 
     // Chunk Accessors

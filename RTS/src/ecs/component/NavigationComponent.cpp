@@ -229,7 +229,7 @@ void requestFinePathToPoint(NavigationComponent& navCmp, const f32v3& start, con
 	}
     else {
         assert(Services::isUsingNav());
-		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/);
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, nullptr);
 	}
 }
 
@@ -372,37 +372,40 @@ void NavigationComponent::setSimpleLinearTargetPoint(const ui32v2& targetPoint, 
 	}
 }
 
-void NavigationComponent::requestFinePath(const f32v3& start, const f32v3& goal) {
-    requestCoarsePathWithCallback(start, goal, nullptr);
-}
-
-void NavigationComponent::requestCoarsePath(const f32v3& start, const f32v3& goal) {
-	requestCoarsePathWithCallback(start, goal, nullptr);
-}
-
-void NavigationComponent::requestFinePathWithCallback(const f32v3& start, const f32v3& goal, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::requestFinePath(const f32v3& start, const f32v3& goal, std::function<void(bool)>&& finishedCallback) {
     mNavigationType = NavigationType::FINE_PATH;
     mCoarsePath.reset();
     mFinePath = std::shared_ptr<NavPath>(new NavPath());
 	assert(Services::isUsingNav());
-    Services::NavThread::ref().addPathfindTask(mFinePath, start, goal, false /*isCoarse*/);
+    Services::NavThread::ref().addPathfindTask(mFinePath, start, goal, false /*isCoarse*/, nullptr);
     mCurrentFinePoint = 0;
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
-    mFinishedCallback = finishedCallback;
+    mFinishedCallback = std::move(finishedCallback);
 }
 
-void NavigationComponent::requestCoarsePathWithCallback(const f32v3& start, const f32v3& goal, std::function<void(bool)> finishedCallback) {
+void NavigationComponent::requestCoarsePath(const f32v3& start, const f32v3& goal, std::function<void(bool)>&& finishedCallback) {
     mNavigationType = NavigationType::COARSE_PATH;
     mFinePath.reset();
     mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
     assert(Services::isUsingNav());
-	Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/);
+	Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, nullptr);
     mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
     mCurrentFinePoint = 0;
     mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
-    mFinishedCallback = finishedCallback;
+    mFinishedCallback = std::move(finishedCallback);
 }
 
+void NavigationComponent::requestCoarsePathToHarvestable(const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void(bool)>&& finishedCallback) {
+    mNavigationType = NavigationType::COARSE_PATH;
+    mFinePath.reset();
+    mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
+    assert(Services::isUsingNav());
+    Services::NavThread::ref().addPathfindToHarvestableTask(mCoarsePath, start, harvestable, maxDistance, nullptr);
+    mFlags &= (~NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH);
+    mCurrentFinePoint = 0;
+    mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
+    mFinishedCallback = std::move(finishedCallback);
+}
 
 void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
     motionCmp.mDesiredMode = CharacterLocomotionMode::IDLE;

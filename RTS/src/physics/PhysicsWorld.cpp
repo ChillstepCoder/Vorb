@@ -32,7 +32,6 @@
 
 #include "util/b3ChromeTraceUtil.h"
 
-
 const btVector3 DEBUG_COLOR_DYNAMIC(0.0, 1.0, 0.0);
 const btVector3 DEBUG_COLOR_STATIC(1.0, 0.0, 0.0);
 const btVector3 DEBUG_COLOR_TERRAIN(1.0, 1.0, 1.0);

@@ -57,9 +57,10 @@ void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& sta
     mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), std::move(mainProc)));
 }
 
-void NavThread::addPathfindTask(std::shared_ptr<NavPath>& path, const f32v3& start, const f32v3& goal, bool isCoarse) {
-    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, goal, isCoarse), nullptr));
+void NavThread::addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, const f32v3& start, TileHarvestable harvestable, f32 maxDistance, std::function<void()>&& mainProc) {
+    mPathTasks.enqueue(std::make_pair(PathArgs(path, start, harvestable, maxDistance), std::move(mainProc)));
 }
+
 
 // Yield CPU resources
 constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
@@ -78,7 +79,6 @@ void NavThread::navThreadFunc() {
 
         mNavWorld->updateNavThread();
         
-
         if (hasTask) {
             const PathArgs& args = pathArgs.first;
             switch (args.type) {
@@ -90,10 +90,14 @@ void NavThread::navThreadFunc() {
                     mPathFinder->generateCoarsePathSynchronous(args.start, args.goal, *args.pathToBuild);
                     break;
                 }
+                case PathRequestType::COARSE_HARVESTABLE: {
+                    mPathFinder->tryGenerateCoarsePathToClosestFreeHarvestableSynchronous(args.start, args.goalHarvestable, args.harvestableMaxDistance, *args.pathToBuild);
+                    break;
+                }
                 default:
                     assert(false);
             }
-            static_assert(e_cast(PathRequestType::COUNT) == 2);
+            static_assert(e_cast(PathRequestType::COUNT) == 3);
            
             if (pathArgs.second) {
                 mMainThreadProcs.enqueue(std::move(pathArgs.second));

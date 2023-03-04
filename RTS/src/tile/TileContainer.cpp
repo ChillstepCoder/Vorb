@@ -104,6 +104,7 @@ void TileContainer::allocateData() {
     size_t numTiles = mDims.x * mDims.y * mDims.z;
     mTiles.resize(numTiles);
     mWalls.resize(numTiles);
+    mHarvestableRegistry.init(*this);
 }
 
 void TileContainer::freeData() {
@@ -112,6 +113,7 @@ void TileContainer::freeData() {
     std::vector<TileWalls>().swap(mWalls);
     std::vector<DynamicTile>().swap(mDynamicTiles);
     mOwnedTiles.freeData();
+    mHarvestableRegistry.destroy();
 }
 
 void TileContainer::updateActiveDynamicTiles() {
@@ -175,6 +177,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
         tile.layers[e_cast(layer)] = id;
     }
     // Dispatch notify
+    mHarvestableRegistry.onTileLayerChanged(evnt.edit);
     TileContainerRepository::dispatchEditTiles(evnt);
 
     onTileChanged(i);
@@ -458,23 +461,34 @@ void TileContainer::removeEntrance(TileIndex pos) {
 
 void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) const {
     assert(!IS_GAME_THREAD());
-    PROFILE_FUNCTION();
+    PROFILE_SCOPE("copyDataWorkerThread::MESH");
+    // Allocate outside critical section
+    dataCopy.mTiles.resize(mTiles.size());
+    dataCopy.mWalls.resize(mWalls.size());
     {
         std::shared_lock lock(mSharedMutex);
-        dataCopy.mTiles = mTiles;
-        dataCopy.mWalls = mWalls;
+        memcpy(dataCopy.mTiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
+        memcpy(dataCopy.mWalls.data(), mWalls.data(), mWalls.size() * sizeof(TileWalls));
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 
-void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const
-{
+void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const {
     assert(!IS_GAME_THREAD());
-    PROFILE_FUNCTION();
+    PROFILE_SCOPE("copyDataWorkerThread::NAV");
+    // Allocate outside critical section
+    dataCopy.mHarvestables.resize(mHarvestableRegistry.getRegistryCount());
+    dataCopy.mTiles.resize(mTiles.size());
+    dataCopy.mWalls.resize(mWalls.size());
+    dataCopy.mOwnedTiles.resize(mOwnedTiles.getNumBits());
     {
         std::shared_lock lock(mSharedMutex);
-        dataCopy.mTiles = mTiles;
-        dataCopy.mWalls = mWalls;
-        dataCopy.mOwnedTiles = mOwnedTiles;
+        memcpy(dataCopy.mTiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
+        memcpy(dataCopy.mWalls.data(), mWalls.data(), mWalls.size() * sizeof(TileWalls));
+        memcpy(dataCopy.mOwnedTiles.data(), mOwnedTiles.data(), mOwnedTiles.getNumBytes() * sizeof(ui8));
+        for (size_t i = 0; i < dataCopy.mHarvestables.size(); ++i) {
+            // Only copying positions cause its all we care about when navving
+            dataCopy.mHarvestables[i].mHarvestablePositions = mHarvestableRegistry.getRegistry(i).mHarvestablePositions;
+        }
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
 }
 

@@ -471,7 +471,7 @@
     <ClCompile Include="src\util\ThreadIDs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tile\TileResource.cpp">
+    <ClCompile Include="src\tile\TileHarvestable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\network\NetworkUtil.cpp">
@@ -682,6 +682,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ai\tasks\ShipItemsForPromiseTask.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tile\TileContainerHarvestableRegistry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1307,7 +1310,7 @@
     <ClInclude Include="src\util\ThreadIDs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tile\TileResource.h">
+    <ClInclude Include="src\tile\TileHarvestable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\network\NetworkUtil.h">
@@ -1596,6 +1599,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ai\tasks\ShipItemsForPromiseTask.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\TileContainerHarvestableRegistry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

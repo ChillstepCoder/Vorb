@@ -53,6 +53,9 @@ public:
     // TODO:s Override allocation to use boost::singleton_pool
    // static void* operator new(size_t count);
    // static void operator delete(void* pointer, size_t size);
+
+    bool tick(entt::registry& registry, entt::entity agent) override;
+
 protected:
     ItemPromiseWeakPtr mItemPromise;
     BuildingBlueprint& mBlueprint;

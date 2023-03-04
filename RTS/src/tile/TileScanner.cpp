@@ -26,7 +26,9 @@ struct closedListNode {
     };
 };
 
-std::vector<TileHandle> TileScanner::scanForResource(TileResource resource, const ui32v2& startWorldPos, ui32 maxDistance, ui32 maxTilesToReturn /* = UINT32_MAX */) {
+std::vector<TileHandle> TileScanner::scanForHarvestable(TileHarvestable resource, const ui32v2& startWorldPos, ui32 maxDistance, ui32 maxTilesToReturn /* = UINT32_MAX */) {
+    assert(IS_GAME_THREAD());
+
     std::vector<TileHandle> tilesToReturn;
     if (maxTilesToReturn != UINT32_MAX) {
         tilesToReturn.reserve(maxTilesToReturn);
@@ -50,17 +52,12 @@ std::vector<TileHandle> TileScanner::scanForResource(TileResource resource, cons
         // Store this if it contains a tile we want
         // Skip the ground layer, it is never a resource
         if (!tileHandle.tile->hasFlag(TileFlags::IS_RESOURCE_RESERVED)) {
-            for (int i = TILE_LAYER_MAIN; i < TILE_LAYER_COUNT; ++i) {
-                const TileID id = tileHandle.tile->getLayers()[i];
-                if (id != TILE_ID_NONE) {
-                    if (TileRepository::getTileData(id).resource == resource) {
-                        tilesToReturn.emplace_back(tileHandle);
-                        if (tilesToReturn.size() >= maxTilesToReturn) {
-                            return tilesToReturn;
-                        }
-                        break;
-                    }
+            if (tileHandle.container->getHarvestables().tileHasHarvestable(tileHandle.tileIndex, resource)) {
+                tilesToReturn.emplace_back(tileHandle);
+                if (tilesToReturn.size() >= maxTilesToReturn) {
+                    return tilesToReturn;
                 }
+                break;
             }
         }
 

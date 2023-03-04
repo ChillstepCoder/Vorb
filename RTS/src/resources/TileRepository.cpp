@@ -22,7 +22,7 @@ KEG_TYPE_DEF_SAME_NAME(TileFileData, kt) {
     kt.addValue("col_shape", keg::Value::custom(offsetof(TileFileData, colliderShape), "CollisionShapes", true));
     kt.addValue("col_half_dims", keg::Value::basic(offsetof(TileFileData, colliderHalfExtents.x), keg::BasicType::F32_V3));
     kt.addValue("shape", keg::Value::custom(offsetof(TileFileData, tileShape), "TileShape", true));
-    kt.addValue("resource", keg::Value::custom(offsetof(TileFileData, resource), "TileResource", true));
+    kt.addValue("resource", keg::Value::custom(offsetof(TileFileData, resource), "TileHarvestable", true));
     kt.addValue("drops", keg::Value::array(offsetof(TileFileData, itemDrops), keg::Value::custom(0, "ItemDropDef", false)));
     kt.addValue("recipe", keg::Value::array(offsetof(TileFileData, recipe), keg::Value::custom(0, "ItemInputDef", false)));
 }
@@ -43,7 +43,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         tileData.layer = fileData.layer;
         assert(tileData.layer < TILE_LAYER_COUNT);
         tileData.pathWeight = fileData.pathWeight;
-        tileData.resource = fileData.resource;
+        tileData.harvestable = fileData.resource;
         tileData.textureMethod = fileData.textureMethod;
         tileData.dims = fileData.dims;
         if (fileData.colliderShape != CollisionShapes::NONE) {

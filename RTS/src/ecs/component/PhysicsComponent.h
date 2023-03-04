@@ -13,6 +13,7 @@ enum class PhysicsComponentFlag : ui8 {
 };
 
 // A physics component represents the transform and optional rigid body 
+// https://github.com/xissburg/edyn
 class PhysicsComponent {
 public:
 

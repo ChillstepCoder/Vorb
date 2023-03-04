@@ -16,7 +16,7 @@ struct TileFileData {
     CollisionShapes colliderShape = CollisionShapes::NONE;
     TileShape tileShape = TileShape::BLOCK;
     TileTextureMethod textureMethod = TileTextureMethod::SIMPLE;
-    TileResource resource = TileResource::NONE;
+    TileHarvestable resource = TileHarvestable::NONE;
     ui8 pathWeight = 255;
     ui8 layer = 1;
     nString materialName;

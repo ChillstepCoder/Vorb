@@ -90,13 +90,13 @@ Tile::Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags) : tileFlags(fla
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
 
-bool Tile::hasHarvestableResource(TileResource resource, TileLayer* outLayer) const {
+bool Tile::hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const {
     assert(IS_GAME_THREAD());
     for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
         // Harvestble resources only exist on ground floor
         TileID tileId = layers[i];
         if (tileId != TILE_ID_NONE) {
-            if (TileRepository::getTileData(tileId).resource == resource) {
+            if (TileRepository::getTileData(tileId).harvestable == resource) {
                 if (outLayer) {
                     *outLayer = (TileLayer)i;
                 }

@@ -86,7 +86,7 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
     if (gatherCmp.mScannedTiles.empty()) {
         for (auto&& ownedPlot : ownershipCmp.mOwnedPlots) {
             PreciseTimer timer;
-            gatherCmp.mScannedTiles = TileScanner::scanForResource(gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
+            gatherCmp.mScannedTiles = TileScanner::scanForHarvestable(gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
             LOG_INFO("Tile scanning took {} ms and returned {} tiles", timer.stop(), gatherCmp.mScannedTiles.size());
             if (sDebugOptions.mShowPaths) {
                 for (auto&& it : gatherCmp.mScannedTiles) {

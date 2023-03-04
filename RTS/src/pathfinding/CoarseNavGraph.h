@@ -1,5 +1,9 @@
 #pragma once
 
+#include "tile/TileHarvestable.h"
+#include "util/BitArray.h"
+
+#include <boost/container/flat_map.hpp>
 
 typedef ui16 DisjointSetNode;
 struct NavGraphTileDataToCopy {
@@ -32,13 +36,13 @@ struct CoarseNavNodeEdge {
 static_assert(sizeof(CoarseNavNodeEdge) == 8, "Keep small");
 
 struct CoarseNavNode {
-    CoarseNavNodeEdge* edges = nullptr;
-    ui32 tileContainerID = 0;
+    ui32 edgesStart = UINT32_MAX;
+    //ui32 tileContainerID = 0;
     ui16 edgeCount = 0;
     mutable bool isClosed = false; // For use in single threaded pathfinding
     // can have extra byte for flags field
 };
-static_assert(sizeof(CoarseNavNode) == 16, "Keep small");
+static_assert(sizeof(CoarseNavNode) == 8, "Keep small");
 
 struct CoarseNavNodeIndexPair {
     TileContainerID tileContainerID;
@@ -46,11 +50,37 @@ struct CoarseNavNodeIndexPair {
 };
 static_assert(sizeof(CoarseNavNodeIndexPair) == 8, "Keep small");
 
+// For checking if a nav node has a harvestable
+class CoarseNavGraphHarvestablesLookup {
+public:
+
+    void init(ui32 numNodes) {
+        mHarvestablesTest.resize(numNodes * (ui32)TileHarvestable::COUNT);
+    }
+    const std::vector<TileIndex>* tryGetHarvestables(ui32 nodeIndex, TileHarvestable harvestable) const {
+        // O(1) membership test
+        if (mHarvestablesTest.getBit(nodeIndex * (ui32)TileHarvestable::COUNT + (ui32)harvestable)) {
+            return &(mHarvestablePositions.find(std::make_pair(nodeIndex, harvestable))->second);
+        }
+        return nullptr;
+    }
+    void setNodeHarvestable(ui32 nodeIndex, TileHarvestable harvestable, TileIndex position) {
+        mHarvestablesTest.setBit(nodeIndex * (ui32)TileHarvestable::COUNT + (ui32)harvestable);
+        mHarvestablePositions[std::make_pair(nodeIndex, harvestable)].emplace_back(position);
+    }
+
+private:
+    BitArray mHarvestablesTest;
+    boost::container::flat_map<std::pair<ui32 /*nodeIndex*/, TileHarvestable>, std::vector<TileIndex>> mHarvestablePositions;
+};
+
 struct CoarseNavGraph {
     //TileContainer* parentContainer; // TODO: Is this needed?
     std::unique_ptr<CoarseNavNodeIndex[]> tileCoarseNavIndices; // Size = tile container size
     std::unique_ptr<CoarseNavNode[]> nodes;
     std::unique_ptr<CoarseNavNodeEdge[]> edges;
+    CoarseNavGraphHarvestablesLookup harvestablesLookup;
+    //  std::unique_ptr<ui32 subchunkIndex> = UINT32_MAX; WE ONLY NEED SUBCHUNK INDEX FOR  RESOURCES
     ui32 numNodes = 0;
     ui32 numEdges = 0;
 

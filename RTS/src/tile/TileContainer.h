@@ -3,6 +3,7 @@
 #include "tile/TileHandle.h"
 #include "util/BitArray.h"
 #include "tile/TileContainerEvents.h"
+#include "tile/TileContainerHarvestableRegistry.h"
 
 #include "physics/StaticPhysicsMesh.h"
 #include <shared_mutex>
@@ -77,7 +78,6 @@ public:
     STATIC_EVENT_DISPATCHER(TileContainer);
 };
 
-
 // TODO: Memory recycler?
 class TileContainer
 {
@@ -124,6 +124,7 @@ public:
     const std::vector<TileWalls>& getTileWalls() const { return mWalls; }
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
+    const TileContainerHarvestableRegistry& getHarvestables() const { return mHarvestableRegistry; }
 
     // This needs to be floor(f32v3worldPos)
     TileHandle tryGetTileHandleAtWorldPos(const i32v3& worldPos) const;
@@ -173,7 +174,6 @@ public:
         return i32v2(i % dims.x, (i % layerSize) / dims.x);
     }
     f32v3 getTileCenterWorldPosition(TileIndex i) const {
-        assert(IS_GAME_THREAD());
         const i32 layerSize = mDims.x * mDims.y;
         return f32v3(mRootPos.x + (i % mDims.x) + 0.5f, mRootPos.y + ((i % layerSize) / mDims.x) + 0.5f, mRootPos.z + (i / layerSize) * getFloorHeight() + mTiles[i].groundZOffset);
     }
@@ -200,6 +200,13 @@ public:
         return (TileIndex)(x + y * mDims.x + z * mDims.x * mDims.y);
     }
     TileContainerID getId() const { return mId; }
+
+    SubchunkIndex getSubchunkIndexFromTileIndex(TileIndex tileIndex) const {
+        const i32v3 offset = getTileXYZOffset(tileIndex);
+        const i32v3 scoffset = offset / SUBCHUNK_WIDTH;
+        const i32v3 subchunkDims = mDims / SUBCHUNK_WIDTH;
+        return scoffset.z * subchunkDims.x * subchunkDims.y + scoffset.y * subchunkDims.x + scoffset.x;
+    }
 
     // Ownership
     TileContainerOwnerType getOwnerType() const { return mOwnerType; }
@@ -256,7 +263,7 @@ public:
     const i32 getFloorStride() const { return mDims.x * mDims.y; }
     i32 getFloorHeight() const { return mFloorHeight; }
 
-    const std::vector<Tile>& getTiles() const { assert(IS_GAME_THREAD()); mTiles; }
+    const std::vector<Tile>& getTiles() const { assert(IS_GAME_THREAD()); return mTiles; }
     const std::vector<TileWalls>& getWalls() const { assert(IS_GAME_THREAD()); return mWalls; }
     size_t getNumTiles() const { return mTiles.size(); }
 
@@ -282,6 +289,7 @@ private:
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
     std::vector<TileContainerEntrance> mEntrances;
+    TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;
     i32v3 mDims;
     i32v3 mRootPos;

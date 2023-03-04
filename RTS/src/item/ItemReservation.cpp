@@ -77,7 +77,7 @@ ItemPromise::ItemPromise(ItemID itemId, ui16 minItemCount, ui16 maxItemCount, ui
 void ItemPromise::promiseShipment(ui16 maxShipmentQuantity) {
     assert(mItemsReady > 0);
     mPendingShipmentQuantity += maxShipmentQuantity;
-    assert(mPendingShipmentQuantity)
+    assert(mPendingShipmentQuantity);
 }
 
 void ItemPromise::cancelShipment(ui16 maxShipmentQuantity) {
@@ -89,7 +89,10 @@ ui16 ItemPromise::beginShipment(ui16 maxShipmentQuantity) {
     assert(maxShipmentQuantity <= mPendingShipmentQuantity);
     assert(mItemsReady > 0);
     assert(mItemsReady <= mMaxItemCount);
-
+    // TODO: Need to have variable shipment size based on what we have, not just max
+    assert(false);
+    mShippingQuantity += maxShipmentQuantity;
+    return maxShipmentQuantity;
 }
 
 void ItemPromise::fulfillQuantity(ui16 quantity) {

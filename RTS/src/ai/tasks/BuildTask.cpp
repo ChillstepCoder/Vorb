@@ -78,7 +78,7 @@ void BuildTask::pathToStockpileSlot(entt::registry& registry, entt::entity agent
     f32v2 targetPos(mSourceItems.back()->getCurrentTargetWorldPosition());
     //assert(false); // itemreservation should use TileHandle or most probably, TileRef ACKSUALLY we dont want it to be tileRef or busy chunks will never LOD ai. Instead it should handle LOD transition
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(myPos, f32v3(targetPos.x, targetPos.y, 0.0f), [this](bool success) {
+    navCmp.requestCoarsePath(myPos, f32v3(targetPos.x, targetPos.y, 0.0f), [this](bool success) {
         if (success) {
             mState = BuildTaskState::PULL_ITEM_FROM_STOCKPILE_SLOT;
         }
@@ -129,7 +129,7 @@ void BuildTask::pathToBlueprint(entt::registry& registry, entt::entity agent) {
     assert(!navCmp.mCoarsePath);
 
     const f32v3 myPos = physCmp.getPosition();
-    navCmp.requestCoarsePathWithCallback(myPos, mBlueprint.getTileHandle(mTargetTiles.back()).getWorldPos3D(), [this](bool success) {
+    navCmp.requestCoarsePath(myPos, mBlueprint.getTileHandle(mTargetTiles.back()).getWorldPos3D(), [this](bool success) {
         if (success) {
             mState = BuildTaskState::BUILD_TILE;
         }
@@ -215,4 +215,18 @@ void BuildTask::failTask() {
          mState = GatherTaskState::FAIL;
      }*/
     mSourceItems.clear();
+}
+
+BuildTilesFromPromiseTask::BuildTilesFromPromiseTask(ItemPromiseWeakPtr&& itemPromise, BuildingBlueprint& blueprint)
+    : mItemPromise(std::move(itemPromise))
+    , mBlueprint(blueprint) {
+
+}
+
+BuildTilesFromPromiseTask::~BuildTilesFromPromiseTask() {
+
+}
+
+bool BuildTilesFromPromiseTask::tick(entt::registry& registry, entt::entity agent) {
+    throw std::logic_error("The method or operation is not implemented.");
 }

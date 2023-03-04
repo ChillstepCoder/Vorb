@@ -258,7 +258,7 @@
     <ClCompile Include="..\src\tile\Tile.cpp" />
     <ClCompile Include="..\src\tile\TileContainer.cpp" />
     <ClCompile Include="..\src\tile\TileHandle.cpp" />
-    <ClCompile Include="..\src\tile\TileResource.cpp" />
+    <ClCompile Include="..\src\tile\TileHarvestable.cpp" />
     <ClCompile Include="..\src\tile\TileScanner.cpp" />
     <ClCompile Include="..\src\tile\TileUtil.cpp" />
     <ClCompile Include="..\src\util\BitArray.cpp" />
@@ -318,7 +318,7 @@
     <ClInclude Include="..\src\tile\TileContainer.h" />
     <ClInclude Include="..\src\tile\TileFlags.h" />
     <ClInclude Include="..\src\tile\TileHandle.h" />
-    <ClInclude Include="..\src\tile\TileResource.h" />
+    <ClInclude Include="..\src\tile\TileHarvestable.h" />
     <ClInclude Include="..\src\tile\TileScanner.h" />
     <ClInclude Include="..\src\tile\TileUtil.h" />
     <ClInclude Include="..\src\util\AABB.hpp" />

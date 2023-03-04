@@ -21,7 +21,7 @@
 struct gather_pool {};
 using singleton_task_pool = boost::singleton_pool<gather_pool, sizeof(GatherTask), boost::default_user_allocator_new_delete, boost::details::pool::null_mutex, 64u>;
 
-GatherTask::GatherTask(TileHandle tileTarget, TileResource resource, std::unique_ptr<ItemReservation> itemPromise) :
+GatherTask::GatherTask(TileHandle tileTarget, TileHarvestable resource, std::unique_ptr<ItemReservation> itemPromise) :
     mTileTarget(tileTarget),
     mResource(resource),
     mItemPromise(std::move(itemPromise)) {
@@ -112,7 +112,7 @@ void GatherTask::init(entt::registry& registry, entt::entity agent) {
         return;
     }
 
-    navCmp.requestCoarsePathWithCallback(physCmp.getPosition(), mTileTarget.getWorldPos3D(), [this](bool success) {
+    navCmp.requestCoarsePath(physCmp.getPosition(), mTileTarget.getWorldPos3D(), [this](bool success) {
         if (success == true) {
             mState = GatherTaskState::BEGIN_HARVEST;
         }
@@ -192,7 +192,7 @@ void GatherTask::pathToStockpileSlot(entt::registry& registry, entt::entity agen
     PathPoint targetPos(mItemPromise->getCurrentTargetWorldPosition());
 
     // Path to the stockpile
-    navCmp.requestCoarsePathWithCallback(myPos, f32v3(targetPos.x, targetPos.y, 0.0f), [this](bool success) {
+    navCmp.requestCoarsePath(myPos, f32v3(targetPos.x, targetPos.y, 0.0f), [this](bool success) {
         if (success) {
             mState = GatherTaskState::ADD_ITEM_TO_STOCKPILE_SLOT;
         }
@@ -261,8 +261,7 @@ GatherItemsForPromiseTask::~GatherItemsForPromiseTask() {
 
 }
 
-bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agent)
-{
+bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agent) {
     switch (mState) {
         case TaskState::FIND_ITEM:
             findItem(registry, agent);
@@ -283,4 +282,12 @@ bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agen
       
     }
     return false;
+}
+
+void GatherItemsForPromiseTask::findItem(entt::registry& registry, entt::entity agent) {
+
+}
+
+void GatherItemsForPromiseTask::harvestItem(entt::registry& registry, entt::entity agent) {
+
 }
