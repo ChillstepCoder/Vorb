@@ -26,10 +26,13 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::IN_CITY);
     FLAG_DISPLAY(TileFlags::HAS_ITEM_STACK);
     FLAG_DISPLAY(TileFlags::IS_RESOURCE_RESERVED);
-    FLAG_DISPLAY(TileFlags::IS_IMPASSABLE);
     FLAG_DISPLAY(TileFlags::IS_BLOCKED_BY_STRUCTURE);
+    FLAG_DISPLAY(TileFlags::BLOCKED_BY_SOUTH);
+    FLAG_DISPLAY(TileFlags::BLOCKED_BY_WEST);
+    FLAG_DISPLAY(TileFlags::BLOCKED_BY_EAST);
+    FLAG_DISPLAY(TileFlags::BLOCKED_BY_NORTH);
 
-    static_assert(e_cast(TileFlags::TERM) == 1 << 6, "Update");
+    static_assert(e_cast(TileFlags::TERM) == 1 << 9, "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {

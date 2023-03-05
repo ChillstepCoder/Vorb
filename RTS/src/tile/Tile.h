@@ -75,6 +75,7 @@ struct TileData {
     TileShape shape = TileShape::BLOCK;
     ui8 pathWeight = 255;
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
+    bool blocksNeighborTiles = false;// TODO: flags?
     union {
         struct {
             f32 heightOffsetSouth;

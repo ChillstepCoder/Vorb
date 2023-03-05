@@ -99,6 +99,8 @@ private:
     mutable ui32 mSelectedTile = 0;
     mutable int mSelectedFloor = 0;
     mutable f32 mGroundTileOffset = 1.0f;
+    mutable bool mDragToPlace = false;
+    mutable bool mDidPlaceTile = false;
     // Building Edit
     mutable ui32 mSelectedBuilding = 0;
     mutable i32v2 mPlotDims = i32v2(16);

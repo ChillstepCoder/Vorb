@@ -337,6 +337,7 @@ void WorldEditorPanel::renderGrassEditUI() const {
 void WorldEditorPanel::renderTileEditUI() const {
     //ImGui::SliderInt("Floor", &mSelectedFloor, 0, TILE_FLOOR_COUNT - 1);
     ImGui::SliderFloat("Ground tile Z offset", &mGroundTileOffset, 0.0f, 10.0f, "%.2f");
+    ImGui::Checkbox("Drag to place", &mDragToPlace);
     ImGui::Text("Tile select");
     const std::vector<TileData>& allData = TileRepository::getAllTileData();
     ImGui::BeginTable("split1", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_NoSavedSettings);
@@ -539,7 +540,8 @@ void WorldEditorPanel::updateGrassEdit() {
 void WorldEditorPanel::updateTileEdit() {
     static ChunkID prevChunkID;
     static TileIndex prevTileIndex;
-    if (mHitResult.didHit() && vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
+    if (mHitResult.didHit() && (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && (mDragToPlace || !mDidPlaceTile))) {
+        mDidPlaceTile = true;
         const ChunkID chunkID(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
         const TileIndex tileIndex = (TileIndex)((ui32)mHitResult.mPosition.x % CHUNK_WIDTH + ((ui32)mHitResult.mPosition.y % CHUNK_WIDTH) * CHUNK_WIDTH);
 
@@ -565,6 +567,9 @@ void WorldEditorPanel::updateTileEdit() {
     }
     else {
         prevChunkID = 0;
+        if (!vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT)) {
+            mDidPlaceTile = false;
+        }
     }
 }
 

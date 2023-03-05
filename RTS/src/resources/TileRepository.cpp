@@ -47,6 +47,7 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
         tileData.textureMethod = fileData.textureMethod;
         tileData.dims = fileData.dims;
         if (fileData.colliderShape != CollisionShapes::NONE) {
+            assert(fileData.colliderHalfExtents.x == fileData.colliderHalfExtents.y); // TODO: Support oblong?
             tileData.collisionShapeID = shapeRepository.getOrAddCollisionShape(fileData.colliderShape, fileData.colliderHalfExtents);
         }
 
@@ -81,6 +82,12 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
 
         if (tileData.pathWeight == 0) {
             tileData.navMask = 0;
+
+            // If its extends into neighbor tiles larger than player collider radius (player collider is 0.24 radius)
+            // then we are blocking
+            if (fileData.colliderHalfExtents.x - 0.5f >= 0.2499f) {
+                tileData.blocksNeighborTiles = true;
+            }
         }
 
         // Nav bits

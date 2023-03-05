@@ -277,7 +277,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 // Impassible or empty tiles are not part of navgraph
                 const Tile& tile = tiles[index];
                 // TODO: Do we need to track resource adjacency here?
-                if (tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
+                if (tile.hasFlag(TileFlags::IS_BLOCKED_BY_STRUCTURE)) {
                     continue;
                 }
                 // Only terrain tiles can be empty
