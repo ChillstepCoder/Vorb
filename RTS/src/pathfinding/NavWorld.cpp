@@ -272,12 +272,13 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
                 // Determine if we own this tile
                 if (!TileContainer::isTileOwned(ownedTiles, index)) {
+                    tileFineNavData.pathWeight = 0;
                     continue;
                 }
                 // Impassible or empty tiles are not part of navgraph
                 const Tile& tile = tiles[index];
-                // TODO: Do we need to track resource adjacency here?
-                if (tile.hasFlag(TileFlags::IS_BLOCKED_BY_STRUCTURE)) {
+                if (tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
+                    tileFineNavData.pathWeight = 0;
                     continue;
                 }
                 // Only terrain tiles can be empty
@@ -506,6 +507,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
     tileEdgePointers.resize(tiles.size());
 
     // Build coarse edges and track harvestables
+#pragma region BUILD_COARSE_AND_TRACK_HARVESTABLES
     for (int tz = 0; tz < dims.z; ++tz) {
         for (int ty = 0; ty < dims.y; ++ty) {
             for (int tx = 0; tx < dims.x; ++tx) {
@@ -521,25 +523,89 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     if (hit != harvestableRegistry.mHarvestablePositions.end()) {
                         // This is a navmesh blocking resource such as a tree or boulder
                         // We should list it in all adjacent DJ nav nodes as an accessible resource
-                        DisjointSetNode navNodeIndex;
-                        if (ty > 0) { // SOUTH
-                            if (tryGetNavNodeIndexForTile(navTileData, index - dims.x, navNodeIndex)) {
-                                coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                        
+                        // TODO: Large harvestable sends tendrils further and sets 8 spots instead of 4?
+                        if (tiles[index].hasFlag(TileFlags::LARGE_BLOCKER)) {
+                            // 8 neighbors past the 4 closest neighbors, which are blocked
+                            // __O__
+                            // _OxO_
+                            // OxxxO
+                            // _OxO_
+                            // __O__
+                            DisjointSetNode navNodeIndex;
+                            if (ty > 0) {
+                                if (ty > 1) { // SOUTH
+                                    if (tryGetNavNodeIndexForTile(navTileData, index - dims.x - dims.x, navNodeIndex)) {
+                                        coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                    }
+                                }
+                                if (tx > 0) { // SOUTH_WEST
+                                    if (tryGetNavNodeIndexForTile(navTileData, index - 1 - dims.x, navNodeIndex)) {
+                                        coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                    }
+                                }
+                                if (tx < dims.x - 1) { // SOUTH_EAST
+                                    if (tryGetNavNodeIndexForTile(navTileData, index + 1 - dims.x, navNodeIndex)) {
+                                        coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                    }
+                                }
+                            }
+                            if (tx > 2) { // West
+                                if (tryGetNavNodeIndexForTile(navTileData, index - 2, navNodeIndex)) {
+                                    coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                }
+                            }
+                            if (tx < dims.x - 2) { // EAST
+                                if (tryGetNavNodeIndexForTile(navTileData, index + 2, navNodeIndex)) {
+                                    coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                }
+                            }
+                            if (ty < dims.y - 1) {
+                                if (tx > 0) { // NORTH_WEST
+                                    if (tryGetNavNodeIndexForTile(navTileData, index - 1 + dims.x, navNodeIndex)) {
+                                        coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                    }
+                                }
+                                if (tx < dims.x - 1) { // NORTH_EAST
+                                    if (tryGetNavNodeIndexForTile(navTileData, index + 1 + dims.x, navNodeIndex)) {
+                                        coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                    }
+                                }
+
+                                if (ty < dims.y - 2) { // NORTH
+                                    if (tryGetNavNodeIndexForTile(navTileData, index + dims.x + dims.x, navNodeIndex)) {
+                                        coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                    }
+                                }
                             }
                         }
-                        if (tx > 0) { // WEST
-                            if (tryGetNavNodeIndexForTile(navTileData, index - 1, navNodeIndex)) {
-                                coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                        else {
+                            // 4 closest neighbors
+                            // _____
+                            // __O__
+                            // _OxO_
+                            // __O__
+                            // _____
+                            DisjointSetNode navNodeIndex;
+                            if (ty > 0) { // SOUTH
+                                if (tryGetNavNodeIndexForTile(navTileData, index - dims.x, navNodeIndex)) {
+                                    coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                }
                             }
-                        }
-                        if (tx < dims.x - 1) { // EAST
-                            if (tryGetNavNodeIndexForTile(navTileData, index + 1, navNodeIndex)) {
-                                coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                            if (tx > 0) { // WEST
+                                if (tryGetNavNodeIndexForTile(navTileData, index - 1, navNodeIndex)) {
+                                    coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                }
                             }
-                        }
-                        if (ty < dims.y - 1) { // NORTH
-                            if (tryGetNavNodeIndexForTile(navTileData, index + dims.x, navNodeIndex)) {
-                                coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                            if (tx < dims.x - 1) { // EAST
+                                if (tryGetNavNodeIndexForTile(navTileData, index + 1, navNodeIndex)) {
+                                    coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                }
+                            }
+                            if (ty < dims.y - 1) { // NORTH
+                                if (tryGetNavNodeIndexForTile(navTileData, index + dims.x, navNodeIndex)) {
+                                    coarseNavGraph.harvestablesLookup.setNodeHarvestable(navNodeIndex, hit->second, hit->first);
+                                }
                             }
                         }
                     }
@@ -569,6 +635,8 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
             }
         }
     }
+#pragma endregion
+
     //std::cout << " c " << timer.stop() << std::endl;
     // ================= Assign and copy edges =================
     if (edgeCount) {

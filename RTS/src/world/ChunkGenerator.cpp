@@ -166,7 +166,27 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
         if (baseZPos + 1.0f > maxHeight) {
             maxHeight = baseZPos + 1.0f;
         }
-        tiles[i] = std::move(tile);
+        // TODO: Bit array instead of full tiledata lookup for cache friendlyness
+        if (tile.mainLayer != TILE_ID_NONE && TileRepository::getTileData(tile.mainLayer).blocksNeighborTiles) {
+            // Set blocked flags
+            if (chunk.mTileContainer->tryBlockNeighborTilesFromGeneration(i)) {
+                TileFlagType prevFlags = tiles[i].tileFlags.getBits();
+                tiles[i] = std::move(tile);
+                tiles[i].tileFlags.setBits((TileFlags)prevFlags);
+            }
+            else {
+                tile.mainLayer = TILE_ID_NONE; // Clear the main layer since it wont fit
+                TileFlagType prevFlags = tiles[i].tileFlags.getBits();
+                tiles[i] = std::move(tile);
+                tiles[i].tileFlags.setBits((TileFlags)prevFlags);
+            }
+        }
+        else {
+            // Make sure we don't obliterate blocked flags
+            TileFlagType prevFlags = tiles[i].tileFlags.getBits();
+            tiles[i] = std::move(tile);
+            tiles[i].tileFlags.setBits((TileFlags)prevFlags);
+        }
         chunk.mGrass[i] = grass;
     }
     // TODO: uhhhh?

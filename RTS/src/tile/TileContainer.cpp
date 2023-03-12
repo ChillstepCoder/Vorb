@@ -160,6 +160,27 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
     if (prevId == id) {
         return;
     }
+
+    // TODO: Array of bits?
+    // Check if we need to block neighbors, such as for large tree
+    const bool blocksNeighborTiles = TileRepository::getTileData(id).blocksNeighborTiles;
+    bool prevBlocksNeighborTiles = false;
+    if (!isTileNone(prevId)) {
+        prevBlocksNeighborTiles = TileRepository::getTileData(prevId).blocksNeighborTiles;
+    }
+
+    if (blocksNeighborTiles != prevBlocksNeighborTiles) {
+        if (blocksNeighborTiles) {
+            if (!tryBlockNeighborTiles(i)) {
+                return; // TODO: RETURN FALSE
+            }
+        }
+        else {
+            // Remove old blockage
+            assert(false);
+        }
+    }
+
     // Build notify
     TileContainerEvent evnt;
     TileContainerEditLayerEventData eventData;
@@ -490,6 +511,79 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
             dataCopy.mHarvestables[i].mHarvestablePositions = mHarvestableRegistry.getRegistry(i).mHarvestablePositions;
         }
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
+}
+
+
+bool TileContainer::tryBlockNeighborTiles(TileIndex i) {
+    assert(IS_GAME_THREAD());
+    // Check for if we can place here (NO BOUNDARIES)
+    const i32v3 offset = getTileXYZOffset(i);
+    if (offset.x == 0 || !isTileOwned(i - 1)) {
+        return false;
+    }
+    if (offset.y == 0 || !isTileOwned(i - mDims.x)) {
+        return false;
+    }
+    if (offset.x == mDims.x - 1 || !isTileOwned(i + 1)) {
+        return false;
+    }
+    if (offset.y == mDims.y - 1 || !isTileOwned(i + mDims.x)) {
+        return false;
+    }
+    // Apply blockage
+    TileContainerEvent flagsEvent;
+    TileContainerEditFlagsEventData eventData[4];
+    flagsEvent.container = this;
+    flagsEvent.edit.editCount = 4;
+    flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
+    flagsEvent.edit.changeFlagsArray = eventData;
+    TileIndex adjacents[4] = { i - mDims.x, i - 1, i + 1, i + mDims.x }; // S W E N
+    for (int n = 0; n < 4; ++n) {
+        const TileIndex nindex = adjacents[n];
+        eventData[n].prevFlags = mTiles[nindex].tileFlags;
+        eventData[n].tileIndex = nindex;
+        eventData[n].worldPosition = getTileCenterWorldPosition(nindex);
+    }
+    {
+        std::lock_guard lock(mSharedMutex);
+        mTiles[i].setTileFlag(TileFlags::LARGE_BLOCKER);
+        mTiles[adjacents[0]].setTileFlag(TileFlags::BLOCKED_BY_NORTH);
+        mTiles[adjacents[1]].setTileFlag(TileFlags::BLOCKED_BY_EAST);
+        mTiles[adjacents[2]].setTileFlag(TileFlags::BLOCKED_BY_WEST);
+        mTiles[adjacents[3]].setTileFlag(TileFlags::BLOCKED_BY_SOUTH);
+    }
+    for (int n = 0; n < 4; ++n) {
+        const TileIndex nindex = adjacents[n];
+        eventData[n].newFlags = mTiles[nindex].tileFlags;
+    }
+    TileContainerRepository::dispatchEditTiles(flagsEvent);
+    return true;
+}
+
+bool TileContainer::tryBlockNeighborTilesFromGeneration(TileIndex i) {
+    assert(!IS_GAME_THREAD());
+    // Check for if we can place here (NO BOUNDARIES)
+    const i32v3 offset = getTileXYZOffset(i);
+    if (offset.x == 0 || !isTileOwned(i - 1)) {
+        return false;
+    }
+    if (offset.y == 0 || !isTileOwned(i - mDims.x)) {
+        return false;
+    }
+    if (offset.x == mDims.x - 1 || !isTileOwned(i + 1)) {
+        return false;
+    }
+    if (offset.y == mDims.y - 1 || !isTileOwned(i + mDims.x)) {
+        return false;
+    }
+    // Apply blockage
+    TileIndex adjacents[4] = { i - mDims.x, i - 1, i + 1, i + mDims.x }; // S W E N
+    mTiles[i].tileFlags.setBit(TileFlags::LARGE_BLOCKER);
+    mTiles[adjacents[0]].tileFlags.setBit(TileFlags::BLOCKED_BY_NORTH);
+    mTiles[adjacents[1]].tileFlags.setBit(TileFlags::BLOCKED_BY_EAST);
+    mTiles[adjacents[2]].tileFlags.setBit(TileFlags::BLOCKED_BY_WEST);
+    mTiles[adjacents[3]].tileFlags.setBit(TileFlags::BLOCKED_BY_SOUTH);
+    return true;
 }
 
 void TileContainer::onTileChanged(TileIndex tileIndex) {

@@ -110,6 +110,7 @@ public:
     void setTileLayer(TileIndex i, const TileData& tileData);
     bool tryAddTileLayer(TileIndex i, const TileData& tileData);
     void setTileLayer(TileIndex i, TileLayer layer, TileID id);
+
     void setTileFlag(TileIndex i, TileFlags flag);
     void setTileFlags(TileIndex i, TileFlags flags);
     void clearTileFlag(TileIndex i, TileFlags flag);
@@ -276,6 +277,8 @@ public:
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
 private:
+    bool tryBlockNeighborTiles(TileIndex i);
+    bool tryBlockNeighborTilesFromGeneration(TileIndex i);
     void onTileChanged(TileIndex tileIndex);
 
     void addDoor(Cartesian doorSide, TileIndex tileIndex);

@@ -539,7 +539,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                 for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
                     TileID layerTile = tile.getLayers()[layerIndex];  // TODO: Thread safe when async
                     // Blocked or invalid tiles have no render (Unowned tiles should all be NONE)
-                    if (isTileBlockedOrNone(layerTile)) {
+                    if (isTileNone(layerTile)) {
                         continue;
                     }
                     const TileData& tileData = TileRepository::getTileData(layerTile);
@@ -560,25 +560,25 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                         TileShape adjacentShapes[4] = { TileShape::NONE, TileShape::NONE, TileShape::NONE, TileShape::NONE };
                         if (xyz.y > 0) {
                             TileID south = tiles.mTiles[index - tileDims.x].getLayers()[layerIndex];
-                            if (!isTileBlockedOrNone(south)) {
+                            if (!isTileNone(south)) {
                                 adjacentShapes[e_cast(Cartesian::SOUTH)] = TileRepository::getTileData(south).shape;
                             }
                         }
                         if (xyz.x > 0) {
                             TileID west = tiles.mTiles[index - 1].getLayers()[layerIndex];
-                            if (!isTileBlockedOrNone(west)) {
+                            if (!isTileNone(west)) {
                                 adjacentShapes[e_cast(Cartesian::WEST)] = TileRepository::getTileData(west).shape;
                             }
                         }
                         if (xyz.x < tileDims.x - 1) {
                             TileID east = tiles.mTiles[index + 1].getLayers()[layerIndex];
-                            if (!isTileBlockedOrNone(east)) {
+                            if (!isTileNone(east)) {
                                 adjacentShapes[e_cast(Cartesian::EAST)] = TileRepository::getTileData(east).shape;
                             }
                         }
                         if (xyz.y < tileDims.y - 1) {
                             TileID north = tiles.mTiles[index + tileDims.x].getLayers()[layerIndex];
-                            if (!isTileBlockedOrNone(north)) {
+                            if (!isTileNone(north)) {
                                 adjacentShapes[e_cast(Cartesian::NORTH)] = TileRepository::getTileData(north).shape;
                             }
                         }

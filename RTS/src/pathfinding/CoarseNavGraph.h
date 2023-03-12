@@ -57,7 +57,7 @@ public:
     void init(ui32 numNodes) {
         mHarvestablesTest.resize(numNodes * (ui32)TileHarvestable::COUNT);
     }
-    const std::vector<TileIndex>* tryGetHarvestables(ui32 nodeIndex, TileHarvestable harvestable) const {
+    const std::set<TileIndex>* tryGetHarvestables(ui32 nodeIndex, TileHarvestable harvestable) const {
         // O(1) membership test
         if (mHarvestablesTest.getBit(nodeIndex * (ui32)TileHarvestable::COUNT + (ui32)harvestable)) {
             return &(mHarvestablePositions.find(std::make_pair(nodeIndex, harvestable))->second);
@@ -66,12 +66,13 @@ public:
     }
     void setNodeHarvestable(ui32 nodeIndex, TileHarvestable harvestable, TileIndex position) {
         mHarvestablesTest.setBit(nodeIndex * (ui32)TileHarvestable::COUNT + (ui32)harvestable);
-        mHarvestablePositions[std::make_pair(nodeIndex, harvestable)].emplace_back(position);
+        mHarvestablePositions[std::make_pair(nodeIndex, harvestable)].insert(position);
     }
 
 private:
     BitArray mHarvestablesTest;
-    boost::container::flat_map<std::pair<ui32 /*nodeIndex*/, TileHarvestable>, std::vector<TileIndex>> mHarvestablePositions;
+    // TODO: test flatSet?
+    boost::container::flat_map<std::pair<ui32 /*nodeIndex*/, TileHarvestable>, std::set<TileIndex>> mHarvestablePositions;
 };
 
 struct CoarseNavGraph {

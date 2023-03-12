@@ -596,11 +596,11 @@ LiteTileHandle PathFinder::tryGenerateCoarsePathToClosestFreeHarvestableSynchron
         const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
         const CoarseNavGraph& navGraph = navData.coarseNavGraph;
         const ui16 navNodeIndex = navGraph.tileCoarseNavIndices[handle.index];
-        const std::vector<TileIndex>* harvestablesPtr = navGraph.harvestablesLookup.tryGetHarvestables(navNodeIndex, harvestable);
+        const std::set<TileIndex>* harvestablesPtr = navGraph.harvestablesLookup.tryGetHarvestables(navNodeIndex, harvestable);
         if (harvestablesPtr && harvestablesPtr->size()) {
             // TODO: Reservable harvestables/tiles
             // TODO: Random harvestable on this node?
-            foundHarvestableHandle = LiteTileHandle(handle.containerId, harvestablesPtr->operator[](0));
+            foundHarvestableHandle = LiteTileHandle(handle.containerId, *harvestablesPtr->begin());
             if (sDebugOptions.mShowPaths) {
                 DebugRenderer::drawWireQuadThreadSafe(f32v3(navData.getTileWorldPos(foundHarvestableHandle.index)), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 2);
             }

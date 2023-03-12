@@ -82,7 +82,7 @@ void TileContainerHarvestableRegistry::refreshFromOwner() {
                 const Tile& tile = tiles[tileIndex];
                 TileID mainId = tile.getMainID();
                 static_assert(TILE_LAYER_COUNT == 2, "If harvestables can exist on more than one level we need this to be a loop");
-                if (isTileBlockedOrNone(mainId)) {
+                if (isTileNone(mainId)) {
                     mHarvestables[tileIndex] = TileHarvestable::NONE;
                 } else {
                     const TileHarvestable harvestable = TileRepository::getTileData(tile.getMainID()).harvestable;
@@ -134,10 +134,10 @@ void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent
             TileHarvestable prevHarvestable = TileHarvestable::NONE;
             TileHarvestable newHarvestable = TileHarvestable::NONE;
 
-            if (!isTileBlockedOrNone(editData.prevId)) {
+            if (!isTileNone(editData.prevId)) {
                 prevHarvestable = TileRepository::getTileData(editData.prevId).harvestable;
             }
-            if (!isTileBlockedOrNone(editData.newId)) {
+            if (!isTileNone(editData.newId)) {
                 newHarvestable = TileRepository::getTileData(editData.newId).harvestable;
             }
 
