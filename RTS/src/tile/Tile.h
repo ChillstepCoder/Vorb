@@ -59,6 +59,13 @@ enum class TileTextureMethod : ui8 {
 };
 KEG_ENUM_DECL(TileTextureMethod);
 
+enum class NavBlockerType {
+    NONE,
+    MEDIUM,
+    LARGE,
+    COUNT
+};
+
 // TODO: separate certain data into multiple arrays because right now every TileData lookup is a cache miss
 // For example we only look up path weight when constructing the nav  graph, why not  have it in a separate vector?
 struct TileData {
@@ -75,7 +82,7 @@ struct TileData {
     TileShape shape = TileShape::BLOCK;
     ui8 pathWeight = 255;
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
-    bool blocksNeighborTiles = false;// TODO: flags?
+    NavBlockerType navBlockerType = NavBlockerType::NONE;
     union {
         struct {
             f32 heightOffsetSouth;
@@ -149,6 +156,7 @@ public:
 
     bool hasFlag(TileFlags flag) const { return tileFlags.isBitSet(flag); }
     bool hasFlagsMaskAny(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
+    TileFlagType getFlags() const { return tileFlags.getBits(); }
 
     bool hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const;
 
@@ -170,7 +178,7 @@ private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTileData(const TileData& tile) const;
     void setTileFlag(TileFlags flag);
-    void setTileFlags(TileFlags flags);
+    void overwriteTileFlags(TileFlags flags);
     void setOrientation(Cartesian dir, TileLayer layer);
     void clearTileFlag(TileFlags flag);
     void clearTileFlags();

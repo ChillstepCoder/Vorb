@@ -161,23 +161,23 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
         return;
     }
 
-    // TODO: Array of bits?
+    // TODO: Array of blocking data so we dont need a cache miss lookup here??
     // Check if we need to block neighbors, such as for large tree
-    const bool blocksNeighborTiles = TileRepository::getTileData(id).blocksNeighborTiles;
-    bool prevBlocksNeighborTiles = false;
+    const NavBlockerType navBlockerType = TileRepository::getTileData(id).navBlockerType;
+    NavBlockerType prevNavBlockerType = NavBlockerType::NONE;
     if (!isTileNone(prevId)) {
-        prevBlocksNeighborTiles = TileRepository::getTileData(prevId).blocksNeighborTiles;
+        prevNavBlockerType = TileRepository::getTileData(prevId).navBlockerType;
     }
 
-    if (blocksNeighborTiles != prevBlocksNeighborTiles) {
-        if (blocksNeighborTiles) {
-            if (!tryBlockNeighborTiles(i)) {
-                return; // TODO: RETURN FALSE
-            }
-        }
-        else {
+    if (navBlockerType != prevNavBlockerType) {
+        if (prevNavBlockerType != NavBlockerType::NONE) {
             // Remove old blockage
             assert(false);
+        }
+        if (navBlockerType != NavBlockerType::NONE) {
+            if (!tryBlockNeighborTiles(i, navBlockerType)) {
+                return; // TODO: RETURN FALSE
+            }
         }
     }
 
@@ -227,7 +227,7 @@ void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
     }
 }
 
-void TileContainer::setTileFlags(TileIndex i, TileFlags flags) {
+void TileContainer::overwriteTileFlags(TileIndex i, TileFlags flags) {
     assert(isReady());
     Tile& tile = mTiles[i];
 
@@ -241,7 +241,7 @@ void TileContainer::setTileFlags(TileIndex i, TileFlags flags) {
         eventData.prevFlags = tile.tileFlags;
         {
             std::lock_guard lock(mSharedMutex);
-            tile.setTileFlags(flags);
+            tile.overwriteTileFlags(flags);
         }
         eventData.newFlags = tile.tileFlags;
         eventData.tileIndex = i;
@@ -514,7 +514,7 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
 }
 
 
-bool TileContainer::tryBlockNeighborTiles(TileIndex i) {
+bool TileContainer::tryBlockNeighborTiles(TileIndex i, NavBlockerType navBlockerType) {
     assert(IS_GAME_THREAD());
     // Check for if we can place here (NO BOUNDARIES)
     const i32v3 offset = getTileXYZOffset(i);
@@ -531,36 +531,49 @@ bool TileContainer::tryBlockNeighborTiles(TileIndex i) {
         return false;
     }
     // Apply blockage
+    constexpr int EDIT_COUNT = 5;
     TileContainerEvent flagsEvent;
-    TileContainerEditFlagsEventData eventData[4];
+    TileContainerEditFlagsEventData eventData[EDIT_COUNT];
     flagsEvent.container = this;
-    flagsEvent.edit.editCount = 4;
+    flagsEvent.edit.editCount = EDIT_COUNT;
     flagsEvent.edit.type = TileContainerEditEventType::ChangeFlags;
     flagsEvent.edit.changeFlagsArray = eventData;
-    TileIndex adjacents[4] = { i - mDims.x, i - 1, i + 1, i + mDims.x }; // S W E N
-    for (int n = 0; n < 4; ++n) {
-        const TileIndex nindex = adjacents[n];
+    TileIndex tileIndices[EDIT_COUNT] = { i, i - mDims.x, i - 1, i + 1, i + mDims.x }; // S W E N
+    for (int n = 0; n < EDIT_COUNT; ++n) {
+        const TileIndex nindex = tileIndices[n];
         eventData[n].prevFlags = mTiles[nindex].tileFlags;
         eventData[n].tileIndex = nindex;
         eventData[n].worldPosition = getTileCenterWorldPosition(nindex);
     }
     {
-        std::lock_guard lock(mSharedMutex);
-        mTiles[i].setTileFlag(TileFlags::LARGE_BLOCKER);
-        mTiles[adjacents[0]].setTileFlag(TileFlags::BLOCKED_BY_NORTH);
-        mTiles[adjacents[1]].setTileFlag(TileFlags::BLOCKED_BY_EAST);
-        mTiles[adjacents[2]].setTileFlag(TileFlags::BLOCKED_BY_WEST);
-        mTiles[adjacents[3]].setTileFlag(TileFlags::BLOCKED_BY_SOUTH);
+        const TileFlags blockerFlag = (navBlockerType == NavBlockerType::MEDIUM) ? TileFlags::MEDIUM_BLOCKER : TileFlags::LARGE_BLOCKER;
+        static_assert(e_cast(NavBlockerType::COUNT) == 3);
+        if (blockerFlag == TileFlags::BLOCKED_BY_LARGE) {
+            std::lock_guard lock(mSharedMutex);
+            mTiles[tileIndices[0]].setTileFlag(blockerFlag);
+            mTiles[tileIndices[1]].setTileFlag(TileFlags(e_cast(TileFlags::HAS_NORTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+            mTiles[tileIndices[2]].setTileFlag(TileFlags(e_cast(TileFlags::HAS_EAST_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+            mTiles[tileIndices[3]].setTileFlag(TileFlags(e_cast(TileFlags::HAS_WEST_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+            mTiles[tileIndices[4]].setTileFlag(TileFlags(e_cast(TileFlags::HAS_SOUTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+        }
+        else {
+            std::lock_guard lock(mSharedMutex);
+            mTiles[tileIndices[0]].setTileFlag(blockerFlag);
+            mTiles[tileIndices[1]].setTileFlag(TileFlags::HAS_NORTH_BLOCKER);
+            mTiles[tileIndices[2]].setTileFlag(TileFlags::HAS_EAST_BLOCKER);
+            mTiles[tileIndices[3]].setTileFlag(TileFlags::HAS_WEST_BLOCKER);
+            mTiles[tileIndices[4]].setTileFlag(TileFlags::HAS_SOUTH_BLOCKER);
+        }
     }
-    for (int n = 0; n < 4; ++n) {
-        const TileIndex nindex = adjacents[n];
+    for (int n = 0; n < EDIT_COUNT; ++n) {
+        const TileIndex nindex = tileIndices[n];
         eventData[n].newFlags = mTiles[nindex].tileFlags;
     }
     TileContainerRepository::dispatchEditTiles(flagsEvent);
     return true;
 }
 
-bool TileContainer::tryBlockNeighborTilesFromGeneration(TileIndex i) {
+bool TileContainer::tryBlockNeighborTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType) {
     assert(!IS_GAME_THREAD());
     // Check for if we can place here (NO BOUNDARIES)
     const i32v3 offset = getTileXYZOffset(i);
@@ -578,11 +591,21 @@ bool TileContainer::tryBlockNeighborTilesFromGeneration(TileIndex i) {
     }
     // Apply blockage
     TileIndex adjacents[4] = { i - mDims.x, i - 1, i + 1, i + mDims.x }; // S W E N
-    mTiles[i].tileFlags.setBit(TileFlags::LARGE_BLOCKER);
-    mTiles[adjacents[0]].tileFlags.setBit(TileFlags::BLOCKED_BY_NORTH);
-    mTiles[adjacents[1]].tileFlags.setBit(TileFlags::BLOCKED_BY_EAST);
-    mTiles[adjacents[2]].tileFlags.setBit(TileFlags::BLOCKED_BY_WEST);
-    mTiles[adjacents[3]].tileFlags.setBit(TileFlags::BLOCKED_BY_SOUTH);
+    if (navBlockerType == NavBlockerType::LARGE) {
+        mTiles[i].tileFlags.setBit(TileFlags::LARGE_BLOCKER);
+        mTiles[adjacents[0]].tileFlags.setBit(TileFlags(e_cast(TileFlags::HAS_NORTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+        mTiles[adjacents[1]].tileFlags.setBit(TileFlags(e_cast(TileFlags::HAS_EAST_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+        mTiles[adjacents[2]].tileFlags.setBit(TileFlags(e_cast(TileFlags::HAS_WEST_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+        mTiles[adjacents[3]].tileFlags.setBit(TileFlags(e_cast(TileFlags::HAS_SOUTH_BLOCKER) | e_cast(TileFlags::BLOCKED_BY_LARGE)));
+    }
+    else {
+        mTiles[i].tileFlags.setBit(TileFlags::MEDIUM_BLOCKER);
+        mTiles[adjacents[0]].tileFlags.setBit(TileFlags::HAS_NORTH_BLOCKER);
+        mTiles[adjacents[1]].tileFlags.setBit(TileFlags::HAS_EAST_BLOCKER);
+        mTiles[adjacents[2]].tileFlags.setBit(TileFlags::HAS_WEST_BLOCKER);
+        mTiles[adjacents[3]].tileFlags.setBit(TileFlags::HAS_SOUTH_BLOCKER);
+    }
+    static_assert(e_cast(NavBlockerType::COUNT) == 3);
     return true;
 }
 

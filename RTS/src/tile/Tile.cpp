@@ -40,7 +40,7 @@ void Tile::setTileFlag(TileFlags flag) {
     tileFlags.setBit(flag);
 }
 
-void Tile::setTileFlags(TileFlags flags) {
+void Tile::overwriteTileFlags(TileFlags flags) {
     assert(IS_GAME_THREAD()); 
     tileFlags = flags;
 }

@@ -178,7 +178,7 @@ constexpr CartesianPair CARTESIAN_DIAGONAL_OPPOSITES[8] = {
 
 // toDir = south means we enter from the north
 bool canEnterTileInDirection(const Tile& tile, const TileWalls& walls, Cartesian toDir) {
-    if (!tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
+    if (!IsTileNavBlocked(tile.getFlags())) {
         const Cartesian fromDir = CARTESIAN_OPPOSITES[e_cast(toDir)];
         if (!tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDir)])) return false;
         return walls.walls[e_cast(fromDir)].canNavThrough();
@@ -186,7 +186,7 @@ bool canEnterTileInDirection(const Tile& tile, const TileWalls& walls, Cartesian
     return false;
 }
 bool canEnterTileInDirectionDiagonal(const Tile& tile, const TileWalls& walls, Cartesian8 toDir) {
-    if (!tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
+    if (!IsTileNavBlocked(tile.getFlags())) {
         const CartesianPair fromDirs = CARTESIAN_DIAGONAL_OPPOSITES[e_cast(toDir)];
         if (!tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDirs.first)]) || !tile.canNavInDirection(CARTESIAN_TO_CARTESIAN8[e_cast(fromDirs.second)])) return false;
         return (walls.walls[e_cast(fromDirs.first)].canNavThrough() && walls.walls[e_cast(fromDirs.second)].canNavThrough());
@@ -277,7 +277,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 }
                 // Impassible or empty tiles are not part of navgraph
                 const Tile& tile = tiles[index];
-                if (tile.hasFlagsMaskAny(IMPASSABLE_TILE_FLAGS_MASK)) {
+                if (IsTileNavBlocked(tile.getFlags())) {
                     tileFineNavData.pathWeight = 0;
                     continue;
                 }
