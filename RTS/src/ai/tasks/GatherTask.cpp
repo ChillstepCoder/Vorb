@@ -254,7 +254,9 @@ void GatherTask::failTask() {
 }
 
 GatherItemsForPromiseTask::GatherItemsForPromiseTask(ItemPromiseWeakPtr&& itemPromise) : mItemPromise(std::move(itemPromise)) {
-
+    assert(mItemPromise.get());
+    mTargetHarvestable = TileRepository::getTileData(mItemPromise->getItemID())
+    assert(mTargetHarvestable != TileHarvestable::NONE);
 }
 
 GatherItemsForPromiseTask::~GatherItemsForPromiseTask() {
@@ -285,8 +287,10 @@ bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agen
 }
 
 void GatherItemsForPromiseTask::findItem(entt::registry& registry, entt::entity agent) {
-    assert(false);
-    xxx; // :)
+    IEntityComponentSystem& ecs = sWorld->getECS();
+    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
+    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
 }
 
 void GatherItemsForPromiseTask::harvestItem(entt::registry& registry, entt::entity agent) {

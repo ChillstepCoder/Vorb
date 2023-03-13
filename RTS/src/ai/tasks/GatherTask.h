@@ -78,6 +78,7 @@ protected:
 
     ItemPromiseWeakPtr mItemPromise;
     TileHandle mCurrentTileTarget;
+	TileHarvestable mTargetHarvestable = TileHarvestable::NONE;
 	TaskState mState = TaskState::FIND_ITEM;
 };
 

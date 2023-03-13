@@ -66,6 +66,8 @@ public:
     bool isReadyForShipment() const { return (mItemsReady - mPendingShipmentQuantity) >= mMinShipmentSize; }
     bool isFinished() const { return mTotalFulfilled >= mMinItemCount; }
 
+    ItemID getItemID() const { return mItemId; }
+
 private:
     std::function<void(ItemPromise*, ui16)> mOnFinish;
     ItemID mItemId;
