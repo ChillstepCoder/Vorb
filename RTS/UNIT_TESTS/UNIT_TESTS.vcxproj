@@ -259,7 +259,6 @@
     <ClCompile Include="..\src\tile\TileContainer.cpp" />
     <ClCompile Include="..\src\tile\TileHandle.cpp" />
     <ClCompile Include="..\src\tile\TileHarvestable.cpp" />
-    <ClCompile Include="..\src\tile\TileScanner.cpp" />
     <ClCompile Include="..\src\tile\TileUtil.cpp" />
     <ClCompile Include="..\src\util\BitArray.cpp" />
     <ClCompile Include="..\src\util\BitFlags.cpp" />
@@ -319,7 +318,6 @@
     <ClInclude Include="..\src\tile\TileFlags.h" />
     <ClInclude Include="..\src\tile\TileHandle.h" />
     <ClInclude Include="..\src\tile\TileHarvestable.h" />
-    <ClInclude Include="..\src\tile\TileScanner.h" />
     <ClInclude Include="..\src\tile\TileUtil.h" />
     <ClInclude Include="..\src\util\AABB.hpp" />
     <ClInclude Include="..\src\util\BitArray.h" />

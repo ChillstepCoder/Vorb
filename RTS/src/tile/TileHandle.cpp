@@ -92,5 +92,5 @@ TileHandle LiteTileHandle::toTileHandle() const {
 i32v3 LiteTileHandle::getWorldPosition() const
 {
     TileContainer* container = getTileContainer();
-    return container->getWorldPos3D() + i32v3(container->getTileXYZOffsetWithZScale(index));
+    return container->getTileCenterWorldPosition(index);;
 }

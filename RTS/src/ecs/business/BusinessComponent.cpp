@@ -11,7 +11,6 @@
 #include "resources/ResourceManager.h"
 #include "city/BuildingDescriptionRepository.h"
 #include "city/business_jobs/ConstructBuildingJob.h"
-#include "tile/TileScanner.h"
 #include "item/ItemStockpile.h"
 #include "resources/TileRepository.h"
 
@@ -83,73 +82,69 @@ void updateGatherComponent(entt::registry& registry, BusinessGatherComponent& ga
     
     // Scans
     // TODO: Better support for multiple plots
-    if (gatherCmp.mScannedTiles.empty()) {
-        for (auto&& ownedPlot : ownershipCmp.mOwnedPlots) {
-            PreciseTimer timer;
-            gatherCmp.mScannedTiles = TileScanner::scanForHarvestable(gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
-            LOG_INFO("Tile scanning took {} ms and returned {} tiles", timer.stop(), gatherCmp.mScannedTiles.size());
-            if (sDebugOptions.mShowPaths) {
-                for (auto&& it : gatherCmp.mScannedTiles) {
-                    DebugRenderer::drawWireQuadThreadSafe(it.getWorldPos3D(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
-                }
-            }
+    //if (gatherCmp.mScannedTiles.empty()) {
+    //    for (auto&& ownedPlot : ownershipCmp.mOwnedPlots) {
+    //        PreciseTimer timer;
+    //        gatherCmp.mScannedTiles = TileScanner::scanForHarvestable(gatherCmp.mResourceToGather, ownedPlot->aabb.getCenter(), MAX_SCAN_DISTANCE, MAX_RETURN_TILES);
+    //        LOG_INFO("Tile scanning took {} ms and returned {} tiles", timer.stop(), gatherCmp.mScannedTiles.size());
+    //        if (sDebugOptions.mShowPaths) {
+    //            for (auto&& it : gatherCmp.mScannedTiles) {
+    //                DebugRenderer::drawWireQuadThreadSafe(it.getWorldPos3D(), f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f), SCAN_FRAMES_DELAY);
+    //            }
+    //        }
 
-            // Mark all tiles as reserved
-            for (auto&& it : gatherCmp.mScannedTiles) {
-                assert(!it.getMutableContainer()->getTileAt(it.tileIndex).hasFlag(TileFlags::IS_RESOURCE_RESERVED));
-                it.getMutableContainer()->setTileFlag(it.tileIndex, TileFlags::IS_RESOURCE_RESERVED);
-            }
-            break;
-        }
-    }
+    //        // Mark all tiles as reserved
+    //        for (auto&& it : gatherCmp.mScannedTiles) {
+    //            assert(!it.getMutableContainer()->getTileAt(it.tileIndex).hasFlag(TileFlags::IS_RESOURCE_RESERVED));
+    //            it.getMutableContainer()->setTileFlag(it.tileIndex, TileFlags::IS_RESOURCE_RESERVED);
+    //        }
+    //        break;
+    //    }
+    //}
 
     // Assign gather tasks to workers
-    if (ownershipCmp.mOwnedStockpiles.size()) {
-        while (businessCmp.mIdleWorkers.size() && gatherCmp.mScannedTiles.size()) {
-            TileHandle handle = gatherCmp.mScannedTiles.back();
+    //if (ownershipCmp.mOwnedStockpiles.size()) {
+    //    while (businessCmp.mIdleWorkers.size()) {
 
-            assert(handle.tile->hasFlag(TileFlags::IS_RESOURCE_RESERVED));
+    //        entt::entity worker = businessCmp.mIdleWorkers.front();
 
-            entt::entity worker = businessCmp.mIdleWorkers.front();
+    //        EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
+    //        assert(!employeeCmp.mCurrentTask);
 
-            EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
-            assert(!employeeCmp.mCurrentTask);
+    //        ItemStack maximumYieldStack;
+    //        TileLayer gatherLayer;
+    //        if (handle.tile->hasHarvestableResource(gatherCmp.mResourceToGather, &gatherLayer)) {
 
-            ItemStack maximumYieldStack;
-            TileLayer gatherLayer;
-            if (handle.tile->hasHarvestableResource(gatherCmp.mResourceToGather, &gatherLayer)) {
+    //            const TileData& tileData = TileRepository::getTileData(handle.tile->getLayers()[e_cast(gatherLayer)]);
+    //            // TODO: Play animation of tree falling
 
-                const TileData& tileData = TileRepository::getTileData(handle.tile->getLayers()[e_cast(gatherLayer)]);
-                // TODO: Play animation of tree falling
+    //            // TODO: HANDLE MULTIPLE DROPS
+    //            for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
+    //                const ItemDrop& drop = tileData.itemDrops[i];
+    //                maximumYieldStack.id = drop.id;
+    //                maximumYieldStack.quantity = drop.countRange.y;
 
-                // TODO: HANDLE MULTIPLE DROPS
-                for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
-                    const ItemDrop& drop = tileData.itemDrops[i];
-                    maximumYieldStack.id = drop.id;
-                    maximumYieldStack.quantity = drop.countRange.y;
+    //                if (std::unique_ptr<ItemReservation> reservation = ownershipCmp.mOwnedStockpiles[0]->tryPromiseItemStack(maximumYieldStack, maximumYieldStack.quantity)) {
+    //                    employeeCmp.mCurrentTask = std::make_unique<GatherTask>(handle, gatherCmp.mResourceToGather, std::move(reservation));
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //        else {
+    //            LOG_INFO("Failed to find resource to gather in business cmp");
+    //        }
 
-                    if (std::unique_ptr<ItemReservation> reservation = ownershipCmp.mOwnedStockpiles[0]->tryPromiseItemStack(maximumYieldStack, maximumYieldStack.quantity)) {
-                        employeeCmp.mCurrentTask = std::make_unique<GatherTask>(handle, gatherCmp.mResourceToGather, std::move(reservation));
-                        break;
-                    }
-                }
-            }
-            else {
-                LOG_INFO("Failed to find resource to gather in business cmp");
-            }
-
-            // If employee has a task, we succeeded. Otherwise, break cause we cant give any tasks right now
-            if (employeeCmp.mCurrentTask) {
-                gatherCmp.mScannedTiles.pop_back();
-                businessCmp.mIdleWorkers.pop_front();
-                employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
-                std::cout << "  REMOVE IDLE 2 " << businessCmp.mIdleWorkers.size() << " " << businessCmp.mIdleWorkers.capacity() << std::endl;
-            }
-            else {
-                break;
-            }
-        }
-    }
+    //        // If employee has a task, we succeeded. Otherwise, break cause we cant give any tasks right now
+    //        if (employeeCmp.mCurrentTask) {
+    //            businessCmp.mIdleWorkers.pop_front();
+    //            employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+    //            std::cout << "  REMOVE IDLE 2 " << businessCmp.mIdleWorkers.size() << " " << businessCmp.mIdleWorkers.capacity() << std::endl;
+    //        }
+    //        else {
+    //            break;
+    //        }
+    //    }
+    //}
 }
 
 void updateBuildComponent(BusinessBuildComponent& buildCmp, BusinessComponent& businessCmp, entt::entity entity) {

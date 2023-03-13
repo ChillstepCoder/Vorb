@@ -239,7 +239,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
         const ContainerNavData& containerNavData = mNavWorld.getNavDataForContainer(handle.containerId);
         const f32v3 worldPos = containerNavData.getTileWorldPos(handle.index);
 
-        constexpr f32 SUCCESS_DISTANCE_SQ = 1.5f;
+        constexpr f32 SUCCESS_DISTANCE_SQ = SQ(2.0f);//1.5f;
         if (glm::length2(worldPos - goalWorldPos) < SUCCESS_DISTANCE_SQ) {
             foundGoal = true;
             break;

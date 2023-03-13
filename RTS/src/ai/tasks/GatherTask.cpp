@@ -285,7 +285,8 @@ bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agen
 }
 
 void GatherItemsForPromiseTask::findItem(entt::registry& registry, entt::entity agent) {
-
+    assert(false);
+    xxx; // :)
 }
 
 void GatherItemsForPromiseTask::harvestItem(entt::registry& registry, entt::entity agent) {

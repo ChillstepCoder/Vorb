@@ -55,7 +55,6 @@ struct GatherItemDesc {
 struct BusinessGatherComponent {
     ui32 mPriority;
     TileHarvestable mResourceToGather = TileHarvestable::NONE;
-    std::vector<TileHandle> mScannedTiles;
 };
 
 // Construct

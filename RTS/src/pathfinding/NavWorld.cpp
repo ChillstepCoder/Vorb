@@ -275,8 +275,9 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     tileFineNavData.pathWeight = 0;
                     continue;
                 }
-                // Impassible or empty tiles are not part of navgraph
                 const Tile& tile = tiles[index];
+                tileFineNavData.zPositionOffsetFromFloor = tile.getGroundZOffset();
+                // Impassible or empty tiles are not part of navgraph
                 if (IsTileNavBlocked(tile.getFlags())) {
                     tileFineNavData.pathWeight = 0;
                     continue;
@@ -287,7 +288,6 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                 }
                 tileFineNavData.isOwned = true;
 
-                tileFineNavData.zPositionOffsetFromFloor = tile.getGroundZOffset();
                 const TileWalls& walls = tileWalls[index];
                 const f32 groundZPosition = tileFineNavData.zPositionOffsetFromFloor + tz * floorHeight;
                 bool assigned = false;
@@ -306,8 +306,6 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
                 // Zero path weight means this is not navable
                 if (tileFineNavData.pathWeight == 0) {
-                    // TODO: Remove this and we get a bug with "find nearest wood" where we return valid wood sometimes
-                    // probably indicates a larger bug with nav
                     continue;
                 }
 

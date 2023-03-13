@@ -381,9 +381,6 @@
     <ClCompile Include="src\tile\TileHandle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tile\TileScanner.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\resources\TileRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1161,9 +1158,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileHandle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tile\TileScanner.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\TileRepository.h">
