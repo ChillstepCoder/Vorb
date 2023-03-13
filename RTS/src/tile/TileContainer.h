@@ -277,8 +277,11 @@ public:
     void copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const;
 
 private:
-    bool tryBlockNeighborTiles(TileIndex i, NavBlockerType navBlockerType);
-    bool tryBlockNeighborTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType);
+    bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
+    bool tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType);
+
+    bool canPlaceAdjNavBlockerTile(TileIndex i);
+
     void onTileChanged(TileIndex tileIndex);
 
     void addDoor(Cartesian doorSide, TileIndex tileIndex);

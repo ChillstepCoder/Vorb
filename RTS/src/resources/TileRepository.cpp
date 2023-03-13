@@ -85,16 +85,20 @@ bool TileRepository::loadTileFile(vio::IOManager& ioManager, const vio::Path& pa
 
             // If its extends into neighbor tiles larger than player collider radius (player collider is 0.24 radius)
             // then we are blocking
-            const f32 overlapIntoNeighbor = fileData.colliderHalfExtents.x - 0.5f;
+            const f32 overlapIntoNeighborX = fileData.colliderHalfExtents.x - 0.5f;
+            const f32 overlapIntoNeighborDiagonal = fileData.colliderHalfExtents.x - 0.7f;
             constexpr f32 AGENT_RADIUS = 0.241f; // TODO: Enforce match to data
             // Distance where if we have two of these objects that have an empty block
             // in between, an agent can no longer path
             // TODO: Refine these values, 0.5f should be right but 0.85 is kinda arbitrary
+
+            // RADIUS X = 0.5
+            // RADIUS DIAGONAL = 0.707
             constexpr f32 MEDIUM_OVERLAP_DISTANCE = 0.5f - AGENT_RADIUS;
             constexpr f32 LARGE_OVERLAP_DISTANCE = 0.85f - AGENT_RADIUS;
-            if (overlapIntoNeighbor >= LARGE_OVERLAP_DISTANCE) {
+            if (overlapIntoNeighborX >= LARGE_OVERLAP_DISTANCE) {
                 tileData.navBlockerType = NavBlockerType::LARGE;
-            } else if (overlapIntoNeighbor >= MEDIUM_OVERLAP_DISTANCE) {
+            } else if (overlapIntoNeighborX >= MEDIUM_OVERLAP_DISTANCE) {
                 tileData.navBlockerType = NavBlockerType::MEDIUM;
             }
         }

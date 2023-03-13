@@ -171,7 +171,7 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
             const NavBlockerType navBlockerType = TileRepository::getTileData(tile.mainLayer).navBlockerType;
             if (navBlockerType != NavBlockerType::NONE) {
                 // Set blocked flags
-                if (chunk.mTileContainer->tryBlockNeighborTilesFromGeneration(i, navBlockerType)) {
+                if (chunk.mTileContainer->tryBlockAdjTilesFromGeneration(i, navBlockerType)) {
                     TileFlagType prevFlags = tiles[i].tileFlags.getBits();
                     tiles[i] = std::move(tile);
                     tiles[i].tileFlags.setBits((TileFlags)prevFlags);
@@ -182,6 +182,11 @@ void ChunkGenerator::GenerateChunk(Chunk& chunk, f32* heightData) {
                     tiles[i] = std::move(tile);
                     tiles[i].tileFlags.setBits((TileFlags)prevFlags);
                 }
+            }
+            else {
+                TileFlagType prevFlags = tiles[i].tileFlags.getBits();
+                tiles[i] = std::move(tile);
+                tiles[i].tileFlags.setBits((TileFlags)prevFlags);
             }
         }
         else {
