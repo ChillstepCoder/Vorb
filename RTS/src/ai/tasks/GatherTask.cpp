@@ -13,6 +13,7 @@
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
+#include "item/ItemReservation.h"
 #include "resources/TileRepository.h"
 #include "math/Random.h"
 
@@ -254,8 +255,9 @@ void GatherTask::failTask() {
 }
 
 GatherItemsForPromiseTask::GatherItemsForPromiseTask(ItemPromiseWeakPtr&& itemPromise) : mItemPromise(std::move(itemPromise)) {
-    assert(mItemPromise.get());
-    mTargetHarvestable = TileRepository::getTileData(mItemPromise->getItemID())
+    assert(mItemPromise.use_count());
+    auto shared = itemPromise.lock();
+    mTargetHarvestable = TileRepository::getTileData(shared->getItemID()).harvestable;
     assert(mTargetHarvestable != TileHarvestable::NONE);
 }
 
@@ -291,8 +293,9 @@ void GatherItemsForPromiseTask::findItem(entt::registry& registry, entt::entity 
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     NavigationComponent& cmp = registry.get_or_emplace<NavigationComponent>(agent);
     cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::WOOD, 1024.0f, nullptr);
+    mState = TaskState::PATH_TO_ITEM;
 }
 
 void GatherItemsForPromiseTask::harvestItem(entt::registry& registry, entt::entity agent) {
-
+    assert(false);
 }
