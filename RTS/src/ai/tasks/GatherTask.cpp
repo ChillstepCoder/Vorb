@@ -129,7 +129,7 @@ bool GatherTask::beginHarvest(entt::registry& registry, entt::entity agent)
 {
     PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
     TileLayer layer;
-    if (!sWorld->terrainTileHasHarvestableResource(mTileTarget.getWorldPos2D(), mResource, &layer)) {
+    if (!sWorld->terrainTileHasHarvestable(mTileTarget.getWorldPos2D(), mResource, &layer)) {
         failTask();
         return false;
     }
@@ -256,8 +256,8 @@ void GatherTask::failTask() {
 
 GatherItemsForPromiseTask::GatherItemsForPromiseTask(ItemPromiseWeakPtr&& itemPromise) : mItemPromise(std::move(itemPromise)) {
     assert(mItemPromise.use_count());
-    auto shared = itemPromise.lock();
-    mTargetHarvestable = TileRepository::getTileData(shared->getItemID()).harvestable;
+    auto shared = mItemPromise.lock();
+    mTargetHarvestable = sItemRepository->getItem(shared->getItemID()).getSourceHarvestable();
     assert(mTargetHarvestable != TileHarvestable::NONE);
 }
 
@@ -270,13 +270,25 @@ bool GatherItemsForPromiseTask::tick(entt::registry& registry, entt::entity agen
         case TaskState::FIND_ITEM:
             findItem(registry, agent);
             break;
-        case TaskState::PATH_TO_ITEM:
-            // Awaiting callback
+        case TaskState::PATH_TO_ITEM: {
+            // NavigationStatusComponent? Simple 1 byte lookup?
+            NavigationComponent& navCmp = registry.get<NavigationComponent>(agent);
+            if (navCmp.isFinished()) {
+                mCurrentTileTarget = navCmp.mTargetHandle.toTileHandle();
+                harvestItem(registry, agent);
+            }
             break;
-        case TaskState::HARVEST_ITEM:
-            break;
+        }
         case TaskState::HARVESTING:
-            // Awaiting callback
+            // Once the component is destroyed, we are done
+           // TODO: This does not allow for harvesting failure
+            if (!registry.try_get<TimedTileInteractComponent>(agent)) {
+                LOG_CRITICAL("HARVESTEDWHEEE");
+                //if (mItemPromise) {
+                //    // TODO: This should be another task
+                //    pathToStockpileSlot(registry, agent);
+                //}
+            }
             break;
         case TaskState::SUCCESS:
         case TaskState::FAIL:
@@ -297,5 +309,59 @@ void GatherItemsForPromiseTask::findItem(entt::registry& registry, entt::entity 
 }
 
 void GatherItemsForPromiseTask::harvestItem(entt::registry& registry, entt::entity agent) {
-    assert(false);
+    assert(IS_GAME_THREAD());
+
+    assert(mCurrentTileTarget.isValid());
+    PhysicsComponent& physCmp = registry.get<PhysicsComponent>(agent);
+    TileLayer layer;
+    if (!sWorld->terrainTileHasHarvestable(mCurrentTileTarget.getWorldPos2D(), mTargetHarvestable, &layer)) {
+        // Try again
+        findItem(registry, agent);
+        return;
+    }
+
+    // Interact
+    if (mCurrentTileTarget.tile->hasFlagsMaskAny(e_cast(TileFlags::IS_INTERACTING) | e_cast(TileFlags::IS_RESOURCE_RESERVED))) {
+        // Someone else is using this tile
+        // Try again
+        findItem(registry, agent);
+        return;
+    }
+
+    constexpr int INTERACT_TICKS = 60;
+    TimedTileInteractComponent& interact = registry.emplace<TimedTileInteractComponent>(
+        agent,
+        mCurrentTileTarget,
+        e_cast(layer),
+        INTERACT_TICKS,
+        0,
+        [&registry, agent, this](bool, TimedTileInteractComponent& cmp) {
+        // TODO: Interact lock???
+        auto&& tileRef = cmp.mInteractTile;
+        //if (tileHandle.tile.layers[cmp.mTileLayer])
+        TileID tileId = tileRef->tile->getLayers()[cmp.mTileLayer];
+        const TileData& tileData = TileRepository::getTileData(tileId);
+        tileRef->container->setTileLayer(tileRef->index, (TileLayer)cmp.mTileLayer, TILE_ID_NONE);
+        tileRef->container->clearTileFlag(mCurrentTileTarget.tileIndex, TileFlags::IS_RESOURCE_RESERVED); // Possible race condition? We could doubitemPromisele clear this in failTask()
+        // TODO: Play animation of tree falling
+
+        // Award loot
+        InventoryComponent& invCmp = registry.get<InventoryComponent>(agent);
+        for (size_t i = 0; i < tileData.itemDrops.size(); ++i) {
+            const ItemDrop& drop = tileData.itemDrops[i];
+            ItemStack stack;
+            if (drop.countRange.y <= drop.countRange.x) {
+                stack.quantity = drop.countRange.y;
+            }
+            else {
+                stack.quantity = Random::getCachedRandom() % (drop.countRange.y - drop.countRange.x) + drop.countRange.x;
+            }
+            stack.id = drop.id;
+            invCmp.addItemStackToWorkingStorage(stack, e_cast(WorkStorageID::HAULING));
+        }
+    }
+    );
+
+    mState = TaskState::HARVESTING;
+
 }

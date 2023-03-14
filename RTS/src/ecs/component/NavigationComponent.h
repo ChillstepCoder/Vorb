@@ -16,10 +16,12 @@ enum class NavigationType : ui8 {
 	INVALID
 };
 
-enum NavigationComponentFlags : ui8 {
-	NAVIGATION_COMPONENT_FLAG_COLLIDING_WITH_AGENT    = 1 << 0,
-	NAVIGATION_COMPONENT_FLAG_FAILED_TO_PATH          = 1 << 1,
+enum class NavigationComponentFlags : ui8 {
+    NAVIGATION_COMPONENT_FLAG_FAILED  = 1 << 0,
+    NAVIGATION_COMPONENT_FLAG_SUCCESS = 1 << 1,
 };
+constexpr ui8 NAVIGATION_SUCCESS_FLAGS = e_cast(NavigationComponentFlags::NAVIGATION_COMPONENT_FLAG_FAILED)
+| e_cast(NavigationComponentFlags::NAVIGATION_COMPONENT_FLAG_SUCCESS);
 
 struct NavigationComponent {
 
@@ -36,6 +38,10 @@ struct NavigationComponent {
 
 	// TODO: RequestAbort so we dont need sharedptr?
 	void abort(CharacterControlComponent& motionCmp);
+
+	bool isFinished() const {
+		return mFlags.isMaskPartiallySet(NAVIGATION_SUCCESS_FLAGS);
+	}
 
     // ============== Data ==============
 	// TODO: We can eliminate this data with polling, maybe that is better? We call update anyways...
@@ -56,10 +62,11 @@ struct NavigationComponent {
 		ui32v2 mSimpleTargetPoint = ui32v2(0);
     };
 	TileContainer* mResidingTileContainer = nullptr;
+	LiteTileHandle mTargetHandle;
 	TileIndex mResidingTile;
 	ui32v2 mPrevNavCell;
     NavigationType mNavigationType = NavigationType::INVALID;
-	ui8 mFlags = 0u;
+	BitFlags<NavigationComponentFlags> mFlags;
 	ui8 mFramesUntilNextRayCheck = 0;
 	// TODO: Maybe this? Let the path find be more automatic?
 	// TileRef mTargetTile; // Can be any tile in existance, automatically figures out how to nav to

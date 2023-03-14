@@ -64,7 +64,6 @@ public:
 	enum class TaskState : ui8 {
 		FIND_ITEM,
 		PATH_TO_ITEM,
-		HARVEST_ITEM,
 		HARVESTING,
 		SUCCESS,
 		FAIL

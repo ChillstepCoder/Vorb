@@ -9,6 +9,7 @@ class ItemRepository
 {
 public:
     ItemRepository(vio::IOManager& ioManager);
+    ~ItemRepository();
 
     void loadItemFile(const vio::Path& filePath, TextureRepository& textureRepo);
 
@@ -24,3 +25,4 @@ private:
     std::vector<Item> mItems;
 };
 
+extern ItemRepository* sItemRepository;

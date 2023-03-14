@@ -91,7 +91,7 @@ entt::entity IWorld::createEntity(const f32v3& pos, StrToken typeToken, bool sho
     return mEcs->createEntity(pos, typeToken, shouldReplicate);
 }
 
-bool IWorld::terrainTileHasHarvestableResource(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {
+bool IWorld::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {
     TileHandle handle = getTerrainTileHandleAtWorldPos(worldPos);
     if (handle.isValid()) {
         return handle.tile->hasHarvestableResource(resource, outLayer);

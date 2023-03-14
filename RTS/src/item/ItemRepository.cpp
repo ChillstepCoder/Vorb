@@ -5,6 +5,8 @@
 
 #include <Vorb/io/IOManager.h>
 
+ItemRepository* sItemRepository = nullptr;
+
 struct ItemDef {
     nString name;
     nString textureName;
@@ -14,6 +16,7 @@ struct ItemDef {
     f32 weight = 0.01f;
     ui32 stackSize = 10;
     ui32v3 stackDims = ui32v3(5, 5, 5);
+    TileHarvestable harvestableSource = TileHarvestable::NONE;
 };
 KEG_TYPE_DEF_SAME_NAME(ItemDef, kt) {
     kt.addValue("type", keg::Value::custom(offsetof(ItemDef, type), "ItemType", true));
@@ -23,13 +26,19 @@ KEG_TYPE_DEF_SAME_NAME(ItemDef, kt) {
     kt.addValue("weight", keg::Value::basic(offsetof(ItemDef, weight), keg::BasicType::F32));
     kt.addValue("stack_size", keg::Value::basic(offsetof(ItemDef, stackSize), keg::BasicType::UI32));
     kt.addValue("stack_dims", keg::Value::basic(offsetof(ItemDef, stackDims), keg::BasicType::UI32_V3));
+    kt.addValue("harvest", keg::Value::custom(offsetof(ItemDef, harvestableSource), "TileHarvestable", true));
 }
 
 ItemRepository::ItemRepository(vio::IOManager& ioManager) :
     mIoManager(ioManager) {
-
+    assert(!sItemRepository);
+    sItemRepository = this;
     // Add the null item, no lookup
     mItems.emplace_back();
+}
+
+ItemRepository::~ItemRepository() {
+    sItemRepository = nullptr;
 }
 
 void ItemRepository::loadItemFile(const vio::Path& filePath, TextureRepository& textureRepo)
@@ -50,6 +59,7 @@ void ItemRepository::loadItemFile(const vio::Path& filePath, TextureRepository& 
         newItem.mWeight = def.weight;
         newItem.mStackSize = def.stackSize;
         newItem.mStackDims = def.stackDims;
+        newItem.mHarvestableSource = def.harvestableSource;
         
         // TODO: Check for mod conflicts
         mItemIdLookup[key] = newItem.mId;

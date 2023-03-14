@@ -18,7 +18,7 @@ struct CityPlot;
 // while if the threat in an area is large, it may decide to add walls sooner
 
 struct PlotRequestProps {
-    std::vector<TileHarvestable> proximityResources; // Nearby resources that we want
+    //std::vector<TileHarvestable> proximityResources; // Nearby resources that we want
     DistrictType desiredDistrict = DistrictType::NONE;
     bool isDistrictMandatory = false;
     ui32v2 minBuildingDims = ui32v2(5);

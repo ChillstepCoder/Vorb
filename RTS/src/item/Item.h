@@ -3,6 +3,7 @@
 // TODO: instead have the ItemRenderer manage this mapping
 
 #include "item/ItemStack.h"
+#include "tile/TileHarvestable.h"
 
 enum class ItemType {
     UNKNOWN,
@@ -39,12 +40,13 @@ public:
     f32 getValue() const { return mValue; }
     f32 getWeight() const { return mWeight; }
     ui32 getMaxStackSize() const { return mStackSize; }
-
+    TileHarvestable getSourceHarvestable() const { return mHarvestableSource; }
 protected:
     nString mName;
     ItemType mType = ItemType::UNKNOWN;
     ItemStorageShape mShape = ItemStorageShape::POINT;
     ItemID mId;
+    TileHarvestable mHarvestableSource = TileHarvestable::NONE;
     // TODO: Model or something?
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;

@@ -45,6 +45,10 @@ struct LiteTileHandle {
 
     i32v3 getWorldPosition() const;
 
+    void reset() {
+        containerId = INVALID_TILE_CONTAINER_ID;
+    }
+
     bool operator==(const LiteTileHandle& rhs) const { return index == rhs.index && containerId == rhs.containerId; }
     bool operator!=(const LiteTileHandle& rhs) const { return index != rhs.index || containerId != rhs.containerId; }
 

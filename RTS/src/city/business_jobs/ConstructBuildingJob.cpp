@@ -89,7 +89,6 @@ IAgentTaskPtr ConstructBuildingJob::tryMakeTaskForWorker(entt::entity worker) {
                 LOG_CRITICAL("WEEEE DID IT {}", fulfilledQuantity);
                 assert(false);
             });
-            ItemPromiseWeakPtr promiseHandle = itemPromise;
 
             // Gather
             GatherItemsForPromiseTaskPtr gatherTask = std::make_unique<GatherItemsForPromiseTask>(itemPromise);

@@ -6,3 +6,4 @@ wood_raw:
   stack_size: 60
   stack_dims: [1,5,5]
   shape: plank
+  harvest: wood

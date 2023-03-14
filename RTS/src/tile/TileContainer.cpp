@@ -163,8 +163,11 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id) {
 
     // TODO: Array of blocking data so we dont need a cache miss lookup here??
     // Check if we need to block neighbors, such as for large tree
-    const NavBlockerType navBlockerType = TileRepository::getTileData(id).navBlockerType;
+    NavBlockerType navBlockerType = NavBlockerType::NONE; 
     NavBlockerType prevNavBlockerType = NavBlockerType::NONE;
+    if (!isTileNone(id)) {
+        navBlockerType = TileRepository::getTileData(id).navBlockerType;
+    }
     if (!isTileNone(prevId)) {
         prevNavBlockerType = TileRepository::getTileData(prevId).navBlockerType;
     }

@@ -239,7 +239,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
         const ContainerNavData& containerNavData = mNavWorld.getNavDataForContainer(handle.containerId);
         const f32v3 worldPos = containerNavData.getTileWorldPos(handle.index);
 
-        constexpr f32 SUCCESS_DISTANCE_SQ = SQ(2.0f);//1.5f;
+        constexpr f32 SUCCESS_DISTANCE_SQ = 1.5f;
         if (glm::length2(worldPos - goalWorldPos) < SUCCESS_DISTANCE_SQ) {
             foundGoal = true;
             break;
@@ -390,10 +390,11 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     }
 
     // Try append goal tile if viable (may not be navable position and thats OK)
-    if (goalNavData && (goalHandle != handle)) {
+    // This causes problems with harvestables since agents try to path inside the tree
+   /* if (goalNavData && (goalHandle != handle)) {
         nodeLookup.emplace(std::make_pair(goalHandle, FineNodeData{ handle, 0 }));
         handle = goalHandle;
-    }
+    }*/
 
     // Generate the path by reverse iterating from the last point
     ui32 pathSize = 0;
@@ -425,6 +426,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3& start, const f32v3& go
     }
 
     LOG_TRACE("Generated path in {} ms with {} total nodes checked", timer.stop(), TOTAL);
+    path.targetHandle = goalHandle;
     path.finishedGenerating.store(true);
     return true;
 }
@@ -775,8 +777,6 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
         }
     }
 
-    
-
     // Copy the path
     if (reverse) {
         path.allocatePath(pathSize);
@@ -807,5 +807,6 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
         }
     }
 
+    path.targetHandle = goalHandle;
     path.finishedGenerating.store(true);
 }
