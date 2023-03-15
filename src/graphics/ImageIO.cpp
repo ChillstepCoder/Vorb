@@ -177,11 +177,17 @@ vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
     //bit_depth=png_get_bit_depth(png_ptr, info_ptr);
 
     //number_of_passes=png_set_interlace_handling(png_ptr);
+    assert(color_type == PNG_COLOR_TYPE_PALETTE || color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGBA || color_type == PNG_COLOR_TYPE_GRAY);
 
     if(color_type==PNG_COLOR_TYPE_PALETTE)
     {
         png_set_palette_to_rgb(png_ptr);
         color_type=PNG_COLOR_TYPE_RGB;
+    }
+    else if (color_type == PNG_COLOR_TYPE_GRAY)
+    {
+        png_set_gray_to_rgb(png_ptr);
+        color_type = PNG_COLOR_TYPE_RGB;
     }
 
     if((color_type==PNG_COLOR_TYPE_RGB)&&(requestedformat==ImageIOFormat::RGBA_UI8))
@@ -224,7 +230,7 @@ vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
     {
         channels=4;
         depth=1;
-    }
+    }/*
     else if(requestedformat==ImageIOFormat::RGB_UI16)
     {
         channels=4;
@@ -234,6 +240,10 @@ vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
     {
         channels=4;
         depth=2;
+    }*/
+    else {
+        // Unsupported
+        assert(false);
     }
 
     std::vector<png_bytep> row_pointers(height);
@@ -258,6 +268,7 @@ vg::BitmapResource vg::ImageIO::load(const vio::Path& path,
         }
     }
 
+    // If we crash here, check that bit depth is 8 per pixel
     png_read_image(png_ptr, row_pointers.data());
 
     fclose(file);
